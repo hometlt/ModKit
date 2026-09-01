@@ -1,9 +1,5 @@
-var __create = Object.create;
 var __defProp = Object.defineProperty;
-var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
-var __getProtoOf = Object.getPrototypeOf;
-var __hasOwnProp = Object.prototype.hasOwnProperty;
 var __esm = (fn, res, err) => function __init() {
   if (err) throw err[0];
   try {
@@ -12,35 +8,16 @@ var __esm = (fn, res, err) => function __init() {
     throw err = [e], e;
   }
 };
-var __commonJS = (cb, mod) => function __require() {
-  try {
-    return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
-  } catch (e) {
-    throw mod = 0, e;
-  }
-};
 var __export = (target, all) => {
   for (var name in all)
     __defProp(target, name, { get: all[name], enumerable: true });
 };
-var __copyProps = (to, from, except, desc) => {
-  if (from && typeof from === "object" || typeof from === "function") {
-    for (let key of __getOwnPropNames(from))
-      if (!__hasOwnProp.call(to, key) && key !== except)
-        __defProp(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
-  }
-  return to;
-};
-var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
-  // If the importer is in node compatibility mode or this is not an ESM
-  // file that has been converted to a CommonJS file using a Babel-
-  // compatible transform (i.e. "__esModule" has not been set), then set
-  // "default" to the CommonJS "module.exports" for node compatibility.
-  isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
-  mod
-));
 
-// packages/sdk/dist/manifest/validators.generated/sourceSpanV1.js
+// packages/sdk/dist/manifest/validators.generated.js
+var validators_generated_exports = {};
+__export(validators_generated_exports, {
+  PRECOMPILED_SCHEMA_VALIDATORS: () => PRECOMPILED_SCHEMA_VALIDATORS
+});
 function validate20(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
@@ -627,43 +604,6 @@ function validate20(data, { instancePath = "", parentData, parentDataProperty, r
   evaluated0.props = props0;
   return errors === 0;
 }
-var sourceSpanV1, pattern4;
-var init_sourceSpanV1 = __esm({
-  "packages/sdk/dist/manifest/validators.generated/sourceSpanV1.js"() {
-    "use strict";
-    sourceSpanV1 = validate20;
-    pattern4 = new RegExp("^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$", "u");
-    validate20.evaluated = { "dynamicProps": true, "dynamicItems": false };
-  }
-});
-
-// ../modkit-extensions-blizzard/node_modules/.pnpm/ajv@8.20.0/node_modules/ajv/dist/runtime/ucs2length.js
-var require_ucs2length = __commonJS({
-  "../modkit-extensions-blizzard/node_modules/.pnpm/ajv@8.20.0/node_modules/ajv/dist/runtime/ucs2length.js"(exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    function ucs2length(str) {
-      const len = str.length;
-      let length = 0;
-      let pos = 0;
-      let value2;
-      while (pos < len) {
-        length++;
-        value2 = str.charCodeAt(pos++);
-        if (value2 >= 55296 && value2 <= 56319 && pos < len) {
-          value2 = str.charCodeAt(pos);
-          if ((value2 & 64512) === 56320)
-            pos++;
-        }
-      }
-      return length;
-    }
-    exports.default = ucs2length;
-    ucs2length.code = 'require("ajv/dist/runtime/ucs2length").default';
-  }
-});
-
-// packages/sdk/dist/manifest/validators.generated/extensionManifestV1.js
 function validate202(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
@@ -1740,25 +1680,6 @@ function validate202(data, { instancePath = "", parentData, parentDataProperty, 
   validate202.errors = vErrors;
   return errors === 0;
 }
-var func1Module, extensionManifestV1, schema31, pattern42, pattern6, pattern7, pattern8, pattern11, pattern13, func1;
-var init_extensionManifestV1 = __esm({
-  "packages/sdk/dist/manifest/validators.generated/extensionManifestV1.js"() {
-    "use strict";
-    func1Module = __toESM(require_ucs2length(), 1);
-    extensionManifestV1 = validate202;
-    schema31 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/extension-manifest.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "publisher", "id", "version", "license", "contributionManifests"], "properties": { "schemaVersion": { "const": 1 }, "publisher": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "license": { "type": "string", "minLength": 1 }, "contributionManifests": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "dependsOn": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/extension-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["extension", "mode", "scope"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } } }, "presentation": { "type": "object", "additionalProperties": false, "properties": { "displayName": { "type": "string", "minLength": 1 }, "description": { "type": "string", "minLength": 1 }, "vendor": { "type": "object", "additionalProperties": false, "required": ["id", "displayName"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 } } }, "games": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "displayName"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 } } } }, "icon": { "type": "object", "additionalProperties": false, "required": ["path"], "properties": { "path": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" }, "displayName": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } }, "source": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "root"], "properties": { "kind": { "const": "root" }, "root": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "url"], "properties": { "kind": { "const": "url" }, "url": { "type": "string", "pattern": "^https?://[^\\s]+$" } } }] }, "licenseFiles": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["path"], "properties": { "path": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" }, "displayName": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } } } } } } };
-    pattern42 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern6 = new RegExp("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", "u");
-    pattern7 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern8 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
-    pattern11 = new RegExp("^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$", "u");
-    pattern13 = new RegExp("^https?://[^\\s]+$", "u");
-    func1 = func1Module.default?.default ?? func1Module.default;
-    validate202.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-  }
-});
-
-// packages/sdk/dist/manifest/validators.generated/extensionManifestModkitBlockV1.js
 function validate203(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
@@ -2773,24 +2694,6 @@ function validate203(data, { instancePath = "", parentData, parentDataProperty, 
   validate203.errors = vErrors;
   return errors === 0;
 }
-var func1Module2, extensionManifestModkitBlockV1, schema312, pattern43, pattern62, pattern72, pattern10, pattern12, func12;
-var init_extensionManifestModkitBlockV1 = __esm({
-  "packages/sdk/dist/manifest/validators.generated/extensionManifestModkitBlockV1.js"() {
-    "use strict";
-    func1Module2 = __toESM(require_ucs2length(), 1);
-    extensionManifestModkitBlockV1 = validate203;
-    schema312 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/extension-manifest-modkit-block.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "publisher", "id", "contributionManifests"], "properties": { "schemaVersion": { "const": 1 }, "publisher": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionManifests": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "dependsOn": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/extension-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["extension", "mode", "scope"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } } }, "presentation": { "type": "object", "additionalProperties": false, "properties": { "displayName": { "type": "string", "minLength": 1 }, "description": { "type": "string", "minLength": 1 }, "vendor": { "type": "object", "additionalProperties": false, "required": ["id", "displayName"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 } } }, "games": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "displayName"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 } } } }, "icon": { "type": "object", "additionalProperties": false, "required": ["path"], "properties": { "path": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" }, "displayName": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } }, "source": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "root"], "properties": { "kind": { "const": "root" }, "root": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "url"], "properties": { "kind": { "const": "url" }, "url": { "type": "string", "pattern": "^https?://[^\\s]+$" } } }] }, "licenseFiles": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["path"], "properties": { "path": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" }, "displayName": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } } } } } } };
-    pattern43 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern62 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern72 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
-    pattern10 = new RegExp("^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$", "u");
-    pattern12 = new RegExp("^https?://[^\\s]+$", "u");
-    func12 = func1Module2.default?.default ?? func1Module2.default;
-    validate203.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-  }
-});
-
-// packages/sdk/dist/manifest/validators.generated/extensionRequirementV1.js
 function validate204(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
@@ -2985,67 +2888,6 @@ function validate204(data, { instancePath = "", parentData, parentDataProperty, 
   validate204.errors = vErrors;
   return errors === 0;
 }
-var func1Module3, extensionRequirementV1, schema313, pattern44, pattern5, func13;
-var init_extensionRequirementV1 = __esm({
-  "packages/sdk/dist/manifest/validators.generated/extensionRequirementV1.js"() {
-    "use strict";
-    func1Module3 = __toESM(require_ucs2length(), 1);
-    extensionRequirementV1 = validate204;
-    schema313 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/extension-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["extension", "mode", "scope"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } };
-    pattern44 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern5 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
-    func13 = func1Module3.default?.default ?? func1Module3.default;
-    validate204.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-  }
-});
-
-// ../modkit-extensions-blizzard/node_modules/.pnpm/fast-deep-equal@3.1.3/node_modules/fast-deep-equal/index.js
-var require_fast_deep_equal = __commonJS({
-  "../modkit-extensions-blizzard/node_modules/.pnpm/fast-deep-equal@3.1.3/node_modules/fast-deep-equal/index.js"(exports, module) {
-    "use strict";
-    module.exports = function equal(a, b) {
-      if (a === b) return true;
-      if (a && b && typeof a == "object" && typeof b == "object") {
-        if (a.constructor !== b.constructor) return false;
-        var length, i2, keys;
-        if (Array.isArray(a)) {
-          length = a.length;
-          if (length != b.length) return false;
-          for (i2 = length; i2-- !== 0; )
-            if (!equal(a[i2], b[i2])) return false;
-          return true;
-        }
-        if (a.constructor === RegExp) return a.source === b.source && a.flags === b.flags;
-        if (a.valueOf !== Object.prototype.valueOf) return a.valueOf() === b.valueOf();
-        if (a.toString !== Object.prototype.toString) return a.toString() === b.toString();
-        keys = Object.keys(a);
-        length = keys.length;
-        if (length !== Object.keys(b).length) return false;
-        for (i2 = length; i2-- !== 0; )
-          if (!Object.prototype.hasOwnProperty.call(b, keys[i2])) return false;
-        for (i2 = length; i2-- !== 0; ) {
-          var key = keys[i2];
-          if (!equal(a[key], b[key])) return false;
-        }
-        return true;
-      }
-      return a !== a && b !== b;
-    };
-  }
-});
-
-// ../modkit-extensions-blizzard/node_modules/.pnpm/ajv@8.20.0/node_modules/ajv/dist/runtime/equal.js
-var require_equal = __commonJS({
-  "../modkit-extensions-blizzard/node_modules/.pnpm/ajv@8.20.0/node_modules/ajv/dist/runtime/equal.js"(exports) {
-    "use strict";
-    Object.defineProperty(exports, "__esModule", { value: true });
-    var equal = require_fast_deep_equal();
-    equal.code = 'require("ajv/dist/runtime/equal").default';
-    exports.default = equal;
-  }
-});
-
-// packages/sdk/dist/manifest/validators.generated/codecContributionSpecV1.js
 function validate205(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
@@ -3987,20 +3829,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i12 = data36.length;
                             let j0;
                             if (i12 > 1) {
-                              outer0: for (; i12--; ) {
-                                for (j0 = i12; j0--; ) {
-                                  if (func0(data36[i12], data36[j0])) {
-                                    const err84 = { instancePath: instancePath + "/companions/" + i8 + "/expected/all/" + i10 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i12, j: j0 }, message: "must NOT have duplicate items (items ## " + j0 + " and " + i12 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err84];
-                                    } else {
-                                      vErrors.push(err84);
+                              outer0:
+                                for (; i12--; ) {
+                                  for (j0 = i12; j0--; ) {
+                                    if (func0(data36[i12], data36[j0])) {
+                                      const err84 = { instancePath: instancePath + "/companions/" + i8 + "/expected/all/" + i10 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i12, j: j0 }, message: "must NOT have duplicate items (items ## " + j0 + " and " + i12 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err84];
+                                      } else {
+                                        vErrors.push(err84);
+                                      }
+                                      errors++;
+                                      break outer0;
                                     }
-                                    errors++;
-                                    break outer0;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err85 = { instancePath: instancePath + "/companions/" + i8 + "/expected/all/" + i10 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/all/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -4131,20 +3974,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i15 = data42.length;
                             let j1;
                             if (i15 > 1) {
-                              outer1: for (; i15--; ) {
-                                for (j1 = i15; j1--; ) {
-                                  if (func0(data42[i15], data42[j1])) {
-                                    const err96 = { instancePath: instancePath + "/companions/" + i8 + "/expected/any/" + i13 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i15, j: j1 }, message: "must NOT have duplicate items (items ## " + j1 + " and " + i15 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err96];
-                                    } else {
-                                      vErrors.push(err96);
+                              outer1:
+                                for (; i15--; ) {
+                                  for (j1 = i15; j1--; ) {
+                                    if (func0(data42[i15], data42[j1])) {
+                                      const err96 = { instancePath: instancePath + "/companions/" + i8 + "/expected/any/" + i13 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i15, j: j1 }, message: "must NOT have duplicate items (items ## " + j1 + " and " + i15 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err96];
+                                      } else {
+                                        vErrors.push(err96);
+                                      }
+                                      errors++;
+                                      break outer1;
                                     }
-                                    errors++;
-                                    break outer1;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err97 = { instancePath: instancePath + "/companions/" + i8 + "/expected/any/" + i13 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/any/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -4275,20 +4119,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i18 = data48.length;
                             let j2;
                             if (i18 > 1) {
-                              outer2: for (; i18--; ) {
-                                for (j2 = i18; j2--; ) {
-                                  if (func0(data48[i18], data48[j2])) {
-                                    const err108 = { instancePath: instancePath + "/companions/" + i8 + "/expected/none/" + i16 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i18, j: j2 }, message: "must NOT have duplicate items (items ## " + j2 + " and " + i18 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err108];
-                                    } else {
-                                      vErrors.push(err108);
+                              outer2:
+                                for (; i18--; ) {
+                                  for (j2 = i18; j2--; ) {
+                                    if (func0(data48[i18], data48[j2])) {
+                                      const err108 = { instancePath: instancePath + "/companions/" + i8 + "/expected/none/" + i16 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i18, j: j2 }, message: "must NOT have duplicate items (items ## " + j2 + " and " + i18 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err108];
+                                      } else {
+                                        vErrors.push(err108);
+                                      }
+                                      errors++;
+                                      break outer2;
                                     }
-                                    errors++;
-                                    break outer2;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err109 = { instancePath: instancePath + "/companions/" + i8 + "/expected/none/" + i16 + "/states", schemaPath: "#/oneOf/0/properties/companions/items/properties/expected/properties/none/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -7762,20 +7607,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i47 = data176.length;
                             let j4;
                             if (i47 > 1) {
-                              outer3: for (; i47--; ) {
-                                for (j4 = i47; j4--; ) {
-                                  if (func0(data176[i47], data176[j4])) {
-                                    const err419 = { instancePath: instancePath + "/companions/" + i43 + "/expected/all/" + i45 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i47, j: j4 }, message: "must NOT have duplicate items (items ## " + j4 + " and " + i47 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err419];
-                                    } else {
-                                      vErrors.push(err419);
+                              outer3:
+                                for (; i47--; ) {
+                                  for (j4 = i47; j4--; ) {
+                                    if (func0(data176[i47], data176[j4])) {
+                                      const err419 = { instancePath: instancePath + "/companions/" + i43 + "/expected/all/" + i45 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i47, j: j4 }, message: "must NOT have duplicate items (items ## " + j4 + " and " + i47 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err419];
+                                      } else {
+                                        vErrors.push(err419);
+                                      }
+                                      errors++;
+                                      break outer3;
                                     }
-                                    errors++;
-                                    break outer3;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err420 = { instancePath: instancePath + "/companions/" + i43 + "/expected/all/" + i45 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/all/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -7906,20 +7752,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i50 = data182.length;
                             let j5;
                             if (i50 > 1) {
-                              outer4: for (; i50--; ) {
-                                for (j5 = i50; j5--; ) {
-                                  if (func0(data182[i50], data182[j5])) {
-                                    const err431 = { instancePath: instancePath + "/companions/" + i43 + "/expected/any/" + i48 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i50, j: j5 }, message: "must NOT have duplicate items (items ## " + j5 + " and " + i50 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err431];
-                                    } else {
-                                      vErrors.push(err431);
+                              outer4:
+                                for (; i50--; ) {
+                                  for (j5 = i50; j5--; ) {
+                                    if (func0(data182[i50], data182[j5])) {
+                                      const err431 = { instancePath: instancePath + "/companions/" + i43 + "/expected/any/" + i48 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i50, j: j5 }, message: "must NOT have duplicate items (items ## " + j5 + " and " + i50 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err431];
+                                      } else {
+                                        vErrors.push(err431);
+                                      }
+                                      errors++;
+                                      break outer4;
                                     }
-                                    errors++;
-                                    break outer4;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err432 = { instancePath: instancePath + "/companions/" + i43 + "/expected/any/" + i48 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/any/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -8050,20 +7897,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                             let i53 = data188.length;
                             let j6;
                             if (i53 > 1) {
-                              outer5: for (; i53--; ) {
-                                for (j6 = i53; j6--; ) {
-                                  if (func0(data188[i53], data188[j6])) {
-                                    const err443 = { instancePath: instancePath + "/companions/" + i43 + "/expected/none/" + i51 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i53, j: j6 }, message: "must NOT have duplicate items (items ## " + j6 + " and " + i53 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err443];
-                                    } else {
-                                      vErrors.push(err443);
+                              outer5:
+                                for (; i53--; ) {
+                                  for (j6 = i53; j6--; ) {
+                                    if (func0(data188[i53], data188[j6])) {
+                                      const err443 = { instancePath: instancePath + "/companions/" + i43 + "/expected/none/" + i51 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i53, j: j6 }, message: "must NOT have duplicate items (items ## " + j6 + " and " + i53 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err443];
+                                      } else {
+                                        vErrors.push(err443);
+                                      }
+                                      errors++;
+                                      break outer5;
                                     }
-                                    errors++;
-                                    break outer5;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err444 = { instancePath: instancePath + "/companions/" + i43 + "/expected/none/" + i51 + "/states", schemaPath: "#/oneOf/1/properties/companions/items/properties/expected/properties/none/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -11678,20 +11526,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                               let i84 = data319.length;
                               let j9;
                               if (i84 > 1) {
-                                outer6: for (; i84--; ) {
-                                  for (j9 = i84; j9--; ) {
-                                    if (func0(data319[i84], data319[j9])) {
-                                      const err766 = { instancePath: instancePath + "/companions/" + i80 + "/expected/all/" + i82 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i84, j: j9 }, message: "must NOT have duplicate items (items ## " + j9 + " and " + i84 + " are identical)" };
-                                      if (vErrors === null) {
-                                        vErrors = [err766];
-                                      } else {
-                                        vErrors.push(err766);
+                                outer6:
+                                  for (; i84--; ) {
+                                    for (j9 = i84; j9--; ) {
+                                      if (func0(data319[i84], data319[j9])) {
+                                        const err766 = { instancePath: instancePath + "/companions/" + i80 + "/expected/all/" + i82 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/all/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i84, j: j9 }, message: "must NOT have duplicate items (items ## " + j9 + " and " + i84 + " are identical)" };
+                                        if (vErrors === null) {
+                                          vErrors = [err766];
+                                        } else {
+                                          vErrors.push(err766);
+                                        }
+                                        errors++;
+                                        break outer6;
                                       }
-                                      errors++;
-                                      break outer6;
                                     }
                                   }
-                                }
                               }
                             } else {
                               const err767 = { instancePath: instancePath + "/companions/" + i80 + "/expected/all/" + i82 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/all/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -11822,20 +11671,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                               let i87 = data325.length;
                               let j10;
                               if (i87 > 1) {
-                                outer7: for (; i87--; ) {
-                                  for (j10 = i87; j10--; ) {
-                                    if (func0(data325[i87], data325[j10])) {
-                                      const err778 = { instancePath: instancePath + "/companions/" + i80 + "/expected/any/" + i85 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i87, j: j10 }, message: "must NOT have duplicate items (items ## " + j10 + " and " + i87 + " are identical)" };
-                                      if (vErrors === null) {
-                                        vErrors = [err778];
-                                      } else {
-                                        vErrors.push(err778);
+                                outer7:
+                                  for (; i87--; ) {
+                                    for (j10 = i87; j10--; ) {
+                                      if (func0(data325[i87], data325[j10])) {
+                                        const err778 = { instancePath: instancePath + "/companions/" + i80 + "/expected/any/" + i85 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/any/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i87, j: j10 }, message: "must NOT have duplicate items (items ## " + j10 + " and " + i87 + " are identical)" };
+                                        if (vErrors === null) {
+                                          vErrors = [err778];
+                                        } else {
+                                          vErrors.push(err778);
+                                        }
+                                        errors++;
+                                        break outer7;
                                       }
-                                      errors++;
-                                      break outer7;
                                     }
                                   }
-                                }
                               }
                             } else {
                               const err779 = { instancePath: instancePath + "/companions/" + i80 + "/expected/any/" + i85 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/any/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -11966,20 +11816,21 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
                               let i90 = data331.length;
                               let j11;
                               if (i90 > 1) {
-                                outer8: for (; i90--; ) {
-                                  for (j11 = i90; j11--; ) {
-                                    if (func0(data331[i90], data331[j11])) {
-                                      const err790 = { instancePath: instancePath + "/companions/" + i80 + "/expected/none/" + i88 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i90, j: j11 }, message: "must NOT have duplicate items (items ## " + j11 + " and " + i90 + " are identical)" };
-                                      if (vErrors === null) {
-                                        vErrors = [err790];
-                                      } else {
-                                        vErrors.push(err790);
+                                outer8:
+                                  for (; i90--; ) {
+                                    for (j11 = i90; j11--; ) {
+                                      if (func0(data331[i90], data331[j11])) {
+                                        const err790 = { instancePath: instancePath + "/companions/" + i80 + "/expected/none/" + i88 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/none/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i90, j: j11 }, message: "must NOT have duplicate items (items ## " + j11 + " and " + i90 + " are identical)" };
+                                        if (vErrors === null) {
+                                          vErrors = [err790];
+                                        } else {
+                                          vErrors.push(err790);
+                                        }
+                                        errors++;
+                                        break outer8;
                                       }
-                                      errors++;
-                                      break outer8;
                                     }
                                   }
-                                }
                               }
                             } else {
                               const err791 = { instancePath: instancePath + "/companions/" + i80 + "/expected/none/" + i88 + "/states", schemaPath: "#/oneOf/2/properties/companions/items/properties/expected/properties/none/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -14487,31 +14338,6 @@ function validate205(data, { instancePath = "", parentData, parentDataProperty, 
   evaluated0.props = props2;
   return errors === 0;
 }
-var func2Module, func0Module, codecContributionSpecV1, schema314, func14, func2, func0, pattern45, pattern63, pattern73, pattern82, pattern132, pattern17, pattern21, pattern25, pattern26;
-var init_codecContributionSpecV1 = __esm({
-  "packages/sdk/dist/manifest/validators.generated/codecContributionSpecV1.js"() {
-    "use strict";
-    func2Module = __toESM(require_ucs2length(), 1);
-    func0Module = __toESM(require_equal(), 1);
-    codecContributionSpecV1 = validate205;
-    schema314 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/codec-contribution-spec.v1.schema.json", "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["formatRefs", "roles", "sourceTopology", "artifactStages", "openIntents", "match", "probe", "representations", "publishesDataSources", "operations", "implementationTier", "budgets"], "properties": { "formatRefs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["formatId", "label"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "label": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "roles": { "type": "array", "items": { "enum": ["container", "media", "byte-transform", "semantic", "index", "sidecar"] }, "minItems": 1 }, "artifactStages": { "type": "array", "items": { "enum": ["authored", "compiled", "runtime"] }, "minItems": 1 }, "openIntents": { "type": "array", "items": { "enum": ["probe", "inspect", "thumbnail", "full", "stream", "export"] }, "minItems": 1 }, "match": { "type": "object", "additionalProperties": false, "properties": { "extensions": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "mediaTypes": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "pathGlobs": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "signatures": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["from", "offset", "bytesHex"], "properties": { "from": { "enum": ["start", "end"] }, "offset": { "type": "integer", "minimum": 0, "maximum": 4096 }, "bytesHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" }, "maskHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" } } }, "maxItems": 8 } } }, "companions": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "patterns", "searchScopes"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "role": { "type": "string", "minLength": 1 }, "required": { "type": "boolean" }, "patterns": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }, "expected": { "type": "object", "additionalProperties": false, "properties": { "all": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "any": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "none": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } } } }, "searchScopes": { "type": "array", "minItems": 1, "items": { "enum": ["sibling-directory", "current-mount", "enclosing-container", "workspace-dependency-layer", "explicit-user-selection"] } } } } }, "representations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "contract", "major", "stage", "lossy"], "properties": { "id": { "type": "string", "minLength": 1 }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "stage": { "enum": ["authored", "compiled", "runtime"] }, "lossy": { "type": "boolean" } } }, "minItems": 1 }, "publishesDataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "requires": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "operations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "requiredPermissions": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } }, "requiresContract": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "outputKinds": { "type": "array", "items": { "enum": ["json", "bytes", "stream", "source", "artifact", "none", "edit-plan", "transaction"] } } } } }, "traitDeclarations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "representation", "presence"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "representation": { "enum": ["source", "compiled", "runtime"] }, "presence": { "enum": ["may-expose", "will-expose"] }, "prerequisites": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } } }, "fidelityEvidence": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "claim", "evidenceId", "corpusId", "corpusDigest", "conformanceProfile", "optionsFingerprint", "inputClass", "provenAt"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "claim": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "const": "byte-identical" }, "preservesUnknownData": { "const": true }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, { "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "const": "semantic" }, "preservesUnknownData": { "type": "boolean" }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, { "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "enum": ["lossy", "none"] }, "preservesUnknownData": { "const": false }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }] }, "evidenceId": { "type": "string", "minLength": 1 }, "corpusId": { "type": "string", "minLength": 1 }, "corpusDigest": { "type": "string", "minLength": 1 }, "conformanceProfile": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "optionsFingerprint": { "type": "string", "minLength": 1 }, "inputClass": { "type": "string", "minLength": 1 }, "provenAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$" } } } }, "implementationTier": { "type": "object", "additionalProperties": false, "required": ["claimed"], "properties": { "claimed": { "enum": [1, 2, 3, 4, 5] } } }, "budgets": { "type": "object", "additionalProperties": false, "required": ["maxInputBytes", "maxDepth", "maxNodes", "maxScalarBytes", "maxDiagnostics"], "properties": { "maxInputBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "maxDepth": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxNodes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxScalarBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxDiagnostics": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "deadlineMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "sourceTopology": { "enum": ["single", "bundle"] }, "probe": { "type": "object", "additionalProperties": false, "required": ["kind", "ranges", "maxBytes"], "properties": { "kind": { "const": "bytes" }, "ranges": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["from", "length"], "properties": { "from": { "enum": ["start", "end"] }, "length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["formatRefs", "roles", "sourceTopology", "artifactStages", "openIntents", "match", "probe", "representations", "publishesDataSources", "operations", "implementationTier", "budgets"], "properties": { "formatRefs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["formatId", "label"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "label": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "roles": { "type": "array", "items": { "enum": ["container", "media", "byte-transform", "semantic", "index", "sidecar"] }, "minItems": 1 }, "artifactStages": { "type": "array", "items": { "enum": ["authored", "compiled", "runtime"] }, "minItems": 1 }, "openIntents": { "type": "array", "items": { "enum": ["probe", "inspect", "thumbnail", "full", "stream", "export"] }, "minItems": 1 }, "match": { "type": "object", "additionalProperties": false, "properties": { "extensions": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "mediaTypes": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "pathGlobs": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "signatures": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["from", "offset", "bytesHex"], "properties": { "from": { "enum": ["start", "end"] }, "offset": { "type": "integer", "minimum": 0, "maximum": 4096 }, "bytesHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" }, "maskHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" } } }, "maxItems": 8 } } }, "companions": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "patterns", "searchScopes"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "role": { "type": "string", "minLength": 1 }, "required": { "type": "boolean" }, "patterns": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }, "expected": { "type": "object", "additionalProperties": false, "properties": { "all": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "any": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "none": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } } } }, "searchScopes": { "type": "array", "minItems": 1, "items": { "enum": ["sibling-directory", "current-mount", "enclosing-container", "workspace-dependency-layer", "explicit-user-selection"] } } } } }, "representations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "contract", "major", "stage", "lossy"], "properties": { "id": { "type": "string", "minLength": 1 }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "stage": { "enum": ["authored", "compiled", "runtime"] }, "lossy": { "type": "boolean" } } }, "minItems": 1 }, "publishesDataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "requires": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "operations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "requiredPermissions": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } }, "requiresContract": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "outputKinds": { "type": "array", "items": { "enum": ["json", "bytes", "stream", "source", "artifact", "none", "edit-plan", "transaction"] } } } } }, "traitDeclarations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "representation", "presence"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "representation": { "enum": ["source", "compiled", "runtime"] }, "presence": { "enum": ["may-expose", "will-expose"] }, "prerequisites": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } } }, "fidelityEvidence": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "claim", "evidenceId", "corpusId", "corpusDigest", "conformanceProfile", "optionsFingerprint", "inputClass", "provenAt"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "claim": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "const": "byte-identical" }, "preservesUnknownData": { "const": true }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, { "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "const": "semantic" }, "preservesUnknownData": { "type": "boolean" }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, { "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "enum": ["lossy", "none"] }, "preservesUnknownData": { "const": false }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }] }, "evidenceId": { "type": "string", "minLength": 1 }, "corpusId": { "type": "string", "minLength": 1 }, "corpusDigest": { "type": "string", "minLength": 1 }, "conformanceProfile": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "optionsFingerprint": { "type": "string", "minLength": 1 }, "inputClass": { "type": "string", "minLength": 1 }, "provenAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$" } } } }, "implementationTier": { "type": "object", "additionalProperties": false, "required": ["claimed"], "properties": { "claimed": { "enum": [1, 2, 3, 4, 5] } } }, "budgets": { "type": "object", "additionalProperties": false, "required": ["maxInputBytes", "maxDepth", "maxNodes", "maxScalarBytes", "maxDiagnostics"], "properties": { "maxInputBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "maxDepth": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxNodes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxScalarBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxDiagnostics": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "deadlineMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "sourceTopology": { "const": "namespace" }, "probe": { "type": "object", "additionalProperties": false, "required": ["kind", "markers", "maxEntries", "maxBytes", "maxDepth", "maxPathBytes"], "properties": { "kind": { "const": "namespace" }, "markers": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "maxItems": 256, "uniqueItems": true }, "prefixes": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "maxEntries": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxDepth": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxPathBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["formatRefs", "roles", "sourceTopology", "artifactStages", "openIntents", "match", "probe", "representations", "publishesDataSources", "operations", "implementationTier", "budgets"], "properties": { "formatRefs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["formatId", "label"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "label": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "roles": { "type": "array", "items": { "enum": ["container", "media", "byte-transform", "semantic", "index", "sidecar"] }, "minItems": 1 }, "artifactStages": { "type": "array", "items": { "enum": ["authored", "compiled", "runtime"] }, "minItems": 1 }, "openIntents": { "type": "array", "items": { "enum": ["probe", "inspect", "thumbnail", "full", "stream", "export"] }, "minItems": 1 }, "match": { "type": "object", "additionalProperties": false, "properties": { "extensions": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "mediaTypes": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "pathGlobs": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "signatures": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["from", "offset", "bytesHex"], "properties": { "from": { "enum": ["start", "end"] }, "offset": { "type": "integer", "minimum": 0, "maximum": 4096 }, "bytesHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" }, "maskHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" } } }, "maxItems": 8 } } }, "companions": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "patterns", "searchScopes"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "role": { "type": "string", "minLength": 1 }, "required": { "type": "boolean" }, "patterns": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }, "expected": { "type": "object", "additionalProperties": false, "properties": { "all": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "any": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "none": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } } } }, "searchScopes": { "type": "array", "minItems": 1, "items": { "enum": ["sibling-directory", "current-mount", "enclosing-container", "workspace-dependency-layer", "explicit-user-selection"] } } } } }, "representations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "contract", "major", "stage", "lossy"], "properties": { "id": { "type": "string", "minLength": 1 }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "stage": { "enum": ["authored", "compiled", "runtime"] }, "lossy": { "type": "boolean" } } }, "minItems": 1 }, "publishesDataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "requires": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "operations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "requiredPermissions": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } }, "requiresContract": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "outputKinds": { "type": "array", "items": { "enum": ["json", "bytes", "stream", "source", "artifact", "none", "edit-plan", "transaction"] } } } } }, "traitDeclarations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "representation", "presence"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "representation": { "enum": ["source", "compiled", "runtime"] }, "presence": { "enum": ["may-expose", "will-expose"] }, "prerequisites": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } } }, "fidelityEvidence": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "claim", "evidenceId", "corpusId", "corpusDigest", "conformanceProfile", "optionsFingerprint", "inputClass", "provenAt"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "claim": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "const": "byte-identical" }, "preservesUnknownData": { "const": true }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, { "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "const": "semantic" }, "preservesUnknownData": { "type": "boolean" }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, { "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "enum": ["lossy", "none"] }, "preservesUnknownData": { "const": false }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }] }, "evidenceId": { "type": "string", "minLength": 1 }, "corpusId": { "type": "string", "minLength": 1 }, "corpusDigest": { "type": "string", "minLength": 1 }, "conformanceProfile": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "optionsFingerprint": { "type": "string", "minLength": 1 }, "inputClass": { "type": "string", "minLength": 1 }, "provenAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$" } } } }, "implementationTier": { "type": "object", "additionalProperties": false, "required": ["claimed"], "properties": { "claimed": { "enum": [1, 2, 3, 4, 5] } } }, "budgets": { "type": "object", "additionalProperties": false, "required": ["maxInputBytes", "maxDepth", "maxNodes", "maxScalarBytes", "maxDiagnostics"], "properties": { "maxInputBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "maxDepth": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxNodes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxScalarBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxDiagnostics": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "deadlineMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "sourceTopology": { "const": "derived" }, "probe": { "type": "object", "additionalProperties": false, "required": ["kind", "maxSubjects", "maxRelationDepth"], "properties": { "kind": { "const": "derived" }, "maxSubjects": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxRelationDepth": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] };
-    func14 = Object.prototype.hasOwnProperty;
-    func2 = func2Module.default?.default ?? func2Module.default;
-    func0 = func0Module.default?.default ?? func0Module.default;
-    pattern45 = new RegExp("^(?:[0-9a-f]{2}){1,64}$", "u");
-    pattern63 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*$", "u");
-    pattern73 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern82 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
-    pattern132 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern17 = new RegExp("^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$", "u");
-    pattern21 = new RegExp("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", "u");
-    pattern25 = new RegExp("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$", "u");
-    pattern26 = new RegExp("^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$", "u");
-    validate205.evaluated = { "dynamicProps": true, "dynamicItems": false };
-  }
-});
-
-// packages/sdk/dist/manifest/validators.generated/serviceProviderContributionSpecV1.js
 function validate206(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
@@ -16139,26 +15965,6 @@ function validate206(data, { instancePath = "", parentData, parentDataProperty, 
   validate206.errors = vErrors;
   return errors === 0;
 }
-var func3Module, serviceProviderContributionSpecV1, schema315, func15, func3, pattern46, pattern52, pattern64, pattern9, pattern112, pattern122;
-var init_serviceProviderContributionSpecV1 = __esm({
-  "packages/sdk/dist/manifest/validators.generated/serviceProviderContributionSpecV1.js"() {
-    "use strict";
-    func3Module = __toESM(require_ucs2length(), 1);
-    serviceProviderContributionSpecV1 = validate206;
-    schema315 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/service-provider-contribution-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["provides", "lifecycleScope"], "properties": { "provides": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["offerId", "contract", "major", "version"], "properties": { "offerId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "facet": { "title": "JsonValue" } } }, "minItems": 1 }, "fidelityEvidence": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["offerId", "evidenceId", "claim", "corpusId", "corpusDigest", "conformanceProfile", "optionsFingerprint", "inputClass", "provenAt"], "properties": { "offerId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "evidenceId": { "type": "string", "minLength": 1 }, "claim": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "const": "byte-identical" }, "preservesUnknownData": { "const": true }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, { "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "const": "semantic" }, "preservesUnknownData": { "type": "boolean" }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, { "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "enum": ["lossy", "none"] }, "preservesUnknownData": { "const": false }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }] }, "corpusId": { "type": "string", "minLength": 1 }, "corpusDigest": { "type": "string", "minLength": 1 }, "conformanceProfile": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "optionsFingerprint": { "type": "string", "minLength": 1 }, "inputClass": { "type": "string", "minLength": 1 }, "provenAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$" } } } }, "requires": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "inputs": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "outputs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "representation", "presence"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "representation": { "enum": ["source", "compiled", "runtime"] }, "presence": { "enum": ["may-expose", "will-expose"] }, "prerequisites": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } } }, "protocolOperations": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "replacement": { "type": "object", "additionalProperties": false, "required": ["target", "compatible"], "properties": { "target": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } }, "compatible": { "type": "boolean" } } }, "lifecycleScope": { "enum": ["session", "operation", "process"] }, "applicableVariants": { "type": "array", "items": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" } } } };
-    func15 = Object.prototype.hasOwnProperty;
-    func3 = func3Module.default?.default ?? func3Module.default;
-    pattern46 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*$", "u");
-    pattern52 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern64 = new RegExp("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", "u");
-    pattern9 = new RegExp("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$", "u");
-    pattern112 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
-    pattern122 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    validate206.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-  }
-});
-
-// packages/sdk/dist/manifest/validators.generated/viewerContributionSpecV1.js
 function validate207(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
@@ -16320,20 +16126,21 @@ function validate207(data, { instancePath = "", parentData, parentDataProperty, 
                 let i2 = data5.length;
                 let j0;
                 if (i2 > 1) {
-                  outer0: for (; i2--; ) {
-                    for (j0 = i2; j0--; ) {
-                      if (func02(data5[i2], data5[j0])) {
-                        const err13 = { instancePath: instancePath + "/requiresTraits/" + i0 + "/states", schemaPath: "#/properties/requiresTraits/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i2, j: j0 }, message: "must NOT have duplicate items (items ## " + j0 + " and " + i2 + " are identical)" };
-                        if (vErrors === null) {
-                          vErrors = [err13];
-                        } else {
-                          vErrors.push(err13);
+                  outer0:
+                    for (; i2--; ) {
+                      for (j0 = i2; j0--; ) {
+                        if (func02(data5[i2], data5[j0])) {
+                          const err13 = { instancePath: instancePath + "/requiresTraits/" + i0 + "/states", schemaPath: "#/properties/requiresTraits/items/properties/states/uniqueItems", keyword: "uniqueItems", params: { i: i2, j: j0 }, message: "must NOT have duplicate items (items ## " + j0 + " and " + i2 + " are identical)" };
+                          if (vErrors === null) {
+                            vErrors = [err13];
+                          } else {
+                            vErrors.push(err13);
+                          }
+                          errors++;
+                          break outer0;
                         }
-                        errors++;
-                        break outer0;
                       }
                     }
-                  }
                 }
               } else {
                 const err14 = { instancePath: instancePath + "/requiresTraits/" + i0 + "/states", schemaPath: "#/properties/requiresTraits/items/properties/states/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -17215,27 +17022,6 @@ function validate207(data, { instancePath = "", parentData, parentDataProperty, 
   validate207.errors = vErrors;
   return errors === 0;
 }
-var func0Module2, func3Module2, viewerContributionSpecV1, schema316, func16, func02, func32, pattern47, pattern53, pattern65, pattern74, pattern92;
-var init_viewerContributionSpecV1 = __esm({
-  "packages/sdk/dist/manifest/validators.generated/viewerContributionSpecV1.js"() {
-    "use strict";
-    func0Module2 = __toESM(require_equal(), 1);
-    func3Module2 = __toESM(require_ucs2length(), 1);
-    viewerContributionSpecV1 = validate207;
-    schema316 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/viewer-contribution-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["kind", "consumesDataSources", "priority"], "properties": { "kind": { "enum": ["stage", "tree", "panel", "toolbar", "transport", "status", "fallback"] }, "requiresTraits": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "requiresOperations": { "type": "array", "items": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" } }, "consumesDataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "optionalDataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "applicability": { "type": "object", "additionalProperties": false, "properties": { "interpretation": { "enum": ["none", "codec", "any"] }, "sourceBytes": { "type": "object", "additionalProperties": false, "properties": { "maximum": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, "longestLineBytes": { "type": "object", "additionalProperties": false, "required": ["maximum", "whenUnknown"], "properties": { "maximum": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "whenUnknown": { "enum": ["eligible", "ineligible"] } } } } }, "hosts": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "priority": { "type": "number" }, "conflicts": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "singletonGroup": { "type": "string", "minLength": 1 } } };
-    func16 = Object.prototype.hasOwnProperty;
-    func02 = func0Module2.default?.default ?? func0Module2.default;
-    func32 = func3Module2.default?.default ?? func3Module2.default;
-    pattern47 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern53 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
-    pattern65 = new RegExp("^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$", "u");
-    pattern74 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern92 = new RegExp("^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$", "u");
-    validate207.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-  }
-});
-
-// packages/sdk/dist/manifest/validators.generated/editorContributionSpecV1.js
 function validate208(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
@@ -17788,20 +17574,21 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
         let i7 = data8.length;
         let j3;
         if (i7 > 1) {
-          outer0: for (; i7--; ) {
-            for (j3 = i7; j3--; ) {
-              if (func03(data8[i7], data8[j3])) {
-                const err43 = { instancePath: instancePath + "/consumesDataSources", schemaPath: "#/properties/consumesDataSources/uniqueItems", keyword: "uniqueItems", params: { i: i7, j: j3 }, message: "must NOT have duplicate items (items ## " + j3 + " and " + i7 + " are identical)" };
-                if (vErrors === null) {
-                  vErrors = [err43];
-                } else {
-                  vErrors.push(err43);
+          outer0:
+            for (; i7--; ) {
+              for (j3 = i7; j3--; ) {
+                if (func03(data8[i7], data8[j3])) {
+                  const err43 = { instancePath: instancePath + "/consumesDataSources", schemaPath: "#/properties/consumesDataSources/uniqueItems", keyword: "uniqueItems", params: { i: i7, j: j3 }, message: "must NOT have duplicate items (items ## " + j3 + " and " + i7 + " are identical)" };
+                  if (vErrors === null) {
+                    vErrors = [err43];
+                  } else {
+                    vErrors.push(err43);
+                  }
+                  errors++;
+                  break outer0;
                 }
-                errors++;
-                break outer0;
               }
             }
-          }
         }
       } else {
         const err44 = { instancePath: instancePath + "/consumesDataSources", schemaPath: "#/properties/consumesDataSources/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -18134,25 +17921,6 @@ function validate208(data, { instancePath = "", parentData, parentDataProperty, 
   validate208.errors = vErrors;
   return errors === 0;
 }
-var func2Module2, func0Module3, editorContributionSpecV1, schema317, func17, func22, func03, pattern48, pattern54, pattern66;
-var init_editorContributionSpecV1 = __esm({
-  "packages/sdk/dist/manifest/validators.generated/editorContributionSpecV1.js"() {
-    "use strict";
-    func2Module2 = __toESM(require_ucs2length(), 1);
-    func0Module3 = __toESM(require_equal(), 1);
-    editorContributionSpecV1 = validate208;
-    schema317 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/editor-contribution-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["sessionModel", "selectionKinds", "semanticLocationKinds", "requiresTransactions", "requiresOperations", "consumesDataSources", "writer", "priority"], "properties": { "sessionModel": { "enum": ["single-subject", "multi-subject", "workspace"] }, "selectionKinds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }, "semanticLocationKinds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }, "requiresTransactions": { "type": "boolean" }, "requiresOperations": { "type": "array", "items": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "uniqueItems": true }, "consumesDataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] }, "uniqueItems": true }, "writer": { "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "mutationMode", "minimumRoundTrip"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "mutationMode": { "enum": ["export-only", "mutate"] }, "minimumRoundTrip": { "enum": ["byte-identical", "semantic", "lossy", "none"] } } }, "hosts": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }, "priority": { "type": "number" }, "scaleLimits": { "type": "object", "additionalProperties": false, "properties": { "maximumSubjects": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maximumRows": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maximumSourceBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } } } };
-    func17 = Object.prototype.hasOwnProperty;
-    func22 = func2Module2.default?.default ?? func2Module2.default;
-    func03 = func0Module3.default?.default ?? func0Module3.default;
-    pattern48 = new RegExp("^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$", "u");
-    pattern54 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern66 = new RegExp("^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$", "u");
-    validate208.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-  }
-});
-
-// packages/sdk/dist/manifest/validators.generated/knowledgePackSpecV1.js
 function validate209(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
@@ -21442,24 +21210,6 @@ function validate209(data, { instancePath = "", parentData, parentDataProperty, 
   validate209.errors = vErrors;
   return errors === 0;
 }
-var func1Module4, knowledgePackSpecV1, schema318, func18, func4, pattern49, pattern55, pattern93, pattern113;
-var init_knowledgePackSpecV1 = __esm({
-  "packages/sdk/dist/manifest/validators.generated/knowledgePackSpecV1.js"() {
-    "use strict";
-    func1Module4 = __toESM(require_ucs2length(), 1);
-    knowledgePackSpecV1 = validate209;
-    schema318 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/knowledge-pack-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "sourceLocale", "priority", "entries"], "properties": { "schemaVersion": { "const": 1 }, "sourceLocale": { "type": "string", "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$", "maxLength": 64 }, "priority": { "type": "number" }, "gameIds": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "maxItems": 32, "uniqueItems": true }, "entries": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "target", "locale", "title", "summary", "claimKind", "confidence", "sources"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "maxLength": 256 }, "target": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "schema", "typeId", "canonicalPath"], "properties": { "kind": { "const": "field" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "schema": { "type": "object", "additionalProperties": false, "required": ["contract", "major", "revision"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "maxLength": 256 }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "revision": { "type": "string", "minLength": 1, "maxLength": 256 } } }, "typeId": { "type": "string", "minLength": 1, "maxLength": 128 }, "canonicalPath": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "minItems": 1, "maxItems": 32 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "subjectKind"], "properties": { "kind": { "const": "subject" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectKind": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectId": { "type": "string", "minLength": 1, "maxLength": 512 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "formatId"], "properties": { "kind": { "const": "format" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "formatId": { "type": "string", "minLength": 1, "maxLength": 128 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "code"], "properties": { "kind": { "const": "diagnostic" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "code": { "type": "string", "minLength": 1, "maxLength": 256 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "conceptId"], "properties": { "kind": { "const": "concept" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "conceptId": { "type": "string", "minLength": 1, "maxLength": 128 } } }] }, "locale": { "type": "string", "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$", "maxLength": 64 }, "title": { "type": "string", "minLength": 1, "maxLength": 256 }, "summary": { "type": "string", "minLength": 1, "maxLength": 1024 }, "claimKind": { "enum": ["schema-derived-fact", "documented-interpretation", "community-note", "external-reference"] }, "confidence": { "enum": ["verified", "high", "medium", "low"] }, "aliases": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "maxItems": 32, "uniqueItems": true }, "keywords": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "maxItems": 32, "uniqueItems": true }, "details": { "type": "object", "additionalProperties": false, "properties": { "valueType": { "type": "string", "minLength": 1, "maxLength": 128 }, "units": { "type": "string", "minLength": 1, "maxLength": 128 }, "defaultValue": { "title": "JsonValue" }, "allowedValues": { "type": "array", "items": { "title": "JsonValue" }, "maxItems": 512 }, "deprecated": { "type": "boolean" }, "formulaRole": { "type": "string", "minLength": 1, "maxLength": 512 } } }, "relations": { "type": "array", "maxItems": 64, "items": { "type": "object", "additionalProperties": false, "required": ["role", "target"], "properties": { "role": { "type": "string", "minLength": 1, "maxLength": 128 }, "target": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "schema", "typeId", "canonicalPath"], "properties": { "kind": { "const": "field" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "schema": { "type": "object", "additionalProperties": false, "required": ["contract", "major", "revision"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "maxLength": 256 }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "revision": { "type": "string", "minLength": 1, "maxLength": 256 } } }, "typeId": { "type": "string", "minLength": 1, "maxLength": 128 }, "canonicalPath": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "minItems": 1, "maxItems": 32 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "subjectKind"], "properties": { "kind": { "const": "subject" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectKind": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectId": { "type": "string", "minLength": 1, "maxLength": 512 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "formatId"], "properties": { "kind": { "const": "format" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "formatId": { "type": "string", "minLength": 1, "maxLength": 128 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "code"], "properties": { "kind": { "const": "diagnostic" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "code": { "type": "string", "minLength": 1, "maxLength": 256 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "conceptId"], "properties": { "kind": { "const": "concept" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "conceptId": { "type": "string", "minLength": 1, "maxLength": 128 } } }] } } } }, "examples": { "type": "array", "maxItems": 16, "items": { "type": "object", "additionalProperties": false, "required": ["title", "text"], "properties": { "title": { "type": "string", "minLength": 1, "maxLength": 256 }, "text": { "type": "string", "minLength": 1, "maxLength": 2048 } } } }, "sources": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["kind", "title", "reviewedAt"], "properties": { "kind": { "enum": ["schema", "official-documentation", "source-code", "community-wiki", "observed-corpus", "external-reference"] }, "title": { "type": "string", "minLength": 1, "maxLength": 256 }, "url": { "type": "string", "pattern": "^https://[^\\s]+$", "maxLength": 2048 }, "schema": { "type": "object", "additionalProperties": false, "required": ["contract", "major", "revision"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "maxLength": 256 }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "revision": { "type": "string", "minLength": 1, "maxLength": 256 } } }, "revision": { "type": "string", "minLength": 1, "maxLength": 256 }, "license": { "type": "string", "minLength": 1, "maxLength": 256 }, "reviewedAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" } } }, "minItems": 1, "maxItems": 16 } } }, "minItems": 1, "maxItems": 1e4 } } };
-    func18 = func1Module4.default?.default ?? func1Module4.default;
-    func4 = Object.prototype.hasOwnProperty;
-    pattern49 = new RegExp("^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$", "u");
-    pattern55 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern93 = new RegExp("^https://[^\\s]+$", "u");
-    pattern113 = new RegExp("^\\d{4}-\\d{2}-\\d{2}$", "u");
-    validate209.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-  }
-});
-
-// packages/sdk/dist/manifest/validators.generated/localizationContributionSpecV1.js
 function validate2010(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
@@ -21735,21 +21485,6 @@ function validate2010(data, { instancePath = "", parentData, parentDataProperty,
   validate2010.errors = vErrors;
   return errors === 0;
 }
-var func1Module5, localizationContributionSpecV1, func19, pattern410, pattern56, pattern67;
-var init_localizationContributionSpecV1 = __esm({
-  "packages/sdk/dist/manifest/validators.generated/localizationContributionSpecV1.js"() {
-    "use strict";
-    func1Module5 = __toESM(require_ucs2length(), 1);
-    localizationContributionSpecV1 = validate2010;
-    func19 = func1Module5.default?.default ?? func1Module5.default;
-    pattern410 = new RegExp("^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$", "u");
-    pattern56 = new RegExp("^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*\\.json$", "u");
-    pattern67 = new RegExp("^[A-Za-z0-9][A-Za-z0-9_-]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)*\\.$", "u");
-    validate2010.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-  }
-});
-
-// packages/sdk/dist/manifest/validators.generated/writerRequirementV1.js
 function validate2011(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
@@ -21889,19 +21624,6 @@ function validate2011(data, { instancePath = "", parentData, parentDataProperty,
   validate2011.errors = vErrors;
   return errors === 0;
 }
-var func1Module6, writerRequirementV1, schema319, func110;
-var init_writerRequirementV1 = __esm({
-  "packages/sdk/dist/manifest/validators.generated/writerRequirementV1.js"() {
-    "use strict";
-    func1Module6 = __toESM(require_ucs2length(), 1);
-    writerRequirementV1 = validate2011;
-    schema319 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/writer-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "mutationMode", "minimumRoundTrip"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "mutationMode": { "enum": ["export-only", "mutate"] }, "minimumRoundTrip": { "enum": ["byte-identical", "semantic", "lossy", "none"] } } };
-    func110 = func1Module6.default?.default ?? func1Module6.default;
-    validate2011.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-  }
-});
-
-// packages/sdk/dist/manifest/validators.generated/writerOfferV1.js
 function validate2012(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
@@ -22103,19 +21825,6 @@ function validate2012(data, { instancePath = "", parentData, parentDataProperty,
   validate2012.errors = vErrors;
   return errors === 0;
 }
-var func1Module7, writerOfferV1, schema3110, func111;
-var init_writerOfferV1 = __esm({
-  "packages/sdk/dist/manifest/validators.generated/writerOfferV1.js"() {
-    "use strict";
-    func1Module7 = __toESM(require_ucs2length(), 1);
-    writerOfferV1 = validate2012;
-    schema3110 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/writer-offer.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "mutationMode", "minimumRoundTrip", "providerId", "fidelityEvidenceId"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "mutationMode": { "enum": ["export-only", "mutate"] }, "minimumRoundTrip": { "enum": ["byte-identical", "semantic", "lossy", "none"] }, "providerId": { "type": "string", "minLength": 1 }, "fidelityEvidenceId": { "type": "string", "minLength": 1 } } };
-    func111 = func1Module7.default?.default ?? func1Module7.default;
-    validate2012.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-  }
-});
-
-// packages/sdk/dist/manifest/validators.generated/traitDefinitionSpecV1.js
 function validate2013(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
@@ -22506,23 +22215,6 @@ function validate2013(data, { instancePath = "", parentData, parentDataProperty,
   validate2013.errors = vErrors;
   return errors === 0;
 }
-var func1Module8, traitDefinitionSpecV1, schema3111, pattern411, pattern57, pattern68, pattern83, func112;
-var init_traitDefinitionSpecV1 = __esm({
-  "packages/sdk/dist/manifest/validators.generated/traitDefinitionSpecV1.js"() {
-    "use strict";
-    func1Module8 = __toESM(require_ucs2length(), 1);
-    traitDefinitionSpecV1 = validate2013;
-    schema3111 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/trait-definition-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "id", "version", "scope", "parametersSchema", "transport"], "properties": { "schemaVersion": { "const": 1 }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "scope": { "anyOf": [{ "enum": ["source", "asset", "subject", "workspace", "service", "operation", "view-session", "representation"] }, { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }] }, "parametersSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "transport": { "enum": ["json", "structured-clone"] }, "documentation": { "type": "string", "minLength": 1 }, "imports": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "range"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } } } };
-    pattern411 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern57 = new RegExp("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", "u");
-    pattern68 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern83 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
-    func112 = func1Module8.default?.default ?? func1Module8.default;
-    validate2013.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-  }
-});
-
-// packages/sdk/dist/manifest/validators.generated/contractDefinitionSpecV1.js
 function validate2014(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
@@ -25883,22 +25575,6 @@ function validate2014(data, { instancePath = "", parentData, parentDataProperty,
   evaluated0.props = props5;
   return errors === 0;
 }
-var func2Module3, contractDefinitionSpecV1, schema3112, func113, func23, pattern412, pattern69;
-var init_contractDefinitionSpecV1 = __esm({
-  "packages/sdk/dist/manifest/validators.generated/contractDefinitionSpecV1.js"() {
-    "use strict";
-    func2Module3 = __toESM(require_ucs2length(), 1);
-    contractDefinitionSpecV1 = validate2014;
-    schema3112 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/contract-definition-spec.v1.schema.json", "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "offerFacet", "requestFacet", "matching", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "service" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "offerFacet": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["presence"], "properties": { "presence": { "const": "forbidden" } } }, { "type": "object", "additionalProperties": false, "required": ["presence", "schema"], "properties": { "presence": { "enum": ["optional", "required"] }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } } } }] }, "requestFacet": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["presence"], "properties": { "presence": { "const": "forbidden" } } }, { "type": "object", "additionalProperties": false, "required": ["presence", "schema"], "properties": { "presence": { "enum": ["optional", "required"] }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } } } }] }, "matching": { "type": "object", "additionalProperties": false, "required": ["profile", "major"], "properties": { "profile": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "configuration": { "title": "JsonValue" } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } }, { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "schema", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "data-source" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } }] };
-    func113 = Object.prototype.hasOwnProperty;
-    func23 = func2Module3.default?.default ?? func2Module3.default;
-    pattern412 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern69 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
-    validate2014.evaluated = { "dynamicProps": true, "dynamicItems": false };
-  }
-});
-
-// packages/sdk/dist/manifest/validators.generated/subjectDescriptorV2.js
 function validate21(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   let vErrors = null;
   let errors = 0;
@@ -38106,20 +37782,21 @@ function validate2015(data, { instancePath = "", parentData, parentDataProperty,
                           let i52 = data388.length;
                           let j6;
                           if (i52 > 1) {
-                            outer0: for (; i52--; ) {
-                              for (j6 = i52; j6--; ) {
-                                if (func04(data388[i52], data388[j6])) {
-                                  const err1059 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/6/properties/candidates/uniqueItems", keyword: "uniqueItems", params: { i: i52, j: j6 }, message: "must NOT have duplicate items (items ## " + j6 + " and " + i52 + " are identical)" };
-                                  if (vErrors === null) {
-                                    vErrors = [err1059];
-                                  } else {
-                                    vErrors.push(err1059);
+                            outer0:
+                              for (; i52--; ) {
+                                for (j6 = i52; j6--; ) {
+                                  if (func04(data388[i52], data388[j6])) {
+                                    const err1059 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/6/properties/candidates/uniqueItems", keyword: "uniqueItems", params: { i: i52, j: j6 }, message: "must NOT have duplicate items (items ## " + j6 + " and " + i52 + " are identical)" };
+                                    if (vErrors === null) {
+                                      vErrors = [err1059];
+                                    } else {
+                                      vErrors.push(err1059);
+                                    }
+                                    errors++;
+                                    break outer0;
                                   }
-                                  errors++;
-                                  break outer0;
                                 }
                               }
-                            }
                           }
                         } else {
                           const err1060 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/6/properties/candidates/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -38584,20 +38261,21 @@ function validate2015(data, { instancePath = "", parentData, parentDataProperty,
                             let i57 = data403.length;
                             let j8;
                             if (i57 > 1) {
-                              outer1: for (; i57--; ) {
-                                for (j8 = i57; j8--; ) {
-                                  if (func04(data403[i57], data403[j8])) {
-                                    const err1101 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/7/properties/candidates/uniqueItems", keyword: "uniqueItems", params: { i: i57, j: j8 }, message: "must NOT have duplicate items (items ## " + j8 + " and " + i57 + " are identical)" };
-                                    if (vErrors === null) {
-                                      vErrors = [err1101];
-                                    } else {
-                                      vErrors.push(err1101);
+                              outer1:
+                                for (; i57--; ) {
+                                  for (j8 = i57; j8--; ) {
+                                    if (func04(data403[i57], data403[j8])) {
+                                      const err1101 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/7/properties/candidates/uniqueItems", keyword: "uniqueItems", params: { i: i57, j: j8 }, message: "must NOT have duplicate items (items ## " + j8 + " and " + i57 + " are identical)" };
+                                      if (vErrors === null) {
+                                        vErrors = [err1101];
+                                      } else {
+                                        vErrors.push(err1101);
+                                      }
+                                      errors++;
+                                      break outer1;
                                     }
-                                    errors++;
-                                    break outer1;
                                   }
                                 }
-                              }
                             }
                           } else {
                             const err1102 = { instancePath: instancePath + "/companions/" + i37 + "/candidates", schemaPath: "#/oneOf/1/properties/companions/items/oneOf/7/properties/candidates/type", keyword: "type", params: { type: "array" }, message: "must be array" };
@@ -38778,31 +38456,6 @@ function validate2015(data, { instancePath = "", parentData, parentDataProperty,
   evaluated0.props = props12;
   return errors === 0;
 }
-var func2Module4, func0Module4, subjectDescriptorV2, schema3113, func114, func24, func04, pattern413, pattern84, pattern18, pattern19, pattern212, pattern262, pattern32, wrapper0;
-var init_subjectDescriptorV2 = __esm({
-  "packages/sdk/dist/manifest/validators.generated/subjectDescriptorV2.js"() {
-    "use strict";
-    func2Module4 = __toESM(require_ucs2length(), 1);
-    func0Module4 = __toESM(require_equal(), 1);
-    subjectDescriptorV2 = validate2015;
-    schema3113 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/subject-descriptor.v2.schema.json", "$defs": { "jsonValue": { "title": "JsonValue", "oneOf": [{ "type": "null" }, { "type": "boolean" }, { "type": "number" }, { "type": "string" }, { "type": "array", "items": { "$ref": "#/$defs/jsonValue" } }, { "type": "object", "additionalProperties": { "$ref": "#/$defs/jsonValue" } }] } }, "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["schemaVersion", "subjectUri", "origin", "traits", "operations", "constraints", "dataSources", "diagnostics", "revision", "interpretation", "candidates"], "properties": { "schemaVersion": { "const": 2 }, "subjectUri": { "type": "string", "pattern": "\\S" }, "origin": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "binding"], "properties": { "kind": { "const": "single" }, "binding": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "bindings"], "properties": { "kind": { "const": "bundle" }, "bindings": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "primary": { "type": "string", "minLength": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "root", "revision"], "properties": { "kind": { "const": "namespace" }, "root": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "inputs"], "properties": { "kind": { "const": "derived" }, "inputs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["bindingId", "role", "subjectUri", "revision", "compositionFingerprint"], "properties": { "bindingId": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "subjectUri": { "type": "string", "minLength": 1 }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "compositionFingerprint": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "recipe": { "type": "object", "additionalProperties": false, "required": ["extensionId", "extensionVersion", "contributionId", "operation"], "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "extensionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "operation": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "parameters": { "$ref": "#/$defs/jsonValue" } } }, "materialization": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }] }, "traits": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state", "diagnosticIds"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "enum": ["partial", "disabled", "dependency-required"] }, "diagnosticIds": { "type": "array", "items": { "type": "string" }, "minItems": 1 } } }] } }, "operations": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource", "reason"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "enum": ["disabled", "dependency-required"] }, "reason": { "type": "string", "minLength": 1 } } }] } }, "constraints": { "type": "object", "additionalProperties": false, "required": ["readOnly", "seekable", "randomAccess", "trusted"], "properties": { "readOnly": { "type": "boolean" }, "seekable": { "type": "boolean" }, "randomAccess": { "type": "boolean" }, "trusted": { "type": "boolean" }, "maxDecodedBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "unsupportedFeatures": { "type": "array", "items": { "type": "string" } } } }, "dataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "diagnostics": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "code", "category", "severity", "message"], "properties": { "id": { "type": "string", "minLength": 1 }, "code": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "category": { "enum": ["syntax", "structure", "fidelity", "dependency", "security", "performance", "operation", "io", "unknown"] }, "severity": { "enum": ["error", "warning", "information", "hint"] }, "message": { "type": "string" }, "source": { "type": "object", "additionalProperties": false, "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" } } }, "path": { "type": "array", "items": { "oneOf": [{ "type": "string" }, { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }] } }, "range": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] }, "data": { "$ref": "#/$defs/jsonValue" }, "relatedIds": { "type": "array", "items": { "type": "string" } } } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "interpretation": { "const": "none" }, "candidates": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["codecId", "confidence", "evidence", "requiredRanges"], "properties": { "codecId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "confidence": { "type": "number", "minimum": 0, "maximum": 1 }, "evidence": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["kind", "weight"], "properties": { "kind": { "enum": ["magic", "structure", "companion", "context", "extension", "user-override"] }, "weight": { "type": "number" }, "note": { "type": "string" } } } }, "requiredRanges": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] } }, "diagnostics": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "code", "category", "severity", "message"], "properties": { "id": { "type": "string", "minLength": 1 }, "code": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "category": { "enum": ["syntax", "structure", "fidelity", "dependency", "security", "performance", "operation", "io", "unknown"] }, "severity": { "enum": ["error", "warning", "information", "hint"] }, "message": { "type": "string" }, "source": { "type": "object", "additionalProperties": false, "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" } } }, "path": { "type": "array", "items": { "oneOf": [{ "type": "string" }, { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }] } }, "range": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] }, "data": { "$ref": "#/$defs/jsonValue" }, "relatedIds": { "type": "array", "items": { "type": "string" } } } } } } } } } }, { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "subjectUri", "origin", "traits", "operations", "constraints", "dataSources", "diagnostics", "revision", "interpretation", "identity", "metadata"], "properties": { "schemaVersion": { "const": 2 }, "subjectUri": { "type": "string", "pattern": "\\S" }, "origin": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "binding"], "properties": { "kind": { "const": "single" }, "binding": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "bindings"], "properties": { "kind": { "const": "bundle" }, "bindings": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "primary": { "type": "string", "minLength": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "root", "revision"], "properties": { "kind": { "const": "namespace" }, "root": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "inputs"], "properties": { "kind": { "const": "derived" }, "inputs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["bindingId", "role", "subjectUri", "revision", "compositionFingerprint"], "properties": { "bindingId": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "subjectUri": { "type": "string", "minLength": 1 }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "compositionFingerprint": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "recipe": { "type": "object", "additionalProperties": false, "required": ["extensionId", "extensionVersion", "contributionId", "operation"], "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "extensionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "operation": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "parameters": { "$ref": "#/$defs/jsonValue" } } }, "materialization": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }] }, "traits": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state", "diagnosticIds"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "enum": ["partial", "disabled", "dependency-required"] }, "diagnosticIds": { "type": "array", "items": { "type": "string" }, "minItems": 1 } } }] } }, "operations": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource", "reason"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "enum": ["disabled", "dependency-required"] }, "reason": { "type": "string", "minLength": 1 } } }] } }, "constraints": { "type": "object", "additionalProperties": false, "required": ["readOnly", "seekable", "randomAccess", "trusted"], "properties": { "readOnly": { "type": "boolean" }, "seekable": { "type": "boolean" }, "randomAccess": { "type": "boolean" }, "trusted": { "type": "boolean" }, "maxDecodedBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "unsupportedFeatures": { "type": "array", "items": { "type": "string" } } } }, "dataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "diagnostics": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "code", "category", "severity", "message"], "properties": { "id": { "type": "string", "minLength": 1 }, "code": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "category": { "enum": ["syntax", "structure", "fidelity", "dependency", "security", "performance", "operation", "io", "unknown"] }, "severity": { "enum": ["error", "warning", "information", "hint"] }, "message": { "type": "string" }, "source": { "type": "object", "additionalProperties": false, "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" } } }, "path": { "type": "array", "items": { "oneOf": [{ "type": "string" }, { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }] } }, "range": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] }, "data": { "$ref": "#/$defs/jsonValue" }, "relatedIds": { "type": "array", "items": { "type": "string" } } } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "interpretation": { "const": "codec" }, "identity": { "type": "object", "additionalProperties": false, "required": ["codecId", "codecVersion", "formatId", "formatLabel", "confidence", "detection"], "properties": { "codecId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "codecVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "formatId": { "type": "string", "minLength": 1 }, "formatLabel": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 }, "confidence": { "type": "number", "minimum": 0, "maximum": 1 }, "detection": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["kind", "weight"], "properties": { "kind": { "enum": ["magic", "structure", "companion", "context", "extension", "user-override"] }, "weight": { "type": "number" }, "note": { "type": "string" } } } } } }, "metadata": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "label", "entries"], "properties": { "id": { "type": "string", "minLength": 1 }, "label": { "type": "string" }, "entries": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["key", "value"], "properties": { "key": { "type": "string", "minLength": 1 }, "value": { "$ref": "#/$defs/jsonValue" } } } } } } }, "companions": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "const": "one" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true, "maxItems": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "const": "one-or-more" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "const": "zero-or-one" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true, "maxItems": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "const": "many" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "diagnosticIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "enum": ["one", "one-or-more"] }, "state": { "const": "missing" }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "enum": ["zero-or-one", "many"] }, "state": { "const": "missing" }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "candidates", "diagnosticIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "const": "one" }, "state": { "const": "ambiguous" }, "candidates": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, "minItems": 2, "uniqueItems": true }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "candidates", "diagnosticIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "const": "zero-or-one" }, "state": { "const": "ambiguous" }, "candidates": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, "minItems": 2, "uniqueItems": true }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }] } } } }] };
-    func114 = Object.prototype.hasOwnProperty;
-    func24 = func2Module4.default?.default ?? func2Module4.default;
-    func04 = func0Module4.default?.default ?? func0Module4.default;
-    pattern413 = new RegExp("\\S", "u");
-    pattern84 = new RegExp("^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$", "u");
-    pattern18 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern19 = new RegExp("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", "u");
-    pattern212 = new RegExp("^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$", "u");
-    pattern262 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern32 = new RegExp("^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$", "u");
-    wrapper0 = { validate: validate21 };
-    validate21.evaluated = { "dynamicProps": true, "dynamicItems": true };
-    validate2015.evaluated = { "dynamicProps": true, "dynamicItems": false };
-  }
-});
-
-// packages/sdk/dist/manifest/validators.generated/contributionManifestV1.js
 function validate2016(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
@@ -39722,24 +39375,6 @@ function validate2016(data, { instancePath = "", parentData, parentDataProperty,
   validate2016.errors = vErrors;
   return errors === 0;
 }
-var func2Module5, contributionManifestV1, schema3114, func115, func25, pattern414, pattern610, pattern75, pattern94;
-var init_contributionManifestV1 = __esm({
-  "packages/sdk/dist/manifest/validators.generated/contributionManifestV1.js"() {
-    "use strict";
-    func2Module5 = __toESM(require_ucs2length(), 1);
-    contributionManifestV1 = validate2016;
-    schema3114 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/contribution-manifest.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "contract", "id", "displayName", "spec"], "properties": { "schemaVersion": { "const": 1 }, "contract": { "type": "object", "additionalProperties": false, "required": ["id", "major"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 }, "status": { "enum": ["supported", "partial", "unsupported", "experimental"] }, "runtimeVariants": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/runtime-variant-declaration.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["variantId", "entrypoint", "target", "executionProfile", "requestedPermissionClasses"], "properties": { "variantId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "entrypoint": { "type": "string", "pattern": "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$" }, "target": { "type": "object", "additionalProperties": false, "properties": { "environments": { "type": "array", "items": { "enum": ["browser-main", "browser-worker", "node", "node-worker", "wasm", "native", "external-tool"] }, "minItems": 1 }, "operatingSystems": { "type": "array", "items": { "enum": ["any", "windows", "linux", "darwin", "android", "ios"] }, "minItems": 1 }, "architectures": { "type": "array", "items": { "enum": ["any", "x86", "x64", "arm32", "arm64", "wasm32"] }, "minItems": 1 }, "requiredHostCapabilities": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "requiredWebApis": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "externalTools": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, "executionProfile": { "enum": ["browser-sandbox", "worker-brokered", "process-brokered", "wasm-brokered", "trusted-in-process", "remote-provider"] }, "requestedPermissionClasses": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } } } } }, "dependsOn": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/scoped-contract-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["contract", "major", "mode", "scope"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } } }, "limitations": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "spec": { "title": "JsonValue" } } };
-    func115 = Object.prototype.hasOwnProperty;
-    func25 = func2Module5.default?.default ?? func2Module5.default;
-    pattern414 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern610 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*$", "u");
-    pattern75 = new RegExp("^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$", "u");
-    pattern94 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
-    validate2016.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-  }
-});
-
-// packages/sdk/dist/manifest/validators.generated/runtimeVariantDeclarationV1.js
 function validate2017(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
@@ -40139,21 +39774,6 @@ function validate2017(data, { instancePath = "", parentData, parentDataProperty,
   validate2017.errors = vErrors;
   return errors === 0;
 }
-var func1Module9, runtimeVariantDeclarationV1, schema3115, pattern415, pattern58, func116;
-var init_runtimeVariantDeclarationV1 = __esm({
-  "packages/sdk/dist/manifest/validators.generated/runtimeVariantDeclarationV1.js"() {
-    "use strict";
-    func1Module9 = __toESM(require_ucs2length(), 1);
-    runtimeVariantDeclarationV1 = validate2017;
-    schema3115 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/runtime-variant-declaration.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["variantId", "entrypoint", "target", "executionProfile", "requestedPermissionClasses"], "properties": { "variantId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "entrypoint": { "type": "string", "pattern": "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$" }, "target": { "type": "object", "additionalProperties": false, "properties": { "environments": { "type": "array", "items": { "enum": ["browser-main", "browser-worker", "node", "node-worker", "wasm", "native", "external-tool"] }, "minItems": 1 }, "operatingSystems": { "type": "array", "items": { "enum": ["any", "windows", "linux", "darwin", "android", "ios"] }, "minItems": 1 }, "architectures": { "type": "array", "items": { "enum": ["any", "x86", "x64", "arm32", "arm64", "wasm32"] }, "minItems": 1 }, "requiredHostCapabilities": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "requiredWebApis": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "externalTools": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, "executionProfile": { "enum": ["browser-sandbox", "worker-brokered", "process-brokered", "wasm-brokered", "trusted-in-process", "remote-provider"] }, "requestedPermissionClasses": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } } } };
-    pattern415 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*$", "u");
-    pattern58 = new RegExp("^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$", "u");
-    func116 = func1Module9.default?.default ?? func1Module9.default;
-    validate2017.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-  }
-});
-
-// packages/sdk/dist/manifest/validators.generated/scopedContractRequirementV1.js
 function validate2018(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   ;
   let vErrors = null;
@@ -40389,21 +40009,6 @@ function validate2018(data, { instancePath = "", parentData, parentDataProperty,
   validate2018.errors = vErrors;
   return errors === 0;
 }
-var func1Module10, scopedContractRequirementV1, schema3116, pattern416, pattern59, func117;
-var init_scopedContractRequirementV1 = __esm({
-  "packages/sdk/dist/manifest/validators.generated/scopedContractRequirementV1.js"() {
-    "use strict";
-    func1Module10 = __toESM(require_ucs2length(), 1);
-    scopedContractRequirementV1 = validate2018;
-    schema3116 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/scoped-contract-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["contract", "major", "mode", "scope"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } };
-    pattern416 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern59 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
-    func117 = func1Module10.default?.default ?? func1Module10.default;
-    validate2018.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-  }
-});
-
-// packages/sdk/dist/manifest/validators.generated/dataSourceContractDefinitionV1.js
 function validate2019(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   let vErrors = null;
   let errors = 0;
@@ -41847,21 +41452,6 @@ function validate2019(data, { instancePath = "", parentData, parentDataProperty,
   validate2019.errors = vErrors;
   return errors === 0;
 }
-var func1Module11, dataSourceContractDefinitionV1, schema3117, pattern417, pattern510, func118;
-var init_dataSourceContractDefinitionV1 = __esm({
-  "packages/sdk/dist/manifest/validators.generated/dataSourceContractDefinitionV1.js"() {
-    "use strict";
-    func1Module11 = __toESM(require_ucs2length(), 1);
-    dataSourceContractDefinitionV1 = validate2019;
-    schema3117 = { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "schema", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "data-source" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } };
-    pattern417 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    pattern510 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
-    func118 = func1Module11.default?.default ?? func1Module11.default;
-    validate2019.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-  }
-});
-
-// packages/sdk/dist/manifest/validators.generated/dataSourceSurfaceV1.js
 function validate2020(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   let vErrors = null;
   let errors = 0;
@@ -43074,19 +42664,6 @@ function validate2020(data, { instancePath = "", parentData, parentDataProperty,
   validate2020.errors = vErrors;
   return errors === 0;
 }
-var dataSourceSurfaceV1, schema3118, pattern418, pattern76;
-var init_dataSourceSurfaceV1 = __esm({
-  "packages/sdk/dist/manifest/validators.generated/dataSourceSurfaceV1.js"() {
-    "use strict";
-    dataSourceSurfaceV1 = validate2020;
-    schema3118 = { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } };
-    pattern418 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
-    pattern76 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
-    validate2020.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
-  }
-});
-
-// packages/sdk/dist/manifest/validators.generated/dataSourceMethodSurfaceV1.js
 function validate2021(data, { instancePath = "", parentData, parentDataProperty, rootData = data, dynamicAnchors = {} } = {}) {
   let vErrors = null;
   let errors = 0;
@@ -44123,48 +43700,291 @@ function validate2021(data, { instancePath = "", parentData, parentDataProperty,
   evaluated0.props = props1;
   return errors === 0;
 }
-var dataSourceMethodSurfaceV1, schema3119, pattern419, pattern511;
-var init_dataSourceMethodSurfaceV1 = __esm({
-  "packages/sdk/dist/manifest/validators.generated/dataSourceMethodSurfaceV1.js"() {
+var __create, __defProp2, __getOwnPropDesc, __getOwnPropNames2, __getProtoOf, __hasOwnProp, __commonJS, __copyProps, __toESM, require_ucs2length, require_fast_deep_equal, require_equal, sourceSpanV1, pattern4, func1Module, extensionManifestV1, schema31, pattern42, pattern6, pattern7, pattern8, pattern11, pattern13, func1, func1Module2, extensionManifestModkitBlockV1, schema312, pattern43, pattern62, pattern72, pattern10, pattern12, func12, func1Module3, extensionRequirementV1, schema313, pattern44, pattern5, func13, func2Module, func0Module, codecContributionSpecV1, schema314, func14, func2, func0, pattern45, pattern63, pattern73, pattern82, pattern132, pattern17, pattern21, pattern25, pattern26, func3Module, serviceProviderContributionSpecV1, schema315, func15, func3, pattern46, pattern52, pattern64, pattern9, pattern112, pattern122, func0Module2, func3Module2, viewerContributionSpecV1, schema316, func16, func02, func32, pattern47, pattern53, pattern65, pattern74, pattern92, func2Module2, func0Module3, editorContributionSpecV1, schema317, func17, func22, func03, pattern48, pattern54, pattern66, func1Module4, knowledgePackSpecV1, schema318, func18, func4, pattern49, pattern55, pattern93, pattern113, func1Module5, localizationContributionSpecV1, func19, pattern410, pattern56, pattern67, func1Module6, writerRequirementV1, schema319, func110, func1Module7, writerOfferV1, schema3110, func111, func1Module8, traitDefinitionSpecV1, schema3111, pattern411, pattern57, pattern68, pattern83, func112, func2Module3, contractDefinitionSpecV1, schema3112, func113, func23, pattern412, pattern69, func2Module4, func0Module4, subjectDescriptorV2, schema3113, func114, func24, func04, pattern413, pattern84, pattern18, pattern19, pattern212, pattern262, pattern32, wrapper0, func2Module5, contributionManifestV1, schema3114, func115, func25, pattern414, pattern610, pattern75, pattern94, func1Module9, runtimeVariantDeclarationV1, schema3115, pattern415, pattern58, func116, func1Module10, scopedContractRequirementV1, schema3116, pattern416, pattern59, func117, func1Module11, dataSourceContractDefinitionV1, schema3117, pattern417, pattern510, func118, dataSourceSurfaceV1, schema3118, pattern418, pattern76, dataSourceMethodSurfaceV1, schema3119, pattern419, pattern511, PRECOMPILED_SCHEMA_VALIDATORS;
+var init_validators_generated = __esm({
+  "packages/sdk/dist/manifest/validators.generated.js"() {
     "use strict";
+    __create = Object.create;
+    __defProp2 = Object.defineProperty;
+    __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+    __getOwnPropNames2 = Object.getOwnPropertyNames;
+    __getProtoOf = Object.getPrototypeOf;
+    __hasOwnProp = Object.prototype.hasOwnProperty;
+    __commonJS = (cb, mod) => function __require() {
+      try {
+        return mod || (0, cb[__getOwnPropNames2(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
+      } catch (e) {
+        throw mod = 0, e;
+      }
+    };
+    __copyProps = (to, from, except, desc) => {
+      if (from && typeof from === "object" || typeof from === "function") {
+        for (let key of __getOwnPropNames2(from))
+          if (!__hasOwnProp.call(to, key) && key !== except)
+            __defProp2(to, key, { get: () => from[key], enumerable: !(desc = __getOwnPropDesc(from, key)) || desc.enumerable });
+      }
+      return to;
+    };
+    __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__getProtoOf(mod)) : {}, __copyProps(
+      // If the importer is in node compatibility mode or this is not an ESM
+      // file that has been converted to a CommonJS file using a Babel-
+      // compatible transform (i.e. "__esModule" has not been set), then set
+      // "default" to the CommonJS "module.exports" for node compatibility.
+      isNodeMode || !mod || !mod.__esModule ? __defProp2(target, "default", { value: mod, enumerable: true }) : target,
+      mod
+    ));
+    require_ucs2length = __commonJS({
+      "node_modules/.pnpm/ajv@8.20.0/node_modules/ajv/dist/runtime/ucs2length.js"(exports) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", { value: true });
+        function ucs2length(str) {
+          const len = str.length;
+          let length = 0;
+          let pos = 0;
+          let value2;
+          while (pos < len) {
+            length++;
+            value2 = str.charCodeAt(pos++);
+            if (value2 >= 55296 && value2 <= 56319 && pos < len) {
+              value2 = str.charCodeAt(pos);
+              if ((value2 & 64512) === 56320)
+                pos++;
+            }
+          }
+          return length;
+        }
+        exports.default = ucs2length;
+        ucs2length.code = 'require("ajv/dist/runtime/ucs2length").default';
+      }
+    });
+    require_fast_deep_equal = __commonJS({
+      "node_modules/.pnpm/fast-deep-equal@3.1.3/node_modules/fast-deep-equal/index.js"(exports, module) {
+        "use strict";
+        module.exports = function equal(a, b) {
+          if (a === b) return true;
+          if (a && b && typeof a == "object" && typeof b == "object") {
+            if (a.constructor !== b.constructor) return false;
+            var length, i2, keys;
+            if (Array.isArray(a)) {
+              length = a.length;
+              if (length != b.length) return false;
+              for (i2 = length; i2-- !== 0; )
+                if (!equal(a[i2], b[i2])) return false;
+              return true;
+            }
+            if (a.constructor === RegExp) return a.source === b.source && a.flags === b.flags;
+            if (a.valueOf !== Object.prototype.valueOf) return a.valueOf() === b.valueOf();
+            if (a.toString !== Object.prototype.toString) return a.toString() === b.toString();
+            keys = Object.keys(a);
+            length = keys.length;
+            if (length !== Object.keys(b).length) return false;
+            for (i2 = length; i2-- !== 0; )
+              if (!Object.prototype.hasOwnProperty.call(b, keys[i2])) return false;
+            for (i2 = length; i2-- !== 0; ) {
+              var key = keys[i2];
+              if (!equal(a[key], b[key])) return false;
+            }
+            return true;
+          }
+          return a !== a && b !== b;
+        };
+      }
+    });
+    require_equal = __commonJS({
+      "node_modules/.pnpm/ajv@8.20.0/node_modules/ajv/dist/runtime/equal.js"(exports) {
+        "use strict";
+        Object.defineProperty(exports, "__esModule", { value: true });
+        var equal = require_fast_deep_equal();
+        equal.code = 'require("ajv/dist/runtime/equal").default';
+        exports.default = equal;
+      }
+    });
+    sourceSpanV1 = validate20;
+    pattern4 = new RegExp("^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$", "u");
+    validate20.evaluated = { "dynamicProps": true, "dynamicItems": false };
+    func1Module = __toESM(require_ucs2length(), 1);
+    extensionManifestV1 = validate202;
+    schema31 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/extension-manifest.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "publisher", "id", "version", "license", "contributionManifests"], "properties": { "schemaVersion": { "const": 1 }, "publisher": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "license": { "type": "string", "minLength": 1 }, "contributionManifests": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "dependsOn": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/extension-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["extension", "mode", "scope"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } } }, "presentation": { "type": "object", "additionalProperties": false, "properties": { "displayName": { "type": "string", "minLength": 1 }, "description": { "type": "string", "minLength": 1 }, "vendor": { "type": "object", "additionalProperties": false, "required": ["id", "displayName"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 } } }, "games": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "displayName"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 } } } }, "icon": { "type": "object", "additionalProperties": false, "required": ["path"], "properties": { "path": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" }, "displayName": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } }, "source": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "root"], "properties": { "kind": { "const": "root" }, "root": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "url"], "properties": { "kind": { "const": "url" }, "url": { "type": "string", "pattern": "^https?://[^\\s]+$" } } }] }, "licenseFiles": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["path"], "properties": { "path": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" }, "displayName": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } } } } } } };
+    pattern42 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern6 = new RegExp("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", "u");
+    pattern7 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern8 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
+    pattern11 = new RegExp("^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$", "u");
+    pattern13 = new RegExp("^https?://[^\\s]+$", "u");
+    func1 = func1Module.default?.default ?? func1Module.default;
+    validate202.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+    func1Module2 = __toESM(require_ucs2length(), 1);
+    extensionManifestModkitBlockV1 = validate203;
+    schema312 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/extension-manifest-modkit-block.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "publisher", "id", "contributionManifests"], "properties": { "schemaVersion": { "const": 1 }, "publisher": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionManifests": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "dependsOn": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/extension-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["extension", "mode", "scope"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } } }, "presentation": { "type": "object", "additionalProperties": false, "properties": { "displayName": { "type": "string", "minLength": 1 }, "description": { "type": "string", "minLength": 1 }, "vendor": { "type": "object", "additionalProperties": false, "required": ["id", "displayName"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 } } }, "games": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "displayName"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 } } } }, "icon": { "type": "object", "additionalProperties": false, "required": ["path"], "properties": { "path": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" }, "displayName": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } }, "source": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "root"], "properties": { "kind": { "const": "root" }, "root": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "url"], "properties": { "kind": { "const": "url" }, "url": { "type": "string", "pattern": "^https?://[^\\s]+$" } } }] }, "licenseFiles": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["path"], "properties": { "path": { "type": "string", "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$" }, "displayName": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } } } } } } };
+    pattern43 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern62 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern72 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
+    pattern10 = new RegExp("^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$", "u");
+    pattern12 = new RegExp("^https?://[^\\s]+$", "u");
+    func12 = func1Module2.default?.default ?? func1Module2.default;
+    validate203.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+    func1Module3 = __toESM(require_ucs2length(), 1);
+    extensionRequirementV1 = validate204;
+    schema313 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/extension-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["extension", "mode", "scope"], "properties": { "extension": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } };
+    pattern44 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern5 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
+    func13 = func1Module3.default?.default ?? func1Module3.default;
+    validate204.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+    func2Module = __toESM(require_ucs2length(), 1);
+    func0Module = __toESM(require_equal(), 1);
+    codecContributionSpecV1 = validate205;
+    schema314 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/codec-contribution-spec.v1.schema.json", "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["formatRefs", "roles", "sourceTopology", "artifactStages", "openIntents", "match", "probe", "representations", "publishesDataSources", "operations", "implementationTier", "budgets"], "properties": { "formatRefs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["formatId", "label"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "label": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "roles": { "type": "array", "items": { "enum": ["container", "media", "byte-transform", "semantic", "index", "sidecar"] }, "minItems": 1 }, "artifactStages": { "type": "array", "items": { "enum": ["authored", "compiled", "runtime"] }, "minItems": 1 }, "openIntents": { "type": "array", "items": { "enum": ["probe", "inspect", "thumbnail", "full", "stream", "export"] }, "minItems": 1 }, "match": { "type": "object", "additionalProperties": false, "properties": { "extensions": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "mediaTypes": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "pathGlobs": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "signatures": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["from", "offset", "bytesHex"], "properties": { "from": { "enum": ["start", "end"] }, "offset": { "type": "integer", "minimum": 0, "maximum": 4096 }, "bytesHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" }, "maskHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" } } }, "maxItems": 8 } } }, "companions": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "patterns", "searchScopes"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "role": { "type": "string", "minLength": 1 }, "required": { "type": "boolean" }, "patterns": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }, "expected": { "type": "object", "additionalProperties": false, "properties": { "all": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "any": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "none": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } } } }, "searchScopes": { "type": "array", "minItems": 1, "items": { "enum": ["sibling-directory", "current-mount", "enclosing-container", "workspace-dependency-layer", "explicit-user-selection"] } } } } }, "representations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "contract", "major", "stage", "lossy"], "properties": { "id": { "type": "string", "minLength": 1 }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "stage": { "enum": ["authored", "compiled", "runtime"] }, "lossy": { "type": "boolean" } } }, "minItems": 1 }, "publishesDataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "requires": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "operations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "requiredPermissions": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } }, "requiresContract": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "outputKinds": { "type": "array", "items": { "enum": ["json", "bytes", "stream", "source", "artifact", "none", "edit-plan", "transaction"] } } } } }, "traitDeclarations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "representation", "presence"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "representation": { "enum": ["source", "compiled", "runtime"] }, "presence": { "enum": ["may-expose", "will-expose"] }, "prerequisites": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } } }, "fidelityEvidence": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "claim", "evidenceId", "corpusId", "corpusDigest", "conformanceProfile", "optionsFingerprint", "inputClass", "provenAt"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "claim": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "const": "byte-identical" }, "preservesUnknownData": { "const": true }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, { "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "const": "semantic" }, "preservesUnknownData": { "type": "boolean" }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, { "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "enum": ["lossy", "none"] }, "preservesUnknownData": { "const": false }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }] }, "evidenceId": { "type": "string", "minLength": 1 }, "corpusId": { "type": "string", "minLength": 1 }, "corpusDigest": { "type": "string", "minLength": 1 }, "conformanceProfile": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "optionsFingerprint": { "type": "string", "minLength": 1 }, "inputClass": { "type": "string", "minLength": 1 }, "provenAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$" } } } }, "implementationTier": { "type": "object", "additionalProperties": false, "required": ["claimed"], "properties": { "claimed": { "enum": [1, 2, 3, 4, 5] } } }, "budgets": { "type": "object", "additionalProperties": false, "required": ["maxInputBytes", "maxDepth", "maxNodes", "maxScalarBytes", "maxDiagnostics"], "properties": { "maxInputBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "maxDepth": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxNodes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxScalarBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxDiagnostics": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "deadlineMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "sourceTopology": { "enum": ["single", "bundle"] }, "probe": { "type": "object", "additionalProperties": false, "required": ["kind", "ranges", "maxBytes"], "properties": { "kind": { "const": "bytes" }, "ranges": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["from", "length"], "properties": { "from": { "enum": ["start", "end"] }, "length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["formatRefs", "roles", "sourceTopology", "artifactStages", "openIntents", "match", "probe", "representations", "publishesDataSources", "operations", "implementationTier", "budgets"], "properties": { "formatRefs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["formatId", "label"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "label": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "roles": { "type": "array", "items": { "enum": ["container", "media", "byte-transform", "semantic", "index", "sidecar"] }, "minItems": 1 }, "artifactStages": { "type": "array", "items": { "enum": ["authored", "compiled", "runtime"] }, "minItems": 1 }, "openIntents": { "type": "array", "items": { "enum": ["probe", "inspect", "thumbnail", "full", "stream", "export"] }, "minItems": 1 }, "match": { "type": "object", "additionalProperties": false, "properties": { "extensions": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "mediaTypes": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "pathGlobs": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "signatures": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["from", "offset", "bytesHex"], "properties": { "from": { "enum": ["start", "end"] }, "offset": { "type": "integer", "minimum": 0, "maximum": 4096 }, "bytesHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" }, "maskHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" } } }, "maxItems": 8 } } }, "companions": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "patterns", "searchScopes"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "role": { "type": "string", "minLength": 1 }, "required": { "type": "boolean" }, "patterns": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }, "expected": { "type": "object", "additionalProperties": false, "properties": { "all": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "any": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "none": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } } } }, "searchScopes": { "type": "array", "minItems": 1, "items": { "enum": ["sibling-directory", "current-mount", "enclosing-container", "workspace-dependency-layer", "explicit-user-selection"] } } } } }, "representations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "contract", "major", "stage", "lossy"], "properties": { "id": { "type": "string", "minLength": 1 }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "stage": { "enum": ["authored", "compiled", "runtime"] }, "lossy": { "type": "boolean" } } }, "minItems": 1 }, "publishesDataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "requires": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "operations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "requiredPermissions": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } }, "requiresContract": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "outputKinds": { "type": "array", "items": { "enum": ["json", "bytes", "stream", "source", "artifact", "none", "edit-plan", "transaction"] } } } } }, "traitDeclarations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "representation", "presence"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "representation": { "enum": ["source", "compiled", "runtime"] }, "presence": { "enum": ["may-expose", "will-expose"] }, "prerequisites": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } } }, "fidelityEvidence": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "claim", "evidenceId", "corpusId", "corpusDigest", "conformanceProfile", "optionsFingerprint", "inputClass", "provenAt"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "claim": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "const": "byte-identical" }, "preservesUnknownData": { "const": true }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, { "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "const": "semantic" }, "preservesUnknownData": { "type": "boolean" }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, { "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "enum": ["lossy", "none"] }, "preservesUnknownData": { "const": false }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }] }, "evidenceId": { "type": "string", "minLength": 1 }, "corpusId": { "type": "string", "minLength": 1 }, "corpusDigest": { "type": "string", "minLength": 1 }, "conformanceProfile": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "optionsFingerprint": { "type": "string", "minLength": 1 }, "inputClass": { "type": "string", "minLength": 1 }, "provenAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$" } } } }, "implementationTier": { "type": "object", "additionalProperties": false, "required": ["claimed"], "properties": { "claimed": { "enum": [1, 2, 3, 4, 5] } } }, "budgets": { "type": "object", "additionalProperties": false, "required": ["maxInputBytes", "maxDepth", "maxNodes", "maxScalarBytes", "maxDiagnostics"], "properties": { "maxInputBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "maxDepth": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxNodes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxScalarBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxDiagnostics": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "deadlineMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "sourceTopology": { "const": "namespace" }, "probe": { "type": "object", "additionalProperties": false, "required": ["kind", "markers", "maxEntries", "maxBytes", "maxDepth", "maxPathBytes"], "properties": { "kind": { "const": "namespace" }, "markers": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "maxItems": 256, "uniqueItems": true }, "prefixes": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "maxEntries": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxDepth": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxPathBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["formatRefs", "roles", "sourceTopology", "artifactStages", "openIntents", "match", "probe", "representations", "publishesDataSources", "operations", "implementationTier", "budgets"], "properties": { "formatRefs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["formatId", "label"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "label": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "roles": { "type": "array", "items": { "enum": ["container", "media", "byte-transform", "semantic", "index", "sidecar"] }, "minItems": 1 }, "artifactStages": { "type": "array", "items": { "enum": ["authored", "compiled", "runtime"] }, "minItems": 1 }, "openIntents": { "type": "array", "items": { "enum": ["probe", "inspect", "thumbnail", "full", "stream", "export"] }, "minItems": 1 }, "match": { "type": "object", "additionalProperties": false, "properties": { "extensions": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "mediaTypes": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "pathGlobs": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "signatures": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["from", "offset", "bytesHex"], "properties": { "from": { "enum": ["start", "end"] }, "offset": { "type": "integer", "minimum": 0, "maximum": 4096 }, "bytesHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" }, "maskHex": { "type": "string", "pattern": "^(?:[0-9a-f]{2}){1,64}$" } } }, "maxItems": 8 } } }, "companions": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "patterns", "searchScopes"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "role": { "type": "string", "minLength": 1 }, "required": { "type": "boolean" }, "patterns": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1 }, "expected": { "type": "object", "additionalProperties": false, "properties": { "all": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "any": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "none": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } } } }, "searchScopes": { "type": "array", "minItems": 1, "items": { "enum": ["sibling-directory", "current-mount", "enclosing-container", "workspace-dependency-layer", "explicit-user-selection"] } } } } }, "representations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "contract", "major", "stage", "lossy"], "properties": { "id": { "type": "string", "minLength": 1 }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "stage": { "enum": ["authored", "compiled", "runtime"] }, "lossy": { "type": "boolean" } } }, "minItems": 1 }, "publishesDataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "requires": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "operations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "requiredPermissions": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } }, "requiresContract": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "outputKinds": { "type": "array", "items": { "enum": ["json", "bytes", "stream", "source", "artifact", "none", "edit-plan", "transaction"] } } } } }, "traitDeclarations": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "representation", "presence"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "representation": { "enum": ["source", "compiled", "runtime"] }, "presence": { "enum": ["may-expose", "will-expose"] }, "prerequisites": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } } }, "fidelityEvidence": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "claim", "evidenceId", "corpusId", "corpusDigest", "conformanceProfile", "optionsFingerprint", "inputClass", "provenAt"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "claim": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "const": "byte-identical" }, "preservesUnknownData": { "const": true }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, { "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "const": "semantic" }, "preservesUnknownData": { "type": "boolean" }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, { "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "enum": ["lossy", "none"] }, "preservesUnknownData": { "const": false }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }] }, "evidenceId": { "type": "string", "minLength": 1 }, "corpusId": { "type": "string", "minLength": 1 }, "corpusDigest": { "type": "string", "minLength": 1 }, "conformanceProfile": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "optionsFingerprint": { "type": "string", "minLength": 1 }, "inputClass": { "type": "string", "minLength": 1 }, "provenAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$" } } } }, "implementationTier": { "type": "object", "additionalProperties": false, "required": ["claimed"], "properties": { "claimed": { "enum": [1, 2, 3, 4, 5] } } }, "budgets": { "type": "object", "additionalProperties": false, "required": ["maxInputBytes", "maxDepth", "maxNodes", "maxScalarBytes", "maxDiagnostics"], "properties": { "maxInputBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "maxDepth": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxNodes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxScalarBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxDiagnostics": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "deadlineMs": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "sourceTopology": { "const": "derived" }, "probe": { "type": "object", "additionalProperties": false, "required": ["kind", "maxSubjects", "maxRelationDepth"], "properties": { "kind": { "const": "derived" }, "maxSubjects": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxRelationDepth": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] };
+    func14 = Object.prototype.hasOwnProperty;
+    func2 = func2Module.default?.default ?? func2Module.default;
+    func0 = func0Module.default?.default ?? func0Module.default;
+    pattern45 = new RegExp("^(?:[0-9a-f]{2}){1,64}$", "u");
+    pattern63 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*$", "u");
+    pattern73 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern82 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
+    pattern132 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern17 = new RegExp("^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$", "u");
+    pattern21 = new RegExp("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", "u");
+    pattern25 = new RegExp("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$", "u");
+    pattern26 = new RegExp("^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$", "u");
+    validate205.evaluated = { "dynamicProps": true, "dynamicItems": false };
+    func3Module = __toESM(require_ucs2length(), 1);
+    serviceProviderContributionSpecV1 = validate206;
+    schema315 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/service-provider-contribution-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["provides", "lifecycleScope"], "properties": { "provides": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["offerId", "contract", "major", "version"], "properties": { "offerId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "facet": { "title": "JsonValue" } } }, "minItems": 1 }, "fidelityEvidence": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["offerId", "evidenceId", "claim", "corpusId", "corpusDigest", "conformanceProfile", "optionsFingerprint", "inputClass", "provenAt"], "properties": { "offerId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "evidenceId": { "type": "string", "minLength": 1 }, "claim": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "const": "byte-identical" }, "preservesUnknownData": { "const": true }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, { "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "const": "semantic" }, "preservesUnknownData": { "type": "boolean" }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, { "type": "object", "additionalProperties": false, "required": ["roundTrip", "preservesUnknownData"], "properties": { "roundTrip": { "enum": ["lossy", "none"] }, "preservesUnknownData": { "const": false }, "notes": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }] }, "corpusId": { "type": "string", "minLength": 1 }, "corpusDigest": { "type": "string", "minLength": 1 }, "conformanceProfile": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "optionsFingerprint": { "type": "string", "minLength": 1 }, "inputClass": { "type": "string", "minLength": 1 }, "provenAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$" } } } }, "requires": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "inputs": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "outputs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "representation", "presence"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "representation": { "enum": ["source", "compiled", "runtime"] }, "presence": { "enum": ["may-expose", "will-expose"] }, "prerequisites": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } }, "evidenceRefs": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } } }, "protocolOperations": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "replacement": { "type": "object", "additionalProperties": false, "required": ["target", "compatible"], "properties": { "target": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } }, "compatible": { "type": "boolean" } } }, "lifecycleScope": { "enum": ["session", "operation", "process"] }, "applicableVariants": { "type": "array", "items": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" } } } };
+    func15 = Object.prototype.hasOwnProperty;
+    func3 = func3Module.default?.default ?? func3Module.default;
+    pattern46 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*$", "u");
+    pattern52 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern64 = new RegExp("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", "u");
+    pattern9 = new RegExp("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$", "u");
+    pattern112 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
+    pattern122 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    validate206.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+    func0Module2 = __toESM(require_equal(), 1);
+    func3Module2 = __toESM(require_ucs2length(), 1);
+    viewerContributionSpecV1 = validate207;
+    schema316 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/viewer-contribution-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["kind", "consumesDataSources", "priority"], "properties": { "kind": { "enum": ["stage", "tree", "panel", "toolbar", "transport", "status", "fallback"] }, "requiresTraits": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "definitionRange": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "states": { "type": "array", "items": { "enum": ["available", "partial", "disabled", "dependency-required"] }, "minItems": 1, "uniqueItems": true } } } }, "requiresOperations": { "type": "array", "items": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" } }, "consumesDataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "optionalDataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "applicability": { "type": "object", "additionalProperties": false, "properties": { "interpretation": { "enum": ["none", "codec", "any"] }, "sourceBytes": { "type": "object", "additionalProperties": false, "properties": { "maximum": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, "longestLineBytes": { "type": "object", "additionalProperties": false, "required": ["maximum", "whenUnknown"], "properties": { "maximum": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "whenUnknown": { "enum": ["eligible", "ineligible"] } } } } }, "hosts": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "priority": { "type": "number" }, "conflicts": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "singletonGroup": { "type": "string", "minLength": 1 } } };
+    func16 = Object.prototype.hasOwnProperty;
+    func02 = func0Module2.default?.default ?? func0Module2.default;
+    func32 = func3Module2.default?.default ?? func3Module2.default;
+    pattern47 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern53 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
+    pattern65 = new RegExp("^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$", "u");
+    pattern74 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern92 = new RegExp("^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$", "u");
+    validate207.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+    func2Module2 = __toESM(require_ucs2length(), 1);
+    func0Module3 = __toESM(require_equal(), 1);
+    editorContributionSpecV1 = validate208;
+    schema317 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/editor-contribution-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["sessionModel", "selectionKinds", "semanticLocationKinds", "requiresTransactions", "requiresOperations", "consumesDataSources", "writer", "priority"], "properties": { "sessionModel": { "enum": ["single-subject", "multi-subject", "workspace"] }, "selectionKinds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }, "semanticLocationKinds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }, "requiresTransactions": { "type": "boolean" }, "requiresOperations": { "type": "array", "items": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "uniqueItems": true }, "consumesDataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] }, "uniqueItems": true }, "writer": { "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "mutationMode", "minimumRoundTrip"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "mutationMode": { "enum": ["export-only", "mutate"] }, "minimumRoundTrip": { "enum": ["byte-identical", "semantic", "lossy", "none"] } } }, "hosts": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true }, "priority": { "type": "number" }, "scaleLimits": { "type": "object", "additionalProperties": false, "properties": { "maximumSubjects": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maximumRows": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maximumSourceBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } } } };
+    func17 = Object.prototype.hasOwnProperty;
+    func22 = func2Module2.default?.default ?? func2Module2.default;
+    func03 = func0Module3.default?.default ?? func0Module3.default;
+    pattern48 = new RegExp("^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$", "u");
+    pattern54 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern66 = new RegExp("^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$", "u");
+    validate208.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+    func1Module4 = __toESM(require_ucs2length(), 1);
+    knowledgePackSpecV1 = validate209;
+    schema318 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/knowledge-pack-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "sourceLocale", "priority", "entries"], "properties": { "schemaVersion": { "const": 1 }, "sourceLocale": { "type": "string", "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$", "maxLength": 64 }, "priority": { "type": "number" }, "gameIds": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "maxItems": 32, "uniqueItems": true }, "entries": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "target", "locale", "title", "summary", "claimKind", "confidence", "sources"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "maxLength": 256 }, "target": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "schema", "typeId", "canonicalPath"], "properties": { "kind": { "const": "field" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "schema": { "type": "object", "additionalProperties": false, "required": ["contract", "major", "revision"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "maxLength": 256 }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "revision": { "type": "string", "minLength": 1, "maxLength": 256 } } }, "typeId": { "type": "string", "minLength": 1, "maxLength": 128 }, "canonicalPath": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "minItems": 1, "maxItems": 32 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "subjectKind"], "properties": { "kind": { "const": "subject" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectKind": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectId": { "type": "string", "minLength": 1, "maxLength": 512 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "formatId"], "properties": { "kind": { "const": "format" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "formatId": { "type": "string", "minLength": 1, "maxLength": 128 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "code"], "properties": { "kind": { "const": "diagnostic" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "code": { "type": "string", "minLength": 1, "maxLength": 256 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "conceptId"], "properties": { "kind": { "const": "concept" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "conceptId": { "type": "string", "minLength": 1, "maxLength": 128 } } }] }, "locale": { "type": "string", "pattern": "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$", "maxLength": 64 }, "title": { "type": "string", "minLength": 1, "maxLength": 256 }, "summary": { "type": "string", "minLength": 1, "maxLength": 1024 }, "claimKind": { "enum": ["schema-derived-fact", "documented-interpretation", "community-note", "external-reference"] }, "confidence": { "enum": ["verified", "high", "medium", "low"] }, "aliases": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "maxItems": 32, "uniqueItems": true }, "keywords": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "maxItems": 32, "uniqueItems": true }, "details": { "type": "object", "additionalProperties": false, "properties": { "valueType": { "type": "string", "minLength": 1, "maxLength": 128 }, "units": { "type": "string", "minLength": 1, "maxLength": 128 }, "defaultValue": { "title": "JsonValue" }, "allowedValues": { "type": "array", "items": { "title": "JsonValue" }, "maxItems": 512 }, "deprecated": { "type": "boolean" }, "formulaRole": { "type": "string", "minLength": 1, "maxLength": 512 } } }, "relations": { "type": "array", "maxItems": 64, "items": { "type": "object", "additionalProperties": false, "required": ["role", "target"], "properties": { "role": { "type": "string", "minLength": 1, "maxLength": 128 }, "target": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "schema", "typeId", "canonicalPath"], "properties": { "kind": { "const": "field" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "schema": { "type": "object", "additionalProperties": false, "required": ["contract", "major", "revision"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "maxLength": 256 }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "revision": { "type": "string", "minLength": 1, "maxLength": 256 } } }, "typeId": { "type": "string", "minLength": 1, "maxLength": 128 }, "canonicalPath": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 128 }, "minItems": 1, "maxItems": 32 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "subjectKind"], "properties": { "kind": { "const": "subject" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectKind": { "type": "string", "minLength": 1, "maxLength": 128 }, "subjectId": { "type": "string", "minLength": 1, "maxLength": 512 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "formatId"], "properties": { "kind": { "const": "format" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "formatId": { "type": "string", "minLength": 1, "maxLength": 128 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "code"], "properties": { "kind": { "const": "diagnostic" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "code": { "type": "string", "minLength": 1, "maxLength": 256 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "ecosystem", "conceptId"], "properties": { "kind": { "const": "concept" }, "ecosystem": { "type": "string", "minLength": 1, "maxLength": 128 }, "conceptId": { "type": "string", "minLength": 1, "maxLength": 128 } } }] } } } }, "examples": { "type": "array", "maxItems": 16, "items": { "type": "object", "additionalProperties": false, "required": ["title", "text"], "properties": { "title": { "type": "string", "minLength": 1, "maxLength": 256 }, "text": { "type": "string", "minLength": 1, "maxLength": 2048 } } } }, "sources": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["kind", "title", "reviewedAt"], "properties": { "kind": { "enum": ["schema", "official-documentation", "source-code", "community-wiki", "observed-corpus", "external-reference"] }, "title": { "type": "string", "minLength": 1, "maxLength": 256 }, "url": { "type": "string", "pattern": "^https://[^\\s]+$", "maxLength": 2048 }, "schema": { "type": "object", "additionalProperties": false, "required": ["contract", "major", "revision"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "maxLength": 256 }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "revision": { "type": "string", "minLength": 1, "maxLength": 256 } } }, "revision": { "type": "string", "minLength": 1, "maxLength": 256 }, "license": { "type": "string", "minLength": 1, "maxLength": 256 }, "reviewedAt": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" } } }, "minItems": 1, "maxItems": 16 } } }, "minItems": 1, "maxItems": 1e4 } } };
+    func18 = func1Module4.default?.default ?? func1Module4.default;
+    func4 = Object.prototype.hasOwnProperty;
+    pattern49 = new RegExp("^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$", "u");
+    pattern55 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern93 = new RegExp("^https://[^\\s]+$", "u");
+    pattern113 = new RegExp("^\\d{4}-\\d{2}-\\d{2}$", "u");
+    validate209.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+    func1Module5 = __toESM(require_ucs2length(), 1);
+    localizationContributionSpecV1 = validate2010;
+    func19 = func1Module5.default?.default ?? func1Module5.default;
+    pattern410 = new RegExp("^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$", "u");
+    pattern56 = new RegExp("^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*\\.json$", "u");
+    pattern67 = new RegExp("^[A-Za-z0-9][A-Za-z0-9_-]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)*\\.$", "u");
+    validate2010.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+    func1Module6 = __toESM(require_ucs2length(), 1);
+    writerRequirementV1 = validate2011;
+    schema319 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/writer-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "mutationMode", "minimumRoundTrip"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "mutationMode": { "enum": ["export-only", "mutate"] }, "minimumRoundTrip": { "enum": ["byte-identical", "semantic", "lossy", "none"] } } };
+    func110 = func1Module6.default?.default ?? func1Module6.default;
+    validate2011.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+    func1Module7 = __toESM(require_ucs2length(), 1);
+    writerOfferV1 = validate2012;
+    schema3110 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/writer-offer.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["formatId", "representationId", "mutationMode", "minimumRoundTrip", "providerId", "fidelityEvidenceId"], "properties": { "formatId": { "type": "string", "minLength": 1 }, "representationId": { "type": "string", "minLength": 1 }, "mutationMode": { "enum": ["export-only", "mutate"] }, "minimumRoundTrip": { "enum": ["byte-identical", "semantic", "lossy", "none"] }, "providerId": { "type": "string", "minLength": 1 }, "fidelityEvidenceId": { "type": "string", "minLength": 1 } } };
+    func111 = func1Module7.default?.default ?? func1Module7.default;
+    validate2012.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+    func1Module8 = __toESM(require_ucs2length(), 1);
+    traitDefinitionSpecV1 = validate2013;
+    schema3111 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/trait-definition-spec.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "id", "version", "scope", "parametersSchema", "transport"], "properties": { "schemaVersion": { "const": 1 }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "scope": { "anyOf": [{ "enum": ["source", "asset", "subject", "workspace", "service", "operation", "view-session", "representation"] }, { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }] }, "parametersSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "transport": { "enum": ["json", "structured-clone"] }, "documentation": { "type": "string", "minLength": 1 }, "imports": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "range"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" } } } } } };
+    pattern411 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern57 = new RegExp("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", "u");
+    pattern68 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern83 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
+    func112 = func1Module8.default?.default ?? func1Module8.default;
+    validate2013.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+    func2Module3 = __toESM(require_ucs2length(), 1);
+    contractDefinitionSpecV1 = validate2014;
+    schema3112 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/contract-definition-spec.v1.schema.json", "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "offerFacet", "requestFacet", "matching", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "service" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "offerFacet": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["presence"], "properties": { "presence": { "const": "forbidden" } } }, { "type": "object", "additionalProperties": false, "required": ["presence", "schema"], "properties": { "presence": { "enum": ["optional", "required"] }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } } } }] }, "requestFacet": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["presence"], "properties": { "presence": { "const": "forbidden" } } }, { "type": "object", "additionalProperties": false, "required": ["presence", "schema"], "properties": { "presence": { "enum": ["optional", "required"] }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } } } }] }, "matching": { "type": "object", "additionalProperties": false, "required": ["profile", "major"], "properties": { "profile": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "configuration": { "title": "JsonValue" } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } }, { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "schema", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "data-source" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } }] };
+    func113 = Object.prototype.hasOwnProperty;
+    func23 = func2Module3.default?.default ?? func2Module3.default;
+    pattern412 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern69 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
+    validate2014.evaluated = { "dynamicProps": true, "dynamicItems": false };
+    func2Module4 = __toESM(require_ucs2length(), 1);
+    func0Module4 = __toESM(require_equal(), 1);
+    subjectDescriptorV2 = validate2015;
+    schema3113 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/subject-descriptor.v2.schema.json", "$defs": { "jsonValue": { "title": "JsonValue", "oneOf": [{ "type": "null" }, { "type": "boolean" }, { "type": "number" }, { "type": "string" }, { "type": "array", "items": { "$ref": "#/$defs/jsonValue" } }, { "type": "object", "additionalProperties": { "$ref": "#/$defs/jsonValue" } }] } }, "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["schemaVersion", "subjectUri", "origin", "traits", "operations", "constraints", "dataSources", "diagnostics", "revision", "interpretation", "candidates"], "properties": { "schemaVersion": { "const": 2 }, "subjectUri": { "type": "string", "pattern": "\\S" }, "origin": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "binding"], "properties": { "kind": { "const": "single" }, "binding": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "bindings"], "properties": { "kind": { "const": "bundle" }, "bindings": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "primary": { "type": "string", "minLength": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "root", "revision"], "properties": { "kind": { "const": "namespace" }, "root": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "inputs"], "properties": { "kind": { "const": "derived" }, "inputs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["bindingId", "role", "subjectUri", "revision", "compositionFingerprint"], "properties": { "bindingId": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "subjectUri": { "type": "string", "minLength": 1 }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "compositionFingerprint": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "recipe": { "type": "object", "additionalProperties": false, "required": ["extensionId", "extensionVersion", "contributionId", "operation"], "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "extensionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "operation": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "parameters": { "$ref": "#/$defs/jsonValue" } } }, "materialization": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }] }, "traits": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state", "diagnosticIds"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "enum": ["partial", "disabled", "dependency-required"] }, "diagnosticIds": { "type": "array", "items": { "type": "string" }, "minItems": 1 } } }] } }, "operations": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource", "reason"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "enum": ["disabled", "dependency-required"] }, "reason": { "type": "string", "minLength": 1 } } }] } }, "constraints": { "type": "object", "additionalProperties": false, "required": ["readOnly", "seekable", "randomAccess", "trusted"], "properties": { "readOnly": { "type": "boolean" }, "seekable": { "type": "boolean" }, "randomAccess": { "type": "boolean" }, "trusted": { "type": "boolean" }, "maxDecodedBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "unsupportedFeatures": { "type": "array", "items": { "type": "string" } } } }, "dataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "diagnostics": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "code", "category", "severity", "message"], "properties": { "id": { "type": "string", "minLength": 1 }, "code": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "category": { "enum": ["syntax", "structure", "fidelity", "dependency", "security", "performance", "operation", "io", "unknown"] }, "severity": { "enum": ["error", "warning", "information", "hint"] }, "message": { "type": "string" }, "source": { "type": "object", "additionalProperties": false, "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" } } }, "path": { "type": "array", "items": { "oneOf": [{ "type": "string" }, { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }] } }, "range": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] }, "data": { "$ref": "#/$defs/jsonValue" }, "relatedIds": { "type": "array", "items": { "type": "string" } } } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "interpretation": { "const": "none" }, "candidates": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["codecId", "confidence", "evidence", "requiredRanges"], "properties": { "codecId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "confidence": { "type": "number", "minimum": 0, "maximum": 1 }, "evidence": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["kind", "weight"], "properties": { "kind": { "enum": ["magic", "structure", "companion", "context", "extension", "user-override"] }, "weight": { "type": "number" }, "note": { "type": "string" } } } }, "requiredRanges": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] } }, "diagnostics": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "code", "category", "severity", "message"], "properties": { "id": { "type": "string", "minLength": 1 }, "code": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "category": { "enum": ["syntax", "structure", "fidelity", "dependency", "security", "performance", "operation", "io", "unknown"] }, "severity": { "enum": ["error", "warning", "information", "hint"] }, "message": { "type": "string" }, "source": { "type": "object", "additionalProperties": false, "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" } } }, "path": { "type": "array", "items": { "oneOf": [{ "type": "string" }, { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }] } }, "range": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] }, "data": { "$ref": "#/$defs/jsonValue" }, "relatedIds": { "type": "array", "items": { "type": "string" } } } } } } } } } }, { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "subjectUri", "origin", "traits", "operations", "constraints", "dataSources", "diagnostics", "revision", "interpretation", "identity", "metadata"], "properties": { "schemaVersion": { "const": 2 }, "subjectUri": { "type": "string", "pattern": "\\S" }, "origin": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "binding"], "properties": { "kind": { "const": "single" }, "binding": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "bindings"], "properties": { "kind": { "const": "bundle" }, "bindings": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "role", "source", "required", "ownership", "revision"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "required": { "type": "boolean" }, "ownership": { "enum": ["owned", "companion", "external"] }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "primary": { "type": "string", "minLength": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "root", "revision"], "properties": { "kind": { "const": "namespace" }, "root": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, { "type": "object", "additionalProperties": false, "required": ["kind", "inputs"], "properties": { "kind": { "const": "derived" }, "inputs": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["bindingId", "role", "subjectUri", "revision", "compositionFingerprint"], "properties": { "bindingId": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "subjectUri": { "type": "string", "minLength": 1 }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "compositionFingerprint": { "type": "string", "minLength": 1 } } }, "minItems": 1 }, "recipe": { "type": "object", "additionalProperties": false, "required": ["extensionId", "extensionVersion", "contributionId", "operation"], "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "extensionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "operation": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "parameters": { "$ref": "#/$defs/jsonValue" } } }, "materialization": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "mediaType": { "type": "string", "minLength": 1 } } } } }] }, "traits": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "descriptorVersion", "state", "diagnosticIds"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "descriptorVersion": { "const": 1 }, "definitionVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "parameters": { "$ref": "#/$defs/jsonValue" }, "state": { "enum": ["partial", "disabled", "dependency-required"] }, "diagnosticIds": { "type": "array", "items": { "type": "string" }, "minItems": 1 } } }] } }, "operations": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "const": "available" } } }, { "type": "object", "additionalProperties": false, "required": ["id", "handlerId", "state", "mutatesSource", "reason"], "properties": { "id": { "type": "string", "pattern": "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$" }, "handlerId": { "type": "string", "minLength": 1 }, "mutatesSource": { "type": "boolean" }, "inputSchema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "state": { "enum": ["disabled", "dependency-required"] }, "reason": { "type": "string", "minLength": 1 } } }] } }, "constraints": { "type": "object", "additionalProperties": false, "required": ["readOnly", "seekable", "randomAccess", "trusted"], "properties": { "readOnly": { "type": "boolean" }, "seekable": { "type": "boolean" }, "randomAccess": { "type": "boolean" }, "trusted": { "type": "boolean" }, "maxDecodedBytes": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "unsupportedFeatures": { "type": "array", "items": { "type": "string" } } } }, "dataSources": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] }, "major": { "const": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["contract", "major", "opaque"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "not": { "enum": ["common.view/text-data-source", "common.view/byte-range-source", "common.view/tree-data-source", "common.view/table-data-source", "common.view/transport-source", "common.view/namespace-entry-source", "common.view/raster-image-source", "common.view/vector-scene-source", "common.view/audio-media-source", "common.view/video-media-source", "common.view/model-scene-source", "common.view/world-scene-source", "common.view/model-resource-refs-source", "common.view/model-skeleton-source", "common.view/model-animation-source", "common.view/model-collision-source", "common.view/model-material-source", "common.view/model-socket-source", "common.view/relation-graph-source", "common.view/subject-selector-source", "common.view/subject-facts-source", "common.view/subject-calculations-source", "common.view/slide-deck-source"] } }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "opaque": { "const": true } } }] } }, "diagnostics": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "code", "category", "severity", "message"], "properties": { "id": { "type": "string", "minLength": 1 }, "code": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "category": { "enum": ["syntax", "structure", "fidelity", "dependency", "security", "performance", "operation", "io", "unknown"] }, "severity": { "enum": ["error", "warning", "information", "hint"] }, "message": { "type": "string" }, "source": { "type": "object", "additionalProperties": false, "properties": { "extensionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "contributionId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" } } }, "path": { "type": "array", "items": { "oneOf": [{ "type": "string" }, { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }] } }, "range": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" } } }, { "type": "object", "additionalProperties": false, "required": ["utf16Offset", "utf16Length", "line", "column"], "properties": { "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, { "type": "object", "additionalProperties": false, "required": ["byteOffset", "byteLength", "utf16Offset", "utf16Length", "line", "column"], "properties": { "byteOffset": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "byteLength": { "type": "string", "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$" }, "utf16Offset": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "utf16Length": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "line": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "column": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }] }, "data": { "$ref": "#/$defs/jsonValue" }, "relatedIds": { "type": "array", "items": { "type": "string" } } } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" }, "interpretation": { "const": "codec" }, "identity": { "type": "object", "additionalProperties": false, "required": ["codecId", "codecVersion", "formatId", "formatLabel", "confidence", "detection"], "properties": { "codecId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "codecVersion": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$" }, "formatId": { "type": "string", "minLength": 1 }, "formatLabel": { "type": "string", "minLength": 1 }, "mediaType": { "type": "string", "minLength": 1 }, "confidence": { "type": "number", "minimum": 0, "maximum": 1 }, "detection": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["kind", "weight"], "properties": { "kind": { "enum": ["magic", "structure", "companion", "context", "extension", "user-override"] }, "weight": { "type": "number" }, "note": { "type": "string" } } } } } }, "metadata": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["id", "label", "entries"], "properties": { "id": { "type": "string", "minLength": 1 }, "label": { "type": "string" }, "entries": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["key", "value"], "properties": { "key": { "type": "string", "minLength": 1 }, "value": { "$ref": "#/$defs/jsonValue" } } } } } } }, "companions": { "type": "array", "items": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "const": "one" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true, "maxItems": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "const": "one-or-more" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "const": "zero-or-one" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true, "maxItems": 1 } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "bindingIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "const": "many" }, "state": { "const": "resolved" }, "bindingIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "diagnosticIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "enum": ["one", "one-or-more"] }, "state": { "const": "missing" }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "enum": ["zero-or-one", "many"] }, "state": { "const": "missing" }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "candidates", "diagnosticIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": true }, "cardinality": { "const": "one" }, "state": { "const": "ambiguous" }, "candidates": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, "minItems": 2, "uniqueItems": true }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }, { "type": "object", "additionalProperties": false, "required": ["id", "role", "required", "cardinality", "state", "candidates", "diagnosticIds"], "properties": { "id": { "type": "string", "minLength": 1 }, "role": { "type": "string", "minLength": 1 }, "required": { "const": false }, "cardinality": { "const": "zero-or-one" }, "state": { "const": "ambiguous" }, "candidates": { "type": "array", "items": { "type": "object", "additionalProperties": false, "required": ["source", "revision"], "properties": { "source": { "type": "object", "additionalProperties": false, "required": ["id", "uri"], "properties": { "id": { "type": "string", "pattern": "\\S" }, "uri": { "type": "string", "pattern": "\\S" }, "parentIds": { "type": "array", "items": { "type": "string", "pattern": "\\S" }, "minItems": 1 } } }, "revision": { "type": "string", "pattern": "^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$" } } }, "minItems": 2, "uniqueItems": true }, "diagnosticIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "minItems": 1, "uniqueItems": true } } }] } } } }] };
+    func114 = Object.prototype.hasOwnProperty;
+    func24 = func2Module4.default?.default ?? func2Module4.default;
+    func04 = func0Module4.default?.default ?? func0Module4.default;
+    pattern413 = new RegExp("\\S", "u");
+    pattern84 = new RegExp("^(?:content-hash|git-object|etag|database-version|provider-token|overlay-generation)(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)?:(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+$", "u");
+    pattern18 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern19 = new RegExp("^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$", "u");
+    pattern212 = new RegExp("^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$", "u");
+    pattern262 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern32 = new RegExp("^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$", "u");
+    wrapper0 = { validate: validate21 };
+    validate21.evaluated = { "dynamicProps": true, "dynamicItems": true };
+    validate2015.evaluated = { "dynamicProps": true, "dynamicItems": false };
+    func2Module5 = __toESM(require_ucs2length(), 1);
+    contributionManifestV1 = validate2016;
+    schema3114 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/contribution-manifest.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["schemaVersion", "contract", "id", "displayName", "spec"], "properties": { "schemaVersion": { "const": 1 }, "contract": { "type": "object", "additionalProperties": false, "required": ["id", "major"], "properties": { "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "id": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "displayName": { "type": "string", "minLength": 1 }, "status": { "enum": ["supported", "partial", "unsupported", "experimental"] }, "runtimeVariants": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/runtime-variant-declaration.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["variantId", "entrypoint", "target", "executionProfile", "requestedPermissionClasses"], "properties": { "variantId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "entrypoint": { "type": "string", "pattern": "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$" }, "target": { "type": "object", "additionalProperties": false, "properties": { "environments": { "type": "array", "items": { "enum": ["browser-main", "browser-worker", "node", "node-worker", "wasm", "native", "external-tool"] }, "minItems": 1 }, "operatingSystems": { "type": "array", "items": { "enum": ["any", "windows", "linux", "darwin", "android", "ios"] }, "minItems": 1 }, "architectures": { "type": "array", "items": { "enum": ["any", "x86", "x64", "arm32", "arm64", "wasm32"] }, "minItems": 1 }, "requiredHostCapabilities": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "requiredWebApis": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "externalTools": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, "executionProfile": { "enum": ["browser-sandbox", "worker-brokered", "process-brokered", "wasm-brokered", "trusted-in-process", "remote-provider"] }, "requestedPermissionClasses": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } } } } }, "dependsOn": { "type": "array", "items": { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/scoped-contract-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["contract", "major", "mode", "scope"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } } }, "limitations": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "spec": { "title": "JsonValue" } } };
+    func115 = Object.prototype.hasOwnProperty;
+    func25 = func2Module5.default?.default ?? func2Module5.default;
+    pattern414 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern610 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*$", "u");
+    pattern75 = new RegExp("^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$", "u");
+    pattern94 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
+    validate2016.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+    func1Module9 = __toESM(require_ucs2length(), 1);
+    runtimeVariantDeclarationV1 = validate2017;
+    schema3115 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/runtime-variant-declaration.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["variantId", "entrypoint", "target", "executionProfile", "requestedPermissionClasses"], "properties": { "variantId": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" }, "entrypoint": { "type": "string", "pattern": "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$" }, "target": { "type": "object", "additionalProperties": false, "properties": { "environments": { "type": "array", "items": { "enum": ["browser-main", "browser-worker", "node", "node-worker", "wasm", "native", "external-tool"] }, "minItems": 1 }, "operatingSystems": { "type": "array", "items": { "enum": ["any", "windows", "linux", "darwin", "android", "ios"] }, "minItems": 1 }, "architectures": { "type": "array", "items": { "enum": ["any", "x86", "x64", "arm32", "arm64", "wasm32"] }, "minItems": 1 }, "requiredHostCapabilities": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "requiredWebApis": { "type": "array", "items": { "type": "string", "minLength": 1 } }, "externalTools": { "type": "array", "items": { "type": "string", "minLength": 1 } } } }, "executionProfile": { "enum": ["browser-sandbox", "worker-brokered", "process-brokered", "wasm-brokered", "trusted-in-process", "remote-provider"] }, "requestedPermissionClasses": { "type": "array", "items": { "enum": ["read-source", "write-source", "filesystem-read", "filesystem-write", "network", "process-launch", "native-code", "credentials", "clipboard", "persistent-storage"] } } } };
+    pattern415 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*$", "u");
+    pattern58 = new RegExp("^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$", "u");
+    func116 = func1Module9.default?.default ?? func1Module9.default;
+    validate2017.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+    func1Module10 = __toESM(require_ucs2length(), 1);
+    scopedContractRequirementV1 = validate2018;
+    schema3116 = { "$schema": "https://json-schema.org/draft/2020-12/schema", "$id": "https://schemas.modkit.org/x3/scoped-contract-requirement.v1.schema.json", "type": "object", "additionalProperties": false, "required": ["contract", "major", "mode", "scope"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "range": { "type": "string", "pattern": "^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$" }, "mode": { "enum": ["required", "default", "suggested", "integrates"] }, "scope": { "type": "object", "additionalProperties": false, "required": ["kind", "id"], "properties": { "kind": { "enum": ["contribution", "offer", "operation", "intent", "variant", "profile", "projection", "slot"] }, "id": { "type": "string", "minLength": 1 } } } } };
+    pattern416 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern59 = new RegExp("^(?:\\*|x|(?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)|(?:(?:0|[1-9]\\d*)\\.(?:x|\\*)|(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)\\.(?:x|\\*))|\\^(?:0|[1-9]\\d*)\\.(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*))?|[<>]=?(?:0|[1-9]\\d*)(?:\\.(?:0|[1-9]\\d*)){0,2}))*)$", "u");
+    func117 = func1Module10.default?.default ?? func1Module10.default;
+    validate2018.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+    func1Module11 = __toESM(require_ucs2length(), 1);
+    dataSourceContractDefinitionV1 = validate2019;
+    schema3117 = { "type": "object", "additionalProperties": false, "required": ["schemaVersion", "kind", "contract", "major", "schema", "conformanceProfile"], "properties": { "schemaVersion": { "const": 1 }, "kind": { "const": "data-source" }, "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "schema": { "type": "object", "additionalProperties": false, "required": ["$ref"], "properties": { "$ref": { "type": "string", "minLength": 1 } } }, "conformanceProfile": { "type": "string", "minLength": 1 }, "surface": { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } } } };
+    pattern417 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    pattern510 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
+    func118 = func1Module11.default?.default ?? func1Module11.default;
+    validate2019.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
+    dataSourceSurfaceV1 = validate2020;
+    schema3118 = { "type": "object", "additionalProperties": false, "required": ["methods"], "properties": { "releaseVia": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "fields": { "type": "array", "items": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "maxItems": 64, "uniqueItems": true }, "methods": { "type": "object", "minProperties": 1, "propertyNames": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" }, "additionalProperties": { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] } } } };
+    pattern418 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
+    pattern76 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
+    validate2020.evaluated = { "props": true, "dynamicProps": false, "dynamicItems": false };
     dataSourceMethodSurfaceV1 = validate2021;
     schema3119 = { "oneOf": [{ "type": "object", "additionalProperties": false, "required": ["kind", "result"], "properties": { "kind": { "const": "lease" }, "result": { "type": "object", "additionalProperties": false, "required": ["contract", "major"], "properties": { "contract": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$" }, "major": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } }, "wrapper": { "enum": ["lease", "bare"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }, { "type": "object", "additionalProperties": false, "required": ["kind"], "properties": { "kind": { "enum": ["value", "leased-value", "iterable", "events"] }, "signal": { "anyOf": [{ "enum": ["last", "none"] }, { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }] }, "progress": { "type": "object", "additionalProperties": false, "required": ["arg", "key"], "properties": { "arg": { "type": "integer", "minimum": 0, "maximum": 16 }, "key": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]{0,63}$" } } }, "arity": { "type": "integer", "minimum": 0, "maximum": 16 }, "optional": { "type": "boolean" }, "limits": { "type": "object", "additionalProperties": false, "properties": { "maxPageItems": { "type": "integer", "minimum": 1, "maximum": 9007199254740991 }, "maxBytes": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 }, "maxStringLength": { "type": "integer", "minimum": 0, "maximum": 9007199254740991 } } } } }] };
     pattern419 = new RegExp("^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$", "u");
     pattern511 = new RegExp("^[a-z][a-zA-Z0-9]{0,63}$", "u");
     validate2021.evaluated = { "dynamicProps": true, "dynamicItems": false };
-  }
-});
-
-// packages/sdk/dist/manifest/validators.generated.js
-var validators_generated_exports = {};
-__export(validators_generated_exports, {
-  PRECOMPILED_SCHEMA_VALIDATORS: () => PRECOMPILED_SCHEMA_VALIDATORS
-});
-var PRECOMPILED_SCHEMA_VALIDATORS;
-var init_validators_generated = __esm({
-  "packages/sdk/dist/manifest/validators.generated.js"() {
-    "use strict";
-    init_sourceSpanV1();
-    init_extensionManifestV1();
-    init_extensionManifestModkitBlockV1();
-    init_extensionRequirementV1();
-    init_codecContributionSpecV1();
-    init_serviceProviderContributionSpecV1();
-    init_viewerContributionSpecV1();
-    init_editorContributionSpecV1();
-    init_knowledgePackSpecV1();
-    init_localizationContributionSpecV1();
-    init_writerRequirementV1();
-    init_writerOfferV1();
-    init_traitDefinitionSpecV1();
-    init_contractDefinitionSpecV1();
-    init_subjectDescriptorV2();
-    init_contributionManifestV1();
-    init_runtimeVariantDeclarationV1();
-    init_scopedContractRequirementV1();
-    init_dataSourceContractDefinitionV1();
-    init_dataSourceSurfaceV1();
-    init_dataSourceMethodSurfaceV1();
     PRECOMPILED_SCHEMA_VALIDATORS = /* @__PURE__ */ new Map([
       ['{\n  "$id": "https://schemas.modkit.org/x3/source-span.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "oneOf": [\n    {\n      "additionalProperties": false,\n      "properties": {\n        "byteLength": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        },\n        "byteOffset": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        }\n      },\n      "required": [\n        "byteOffset",\n        "byteLength"\n      ],\n      "type": "object"\n    },\n    {\n      "additionalProperties": false,\n      "properties": {\n        "column": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "line": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Length": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Offset": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        }\n      },\n      "required": [\n        "utf16Offset",\n        "utf16Length",\n        "line",\n        "column"\n      ],\n      "type": "object"\n    },\n    {\n      "additionalProperties": false,\n      "properties": {\n        "byteLength": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        },\n        "byteOffset": {\n          "pattern": "^(?:0|[1-9][0-9]{0,18}|(?:18446744073709551615|1[0-7][0-9]{18}|18[0-3][0-9]{17}|184[0-3][0-9]{16}|1844[0-5][0-9]{15}|18446[0-6][0-9]{14}|184467[0-3][0-9]{13}|1844674[0-3][0-9]{12}|184467440[0-6][0-9]{10}|1844674407[0-2][0-9]{9}|18446744073[0-6][0-9]{8}|1844674407370[0-8][0-9]{6}|18446744073709[0-4][0-9]{5}|184467440737095[0-4][0-9]{4}|18446744073709550[0-9]{3}|18446744073709551[0-5][0-9]{2}|1844674407370955160[0-9]{1}|1844674407370955161[0-4]))$",\n          "type": "string"\n        },\n        "column": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "line": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Length": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        },\n        "utf16Offset": {\n          "maximum": 9007199254740991,\n          "minimum": 0,\n          "type": "integer"\n        }\n      },\n      "required": [\n        "byteOffset",\n        "byteLength",\n        "utf16Offset",\n        "utf16Length",\n        "line",\n        "column"\n      ],\n      "type": "object"\n    }\n  ]\n}\n', sourceSpanV1],
       ['{\n  "$id": "https://schemas.modkit.org/x3/extension-manifest.v1.schema.json",\n  "$schema": "https://json-schema.org/draft/2020-12/schema",\n  "additionalProperties": false,\n  "properties": {\n    "contributionManifests": {\n      "items": {\n        "minLength": 1,\n        "type": "string"\n      },\n      "type": "array"\n    },\n    "dependsOn": {\n      "items": {\n        "$id": "https://schemas.modkit.org/x3/extension-requirement.v1.schema.json",\n        "$schema": "https://json-schema.org/draft/2020-12/schema",\n        "additionalProperties": false,\n        "properties": {\n          "extension": {\n            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n            "type": "string"\n          },\n          "mode": {\n            "enum": [\n              "required",\n              "default",\n              "suggested",\n              "integrates"\n            ]\n          },\n          "range": {\n            "pattern": "^(?:\\\\*|x|(?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2})(?: (?:=?(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)|(?:(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*)|(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)\\\\.(?:x|\\\\*))|\\\\^(?:0|[1-9]\\\\d*)\\\\.(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*))?|[<>]=?(?:0|[1-9]\\\\d*)(?:\\\\.(?:0|[1-9]\\\\d*)){0,2}))*)$",\n            "type": "string"\n          },\n          "scope": {\n            "additionalProperties": false,\n            "properties": {\n              "id": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "kind": {\n                "enum": [\n                  "contribution",\n                  "offer",\n                  "operation",\n                  "intent",\n                  "variant",\n                  "profile",\n                  "projection",\n                  "slot"\n                ]\n              }\n            },\n            "required": [\n              "kind",\n              "id"\n            ],\n            "type": "object"\n          }\n        },\n        "required": [\n          "extension",\n          "mode",\n          "scope"\n        ],\n        "type": "object"\n      },\n      "type": "array"\n    },\n    "id": {\n      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n      "type": "string"\n    },\n    "license": {\n      "minLength": 1,\n      "type": "string"\n    },\n    "presentation": {\n      "additionalProperties": false,\n      "properties": {\n        "description": {\n          "minLength": 1,\n          "type": "string"\n        },\n        "displayName": {\n          "minLength": 1,\n          "type": "string"\n        },\n        "games": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "displayName": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "id": {\n                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n                "type": "string"\n              }\n            },\n            "required": [\n              "id",\n              "displayName"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        },\n        "icon": {\n          "additionalProperties": false,\n          "properties": {\n            "displayName": {\n              "minLength": 1,\n              "type": "string"\n            },\n            "mediaType": {\n              "minLength": 1,\n              "type": "string"\n            },\n            "path": {\n              "pattern": "^(?:\\\\./)?(?![A-Za-z]:)(?!\\\\\\\\)(?!.*\\\\\\\\)(?!.*\\\\u0000)(?!\\\\.{1,2}(?:/|$))(?!.*\\\\/\\\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",\n              "type": "string"\n            }\n          },\n          "required": [\n            "path"\n          ],\n          "type": "object"\n        },\n        "licenseFiles": {\n          "items": {\n            "additionalProperties": false,\n            "properties": {\n              "displayName": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "mediaType": {\n                "minLength": 1,\n                "type": "string"\n              },\n              "path": {\n                "pattern": "^(?:\\\\./)?(?![A-Za-z]:)(?!\\\\\\\\)(?!.*\\\\\\\\)(?!.*\\\\u0000)(?!\\\\.{1,2}(?:/|$))(?!.*\\\\/\\\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",\n                "type": "string"\n              }\n            },\n            "required": [\n              "path"\n            ],\n            "type": "object"\n          },\n          "type": "array"\n        },\n        "source": {\n          "oneOf": [\n            {\n              "additionalProperties": false,\n              "properties": {\n                "kind": {\n                  "const": "root"\n                },\n                "root": {\n                  "pattern": "^(?:\\\\./)?(?![A-Za-z]:)(?!\\\\\\\\)(?!.*\\\\\\\\)(?!.*\\\\u0000)(?!\\\\.{1,2}(?:/|$))(?!.*\\\\/\\\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",\n                  "type": "string"\n                }\n              },\n              "required": [\n                "kind",\n                "root"\n              ],\n              "type": "object"\n            },\n            {\n              "additionalProperties": false,\n              "properties": {\n                "kind": {\n                  "const": "url"\n                },\n                "url": {\n                  "pattern": "^https?://[^\\\\s]+$",\n                  "type": "string"\n                }\n              },\n              "required": [\n                "kind",\n                "url"\n              ],\n              "type": "object"\n            }\n          ]\n        },\n        "vendor": {\n          "additionalProperties": false,\n          "properties": {\n            "displayName": {\n              "minLength": 1,\n              "type": "string"\n            },\n            "id": {\n              "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n              "type": "string"\n            }\n          },\n          "required": [\n            "id",\n            "displayName"\n          ],\n          "type": "object"\n        }\n      },\n      "type": "object"\n    },\n    "publisher": {\n      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",\n      "type": "string"\n    },\n    "schemaVersion": {\n      "const": 1\n    },\n    "version": {\n      "pattern": "^(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)\\\\.(0|[1-9]\\\\d*)(?:-((?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\\\.(?:0|[1-9]\\\\d*|\\\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\\\+([0-9a-zA-Z-]+(?:\\\\.[0-9a-zA-Z-]+)*))?$",\n      "type": "string"\n    }\n  },\n  "required": [\n    "schemaVersion",\n    "publisher",\n    "id",\n    "version",\n    "license",\n    "contributionManifests"\n  ],\n  "type": "object"\n}\n', extensionManifestV1],
@@ -48324,7 +48144,7 @@ function combinedDisposable(...disposables) {
 function toDisposable(fn) {
   return new FunctionDisposable(fn);
 }
-var FunctionDisposable, DisposableStore2, Disposable, MutableDisposable, RefCountedDisposable, ImmortalReference, DisposableMap;
+var FunctionDisposable, DisposableStore, Disposable, MutableDisposable, RefCountedDisposable, ImmortalReference, DisposableMap;
 var init_lifecycle = __esm({
   "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/base/common/lifecycle.js"() {
     init_iterator();
@@ -48344,7 +48164,7 @@ var init_lifecycle = __esm({
         this._fn();
       }
     };
-    DisposableStore2 = class _DisposableStore {
+    DisposableStore = class _DisposableStore {
       static {
         this.DISABLE_DISPOSED_WARNING = false;
       }
@@ -48423,7 +48243,7 @@ var init_lifecycle = __esm({
         } });
       }
       constructor() {
-        this._store = new DisposableStore2();
+        this._store = new DisposableStore();
         setParentOfDisposable(this._store);
       }
       dispose() {
@@ -48774,14 +48594,14 @@ function _isBufferLeakWarningEnabled() {
   return !!env["VSCODE_DEV"];
 }
 function addToDisposables(result, disposables) {
-  if (disposables instanceof DisposableStore2) {
+  if (disposables instanceof DisposableStore) {
     disposables.add(result);
   } else if (Array.isArray(disposables)) {
     disposables.push(result);
   }
 }
 function disposeAndRemove(result, disposables) {
-  if (disposables instanceof DisposableStore2) {
+  if (disposables instanceof DisposableStore) {
     disposables.delete(result);
   } else if (Array.isArray(disposables)) {
     const index = disposables.indexOf(result);
@@ -54765,7 +54585,7 @@ var init_derivedImpl = __esm({
       get store() {
         this._ensureReaderValid();
         if (this._store === void 0) {
-          this._store = new DisposableStore2();
+          this._store = new DisposableStore();
         }
         return this._store;
       }
@@ -54868,7 +54688,7 @@ function derivedDisposable(computeFnOrOwner, computeFnOrUndefined, debugLocation
   let store = void 0;
   return new Derived(new DebugNameData(owner, void 0, computeFn), (r) => {
     if (!store) {
-      store = new DisposableStore2();
+      store = new DisposableStore();
     } else {
       store.clear();
     }
@@ -55090,7 +54910,7 @@ var init_autorunImpl = __esm({
           throw new BugIndicatingError("Cannot access store after dispose");
         }
         if (this._store === void 0) {
-          this._store = new DisposableStore2();
+          this._store = new DisposableStore();
         }
         return this._store;
       }
@@ -55132,7 +54952,7 @@ function autorunHandleChanges(options, fn, debugLocation = DebugLocation.ofCalle
   return new AutorunObserver(new DebugNameData(options.owner, options.debugName, options.debugReferenceFn ?? fn), fn, options.changeTracker, debugLocation);
 }
 function autorunWithStoreHandleChanges(options, fn) {
-  const store = new DisposableStore2();
+  const store = new DisposableStore();
   const disposable = autorunHandleChanges({
     owner: options.owner,
     debugName: options.debugName,
@@ -55148,7 +54968,7 @@ function autorunWithStoreHandleChanges(options, fn) {
   });
 }
 function autorunWithStore(fn) {
-  const store = new DisposableStore2();
+  const store = new DisposableStore();
   const disposable = autorunOpts({
     owner: void 0,
     debugName: void 0,
@@ -55717,7 +55537,7 @@ var init_utils = __esm({
           const key = this._keySelector ? this._keySelector(item) : item;
           let entry = this._cache.get(key);
           if (!entry) {
-            const store = new DisposableStore2();
+            const store = new DisposableStore();
             const out = this._map(item, store);
             entry = { out, store };
             this._cache.set(key, entry);
@@ -56937,7 +56757,7 @@ var init_dom = __esm({
     ({ getWindow, getDocument, getWindows, getWindowsCount, getWindowId, getWindowById, onDidRegisterWindow, onWillUnregisterWindow, onDidUnregisterWindow } = (function() {
       const windows = /* @__PURE__ */ new Map();
       ensureCodeWindow(mainWindow, 1);
-      const mainWindowRegistration = { window: mainWindow, disposables: new DisposableStore2() };
+      const mainWindowRegistration = { window: mainWindow, disposables: new DisposableStore() };
       windows.set(mainWindow.vscodeWindowId, mainWindowRegistration);
       const onDidRegisterWindow2 = new Emitter();
       const onDidUnregisterWindow2 = new Emitter();
@@ -56954,10 +56774,10 @@ var init_dom = __esm({
           if (windows.has(window2.vscodeWindowId)) {
             return Disposable.None;
           }
-          const disposables = new DisposableStore2();
+          const disposables = new DisposableStore();
           const registeredWindow = {
             window: window2,
-            disposables: disposables.add(new DisposableStore2())
+            disposables: disposables.add(new DisposableStore())
           };
           windows.set(window2.vscodeWindowId, registeredWindow);
           disposables.add(toDisposable(() => {
@@ -57362,7 +57182,7 @@ var init_dom = __esm({
     ModifierKeyEmitter = class _ModifierKeyEmitter extends Emitter {
       constructor() {
         super();
-        this._subscriptions = new DisposableStore2();
+        this._subscriptions = new DisposableStore();
         this._keyStatus = {
           altKey: false,
           shiftKey: false,
@@ -57664,7 +57484,7 @@ var init_dom = __esm({
        * Creates a live element that will keep the element updated as long as the returned object is not disposed.
       */
       toDisposableLiveElement() {
-        const store = new DisposableStore2();
+        const store = new DisposableStore();
         this.keepUpdated(store);
         return new LiveElement(this._element, store);
       }
@@ -61090,7 +60910,7 @@ var init_keybindingsRegistry = __esm({
       }
       registerKeybindingRule(rule) {
         const actualKb = _KeybindingsRegistryImpl.bindToCurrentPlatform(rule);
-        const result = new DisposableStore2();
+        const result = new DisposableStore();
         if (actualKb && actualKb.primary) {
           const kk = decodeKeybinding(actualKb.primary, OS);
           if (kk) {
@@ -62077,7 +61897,7 @@ var init_actions2 = __esm({
         }));
       }
       appendMenuItems(items) {
-        const result = new DisposableStore2();
+        const result = new DisposableStore();
         for (const { id, item } of items) {
           result.add(this.appendMenuItem(id, item));
         }
@@ -66844,7 +66664,7 @@ function deepClone(obj) {
   });
   return result;
 }
-function deepFreeze4(obj) {
+function deepFreeze3(obj) {
   if (!obj || typeof obj !== "object") {
     return obj;
   }
@@ -83078,7 +82898,7 @@ var init_textModelSync_impl = __esm({
           EOL: model.getEOL(),
           versionId: model.getVersionId()
         });
-        const toDispose = new DisposableStore2();
+        const toDispose = new DisposableStore();
         toDispose.add(model.onDidChangeContent((e) => {
           this._proxy.$acceptModelChanged(modelUrl.toString(), e);
         }));
@@ -89187,7 +89007,7 @@ function createStyleSheet(container = mainWindow.document.head, beforeAppend, di
   return style;
 }
 function cloneGlobalStyleSheet(globalStylesheet, globalStylesheetClones, targetWindow) {
-  const disposables = new DisposableStore2();
+  const disposables = new DisposableStore();
   const clone2 = globalStylesheet.cloneNode(true);
   targetWindow.document.head.appendChild(clone2);
   disposables.add(toDisposable(() => clone2.remove()));
@@ -89239,7 +89059,7 @@ function isCSSStyleRule(rule) {
   return typeof rule.selectorText === "string";
 }
 function createStyleSheetFromObservable(css) {
-  const store = new DisposableStore2();
+  const store = new DisposableStore();
   const w = store.add(new WrappedStyleElement());
   store.add(autorun((reader) => {
     w.setStyle(css.read(reader));
@@ -89290,7 +89110,7 @@ var init_globalPointerMoveMonitor = __esm({
     init_lifecycle();
     GlobalPointerMoveMonitor = class {
       constructor() {
-        this._hooks = new DisposableStore2();
+        this._hooks = new DisposableStore();
         this._pointerMoveCallback = null;
         this._onStopCallback = null;
       }
@@ -90139,7 +89959,7 @@ var init_editorDom = __esm({
         this.className = className2;
         this.properties = properties;
         this._referenceCount = 0;
-        this._styleElementDisposables = new DisposableStore2();
+        this._styleElementDisposables = new DisposableStore();
         this._styleElement = createStyleSheet(_containerElement, void 0, this._styleElementDisposables);
         this._styleElement.textContent = this.getCssText(this.className, this.properties);
       }
@@ -108574,7 +108394,7 @@ function runOnChange(observable, cb) {
   });
 }
 function runOnChangeWithStore(observable, cb) {
-  const store = new DisposableStore2();
+  const store = new DisposableStore();
   const disposable = runOnChange(observable, (value2, previousValue, deltas) => {
     store.clear();
     cb(value2, previousValue, deltas, store);
@@ -113083,7 +112903,7 @@ var init_view = __esm({
         super();
         this._instantiationService = _instantiationService;
         this._userInteractionService = _userInteractionService;
-        this._editContextClipboardListeners = new DisposableStore2();
+        this._editContextClipboardListeners = new DisposableStore();
         this._onWillCopy = this._register(new Emitter());
         this.onWillCopy = this._onWillCopy.event;
         this._onWillCut = this._register(new Emitter());
@@ -117002,7 +116822,7 @@ var init_bracketPairsImpl = __esm({
       updateBracketPairsTree() {
         if (this.bracketsRequested && this.canBuildAST) {
           if (!this.bracketPairsTree.value) {
-            const store = new DisposableStore2();
+            const store = new DisposableStore();
             this.bracketPairsTree.value = createDisposableRef(store.add(new BracketPairsTree(this.textModel, (languageId) => {
               return this.languageConfigurationService.getLanguageConfiguration(languageId);
             })), store);
@@ -137111,7 +136931,7 @@ function observableConfigValue(key, defaultValue, configurationService, debugLoc
 }
 function bindContextKey(key, service, computeValue, debugLocation = DebugLocation.ofCaller()) {
   const boundKey = key.bindTo(service);
-  const store = new DisposableStore2();
+  const store = new DisposableStore();
   derivedOpts({ debugName: () => `Set Context Key "${key.key}"` }, (reader) => {
     const value2 = computeValue(reader);
     boundKey.set(value2);
@@ -142348,7 +142168,7 @@ function createAlertBlockquoteRenderer(fallbackRenderer) {
   };
 }
 function renderMarkdown(markdown, options = {}, target) {
-  const disposables = new DisposableStore2();
+  const disposables = new DisposableStore();
   let isDisposed = false;
   const markedInstance2 = new Marked(...options.markedExtensions ?? []);
   const { renderer, codeBlocks, syncCodeBlocks } = createMarkdownRenderer(markedInstance2, options, markdown);
@@ -143715,7 +143535,7 @@ var init_listView = __esm({
         this.currentDragFeedbackDisposable = Disposable.None;
         this.onDragLeaveTimeout = Disposable.None;
         this.currentSelectionDisposable = Disposable.None;
-        this.disposables = new DisposableStore2();
+        this.disposables = new DisposableStore();
         this._onDidChangeContentHeight = this.disposables.add(new Emitter());
         this._onDidChangeContentWidth = this.disposables.add(new Emitter());
         this.onDidChangeContentHeight = Event2.latch(this._onDidChangeContentHeight.event, void 0, this.disposables);
@@ -144298,8 +144118,8 @@ var init_listView = __esm({
       onPotentialSelectionStart(e) {
         this.currentSelectionDisposable.dispose();
         const doc = getDocument(this.domNode);
-        const selectionStore = this.currentSelectionDisposable = new DisposableStore2();
-        const movementStore = selectionStore.add(new DisposableStore2());
+        const selectionStore = this.currentSelectionDisposable = new DisposableStore();
+        const movementStore = selectionStore.add(new DisposableStore());
         movementStore.add(addDisposableListener(this.domNode, "selectstart", () => {
           movementStore.add(addDisposableListener(doc, "mousemove", (e2) => {
             if (doc.getSelection()?.isCollapsed === false) {
@@ -145013,8 +144833,8 @@ var init_listWidget = __esm({
       constructor(list2, view, options) {
         this.list = list2;
         this.view = view;
-        this.disposables = new DisposableStore2();
-        this.multipleSelectionDisposables = new DisposableStore2();
+        this.disposables = new DisposableStore();
+        this.multipleSelectionDisposables = new DisposableStore();
         this.multipleSelectionSupport = options.multipleSelectionSupport;
         this.disposables.add(this.onKeyDown((e) => {
           switch (e.keyCode) {
@@ -145141,8 +144961,8 @@ var init_listWidget = __esm({
         this.mode = TypeNavigationMode.Automatic;
         this.triggered = false;
         this.previouslyFocused = -1;
-        this.enabledDisposables = new DisposableStore2();
-        this.disposables = new DisposableStore2();
+        this.enabledDisposables = new DisposableStore();
+        this.disposables = new DisposableStore();
         this.updateOptions(list2.options);
       }
       updateOptions(options) {
@@ -145239,7 +145059,7 @@ var init_listWidget = __esm({
       constructor(list2, view) {
         this.list = list2;
         this.view = view;
-        this.disposables = new DisposableStore2();
+        this.disposables = new DisposableStore();
         const onKeyDown = Event2.chain(this.disposables.add(new DomEmitter(view.domNode, "keydown")).event, ($23) => $23.filter((e) => !isEditableElement(e.target)).map((e) => new StandardKeyboardEvent(e)));
         const onTab = Event2.chain(onKeyDown, ($23) => $23.filter((e) => e.keyCode === 2 && !e.ctrlKey && !e.metaKey && !e.shiftKey && !e.altKey));
         onTab(this.onTab, this, this.disposables);
@@ -145282,7 +145102,7 @@ var init_listWidget = __esm({
       }
       constructor(list2) {
         this.list = list2;
-        this.disposables = new DisposableStore2();
+        this.disposables = new DisposableStore();
         this._onPointer = this.disposables.add(new Emitter());
         if (list2.options.multipleSelectionSupport !== false) {
           this.multipleSelectionController = this.list.options.multipleSelectionController || DefaultMultipleSelectionController;
@@ -145652,7 +145472,7 @@ var init_listWidget = __esm({
         this.templateId = "a18n";
       }
       renderTemplate(container) {
-        return { container, disposables: new DisposableStore2() };
+        return { container, disposables: new DisposableStore() };
       }
       renderElement(element2, index, data) {
         const ariaLabel = this.accessibilityProvider.getAriaLabel(element2);
@@ -145795,7 +145615,7 @@ var init_listWidget = __esm({
         this.anchor = new Trait("anchor");
         this.eventBufferer = new EventBufferer();
         this._ariaLabel = "";
-        this.disposables = new DisposableStore2();
+        this.disposables = new DisposableStore();
         this._onDidDispose = new Emitter();
         this.onDidDispose = this._onDidDispose.event;
         const role = this._options.accessibilityProvider && this._options.accessibilityProvider.getWidgetRole ? this._options.accessibilityProvider?.getWidgetRole() : "list";
@@ -146320,7 +146140,7 @@ var init_selectBoxCustom2 = __esm({
         this.options = [];
         this._currentSelection = 0;
         this._hasDetails = false;
-        this._selectionDetailsDisposables = this._register(new DisposableStore2());
+        this._selectionDetailsDisposables = this._register(new DisposableStore());
         this._skipLayout = false;
         this._sticky = false;
         this._isVisible = false;
@@ -147632,7 +147452,7 @@ var init_actionbar2 = __esm({
       }
       constructor(container, options = {}) {
         super();
-        this._actionRunnerDisposables = this._register(new DisposableStore2());
+        this._actionRunnerDisposables = this._register(new DisposableStore());
         this.viewItemDisposables = this._register(new DisposableMap());
         this.triggerKeyDown = false;
         this.focusable = true;
@@ -148119,7 +147939,7 @@ function joinCombine(arr1, arr2, keySelector, combine) {
   return result;
 }
 function applyObservableDecorations(editor2, decorations) {
-  const d = new DisposableStore2();
+  const d = new DisposableStore();
   const decorationsCollection = editor2.createDecorationsCollection();
   d.add(autorunOpts({ debugName: () => `Apply decorations from ${decorations.debugName}` }, (reader) => {
     const d2 = decorations.read(reader);
@@ -148206,7 +148026,7 @@ function applyStyle(domNode, style) {
   });
 }
 function applyViewZones(editor2, viewZones, setIsUpdating, zoneIds) {
-  const store = new DisposableStore2();
+  const store = new DisposableStore();
   const lastViewZoneIds = [];
   store.add(autorunWithStore((reader, store2) => {
     const curViewZones = viewZones.read(reader);
@@ -148432,7 +148252,7 @@ var init_utils5 = __esm({
         return new BaseRefCounted(value2, value2, debugOwner);
       }
       static createWithDisposable(value2, disposable, debugOwner = void 0) {
-        const store = new DisposableStore2();
+        const store = new DisposableStore();
         store.add(disposable);
         store.add(value2);
         return new BaseRefCounted(value2, store, debugOwner);
@@ -150108,7 +149928,7 @@ var init_diffEditorViewModel = __esm({
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/browser/widget/diffEditor/components/diffEditorViewZones/copySelection.js
 function enableCopySelection(options) {
   const { domNode, renderLinesResult, diffEntry, originalModel, clipboardService } = options;
-  const viewZoneDisposable = new DisposableStore2();
+  const viewZoneDisposable = new DisposableStore();
   viewZoneDisposable.add(addDisposableListener(domNode, "copy", (e) => {
     e.preventDefault();
     const selection = domNode.ownerDocument.getSelection();
@@ -150797,7 +150617,7 @@ var init_diffEditorViewZones = __esm({
           r.className = "diagonal-fill";
           return r;
         }
-        const alignmentViewZonesDisposables = this._register(new DisposableStore2());
+        const alignmentViewZonesDisposables = this._register(new DisposableStore());
         this.viewZones = derived(this, (reader) => {
           alignmentViewZonesDisposables.clear();
           const alignmentsVal = alignments.read(reader) || [];
@@ -151770,7 +151590,7 @@ var init_observableCodeEditor = __esm({
         }), () => this.editor.getOption(id), debugLocation);
       }
       setDecorations(decorations) {
-        const d = new DisposableStore2();
+        const d = new DisposableStore();
         const decorationsCollection = this.editor.createDecorationsCollection();
         d.add(autorunOpts({ owner: this, debugName: () => `Apply decorations from ${decorations.debugName}` }, (reader) => {
           const d2 = decorations.read(reader);
@@ -152363,7 +152183,7 @@ var init_sash2 = __esm({
     MouseEventFactory = class {
       constructor(el) {
         this.el = el;
-        this.disposables = new DisposableStore2();
+        this.disposables = new DisposableStore();
       }
       get onPointerMove() {
         return this.disposables.add(new DomEmitter(getWindow(this.el), "mousemove")).event;
@@ -152390,7 +152210,7 @@ var init_sash2 = __esm({
       }
       constructor(el) {
         this.el = el;
-        this.disposables = new DisposableStore2();
+        this.disposables = new DisposableStore();
       }
       dispose() {
         this.disposables.dispose();
@@ -152551,10 +152371,10 @@ var init_sash2 = __esm({
         this._onDidChange = this._register(new Emitter());
         this._onDidReset = this._register(new Emitter());
         this._onDidEnd = this._register(new Emitter());
-        this.orthogonalStartSashDisposables = this._register(new DisposableStore2());
-        this.orthogonalStartDragHandleDisposables = this._register(new DisposableStore2());
-        this.orthogonalEndSashDisposables = this._register(new DisposableStore2());
-        this.orthogonalEndDragHandleDisposables = this._register(new DisposableStore2());
+        this.orthogonalStartSashDisposables = this._register(new DisposableStore());
+        this.orthogonalStartDragHandleDisposables = this._register(new DisposableStore());
+        this.orthogonalEndSashDisposables = this._register(new DisposableStore());
+        this.orthogonalEndDragHandleDisposables = this._register(new DisposableStore());
         this.linkedSash = void 0;
         this.el = append(container, $(".monaco-sash"));
         if (options.orthogonalEdge) {
@@ -152661,7 +152481,7 @@ var init_sash2 = __esm({
           }
           style.textContent = `* { cursor: ${cursor3} !important; }`;
         };
-        const disposables = new DisposableStore2();
+        const disposables = new DisposableStore();
         updateStyle();
         if (!isMultisashResize) {
           this.onDidEnablementChange.event(updateStyle, null, disposables);
@@ -153512,7 +153332,7 @@ var init_toolbar2 = __esm({
         this.originalPrimaryActions = [];
         this.originalSecondaryActions = [];
         this.hiddenActions = [];
-        this.disposables = this._register(new DisposableStore2());
+        this.disposables = this._register(new DisposableStore());
         options.hoverDelegate = options.hoverDelegate ?? this._register(createInstantHoverDelegate());
         this.options = options;
         this.toggleMenuAction = this._register(new ToggleMenuAction(() => this.toggleMenuActionViewItem?.show(), options.toggleMenuTitle));
@@ -155358,7 +155178,7 @@ var init_menuEntryActionViewItem2 = __esm({
         this._menuService = _menuService;
         this._instaService = _instaService;
         this._storageService = _storageService;
-        this._defaultActionDisposables = this._register(new DisposableStore2());
+        this._defaultActionDisposables = this._register(new DisposableStore());
         this._container = null;
         this._primaryActionListener = this._register(new MutableDisposable());
         this._options = options;
@@ -155629,7 +155449,7 @@ var init_menuService = __esm({
       }
       constructor(_storageService) {
         this._storageService = _storageService;
-        this._disposables = new DisposableStore2();
+        this._disposables = new DisposableStore();
         this._onDidChange = new Emitter();
         this.onDidChange = this._onDidChange.event;
         this._ignoreChangeEvent = false;
@@ -155878,7 +155698,7 @@ var init_menuService = __esm({
     ], MenuInfo);
     MenuImpl = class MenuImpl2 {
       constructor(id, hiddenStates, options, commandService, keybindingService, contextKeyService) {
-        this._disposables = new DisposableStore2();
+        this._disposables = new DisposableStore();
         this._menuInfo = new MenuInfo(id, hiddenStates, options.emitEventsForSubmenuChanges, commandService, keybindingService, contextKeyService);
         const rebuildMenuSoon = new RunOnceScheduler(() => {
           this._menuInfo.refresh();
@@ -155893,7 +155713,7 @@ var init_menuService = __esm({
             }
           }
         }));
-        const lazyListener = this._disposables.add(new DisposableStore2());
+        const lazyListener = this._disposables.add(new DisposableStore());
         const merge = (events) => {
           let isStructuralChange = false;
           let isEnablementChange = false;
@@ -156033,7 +155853,7 @@ var init_toolbar3 = __esm({
         this._contextMenuService = _contextMenuService;
         this._keybindingService = _keybindingService;
         this._commandService = _commandService;
-        this._sessionDisposables = this._store.add(new DisposableStore2());
+        this._sessionDisposables = this._store.add(new DisposableStore());
         const telemetrySource = _options?.telemetrySource;
         if (telemetrySource) {
           this._store.add(this.actionBar.onDidRun((e) => telemetryService.publicLog2("workbenchActionExecuted", { id: e.action.id, from: telemetrySource })));
@@ -156280,7 +156100,7 @@ var init_hover = __esm({
         this.hoverService = hoverService;
         this.lastHoverHideTime = 0;
         this.timeLimit = 200;
-        this.hoverDisposables = this._register(new DisposableStore2());
+        this.hoverDisposables = this._register(new DisposableStore());
         this._delay = this.configurationService.getValue("workbench.hover.delay");
         this._register(this.configurationService.onDidChangeConfiguration((e) => {
           if (e.affectsConfiguration("workbench.hover.delay")) {
@@ -159297,7 +159117,7 @@ var init_editorState = __esm({
     EditorStateCancellationTokenSource = class extends EditorKeybindingCancellationTokenSource {
       constructor(editor2, flags, range2, parent) {
         super(editor2, parent);
-        this._listener = new DisposableStore2();
+        this._listener = new DisposableStore();
         if (flags & 4) {
           this._listener.add(editor2.onDidChangeCursorPosition((e) => {
             if (!range2 || !Range.containsPosition(range2, e.position)) {
@@ -159652,7 +159472,7 @@ var init_messageController2 = __esm({
       constructor(editor2, contextKeyService, _openerService) {
         this._openerService = _openerService;
         this._messageWidget = new MutableDisposable();
-        this._messageListeners = new DisposableStore2();
+        this._messageListeners = new DisposableStore();
         this._mouseOverMessage = false;
         this._editor = editor2;
         this._visible = MessageController_1.MESSAGE_VISIBLE.bindTo(contextKeyService);
@@ -162237,7 +162057,7 @@ var init_contextview2 = __esm({
           } else {
             this.container.appendChild(this.view);
           }
-          const toDisposeOnSetContainer = new DisposableStore2();
+          const toDisposeOnSetContainer = new DisposableStore();
           _ContextView.BUBBLE_UP_EVENTS.forEach((event) => {
             toDisposeOnSetContainer.add(addStandardDisposableListener(this.container, event, (e) => {
               this.onDOMEvent(e, false);
@@ -162646,7 +162466,7 @@ var init_actionList = __esm({
         const submenuIndicator = document.createElement("div");
         submenuIndicator.className = "action-list-submenu-indicator";
         container.append(submenuIndicator);
-        const elementDisposables = new DisposableStore2();
+        const elementDisposables = new DisposableStore();
         return { container, icon, text: text3, detail, badge, description, groupTitle, keybinding, toolbar, submenuIndicator, elementDisposables };
       }
       renderElement(element2, _index, data) {
@@ -162815,7 +162635,7 @@ var init_actionList = __esm({
         this._headerLineHeight = 24;
         this._separatorLineHeight = 8;
         this.cts = this._register(new CancellationTokenSource());
-        this._submenuDisposables = this._register(new DisposableStore2());
+        this._submenuDisposables = this._register(new DisposableStore());
         this._collapsedSections = /* @__PURE__ */ new Set();
         this._filterText = "";
         this._suppressHover = false;
@@ -164088,7 +163908,7 @@ var init_actionWidget2 = __esm({
         } else {
           throw new Error("List has no value");
         }
-        const renderDisposables = new DisposableStore2();
+        const renderDisposables = new DisposableStore();
         const headerContainer = this._list.value.headerContainer;
         if (headerContainer) {
           renderDisposables.add(addDisposableGenericMouseDownListener(headerContainer, (e) => e.preventDefault()));
@@ -164810,7 +164630,7 @@ var init_copyPasteController = __esm({
             return;
           }
           const model = editor3.getModel();
-          const disposables = new DisposableStore2();
+          const disposables = new DisposableStore();
           const cts = disposables.add(new CancellationTokenSource(pToken));
           disposables.add(editorStateCts.token.onCancellationRequested(() => cts.cancel()));
           const token = cts.token;
@@ -164884,7 +164704,7 @@ var init_copyPasteController = __esm({
             return;
           }
           const model = editor2.getModel();
-          const disposables = new DisposableStore2();
+          const disposables = new DisposableStore();
           const tokenSource = disposables.add(new EditorStateCancellationTokenSource(editor2, 1 | 2, void 0, token));
           try {
             await this.mergeInDataFromCopy(allProviders, dataTransfer, metadata, tokenSource.token);
@@ -165023,7 +164843,7 @@ var init_copyPasteController = __esm({
         }
       }
       async getPasteEdits(providers, dataTransfer, model, selections, context, token) {
-        const disposables = new DisposableStore2();
+        const disposables = new DisposableStore();
         const results = await raceCancellation(Promise.all(providers.map(async (provider) => {
           try {
             const edits2 = await provider.provideDocumentPasteEdits?.(model, selections, dataTransfer, context, token);
@@ -165943,7 +165763,7 @@ async function getCodeActions(registry, model, rangeOrSelection, trigger, progre
   const cts = new TextModelCancellationTokenSource(model, token);
   const excludeNotebookCodeActions = trigger.type === 2;
   const providers = getCodeActionProviders(registry, model, excludeNotebookCodeActions ? notebookFilter : filter);
-  const disposables = new DisposableStore2();
+  const disposables = new DisposableStore();
   const promises = providers.map(async (provider) => {
     const handle = setTimeout(() => progress.report(provider), 1250);
     try {
@@ -168111,7 +167931,7 @@ var init_codelens = __esm({
       }
       add(list2, provider) {
         if (isDisposable(list2)) {
-          this._store ??= new DisposableStore2();
+          this._store ??= new DisposableStore();
           this._store.add(list2);
         }
         for (const symbol of list2.lenses) {
@@ -168129,7 +167949,7 @@ var init_codelens = __esm({
         throw illegalArgument();
       }
       const result = [];
-      const disposables = new DisposableStore2();
+      const disposables = new DisposableStore();
       return getCodeLensModel(codeLensProvider, model, CancellationToken.None).then((value2) => {
         disposables.add(value2);
         const resolve3 = [];
@@ -168725,10 +168545,10 @@ var init_codelensController = __esm({
         this._commandService = _commandService;
         this._notificationService = _notificationService;
         this._codeLensCache = _codeLensCache;
-        this._disposables = new DisposableStore2();
-        this._localToDispose = new DisposableStore2();
+        this._disposables = new DisposableStore();
+        this._localToDispose = new DisposableStore();
         this._lenses = [];
-        this._oldCodeLensModels = new DisposableStore2();
+        this._oldCodeLensModels = new DisposableStore();
         this._provideCodeLensDebounce = debounceService.for(_languageFeaturesService.codeLensProvider, "CodeLensProvide", { min: 250 });
         this._resolveCodeLensesDebounce = debounceService.for(_languageFeaturesService.codeLensProvider, "CodeLensResolve", { min: 250, salt: "resolve" });
         this._resolveCodeLensesScheduler = new RunOnceScheduler(() => this._resolveCodeLensesInViewport(), this._resolveCodeLensesDebounce.default());
@@ -169433,11 +169253,11 @@ var init_colorDetector = __esm({
         this._editor = _editor;
         this._configurationService = _configurationService;
         this._languageFeaturesService = _languageFeaturesService;
-        this._localToDispose = this._register(new DisposableStore2());
+        this._localToDispose = this._register(new DisposableStore());
         this._decorationsIds = [];
         this._colorDatas = /* @__PURE__ */ new Map();
         this._decoratorLimitReporter = this._register(new DecoratorLimitReporter());
-        this._colorDecorationClassRefs = this._register(new DisposableStore2());
+        this._colorDecorationClassRefs = this._register(new DisposableStore());
         this._colorDecoratorIds = this._editor.createDecorationsCollection();
         this._ruleFactory = this._register(new DynamicCssRules(this._editor));
         this._debounceInformation = languageFeatureDebounceService.for(_languageFeaturesService.colorProvider, "Document Colors", { min: ColorDetector_1.RECOMPUTE_TIME });
@@ -170261,7 +170081,7 @@ var init_resizable = __esm({
       constructor() {
         this._onDidWillResize = new Emitter();
         this._onDidResize = new Emitter();
-        this._sashListener = new DisposableStore2();
+        this._sashListener = new DisposableStore();
         this._size = new Dimension(0, 0);
         this._minSize = new Dimension(0, 0);
         this._maxSize = new Dimension(Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER);
@@ -172214,7 +172034,7 @@ var init_findModel = __esm({
     RESEARCH_DELAY = 240;
     FindModelBoundToEditorModel = class _FindModelBoundToEditorModel {
       constructor(editor2, state) {
-        this._toDispose = new DisposableStore2();
+        this._toDispose = new DisposableStore();
         this._editor = editor2;
         this._state = state;
         this._isDisposed = false;
@@ -173750,7 +173570,7 @@ var init_findInput2 = __esm({
           currentToggle.domNode.remove();
         }
         this.additionalToggles = [];
-        this.additionalTogglesDisposables.value = new DisposableStore2();
+        this.additionalTogglesDisposables.value = new DisposableStore();
         for (const toggle of toggles ?? []) {
           this.additionalTogglesDisposables.value.add(toggle);
           this.controls.appendChild(toggle.domNode);
@@ -174048,7 +173868,7 @@ function registerAndCreateHistoryNavigationContext(scopedContextKeyService, widg
     throw new Error("Cannot register the same widget multiple times");
   }
   widgets.push(widget);
-  const disposableStore = new DisposableStore2();
+  const disposableStore = new DisposableStore();
   const historyNavigationWidgetFocus = new RawContextKey(HistoryNavigationWidgetFocusContext, false).bindTo(scopedContextKeyService);
   const historyNavigationForwardsEnablement = new RawContextKey(HistoryNavigationForwardsEnablementContext, true).bindTo(scopedContextKeyService);
   const historyNavigationBackwardsEnablement = new RawContextKey(HistoryNavigationBackwardsEnablementContext, true).bindTo(scopedContextKeyService);
@@ -175551,7 +175371,7 @@ function renderMarkdownHovers(context, markdownHovers, editor2, markdownRenderer
   return new RenderedHoverParts(renderedHoverParts);
 }
 function renderMarkdown2(editor2, markdownHover, markdownRendererService, onFinishedRendering) {
-  const disposables = new DisposableStore2();
+  const disposables = new DisposableStore();
   const renderedMarkdown = $7("div.hover-row");
   const renderedMarkdownContents = $7("div.hover-row-contents");
   renderedMarkdown.appendChild(renderedMarkdownContents);
@@ -175793,7 +175613,7 @@ var init_markdownHoverParticipant = __esm({
         this._markdownRendererService = _markdownRendererService;
         this._onFinishedRendering = _onFinishedRendering;
         this._ongoingHoverOperations = /* @__PURE__ */ new Map();
-        this._disposables = new DisposableStore2();
+        this._disposables = new DisposableStore();
         this.renderedHoverParts = this._renderHoverParts(hoverParts, hoverPartsContainer, this._onFinishedRendering);
         this._disposables.add(toDisposable(() => {
           this.renderedHoverParts.forEach((renderedHoverPart) => {
@@ -175816,7 +175636,7 @@ var init_markdownHoverParticipant = __esm({
         const renderedMarkdownPart = this._renderMarkdownHover(hoverPart, onFinishedRendering);
         const renderedMarkdownElement = renderedMarkdownPart.hoverElement;
         const hoverSource = hoverPart.source;
-        const disposables = new DisposableStore2();
+        const disposables = new DisposableStore();
         disposables.add(renderedMarkdownPart);
         if (!hoverSource) {
           return new RenderedMarkdownHoverPart(hoverPart, renderedMarkdownElement, disposables);
@@ -175839,7 +175659,7 @@ var init_markdownHoverParticipant = __esm({
         return renderedMarkdownHover;
       }
       _renderHoverExpansionAction(container, action, actionEnabled) {
-        const store = new DisposableStore2();
+        const store = new DisposableStore();
         const isActionIncrease = action === HoverVerbosityAction.Increase;
         const actionElement = append(container, $7(ThemeIcon.asCSSSelector(isActionIncrease ? increaseHoverVerbosityIcon : decreaseHoverVerbosityIcon)));
         actionElement.tabIndex = 0;
@@ -176650,7 +176470,7 @@ var init_hoverColorPickerParticipant = __esm({
           /* EditorOption.lineHeight */
         ) + 8;
         context.setMinimumDimensions(new Dimension(302, minimumHeight));
-        const disposables = new DisposableStore2();
+        const disposables = new DisposableStore();
         const colorHover = hoverParts[0];
         const editorModel = editor2.getModel();
         const model = colorHover.model;
@@ -176995,7 +176815,7 @@ var init_inlayHints = __esm({
         return new _InlayHintsFragments(ranges, data, model);
       }
       constructor(ranges, data, model) {
-        this._disposables = new DisposableStore2();
+        this._disposables = new DisposableStore();
         this.ranges = ranges;
         this.provider = /* @__PURE__ */ new Set();
         const items = [];
@@ -177279,7 +177099,7 @@ var init_zoneWidget2 = __esm({
         this._resizeSash = null;
         this._isSashResizeHeight = false;
         this._viewZone = null;
-        this._disposables = new DisposableStore2();
+        this._disposables = new DisposableStore();
         this.container = null;
         this._isShowing = false;
         this.editor = editor2;
@@ -177925,7 +177745,7 @@ var init_listPaging = __esm({
     };
     PagedList = class {
       constructor(user, container, virtualDelegate, renderers, options = {}) {
-        this.modelDisposables = new DisposableStore2();
+        this.modelDisposables = new DisposableStore();
         const modelProvider = () => this.model;
         const pagedRenderers = renderers.map((r) => new PagedRenderer(r, modelProvider));
         this.list = new List(user, container, virtualDelegate, pagedRenderers, fromPagedListOptions(modelProvider, options));
@@ -178945,7 +178765,7 @@ var init_tableWidget = __esm({
         this.virtualDelegate = virtualDelegate;
         this.columns = columns;
         this.domId = `table_id_${++_Table.InstanceCount}`;
-        this.disposables = new DisposableStore2();
+        this.disposables = new DisposableStore();
         this.cachedWidth = 0;
         this.cachedHeight = 0;
         this.domNode = append(container, $(`.monaco-table.${this.domId}`));
@@ -179731,7 +179551,7 @@ var init_abstractTree = __esm({
         this.modelProvider = modelProvider;
         this.dnd = dnd;
         this.autoExpandDisposable = Disposable.None;
-        this.disposables = new DisposableStore2();
+        this.disposables = new DisposableStore();
       }
       getDragURI(node) {
         return this.dnd.getDragURI(node.element);
@@ -179828,7 +179648,7 @@ var init_abstractTree = __esm({
       }
       constructor(onDidChange, _elements = []) {
         this._elements = _elements;
-        this.disposables = new DisposableStore2();
+        this.disposables = new DisposableStore();
         this.onDidChange = Event2.forEach(onDidChange, (elements) => this._elements = elements, this.disposables);
       }
       dispose() {
@@ -179852,7 +179672,7 @@ var init_abstractTree = __esm({
         this.shouldRenderIndentGuides = false;
         this.activeIndentNodes = /* @__PURE__ */ new Set();
         this.indentGuidesDisposable = Disposable.None;
-        this.disposables = new DisposableStore2();
+        this.disposables = new DisposableStore();
         this.templateId = renderer.templateId;
         this.updateOptions(options);
         Event2.map(onDidChangeCollapseState, (e) => e.node)(this.onDidChangeNodeTwistieState, this, this.disposables);
@@ -179882,7 +179702,7 @@ var init_abstractTree = __esm({
             }
             this.indentGuidesDisposable.dispose();
             if (shouldRenderIndentGuides) {
-              const disposables = new DisposableStore2();
+              const disposables = new DisposableStore();
               this.activeNodes.onDidChange(this._onDidChangeActiveNodes, this, disposables);
               this.indentGuidesDisposable = disposables;
               this._onDidChangeActiveNodes(this.activeNodes.elements);
@@ -179974,7 +179794,7 @@ var init_abstractTree = __esm({
         if (!this.shouldRenderIndentGuides) {
           return;
         }
-        const disposableStore = new DisposableStore2();
+        const disposableStore = new DisposableStore();
         while (true) {
           const ref2 = this.model.getNodeLocation(node);
           const parentRef = this.model.getParentNodeLocation(ref2);
@@ -180062,7 +179882,7 @@ var init_abstractTree = __esm({
         this._findMode = TreeFindMode.Highlight;
         this._pattern = "";
         this._lowercasePattern = "";
-        this.disposables = new DisposableStore2();
+        this.disposables = new DisposableStore();
       }
       filter(element2, parentVisibility) {
         let visibility = 1;
@@ -180177,8 +179997,8 @@ var init_abstractTree = __esm({
         this._onDidChangePattern = new Emitter();
         this._onDidChangeOpenState = new Emitter();
         this.onDidChangeOpenState = this._onDidChangeOpenState.event;
-        this.enabledDisposables = new DisposableStore2();
-        this.disposables = new DisposableStore2();
+        this.enabledDisposables = new DisposableStore();
+        this.disposables = new DisposableStore();
         this.toggles = new FindToggles(options.toggles ?? []);
         this._placeholder = options.placeholder ?? localize(22, "Type to search");
       }
@@ -180592,7 +180412,7 @@ var init_abstractTree = __esm({
         this.treeDelegate = treeDelegate;
         this.accessibilityProvider = accessibilityProvider;
         this._previousElements = [];
-        this._previousStateDisposables = new DisposableStore2();
+        this._previousStateDisposables = new DisposableStore();
         this._rootDomNode = $(".monaco-tree-sticky-container.empty");
         container.appendChild(this._rootDomNode);
         const shadow = $(".monaco-tree-sticky-container-shadow");
@@ -181236,7 +181056,7 @@ var init_abstractTree = __esm({
         this.eventBufferer = new EventBufferer();
         this.onDidChangeFindOpenState = Event2.None;
         this.onDidChangeStickyScrollFocused = Event2.None;
-        this.disposables = new DisposableStore2();
+        this.disposables = new DisposableStore();
         this.onDidSwapModel = this.disposables.add(new Emitter());
         this.onDidChangeModelRelay = this.disposables.add(new Relay());
         this.onDidSpliceModelRelay = this.disposables.add(new Relay());
@@ -181246,7 +181066,7 @@ var init_abstractTree = __esm({
         this._onWillRefilter = new Emitter();
         this.onWillRefilter = this._onWillRefilter.event;
         this._onDidUpdateOptions = new Emitter();
-        this.modelDisposables = new DisposableStore2();
+        this.modelDisposables = new DisposableStore();
         if (_options.keyboardNavigationLabelProvider && (_options.findWidgetEnabled ?? true)) {
           this.findFilter = new FindFilter(_options.keyboardNavigationLabelProvider, _options.filter, _options.defaultFindVisibility);
           _options = { ..._options, filter: this.findFilter };
@@ -182772,7 +182592,7 @@ var init_asyncDataTree = __esm({
         this._onDidRender = new Emitter();
         this._onDidChangeNodeSlowState = new Emitter();
         this.nodeMapper = new WeakMapper((node) => new AsyncDataTreeNodeWrapper(node));
-        this.disposables = new DisposableStore2();
+        this.disposables = new DisposableStore();
         this.identityProvider = options.identityProvider;
         this.autoExpandSingleChildren = typeof options.autoExpandSingleChildren === "undefined" ? false : options.autoExpandSingleChildren;
         this.sorter = options.sorter;
@@ -183463,7 +183283,7 @@ function useAltAsMultipleSelectionModifier(configurationService) {
 function toWorkbenchListOptions(accessor, options) {
   const configurationService = accessor.get(IConfigurationService);
   const keybindingService = accessor.get(IKeybindingService);
-  const disposables = new DisposableStore2();
+  const disposables = new DisposableStore();
   const result = {
     ...options,
     keyboardNavigationDelegate: { mightProducePrintableCharacter(e) {
@@ -183614,7 +183434,7 @@ var init_listService = __esm({
         return this._lastFocusedWidget;
       }
       constructor() {
-        this.disposables = new DisposableStore2();
+        this.disposables = new DisposableStore();
         this.lists = [];
         this._lastFocusedWidget = void 0;
       }
@@ -183803,7 +183623,7 @@ var init_listService = __esm({
           ...workbenchListOptions,
           horizontalScrolling
         });
-        this.disposables = new DisposableStore2();
+        this.disposables = new DisposableStore();
         this.disposables.add(workbenchListOptionsDisposable);
         this.contextKeyService = createScopedContextKeyService(contextKeyService, this);
         this.disposables.add(createScrollObserver(this.contextKeyService, this.widget));
@@ -185095,7 +184915,7 @@ var init_iconLabel = __esm({
         this.supportIcons = supportIcons;
         this.label = void 0;
         this.singleLabel = void 0;
-        this._labelDisposables = this._register(new DisposableStore2());
+        this._labelDisposables = this._register(new DisposableStore());
       }
       setLabel(label, options) {
         if (this.label === label && equals4(this.options, options)) {
@@ -185386,8 +185206,8 @@ var init_referencesWidget2 = __esm({
         this._model = _model;
         this._decorations = /* @__PURE__ */ new Map();
         this._decorationIgnoreSet = /* @__PURE__ */ new Set();
-        this._callOnDispose = new DisposableStore2();
-        this._callOnModelChange = new DisposableStore2();
+        this._callOnDispose = new DisposableStore();
+        this._callOnModelChange = new DisposableStore();
         this._callOnDispose.add(this._editor.onDidChangeModel(() => this._onModelChanged()));
         this._onModelChanged();
       }
@@ -185503,7 +185323,7 @@ var init_referencesWidget2 = __esm({
     ReferencesDragAndDrop = class ReferencesDragAndDrop2 {
       constructor(labelService) {
         this.labelService = labelService;
-        this.disposables = new DisposableStore2();
+        this.disposables = new DisposableStore();
       }
       getDragURI(element2) {
         if (element2 instanceof FileReferences) {
@@ -185553,8 +185373,8 @@ var init_referencesWidget2 = __esm({
         this._peekViewService = _peekViewService;
         this._uriLabel = _uriLabel;
         this._keybindingService = _keybindingService;
-        this._disposeOnNewModel = new DisposableStore2();
-        this._callOnDispose = new DisposableStore2();
+        this._disposeOnNewModel = new DisposableStore();
+        this._callOnDispose = new DisposableStore();
         this._onDidSelectReference = this._callOnDispose.add(new Emitter());
         this.onDidSelectReference = this._onDidSelectReference.event;
         this._dim = new Dimension(0, 0);
@@ -185907,7 +185727,7 @@ var init_referencesController = __esm({
         this._instantiationService = _instantiationService;
         this._storageService = _storageService;
         this._configurationService = _configurationService;
-        this._disposables = new DisposableStore2();
+        this._disposables = new DisposableStore();
         this._requestIdPool = 0;
         this._ignoreModelChangeEvent = false;
         this._referenceSearchVisible = ctxReferenceSearchVisible.bindTo(contextKeyService);
@@ -186388,7 +186208,7 @@ var init_symbolNavigation = __esm({
     EditorState2 = class EditorState3 {
       constructor(editorService) {
         this._listener = /* @__PURE__ */ new Map();
-        this._disposables = new DisposableStore2();
+        this._disposables = new DisposableStore();
         this._onDidChange = new Emitter();
         this.onDidChange = this._onDidChange.event;
         this._disposables.add(editorService.onCodeEditorRemove(this._onDidRemoveEditor, this));
@@ -187480,7 +187300,7 @@ var init_inlayHintsController = __esm({
       reset() {
         this._tokenSource.dispose(true);
         this._tokenSource = new CancellationTokenSource();
-        this._store.value = new DisposableStore2();
+        this._store.value = new DisposableStore();
         return {
           store: this._store.value,
           token: this._tokenSource.token
@@ -187510,8 +187330,8 @@ var init_inlayHintsController = __esm({
         this._commandService = _commandService;
         this._notificationService = _notificationService;
         this._instaService = _instaService;
-        this._disposables = new DisposableStore2();
-        this._sessionDisposables = new DisposableStore2();
+        this._disposables = new DisposableStore();
+        this._sessionDisposables = new DisposableStore();
         this._decorationsMetadata = /* @__PURE__ */ new Map();
         this._activeRenderMode = 0;
         this._ruleFactory = this._disposables.add(new DynamicCssRules(this._editor));
@@ -187643,9 +187463,9 @@ var init_inlayHintsController = __esm({
         this._sessionDisposables.add(this._installContextMenu());
       }
       _installLinkGesture() {
-        const store = new DisposableStore2();
+        const store = new DisposableStore();
         const gesture = store.add(new ClickLinkGesture(this._editor));
-        const sessionStore = new DisposableStore2();
+        const sessionStore = new DisposableStore();
         store.add(sessionStore);
         store.add(gesture.onMouseMoveOrRelevantKeyDown((e) => {
           const [mouseEvent] = e;
@@ -188354,7 +188174,7 @@ var init_contentHoverRendered = __esm({
           statusBar,
           ...hoverContext
         };
-        const disposables = new DisposableStore2();
+        const disposables = new DisposableStore();
         disposables.add(statusBar);
         for (const participant of participants) {
           const renderedHoverParts = this._renderHoverPartsForParticipant(hoverParts, participant, hoverRenderingContext);
@@ -188394,7 +188214,7 @@ var init_contentHoverRendered = __esm({
         return new RenderedStatusBar(fragment, statusBar);
       }
       _registerListenersOnRenderedParts() {
-        const disposables = new DisposableStore2();
+        const disposables = new DisposableStore();
         this._renderedParts.forEach((renderedPart, index) => {
           const element2 = renderedPart.hoverElement;
           element2.tabIndex = 0;
@@ -188925,7 +188745,7 @@ var init_contentHoverController = __esm({
         this._keybindingService = _keybindingService;
         this._onHoverContentsChanged = this._register(new Emitter());
         this.shouldKeepOpenOnEditorMouseMoveOrLeave = false;
-        this._listenersStore = new DisposableStore2();
+        this._listenersStore = new DisposableStore();
         this._isMouseDown = false;
         this._ignoreMouseEvents = false;
         this._reactToEditorMouseMoveRunner = this._register(new RunOnceScheduler(() => {
@@ -190472,7 +190292,7 @@ var init_contextmenu = __esm({
         this._menuService = _menuService;
         this._configurationService = _configurationService;
         this._workspaceContextService = _workspaceContextService;
-        this._toDispose = new DisposableStore2();
+        this._toDispose = new DisposableStore();
         this._contextMenuIsBeingShownCount = 0;
         this._editor = editor2;
         this._toDispose.add(this._editor.onContextMenu((e) => this._onContextMenu(e)));
@@ -191426,7 +191246,7 @@ var init_dropIntoEditorController = __esm({
         editor2.focus();
         editor2.setPosition(position);
         const p = createCancelablePromise(async (token) => {
-          const disposables = new DisposableStore2();
+          const disposables = new DisposableStore();
           const tokenSource = disposables.add(new EditorStateCancellationTokenSource(editor2, 1, void 0, token));
           try {
             const ourDataTransfer = await this.extractDataTransferData(dragEvent);
@@ -191466,7 +191286,7 @@ var init_dropIntoEditorController = __esm({
         DropIntoEditorController_1._currentDropOperation = p;
       }
       async getDropEdits(providers, model, position, dataTransfer, token) {
-        const disposables = new DisposableStore2();
+        const disposables = new DisposableStore();
         const results = await raceCancellation(Promise.all(providers.map(async (provider) => {
           try {
             const edits2 = await provider.provideDocumentDropEdits(model, position, dataTransfer, token);
@@ -192943,7 +192763,7 @@ var init_findController = __esm({
           return;
         }
         const quickInputService = accessor.get(IQuickInputService);
-        const disposables = new DisposableStore2();
+        const disposables = new DisposableStore();
         const inputBox = disposables.add(quickInputService.createInputBox());
         inputBox.placeholder = localize(983, "Type a number to go to a specific match (between 1 and {0})", matchesCount);
         const toFindMatchIndex = (value2) => {
@@ -194661,7 +194481,7 @@ var init_syntaxRangeProvider = __esm({
         this.foldingRangesLimit = foldingRangesLimit;
         this.fallbackRangeProvider = fallbackRangeProvider;
         this.id = ID_SYNTAX_PROVIDER;
-        this.disposables = new DisposableStore2();
+        this.disposables = new DisposableStore();
         if (fallbackRangeProvider) {
           this.disposables.add(fallbackRangeProvider);
         }
@@ -194856,7 +194676,7 @@ var init_folding2 = __esm({
         this.contextKeyService = contextKeyService;
         this.languageConfigurationService = languageConfigurationService;
         this.languageFeaturesService = languageFeaturesService;
-        this.localToDispose = this._register(new DisposableStore2());
+        this.localToDispose = this._register(new DisposableStore());
         this.editor = editor2;
         this._foldingLimitReporter = this._register(new RangesLimitReporter(editor2));
         const options = this.editor.getOptions();
@@ -196601,8 +196421,8 @@ var init_formatActions = __esm({
         this._languageFeaturesService = _languageFeaturesService;
         this._workerService = _workerService;
         this._accessibilitySignalService = _accessibilitySignalService;
-        this._disposables = new DisposableStore2();
-        this._sessionDisposables = new DisposableStore2();
+        this._disposables = new DisposableStore();
+        this._sessionDisposables = new DisposableStore();
         this._disposables.add(_languageFeaturesService.onTypeFormattingEditProvider.onDidChange(this._update, this));
         this._disposables.add(_editor.onDidChangeModel(() => this._update()));
         this._disposables.add(_editor.onDidChangeModelLanguage(() => this._update()));
@@ -196698,8 +196518,8 @@ var init_formatActions = __esm({
         this.editor = editor2;
         this._languageFeaturesService = _languageFeaturesService;
         this._instantiationService = _instantiationService;
-        this._callOnDispose = new DisposableStore2();
-        this._callOnModel = new DisposableStore2();
+        this._callOnDispose = new DisposableStore();
+        this._callOnModel = new DisposableStore();
         this._callOnDispose.add(editor2.onDidChangeConfiguration(() => this._update()));
         this._callOnDispose.add(editor2.onDidChangeModel(() => this._update()));
         this._callOnDispose.add(editor2.onDidChangeModelLanguage(() => this._update()));
@@ -197027,7 +196847,7 @@ var init_outlineModel = __esm({
     OutlineModelService = class OutlineModelService2 {
       constructor(_languageFeaturesService, debounces, modelService) {
         this._languageFeaturesService = _languageFeaturesService;
-        this._disposables = new DisposableStore2();
+        this._disposables = new DisposableStore();
         this._cache = new LRUCache(15, 0.7);
         this._debounceInformation = debounces.for(_languageFeaturesService.documentSymbolProvider, "DocumentSymbols", { min: 350 });
         this._disposables.add(modelService.onModelRemoved((textModel) => {
@@ -197366,7 +197186,7 @@ async function provideSuggestionItems(registry, model, position, options = Compl
   const defaultReplaceRange = word ? new Range(position.lineNumber, word.startColumn, position.lineNumber, word.endColumn) : Range.fromPositions(position);
   const defaultRange = { replace: defaultReplaceRange, insert: defaultReplaceRange.setEndPosition(position.lineNumber, position.column) };
   const result = [];
-  const disposables = new DisposableStore2();
+  const disposables = new DisposableStore();
   const durations = [];
   let needsClipboard = false;
   const onCompletionList = (provider, container, sw2) => {
@@ -197747,7 +197567,7 @@ var init_markerNavigationService = __esm({
         this._configService = _configService;
         this._onDidChange = new Emitter();
         this.onDidChange = this._onDidChange.event;
-        this._dispoables = new DisposableStore2();
+        this._dispoables = new DisposableStore();
         this._markers = [];
         this._nextIdx = -1;
         if (URI.isUri(resourceFilter)) {
@@ -198014,7 +197834,7 @@ var init_gotoErrorWidget2 = __esm({
         this._lines = 0;
         this._longestLineLength = 0;
         this._relatedDiagnostics = /* @__PURE__ */ new WeakMap();
-        this._disposables = new DisposableStore2();
+        this._disposables = new DisposableStore();
         this._editor = editor2;
         const domNode = document.createElement("div");
         domNode.className = "descriptioncontainer";
@@ -198187,7 +198007,7 @@ var init_gotoErrorWidget2 = __esm({
         this._menuService = _menuService;
         this._contextKeyService = _contextKeyService;
         this._labelService = _labelService;
-        this._callOnDispose = new DisposableStore2();
+        this._callOnDispose = new DisposableStore();
         this._onDidSelectRelatedInformation = new Emitter();
         this.onDidSelectRelatedInformation = this._onDidSelectRelatedInformation.event;
         this._severity = MarkerSeverity2.Warning;
@@ -198362,7 +198182,7 @@ var init_gotoError = __esm({
         this._contextKeyService = _contextKeyService;
         this._editorService = _editorService;
         this._instantiationService = _instantiationService;
-        this._sessionDispoables = new DisposableStore2();
+        this._sessionDispoables = new DisposableStore();
         this._editor = editor2;
         this._widgetVisible = CONTEXT_MARKERS_NAVIGATION_VISIBLE.bindTo(this._contextKeyService);
       }
@@ -201521,7 +201341,7 @@ var init_snippetController2 = __esm({
         this._languageFeaturesService = _languageFeaturesService;
         this._languageConfigurationService = _languageConfigurationService;
         this._inSnippetObservable = observableValue(this, false);
-        this._snippetListener = new DisposableStore2();
+        this._snippetListener = new DisposableStore();
         this._modelVersionId = -1;
         this._inSnippet = SnippetController2_1.InSnippetMode.bindTo(contextKeyService);
         this._hasNextTabstop = SnippetController2_1.HasNextTabstop.bindTo(contextKeyService);
@@ -203939,7 +203759,7 @@ var init_renameWidget2 = __esm({
         this._keybindingService = _keybindingService;
         this._logService = _logService;
         this.allowEditorOverflow = true;
-        this._disposables = new DisposableStore2();
+        this._disposables = new DisposableStore();
         this._visibleContextKey = CONTEXT_RENAME_INPUT_VISIBLE.bindTo(contextKeyService);
         this._isEditingRenameCandidate = false;
         this._nRenameSuggestionsInvocations = 0;
@@ -204121,7 +203941,7 @@ var init_renameWidget2 = __esm({
       getInput(where, currentName, supportPreview, requestRenameCandidates, cts) {
         const { start: selectionStart, end: selectionEnd } = this._getSelection(where, currentName);
         this._renameCts = cts;
-        const disposeOnDone = new DisposableStore2();
+        const disposeOnDone = new DisposableStore();
         this._nRenameSuggestionsInvocations = 0;
         this._hadAutomaticRenameSuggestionsInvocation = false;
         if (requestRenameCandidates === void 0) {
@@ -204329,7 +204149,7 @@ var init_renameWidget2 = __esm({
     RenameCandidateListView = class _RenameCandidateListView {
       // FIXME@ulugbekna: rewrite using event emitters
       constructor(parent, opts) {
-        this._disposables = new DisposableStore2();
+        this._disposables = new DisposableStore();
         this._availableHeight = 0;
         this._minimumWidth = 0;
         this._lineHeight = opts.fontInfo.lineHeight;
@@ -204500,7 +204320,7 @@ var init_renameWidget2 = __esm({
     InputWithButton = class {
       constructor() {
         this._buttonHoverContent = "";
-        this._disposables = new DisposableStore2();
+        this._disposables = new DisposableStore();
         this._onDidInputChange = this._disposables.add(new Emitter());
         this.onDidInputChange = this._onDidInputChange.event;
       }
@@ -204769,7 +204589,7 @@ var init_rename = __esm({
         this._logService = _logService;
         this._configService = _configService;
         this._languageFeaturesService = _languageFeaturesService;
-        this._disposableStore = new DisposableStore2();
+        this._disposableStore = new DisposableStore();
         this._cts = new CancellationTokenSource();
         this._renameWidget = this._disposableStore.add(this._instaService.createInstance(RenameWidget, this.editor, ["acceptRenameInput", "acceptRenameInputWithPreview"]));
       }
@@ -205756,7 +205576,7 @@ var init_inlineCompletionsSource = __esm({
         this._updateOperation.clear();
         const source = new CancellationTokenSource();
         const promise = (async () => {
-          const store = new DisposableStore2();
+          const store = new DisposableStore();
           this._loadingCount.set(this._loadingCount.get() + 1, void 0);
           let didDecrease = false;
           const decreaseLoadingCount = () => {
@@ -207920,7 +207740,7 @@ var init_suggestMemory = __esm({
       constructor(_storageService, _configService) {
         this._storageService = _storageService;
         this._configService = _configService;
-        this._disposables = new DisposableStore2();
+        this._disposables = new DisposableStore();
         this._persistSoon = new RunOnceScheduler(() => this._saveState(), 500);
         this._disposables.add(_storageService.onWillSaveState((e) => {
           if (e.reason === WillSaveStateReason.SHUTDOWN) {
@@ -208172,7 +207992,7 @@ var init_suggestCommitCharacters = __esm({
     init_characterClassifier();
     CommitCharacterController = class {
       constructor(editor2, widget, model, accept) {
-        this._disposables = new DisposableStore2();
+        this._disposables = new DisposableStore();
         this._disposables.add(model.onDidSuggest((e) => {
           if (e.completionModel.items.length === 0) {
             this.reset();
@@ -208715,11 +208535,11 @@ var init_suggestModel = __esm({
         this._configurationService = _configurationService;
         this._languageFeaturesService = _languageFeaturesService;
         this._envService = _envService;
-        this._toDispose = new DisposableStore2();
-        this._triggerCharacterListener = new DisposableStore2();
+        this._toDispose = new DisposableStore();
+        this._triggerCharacterListener = new DisposableStore();
         this._triggerQuickSuggest = new TimeoutTimer();
         this._triggerState = void 0;
-        this._completionDisposables = new DisposableStore2();
+        this._completionDisposables = new DisposableStore();
         this._onDidCancel = new Emitter();
         this._onDidTrigger = new Emitter();
         this._onDidSuggest = new Emitter();
@@ -208974,7 +208794,7 @@ var init_suggestModel = __esm({
         if (state?.inlineSuggestion) {
           return;
         }
-        const store = new DisposableStore2();
+        const store = new DisposableStore();
         this._waitForInlineCompletions = store;
         const triggerAndCleanUp = (doTrigger) => {
           store.dispose();
@@ -209418,7 +209238,7 @@ var init_suggestOvertypingCapturer = __esm({
         this._maxSelectionLength = 51200;
       }
       constructor(editor2, suggestModel) {
-        this._disposables = new DisposableStore2();
+        this._disposables = new DisposableStore();
         this._lastOvertyped = [];
         this._locked = false;
         this._disposables.add(editor2.onWillType(() => {
@@ -209503,7 +209323,7 @@ var init_suggestWidgetStatus = __esm({
         this._menuId = _menuId;
         this._menuService = _menuService;
         this._contextKeyService = _contextKeyService;
-        this._menuDisposables = new DisposableStore2();
+        this._menuDisposables = new DisposableStore();
         this.element = append(container, $(".suggest-status-bar"));
         const actionViewItemProvider = ((action) => {
           if (options?.showIconsNoKeybindings) {
@@ -209594,8 +209414,8 @@ var init_suggestWidgetDetails = __esm({
         this.onDidClose = this._onDidClose.event;
         this._onDidChangeContents = new Emitter();
         this.onDidChangeContents = this._onDidChangeContents.event;
-        this._disposables = new DisposableStore2();
-        this._renderDisposeable = new DisposableStore2();
+        this._disposables = new DisposableStore();
+        this._renderDisposeable = new DisposableStore();
         this._size = new Dimension(330, 0);
         this.domNode = $(".suggest-details");
         this.domNode.classList.add("no-docs");
@@ -209799,7 +209619,7 @@ var init_suggestWidgetDetails = __esm({
         this.widget = widget;
         this._editor = _editor;
         this.allowEditorOverflow = true;
-        this._disposables = new DisposableStore2();
+        this._disposables = new DisposableStore();
         this._added = false;
         this._preferAlignAtTop = true;
         this._resizable = new ResizableHTMLElement();
@@ -210154,7 +209974,7 @@ var init_suggestWidgetRenderer = __esm({
         this._onDidToggleDetails.dispose();
       }
       renderTemplate(container) {
-        const disposables = new DisposableStore2();
+        const disposables = new DisposableStore();
         const root = container;
         root.classList.add("show-file-icons");
         const icon = append(container, $(".icon"));
@@ -210415,7 +210235,7 @@ var init_suggestWidget = __esm({
         this._forceRenderingAbove = false;
         this._explainMode = false;
         this._showTimeout = new TimeoutTimer();
-        this._disposables = new DisposableStore2();
+        this._disposables = new DisposableStore();
         this._onDidSelect = new PauseableEmitter();
         this._onDidFocus = new PauseableEmitter();
         this._onDidHide = new Emitter();
@@ -211345,7 +211165,7 @@ var init_suggestController = __esm({
         this._logService = _logService;
         this._telemetryService = _telemetryService;
         this._lineSuffix = new MutableDisposable();
-        this._toDispose = new DisposableStore2();
+        this._toDispose = new DisposableStore();
         this._selectors = new PriorityRegistry((s) => s.priority);
         this._onWillInsertSuggestItem = new Emitter();
         this._wantsForceRenderingAbove = false;
@@ -213016,7 +212836,7 @@ var init_ghostTextView2 = __esm({
         const { tabSize } = textModel.getOptions();
         observableCodeEditor(this._editor).transaction((_) => {
           this._editor.changeViewZones((changeAccessor) => {
-            const store = new DisposableStore2();
+            const store = new DisposableStore();
             this.removeActiveViewZone(changeAccessor);
             const heightInLines = Math.max(additionalLines.length, minReservedLineCount);
             if (heightInLines > 0) {
@@ -213322,7 +213142,7 @@ var init_stickyScrollWidget = __esm({
       }
       constructor(editor2) {
         super();
-        this._foldingIconStore = this._register(new DisposableStore2());
+        this._foldingIconStore = this._register(new DisposableStore());
         this._rootDomNode = document.createElement("div");
         this._lineNumbersDomNode = document.createElement("div");
         this._linesDomNodeScrollable = document.createElement("div");
@@ -213830,7 +213650,7 @@ var init_stickyScrollModelProvider = __esm({
         this._modelProviders = [];
         this._modelPromise = null;
         this._updateScheduler = this._register(new Delayer(300));
-        this._updateOperation = this._register(new DisposableStore2());
+        this._updateOperation = this._register(new DisposableStore());
         switch (this._editor.getOption(
           131
           /* EditorOption.stickyScroll */
@@ -214160,7 +213980,7 @@ var init_stickyScrollProvider = __esm({
         this._cts = null;
         this._stickyModelProvider = null;
         this._editor = editor2;
-        this._sessionStore = this._register(new DisposableStore2());
+        this._sessionStore = this._register(new DisposableStore());
         this._updateSoon = this._register(new RunOnceScheduler(() => this.update(), 50));
         this._register(this._editor.onDidChangeConfiguration((e) => {
           if (e.hasChanged(
@@ -214372,7 +214192,7 @@ var init_stickyScrollController = __esm({
         this._languageFeaturesService = _languageFeaturesService;
         this._instaService = _instaService;
         this._contextKeyService = _contextKeyService;
-        this._sessionStore = new DisposableStore2();
+        this._sessionStore = new DisposableStore();
         this._maxStickyLines = Number.MAX_SAFE_INTEGER;
         this._candidateDefinitionsLength = -1;
         this._focusedStickyElementIndex = -1;
@@ -214463,7 +214283,7 @@ var init_stickyScrollController = __esm({
           return;
         }
         this._focused = true;
-        this._focusDisposableStore = new DisposableStore2();
+        this._focusDisposableStore = new DisposableStore();
         this._stickyScrollFocusedContextKey.set(true);
         this._focusedStickyElementIndex = this._stickyScrollWidget.lineNumbers.length - 1;
         this._stickyScrollWidget.focusLineWithIndex(this._focusedStickyElementIndex);
@@ -214511,7 +214331,7 @@ var init_stickyScrollController = __esm({
         this._editor.focus();
       }
       _registerMouseListeners() {
-        const sessionStore = this._register(new DisposableStore2());
+        const sessionStore = this._register(new DisposableStore());
         const gesture = this._register(new ClickLinkGesture(this._editor, {
           extractLineNumberFromMouseEvent: (e) => {
             const position = this._stickyScrollWidget.getEditorPositionFromNode(e.target.element);
@@ -216035,7 +215855,7 @@ var init_gutterIndicatorView = __esm({
         if (!data) {
           throw new BugIndicatingError("Gutter indicator data not available");
         }
-        const disposableStore = new DisposableStore2();
+        const disposableStore = new DisposableStore();
         const content = disposableStore.add(this._instantiationService.createInstance(GutterIndicatorMenuContent, this._editorObs, data.gutterMenuData, (focusEditor, commandId) => {
           if (focusEditor) {
             this._editorObs.editor.focus();
@@ -216138,7 +215958,7 @@ var init_inlineEditsNewUsers = __esm({
         if (this.getNewUserType() === UserKind.Active) {
           return void 0;
         }
-        const disposableStore = new DisposableStore2();
+        const disposableStore = new DisposableStore();
         let userHasHoveredOverIcon = false;
         let inlineEditHasBeenAccepted = false;
         let firstTimeUserAnimationCount = 0;
@@ -221649,7 +221469,7 @@ var init_hoverParticipant = __esm({
         return [];
       }
       renderHoverParts(context, hoverParts) {
-        const disposables = new DisposableStore2();
+        const disposables = new DisposableStore();
         const part = hoverParts[0];
         this._telemetryService.publicLog2("inlineCompletionHover.shown");
         if (this.accessibilityService.isScreenReaderOptimized() && !this._editor.getOption(
@@ -221681,7 +221501,7 @@ var init_hoverParticipant = __esm({
         return localize(1248, "There are inline completions here");
       }
       renderScreenReaderText(context, part) {
-        const disposables = new DisposableStore2();
+        const disposables = new DisposableStore();
         const $$1 = $;
         const markdownHoverElement = $$1("div.hover-row.markdown-hover");
         const hoverContentsElement = append(markdownHoverElement, $$1("div.hover-contents", { ["aria-live"]: "assertive" }));
@@ -221818,8 +221638,8 @@ var init_goToDefinitionAtPosition2 = __esm({
         this.textModelResolverService = textModelResolverService;
         this.languageService = languageService;
         this.languageFeaturesService = languageFeaturesService;
-        this.toUnhook = new DisposableStore2();
-        this.toUnhookForKeyboard = new DisposableStore2();
+        this.toUnhook = new DisposableStore();
+        this.toUnhookForKeyboard = new DisposableStore();
         this.currentWordAtPosition = null;
         this.previousPromise = null;
         this.editor = editor2;
@@ -222727,7 +222547,7 @@ var init_markerHoverParticipant = __esm({
         return hoverPart.marker.message;
       }
       _renderMarkerHover(markerHover) {
-        const disposables = new DisposableStore2();
+        const disposables = new DisposableStore();
         const hoverElement = $14("div.hover-row");
         const markerElement = append(hoverElement, $14("div.marker.hover-contents"));
         const { source, message, code, relatedInformation } = markerHover.marker;
@@ -222792,7 +222612,7 @@ var init_markerHoverParticipant = __esm({
         return renderedHoverPart;
       }
       _renderMarkerStatusbar(context, markerHover) {
-        const disposables = new DisposableStore2();
+        const disposables = new DisposableStore();
         if (markerHover.marker.severity === MarkerSeverity2.Error || markerHover.marker.severity === MarkerSeverity2.Warning || markerHover.marker.severity === MarkerSeverity2.Info) {
           const markerController = MarkerController.get(this._editor);
           if (markerController) {
@@ -222998,7 +222818,7 @@ var init_glyphHoverWidget = __esm({
         super();
         this._markdownRendererService = _markdownRendererService;
         this.allowEditorOverflow = true;
-        this._renderDisposeables = this._register(new DisposableStore2());
+        this._renderDisposeables = this._register(new DisposableStore());
         this._editor = editor2;
         this._isVisible = false;
         this._messages = [];
@@ -223182,7 +223002,7 @@ var init_glyphHoverController = __esm({
         this._editor = _editor;
         this._instantiationService = _instantiationService;
         this.shouldKeepOpenOnEditorMouseMoveOrLeave = false;
-        this._listenersStore = new DisposableStore2();
+        this._listenersStore = new DisposableStore();
         this._hoverState = {
           mouseDown: false
         };
@@ -223866,8 +223686,8 @@ var init_indentation3 = __esm({
       constructor(editor2, _languageConfigurationService) {
         this.editor = editor2;
         this._languageConfigurationService = _languageConfigurationService;
-        this.callOnDispose = new DisposableStore2();
-        this.callOnModel = new DisposableStore2();
+        this.callOnDispose = new DisposableStore();
+        this.callOnModel = new DisposableStore();
         this.callOnDispose.add(editor2.onDidChangeConfiguration(() => this.update()));
         this.callOnDispose.add(editor2.onDidChangeModel(() => this.update()));
         this.callOnDispose.add(editor2.onDidChangeModelLanguage(() => this.update()));
@@ -224493,7 +224313,7 @@ var init_linkedEditing2 = __esm({
         super();
         this.languageConfigurationService = languageConfigurationService;
         this._syncRangesToken = 0;
-        this._localToDispose = this._register(new DisposableStore2());
+        this._localToDispose = this._register(new DisposableStore());
         this._editor = editor2;
         this._providers = languageFeaturesService.linkedEditingRangeProvider;
         this._enabled = false;
@@ -224503,7 +224323,7 @@ var init_linkedEditing2 = __esm({
         this._languageWordPattern = null;
         this._currentWordPattern = null;
         this._ignoreChangeEvent = false;
-        this._localToDispose = this._register(new DisposableStore2());
+        this._localToDispose = this._register(new DisposableStore());
         this._rangeUpdateTriggerPromise = null;
         this._rangeSyncTriggerPromise = null;
         this._currentRequestCts = null;
@@ -224887,13 +224707,13 @@ var init_getLinks = __esm({
         this.Empty = new _LinksList([]);
       }
       constructor(tuples) {
-        this._disposables = new DisposableStore2();
+        this._disposables = new DisposableStore();
         let links = [];
         for (const [list2, provider] of tuples) {
           const newLinks = list2.links.map((link2) => new Link(link2, provider));
           links = _LinksList._union(links, newLinks);
           if (isDisposable(list2)) {
-            this._disposables ??= new DisposableStore2();
+            this._disposables ??= new DisposableStore();
             this._disposables.add(list2);
           }
         }
@@ -225439,7 +225259,7 @@ var init_middleScrollController = __esm({
             }
             e.event.stopPropagation();
             e.event.preventDefault();
-            const store = new DisposableStore2();
+            const store = new DisposableStore();
             const initialPos = new Point(e.event.posx, e.event.posy);
             const mousePos = observeWindowMousePos(getWindow(editorDomNode), initialPos, store);
             const mouseDeltaAfterThreshold = mousePos.map((v) => v.subtract(initialPos).withThreshold(5));
@@ -226093,7 +225913,7 @@ var init_multicursor = __esm({
       }
       constructor(editor2) {
         super();
-        this._sessionDispose = this._register(new DisposableStore2());
+        this._sessionDispose = this._register(new DisposableStore());
         this._editor = editor2;
         this._ignoreSelectionChange = false;
         this._session = null;
@@ -227114,7 +226934,7 @@ var init_parameterHintsWidget = __esm({
         this.editor = editor2;
         this.model = model;
         this.markdownRendererService = markdownRendererService;
-        this.renderDisposeables = this._register(new DisposableStore2());
+        this.renderDisposeables = this._register(new DisposableStore());
         this.visible = false;
         this.announcedLabel = null;
         this.allowEditorOverflow = true;
@@ -228904,7 +228724,7 @@ var init_documentSemanticTokens = __esm({
       constructor(semanticTokensStylingService, modelService, themeService, configurationService, languageFeatureDebounceService, languageFeaturesService) {
         super();
         this._watchers = new ResourceMap();
-        this._providerChangeListeners = this._register(new DisposableStore2());
+        this._providerChangeListeners = this._register(new DisposableStore());
         const provider = languageFeaturesService.documentSemanticTokensProvider;
         const register4 = (model) => {
           this._watchers.get(model.uri)?.dispose();
@@ -232093,7 +231913,7 @@ var init_wordHighlighter = __esm({
         this.query = null;
       }
       constructor(editor2, providers, multiProviders, contextKeyService, textModelService, codeEditorService, configurationService, logService) {
-        this.toUnhook = new DisposableStore2();
+        this.toUnhook = new DisposableStore();
         this.workerRequestTokenId = 0;
         this.workerRequestCompleted = false;
         this.workerRequestValue = new ResourceMap();
@@ -234148,7 +233968,7 @@ var init_helpQuickAccess = __esm({
         this.registry = Registry.as(Extensions10.Quickaccess);
       }
       provide(picker) {
-        const disposables = new DisposableStore2();
+        const disposables = new DisposableStore();
         disposables.add(picker.onDidAccept(() => {
           const [item] = picker.selectedItems;
           if (item) {
@@ -234224,7 +234044,7 @@ var init_editorNavigationQuickAccess = __esm({
       }
       //#region Provider methods
       provide(picker, token, runOptions) {
-        const disposables = new DisposableStore2();
+        const disposables = new DisposableStore();
         picker.canAcceptInBackground = !!this.options?.canAcceptInBackground;
         picker.matchOnLabel = picker.matchOnDescription = picker.matchOnDetail = picker.sortByLabel = false;
         const pickerDisposable = disposables.add(new MutableDisposable());
@@ -234236,7 +234056,7 @@ var init_editorNavigationQuickAccess = __esm({
         return disposables;
       }
       doProvide(picker, token, runOptions) {
-        const disposables = new DisposableStore2();
+        const disposables = new DisposableStore();
         const editor2 = this.activeTextEditorControl;
         if (editor2 && this.canProvideWithTextEditor(editor2)) {
           const context = { editor: editor2 };
@@ -234384,7 +234204,7 @@ var init_gotoLineQuickAccess = __esm({
       }
       provideWithTextEditor(context, picker, token) {
         const editor2 = context.editor;
-        const disposables = new DisposableStore2();
+        const disposables = new DisposableStore();
         picker.ariaLabel = localize(1383, "Go to line. Type a line number, optionally followed by colon and column number.");
         disposables.add(picker.onDidAccept((event) => {
           const [item] = picker.selectedItems;
@@ -234804,7 +234624,7 @@ var init_gotoSymbolQuickAccess = __esm({
         return this.doProvideWithoutEditorSymbols(context, model, picker, token);
       }
       doProvideWithoutEditorSymbols(context, model, picker, token) {
-        const disposables = new DisposableStore2();
+        const disposables = new DisposableStore();
         this.provideLabelPick(picker, localize(1395, "The active text editor does not provide symbol information."));
         (async () => {
           const result = await this.waitForLanguageSymbolRegistry(model, disposables);
@@ -234840,7 +234660,7 @@ var init_gotoSymbolQuickAccess = __esm({
       }
       doProvideWithEditorSymbols(context, model, picker, token, runOptions) {
         const editor2 = context.editor;
-        const disposables = new DisposableStore2();
+        const disposables = new DisposableStore();
         disposables.add(picker.onDidAccept((event) => {
           const [item] = picker.selectedItems;
           if (item && item.range) {
@@ -235440,7 +235260,7 @@ var init_pickerQuickAccess = __esm({
         this.options = options;
       }
       provide(picker, token, runOptions) {
-        const disposables = new DisposableStore2();
+        const disposables = new DisposableStore();
         picker.canAcceptInBackground = !!this.options?.canAcceptInBackground;
         picker.matchOnLabel = picker.matchOnDescription = picker.matchOnDetail = picker.sortByLabel = false;
         let picksCts = void 0;
@@ -235448,7 +235268,7 @@ var init_pickerQuickAccess = __esm({
         const updatePickerItems = async () => {
           picksCts?.dispose(true);
           picker.busy = false;
-          const picksDisposables = picksDisposable.value = new DisposableStore2();
+          const picksDisposables = picksDisposable.value = new DisposableStore();
           picksCts = picksDisposables.add(new CancellationTokenSource(token));
           const picksToken = picksCts.token;
           let picksFilter = picker.value.substring(this.prefix.length);
@@ -236458,7 +236278,7 @@ var init_themes = __esm({
 
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/platform/theme/browser/iconsStyleSheet.js
 function getIconsStyleSheet(themeService) {
-  const disposable = new DisposableStore2();
+  const disposable = new DisposableStore();
   const onDidChangeEmmiter = disposable.add(new Emitter());
   const iconRegistry2 = getIconRegistry();
   disposable.add(iconRegistry2.onDidChange(() => onDidChangeEmmiter.fire()));
@@ -238030,7 +237850,7 @@ var init_hoverWidget3 = __esm({
         this._configurationService = _configurationService;
         this._markdownRenderer = _markdownRenderer;
         this._accessibilityService = _accessibilityService;
-        this._messageListeners = new DisposableStore2();
+        this._messageListeners = new DisposableStore();
         this._isDisposed = false;
         this._forcePosition = false;
         this._x = 0;
@@ -238534,7 +238354,7 @@ var init_hoverWidget3 = __esm({
           return Disposable.None;
         }
         this._elements.push(element2);
-        const store = new DisposableStore2();
+        const store = new DisposableStore();
         store.add(addDisposableListener(element2, EventType.MOUSE_OVER, () => this._onTargetMouseOver()));
         store.add(addDisposableListener(element2, EventType.MOUSE_LEAVE, () => this._onTargetMouseLeave()));
         store.add(toDisposable(() => {
@@ -238897,7 +238717,7 @@ var init_hoverService = __esm({
         return this._setupDelayedHover(target, resolveHoverOptions, lifecycleOptions);
       }
       _setupDelayedHover(target, resolveHoverOptions, lifecycleOptions) {
-        const store = new DisposableStore2();
+        const store = new DisposableStore();
         store.add(addDisposableListener(target, EventType.MOUSE_OVER, (e) => {
           this.showDelayedHover(resolveHoverOptions(e), {
             groupId: lifecycleOptions?.groupId,
@@ -238958,7 +238778,7 @@ var init_hoverService = __esm({
             }
           }
         }
-        const hoverDisposables = new DisposableStore2();
+        const hoverDisposables = new DisposableStore();
         const hover = this._instantiationService.createInstance(HoverWidget2, options);
         if (options.persistence?.sticky) {
           hover.isLocked = true;
@@ -239192,7 +239012,7 @@ var init_hoverService = __esm({
             }
           }, delay);
         };
-        const store = new DisposableStore2();
+        const store = new DisposableStore();
         let isMouseDown = false;
         store.add(addDisposableListener(targetElement, EventType.MOUSE_DOWN, () => {
           isMouseDown = true;
@@ -239209,7 +239029,7 @@ var init_hoverService = __esm({
           if (hoverPreparation) {
             return;
           }
-          const mouseOverStore = new DisposableStore2();
+          const mouseOverStore = new DisposableStore();
           const target = {
             targetElements: [targetElement],
             dispose: () => {
@@ -239249,7 +239069,7 @@ var init_hoverService = __esm({
             dispose: () => {
             }
           };
-          const toDispose = new DisposableStore2();
+          const toDispose = new DisposableStore();
           const onBlur = () => hideHover(true, true);
           toDispose.add(addDisposableListener(targetElement, EventType.BLUR, onBlur, true));
           toDispose.add(triggerShowHover(typeof hoverDelegate.delay === "function" ? hoverDelegate.delay(content) : hoverDelegate.delay, false, target));
@@ -241345,7 +241165,7 @@ var init_clipboardService2 = __esm({
 
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/platform/configuration/common/configurationModels.js
 function freeze2(data) {
-  return Object.isFrozen(data) ? data : deepFreeze4(data);
+  return Object.isFrozen(data) ? data : deepFreeze3(data);
 }
 var ConfigurationModel, ConfigurationModelParser, ConfigurationInspectValue, Configuration, ConfigurationChangeEvent;
 var init_configurationModels = __esm({
@@ -242377,7 +242197,7 @@ var init_contextKeyService = __esm({
         this._register(Event2.runAndSubscribe(onDidRegisterWindow, ({ window: window2, disposables }) => {
           const onFocusDisposables = disposables.add(new MutableDisposable());
           disposables.add(addDisposableListener(window2, EventType.FOCUS_IN, () => {
-            onFocusDisposables.value = new DisposableStore2();
+            onFocusDisposables.value = new DisposableStore();
             this.updateInputContextKeys(window2.document, onFocusDisposables.value);
           }, true));
         }, { window: mainWindow, disposables: this._store }));
@@ -243427,7 +243247,7 @@ var init_menu = __esm({
         this.parentData = parentData;
         this.submenuOptions = submenuOptions;
         this.mysubmenu = null;
-        this.submenuDisposables = this._register(new DisposableStore2());
+        this.submenuDisposables = this._register(new DisposableStore());
         this.mouseOver = false;
         this.expandDirection = submenuOptions && submenuOptions.expandDirection !== void 0 ? submenuOptions.expandDirection : { horizontal: HorizontalDirection.Right, vertical: VerticalDirection.Below };
         this.showScheduler = new RunOnceScheduler(() => {
@@ -243696,7 +243516,7 @@ var init_contextMenuHandler = __esm({
               this.blockDisposable?.dispose();
               this.blockDisposable = addDisposableListener(this.block, EventType.MOUSE_DOWN, (e) => e.stopPropagation());
             }
-            const menuDisposables = new DisposableStore2();
+            const menuDisposables = new DisposableStore();
             const actionRunner = delegate.actionRunner || menuDisposables.add(new ActionRunner());
             actionRunner.onWillRun((evt) => this.onActionRun(evt, !delegate.skipTelemetry), this, menuDisposables);
             actionRunner.onDidRun(this.onDidActionRun, this, menuDisposables);
@@ -246708,7 +246528,7 @@ var init_modelService = __esm({
     ModelData2 = class {
       constructor(model, onWillDispose, onDidChangeLanguage) {
         this.model = model;
-        this._modelEventListeners = new DisposableStore2();
+        this._modelEventListeners = new DisposableStore();
         this.model = model;
         this._modelEventListeners.add(model.onWillDispose(() => onWillDispose(model)));
         this._modelEventListeners.add(model.onDidChangeLanguage((e) => onDidChangeLanguage(model, e)));
@@ -247153,7 +246973,7 @@ var init_quickAccess2 = __esm({
         }
         const visibleSelection = visibleQuickAccess?.picker?.valueSelection;
         const visibleValue = visibleQuickAccess?.picker?.value;
-        const disposables = new DisposableStore2();
+        const disposables = new DisposableStore();
         const picker = disposables.add(this.quickInputService.createQuickPick({ useSeparators: true }));
         picker.value = value2;
         this.adjustValueSelection(picker, descriptor, options);
@@ -247203,7 +247023,7 @@ var init_quickAccess2 = __esm({
         picker.valueSelection = valueSelection;
       }
       registerPickerListeners(picker, provider, descriptor, value2, options) {
-        const disposables = new DisposableStore2();
+        const disposables = new DisposableStore();
         const visibleQuickAccess = this.visibleQuickAccess = { picker, descriptor, value: value2 };
         disposables.add(toDisposable(() => {
           if (visibleQuickAccess === this.visibleQuickAccess) {
@@ -247512,7 +247332,7 @@ var init_quickInput3 = __esm({
         this.onDidHideEmitter = this._register(new Emitter());
         this.onWillHideEmitter = this._register(new Emitter());
         this.onDisposeEmitter = this._register(new Emitter());
-        this.visibleDisposables = this._register(new DisposableStore2());
+        this.visibleDisposables = this._register(new DisposableStore());
         this.onDidTriggerButton = this.onDidTriggerButtonEmitter.event;
         this.onDidHide = this.onDidHideEmitter.event;
       }
@@ -248991,8 +248811,8 @@ var init_quickInputList = __esm({
       // TODO: only do the common stuff here and have a subclass handle their specific stuff
       renderTemplate(container) {
         const data = /* @__PURE__ */ Object.create(null);
-        data.toDisposeElement = new DisposableStore2();
-        data.toDisposeTemplate = new DisposableStore2();
+        data.toDisposeElement = new DisposableStore();
+        data.toDisposeTemplate = new DisposableStore();
         data.entry = append(container, $19(".quick-input-list-entry"));
         const label = append(data.entry, $19("label.quick-input-list-label"));
         data.outerLabel = label;
@@ -249290,7 +249110,7 @@ var init_quickInputList = __esm({
         this._inputElements = new Array();
         this._elementTree = new Array();
         this._itemElements = new Array();
-        this._elementDisposable = this._register(new DisposableStore2());
+        this._elementDisposable = this._register(new DisposableStore());
         this._matchOnDescription = false;
         this._matchOnDetail = false;
         this._matchOnLabel = true;
@@ -249886,7 +249706,7 @@ var init_quickInputList = __esm({
           return;
         }
         this.showHover(focused);
-        const store = new DisposableStore2();
+        const store = new DisposableStore();
         store.add(this._tree.onDidChangeFocus((e) => {
           if (e.elements[0] instanceof QuickPickItemElement) {
             this.showHover(e.elements[0]);
@@ -250279,7 +250099,7 @@ var init_quickInputTreeRenderer = __esm({
         this.onDidDisposeFocusedElement = this._onDidDisposeFocusedElement.event;
       }
       renderTemplate(container) {
-        const store = new DisposableStore2();
+        const store = new DisposableStore();
         const entry = append(container, $20(".quick-input-tree-entry"));
         const checkbox = store.add(new TriStateCheckbox("", false, { ...defaultCheckboxStyles, size: 15 }));
         entry.appendChild(checkbox.domNode);
@@ -250307,7 +250127,7 @@ var init_quickInputTreeRenderer = __esm({
           icon,
           label,
           actionBar: actionBar2,
-          toDisposeElement: new DisposableStore2()
+          toDisposeElement: new DisposableStore()
         };
       }
       renderElement(node, _index, templateData, _details) {
@@ -252974,7 +252794,7 @@ var init_standaloneServices = __esm({
         this._dynamicKeybindings = [];
         this._domNodeListeners = [];
         const addContainer = (domNode) => {
-          const disposables = new DisposableStore2();
+          const disposables = new DisposableStore();
           disposables.add(addDisposableListener(domNode, EventType.KEY_DOWN, (e) => {
             const keyEvent = new StandardKeyboardEvent(e);
             const shouldPreventDefault = this._dispatch(keyEvent, keyEvent.target);
@@ -253652,7 +253472,7 @@ var init_standaloneServices = __esm({
         if (initialized) {
           return callback();
         }
-        const disposable = new DisposableStore2();
+        const disposable = new DisposableStore();
         const listener = disposable.add(onDidInitialize.event(() => {
           listener.dispose();
           disposable.add(callback());
@@ -253874,7 +253694,7 @@ var init_standaloneCodeEditor = __esm({
         const run = (_accessor, ...args) => {
           return Promise.resolve(_descriptor.run(this, ...args));
         };
-        const toDispose = new DisposableStore2();
+        const toDispose = new DisposableStore();
         const uniqueId = this.getId() + ":" + id;
         toDispose.add(CommandsRegistry.registerCommand(uniqueId, run));
         if (contextMenuGroupId) {
@@ -254177,7 +253997,7 @@ var init_diffEditorItemTemplate = __esm({
         this.isFocused = derived(this, (reader) => this.isModifedFocused.read(reader) || this.isOriginalFocused.read(reader));
         this._resourceLabel = this._workbenchUIElementFactory.createResourceLabel ? this._register(this._workbenchUIElementFactory.createResourceLabel(this._elements.primaryPath)) : void 0;
         this._resourceLabel2 = this._workbenchUIElementFactory.createResourceLabel ? this._register(this._workbenchUIElementFactory.createResourceLabel(this._elements.secondaryPath)) : void 0;
-        this._dataStore = this._register(new DisposableStore2());
+        this._dataStore = this._register(new DisposableStore());
         this._headerHeight = 40;
         this._lastScrollTop = -1;
         this._isSettingScrollTop = false;
@@ -254945,7 +254765,7 @@ function addEditorAction(descriptor) {
   const run = (accessor, ...args) => {
     return EditorCommand.runEditorCommand(accessor, args, precondition, (accessor2, editor2, args2) => Promise.resolve(descriptor.run(editor2, ...args2)));
   };
-  const toDispose = new DisposableStore2();
+  const toDispose = new DisposableStore();
   toDispose.add(CommandsRegistry.registerCommand(descriptor.id, run));
   if (descriptor.contextMenuGroupId) {
     const menuItem = {
@@ -256320,7 +256140,7 @@ function transform(requestMap) {
   }
   return result;
 }
-var __defProp3, __defNormalProp, __publicField, _a3, _b2, _c2, _d, _e, ErrorObject, ErrorCode, EventEmitter, ValueWithChangeEvent, Deferred, BaseMessageTransport, StreamLogger, ConsoleMessageLogger, Channel, StreamBasedChannel, Serializers, OptionalMethodNotFound, TypedChannelBase, ContextualizedTypedChannel, TypedChannel, RequestHandlingError, RequestType, NotificationType, IsErrorWrapper, ErrorWrapper, Contract, FoldingRangeKind2, SymbolKind2, SymbolTag2, InlayHintKind3, CompletionItemKind2, CompletionItemTag2, InsertTextFormat, DocumentHighlightKind3, CodeActionKind2, DiagnosticSeverity, DiagnosticTag, CompletionTriggerKind2, SignatureHelpTriggerKind3, CodeActionTriggerKind, Capability, capabilities, api2, Disposable2, DisposableStore3, lspCodeActionKindToMonacoCodeActionKind, monacoCodeActionTriggerTypeToLspCodeActionTriggerKind, lspCompletionItemKindToMonacoCompletionItemKind, lspCompletionItemTagToMonacoCompletionItemTag, monacoCompletionTriggerKindToLspCompletionTriggerKind, lspInsertTextFormatToMonacoInsertTextRules, lspSymbolKindToMonacoSymbolKind, lspSymbolTagToMonacoSymbolTag, lspDocumentHighlightKindToMonacoDocumentHighlightKind, lspFoldingRangeKindToMonacoFoldingRangeKind, monacoMarkerSeverityToLspDiagnosticSeverity, lspDiagnosticSeverityToMonacoMarkerSeverity, lspDiagnosticTagToMonacoMarkerTag, monacoSignatureHelpTriggerKindToLspSignatureHelpTriggerKind, lspInlayHintKindToMonacoInlayHintKind, capabilitiesByMethod, ws;
+var __defProp4, __defNormalProp, __publicField, _a3, _b2, _c2, _d, _e, ErrorObject, ErrorCode, EventEmitter, ValueWithChangeEvent, Deferred, BaseMessageTransport, StreamLogger, ConsoleMessageLogger, Channel, StreamBasedChannel, Serializers, OptionalMethodNotFound, TypedChannelBase, ContextualizedTypedChannel, TypedChannel, RequestHandlingError, RequestType, NotificationType, IsErrorWrapper, ErrorWrapper, Contract, FoldingRangeKind2, SymbolKind2, SymbolTag2, InlayHintKind3, CompletionItemKind2, CompletionItemTag2, InsertTextFormat, DocumentHighlightKind3, CodeActionKind2, DiagnosticSeverity, DiagnosticTag, CompletionTriggerKind2, SignatureHelpTriggerKind3, CodeActionTriggerKind, Capability, capabilities, api2, Disposable2, DisposableStore2, lspCodeActionKindToMonacoCodeActionKind, monacoCodeActionTriggerTypeToLspCodeActionTriggerKind, lspCompletionItemKindToMonacoCompletionItemKind, lspCompletionItemTagToMonacoCompletionItemTag, monacoCompletionTriggerKindToLspCompletionTriggerKind, lspInsertTextFormatToMonacoInsertTextRules, lspSymbolKindToMonacoSymbolKind, lspSymbolTagToMonacoSymbolTag, lspDocumentHighlightKindToMonacoDocumentHighlightKind, lspFoldingRangeKindToMonacoFoldingRangeKind, monacoMarkerSeverityToLspDiagnosticSeverity, lspDiagnosticSeverityToMonacoMarkerSeverity, lspDiagnosticTagToMonacoMarkerTag, monacoSignatureHelpTriggerKindToLspSignatureHelpTriggerKind, lspInlayHintKindToMonacoInlayHintKind, capabilitiesByMethod, ws;
 var init_out = __esm({
   "node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/external/monaco-lsp-client/out/index.js"() {
     init_coreCommands();
@@ -256397,8 +256217,8 @@ var init_out = __esm({
     init_standaloneReferenceSearch();
     init_toggleHighContrast();
     init_editor_api();
-    __defProp3 = Object.defineProperty;
-    __defNormalProp = (obj, key, value2) => key in obj ? __defProp3(obj, key, { enumerable: true, configurable: true, writable: true, value: value2 }) : obj[key] = value2;
+    __defProp4 = Object.defineProperty;
+    __defNormalProp = (obj, key, value2) => key in obj ? __defProp4(obj, key, { enumerable: true, configurable: true, writable: true, value: value2 }) : obj[key] = value2;
     __publicField = (obj, key, value2) => __defNormalProp(obj, typeof key !== "symbol" ? key + "" : key, value2);
     (function(ErrorObject$1) {
       function create3(obj) {
@@ -257492,7 +257312,7 @@ ${JSON.stringify(response, null, 2)}`);
     });
     Disposable2 = (_d = class {
       constructor() {
-        __publicField(this, "_store", new DisposableStore3());
+        __publicField(this, "_store", new DisposableStore2());
       }
       dispose() {
         this._store.dispose();
@@ -257503,7 +257323,7 @@ ${JSON.stringify(response, null, 2)}`);
       }
     }, __publicField(_d, "None", Object.freeze({ dispose() {
     } })), _d);
-    DisposableStore3 = (_e = class {
+    DisposableStore2 = (_e = class {
       constructor() {
         __publicField(this, "_toDispose", /* @__PURE__ */ new Set());
         __publicField(this, "_isDisposed", false);
@@ -293822,7 +293642,7 @@ var init_editor3 = __esm({
   }
 });
 
-// packages/core/dist/ids.js
+// packages/core/dist/index.js
 var SEGMENT = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 var DOTTED = /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)*$/;
 var QUALIFIED = /^[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)*\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\.[a-z0-9]+(?:-[a-z0-9]+)*)*$/;
@@ -293842,18 +293662,15 @@ function isTraitId(value2) {
   return value2.includes(".") && isDottedId(value2);
 }
 function contractId(value2) {
-  if (!isQualifiedId(value2))
-    throw new TypeError(`invalid contract id: ${value2}`);
+  if (!isQualifiedId(value2)) throw new TypeError(`invalid contract id: ${value2}`);
   return value2;
 }
 function errorCode(value2) {
-  if (!isErrorCode(value2))
-    throw new TypeError(`invalid diagnostic/error code: ${value2}`);
+  if (!isErrorCode(value2)) throw new TypeError(`invalid diagnostic/error code: ${value2}`);
   return value2;
 }
 function traitId(value2) {
-  if (!isTraitId(value2))
-    throw new TypeError(`invalid trait id: ${value2}`);
+  if (!isTraitId(value2)) throw new TypeError(`invalid trait id: ${value2}`);
   return value2;
 }
 var OPERATION_DOMAINS = Object.freeze([
@@ -293916,10 +293733,10 @@ function operationId(value2, owner) {
   if (SHARED_OPERATION_IDS.includes(value2) || canonicalDomain || localSuffix !== void 0 && isSegment(localSuffix)) {
     return value2;
   }
-  throw new TypeError(`operation id ${value2} is outside shared, canonical domain, and ${codecPrefix} namespaces`);
+  throw new TypeError(
+    `operation id ${value2} is outside shared, canonical domain, and ${codecPrefix} namespaces`
+  );
 }
-
-// packages/core/dist/version.js
 var SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/;
 function parseSafeInteger(value2) {
   const parsed = Number(value2);
@@ -293927,16 +293744,13 @@ function parseSafeInteger(value2) {
 }
 function parseSemver(value2) {
   const m = SEMVER.exec(value2);
-  if (!m)
-    return void 0;
+  if (!m) return void 0;
   const major = parseSafeInteger(m[1] ?? "");
   const minor = parseSafeInteger(m[2] ?? "");
   const patch = parseSafeInteger(m[3] ?? "");
-  if (major === void 0 || minor === void 0 || patch === void 0)
-    return void 0;
+  if (major === void 0 || minor === void 0 || patch === void 0) return void 0;
   const prerelease = (m[4] ?? "").split(".").filter((part) => part.length > 0).map((part) => /^\d+$/.test(part) ? parseSafeInteger(part) : part);
-  if (prerelease.some((part) => part === void 0))
-    return void 0;
+  if (prerelease.some((part) => part === void 0)) return void 0;
   const build = (m[5] ?? "").split(".").filter((part) => part.length > 0);
   return {
     major,
@@ -293949,35 +293763,25 @@ function parseSemver(value2) {
 function comparePrerelease(a, b) {
   const ap = a.prerelease;
   const bp = b.prerelease;
-  if (ap.length === 0 && bp.length === 0)
-    return 0;
-  if (ap.length === 0)
-    return 1;
-  if (bp.length === 0)
-    return -1;
+  if (ap.length === 0 && bp.length === 0) return 0;
+  if (ap.length === 0) return 1;
+  if (bp.length === 0) return -1;
   const length = Math.min(ap.length, bp.length);
   for (let i2 = 0; i2 < length; i2 += 1) {
     const x = ap[i2];
     const y = bp[i2];
-    if (x === y)
-      continue;
-    if (typeof x === "number" && typeof y === "number")
-      return x < y ? -1 : 1;
-    if (typeof x === "number")
-      return -1;
-    if (typeof y === "number")
-      return 1;
+    if (x === y) continue;
+    if (typeof x === "number" && typeof y === "number") return x < y ? -1 : 1;
+    if (typeof x === "number") return -1;
+    if (typeof y === "number") return 1;
     return x < y ? -1 : 1;
   }
   return ap.length === bp.length ? 0 : ap.length < bp.length ? -1 : 1;
 }
 function compareSemver(a, b) {
-  if (a.major !== b.major)
-    return a.major < b.major ? -1 : 1;
-  if (a.minor !== b.minor)
-    return a.minor < b.minor ? -1 : 1;
-  if (a.patch !== b.patch)
-    return a.patch < b.patch ? -1 : 1;
+  if (a.major !== b.major) return a.major < b.major ? -1 : 1;
+  if (a.minor !== b.minor) return a.minor < b.minor ? -1 : 1;
+  if (a.patch !== b.patch) return a.patch < b.patch ? -1 : 1;
   return comparePrerelease(a, b);
 }
 function formatSemver(version) {
@@ -294014,23 +293818,19 @@ function caretUpperBound(v) {
 }
 function parsePartial(value2) {
   const m = /^(0|[1-9]\d*)(?:\.(0|[1-9]\d*|x|\*))?(?:\.(0|[1-9]\d*|x|\*))?$/.exec(value2);
-  if (!m)
-    return void 0;
+  if (!m) return void 0;
   const major = parseSafeInteger(m[1] ?? "");
-  if (major === void 0)
-    return void 0;
+  if (major === void 0) return void 0;
   const minorRaw = m[2];
   const patchRaw = m[3];
   const wild = (s) => s === "x" || s === "*";
   if (minorRaw === void 0 || wild(minorRaw)) {
-    if (wild(minorRaw) && patchRaw !== void 0)
-      return void 0;
+    if (wild(minorRaw) && patchRaw !== void 0) return void 0;
     return { v: { major, minor: 0, patch: 0, prerelease: [], build: [] }, precision: 1 };
   }
   if (patchRaw === void 0 || wild(patchRaw)) {
     const minor2 = parseSafeInteger(minorRaw);
-    if (minor2 === void 0)
-      return void 0;
+    if (minor2 === void 0) return void 0;
     return {
       v: { major, minor: minor2, patch: 0, prerelease: [], build: [] },
       precision: 2
@@ -294038,8 +293838,7 @@ function parsePartial(value2) {
   }
   const minor = parseSafeInteger(minorRaw);
   const patch = parseSafeInteger(patchRaw);
-  if (minor === void 0 || patch === void 0)
-    return void 0;
+  if (minor === void 0 || patch === void 0) return void 0;
   return {
     v: { major, minor, patch, prerelease: [], build: [] },
     precision: 3
@@ -294047,38 +293846,29 @@ function parsePartial(value2) {
 }
 function parseSingle(token) {
   const opMatch = /^(>=|<=|>|<|=|\^)?(.+)$/.exec(token);
-  if (!opMatch)
-    return void 0;
+  if (!opMatch) return void 0;
   const op = opMatch[1];
   const rest = (opMatch[2] ?? "").trim();
   const hasWildcard = /(?:^|\.)(?:x|\*)(?:\.|$)/.test(rest);
   if (op === "^") {
-    if (hasWildcard)
-      return void 0;
+    if (hasWildcard) return void 0;
     const partial2 = parsePartial(rest);
-    if (!partial2 || partial2.precision === 1)
-      return void 0;
+    if (!partial2 || partial2.precision === 1) return void 0;
     const upper = caretUpperBound(partial2.v);
-    if (upper === void 0)
-      return void 0;
+    if (upper === void 0) return void 0;
     return [
       { op: ">=", version: partial2.v },
       { op: "<", version: upper }
     ];
   }
   const partial = parsePartial(rest);
-  if (!partial)
-    return void 0;
-  if (hasWildcard && op !== void 0)
-    return void 0;
+  if (!partial) return void 0;
+  if (hasWildcard && op !== void 0) return void 0;
   if (op === void 0 || op === "=") {
-    if (!hasWildcard && partial.precision !== 3)
-      return void 0;
-    if (partial.precision === 3)
-      return [{ op: "=", version: partial.v }];
+    if (!hasWildcard && partial.precision !== 3) return void 0;
+    if (partial.precision === 3) return [{ op: "=", version: partial.v }];
     const next = partial.precision === 1 ? partial.v.major + 1 : partial.v.minor + 1;
-    if (!Number.isSafeInteger(next))
-      return void 0;
+    if (!Number.isSafeInteger(next)) return void 0;
     const upper = partial.precision === 1 ? { major: partial.v.major + 1, minor: 0, patch: 0, prerelease: [], build: [] } : {
       major: partial.v.major,
       minor: partial.v.minor + 1,
@@ -294102,8 +293892,7 @@ function parseVersionRange(raw) {
   const comparators = [];
   for (const token of tokens) {
     const parsed = parseSingle(token);
-    if (!parsed)
-      return void 0;
+    if (!parsed) return void 0;
     comparators.push(...parsed);
   }
   return {
@@ -294113,28 +293902,23 @@ function parseVersionRange(raw) {
   };
 }
 function versionRangeTargetsMajor(range2, major) {
-  if (!Number.isSafeInteger(major) || major < 0)
-    return false;
+  if (!Number.isSafeInteger(major) || major < 0) return false;
   const start = { major, minor: 0, patch: 0, prerelease: [], build: [] };
   return range2.comparators.every((conjunction) => {
-    if (conjunction.length === 0)
-      return true;
+    if (conjunction.length === 0) return true;
     const exact = conjunction.find((comparator) => comparator.op === "=");
     if (exact !== void 0) {
       return exact.version.major === major && conjunction.every((comparator) => matches(exact.version, comparator));
     }
     const nextMajor = major + 1;
-    if (!Number.isSafeInteger(nextMajor))
-      return false;
+    if (!Number.isSafeInteger(nextMajor)) return false;
     const end = { major: nextMajor, minor: 0, patch: 0, prerelease: [], build: [] };
     const crossesUpperBoundary = conjunction.some((comparator) => {
-      if (comparator.op !== "<" && comparator.op !== "<=")
-        return false;
+      if (comparator.op !== "<" && comparator.op !== "<=") return false;
       const boundary = compareSemver(comparator.version, end);
       return boundary > 0 || boundary === 0 && comparator.op === "<=";
     });
-    if (crossesUpperBoundary)
-      return false;
+    if (crossesUpperBoundary) return false;
     const lowers = [
       { op: ">=", version: start },
       ...conjunction.filter((comparator) => comparator.op === ">" || comparator.op === ">=")
@@ -294145,14 +293929,12 @@ function versionRangeTargetsMajor(range2, major) {
     ];
     const lower = lowers.reduce((best, candidate) => {
       const comparison = compareSemver(candidate.version, best.version);
-      if (comparison > 0 || comparison === 0 && candidate.op === ">")
-        return candidate;
+      if (comparison > 0 || comparison === 0 && candidate.op === ">") return candidate;
       return best;
     });
     const upper = uppers.reduce((best, candidate) => {
       const comparison = compareSemver(candidate.version, best.version);
-      if (comparison < 0 || comparison === 0 && candidate.op === "<")
-        return candidate;
+      if (comparison < 0 || comparison === 0 && candidate.op === "<") return candidate;
       return best;
     });
     const lowerInside = compareSemver(lower.version, start) >= 0;
@@ -294178,8 +293960,6 @@ function matches(version, comparator) {
       return cmp3 <= 0;
   }
 }
-
-// packages/core/dist/errors.js
 var ModkitError = class extends Error {
   code;
   context;
@@ -294191,8 +293971,7 @@ var ModkitError = class extends Error {
       throw new TypeError(`ModkitError code must be a qualified id, got \xAB${options.code}\xBB`);
     }
     this.code = options.code;
-    if (options.context !== void 0)
-      this.context = options.context;
+    if (options.context !== void 0) this.context = options.context;
     this.retryability = options.retryability ?? "never";
   }
   toJSON() {
@@ -294207,8 +293986,6 @@ var ModkitError = class extends Error {
 function isModkitError(value2) {
   return value2 instanceof ModkitError;
 }
-
-// packages/core/dist/diagnostics.js
 function diagnostic(severity, code, message, path, data, range2) {
   return {
     code: errorCode(code),
@@ -294222,13 +293999,10 @@ function diagnostic(severity, code, message, path, data, range2) {
 function hasErrors(diagnostics) {
   return diagnostics.some((d) => d.severity === "error");
 }
-
-// packages/core/dist/immutability.js
 function deepFreeze(value2) {
   const seen = /* @__PURE__ */ new WeakSet();
   const visit2 = (candidate) => {
-    if (typeof candidate !== "object" || candidate === null || seen.has(candidate))
-      return;
+    if (typeof candidate !== "object" || candidate === null || seen.has(candidate)) return;
     seen.add(candidate);
     for (const key of Reflect.ownKeys(candidate)) {
       visit2(candidate[key]);
@@ -294238,15 +294012,12 @@ function deepFreeze(value2) {
   visit2(value2);
   return value2;
 }
-
-// packages/core/dist/source-span.js
 var UINT64_MAX_DECIMAL = "18446744073709551615";
 function fixedWidthDecimalAtMost(maximum) {
   const alternatives = [maximum];
   for (let index = 1; index < maximum.length; index += 1) {
     const maximumDigit = Number(maximum[index]);
-    if (maximumDigit === 0)
-      continue;
+    if (maximumDigit === 0) continue;
     const prefix = maximum.slice(0, index);
     const lowerDigit = maximumDigit === 1 ? "0" : `[0-${maximumDigit - 1}]`;
     const remaining = maximum.length - index - 1;
@@ -294305,8 +294076,6 @@ function uint64(value2) {
   }
   return decimal;
 }
-
-// packages/core/dist/ordering.js
 var encoder = new TextEncoder();
 function compareUtf8(a, b) {
   let ascii = true;
@@ -294326,20 +294095,14 @@ function compareUtf8(a, b) {
   for (let i2 = 0; i2 < length; i2 += 1) {
     const x = ab[i2];
     const y = bb[i2];
-    if (x !== y)
-      return x < y ? -1 : 1;
+    if (x !== y) return x < y ? -1 : 1;
   }
-  if (ab.length !== bb.length)
-    return ab.length < bb.length ? -1 : 1;
-  if (a === b)
-    return 0;
+  if (ab.length !== bb.length) return ab.length < bb.length ? -1 : 1;
+  if (a === b) return 0;
   return a < b ? -1 : 1;
 }
-
-// packages/core/dist/canonical-json.js
 function render(value2, indent, depth, path) {
-  if (value2 === null)
-    return "null";
+  if (value2 === null) return "null";
   switch (typeof value2) {
     case "boolean":
       return value2 ? "true" : "false";
@@ -294364,8 +294127,7 @@ function render(value2, indent, depth, path) {
   const pad = indent.repeat(depth + 1);
   const closePad = indent.repeat(depth);
   if (Array.isArray(value2)) {
-    if (value2.length === 0)
-      return "[]";
+    if (value2.length === 0) return "[]";
     const items = value2.map((item, i2) => pad + render(item, indent, depth + 1, `${path}[${i2}]`));
     return `[
 ${items.join(",\n")}
@@ -294373,9 +294135,10 @@ ${closePad}]`;
   }
   const record = value2;
   const keys = Object.keys(record).filter((key) => record[key] !== void 0).sort(compareUtf8);
-  if (keys.length === 0)
-    return "{}";
-  const entries2 = keys.map((key) => `${pad}${JSON.stringify(key)}: ${render(record[key], indent, depth + 1, `${path}.${key}`)}`);
+  if (keys.length === 0) return "{}";
+  const entries2 = keys.map(
+    (key) => `${pad}${JSON.stringify(key)}: ${render(record[key], indent, depth + 1, `${path}.${key}`)}`
+  );
   return `{
 ${entries2.join(",\n")}
 ${closePad}}`;
@@ -294384,8 +294147,6 @@ function canonicalJsonStringify(value2) {
   return `${render(value2, "  ", 0, "$")}
 `;
 }
-
-// packages/core/dist/cancellation.js
 var CANCELLED_CODE = "x3.core/operation-cancelled";
 var OperationCancelledError = class extends ModkitError {
   constructor(reason) {
@@ -294399,14 +294160,13 @@ var OperationCancelledError = class extends ModkitError {
   }
 };
 function throwIfAborted(signal) {
-  if (signal?.aborted)
-    throw new OperationCancelledError(signal.reason);
+  if (signal?.aborted) throw new OperationCancelledError(signal.reason);
 }
 function isCancellation(value2) {
   return value2 instanceof OperationCancelledError;
 }
 
-// packages/sdk/dist/schemas/patterns.js
+// packages/sdk/dist/index.js
 var DOTTED_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
 var NAMESPACED_DOTTED_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
 var OPERATION_PATTERN = "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$";
@@ -294423,8 +294183,6 @@ var RANGE_ATOM = `(?:${RANGE_EXACT}|${RANGE_WILDCARD}|${RANGE_CARET}|${RANGE_COM
 var VERSION_RANGE_PATTERN = `^(?:\\*|x|${RANGE_ATOM}(?: ${RANGE_ATOM})*)$`;
 var RELATIVE_ENTRYPOINT_PATTERN = "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$";
 var METHOD_NAME_PATTERN = "^[a-z][a-zA-Z0-9]{0,63}$";
-
-// packages/sdk/dist/schemas/extension-manifest.js
 var REQUIREMENT_SCOPE_KINDS = Object.freeze([
   "contribution",
   "offer",
@@ -294566,8 +294324,6 @@ deepFreeze(extensionSourceDetailsSchema);
 deepFreeze(extensionPresentationSchema);
 deepFreeze(extensionManifestSchema);
 deepFreeze(modkitBlockSchema);
-
-// packages/sdk/dist/identity.js
 var QUALIFIED_RULES = [
   ["org.modkitx/starcraft-2", "blizzard/starcraft-2", true],
   ["org.modkitx/warzone-2100", "wz2100project/warzone-2100", true],
@@ -294582,16 +294338,13 @@ var QUALIFIED_RULES = [
 function normalizeByRules(value2, rules) {
   for (const [from, to, exact] of rules) {
     const next = exact === true ? value2 === from ? to : void 0 : value2.startsWith(from) ? `${to}${value2.slice(from.length)}` : void 0;
-    if (next !== void 0)
-      return Object.freeze({ value: next, changed: next !== value2 });
+    if (next !== void 0) return Object.freeze({ value: next, changed: next !== value2 });
   }
   return Object.freeze({ value: value2, changed: false });
 }
 function normalizeModkitIdentifier(value2) {
   return normalizeByRules(value2, QUALIFIED_RULES).value;
 }
-
-// packages/sdk/dist/schemas/contribution-manifest.js
 var EXECUTION_PROFILES = Object.freeze([
   "browser-sandbox",
   "worker-brokered",
@@ -294709,8 +294462,6 @@ deepFreeze(runtimeTargetConstraintSchema);
 deepFreeze(runtimeVariantDeclarationSchema);
 deepFreeze(scopedContractRequirementSchema);
 deepFreeze(contributionManifestSchema);
-
-// packages/sdk/dist/asset-capabilities/data-source-ids.js
 var STANDARD_DATA_SOURCE_CONTRACTS = Object.freeze([
   "common.view/text-data-source",
   "common.view/byte-range-source",
@@ -294762,26 +294513,26 @@ var DATA_SOURCE_MATURITY = Object.freeze({
   "common.view/subject-calculations-source": "admitted",
   "common.view/slide-deck-source": "publisher-candidate"
 });
-var ADMITTED_DATA_SOURCE_CONTRACTS = Object.freeze(STANDARD_DATA_SOURCE_CONTRACTS.filter((contract2) => DATA_SOURCE_MATURITY[contract2] === "admitted"));
-
-// packages/sdk/dist/knowledge/index.js
+var ADMITTED_DATA_SOURCE_CONTRACTS = Object.freeze(
+  STANDARD_DATA_SOURCE_CONTRACTS.filter(
+    (contract2) => DATA_SOURCE_MATURITY[contract2] === "admitted"
+  )
+);
 var KNOWLEDGE_LOCALE_PATTERN = "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$";
 var knowledgeLocalePattern = new RegExp(KNOWLEDGE_LOCALE_PATTERN, "u");
 var isBoundedString = (value2, maximum) => typeof value2 === "string" && value2.length > 0 && value2.length <= maximum;
 var isRecord = (value2) => typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
 var hasOnlyKeys = (value2, allowed) => {
   const accepted = new Set(allowed);
-  return Object.keys(value2).every((key) => accepted.has(key));
+  return Object.keys(value2).every((key2) => accepted.has(key2));
 };
 var isKnowledgeSchemaCoordinate = (value2) => {
-  if (!isRecord(value2) || !hasOnlyKeys(value2, ["contract", "major", "revision"]))
-    return false;
+  if (!isRecord(value2) || !hasOnlyKeys(value2, ["contract", "major", "revision"])) return false;
   return isBoundedString(value2["contract"], 256) && isQualifiedId(value2["contract"]) && typeof value2["major"] === "number" && Number.isSafeInteger(value2["major"]) && value2["major"] >= 0 && isBoundedString(value2["revision"], 256);
 };
 function isKnowledgeTarget(value2) {
   try {
-    if (!isRecord(value2) || !isBoundedString(value2["ecosystem"], 128))
-      return false;
+    if (!isRecord(value2) || !isBoundedString(value2["ecosystem"], 128)) return false;
     switch (value2["kind"]) {
       case "field":
         return hasOnlyKeys(value2, ["kind", "ecosystem", "schema", "typeId", "canonicalPath"]) && isKnowledgeSchemaCoordinate(value2["schema"]) && isBoundedString(value2["typeId"], 128) && Array.isArray(value2["canonicalPath"]) && value2["canonicalPath"].length >= 1 && value2["canonicalPath"].length <= 32 && value2["canonicalPath"].every((item) => isBoundedString(item, 128));
@@ -294801,12 +294552,9 @@ function isKnowledgeTarget(value2) {
   }
 }
 function knowledgeTargetKey(target) {
-  if (!isKnowledgeTarget(target))
-    throw new TypeError("knowledge target is malformed or unbounded");
+  if (!isKnowledgeTarget(target)) throw new TypeError("knowledge target is malformed or unbounded");
   return canonicalJsonStringify(target);
 }
-
-// packages/sdk/dist/schemas/contribution-specs.js
 var nonEmptyString = { type: "string", minLength: 1 };
 var qualifiedId = { type: "string", pattern: QUALIFIED_PATTERN };
 var namespacedDottedId = { type: "string", pattern: NAMESPACED_DOTTED_PATTERN };
@@ -295844,8 +295592,6 @@ deepFreeze(dataSourceMethodSurfaceV1Schema);
 deepFreeze(dataSourceSurfaceV1Schema);
 deepFreeze(dataSourceContractDefinitionSpecV1Schema);
 deepFreeze(contractDefinitionSpecV1Schema);
-
-// packages/sdk/dist/editing.js
 var WRITER_CONTRACT_ID = "common.edit/writer";
 var WRITER_FACET_MATCHER_PROFILE = "modkit/writer-facet-matcher";
 var writerSurface = {
@@ -295869,8 +295615,6 @@ function writerOfferSatisfies(request, offer) {
 function writerSelectionKey(request) {
   return `writer:${request.formatId}:${request.representationId}:${request.mutationMode}:${request.minimumRoundTrip}`;
 }
-
-// packages/sdk/dist/subjects/refs.js
 var REVISION_KINDS = Object.freeze([
   "content-hash",
   "git-object",
@@ -295885,8 +295629,7 @@ var REVISION_VALUE_PATTERN = "(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+";
 var REVISION_ID_PATTERN = `^(?:${REVISION_KIND_PATTERN})(?:\\.${REVISION_ALGORITHM_PATTERN})?:${REVISION_VALUE_PATTERN}$`;
 var REVISION_ID = new RegExp(REVISION_ID_PATTERN);
 function parseRevisionRef(value2) {
-  if (!REVISION_ID.test(value2))
-    return void 0;
+  if (!REVISION_ID.test(value2)) return void 0;
   const colon = value2.indexOf(":");
   const coordinate = value2.slice(0, colon);
   const dot = coordinate.indexOf(".");
@@ -295895,8 +295638,7 @@ function parseRevisionRef(value2) {
   const encoded = value2.slice(colon + 1);
   try {
     const decoded = decodeURIComponent(encoded);
-    if (decoded.length === 0 || encodeURIComponent(decoded) !== encoded)
-      return void 0;
+    if (decoded.length === 0 || encodeURIComponent(decoded) !== encoded) return void 0;
     return Object.freeze({
       kind,
       value: decoded,
@@ -295917,8 +295659,7 @@ function assertSubjectIdentity(identity2) {
   if (typeof identity2.kind !== "string" || typeof identity2.key !== "string") {
     throw new TypeError("subject identity kind and key must be strings");
   }
-  if (identity2.kind === "" && identity2.key === "")
-    return;
+  if (identity2.kind === "" && identity2.key === "") return;
   if (!isQualifiedId(identity2.kind)) {
     throw new TypeError(`nested subject kind must be a qualified id: ${identity2.kind}`);
   }
@@ -295934,10 +295675,10 @@ function rootSubject(source, workspace) {
     identity: { kind: "", key: "" }
   };
 }
-function nestedSubject(owner, kind, key) {
+function nestedSubject(owner, kind, key2) {
   assertSourceChain(owner.source);
-  assertSubjectIdentity({ kind, key });
-  return { ...owner, identity: { kind, key } };
+  assertSubjectIdentity({ kind, key: key2 });
+  return { ...owner, identity: { kind, key: key2 } };
 }
 var EXTENDED_SUBJECT_PREFIX = "x3-subject:";
 function sourceIdChain(source) {
@@ -295948,8 +295689,7 @@ function sourceIdChain(source) {
   return chain.reverse();
 }
 function sourceFromIdChain(chain) {
-  if (chain.length === 0)
-    throw new TypeError("subject source chain must be non-empty");
+  if (chain.length === 0) throw new TypeError("subject source chain must be non-empty");
   let source;
   for (const id of chain) {
     if (typeof id !== "string" || id.length === 0) {
@@ -295972,25 +295712,26 @@ function serializeSubjectRef(ref2) {
     ];
     return `${EXTENDED_SUBJECT_PREFIX}${encodeURIComponent(JSON.stringify(payload))}`;
   }
-  if (ref2.identity.key === "" && ref2.identity.kind === "")
-    return ref2.source.id;
+  if (ref2.identity.key === "" && ref2.identity.kind === "") return ref2.source.id;
   return `${ref2.source.id}#${encodeURIComponent(ref2.identity.kind)}/${encodeURIComponent(ref2.identity.key)}`;
 }
 function parseSubjectRef(uri, workspace) {
   if (uri.startsWith(EXTENDED_SUBJECT_PREFIX)) {
     try {
-      const payload = JSON.parse(decodeURIComponent(uri.slice(EXTENDED_SUBJECT_PREFIX.length)));
+      const payload = JSON.parse(
+        decodeURIComponent(uri.slice(EXTENDED_SUBJECT_PREFIX.length))
+      );
       if (!Array.isArray(payload) || payload.length !== 5 || payload[0] !== 1) {
         throw new TypeError("invalid extended subject reference");
       }
       const encodedWorkspace = payload[1];
       const chain = payload[2];
       const kind = payload[3];
-      const key = payload[4];
-      if (encodedWorkspace !== null && typeof encodedWorkspace !== "string" || !Array.isArray(chain) || typeof kind !== "string" || typeof key !== "string") {
+      const key2 = payload[4];
+      if (encodedWorkspace !== null && typeof encodedWorkspace !== "string" || !Array.isArray(chain) || typeof kind !== "string" || typeof key2 !== "string") {
         throw new TypeError("invalid extended subject reference");
       }
-      const identity2 = { kind, key };
+      const identity2 = { kind, key: key2 };
       assertSubjectIdentity(identity2);
       return {
         ...encodedWorkspace === null ? {} : { workspace: encodedWorkspace },
@@ -295998,32 +295739,32 @@ function parseSubjectRef(uri, workspace) {
         identity: identity2
       };
     } catch (error3) {
-      throw new TypeError(`invalid extended subject reference: ${error3 instanceof Error ? error3.message : String(error3)}`);
+      throw new TypeError(
+        `invalid extended subject reference: ${error3 instanceof Error ? error3.message : String(error3)}`
+      );
     }
   }
   const hash2 = uri.indexOf("#");
-  if (hash2 === -1)
-    return rootSubject({ id: uri }, workspace);
+  if (hash2 === -1) return rootSubject({ id: uri }, workspace);
   const fragment = uri.slice(hash2 + 1);
   const slash = fragment.indexOf("/");
-  if (slash === -1)
-    throw new TypeError("nested subject reference must include a non-empty key");
+  if (slash === -1) throw new TypeError("nested subject reference must include a non-empty key");
   try {
     const kind = decodeURIComponent(fragment.slice(0, slash));
-    const key = decodeURIComponent(fragment.slice(slash + 1));
-    return nestedSubject(rootSubject({ id: uri.slice(0, hash2) }, workspace), kind, key);
+    const key2 = decodeURIComponent(fragment.slice(slash + 1));
+    return nestedSubject(rootSubject({ id: uri.slice(0, hash2) }, workspace), kind, key2);
   } catch (error3) {
-    throw new TypeError(`invalid nested subject reference: ${error3 instanceof Error ? error3.message : String(error3)}`);
+    throw new TypeError(
+      `invalid nested subject reference: ${error3 instanceof Error ? error3.message : String(error3)}`
+    );
   }
 }
-
-// packages/sdk/dist/schemas/subject-descriptor.js
 var sourceSpanValueSchema = { oneOf: sourceSpanSchema.oneOf };
 var nonEmptyString2 = { type: "string", minLength: 1 };
 var nonWhitespaceString = { type: "string", pattern: "\\S" };
 var revisionString = { type: "string", pattern: REVISION_ID_PATTERN };
 var namespacedDottedId2 = { type: "string", pattern: NAMESPACED_DOTTED_PATTERN };
-var operationId3 = { type: "string", pattern: OPERATION_PATTERN };
+var operationId22 = { type: "string", pattern: OPERATION_PATTERN };
 var stringArray = { type: "array", items: { type: "string" } };
 var jsonValueRef = { $ref: "#/$defs/jsonValue" };
 var jsonValueSchema = {
@@ -296081,7 +295822,7 @@ var derivationRecipeSchema = {
     extensionId: { type: "string", pattern: QUALIFIED_PATTERN },
     extensionVersion: { type: "string", pattern: SEMVER_PATTERN },
     contributionId: { type: "string", pattern: QUALIFIED_PATTERN },
-    operation: operationId3,
+    operation: operationId22,
     parameters: jsonValueRef
   }
 };
@@ -296217,7 +295958,7 @@ var jsonSchemaRefSchema2 = {
   properties: { $ref: nonEmptyString2 }
 };
 var operationProperties = {
-  id: operationId3,
+  id: operationId22,
   handlerId: nonEmptyString2,
   mutatesSource: { type: "boolean" },
   inputSchema: jsonSchemaRefSchema2
@@ -296510,18 +296251,28 @@ var subjectDescriptorV2InferenceSchema = {
 };
 deepFreeze(subjectDescriptorV2Schema);
 deepFreeze(subjectDescriptorV2InferenceSchema);
-
-// packages/sdk/dist/manifest/validate.js
 var platformValidatorsPromise;
 function platformValidators() {
-  platformValidatorsPromise ??= Promise.resolve().then(() => (init_validators_generated(), validators_generated_exports)).then((module) => module.PRECOMPILED_SCHEMA_VALIDATORS);
+  platformValidatorsPromise ??= Promise.resolve().then(() => (init_validators_generated(), validators_generated_exports)).then(
+    (module) => module.PRECOMPILED_SCHEMA_VALIDATORS
+  );
   return platformValidatorsPromise;
 }
 function toPath(error3) {
-  return error3.instancePath.split("/").filter((part) => part.length > 0).map((part) => /^\d+$/.test(part) ? Number(part) : part.replaceAll("~1", "/").replaceAll("~0", "~"));
+  return error3.instancePath.split("/").filter((part) => part.length > 0).map(
+    (part) => /^\d+$/.test(part) ? Number(part) : part.replaceAll("~1", "/").replaceAll("~0", "~")
+  );
 }
 function schemaDiagnostics(errors, code) {
-  return (errors ?? []).map((error3) => diagnostic("error", code, `${error3.instancePath || "/"} ${error3.message ?? "schema violation"}`, toPath(error3), { keyword: error3.keyword, params: error3.params }));
+  return (errors ?? []).map(
+    (error3) => diagnostic(
+      "error",
+      code,
+      `${error3.instancePath || "/"} ${error3.message ?? "schema violation"}`,
+      toPath(error3),
+      { keyword: error3.keyword, params: error3.params }
+    )
+  );
 }
 function isPromiseLike(value2) {
   return (typeof value2 === "object" || typeof value2 === "function") && value2 !== null && typeof value2.then === "function";
@@ -296535,10 +296286,16 @@ function materializePath(node) {
   return reversed.reverse();
 }
 function nonJsonDiagnostic(path, reason) {
-  return diagnostic("error", "x3.sdk/non-json-wire-value", `${path.length === 0 ? "/" : `/${path.join("/")}`} is not JSON-wire-safe: ${reason}`, path, { reason });
+  return diagnostic(
+    "error",
+    "x3.sdk/non-json-wire-value",
+    `${path.length === 0 ? "/" : `/${path.join("/")}`} is not JSON-wire-safe: ${reason}`,
+    path,
+    { reason }
+  );
 }
-function assignJsonValue(parent, key, value2) {
-  Object.defineProperty(parent, key, {
+function assignJsonValue(parent, key2, value2) {
+  Object.defineProperty(parent, key2, {
     configurable: true,
     enumerable: true,
     writable: true,
@@ -296554,22 +296311,20 @@ function snapshotJsonWireValue(root) {
   const active = /* @__PURE__ */ new WeakSet();
   while (pending.length > 0) {
     const current = pending.pop();
-    if (current === void 0)
-      break;
+    if (current === void 0) break;
     if (current.exit !== void 0) {
       active.delete(current.exit);
       continue;
     }
-    const { value: value2, path, parent, key } = current;
-    if (parent === void 0 || key === void 0)
-      continue;
+    const { value: value2, path, parent, key: key2 } = current;
+    if (parent === void 0 || key2 === void 0) continue;
     if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean") {
-      assignJsonValue(parent, key, value2);
+      assignJsonValue(parent, key2, value2);
       continue;
     }
     if (typeof value2 === "number") {
       if (Number.isFinite(value2)) {
-        assignJsonValue(parent, key, value2);
+        assignJsonValue(parent, key2, value2);
         continue;
       }
       return { diagnostics: [nonJsonDiagnostic(materializePath(path), "numbers must be finite")] };
@@ -296598,12 +296353,15 @@ function snapshotJsonWireValue(root) {
       if (ownNames.length !== value2.length + 1 || !ownNames.includes("length")) {
         return {
           diagnostics: [
-            nonJsonDiagnostic(materializePath(path), "arrays must be dense and have no extra properties")
+            nonJsonDiagnostic(
+              materializePath(path),
+              "arrays must be dense and have no extra properties"
+            )
           ]
         };
       }
-      const clone3 = new Array(value2.length);
-      assignJsonValue(parent, key, clone3);
+      const clone22 = new Array(value2.length);
+      assignJsonValue(parent, key2, clone22);
       for (let index = value2.length - 1; index >= 0; index -= 1) {
         const descriptor = Object.getOwnPropertyDescriptor(value2, index);
         const childPath = { parent: path, segment: index };
@@ -296615,11 +296373,14 @@ function snapshotJsonWireValue(root) {
         if (!descriptor.enumerable || !("value" in descriptor)) {
           return {
             diagnostics: [
-              nonJsonDiagnostic(materializePath(childPath), "elements must be enumerable data values")
+              nonJsonDiagnostic(
+                materializePath(childPath),
+                "elements must be enumerable data values"
+              )
             ]
           };
         }
-        pending.push({ value: descriptor.value, path: childPath, parent: clone3, key: index });
+        pending.push({ value: descriptor.value, path: childPath, parent: clone22, key: index });
       }
       continue;
     }
@@ -296627,39 +296388,42 @@ function snapshotJsonWireValue(root) {
     if (prototype !== Object.prototype && prototype !== null) {
       return {
         diagnostics: [
-          nonJsonDiagnostic(materializePath(path), "objects must have Object.prototype or a null prototype")
+          nonJsonDiagnostic(
+            materializePath(path),
+            "objects must have Object.prototype or a null prototype"
+          )
         ]
       };
     }
     const clone2 = {};
-    assignJsonValue(parent, key, clone2);
-    for (const [key2, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(value2))) {
-      const childPath = { parent: path, segment: key2 };
+    assignJsonValue(parent, key2, clone2);
+    for (const [key3, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(value2))) {
+      const childPath = { parent: path, segment: key3 };
       if (!descriptor.enumerable || !("value" in descriptor)) {
         return {
           diagnostics: [
-            nonJsonDiagnostic(materializePath(childPath), "fields must be enumerable data properties")
+            nonJsonDiagnostic(
+              materializePath(childPath),
+              "fields must be enumerable data properties"
+            )
           ]
         };
       }
-      pending.push({ value: descriptor.value, path: childPath, parent: clone2, key: key2 });
+      pending.push({ value: descriptor.value, path: childPath, parent: clone2, key: key3 });
     }
   }
   return { value: holder.value, diagnostics: [] };
 }
-function deepFreeze2(value2) {
-  if (value2 === null || typeof value2 !== "object")
-    return value2;
+function deepFreeze6(value2) {
+  if (value2 === null || typeof value2 !== "object") return value2;
   const pending = [value2];
   const visited = /* @__PURE__ */ new WeakSet();
   while (pending.length > 0) {
     const current = pending.pop();
-    if (current === void 0 || visited.has(current))
-      continue;
+    if (current === void 0 || visited.has(current)) continue;
     visited.add(current);
     for (const child of Object.values(current)) {
-      if (child !== null && typeof child === "object")
-        pending.push(child);
+      if (child !== null && typeof child === "object") pending.push(child);
     }
     Object.freeze(current);
   }
@@ -296674,7 +296438,7 @@ function snapshotJsonWireData(value2) {
       context: { diagnostics: snapshot.diagnostics }
     });
   }
-  return deepFreeze2(snapshot.value);
+  return deepFreeze6(snapshot.value);
 }
 function snapshotJsonWireObject(value2) {
   return snapshotJsonWireData(value2);
@@ -296688,8 +296452,7 @@ async function validateWithSchema(schema, value2, code = "x3.sdk/schema-violatio
       diagnostics: [nonJsonDiagnostic([], "value could not be inspected as inert data")]
     };
   }
-  if (valueSnapshot.diagnostics.length > 0)
-    return [...valueSnapshot.diagnostics];
+  if (valueSnapshot.diagnostics.length > 0) return [...valueSnapshot.diagnostics];
   let schemaSnapshot;
   let schemaCacheKey;
   try {
@@ -296697,13 +296460,25 @@ async function validateWithSchema(schema, value2, code = "x3.sdk/schema-violatio
     schemaCacheKey = canonicalJsonStringify(schemaSnapshot);
   } catch (error3) {
     return [
-      diagnostic("error", "x3.sdk/invalid-schema-authority", "the selected JSON Schema is not inert JSON data", [], { error: error3 instanceof Error ? error3.message : String(error3) })
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-schema-authority",
+        "the selected JSON Schema is not inert JSON data",
+        [],
+        { error: error3 instanceof Error ? error3.message : String(error3) }
+      )
     ];
   }
   const validate = suppliedValidator ?? (await platformValidators()).get(schemaCacheKey);
   if (validate === void 0) {
     return [
-      diagnostic("error", "x3.sdk/invalid-schema-authority", "the selected JSON Schema has no CSP-safe precompiled validator", [], { reason: "precompiled-validator-missing" })
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-schema-authority",
+        "the selected JSON Schema has no CSP-safe precompiled validator",
+        [],
+        { reason: "precompiled-validator-missing" }
+      )
     ];
   }
   try {
@@ -296712,8 +296487,7 @@ async function validateWithSchema(schema, value2, code = "x3.sdk/schema-violatio
       await result;
       return [];
     }
-    if (result)
-      return [];
+    if (result) return [];
   } catch (error3) {
     const asyncErrors = error3?.errors;
     if (asyncErrors !== void 0 && asyncErrors !== null) {
@@ -296721,28 +296495,28 @@ async function validateWithSchema(schema, value2, code = "x3.sdk/schema-violatio
     }
     const reason = error3 instanceof Error ? error3.message : String(error3);
     return [
-      diagnostic("error", "x3.sdk/schema-evaluation-failed", `the selected JSON Schema failed while evaluating inert wire data: ${reason}`, [], { error: reason })
+      diagnostic(
+        "error",
+        "x3.sdk/schema-evaluation-failed",
+        `the selected JSON Schema failed while evaluating inert wire data: ${reason}`,
+        [],
+        { error: reason }
+      )
     ];
   }
   return schemaDiagnostics(validate.errors, code);
 }
-
-// packages/sdk/dist/asset-capabilities/types.js
 function contributionId(value2) {
-  if (!isQualifiedId(value2))
-    throw new TypeError(`invalid contribution id: ${value2}`);
+  if (!isQualifiedId(value2)) throw new TypeError(`invalid contribution id: ${value2}`);
   return value2;
 }
 function isRevisionId(value2) {
   return parseRevisionRef(value2) !== void 0;
 }
 function revisionId(value2) {
-  if (!isRevisionId(value2))
-    throw new TypeError("revision id must be a canonical kind-tagged value");
+  if (!isRevisionId(value2)) throw new TypeError("revision id must be a canonical kind-tagged value");
   return value2;
 }
-
-// packages/sdk/dist/host-facilities.generated.js
 var STANDARD_HOST_FACILITY_IDS = Object.freeze([
   "clipboard.write",
   "credential.broker",
@@ -296776,8 +296550,6 @@ var STANDARD_HOST_FACILITY_IDS = Object.freeze([
 var LEGACY_HOST_FACILITY_ALIASES = Object.freeze([
   "editor.monaco"
 ]);
-
-// packages/sdk/dist/host-profile.js
 var HOST_TRANSPORT_KINDS = Object.freeze([
   "in-process",
   "structured-clone",
@@ -296790,8 +296562,6 @@ var HOST_TRANSPORT_KINDS = Object.freeze([
 var standardFacilities = new Set(STANDARD_HOST_FACILITY_IDS);
 var legacyFacilities = new Set(LEGACY_HOST_FACILITY_ALIASES);
 var transportKinds = new Set(HOST_TRANSPORT_KINDS);
-
-// packages/sdk/dist/asset-capabilities/standard-traits.js
 var TRAIT_IDS = Object.freeze([
   "content.metadata",
   "content.binary",
@@ -296873,30 +296643,46 @@ var STANDARD_TRAIT_SET = new Set(TRAIT_IDS);
 function isStandardTraitId(value2) {
   return STANDARD_TRAIT_SET.has(value2);
 }
-
-// packages/sdk/dist/manifest/contribution-contract-registry.js
 var CODEC_CONTRIBUTION_CONTRACT = contractId("modkit/codec-contribution");
-var SERVICE_PROVIDER_CONTRIBUTION_CONTRACT = contractId("modkit/service-provider-contribution");
+var SERVICE_PROVIDER_CONTRIBUTION_CONTRACT = contractId(
+  "modkit/service-provider-contribution"
+);
 var VIEWER_CONTRIBUTION_CONTRACT = contractId("modkit/viewer-contribution");
 var EDITOR_CONTRIBUTION_CONTRACT = contractId("modkit/editor-contribution");
 var TRAIT_DEFINITION_CONTRIBUTION_CONTRACT = contractId("modkit/trait-definition");
-var CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT = contractId("modkit/contract-definition");
+var CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT = contractId(
+  "modkit/contract-definition"
+);
 var KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT = contractId("modkit/knowledge-pack");
-var LOCALIZATION_CONTRIBUTION_CONTRACT = contractId("modkit/localization-contribution");
+var LOCALIZATION_CONTRIBUTION_CONTRACT = contractId(
+  "modkit/localization-contribution"
+);
 var TRAIT_DEFINITION_FACT = contractId("modkit.inventory/trait-definition");
-var CONTRACT_DEFINITION_FACT = contractId("modkit.inventory/contract-definition");
-var EDITOR_CONTRIBUTION_FACT = contractId("modkit.inventory/editor-contribution");
+var CONTRACT_DEFINITION_FACT = contractId(
+  "modkit.inventory/contract-definition"
+);
+var EDITOR_CONTRIBUTION_FACT = contractId(
+  "modkit.inventory/editor-contribution"
+);
 var KNOWLEDGE_PACK_FACT = contractId("modkit.inventory/knowledge-pack");
-var LOCALIZATION_CONTRIBUTION_FACT = contractId("modkit.inventory/localization-contribution");
+var LOCALIZATION_CONTRIBUTION_FACT = contractId(
+  "modkit.inventory/localization-contribution"
+);
 function duplicateFieldDiagnostics(values, path, label) {
   const first2 = /* @__PURE__ */ new Map();
   const diagnostics = [];
   values.forEach((value2, index) => {
     const previous = first2.get(value2);
-    if (previous === void 0)
-      first2.set(value2, index);
+    if (previous === void 0) first2.set(value2, index);
     else {
-      diagnostics.push(diagnostic("error", "x3.sdk/duplicate-semantic-id", `${label} ${value2} duplicates index ${previous}`, [...path, index]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-semantic-id",
+          `${label} ${value2} duplicates index ${previous}`,
+          [...path, index]
+        )
+      );
     }
   });
   return diagnostics;
@@ -296904,18 +296690,33 @@ function duplicateFieldDiagnostics(values, path, label) {
 function requirementRangeDiagnostics(requirement, path) {
   const parsed = requirement.range === void 0 ? void 0 : parseVersionRange(requirement.range);
   return requirement.range !== void 0 && (parsed === void 0 || !versionRangeTargetsMajor(parsed, requirement.major)) ? [
-    diagnostic("error", "x3.sdk/invalid-contract-range", `contract range ${requirement.range} cannot be evaluated safely`, [...path, "range"])
+    diagnostic(
+      "error",
+      "x3.sdk/invalid-contract-range",
+      `contract range ${requirement.range} cannot be evaluated safely`,
+      [...path, "range"]
+    )
   ] : [];
 }
 function traitDefinitionRangeDiagnostics(id, range2, path) {
   if (isStandardTraitId(id)) {
     return range2 === void 0 ? [] : [
-      diagnostic("error", "x3.sdk/standard-trait-versioned", `standard trait ${id} does not use an extension definition range`, [...path, "definitionRange"])
+      diagnostic(
+        "error",
+        "x3.sdk/standard-trait-versioned",
+        `standard trait ${id} does not use an extension definition range`,
+        [...path, "definitionRange"]
+      )
     ];
   }
   if (range2 === void 0 || parseVersionRange(range2) === void 0) {
     return [
-      diagnostic("error", "x3.sdk/custom-trait-definition-unbound", `custom trait ${id} must declare a safe definition range`, [...path, "definitionRange"])
+      diagnostic(
+        "error",
+        "x3.sdk/custom-trait-definition-unbound",
+        `custom trait ${id} must declare a safe definition range`,
+        [...path, "definitionRange"]
+      )
     ];
   }
   return [];
@@ -296923,12 +296724,22 @@ function traitDefinitionRangeDiagnostics(id, range2, path) {
 function traitDefinitionOfferDiagnostics(id, version, path) {
   if (isStandardTraitId(id)) {
     return version === void 0 ? [] : [
-      diagnostic("error", "x3.sdk/standard-trait-versioned", `standard trait ${id} does not use an extension definition version`, [...path, "definitionVersion"])
+      diagnostic(
+        "error",
+        "x3.sdk/standard-trait-versioned",
+        `standard trait ${id} does not use an extension definition version`,
+        [...path, "definitionVersion"]
+      )
     ];
   }
   if (version === void 0 || parseSemver(version) === void 0) {
     return [
-      diagnostic("error", "x3.sdk/custom-trait-definition-unbound", `custom trait ${id} must declare one exact safe definition version`, [...path, "definitionVersion"])
+      diagnostic(
+        "error",
+        "x3.sdk/custom-trait-definition-unbound",
+        `custom trait ${id} must declare one exact safe definition version`,
+        [...path, "definitionVersion"]
+      )
     ];
   }
   return [];
@@ -296937,69 +296748,130 @@ var validateCodecContributionSemantics = (manifest) => {
   const spec = manifest.spec;
   const localCodecPrefix = manifest.id;
   const diagnostics = [
-    ...duplicateFieldDiagnostics(spec.formatRefs.map((format4) => format4.formatId), ["spec", "formatRefs"], "format ID"),
-    ...duplicateFieldDiagnostics(spec.representations.map((representation) => representation.id), ["spec", "representations"], "representation ID"),
-    ...duplicateFieldDiagnostics(spec.companions?.map((companion) => companion.id) ?? [], ["spec", "companions"], "companion rule ID"),
-    ...duplicateFieldDiagnostics(spec.traitDeclarations?.map((declaration) => `${declaration.id}\0${declaration.representation}`) ?? [], ["spec", "traitDeclarations"], "trait declaration coordinate"),
-    ...duplicateFieldDiagnostics(spec.operations.map((operation) => operation.id), ["spec", "operations"], "operation ID"),
-    ...duplicateFieldDiagnostics(spec.operations.map((operation) => operation.handlerId), ["spec", "operations"], "operation handler ID"),
-    ...duplicateFieldDiagnostics(spec.fidelityEvidence?.map((item) => item.evidenceId) ?? [], ["spec", "fidelityEvidence"], "fidelity evidence ID")
+    ...duplicateFieldDiagnostics(
+      spec.formatRefs.map((format4) => format4.formatId),
+      ["spec", "formatRefs"],
+      "format ID"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.representations.map((representation) => representation.id),
+      ["spec", "representations"],
+      "representation ID"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.companions?.map((companion) => companion.id) ?? [],
+      ["spec", "companions"],
+      "companion rule ID"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.traitDeclarations?.map(
+        (declaration) => `${declaration.id}\0${declaration.representation}`
+      ) ?? [],
+      ["spec", "traitDeclarations"],
+      "trait declaration coordinate"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.operations.map((operation) => operation.id),
+      ["spec", "operations"],
+      "operation ID"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.operations.map((operation) => operation.handlerId),
+      ["spec", "operations"],
+      "operation handler ID"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.fidelityEvidence?.map((item) => item.evidenceId) ?? [],
+      ["spec", "fidelityEvidence"],
+      "fidelity evidence ID"
+    )
   ];
   const formatIds = new Set(spec.formatRefs.map((format4) => format4.formatId));
-  const representationIds = new Set(spec.representations.map((representation) => representation.id));
+  const representationIds = new Set(
+    spec.representations.map((representation) => representation.id)
+  );
   spec.fidelityEvidence?.forEach((item, index) => {
     if (!formatIds.has(item.formatId)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/fidelity-evidence-format-unknown", `fidelity evidence ${item.evidenceId} names undeclared format ${item.formatId}`, ["spec", "fidelityEvidence", index, "formatId"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/fidelity-evidence-format-unknown",
+          `fidelity evidence ${item.evidenceId} names undeclared format ${item.formatId}`,
+          ["spec", "fidelityEvidence", index, "formatId"]
+        )
+      );
     }
     if (!representationIds.has(item.representationId)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/fidelity-evidence-representation-unknown", `fidelity evidence ${item.evidenceId} names undeclared representation ${item.representationId}`, ["spec", "fidelityEvidence", index, "representationId"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/fidelity-evidence-representation-unknown",
+          `fidelity evidence ${item.evidenceId} names undeclared representation ${item.representationId}`,
+          ["spec", "fidelityEvidence", index, "representationId"]
+        )
+      );
     }
   });
   const expectedProbeKind = spec.sourceTopology === "namespace" ? "namespace" : spec.sourceTopology === "derived" ? "derived" : "bytes";
   if (spec.probe.kind !== expectedProbeKind) {
-    diagnostics.push(diagnostic("error", "x3.sdk/probe-topology-mismatch", `topology ${spec.sourceTopology} requires a ${expectedProbeKind} probe policy`, ["spec", "probe", "kind"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/probe-topology-mismatch",
+        `topology ${spec.sourceTopology} requires a ${expectedProbeKind} probe policy`,
+        ["spec", "probe", "kind"]
+      )
+    );
   }
   spec.requires?.forEach((requirement, index) => {
     diagnostics.push(...requirementRangeDiagnostics(requirement, ["spec", "requires", index]));
   });
   spec.traitDeclarations?.forEach((claim, index) => {
-    diagnostics.push(...traitDefinitionOfferDiagnostics(claim.id, claim.definitionVersion, [
-      "spec",
-      "traitDeclarations",
-      index
-    ]));
-    claim.prerequisites?.forEach((requirement, requirementIndex) => {
-      diagnostics.push(...requirementRangeDiagnostics(requirement, [
+    diagnostics.push(
+      ...traitDefinitionOfferDiagnostics(claim.id, claim.definitionVersion, [
         "spec",
         "traitDeclarations",
-        index,
-        "prerequisites",
-        requirementIndex
-      ]));
+        index
+      ])
+    );
+    claim.prerequisites?.forEach((requirement, requirementIndex) => {
+      diagnostics.push(
+        ...requirementRangeDiagnostics(requirement, [
+          "spec",
+          "traitDeclarations",
+          index,
+          "prerequisites",
+          requirementIndex
+        ])
+      );
     });
   });
   spec.companions?.forEach((companion, companionIndex) => {
     for (const selector of ["all", "any", "none"]) {
       companion.expected?.[selector]?.forEach((requirement, requirementIndex) => {
-        diagnostics.push(...traitDefinitionRangeDiagnostics(requirement.id, requirement.definitionRange, [
-          "spec",
-          "companions",
-          companionIndex,
-          "expected",
-          selector,
-          requirementIndex
-        ]));
+        diagnostics.push(
+          ...traitDefinitionRangeDiagnostics(requirement.id, requirement.definitionRange, [
+            "spec",
+            "companions",
+            companionIndex,
+            "expected",
+            selector,
+            requirementIndex
+          ])
+        );
       });
     }
   });
   spec.operations.forEach((operation, index) => {
     if (operation.requiresContract !== void 0) {
-      diagnostics.push(...requirementRangeDiagnostics(operation.requiresContract, [
-        "spec",
-        "operations",
-        index,
-        "requiresContract"
-      ]));
+      diagnostics.push(
+        ...requirementRangeDiagnostics(operation.requiresContract, [
+          "spec",
+          "operations",
+          index,
+          "requiresContract"
+        ])
+      );
     }
     const shared = SHARED_OPERATION_IDS.includes(operation.id);
     const canonicalDomain = OPERATION_DOMAINS.some((domain) => {
@@ -297009,28 +296881,40 @@ var validateCodecContributionSemantics = (manifest) => {
     const localSuffix = operation.id.startsWith(`${localCodecPrefix}.`) ? operation.id.slice(localCodecPrefix.length + 1) : void 0;
     const codecLocal = localSuffix !== void 0 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(localSuffix);
     if (!shared && !canonicalDomain && !codecLocal) {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-operation-namespace", `operation ${operation.id} is not shared, canonical-domain, or local to ${manifest.id}`, ["spec", "operations", index, "id"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-operation-namespace",
+          `operation ${operation.id} is not shared, canonical-domain, or local to ${manifest.id}`,
+          ["spec", "operations", index, "id"]
+        )
+      );
     }
   });
   const requiredPermissions = /* @__PURE__ */ new Set(["read-source"]);
   spec.operations.forEach((operation) => {
-    if (operation.mutatesSource)
-      requiredPermissions.add("write-source");
+    if (operation.mutatesSource) requiredPermissions.add("write-source");
     operation.requiredPermissions?.forEach((permission) => requiredPermissions.add(permission));
   });
   manifest.runtimeVariants?.forEach((variant, variantIndex) => {
     const requested = new Set(variant.requestedPermissionClasses);
     for (const permission of requiredPermissions) {
       if (!requested.has(permission)) {
-        diagnostics.push(diagnostic("error", "x3.sdk/variant-permission-underdeclared", `runtime variant ${variant.variantId} does not request ${permission}`, ["runtimeVariants", variantIndex, "requestedPermissionClasses"]));
+        diagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/variant-permission-underdeclared",
+            `runtime variant ${variant.variantId} does not request ${permission}`,
+            ["runtimeVariants", variantIndex, "requestedPermissionClasses"]
+          )
+        );
       }
     }
   });
   return diagnostics;
 };
 function isPortableOperationReference(id) {
-  if (SHARED_OPERATION_IDS.includes(id))
-    return true;
+  if (SHARED_OPERATION_IDS.includes(id)) return true;
   if (OPERATION_DOMAINS.some((domain) => {
     const prefix = `${domain}.`;
     return id.startsWith(prefix) && isSegment(id.slice(prefix.length));
@@ -297043,20 +296927,37 @@ function isPortableOperationReference(id) {
 var validateViewerContributionSemantics = (manifest) => {
   const spec = manifest.spec;
   const diagnostics = [
-    ...duplicateFieldDiagnostics(spec.requiresTraits?.map((requirement) => requirement.id) ?? [], ["spec", "requiresTraits"], "trait requirement"),
-    ...duplicateFieldDiagnostics(spec.requiresOperations ?? [], ["spec", "requiresOperations"], "operation requirement")
+    ...duplicateFieldDiagnostics(
+      spec.requiresTraits?.map((requirement) => requirement.id) ?? [],
+      ["spec", "requiresTraits"],
+      "trait requirement"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.requiresOperations ?? [],
+      ["spec", "requiresOperations"],
+      "operation requirement"
+    )
   ];
   spec.requiresOperations?.forEach((id, index) => {
     if (!isPortableOperationReference(id)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-operation-namespace", `viewer operation requirement ${id} is not shared, canonical-domain, or qualified-local`, ["spec", "requiresOperations", index]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-operation-namespace",
+          `viewer operation requirement ${id} is not shared, canonical-domain, or qualified-local`,
+          ["spec", "requiresOperations", index]
+        )
+      );
     }
   });
   spec.requiresTraits?.forEach((requirement, index) => {
-    diagnostics.push(...traitDefinitionRangeDiagnostics(requirement.id, requirement.definitionRange, [
-      "spec",
-      "requiresTraits",
-      index
-    ]));
+    diagnostics.push(
+      ...traitDefinitionRangeDiagnostics(requirement.id, requirement.definitionRange, [
+        "spec",
+        "requiresTraits",
+        index
+      ])
+    );
   });
   return diagnostics;
 };
@@ -297071,22 +296972,58 @@ var EDITING_OPERATION_IDS = Object.freeze([
 var validateEditorContributionSemantics = (manifest) => {
   const spec = manifest.spec;
   const diagnostics = [
-    ...duplicateFieldDiagnostics(spec.requiresOperations, ["spec", "requiresOperations"], "operation"),
-    ...duplicateFieldDiagnostics(spec.consumesDataSources.map((source) => `${source.contract}@${source.major}`), ["spec", "consumesDataSources"], "data-source requirement")
+    ...duplicateFieldDiagnostics(
+      spec.requiresOperations,
+      ["spec", "requiresOperations"],
+      "operation"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.consumesDataSources.map((source) => `${source.contract}@${source.major}`),
+      ["spec", "consumesDataSources"],
+      "data-source requirement"
+    )
   ];
   spec.requiresOperations.forEach((id, index) => {
     if (!EDITING_OPERATION_IDS.includes(id)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-editor-operation", `editor operation ${id} is not one of the shared editing operations`, ["spec", "requiresOperations", index]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-editor-operation",
+          `editor operation ${id} is not one of the shared editing operations`,
+          ["spec", "requiresOperations", index]
+        )
+      );
     }
   });
   if (!spec.requiresOperations.some((id) => id.startsWith("edit."))) {
-    diagnostics.push(diagnostic("error", "x3.sdk/editor-edit-operation-missing", "an editor contribution requires an explicit edit operation", ["spec", "requiresOperations"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/editor-edit-operation-missing",
+        "an editor contribution requires an explicit edit operation",
+        ["spec", "requiresOperations"]
+      )
+    );
   }
   if (spec.requiresTransactions && !spec.requiresOperations.some((id) => id === "source.save" || id === "source.save-as")) {
-    diagnostics.push(diagnostic("error", "x3.sdk/editor-save-operation-missing", "a transactional editor requires source.save or source.save-as", ["spec", "requiresOperations"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/editor-save-operation-missing",
+        "a transactional editor requires source.save or source.save-as",
+        ["spec", "requiresOperations"]
+      )
+    );
   }
   if (spec.requiresTransactions && spec.writer.mutationMode !== "mutate") {
-    diagnostics.push(diagnostic("error", "x3.sdk/editor-writer-mode-mismatch", "a transactional editor requires a mutating writer", ["spec", "writer", "mutationMode"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/editor-writer-mode-mismatch",
+        "a transactional editor requires a mutating writer",
+        ["spec", "writer", "mutationMode"]
+      )
+    );
   }
   return diagnostics;
 };
@@ -297094,21 +297031,48 @@ var validateTraitDefinitionSemantics = (manifest) => {
   const spec = manifest.spec;
   const diagnostics = [];
   if (parseSemver(spec.version) === void 0) {
-    diagnostics.push(diagnostic("error", "x3.sdk/invalid-definition-version", `trait definition version ${spec.version} cannot be evaluated safely`, ["spec", "version"]));
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-definition-version",
+        `trait definition version ${spec.version} cannot be evaluated safely`,
+        ["spec", "version"]
+      )
+    );
   }
   const seen = /* @__PURE__ */ new Map();
   spec.imports?.forEach((dependency, index) => {
     if (dependency.id === spec.id) {
-      diagnostics.push(diagnostic("error", "x3.sdk/self-definition-import", `trait definition ${spec.id} cannot import itself`, ["spec", "imports", index, "id"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/self-definition-import",
+          `trait definition ${spec.id} cannot import itself`,
+          ["spec", "imports", index, "id"]
+        )
+      );
     }
     const previous = seen.get(dependency.id);
-    if (previous === void 0)
-      seen.set(dependency.id, index);
+    if (previous === void 0) seen.set(dependency.id, index);
     else {
-      diagnostics.push(diagnostic("error", "x3.sdk/duplicate-definition-import", `trait import ${dependency.id} duplicates index ${previous}`, ["spec", "imports", index, "id"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-definition-import",
+          `trait import ${dependency.id} duplicates index ${previous}`,
+          ["spec", "imports", index, "id"]
+        )
+      );
     }
     if (parseVersionRange(dependency.range) === void 0) {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-definition-range", `trait import range ${dependency.range} cannot be evaluated safely`, ["spec", "imports", index, "range"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-definition-range",
+          `trait import range ${dependency.range} cannot be evaluated safely`,
+          ["spec", "imports", index, "range"]
+        )
+      );
     }
   });
   return diagnostics;
@@ -297117,7 +297081,12 @@ var validateContractDefinitionSemantics = (manifest) => {
   const spec = manifest.spec;
   if (!Number.isSafeInteger(spec.major) || spec.major < 0) {
     return [
-      diagnostic("error", "x3.sdk/invalid-contract-major", `contract definition major ${spec.major} is not a safe non-negative integer`, ["spec", "major"])
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-contract-major",
+        `contract definition major ${spec.major} is not a safe non-negative integer`,
+        ["spec", "major"]
+      )
     ];
   }
   if (spec.surface !== void 0) {
@@ -297130,14 +297099,35 @@ function dataSourceSurfaceDiagnostics(surface, path) {
   if (surface.releaseVia !== void 0) {
     const target = surface.methods[surface.releaseVia];
     if (target === void 0) {
-      diagnostics.push(diagnostic("error", "x3.sdk/surface-release-via-unknown", `releaseVia \xAB${surface.releaseVia}\xBB does not name a declared method`, [...path, "releaseVia"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/surface-release-via-unknown",
+          `releaseVia \xAB${surface.releaseVia}\xBB does not name a declared method`,
+          [...path, "releaseVia"]
+        )
+      );
     } else if (target.kind !== "value") {
-      diagnostics.push(diagnostic("error", "x3.sdk/surface-release-via-kind", `releaseVia \xAB${surface.releaseVia}\xBB must name a value method, found ${target.kind}`, [...path, "releaseVia"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/surface-release-via-kind",
+          `releaseVia \xAB${surface.releaseVia}\xBB must name a value method, found ${target.kind}`,
+          [...path, "releaseVia"]
+        )
+      );
     }
   }
   for (const field2 of surface.fields ?? []) {
     if (Object.hasOwn(surface.methods, field2)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/surface-field-is-method", `\xAB${field2}\xBB cannot be both a field and a method`, [...path, "fields"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/surface-field-is-method",
+          `\xAB${field2}\xBB cannot be both a field and a method`,
+          [...path, "fields"]
+        )
+      );
     }
   }
   return diagnostics;
@@ -297145,76 +297135,154 @@ function dataSourceSurfaceDiagnostics(surface, path) {
 var validateServiceProviderContributionSemantics = (manifest) => {
   const spec = manifest.spec;
   const diagnostics = [
-    ...duplicateFieldDiagnostics(spec.provides.map((offer) => offer.offerId), ["spec", "provides"], "offer ID"),
-    ...duplicateFieldDiagnostics(spec.outputs?.map((output) => `${output.id}\0${output.representation}`) ?? [], ["spec", "outputs"], "trait declaration coordinate"),
-    ...duplicateFieldDiagnostics(spec.fidelityEvidence?.map((evidence) => `${evidence.offerId}\0${evidence.evidenceId}`) ?? [], ["spec", "fidelityEvidence"], "writer fidelity evidence coordinate")
+    ...duplicateFieldDiagnostics(
+      spec.provides.map((offer) => offer.offerId),
+      ["spec", "provides"],
+      "offer ID"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.outputs?.map((output) => `${output.id}\0${output.representation}`) ?? [],
+      ["spec", "outputs"],
+      "trait declaration coordinate"
+    ),
+    ...duplicateFieldDiagnostics(
+      spec.fidelityEvidence?.map((evidence) => `${evidence.offerId}\0${evidence.evidenceId}`) ?? [],
+      ["spec", "fidelityEvidence"],
+      "writer fidelity evidence coordinate"
+    )
   ];
   spec.requires?.forEach((requirement, index) => {
     diagnostics.push(...requirementRangeDiagnostics(requirement, ["spec", "requires", index]));
   });
   spec.outputs?.forEach((claim, index) => {
-    diagnostics.push(...traitDefinitionOfferDiagnostics(claim.id, claim.definitionVersion, [
-      "spec",
-      "outputs",
-      index
-    ]));
-    claim.prerequisites?.forEach((requirement, requirementIndex) => {
-      diagnostics.push(...requirementRangeDiagnostics(requirement, [
+    diagnostics.push(
+      ...traitDefinitionOfferDiagnostics(claim.id, claim.definitionVersion, [
         "spec",
         "outputs",
-        index,
-        "prerequisites",
-        requirementIndex
-      ]));
+        index
+      ])
+    );
+    claim.prerequisites?.forEach((requirement, requirementIndex) => {
+      diagnostics.push(
+        ...requirementRangeDiagnostics(requirement, [
+          "spec",
+          "outputs",
+          index,
+          "prerequisites",
+          requirementIndex
+        ])
+      );
     });
   });
   if (spec.replacement !== void 0) {
-    diagnostics.push(...requirementRangeDiagnostics(spec.replacement.target, ["spec", "replacement", "target"]));
+    diagnostics.push(
+      ...requirementRangeDiagnostics(spec.replacement.target, ["spec", "replacement", "target"])
+    );
   }
   const variants = new Set((manifest.runtimeVariants ?? []).map((variant) => variant.variantId));
   spec.provides.forEach((offer, index) => {
     const version = parseSemver(offer.version);
     if (version === void 0 || version.major !== offer.major) {
-      diagnostics.push(diagnostic("error", "x3.sdk/offer-major-mismatch", `offer ${offer.offerId} version ${offer.version} does not match major ${offer.major}`, ["spec", "provides", index, "version"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/offer-major-mismatch",
+          `offer ${offer.offerId} version ${offer.version} does not match major ${offer.major}`,
+          ["spec", "provides", index, "version"]
+        )
+      );
     }
   });
   const offersById = new Map(spec.provides.map((offer, index) => [offer.offerId, { offer, index }]));
   spec.fidelityEvidence?.forEach((evidence, index) => {
     const found = offersById.get(evidence.offerId);
     if (found === void 0) {
-      diagnostics.push(diagnostic("error", "x3.sdk/writer-evidence-offer-unknown", `writer fidelity evidence references unknown offer ${evidence.offerId}`, ["spec", "fidelityEvidence", index, "offerId"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/writer-evidence-offer-unknown",
+          `writer fidelity evidence references unknown offer ${evidence.offerId}`,
+          ["spec", "fidelityEvidence", index, "offerId"]
+        )
+      );
       return;
     }
     if (found.offer.contract !== "common.edit/writer" || found.offer.major !== 1) {
-      diagnostics.push(diagnostic("error", "x3.sdk/writer-evidence-offer-contract", `writer fidelity evidence offer ${evidence.offerId} is not common.edit/writer@1`, ["spec", "fidelityEvidence", index, "offerId"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/writer-evidence-offer-contract",
+          `writer fidelity evidence offer ${evidence.offerId} is not common.edit/writer@1`,
+          ["spec", "fidelityEvidence", index, "offerId"]
+        )
+      );
       return;
     }
     const facet = found.offer.facet;
     if (typeof facet !== "object" || facet === null || Array.isArray(facet)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/writer-evidence-offer-facet", `writer fidelity evidence offer ${evidence.offerId} has no writer facet`, ["spec", "provides", found.index, "facet"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/writer-evidence-offer-facet",
+          `writer fidelity evidence offer ${evidence.offerId} has no writer facet`,
+          ["spec", "provides", found.index, "facet"]
+        )
+      );
       return;
     }
     const writerFacet = facet;
     if (writerFacet.providerId !== manifest.id) {
-      diagnostics.push(diagnostic("error", "x3.sdk/writer-evidence-provider-mismatch", `writer offer ${evidence.offerId} providerId must equal contribution id ${manifest.id}`, ["spec", "provides", found.index, "facet", "providerId"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/writer-evidence-provider-mismatch",
+          `writer offer ${evidence.offerId} providerId must equal contribution id ${manifest.id}`,
+          ["spec", "provides", found.index, "facet", "providerId"]
+        )
+      );
     }
     if (writerFacet.fidelityEvidenceId !== evidence.evidenceId) {
-      diagnostics.push(diagnostic("error", "x3.sdk/writer-evidence-id-mismatch", `writer evidence ${evidence.evidenceId} does not match offer ${evidence.offerId}`, ["spec", "fidelityEvidence", index, "evidenceId"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/writer-evidence-id-mismatch",
+          `writer evidence ${evidence.evidenceId} does not match offer ${evidence.offerId}`,
+          ["spec", "fidelityEvidence", index, "evidenceId"]
+        )
+      );
     }
     if (writerFacet.minimumRoundTrip !== evidence.claim.roundTrip) {
-      diagnostics.push(diagnostic("error", "x3.sdk/writer-evidence-claim-mismatch", `writer evidence ${evidence.evidenceId} claims ${evidence.claim.roundTrip}, but offer ${evidence.offerId} declares ${String(writerFacet.minimumRoundTrip)}`, ["spec", "fidelityEvidence", index, "claim", "roundTrip"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/writer-evidence-claim-mismatch",
+          `writer evidence ${evidence.evidenceId} claims ${evidence.claim.roundTrip}, but offer ${evidence.offerId} declares ${String(writerFacet.minimumRoundTrip)}`,
+          ["spec", "fidelityEvidence", index, "claim", "roundTrip"]
+        )
+      );
     }
   });
   spec.applicableVariants?.forEach((variantId, index) => {
     if (!variants.has(variantId)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/unknown-applicable-variant", `applicable variant ${variantId} is not declared by the envelope`, ["spec", "applicableVariants", index]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/unknown-applicable-variant",
+          `applicable variant ${variantId} is not declared by the envelope`,
+          ["spec", "applicableVariants", index]
+        )
+      );
     }
   });
   return diagnostics;
 };
 var validateKnowledgePackSemantics = (manifest) => {
   const spec = manifest.spec;
-  const diagnostics = duplicateFieldDiagnostics(spec.entries.map((entry) => `${entry.id}\0${entry.locale.toLowerCase()}`), ["spec", "entries"], "knowledge entry and locale");
+  const diagnostics = duplicateFieldDiagnostics(
+    spec.entries.map((entry) => `${entry.id}\0${entry.locale.toLowerCase()}`),
+    ["spec", "entries"],
+    "knowledge entry and locale"
+  );
   const targetLocales = /* @__PURE__ */ new Set();
   const targetByLogicalId = /* @__PURE__ */ new Map();
   const localesByLogicalId = /* @__PURE__ */ new Map();
@@ -297222,12 +297290,26 @@ var validateKnowledgePackSemantics = (manifest) => {
     const targetKey = knowledgeTargetKey(entry.target);
     const coordinate = `${targetKey}\0${entry.locale.toLowerCase()}`;
     if (targetLocales.has(coordinate)) {
-      diagnostics.push(diagnostic("warning", "x3.sdk/knowledge-target-locale-overlap", `more than one knowledge entry describes the same target and locale`, ["spec", "entries", index, "target"]));
+      diagnostics.push(
+        diagnostic(
+          "warning",
+          "x3.sdk/knowledge-target-locale-overlap",
+          `more than one knowledge entry describes the same target and locale`,
+          ["spec", "entries", index, "target"]
+        )
+      );
     }
     targetLocales.add(coordinate);
     const previousTarget = targetByLogicalId.get(entry.id);
     if (previousTarget !== void 0 && previousTarget !== targetKey) {
-      diagnostics.push(diagnostic("error", "x3.sdk/knowledge-logical-id-target-mismatch", "translations sharing a logical knowledge entry id must describe the same target", ["spec", "entries", index, "target"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/knowledge-logical-id-target-mismatch",
+          "translations sharing a logical knowledge entry id must describe the same target",
+          ["spec", "entries", index, "target"]
+        )
+      );
     } else {
       targetByLogicalId.set(entry.id, targetKey);
     }
@@ -297238,27 +297320,53 @@ var validateKnowledgePackSemantics = (manifest) => {
     logicalLocales.values.add(entry.locale.toLowerCase());
     localesByLogicalId.set(entry.id, logicalLocales);
     const exactSchemaRevision = entry.target.kind === "field" ? entry.target.schema.revision : void 0;
-    const hasExactSchemaSource = entry.sources.some((source) => source.kind === "schema" && source.schema !== void 0 && (entry.target.kind !== "field" || source.schema.contract === entry.target.schema.contract && source.schema.major === entry.target.schema.major && source.schema.revision === exactSchemaRevision));
+    const hasExactSchemaSource = entry.sources.some(
+      (source) => source.kind === "schema" && source.schema !== void 0 && (entry.target.kind !== "field" || source.schema.contract === entry.target.schema.contract && source.schema.major === entry.target.schema.major && source.schema.revision === exactSchemaRevision)
+    );
     if (entry.claimKind === "schema-derived-fact" && !hasExactSchemaSource) {
-      diagnostics.push(diagnostic("error", "x3.sdk/knowledge-schema-fact-without-schema-source", "a schema-derived fact must cite the exact active schema revision", ["spec", "entries", index, "sources"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/knowledge-schema-fact-without-schema-source",
+          "a schema-derived fact must cite the exact active schema revision",
+          ["spec", "entries", index, "sources"]
+        )
+      );
     }
   });
   const sourceLocale = spec.sourceLocale.toLowerCase();
   for (const [logicalId, locales] of localesByLogicalId) {
-    if (locales.values.has(sourceLocale))
-      continue;
-    diagnostics.push(diagnostic("error", "x3.sdk/knowledge-source-locale-missing", `knowledge entry ${logicalId} has no ${spec.sourceLocale} source-locale version`, ["spec", "entries", locales.firstIndex, "locale"]));
+    if (locales.values.has(sourceLocale)) continue;
+    diagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/knowledge-source-locale-missing",
+        `knowledge entry ${logicalId} has no ${spec.sourceLocale} source-locale version`,
+        ["spec", "entries", locales.firstIndex, "locale"]
+      )
+    );
   }
   return diagnostics;
 };
 var validateLocalizationContributionSemantics = (manifest) => {
   const spec = manifest.spec;
-  const diagnostics = duplicateFieldDiagnostics(spec.catalogs.map((catalog) => catalog.path.toLowerCase()), ["spec", "catalogs"], "localization catalog path");
+  const diagnostics = duplicateFieldDiagnostics(
+    spec.catalogs.map((catalog) => catalog.path.toLowerCase()),
+    ["spec", "catalogs"],
+    "localization catalog path"
+  );
   spec.catalogs.forEach((catalog, index) => {
     try {
       Intl.getCanonicalLocales(catalog.locale);
     } catch {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-localization-locale", `localization catalog locale ${catalog.locale} is not a valid BCP-47 language tag`, ["spec", "catalogs", index, "locale"]));
+      diagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-localization-locale",
+          `localization catalog locale ${catalog.locale} is not a valid BCP-47 language tag`,
+          ["spec", "catalogs", index, "locale"]
+        )
+      );
     }
   });
   return diagnostics;
@@ -297342,15 +297450,6 @@ var A1_SPEC_SCHEMA_ENTRIES = [
     }
   }
 ];
-
-// packages/sdk/dist/language/index.js
-var LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT = "common.language/document-analysis";
-var LANGUAGE_DOCUMENT_MATCHER_PROFILE = "modkit/language-document-matcher";
-
-// packages/sdk/dist/runtime/index.js
-var RUNTIME_PROVIDER_CONTRACT = "common.runtime/provider";
-var RUNTIME_SESSION_CONTRACT = "common.runtime/session";
-var RUNTIME_PROVIDER_MATCHER_PROFILE = "modkit/runtime-provider-matcher";
 var RUNTIME_SESSION_V2_MEMBERS = Object.freeze([
   "offers",
   "identity",
@@ -297360,45 +297459,12 @@ var RUNTIME_SESSION_V2_MEMBERS = Object.freeze([
   "restore",
   "stateHash"
 ]);
-
-// packages/sdk/dist/renderer/index.js
-var SCENE_RENDERER_CONTRACT = "common.render/scene-3d";
-var SCENE_RENDERER_MATCHER_PROFILE = "modkit/scene-renderer-matcher";
-
-// packages/sdk/dist/games/index.js
-var GAME_INSTALLATION_DISCOVERY_CONTRACT = "common.game/installation-discovery";
-var GAME_LAUNCH_PLAN_CONTRACT = "common.game/launch-plan";
-var GAME_INSTALLATION_MATCHER_PROFILE = "modkit/game-installation-matcher";
-
-// packages/sdk/dist/mods/index.js
-var MOD_WORKSPACE_COMPOSITION_CONTRACT = "common.mod/workspace-composition";
-var MOD_WORKSPACE_MATCHER_PROFILE = "modkit/mod-workspace-matcher";
-
-// packages/sdk/dist/data/index.js
-var DATA_CATALOG_ANALYSIS_CONTRACT = "common.data/catalog-analysis";
-var DATA_CATALOG_MATCHER_PROFILE = "modkit/data-catalog-matcher";
-var RESOLVED_DATA_WORKSPACE_CONTRACT = "common.data/resolved-workspace";
-var RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE = "modkit/resolved-data-workspace-matcher";
-
-// packages/sdk/dist/maps/index.js
-var MAP_SEMANTIC_ANALYSIS_CONTRACT = "common.map/semantic-analysis";
-var RESOLVED_MAP_WORKSPACE_CONTRACT = "common.map/resolved-workspace";
-var MAP_PREVIEW_PREPARATION_CONTRACT = "common.map/preview-preparation";
-var WORLD_SCENE_SOURCE_CONTRACT = "common.view/world-scene-source";
-var MAP_SEMANTIC_MATCHER_PROFILE = "modkit/map-semantic-matcher";
-var MAP_PREVIEW_PREPARATION_MATCHER_PROFILE = "modkit/map-preview-preparation-matcher";
-
-// packages/sdk/dist/security/grant.js
 function grantValidity(grant, now = Date.now()) {
-  if (grant.expiresAt === void 0)
-    return { state: "valid" };
+  if (grant.expiresAt === void 0) return { state: "valid" };
   const parsed = Date.parse(grant.expiresAt);
-  if (Number.isNaN(parsed))
-    return { state: "malformed", value: grant.expiresAt };
+  if (Number.isNaN(parsed)) return { state: "malformed", value: grant.expiresAt };
   return parsed > now ? { state: "valid" } : { state: "expired", at: grant.expiresAt };
 }
-
-// packages/sdk/dist/asset-capabilities/model-facet-sources.js
 var RESERVED_MODEL_FACET_SOURCES = Object.freeze([
   Object.freeze({
     contract: "common.view/model-lod-source",
@@ -297428,8 +297494,6 @@ var RESERVED_MODEL_FACET_SOURCES = Object.freeze([
     blockedBy: "the UVM reader publishes effect *counts* by kind, which fills info() and nothing else; per-emitter records have no publisher, and a page method no publisher can fill is not a contract"
   })
 ]);
-
-// packages/sdk/dist/asset-capabilities/data-sources.js
 function dataSourceRefFromWire(ref2) {
   if (!isQualifiedId(ref2.contract) || !Number.isSafeInteger(ref2.major) || ref2.major < 0) {
     throw new TypeError(`invalid data-source reference: ${ref2.contract}@${ref2.major}`);
@@ -297441,12 +297505,12 @@ function dataSourceRefFromWire(ref2) {
     return Object.freeze({ ...ref2 });
   }
   if (!STANDARD_DATA_SOURCE_CONTRACTS.includes(ref2.contract) || ref2.major !== 1) {
-    throw new TypeError(`unknown data-source reference must be explicitly opaque: ${ref2.contract}@${ref2.major}`);
+    throw new TypeError(
+      `unknown data-source reference must be explicitly opaque: ${ref2.contract}@${ref2.major}`
+    );
   }
   return Object.freeze({ ...ref2 });
 }
-
-// packages/sdk/dist/asset-capabilities/data-source-surfaces.js
 var ENCODED_MEDIA_SURFACE_ID = "common.view/encoded-media";
 var ENCODED_MEDIA = Object.freeze({
   contract: contractId(ENCODED_MEDIA_SURFACE_ID),
@@ -297658,8 +297722,6 @@ var AUXILIARY_DATA_SOURCE_SURFACES = deepFreeze({
   [ENCODED_MEDIA_SURFACE_ID]: encodedMediaSurface
 });
 var ENCODED_MEDIA_SURFACE_CONTRACT = contractId(ENCODED_MEDIA_SURFACE_ID);
-
-// packages/sdk/dist/asset-capabilities/validate-descriptor.js
 function normalizeSourceSpan(span2) {
   if (typeof span2.byteOffset === "string" && typeof span2.byteLength === "string") {
     return Object.freeze({
@@ -297709,10 +297771,14 @@ function normalizeCompanion(item) {
   if (item.state === "ambiguous") {
     return Object.freeze({
       ...item,
-      candidates: Object.freeze(item.candidates.map((candidate) => Object.freeze({
-        source: freezeSource(candidate.source),
-        revision: revisionId(candidate.revision)
-      }))),
+      candidates: Object.freeze(
+        item.candidates.map(
+          (candidate) => Object.freeze({
+            source: freezeSource(candidate.source),
+            revision: revisionId(candidate.revision)
+          })
+        )
+      ),
       diagnosticIds: Object.freeze([...item.diagnosticIds])
     });
   }
@@ -297743,7 +297809,11 @@ function normalizeOrigin(origin) {
     case "derived":
       return Object.freeze({
         kind: "derived",
-        inputs: Object.freeze(origin.inputs.map((input) => Object.freeze({ ...input, revision: revisionId(input.revision) }))),
+        inputs: Object.freeze(
+          origin.inputs.map(
+            (input) => Object.freeze({ ...input, revision: revisionId(input.revision) })
+          )
+        ),
         ...origin.recipe === void 0 ? {} : {
           recipe: Object.freeze({
             ...origin.recipe,
@@ -297770,13 +297840,18 @@ async function validateSubjectDescriptorV2(value2) {
   } catch (error3) {
     return {
       diagnostics: [
-        diagnostic("error", "x3.sdk/non-json-subject-descriptor", "subject descriptor must be inert JSON data", [], { error: error3 instanceof Error ? error3.message : String(error3) })
+        diagnostic(
+          "error",
+          "x3.sdk/non-json-subject-descriptor",
+          "subject descriptor must be inert JSON data",
+          [],
+          { error: error3 instanceof Error ? error3.message : String(error3) }
+        )
       ]
     };
   }
   const schemaDiagnostics2 = await validateWithSchema(subjectDescriptorV2Schema, snapshot);
-  if (hasErrors(schemaDiagnostics2))
-    return { diagnostics: schemaDiagnostics2 };
+  if (hasErrors(schemaDiagnostics2)) return { diagnostics: schemaDiagnostics2 };
   const wire = snapshot;
   const semanticDiagnostics = [];
   const validateSubjectUri = (uri, path) => {
@@ -297785,61 +297860,131 @@ async function validateSubjectDescriptorV2(value2) {
         throw new TypeError("subject reference is not in canonical form");
       }
     } catch (error3) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-subject-reference", `subject reference ${uri} is not a canonical restorable identity`, path, { error: error3 instanceof Error ? error3.message : String(error3) }));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-subject-reference",
+          `subject reference ${uri} is not a canonical restorable identity`,
+          path,
+          { error: error3 instanceof Error ? error3.message : String(error3) }
+        )
+      );
     }
   };
   validateSubjectUri(wire.subjectUri, ["subjectUri"]);
   if (wire.origin.kind === "derived") {
-    wire.origin.inputs.forEach((input, index) => validateSubjectUri(input.subjectUri, ["origin", "inputs", index, "subjectUri"]));
+    wire.origin.inputs.forEach(
+      (input, index) => validateSubjectUri(input.subjectUri, ["origin", "inputs", index, "subjectUri"])
+    );
   }
   const validateDiagnosticCode = (item, path) => {
     if (!isQualifiedId(item.code)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-persistent-diagnostic-code", `persistent diagnostic code ${item.code} is not a qualified id`, [...path, "code"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-persistent-diagnostic-code",
+          `persistent diagnostic code ${item.code} is not a qualified id`,
+          [...path, "code"]
+        )
+      );
     }
   };
   wire.diagnostics.forEach((item, index) => validateDiagnosticCode(item, ["diagnostics", index]));
   if (wire.interpretation === "none") {
-    wire.candidates.forEach((candidate, candidateIndex) => candidate.diagnostics?.forEach((item, diagnosticIndex) => validateDiagnosticCode(item, [
-      "candidates",
-      candidateIndex,
-      "diagnostics",
-      diagnosticIndex
-    ])));
+    wire.candidates.forEach(
+      (candidate, candidateIndex) => candidate.diagnostics?.forEach(
+        (item, diagnosticIndex) => validateDiagnosticCode(item, [
+          "candidates",
+          candidateIndex,
+          "diagnostics",
+          diagnosticIndex
+        ])
+      )
+    );
   }
   if (wire.interpretation === "codec" && parseSemver(wire.identity.codecVersion) === void 0) {
-    semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-codec-version", `codec version ${wire.identity.codecVersion} cannot be evaluated safely`, ["identity", "codecVersion"]));
+    semanticDiagnostics.push(
+      diagnostic(
+        "error",
+        "x3.sdk/invalid-codec-version",
+        `codec version ${wire.identity.codecVersion} cannot be evaluated safely`,
+        ["identity", "codecVersion"]
+      )
+    );
   }
   const knownDiagnostics = /* @__PURE__ */ new Set();
   wire.diagnostics.forEach((item, index) => {
     if (knownDiagnostics.has(item.id)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-descriptor-diagnostic", `diagnostic id ${item.id} is declared more than once`, ["diagnostics", index, "id"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-descriptor-diagnostic",
+          `diagnostic id ${item.id} is declared more than once`,
+          ["diagnostics", index, "id"]
+        )
+      );
     }
     knownDiagnostics.add(item.id);
   });
   const traitIds = /* @__PURE__ */ new Set();
   wire.traits.forEach((trait, index) => {
     if (traitIds.has(trait.id)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-descriptor-trait", `trait ${trait.id} is declared more than once`, ["traits", index, "id"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-descriptor-trait",
+          `trait ${trait.id} is declared more than once`,
+          ["traits", index, "id"]
+        )
+      );
     }
     traitIds.add(trait.id);
     if (isStandardTraitId(trait.id)) {
       if (trait.definitionVersion !== void 0) {
-        semanticDiagnostics.push(diagnostic("error", "x3.sdk/standard-trait-versioned", `standard trait ${trait.id} cannot bind an extension definition version`, ["traits", index, "definitionVersion"]));
+        semanticDiagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/standard-trait-versioned",
+            `standard trait ${trait.id} cannot bind an extension definition version`,
+            ["traits", index, "definitionVersion"]
+          )
+        );
       }
     } else {
       if (trait.definitionVersion === void 0 || parseSemver(trait.definitionVersion) === void 0) {
-        semanticDiagnostics.push(diagnostic("error", "x3.sdk/custom-trait-definition-unbound", `custom trait ${trait.id} must bind an exact installed definition version`, ["traits", index, "definitionVersion"]));
+        semanticDiagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/custom-trait-definition-unbound",
+            `custom trait ${trait.id} must bind an exact installed definition version`,
+            ["traits", index, "definitionVersion"]
+          )
+        );
       }
     }
     if (trait.state !== "available") {
       const diagnosticIds = /* @__PURE__ */ new Set();
       for (const id of trait.diagnosticIds) {
         if (diagnosticIds.has(id)) {
-          semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-trait-diagnostic", `trait diagnostic ${id} is referenced more than once`, ["traits", index, "diagnosticIds"]));
+          semanticDiagnostics.push(
+            diagnostic(
+              "error",
+              "x3.sdk/duplicate-trait-diagnostic",
+              `trait diagnostic ${id} is referenced more than once`,
+              ["traits", index, "diagnosticIds"]
+            )
+          );
         }
         diagnosticIds.add(id);
         if (!knownDiagnostics.has(id)) {
-          semanticDiagnostics.push(diagnostic("error", "x3.sdk/unknown-trait-diagnostic", `trait diagnostic ${id} is not present in descriptor diagnostics`, ["traits", index, "diagnosticIds"]));
+          semanticDiagnostics.push(
+            diagnostic(
+              "error",
+              "x3.sdk/unknown-trait-diagnostic",
+              `trait diagnostic ${id} is not present in descriptor diagnostics`,
+              ["traits", index, "diagnosticIds"]
+            )
+          );
         }
       }
     }
@@ -297849,29 +297994,64 @@ async function validateSubjectDescriptorV2(value2) {
   const handlerIds = /* @__PURE__ */ new Set();
   wire.operations.forEach((operation, index) => {
     if (operationIds.has(operation.id)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-descriptor-operation", `operation ${operation.id} is declared more than once`, ["operations", index, "id"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-descriptor-operation",
+          `operation ${operation.id} is declared more than once`,
+          ["operations", index, "id"]
+        )
+      );
     }
     operationIds.add(operation.id);
     if (handlerIds.has(operation.handlerId)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-descriptor-handler", `handler ${operation.handlerId} is bound to more than one operation`, ["operations", index, "handlerId"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/duplicate-descriptor-handler",
+          `handler ${operation.handlerId} is bound to more than one operation`,
+          ["operations", index, "handlerId"]
+        )
+      );
     }
     handlerIds.add(operation.handlerId);
     try {
       operationId(operation.id, { contributionId: operationOwner });
     } catch {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-descriptor-operation", `operation ${operation.id} is not owned by ${operationOwner}`, ["operations", index, "id"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-descriptor-operation",
+          `operation ${operation.id} is not owned by ${operationOwner}`,
+          ["operations", index, "id"]
+        )
+      );
     }
   });
   if (wire.origin.kind === "bundle") {
     const bindingIds = /* @__PURE__ */ new Set();
     wire.origin.bindings.forEach((binding, index) => {
       if (bindingIds.has(binding.id)) {
-        semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-origin-binding", `origin binding id ${binding.id} is duplicated`, ["origin", "bindings", index, "id"]));
+        semanticDiagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/duplicate-origin-binding",
+            `origin binding id ${binding.id} is duplicated`,
+            ["origin", "bindings", index, "id"]
+          )
+        );
       }
       bindingIds.add(binding.id);
     });
     if (wire.origin.primary !== void 0 && !bindingIds.has(wire.origin.primary)) {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/unknown-origin-primary", `origin primary ${wire.origin.primary} does not name a bundle binding`, ["origin", "primary"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/unknown-origin-primary",
+          `origin primary ${wire.origin.primary} does not name a bundle binding`,
+          ["origin", "primary"]
+        )
+      );
     }
   }
   if (wire.interpretation === "codec") {
@@ -297880,34 +298060,69 @@ async function validateSubjectDescriptorV2(value2) {
     const bundleBindings = wire.origin.kind === "bundle" ? new Map(wire.origin.bindings.map((binding) => [binding.id, binding])) : /* @__PURE__ */ new Map();
     (wire.companions ?? []).forEach((companion, index) => {
       if (companionIds.has(companion.id)) {
-        semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-companion-state", `companion requirement ${companion.id} is declared more than once`, ["companions", index, "id"]));
+        semanticDiagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/duplicate-companion-state",
+            `companion requirement ${companion.id} is declared more than once`,
+            ["companions", index, "id"]
+          )
+        );
       }
       companionIds.add(companion.id);
       if (companion.state === "resolved") {
         if ((companion.cardinality === "one" || companion.cardinality === "zero-or-one") && companion.bindingIds.length !== 1) {
-          semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-companion-cardinality", `resolved companion ${companion.id} must name exactly one binding for ${companion.cardinality}`, ["companions", index, "bindingIds"]));
+          semanticDiagnostics.push(
+            diagnostic(
+              "error",
+              "x3.sdk/invalid-companion-cardinality",
+              `resolved companion ${companion.id} must name exactly one binding for ${companion.cardinality}`,
+              ["companions", index, "bindingIds"]
+            )
+          );
         }
         companion.bindingIds.forEach((bindingId2, bindingIndex) => {
           const binding = bundleBindings.get(bindingId2);
           if (binding === void 0 || binding.ownership !== "companion" || binding.role !== companion.role || binding.required !== companion.required || companionBindingIds.has(bindingId2)) {
-            semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-companion-binding", `resolved companion ${companion.id} does not name a distinct matching companion binding`, ["companions", index, "bindingIds", bindingIndex]));
+            semanticDiagnostics.push(
+              diagnostic(
+                "error",
+                "x3.sdk/invalid-companion-binding",
+                `resolved companion ${companion.id} does not name a distinct matching companion binding`,
+                ["companions", index, "bindingIds", bindingIndex]
+              )
+            );
           }
           companionBindingIds.add(bindingId2);
         });
       } else {
         for (const id of companion.diagnosticIds ?? []) {
           if (!knownDiagnostics.has(id)) {
-            semanticDiagnostics.push(diagnostic("error", "x3.sdk/unknown-companion-diagnostic", `companion diagnostic ${id} is not present in descriptor diagnostics`, ["companions", index, "diagnosticIds"]));
+            semanticDiagnostics.push(
+              diagnostic(
+                "error",
+                "x3.sdk/unknown-companion-diagnostic",
+                `companion diagnostic ${id} is not present in descriptor diagnostics`,
+                ["companions", index, "diagnosticIds"]
+              )
+            );
           }
         }
         if (companion.state === "ambiguous") {
           const candidates = /* @__PURE__ */ new Set();
           companion.candidates.forEach((candidate, candidateIndex) => {
-            const key = canonicalJsonStringify(candidate);
-            if (candidates.has(key)) {
-              semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-companion-candidate", `ambiguous companion ${companion.id} repeats one candidate`, ["companions", index, "candidates", candidateIndex]));
+            const key2 = canonicalJsonStringify(candidate);
+            if (candidates.has(key2)) {
+              semanticDiagnostics.push(
+                diagnostic(
+                  "error",
+                  "x3.sdk/duplicate-companion-candidate",
+                  `ambiguous companion ${companion.id} repeats one candidate`,
+                  ["companions", index, "candidates", candidateIndex]
+                )
+              );
             }
-            candidates.add(key);
+            candidates.add(key2);
           });
         }
       }
@@ -297915,7 +298130,14 @@ async function validateSubjectDescriptorV2(value2) {
     if (wire.origin.kind === "bundle") {
       wire.origin.bindings.forEach((binding, index) => {
         if (binding.ownership === "companion" && !companionBindingIds.has(binding.id)) {
-          semanticDiagnostics.push(diagnostic("error", "x3.sdk/untracked-companion-binding", `companion binding ${binding.id} has no resolved requirement state`, ["origin", "bindings", index, "id"]));
+          semanticDiagnostics.push(
+            diagnostic(
+              "error",
+              "x3.sdk/untracked-companion-binding",
+              `companion binding ${binding.id} has no resolved requirement state`,
+              ["origin", "bindings", index, "id"]
+            )
+          );
         }
       });
     }
@@ -297924,7 +298146,14 @@ async function validateSubjectDescriptorV2(value2) {
     const inputIds = /* @__PURE__ */ new Set();
     wire.origin.inputs.forEach((input, index) => {
       if (inputIds.has(input.bindingId)) {
-        semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-derived-input", `derived input binding ${input.bindingId} is duplicated`, ["origin", "inputs", index, "bindingId"]));
+        semanticDiagnostics.push(
+          diagnostic(
+            "error",
+            "x3.sdk/duplicate-derived-input",
+            `derived input binding ${input.bindingId} is duplicated`,
+            ["origin", "inputs", index, "bindingId"]
+          )
+        );
       }
       inputIds.add(input.bindingId);
     });
@@ -297939,7 +298168,14 @@ async function validateSubjectDescriptorV2(value2) {
         contributionId: wire.origin.recipe.contributionId
       });
     } catch {
-      semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-derivation-operation", `derivation recipe ${wire.origin.recipe.extensionId}@${wire.origin.recipe.extensionVersion}#${wire.origin.recipe.contributionId} cannot own ${wire.origin.recipe.operation}`, ["origin", "recipe"]));
+      semanticDiagnostics.push(
+        diagnostic(
+          "error",
+          "x3.sdk/invalid-derivation-operation",
+          `derivation recipe ${wire.origin.recipe.extensionId}@${wire.origin.recipe.extensionVersion}#${wire.origin.recipe.contributionId} cannot own ${wire.origin.recipe.operation}`,
+          ["origin", "recipe"]
+        )
+      );
     }
   }
   if (hasErrors(semanticDiagnostics)) {
@@ -297955,38 +298191,39 @@ async function validateSubjectDescriptorV2(value2) {
     }),
     diagnostics: Object.freeze(wire.diagnostics.map(normalizeDiagnostic)),
     dataSources: Object.freeze(wire.dataSources.map(dataSourceRefFromWire)),
-    traits: Object.freeze(wire.traits.map((item) => Object.freeze({ ...item, id: traitId(item.id) }))),
-    operations: Object.freeze(wire.operations.map((item) => Object.freeze({
-      ...item,
-      id: operationId(item.id, { contributionId: operationOwner })
-    })))
+    traits: Object.freeze(
+      wire.traits.map((item) => Object.freeze({ ...item, id: traitId(item.id) }))
+    ),
+    operations: Object.freeze(
+      wire.operations.map(
+        (item) => Object.freeze({
+          ...item,
+          id: operationId(item.id, { contributionId: operationOwner })
+        })
+      )
+    )
   };
-  const descriptor = Object.freeze(wire.interpretation === "none" ? { ...base, candidates: Object.freeze(wire.candidates.map(normalizeDetection)) } : {
-    ...base,
-    ...wire.companions === void 0 ? {} : { companions: Object.freeze(wire.companions.map(normalizeCompanion)) }
-  });
+  const descriptor = Object.freeze(
+    wire.interpretation === "none" ? { ...base, candidates: Object.freeze(wire.candidates.map(normalizeDetection)) } : {
+      ...base,
+      ...wire.companions === void 0 ? {} : { companions: Object.freeze(wire.companions.map(normalizeCompanion)) }
+    }
+  );
   return { descriptor, diagnostics: [...schemaDiagnostics2, ...semanticDiagnostics] };
 }
-
-// packages/sdk/dist/asset-capabilities/presentation.js
 function bindingId(value2) {
-  if (!isSegment(value2))
-    throw new TypeError(`invalid binding id: ${value2}`);
+  if (!isSegment(value2)) throw new TypeError(`invalid binding id: ${value2}`);
   return value2;
 }
 function presentationSlotId(value2) {
-  if (!isSegment(value2))
-    throw new TypeError(`invalid presentation slot id: ${value2}`);
+  if (!isSegment(value2)) throw new TypeError(`invalid presentation slot id: ${value2}`);
   return value2;
 }
-
-// packages/sdk/dist/asset-capabilities/visual-composition.js
 var MIXED_VISUAL_STAGE_ID = presentationSlotId("mixed-visual");
 var MIXED_VISUAL_WORLD_BINDING_ID = bindingId("mixed-world");
 var MIXED_VISUAL_MODEL_BINDING_ID = bindingId("mixed-model");
-function nonEmpty(value2, label) {
-  if (value2.trim().length === 0)
-    throw new TypeError(`${label} must not be empty`);
+function nonEmpty2(value2, label) {
+  if (value2.trim().length === 0) throw new TypeError(`${label} must not be empty`);
 }
 function finiteTuple(value2, label, positive = false) {
   if (value2.length !== 3 || value2.some((item) => !Number.isFinite(item) || positive && item <= 0)) {
@@ -297999,7 +298236,7 @@ function basis(value2, label) {
       throw new TypeError(`${label}.sourceUnit is only valid for source-unit coordinates`);
     }
   } else {
-    nonEmpty(value2.sourceUnit ?? "", `${label}.sourceUnit`);
+    nonEmpty2(value2.sourceUnit ?? "", `${label}.sourceUnit`);
   }
   if (value2.metersPerUnit !== void 0 && (!Number.isFinite(value2.metersPerUnit) || value2.metersPerUnit <= 0)) {
     throw new TypeError(`${label}.metersPerUnit must be positive and finite`);
@@ -298009,13 +298246,13 @@ function basis(value2, label) {
   }
 }
 function frame(value2, label) {
-  nonEmpty(value2.coordinateSpaceId, `${label}.coordinateSpaceId`);
+  nonEmpty2(value2.coordinateSpaceId, `${label}.coordinateSpaceId`);
   basis(value2.basis, `${label}.basis`);
   finiteTuple(value2.origin, `${label}.origin`);
 }
 function subject(value2, label) {
-  nonEmpty(value2.subjectUri, `${label}.subjectUri`);
-  nonEmpty(value2.revision, `${label}.revision`);
+  nonEmpty2(value2.subjectUri, `${label}.subjectUri`);
+  nonEmpty2(value2.revision, `${label}.revision`);
 }
 function digest(value2, label) {
   if (value2 !== void 0 && !/^sha256:[0-9a-f]{64}$/u.test(value2)) {
@@ -298023,18 +298260,16 @@ function digest(value2, label) {
   }
 }
 function policy(value2, label) {
-  nonEmpty(value2.provenance.sourceIdentity, `${label}.provenance.sourceIdentity`);
+  nonEmpty2(value2.provenance.sourceIdentity, `${label}.provenance.sourceIdentity`);
   subject(value2.provenance.subject, `${label}.provenance.subject`);
-  nonEmpty(value2.provenance.originUri, `${label}.provenance.originUri`);
+  nonEmpty2(value2.provenance.originUri, `${label}.provenance.originUri`);
   digest(value2.provenance.contentDigest, `${label}.provenance.contentDigest`);
   if (value2.license.state === "declared")
-    nonEmpty(value2.license.expression, `${label}.license.expression`);
-  else
-    nonEmpty(value2.license.reason, `${label}.license.reason`);
+    nonEmpty2(value2.license.expression, `${label}.license.expression`);
+  else nonEmpty2(value2.license.reason, `${label}.license.reason`);
   if (value2.redistribution.state === "allowed")
-    nonEmpty(value2.redistribution.basis, `${label}.redistribution.basis`);
-  else
-    nonEmpty(value2.redistribution.reason, `${label}.redistribution.reason`);
+    nonEmpty2(value2.redistribution.basis, `${label}.redistribution.basis`);
+  else nonEmpty2(value2.redistribution.reason, `${label}.redistribution.reason`);
 }
 function sameSubject(left, right) {
   return left.subjectUri === right.subjectUri && left.revision === right.revision;
@@ -298046,8 +298281,7 @@ function sameFrame(left, right) {
   return sameJson(left, right);
 }
 function validateTransform(value2, worldFrame) {
-  if (value2.schemaVersion !== 1)
-    throw new TypeError("overlay transform schemaVersion must be 1");
+  if (value2.schemaVersion !== 1) throw new TypeError("overlay transform schemaVersion must be 1");
   frame(value2.source, "overlay transform source");
   frame(value2.target, "overlay transform target");
   if (!sameFrame(value2.target, worldFrame)) {
@@ -298061,8 +298295,7 @@ function validateTransform(value2, worldFrame) {
   let inversions = 0;
   for (let left = 0; left < indices.length; left += 1) {
     for (let right = left + 1; right < indices.length; right += 1) {
-      if (indices[left] > indices[right])
-        inversions += 1;
+      if (indices[left] > indices[right]) inversions += 1;
     }
   }
   const permutationDirection = inversions % 2 === 0 ? 1 : -1;
@@ -298073,16 +298306,14 @@ function validateTransform(value2, worldFrame) {
   }
   finiteTuple(value2.scale, "overlay transform scale", true);
   finiteTuple(value2.translation, "overlay transform translation");
-  nonEmpty(value2.evidence.reference, "overlay transform evidence reference");
+  nonEmpty2(value2.evidence.reference, "overlay transform evidence reference");
   digest(value2.evidence.receiptDigest, "overlay transform evidence receiptDigest");
 }
 function validateDocument(document2) {
-  if (document2.schemaVersion !== 1)
-    throw new TypeError("mixed visual schemaVersion must be 1");
-  nonEmpty(document2.workspaceId, "workspaceId");
+  if (document2.schemaVersion !== 1) throw new TypeError("mixed visual schemaVersion must be 1");
+  nonEmpty2(document2.workspaceId, "workspaceId");
   frame(document2.worldFrame, "worldFrame");
-  if (document2.sources.length !== 2)
-    throw new TypeError("mixed visual workspace needs two sources");
+  if (document2.sources.length !== 2) throw new TypeError("mixed visual workspace needs two sources");
   const world = document2.sources.find((source) => source.role === "world-base");
   const model = document2.sources.find((source) => source.role === "model-overlay");
   if (world === void 0 || model === void 0) {
@@ -298097,7 +298328,7 @@ function validateDocument(document2) {
   for (const source of document2.sources) {
     if (!isSegment(source.sourceId))
       throw new TypeError(`invalid mixed visual source id: ${source.sourceId}`);
-    nonEmpty(source.originGroup, `source ${source.sourceId} originGroup`);
+    nonEmpty2(source.originGroup, `source ${source.sourceId} originGroup`);
     subject(source.subject, `source ${source.sourceId} subject`);
   }
   if (world.binding.contract !== "common.view/world-scene-source" || world.binding.major !== 1) {
@@ -298122,11 +298353,12 @@ function validateDocument(document2) {
     if (resources.has(resource.resourceId))
       throw new TypeError(`duplicate mixed visual resource id: ${resource.resourceId}`);
     const source = document2.sources.find((candidate) => candidate.sourceId === resource.sourceId);
-    if (source === void 0)
-      throw new TypeError(`unknown resource source: ${resource.sourceId}`);
-    nonEmpty(resource.logicalId, `resource ${resource.resourceId} logicalId`);
+    if (source === void 0) throw new TypeError(`unknown resource source: ${resource.sourceId}`);
+    nonEmpty2(resource.logicalId, `resource ${resource.resourceId} logicalId`);
     if (!sameSubject(resource.provenance.subject, source.subject)) {
-      throw new TypeError(`resource ${resource.resourceId} provenance does not match its source snapshot`);
+      throw new TypeError(
+        `resource ${resource.resourceId} provenance does not match its source snapshot`
+      );
     }
     policy(resource, `resource ${resource.resourceId}`);
     resources.set(resource.resourceId, resource);
@@ -298138,8 +298370,7 @@ function validateDocument(document2) {
     if (objects.has(object.objectId))
       throw new TypeError(`duplicate mixed visual object id: ${object.objectId}`);
     const source = document2.sources.find((candidate) => candidate.sourceId === object.sourceId);
-    if (source === void 0)
-      throw new TypeError(`unknown object source: ${object.sourceId}`);
+    if (source === void 0) throw new TypeError(`unknown object source: ${object.sourceId}`);
     if (source.role !== object.role)
       throw new TypeError(`object ${object.objectId} role does not match its source`);
     if (!sameSubject(object.provenance.subject, source.subject)) {
@@ -298173,7 +298404,9 @@ function validateDocument(document2) {
       throw new TypeError(`duplicate overlay placement id: ${placement.placementId}`);
     const object = objects.get(placement.objectId);
     if (object?.role !== "model-overlay") {
-      throw new TypeError(`overlay placement ${placement.placementId} must reference a model-overlay object`);
+      throw new TypeError(
+        `overlay placement ${placement.placementId} must reference a model-overlay object`
+      );
     }
     validateTransform(placement.transform, document2.worldFrame);
     placementIds.add(placement.placementId);
@@ -298197,8 +298430,7 @@ function validateDocument(document2) {
 }
 function isMixedVisualPresentationSlot(slot) {
   const candidate = slot;
-  if (slot.slotId !== MIXED_VISUAL_STAGE_ID || candidate.composition === void 0)
-    return false;
+  if (slot.slotId !== MIXED_VISUAL_STAGE_ID || candidate.composition === void 0) return false;
   try {
     validateDocument(candidate.composition);
     const expectedBindings = candidate.composition.sources.map((source) => source.binding);
@@ -298211,19 +298443,52 @@ function isMixedVisualPresentationSlot(slot) {
   }
 }
 
-// packages/sdk/dist/templates/index.js
-var GAME_TEMPLATE_PREVIEW_OPERATION_ID = "view.template";
-var GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION = 1;
-var nonEmpty2 = (value2) => typeof value2 === "string" && value2.trim().length > 0;
-function isGameTemplatePreviewResult(value2) {
-  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2))
-    return false;
-  const result = value2;
-  const fidelity = result["fidelity"];
-  return result["schemaVersion"] === GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION && result["operationId"] === GAME_TEMPLATE_PREVIEW_OPERATION_ID && nonEmpty2(result["templateKind"]) && nonEmpty2(result["entryUri"]) && (result["rootPath"] === void 0 || typeof result["rootPath"] === "string") && typeof result["resolvedTree"] === "object" && result["resolvedTree"] !== null && Array.isArray(result["displayItems"]) && Array.isArray(result["diagnostics"]) && ["complete", "partial", "capped", "invalid"].includes(String(result["completeness"])) && typeof fidelity === "object" && fidelity !== null && !Array.isArray(fidelity) && fidelity["comparison"] === "semantic" && Array.isArray(fidelity["unsupported"]) && result["provenance"] !== void 0 && result["digest"] !== void 0;
-}
+// packages/sdk/dist/language/index.js
+var LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT = "common.language/document-analysis";
+var LANGUAGE_DOCUMENT_MATCHER_PROFILE = "modkit/language-document-matcher";
 
-// ../modkit-extensions-blizzard/node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/scanner.js
+// packages/sdk/dist/runtime/index.js
+var RUNTIME_PROVIDER_CONTRACT = "common.runtime/provider";
+var RUNTIME_SESSION_CONTRACT = "common.runtime/session";
+var RUNTIME_PROVIDER_MATCHER_PROFILE = "modkit/runtime-provider-matcher";
+var RUNTIME_SESSION_V2_MEMBERS2 = Object.freeze([
+  "offers",
+  "identity",
+  "step",
+  "events",
+  "snapshot",
+  "restore",
+  "stateHash"
+]);
+
+// packages/sdk/dist/renderer/index.js
+var SCENE_RENDERER_CONTRACT = "common.render/scene-3d";
+var SCENE_RENDERER_MATCHER_PROFILE = "modkit/scene-renderer-matcher";
+
+// packages/sdk/dist/games/index.js
+var GAME_INSTALLATION_DISCOVERY_CONTRACT = "common.game/installation-discovery";
+var GAME_LAUNCH_PLAN_CONTRACT = "common.game/launch-plan";
+var GAME_INSTALLATION_MATCHER_PROFILE = "modkit/game-installation-matcher";
+
+// packages/sdk/dist/mods/index.js
+var MOD_WORKSPACE_COMPOSITION_CONTRACT = "common.mod/workspace-composition";
+var MOD_WORKSPACE_MATCHER_PROFILE = "modkit/mod-workspace-matcher";
+
+// packages/sdk/dist/data/index.js
+var DATA_CATALOG_ANALYSIS_CONTRACT = "common.data/catalog-analysis";
+var DATA_CATALOG_MATCHER_PROFILE = "modkit/data-catalog-matcher";
+var RESOLVED_DATA_WORKSPACE_CONTRACT = "common.data/resolved-workspace";
+var RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE = "modkit/resolved-data-workspace-matcher";
+
+// packages/sdk/dist/maps/index.js
+var MAP_SEMANTIC_ANALYSIS_CONTRACT = "common.map/semantic-analysis";
+var RESOLVED_MAP_WORKSPACE_CONTRACT = "common.map/resolved-workspace";
+var MAP_PREVIEW_PREPARATION_CONTRACT = "common.map/preview-preparation";
+var WORLD_SCENE_SOURCE_CONTRACT = "common.view/world-scene-source";
+var MAP_SEMANTIC_MATCHER_PROFILE = "modkit/map-semantic-matcher";
+var MAP_PREVIEW_PREPARATION_MATCHER_PROFILE = "modkit/map-preview-preparation-matcher";
+
+// node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/scanner.js
 function createScanner(text3, ignoreTrivia = false) {
   const len = text3.length;
   let pos = 0, value2 = "", tokenOffset = 0, token = 16, lineNumber = 0, lineStartOffset = 0, tokenLineStartOffset = 0, prevTokenLineStartOffset = 0, scanError = 0;
@@ -298644,7 +298909,7 @@ var CharacterCodes;
   CharacterCodes3[CharacterCodes3["tab"] = 9] = "tab";
 })(CharacterCodes || (CharacterCodes = {}));
 
-// ../modkit-extensions-blizzard/node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/string-intern.js
+// node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/string-intern.js
 var cachedSpaces = new Array(20).fill(0).map((_, index) => {
   return " ".repeat(index);
 });
@@ -298674,7 +298939,7 @@ var cachedBreakLinesWithSpaces = {
   }
 };
 
-// ../modkit-extensions-blizzard/node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/parser.js
+// node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/parser.js
 var ParseOptions;
 (function(ParseOptions3) {
   ParseOptions3.DEFAULT = {
@@ -299065,7 +299330,7 @@ function getNodeType(value2) {
   }
 }
 
-// ../modkit-extensions-blizzard/node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/main.js
+// node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/main.js
 var ScanError;
 (function(ScanError3) {
   ScanError3[ScanError3["None"] = 0] = "None";
@@ -299155,10 +299420,10 @@ function printParseErrorCode(code) {
 }
 
 // packages/host/dist/index.js
-var __defProp2 = Object.defineProperty;
+var __defProp3 = Object.defineProperty;
 var __export2 = (target, all) => {
   for (var name in all)
-    __defProp2(target, name, { get: all[name], enumerable: true });
+    __defProp3(target, name, { get: all[name], enumerable: true });
 };
 var RESTRICTED_LINKED_EXECUTION = Object.freeze({
   origin: "linked",
@@ -299220,15 +299485,15 @@ var ok = (command, data, diagnostics = []) => ({ state: "ok", command, data, dia
 var unavailable = (command, reason, alternative, diagnostics = [], code = COMMAND_UNAVAILABLE) => ({ state: "unavailable", command, code, reason, alternative, diagnostics });
 var failed = (command, code, message, diagnostics = []) => ({ state: "failed", command, code, message, diagnostics });
 var RESULT_STATES = Object.freeze(["ok", "unavailable", "failed"]);
-function deepFreeze3(value2) {
+function deepFreeze2(value2) {
   if (value2 !== null && typeof value2 === "object" && !Object.isFrozen(value2)) {
-    for (const nested of Object.values(value2)) deepFreeze3(nested);
+    for (const nested of Object.values(value2)) deepFreeze2(nested);
     Object.freeze(value2);
   }
   return value2;
 }
 function defineSubjectCommandTargets(targets) {
-  return deepFreeze3(targets);
+  return deepFreeze2(targets);
 }
 var SUBJECT_COMMAND_TARGETS = defineSubjectCommandTargets({
   open: {
@@ -307128,6 +307393,17 @@ async function connectElectronSubjectClient(options) {
   });
 }
 
+// packages/sdk/dist/templates/index.js
+var GAME_TEMPLATE_PREVIEW_OPERATION_ID = "view.template";
+var GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION = 1;
+var nonEmpty = (value2) => typeof value2 === "string" && value2.trim().length > 0;
+function isGameTemplatePreviewResult(value2) {
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2)) return false;
+  const result = value2;
+  const fidelity = result["fidelity"];
+  return result["schemaVersion"] === GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION && result["operationId"] === GAME_TEMPLATE_PREVIEW_OPERATION_ID && nonEmpty(result["templateKind"]) && nonEmpty(result["entryUri"]) && (result["rootPath"] === void 0 || typeof result["rootPath"] === "string") && typeof result["resolvedTree"] === "object" && result["resolvedTree"] !== null && Array.isArray(result["displayItems"]) && Array.isArray(result["diagnostics"]) && ["complete", "partial", "capped", "invalid"].includes(String(result["completeness"])) && typeof fidelity === "object" && fidelity !== null && !Array.isArray(fidelity) && fidelity["comparison"] === "semantic" && Array.isArray(fidelity["unsupported"]) && result["provenance"] !== void 0 && result["digest"] !== void 0;
+}
+
 // packages/ui/dist/index.js
 var PARTS = Object.freeze([
   // shared surface
@@ -307943,6 +308219,16 @@ var EN_MESSAGES = Object.freeze({
   "card.extension.fact.games": "Games",
   "card.extension.fact.sourceDetails": "Source details",
   "card.extension.fact.licenseFiles": "License files",
+  "card.repository.group.overview": "Overview",
+  "card.repository.group.offerings": "Games and components",
+  "card.repository.group.resources": "Resources",
+  "card.repository.group.extensions": "Extensions",
+  "card.repository.group.capabilities": "Capabilities",
+  "card.repository.fact.id": "Identifier",
+  "card.repository.fact.displayName": "Display name",
+  "card.repository.fact.vendor": "Vendor",
+  "card.repository.fact.gameCount": "Games",
+  "card.repository.fact.extensionCount": "Extensions and components",
   "card.contribution.fact.id": "Contribution ID",
   "card.contribution.fact.displayName": "Display name",
   "card.contribution.fact.ownerExtension": "Owner extension",
@@ -308510,6 +308796,16 @@ var RU_MESSAGES = Object.freeze({
   "card.extension.fact.games": "\u0418\u0433\u0440\u044B",
   "card.extension.fact.sourceDetails": "\u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A",
   "card.extension.fact.licenseFiles": "\u0424\u0430\u0439\u043B\u044B \u043B\u0438\u0446\u0435\u043D\u0437\u0438\u0439",
+  "card.repository.group.overview": "\u041E\u0431\u0437\u043E\u0440",
+  "card.repository.group.offerings": "\u0418\u0433\u0440\u044B \u0438 \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u044B",
+  "card.repository.group.resources": "\u0420\u0435\u0441\u0443\u0440\u0441\u044B",
+  "card.repository.group.extensions": "\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F",
+  "card.repository.group.capabilities": "\u0412\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0438",
+  "card.repository.fact.id": "\u0418\u0434\u0435\u043D\u0442\u0438\u0444\u0438\u043A\u0430\u0442\u043E\u0440",
+  "card.repository.fact.displayName": "\u041E\u0442\u043E\u0431\u0440\u0430\u0436\u0430\u0435\u043C\u043E\u0435 \u0438\u043C\u044F",
+  "card.repository.fact.vendor": "\u0420\u0430\u0437\u0440\u0430\u0431\u043E\u0442\u0447\u0438\u043A",
+  "card.repository.fact.gameCount": "\u0418\u0433\u0440\u044B",
+  "card.repository.fact.extensionCount": "\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F \u0438 \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u044B",
   "card.contribution.fact.id": "\u0418\u0434\u0435\u043D\u0442\u0438\u0444\u0438\u043A\u0430\u0442\u043E\u0440 \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0438",
   "card.contribution.fact.displayName": "\u041E\u0442\u043E\u0431\u0440\u0430\u0436\u0430\u0435\u043C\u043E\u0435 \u0438\u043C\u044F",
   "card.contribution.fact.ownerExtension": "\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435-\u0432\u043B\u0430\u0434\u0435\u043B\u0435\u0446",
@@ -308911,6 +309207,16 @@ var CARD_FALLBACK_MESSAGES = {
   "card.namedSubject": "{label} subject card",
   "card.relatedCapped": "Related subjects are capped.",
   "card.relatedSubjects": "Related subjects",
+  "card.repository.fact.displayName": "Display name",
+  "card.repository.fact.extensionCount": "Extensions and components",
+  "card.repository.fact.gameCount": "Games",
+  "card.repository.fact.id": "Identifier",
+  "card.repository.fact.vendor": "Vendor",
+  "card.repository.group.capabilities": "Capabilities",
+  "card.repository.group.extensions": "Extensions",
+  "card.repository.group.offerings": "Games and components",
+  "card.repository.group.overview": "Overview",
+  "card.repository.group.resources": "Resources",
   "card.sections": "{label} sections",
   "card.subject": "Subject card"
 };
@@ -313522,6 +313828,8 @@ function factValue(value2) {
 }
 var EXTENSION_SUBJECT_KIND = "modkit/extension";
 var CONTRIBUTION_SUBJECT_KIND = "modkit/contribution";
+var VENDOR_SUBJECT_KIND = "modkit/vendor";
+var GAME_SUBJECT_KIND = "modkit/game";
 var EXTENSION_GROUP_MESSAGE_KEYS = Object.freeze({
   overview: "card.extension.group.overview",
   state: "card.extension.group.state",
@@ -313562,9 +313870,29 @@ var CONTRIBUTION_FACT_MESSAGE_KEYS = Object.freeze({
   "runtime-variants": "card.contribution.fact.runtimeVariants",
   spec: "card.contribution.fact.specification"
 });
+var REPOSITORY_SUBJECT_GROUP_MESSAGE_KEYS = Object.freeze(
+  {
+    overview: "card.repository.group.overview",
+    resources: "card.repository.group.resources",
+    offerings: "card.repository.group.offerings",
+    "extension-requirements": "card.repository.group.extensions",
+    "capability-requirements": "card.repository.group.capabilities"
+  }
+);
+var REPOSITORY_SUBJECT_FACT_MESSAGE_KEYS = Object.freeze({
+  id: "card.repository.fact.id",
+  "display-name": "card.repository.fact.displayName",
+  description: "card.extension.fact.description",
+  vendor: "card.repository.fact.vendor",
+  "game-count": "card.repository.fact.gameCount",
+  "extension-count": "card.repository.fact.extensionCount"
+});
 var NO_FACT_MESSAGE_KEYS = Object.freeze({});
+function isRepositorySubjectKind(kind) {
+  return kind === VENDOR_SUBJECT_KIND || kind === GAME_SUBJECT_KIND;
+}
 function systemSubjectLabel(localizer, subjectKind, keys, id, fallback2) {
-  if (subjectKind !== EXTENSION_SUBJECT_KIND && subjectKind !== CONTRIBUTION_SUBJECT_KIND) {
+  if (subjectKind !== EXTENSION_SUBJECT_KIND && subjectKind !== CONTRIBUTION_SUBJECT_KIND && !isRepositorySubjectKind(subjectKind)) {
     return fallback2;
   }
   const key = keys[id];
@@ -313572,13 +313900,40 @@ function systemSubjectLabel(localizer, subjectKind, keys, id, fallback2) {
 }
 function factField(fact, subjectKind, localizer) {
   const provenance = fact.provenance.map((item) => item.label);
-  const keys = subjectKind === EXTENSION_SUBJECT_KIND ? EXTENSION_FACT_MESSAGE_KEYS : subjectKind === CONTRIBUTION_SUBJECT_KIND ? CONTRIBUTION_FACT_MESSAGE_KEYS : NO_FACT_MESSAGE_KEYS;
+  const keys = subjectKind === EXTENSION_SUBJECT_KIND ? EXTENSION_FACT_MESSAGE_KEYS : subjectKind === CONTRIBUTION_SUBJECT_KIND ? CONTRIBUTION_FACT_MESSAGE_KEYS : isRepositorySubjectKind(subjectKind) ? REPOSITORY_SUBJECT_FACT_MESSAGE_KEYS : NO_FACT_MESSAGE_KEYS;
   return {
     name: systemSubjectLabel(localizer, subjectKind, keys, fact.id, fact.label),
     value: factValue(fact.value),
     ...provenance.length === 0 ? {} : { badge: provenance[0] },
     ...provenance.length <= 1 ? {} : { title: provenance.join(" \xB7 ") },
     ...fact.knowledgeTarget === void 0 ? {} : { knowledgeTarget: fact.knowledgeTarget }
+  };
+}
+function repositoryResourceRef(value2) {
+  if (value2 === null || typeof value2 !== "object" || Array.isArray(value2)) return void 0;
+  const label = Object.getOwnPropertyDescriptor(value2, "label")?.value;
+  const url = Object.getOwnPropertyDescriptor(value2, "url")?.value;
+  if (typeof label !== "string" || typeof url !== "string") return void 0;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:" || parsed.username !== "" || parsed.password !== "") {
+      return void 0;
+    }
+    return { label, href: parsed.href };
+  } catch {
+    return void 0;
+  }
+}
+function repositorySubjectTableField(fact) {
+  const value2 = fact.value;
+  if (value2 === null || typeof value2 !== "object" || Array.isArray(value2)) return void 0;
+  const subjectId = Object.getOwnPropertyDescriptor(value2, "subjectId")?.value;
+  const description = Object.getOwnPropertyDescriptor(value2, "description")?.value;
+  if (typeof subjectId !== "string" || typeof description !== "string") return void 0;
+  return {
+    name: fact.label,
+    value: description,
+    ref: { label: fact.label, href: subjectId }
   };
 }
 async function loadSubjectCardSections(source, options = {}) {
@@ -313641,10 +313996,37 @@ async function loadSubjectCardSections(source, options = {}) {
   }
   for (const { group, page: page2 } of factGroups) {
     if (summary.identity.kind === EXTENSION_SUBJECT_KIND && group.id === "contributions") continue;
+    if (isRepositorySubjectKind(summary.identity.kind) && group.id === "resources") {
+      const links = page2.items.map((item) => repositoryResourceRef(item.value)).filter((item) => item !== void 0);
+      if (links.length === page2.items.length) {
+        sections.push({
+          kind: "links",
+          id: group.id,
+          title: localizer.text("card.repository.group.resources"),
+          links,
+          expanded: true
+        });
+        continue;
+      }
+    }
+    if (summary.identity.kind === VENDOR_SUBJECT_KIND && group.id === "offerings") {
+      const fields = page2.items.map(repositorySubjectTableField).filter((item) => item !== void 0);
+      if (fields.length === page2.items.length) {
+        sections.push({
+          kind: "fields",
+          id: group.id,
+          title: localizer.text("card.repository.group.offerings"),
+          fields,
+          expanded: true
+        });
+        continue;
+      }
+    }
+    const groupKeys = isRepositorySubjectKind(summary.identity.kind) ? REPOSITORY_SUBJECT_GROUP_MESSAGE_KEYS : EXTENSION_GROUP_MESSAGE_KEYS;
     const groupLabel = systemSubjectLabel(
       localizer,
       summary.identity.kind,
-      EXTENSION_GROUP_MESSAGE_KEYS,
+      groupKeys,
       group.id,
       group.label
     );
@@ -313786,7 +314168,7 @@ function renderHeader(document2, host2, section, localizer, onNavigate) {
   }
   host2.append(header2);
 }
-function renderFields(document2, host2, fields, inspectKnowledge) {
+function renderFields(document2, host2, fields, inspectKnowledge, onNavigate) {
   const list2 = document2.createElement("div");
   list2.className = "modkit-card__fields";
   list2.setAttribute("role", "table");
@@ -313797,8 +314179,8 @@ function renderFields(document2, host2, fields, inspectKnowledge) {
     setPart(row, "card.field");
     row.tabIndex = 0;
     if (field2.title !== void 0) row.title = field2.title;
-    const name = document2.createElement("span");
-    name.textContent = safeViewerText(field2.name, 128);
+    const name = field2.ref === void 0 ? document2.createElement("span") : ref(document2, field2.ref, onNavigate);
+    if (field2.ref === void 0) name.textContent = safeViewerText(field2.name, 128);
     setPart(name, "card.field-name");
     const value2 = document2.createElement("span");
     value2.textContent = safeViewerText(field2.value, 2048);
@@ -313921,7 +314303,8 @@ function createSubjectCard(document2, options) {
               document2,
               panel,
               section.fields,
-              options.knowledge === void 0 ? void 0 : inspectKnowledge
+              options.knowledge === void 0 ? void 0 : inspectKnowledge,
+              options.onNavigate
             );
             return;
           case "links": {
@@ -318223,6 +318606,16 @@ var EN_MESSAGES2 = Object.freeze({
   "card.extension.fact.games": "Games",
   "card.extension.fact.sourceDetails": "Source details",
   "card.extension.fact.licenseFiles": "License files",
+  "card.repository.group.overview": "Overview",
+  "card.repository.group.offerings": "Games and components",
+  "card.repository.group.resources": "Resources",
+  "card.repository.group.extensions": "Extensions",
+  "card.repository.group.capabilities": "Capabilities",
+  "card.repository.fact.id": "Identifier",
+  "card.repository.fact.displayName": "Display name",
+  "card.repository.fact.vendor": "Vendor",
+  "card.repository.fact.gameCount": "Games",
+  "card.repository.fact.extensionCount": "Extensions and components",
   "card.contribution.fact.id": "Contribution ID",
   "card.contribution.fact.displayName": "Display name",
   "card.contribution.fact.ownerExtension": "Owner extension",
@@ -318790,6 +319183,16 @@ var RU_MESSAGES2 = Object.freeze({
   "card.extension.fact.games": "\u0418\u0433\u0440\u044B",
   "card.extension.fact.sourceDetails": "\u0418\u0441\u0442\u043E\u0447\u043D\u0438\u043A",
   "card.extension.fact.licenseFiles": "\u0424\u0430\u0439\u043B\u044B \u043B\u0438\u0446\u0435\u043D\u0437\u0438\u0439",
+  "card.repository.group.overview": "\u041E\u0431\u0437\u043E\u0440",
+  "card.repository.group.offerings": "\u0418\u0433\u0440\u044B \u0438 \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u044B",
+  "card.repository.group.resources": "\u0420\u0435\u0441\u0443\u0440\u0441\u044B",
+  "card.repository.group.extensions": "\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F",
+  "card.repository.group.capabilities": "\u0412\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0438",
+  "card.repository.fact.id": "\u0418\u0434\u0435\u043D\u0442\u0438\u0444\u0438\u043A\u0430\u0442\u043E\u0440",
+  "card.repository.fact.displayName": "\u041E\u0442\u043E\u0431\u0440\u0430\u0436\u0430\u0435\u043C\u043E\u0435 \u0438\u043C\u044F",
+  "card.repository.fact.vendor": "\u0420\u0430\u0437\u0440\u0430\u0431\u043E\u0442\u0447\u0438\u043A",
+  "card.repository.fact.gameCount": "\u0418\u0433\u0440\u044B",
+  "card.repository.fact.extensionCount": "\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u044F \u0438 \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u044B",
   "card.contribution.fact.id": "\u0418\u0434\u0435\u043D\u0442\u0438\u0444\u0438\u043A\u0430\u0442\u043E\u0440 \u0432\u043E\u0437\u043C\u043E\u0436\u043D\u043E\u0441\u0442\u0438",
   "card.contribution.fact.displayName": "\u041E\u0442\u043E\u0431\u0440\u0430\u0436\u0430\u0435\u043C\u043E\u0435 \u0438\u043C\u044F",
   "card.contribution.fact.ownerExtension": "\u0420\u0430\u0441\u0448\u0438\u0440\u0435\u043D\u0438\u0435-\u0432\u043B\u0430\u0434\u0435\u043B\u0435\u0446",
@@ -319951,6 +320354,1989 @@ var ExtensionManagerError = class extends Error {
   }
 };
 
+// packages/sdk/dist/subjects/index.js
+var REVISION_KINDS2 = Object.freeze([
+  "content-hash",
+  "git-object",
+  "etag",
+  "database-version",
+  "provider-token",
+  "overlay-generation"
+]);
+var REVISION_KIND_PATTERN2 = REVISION_KINDS2.join("|");
+var REVISION_ALGORITHM_PATTERN2 = "[a-z0-9]+(?:-[a-z0-9]+)*";
+var REVISION_VALUE_PATTERN2 = "(?:[A-Za-z0-9_.!~*'()\\-]|%[0-9A-F]{2})+";
+var REVISION_ID_PATTERN2 = `^(?:${REVISION_KIND_PATTERN2})(?:\\.${REVISION_ALGORITHM_PATTERN2})?:${REVISION_VALUE_PATTERN2}$`;
+var REVISION_ID2 = new RegExp(REVISION_ID_PATTERN2);
+var STANDARD_DATA_SOURCE_CONTRACTS2 = Object.freeze([
+  "common.view/text-data-source",
+  "common.view/byte-range-source",
+  "common.view/tree-data-source",
+  "common.view/table-data-source",
+  "common.view/transport-source",
+  "common.view/namespace-entry-source",
+  "common.view/raster-image-source",
+  "common.view/vector-scene-source",
+  "common.view/audio-media-source",
+  "common.view/video-media-source",
+  "common.view/model-scene-source",
+  "common.view/world-scene-source",
+  // optional model facets beside the base scene source (block 11, slice 11C0, plan item 11)
+  "common.view/model-resource-refs-source",
+  "common.view/model-skeleton-source",
+  "common.view/model-animation-source",
+  "common.view/model-collision-source",
+  "common.view/model-material-source",
+  "common.view/model-socket-source",
+  "common.view/relation-graph-source",
+  "common.view/subject-selector-source",
+  "common.view/subject-facts-source",
+  "common.view/subject-calculations-source",
+  "common.view/slide-deck-source"
+]);
+var DATA_SOURCE_MATURITY2 = Object.freeze({
+  "common.view/text-data-source": "admitted",
+  "common.view/byte-range-source": "admitted",
+  "common.view/tree-data-source": "admitted",
+  "common.view/table-data-source": "admitted",
+  "common.view/transport-source": "admitted",
+  "common.view/namespace-entry-source": "admitted",
+  "common.view/raster-image-source": "admitted",
+  "common.view/vector-scene-source": "admitted",
+  "common.view/audio-media-source": "admitted",
+  "common.view/video-media-source": "admitted",
+  "common.view/model-scene-source": "admitted",
+  "common.view/world-scene-source": "publisher-candidate",
+  "common.view/model-resource-refs-source": "admitted",
+  "common.view/model-skeleton-source": "admitted",
+  "common.view/model-animation-source": "admitted",
+  "common.view/model-collision-source": "admitted",
+  "common.view/model-material-source": "admitted",
+  "common.view/model-socket-source": "publisher-candidate",
+  "common.view/relation-graph-source": "admitted",
+  "common.view/subject-selector-source": "publisher-candidate",
+  "common.view/subject-facts-source": "admitted",
+  "common.view/subject-calculations-source": "admitted",
+  "common.view/slide-deck-source": "publisher-candidate"
+});
+var ADMITTED_DATA_SOURCE_CONTRACTS2 = Object.freeze(
+  STANDARD_DATA_SOURCE_CONTRACTS2.filter(
+    (contract2) => DATA_SOURCE_MATURITY2[contract2] === "admitted"
+  )
+);
+var KNOWLEDGE_LOCALE_PATTERN2 = "^[A-Za-z]{2,8}(?:-[A-Za-z0-9]{1,8})*$";
+var knowledgeLocalePattern2 = new RegExp(KNOWLEDGE_LOCALE_PATTERN2, "u");
+var DOTTED_PATTERN2 = "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
+var NAMESPACED_DOTTED_PATTERN2 = "^[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
+var OPERATION_PATTERN2 = "^(?:[a-z0-9]+(?:-[a-z0-9]+)*\\.[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*|[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\.[a-z0-9]+(?:-[a-z0-9]+)*)$";
+var QUALIFIED_PATTERN2 = "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
+var SEGMENT_PATTERN2 = "^[a-z0-9]+(?:-[a-z0-9]+)*$";
+var SEMVER_PATTERN2 = "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$";
+var RANGE_NUMBER2 = "(?:0|[1-9]\\d*)";
+var RANGE_NUMERIC2 = `${RANGE_NUMBER2}(?:\\.${RANGE_NUMBER2}){0,2}`;
+var RANGE_EXACT2 = `=?${RANGE_NUMBER2}\\.${RANGE_NUMBER2}\\.${RANGE_NUMBER2}`;
+var RANGE_WILDCARD2 = `(?:${RANGE_NUMBER2}\\.(?:x|\\*)|${RANGE_NUMBER2}\\.${RANGE_NUMBER2}\\.(?:x|\\*))`;
+var RANGE_CARET2 = `\\^${RANGE_NUMBER2}\\.${RANGE_NUMBER2}(?:\\.${RANGE_NUMBER2})?`;
+var RANGE_COMPARATOR2 = `[<>]=?${RANGE_NUMERIC2}`;
+var RANGE_ATOM2 = `(?:${RANGE_EXACT2}|${RANGE_WILDCARD2}|${RANGE_CARET2}|${RANGE_COMPARATOR2})`;
+var VERSION_RANGE_PATTERN2 = `^(?:\\*|x|${RANGE_ATOM2}(?: ${RANGE_ATOM2})*)$`;
+var RELATIVE_ENTRYPOINT_PATTERN2 = "^(?![a-zA-Z][a-zA-Z0-9+.-]*:)(?!/)(?!\\\\)(?:(?!\\.\\.(?:/|$))[^\\\\/\\u0000-\\u001f]+/)*(?!\\.\\.$)[^\\\\/\\u0000-\\u001f]+$";
+var METHOD_NAME_PATTERN2 = "^[a-z][a-zA-Z0-9]{0,63}$";
+var REQUIREMENT_SCOPE_KINDS2 = Object.freeze([
+  "contribution",
+  "offer",
+  "operation",
+  "intent",
+  "variant",
+  "profile",
+  "projection",
+  "slot"
+]);
+var requirementScopeSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["kind", "id"],
+  properties: {
+    kind: { enum: REQUIREMENT_SCOPE_KINDS2 },
+    id: { type: "string", minLength: 1 }
+  }
+};
+var extensionRequirementSchema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/extension-requirement.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["extension", "mode", "scope"],
+  properties: {
+    extension: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    range: { type: "string", pattern: VERSION_RANGE_PATTERN2 },
+    mode: { enum: ["required", "default", "suggested", "integrates"] },
+    scope: requirementScopeSchema2
+  }
+};
+var contributionManifestsSchema2 = {
+  type: "array",
+  items: { type: "string", minLength: 1 }
+};
+var EXTENSION_VFS_PATH_PATTERN2 = "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$";
+var extensionVendorDescriptorSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "displayName"],
+  properties: {
+    id: { type: "string", pattern: DOTTED_PATTERN2 },
+    displayName: { type: "string", minLength: 1 }
+  }
+};
+var extensionGameDescriptorSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "displayName"],
+  properties: {
+    id: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    displayName: { type: "string", minLength: 1 }
+  }
+};
+var extensionAssetReferenceSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["path"],
+  properties: {
+    path: { type: "string", pattern: EXTENSION_VFS_PATH_PATTERN2 },
+    displayName: { type: "string", minLength: 1 },
+    mediaType: { type: "string", minLength: 1 }
+  }
+};
+var extensionSourceDetailsSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "root"],
+      properties: {
+        kind: { const: "root" },
+        root: { type: "string", pattern: EXTENSION_VFS_PATH_PATTERN2 }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "url"],
+      properties: {
+        kind: { const: "url" },
+        url: { type: "string", pattern: "^https?://[^\\s]+$" }
+      }
+    }
+  ]
+};
+var extensionPresentationSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    displayName: { type: "string", minLength: 1 },
+    description: { type: "string", minLength: 1 },
+    vendor: extensionVendorDescriptorSchema2,
+    games: { type: "array", items: extensionGameDescriptorSchema2 },
+    icon: extensionAssetReferenceSchema2,
+    source: extensionSourceDetailsSchema2,
+    licenseFiles: { type: "array", items: extensionAssetReferenceSchema2 }
+  }
+};
+var extensionManifestSchema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/extension-manifest.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "publisher", "id", "version", "license", "contributionManifests"],
+  properties: {
+    schemaVersion: { const: 1 },
+    publisher: { type: "string", pattern: DOTTED_PATTERN2 },
+    id: { type: "string", pattern: DOTTED_PATTERN2 },
+    version: { type: "string", pattern: SEMVER_PATTERN2 },
+    license: { type: "string", minLength: 1 },
+    contributionManifests: contributionManifestsSchema2,
+    dependsOn: { type: "array", items: extensionRequirementSchema2 },
+    presentation: extensionPresentationSchema2
+  }
+};
+var modkitBlockSchema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/extension-manifest-modkit-block.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "publisher", "id", "contributionManifests"],
+  properties: {
+    schemaVersion: { const: 1 },
+    publisher: { type: "string", pattern: DOTTED_PATTERN2 },
+    id: { type: "string", pattern: DOTTED_PATTERN2 },
+    contributionManifests: contributionManifestsSchema2,
+    dependsOn: { type: "array", items: extensionRequirementSchema2 },
+    presentation: extensionPresentationSchema2
+  }
+};
+deepFreeze(requirementScopeSchema2);
+deepFreeze(extensionRequirementSchema2);
+deepFreeze(extensionVendorDescriptorSchema2);
+deepFreeze(extensionGameDescriptorSchema2);
+deepFreeze(extensionAssetReferenceSchema2);
+deepFreeze(extensionSourceDetailsSchema2);
+deepFreeze(extensionPresentationSchema2);
+deepFreeze(extensionManifestSchema2);
+deepFreeze(modkitBlockSchema2);
+var EXECUTION_PROFILES2 = Object.freeze([
+  "browser-sandbox",
+  "worker-brokered",
+  "process-brokered",
+  "wasm-brokered",
+  "trusted-in-process",
+  "remote-provider"
+]);
+var PERMISSION_CLASSES2 = Object.freeze([
+  "read-source",
+  "write-source",
+  "filesystem-read",
+  "filesystem-write",
+  "network",
+  "process-launch",
+  "native-code",
+  "credentials",
+  "clipboard",
+  "persistent-storage"
+]);
+var RUNTIME_ENVIRONMENTS2 = Object.freeze([
+  "browser-main",
+  "browser-worker",
+  "node",
+  "node-worker",
+  "wasm",
+  "native",
+  "external-tool"
+]);
+var OPERATING_SYSTEMS2 = Object.freeze([
+  "any",
+  "windows",
+  "linux",
+  "darwin",
+  "android",
+  "ios"
+]);
+var ARCHITECTURES2 = Object.freeze([
+  "any",
+  "x86",
+  "x64",
+  "arm32",
+  "arm64",
+  "wasm32"
+]);
+var runtimeTargetConstraintSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    environments: { type: "array", items: { enum: RUNTIME_ENVIRONMENTS2 }, minItems: 1 },
+    operatingSystems: { type: "array", items: { enum: OPERATING_SYSTEMS2 }, minItems: 1 },
+    architectures: { type: "array", items: { enum: ARCHITECTURES2 }, minItems: 1 },
+    requiredHostCapabilities: { type: "array", items: { type: "string", minLength: 1 } },
+    requiredWebApis: { type: "array", items: { type: "string", minLength: 1 } },
+    externalTools: { type: "array", items: { type: "string", minLength: 1 } }
+  }
+};
+var runtimeVariantDeclarationSchema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/runtime-variant-declaration.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["variantId", "entrypoint", "target", "executionProfile", "requestedPermissionClasses"],
+  properties: {
+    variantId: { type: "string", pattern: SEGMENT_PATTERN2 },
+    // Containment is enforced twice: here (authoring gate) and again by the host before
+    // any import (MK3/24 §8) — the host never trusts that someone validated the input.
+    entrypoint: { type: "string", pattern: RELATIVE_ENTRYPOINT_PATTERN2 },
+    target: runtimeTargetConstraintSchema2,
+    executionProfile: { enum: EXECUTION_PROFILES2 },
+    requestedPermissionClasses: { type: "array", items: { enum: PERMISSION_CLASSES2 } }
+  }
+};
+var scopedContractRequirementSchema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/scoped-contract-requirement.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["contract", "major", "mode", "scope"],
+  properties: {
+    contract: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    range: { type: "string", pattern: VERSION_RANGE_PATTERN2 },
+    mode: { enum: ["required", "default", "suggested", "integrates"] },
+    scope: requirementScopeSchema2
+  }
+};
+var contributionManifestSchema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/contribution-manifest.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "contract", "id", "displayName", "spec"],
+  properties: {
+    schemaVersion: { const: 1 },
+    contract: {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "major"],
+      properties: {
+        id: { type: "string", pattern: QUALIFIED_PATTERN2 },
+        major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+      }
+    },
+    id: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    displayName: { type: "string", minLength: 1 },
+    status: { enum: ["supported", "partial", "unsupported", "experimental"] },
+    runtimeVariants: { type: "array", items: runtimeVariantDeclarationSchema2 },
+    dependsOn: { type: "array", items: scopedContractRequirementSchema2 },
+    limitations: { type: "array", items: { type: "string", minLength: 1 } },
+    spec: { title: "JsonValue" }
+  }
+};
+deepFreeze(runtimeTargetConstraintSchema2);
+deepFreeze(runtimeVariantDeclarationSchema2);
+deepFreeze(scopedContractRequirementSchema2);
+deepFreeze(contributionManifestSchema2);
+var nonEmptyString7 = { type: "string", minLength: 1 };
+var qualifiedId2 = { type: "string", pattern: QUALIFIED_PATTERN2 };
+var namespacedDottedId3 = { type: "string", pattern: NAMESPACED_DOTTED_PATTERN2 };
+var operationId3 = { type: "string", pattern: OPERATION_PATTERN2 };
+var decimalU642 = { type: "string", pattern: UINT64_DECIMAL_PATTERN };
+var jsonSchemaRefSchema3 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["$ref"],
+  properties: { $ref: nonEmptyString7 }
+};
+var resourceBudgetWireSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["maxInputBytes", "maxDepth", "maxNodes", "maxScalarBytes", "maxDiagnostics"],
+  properties: {
+    maxInputBytes: decimalU642,
+    maxDepth: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    maxNodes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    maxScalarBytes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    maxDiagnostics: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    deadlineMs: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+  }
+};
+var dataSourceRefWireSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["contract", "major"],
+      properties: {
+        contract: { enum: STANDARD_DATA_SOURCE_CONTRACTS2 },
+        major: { const: 1 }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["contract", "major", "opaque"],
+      properties: {
+        contract: { ...qualifiedId2, not: { enum: STANDARD_DATA_SOURCE_CONTRACTS2 } },
+        major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        opaque: { const: true }
+      }
+    }
+  ]
+};
+var contractRequirementSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["contract", "major"],
+  properties: {
+    contract: qualifiedId2,
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    range: { type: "string", pattern: VERSION_RANGE_PATTERN2 }
+  }
+};
+var formatRefSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["formatId", "label"],
+  properties: {
+    formatId: nonEmptyString7,
+    label: nonEmptyString7,
+    mediaType: nonEmptyString7
+  }
+};
+var signatureRuleSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["from", "offset", "bytesHex"],
+  properties: {
+    from: { enum: ["start", "end"] },
+    offset: { type: "integer", minimum: 0, maximum: 4096 },
+    bytesHex: { type: "string", pattern: "^(?:[0-9a-f]{2}){1,64}$" },
+    maskHex: { type: "string", pattern: "^(?:[0-9a-f]{2}){1,64}$" }
+  }
+};
+var matchRulesSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    extensions: { type: "array", items: nonEmptyString7 },
+    mediaTypes: { type: "array", items: nonEmptyString7 },
+    pathGlobs: { type: "array", items: nonEmptyString7 },
+    signatures: { type: "array", items: signatureRuleSchema2, maxItems: 8 }
+  }
+};
+var probePlanSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "ranges", "maxBytes"],
+      properties: {
+        kind: { const: "bytes" },
+        ranges: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["from", "length"],
+            properties: {
+              from: { enum: ["start", "end"] },
+              length: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+            }
+          }
+        },
+        maxBytes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "markers", "maxEntries", "maxBytes", "maxDepth", "maxPathBytes"],
+      properties: {
+        kind: { const: "namespace" },
+        markers: {
+          type: "array",
+          items: nonEmptyString7,
+          minItems: 1,
+          maxItems: 256,
+          uniqueItems: true
+        },
+        prefixes: { type: "array", items: nonEmptyString7 },
+        maxEntries: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        maxBytes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        maxDepth: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        maxPathBytes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "maxSubjects", "maxRelationDepth"],
+      properties: {
+        kind: { const: "derived" },
+        maxSubjects: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        maxRelationDepth: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+      }
+    }
+  ]
+};
+var traitDefinitionRequirementSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id"],
+  properties: {
+    id: namespacedDottedId3,
+    definitionRange: { type: "string", pattern: VERSION_RANGE_PATTERN2 }
+  }
+};
+var traitQueryRequirementSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id"],
+  properties: {
+    ...traitDefinitionRequirementSchema2.properties,
+    states: {
+      type: "array",
+      items: { enum: ["available", "partial", "disabled", "dependency-required"] },
+      minItems: 1,
+      uniqueItems: true
+    }
+  }
+};
+var companionRuleSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "role", "required", "patterns", "searchScopes"],
+  properties: {
+    id: { type: "string", pattern: SEGMENT_PATTERN2 },
+    role: nonEmptyString7,
+    required: { type: "boolean" },
+    patterns: { type: "array", items: nonEmptyString7, minItems: 1 },
+    expected: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        all: { type: "array", items: traitQueryRequirementSchema2 },
+        any: { type: "array", items: traitQueryRequirementSchema2 },
+        none: { type: "array", items: traitQueryRequirementSchema2 }
+      }
+    },
+    searchScopes: {
+      type: "array",
+      minItems: 1,
+      items: {
+        enum: [
+          "sibling-directory",
+          "current-mount",
+          "enclosing-container",
+          "workspace-dependency-layer",
+          "explicit-user-selection"
+        ]
+      }
+    }
+  }
+};
+var representationDeclSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "contract", "major", "stage", "lossy"],
+  properties: {
+    id: nonEmptyString7,
+    contract: qualifiedId2,
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    stage: { enum: ["authored", "compiled", "runtime"] },
+    lossy: { type: "boolean" }
+  }
+};
+var operationDeclSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "handlerId", "mutatesSource"],
+  properties: {
+    id: operationId3,
+    handlerId: nonEmptyString7,
+    mutatesSource: { type: "boolean" },
+    requiredPermissions: { type: "array", items: { enum: PERMISSION_CLASSES2 } },
+    requiresContract: contractRequirementSchema2,
+    inputSchema: jsonSchemaRefSchema3,
+    outputKinds: {
+      type: "array",
+      items: {
+        enum: ["json", "bytes", "stream", "source", "artifact", "none", "edit-plan", "transaction"]
+      }
+    }
+  }
+};
+var traitDeclarationSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "representation", "presence"],
+  properties: {
+    id: namespacedDottedId3,
+    definitionVersion: { type: "string", pattern: SEMVER_PATTERN2 },
+    representation: { enum: ["source", "compiled", "runtime"] },
+    presence: { enum: ["may-expose", "will-expose"] },
+    prerequisites: { type: "array", items: contractRequirementSchema2 },
+    evidenceRefs: { type: "array", items: nonEmptyString7, uniqueItems: true }
+  }
+};
+var fidelityNotesSchema2 = { type: "array", items: nonEmptyString7 };
+var fidelityClaimSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["roundTrip", "preservesUnknownData"],
+      properties: {
+        roundTrip: { const: "byte-identical" },
+        preservesUnknownData: { const: true },
+        notes: fidelityNotesSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["roundTrip", "preservesUnknownData"],
+      properties: {
+        roundTrip: { const: "semantic" },
+        preservesUnknownData: { type: "boolean" },
+        notes: fidelityNotesSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["roundTrip", "preservesUnknownData"],
+      properties: {
+        roundTrip: { enum: ["lossy", "none"] },
+        preservesUnknownData: { const: false },
+        notes: fidelityNotesSchema2
+      }
+    }
+  ]
+};
+var codecFidelityEvidenceSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "formatId",
+    "representationId",
+    "claim",
+    "evidenceId",
+    "corpusId",
+    "corpusDigest",
+    "conformanceProfile",
+    "optionsFingerprint",
+    "inputClass",
+    "provenAt"
+  ],
+  properties: {
+    formatId: nonEmptyString7,
+    representationId: nonEmptyString7,
+    claim: fidelityClaimSchema2,
+    evidenceId: nonEmptyString7,
+    corpusId: nonEmptyString7,
+    corpusDigest: nonEmptyString7,
+    conformanceProfile: qualifiedId2,
+    optionsFingerprint: nonEmptyString7,
+    inputClass: nonEmptyString7,
+    provenAt: {
+      type: "string",
+      pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"
+    }
+  }
+};
+var serviceProviderFidelityEvidenceSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "offerId",
+    "evidenceId",
+    "claim",
+    "corpusId",
+    "corpusDigest",
+    "conformanceProfile",
+    "optionsFingerprint",
+    "inputClass",
+    "provenAt"
+  ],
+  properties: {
+    offerId: { type: "string", pattern: SEGMENT_PATTERN2 },
+    evidenceId: nonEmptyString7,
+    claim: fidelityClaimSchema2,
+    corpusId: nonEmptyString7,
+    corpusDigest: nonEmptyString7,
+    conformanceProfile: qualifiedId2,
+    optionsFingerprint: nonEmptyString7,
+    inputClass: nonEmptyString7,
+    provenAt: {
+      type: "string",
+      pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?Z$"
+    }
+  }
+};
+var codecContributionRequired2 = [
+  "formatRefs",
+  "roles",
+  "sourceTopology",
+  "artifactStages",
+  "openIntents",
+  "match",
+  "probe",
+  "representations",
+  "publishesDataSources",
+  "operations",
+  "implementationTier",
+  "budgets"
+];
+var codecContributionProperties2 = {
+  formatRefs: { type: "array", items: formatRefSchema2, minItems: 1 },
+  roles: {
+    type: "array",
+    items: { enum: ["container", "media", "byte-transform", "semantic", "index", "sidecar"] },
+    minItems: 1
+  },
+  artifactStages: {
+    type: "array",
+    items: { enum: ["authored", "compiled", "runtime"] },
+    minItems: 1
+  },
+  openIntents: {
+    type: "array",
+    items: { enum: ["probe", "inspect", "thumbnail", "full", "stream", "export"] },
+    minItems: 1
+  },
+  match: matchRulesSchema2,
+  companions: { type: "array", items: companionRuleSchema2 },
+  representations: { type: "array", items: representationDeclSchema2, minItems: 1 },
+  publishesDataSources: { type: "array", items: dataSourceRefWireSchema2 },
+  requires: { type: "array", items: contractRequirementSchema2 },
+  operations: { type: "array", items: operationDeclSchema2 },
+  traitDeclarations: { type: "array", items: traitDeclarationSchema2 },
+  fidelityEvidence: { type: "array", items: codecFidelityEvidenceSchema2 },
+  implementationTier: {
+    type: "object",
+    additionalProperties: false,
+    required: ["claimed"],
+    properties: { claimed: { enum: [1, 2, 3, 4, 5] } }
+  },
+  budgets: resourceBudgetWireSchema2
+};
+var codecContributionSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/codec-contribution-spec.v1.schema.json",
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: codecContributionRequired2,
+      properties: {
+        ...codecContributionProperties2,
+        sourceTopology: { enum: ["single", "bundle"] },
+        probe: probePlanSchema2.oneOf[0]
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: codecContributionRequired2,
+      properties: {
+        ...codecContributionProperties2,
+        sourceTopology: { const: "namespace" },
+        probe: probePlanSchema2.oneOf[1]
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: codecContributionRequired2,
+      properties: {
+        ...codecContributionProperties2,
+        sourceTopology: { const: "derived" },
+        probe: probePlanSchema2.oneOf[2]
+      }
+    }
+  ]
+};
+var serviceContractOfferDeclarationSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["offerId", "contract", "major", "version"],
+  properties: {
+    offerId: { type: "string", pattern: SEGMENT_PATTERN2 },
+    contract: qualifiedId2,
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    version: { type: "string", pattern: SEMVER_PATTERN2 },
+    facet: { title: "JsonValue" }
+  }
+};
+var serviceProviderContributionSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/service-provider-contribution-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["provides", "lifecycleScope"],
+  properties: {
+    provides: { type: "array", items: serviceContractOfferDeclarationSchema2, minItems: 1 },
+    fidelityEvidence: { type: "array", items: serviceProviderFidelityEvidenceSchema2 },
+    requires: { type: "array", items: contractRequirementSchema2 },
+    inputs: { type: "array", items: nonEmptyString7 },
+    outputs: { type: "array", items: traitDeclarationSchema2 },
+    protocolOperations: { type: "array", items: nonEmptyString7 },
+    replacement: {
+      type: "object",
+      additionalProperties: false,
+      required: ["target", "compatible"],
+      properties: { target: contractRequirementSchema2, compatible: { type: "boolean" } }
+    },
+    lifecycleScope: { enum: ["session", "operation", "process"] },
+    applicableVariants: { type: "array", items: { type: "string", pattern: SEGMENT_PATTERN2 } }
+  }
+};
+var traitRequirementSchema2 = traitQueryRequirementSchema2;
+var viewerApplicabilitySchema2 = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    interpretation: { enum: ["none", "codec", "any"] },
+    sourceBytes: {
+      type: "object",
+      additionalProperties: false,
+      properties: { maximum: decimalU642 }
+    },
+    longestLineBytes: {
+      type: "object",
+      additionalProperties: false,
+      required: ["maximum", "whenUnknown"],
+      properties: {
+        maximum: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        whenUnknown: { enum: ["eligible", "ineligible"] }
+      }
+    }
+  }
+};
+var viewerContributionSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/viewer-contribution-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["kind", "consumesDataSources", "priority"],
+  properties: {
+    kind: { enum: ["stage", "tree", "panel", "toolbar", "transport", "status", "fallback"] },
+    requiresTraits: { type: "array", items: traitRequirementSchema2 },
+    requiresOperations: { type: "array", items: operationId3 },
+    consumesDataSources: { type: "array", items: dataSourceRefWireSchema2 },
+    /*
+     * Sources a viewer reads when the subject publishes them and does without when it does not.
+     *
+     * Kept apart from `consumesDataSources` because that list decides eligibility: a facet named
+     * there would cost the stage every subject that publishes none of them, which is the opposite
+     * of optional. Naming them separately is what lets one generic viewer consume the optional
+     * model facets instead of splitting into a contribution per facet combination.
+     */
+    optionalDataSources: { type: "array", items: dataSourceRefWireSchema2 },
+    applicability: viewerApplicabilitySchema2,
+    hosts: { type: "array", items: nonEmptyString7 },
+    priority: { type: "number" },
+    conflicts: { type: "array", items: nonEmptyString7 },
+    singletonGroup: nonEmptyString7
+  }
+};
+var writerRequirementSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["formatId", "representationId", "mutationMode", "minimumRoundTrip"],
+  properties: {
+    formatId: nonEmptyString7,
+    representationId: nonEmptyString7,
+    mutationMode: { enum: ["export-only", "mutate"] },
+    minimumRoundTrip: { enum: ["byte-identical", "semantic", "lossy", "none"] }
+  }
+};
+var writerRequirementV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/writer-requirement.v1.schema.json",
+  ...writerRequirementSchema2
+};
+var writerOfferV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/writer-offer.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: [...writerRequirementSchema2.required, "providerId", "fidelityEvidenceId"],
+  properties: {
+    ...writerRequirementSchema2.properties,
+    providerId: nonEmptyString7,
+    fidelityEvidenceId: nonEmptyString7
+  }
+};
+var editorContributionSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/editor-contribution-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "sessionModel",
+    "selectionKinds",
+    "semanticLocationKinds",
+    "requiresTransactions",
+    "requiresOperations",
+    "consumesDataSources",
+    "writer",
+    "priority"
+  ],
+  properties: {
+    sessionModel: { enum: ["single-subject", "multi-subject", "workspace"] },
+    selectionKinds: { type: "array", items: nonEmptyString7, uniqueItems: true },
+    semanticLocationKinds: { type: "array", items: nonEmptyString7, uniqueItems: true },
+    requiresTransactions: { type: "boolean" },
+    requiresOperations: { type: "array", items: operationId3, uniqueItems: true },
+    consumesDataSources: { type: "array", items: dataSourceRefWireSchema2, uniqueItems: true },
+    writer: writerRequirementSchema2,
+    hosts: { type: "array", items: nonEmptyString7, uniqueItems: true },
+    priority: { type: "number" },
+    scaleLimits: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        maximumSubjects: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        maximumRows: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        maximumSourceBytes: decimalU642
+      }
+    }
+  }
+};
+var localeTag2 = {
+  type: "string",
+  pattern: KNOWLEDGE_LOCALE_PATTERN2,
+  maxLength: 64
+};
+var knowledgeShortText2 = { type: "string", minLength: 1, maxLength: 128 };
+var knowledgeTitle2 = { type: "string", minLength: 1, maxLength: 256 };
+var boundedKnowledgeQualifiedId2 = {
+  type: "string",
+  pattern: QUALIFIED_PATTERN2,
+  maxLength: 256
+};
+var knowledgeSchemaCoordinate2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["contract", "major", "revision"],
+  properties: {
+    contract: boundedKnowledgeQualifiedId2,
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    revision: { type: "string", minLength: 1, maxLength: 256 }
+  }
+};
+var knowledgeTargetSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "ecosystem", "schema", "typeId", "canonicalPath"],
+      properties: {
+        kind: { const: "field" },
+        ecosystem: knowledgeShortText2,
+        schema: knowledgeSchemaCoordinate2,
+        typeId: knowledgeShortText2,
+        canonicalPath: {
+          type: "array",
+          items: knowledgeShortText2,
+          minItems: 1,
+          maxItems: 32
+        }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "ecosystem", "subjectKind"],
+      properties: {
+        kind: { const: "subject" },
+        ecosystem: knowledgeShortText2,
+        subjectKind: knowledgeShortText2,
+        subjectId: { type: "string", minLength: 1, maxLength: 512 }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "ecosystem", "formatId"],
+      properties: {
+        kind: { const: "format" },
+        ecosystem: knowledgeShortText2,
+        formatId: knowledgeShortText2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "ecosystem", "code"],
+      properties: {
+        kind: { const: "diagnostic" },
+        ecosystem: knowledgeShortText2,
+        code: { type: "string", minLength: 1, maxLength: 256 }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "ecosystem", "conceptId"],
+      properties: {
+        kind: { const: "concept" },
+        ecosystem: knowledgeShortText2,
+        conceptId: knowledgeShortText2
+      }
+    }
+  ]
+};
+var knowledgeSourceSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["kind", "title", "reviewedAt"],
+  properties: {
+    kind: {
+      enum: [
+        "schema",
+        "official-documentation",
+        "source-code",
+        "community-wiki",
+        "observed-corpus",
+        "external-reference"
+      ]
+    },
+    title: knowledgeTitle2,
+    url: { type: "string", pattern: "^https://[^\\s]+$", maxLength: 2048 },
+    schema: knowledgeSchemaCoordinate2,
+    revision: { type: "string", minLength: 1, maxLength: 256 },
+    license: { type: "string", minLength: 1, maxLength: 256 },
+    reviewedAt: { type: "string", pattern: "^\\d{4}-\\d{2}-\\d{2}$" }
+  }
+};
+var knowledgeEntrySchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "target", "locale", "title", "summary", "claimKind", "confidence", "sources"],
+  properties: {
+    id: boundedKnowledgeQualifiedId2,
+    target: knowledgeTargetSchema2,
+    locale: localeTag2,
+    title: knowledgeTitle2,
+    summary: { type: "string", minLength: 1, maxLength: 1024 },
+    claimKind: {
+      enum: [
+        "schema-derived-fact",
+        "documented-interpretation",
+        "community-note",
+        "external-reference"
+      ]
+    },
+    confidence: { enum: ["verified", "high", "medium", "low"] },
+    aliases: {
+      type: "array",
+      items: knowledgeShortText2,
+      maxItems: 32,
+      uniqueItems: true
+    },
+    keywords: {
+      type: "array",
+      items: knowledgeShortText2,
+      maxItems: 32,
+      uniqueItems: true
+    },
+    details: {
+      type: "object",
+      additionalProperties: false,
+      properties: {
+        valueType: knowledgeShortText2,
+        units: knowledgeShortText2,
+        defaultValue: { title: "JsonValue" },
+        allowedValues: { type: "array", items: { title: "JsonValue" }, maxItems: 512 },
+        deprecated: { type: "boolean" },
+        formulaRole: { type: "string", minLength: 1, maxLength: 512 }
+      }
+    },
+    relations: {
+      type: "array",
+      maxItems: 64,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["role", "target"],
+        properties: { role: knowledgeShortText2, target: knowledgeTargetSchema2 }
+      }
+    },
+    examples: {
+      type: "array",
+      maxItems: 16,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["title", "text"],
+        properties: {
+          title: knowledgeTitle2,
+          text: { type: "string", minLength: 1, maxLength: 2048 }
+        }
+      }
+    },
+    sources: { type: "array", items: knowledgeSourceSchema2, minItems: 1, maxItems: 16 }
+  }
+};
+var knowledgePackSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/knowledge-pack-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "sourceLocale", "priority", "entries"],
+  properties: {
+    schemaVersion: { const: 1 },
+    sourceLocale: localeTag2,
+    priority: { type: "number" },
+    gameIds: { type: "array", items: knowledgeShortText2, maxItems: 32, uniqueItems: true },
+    entries: { type: "array", items: knowledgeEntrySchema2, minItems: 1, maxItems: 1e4 }
+  }
+};
+var localizationCatalogResourceV1Schema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["locale", "path", "messagePrefixes"],
+  properties: {
+    locale: localeTag2,
+    path: {
+      type: "string",
+      maxLength: 1024,
+      pattern: "^[A-Za-z0-9][A-Za-z0-9._-]*(?:/[A-Za-z0-9][A-Za-z0-9._-]*)*\\.json$"
+    },
+    messagePrefixes: {
+      type: "array",
+      minItems: 1,
+      maxItems: 64,
+      uniqueItems: true,
+      items: {
+        type: "string",
+        maxLength: 256,
+        pattern: "^[A-Za-z0-9][A-Za-z0-9_-]*(?:\\.[A-Za-z0-9][A-Za-z0-9_-]*)*\\.$"
+      }
+    }
+  }
+};
+var localizationContributionSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/localization-contribution-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["catalogs"],
+  properties: {
+    catalogs: {
+      type: "array",
+      minItems: 1,
+      maxItems: 256,
+      items: localizationCatalogResourceV1Schema2
+    }
+  }
+};
+var traitDefinitionSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/trait-definition-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "id", "version", "scope", "parametersSchema", "transport"],
+  properties: {
+    schemaVersion: { const: 1 },
+    id: namespacedDottedId3,
+    version: { type: "string", pattern: SEMVER_PATTERN2 },
+    scope: {
+      anyOf: [
+        {
+          enum: [
+            "source",
+            "asset",
+            "subject",
+            "workspace",
+            "service",
+            "operation",
+            "view-session",
+            "representation"
+          ]
+        },
+        { type: "string", pattern: QUALIFIED_PATTERN2 }
+      ]
+    },
+    parametersSchema: jsonSchemaRefSchema3,
+    transport: { enum: ["json", "structured-clone"] },
+    documentation: nonEmptyString7,
+    imports: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["id", "range"],
+        properties: {
+          id: namespacedDottedId3,
+          range: { type: "string", pattern: VERSION_RANGE_PATTERN2 }
+        }
+      }
+    }
+  }
+};
+var methodName2 = { type: "string", pattern: METHOD_NAME_PATTERN2 };
+var dataSourceSurfaceRefSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["contract", "major"],
+  properties: {
+    contract: qualifiedId2,
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+  }
+};
+var dataSourceMethodLimitsSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    maxPageItems: { type: "integer", minimum: 1, maximum: Number.MAX_SAFE_INTEGER },
+    maxBytes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    maxStringLength: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+  }
+};
+var argKeyRefSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["arg", "key"],
+  properties: {
+    arg: { type: "integer", minimum: 0, maximum: 16 },
+    key: methodName2
+  }
+};
+var dataSourceMethodSurfaceCommon2 = {
+  /**
+   * Where the executing side places the `AbortSignal`: appended last, nowhere, or as a key of an
+   * object argument (the consumer strips that key before sending, the executor re-creates it).
+   */
+  signal: { anyOf: [{ enum: ["last", "none"] }, argKeyRefSchema2] },
+  /** Where a progress callback lives inside an object argument (`invoke(…, { onProgress })`). */
+  progress: argKeyRefSchema2,
+  /**
+   * Positional argument count before the signal. The executing side pads omitted trailing
+   * arguments with `undefined` up to `arity` before appending the signal, so
+   * `encoded(trackId?, signal?)` called as `encoded()` still receives its signal last.
+   */
+  arity: { type: "integer", minimum: 0, maximum: 16 },
+  /** The ABI declares the method with `?`; an implementation may lack it. */
+  optional: { type: "boolean" },
+  limits: dataSourceMethodLimitsSchema2
+};
+var dataSourceMethodSurfaceV1Schema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "result"],
+      properties: {
+        kind: { const: "lease" },
+        result: dataSourceSurfaceRefSchema2,
+        /** `'lease'` materializes `{ value, release }`; `'bare'` (default) the capability object itself. */
+        wrapper: { enum: ["lease", "bare"] },
+        ...dataSourceMethodSurfaceCommon2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind"],
+      properties: {
+        kind: { enum: ["value", "leased-value", "iterable", "events"] },
+        ...dataSourceMethodSurfaceCommon2
+      }
+    }
+  ]
+};
+var dataSourceSurfaceV1Schema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["methods"],
+  properties: {
+    /** A `value` method whose completion also releases the capability (`dispose`-style ABIs). */
+    releaseVia: methodName2,
+    /**
+     * Data properties of the object copied to the consumer with its handle (`TextSyntaxProvider.contract`);
+     * exposed as read-only properties next to the proxied methods.
+     */
+    fields: { type: "array", items: methodName2, maxItems: 64, uniqueItems: true },
+    methods: {
+      type: "object",
+      minProperties: 1,
+      propertyNames: methodName2,
+      additionalProperties: dataSourceMethodSurfaceV1Schema2
+    }
+  }
+};
+var serviceContractDefinitionSpecV1Schema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "schemaVersion",
+    "kind",
+    "contract",
+    "major",
+    "offerFacet",
+    "requestFacet",
+    "matching",
+    "conformanceProfile"
+  ],
+  properties: {
+    schemaVersion: { const: 1 },
+    kind: { const: "service" },
+    contract: qualifiedId2,
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    offerFacet: {
+      oneOf: [
+        {
+          type: "object",
+          additionalProperties: false,
+          required: ["presence"],
+          properties: { presence: { const: "forbidden" } }
+        },
+        {
+          type: "object",
+          additionalProperties: false,
+          required: ["presence", "schema"],
+          properties: {
+            presence: { enum: ["optional", "required"] },
+            schema: jsonSchemaRefSchema3
+          }
+        }
+      ]
+    },
+    requestFacet: {
+      oneOf: [
+        {
+          type: "object",
+          additionalProperties: false,
+          required: ["presence"],
+          properties: { presence: { const: "forbidden" } }
+        },
+        {
+          type: "object",
+          additionalProperties: false,
+          required: ["presence", "schema"],
+          properties: {
+            presence: { enum: ["optional", "required"] },
+            schema: jsonSchemaRefSchema3
+          }
+        }
+      ]
+    },
+    matching: {
+      type: "object",
+      additionalProperties: false,
+      required: ["profile", "major"],
+      properties: {
+        profile: qualifiedId2,
+        major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+        configuration: { title: "JsonValue" }
+      }
+    },
+    conformanceProfile: nonEmptyString7,
+    surface: dataSourceSurfaceV1Schema2
+  }
+};
+var dataSourceContractDefinitionSpecV1Schema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "kind", "contract", "major", "schema", "conformanceProfile"],
+  properties: {
+    schemaVersion: { const: 1 },
+    kind: { const: "data-source" },
+    contract: qualifiedId2,
+    major: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
+    schema: jsonSchemaRefSchema3,
+    conformanceProfile: nonEmptyString7,
+    surface: dataSourceSurfaceV1Schema2
+  }
+};
+var contractDefinitionSpecV1Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/contract-definition-spec.v1.schema.json",
+  oneOf: [serviceContractDefinitionSpecV1Schema2, dataSourceContractDefinitionSpecV1Schema2]
+};
+deepFreeze(jsonSchemaRefSchema3);
+deepFreeze(resourceBudgetWireSchema2);
+deepFreeze(dataSourceRefWireSchema2);
+deepFreeze(codecContributionSpecV1Schema2);
+deepFreeze(serviceProviderContributionSpecV1Schema2);
+deepFreeze(viewerContributionSpecV1Schema2);
+deepFreeze(editorContributionSpecV1Schema2);
+deepFreeze(knowledgePackSpecV1Schema2);
+deepFreeze(localizationContributionSpecV1Schema2);
+deepFreeze(traitDefinitionSpecV1Schema2);
+deepFreeze(serviceContractDefinitionSpecV1Schema2);
+deepFreeze(dataSourceMethodSurfaceV1Schema2);
+deepFreeze(dataSourceSurfaceV1Schema2);
+deepFreeze(dataSourceContractDefinitionSpecV1Schema2);
+deepFreeze(contractDefinitionSpecV1Schema2);
+var sourceSpanValueSchema2 = { oneOf: sourceSpanSchema.oneOf };
+var nonEmptyString23 = { type: "string", minLength: 1 };
+var nonWhitespaceString2 = { type: "string", pattern: "\\S" };
+var revisionString2 = { type: "string", pattern: REVISION_ID_PATTERN2 };
+var namespacedDottedId22 = { type: "string", pattern: NAMESPACED_DOTTED_PATTERN2 };
+var operationId23 = { type: "string", pattern: OPERATION_PATTERN2 };
+var stringArray2 = { type: "array", items: { type: "string" } };
+var jsonValueRef2 = { $ref: "#/$defs/jsonValue" };
+var jsonValueSchema2 = {
+  title: "JsonValue",
+  oneOf: [
+    { type: "null" },
+    { type: "boolean" },
+    { type: "number" },
+    { type: "string" },
+    { type: "array", items: jsonValueRef2 },
+    { type: "object", additionalProperties: jsonValueRef2 }
+  ]
+};
+var assetSourceRefSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "uri"],
+  properties: {
+    id: nonWhitespaceString2,
+    uri: nonWhitespaceString2,
+    parentIds: { type: "array", items: nonWhitespaceString2, minItems: 1 }
+  }
+};
+var sourceBindingDescriptorSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "role", "source", "required", "ownership", "revision"],
+  properties: {
+    id: nonEmptyString23,
+    role: nonEmptyString23,
+    source: assetSourceRefSchema2,
+    required: { type: "boolean" },
+    ownership: { enum: ["owned", "companion", "external"] },
+    revision: revisionString2,
+    mediaType: nonEmptyString23
+  }
+};
+var subjectSnapshotRefSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["bindingId", "role", "subjectUri", "revision", "compositionFingerprint"],
+  properties: {
+    bindingId: nonEmptyString23,
+    role: nonEmptyString23,
+    subjectUri: nonEmptyString23,
+    revision: revisionString2,
+    compositionFingerprint: nonEmptyString23
+  }
+};
+var derivationRecipeSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["extensionId", "extensionVersion", "contributionId", "operation"],
+  properties: {
+    extensionId: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    extensionVersion: { type: "string", pattern: SEMVER_PATTERN2 },
+    contributionId: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    operation: operationId23,
+    parameters: jsonValueRef2
+  }
+};
+var materializedAssetSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["source", "revision"],
+  properties: {
+    source: assetSourceRefSchema2,
+    revision: revisionString2,
+    mediaType: nonEmptyString23
+  }
+};
+var assetOriginDescriptorSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "binding"],
+      properties: {
+        kind: { const: "single" },
+        binding: sourceBindingDescriptorSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "bindings"],
+      properties: {
+        kind: { const: "bundle" },
+        bindings: { type: "array", items: sourceBindingDescriptorSchema2, minItems: 1 },
+        primary: nonEmptyString23
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "root", "revision"],
+      properties: {
+        kind: { const: "namespace" },
+        root: assetSourceRefSchema2,
+        revision: revisionString2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "inputs"],
+      properties: {
+        kind: { const: "derived" },
+        inputs: { type: "array", items: subjectSnapshotRefSchema2, minItems: 1 },
+        recipe: derivationRecipeSchema2,
+        materialization: materializedAssetSchema2
+      }
+    }
+  ]
+};
+var diagnosticSourceSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    extensionId: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    contributionId: { type: "string", pattern: QUALIFIED_PATTERN2 }
+  }
+};
+var assetDiagnosticSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "code", "category", "severity", "message"],
+  properties: {
+    id: nonEmptyString23,
+    code: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    category: {
+      enum: [
+        "syntax",
+        "structure",
+        "fidelity",
+        "dependency",
+        "security",
+        "performance",
+        "operation",
+        "io",
+        "unknown"
+      ]
+    },
+    severity: { enum: ["error", "warning", "information", "hint"] },
+    message: { type: "string" },
+    source: diagnosticSourceSchema2,
+    path: {
+      type: "array",
+      items: {
+        oneOf: [
+          { type: "string" },
+          { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER }
+        ]
+      }
+    },
+    range: sourceSpanValueSchema2,
+    data: jsonValueRef2,
+    relatedIds: stringArray2
+  }
+};
+var traitProperties2 = {
+  id: namespacedDottedId22,
+  descriptorVersion: { const: 1 },
+  definitionVersion: { type: "string", pattern: SEMVER_PATTERN2 },
+  parameters: jsonValueRef2
+};
+var traitInstanceSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "descriptorVersion", "state"],
+      properties: { ...traitProperties2, state: { const: "available" } }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "descriptorVersion", "state", "diagnosticIds"],
+      properties: {
+        ...traitProperties2,
+        state: { enum: ["partial", "disabled", "dependency-required"] },
+        diagnosticIds: { ...stringArray2, minItems: 1 }
+      }
+    }
+  ]
+};
+var jsonSchemaRefSchema22 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["$ref"],
+  properties: { $ref: nonEmptyString23 }
+};
+var operationProperties2 = {
+  id: operationId23,
+  handlerId: nonEmptyString23,
+  mutatesSource: { type: "boolean" },
+  inputSchema: jsonSchemaRefSchema22
+};
+var assetOperationDescriptorSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "handlerId", "state", "mutatesSource"],
+      properties: { ...operationProperties2, state: { const: "available" } }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "handlerId", "state", "mutatesSource", "reason"],
+      properties: {
+        ...operationProperties2,
+        state: { enum: ["disabled", "dependency-required"] },
+        reason: nonEmptyString23
+      }
+    }
+  ]
+};
+var assetConstraintsSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["readOnly", "seekable", "randomAccess", "trusted"],
+  properties: {
+    readOnly: { type: "boolean" },
+    seekable: { type: "boolean" },
+    randomAccess: { type: "boolean" },
+    trusted: { type: "boolean" },
+    maxDecodedBytes: { type: "string", pattern: UINT64_DECIMAL_PATTERN },
+    unsupportedFeatures: stringArray2
+  }
+};
+var metadataEntrySchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["key", "value"],
+  properties: {
+    key: nonEmptyString23,
+    value: jsonValueRef2
+  }
+};
+var metadataGroupSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id", "label", "entries"],
+  properties: {
+    id: nonEmptyString23,
+    label: { type: "string" },
+    entries: { type: "array", items: metadataEntrySchema2 }
+  }
+};
+var companionBaseProperties2 = {
+  id: nonEmptyString23,
+  role: nonEmptyString23,
+  required: { type: "boolean" },
+  cardinality: { enum: ["one", "zero-or-one", "one-or-more", "many"] },
+  state: { enum: ["resolved", "missing", "ambiguous"] }
+};
+var requiredCompanionProperties2 = {
+  ...companionBaseProperties2,
+  required: { const: true },
+  cardinality: { enum: ["one", "one-or-more"] }
+};
+var optionalCompanionProperties2 = {
+  ...companionBaseProperties2,
+  required: { const: false },
+  cardinality: { enum: ["zero-or-one", "many"] }
+};
+var companionCandidateSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["source", "revision"],
+  properties: { source: assetSourceRefSchema2, revision: revisionString2 }
+};
+var companionBindingIdsSchema2 = {
+  type: "array",
+  items: nonEmptyString23,
+  minItems: 1,
+  uniqueItems: true
+};
+var singleCompanionBindingIdSchema2 = {
+  ...companionBindingIdsSchema2,
+  maxItems: 1
+};
+var companionDiagnosticIdsSchema2 = {
+  type: "array",
+  items: nonEmptyString23,
+  minItems: 1,
+  uniqueItems: true
+};
+var companionDescriptorSchema2 = {
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state", "bindingIds"],
+      properties: {
+        ...requiredCompanionProperties2,
+        cardinality: { const: "one" },
+        state: { const: "resolved" },
+        bindingIds: singleCompanionBindingIdSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state", "bindingIds"],
+      properties: {
+        ...requiredCompanionProperties2,
+        cardinality: { const: "one-or-more" },
+        state: { const: "resolved" },
+        bindingIds: companionBindingIdsSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state", "bindingIds"],
+      properties: {
+        ...optionalCompanionProperties2,
+        cardinality: { const: "zero-or-one" },
+        state: { const: "resolved" },
+        bindingIds: singleCompanionBindingIdSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state", "bindingIds"],
+      properties: {
+        ...optionalCompanionProperties2,
+        cardinality: { const: "many" },
+        state: { const: "resolved" },
+        bindingIds: companionBindingIdsSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state", "diagnosticIds"],
+      properties: {
+        ...requiredCompanionProperties2,
+        state: { const: "missing" },
+        diagnosticIds: companionDiagnosticIdsSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state"],
+      properties: {
+        ...optionalCompanionProperties2,
+        state: { const: "missing" },
+        diagnosticIds: { type: "array", items: nonEmptyString23, uniqueItems: true }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state", "candidates", "diagnosticIds"],
+      properties: {
+        ...requiredCompanionProperties2,
+        cardinality: { const: "one" },
+        state: { const: "ambiguous" },
+        candidates: {
+          type: "array",
+          items: companionCandidateSchema2,
+          minItems: 2,
+          uniqueItems: true
+        },
+        diagnosticIds: companionDiagnosticIdsSchema2
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["id", "role", "required", "cardinality", "state", "candidates", "diagnosticIds"],
+      properties: {
+        ...optionalCompanionProperties2,
+        cardinality: { const: "zero-or-one" },
+        state: { const: "ambiguous" },
+        candidates: {
+          type: "array",
+          items: companionCandidateSchema2,
+          minItems: 2,
+          uniqueItems: true
+        },
+        diagnosticIds: companionDiagnosticIdsSchema2
+      }
+    }
+  ]
+};
+var detectionEvidenceSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["kind", "weight"],
+  properties: {
+    kind: { enum: ["magic", "structure", "companion", "context", "extension", "user-override"] },
+    weight: { type: "number" },
+    note: { type: "string" }
+  }
+};
+var detectionResultSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["codecId", "confidence", "evidence", "requiredRanges"],
+  properties: {
+    codecId: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    confidence: { type: "number", minimum: 0, maximum: 1 },
+    evidence: { type: "array", items: detectionEvidenceSchema2 },
+    requiredRanges: { type: "array", items: sourceSpanValueSchema2 },
+    diagnostics: { type: "array", items: assetDiagnosticSchema2 }
+  }
+};
+var resolvedIdentitySchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: ["codecId", "codecVersion", "formatId", "formatLabel", "confidence", "detection"],
+  properties: {
+    codecId: { type: "string", pattern: QUALIFIED_PATTERN2 },
+    codecVersion: { type: "string", pattern: SEMVER_PATTERN2 },
+    formatId: nonEmptyString23,
+    formatLabel: nonEmptyString23,
+    mediaType: nonEmptyString23,
+    confidence: { type: "number", minimum: 0, maximum: 1 },
+    detection: { type: "array", items: detectionEvidenceSchema2 }
+  }
+};
+var subjectRequired2 = [
+  "schemaVersion",
+  "subjectUri",
+  "origin",
+  "traits",
+  "operations",
+  "constraints",
+  "dataSources",
+  "diagnostics",
+  "revision"
+];
+var subjectProperties2 = {
+  schemaVersion: { const: 2 },
+  subjectUri: nonWhitespaceString2,
+  origin: assetOriginDescriptorSchema2,
+  traits: { type: "array", items: traitInstanceSchema2 },
+  operations: { type: "array", items: assetOperationDescriptorSchema2 },
+  constraints: assetConstraintsSchema2,
+  dataSources: { type: "array", items: dataSourceRefWireSchema2 },
+  diagnostics: { type: "array", items: assetDiagnosticSchema2 },
+  revision: revisionString2
+};
+var unresolvedSourceDescriptorSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: [...subjectRequired2, "interpretation", "candidates"],
+  properties: {
+    ...subjectProperties2,
+    interpretation: { const: "none" },
+    candidates: { type: "array", items: detectionResultSchema2 }
+  }
+};
+var resolvedAssetDescriptorSchema2 = {
+  type: "object",
+  additionalProperties: false,
+  required: [...subjectRequired2, "interpretation", "identity", "metadata"],
+  properties: {
+    ...subjectProperties2,
+    interpretation: { const: "codec" },
+    identity: resolvedIdentitySchema2,
+    metadata: { type: "array", items: metadataGroupSchema2 },
+    companions: { type: "array", items: companionDescriptorSchema2 }
+  }
+};
+var subjectDescriptorV2Schema2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/subject-descriptor.v2.schema.json",
+  $defs: { jsonValue: jsonValueSchema2 },
+  oneOf: [unresolvedSourceDescriptorSchema2, resolvedAssetDescriptorSchema2]
+};
+var subjectDescriptorV2InferenceSchema2 = {
+  ...subjectDescriptorV2Schema2,
+  $defs: {
+    ...subjectDescriptorV2Schema2.$defs,
+    jsonValue: { title: "JsonValue" }
+  }
+};
+deepFreeze(subjectDescriptorV2Schema2);
+deepFreeze(subjectDescriptorV2InferenceSchema2);
+var RESERVED_MODEL_FACET_SOURCES2 = Object.freeze([
+  Object.freeze({
+    contract: "common.view/model-lod-source",
+    major: 1,
+    minimalShape: Object.freeze([
+      "info(): { levels }",
+      "levels(page): { id, nodeIds, order, selection? }"
+    ]),
+    blockedBy: "no codec publishes discrete LOD levels today: MSFT_lod topology is readable in principle, and nothing reads it"
+  }),
+  Object.freeze({
+    contract: "common.view/model-variant-source",
+    major: 1,
+    minimalShape: Object.freeze([
+      "info(): { variants }",
+      "variants(page): { id, name, kind, targets }"
+    ]),
+    blockedBy: "no codec publishes named variants today: UV_game_variants exists in the schema and no reader surfaces it"
+  }),
+  Object.freeze({
+    contract: "common.view/model-effect-source",
+    major: 1,
+    minimalShape: Object.freeze([
+      "info(): { effects, byKind, profile? }",
+      "effects(page): { id, kind, nodeId?, materialId? }"
+    ]),
+    blockedBy: "the UVM reader publishes effect *counts* by kind, which fills info() and nothing else; per-emitter records have no publisher, and a page method no publisher can fill is not a contract"
+  })
+]);
+var TRAIT_IDS2 = Object.freeze([
+  "content.metadata",
+  "content.binary",
+  "content.text",
+  "content.images",
+  "content.fonts",
+  "content.styles",
+  "content.scripts",
+  "content.thumbnails",
+  "image.raster",
+  "image.channels",
+  "image.mipmaps",
+  "image.subresources",
+  "image.compressed-blocks",
+  "image.frames",
+  "image.palette",
+  "image.color-profile",
+  "vector.scene",
+  "vector.paths",
+  "vector.shapes",
+  "vector.text",
+  "vector.gradients",
+  "document.flow",
+  "document.pages",
+  "document.outline",
+  "document.annotations",
+  "table.sheets",
+  "table.cells",
+  "table.formulas",
+  "presentation.slides",
+  "presentation.masters",
+  "design.components",
+  "design.constraints",
+  "structure.hierarchy",
+  "structure.layers",
+  "structure.nodes",
+  "structure.timeline",
+  "project.editable",
+  "project.companions",
+  "model.geometry",
+  "model.materials",
+  "model.textures",
+  "model.skeleton",
+  "model.animations",
+  "model.lods",
+  "scene.objects",
+  "scene.cameras",
+  "scene.lights",
+  "scene.effects",
+  "audio.streams",
+  "audio.waveform",
+  "audio.loop-points",
+  "video.streams",
+  "video.tracks",
+  "media.duration",
+  "media.frames",
+  "media.seekable",
+  "media.interactive-runtime",
+  "container.entries",
+  "container.directories",
+  "container.nested",
+  "container.compression",
+  "container.encryption",
+  "container.overlay",
+  "source.dependencies",
+  "font.glyphs",
+  "font.metrics",
+  "font.character-map",
+  "code.source",
+  "code.shader",
+  "code.node-graph",
+  "game.map",
+  "game.replay",
+  "game.layout",
+  "game.localization",
+  "game.catalog"
+]);
+var STANDARD_TRAIT_SET2 = new Set(TRAIT_IDS2);
+
 // packages/extension-manager/src/subjects.js
 function fail(message, context = {}) {
   throw new ExtensionManagerError("extension-manager/subject-projection-invalid", message, context);
@@ -320475,6 +322861,58 @@ function createElectronLocalizer(requested, catalogs = []) {
 }
 
 // apps/electron/src/extensions-page.ts
+function createExtensionOperationLifecycle() {
+  let marker = Object.freeze({ revision: 0, state: "applied" });
+  let activeRevision;
+  return {
+    get busy() {
+      return activeRevision !== void 0;
+    },
+    get marker() {
+      return marker;
+    },
+    begin() {
+      if (activeRevision !== void 0) return void 0;
+      activeRevision = marker.revision + 1;
+      marker = Object.freeze({ revision: activeRevision, state: "busy" });
+      return activeRevision;
+    },
+    finish(revision, state) {
+      if (activeRevision !== revision) return false;
+      marker = Object.freeze({ revision, state });
+      activeRevision = void 0;
+      return true;
+    }
+  };
+}
+function extensionOperationIsTerminal(state) {
+  return state === "applied" || state === "failed" || state === "refused";
+}
+function readExtensionOperationMarker(root) {
+  const node = root.querySelector("[data-operation-revision][data-operation-state]");
+  const revisionText = node?.getAttribute("data-operation-revision");
+  const state = node?.getAttribute("data-operation-state");
+  const revision = revisionText === null || revisionText === void 0 ? Number.NaN : Number(revisionText);
+  if (!Number.isSafeInteger(revision) || revision < 0 || state !== "busy" && state !== "applied" && state !== "failed" && state !== "refused") {
+    return void 0;
+  }
+  return Object.freeze({ revision, state });
+}
+async function waitForExtensionOperation(read, afterRevision, options = {}) {
+  const attempts = options.attempts ?? 600;
+  const intervalMs = options.intervalMs ?? 100;
+  let last = read();
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    last = read();
+    if (last !== void 0 && last.revision > afterRevision && extensionOperationIsTerminal(last.state)) {
+      return last;
+    }
+    await new Promise((resolve3) => setTimeout(resolve3, intervalMs));
+  }
+  throw new Error(
+    `extension operation after revision ${afterRevision} did not complete; last=${last === void 0 ? "missing" : `${last.revision}:${last.state}`}`
+  );
+}
 function groupManagedExtensions(snapshot, problems = Object.freeze([])) {
   return Object.freeze({
     available: Object.freeze(
@@ -320622,52 +323060,64 @@ function createExtensionsSettingsGroups(options) {
   let selectedSubjectId;
   let mountedCard;
   let cardLoadRevision = 0;
-  let busy = false;
+  const operation = createExtensionOperationLifecycle();
   const refusals = [];
   const say = (message, bad = false) => {
     groupContext?.report(safeViewerText(message, 600), bad);
   };
   const draw = () => groupContext?.refresh();
+  const beginOperation = () => {
+    const revision = operation.begin();
+    if (revision !== void 0) draw();
+    return revision;
+  };
+  const finishOperation = (revision, state) => {
+    if (operation.finish(revision, state)) draw();
+  };
+  const markOperation = (host2) => {
+    host2.dataset["operationRevision"] = String(operation.marker.revision);
+    host2.dataset["operationState"] = operation.marker.state;
+  };
   const describe4 = (error3) => error3 instanceof Error ? error3.message : String(error3);
   const summarise = (value2) => {
     const loaded = value2.bundled.length + value2.installed.length;
     const off = value2.contributions.filter((item) => item.disabled).length;
     return copy.summary(loaded, value2.contributions.length, off, value2.supportedExtensions.length);
   };
-  const mutate = async (what, change) => {
-    if (busy) return;
-    busy = true;
+  const mutate = async (what, change, activeRevision) => {
+    const revision = activeRevision ?? beginOperation();
+    if (revision === void 0) return;
+    let terminal = "applied";
     say(copy.saving(what));
-    draw();
     try {
       await options.store.write(change((await options.store.read()).document));
       report = await options.apply();
       say(copy.applied(what, summarise(report)));
     } catch (error3) {
+      terminal = "failed";
       say(copy.failed(what, describe4(error3)), true);
     } finally {
-      busy = false;
-      draw();
+      finishOperation(revision, terminal);
     }
   };
-  const manage = async (what, operation, recompose = true) => {
-    if (busy) return;
-    busy = true;
+  const manage = async (what, operation2, recompose = true) => {
+    const revision = beginOperation();
+    if (revision === void 0) return;
+    let terminal = "applied";
     say(`${what}\u2026`);
-    draw();
     try {
-      await operation();
+      await operation2();
       managerSnapshot = await options.manager?.snapshot();
       managerProblems.length = 0;
       if (recompose) report = await options.apply();
       say(copy.complete(what, report === void 0 ? void 0 : summarise(report)));
     } catch (error3) {
+      terminal = "failed";
       const problem = copy.failed(what, describe4(error3));
       managerProblems.unshift(problem);
       say(problem, true);
     } finally {
-      busy = false;
-      draw();
+      finishOperation(revision, terminal);
     }
   };
   const subjectCards = () => report?.subjectCards ?? Object.freeze([]);
@@ -320725,11 +323175,13 @@ function createExtensionsSettingsGroups(options) {
       return false;
     }
     const actions = element(host2, "div", { part: "settings.adder" });
-    addEnablementIcon(
-      actions,
-      wire.subject.kind === "modkit/contribution" ? wire.subject.effectiveEnabled === true : wire.subject.enabled,
-      wire.subject.displayName
-    );
+    if (wire.subject.kind === "modkit/contribution" || wire.subject.kind === "modkit/extension") {
+      addEnablementIcon(
+        actions,
+        wire.subject.kind === "modkit/contribution" ? wire.subject.effectiveEnabled === true : wire.subject.enabled === true,
+        wire.subject.displayName
+      );
+    }
     const back = element(actions, "button", {
       part: "settings.add",
       text: copy.back
@@ -320746,19 +323198,19 @@ function createExtensionsSettingsGroups(options) {
         text: wire.subject.enabled ? copy.disableContribution : copy.enableContribution
       });
       toggle.type = "button";
-      toggle.disabled = busy;
+      toggle.disabled = operation.busy;
       toggle.dataset["action"] = wire.subject.enabled ? "disable-contribution" : "enable-contribution";
       toggle.addEventListener(
         "click",
         () => mutateContribution(wire.subject.id, !wire.subject.enabled)
       );
-    } else {
+    } else if (wire.subject.kind === "modkit/extension") {
       const toggle = element(actions, "button", {
         part: "settings.add",
         text: wire.subject.enabled ? copy.disableExtension : copy.enableExtension
       });
       toggle.type = "button";
-      toggle.disabled = busy;
+      toggle.disabled = operation.busy;
       toggle.dataset["action"] = wire.subject.enabled ? "disable-extension" : "enable-extension";
       toggle.addEventListener("click", () => {
         void mutate(
@@ -320805,36 +323257,45 @@ function createExtensionsSettingsGroups(options) {
   };
   const addFolder = () => {
     void (async () => {
-      if (busy) return;
+      const revision = beginOperation();
+      if (revision === void 0) return;
       let picked;
       try {
         picked = await options.browse();
       } catch (error3) {
         say(copy.browseFailed(describe4(error3)), true);
+        finishOperation(revision, "failed");
         return;
       }
       if (picked.canceled) {
         say(copy.noFolder);
+        finishOperation(revision, "refused");
         return;
       }
       if (picked.state === "already-configured") {
         say(copy.alreadyListed(picked.root));
+        finishOperation(revision, "refused");
         return;
       }
       if (picked.state === "refused") {
         refusals.unshift({ root: picked.root, code: picked.code, message: picked.message });
         say(copy.notAddedStatus(picked.root, picked.code, picked.message), true);
-        draw();
+        finishOperation(revision, "refused");
         return;
       }
       const entry = { id: picked.id, path: picked.root, enabled: true };
-      await mutate(copy.operation("add", picked.id), (document2) => ({
-        ...document2,
-        extensions: [...document2.extensions.filter((other) => other.id !== entry.id), entry]
-      }));
+      await mutate(
+        copy.operation("add", picked.id),
+        (document2) => ({
+          ...document2,
+          extensions: [...document2.extensions.filter((other) => other.id !== entry.id), entry]
+        }),
+        revision
+      );
     })();
   };
   const renderExtensions = (host2) => {
+    markOperation(host2);
     if (renderSelectedSubject(host2)) return;
     const value2 = report;
     element(host2, "p", {
@@ -320865,7 +323326,7 @@ function createExtensionsSettingsGroups(options) {
       });
       refresh.type = "button";
       refresh.dataset["action"] = "refresh-catalog";
-      refresh.disabled = busy;
+      refresh.disabled = operation.busy;
       refresh.addEventListener("click", () => {
         void manage(copy.operation("refresh", copy.extensions), () => manager.refresh(), false);
       });
@@ -320902,7 +323363,7 @@ function createExtensionsSettingsGroups(options) {
         });
         control.type = "button";
         control.dataset["action"] = action;
-        control.disabled = busy;
+        control.disabled = operation.busy;
         control.addEventListener("click", run);
       };
       renderManagedRows(
@@ -320982,7 +323443,7 @@ function createExtensionsSettingsGroups(options) {
     });
     add.type = "button";
     add.dataset["action"] = "add-folder";
-    add.disabled = busy;
+    add.disabled = operation.busy;
     add.addEventListener("click", addFolder);
     element(host2, "div", { part: "settings.label", text: copy.connected });
     const list2 = element(host2, "div", { part: "settings.list" });
@@ -321000,7 +323461,8 @@ function createExtensionsSettingsGroups(options) {
       const toggle = element(item, "input", { part: "settings.toggle" });
       toggle.type = "checkbox";
       toggle.checked = entry.enabled;
-      toggle.disabled = busy || entry.id === void 0;
+      toggle.disabled = operation.busy || entry.id === void 0;
+      toggle.dataset["action"] = entry.enabled ? "disable-extension" : "enable-extension";
       toggle.dataset["extension"] = entry.id ?? entry.path;
       toggle.setAttribute("aria-label", `${copy.enable} ${entry.id ?? entry.path}`);
       toggle.addEventListener("change", () => {
@@ -321029,7 +323491,9 @@ function createExtensionsSettingsGroups(options) {
         text: copy.remove
       });
       remove.type = "button";
-      remove.disabled = busy;
+      remove.dataset["action"] = "remove-folder";
+      remove.dataset["extension"] = entry.id ?? entry.path;
+      remove.disabled = operation.busy;
       remove.addEventListener("click", () => {
         void mutate(copy.operation("remove", entry.id ?? entry.path), (document2) => ({
           ...document2,
@@ -321095,6 +323559,7 @@ function createExtensionsSettingsGroups(options) {
     }
   };
   const renderCodecs = (host2) => {
+    markOperation(host2);
     if (renderSelectedSubject(host2)) return;
     const value2 = report;
     element(host2, "p", {
@@ -321149,7 +323614,8 @@ function createExtensionsSettingsGroups(options) {
             const toggle = element(item, "input", { part: "settings.toggle" });
             toggle.type = "checkbox";
             toggle.checked = !contribution.disabled;
-            toggle.disabled = busy;
+            toggle.disabled = operation.busy;
+            toggle.dataset["action"] = contribution.disabled ? "enable-contribution" : "disable-contribution";
             toggle.dataset["contribution"] = id;
             toggle.setAttribute("aria-label", `${copy.enable} ${id}`);
             toggle.addEventListener("change", () => mutateContribution(id, toggle.checked));
@@ -323088,20 +325554,22 @@ async function extensionProbes(options) {
     `selftest: extensions page groups=[${groupButtons.map((node) => node.textContent ?? "").join(", ")}]`
   );
   const status2 = () => extensionsRoot.querySelector('[data-mk-part="settings.status"]')?.textContent ?? "";
-  const showGroup = async (label) => {
-    const button = groupButtons.find((node) => node.textContent === label);
+  const showGroup = async (id) => {
+    const button = extensionsRoot.querySelector(
+      `[data-mk-part="settings.group"][data-group="${id}"]`
+    );
     if (!(button instanceof HTMLElement)) return false;
     button.click();
     await settle();
     return true;
   };
-  const settleApplied = async () => {
-    for (let attempt = 0; attempt < 600; attempt += 1) {
-      const text3 = status2();
-      if (text3.includes("applied.") || text3.includes("failed")) return text3;
-      await new Promise((resolve3) => setTimeout(resolve3, 100));
-    }
-    return `TIMEOUT ${status2()}`;
+  const operationRevision = () => readExtensionOperationMarker(extensionsRoot)?.revision ?? 0;
+  const settleOperation = async (afterRevision) => {
+    const marker = await waitForExtensionOperation(
+      () => readExtensionOperationMarker(extensionsRoot),
+      afterRevision
+    );
+    return `${marker.revision}:${marker.state} ${status2()}`;
   };
   const openAndDescribe = async (entry) => {
     options.showWorkspace();
@@ -323119,9 +325587,9 @@ async function extensionProbes(options) {
     options.showExtensions();
     await settle();
   };
-  const codecToggle = (id) => {
+  const codecToggle = (id, action) => {
     const node = extensionsRoot.querySelector(
-      `[data-mk-part="settings.toggle"][data-contribution="${id}"]`
+      `[data-mk-part="settings.toggle"][data-action="${action}"][data-contribution="${id}"]`
     );
     return node instanceof HTMLInputElement ? node : void 0;
   };
@@ -323131,70 +325599,72 @@ async function extensionProbes(options) {
   } else {
     console.log(`selftest: extensions ${png.name} before ${await openAndDescribe(png)}`);
     await closeAllAndShowPage();
-    if (!await showGroup("Contributions")) {
+    if (!await showGroup("codecs")) {
       console.log("selftest: extensions page has no Contributions group");
     } else {
-      const off = codecToggle(PNG_CODEC);
+      const off = codecToggle(PNG_CODEC, "disable-contribution");
       if (off === void 0) {
         console.log(`selftest: extensions no switch for ${PNG_CODEC}`);
       } else {
         off.checked = false;
+        const revision = operationRevision();
         off.dispatchEvent(new Event("change"));
-        console.log(`selftest: extensions disable ${PNG_CODEC} -> ${await settleApplied()}`);
+        console.log(
+          `selftest: extensions disable ${PNG_CODEC} -> ${await settleOperation(revision)}`
+        );
         console.log(`selftest: extensions ${png.name} disabled ${await openAndDescribe(png)}`);
         await closeAllAndShowPage();
-        await showGroup("Contributions");
-        const on = codecToggle(PNG_CODEC);
+        await showGroup("codecs");
+        const on = codecToggle(PNG_CODEC, "enable-contribution");
         if (on === void 0) {
           console.log(`selftest: extensions ${PNG_CODEC} VANISHED while disabled`);
         } else {
           console.log(`selftest: extensions disabled switch still listed, checked=${on.checked}`);
           on.checked = true;
+          const revision2 = operationRevision();
           on.dispatchEvent(new Event("change"));
-          console.log(`selftest: extensions enable ${PNG_CODEC} -> ${await settleApplied()}`);
+          console.log(
+            `selftest: extensions enable ${PNG_CODEC} -> ${await settleOperation(revision2)}`
+          );
           console.log(`selftest: extensions ${png.name} re-enabled ${await openAndDescribe(png)}`);
         }
       }
     }
   }
   await closeAllAndShowPage();
-  await showGroup("Extensions");
+  await showGroup("extensions");
   const addButton = extensionsRoot.querySelector('[data-action="add-folder"]');
   if (!(addButton instanceof HTMLElement)) {
     console.log("selftest: extensions page has no Add extension folder control");
     return;
   }
-  const listedContributions = async () => {
-    await showGroup("Contributions");
+  const contributionSnapshot = async (selected) => {
+    await showGroup("codecs");
     const ids = [...extensionsRoot.querySelectorAll('[data-mk-part="settings.toggle"]')].flatMap(
       (node) => {
         const id = node instanceof HTMLInputElement ? node.dataset["contribution"] : void 0;
         return id === void 0 ? [] : [id];
       }
     );
-    await showGroup("Extensions");
-    return ids;
-  };
-  const contributionEnablement = async (id) => {
-    await showGroup("Contributions");
-    const toggle = extensionsRoot.querySelector(
-      `[data-mk-part="settings.toggle"][data-contribution="${id}"]`
+    const toggle = selected === void 0 ? void 0 : extensionsRoot.querySelector(
+      `[data-mk-part="settings.toggle"][data-contribution="${selected}"]`
     );
     const state = toggle?.closest('[data-mk-part="settings.extension"]')?.querySelector("[data-enablement]")?.dataset["enablement"];
-    await showGroup("Extensions");
-    return state ?? "missing";
+    await showGroup("extensions");
+    return { ids, selectedState: state ?? "missing" };
   };
-  const before = await listedContributions();
+  const before = (await contributionSnapshot()).ids;
+  const addRevision = operationRevision();
   addButton.click();
-  console.log(`selftest: extensions add folder #1 -> ${await settleApplied()}`);
-  const after2 = await listedContributions();
+  console.log(`selftest: extensions add folder #1 -> ${await settleOperation(addRevision)}`);
+  const after2 = (await contributionSnapshot()).ids;
   const gained = after2.filter((id) => !before.includes(id));
   console.log(
     `selftest: extensions codecs ${before.length} -> ${after2.length}, new [${gained.join(", ")}]`
   );
-  const extensionToggle = (id) => {
+  const extensionToggle = (id, action) => {
     const node = extensionsRoot.querySelector(
-      `[data-mk-part="settings.toggle"][data-extension="${id}"]`
+      `[data-mk-part="settings.toggle"][data-action="${action}"][data-extension="${id}"]`
     );
     return node instanceof HTMLInputElement ? node : void 0;
   };
@@ -323202,37 +325672,45 @@ async function extensionProbes(options) {
   if (connected === void 0) {
     console.log("selftest: extensions the connected folder contributed nothing to switch off");
   } else {
-    const owner = extensionToggle("org.example/fixture-thirdparty");
+    const owner = extensionToggle("org.example/fixture-thirdparty", "disable-extension");
     if (owner === void 0) {
       console.log("selftest: extensions no switch for the connected extension");
     } else {
       owner.checked = false;
+      const revision = operationRevision();
       owner.dispatchEvent(new Event("change"));
-      console.log(`selftest: extensions disable the connected folder -> ${await settleApplied()}`);
-      const off = await listedContributions();
       console.log(
-        `selftest: extensions codecs ${after2.length} -> ${off.length}, ${connected} listed=${off.includes(connected)} state=${await contributionEnablement(connected)}`
+        `selftest: extensions disable the connected folder -> ${await settleOperation(revision)}`
       );
-      const again = extensionToggle("org.example/fixture-thirdparty");
+      const offSnapshot = await contributionSnapshot(connected);
+      const off = offSnapshot.ids;
+      console.log(
+        `selftest: extensions codecs ${after2.length} -> ${off.length}, ${connected} listed=${off.includes(connected)} state=${offSnapshot.selectedState}`
+      );
+      const again = extensionToggle("org.example/fixture-thirdparty", "enable-extension");
       if (again !== void 0) {
         again.checked = true;
+        const revision2 = operationRevision();
         again.dispatchEvent(new Event("change"));
-        console.log(`selftest: extensions enable the connected folder -> ${await settleApplied()}`);
-        const back = await listedContributions();
         console.log(
-          `selftest: extensions codecs ${off.length} -> ${back.length}, ${connected} listed=${back.includes(connected)} state=${await contributionEnablement(connected)}`
+          `selftest: extensions enable the connected folder -> ${await settleOperation(revision2)}`
+        );
+        const backSnapshot = await contributionSnapshot(connected);
+        const back = backSnapshot.ids;
+        console.log(
+          `selftest: extensions codecs ${off.length} -> ${back.length}, ${connected} listed=${back.includes(connected)} state=${backSnapshot.selectedState}`
         );
       }
     }
   }
   const addAgain = extensionsRoot.querySelector('[data-action="add-folder"]');
   if (addAgain instanceof HTMLElement) {
+    const revision = operationRevision();
     addAgain.click();
-    for (let attempt = 0; attempt < 100; attempt += 1) {
-      if (status2().includes("not added")) break;
-      await new Promise((resolve3) => setTimeout(resolve3, 50));
-    }
-    console.log(`selftest: extensions add folder #2 status ${JSON.stringify(status2())}`);
+    const completion = await settleOperation(revision);
+    console.log(
+      `selftest: extensions add folder #2 completion ${completion} status ${JSON.stringify(status2())}`
+    );
     const refused = [
       ...extensionsRoot.querySelectorAll(
         '[data-mk-part="settings.extension"][data-mk-state~="error"]'
@@ -323240,12 +325718,15 @@ async function extensionProbes(options) {
     ].map((node) => node.textContent ?? "");
     console.log(`selftest: extensions refused rows ${JSON.stringify(refused)}`);
   }
-  const remove = [...extensionsRoot.querySelectorAll('[data-mk-part="settings.remove"]')].find(
-    (node) => node.textContent === "Remove"
+  const remove = extensionsRoot.querySelector(
+    '[data-action="remove-folder"][data-extension="org.example/fixture-thirdparty"]'
   );
   if (remove instanceof HTMLElement) {
+    const revision = operationRevision();
     remove.click();
-    console.log(`selftest: extensions remove connected folder -> ${await settleApplied()}`);
+    console.log(
+      `selftest: extensions remove connected folder -> ${await settleOperation(revision)}`
+    );
   }
   options.showWorkspace();
   await settle();

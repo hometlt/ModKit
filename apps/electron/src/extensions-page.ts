@@ -39,6 +39,110 @@ import { createElectronLocalizer } from './localization.js'
 export type { ExtensionManagerSnapshot } from '@modkit/extension-manager'
 
 // ---------------------------------------------------------------------------------------------
+// machine-readable operation lifecycle
+
+export type ExtensionOperationState = 'busy' | 'applied' | 'failed' | 'refused'
+export type ExtensionOperationTerminalState = Exclude<ExtensionOperationState, 'busy'>
+
+export interface ExtensionOperationMarker {
+  readonly revision: number
+  readonly state: ExtensionOperationState
+}
+
+export interface ExtensionOperationLifecycle {
+  readonly busy: boolean
+  readonly marker: ExtensionOperationMarker
+  begin(): number | undefined
+  finish(revision: number, state: ExtensionOperationTerminalState): boolean
+}
+
+interface ExtensionOperationMarkerSource {
+  querySelector(selector: string): { getAttribute(name: string): string | null } | null
+}
+
+/**
+ * One monotonic lifecycle shared by every mutation on the Extensions & Contributions page.
+ * A terminal state keeps the revision of its matching `busy` state, so an observer cannot mistake
+ * an older success message for completion of the operation it just started.
+ */
+export function createExtensionOperationLifecycle(): ExtensionOperationLifecycle {
+  let marker: ExtensionOperationMarker = Object.freeze({ revision: 0, state: 'applied' })
+  let activeRevision: number | undefined
+
+  return {
+    get busy() {
+      return activeRevision !== undefined
+    },
+    get marker() {
+      return marker
+    },
+    begin() {
+      if (activeRevision !== undefined) return undefined
+      activeRevision = marker.revision + 1
+      marker = Object.freeze({ revision: activeRevision, state: 'busy' })
+      return activeRevision
+    },
+    finish(revision, state) {
+      if (activeRevision !== revision) return false
+      marker = Object.freeze({ revision, state })
+      activeRevision = undefined
+      return true
+    },
+  }
+}
+
+export function extensionOperationIsTerminal(
+  state: ExtensionOperationState,
+): state is ExtensionOperationTerminalState {
+  return state === 'applied' || state === 'failed' || state === 'refused'
+}
+
+/** Read only the stable machine attributes; localized status copy is deliberately outside it. */
+export function readExtensionOperationMarker(
+  root: ExtensionOperationMarkerSource,
+): ExtensionOperationMarker | undefined {
+  const node = root.querySelector('[data-operation-revision][data-operation-state]')
+  const revisionText = node?.getAttribute('data-operation-revision')
+  const state = node?.getAttribute('data-operation-state')
+  const revision =
+    revisionText === null || revisionText === undefined ? Number.NaN : Number(revisionText)
+  if (
+    !Number.isSafeInteger(revision) ||
+    revision < 0 ||
+    (state !== 'busy' && state !== 'applied' && state !== 'failed' && state !== 'refused')
+  ) {
+    return undefined
+  }
+  return Object.freeze({ revision, state })
+}
+
+/** Wait for an operation newer than `afterRevision` without inspecting any human-facing text. */
+export async function waitForExtensionOperation(
+  read: () => ExtensionOperationMarker | undefined,
+  afterRevision: number,
+  options: { readonly attempts?: number; readonly intervalMs?: number } = {},
+): Promise<ExtensionOperationMarker> {
+  const attempts = options.attempts ?? 600
+  const intervalMs = options.intervalMs ?? 100
+  let last = read()
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    last = read()
+    if (
+      last !== undefined &&
+      last.revision > afterRevision &&
+      extensionOperationIsTerminal(last.state)
+    ) {
+      return last
+    }
+    await new Promise(resolve => setTimeout(resolve, intervalMs))
+  }
+  throw new Error(
+    `extension operation after revision ${afterRevision} did not complete; ` +
+      `last=${last === undefined ? 'missing' : `${last.revision}:${last.state}`}`,
+  )
+}
+
+// ---------------------------------------------------------------------------------------------
 // what main reports
 
 /** One entry of the settings document, joined with what the loader made of it. */
@@ -370,7 +474,7 @@ export function createExtensionsSettingsGroups(
   let mountedCard: SubjectCard | undefined
   let cardLoadRevision = 0
   /** Busy while main recomposes: a second toggle mid-flight would compose against stale bytes. */
-  let busy = false
+  const operation = createExtensionOperationLifecycle()
   /**
    * Folders the user picked that were not extensions, kept for the life of this window.
    *
@@ -389,6 +493,21 @@ export function createExtensionsSettingsGroups(
   }
 
   const draw = (): void => groupContext?.refresh()
+
+  const beginOperation = (): number | undefined => {
+    const revision = operation.begin()
+    if (revision !== undefined) draw()
+    return revision
+  }
+
+  const finishOperation = (revision: number, state: ExtensionOperationTerminalState): void => {
+    if (operation.finish(revision, state)) draw()
+  }
+
+  const markOperation = (host: HTMLElement): void => {
+    host.dataset['operationRevision'] = String(operation.marker.revision)
+    host.dataset['operationState'] = operation.marker.state
+  }
 
   const describe = (error: unknown): string =>
     error instanceof Error ? error.message : String(error)
@@ -414,20 +533,21 @@ export function createExtensionsSettingsGroups(
   const mutate = async (
     what: string,
     change: (document: SettingsDocument) => SettingsDocument,
+    activeRevision?: number,
   ): Promise<void> => {
-    if (busy) return
-    busy = true
+    const revision = activeRevision ?? beginOperation()
+    if (revision === undefined) return
+    let terminal: ExtensionOperationTerminalState = 'applied'
     say(copy.saving(what))
-    draw()
     try {
       await options.store.write(change((await options.store.read()).document))
       report = await options.apply()
       say(copy.applied(what, summarise(report)))
     } catch (error) {
+      terminal = 'failed'
       say(copy.failed(what, describe(error)), true)
     } finally {
-      busy = false
-      draw()
+      finishOperation(revision, terminal)
     }
   }
 
@@ -437,10 +557,10 @@ export function createExtensionsSettingsGroups(
     operation: () => Promise<void>,
     recompose = true,
   ): Promise<void> => {
-    if (busy) return
-    busy = true
+    const revision = beginOperation()
+    if (revision === undefined) return
+    let terminal: ExtensionOperationTerminalState = 'applied'
     say(`${what}…`)
-    draw()
     try {
       await operation()
       managerSnapshot = await options.manager?.snapshot()
@@ -448,12 +568,12 @@ export function createExtensionsSettingsGroups(
       if (recompose) report = await options.apply()
       say(copy.complete(what, report === undefined ? undefined : summarise(report)))
     } catch (error) {
+      terminal = 'failed'
       const problem = copy.failed(what, describe(error))
       managerProblems.unshift(problem)
       say(problem, true)
     } finally {
-      busy = false
-      draw()
+      finishOperation(revision, terminal)
     }
   }
 
@@ -563,7 +683,7 @@ export function createExtensionsSettingsGroups(
         text: wire.subject.enabled ? copy.disableContribution : copy.enableContribution,
       }) as HTMLButtonElement
       toggle.type = 'button'
-      toggle.disabled = busy
+      toggle.disabled = operation.busy
       toggle.dataset['action'] = wire.subject.enabled
         ? 'disable-contribution'
         : 'enable-contribution'
@@ -576,7 +696,7 @@ export function createExtensionsSettingsGroups(
         text: wire.subject.enabled ? copy.disableExtension : copy.enableExtension,
       }) as HTMLButtonElement
       toggle.type = 'button'
-      toggle.disabled = busy
+      toggle.disabled = operation.busy
       toggle.dataset['action'] = wire.subject.enabled ? 'disable-extension' : 'enable-extension'
       toggle.addEventListener('click', () => {
         void mutate(
@@ -629,20 +749,24 @@ export function createExtensionsSettingsGroups(
   // ------------------------------------------------------------------ extensions group
   const addFolder = (): void => {
     void (async () => {
-      if (busy) return
+      const revision = beginOperation()
+      if (revision === undefined) return
       let picked: BrowseResult
       try {
         picked = await options.browse()
       } catch (error) {
         say(copy.browseFailed(describe(error)), true)
+        finishOperation(revision, 'failed')
         return
       }
       if (picked.canceled) {
         say(copy.noFolder)
+        finishOperation(revision, 'refused')
         return
       }
       if (picked.state === 'already-configured') {
         say(copy.alreadyListed(picked.root))
+        finishOperation(revision, 'refused')
         return
       }
       if (picked.state === 'refused') {
@@ -650,18 +774,23 @@ export function createExtensionsSettingsGroups(
         // loader's reason" is the whole answer a user who picked the wrong directory needs.
         refusals.unshift({ root: picked.root, code: picked.code, message: picked.message })
         say(copy.notAddedStatus(picked.root, picked.code, picked.message), true)
-        draw()
+        finishOperation(revision, 'refused')
         return
       }
       const entry = { id: picked.id, path: picked.root, enabled: true }
-      await mutate(copy.operation('add', picked.id), document => ({
-        ...document,
-        extensions: [...document.extensions.filter(other => other.id !== entry.id), entry],
-      }))
+      await mutate(
+        copy.operation('add', picked.id),
+        document => ({
+          ...document,
+          extensions: [...document.extensions.filter(other => other.id !== entry.id), entry],
+        }),
+        revision,
+      )
     })()
   }
 
   const renderExtensions = (host: HTMLElement): void => {
+    markOperation(host)
     if (renderSelectedSubject(host)) return
     const value = report
     element(host, 'p', {
@@ -693,7 +822,7 @@ export function createExtensionsSettingsGroups(
       }) as HTMLButtonElement
       refresh.type = 'button'
       refresh.dataset['action'] = 'refresh-catalog'
-      refresh.disabled = busy
+      refresh.disabled = operation.busy
       refresh.addEventListener('click', () => {
         void manage(copy.operation('refresh', copy.extensions), () => manager.refresh(), false)
       })
@@ -740,7 +869,7 @@ export function createExtensionsSettingsGroups(
         }) as HTMLButtonElement
         control.type = 'button'
         control.dataset['action'] = action
-        control.disabled = busy
+        control.disabled = operation.busy
         control.addEventListener('click', run)
       }
 
@@ -820,7 +949,7 @@ export function createExtensionsSettingsGroups(
     }) as HTMLButtonElement
     add.type = 'button'
     add.dataset['action'] = 'add-folder'
-    add.disabled = busy
+    add.disabled = operation.busy
     add.addEventListener('click', addFolder)
 
     // ---- what the user connected
@@ -840,7 +969,8 @@ export function createExtensionsSettingsGroups(
       const toggle = element(item, 'input', { part: 'settings.toggle' }) as HTMLInputElement
       toggle.type = 'checkbox'
       toggle.checked = entry.enabled
-      toggle.disabled = busy || entry.id === undefined
+      toggle.disabled = operation.busy || entry.id === undefined
+      toggle.dataset['action'] = entry.enabled ? 'disable-extension' : 'enable-extension'
       toggle.dataset['extension'] = entry.id ?? entry.path
       toggle.setAttribute('aria-label', `${copy.enable} ${entry.id ?? entry.path}`)
       toggle.addEventListener('change', () => {
@@ -877,7 +1007,9 @@ export function createExtensionsSettingsGroups(
         text: copy.remove,
       }) as HTMLButtonElement
       remove.type = 'button'
-      remove.disabled = busy
+      remove.dataset['action'] = 'remove-folder'
+      remove.dataset['extension'] = entry.id ?? entry.path
+      remove.disabled = operation.busy
       remove.addEventListener('click', () => {
         void mutate(copy.operation('remove', entry.id ?? entry.path), document => ({
           ...document,
@@ -951,6 +1083,7 @@ export function createExtensionsSettingsGroups(
 
   // ------------------------------------------------------------------ codecs group
   const renderCodecs = (host: HTMLElement): void => {
+    markOperation(host)
     if (renderSelectedSubject(host)) return
     const value = report
     element(host, 'p', {
@@ -1009,7 +1142,10 @@ export function createExtensionsSettingsGroups(
             const toggle = element(item, 'input', { part: 'settings.toggle' }) as HTMLInputElement
             toggle.type = 'checkbox'
             toggle.checked = !contribution.disabled
-            toggle.disabled = busy
+            toggle.disabled = operation.busy
+            toggle.dataset['action'] = contribution.disabled
+              ? 'enable-contribution'
+              : 'disable-contribution'
             toggle.dataset['contribution'] = id
             toggle.setAttribute('aria-label', `${copy.enable} ${id}`)
             toggle.addEventListener('change', () => mutateContribution(id, toggle.checked))

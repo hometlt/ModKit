@@ -42,6 +42,8 @@ import { editOffer, editSelfTestLine } from './edit-operations.js'
 import { createEditPanel } from './edit-panel.js'
 import {
   createExtensionsSettingsGroups,
+  readExtensionOperationMarker,
+  waitForExtensionOperation,
   type BrowseResult,
   type ExtensionManagerSnapshot,
   type ExtensionsReport,
@@ -1608,8 +1610,10 @@ async function extensionProbes(options: {
     extensionsRoot.querySelector('[data-mk-part="settings.status"]')?.textContent ?? ''
 
   /** Move to a group of the page by clicking its tab, exactly as a user reaches it. */
-  const showGroup = async (label: string): Promise<boolean> => {
-    const button = groupButtons.find(node => node.textContent === label)
+  const showGroup = async (id: 'extensions' | 'codecs'): Promise<boolean> => {
+    const button = extensionsRoot.querySelector(
+      `[data-mk-part="settings.group"][data-group="${id}"]`,
+    )
     if (!(button instanceof HTMLElement)) return false
     button.click()
     await settle()
@@ -1617,19 +1621,17 @@ async function extensionProbes(options: {
   }
 
   /**
-   * Wait for main to finish recomposing.
-   *
-   * The page says so itself: every switch reports "applied" (or "failed") on its status line once
-   * the new composition is live and the tabs have been reopened. Polling that line is what a human
-   * watching the page would do.
+   * Wait for main to finish recomposing through the page's machine contract. Status copy remains
+   * useful in the log, but localized words never decide whether the operation completed.
    */
-  const settleApplied = async (): Promise<string> => {
-    for (let attempt = 0; attempt < 600; attempt += 1) {
-      const text = status()
-      if (text.includes('applied.') || text.includes('failed')) return text
-      await new Promise(resolve => setTimeout(resolve, 100))
-    }
-    return `TIMEOUT ${status()}`
+  const operationRevision = (): number =>
+    readExtensionOperationMarker(extensionsRoot)?.revision ?? 0
+  const settleOperation = async (afterRevision: number): Promise<string> => {
+    const marker = await waitForExtensionOperation(
+      () => readExtensionOperationMarker(extensionsRoot),
+      afterRevision,
+    )
+    return `${marker.revision}:${marker.state} ${status()}`
   }
 
   /** The stages the shell offers for this file, read from the focused group's own picker. */
@@ -1656,9 +1658,12 @@ async function extensionProbes(options: {
   }
 
   /** The switch for one contribution, found by the id it names — never by position. */
-  const codecToggle = (id: string): HTMLInputElement | undefined => {
+  const codecToggle = (
+    id: string,
+    action: 'disable-contribution' | 'enable-contribution',
+  ): HTMLInputElement | undefined => {
     const node = extensionsRoot.querySelector(
-      `[data-mk-part="settings.toggle"][data-contribution="${id}"]`,
+      `[data-mk-part="settings.toggle"][data-action="${action}"][data-contribution="${id}"]`,
     )
     return node instanceof HTMLInputElement ? node : undefined
   }
@@ -1670,21 +1675,24 @@ async function extensionProbes(options: {
   } else {
     console.log(`selftest: extensions ${png.name} before ${await openAndDescribe(png)}`)
     await closeAllAndShowPage()
-    if (!(await showGroup('Contributions'))) {
+    if (!(await showGroup('codecs'))) {
       console.log('selftest: extensions page has no Contributions group')
     } else {
-      const off = codecToggle(PNG_CODEC)
+      const off = codecToggle(PNG_CODEC, 'disable-contribution')
       if (off === undefined) {
         console.log(`selftest: extensions no switch for ${PNG_CODEC}`)
       } else {
         off.checked = false
+        const revision = operationRevision()
         off.dispatchEvent(new Event('change'))
-        console.log(`selftest: extensions disable ${PNG_CODEC} -> ${await settleApplied()}`)
+        console.log(
+          `selftest: extensions disable ${PNG_CODEC} -> ${await settleOperation(revision)}`,
+        )
         console.log(`selftest: extensions ${png.name} disabled ${await openAndDescribe(png)}`)
 
         await closeAllAndShowPage()
-        await showGroup('Contributions')
-        const on = codecToggle(PNG_CODEC)
+        await showGroup('codecs')
+        const on = codecToggle(PNG_CODEC, 'enable-contribution')
         if (on === undefined) {
           // The whole reason a disabled contribution stays in the inventory: without the record
           // there would be no switch left to turn it back on.
@@ -1692,8 +1700,11 @@ async function extensionProbes(options: {
         } else {
           console.log(`selftest: extensions disabled switch still listed, checked=${on.checked}`)
           on.checked = true
+          const revision = operationRevision()
           on.dispatchEvent(new Event('change'))
-          console.log(`selftest: extensions enable ${PNG_CODEC} -> ${await settleApplied()}`)
+          console.log(
+            `selftest: extensions enable ${PNG_CODEC} -> ${await settleOperation(revision)}`,
+          )
           console.log(`selftest: extensions ${png.name} re-enabled ${await openAndDescribe(png)}`)
         }
       }
@@ -1702,41 +1713,46 @@ async function extensionProbes(options: {
 
   // ---------------------------------------------------------------- connecting folders
   await closeAllAndShowPage()
-  await showGroup('Extensions')
+  await showGroup('extensions')
   const addButton = extensionsRoot.querySelector('[data-action="add-folder"]')
   if (!(addButton instanceof HTMLElement)) {
     console.log('selftest: extensions page has no Add extension folder control')
     return
   }
 
-  /** Every id the Contributions group currently lists, read from the switches themselves. */
-  const listedContributions = async (): Promise<readonly string[]> => {
-    await showGroup('Contributions')
+  /**
+   * Read the contribution inventory and one optional owner-state in a single visit to the group.
+   * Keeping this atomic avoids repeatedly rebuilding the complete cards just to inspect the same
+   * machine state twice.
+   */
+  const contributionSnapshot = async (
+    selected?: string,
+  ): Promise<{ readonly ids: readonly string[]; readonly selectedState: string }> => {
+    await showGroup('codecs')
     const ids = [...extensionsRoot.querySelectorAll('[data-mk-part="settings.toggle"]')].flatMap(
       node => {
         const id = node instanceof HTMLInputElement ? node.dataset['contribution'] : undefined
         return id === undefined ? [] : [id]
       },
     )
-    await showGroup('Extensions')
-    return ids
-  }
-  const contributionEnablement = async (id: string): Promise<string> => {
-    await showGroup('Contributions')
-    const toggle = extensionsRoot.querySelector(
-      `[data-mk-part="settings.toggle"][data-contribution="${id}"]`,
-    )
+    const toggle =
+      selected === undefined
+        ? undefined
+        : extensionsRoot.querySelector(
+            `[data-mk-part="settings.toggle"][data-contribution="${selected}"]`,
+          )
     const state = toggle
       ?.closest('[data-mk-part="settings.extension"]')
       ?.querySelector<HTMLElement>('[data-enablement]')?.dataset['enablement']
-    await showGroup('Extensions')
-    return state ?? 'missing'
+    await showGroup('extensions')
+    return { ids, selectedState: state ?? 'missing' }
   }
 
-  const before = await listedContributions()
+  const before = (await contributionSnapshot()).ids
+  const addRevision = operationRevision()
   addButton.click()
-  console.log(`selftest: extensions add folder #1 -> ${await settleApplied()}`)
-  const after = await listedContributions()
+  console.log(`selftest: extensions add folder #1 -> ${await settleOperation(addRevision)}`)
+  const after = (await contributionSnapshot()).ids
   const gained = after.filter(id => !before.includes(id))
   console.log(
     `selftest: extensions codecs ${before.length} -> ${after.length}, new [${gained.join(', ')}]`,
@@ -1748,9 +1764,12 @@ async function extensionProbes(options: {
    * Both halves are checked because "the switch wrote the file" and "the host refused activation"
    * are different claims.
    */
-  const extensionToggle = (id: string): HTMLInputElement | undefined => {
+  const extensionToggle = (
+    id: string,
+    action: 'disable-extension' | 'enable-extension',
+  ): HTMLInputElement | undefined => {
     const node = extensionsRoot.querySelector(
-      `[data-mk-part="settings.toggle"][data-extension="${id}"]`,
+      `[data-mk-part="settings.toggle"][data-action="${action}"][data-extension="${id}"]`,
     )
     return node instanceof HTMLInputElement ? node : undefined
   }
@@ -1758,29 +1777,37 @@ async function extensionProbes(options: {
   if (connected === undefined) {
     console.log('selftest: extensions the connected folder contributed nothing to switch off')
   } else {
-    const owner = extensionToggle('org.example/fixture-thirdparty')
+    const owner = extensionToggle('org.example/fixture-thirdparty', 'disable-extension')
     if (owner === undefined) {
       console.log('selftest: extensions no switch for the connected extension')
     } else {
       owner.checked = false
+      const revision = operationRevision()
       owner.dispatchEvent(new Event('change'))
-      console.log(`selftest: extensions disable the connected folder -> ${await settleApplied()}`)
-      const off = await listedContributions()
+      console.log(
+        `selftest: extensions disable the connected folder -> ${await settleOperation(revision)}`,
+      )
+      const offSnapshot = await contributionSnapshot(connected)
+      const off = offSnapshot.ids
       console.log(
         `selftest: extensions codecs ${after.length} -> ${off.length}, ` +
           `${connected} listed=${off.includes(connected)} ` +
-          `state=${await contributionEnablement(connected)}`,
+          `state=${offSnapshot.selectedState}`,
       )
-      const again = extensionToggle('org.example/fixture-thirdparty')
+      const again = extensionToggle('org.example/fixture-thirdparty', 'enable-extension')
       if (again !== undefined) {
         again.checked = true
+        const revision = operationRevision()
         again.dispatchEvent(new Event('change'))
-        console.log(`selftest: extensions enable the connected folder -> ${await settleApplied()}`)
-        const back = await listedContributions()
+        console.log(
+          `selftest: extensions enable the connected folder -> ${await settleOperation(revision)}`,
+        )
+        const backSnapshot = await contributionSnapshot(connected)
+        const back = backSnapshot.ids
         console.log(
           `selftest: extensions codecs ${off.length} -> ${back.length}, ` +
             `${connected} listed=${back.includes(connected)} ` +
-            `state=${await contributionEnablement(connected)}`,
+            `state=${backSnapshot.selectedState}`,
         )
       }
     }
@@ -1789,12 +1816,13 @@ async function extensionProbes(options: {
   // A folder that is not an extension: it must say so, verbatim, and not disappear.
   const addAgain = extensionsRoot.querySelector('[data-action="add-folder"]')
   if (addAgain instanceof HTMLElement) {
+    const revision = operationRevision()
     addAgain.click()
-    for (let attempt = 0; attempt < 100; attempt += 1) {
-      if (status().includes('not added')) break
-      await new Promise(resolve => setTimeout(resolve, 50))
-    }
-    console.log(`selftest: extensions add folder #2 status ${JSON.stringify(status())}`)
+    const completion = await settleOperation(revision)
+    console.log(
+      `selftest: extensions add folder #2 completion ${completion} ` +
+        `status ${JSON.stringify(status())}`,
+    )
     const refused = [
       ...extensionsRoot.querySelectorAll(
         '[data-mk-part="settings.extension"][data-mk-state~="error"]',
@@ -1804,12 +1832,15 @@ async function extensionProbes(options: {
   }
 
   // Leave the settings file as it was found: a temp fixture path must not outlive the run.
-  const remove = [...extensionsRoot.querySelectorAll('[data-mk-part="settings.remove"]')].find(
-    node => node.textContent === 'Remove',
+  const remove = extensionsRoot.querySelector(
+    '[data-action="remove-folder"][data-extension="org.example/fixture-thirdparty"]',
   )
   if (remove instanceof HTMLElement) {
+    const revision = operationRevision()
     remove.click()
-    console.log(`selftest: extensions remove connected folder -> ${await settleApplied()}`)
+    console.log(
+      `selftest: extensions remove connected folder -> ${await settleOperation(revision)}`,
+    )
   }
   options.showWorkspace()
   await settle()

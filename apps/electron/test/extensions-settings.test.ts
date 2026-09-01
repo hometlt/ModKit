@@ -25,15 +25,78 @@ import {
   CONTRIBUTION_DISABLED_CODE,
 } from '../src/index.js'
 import {
+  createExtensionOperationLifecycle,
   groupContributionsByContract,
+  readExtensionOperationMarker,
+  waitForExtensionOperation,
   withContributionEnabled,
   withExtensionEnabled,
   type ContributionReport,
 } from '../src/extensions-page.js'
+import { createElectronLocalizer } from '../src/localization.js'
 
 const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
 const imagesExtension = join(repositoryRoot, 'extensions', 'images')
 const PNG_CODEC = 'modkit/image-png'
+
+describe('locale-independent extension operation lifecycle', () => {
+  it('completes RU toggle, add refusal, failure and remove probes without reading status text', async () => {
+    const localizer = createElectronLocalizer('ru')
+    expect(localizer.locale).toBe('ru')
+    const russianStatusCopy = [
+      localizer.text('electron.extensions.applied', { what: 'переключение', summary: 'готово' }),
+      localizer.text('electron.extensions.failed', { what: 'переключение', reason: 'отказ' }),
+      localizer.text('electron.extensions.notAddedStatus', {
+        root: 'папка',
+        code: 'x3.host/refused',
+        message: 'отказ',
+      }),
+    ]
+    expect(russianStatusCopy.every(text => /[а-я]/iu.test(text))).toBe(true)
+
+    const lifecycle = createExtensionOperationLifecycle()
+    const markerSource = {
+      querySelector() {
+        const marker = lifecycle.marker
+        return {
+          getAttribute(name: string) {
+            if (name === 'data-operation-revision') return String(marker.revision)
+            if (name === 'data-operation-state') return marker.state
+            return null
+          },
+        }
+      },
+    }
+    const scenarios = [
+      { action: 'toggle', terminal: 'applied' },
+      { action: 'add refusal', terminal: 'refused' },
+      { action: 'toggle failure', terminal: 'failed' },
+      { action: 'remove', terminal: 'applied' },
+    ] as const
+
+    for (const [index, scenario] of scenarios.entries()) {
+      const before = lifecycle.marker.revision
+      const revision = lifecycle.begin()
+      expect(revision, scenario.action).toBe(index + 1)
+      expect(readExtensionOperationMarker(markerSource), scenario.action).toEqual({
+        revision,
+        state: 'busy',
+      })
+      const completion = waitForExtensionOperation(
+        () => readExtensionOperationMarker(markerSource),
+        before,
+        { attempts: 10, intervalMs: 0 },
+      )
+      queueMicrotask(() => {
+        if (revision !== undefined) lifecycle.finish(revision, scenario.terminal)
+      })
+      await expect(completion, scenario.action).resolves.toEqual({
+        revision,
+        state: scenario.terminal,
+      })
+    }
+  })
+})
 
 /** The two directories the "connect a folder" flow is verified against, built by the fixture script. */
 const extensionFolders = ((): { readonly ok: string; readonly junk: string } => {
