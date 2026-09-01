@@ -3287,10 +3287,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       streamCount: archiveAcceptanceStreams.length,
     })
     if (
-      metadataIo.readCount !== 8 ||
-      metadataIo.bytes !== 70_978 ||
-      metadataIo.maxReadBytes !== 65_557 ||
-      metadataIo.streamCount !== 0
+      metadataIo.readCount !== INSTALLED_ARCHIVE_AUTHORITIES.armod.metadataIo.readCount ||
+      metadataIo.bytes !== INSTALLED_ARCHIVE_AUTHORITIES.armod.metadataIo.bytes ||
+      metadataIo.maxReadBytes !== INSTALLED_ARCHIVE_AUTHORITIES.armod.metadataIo.maxReadBytes ||
+      metadataIo.streamCount !== INSTALLED_ARCHIVE_AUTHORITIES.armod.metadataIo.streamCount
     ) {
       throw new TypeError(`ARmod installed metadata I/O differed: ${JSON.stringify(metadataIo)}`)
     }

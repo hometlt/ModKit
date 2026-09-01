@@ -103,6 +103,18 @@ export const INSTALLED_ARCHIVE_AUTHORITIES = Object.freeze({
     path: 'references/ARmod_4.0.1.wz',
     bytes: 102_362_635,
     sha256: '69997de6acbbccae87838d830958ad377cc5fa607587a61ff8dfefb1afb0f241',
+    /*
+     * What opening 102 MB of ARmod costs the installed editor, as an exact contract rather than a
+     * ceiling: five ranged reads totalling 65,849 bytes, the largest of them the 65,557-byte
+     * metadata range, and no stream. An earlier pin held the eight reads / 70,978 bytes an
+     * in-process CLI composition made; the worker-brokered route the editor selects reads less.
+     */
+    metadataIo: Object.freeze({
+      readCount: 5,
+      bytes: 65_849,
+      maxReadBytes: 65_557,
+      streamCount: 0,
+    }),
     route: Object.freeze({
       extensionId: 'wz2100project/warzone-2100',
       contributionId: 'modkit/warzone-wz',
@@ -509,10 +521,10 @@ export function assertInstalledArchiveAcceptanceReceipt(value: unknown): asserts
     !Number.isSafeInteger(armodIo.readCount) ||
     !Number.isSafeInteger(armodIo.bytes) ||
     !Number.isSafeInteger(armodIo.maxReadBytes) ||
-    armodIo.readCount !== 8 ||
-    armodIo.bytes !== 70_978 ||
-    armodIo.maxReadBytes !== 65_557 ||
-    armodIo.streamCount !== 0 ||
+    armodIo.readCount !== INSTALLED_ARCHIVE_AUTHORITIES.armod.metadataIo.readCount ||
+    armodIo.bytes !== INSTALLED_ARCHIVE_AUTHORITIES.armod.metadataIo.bytes ||
+    armodIo.maxReadBytes !== INSTALLED_ARCHIVE_AUTHORITIES.armod.metadataIo.maxReadBytes ||
+    armodIo.streamCount !== INSTALLED_ARCHIVE_AUTHORITIES.armod.metadataIo.streamCount ||
     armodInspection.inspectionMode !== 'metadata-first-range' ||
     armodInspection.sourceBytes !== '102362635' ||
     armodInspection.metadataBytesRead !== 65_557 ||

@@ -213,7 +213,7 @@ const passingEvidence = (caseId: (typeof INSTALLED_ARCHIVE_ACCEPTANCE_CASE_IDS)[
         deltaBytes: 0,
         deltaCeilingBytes: ARMOD_EXTERNAL_PROCESS_TREE_MEMORY_DELTA_CEILING_BYTES,
       },
-      metadataIo: { readCount: 8, bytes: 70_978, maxReadBytes: 65_557, streamCount: 0 },
+      metadataIo: { ...INSTALLED_ARCHIVE_AUTHORITIES.armod.metadataIo },
       inspection: {
         inspectionMode: 'metadata-first-range',
         sourceBytes: '102362635',
