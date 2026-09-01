@@ -2525,6 +2525,21 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           `${caseId} Explorer filesystem did not expose its exact authority entry`,
         )
       }
+      /*
+       * This is the laziness boundary, and it is the deterministic one: browsing the container,
+       * listing its root and stat'ing the authority entry index it without reading a single
+       * member's bytes. Reading the member the visible search selects is what the selection means,
+       * so what must never appear afterwards is a read of a member nobody picked. Extractions are
+       * scoped to this container because a previous case's editor may still be loading its own.
+       */
+      const containerExtractions = () =>
+        archiveAcceptanceExtractions.filter(item => item.container === container)
+      const indexedExtractions = containerExtractions()
+      if (indexedExtractions.length !== 0) {
+        throw new TypeError(
+          `${caseId} read ${indexedExtractions.length} member(s) while indexing its container`,
+        )
+      }
       const expectedSelection = Object.freeze({
         caseId,
         container: basename(container),
@@ -2561,8 +2576,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         artifactSha256,
         ...expectedSelection,
       })
-      if (archiveAcceptanceExtractions.length !== 0) {
-        throw new TypeError(`${caseId} extracted before its Explorer/search observation completed`)
+      const foreignExtractions = containerExtractions().filter(item => item.entry !== requiredEntry)
+      if (foreignExtractions.length !== 0) {
+        throw new TypeError(
+          `${caseId} read ${foreignExtractions
+            .map(item => item.entry)
+            .join(', ')} rather than only its authority entry`,
+        )
       }
       record(caseId, {
         browseCommand: 'modkit.browseContainer',
@@ -2590,7 +2610,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         selectedRoute: acknowledgement.selectedRoute,
         query,
         requiredEntry,
-        extractionCountBeforeRead: archiveAcceptanceExtractions.length,
+        extractionCountWhileIndexing: indexedExtractions.length,
+        foreignExtractionCount: foreignExtractions.length,
       })
     }
     const materialize = async (

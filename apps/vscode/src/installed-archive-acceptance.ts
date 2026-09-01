@@ -264,7 +264,8 @@ export function assertInstalledArchiveAcceptanceReceipt(value: unknown): asserts
       explorerMember.entry !== expected.entry ||
       explorerMember.kind !== 'file' ||
       !Number.isSafeInteger(explorerMember.size) ||
-      evidence.extractionCountBeforeRead !== 0
+      evidence.extractionCountWhileIndexing !== 0 ||
+      evidence.foreignExtractionCount !== 0
     ) {
       throw new TypeError(
         `${caseId} did not prove visible registered browse/search and lazy Explorer access`,

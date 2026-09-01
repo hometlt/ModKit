@@ -43,7 +43,8 @@ const passingEvidence = (caseId: (typeof INSTALLED_ARCHIVE_ACCEPTANCE_CASE_IDS)[
       selectedRoute: 'modkit-container',
       query: searchQueryByCase[caseId as keyof typeof searchQueryByCase],
       requiredEntry: searchEntry,
-      extractionCountBeforeRead: 0,
+      extractionCountWhileIndexing: 0,
+      foreignExtractionCount: 0,
     }
   }
   if (caseId.endsWith('-materialize')) {
@@ -331,6 +332,18 @@ describe('installed Wave 2A archive acceptance receipt', () => {
       evidence.quickPickObserved = false
       expect(() => assertInstalledArchiveAcceptanceReceipt(receipt)).toThrow(
         /visible registered browse\/search/u,
+      )
+    }
+  })
+
+  it('rejects a member read while indexing, and a member nobody selected', () => {
+    for (const field of ['extractionCountWhileIndexing', 'foreignExtractionCount'] as const) {
+      const receipt = passingReceipt()
+      const target = receipt.cases.find(item => item.caseId === 'mpq-tree-search-lazy')
+      if (target === undefined) throw new TypeError('fixture omitted the MPQ search')
+      ;(target.evidence as unknown as Record<string, number>)[field] = 1
+      expect(() => assertInstalledArchiveAcceptanceReceipt(receipt)).toThrow(
+        /lazy Explorer access/u,
       )
     }
   })
