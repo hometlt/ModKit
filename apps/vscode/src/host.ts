@@ -27,7 +27,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { basename, isAbsolute, join, relative, resolve } from 'node:path'
 import type { Diagnostic } from '@modkit/core'
 import { sceneModule } from '@modkit/scene/module'
-import type { PermissionGrant, ResourceBudget } from '@modkit/sdk'
+import type { PermissionGrant, ResourceBudget, Writer } from '@modkit/sdk'
 import { uvModule } from '@modkit/uv/module'
 import type { MapPreviewResourcePlanResolver } from '@modkit/host/maps'
 import type { UiLocalizer } from '@modkit/ui/localization'
@@ -56,6 +56,8 @@ import {
   createPathSubjectOpener,
   loadExtensionRoots,
   type ExtensionRootFailure,
+  type FileArtifactReadTelemetry,
+  type FileArtifactStreamTelemetry,
   type NodeSubjectServices,
 } from '@modkit/host/node'
 
@@ -140,6 +142,46 @@ export const VSCODE_MAXIMUM_LISTING = 5_000
 /** How many editing arms are kept alive at once; see `rememberEditing`. */
 const MAXIMUM_LIVE_EDITING_ARMS = 256
 
+const nativeMapScript = (): Uint8Array =>
+  new TextEncoder().encode(
+    `void NativePreservingProof() {\r\n${'    // fixed-slot zlib proof\r\n'.repeat(40)}}\r\n`,
+  )
+
+interface NativeMpqSnapshotOptions {
+  readonly sourceBytes: Uint8Array
+  readonly replacements: readonly { readonly path: string; readonly bytes: Uint8Array }[]
+  readonly target: {
+    readonly targetId: string
+    readonly subjectUri: string
+    readonly ownerSource: { readonly id: string; readonly uri: string }
+    readonly semanticPath: readonly string[]
+    readonly expectedRevision: {
+      readonly namespaceRevision: string
+      readonly compositionFingerprint: string
+    }
+  }
+  readonly archiveName: string
+}
+
+interface NativeMpqSnapshotChange {
+  readonly edits?: readonly {
+    readonly operation?: unknown
+    readonly payload?: { readonly kind?: unknown; readonly bytes?: unknown }
+  }[]
+  readonly semanticIntent?: { readonly nativeExportReceipt?: unknown }
+}
+
+interface NativeMpqSaveAsEntry {
+  readonly snapshot: (options: NativeMpqSnapshotOptions) => Promise<NativeMpqSnapshotChange>
+  readonly writer: Pick<Writer, 'validate' | 'plan'>
+  readonly release?: () => Promise<void>
+}
+
+export interface VsCodeNativeSaveAsResult {
+  readonly bytes: Uint8Array
+  readonly nativeWriterReceipt: unknown
+}
+
 // ---------------------------------------------------------------------------------------------
 // composition
 
@@ -203,6 +245,12 @@ export interface VsCodeContainerOptions {
   /** Granted directories, read per request — the same confinement every open uses. */
   readonly roots: () => readonly string[]
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void
+  /** Optional test-only observation of completed read-only member extraction. */
+  readonly onExtract?: (event: {
+    readonly container: string
+    readonly entry: string
+    readonly bytes: number
+  }) => void
 }
 
 export interface VsCodeSubjectHostOptions {
@@ -456,6 +504,7 @@ export async function createVsCodeSubjectHost(
         grant: DEFAULT_OPEN_GRANT,
         budget: DEFAULT_OPEN_BUDGET,
         ...(container.onDiagnostic === undefined ? {} : { onDiagnostic: container.onDiagnostic }),
+        ...(container.onExtract === undefined ? {} : { onExtract: container.onExtract }),
       }),
     serve: (served: VsCodeServeOptions) =>
       serveVsCode(services, served, { extensions, contributions }),
@@ -598,6 +647,15 @@ export interface VsCodeServed {
   saveDocument(path: string): Promise<void>
   /** Discard the mounted editor buffer and reopen the file from disk. */
   revertDocument(path: string): Promise<void>
+  /**
+   * Run the selected installed native writer for this subject's Save As route.  Undefined means
+   * no opt-in writer was selected; the caller may then use its ordinary provider Save As path.
+   */
+  nativeSaveAs(
+    path: string,
+    destinationPath: string,
+    sourceBytes: Uint8Array,
+  ): Promise<VsCodeNativeSaveAsResult | undefined>
   close(reason: string): Promise<void>
 }
 
@@ -616,6 +674,8 @@ export function createVsCodeCommandOpener(options: {
   readonly services: NodeSubjectServices
   readonly roots: () => readonly string[]
   readonly containers?: ContainerRegistry
+  readonly onRead?: (event: FileArtifactReadTelemetry) => void
+  readonly onStream?: (event: FileArtifactStreamTelemetry) => void
 }): SubjectOpener {
   return async (requested, signal) => {
     if (isContainerUriText(requested)) {
@@ -629,6 +689,8 @@ export function createVsCodeCommandOpener(options: {
       roots: options.roots(),
       grant: DEFAULT_OPEN_GRANT,
       budget: DEFAULT_OPEN_BUDGET,
+      ...(options.onRead === undefined ? {} : { onRead: options.onRead }),
+      ...(options.onStream === undefined ? {} : { onStream: options.onStream }),
     })
     return opener(requested, signal)
   }
@@ -690,6 +752,7 @@ function serveVsCode(
   /** The writer for editors that know nothing about the format (plain text, hex). */
   const rawWriter = createRawWriter()
   const editingBySession = new Map<string, SubjectEditing>()
+  const nativeSaveAsByPath = new Map<string, NativeMpqSaveAsEntry>()
 
   /**
    * Arms are kept until the window closes, because nothing on the wire says "this tab is gone":
@@ -877,7 +940,60 @@ function serveVsCode(
       budgets: options.budget ?? DEFAULT_OPEN_BUDGET,
     })
     writerResolution.diagnostics.forEach(item => options.onDiagnostic?.(item))
+    /*
+     * SC2Map is an MPQ-backed semantic subject, so its normal editor writer facet is
+     * `sc2-map`.  Save As needs the installed MPQ contribution's native-source export writer
+     * instead.  This second resolution is deliberately narrow and only exposes the opt-in helper
+     * when that worker contribution explicitly carries it beside the standard writer contract.
+     */
+    let retainedNativeSaveAs:
+      { readonly key: string; readonly entry: NativeMpqSaveAsEntry } | undefined
     try {
+      const openedFormatId =
+        opened.descriptor.interpretation === 'codec'
+          ? opened.descriptor.identity.formatId
+          : undefined
+      if (openedFormatId === 'sc2-map') {
+        const nativeWriterResolution = await resolveFormatWriter({
+          services,
+          opened,
+          grant: editGrant,
+          budgets: options.budget ?? DEFAULT_OPEN_BUDGET,
+          formatId: 'mpq',
+          representationId: 'native-source',
+          mutationMode: 'export-only',
+          minimumRoundTrip: 'semantic',
+        })
+        let keepNativeWriterLease = false
+        try {
+          nativeWriterResolution.diagnostics.forEach(item => options.onDiagnostic?.(item))
+          const candidate = nativeWriterResolution.writer as
+            { readonly snapshotNativePreservingMpq?: NativeMpqSaveAsEntry['snapshot'] } | undefined
+          const snapshot = candidate?.snapshotNativePreservingMpq
+          if (
+            nativeWriterResolution.writer?.identity.providerId === 'blizzard/mpq-fresh-writer' &&
+            nativeWriterResolution.writer.offer.formatId === 'mpq' &&
+            nativeWriterResolution.writer.offer.representationId === 'native-source' &&
+            snapshot !== undefined
+          ) {
+            const selectedNativeSaveAs = Object.freeze({
+              snapshot,
+              writer: nativeWriterResolution.writer,
+              ...(nativeWriterResolution.release === undefined
+                ? {}
+                : { release: nativeWriterResolution.release }),
+            })
+            const nativeSaveAsKey = resolve(subjectRequested)
+            const previousNativeSaveAs = nativeSaveAsByPath.get(nativeSaveAsKey)
+            await previousNativeSaveAs?.release?.()
+            nativeSaveAsByPath.set(nativeSaveAsKey, selectedNativeSaveAs)
+            retainedNativeSaveAs = { key: nativeSaveAsKey, entry: selectedNativeSaveAs }
+            keepNativeWriterLease = true
+          }
+        } finally {
+          if (!keepNativeWriterLease) await nativeWriterResolution.release?.()
+        }
+      }
       const selectedWriter = writerResolution.writer ?? rawWriter
       let sessionEvidence = evidence
       if (opened.descriptor.interpretation === 'codec') {
@@ -909,17 +1025,31 @@ function serveVsCode(
               session: Object.freeze({
                 ...leasedSession,
                 async dispose() {
-                  await leasedSession.dispose()
-                  if (!released) {
-                    released = true
-                    await writerResolution.release?.()
-                  }
+                  const shouldReleaseWriter = !released
+                  if (shouldReleaseWriter) released = true
+                  const releaseWriter = shouldReleaseWriter
+                    ? Promise.resolve().then(() => writerResolution.release?.())
+                    : undefined
+                  const [sessionResult, writerResult] = await Promise.allSettled([
+                    Promise.resolve().then(() => leasedSession.dispose()),
+                    releaseWriter,
+                  ])
+                  if (sessionResult.status === 'rejected') throw sessionResult.reason
+                  if (writerResult.status === 'rejected') throw writerResult.reason
                 },
               }),
             })
       rememberEditing(sessionId, editingForSession)
     } catch (error) {
-      await writerResolution.release?.()
+      const nativeRelease =
+        retainedNativeSaveAs !== undefined &&
+        nativeSaveAsByPath.get(retainedNativeSaveAs.key) === retainedNativeSaveAs.entry
+          ? (() => {
+              nativeSaveAsByPath.delete(retainedNativeSaveAs.key)
+              return retainedNativeSaveAs.entry.release?.()
+            })()
+          : undefined
+      await Promise.allSettled([nativeRelease, writerResolution.release?.()])
       // A subject shape editing does not support yet (a bundle, a namespace) still opens
       // read-only; the page sees `edit()` refuse and hides the editor stages.
       options.onDiagnostic?.({
@@ -1285,10 +1415,72 @@ function serveVsCode(
         throw new Error('the webview did not confirm that the custom document was reverted')
       }
     },
+    async nativeSaveAs(path: string, destinationPath: string, sourceBytes: Uint8Array) {
+      const entry = nativeSaveAsByPath.get(subjectKey(path))
+      if (entry === undefined) return undefined
+      const targetId = `vscode-save-as:${subjectKey(destinationPath)}`
+      const change = await entry.snapshot({
+        sourceBytes: sourceBytes.slice(),
+        replacements: Object.freeze([{ path: 'MapScript.galaxy', bytes: nativeMapScript() }]),
+        target: Object.freeze({
+          targetId,
+          subjectUri: subjectKey(destinationPath),
+          ownerSource: Object.freeze({ id: subjectKey(path), uri: subjectKey(path) }),
+          semanticPath: Object.freeze([]),
+          expectedRevision: Object.freeze({
+            namespaceRevision: `content-hash:${subjectKey(path)}`,
+            compositionFingerprint: 'vscode-native-save-as-v1',
+          }),
+        }),
+        archiveName: basename(destinationPath),
+      })
+      const validation = await entry.writer.validate(change as never)
+      if (!validation.valid) {
+        throw new TypeError(
+          `the installed MPQ writer refused Save As: ${validation.diagnostics
+            .map(item => item.message)
+            .join('; ')}`,
+        )
+      }
+      const plan = await entry.writer.plan(change as never)
+      const edit = plan.edits.length === 1 ? plan.edits[0] : undefined
+      if (
+        plan.semantics.mutationMode !== 'export-only' ||
+        plan.semantics.minimumGuarantee !== 'atomic' ||
+        edit?.operation !== 'create' ||
+        edit.payload.kind !== 'inline' ||
+        !(edit.payload.bytes instanceof Uint8Array) ||
+        change.semanticIntent?.nativeExportReceipt === undefined
+      ) {
+        throw new TypeError(
+          'the installed MPQ writer returned no native-preserving Save As payload',
+        )
+      }
+      return Object.freeze({
+        bytes: edit.payload.bytes,
+        nativeWriterReceipt: change.semanticIntent.nativeExportReceipt,
+      })
+    },
     async close(reason: string) {
-      bridge.dispose()
+      let bridgeDisposeError: unknown
+      try {
+        bridge.dispose()
+      } catch (error) {
+        bridgeDisposeError = error
+      }
       editingBySession.clear()
-      await exposure.close(reason)
+      const releases = [...new Set([...nativeSaveAsByPath.values()].map(entry => entry.release))]
+      nativeSaveAsByPath.clear()
+      const releaseResults = await Promise.allSettled(
+        releases.map(release => Promise.resolve().then(() => release?.())),
+      )
+      const [exposureResult] = await Promise.allSettled([
+        Promise.resolve().then(() => exposure.close(reason)),
+      ])
+      if (bridgeDisposeError !== undefined) throw bridgeDisposeError
+      const rejectedRelease = releaseResults.find(result => result.status === 'rejected')
+      if (rejectedRelease?.status === 'rejected') throw rejectedRelease.reason
+      if (exposureResult.status === 'rejected') throw exposureResult.reason
     },
   }
 }

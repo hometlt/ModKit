@@ -148,6 +148,13 @@ import {
   type SelectedContentSource,
 } from './workbench-workflows.js'
 import { runExplicitGameLaunch, VSCODE_GAME_LAUNCH_COMMAND } from './game-launch-workflow.js'
+import {
+  ARMOD_EXTERNAL_PROCESS_TREE_MEMORY_DELTA_CEILING_BYTES,
+  ARMOD_EXTERNAL_PROCESS_TREE_MAX_OBSERVED_INTERVAL_MS,
+  ARMOD_EXTERNAL_PROCESS_TREE_MIN_SAMPLES,
+  INSTALLED_ARCHIVE_AUTHORITIES,
+  INSTALLED_ARCHIVE_ACCEPTANCE_CASE_IDS,
+} from './installed-archive-acceptance.js'
 
 const CUSTOM_EDITOR_TYPE = 'modkit.genericAssetPreview'
 
@@ -195,6 +202,8 @@ const FORMAT_SMOKE_SC2_ROOT_ENV = 'MODKIT_VSCODE_ACCEPTANCE_FORMAT_SMOKE_SC2_ROO
 const FORMAT_SMOKE_WARZONE_ROOT_ENV = 'MODKIT_VSCODE_ACCEPTANCE_FORMAT_SMOKE_WARZONE_ROOT'
 const FORMAT_SMOKE_START_ENV = 'MODKIT_VSCODE_ACCEPTANCE_FORMAT_SMOKE_START'
 const FORMAT_SMOKE_ACK_ENV = 'MODKIT_VSCODE_ACCEPTANCE_FORMAT_SMOKE_ACK'
+const ARCHIVE_ACCEPTANCE_START_ENV = 'MODKIT_VSCODE_ACCEPTANCE_ARCHIVE_START'
+const ARCHIVE_ACCEPTANCE_ACK_ENV = 'MODKIT_VSCODE_ACCEPTANCE_ARCHIVE_ACK'
 const MANAGED_PACKAGES_DIRECTORY = 'managed-packages'
 const MANAGED_RELEASE_DESCRIPTOR = 'release.v1.json'
 const MANAGED_RELEASE_CATALOG = 'catalog.v1.json'
@@ -299,6 +308,42 @@ const formatSmokeObject = (value: unknown, label: string): Record<string, unknow
     throw new TypeError(`${label} must be an object`)
   }
   return value as Record<string, unknown>
+}
+
+type AttemptedContainerCandidate = {
+  readonly contributionId: string
+  readonly formatIds: readonly string[]
+  readonly state: 'rejected' | 'detected' | 'selected'
+  readonly diagnostics: readonly {
+    readonly severity: string
+    readonly code: string
+    readonly message: string
+  }[]
+}
+
+const isAttemptedContainerCandidate = (value: unknown): value is AttemptedContainerCandidate => {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false
+  const candidate = value as Record<string, unknown>
+  return (
+    typeof candidate.contributionId === 'string' &&
+    Array.isArray(candidate.formatIds) &&
+    candidate.formatIds.every((formatId: unknown) => typeof formatId === 'string') &&
+    (candidate.state === 'rejected' ||
+      candidate.state === 'detected' ||
+      candidate.state === 'selected') &&
+    Array.isArray(candidate.diagnostics) &&
+    candidate.diagnostics.every(diagnostic => {
+      if (diagnostic === null || typeof diagnostic !== 'object' || Array.isArray(diagnostic)) {
+        return false
+      }
+      const item = diagnostic as Record<string, unknown>
+      return (
+        typeof item.severity === 'string' &&
+        typeof item.code === 'string' &&
+        typeof item.message === 'string'
+      )
+    })
+  )
 }
 
 const formatSmokeConfinedPath = (root: string, portable: string, label: string): string => {
@@ -1134,11 +1179,18 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   )
   let packageGateDisabledProbeAcceptance: unknown
   let packageGateFormatSmokeAcceptance: unknown
+  let packageGateArchiveAcceptance: unknown
   const formatSmokeReadOnlySubjects = new Set<string>()
+  const liveArchiveAcceptanceDocuments = new Map<string, ModkitCustomDocument>()
+  const liveArchiveAcceptanceServed = new Map<string, VsCodeServed>()
+  let nativeWriterReceiptForAcceptance: unknown
+  let saveLiveArchiveAcceptanceDocument:
+    ((document: ModkitCustomDocument, destination: vscode.Uri) => Promise<void>) | undefined
   const webviewAcceptance = (): ModkitAcceptanceReceipt => {
     if (
       packageGateDisabledProbeAcceptance === undefined &&
-      packageGateFormatSmokeAcceptance === undefined
+      packageGateFormatSmokeAcceptance === undefined &&
+      packageGateArchiveAcceptance === undefined
     ) {
       return acceptance
     }
@@ -1154,6 +1206,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       ...(packageGateFormatSmokeAcceptance === undefined
         ? {}
         : { formatSmoke: packageGateFormatSmokeAcceptance }),
+      ...(packageGateArchiveAcceptance === undefined
+        ? {}
+        : { archiveAcceptance: packageGateArchiveAcceptance }),
     } as ModkitAcceptanceReceipt
   }
   let localizationCatalogs: readonly UiCatalogDocument[] = Object.freeze([])
@@ -1257,6 +1312,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
 
   const granted = new Set<string>(selectedSources.map(source => resolve(source.installPath)))
   const roots = (): readonly string[] => [...new Set([...workspaceFolders(), ...granted])]
+  const archiveAcceptanceExtractions: {
+    container: string
+    entry: string
+    bytes: number
+  }[] = []
+  const archiveAcceptanceReads: { readonly uri: string; readonly bytes: number }[] = []
+  const archiveAcceptanceStreams: { readonly uri: string }[] = []
+  let archiveAcceptanceIoActive = false
 
   // ---------------------------------------------------------------- containers
   /*
@@ -1276,6 +1339,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     roots,
     onDiagnostic: item =>
       log(`[container] ${item.severity ?? 'information'} ${item.code}: ${item.message}`),
+    ...(process.env[PACKAGE_INSTALL_GATE_ENV] === '1'
+      ? {
+          onExtract: event => archiveAcceptanceExtractions.push({ ...event }),
+        }
+      : {}),
   })
   context.subscriptions.push({
     dispose: () => {
@@ -1929,6 +1997,259 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     throw new TypeError(`${expected.caseId} external observation timed out`)
   }
 
+  const waitForArchiveAcceptanceAck = async (expected: {
+    readonly path: string
+    readonly artifactSha256: string
+    readonly stage: 'source-observed' | 'target-observed'
+    readonly source: string
+    readonly target: string
+  }) => {
+    const deadline = Date.now() + 180_000
+    while (Date.now() < deadline) {
+      try {
+        const ack = formatSmokeObject(
+          JSON.parse(readFileSync(expected.path, 'utf8')),
+          'archive acceptance acknowledgement',
+        )
+        if (
+          ack.kind !== 'x3.vscode-installed-archive-acceptance-ack' ||
+          ack.schemaVersion !== 1 ||
+          ack.artifactSha256 !== expected.artifactSha256 ||
+          ack.generation !== 3 ||
+          ack.caseId !== 'wte70-save-as-reopen' ||
+          ack.stage !== expected.stage ||
+          ack.source !== expected.source ||
+          ack.target !== expected.target ||
+          ack.observedBy !== 'cdp' ||
+          ack.verdict !== 'pass'
+        ) {
+          await new Promise(resolvePromise => setTimeout(resolvePromise, 250))
+          continue
+        }
+        const nativeUserCommand =
+          expected.stage === 'source-observed'
+            ? formatSmokeObject(ack.nativeUserCommand, 'WTE70 native Save As observation')
+            : undefined
+        if (
+          nativeUserCommand !== undefined &&
+          (nativeUserCommand.command !== 'workbench.action.files.saveAs' ||
+            nativeUserCommand.attempted !== false ||
+            nativeUserCommand.proof !== false ||
+            typeof nativeUserCommand.cdpQuickInputObserved !== 'boolean')
+        ) {
+          throw new TypeError('WTE70 native Save As acknowledgement is malformed')
+        }
+        return Object.freeze({
+          observedBy: 'cdp' as const,
+          stage: expected.stage,
+          ...(nativeUserCommand === undefined ? {} : { nativeUserCommand }),
+        })
+      } catch (error) {
+        if (error instanceof SyntaxError || (error as NodeJS.ErrnoException).code === 'ENOENT') {
+          await new Promise(resolvePromise => setTimeout(resolvePromise, 250))
+          continue
+        }
+        throw error
+      }
+    }
+    throw new TypeError(`WTE70 ${expected.stage} external observation timed out`)
+  }
+
+  /*
+   * Unlike the WTE70 bridge, a container search deliberately stops in the ordinary VS Code
+   * quick-input surface. The installed harness has to drive the InputBox and select the
+   * QuickPick row; only the return value of the registered command can then bind that external
+   * selection back to the product route. Keep this acknowledgement case-bound so a stale
+   * Save-As acknowledgement, or a selection from another archive family, can never satisfy it.
+   */
+  const waitForArchiveAcceptanceSearchAck = async (expected: {
+    readonly path: string
+    readonly artifactSha256: string
+    readonly caseId: (typeof INSTALLED_ARCHIVE_ACCEPTANCE_CASE_IDS)[number]
+    readonly container: string
+    readonly query: string
+    readonly requiredEntry: string
+    readonly selectedUri: string
+  }) => {
+    const deadline = Date.now() + 180_000
+    while (Date.now() < deadline) {
+      try {
+        const ack = formatSmokeObject(
+          JSON.parse(readFileSync(expected.path, 'utf8')),
+          'archive search acknowledgement',
+        )
+        if (
+          ack.kind !== 'x3.vscode-installed-archive-acceptance-ack' ||
+          ack.schemaVersion !== 1 ||
+          ack.artifactSha256 !== expected.artifactSha256 ||
+          ack.generation !== 3 ||
+          ack.caseId !== expected.caseId ||
+          ack.stage !== 'search-picker-selected' ||
+          ack.container !== expected.container ||
+          ack.query !== expected.query ||
+          ack.requiredEntry !== expected.requiredEntry ||
+          ack.selectedUri !== expected.selectedUri ||
+          ack.selectedRoute !== CONTAINER_SCHEME ||
+          ack.observedBy !== 'cdp' ||
+          ack.inputBoxObserved !== true ||
+          ack.quickPickObserved !== true ||
+          ack.pickedLabel !== expected.requiredEntry ||
+          ack.verdict !== 'pass'
+        ) {
+          await new Promise(resolvePromise => setTimeout(resolvePromise, 250))
+          continue
+        }
+        return Object.freeze({
+          observedBy: 'cdp' as const,
+          inputBoxObserved: true as const,
+          quickPickObserved: true as const,
+          pickedLabel: expected.requiredEntry,
+          selectedUri: expected.selectedUri,
+          selectedRoute: CONTAINER_SCHEME,
+        })
+      } catch (error) {
+        if (error instanceof SyntaxError || (error as NodeJS.ErrnoException).code === 'ENOENT') {
+          await new Promise(resolvePromise => setTimeout(resolvePromise, 250))
+          continue
+        }
+        throw error
+      }
+    }
+    throw new TypeError(`${expected.caseId} external search selection timed out`)
+  }
+
+  /*
+   * The isolated-product harness owns this sampler.  In particular, it must keep sampling even
+   * when the extension host is busy awaiting an isolated runtime worker, which an in-host timer
+   * cannot prove.  The acknowledgement is bound to this exact installed artifact, generation,
+   * and case before either the open or the stop boundary may advance.
+   */
+  const waitForArmodProcessTreeMemoryAck = async (expected: {
+    readonly path: string
+    readonly artifactSha256: string
+    readonly stage: 'armod-memory-sampling-start' | 'armod-memory-sampling-stop'
+  }) => {
+    const deadline = Date.now() + 180_000
+    while (Date.now() < deadline) {
+      try {
+        const ack = formatSmokeObject(
+          JSON.parse(readFileSync(expected.path, 'utf8')),
+          'ARmod external process-tree memory acknowledgement',
+        )
+        if (
+          ack.kind !== 'x3.vscode-installed-archive-acceptance-ack' ||
+          ack.schemaVersion !== 1 ||
+          ack.artifactSha256 !== expected.artifactSha256 ||
+          ack.generation !== 3 ||
+          ack.caseId !== 'armod-open' ||
+          ack.stage !== expected.stage
+        ) {
+          await new Promise(resolvePromise => setTimeout(resolvePromise, 250))
+          continue
+        }
+        if (
+          ack.observedBy !== 'external-process-tree' ||
+          ack.collector !== 'Win32_Process' ||
+          ack.requestedSampleIntervalMs !== 25 ||
+          ack.verdict !== 'pass'
+        ) {
+          throw new TypeError(`ARmod ${expected.stage} external memory acknowledgement failed`)
+        }
+        if (expected.stage === 'armod-memory-sampling-stop') {
+          const workingSetBytes = formatSmokeObject(ack.workingSetBytes, 'ARmod working set')
+          const privateBytes = formatSmokeObject(ack.privateBytes, 'ARmod private bytes')
+          const sampleCount = ack.sampleCount
+          const samples = Array.isArray(ack.samples)
+            ? ack.samples.map((sample, index) =>
+                formatSmokeObject(sample, `ARmod external process-tree sample ${index + 1}`),
+              )
+            : []
+          const observedCadence = formatSmokeObject(
+            ack.observedCadence,
+            'ARmod external process-tree observed cadence',
+          )
+          const timestamps = samples.map(sample => sample.timestampMs)
+          const observedIntervals = timestamps.slice(1).map((timestamp, index) => {
+            const previous = timestamps[index]
+            return typeof timestamp === 'number' && typeof previous === 'number'
+              ? timestamp - previous
+              : Number.NaN
+          })
+          const validMetric = (metric: Readonly<Record<string, unknown>>) => {
+            const baselineBytes = metric.baselineBytes
+            const peakBytes = metric.peakBytes
+            const deltaBytes = metric.deltaBytes
+            return (
+              typeof baselineBytes === 'number' &&
+              Number.isSafeInteger(baselineBytes) &&
+              baselineBytes >= 0 &&
+              typeof peakBytes === 'number' &&
+              Number.isSafeInteger(peakBytes) &&
+              peakBytes >= baselineBytes &&
+              typeof deltaBytes === 'number' &&
+              Number.isSafeInteger(deltaBytes) &&
+              deltaBytes === peakBytes - baselineBytes &&
+              metric.deltaCeilingBytes === ARMOD_EXTERNAL_PROCESS_TREE_MEMORY_DELTA_CEILING_BYTES &&
+              deltaBytes <= ARMOD_EXTERNAL_PROCESS_TREE_MEMORY_DELTA_CEILING_BYTES
+            )
+          }
+          const validCadence =
+            typeof observedCadence.intervalCount === 'number' &&
+            Number.isSafeInteger(observedCadence.intervalCount) &&
+            observedCadence.intervalCount === observedIntervals.length &&
+            typeof observedCadence.minIntervalMs === 'number' &&
+            Number.isSafeInteger(observedCadence.minIntervalMs) &&
+            observedCadence.minIntervalMs > 0 &&
+            observedCadence.minIntervalMs === Math.min(...observedIntervals) &&
+            typeof observedCadence.maxIntervalMs === 'number' &&
+            Number.isSafeInteger(observedCadence.maxIntervalMs) &&
+            observedCadence.maxIntervalMs === Math.max(...observedIntervals) &&
+            observedCadence.maxIntervalMs >= observedCadence.minIntervalMs &&
+            observedCadence.maxIntervalMs <= ARMOD_EXTERNAL_PROCESS_TREE_MAX_OBSERVED_INTERVAL_MS &&
+            typeof observedCadence.averageIntervalMs === 'number' &&
+            Number.isFinite(observedCadence.averageIntervalMs) &&
+            observedCadence.averageIntervalMs ===
+              observedIntervals.reduce((total, interval) => total + interval, 0) /
+                observedIntervals.length
+          if (
+            !Array.isArray(ack.matchedRootPids) ||
+            ack.matchedRootPids.length === 0 ||
+            ack.matchedRootPids.some(pid => !Number.isSafeInteger(pid) || pid <= 0) ||
+            !Array.isArray(ack.descendantPids) ||
+            ack.descendantPids.length === 0 ||
+            ack.descendantPids.some(pid => !Number.isSafeInteger(pid) || pid <= 0) ||
+            typeof sampleCount !== 'number' ||
+            !Number.isSafeInteger(sampleCount) ||
+            sampleCount < ARMOD_EXTERNAL_PROCESS_TREE_MIN_SAMPLES ||
+            !Array.isArray(ack.samples) ||
+            samples.length !== sampleCount ||
+            samples.some(
+              sample =>
+                !Number.isSafeInteger(sample.timestampMs) ||
+                !Number.isSafeInteger(sample.workingSetBytes) ||
+                !Number.isSafeInteger(sample.privateBytes),
+            ) ||
+            !validCadence ||
+            !Array.isArray(ack.errors) ||
+            ack.errors.length !== 0 ||
+            !validMetric(workingSetBytes) ||
+            !validMetric(privateBytes)
+          ) {
+            throw new TypeError('ARmod external process-tree memory acknowledgement is incomplete')
+          }
+        }
+        return Object.freeze({ ...ack })
+      } catch (error) {
+        if (error instanceof SyntaxError || (error as NodeJS.ErrnoException).code === 'ENOENT') {
+          await new Promise(resolvePromise => setTimeout(resolvePromise, 250))
+          continue
+        }
+        throw error
+      }
+    }
+    throw new TypeError(`ARmod ${expected.stage} external memory acknowledgement timed out`)
+  }
+
   const runInstalledFormatSmoke = async (
     artifactSha256: string,
     persist: (value: unknown) => Promise<void>,
@@ -2067,6 +2388,857 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       verdict: 'pass',
     })
   }
+
+  /*
+   * Wave 2A is deliberately a second generation-three phase rather than another A8 case.  A8
+   * proves format routes in a webview; this phase proves the native container doors that a person
+   * actually uses (indexed Explorer tree, bounded search, native Save As/materialize, and a
+   * nested subject).  It is opt-in: only the existing materialize command and the explicit
+   * acceptance-gated Save As bridge write separate user-selected destinations.
+   */
+  const runInstalledArchiveAcceptance = async (
+    artifactSha256: string,
+    persist: (value: unknown) => Promise<void>,
+  ) => {
+    const startPath = formatSmokeControlPath(ARCHIVE_ACCEPTANCE_START_ENV)
+    const ackPath = formatSmokeControlPath(ARCHIVE_ACCEPTANCE_ACK_ENV)
+    await persist(
+      await packageGateCumulative(
+        Object.freeze({
+          generation: 3,
+          state: 'awaiting-archive-acceptance-start',
+          archiveAcceptance: Object.freeze({
+            expectedCases: INSTALLED_ARCHIVE_ACCEPTANCE_CASE_IDS,
+            artifactSha256,
+          }),
+          failures: Object.freeze([]),
+          verdict: 'pending',
+        }),
+      ),
+    )
+    if (!(await waitForPackageGateContinuation(startPath))) {
+      throw new TypeError('archive acceptance start sentinel was not observed')
+    }
+
+    const sc2Root = requiredFormatSmokeRoot(FORMAT_SMOKE_SC2_ROOT_ENV)
+    const warzoneRoot = requiredFormatSmokeRoot(FORMAT_SMOKE_WARZONE_ROOT_ENV)
+    const authorityWorkspace = requiredFormatSmokeRoot(FORMAT_SMOKE_WORKSPACE_ROOT_ENV)
+    const scratchWorkspace = workspaceFolders()[0]
+    if (scratchWorkspace === undefined) throw new TypeError('archive acceptance needs a workspace')
+    const cases: unknown[] = []
+    const materializations: unknown[] = []
+    const record = (
+      caseId: (typeof INSTALLED_ARCHIVE_ACCEPTANCE_CASE_IDS)[number],
+      evidence: unknown,
+    ) =>
+      cases.push(
+        Object.freeze({ caseId, evidence: Object.freeze(evidence as object), verdict: 'pass' }),
+      )
+    const digestFile = async (
+      path: string,
+      expected: { readonly bytes: number; readonly sha256: string },
+    ) => {
+      const details = statSync(path)
+      if (!details.isFile() || details.size !== expected.bytes) {
+        throw new TypeError(`${basename(path)} does not match its exact corpus byte length`)
+      }
+      const sha256 = await formatSmokeFileDigest(path)
+      if (sha256 !== expected.sha256)
+        throw new TypeError(`${basename(path)} does not match its corpus SHA-256`)
+      return Object.freeze({ bytes: details.size, sha256 })
+    }
+    const requireNested = async (
+      container: string,
+      entry: string,
+      expected: { readonly formatId: string; readonly contributionId: string },
+    ) => {
+      const uri = vscode.Uri.from({
+        scheme: CONTAINER_SCHEME,
+        path: containerUriPath(container, entry),
+      })
+      const opened = await commandOpener(uri.toString())
+      if (opened.snapshot.state !== 'opened') {
+        throw new TypeError(
+          `nested ${entry} did not open: ${JSON.stringify(opened.snapshot.diagnostics)}`,
+        )
+      }
+      try {
+        const selected = opened.snapshot.selected
+        const selectedRoute = opened.snapshot.selectedRoute?.at(-1)
+        if (
+          selectedRoute?.formatId !== expected.formatId ||
+          selected.contributionId !== expected.contributionId
+        ) {
+          throw new TypeError(
+            `nested ${entry} selected ${selectedRoute?.formatId ?? 'unknown'}/${selected.contributionId}, not ${expected.formatId}/${expected.contributionId}`,
+          )
+        }
+        return Object.freeze({ selectedRoute: opened.snapshot.selectedRoute ?? [], selected })
+      } finally {
+        await opened.session?.dispose()
+      }
+    }
+    const treeSearchLazy = async (
+      caseId: (typeof INSTALLED_ARCHIVE_ACCEPTANCE_CASE_IDS)[number],
+      container: string,
+      query: string,
+      requiredEntry: string,
+    ) => {
+      archiveAcceptanceExtractions.length = 0
+      const browse = await vscode.commands.executeCommand(
+        'modkit.browseContainer',
+        vscode.Uri.file(container),
+      )
+      if (browse === null || typeof browse !== 'object' || Array.isArray(browse)) {
+        throw new TypeError(`${caseId} registered browse command returned no Explorer folder`)
+      }
+      const browseResult = browse as {
+        readonly folder?: unknown
+        readonly indexedFiles?: unknown
+        readonly workspaceEffect?: unknown
+      }
+      const indexedFiles = browseResult.indexedFiles
+      if (
+        !(browseResult.folder instanceof vscode.Uri) ||
+        typeof indexedFiles !== 'number' ||
+        !Number.isSafeInteger(indexedFiles) ||
+        indexedFiles < 1 ||
+        (browseResult.workspaceEffect !== 'added' &&
+          browseResult.workspaceEffect !== 'already-present')
+      ) {
+        throw new TypeError(`${caseId} browse command did not publish an Explorer workspace effect`)
+      }
+      // This is the registered `modkit-container:` FileSystemProvider, not an internal index.
+      const rootEntries = await vscode.workspace.fs.readDirectory(browseResult.folder)
+      const memberUri = vscode.Uri.joinPath(browseResult.folder, ...requiredEntry.split('/'))
+      const member = await vscode.workspace.fs.stat(memberUri)
+      if ((member.type & vscode.FileType.File) === 0) {
+        throw new TypeError(
+          `${caseId} Explorer filesystem did not expose its exact authority entry`,
+        )
+      }
+      const expectedUri = vscode.Uri.from({
+        scheme: CONTAINER_SCHEME,
+        path: containerUriPath(container, requiredEntry),
+      })
+      const expectedSelection = Object.freeze({
+        caseId,
+        container: basename(container),
+        query,
+        requiredEntry,
+        selectedUri: expectedUri.toString(),
+      })
+      await persist(
+        await packageGateCumulative(
+          Object.freeze({
+            generation: 3,
+            state: 'awaiting-archive-search-picker',
+            archiveAcceptance: Object.freeze({
+              stage: 'search-picker',
+              ...expectedSelection,
+            }),
+            failures: Object.freeze([]),
+            verdict: 'pending',
+          }),
+        ),
+      )
+      // This is specifically the normal visible command path. It intentionally supplies no
+      // query and no `resultOnly` flag: the external installed harness must type the authority
+      // query into InputBox and choose the matching QuickPick row just as a user would.
+      const selected = await vscode.commands.executeCommand('modkit.searchContainer', { container })
+      if (
+        !(selected instanceof vscode.Uri) ||
+        selected.toString() !== expectedSelection.selectedUri
+      ) {
+        throw new TypeError(`${caseId} search UI selected a URI other than its authority entry`)
+      }
+      const acknowledgement = await waitForArchiveAcceptanceSearchAck({
+        path: ackPath,
+        artifactSha256,
+        ...expectedSelection,
+      })
+      if (archiveAcceptanceExtractions.length !== 0) {
+        throw new TypeError(`${caseId} extracted before its Explorer/search observation completed`)
+      }
+      record(caseId, {
+        browseCommand: 'modkit.browseContainer',
+        explorerFileSystem: CONTAINER_SCHEME,
+        workspaceEffect: browseResult.workspaceEffect,
+        indexedFiles,
+        explorerRootEntries: rootEntries.length,
+        explorerMember: Object.freeze({
+          entry: requiredEntry,
+          kind: 'file',
+          size: member.size,
+        }),
+        searchCommand: 'modkit.searchContainer',
+        resultOnly: false,
+        // `true` only comes from the external CDP acknowledgement above; product code itself
+        // observes only the URI returned by its registered command.
+        uiPickerObserved:
+          acknowledgement.observedBy === 'cdp' &&
+          acknowledgement.inputBoxObserved &&
+          acknowledgement.quickPickObserved,
+        inputBoxObserved: acknowledgement.inputBoxObserved,
+        quickPickObserved: acknowledgement.quickPickObserved,
+        pickedLabel: acknowledgement.pickedLabel,
+        selectedUri: acknowledgement.selectedUri,
+        selectedRoute: acknowledgement.selectedRoute,
+        query,
+        requiredEntry,
+        extractionCountBeforeRead: archiveAcceptanceExtractions.length,
+      })
+    }
+    const materialize = async (
+      caseId: (typeof INSTALLED_ARCHIVE_ACCEPTANCE_CASE_IDS)[number],
+      container: string,
+      entry: string,
+      targetName: string,
+      expected: { readonly bytes: number; readonly sha256: string },
+    ) => {
+      const target = vscode.Uri.file(join(scratchWorkspace, targetName))
+      archiveAcceptanceExtractions.length = 0
+      const result = await vscode.commands.executeCommand(
+        'modkit.materializeContainerEntry',
+        Object.freeze({ container, entry, target }),
+      )
+      if (!(result instanceof vscode.Uri) || result.fsPath !== target.fsPath) {
+        throw new TypeError(`${caseId} did not return its explicit deterministic destination`)
+      }
+      const extracted = archiveAcceptanceExtractions.find(
+        item => item.container === container && item.entry === entry,
+      )
+      if (extracted === undefined || extracted.bytes !== expected.bytes) {
+        throw new TypeError(`${caseId} recorded no exact provider extraction`)
+      }
+      const evidence = Object.freeze({
+        command: 'modkit.materializeContainerEntry',
+        dialogBypass: true,
+        target: basename(target.fsPath),
+        corpus: await digestFile(target.fsPath, expected),
+        extraction: extracted,
+      })
+      materializations.push(Object.freeze({ caseId, ...evidence }))
+      record(caseId, evidence)
+    }
+    const corruptThenCanary = async (
+      caseId: (typeof INSTALLED_ARCHIVE_ACCEPTANCE_CASE_IDS)[number],
+      expected: {
+        readonly family: 'mpq' | 'casc' | 'wz'
+        readonly route: 'file-container' | 'casc-namespace'
+        readonly corpusMutation: string
+        readonly path: string
+        readonly contributionId: string
+        readonly formatId: string
+      },
+    ) => {
+      const result = await vscode.commands.executeCommand(
+        'modkit.browseContainer',
+        vscode.Uri.file(expected.path),
+      )
+      if (result === null || typeof result !== 'object' || Array.isArray(result)) {
+        throw new TypeError(`${caseId} browse command returned no typed refusal`)
+      }
+      const refusalResult = result as {
+        readonly state?: unknown
+        readonly command?: unknown
+        readonly failedStep?: unknown
+        readonly code?: unknown
+        readonly message?: unknown
+        readonly attemptedCandidates?: unknown
+      }
+      const attemptedCandidates = Array.isArray(refusalResult.attemptedCandidates)
+        ? refusalResult.attemptedCandidates.filter(isAttemptedContainerCandidate).map(value =>
+            Object.freeze({
+              contributionId: (value as Record<string, unknown>).contributionId as string,
+              formatIds: Object.freeze([
+                ...((value as Record<string, unknown>).formatIds as readonly string[]),
+              ]),
+              state: value.state,
+              diagnostics: Object.freeze(
+                value.diagnostics.map(diagnostic => Object.freeze({ ...diagnostic })),
+              ),
+            }),
+          )
+        : []
+      const attempted = attemptedCandidates.find(
+        candidate =>
+          candidate.contributionId === expected.contributionId &&
+          candidate.formatIds.includes(expected.formatId) &&
+          candidate.state === 'rejected',
+      )
+      const diagnostic = attempted?.diagnostics.find(
+        item => item.severity === 'error' && item.code.trim() !== '' && item.message.trim() !== '',
+      )
+      if (
+        refusalResult.state !== 'refused' ||
+        refusalResult.command !== 'modkit.browseContainer' ||
+        refusalResult.failedStep !== 'container-index' ||
+        attempted === undefined ||
+        diagnostic === undefined
+      ) {
+        throw new TypeError(`${caseId} accepted a corrupt ${expected.family} container`)
+      }
+      const canary = await containers.stat(sc2Root, INSTALLED_ARCHIVE_AUTHORITIES.cascDds.entry)
+      if (canary.kind !== 'file')
+        throw new TypeError(`${caseId} valid CASC canary did not remain openable`)
+      record(caseId, {
+        family: expected.family,
+        route: expected.route,
+        corpusMutation: expected.corpusMutation,
+        failedStep: refusalResult.failedStep,
+        attempted: Object.freeze({
+          contributionId: attempted.contributionId,
+          formatId: expected.formatId,
+          state: attempted.state,
+          diagnostic: Object.freeze({ code: diagnostic.code, message: diagnostic.message }),
+        }),
+        refusal: Object.freeze({
+          source: 'candidate-diagnostic',
+          code: diagnostic.code,
+          message: diagnostic.message,
+        }),
+        appAlive: Object.freeze({ validCascCanary: true, entry: canary.name }),
+      })
+    }
+
+    const wte70Path = formatSmokeConfinedPath(
+      sc2Root,
+      INSTALLED_ARCHIVE_AUTHORITIES.wte70.path,
+      'WTE70',
+    )
+    const rustBucketPath = formatSmokeConfinedPath(
+      sc2Root,
+      INSTALLED_ARCHIVE_AUTHORITIES.rustBucketM3.path,
+      'RustBucket MPQ',
+    )
+    const baseWzPath = formatSmokeConfinedPath(
+      warzoneRoot,
+      INSTALLED_ARCHIVE_AUTHORITIES.warzonePie.container,
+      'Warzone base.wz',
+    )
+    const armodPath = formatSmokeConfinedPath(
+      authorityWorkspace,
+      INSTALLED_ARCHIVE_AUTHORITIES.armod.path,
+      'ARmod',
+    )
+    await digestFile(wte70Path, INSTALLED_ARCHIVE_AUTHORITIES.wte70)
+    await digestFile(rustBucketPath, INSTALLED_ARCHIVE_AUTHORITIES.rustBucketM3)
+    await digestFile(armodPath, INSTALLED_ARCHIVE_AUTHORITIES.armod)
+    granted.add(dirname(sc2Root))
+    granted.add(dirname(baseWzPath))
+    granted.add(dirname(armodPath))
+
+    await treeSearchLazy(
+      'mpq-tree-search-lazy',
+      rustBucketPath,
+      'LandingLights_NoLensFlare.m3',
+      INSTALLED_ARCHIVE_AUTHORITIES.rustBucketM3.entry,
+    )
+    await treeSearchLazy(
+      'casc-tree-search-lazy',
+      sc2Root,
+      'alpha2.dds',
+      INSTALLED_ARCHIVE_AUTHORITIES.cascDds.entry,
+    )
+    await treeSearchLazy(
+      'wz-tree-search-lazy',
+      baseWzPath,
+      'cybd_run.pie',
+      INSTALLED_ARCHIVE_AUTHORITIES.warzonePie.entry,
+    )
+    record(
+      'casc-dds-nested-open',
+      await requireNested(sc2Root, INSTALLED_ARCHIVE_AUTHORITIES.cascDds.entry, {
+        formatId: 'dds',
+        contributionId: 'modkit/dds',
+      }),
+    )
+    await materialize(
+      'casc-dds-materialize',
+      sc2Root,
+      INSTALLED_ARCHIVE_AUTHORITIES.cascDds.entry,
+      'wave2a-casc-alpha2.dds',
+      INSTALLED_ARCHIVE_AUTHORITIES.cascDds,
+    )
+    record(
+      'mpq-m3-nested-open',
+      await requireNested(rustBucketPath, INSTALLED_ARCHIVE_AUTHORITIES.rustBucketM3.entry, {
+        formatId: 'm3',
+        contributionId: 'blizzard/m3',
+      }),
+    )
+    await materialize(
+      'mpq-m3-materialize',
+      rustBucketPath,
+      INSTALLED_ARCHIVE_AUTHORITIES.rustBucketM3.entry,
+      'wave2a-rustbucket.m3',
+      {
+        bytes: INSTALLED_ARCHIVE_AUTHORITIES.rustBucketM3.entryBytes,
+        sha256: INSTALLED_ARCHIVE_AUTHORITIES.rustBucketM3.entrySha256,
+      },
+    )
+    record(
+      'wz-pie-nested-open',
+      await requireNested(baseWzPath, INSTALLED_ARCHIVE_AUTHORITIES.warzonePie.entry, {
+        formatId: 'warzone-pie',
+        contributionId: 'modkit/warzone-pie',
+      }),
+    )
+    await materialize(
+      'wz-pie-materialize',
+      baseWzPath,
+      INSTALLED_ARCHIVE_AUTHORITIES.warzonePie.entry,
+      'wave2a-cybd_run.pie',
+      INSTALLED_ARCHIVE_AUTHORITIES.warzonePie,
+    )
+
+    const wte70Uri = vscode.Uri.file(wte70Path)
+    const wte70SaveAsUri = vscode.Uri.file(join(scratchWorkspace, 'wave2a-wte70-save-as.SC2Map'))
+    const wte70Source = basename(wte70Path)
+    const wte70Target = basename(wte70SaveAsUri.fsPath)
+    packageGateArchiveAcceptance = Object.freeze({
+      caseId: 'wte70-save-as-reopen',
+      stage: 'source-open',
+      source: wte70Source,
+      target: wte70Target,
+      readOnly: false,
+      materializations: Object.freeze([...materializations]),
+    })
+    try {
+      // This opens the ordinary installed custom editor.  The harness must see the same live
+      // webview through CDP before it authorizes the opt-in bridge below.
+      openResource(wte70Uri)
+      await persist(
+        await packageGateCumulative(
+          Object.freeze({
+            generation: 3,
+            state: 'awaiting-wte70-source-observation',
+            archiveAcceptance: Object.freeze({
+              caseId: 'wte70-save-as-reopen',
+              stage: 'source-open',
+              source: wte70Source,
+              target: wte70Target,
+              materializations: Object.freeze([...materializations]),
+            }),
+            failures: Object.freeze([]),
+            verdict: 'pending',
+          }),
+        ),
+      )
+      const sourceAcknowledgement = await waitForArchiveAcceptanceAck({
+        path: ackPath,
+        artifactSha256,
+        stage: 'source-observed',
+        source: wte70Source,
+        target: wte70Target,
+      })
+      const document = liveArchiveAcceptanceDocuments.get(wte70Uri.toString())
+      if (document === undefined || saveLiveArchiveAcceptanceDocument === undefined) {
+        throw new TypeError('WTE70 source is not a live installed custom document')
+      }
+      const beforeSaveAs = await digestFile(wte70Path, INSTALLED_ARCHIVE_AUTHORITIES.wte70)
+      nativeWriterReceiptForAcceptance = undefined
+      const started = Date.now()
+      await saveLiveArchiveAcceptanceDocument(document, wte70SaveAsUri)
+      const saveOperationElapsedMs = Date.now() - started
+      const afterSaveAs = await digestFile(wte70Path, INSTALLED_ARCHIVE_AUTHORITIES.wte70)
+      const saved = await digestFile(wte70SaveAsUri.fsPath, {
+        bytes: INSTALLED_ARCHIVE_AUTHORITIES.wte70.savedBytes,
+        sha256: INSTALLED_ARCHIVE_AUTHORITIES.wte70.savedSha256,
+      })
+      const nativeWriterReceipt = formatSmokeObject(
+        nativeWriterReceiptForAcceptance,
+        'WTE70 native writer receipt',
+      )
+      if (
+        nativeWriterReceipt.kind !== 'mpq-native-export-receipt-v1' ||
+        nativeWriterReceipt.strategy !== 'whole-archive-save-as-fixed-slots' ||
+        nativeWriterReceipt.archiveByteIdentity !== 'changed' ||
+        nativeWriterReceipt.sourceArchiveDigest !== `sha256:${beforeSaveAs.sha256}` ||
+        nativeWriterReceipt.outputArchiveDigest !== `sha256:${saved.sha256}`
+      ) {
+        throw new TypeError('WTE70 Save As did not return the installed native writer receipt')
+      }
+      const changed = Array.isArray(nativeWriterReceipt.changed)
+        ? nativeWriterReceipt.changed.find(
+            item =>
+              item !== null &&
+              typeof item === 'object' &&
+              (item as Record<string, unknown>).path === 'MapScript.galaxy',
+          )
+        : undefined
+      if (changed === undefined) {
+        throw new TypeError('WTE70 native writer receipt did not name MapScript.galaxy')
+      }
+      packageGateArchiveAcceptance = Object.freeze({
+        caseId: 'wte70-save-as-reopen',
+        stage: 'target-reopen',
+        source: wte70Source,
+        target: wte70Target,
+        readOnly: false,
+        materializations: Object.freeze([...materializations]),
+      })
+      openResource(wte70SaveAsUri)
+      await persist(
+        await packageGateCumulative(
+          Object.freeze({
+            generation: 3,
+            state: 'awaiting-wte70-target-observation',
+            archiveAcceptance: Object.freeze({
+              caseId: 'wte70-save-as-reopen',
+              stage: 'target-reopen',
+              source: wte70Source,
+              target: wte70Target,
+              materializations: Object.freeze([...materializations]),
+            }),
+            failures: Object.freeze([]),
+            verdict: 'pending',
+          }),
+        ),
+      )
+      await waitForArchiveAcceptanceAck({
+        path: ackPath,
+        artifactSha256,
+        stage: 'target-observed',
+        source: wte70Source,
+        target: wte70Target,
+      })
+      const elapsedMs = Date.now() - started
+      if (elapsedMs >= 60_000) {
+        throw new TypeError(
+          `WTE70 Save As through confirmed reopen took ${elapsedMs}ms, not under 60s`,
+        )
+      }
+      await vscode.commands.executeCommand('workbench.action.closeActiveEditor')
+      record('wte70-save-as-reopen', {
+        mode: 'live-provider-bridge',
+        acceptanceGated: true,
+        cleanCopy: false,
+        nativeUserCommandProof: false,
+        nativeWriterProof: true,
+        classification: 'installed-acceptance-native-writer-save-as',
+        modifiedWriterReceiptSha256:
+          INSTALLED_ARCHIVE_AUTHORITIES.wte70.modifiedWriterReceiptSha256,
+        nativeWriterReceipt,
+        nativeUserCommand: sourceAcknowledgement.nativeUserCommand,
+        bridge: 'live-custom-document-save-as',
+        providerMethod: 'CustomEditorProvider.saveCustomDocumentAs',
+        sourceObservedByCdp: true,
+        targetObservedByCdp: true,
+        sourceUnchanged: beforeSaveAs.sha256 === afterSaveAs.sha256,
+        source: beforeSaveAs,
+        saved,
+        elapsedScope: 'save-as-through-cdp-reopen',
+        saveOperationElapsedMs,
+        elapsedMs,
+        semanticRoute: 'blizzard/sc2-map',
+      })
+    } finally {
+      packageGateArchiveAcceptance = undefined
+    }
+    const installedWarzoneRoot = managedExtensionState.roots.find(
+      root => root.expectedId === INSTALLED_ARCHIVE_AUTHORITIES.armod.route.extensionId,
+    )
+    if (installedWarzoneRoot === undefined || typeof installedWarzoneRoot.root !== 'string') {
+      throw new TypeError('ARmod selected extension has no installed physical root')
+    }
+    const installedManifestPath = join(installedWarzoneRoot.root, 'package.json')
+    const installedManifestBytes = readFileSync(installedManifestPath)
+    const installedManifestSha256 = `sha256:${createHash('sha256')
+      .update(installedManifestBytes)
+      .digest('hex')}`
+    if (
+      installedManifestSha256 !== INSTALLED_ARCHIVE_AUTHORITIES.armod.route.installedManifestSha256
+    ) {
+      throw new TypeError('ARmod installed package manifest does not match its pinned authority')
+    }
+    const installedManifest = formatSmokeObject(
+      JSON.parse(installedManifestBytes.toString('utf8')),
+      'installed ARmod extension manifest',
+    )
+    const installedModkit = formatSmokeObject(
+      installedManifest.modkit,
+      'installed ARmod modkit manifest',
+    )
+    if (installedModkit.publisher !== 'wz2100project' || installedModkit.id !== 'warzone-2100') {
+      throw new TypeError('ARmod selected root does not contain the installed Warzone manifest')
+    }
+    const installedContribution = formatSmokeObject(
+      JSON.parse(
+        readFileSync(
+          join(installedWarzoneRoot.root, 'contributions', 'codec-warzone-wz.json'),
+          'utf8',
+        ),
+      ),
+      'installed ARmod contribution',
+    )
+    const installedVariant = Array.isArray(installedContribution.runtimeVariants)
+      ? installedContribution.runtimeVariants.find(
+          variant =>
+            formatSmokeObject(variant, 'installed ARmod runtime variant').variantId ===
+            INSTALLED_ARCHIVE_AUTHORITIES.armod.route.variantId,
+        )
+      : undefined
+    if (
+      installedContribution.id !== INSTALLED_ARCHIVE_AUTHORITIES.armod.route.contributionId ||
+      installedVariant === undefined ||
+      formatSmokeObject(installedVariant, 'installed ARmod selected runtime variant').entrypoint !==
+        INSTALLED_ARCHIVE_AUTHORITIES.armod.route.entrypoint
+    ) {
+      throw new TypeError(
+        'ARmod installed contribution/entrypoint does not match the selected route',
+      )
+    }
+    await persist(
+      await packageGateCumulative(
+        Object.freeze({
+          generation: 3,
+          state: 'awaiting-armod-external-memory-start',
+          archiveAcceptance: Object.freeze({
+            caseId: 'armod-open',
+            stage: 'armod-memory-sampling-start',
+            artifactSha256,
+            collector: 'Win32_Process',
+            requestedSampleIntervalMs: 25,
+          }),
+          failures: Object.freeze([]),
+          verdict: 'pending',
+        }),
+      ),
+    )
+    const externalMemoryStart = await waitForArmodProcessTreeMemoryAck({
+      path: ackPath,
+      artifactSha256,
+      stage: 'armod-memory-sampling-start',
+    })
+    archiveAcceptanceReads.length = 0
+    archiveAcceptanceStreams.length = 0
+    archiveAcceptanceIoActive = true
+    // This is explicitly supplemental: only the external process-tree sampler is authoritative.
+    const extensionHostRssBaselineBytes = process.memoryUsage().rss
+    let extensionHostRssPeakBytes = extensionHostRssBaselineBytes
+    const sampleExtensionHostRss = () => {
+      extensionHostRssPeakBytes = Math.max(extensionHostRssPeakBytes, process.memoryUsage().rss)
+    }
+    const extensionHostRssSampler = setInterval(sampleExtensionHostRss, 25)
+    let armod: Awaited<ReturnType<typeof commandOpener>> | undefined
+    let armodEvidence:
+      | {
+          readonly selected: unknown
+          readonly selectedRoute: unknown
+          readonly selectedDetection: unknown
+        }
+      | undefined
+    let inspection: Readonly<Record<string, unknown>> | undefined
+    let externalMemoryStop: Readonly<Record<string, unknown>> | undefined
+    let armodOpenFailed = false
+    let armodOpenError: unknown
+    try {
+      const opened = await commandOpener(armodPath)
+      armod = opened
+      sampleExtensionHostRss()
+      if (opened.snapshot.state !== 'opened') {
+        throw new TypeError(`ARmod did not open: ${JSON.stringify(opened.snapshot.diagnostics)}`)
+      }
+      const selected = opened.snapshot.selected
+      if (
+        selected.contributionId !== INSTALLED_ARCHIVE_AUTHORITIES.armod.route.contributionId ||
+        selected.variantId !== INSTALLED_ARCHIVE_AUTHORITIES.armod.route.variantId
+      ) {
+        throw new TypeError(`ARmod selected ${selected.contributionId}/${selected.variantId}`)
+      }
+      const descriptor = await opened.session?.descriptor()
+      const identity = formatSmokeObject(
+        descriptor !== undefined && 'identity' in descriptor ? descriptor.identity : undefined,
+        'ARmod selected detection identity',
+      )
+      if (
+        identity.formatId !== 'warzone-wz' ||
+        identity.manifestDigest !== INSTALLED_ARCHIVE_AUTHORITIES.armod.route.manifestDigest ||
+        identity.artifactDigest !== INSTALLED_ARCHIVE_AUTHORITIES.armod.route.artifactDigest
+      ) {
+        throw new TypeError('ARmod selected detection identity does not match installed authority')
+      }
+      armodEvidence = Object.freeze({
+        selected,
+        selectedRoute: opened.snapshot.selectedRoute ?? [],
+        selectedDetection: identity,
+      })
+      const inspect = descriptor?.operations.find(
+        operation => operation.id === 'view.inspect' && operation.state === 'available',
+      )
+      if (inspect === undefined || opened.session === undefined) {
+        throw new TypeError('ARmod installed route does not expose view.inspect')
+      }
+      const inspected = await opened.session.operations().invoke(inspect.handlerId, null)
+      if (inspected.state !== 'ok' || inspected.output.kind !== 'json') {
+        throw new TypeError('ARmod installed view.inspect did not return metadata JSON')
+      }
+      inspection = formatSmokeObject(inspected.output.value, 'ARmod installed inspect result')
+      if (
+        inspection.inspectionMode !== 'metadata-first-range' ||
+        inspection.sourceBytes !== String(INSTALLED_ARCHIVE_AUTHORITIES.armod.bytes) ||
+        inspection.metadataBytesRead !== 65_557
+      ) {
+        throw new TypeError(
+          'ARmod installed inspect did not preserve metadata-first authority facts',
+        )
+      }
+    } catch (error) {
+      armodOpenFailed = true
+      armodOpenError = error
+    } finally {
+      clearInterval(extensionHostRssSampler)
+      archiveAcceptanceIoActive = false
+      const dispose = Promise.allSettled([Promise.resolve().then(() => armod?.session?.dispose())])
+      let externalHandshakeError: unknown
+      try {
+        await persist(
+          await packageGateCumulative(
+            Object.freeze({
+              generation: 3,
+              state: 'awaiting-armod-external-memory-stop',
+              archiveAcceptance: Object.freeze({
+                caseId: 'armod-open',
+                stage: 'armod-memory-sampling-stop',
+                artifactSha256,
+                collector: 'Win32_Process',
+                requestedSampleIntervalMs: 25,
+              }),
+              failures: Object.freeze([]),
+              verdict: 'pending',
+            }),
+          ),
+        )
+        externalMemoryStop = await waitForArmodProcessTreeMemoryAck({
+          path: ackPath,
+          artifactSha256,
+          stage: 'armod-memory-sampling-stop',
+        })
+      } catch (error) {
+        externalHandshakeError = error
+      }
+      const [disposeResult] = await dispose
+      if (armodOpenFailed) throw armodOpenError
+      if (externalHandshakeError !== undefined) throw externalHandshakeError
+      if (disposeResult.status === 'rejected') throw disposeResult.reason
+    }
+    if (armodEvidence === undefined || inspection === undefined || externalMemoryStop === undefined)
+      throw new TypeError('ARmod opened without route/metadata evidence')
+    const metadataIo = Object.freeze({
+      readCount: archiveAcceptanceReads.length,
+      bytes: archiveAcceptanceReads.reduce((total, item) => total + item.bytes, 0),
+      maxReadBytes: archiveAcceptanceReads.reduce(
+        (maximum, item) => Math.max(maximum, item.bytes),
+        0,
+      ),
+      streamCount: archiveAcceptanceStreams.length,
+    })
+    if (
+      metadataIo.readCount !== 8 ||
+      metadataIo.bytes !== 70_978 ||
+      metadataIo.maxReadBytes !== 65_557 ||
+      metadataIo.streamCount !== 0
+    ) {
+      throw new TypeError(`ARmod installed metadata I/O differed: ${JSON.stringify(metadataIo)}`)
+    }
+    sampleExtensionHostRss()
+    const extensionHostRssDeltaBytes = extensionHostRssPeakBytes - extensionHostRssBaselineBytes
+    if (extensionHostRssDeltaBytes > ARMOD_EXTERNAL_PROCESS_TREE_MEMORY_DELTA_CEILING_BYTES) {
+      throw new TypeError(
+        `ARmod installed extension-host RSS delta ${extensionHostRssDeltaBytes} exceeds ${ARMOD_EXTERNAL_PROCESS_TREE_MEMORY_DELTA_CEILING_BYTES}`,
+      )
+    }
+    record('armod-open', {
+      ...armodEvidence,
+      installedManifestSha256,
+      entrypoint: formatSmokeObject(installedVariant, 'installed ARmod selected runtime variant')
+        .entrypoint,
+      inspection,
+      metadataIo,
+      externalProcessTreeMemory: Object.freeze({
+        startAcknowledgement: externalMemoryStart,
+        stopAcknowledgement: externalMemoryStop,
+      }),
+      extensionHostRss: Object.freeze({
+        source: 'process.memoryUsage().rss',
+        baselineBytes: extensionHostRssBaselineBytes,
+        peakBytes: extensionHostRssPeakBytes,
+        deltaBytes: extensionHostRssDeltaBytes,
+        deltaCeilingBytes: ARMOD_EXTERNAL_PROCESS_TREE_MEMORY_DELTA_CEILING_BYTES,
+      }),
+    })
+
+    const corruptRoot = join(scratchWorkspace, 'wave2a-corrupt-casc')
+    await vscode.workspace.fs.createDirectory(vscode.Uri.file(corruptRoot))
+    await vscode.workspace.fs.createDirectory(vscode.Uri.file(join(corruptRoot, 'SC2Data')))
+    await vscode.workspace.fs.createDirectory(
+      vscode.Uri.file(join(corruptRoot, 'SC2Data', 'config')),
+    )
+    await vscode.workspace.fs.createDirectory(vscode.Uri.file(join(corruptRoot, 'SC2Data', 'data')))
+    await vscode.workspace.fs.createDirectory(
+      vscode.Uri.file(join(corruptRoot, 'SC2Data', 'indices')),
+    )
+    await vscode.workspace.fs.writeFile(
+      vscode.Uri.file(join(corruptRoot, 'Data.000')),
+      Uint8Array.of(0),
+    )
+    await vscode.workspace.fs.writeFile(
+      vscode.Uri.file(join(corruptRoot, '.build.info')),
+      new TextEncoder().encode('Build Key\tCDN Key\nmalformed\t'),
+    )
+    const corruptMpq = join(scratchWorkspace, 'wave2a-corrupt.SC2Map')
+    const corruptWz = join(scratchWorkspace, 'wave2a-corrupt.wz')
+    await vscode.workspace.fs.writeFile(
+      vscode.Uri.file(corruptMpq),
+      // MPQ\x1a followed by a deliberately truncated header/table region.
+      Uint8Array.of(0x4d, 0x50, 0x51, 0x1a, 0x20, 0x00, 0x00, 0x00),
+    )
+    await vscode.workspace.fs.writeFile(
+      vscode.Uri.file(corruptWz),
+      // A ZIP local-file header that ends before its declared archive can be read.
+      Uint8Array.of(0x50, 0x4b, 0x03, 0x04, 0x14, 0x00, 0x00),
+    )
+    await corruptThenCanary('corrupt-mpq-then-canary', {
+      family: 'mpq',
+      route: 'file-container',
+      corpusMutation: 'MPQ\\x1a header with a truncated archive/table region',
+      path: corruptMpq,
+      contributionId: 'blizzard/mpq',
+      formatId: 'mpq',
+    })
+    // This is intentionally the CASC-only directory branch, never a generic directory subject.
+    await corruptThenCanary('corrupt-casc-then-canary', {
+      family: 'casc',
+      route: 'casc-namespace',
+      corpusMutation: 'CASC marker namespace with malformed build info/config/data/indices',
+      path: corruptRoot,
+      contributionId: 'blizzard/casc',
+      formatId: 'casc',
+    })
+    await corruptThenCanary('corrupt-wz-then-canary', {
+      family: 'wz',
+      route: 'file-container',
+      corpusMutation: 'ZIP local-file header truncated before a complete WZ archive directory',
+      path: corruptWz,
+      contributionId: 'modkit/warzone-wz',
+      formatId: 'warzone-wz',
+    })
+
+    if (cases.length !== INSTALLED_ARCHIVE_ACCEPTANCE_CASE_IDS.length) {
+      throw new TypeError('archive acceptance did not record every required case')
+    }
+    return Object.freeze({
+      kind: 'x3.vscode-installed-archive-acceptance',
+      schemaVersion: 1,
+      artifactSha256,
+      expectedCases: INSTALLED_ARCHIVE_ACCEPTANCE_CASE_IDS,
+      cases: Object.freeze(cases),
+      failures: Object.freeze([]),
+      verdict: 'pass' as const,
+    })
+  }
   const packageInstallGateReceipt = async (
     persist: (value: unknown) => Promise<void> = async () => undefined,
   ) => {
@@ -2101,6 +3273,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     const actions: unknown[] = []
     let catalog: unknown
     let formatSmoke: unknown
+    let archiveAcceptance: unknown
     if (failures.length === 0 && generation === 1) {
       const envelope = (await nodeExtensionManager.catalogSource.refresh()) as
         | {
@@ -2406,12 +3579,25 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         'generation 3 host/card model did not expose any contributions or cards',
       )
       if (failures.length === 0) {
+        let index: Awaited<ReturnType<typeof containers.index>>
         try {
           formatSmoke = await runInstalledFormatSmoke(artifactSha256, persist)
         } catch (error) {
           failures.push(
             packageGateFailure(
               'x3.acceptance/installed-format-smoke-failed',
+              error instanceof Error ? error.message : String(error),
+            ),
+          )
+        }
+      }
+      if (failures.length === 0) {
+        try {
+          archiveAcceptance = await runInstalledArchiveAcceptance(artifactSha256, persist)
+        } catch (error) {
+          failures.push(
+            packageGateFailure(
+              'x3.acceptance/installed-archive-acceptance-failed',
               error instanceof Error ? error.message : String(error),
             ),
           )
@@ -2428,6 +3614,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       host: packageGateHostModel(),
       stores: await packageGateStores(),
       ...(formatSmoke === undefined ? {} : { formatSmoke }),
+      ...(archiveAcceptance === undefined ? {} : { archiveAcceptance }),
       actions: Object.freeze(actions),
       changeEventCount: packageGateChangeEvents,
       failures: Object.freeze(failures),
@@ -3405,7 +4592,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
    */
   const commandRuntime = createSubjectCommandRuntime()
   const commandOpener = commandSubjectsFrom(
-    createVsCodeCommandOpener({ services: host.services, roots, containers }),
+    createVsCodeCommandOpener({
+      services: host.services,
+      roots,
+      containers,
+      onRead: event => {
+        if (archiveAcceptanceIoActive) archiveAcceptanceReads.push(event)
+      },
+      onStream: event => {
+        if (archiveAcceptanceIoActive) archiveAcceptanceStreams.push(event)
+      },
+    }),
   )
 
   const runtimeActionLabel = (action: string): string => {
@@ -4923,8 +6120,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
      * which would tear down the composition mid-command — so an empty window is told to open a
      * folder first rather than being restarted behind the user's back.
      */
-    vscode.commands.registerCommand('modkit.browseContainer', (argument: unknown) => {
-      void (async () => {
+    vscode.commands.registerCommand('modkit.browseContainer', (argument: unknown) =>
+      (async () => {
         const uri =
           argument instanceof vscode.Uri
             ? argument
@@ -4946,27 +6143,59 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
                   : localizer.text('vscode.container.alreadyMember'),
             }),
           )
-          return
+          return undefined
         }
         granted.add(dirname(target.path))
+        let index: Awaited<ReturnType<typeof containers.index>>
         try {
           // Opens and indexes it; a subject that is not a container is refused here by name,
           // before a folder the Explorer could not list appears in the workspace.
-          await containers.index(target.path)
+          index = await containers.index(target.path)
         } catch (error) {
-          const message = error instanceof Error ? error.message : String(error)
+          const named = error as {
+            readonly code?: unknown
+            readonly message?: unknown
+            readonly context?: unknown
+          }
+          const code = typeof named.code === 'string' ? named.code : undefined
+          const message = typeof named.message === 'string' ? named.message : String(error)
+          const context =
+            named.context !== null && typeof named.context === 'object'
+              ? (named.context as Record<string, unknown>)
+              : undefined
+          const attemptedCandidates = Array.isArray(context?.attemptedCandidates)
+            ? Object.freeze(
+                context.attemptedCandidates.filter(isAttemptedContainerCandidate).map(item =>
+                  Object.freeze({
+                    contributionId: item.contributionId,
+                    formatIds: Object.freeze([...item.formatIds]),
+                    state: item.state,
+                    diagnostics: Object.freeze(
+                      item.diagnostics.map(diagnostic => Object.freeze({ ...diagnostic })),
+                    ),
+                  }),
+                ),
+              )
+            : Object.freeze([])
           log(`browse refused ${basename(target.path)}: ${message}`)
           void vscode.window.showWarningMessage(
             localizer.text('vscode.container.cannotBrowse', { reason: message }),
           )
-          return
+          return Object.freeze({
+            state: 'refused' as const,
+            command: 'modkit.browseContainer',
+            failedStep: 'container-index',
+            ...(code === undefined ? {} : { code }),
+            message,
+            attemptedCandidates,
+          })
         }
         const existing = vscode.workspace.workspaceFolders
         if (existing === undefined || existing.length === 0) {
           void vscode.window.showWarningMessage(
             `Modkit: ${localizer.text('vscode.container.openFolderFirst')}`,
           )
-          return
+          return undefined
         }
         const folder = vscode.Uri.from({
           scheme: CONTAINER_SCHEME,
@@ -4974,7 +6203,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         })
         if (existing.some(item => item.uri.toString() === folder.toString())) {
           void vscode.commands.executeCommand('revealInExplorer', folder)
-          return
+          return Object.freeze({
+            container: target.path,
+            folder,
+            indexedFiles: index.files.size,
+            workspaceEffect: 'already-present' as const,
+          })
         }
         const added = vscode.workspace.updateWorkspaceFolders(existing.length, 0, {
           uri: folder,
@@ -4990,8 +6224,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             `Modkit: ${localizer.text('vscode.container.workspaceRejected')}`,
           )
         }
-      })()
-    }),
+        return Object.freeze({
+          container: target.path,
+          folder,
+          indexedFiles: index.files.size,
+          workspaceEffect: added ? ('added' as const) : ('rejected' as const),
+        })
+      })(),
+    ),
 
     /*
      * Open one member of a container as a subject of its own.
@@ -5167,6 +6407,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         },
       })
       document.state.attach(served)
+      liveArchiveAcceptanceDocuments.set(document.uri.toString(), document)
+      liveArchiveAcceptanceServed.set(document.uri.toString(), served)
 
       /*
        * The status bar follows the active editor, not the open one. Several Modkit editors can be
@@ -5186,6 +6428,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       panel.onDidChangeViewState(followActive)
 
       panel.onDidDispose(() => {
+        if (liveArchiveAcceptanceDocuments.get(document.uri.toString()) === document) {
+          liveArchiveAcceptanceDocuments.delete(document.uri.toString())
+        }
+        if (liveArchiveAcceptanceServed.get(document.uri.toString()) === served) {
+          liveArchiveAcceptanceServed.delete(document.uri.toString())
+        }
         if (activeSubject === subjectKey(target.path)) {
           activeSubject = undefined
           showSubjectStatus(undefined)
@@ -5208,11 +6456,27 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
 
     async saveCustomDocumentAs(document, destination, token) {
       checkCancellation(token)
-      // Saving a container member *elsewhere* is extraction, and it is allowed: the copy below
-      // reads through the read-only provider and writes a file that is no longer a member.
-      if (!document.readOnly) await document.state.save()
+      const served = liveArchiveAcceptanceServed.get(document.uri.toString())
+      const nativeSaveAsEnabled = process.env[PACKAGE_INSTALL_GATE_ENV] === '1'
+      if (nativeSaveAsEnabled && served !== undefined && document.state.isDirty) {
+        throw new Error('native MPQ Save As requires a clean source document')
+      }
+      if (!document.readOnly && document.state.isDirty) await document.state.save()
       checkCancellation(token)
       if (destination.toString() !== document.uri.toString()) {
+        if (nativeSaveAsEnabled && served !== undefined) {
+          const sourceBytes = await vscode.workspace.fs.readFile(document.uri)
+          const native = await served.nativeSaveAs(
+            document.uri.fsPath,
+            destination.fsPath,
+            sourceBytes,
+          )
+          if (native !== undefined) {
+            await vscode.workspace.fs.writeFile(destination, native.bytes)
+            nativeWriterReceiptForAcceptance = native.nativeWriterReceipt
+            return
+          }
+        }
         await vscode.workspace.fs.copy(document.uri, destination, { overwrite: true })
       }
     },
@@ -5240,6 +6504,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         delete: () => vscode.workspace.fs.delete(backupContext.destination),
       }
     },
+  }
+  saveLiveArchiveAcceptanceDocument = async (document, destination) => {
+    const cancellation = new vscode.CancellationTokenSource()
+    try {
+      await customEditor.saveCustomDocumentAs(document, destination, cancellation.token)
+    } finally {
+      cancellation.dispose()
+    }
   }
   context.subscriptions.push(
     vscode.window.registerCustomEditorProvider(CUSTOM_EDITOR_TYPE, customEditor, {

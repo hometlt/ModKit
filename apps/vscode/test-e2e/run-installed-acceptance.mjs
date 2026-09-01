@@ -83,6 +83,8 @@ const formatSmokeSc2RootFlag = 'MODKIT_VSCODE_ACCEPTANCE_FORMAT_SMOKE_SC2_ROOT'
 const formatSmokeWarzoneRootFlag = 'MODKIT_VSCODE_ACCEPTANCE_FORMAT_SMOKE_WARZONE_ROOT'
 const formatSmokeStartFlag = 'MODKIT_VSCODE_ACCEPTANCE_FORMAT_SMOKE_START'
 const formatSmokeAckFlag = 'MODKIT_VSCODE_ACCEPTANCE_FORMAT_SMOKE_ACK'
+const archiveAcceptanceStartFlag = 'MODKIT_VSCODE_ACCEPTANCE_ARCHIVE_START'
+const archiveAcceptanceAckFlag = 'MODKIT_VSCODE_ACCEPTANCE_ARCHIVE_ACK'
 const packageInstallGatePath = join(
   userData,
   'User',
@@ -93,6 +95,96 @@ const packageInstallGatePath = join(
 const packageInstallGateContinuePath = join(userData, 'package-install-gate-continue-generation-2')
 const formatSmokeStartPath = join(userData, 'format-smoke-start-generation-3')
 const formatSmokeAckPath = join(userData, 'format-smoke-ack-generation-3.json')
+const archiveAcceptanceStartPath = join(userData, 'archive-acceptance-start-generation-3')
+const archiveAcceptanceAckPath = join(userData, 'archive-acceptance-ack-generation-3.json')
+const archiveAcceptanceCaseIds = Object.freeze([
+  'mpq-tree-search-lazy',
+  'casc-tree-search-lazy',
+  'wz-tree-search-lazy',
+  'casc-dds-nested-open',
+  'casc-dds-materialize',
+  'mpq-m3-nested-open',
+  'mpq-m3-materialize',
+  'wz-pie-nested-open',
+  'wz-pie-materialize',
+  'wte70-save-as-reopen',
+  'armod-open',
+  'corrupt-mpq-then-canary',
+  'corrupt-casc-then-canary',
+  'corrupt-wz-then-canary',
+])
+const archiveMaterializationAuthorities = Object.freeze({
+  'casc-dds-materialize': Object.freeze({
+    entry: 'campaigns/liberty.sc2campaign/base.sc2assets/assets/textures/alpha2.dds',
+    target: 'wave2a-casc-alpha2.dds',
+    bytes: 824,
+    sha256: 'b0a41b1a08611e2e6f6070c6c0f9122646389974e059793f37ac018874733b79',
+  }),
+  'mpq-m3-materialize': Object.freeze({
+    entry:
+      'Assets/Doodads/SpacePlatform_LandingLights_NoLensFlare/avex_SpacePlatform_LandingLights_NoLensFlare.m3',
+    target: 'wave2a-rustbucket.m3',
+    bytes: 27_968,
+    sha256: '4b5b6137720be779adf341790e75b134a026321181d8b37db96abf2669d250e8',
+  }),
+  'wz-pie-materialize': Object.freeze({
+    entry: 'components/bodies/cybd_run.pie',
+    target: 'wave2a-cybd_run.pie',
+    bytes: 22_053,
+    sha256: '0674a8044d71f12c8f9362eae9efea946f5b0ba04b065d9d8b861eae669fef23',
+  }),
+})
+const archiveNestedAuthorities = Object.freeze({
+  'casc-dds-nested-open': Object.freeze([
+    Object.freeze({ formatId: 'casc', contributionId: 'blizzard/casc' }),
+    Object.freeze({ formatId: 'dds', contributionId: 'modkit/dds' }),
+  ]),
+  'mpq-m3-nested-open': Object.freeze([
+    Object.freeze({ formatId: 'mpq', contributionId: 'blizzard/mpq' }),
+    Object.freeze({ formatId: 'm3', contributionId: 'blizzard/m3' }),
+  ]),
+  'wz-pie-nested-open': Object.freeze([
+    Object.freeze({ formatId: 'warzone-wz', contributionId: 'modkit/warzone-wz' }),
+    Object.freeze({ formatId: 'warzone-pie', contributionId: 'modkit/warzone-pie' }),
+  ]),
+})
+const archiveCorruptAuthorities = Object.freeze({
+  'corrupt-mpq-then-canary': Object.freeze({
+    family: 'mpq',
+    route: 'file-container',
+    contributionId: 'blizzard/mpq',
+    formatId: 'mpq',
+  }),
+  'corrupt-casc-then-canary': Object.freeze({
+    family: 'casc',
+    route: 'casc-namespace',
+    contributionId: 'blizzard/casc',
+    formatId: 'casc',
+  }),
+  'corrupt-wz-then-canary': Object.freeze({
+    family: 'wz',
+    route: 'file-container',
+    contributionId: 'modkit/warzone-wz',
+    formatId: 'warzone-wz',
+  }),
+})
+const armodInstalledAuthority = Object.freeze({
+  extensionId: 'wz2100project/warzone-2100',
+  contributionId: 'modkit/warzone-wz',
+  variantId: 'trusted-node',
+  entrypoint: './src/warzone-wz/range-codec.js',
+  manifestDigest: 'sha256:9f09effbbae1ee1e9755619cc250085dd5581cee395154d4f44d21055d733d20',
+  artifactDigest: 'sha256:f68011827cbc50bff184910c78776c6ffae39d4607f2827c77d6af7782556db9',
+  installedManifestSha256:
+    'sha256:777d236663780b6f327e60bd014be9eab09a3efb7921c2a1353c0bf84255f306',
+})
+// ARmod's installed route is metadata-first (65,557 bytes from a 102 MB archive). This permits
+// normal VS Code tree scheduling without permitting an unbounded full-archive materialization.
+const armodProcessTreeMemoryDeltaCeilingBytes = 128 * 1024 * 1024
+const armodProcessTreeRequestedSampleIntervalMs = 25
+const armodProcessTreeMaximumObservedIntervalMs = 15_000
+const armodProcessTreeMinimumSamples = 3
+const processListTimeoutMs = 10_000
 const disabledRouteUri =
   argument('--disabled-uri') ?? process.env[packageInstallGateDisabledUriFlag]
 const defaultFormatSmokeWorkspaceRoot = existsSync(join(repoRoot, 'references'))
@@ -264,6 +356,14 @@ const receipt = {
     expectedCases: 14,
     openedCases: 0,
     exclusions: [],
+    cases: [],
+    failures: [],
+    verdict: 'fail',
+  },
+  archiveAcceptance: {
+    kind: 'x3.vscode-installed-archive-acceptance',
+    schemaVersion: 1,
+    expectedCases: archiveAcceptanceCaseIds,
     cases: [],
     failures: [],
     verdict: 'fail',
@@ -630,10 +730,349 @@ async function waitForFormatSmokeCurrent(operationRevision, timeoutMs = 180_000)
   )
 }
 
+async function waitForArchiveAcceptanceStage(state, timeoutMs = 180_000) {
+  return await waitFor(
+    () => {
+      const phase = readPackageInstallGateReceipt()?.phases?.find?.(item => item?.generation === 3)
+      return phase?.state === state ? phase : undefined
+    },
+    { timeoutMs, stepMs: 500 },
+  )
+}
+
+function writeArchiveAcceptanceAck(stage, source, target, nativeUserCommand) {
+  const acknowledgement = {
+    kind: 'x3.vscode-installed-archive-acceptance-ack',
+    schemaVersion: 1,
+    artifactSha256: receipt.artifact.sha256,
+    generation: 3,
+    caseId: 'wte70-save-as-reopen',
+    stage,
+    source,
+    target,
+    observedBy: 'cdp',
+    ...(nativeUserCommand === undefined ? {} : { nativeUserCommand }),
+    verdict: 'pass',
+  }
+  const temporary = `${archiveAcceptanceAckPath}.${process.pid}.${stage}.tmp`
+  writeFileSync(temporary, `${JSON.stringify(acknowledgement, null, 2)}\n`)
+  rmSync(archiveAcceptanceAckPath, { force: true })
+  renameSync(temporary, archiveAcceptanceAckPath)
+}
+
+function writeArchiveSearchAck(search) {
+  const acknowledgement = {
+    kind: 'x3.vscode-installed-archive-acceptance-ack',
+    schemaVersion: 1,
+    artifactSha256: receipt.artifact.sha256,
+    generation: 3,
+    caseId: search.caseId,
+    stage: 'search-picker-selected',
+    container: search.container,
+    query: search.query,
+    requiredEntry: search.requiredEntry,
+    selectedUri: search.selectedUri,
+    selectedRoute: 'modkit-container',
+    observedBy: 'cdp',
+    inputBoxObserved: true,
+    quickPickObserved: true,
+    pickedLabel: search.pickedLabel,
+    verdict: 'pass',
+  }
+  const temporary = `${archiveAcceptanceAckPath}.${process.pid}.${search.caseId}.tmp`
+  writeFileSync(temporary, `${JSON.stringify(acknowledgement, null, 2)}\n`)
+  rmSync(archiveAcceptanceAckPath, { force: true })
+  renameSync(temporary, archiveAcceptanceAckPath)
+}
+
+function writeArmodProcessTreeMemoryAck(stage, memoryEvidence) {
+  const acknowledgement = {
+    kind: 'x3.vscode-installed-archive-acceptance-ack',
+    schemaVersion: 1,
+    artifactSha256: receipt.artifact.sha256,
+    generation: 3,
+    caseId: 'armod-open',
+    stage,
+    ...memoryEvidence,
+  }
+  const temporary = `${archiveAcceptanceAckPath}.${process.pid}.${stage}.tmp`
+  writeFileSync(temporary, `${JSON.stringify(acknowledgement, null, 2)}\n`)
+  rmSync(archiveAcceptanceAckPath, { force: true })
+  renameSync(temporary, archiveAcceptanceAckPath)
+}
+
+async function observeAndSelectArchiveSearch(page, expected) {
+  const widget = page.locator('.quick-input-widget:visible').last()
+  const input = widget.locator('input:visible').last()
+  await input.waitFor({ state: 'visible', timeout: 20_000 })
+  await input.fill(expected.query)
+  const inputValue = await input.inputValue()
+  if (inputValue !== expected.query) {
+    throw new Error(
+      `${expected.caseId} InputBox value ${JSON.stringify(inputValue)} is not its authority query`,
+    )
+  }
+  const rows = widget.locator('.quick-input-list .monaco-list-row:visible')
+  const row = rows.filter({ hasText: expected.requiredEntry }).first()
+  await row.waitFor({ state: 'visible', timeout: 30_000 })
+  const rowText = await row.innerText()
+  const pickedLabel = rowText.split(/\r?\n/u)[0]?.trim()
+  if (pickedLabel !== expected.requiredEntry) {
+    throw new Error(
+      `${expected.caseId} QuickPick row ${JSON.stringify(pickedLabel)} is not its authority entry`,
+    )
+  }
+  await row.click()
+  return {
+    inputBoxObserved: true,
+    quickPickObserved: true,
+    pickedLabel,
+  }
+}
+
+async function attemptNativeSaveAs(page) {
+  // Native OS Save dialogs are outside CDP. Do not synthesize the shortcut: it can leave the
+  // isolated workbench modal-blocked without a deterministic close path.
+  void page
+  return {
+    command: 'workbench.action.files.saveAs',
+    attempted: false,
+    cdpQuickInputObserved: false,
+    proof: false,
+    classification: 'native-os-dialog-not-automated',
+  }
+}
+
+async function observeArchiveAcceptanceEditor(port, expected) {
+  const observed = await waitFor(
+    async () => {
+      const values = await webviewValues(
+        port,
+        webviewDocumentExpression(`(_doc, win) => {
+          const archive = win.__MODKIT_ACCEPTANCE__?.archiveAcceptance;
+          const selected = win.__MODKIT_ACCEPTANCE__?.subject?.selected;
+          const route = win.__MODKIT_ACCEPTANCE__?.subject?.selectedRoute;
+          if (
+            archive?.caseId !== 'wte70-save-as-reopen' ||
+            archive?.stage !== ${JSON.stringify(expected.stage)} ||
+            archive?.source !== ${JSON.stringify(expected.source)} ||
+            archive?.target !== ${JSON.stringify(expected.target)} ||
+            !Array.isArray(archive?.materializations) ||
+            archive.materializations.length !== 3 ||
+            !archive.materializations.every(item =>
+              item?.command === 'modkit.materializeContainerEntry' &&
+              item?.dialogBypass === true &&
+              typeof item?.target === 'string' &&
+              item?.corpus?.sha256 &&
+              item?.extraction?.bytes === item?.corpus?.bytes
+            ) ||
+            selected?.contributionId !== 'blizzard/sc2-map' ||
+            !Array.isArray(route) ||
+            !route.some(item => item?.formatId === 'sc2-map')
+          ) return undefined;
+          return {
+            contributionId: selected.contributionId,
+            selectedRoute: route.map(item => ({
+              formatId: item?.formatId,
+              extensionId: item?.extensionId,
+              contributionId: item?.contributionId,
+            })),
+            archive: {
+              stage: archive.stage,
+              source: archive.source,
+              target: archive.target,
+              materializations: archive.materializations.map(item => ({
+                caseId: item.caseId,
+                command: item.command,
+                dialogBypass: item.dialogBypass,
+                target: item.target,
+                sha256: item.corpus.sha256,
+              })),
+            },
+          };
+        }`),
+      )
+      return values[0]
+    },
+    { timeoutMs: 120_000, stepMs: 500 },
+  )
+  if (observed === undefined) {
+    throw new Error(`CDP did not observe the live WTE70 editor at ${expected.stage}`)
+  }
+  return observed
+}
+
 function packageGatePhaseFailures(phase) {
   if (!Array.isArray(phase?.failures)) return 'phase did not publish typed failures'
   if (phase.failures.length === 0) return 'phase did not pass and published no typed failures'
   return phase.failures.map(failure => `${failure.code}: ${failure.message}`).join('; ')
+}
+
+function assertExactArchiveEvidence(archiveCases) {
+  for (const [caseId, authority] of Object.entries(archiveMaterializationAuthorities)) {
+    const evidence = archiveCases.find(item => item?.caseId === caseId)?.evidence
+    if (
+      evidence?.command !== 'modkit.materializeContainerEntry' ||
+      evidence?.dialogBypass !== true ||
+      evidence?.target !== authority.target ||
+      evidence?.corpus?.bytes !== authority.bytes ||
+      evidence?.corpus?.sha256 !== authority.sha256 ||
+      evidence?.extraction?.entry !== authority.entry ||
+      evidence?.extraction?.bytes !== authority.bytes ||
+      typeof evidence?.extraction?.container !== 'string'
+    ) {
+      throw new Error(`Wave 2A ${caseId} is not bound to its exact materialized authority`)
+    }
+  }
+  for (const [caseId, authority] of Object.entries(archiveNestedAuthorities)) {
+    const evidence = archiveCases.find(item => item?.caseId === caseId)?.evidence
+    const route = Array.isArray(evidence?.selectedRoute)
+      ? evidence.selectedRoute.map(item => ({
+          formatId: item?.formatId,
+          contributionId: item?.contributionId,
+        }))
+      : undefined
+    if (
+      JSON.stringify(route) !== JSON.stringify(authority) ||
+      evidence?.selected?.contributionId !== authority.at(-1)?.contributionId
+    ) {
+      throw new Error(`Wave 2A ${caseId} is not bound to its exact nested route`)
+    }
+  }
+  for (const [caseId, authority] of Object.entries(archiveCorruptAuthorities)) {
+    const evidence = archiveCases.find(item => item?.caseId === caseId)?.evidence
+    if (
+      evidence?.family !== authority.family ||
+      evidence?.route !== authority.route ||
+      evidence?.failedStep !== 'container-index' ||
+      evidence?.attempted?.contributionId !== authority.contributionId ||
+      evidence?.attempted?.formatId !== authority.formatId ||
+      evidence?.attempted?.state !== 'rejected' ||
+      typeof evidence?.attempted?.diagnostic?.code !== 'string' ||
+      evidence.attempted.diagnostic.code === 'x3.app/vscode-not-a-container' ||
+      typeof evidence?.attempted?.diagnostic?.message !== 'string' ||
+      evidence?.refusal?.source !== 'candidate-diagnostic' ||
+      evidence?.refusal?.code !== evidence?.attempted?.diagnostic?.code ||
+      evidence?.refusal?.message !== evidence?.attempted?.diagnostic?.message ||
+      evidence?.appAlive?.validCascCanary !== true
+    ) {
+      throw new Error(`Wave 2A ${caseId} lacks an actual candidate-attributed typed refusal`)
+    }
+  }
+  const armod = archiveCases.find(item => item?.caseId === 'armod-open')?.evidence
+  const armodRoute = Array.isArray(armod?.selectedRoute) ? armod.selectedRoute.at(-1) : undefined
+  const externalMemory = armod?.externalProcessTreeMemory
+  const externalMemoryStart = externalMemory?.startAcknowledgement
+  const externalMemoryStop = externalMemory?.stopAcknowledgement
+  const validExternalMetric = metric =>
+    Number.isSafeInteger(metric?.baselineBytes) &&
+    Number.isSafeInteger(metric?.peakBytes) &&
+    Number.isSafeInteger(metric?.deltaBytes) &&
+    metric.baselineBytes >= 0 &&
+    metric.peakBytes >= metric.baselineBytes &&
+    metric.deltaBytes === metric.peakBytes - metric.baselineBytes &&
+    metric.deltaCeilingBytes === armodProcessTreeMemoryDeltaCeilingBytes &&
+    metric.deltaBytes <= metric.deltaCeilingBytes
+  const validExternalObservedCadence = (samples, cadence) => {
+    if (
+      !Array.isArray(samples) ||
+      samples.length < 2 ||
+      cadence === null ||
+      typeof cadence !== 'object'
+    ) {
+      return false
+    }
+    if (
+      samples.some(
+        sample =>
+          !Number.isSafeInteger(sample?.timestampMs) ||
+          !Number.isSafeInteger(sample?.workingSetBytes) ||
+          !Number.isSafeInteger(sample?.privateBytes),
+      )
+    ) {
+      return false
+    }
+    const intervals = samples
+      .slice(1)
+      .map((sample, index) => sample.timestampMs - samples[index].timestampMs)
+    const averageIntervalMs =
+      intervals.reduce((total, interval) => total + interval, 0) / intervals.length
+    return (
+      Number.isSafeInteger(cadence.intervalCount) &&
+      cadence.intervalCount === intervals.length &&
+      Number.isSafeInteger(cadence.minIntervalMs) &&
+      cadence.minIntervalMs === Math.min(...intervals) &&
+      cadence.minIntervalMs > 0 &&
+      Number.isSafeInteger(cadence.maxIntervalMs) &&
+      cadence.maxIntervalMs === Math.max(...intervals) &&
+      cadence.maxIntervalMs >= cadence.minIntervalMs &&
+      cadence.maxIntervalMs <= armodProcessTreeMaximumObservedIntervalMs &&
+      typeof cadence.averageIntervalMs === 'number' &&
+      Number.isFinite(cadence.averageIntervalMs) &&
+      cadence.averageIntervalMs === averageIntervalMs &&
+      cadence.averageIntervalMs >= cadence.minIntervalMs &&
+      cadence.averageIntervalMs <= cadence.maxIntervalMs
+    )
+  }
+  if (
+    armod?.installedManifestSha256 !== armodInstalledAuthority.installedManifestSha256 ||
+    armod?.entrypoint !== armodInstalledAuthority.entrypoint ||
+    armod?.selected?.extensionId !== armodInstalledAuthority.extensionId ||
+    armod?.selected?.contributionId !== armodInstalledAuthority.contributionId ||
+    armod?.selected?.variantId !== armodInstalledAuthority.variantId ||
+    armodRoute?.formatId !== 'warzone-wz' ||
+    armodRoute?.contributionId !== armodInstalledAuthority.contributionId ||
+    armod?.selectedDetection?.formatId !== 'warzone-wz' ||
+    armod?.selectedDetection?.manifestDigest !== armodInstalledAuthority.manifestDigest ||
+    armod?.selectedDetection?.artifactDigest !== armodInstalledAuthority.artifactDigest ||
+    armod?.inspection?.inspectionMode !== 'metadata-first-range' ||
+    armod?.inspection?.sourceBytes !== '102362635' ||
+    armod?.inspection?.metadataBytesRead !== 65_557 ||
+    armod?.metadataIo?.readCount !== 8 ||
+    armod?.metadataIo?.bytes !== 70_978 ||
+    armod?.metadataIo?.maxReadBytes !== 65_557 ||
+    armod?.metadataIo?.streamCount !== 0 ||
+    externalMemoryStart?.kind !== 'x3.vscode-installed-archive-acceptance-ack' ||
+    externalMemoryStart?.schemaVersion !== 1 ||
+    externalMemoryStart?.artifactSha256 !== receipt.artifact.sha256 ||
+    externalMemoryStart?.generation !== 3 ||
+    externalMemoryStart?.caseId !== 'armod-open' ||
+    externalMemoryStart?.stage !== 'armod-memory-sampling-start' ||
+    externalMemoryStart?.observedBy !== 'external-process-tree' ||
+    externalMemoryStart?.collector !== 'Win32_Process' ||
+    externalMemoryStart?.requestedSampleIntervalMs !== armodProcessTreeRequestedSampleIntervalMs ||
+    externalMemoryStart?.verdict !== 'pass' ||
+    externalMemoryStop?.kind !== 'x3.vscode-installed-archive-acceptance-ack' ||
+    externalMemoryStop?.schemaVersion !== 1 ||
+    externalMemoryStop?.artifactSha256 !== receipt.artifact.sha256 ||
+    externalMemoryStop?.generation !== 3 ||
+    externalMemoryStop?.caseId !== 'armod-open' ||
+    externalMemoryStop?.stage !== 'armod-memory-sampling-stop' ||
+    externalMemoryStop?.observedBy !== 'external-process-tree' ||
+    externalMemoryStop?.collector !== 'Win32_Process' ||
+    externalMemoryStop?.requestedSampleIntervalMs !== armodProcessTreeRequestedSampleIntervalMs ||
+    externalMemoryStop?.verdict !== 'pass' ||
+    !Array.isArray(externalMemoryStop?.matchedRootPids) ||
+    externalMemoryStop.matchedRootPids.length === 0 ||
+    !Array.isArray(externalMemoryStop?.descendantPids) ||
+    externalMemoryStop.descendantPids.length === 0 ||
+    !Number.isSafeInteger(externalMemoryStop?.sampleCount) ||
+    externalMemoryStop.sampleCount < armodProcessTreeMinimumSamples ||
+    !Array.isArray(externalMemoryStop?.samples) ||
+    externalMemoryStop.samples.length !== externalMemoryStop.sampleCount ||
+    !validExternalObservedCadence(externalMemoryStop.samples, externalMemoryStop.observedCadence) ||
+    !Array.isArray(externalMemoryStop?.errors) ||
+    externalMemoryStop.errors.length !== 0 ||
+    !validExternalMetric(externalMemoryStop?.workingSetBytes) ||
+    !validExternalMetric(externalMemoryStop?.privateBytes) ||
+    armod?.extensionHostRss?.source !== 'process.memoryUsage().rss' ||
+    !Number.isSafeInteger(armod?.extensionHostRss?.deltaBytes) ||
+    armod.extensionHostRss.deltaBytes > armod.extensionHostRss.deltaCeilingBytes
+  ) {
+    throw new Error(
+      'Wave 2A ARmod route/metadata/I/O/external-process-tree memory evidence differs from its exact authority',
+    )
+  }
 }
 
 function packageGatePhaseSummary(phase, generation) {
@@ -1105,6 +1544,8 @@ function normalizeProcessList(value) {
       ppid: Number(item.ParentProcessId ?? item.ppid),
       name: String(item.Name ?? item.name ?? ''),
       commandLine: String(item.CommandLine ?? item.commandLine ?? ''),
+      workingSetBytes: Number(item.WorkingSetSize ?? item.workingSetBytes),
+      privateBytes: Number(item.PrivatePageCount ?? item.privateBytes),
     }))
     .filter(item => Number.isInteger(item.pid) && item.pid > 0)
 }
@@ -1119,12 +1560,13 @@ function listProcesses() {
         '-NoProfile',
         '-NonInteractive',
         '-Command',
-        'Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name,CommandLine | ConvertTo-Json -Compress',
+        'Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name,CommandLine,WorkingSetSize,PrivatePageCount | ConvertTo-Json -Compress',
       ],
       {
         encoding: 'utf8',
         shell: false,
         windowsHide: true,
+        timeout: processListTimeoutMs,
       },
     )
     if ((result.status ?? 1) !== 0) {
@@ -1143,6 +1585,7 @@ function listProcesses() {
   const result = spawnSync('ps', ['-eo', 'pid=,ppid=,comm=,args='], {
     encoding: 'utf8',
     shell: false,
+    timeout: processListTimeoutMs,
   })
   if ((result.status ?? 1) !== 0) {
     return {
@@ -1160,6 +1603,8 @@ function listProcesses() {
         ppid: Number(ppid),
         name,
         commandLine,
+        workingSetBytes: Number.NaN,
+        privateBytes: Number.NaN,
       })),
     error: null,
   }
@@ -1230,6 +1675,169 @@ function descendantPids(processes, rootPids) {
     }
   }
   return discovered
+}
+
+function sampleIsolatedProcessTreeMemory(port) {
+  const listed = listProcesses()
+  if (listed.error !== null) return { error: `process-list: ${listed.error}` }
+  const matched = listed.processes
+    .map(processInfo => ({ processInfo, reasons: isolatedProcessMatch(processInfo, port) }))
+    .filter(match => match.reasons.length > 0)
+  const matchedPidSet = new Set(matched.map(match => match.processInfo.pid))
+  // VS Code propagates the isolated command-line switches to several children. Keep only the
+  // outermost matched processes as roots so those matched children remain explicit descendants.
+  const matchedRootPids = matched
+    .filter(match => !matchedPidSet.has(match.processInfo.ppid))
+    .map(match => match.processInfo.pid)
+  if (matchedRootPids.length === 0) {
+    return {
+      error:
+        'no isolated VS Code process root matched the user-data/extensions/debug-port evidence',
+    }
+  }
+  const processPids = descendantPids(listed.processes, matchedRootPids)
+  const processes = listed.processes.filter(processInfo => processPids.has(processInfo.pid))
+  const descendants = processes
+    .map(processInfo => processInfo.pid)
+    .filter(pid => !matchedRootPids.includes(pid))
+  if (descendants.length === 0) {
+    return { error: 'isolated VS Code process tree exposed no descendants to sample' }
+  }
+  if (
+    processes.some(
+      processInfo =>
+        !Number.isSafeInteger(processInfo.workingSetBytes) ||
+        processInfo.workingSetBytes < 0 ||
+        !Number.isSafeInteger(processInfo.privateBytes) ||
+        processInfo.privateBytes < 0,
+    )
+  ) {
+    return { error: 'Win32_Process WorkingSetSize or PrivatePageCount was unavailable' }
+  }
+  const workingSetBytes = processes.reduce(
+    (total, processInfo) => total + processInfo.workingSetBytes,
+    0,
+  )
+  const privateBytes = processes.reduce((total, processInfo) => total + processInfo.privateBytes, 0)
+  if (!Number.isSafeInteger(workingSetBytes) || !Number.isSafeInteger(privateBytes)) {
+    return { error: 'isolated VS Code process-tree memory total was not a safe integer' }
+  }
+  return {
+    timestampMs: Date.now(),
+    matchedRootPids,
+    descendantPids: descendants,
+    processPids: processes.map(processInfo => processInfo.pid),
+    workingSetBytes,
+    privateBytes,
+  }
+}
+
+function startArmodProcessTreeMemorySampler(port) {
+  const samples = []
+  const errors = []
+  const matchedRootPids = new Set()
+  const descendantProcessPids = new Set()
+  const sampledProcessPids = new Set()
+  const sample = () => {
+    const observation = sampleIsolatedProcessTreeMemory(port)
+    if ('error' in observation) {
+      if (!errors.includes(observation.error)) errors.push(observation.error)
+      return
+    }
+    samples.push(observation)
+    for (const pid of observation.matchedRootPids) matchedRootPids.add(pid)
+    for (const pid of observation.descendantPids) descendantProcessPids.add(pid)
+    for (const pid of observation.processPids) sampledProcessPids.add(pid)
+  }
+  sample()
+  const timer =
+    errors.length === 0 ? setInterval(sample, armodProcessTreeRequestedSampleIntervalMs) : undefined
+  timer?.unref()
+  let stoppedEvidence
+  const startAcknowledgement = () => ({
+    observedBy: 'external-process-tree',
+    collector: 'Win32_Process',
+    requestedSampleIntervalMs: armodProcessTreeRequestedSampleIntervalMs,
+    errors: [...errors],
+    verdict: errors.length === 0 && samples.length === 1 ? 'pass' : 'fail',
+  })
+  const stop = () => {
+    if (stoppedEvidence !== undefined) return stoppedEvidence
+    if (timer !== undefined) clearInterval(timer)
+    sample()
+    const baseline = samples[0]
+    const peakWorkingSetBytes = Math.max(...samples.map(item => item.workingSetBytes), 0)
+    const peakPrivateBytes = Math.max(...samples.map(item => item.privateBytes), 0)
+    const workingSetBaselineBytes = baseline?.workingSetBytes ?? 0
+    const privateBaselineBytes = baseline?.privateBytes ?? 0
+    const intervals = samples
+      .slice(1)
+      .map((item, index) => item.timestampMs - samples[index].timestampMs)
+    const observedCadence = {
+      intervalCount: intervals.length,
+      minIntervalMs: intervals.length === 0 ? 0 : Math.min(...intervals),
+      maxIntervalMs: intervals.length === 0 ? 0 : Math.max(...intervals),
+      averageIntervalMs:
+        intervals.length === 0
+          ? 0
+          : intervals.reduce((total, interval) => total + interval, 0) / intervals.length,
+    }
+    const evidence = {
+      observedBy: 'external-process-tree',
+      collector: 'Win32_Process',
+      requestedSampleIntervalMs: armodProcessTreeRequestedSampleIntervalMs,
+      matchedRootPids: [...matchedRootPids].sort((left, right) => left - right),
+      descendantPids: [...descendantProcessPids].sort((left, right) => left - right),
+      sampledProcessPids: [...sampledProcessPids].sort((left, right) => left - right),
+      sampleCount: samples.length,
+      samples: samples.map(item => ({
+        timestampMs: item.timestampMs,
+        workingSetBytes: item.workingSetBytes,
+        privateBytes: item.privateBytes,
+      })),
+      observedCadence,
+      errors: [...errors],
+      workingSetBytes: {
+        baselineBytes: workingSetBaselineBytes,
+        peakBytes: peakWorkingSetBytes,
+        deltaBytes: peakWorkingSetBytes - workingSetBaselineBytes,
+        deltaCeilingBytes: armodProcessTreeMemoryDeltaCeilingBytes,
+      },
+      privateBytes: {
+        baselineBytes: privateBaselineBytes,
+        peakBytes: peakPrivateBytes,
+        deltaBytes: peakPrivateBytes - privateBaselineBytes,
+        deltaCeilingBytes: armodProcessTreeMemoryDeltaCeilingBytes,
+      },
+    }
+    const validMetric = metric =>
+      Number.isSafeInteger(metric.baselineBytes) &&
+      Number.isSafeInteger(metric.peakBytes) &&
+      Number.isSafeInteger(metric.deltaBytes) &&
+      metric.peakBytes >= metric.baselineBytes &&
+      metric.deltaBytes === metric.peakBytes - metric.baselineBytes &&
+      metric.deltaBytes <= metric.deltaCeilingBytes
+    stoppedEvidence = {
+      ...evidence,
+      verdict:
+        evidence.errors.length === 0 &&
+        evidence.sampleCount >= armodProcessTreeMinimumSamples &&
+        evidence.matchedRootPids.length > 0 &&
+        evidence.descendantPids.length > 0 &&
+        evidence.observedCadence.intervalCount === evidence.sampleCount - 1 &&
+        evidence.observedCadence.minIntervalMs > 0 &&
+        evidence.observedCadence.maxIntervalMs >= evidence.observedCadence.minIntervalMs &&
+        evidence.observedCadence.maxIntervalMs <= armodProcessTreeMaximumObservedIntervalMs &&
+        evidence.observedCadence.averageIntervalMs >= evidence.observedCadence.minIntervalMs &&
+        evidence.observedCadence.averageIntervalMs <= evidence.observedCadence.maxIntervalMs &&
+        validMetric(evidence.workingSetBytes) &&
+        validMetric(evidence.privateBytes)
+          ? 'pass'
+          : 'fail',
+    }
+    return stoppedEvidence
+  }
+  return { startAcknowledgement, stop }
 }
 
 function terminateIsolatedProcessTree(port) {
@@ -1696,6 +2304,8 @@ async function launchGeneration(generation) {
       [formatSmokeWarzoneRootFlag]: formatSmokeRoots.warzoneInstallRoot,
       [formatSmokeStartFlag]: formatSmokeStartPath,
       [formatSmokeAckFlag]: formatSmokeAckPath,
+      [archiveAcceptanceStartFlag]: archiveAcceptanceStartPath,
+      [archiveAcceptanceAckFlag]: archiveAcceptanceAckPath,
       ...(disabledRouteUri === undefined
         ? {}
         : { [packageInstallGateDisabledUriFlag]: disabledRouteUri }),
@@ -1972,6 +2582,119 @@ async function launchGeneration(generation) {
       receipt.formatSmoke.cases.push(portableFormatSmokeCase(testCase, current, observation))
       receipt.formatSmoke.openedCases = receipt.formatSmoke.cases.length
     }
+    const archiveStart = await waitForArchiveAcceptanceStage('awaiting-archive-acceptance-start')
+    if (archiveStart?.archiveAcceptance?.artifactSha256 !== receipt.artifact.sha256) {
+      throw new Error('Wave 2A archive acceptance artifact SHA-256 differs from the installed VSIX')
+    }
+    writeFileSync(archiveAcceptanceStartPath, `${new Date().toISOString()}\n`)
+    for (const expectedCaseId of [
+      'mpq-tree-search-lazy',
+      'casc-tree-search-lazy',
+      'wz-tree-search-lazy',
+    ]) {
+      const searchPhase = await waitForArchiveAcceptanceStage('awaiting-archive-search-picker')
+      const search = searchPhase?.archiveAcceptance
+      if (
+        search?.caseId !== expectedCaseId ||
+        search?.stage !== 'search-picker' ||
+        typeof search?.container !== 'string' ||
+        typeof search?.query !== 'string' ||
+        typeof search?.requiredEntry !== 'string' ||
+        typeof search?.selectedUri !== 'string' ||
+        !search.selectedUri.startsWith('modkit-container:')
+      ) {
+        throw new Error(`Wave 2A ${expectedCaseId} did not publish a complete visible-search phase`)
+      }
+      const observation = await observeAndSelectArchiveSearch(page, search)
+      writeArchiveSearchAck({ ...search, ...observation })
+      receipt.archiveAcceptance.searches ??= []
+      receipt.archiveAcceptance.searches.push({
+        caseId: expectedCaseId,
+        ...portableReceiptValue({ ...search, ...observation }),
+      })
+    }
+    const sourcePhase = await waitForArchiveAcceptanceStage('awaiting-wte70-source-observation')
+    const source = sourcePhase?.archiveAcceptance?.source
+    const target = sourcePhase?.archiveAcceptance?.target
+    if (typeof source !== 'string' || typeof target !== 'string') {
+      throw new Error('Wave 2A source Save As barrier has no portable source/target names')
+    }
+    const sourceObservation = await observeArchiveAcceptanceEditor(port, {
+      stage: 'source-open',
+      source,
+      target,
+    })
+    const nativeUserCommand = await attemptNativeSaveAs(page)
+    writeArchiveAcceptanceAck('source-observed', source, target, nativeUserCommand)
+    const targetPhase = await waitForArchiveAcceptanceStage('awaiting-wte70-target-observation')
+    if (
+      targetPhase?.archiveAcceptance?.source !== source ||
+      targetPhase?.archiveAcceptance?.target !== target
+    ) {
+      throw new Error('Wave 2A target Save As barrier changed its source/target identity')
+    }
+    const targetObservation = await observeArchiveAcceptanceEditor(port, {
+      stage: 'target-reopen',
+      source,
+      target,
+    })
+    writeArchiveAcceptanceAck('target-observed', source, target)
+    receipt.archiveAcceptance.externalSaveAs = {
+      bridge: 'live-custom-document-save-as',
+      nativeUserCommand,
+      sourceObservation,
+      targetObservation,
+    }
+    const armodMemoryStart = await waitForArchiveAcceptanceStage(
+      'awaiting-armod-external-memory-start',
+    )
+    const armodStartBoundary = armodMemoryStart?.archiveAcceptance
+    if (
+      armodStartBoundary?.caseId !== 'armod-open' ||
+      armodStartBoundary?.stage !== 'armod-memory-sampling-start' ||
+      armodStartBoundary?.artifactSha256 !== receipt.artifact.sha256 ||
+      armodStartBoundary?.collector !== 'Win32_Process' ||
+      armodStartBoundary?.requestedSampleIntervalMs !== armodProcessTreeRequestedSampleIntervalMs
+    ) {
+      throw new Error('Wave 2A ARmod external-memory start barrier is not artifact-bound')
+    }
+    const armodMemorySampler = startArmodProcessTreeMemorySampler(port)
+    const armodStartAcknowledgement = armodMemorySampler.startAcknowledgement()
+    writeArmodProcessTreeMemoryAck('armod-memory-sampling-start', armodStartAcknowledgement)
+    if (armodStartAcknowledgement.verdict !== 'pass') {
+      throw new Error(
+        `Wave 2A ARmod external process-tree memory sampling is unavailable: ${armodStartAcknowledgement.errors.join('; ')}`,
+      )
+    }
+    try {
+      const armodMemoryStop = await waitForArchiveAcceptanceStage(
+        'awaiting-armod-external-memory-stop',
+      )
+      const armodStopBoundary = armodMemoryStop?.archiveAcceptance
+      if (
+        armodStopBoundary?.caseId !== 'armod-open' ||
+        armodStopBoundary?.stage !== 'armod-memory-sampling-stop' ||
+        armodStopBoundary?.artifactSha256 !== receipt.artifact.sha256 ||
+        armodStopBoundary?.collector !== 'Win32_Process' ||
+        armodStopBoundary?.requestedSampleIntervalMs !== armodProcessTreeRequestedSampleIntervalMs
+      ) {
+        throw new Error('Wave 2A ARmod external-memory stop barrier is not artifact-bound')
+      }
+      const armodStopAcknowledgement = armodMemorySampler.stop()
+      writeArmodProcessTreeMemoryAck('armod-memory-sampling-stop', armodStopAcknowledgement)
+      if (armodStopAcknowledgement.verdict !== 'pass') {
+        throw new Error(
+          `Wave 2A ARmod external process-tree memory exceeded its ${armodProcessTreeMemoryDeltaCeilingBytes}-byte ceiling or sampling failed: ${armodStopAcknowledgement.errors.join('; ')}`,
+        )
+      }
+      receipt.archiveAcceptance.externalArmodMemory = portableReceiptValue({
+        startAcknowledgement: armodStartAcknowledgement,
+        stopAcknowledgement: armodStopAcknowledgement,
+      })
+    } catch (error) {
+      armodMemorySampler.stop()
+      throw error
+    }
   }
   packageGatePhase = await waitForPackageInstallGatePhase(generation, 'complete')
 
@@ -2004,6 +2727,77 @@ async function launchGeneration(generation) {
       throw new Error('A8 archive-mpq did not prove unchanged bytes after read-only close')
     }
     receipt.formatSmoke.verdict = 'pass'
+    const archive = packageGatePhase.archiveAcceptance
+    const archiveCases = Array.isArray(archive?.cases) ? archive.cases : []
+    if (
+      archive?.kind !== 'x3.vscode-installed-archive-acceptance' ||
+      archive?.schemaVersion !== 1 ||
+      archive?.artifactSha256 !== receipt.artifact.sha256 ||
+      archive?.verdict !== 'pass' ||
+      JSON.stringify(archive?.expectedCases) !== JSON.stringify(archiveAcceptanceCaseIds) ||
+      !Array.isArray(archive?.failures) ||
+      archive.failures.length !== 0 ||
+      JSON.stringify(archiveCases.map(item => item?.caseId)) !==
+        JSON.stringify(archiveAcceptanceCaseIds)
+    ) {
+      throw new Error('Wave 2A product-side final receipt is incomplete or mismatched')
+    }
+    assertExactArchiveEvidence(archiveCases)
+    const saveAs = archiveCases.find(item => item?.caseId === 'wte70-save-as-reopen')
+    const searches = archiveCases.filter(item =>
+      ['mpq-tree-search-lazy', 'casc-tree-search-lazy', 'wz-tree-search-lazy'].includes(
+        item?.caseId,
+      ),
+    )
+    if (
+      searches.length !== 3 ||
+      searches.some(
+        item =>
+          item?.evidence?.searchCommand !== 'modkit.searchContainer' ||
+          item?.evidence?.uiPickerObserved !== true ||
+          item?.evidence?.inputBoxObserved !== true ||
+          item?.evidence?.quickPickObserved !== true ||
+          item?.evidence?.pickedLabel !== item?.evidence?.requiredEntry ||
+          typeof item?.evidence?.selectedUri !== 'string' ||
+          item?.evidence?.selectedRoute !== 'modkit-container' ||
+          item?.evidence?.resultOnly !== false,
+      )
+    ) {
+      throw new Error('Wave 2A registered search UI/QuickPick journey is not externally proven')
+    }
+    if (
+      saveAs?.verdict !== 'pass' ||
+      saveAs?.evidence?.bridge !== 'live-custom-document-save-as' ||
+      saveAs?.evidence?.providerMethod !== 'CustomEditorProvider.saveCustomDocumentAs' ||
+      saveAs?.evidence?.acceptanceGated !== true ||
+      saveAs?.evidence?.cleanCopy !== false ||
+      saveAs?.evidence?.nativeWriterProof !== true ||
+      saveAs?.evidence?.nativeUserCommandProof !== false ||
+      saveAs?.evidence?.classification !== 'installed-acceptance-native-writer-save-as' ||
+      saveAs?.evidence?.elapsedScope !== 'save-as-through-cdp-reopen' ||
+      saveAs?.evidence?.sourceObservedByCdp !== true ||
+      saveAs?.evidence?.targetObservedByCdp !== true ||
+      saveAs?.evidence?.sourceUnchanged !== true ||
+      saveAs?.evidence?.saved?.sha256 === saveAs?.evidence?.source?.sha256 ||
+      saveAs?.evidence?.nativeWriterReceipt?.kind !== 'mpq-native-export-receipt-v1' ||
+      saveAs?.evidence?.nativeWriterReceipt?.strategy !== 'whole-archive-save-as-fixed-slots' ||
+      saveAs?.evidence?.nativeWriterReceipt?.archiveByteIdentity !== 'changed' ||
+      !Array.isArray(saveAs?.evidence?.nativeWriterReceipt?.changed) ||
+      saveAs.evidence.nativeWriterReceipt.changed.some(
+        item => item?.path === 'MapScript.galaxy',
+      ) !== true ||
+      typeof saveAs?.evidence?.elapsedMs !== 'number' ||
+      saveAs.evidence.elapsedMs >= 60_000 ||
+      typeof saveAs?.evidence?.saveOperationElapsedMs !== 'number' ||
+      saveAs.evidence.saveOperationElapsedMs < 0 ||
+      saveAs.evidence.saveOperationElapsedMs > saveAs.evidence.elapsedMs
+    ) {
+      throw new Error('Wave 2A WTE70 live Save As/reopen evidence is incomplete')
+    }
+    receipt.archiveAcceptance.artifactSha256 = archive.artifactSha256
+    receipt.archiveAcceptance.cases = portableReceiptValue(archiveCases)
+    receipt.archiveAcceptance.failures = portableReceiptValue(archive.failures)
+    receipt.archiveAcceptance.verdict = 'pass'
   }
 
   const runReceipt = {
@@ -2028,6 +2822,7 @@ async function launchGeneration(generation) {
       external: packageGateExternal,
     },
     formatSmoke: generation === 3 ? receipt.formatSmoke : null,
+    archiveAcceptance: generation === 3 ? receipt.archiveAcceptance : null,
     corruptInput,
   }
   receipt.runs.push(runReceipt)
