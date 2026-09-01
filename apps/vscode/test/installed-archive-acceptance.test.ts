@@ -177,13 +177,14 @@ const passingEvidence = (caseId: (typeof INSTALLED_ARCHIVE_ACCEPTANCE_CASE_IDS)[
           requestedSampleIntervalMs: 25,
           matchedRootPids: [101],
           descendantPids: [102],
-          sampleCount: 2,
+          sampleCount: 3,
           samples: [
             { timestampMs: 1_000, workingSetBytes: 1, privateBytes: 1 },
             { timestampMs: 1_025, workingSetBytes: 1, privateBytes: 1 },
+            { timestampMs: 1_050, workingSetBytes: 1, privateBytes: 1 },
           ],
           observedCadence: {
-            intervalCount: 1,
+            intervalCount: 2,
             minIntervalMs: 25,
             maxIntervalMs: 25,
             averageIntervalMs: 25,
