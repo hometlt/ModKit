@@ -3171,21 +3171,38 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         )
       }
       const descriptor = await opened.session?.descriptor()
-      const identity = formatSmokeObject(
+      const codecIdentity = formatSmokeObject(
         descriptor !== undefined && 'identity' in descriptor ? descriptor.identity : undefined,
         'ARmod selected detection identity',
       )
+      /*
+       * The descriptor's identity names the codec and the format. What binds the route to the
+       * package installed in this profile are the bytes on disk: the contribution manifest that
+       * declares the codec, and the range codec its variant names as the entrypoint.
+       */
+      const installedRouteDigest = (relative: string) =>
+        `sha256:${createHash('sha256')
+          .update(
+            readFileSync(
+              join(installedWarzoneRoot.root, ...relative.replace(/^\.\//u, '').split('/')),
+            ),
+          )
+          .digest('hex')}`
+      const identity = Object.freeze({
+        formatId: codecIdentity.formatId,
+        codecId: codecIdentity.codecId,
+        manifestDigest: installedRouteDigest(
+          INSTALLED_ARCHIVE_AUTHORITIES.armod.route.contributionManifest,
+        ),
+        artifactDigest: installedRouteDigest(INSTALLED_ARCHIVE_AUTHORITIES.armod.route.entrypoint),
+      })
       if (
         identity.formatId !== 'warzone-wz' ||
         identity.manifestDigest !== INSTALLED_ARCHIVE_AUTHORITIES.armod.route.manifestDigest ||
         identity.artifactDigest !== INSTALLED_ARCHIVE_AUTHORITIES.armod.route.artifactDigest
       ) {
         throw new TypeError(
-          `ARmod selected detection identity does not match installed authority: ${JSON.stringify({
-            formatId: identity.formatId,
-            manifestDigest: identity.manifestDigest,
-            artifactDigest: identity.artifactDigest,
-          })}`,
+          `ARmod selected detection identity does not match installed authority: ${JSON.stringify(identity)}`,
         )
       }
       armodEvidence = Object.freeze({

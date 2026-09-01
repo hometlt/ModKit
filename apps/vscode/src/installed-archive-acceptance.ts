@@ -114,8 +114,18 @@ export const INSTALLED_ARCHIVE_AUTHORITIES = Object.freeze({
        */
       variantId: 'portable',
       entrypoint: './src/warzone-wz/range-codec.js',
+      contributionManifest: './contributions/codec-warzone-wz.json',
+      /*
+       * Digests of the two installed files this route runs, taken from the extension root the
+       * offline release materialized — the contribution manifest that declares the codec, and the
+       * range codec both of its variants name as their entrypoint.
+       *
+       * They are deliberately not the loader's internal artifact/manifest digests: those live in
+       * the host's detection-selection record, which `SubjectOpenedSnapshot` does not carry, so an
+       * installed consumer cannot observe them and an assertion on them could never hold.
+       */
       manifestDigest: 'sha256:9f09effbbae1ee1e9755619cc250085dd5581cee395154d4f44d21055d733d20',
-      artifactDigest: 'sha256:f68011827cbc50bff184910c78776c6ffae39d4607f2827c77d6af7782556db9',
+      artifactDigest: 'sha256:0cdc351d13ee42fc6487a6d85226d93ea15aa4006148aa4edd40cfee5f61805c',
       /*
        * The manifest of the Warzone package this release actually installs — the base64 entry
        * `copyEmbeddedFiles` writes verbatim out of
