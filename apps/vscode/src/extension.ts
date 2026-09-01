@@ -3164,7 +3164,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         selected.contributionId !== INSTALLED_ARCHIVE_AUTHORITIES.armod.route.contributionId ||
         selected.variantId !== INSTALLED_ARCHIVE_AUTHORITIES.armod.route.variantId
       ) {
-        throw new TypeError(`ARmod selected ${selected.contributionId}/${selected.variantId}`)
+        throw new TypeError(
+          `ARmod selected ${selected.contributionId}/${selected.variantId}, not ` +
+            `${INSTALLED_ARCHIVE_AUTHORITIES.armod.route.contributionId}/` +
+            `${INSTALLED_ARCHIVE_AUTHORITIES.armod.route.variantId}`,
+        )
       }
       const descriptor = await opened.session?.descriptor()
       const identity = formatSmokeObject(
@@ -3176,7 +3180,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         identity.manifestDigest !== INSTALLED_ARCHIVE_AUTHORITIES.armod.route.manifestDigest ||
         identity.artifactDigest !== INSTALLED_ARCHIVE_AUTHORITIES.armod.route.artifactDigest
       ) {
-        throw new TypeError('ARmod selected detection identity does not match installed authority')
+        throw new TypeError(
+          `ARmod selected detection identity does not match installed authority: ${JSON.stringify({
+            formatId: identity.formatId,
+            manifestDigest: identity.manifestDigest,
+            artifactDigest: identity.artifactDigest,
+          })}`,
+        )
       }
       armodEvidence = Object.freeze({
         selected,
@@ -3200,7 +3210,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         inspection.metadataBytesRead !== 65_557
       ) {
         throw new TypeError(
-          'ARmod installed inspect did not preserve metadata-first authority facts',
+          `ARmod installed inspect did not preserve metadata-first authority facts: ${JSON.stringify(
+            {
+              inspectionMode: inspection.inspectionMode,
+              sourceBytes: inspection.sourceBytes,
+              metadataBytesRead: inspection.metadataBytesRead,
+            },
+          )}`,
         )
       }
     } catch (error) {

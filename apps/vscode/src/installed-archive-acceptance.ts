@@ -106,7 +106,13 @@ export const INSTALLED_ARCHIVE_AUTHORITIES = Object.freeze({
     route: Object.freeze({
       extensionId: 'wz2100project/warzone-2100',
       contributionId: 'modkit/warzone-wz',
-      variantId: 'trusted-node',
+      /*
+       * The installed editor runs codecs worker-brokered, so it selects the contribution's
+       * `portable` variant — not the `trusted-in-process` one a CLI composition would take. Both
+       * variants declare the same range codec as their entrypoint, so the metadata-first facts
+       * below are the same code either way.
+       */
+      variantId: 'portable',
       entrypoint: './src/warzone-wz/range-codec.js',
       manifestDigest: 'sha256:9f09effbbae1ee1e9755619cc250085dd5581cee395154d4f44d21055d733d20',
       artifactDigest: 'sha256:f68011827cbc50bff184910c78776c6ffae39d4607f2827c77d6af7782556db9',

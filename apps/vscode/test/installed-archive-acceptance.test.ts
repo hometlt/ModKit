@@ -150,7 +150,7 @@ const passingEvidence = (caseId: (typeof INSTALLED_ARCHIVE_ACCEPTANCE_CASE_IDS)[
       selected: {
         extensionId: 'wz2100project/warzone-2100',
         contributionId: 'modkit/warzone-wz',
-        variantId: 'trusted-node',
+        variantId: INSTALLED_ARCHIVE_AUTHORITIES.armod.route.variantId,
       },
       selectedRoute: [{ formatId: 'warzone-wz', contributionId: 'modkit/warzone-wz' }],
       externalProcessTreeMemory: {
