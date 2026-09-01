@@ -734,11 +734,22 @@ async function waitForFormatSmokeCurrent(operationRevision, timeoutMs = 180_000)
   )
 }
 
-async function waitForArchiveAcceptanceStage(state, timeoutMs = 180_000) {
+/*
+ * The three archive searches publish the same `awaiting-archive-search-picker` state one after the
+ * other, and the product does not clear it between them. Waiting on the state alone therefore
+ * answers the second and third search with the phase the previous one already left behind, so a
+ * caller that knows which case it is waiting for must say so and be answered only by that case.
+ */
+async function waitForArchiveAcceptanceStage(state, expectedCase = undefined, timeoutMs = 180_000) {
   return await waitFor(
     () => {
       const phase = readPackageInstallGateReceipt()?.phases?.find?.(item => item?.generation === 3)
-      return phase?.state === state ? phase : undefined
+      if (phase?.state !== state) return undefined
+      if (expectedCase === undefined) return phase
+      const archive = phase.archiveAcceptance
+      return archive?.caseId === expectedCase.caseId && archive?.stage === expectedCase.stage
+        ? phase
+        : undefined
     },
     { timeoutMs, stepMs: 500 },
   )
@@ -2624,7 +2635,10 @@ async function launchGeneration(generation) {
       'casc-tree-search-lazy',
       'wz-tree-search-lazy',
     ]) {
-      const searchPhase = await waitForArchiveAcceptanceStage('awaiting-archive-search-picker')
+      const searchPhase = await waitForArchiveAcceptanceStage('awaiting-archive-search-picker', {
+        caseId: expectedCaseId,
+        stage: 'search-picker',
+      })
       const search = searchPhase?.archiveAcceptance
       if (
         search?.caseId !== expectedCaseId ||
