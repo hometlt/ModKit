@@ -3066,7 +3066,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     if (
       installedManifestSha256 !== INSTALLED_ARCHIVE_AUTHORITIES.armod.route.installedManifestSha256
     ) {
-      throw new TypeError('ARmod installed package manifest does not match its pinned authority')
+      throw new TypeError(
+        `ARmod installed package manifest ${installedManifestSha256} does not match its pinned ` +
+          `authority ${INSTALLED_ARCHIVE_AUTHORITIES.armod.route.installedManifestSha256}`,
+      )
     }
     const installedManifest = formatSmokeObject(
       JSON.parse(installedManifestBytes.toString('utf8')),

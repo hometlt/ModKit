@@ -110,8 +110,15 @@ export const INSTALLED_ARCHIVE_AUTHORITIES = Object.freeze({
       entrypoint: './src/warzone-wz/range-codec.js',
       manifestDigest: 'sha256:9f09effbbae1ee1e9755619cc250085dd5581cee395154d4f44d21055d733d20',
       artifactDigest: 'sha256:f68011827cbc50bff184910c78776c6ffae39d4607f2827c77d6af7782556db9',
+      /*
+       * The manifest of the Warzone package this release actually installs — the base64 entry
+       * `copyEmbeddedFiles` writes verbatim out of
+       * `generated/offline-release/warzone-2100-0.1.0.bundle.json`. It was last re-pinned when that
+       * bundle was refreshed; a stale value here means the route is being proved against a package
+       * the product no longer ships.
+       */
       installedManifestSha256:
-        'sha256:777d236663780b6f327e60bd014be9eab09a3efb7921c2a1353c0bf84255f306',
+        'sha256:231e2d27c9168bb5f8b7254a5ee04b8c2696591eae2bef4e6e3ecef7c2091286',
     }),
   }),
 })
