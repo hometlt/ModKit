@@ -2501,6 +2501,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         readonly folder?: unknown
         readonly indexedFiles?: unknown
         readonly workspaceEffect?: unknown
+        readonly state?: unknown
+        readonly code?: unknown
+        readonly failedStep?: unknown
+        readonly message?: unknown
       }
       const indexedFiles = browseResult.indexedFiles
       if (
@@ -2511,7 +2515,24 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         (browseResult.workspaceEffect !== 'added' &&
           browseResult.workspaceEffect !== 'already-present')
       ) {
-        throw new TypeError(`${caseId} browse command did not publish an Explorer workspace effect`)
+        /*
+         * The browse command answers a refusal with the same shape it answers a folder with, so
+         * carry what it actually said: a receipt that only says "no workspace effect" cannot tell
+         * a refused container from an empty index or a workspace that declined the folder.
+         */
+        throw new TypeError(
+          `${caseId} browse command did not publish an Explorer workspace effect: ` +
+            JSON.stringify({
+              state: browseResult.state,
+              code: browseResult.code,
+              failedStep: browseResult.failedStep,
+              message: browseResult.message,
+              indexedFiles: browseResult.indexedFiles,
+              workspaceEffect: browseResult.workspaceEffect,
+              folder:
+                browseResult.folder instanceof vscode.Uri ? 'uri' : typeof browseResult.folder,
+            }),
+        )
       }
       // This is the registered `modkit-container:` FileSystemProvider, not an internal index.
       const rootEntries = await vscode.workspace.fs.readDirectory(browseResult.folder)
