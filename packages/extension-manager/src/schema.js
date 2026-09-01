@@ -36,6 +36,13 @@ function optionalText(value, label) {
   return value === undefined ? undefined : text(value, label)
 }
 
+function base64Text(value, label) {
+  if (typeof value !== 'string') {
+    fail('extension-manager/schema-invalid', `${label} must be a string`)
+  }
+  return value
+}
+
 function stringList(value, label) {
   if (!Array.isArray(value)) fail('extension-manager/schema-invalid', `${label} must be a list`)
   return Object.freeze(value.map((item, index) => text(item, `${label}[${index}]`)))
@@ -192,7 +199,7 @@ export function normalizeRepositoryManifest(value) {
         Object.fromEntries(
           Object.entries(rawFiles).map(([name, encoded]) => [
             text(name, `extensions[${index}].files key`),
-            text(encoded, `extensions[${index}].files.${name}`),
+            base64Text(encoded, `extensions[${index}].files.${name}`),
           ]),
         ),
       )

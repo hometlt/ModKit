@@ -498,6 +498,8 @@ test('signed HTTP catalog and portable repository materialize without network on
   }
 
   assert.equal(verifyExtensionCatalogSignature(catalog, trustedPublicKeys), true)
+  assert.equal(verifyExtensionCatalogSignature(catalog, { [keyId]: publicKey }), true)
+  assert.equal(verifyExtensionCatalogSignature(catalog, new Map([[keyId, publicKey]])), true)
   const mutated = structuredClone(catalog)
   mutated.packages[0].displayName = 'Mutated'
   assert.equal(verifyExtensionCatalogSignature(mutated, trustedPublicKeys), false)
@@ -791,6 +793,94 @@ test('linked store confines every public root to its declared repository', async
     { code: 'extension-manager/path-escape' },
   )
   assert.equal(existsSync(join(privateState, 'packages.v1.json')), false)
+})
+
+test('portable store accepts canonical empty base64 for zero-byte embedded files', async t => {
+  const fixture = await temporaryDirectory(t)
+  const privateState = join(fixture, 'private')
+  const expectedId = 'example.publisher/codec'
+  const bytes = Buffer.from(
+    JSON.stringify({
+      schemaVersion: 1,
+      extensions: [
+        {
+          id: expectedId,
+          files: {
+            'empty.dat': '',
+            'package.json': Buffer.from(packageJson(expectedId)).toString('base64'),
+          },
+        },
+      ],
+    }),
+  )
+  const store = createNodeArtifactStore({ root: privateState })
+
+  const installed = await store.install({
+    entry: {
+      id: 'example.publisher/toolkit',
+      displayName: 'Example toolkit',
+      publisher: 'example.publisher',
+      version: '1.0.0',
+      extensions: [expectedId],
+      source: {
+        kind: 'bundle',
+        uri: 'memory://registry/toolkit.json',
+        trust: { mode: 'signed' },
+      },
+      remote: false,
+      trusted: true,
+    },
+    artifact: { kind: 'portable-repository', bytes },
+    integrity: `sha256:${createHash('sha256').update(bytes).digest('hex')}`,
+  })
+
+  assert.equal((await readFile(join(installed.roots[0].root, 'empty.dat'))).byteLength, 0)
+})
+
+test('portable store validates large embedded base64 without regex stack overflow', async t => {
+  const fixture = await temporaryDirectory(t)
+  const privateState = join(fixture, 'private')
+  const expectedId = 'example.publisher/codec'
+  const large = Buffer.alloc(1024 * 1024, 7)
+  const bytes = Buffer.from(
+    JSON.stringify({
+      schemaVersion: 1,
+      extensions: [
+        {
+          id: expectedId,
+          files: {
+            'large.bin': large.toString('base64'),
+            'package.json': Buffer.from(packageJson(expectedId)).toString('base64'),
+          },
+        },
+      ],
+    }),
+  )
+  const store = createNodeArtifactStore({ root: privateState })
+
+  const installed = await store.install({
+    entry: {
+      id: 'example.publisher/toolkit',
+      displayName: 'Example toolkit',
+      publisher: 'example.publisher',
+      version: '1.0.0',
+      extensions: [expectedId],
+      source: {
+        kind: 'bundle',
+        uri: 'memory://registry/toolkit.json',
+        trust: { mode: 'signed' },
+      },
+      remote: false,
+      trusted: true,
+    },
+    artifact: { kind: 'portable-repository', bytes },
+    integrity: `sha256:${createHash('sha256').update(bytes).digest('hex')}`,
+  })
+
+  assert.equal(
+    (await readFile(join(installed.roots[0].root, 'large.bin'))).byteLength,
+    large.length,
+  )
 })
 
 test('managed update retains the previous immutable roots for crash recovery and later GC', async t => {

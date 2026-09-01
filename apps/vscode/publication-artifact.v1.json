@@ -5,10 +5,12 @@
   "shellEntries": [
     "app.css",
     "extension.cjs",
+    "format-smoke.v1.json",
     "modkit-ui.css",
     "webview.js",
     "worker-bootstrap.js"
   ],
+  "managedPackageEntries": ["managed-packages"],
   "packagedCodecRoots": [
     "extensions/archives",
     "extensions/audio",

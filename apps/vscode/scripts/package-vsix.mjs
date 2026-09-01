@@ -21,6 +21,8 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { inflateRawSync } from 'node:zlib'
 
+import { managedPackagesDirectory, verifyVirtualOfflineRelease } from './offline-release.mjs'
+
 const here = dirname(fileURLToPath(import.meta.url))
 const appRoot = resolve(here, '..')
 const rawArguments = process.argv.slice(2)
@@ -66,12 +68,17 @@ function vsixEntries(bytes) {
     const nameLength = bytes.readUInt16LE(cursor + 28)
     const extraLength = bytes.readUInt16LE(cursor + 30)
     const commentLength = bytes.readUInt16LE(cursor + 32)
+    const externalAttributes = bytes.readUInt32LE(cursor + 38)
     const localOffset = bytes.readUInt32LE(cursor + 42)
     const name = bytes.subarray(cursor + 46, cursor + 46 + nameLength).toString('utf8')
-    entries.set(name, { compression, compressedSize, localOffset })
+    entries.set(name, { compression, compressedSize, externalAttributes, localOffset })
     cursor += 46 + nameLength + extraLength + commentLength
   }
   return entries
+}
+
+function zipEntryIsSymlink(entry) {
+  return ((entry.externalAttributes >>> 16) & 0xf000) === 0xa000
 }
 
 function readVsixEntry(bytes, entries, name) {
@@ -100,6 +107,9 @@ function verifyCandidate(candidate) {
   if (manifest.name !== 'modkit-vscode' || manifest.publisher !== 'modkit') {
     throw new Error('VSIX candidate manifest is not the official modkit.modkit-vscode extension')
   }
+  if (!entries.has('extension/dist-app/format-smoke.v1.json')) {
+    throw new Error('VSIX candidate is missing the generated A8 format smoke inventory')
+  }
   for (const root of [
     'archives',
     'audio',
@@ -121,6 +131,19 @@ function verifyCandidate(candidate) {
       throw new Error(`VSIX candidate is missing required bundled dependency @modkit/${dependency}`)
     }
   }
+  const managedPrefix = `extension/dist-app/${managedPackagesDirectory}/`
+  for (const [name, entry] of entries) {
+    if (name.startsWith(managedPrefix) && zipEntryIsSymlink(entry)) {
+      throw new Error(`VSIX candidate managed package entry must not be a link: ${name}`)
+    }
+  }
+  const managedFiles = [...entries.keys()]
+    .filter(name => name.startsWith(managedPrefix) && !name.endsWith('/'))
+    .map(name => name.slice(managedPrefix.length))
+    .sort()
+  verifyVirtualOfflineRelease(managedFiles, name =>
+    readVsixEntry(bytes, entries, `${managedPrefix}${name}`),
+  )
 }
 
 mkdirSync(dirname(artifactPath), { recursive: true })

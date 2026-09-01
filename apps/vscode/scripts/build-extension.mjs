@@ -32,6 +32,12 @@ import { builtinModules } from 'node:module'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import {
+  copyOfflineReleaseToDist,
+  managedPackagesDirectory,
+  verifyPackagedOfflineRelease,
+} from './offline-release.mjs'
+
 const here = dirname(fileURLToPath(import.meta.url))
 const appRoot = resolve(here, '..')
 const repoRoot = resolve(appRoot, '..', '..')
@@ -45,6 +51,7 @@ if (
   publicationInventory.schemaVersion !== 1 ||
   publicationInventory.artifactKind !== 'deterministic-shell' ||
   !Array.isArray(publicationInventory.shellEntries) ||
+  !Array.isArray(publicationInventory.managedPackageEntries) ||
   !Array.isArray(publicationInventory.packagedCodecRoots)
 ) {
   throw new TypeError('VS Code publication artifact inventory must be deterministic-shell v1')
@@ -52,6 +59,7 @@ if (
 
 function assertPublicationArtifact(output) {
   const shellEntries = [...publicationInventory.shellEntries].sort()
+  const managedPackageEntries = [...publicationInventory.managedPackageEntries].sort()
   const packagedCodecRoots = [...publicationInventory.packagedCodecRoots].sort()
   if (
     shellEntries.some(
@@ -59,6 +67,14 @@ function assertPublicationArtifact(output) {
         typeof entry !== 'string' ||
         entry.length === 0 ||
         (index > 0 && entry === shellEntries[index - 1]),
+    ) ||
+    managedPackageEntries.some(
+      (entry, index) =>
+        typeof entry !== 'string' ||
+        entry.length === 0 ||
+        entry.includes('/') ||
+        entry.includes('\\') ||
+        (index > 0 && entry === managedPackageEntries[index - 1]),
     ) ||
     packagedCodecRoots.some(
       (entry, index) =>
@@ -83,8 +99,17 @@ function assertPublicationArtifact(output) {
     }
     rootDirectories.set(root, segments[1])
   }
+  if (managedPackageEntries.length !== 1 || managedPackageEntries[0] !== managedPackagesDirectory) {
+    throw new TypeError(
+      `VS Code publication artifact must name exactly ${managedPackagesDirectory}`,
+    )
+  }
   const expectedEntries = [
-    ...new Set([...shellEntries, ...rootDirectories.keys()].map(entry => entry.split('/')[0])),
+    ...new Set(
+      [...shellEntries, ...managedPackageEntries, ...rootDirectories.keys()].map(
+        entry => entry.split('/')[0],
+      ),
+    ),
   ].sort()
   const actualEntries = readdirSync(output).sort()
   if (JSON.stringify(actualEntries) !== JSON.stringify(expectedEntries)) {
@@ -109,6 +134,7 @@ function assertPublicationArtifact(output) {
       throw new Error(`VS Code packaged codec root is missing: ${root}`)
     }
   }
+  verifyPackagedOfflineRelease(output)
 }
 
 function packageSegments(name) {
@@ -452,7 +478,9 @@ async function buildInto(output, syncManifest) {
   // Shell chrome only: the shipped stylesheet has no layout for the `workbench` parts on purpose, so
   // the host places them. Everything else the page draws comes from `modkit-ui.css`.
   cpSync(join(appRoot, 'app.css'), join(output, 'app.css'))
+  cpSync(join(appRoot, 'generated', 'format-smoke.v1.json'), join(output, 'format-smoke.v1.json'))
   copyBundledCodecRoots(output)
+  copyOfflineReleaseToDist({ output })
 
   // ---------------------------------------------------------------- manifest
   // Only the real output owns the manifest: a check build must not write the package it is checking.

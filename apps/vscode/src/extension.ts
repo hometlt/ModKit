@@ -13,6 +13,7 @@
  * webview is not an extension host) stays true in the running product and not only in the
  * topology.
  */
+import { existsSync, readFileSync } from 'node:fs'
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import * as vscode from 'vscode'
@@ -184,7 +185,40 @@ const GAME_DISCOVERY_BUDGET = Object.freeze({
 
 const PACKAGE_INSTALL_GATE_COMMAND = '_modkit.acceptance.packageInstallGate'
 const PACKAGE_INSTALL_GATE_ENV = 'MODKIT_VSCODE_ACCEPTANCE_PACKAGE_GATE'
+const MANAGED_PACKAGES_DIRECTORY = 'managed-packages'
+const MANAGED_RELEASE_DESCRIPTOR = 'release.v1.json'
+const MANAGED_RELEASE_CATALOG = 'catalog.v1.json'
 const SELECTED_SOURCES_KEY = 'modkit.selectedContentSources'
+
+interface PackagedManagedRegistry {
+  readonly catalogPath: string
+  readonly trustedPublicKeys: Readonly<Record<string, string>>
+}
+
+function readPackagedManagedRegistry(extensionRoot: string): PackagedManagedRegistry | undefined {
+  const releaseRoot = join(extensionRoot, 'dist-app', MANAGED_PACKAGES_DIRECTORY)
+  const descriptorPath = join(releaseRoot, MANAGED_RELEASE_DESCRIPTOR)
+  if (!existsSync(descriptorPath)) return undefined
+  const descriptor = JSON.parse(readFileSync(descriptorPath, 'utf8')) as {
+    readonly catalog?: { readonly file?: unknown }
+    readonly signing?: { readonly keyId?: unknown; readonly publicKeyPem?: unknown }
+  }
+  if (descriptor.catalog?.file !== MANAGED_RELEASE_CATALOG) {
+    throw new Error(`packaged managed catalog file must be ${MANAGED_RELEASE_CATALOG}`)
+  }
+  const keyId = descriptor.signing?.keyId
+  const publicKeyPem = descriptor.signing?.publicKeyPem
+  if (typeof keyId !== 'string' || keyId.trim() === '') {
+    throw new Error('packaged managed release signing keyId must be non-empty')
+  }
+  if (typeof publicKeyPem !== 'string' || publicKeyPem.trim() === '') {
+    throw new Error('packaged managed release public key must be non-empty PEM')
+  }
+  return Object.freeze({
+    catalogPath: join(releaseRoot, MANAGED_RELEASE_CATALOG),
+    trustedPublicKeys: Object.freeze({ [keyId]: publicKeyPem }),
+  })
+}
 
 /**
  * The subject string a URI names.
@@ -746,11 +780,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   const rawConfiguredExtensions = initialConfiguration.get('extensions')
   const registrySetting = initialConfiguration.get<unknown>('extensionRegistry')
   const registryEnvironment = process.env.MODKIT_EXTENSION_REGISTRY
-  const managerSecurity = extensionManagerSecurityOptions({
-    MODKIT_EXTENSION_TRUSTED_PUBLIC_KEYS: process.env.MODKIT_EXTENSION_TRUSTED_PUBLIC_KEYS,
-    MODKIT_EXTENSION_ALLOWED_ORIGINS: process.env.MODKIT_EXTENSION_ALLOWED_ORIGINS,
-    MODKIT_EXTENSION_RAPID_POOL_ROOT: process.env.MODKIT_EXTENSION_RAPID_POOL_ROOT,
-  })
+  const packagedRegistry = readPackagedManagedRegistry(extensionRoot)
+  const managerSecurity = extensionManagerSecurityOptions(
+    {
+      MODKIT_EXTENSION_TRUSTED_PUBLIC_KEYS: process.env.MODKIT_EXTENSION_TRUSTED_PUBLIC_KEYS,
+      MODKIT_EXTENSION_ALLOWED_ORIGINS: process.env.MODKIT_EXTENSION_ALLOWED_ORIGINS,
+      MODKIT_EXTENSION_RAPID_POOL_ROOT: process.env.MODKIT_EXTENSION_RAPID_POOL_ROOT,
+    },
+    packagedRegistry?.trustedPublicKeys,
+  )
   const registry =
     typeof registrySetting === 'string' && registrySetting.trim().length > 0
       ? registrySetting.trim()
@@ -771,7 +809,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     trustedPublicKeys: managerSecurity.trustedPublicKeys,
     vfsOptions: managerSecurity.vfsOptions,
     ...(registry === undefined
-      ? { catalogSource: noRegistryCatalog }
+      ? packagedRegistry === undefined
+        ? { catalogSource: noRegistryCatalog }
+        : {
+            catalog: packagedRegistry.catalogPath,
+            baseDirectory: dirname(packagedRegistry.catalogPath),
+            requireSignature: true,
+          }
       : {
           catalog: registry,
           baseDirectory: workspaceFolders()[0] ?? extensionRoot,

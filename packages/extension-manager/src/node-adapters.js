@@ -1,4 +1,10 @@
-import { createHash, createPublicKey, randomUUID, verify as verifySignature } from 'node:crypto'
+import {
+  createHash,
+  createPublicKey,
+  KeyObject,
+  randomUUID,
+  verify as verifySignature,
+} from 'node:crypto'
 import {
   createReadStream,
   existsSync,
@@ -31,7 +37,6 @@ const HTTP_REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308])
 const MAX_ARTIFACT_REDIRECTS = 5
 const SOURCE_SCHEME = /^[a-z][a-z0-9+.-]*:/iu
 const WINDOWS_DRIVE = /^[a-z]:[\\/]/iu
-const BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u
 const WINDOWS_RESERVED = /^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/iu
 const textDecoder = new TextDecoder('utf-8', { fatal: true })
 
@@ -289,15 +294,26 @@ export function verifyExtensionCatalogSignature(catalogValue, trustedPublicKeys 
   const material = trustedKey(trustedPublicKeys, signature.keyId)
   if (material === undefined) return false
   let key
-  try {
-    key = createPublicKey(material)
-  } catch (cause) {
-    fail(
-      'extension-manager/trusted-key-invalid',
-      `trusted public key «${signature.keyId}» is invalid`,
-      { keyId: signature.keyId },
-      cause,
-    )
+  if (material instanceof KeyObject) {
+    if (material.type !== 'public') {
+      fail(
+        'extension-manager/trusted-key-invalid',
+        `trusted public key «${signature.keyId}» is not a public key`,
+        { keyId: signature.keyId, type: material.type },
+      )
+    }
+    key = material
+  } else {
+    try {
+      key = createPublicKey(material)
+    } catch (cause) {
+      fail(
+        'extension-manager/trusted-key-invalid',
+        `trusted public key «${signature.keyId}» is invalid`,
+        { keyId: signature.keyId },
+        cause,
+      )
+    }
   }
   if (key.asymmetricKeyType !== 'ed25519') {
     fail(
@@ -1062,8 +1078,33 @@ function installedOf(root, value) {
 }
 
 function decodeEmbedded(encoded, label) {
-  if (typeof encoded !== 'string' || !BASE64.test(encoded)) {
+  if (typeof encoded !== 'string') {
     fail('extension-manager/artifact-base64-invalid', `${label} is not canonical base64`)
+  }
+  if (encoded.length % 4 !== 0) {
+    fail('extension-manager/artifact-base64-invalid', `${label} is not canonical base64`)
+  }
+  const padding = encoded.length - encoded.replace(/=+$/u, '').length
+  if (padding > 2 || (padding > 0 && encoded.length === padding)) {
+    fail('extension-manager/artifact-base64-invalid', `${label} is not canonical base64`)
+  }
+  const contentLength = encoded.length - padding
+  for (let index = 0; index < contentLength; index += 1) {
+    const code = encoded.charCodeAt(index)
+    const valid =
+      (code >= 65 && code <= 90) ||
+      (code >= 97 && code <= 122) ||
+      (code >= 48 && code <= 57) ||
+      code === 43 ||
+      code === 47
+    if (!valid) {
+      fail('extension-manager/artifact-base64-invalid', `${label} is not canonical base64`)
+    }
+  }
+  for (let index = contentLength; index < encoded.length; index += 1) {
+    if (encoded.charCodeAt(index) !== 61) {
+      fail('extension-manager/artifact-base64-invalid', `${label} is not canonical base64`)
+    }
   }
   const bytes = Buffer.from(encoded, 'base64')
   if (bytes.toString('base64') !== encoded) {

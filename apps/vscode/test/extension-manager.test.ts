@@ -521,6 +521,46 @@ describe('VS Code extension manager environment', () => {
     expect(options.vfsOptions).toEqual({ allowedOrigins: [] })
   })
 
+  it('pins built-in release trust while keeping compatible explicit dev-registry keys', () => {
+    const builtIn = generateKeyPairSync('ed25519')
+      .publicKey.export({ type: 'spki', format: 'pem' })
+      .toString()
+    const dev = generateKeyPairSync('ed25519')
+      .publicKey.export({ type: 'spki', format: 'pem' })
+      .toString()
+
+    const options = extensionManagerSecurityOptions(
+      { MODKIT_EXTENSION_TRUSTED_PUBLIC_KEYS: JSON.stringify({ dev }) },
+      { release: builtIn },
+    )
+
+    expect(Object.keys(options.trustedPublicKeys)).toEqual(['release', 'dev'])
+    expect(
+      (options.trustedPublicKeys as Readonly<Record<string, { asymmetricKeyType?: string }>>)
+        .release?.asymmetricKeyType,
+    ).toBe('ed25519')
+    expect(
+      (options.trustedPublicKeys as Readonly<Record<string, { asymmetricKeyType?: string }>>).dev
+        ?.asymmetricKeyType,
+    ).toBe('ed25519')
+  })
+
+  it('refuses environment trust that collides with a built-in release key id', () => {
+    const builtIn = generateKeyPairSync('ed25519')
+      .publicKey.export({ type: 'spki', format: 'pem' })
+      .toString()
+    const override = generateKeyPairSync('ed25519')
+      .publicKey.export({ type: 'spki', format: 'pem' })
+      .toString()
+
+    expect(() =>
+      extensionManagerSecurityOptions(
+        { MODKIT_EXTENSION_TRUSTED_PUBLIC_KEYS: JSON.stringify({ release: override }) },
+        { release: builtIn },
+      ),
+    ).toThrow('cannot override built-in key release')
+  })
+
   it.each([
     [{ MODKIT_EXTENSION_TRUSTED_PUBLIC_KEYS: '{' }, 'must be a JSON object'],
     [
