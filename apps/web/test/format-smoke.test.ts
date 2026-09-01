@@ -113,7 +113,7 @@ const bridge = (
   },
   async openHostOnlySource(testCase) {
     onHostOnlySource(testCase)
-    await browserSourceOpen.openSc2CascEntry(sourceRequest(testCase))
+    return browserSourceOpen.openSc2CascEntry(sourceRequest(testCase))
   },
 })
 

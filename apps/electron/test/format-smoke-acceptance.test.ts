@@ -13,9 +13,7 @@ import {
 const authorityBytes = readFileSync(
   new URL('../../vscode/generated/format-smoke.v1.json', import.meta.url),
 )
-const electronAuthorityBytes = readFileSync(
-  new URL('../generated/format-smoke.v1.json', import.meta.url),
-)
+const electronAuthorityBytes = readFileSync(new URL('../format-smoke.v1.json', import.meta.url))
 const authority = JSON.parse(authorityBytes.toString('utf8')) as unknown
 const authoritySha256 = createHash('sha256').update(authorityBytes).digest('hex')
 
@@ -146,9 +144,11 @@ describe('Electron format-smoke acceptance authority', () => {
     const summary = summarizeElectronFormatSmokeAuthority(authority)
     const observations: ElectronFormatSmokeObservation[] = summary.included.map(item => {
       const boundary = boundaryFor(item.corpus.kind)
+      const codecId = routeCodec(item)
+      const parentCodecId = item.route[0]?.contributionId
       return {
         entryName: basename(item.corpus.path ?? item.id),
-        codecId: routeCodec(item),
+        ...(codecId === undefined ? {} : { codecId }),
         selectedRoute: item.route,
         bytes: item.corpus.bytes ?? 0,
         sha256: item.corpus.sha256 ?? '',
@@ -165,7 +165,7 @@ describe('Electron format-smoke acceptance authority', () => {
           ? {
               container: {
                 parentEntryName: basename(item.corpus.container ?? item.id),
-                parentCodecId: item.route[0]?.contributionId,
+                ...(parentCodecId === undefined ? {} : { parentCodecId }),
                 parentRoute: item.route.slice(0, 1),
                 entryPath: item.corpus.path ?? '',
               },
@@ -217,6 +217,7 @@ describe('Electron format-smoke acceptance authority', () => {
     const summary = summarizeElectronFormatSmokeAuthority(authority)
     const first = summary.included[0]
     if (first === undefined) throw new Error('missing included case')
+    const codecId = routeCodec(first)
     const receipt = buildElectronFormatSmokeReceipt(authority, {
       authoritySha256,
       plan: planForAuthority(),
@@ -227,7 +228,7 @@ describe('Electron format-smoke acceptance authority', () => {
       observations: [
         {
           entryName: basename(first.corpus.path ?? first.id),
-          codecId: routeCodec(first),
+          ...(codecId === undefined ? {} : { codecId }),
           bytes: first.corpus.bytes ?? 0,
           sha256: first.corpus.sha256 ?? '',
           views: [viewForStage(first.stage)],

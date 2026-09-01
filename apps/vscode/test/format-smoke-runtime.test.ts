@@ -15,6 +15,14 @@ import {
   resolveFormatSmokeCases,
   verifyFormatSmokeCorpusBeforeOpen,
 } from '../test-e2e/format-smoke-runtime.mjs'
+import type {
+  FormatSmokeContainerSource,
+  FormatSmokeFileSource,
+  FormatSmokeOpenCase,
+  FormatSmokeRouteStep,
+  FormatSmokeVerificationCase,
+  FormatSmokeWebviewObservation,
+} from '../test-e2e/format-smoke-runtime.mjs'
 
 const authority = loadFormatSmokeAuthority()
 const scratch = mkdtempSync(join(tmpdir(), 'modkit-format-smoke-runtime-'))
@@ -26,16 +34,40 @@ const roots = {
 for (const root of Object.values(roots)) mkdirSync(root, { recursive: true })
 
 const cases = resolveFormatSmokeCases(authority, roots)
-const openCase = id => {
+const openCase = (id: string): FormatSmokeOpenCase => {
   const found = cases.find(entry => entry.id === id)
   if (found?.kind !== 'open') throw new TypeError(`${id} is not an open case`)
   return found
 }
 
-const observation = (testCase, fields) => ({
+const fileCase = (id: string): FormatSmokeOpenCase & { readonly source: FormatSmokeFileSource } => {
+  const testCase = openCase(id)
+  if (testCase.source.kind !== 'file') throw new TypeError(`${id} is not a file source`)
+  return { ...testCase, source: testCase.source }
+}
+
+const containerCase = (
+  id: string,
+): FormatSmokeOpenCase & { readonly source: FormatSmokeContainerSource } => {
+  const testCase = openCase(id)
+  if (testCase.source.kind !== 'container-entry') {
+    throw new TypeError(`${id} is not a container entry source`)
+  }
+  return { ...testCase, source: testCase.source }
+}
+
+type ObservationFields = Omit<FormatSmokeWebviewObservation, 'caseId' | 'uri' | 'selectedRoute'>
+type MutableObservation = Omit<FormatSmokeWebviewObservation, 'selectedRoute'> & {
+  selectedRoute: FormatSmokeRouteStep[]
+}
+
+const observation = (
+  testCase: FormatSmokeOpenCase,
+  fields: ObservationFields,
+): MutableObservation => ({
   caseId: testCase.id,
   uri: testCase.source.uri,
-  selectedRoute: testCase.selectedRoute,
+  selectedRoute: testCase.selectedRoute.map(step => ({ ...step })),
   ...fields,
 })
 
@@ -63,14 +95,14 @@ describe('installed format-smoke runtime descriptor', () => {
       'archive-warzone-wz',
       'archive-mpq',
     ]) {
-      const testCase = openCase(id)
+      const testCase = fileCase(id)
       expect(testCase.source.kind, id).toBe('file')
       expect(testCase.source.uri, id).toBe(pathToFileURL(testCase.source.filePath).href)
     }
-    expect(openCase('archive-warzone-wz').source.filePath).toBe(
+    expect(fileCase('archive-warzone-wz').source.filePath).toBe(
       join(roots.warzoneInstallRoot, 'data', 'mp.wz'),
     )
-    expect(openCase('archive-mpq').source.filePath).toBe(
+    expect(fileCase('archive-mpq').source.filePath).toBe(
       join(roots.sc2InstallRoot, 'Maps', 'ex', 'WTE70_Madlibrarian.SC2Map'),
     )
     expect(openCase('archive-mpq').selectedRoute).toEqual([
@@ -84,15 +116,17 @@ describe('installed format-smoke runtime descriptor', () => {
 
   it('rejects an authority path that escapes its explicit root', () => {
     const escaped = structuredClone(authority)
-    escaped.cases[0].corpus.path = '../outside.dds'
+    const corpus = escaped.cases[0].corpus
+    if (!('path' in corpus)) throw new TypeError('the first fixture corpus must have a path')
+    corpus.path = '../outside.dds'
     expect(() => resolveFormatSmokeCases(escaped, roots)).toThrow(/escapes its explicit root/u)
 
-    escaped.cases[0].corpus.path = resolve(scratch, 'absolute.dds')
+    corpus.path = resolve(scratch, 'absolute.dds')
     expect(() => resolveFormatSmokeCases(escaped, roots)).toThrow(/escapes its explicit root/u)
   })
 
   it('builds exact SC2-directory CASC and Warzone base.wz container URIs', () => {
-    const casc = openCase('casc-dds')
+    const casc = containerCase('casc-dds')
     expect(casc.source).toMatchObject({
       kind: 'container-entry',
       containerKind: 'sc2-casc',
@@ -102,7 +136,7 @@ describe('installed format-smoke runtime descriptor', () => {
       formatSmokeContainerUri(roots.sc2InstallRoot, casc.source.entryPath),
     )
 
-    const pie = openCase('model-warzone-pie')
+    const pie = containerCase('model-warzone-pie')
     expect(pie.source).toMatchObject({
       kind: 'container-entry',
       containerKind: 'warzone-wz',
@@ -135,7 +169,7 @@ describe('corpus verification before open', () => {
         expectedBytes: bytes.length,
         expectedSha256: createHash('sha256').update(bytes).digest('hex'),
       },
-    }
+    } satisfies FormatSmokeVerificationCase
     await expect(verifyFormatSmokeCorpusBeforeOpen(testCase)).resolves.toMatchObject({
       caseId: 'fixture-file',
       verifiedBeforeOpen: true,
@@ -157,7 +191,7 @@ describe('corpus verification before open', () => {
         expectedBytes: bytes.length,
         expectedSha256: '0'.repeat(64),
       },
-    }
+    } satisfies FormatSmokeVerificationCase
     await expect(verifyFormatSmokeCorpusBeforeOpen(testCase)).rejects.toThrow(
       /corpus SHA-256 mismatch/u,
     )
@@ -177,7 +211,7 @@ describe('corpus verification before open', () => {
         expectedBytes: bytes.length,
         expectedSha256: createHash('sha256').update(bytes).digest('hex'),
       },
-    }
+    } satisfies FormatSmokeVerificationCase
     await expect(verifyFormatSmokeCorpusBeforeOpen(testCase)).rejects.toThrow(
       /needs a readContainerEntry callback/u,
     )
@@ -196,7 +230,9 @@ describe('pure webview stage assertions', () => {
       raster: { width: 4, height: 4, opaquePixels: 16 },
       metadata: { entryCount: 3 },
     })
-    actual.selectedRoute = [{ ...actual.selectedRoute[0], contributionId: 'wrong/dds' }]
+    const firstRoute = actual.selectedRoute[0]
+    if (firstRoute === undefined) throw new TypeError('fixture route is empty')
+    actual.selectedRoute = [{ ...firstRoute, contributionId: 'wrong/dds' }]
     expect(() => assertFormatSmokeWebviewResult(testCase, actual)).toThrow(
       /selected route mismatch/u,
     )

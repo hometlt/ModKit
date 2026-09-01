@@ -483,13 +483,18 @@ describe('VS Code extension manager state', () => {
   })
 
   it('allows reinstall when a stale static row came from runtime managed package composition', async () => {
+    const displayName = alphaV2.displayName
+    const publisher = alphaV2.publisher
+    if (displayName === undefined || publisher === undefined) {
+      throw new TypeError('the managed package fixture must have display and publisher names')
+    }
     const state = fixture({
       staticPackages: [
         {
           entry: {
             id: alphaV2.id,
-            displayName: alphaV2.displayName,
-            publisher: alphaV2.publisher,
+            displayName,
+            publisher,
             availableVersion: 'local',
             installedVersion: 'local',
             enabled: false,
