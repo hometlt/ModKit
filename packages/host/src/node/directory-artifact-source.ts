@@ -19,7 +19,11 @@ import {
   type Lease,
 } from '@modkit/sdk'
 import { normalizeVfsPath } from '@modkit/vfs'
-import { openFileArtifactSource } from './file-artifact-source.js'
+import {
+  openFileArtifactSource,
+  type FileArtifactReadTelemetry,
+  type FileArtifactStreamTelemetry,
+} from './file-artifact-source.js'
 
 const PATH_ENCODER = new TextEncoder()
 
@@ -31,6 +35,8 @@ export interface DirectoryArtifactSourceOptions {
   /** Maximum UTF-8 bytes in one logical path. */
   readonly maxPathBytes?: number
   readonly signal?: AbortSignal
+  readonly onRead?: (event: FileArtifactReadTelemetry) => void
+  readonly onStream?: (event: FileArtifactStreamTelemetry) => void
 }
 
 const DEFAULT_DIRECTORY_LIMITS = Object.freeze({
@@ -128,7 +134,9 @@ export async function openDirectoryArtifactSource(
     return normalized
   }
 
-  const resolveInside = async (logicalPath: string): Promise<{ path: string; absolute: string }> => {
+  const resolveInside = async (
+    logicalPath: string,
+  ): Promise<{ path: string; absolute: string }> => {
     const path = normalize(logicalPath)
     const candidate = resolve(root, ...path.split('/').filter(Boolean))
     let absolute: string
@@ -196,7 +204,9 @@ export async function openDirectoryArtifactSource(
               })
             }
             const entries = await readdir(requested.absolute, { withFileTypes: true })
-            for (const entry of entries.sort((left, right) => left.name.localeCompare(right.name))) {
+            for (const entry of entries.sort((left, right) =>
+              left.name.localeCompare(right.name),
+            )) {
               throwIfAborted(listSignal)
               const childPath = normalize(
                 requested.path === '' ? entry.name : `${requested.path}/${entry.name}`,
@@ -232,6 +242,8 @@ export async function openDirectoryArtifactSource(
             }
             const value = await openFileArtifactSource(child.absolute, {
               uri: childRef.uri,
+              ...(options.onRead === undefined ? {} : { onRead: options.onRead }),
+              ...(options.onStream === undefined ? {} : { onStream: options.onStream }),
               ...(openSignal === undefined ? {} : { signal: openSignal }),
             })
             return Object.freeze({ value, release: async () => undefined })
@@ -252,5 +264,9 @@ export async function openPathArtifactSource(
   const info = await stat(path)
   return info.isDirectory()
     ? openDirectoryArtifactSource(path, options)
-    : openFileArtifactSource(path, options.signal === undefined ? {} : { signal: options.signal })
+    : openFileArtifactSource(path, {
+        ...(options.signal === undefined ? {} : { signal: options.signal }),
+        ...(options.onRead === undefined ? {} : { onRead: options.onRead }),
+        ...(options.onStream === undefined ? {} : { onStream: options.onStream }),
+      })
 }

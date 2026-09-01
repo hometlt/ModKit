@@ -31,6 +31,23 @@ export interface FileArtifactSourceOptions {
   /** Overrides the source ref id/uri (default: the file: URL of the path). */
   readonly uri?: string
   readonly signal?: AbortSignal
+  /** Optional product-owned observation of completed bounded random-access reads. */
+  readonly onRead?: (event: FileArtifactReadTelemetry) => void
+  /** Optional product-owned observation of stream entry; payload chunks still report through onRead. */
+  readonly onStream?: (event: FileArtifactStreamTelemetry) => void
+}
+
+export interface FileArtifactReadTelemetry {
+  readonly uri: string
+  readonly offset: string
+  readonly requestedBytes: number
+  readonly bytes: number
+}
+
+export interface FileArtifactStreamTelemetry {
+  readonly uri: string
+  readonly offset: string
+  readonly length: string
 }
 
 export async function openFileArtifactSource(
@@ -110,7 +127,20 @@ export async function openFileArtifactSource(
         if (bytesRead === 0) break
         filled += bytesRead
       }
-      return filled === bounded ? bytes : bytes.slice(0, filled)
+      const result = filled === bounded ? bytes : bytes.slice(0, filled)
+      try {
+        options.onRead?.(
+          Object.freeze({
+            uri,
+            offset: String(offset),
+            requestedBytes: length,
+            bytes: result.byteLength,
+          }),
+        )
+      } catch {
+        // Observation is never allowed to turn a successful product read into a failure.
+      }
+      return result
     } finally {
       await handle?.close()
     }
@@ -125,6 +155,13 @@ export async function openFileArtifactSource(
     async *stream(range, signal) {
       const start = range?.offset ?? 0n
       const total = range?.length ?? (snapshot.size > start ? snapshot.size - start : 0n)
+      try {
+        options.onStream?.(
+          Object.freeze({ uri, offset: String(start), length: String(total) }),
+        )
+      } catch {
+        // Observation is never allowed to turn a successful product stream into a failure.
+      }
       let consumed = 0n
       while (consumed < total) {
         const remaining = total - consumed

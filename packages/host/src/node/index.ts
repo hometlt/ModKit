@@ -1,6 +1,11 @@
 export { listFilesRecursive, loadExtensionDirectory } from './loader.js'
 export { openFileSource } from './file-source.js'
-export { openFileArtifactSource, type FileArtifactSourceOptions } from './file-artifact-source.js'
+export {
+  openFileArtifactSource,
+  type FileArtifactReadTelemetry,
+  type FileArtifactSourceOptions,
+  type FileArtifactStreamTelemetry,
+} from './file-artifact-source.js'
 export {
   openDirectoryArtifactSource,
   openPathArtifactSource,

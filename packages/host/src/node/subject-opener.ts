@@ -22,6 +22,10 @@ import {
 import { createCompanionInputResolver, createSignatureTraitProbe } from '../input-resolution.js'
 import { createFilesystemCompanionOrigin } from './companion-origin.js'
 import { openPathArtifactSource } from './directory-artifact-source.js'
+import type {
+  FileArtifactReadTelemetry,
+  FileArtifactStreamTelemetry,
+} from './file-artifact-source.js'
 
 export interface PathSubjectOpenerOptions {
   readonly subjects: SubjectServices
@@ -38,6 +42,8 @@ export interface PathSubjectOpenerOptions {
    * dropped here; the session id is the key an editing policy is keyed by.
    */
   onOpened?(opened: OpenedSubject, sessionId: string): void
+  readonly onRead?: (event: FileArtifactReadTelemetry) => void
+  readonly onStream?: (event: FileArtifactStreamTelemetry) => void
 }
 
 export const DEFAULT_SUBJECT_OPEN_BUDGET: ResourceBudget = Object.freeze({
@@ -112,6 +118,8 @@ export function createPathSubjectOpener(options: PathSubjectOpenerOptions): Subj
     const source = await openPathArtifactSource(path, {
       maxEntries: budget.maxNodes,
       maxDepth: budget.maxDepth,
+      ...(options.onRead === undefined ? {} : { onRead: options.onRead }),
+      ...(options.onStream === undefined ? {} : { onStream: options.onStream }),
       ...(signal === undefined ? {} : { signal }),
     })
     /*

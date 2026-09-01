@@ -32,6 +32,8 @@ export interface FormatWriterRequest {
   readonly opened: OpenedSubject
   readonly grant: PermissionGrant
   readonly budgets: ResourceBudget
+  /** Optional host-owned format override for a product bridge (for example SC2Map → MPQ). */
+  readonly formatId?: string
   /** Default `'source'` — the representation a text editor edits. */
   readonly representationId?: string
   /** Default `'byte-identical'`. */
@@ -62,7 +64,8 @@ export async function resolveFormatWriter(
       readonly identity?: { readonly formatId?: unknown }
     }
   ).identity
-  const formatId = typeof identity?.formatId === 'string' ? identity.formatId : undefined
+  const formatId =
+    request.formatId ?? (typeof identity?.formatId === 'string' ? identity.formatId : undefined)
   if (formatId === undefined) {
     return {
       diagnostics: [

@@ -86,6 +86,15 @@ export interface ContainerRegistryOptions {
   readonly budget: ResourceBudget
   /** Named non-fatal outcomes — a companion absent inside the archive, a capped listing. */
   readonly onDiagnostic?: (diagnostic: Diagnostic) => void
+  /**
+   * Optional acceptance telemetry. It observes only a completed ordinary `container.extract`
+   * result; it neither changes selection nor gains a write path into a provider.
+   */
+  readonly onExtract?: (event: {
+    readonly container: string
+    readonly entry: string
+    readonly bytes: number
+  }) => void
   /** Host-open seam for the namespace-only container branch; production uses `openSubject`. */
   readonly openNamespaceSubject?: typeof openSubject
 }
@@ -234,7 +243,14 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
             answer.snapshot.state === 'opened'
               ? 'the container opened without a session'
               : `no contribution claimed this container: ${answer.snapshot.reason}`,
-          context: { state: answer.snapshot.state },
+          context: {
+            state: answer.snapshot.state,
+            // Keep the actual resolver explanations with the typed refusal. The workbench can
+            // then distinguish an attempted codec from a caller-supplied family label without
+            // widening ordinary directory subjects or retrying an unsafe source.
+            attemptedCandidates: answer.snapshot.candidates,
+            diagnostics: answer.snapshot.diagnostics,
+          },
         })
       }
       const session = answer.session
@@ -503,6 +519,9 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
           },
         })
       }
+      options.onExtract?.(
+        Object.freeze({ container, entry, bytes: invoked.output.value.byteLength }),
+      )
       return invoked.output.value
     },
 

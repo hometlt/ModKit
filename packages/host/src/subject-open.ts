@@ -77,6 +77,8 @@ export interface SubjectOpenCandidateExplanation {
   readonly contributionId: string
   readonly extensionId: string
   readonly variantId: string
+  /** Declared formats for this actual candidate; retained for fail-closed host receipts. */
+  readonly formatIds: readonly string[]
   readonly offerId?: string
   readonly state: SubjectOpenCandidateState
   readonly confidence?: number
@@ -1170,6 +1172,7 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
           contributionId: candidate.contributionId,
           extensionId: candidate.extensionId,
           variantId: candidate.offer.runtimeVariant,
+          formatIds: Object.freeze(candidate.spec.formatRefs.map(item => item.formatId)),
           offerId: candidate.logicalOffer.offerId,
           state: 'rejected',
           diagnostics: Object.freeze(local),
@@ -1210,6 +1213,7 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
           contributionId: candidate.contributionId,
           extensionId: candidate.extensionId,
           variantId: candidate.offer.runtimeVariant,
+          formatIds: Object.freeze(candidate.spec.formatRefs.map(item => item.formatId)),
           offerId: candidate.logicalOffer.offerId,
           state: 'rejected',
           diagnostics: Object.freeze(local),
@@ -1339,6 +1343,7 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
           contributionId: candidate.contributionId,
           extensionId: candidate.extensionId,
           variantId: candidate.offer.runtimeVariant,
+          formatIds: Object.freeze(candidate.spec.formatRefs.map(item => item.formatId)),
           offerId: candidate.logicalOffer.offerId,
           state: 'detected',
           confidence: detection.confidence,
@@ -1355,6 +1360,7 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
           contributionId: candidate.contributionId,
           extensionId: candidate.extensionId,
           variantId: candidate.offer.runtimeVariant,
+          formatIds: Object.freeze(candidate.spec.formatRefs.map(item => item.formatId)),
           offerId: candidate.logicalOffer.offerId,
           state: 'rejected',
           diagnostics: Object.freeze(local),

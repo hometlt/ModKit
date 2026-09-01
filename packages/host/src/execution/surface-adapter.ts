@@ -149,10 +149,26 @@ export function capabilitySurfaceFromDataSource(
  */
 export function standardDataSourceCapabilitySurfaces(): readonly CapabilitySurface[] {
   const out: CapabilitySurface[] = []
+  /*
+   * The native MPQ Save As bridge is not a common.edit/writer contract method.  It is an
+   * optional, product-owned extension point carried by the installed Blizzard provider when that
+   * provider explicitly exports it.  Keeping it optional preserves every ordinary Writer and
+   * lets older providers continue to materialize unchanged.
+   */
+  const editingSurfaces = {
+    ...STANDARD_EDITING_SURFACES,
+    'common.edit/writer': {
+      ...STANDARD_EDITING_SURFACES['common.edit/writer'],
+      methods: {
+        ...STANDARD_EDITING_SURFACES['common.edit/writer'].methods,
+        snapshotNativePreservingMpq: { kind: 'value', optional: true, arity: 1 },
+      },
+    },
+  }
   for (const table of [
     STANDARD_DATA_SOURCE_SURFACES,
     AUXILIARY_DATA_SOURCE_SURFACES,
-    STANDARD_EDITING_SURFACES,
+    editingSurfaces,
   ]) {
     for (const [contract, surface] of Object.entries(table)) {
       out.push(capabilitySurfaceFromDataSource(contract, 1, surface))
