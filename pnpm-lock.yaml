@@ -190,6 +190,9 @@ importers:
       '@modkit/uv':
         specifier: workspace:*
         version: link:../../packages/uv
+      '@modkit/vfs':
+        specifier: workspace:*
+        version: link:../../packages/vfs
     devDependencies:
       '@types/vscode':
         specifier: ^1.125.0

@@ -5,7 +5,7 @@
   "generatedFrom": {
     "policy": {
       "file": "format-smoke-policy.v1.json",
-      "sha256": "sha256:91edb920f3bf90375800a4739059234759e4ecf820717bf154415d6712490810"
+      "sha256": "sha256:0b8f8c4c0926f8f1e7220ec56ee4fcbf68cf826a924db38eb09933a293fd326c"
     },
     "bundledCatalog": {
       "file": "generated/bundled-catalog.json",
@@ -47,8 +47,8 @@
       ]
     },
     "offlineRelease": {
-      "descriptorSha256": "sha256:668c59adcc7442d6815ab3c5cf3e17ff756786887ff170f56fe857db7108463b",
-      "catalogSha256": "sha256:afa51d03660c0a01db140e74420072654e4f718319476b1d4d6bdeddb98dc0ef",
+      "descriptorSha256": "sha256:05b804a37bc52ea594e9bbb316494ee9642485e600d0bddae8523e501a74ee96",
+      "catalogSha256": "sha256:1cf95d518a22f21d057e20a2b33bc7f4a4dd040dedf9b4c3291e7271485ee69c",
       "catalogSignature": {
         "algorithm": "Ed25519",
         "keyId": "modkit.ga-wave1b-2026-09-01",
@@ -339,9 +339,9 @@
       "stage": "tree",
       "corpus": {
         "kind": "warzone-install-file",
-        "path": "data/base.wz",
-        "bytes": 122957601,
-        "sha256": "f3f131e7cdfb9e550221ca3ad074debf5c946417240799da1a53238804cdd71d"
+        "path": "data/mp.wz",
+        "bytes": 10443521,
+        "sha256": "d698475eaa7b3386c2465e5850e5609b0d524157280c7d659dc5f79cde6e5688"
       },
       "runtime": {
         "vscode": "open",
@@ -355,13 +355,13 @@
     {
       "id": "archive-mpq",
       "family": "archives",
-      "formats": ["mpq"],
+      "formats": ["sc2-map"],
       "route": [
         {
-          "formatId": "mpq",
-          "extensionId": "blizzard/mpq",
-          "contributionId": "blizzard/mpq",
-          "roles": ["container"],
+          "formatId": "sc2-map",
+          "extensionId": "blizzard/starcraft2",
+          "contributionId": "blizzard/sc2-map",
+          "roles": ["semantic"],
           "sourceTopology": "single",
           "dataSources": [
             "common.view/byte-range-source",

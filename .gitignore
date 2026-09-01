@@ -4,6 +4,13 @@ dist/
 .eslintcache
 coverage/
 apps/vscode/dist-app/
+# Reproducible Electron staging assembled by `apps/electron/scripts/build-app.mjs`. The checked-in
+# renderer bundle remains tracked; package roots, signed release copies and runtime closures are
+# build outputs duplicated from their authoritative source/generated trees.
+apps/electron/dist-app/extensions/
+apps/electron/dist-app/managed-packages/
+apps/electron/dist-app/main-runtime/
+apps/electron/dist-app/format-smoke.v1.json
 # Raw `proves()` declarations: the suites append one file per worker while `pnpm test` runs, and
 # `pnpm evidence:emit` merges and deletes them. The document that is kept is
 # `migration/generated/evidence.json`, which is tracked; this directory is the scratch behind it and
