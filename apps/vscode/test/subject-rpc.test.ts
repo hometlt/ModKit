@@ -22,6 +22,7 @@ import type { ChangeSet } from '@modkit/sdk'
 import { createBridge, type WebviewChannel } from '../src/bridge.js'
 import {
   createVsCodeSubjectHost,
+  ownedWireBytes,
   VSCODE_MAXIMUM_RANGE_BACKED_SUBJECT_BYTES,
   VSCODE_MAXIMUM_SUBJECT_BYTES,
   VSCODE_SUBJECT_CONTRIBUTION_ID,
@@ -289,5 +290,31 @@ describe('root confinement', () => {
     expect(withinRoots([root], join(root, 'a', 'b.txt'))).toBe(true)
     expect(withinRoots([root], join(tmpdir(), 'granted-elsewhere', 'b.txt'))).toBe(false)
     expect(withinRoots([], join(root, 'a.txt'))).toBe(false)
+  })
+})
+
+describe('bytes that cross the capability wire', () => {
+  /*
+   * `workspace.fs.readFile` is typed `Uint8Array` and returns a Node `Buffer`. The wire refuses a
+   * subclass by design, and `Buffer.prototype.slice` hands back another view rather than the copy a
+   * defensive `.slice()` reads as — which is how the installed Save As route sent a `Buffer` and was
+   * refused with `x3.host/rpc-outbound-value-invalid`.
+   */
+  it('turns a Node Buffer into an owned plain Uint8Array', () => {
+    const source = Buffer.from([1, 2, 3])
+    const wire = ownedWireBytes(source)
+    expect(wire.constructor).toBe(Uint8Array)
+    expect([...wire]).toEqual([1, 2, 3])
+    source[0] = 9
+    expect(wire[0]).toBe(1)
+  })
+
+  it('copies a plain Uint8Array rather than aliasing it', () => {
+    const source = Uint8Array.from([4, 5, 6])
+    const wire = ownedWireBytes(source)
+    expect(wire.constructor).toBe(Uint8Array)
+    expect(wire).not.toBe(source)
+    source[0] = 9
+    expect(wire[0]).toBe(4)
   })
 })

@@ -1420,7 +1420,7 @@ function serveVsCode(
       if (entry === undefined) return undefined
       const targetId = `vscode-save-as:${subjectKey(destinationPath)}`
       const change = await entry.snapshot({
-        sourceBytes: sourceBytes.slice(),
+        sourceBytes: ownedWireBytes(sourceBytes),
         replacements: Object.freeze([{ path: 'MapScript.galaxy', bytes: nativeMapScript() }]),
         target: Object.freeze({
           targetId,
@@ -1498,6 +1498,19 @@ const describe = (error: unknown): string =>
  */
 export function subjectKey(path: string): string {
   return isContainerUriText(path) ? path : resolve(path)
+}
+
+/**
+ * An owned copy of bytes, as the plain kind the capability wire accepts.
+ *
+ * `workspace.fs.readFile` is typed `Uint8Array` but hands back the extension host's own buffer,
+ * which under Node is a `Buffer`. That matters twice: the wire deliberately refuses a `Uint8Array`
+ * subclass, because a subclass carries behaviour the far side would not reconstruct; and
+ * `Buffer.prototype.slice` returns another view over the same memory rather than the owned copy a
+ * defensive `.slice()` reads as. Constructing the base kind settles both at once.
+ */
+export function ownedWireBytes(view: Uint8Array): Uint8Array {
+  return new Uint8Array(view)
 }
 
 /**
