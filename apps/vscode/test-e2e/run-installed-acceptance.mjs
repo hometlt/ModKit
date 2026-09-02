@@ -2309,19 +2309,30 @@ async function openWorkspaceFile(page, filePath) {
     .waitFor({ state: 'visible', timeout: 20_000 })
 }
 
+/*
+ * The palette's own «No matching commands» placeholder is a visible row, so "at least one row"
+ * accepted the empty answer and recorded it as the installed command list. The activation event
+ * that registers the commands has not necessarily fired the moment the workbench paints, so the
+ * check now waits for rows that actually name Modkit commands and fails with what it did see.
+ */
 async function inspectModkitCommands(page) {
-  const widget = await fillQuickInput(page, 'modkit')
-  const rows = widget.locator('.quick-input-list .monaco-list-row:visible')
+  let observed = []
   const commandTexts = await waitFor(
     async () => {
-      const texts = await rows.allInnerTexts()
-      return texts.length > 0 ? texts : undefined
+      const widget = await fillQuickInput(page, 'modkit')
+      const rows = widget.locator('.quick-input-list .monaco-list-row:visible')
+      const texts = await rows.allInnerTexts().catch(() => [])
+      observed = texts
+      const named = texts.filter(item => /^\s*Modkit:/u.test(item.replace(/\s+/gu, ' ').trim()))
+      return named.length > 0 ? texts : undefined
     },
-    { timeoutMs: 20_000 },
+    { timeoutMs: 90_000, stepMs: 1_000 },
   )
-  await page.keyboard.press('Escape')
+  await page.keyboard.press('Escape').catch(() => undefined)
   if (commandTexts === undefined) {
-    throw new Error('installed extension exposed no Modkit commands in the command palette')
+    throw new Error(
+      `installed extension exposed no Modkit commands in the command palette; rows=${JSON.stringify(observed)}`,
+    )
   }
   return commandTexts
 }
