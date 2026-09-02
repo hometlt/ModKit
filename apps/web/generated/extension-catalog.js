@@ -2131,7 +2131,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:859afeaeca94d2dfd67338c1a9c235861b86a76cfcc0d8defad8ba605211ebca',
+        artifactDigest: 'sha256:780ac71eda54023d7ea662247b54f534efb9da419819cff01e17c695e23282cc',
         fileDigests: {
           'MIGRATION-NOTES-common-audio.json':
             'sha256:9208bc42ef1da984ce9776d9bed7024eaf3f797a1cd56ca193919caf142ee636',
@@ -2147,7 +2147,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-ogg.json':
             'sha256:eb7ddb19893b6958df00f28a4c9364205f9865e4318afe4fefca3efe9abd4fe5',
           'contributions/codec-wav.json':
-            'sha256:87bf2b497c23eba9c61a27971a78836cddd90d1163fea99f133a6bc08a0845f9',
+            'sha256:b9a35b941c7b1442b60f35aa3beb1a91aaf12853f51baf67fe654855d38f3240',
           'package.json': 'sha256:44743bfcbcf9f51ab7fb7b62e0c00343ecc962384f784b16c72d8ffc62b06d7c',
           'src/aac/codec.js':
             'sha256:8fd45809559754220cde4b64a0a51d35a9e0ce60f83b1557b16041321ca4d704',
@@ -2163,10 +2163,14 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/ogg/codec.js':
             'sha256:4615fe83734068e90591d68c46614b158c40cd1d10466e5f320170cea719e515',
           'src/wav/codec.js':
-            'sha256:8aac8c02b7ec948b4ff36dfa1a90e97c1de71e9127382a71e4f23fc59526ffe9',
+            'sha256:bb0e1a3db1a75cf6af1ac4c4c85b0213d9e4debe80c73f40657156cfbacf03b7',
+          'src/wav/pcm.js':
+            'sha256:f67d79a5e25ebd640be028b510fa09b84a9ba06ca0e4cc441026cf30beb48f37',
+          'test/wav-pcm-decode.test.ts':
+            'sha256:6f29a81d4202e06d77d81ccec1eeae9206c56c3ab4e320113fec55e561b63839',
         },
         inventoryRecordId:
-          'artifact:sha256:859afeaeca94d2dfd67338c1a9c235861b86a76cfcc0d8defad8ba605211ebca',
+          'artifact:sha256:780ac71eda54023d7ea662247b54f534efb9da419819cff01e17c695e23282cc',
       },
       artifactRoot: 'extensions/audio/',
       containers: {
@@ -2239,7 +2243,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-wav.json',
-          'sha256:87bf2b497c23eba9c61a27971a78836cddd90d1163fea99f133a6bc08a0845f9',
+          'sha256:b9a35b941c7b1442b60f35aa3beb1a91aaf12853f51baf67fe654855d38f3240',
         ],
       ],
       documents: [
@@ -2962,7 +2966,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             displayName: 'WAV (RIFF)',
             id: 'modkit/wav',
             limitations: [
-              'PCM integer and 32-bit float samples decode in-process; other RIFF/WAVE codecs require native host playback or an injected transcoder.',
+              'Decoded in-process through readPcm: linear PCM at 8/16/24/32 bits, IEEE float at 32/64 bits, and IMA ADPCM at 4 bits. Other RIFF/WAVE codecs (A-law, mu-law, MP3-in-RIFF and the rest) are reported by format tag and left to native host playback or an injected transcoder.',
               'Declarative routing is extension-first because manifest v1 cannot express the legacy extension-or-RIFF/WAVE-sniffer behavior without making the evidence conjunctive.',
             ],
             runtimeVariants: [
@@ -3089,6 +3093,8 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'src/mp3/codec.js',
         'src/ogg/codec.js',
         'src/wav/codec.js',
+        'src/wav/pcm.js',
+        'test/wav-pcm-decode.test.ts',
       ],
       name: 'audio',
       source: 'extensions/audio',
@@ -6376,7 +6382,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:76119b45d1ee64f11a9786d1798dccbd2a6cb6b19a472c4c98ac8f779ede61f2',
+        artifactDigest: 'sha256:6a8e4a21b05eed00bbeae3b9370652916b5bcfe67b61dae21648576a366404f7',
         fileDigests: {
           'MIGRATION-NOTES-common-images.json':
             'sha256:44c30ea45aaceceff66d53f72e5e0d0ec8efb1a7f2afbc2f9913849720632e93',
@@ -6394,7 +6400,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-cur.json':
             'sha256:ca83a2ee185f99c30030382692eb875a4a7301aeb0d072a4bbf109f787d17bdf',
           'contributions/codec-dds.json':
-            'sha256:c8a01abcac581562cf3d9f951ac1f10152fe8fd026b57d8ce809defdbff66c4b',
+            'sha256:303693201ab5d818e5c5e831a89895d433be7f0ac6c3c6b0a462295704c05749',
           'contributions/codec-exr.json':
             'sha256:377eb43959c01dff23c3117a6a1263a9797e91503b79e65a718d049336e6cca7',
           'contributions/codec-gif.json':
@@ -6443,7 +6449,9 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/cur/codec.js':
             'sha256:daf34dd18dd2ed3f13ea0d74668fc9c40bdda171899ee0667cd558c9f7fe24a9',
           'src/dds/codec.js':
-            'sha256:768a15f8f107aaf8c66d94dc0f0d2a4edf74dcb50f90001f218879641d069ab1',
+            'sha256:0d482ac028af92426cd4ab3947e04410f5f4bf540df46e71608aeba27c20b36b',
+          'src/dds/layout.js':
+            'sha256:feb37c0f0157512697eaa3f80b4b8545ac33d937ac2a37e95f13ca24e8d92e26',
           'src/exr/codec.js':
             'sha256:3c46fa55f1ca7aea4ff36011f91ff350832f174e6c82633c037d41cc09daf9a9',
           'src/gif/codec.js':
@@ -6491,11 +6499,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:ed0f8d41d2c64a3276ae4f53276ed49846354bf28cc03fd77adecab1931a3bd1',
           'test/codec-session.ts':
             'sha256:fa6bcdf1bc58315268af02ca9b02076ec655a28bee8a327cf6664f1f0ea163e6',
+          'test/dds-subresources.test.ts':
+            'sha256:600156ad576f93af37451d373b93a488460f95642682c114feb6885f3ea9f8ff',
           'test/eac-r11-decode.test.ts':
             'sha256:2a0d83d3152224ce7ea530605bb9441912aa9be68b3b4ec60d1e51cb0e5beed4',
         },
         inventoryRecordId:
-          'artifact:sha256:76119b45d1ee64f11a9786d1798dccbd2a6cb6b19a472c4c98ac8f779ede61f2',
+          'artifact:sha256:6a8e4a21b05eed00bbeae3b9370652916b5bcfe67b61dae21648576a366404f7',
       },
       artifactRoot: 'extensions/images/',
       containers: {
@@ -6573,7 +6583,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-dds.json',
-          'sha256:c8a01abcac581562cf3d9f951ac1f10152fe8fd026b57d8ce809defdbff66c4b',
+          'sha256:303693201ab5d818e5c5e831a89895d433be7f0ac6c3c6b0a462295704c05749',
         ],
         [
           'contributions/codec-exr.json',
@@ -7415,9 +7425,10 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             displayName: 'DirectDraw Surface',
             id: 'modkit/dds',
             limitations: [
-              "BC6H and BC7 decoding uses the package's asynchronous WASM-backed path; uncommon DXGI formats remain diagnostic-only.",
-              'Browser main-thread and module-worker software decode use an explicit URL-based ESM/WASM boundary; the host controls where those optional assets are deployed.',
-              'Mip, array-layer, cubemap-face, and volume-slice selection is available through the shared descriptor and generic viewer controls.',
+              'Decoded to pixels: BC1/BC2/BC3 (FourCC DXT1/DXT3/DXT5 and the equivalent DXGI numbers 70-78) and uncompressed RGB/RGBA masks at 24 or 32 bits.',
+              'NOT decoded: BC4, BC5, BC6H and BC7. The header parser recognises those DXGI numbers and refuses them by name; this package ships no decoder and no WASM for them, and the manifest no longer claims one.',
+              'Decode is pure JavaScript inside the codec runtime. There is no optional WASM asset, no URL-based ESM boundary and nothing for a host to deploy separately.',
+              'Mip, array-layer, cubemap-face and volume-slice selection is implemented: readRegion resolves any subresource the header declares and refuses out-of-range coordinates by name.',
               'Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global signature sniffing.',
             ],
             runtimeVariants: [
@@ -9614,6 +9625,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'src/bmp/codec.js',
         'src/cur/codec.js',
         'src/dds/codec.js',
+        'src/dds/layout.js',
         'src/exr/codec.js',
         'src/gif/codec.js',
         'src/hdr/codec.js',
@@ -9638,6 +9650,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'test/astc-ordinary-ldr.test.ts',
         'test/astc-void-extent.test.ts',
         'test/codec-session.ts',
+        'test/dds-subresources.test.ts',
         'test/eac-r11-decode.test.ts',
       ],
       name: 'images',

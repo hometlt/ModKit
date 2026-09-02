@@ -72,7 +72,7 @@ import {
   type ElectronFormatSmokePlan,
   type ElectronFormatSmokeRouteStep,
 } from './format-smoke-acceptance.js'
-import { findExactNamespaceFile, indexNamespace } from './namespace-index.js'
+import { findExactNamespaceFile } from './namespace-index.js'
 
 /**
  * Hand Monaco its language workers. Monaco reads this the first time an editor asks for one, which

@@ -246,19 +246,19 @@ try {
   }
   writeFileSync(planPath, `${JSON.stringify(plan, null, 2)}\n`)
 
-  const childEnv = {
-    ...process.env,
-    MODKIT_ELECTRON_FORMAT_SMOKE_PLAN: planPath,
-    MODKIT_ELECTRON_USER_DATA_DIR: userData,
-  }
-  for (const name of [
+  const strippedFromChildEnv = new Set([
     'NODE_PATH',
     'MODKIT_EXTENSION_REGISTRY',
     'MODKIT_EXTENSION_ALLOWED_ORIGINS',
     'MODKIT_EXTENSION_TRUSTED_PUBLIC_KEYS',
     'MODKIT_EXTENSION_INSTALL_DIR',
-  ]) {
-    delete childEnv[name]
+  ])
+  const childEnv = {
+    ...Object.fromEntries(
+      Object.entries(process.env).filter(([name]) => !strippedFromChildEnv.has(name)),
+    ),
+    MODKIT_ELECTRON_FORMAT_SMOKE_PLAN: planPath,
+    MODKIT_ELECTRON_USER_DATA_DIR: userData,
   }
 
   const child = spawn(

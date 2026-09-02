@@ -10,8 +10,6 @@ import {
 import {
   BROWSER_EXTENSION_LOCK_UNAVAILABLE,
   BROWSER_EXTENSION_MUTATION_LOCK,
-  BROWSER_SC2_FACILITY,
-  BROWSER_HOST_FACILITY_UNAVAILABLE,
   assertBrowserArtifactBound,
   browserRuntimeAvailability,
   createBrowserExtensionManager,

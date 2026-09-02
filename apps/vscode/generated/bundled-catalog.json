@@ -41,7 +41,7 @@
         "modkit/m4a",
         "modkit/wav"
       ],
-      "digest": "sha256:859afeaeca94d2dfd67338c1a9c235861b86a76cfcc0d8defad8ba605211ebca"
+      "digest": "sha256:780ac71eda54023d7ea662247b54f534efb9da419819cff01e17c695e23282cc"
     },
     {
       "name": "data",
@@ -120,7 +120,7 @@
         "modkit/tiff",
         "modkit/webp"
       ],
-      "digest": "sha256:76119b45d1ee64f11a9786d1798dccbd2a6cb6b19a472c4c98ac8f779ede61f2"
+      "digest": "sha256:6a8e4a21b05eed00bbeae3b9370652916b5bcfe67b61dae21648576a366404f7"
     },
     {
       "name": "models",

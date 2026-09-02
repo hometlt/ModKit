@@ -186,8 +186,9 @@ function copyPackageClosure(targetNodeModules) {
   const queue = runtimePackageSeeds.map(name => ({ name }))
   const copied = new Set()
   mkdirSync(targetNodeModules, { recursive: true })
-  for (let index = 0; index < queue.length; index += 1) {
-    const { name, issuer } = queue[index]
+  // The queue grows while it is walked; an array iterator re-reads length each step, so a
+  // for-of still sees entries appended after it started.
+  for (const { name, issuer } of queue) {
     if (copied.has(name)) continue
     copied.add(name)
     const source = resolvePackageRoot(name, issuer)
