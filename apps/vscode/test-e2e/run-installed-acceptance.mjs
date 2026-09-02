@@ -3286,13 +3286,25 @@ async function launchGeneration(generation) {
     let message = await observeCorruptInputRefusal(page, port, 5_000)
     let corruptRoute = 'workspace open -> selected installed Modkit editor'
     if (message === undefined) {
+      /*
+       * The palette route is a SECOND way in, not the requirement. Since Wave 2B an enabled DDS
+       * codec owns *.dds, so opening the file already is the Modkit route and the extra command is
+       * usually unnecessary; when the palette does not offer it, that must not end the run before
+       * the refusal itself has been given its full wait. The assertion below is unchanged.
+       */
       await activateEditor(page, corruptDdsPath)
-      await chooseQuickInput(
-        page,
-        'modkit open active file in workbench',
-        /^Modkit: Open Active File in Workbench$/u,
-      )
-      corruptRoute = 'workspace open -> command palette -> Modkit: Open Active File in Workbench'
+      try {
+        await chooseQuickInput(
+          page,
+          'modkit open active file in workbench',
+          /^Modkit: Open Active File in Workbench$/u,
+        )
+        corruptRoute = 'workspace open -> command palette -> Modkit: Open Active File in Workbench'
+      } catch (paletteError) {
+        corruptRoute =
+          'workspace open -> default editor association (palette route unavailable: ' +
+          `${String(paletteError).slice(0, 200)})`
+      }
       message = await observeCorruptInputRefusal(page, port, 60_000)
     }
     if (message === undefined) {
