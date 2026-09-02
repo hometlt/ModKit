@@ -2637,31 +2637,27 @@ async function readStageDataset(port, part, keys, timeoutMs = 30_000) {
 }
 
 /**
- * What surface the active editor is showing, in VS Code's own terms.
+ * Which subjects Modkit currently has open, asked of Modkit rather than of the workbench DOM.
  *
- * A custom editor renders a webview; the built-in editor for a binary file renders the workbench's
- * own "not displayed ... binary" notice. Those two facts are what «Modkit is the default» and «the
- * built-in editor came back» mean concretely, and neither depends on a Modkit internal.
+ * "Did the association open this in Modkit" is a question about the product, and the product
+ * already answers it: every Modkit editor publishes the format its codec resolved. Reading that
+ * beats guessing at editor-group class names, which is what the first version of this check did
+ * and got wrong. The caller closes every editor first, so the answer describes this open alone.
  */
-async function describeActiveEditorSurface(page) {
-  const group = page.locator('.editor-group-container.active').last()
-  const scope = (await group.count()) > 0 ? group : page.locator('.monaco-workbench')
-  const webviews = await scope
-    .locator('.webview')
-    .count()
-    .catch(() => 0)
-  const iframes = await scope
-    .locator('iframe')
-    .count()
-    .catch(() => 0)
-  const body = await scope.innerText().catch(() => '')
-  const collapsed = body.replace(/\s+/gu, ' ').trim()
-  return {
-    webviewPresent: webviews + iframes > 0,
-    binaryNoticePresent:
-      /is not displayed in the (?:text )?editor because it is either binary/iu.test(collapsed),
-    excerpt: collapsed.slice(0, 400),
-  }
+async function openModkitSubjectFormats(port) {
+  const values = await webviewValues(
+    port,
+    webviewDocumentExpression(
+      `(_doc, win) => win.__MODKIT_ACCEPTANCE__?.subject?.descriptor?.identity?.formatId`,
+    ),
+  ).catch(() => [])
+  return values.filter(value => typeof value === 'string')
+}
+
+/** Close every editor, so the next open is the only thing the window is showing. */
+async function closeAllEditors(page) {
+  await chooseQuickInput(page, 'close all editors', /^View: Close All Editors$/u)
+  await page.waitForTimeout(500)
 }
 
 /** Press one of the product's own buttons by its accessible title, inside the webview. */
@@ -2743,27 +2739,29 @@ async function runMediaAndEditorAcceptance(page, port) {
    * format and a common one are checked, because the owner's decision explicitly covers PNG.
    */
   const openedByAssociation = []
-  for (const entry of [dds, png]) {
+  for (const [entry, expectedFormat] of [
+    [dds, 'dds'],
+    [png, 'png'],
+  ]) {
+    await closeAllEditors(page)
     await openWorkspaceFile(page, entry.path)
-    await activateEditor(page, entry.path)
-    const surface = await waitFor(
+    const formats = await waitFor(
       async () => {
-        const observed = await describeActiveEditorSurface(page)
-        return observed.webviewPresent && !observed.binaryNoticePresent ? observed : undefined
+        const observed = await openModkitSubjectFormats(port)
+        return observed.includes(expectedFormat) ? observed : undefined
       },
-      { timeoutMs: 60_000, stepMs: 500 },
+      { timeoutMs: 90_000, stepMs: 500 },
     )
-    if (surface === undefined) {
-      const observed = await describeActiveEditorSurface(page)
+    if (formats === undefined) {
       throw new Error(
-        `2B-5 ${entry.target} did not open in Modkit through its default association: ` +
-          `${JSON.stringify(observed)}`,
+        `2B-5 ${entry.target} did not open in Modkit through its default association; ` +
+          `Modkit subjects open: ${JSON.stringify(await openModkitSubjectFormats(port))}`,
       )
     }
     openedByAssociation.push({
       target: entry.target,
-      surface: 'custom-editor-webview',
-      binaryNoticePresent: surface.binaryNoticePresent,
+      openedBy: 'workbench.editorAssociations',
+      formatId: expectedFormat,
     })
   }
 
@@ -3012,27 +3010,32 @@ async function runMediaAndEditorAcceptance(page, port) {
     throw new Error('2B-5 clearing one codec removed another codec’s association')
   }
   /*
-   * The anchor is «without reinstalling», so the proof is a reopen in this same window: close the
-   * DDS tab and open the file again by name. The editor VS Code picks now is the built-in one.
+   * The anchor is «without reinstalling», so the proof is a reopen in this same window: close
+   * every editor and open the DDS again by name. Modkit must not claim it this time — and the
+   * PNG, whose codec kept its default, must still be claimed, which is what separates «this
+   * codec stopped being the default» from «the association sync broke».
    */
-  await activateEditor(page, dds.path)
-  await page.keyboard.press('Control+W')
-  await page.waitForTimeout(500)
+  await closeAllEditors(page)
   await openWorkspaceFile(page, dds.path)
-  await activateEditor(page, dds.path)
-  const builtInSurface = await waitFor(
+  await page.waitForTimeout(3_000)
+  const afterClearing = await openModkitSubjectFormats(port)
+  if (afterClearing.includes('dds')) {
+    throw new Error(
+      `2B-5 Modkit still opened the DDS after its codec default was cleared: ` +
+        `${JSON.stringify(afterClearing)}`,
+    )
+  }
+  await closeAllEditors(page)
+  await openWorkspaceFile(page, png.path)
+  const pngStillDefault = await waitFor(
     async () => {
-      const observed = await describeActiveEditorSurface(page)
-      return observed.binaryNoticePresent ? observed : undefined
+      const observed = await openModkitSubjectFormats(port)
+      return observed.includes('png') ? observed : undefined
     },
     { timeoutMs: 60_000, stepMs: 500 },
   )
-  if (builtInSurface === undefined) {
-    const observed = await describeActiveEditorSurface(page)
-    throw new Error(
-      `2B-5 the built-in editor did not come back after the default was cleared: ` +
-        `${JSON.stringify(observed)}`,
-    )
+  if (pngStillDefault === undefined) {
+    throw new Error('2B-5 clearing the DDS codec default also stopped the PNG codec being default')
   }
   cases.push({
     caseId: 'codec-default-editor-toggle',
@@ -3045,8 +3048,9 @@ async function runMediaAndEditorAcceptance(page, port) {
     associationAfter: associationsAfter['*.dds'] ?? null,
     unrelatedAssociationKept: associationsAfter['*.png'],
     builtInEditorRestored: {
-      binaryNoticePresent: builtInSurface.binaryNoticePresent,
-      excerpt: compact(builtInSurface.excerpt, 200),
+      modkitSubjectsAfterReopen: afterClearing,
+      ddsClaimedByModkit: false,
+      pngStillClaimedByModkit: true,
     },
     scope: 'workspace',
     windowReloaded: false,
