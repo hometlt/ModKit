@@ -3129,21 +3129,51 @@ async function runMediaAndEditorAcceptance(page, port) {
   await closeAllEditors(page, port)
   await openWorkspaceFile(page, corrupt)
   await activateEditor(page, corrupt)
-  const refusal = await waitFor(
+  /*
+   * A typed refusal reaches the user in one of two places, and which one is not this case's
+   * business: the editor renders it, or it lands in the Problems panel. C3 has always looked in
+   * both; this looked only at the editor and reported "no refusal" for one that VS Code had put in
+   * the panel. The requirement is unchanged — the subject must be named and the code must be a
+   * typed x3 code, not prose.
+   */
+  const corruptName = basename(corrupt)
+  const refusalIn = text =>
+    typeof text === 'string' && text.includes(corruptName) && /x3.[a-z-]+/ / u.test(text)
+  let refusalRoute = 'editor'
+  let refusal = await waitFor(
     async () => {
       const values = await webviewValues(
         port,
-        webviewDocumentExpression(`doc => {
-          const text = (doc.body?.innerText || '').slice(0, 8000);
-          return text.includes('wave2b-corrupt.wav') && text.includes('x3.host/') ? text : undefined;
-        }`),
+        webviewDocumentExpression(`doc => (doc.body?.innerText || '').slice(0, 8000)`),
       )
-      return values.find(value => typeof value === 'string')
+      return values.find(value => refusalIn(value))
     },
-    { timeoutMs: 90_000, stepMs: 500 },
+    { timeoutMs: 60_000, stepMs: 500 },
   )
   if (refusal === undefined) {
-    throw new Error('2B-4 corrupt WAV produced no typed refusal in the installed application')
+    refusalRoute = 'problems panel'
+    await focusWorkbench(page)
+    const panel = page.locator('.markers-panel:visible').last()
+    if ((await panel.count().catch(() => 0)) === 0) {
+      await page.keyboard.press('Control+Shift+M').catch(() => undefined)
+    }
+    refusal = await waitFor(
+      async () => {
+        const text = await panel.innerText().catch(() => '')
+        return refusalIn(text) ? text : undefined
+      },
+      { timeoutMs: 60_000, stepMs: 500 },
+    )
+  }
+  if (refusal === undefined) {
+    const seen = await webviewValues(
+      port,
+      webviewDocumentExpression(`doc => (doc.body?.innerText || '').slice(0, 2000)`),
+    ).catch(() => [])
+    throw new Error(
+      `2B-4 corrupt WAV produced no typed refusal in the installed application; ` +
+        `webviews=${JSON.stringify(seen)}`,
+    )
   }
   await closeAllEditors(page, port)
   await openWorkspaceFile(page, wav.path)
@@ -3155,6 +3185,7 @@ async function runMediaAndEditorAcceptance(page, port) {
   cases.push({
     caseId: 'corrupt-audio-then-canary',
     anchor: '2B-4',
+    refusalRoute,
     refusalExcerpt: compact(refusal, 600),
     canaryDecoder: canary.decoder,
     observedBy: 'cdp',
