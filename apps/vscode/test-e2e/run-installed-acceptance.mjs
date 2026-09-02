@@ -67,6 +67,14 @@ const receiptPath = resolve(
 const screenshotPath = resolve(
   argument('--screenshot') ?? join(tmpdir(), `modkit-vscode-installed-dds-${process.pid}.png`),
 )
+/*
+ * Anchor 2B-6 asks for a screenshot of the NATIVE picker specifically, so it gets its own file
+ * rather than sharing the DDS screenshot and being overwritten by a later generation.
+ */
+const nativePickerScreenshotPath = resolve(
+  argument('--native-picker-screenshot') ??
+    screenshotPath.replace(/\.png$/iu, '') + '-native-picker.png',
+)
 const workspace = join(scratch, 'workspace')
 const workspaceFile = join(scratch, 'modkit-acceptance.code-workspace')
 const userData = join(scratch, 'user-data')
@@ -384,6 +392,14 @@ const receipt = {
     cases: [],
     failures: [],
     verdict: 'fail',
+  },
+  mediaAcceptance: {
+    kind: 'x3.vscode-installed-media-editor-acceptance',
+    schemaVersion: 1,
+    expectedAnchors: ['2B-1/2B-2', '2B-3', '2B-4', '2B-5', '2B-6'],
+    cases: [],
+    failures: [],
+    verdict: 'pending',
   },
   archiveAcceptance: {
     kind: 'x3.vscode-installed-archive-acceptance',
@@ -857,11 +873,21 @@ async function readQuickInputRow(row) {
   const labelNodes = row.locator('.label-name')
   const descriptionNodes = row.locator('.label-description')
   if ((await labelNodes.count().catch(() => 0)) > 0) {
-    const label = (await labelNodes.first().innerText().catch(() => undefined))?.trim()
+    const label = (
+      await labelNodes
+        .first()
+        .innerText()
+        .catch(() => undefined)
+    )?.trim()
     if (label === undefined) return undefined
     const description =
       (await descriptionNodes.count().catch(() => 0)) > 0
-        ? ((await descriptionNodes.first().innerText().catch(() => '')) ?? '').trim()
+        ? (
+            (await descriptionNodes
+              .first()
+              .innerText()
+              .catch(() => '')) ?? ''
+          ).trim()
         : ''
     return { rowText, label, description, source: 'quick-input-label-element' }
   }
@@ -2441,6 +2467,540 @@ function assertDds(probe) {
   }
 }
 
+// ------------------------------------------------------------------- Wave 2B media and editors
+/*
+ * Media tools, playback and the native editor picker, driven through the installed workbench.
+ *
+ * Everything below is harness-side and CDP-only: it stages pinned corpora into the acceptance
+ * workspace, opens them the way a person would, and uses VS Code's own editor picker. Where a
+ * viewer control is operated it is the product's own button and the product's own handler, and the
+ * receipt records `clickDispatch: 'element.click()'` so the evidence says how the control was
+ * reached instead of implying a mouse.
+ */
+
+const WAVE2B_MEDIA_CORPUS = Object.freeze([
+  Object.freeze({
+    id: 'dds-mipchain',
+    source: 'artifacts/ga-recovery-wave2b/corpus/sc2-observer-mipchain.dds',
+    target: 'wave2b-observer.dds',
+    bytes: 22_000,
+    sha256: 'fdc2cbdcbaf4fd6147c08571efdaf22fb8fc8fed3cd6e323f8af49508726ff9a',
+    provenance: 'StarCraft II icon export, DXT5 128x128 with an 8-level mip chain',
+  }),
+  Object.freeze({
+    id: 'png-common',
+    source: 'artifacts/ga-recovery-wave2b/corpus/sc2-galaxy-icon.png',
+    target: 'wave2b-icon.png',
+    bytes: 19_938,
+    sha256: 'c3bb4668636d3d83fa9dc8f9ef68d4f1a51c4eb714bf7f6b47377b27a0da4c07',
+    provenance: 'references/vscode-sc2-galaxy-master/icon.png, the A8 image-png corpus',
+  }),
+  Object.freeze({
+    id: 'wav-ima-adpcm',
+    source: 'artifacts/ga-recovery-wave2b/corpus/sc2-casc-ui_ac_allyfound.wav',
+    target: 'wave2b-allyfound.wav',
+    bytes: 178_236,
+    sha256: '304fb9259325128c627d40a419086edb9f5492d435a8ce280e3c28fec7647cf9',
+    provenance:
+      'StarCraft II CASC entry mods/core.sc2mod/base.sc2assets/assets/sounds/ui_ac_allyfound.wav, IMA ADPCM 2ch 44100 Hz',
+  }),
+  Object.freeze({
+    id: 'ogg-vorbis',
+    source: 'artifacts/ga-recovery-wave2b/corpus/sc2-casc-ui_ac_musicstinger01.ogg',
+    target: 'wave2b-musicstinger01.ogg',
+    bytes: 112_704,
+    sha256: 'a334fe262048b28f4a1e0e631b1a3ecf1a44aedc4526aa4f27207d7e98daf64a',
+    provenance:
+      'StarCraft II CASC entry mods/core.sc2mod/base.sc2assets/assets/sounds/ui_ac_musicstinger01.ogg, Vorbis',
+  }),
+])
+
+/** The editor picker has to offer the hex viewer and the family viewers, not only the generic one. */
+const WAVE2B_REQUIRED_PICKER_ROWS = Object.freeze([
+  'Modkit Hex Viewer',
+  'Modkit Image Viewer',
+  'Modkit Archive Viewer',
+  'Modkit Asset Preview',
+])
+
+function stageWave2bCorpus() {
+  const staged = []
+  for (const entry of WAVE2B_MEDIA_CORPUS) {
+    const source = resolve(formatSmokeRoots.workspaceRoot, entry.source)
+    if (!existsSync(source)) {
+      throw new Error(`Wave 2B media corpus is missing: ${entry.source}`)
+    }
+    const bytes = readFileSync(source)
+    const sha256 = createHash('sha256').update(bytes).digest('hex')
+    if (bytes.byteLength !== entry.bytes || sha256 !== entry.sha256) {
+      throw new Error(
+        `Wave 2B media corpus ${entry.id} is not its pinned bytes: ${bytes.byteLength}/${sha256}`,
+      )
+    }
+    const target = join(workspace, entry.target)
+    writeFileSync(target, bytes)
+    staged.push({ ...entry, path: target })
+  }
+  // A payload that is a RIFF/WAVE header and nothing else: the codec has to name what is missing.
+  const corrupt = join(workspace, 'wave2b-corrupt.wav')
+  writeFileSync(corrupt, Buffer.concat([Buffer.from('RIFFxxxxWAVE', 'ascii'), Buffer.alloc(24)]))
+  return { staged, corrupt }
+}
+
+/** Read what a viewer publishes on its stage element, inside the webview. */
+async function readStageDataset(port, part, keys, timeoutMs = 30_000) {
+  return await waitFor(
+    async () => {
+      const values = await webviewValues(
+        port,
+        webviewDocumentExpression(`doc => {
+          const stage = doc.querySelector('[data-mk-part="${part}"]');
+          if (stage === null) return undefined;
+          const readout = doc.querySelector('[data-mk-part="${part}.readout"]');
+          const canvas = doc.querySelector('[data-mk-part="${part}.canvas"]');
+          const result = { readout: (readout?.textContent ?? '').slice(0, 400) };
+          if (canvas !== null) { result.canvas = { width: canvas.width, height: canvas.height }; }
+          for (const key of ${JSON.stringify(keys)}) {
+            const value = stage.dataset[key];
+            if (value !== undefined) result[key] = value;
+          }
+          return result;
+        }`),
+      )
+      return values.find(value => value !== undefined && value !== null)
+    },
+    { timeoutMs, stepMs: 250 },
+  )
+}
+
+/**
+ * What surface the active editor is showing, in VS Code's own terms.
+ *
+ * A custom editor renders a webview; the built-in editor for a binary file renders the workbench's
+ * own "not displayed ... binary" notice. Those two facts are what «Modkit is the default» and «the
+ * built-in editor came back» mean concretely, and neither depends on a Modkit internal.
+ */
+async function describeActiveEditorSurface(page) {
+  const group = page.locator('.editor-group-container.active').last()
+  const scope = (await group.count()) > 0 ? group : page.locator('.monaco-workbench')
+  const webviews = await scope
+    .locator('.webview')
+    .count()
+    .catch(() => 0)
+  const iframes = await scope
+    .locator('iframe')
+    .count()
+    .catch(() => 0)
+  const body = await scope.innerText().catch(() => '')
+  const collapsed = body.replace(/\s+/gu, ' ').trim()
+  return {
+    webviewPresent: webviews + iframes > 0,
+    binaryNoticePresent:
+      /is not displayed in the (?:text )?editor because it is either binary/iu.test(collapsed),
+    excerpt: collapsed.slice(0, 400),
+  }
+}
+
+/** Press one of the product's own buttons by its accessible title, inside the webview. */
+async function clickViewerControl(port, title, timeoutMs = 20_000) {
+  const clicked = await waitFor(
+    async () => {
+      const values = await webviewValues(
+        port,
+        webviewDocumentExpression(`doc => {
+          const buttons = [...doc.querySelectorAll('button')];
+          const wanted = buttons.find(button => (button.title ?? '') === ${JSON.stringify(title)});
+          if (wanted === undefined || wanted.disabled === true) return undefined;
+          wanted.click();
+          return { title: wanted.title, label: (wanted.textContent ?? '').trim() };
+        }`),
+      )
+      return values.find(value => value !== undefined && value !== null)
+    },
+    { timeoutMs, stepMs: 250 },
+  )
+  if (clicked === undefined) {
+    throw new Error(`Wave 2B viewer control ${JSON.stringify(title)} was absent or disabled`)
+  }
+  return { ...clicked, clickDispatch: 'element.click()', observedBy: 'cdp' }
+}
+
+/** Reopen the active tab with one named editor, chosen in VS Code's own picker, by keyboard. */
+async function reopenWithNamedEditor(page, editorName) {
+  const command = await chooseQuickInput(
+    page,
+    'reopen editor with',
+    /^View: Reopen Editor With(?:\.\.\.|…)?$/u,
+  )
+  const widget = page.locator('.quick-input-widget:visible').last()
+  const selected = await selectQuickInputRowByKeyboard(page, widget, {
+    label: `Reopen Editor With ${JSON.stringify(editorName)}`,
+    filter: editorName,
+    present: text => text.includes(editorName),
+    matches: candidate => candidate.label === editorName,
+    timeoutMs: 30_000,
+  })
+  return { command, pickedLabel: selected.label, selectionMethod: selected.selectionMethod }
+}
+
+async function runMediaAndEditorAcceptance(page, port) {
+  const cases = []
+  const { staged, corrupt } = stageWave2bCorpus()
+  const dds = staged.find(entry => entry.id === 'dds-mipchain')
+  const png = staged.find(entry => entry.id === 'png-common')
+  const wav = staged.find(entry => entry.id === 'wav-ima-adpcm')
+  const ogg = staged.find(entry => entry.id === 'ogg-vorbis')
+
+  const readWorkspaceAssociations = () => {
+    const document = JSON.parse(readFileSync(workspaceFile, 'utf8'))
+    const associations = document?.settings?.['workbench.editorAssociations']
+    return associations !== null && typeof associations === 'object' ? associations : {}
+  }
+
+  // ------------------------------- 2B-5 first half: an enabled codec IS the default for its formats
+  const associationsBefore = await waitFor(
+    () => {
+      const associations = readWorkspaceAssociations()
+      return associations['*.dds'] === 'modkit.genericAssetPreview' &&
+        associations['*.png'] === 'modkit.genericAssetPreview'
+        ? associations
+        : undefined
+    },
+    { timeoutMs: 60_000, stepMs: 500 },
+  )
+  if (associationsBefore === undefined) {
+    throw new Error(
+      `2B-5 enabled codecs did not become the default editor for their formats: ` +
+        `${JSON.stringify(readWorkspaceAssociations())}`,
+    )
+  }
+  /*
+   * Opening a file by name is the same route a double click takes: VS Code resolves the editor from
+   * `workbench.editorAssociations`, so the tab that appears is the association's answer. Both a game
+   * format and a common one are checked, because the owner's decision explicitly covers PNG.
+   */
+  const openedByAssociation = []
+  for (const entry of [dds, png]) {
+    await openWorkspaceFile(page, entry.path)
+    await activateEditor(page, entry.path)
+    const surface = await waitFor(
+      async () => {
+        const observed = await describeActiveEditorSurface(page)
+        return observed.webviewPresent && !observed.binaryNoticePresent ? observed : undefined
+      },
+      { timeoutMs: 60_000, stepMs: 500 },
+    )
+    if (surface === undefined) {
+      const observed = await describeActiveEditorSurface(page)
+      throw new Error(
+        `2B-5 ${entry.target} did not open in Modkit through its default association: ` +
+          `${JSON.stringify(observed)}`,
+      )
+    }
+    openedByAssociation.push({
+      target: entry.target,
+      surface: 'custom-editor-webview',
+      binaryNoticePresent: surface.binaryNoticePresent,
+    })
+  }
+
+  // ------------------------------------------------------------- 2B-6: the native editor picker
+  await activateEditor(page, dds.path)
+  const pickerCommand = await chooseQuickInput(
+    page,
+    'reopen editor with',
+    /^View: Reopen Editor With(?:\.\.\.|…)?$/u,
+  )
+  const pickerWidget = page.locator('.quick-input-widget:visible').last()
+  const pickerRows = pickerWidget.locator('.quick-input-list .monaco-list-row:visible')
+  const pickerTexts = await waitFor(
+    async () => {
+      const texts = await pickerRows.allInnerTexts().catch(() => [])
+      return texts.length > 0 &&
+        WAVE2B_REQUIRED_PICKER_ROWS.every(name => texts.some(text => text.includes(name)))
+        ? texts
+        : undefined
+    },
+    { timeoutMs: 30_000, stepMs: 250 },
+  )
+  if (pickerTexts === undefined) {
+    const seen = await pickerRows.allInnerTexts().catch(() => [])
+    throw new Error(
+      `2B-6 native editor picker did not offer every Modkit editor; rows=${JSON.stringify(seen)}`,
+    )
+  }
+  const normalizedPickerRows = pickerTexts.map(text => text.replace(/\s+/gu, ' ').trim())
+  const textEditorOffered = normalizedPickerRows.some(text => /^Text\b/u.test(text))
+  await page.screenshot({ path: nativePickerScreenshotPath, fullPage: false })
+  cases.push({
+    caseId: 'native-editor-picker',
+    anchor: '2B-6',
+    command: pickerCommand,
+    rows: normalizedPickerRows,
+    requiredRows: WAVE2B_REQUIRED_PICKER_ROWS,
+    textEditorOffered,
+    screenshot: portablePath(nativePickerScreenshotPath),
+    observedBy: 'cdp',
+    verdict: 'pass',
+  })
+  await page.keyboard.press('Escape').catch(() => undefined)
+
+  // ------------------------------------------- 2B-1/2B-2: subresource selection, compare, export
+  await activateEditor(page, dds.path)
+  const imageEditor = await reopenWithNamedEditor(page, 'Modkit Image Viewer')
+  const baseStage = await readStageDataset(port, 'image', [])
+  if ((baseStage?.canvas?.width ?? 0) <= 0) {
+    throw new Error('2B-2 Modkit Image Viewer produced no canvas for the mip-chain DDS')
+  }
+  const mipNext = await clickViewerControl(port, 'Next mip')
+  const afterMip = await waitFor(
+    async () => {
+      const value = await readStageDataset(port, 'image', [])
+      return value?.readout?.includes('subresource mip1') === true ? value : undefined
+    },
+    { timeoutMs: 30_000, stepMs: 250 },
+  )
+  if (afterMip === undefined) throw new Error('2B-2 mip selection did not reach subresource mip1')
+  const compare = await clickViewerControl(port, 'Cycle comparison: off, side by side, difference')
+  const afterCompare = await waitFor(
+    async () => {
+      const value = await readStageDataset(port, 'image', [])
+      return value?.readout?.includes('compared with') === true ? value : undefined
+    },
+    { timeoutMs: 30_000, stepMs: 250 },
+  )
+  if (afterCompare === undefined) throw new Error('2B-2 comparison mode did not engage')
+  const exportAll = await clickViewerControl(port, 'Export every declared subresource as PNG')
+  const exportDirectory = join(workspace, 'modkit-export')
+  const exported = await waitFor(
+    () => {
+      if (!existsSync(exportDirectory)) return undefined
+      const files = readdirSync(exportDirectory).filter(name => name.endsWith('.png'))
+      return files.length >= 8 ? files.sort() : undefined
+    },
+    { timeoutMs: 120_000, stepMs: 500 },
+  )
+  if (exported === undefined) {
+    throw new Error(
+      `2B-2 batch export produced no PNG set in ${portablePath(exportDirectory)}: ` +
+        `${existsSync(exportDirectory) ? readdirSync(exportDirectory).join(', ') : 'no folder'}`,
+    )
+  }
+  cases.push({
+    caseId: 'dds-subresource-tools',
+    anchor: '2B-1/2B-2',
+    corpus: {
+      target: dds.target,
+      bytes: dds.bytes,
+      sha256: dds.sha256,
+      provenance: dds.provenance,
+    },
+    editor: 'Modkit Image Viewer',
+    reopen: imageEditor,
+    baseCanvas: baseStage.canvas,
+    baseReadout: baseStage.readout,
+    mipControl: mipNext,
+    mipCanvas: afterMip.canvas,
+    mipReadout: afterMip.readout,
+    compareControl: compare,
+    compareReadout: afterCompare.readout,
+    exportControl: exportAll,
+    exportedFiles: exported,
+    exportDirectory: portablePath(exportDirectory),
+    observedBy: 'cdp',
+    verdict: 'pass',
+  })
+
+  // ----------------------------------------------------------------------- 2B-3: audio playback
+  for (const [entry, expectedDecoder] of [
+    [wav, 'codec-pcm'],
+    [ogg, 'platform-decoder'],
+  ]) {
+    await openWorkspaceFile(page, entry.path)
+    await activateEditor(page, entry.path)
+    const loaded = await readStageDataset(
+      port,
+      'audio',
+      ['decoder', 'transport', 'rate', 'position'],
+      60_000,
+    )
+    if (loaded?.decoder !== expectedDecoder) {
+      throw new Error(
+        `2B-3 ${entry.target} was decoded by ${String(loaded?.decoder)}, not ${expectedDecoder}`,
+      )
+    }
+    const play = await clickViewerControl(port, 'Play')
+    const playing = await waitFor(
+      async () => {
+        const value = await readStageDataset(port, 'audio', [
+          'decoder',
+          'transport',
+          'rate',
+          'position',
+        ])
+        return value?.transport === 'playing' && Number(value.position) > 0 ? value : undefined
+      },
+      { timeoutMs: 30_000, stepMs: 250 },
+    )
+    if (playing === undefined) {
+      throw new Error(`2B-3 ${entry.target} never reported a playing transport past position 0`)
+    }
+    const rate = await clickViewerControl(port, 'Cycle the playback rate')
+    const rated = await waitFor(
+      async () => {
+        const value = await readStageDataset(port, 'audio', ['transport', 'rate', 'position'])
+        return value?.rate !== undefined && value.rate !== playing.rate ? value : undefined
+      },
+      { timeoutMs: 20_000, stepMs: 250 },
+    )
+    if (rated === undefined) throw new Error(`2B-3 ${entry.target} playback rate did not change`)
+    const pause = await clickViewerControl(port, 'Pause')
+    const paused = await waitFor(
+      async () => {
+        const value = await readStageDataset(port, 'audio', ['transport', 'rate', 'position'])
+        return value?.transport === 'paused' ? value : undefined
+      },
+      { timeoutMs: 20_000, stepMs: 250 },
+    )
+    if (paused === undefined) throw new Error(`2B-3 ${entry.target} did not pause`)
+    cases.push({
+      caseId: `audio-playback-${entry.id}`,
+      anchor: '2B-3',
+      corpus: {
+        target: entry.target,
+        bytes: entry.bytes,
+        sha256: entry.sha256,
+        provenance: entry.provenance,
+      },
+      decoder: loaded.decoder,
+      readout: playing.readout,
+      controls: { play, rate, pause },
+      positionWhilePlaying: Number(playing.position),
+      rateBefore: playing.rate,
+      rateAfter: rated.rate,
+      transportAfterPause: paused.transport,
+      observedBy: 'cdp',
+      verdict: 'pass',
+    })
+  }
+
+  // ------------------------------------------------- 2B-4: corrupt audio payload, typed refusal
+  await openWorkspaceFile(page, corrupt)
+  await activateEditor(page, corrupt)
+  const refusal = await waitFor(
+    async () => {
+      const values = await webviewValues(
+        port,
+        webviewDocumentExpression(`doc => {
+          const text = (doc.body?.innerText || '').slice(0, 8000);
+          return text.includes('wave2b-corrupt.wav') && text.includes('x3.host/') ? text : undefined;
+        }`),
+      )
+      return values.find(value => typeof value === 'string')
+    },
+    { timeoutMs: 90_000, stepMs: 500 },
+  )
+  if (refusal === undefined) {
+    throw new Error('2B-4 corrupt WAV produced no typed refusal in the installed application')
+  }
+  await openWorkspaceFile(page, wav.path)
+  await activateEditor(page, wav.path)
+  const canary = await readStageDataset(port, 'audio', ['decoder', 'transport'], 60_000)
+  if (canary?.decoder !== 'codec-pcm') {
+    throw new Error('2B-4 canary: the application did not open a valid WAV after the refusal')
+  }
+  cases.push({
+    caseId: 'corrupt-audio-then-canary',
+    anchor: '2B-4',
+    refusalExcerpt: compact(refusal, 600),
+    canaryDecoder: canary.decoder,
+    observedBy: 'cdp',
+    verdict: 'pass',
+  })
+
+  // ---------------------------- 2B-5 second half: clearing a codec's default restores the built-in
+  await chooseQuickInput(
+    page,
+    'Open Files of a Codec With Modkit by Default',
+    /Open Files of a Codec With Modkit by Default/u,
+  )
+  const codecWidget = page.locator('.quick-input-widget:visible').last()
+  const pickedCodec = await selectQuickInputRowByKeyboard(page, codecWidget, {
+    label: 'codec default-editor picker',
+    filter: 'modkit/dds',
+    present: text => text.includes('modkit/dds'),
+    matches: candidate => candidate.label === 'modkit/dds',
+    timeoutMs: 30_000,
+  })
+  const associationsAfter = await waitFor(
+    () => {
+      const associations = readWorkspaceAssociations()
+      return associations['*.dds'] === undefined ? associations : undefined
+    },
+    { timeoutMs: 60_000, stepMs: 250 },
+  )
+  if (associationsAfter === undefined) {
+    throw new Error(
+      `2B-5 clearing the codec default did not remove its editor association: ` +
+        `${JSON.stringify(readWorkspaceAssociations())}`,
+    )
+  }
+  if (associationsAfter['*.png'] !== 'modkit.genericAssetPreview') {
+    throw new Error('2B-5 clearing one codec removed another codec’s association')
+  }
+  /*
+   * The anchor is «without reinstalling», so the proof is a reopen in this same window: close the
+   * DDS tab and open the file again by name. The editor VS Code picks now is the built-in one.
+   */
+  await activateEditor(page, dds.path)
+  await page.keyboard.press('Control+W')
+  await page.waitForTimeout(500)
+  await openWorkspaceFile(page, dds.path)
+  await activateEditor(page, dds.path)
+  const builtInSurface = await waitFor(
+    async () => {
+      const observed = await describeActiveEditorSurface(page)
+      return observed.binaryNoticePresent ? observed : undefined
+    },
+    { timeoutMs: 60_000, stepMs: 500 },
+  )
+  if (builtInSurface === undefined) {
+    const observed = await describeActiveEditorSurface(page)
+    throw new Error(
+      `2B-5 the built-in editor did not come back after the default was cleared: ` +
+        `${JSON.stringify(observed)}`,
+    )
+  }
+  cases.push({
+    caseId: 'codec-default-editor-toggle',
+    anchor: '2B-5',
+    command: 'modkit.setCodecDefaultEditor',
+    contributionId: pickedCodec.label,
+    selectionMethod: pickedCodec.selectionMethod,
+    openedByAssociation,
+    associationBefore: associationsBefore['*.dds'],
+    associationAfter: associationsAfter['*.dds'] ?? null,
+    unrelatedAssociationKept: associationsAfter['*.png'],
+    builtInEditorRestored: {
+      binaryNoticePresent: builtInSurface.binaryNoticePresent,
+      excerpt: compact(builtInSurface.excerpt, 200),
+    },
+    scope: 'workspace',
+    windowReloaded: false,
+    observedBy: 'cdp',
+    verdict: 'pass',
+  })
+
+  return {
+    kind: 'x3.vscode-installed-media-editor-acceptance',
+    schemaVersion: 1,
+    artifactSha256: receipt.artifact.sha256,
+    cases,
+    failures: [],
+    verdict: 'pass',
+  }
+}
+
 async function launchGeneration(generation) {
   const port = await freePort()
   activeApplications.set(port, { generation, launchPid: null })
@@ -2984,6 +3544,24 @@ async function launchGeneration(generation) {
     receipt.archiveAcceptance.cases = portableReceiptValue(archiveCases)
     receipt.archiveAcceptance.failures = portableReceiptValue(archive.failures)
     receipt.archiveAcceptance.verdict = 'pass'
+  }
+
+  /*
+   * Wave 2B: media tools, playback, corrupt-media refusal and the native editor picker.
+   *
+   * Placed after the Wave 2A product receipts are settled so a media failure cannot be mistaken for
+   * an archive one, and so the archive barriers are never waiting on a picker.
+   */
+  if (generation === 3) {
+    const media = await runMediaAndEditorAcceptance(page, port)
+    receipt.mediaAcceptance.artifactSha256 = media.artifactSha256
+    receipt.mediaAcceptance.cases = portableReceiptValue(media.cases)
+    receipt.mediaAcceptance.failures = portableReceiptValue(media.failures)
+    const anchors = new Set(media.cases.map(item => item.anchor))
+    for (const anchor of receipt.mediaAcceptance.expectedAnchors) {
+      if (!anchors.has(anchor)) throw new Error(`Wave 2B anchor ${anchor} produced no case`)
+    }
+    receipt.mediaAcceptance.verdict = 'pass'
   }
 
   const runReceipt = {
