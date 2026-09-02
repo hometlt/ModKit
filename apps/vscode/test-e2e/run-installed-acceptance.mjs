@@ -921,10 +921,22 @@ async function selectQuickInputRowByKeyboard(page, widget, options) {
     maxSteps = 80,
     timeoutMs = 30_000,
   } = options
+  /*
+   * Narrowing is an optimisation, not the guarantee: some pickers — the editor picker VS Code 1.136
+   * raises for «Reopen Editor With» among them — render no filter box at all. The arrow walk below
+   * is what actually selects, so a missing input must not stop it. Whether narrowing happened is
+   * recorded rather than assumed.
+   */
+  let filtered = false
   if (typeof filter === 'string') {
     const input = widget.locator('input:visible').last()
-    await input.waitFor({ state: 'visible', timeout: 20_000 })
-    await input.fill(filter)
+    try {
+      await input.waitFor({ state: 'visible', timeout: 5_000 })
+      await input.fill(filter)
+      filtered = true
+    } catch {
+      filtered = false
+    }
   }
   const rows = widget.locator('.quick-input-list .monaco-list-row:visible')
   // Do not start walking an empty list: wait until the wanted row is actually rendered.
@@ -950,7 +962,12 @@ async function selectQuickInputRowByKeyboard(page, widget, options) {
         visited.push(row.rowText)
         if (matches(row)) {
           await page.keyboard.press('Enter')
-          return { ...row, keyboardSteps: steps, selectionMethod: 'keyboard-filter-arrows-enter' }
+          return {
+            ...row,
+            keyboardSteps: steps,
+            filtered,
+            selectionMethod: filtered ? 'keyboard-filter-arrows-enter' : 'keyboard-arrows-enter',
+          }
         }
       }
     }
@@ -2273,40 +2290,41 @@ async function activateEditor(page, filePath = ddsPath) {
 
 async function openWorkspaceFile(page, filePath) {
   const file = basename(filePath)
-  let widget
+  /*
+   * Quick Open is opened, filled and CHECKED as one attempt. Splitting them left the caller
+   * asserting against a widget that had accepted the shortcut but not the query — an empty result
+   * list then read as "the file is not there" instead of "ask again".
+   */
   let lastError
   for (let attempt = 1; attempt <= 3; attempt += 1) {
     await page.keyboard.press('Escape').catch(() => undefined)
     await focusWorkbench(page)
     await page.keyboard.press('Control+P')
-    widget = page.locator('.quick-input-widget:visible').last()
+    const widget = page.locator('.quick-input-widget:visible').last()
     try {
-      await widget.locator('input:visible').last().waitFor({ state: 'visible', timeout: 5_000 })
-      lastError = undefined
-      break
+      const input = widget.locator('input:visible').last()
+      await input.waitFor({ state: 'visible', timeout: 5_000 })
+      await input.fill(file)
+      // H2: keyboard selection — Quick Open re-renders its rows while results stream in.
+      await selectQuickInputRowByKeyboard(page, widget, {
+        label: `Quick Open ${JSON.stringify(file)}`,
+        present: text => quickInputTextMatches(file, text),
+        matches: candidate =>
+          candidate.label === file || quickInputTextMatches(file, candidate.rowText),
+        timeoutMs: 15_000,
+      })
+      await page
+        .locator('.tabs-container .tab:visible')
+        .filter({ hasText: file })
+        .last()
+        .waitFor({ state: 'visible', timeout: 20_000 })
+      return
     } catch (error) {
       lastError = error
-      await page.waitForTimeout(250)
+      await page.waitForTimeout(500)
     }
   }
-  if (lastError !== undefined) {
-    throw new Error(`Quick Open did not accept Ctrl+P for ${file}: ${String(lastError)}`)
-  }
-  const input = widget.locator('input:visible').last()
-  await input.fill(file)
-  // H2: keyboard selection — Quick Open re-renders its rows while results stream in.
-  await selectQuickInputRowByKeyboard(page, widget, {
-    label: `Quick Open ${JSON.stringify(file)}`,
-    present: text => quickInputTextMatches(file, text),
-    matches: candidate =>
-      candidate.label === file || quickInputTextMatches(file, candidate.rowText),
-    timeoutMs: 20_000,
-  })
-  await page
-    .locator('.tabs-container .tab:visible')
-    .filter({ hasText: file })
-    .last()
-    .waitFor({ state: 'visible', timeout: 20_000 })
+  throw new Error(`Quick Open never opened ${file}: ${String(lastError)}`)
 }
 
 /*
@@ -2621,7 +2639,11 @@ async function readStageDataset(port, part, keys, timeoutMs = 30_000) {
           if (stage === null) return undefined;
           const readout = doc.querySelector('[data-mk-part="${part}.readout"]');
           const canvas = doc.querySelector('[data-mk-part="${part}.canvas"]');
-          const result = { readout: (readout?.textContent ?? '').slice(0, 400) };
+          const result = {
+            readout: (readout?.textContent ?? '').slice(0, 400),
+            stageState: stage.getAttribute('data-mk-state') ?? '',
+            stageText: (stage.textContent ?? '').replace(/s+/g, ' ').trim().slice(0, 600),
+          };
           if (canvas !== null) { result.canvas = { width: canvas.width, height: canvas.height }; }
           for (const key of ${JSON.stringify(keys)}) {
             const value = stage.dataset[key];
@@ -2733,12 +2755,35 @@ async function clickViewerControl(port, title, timeoutMs = 20_000) {
  */
 async function openReopenEditorPicker(page, filePath) {
   await activateEditor(page, filePath)
+  /*
+   * The helper owns its postcondition: the picker is actually up. Running the palette command is
+   * not the same as the picker appearing — the command needs an active editor, and right after an
+   * editor was opened that can still be settling. When the palette route produces no rows, the tab
+   * context menu is taken instead of the caller waiting out a picker that never came.
+   */
+  const pickerRows = () =>
+    page
+      .locator('.quick-input-widget:visible')
+      .last()
+      .locator('.quick-input-list .monaco-list-row:visible')
+  const pickerAppeared = async timeoutMs =>
+    (await waitFor(
+      async () =>
+        (await pickerRows()
+          .count()
+          .catch(() => 0)) > 0
+          ? true
+          : undefined,
+      { timeoutMs, stepMs: 250 },
+    )) === true
   try {
-    return await chooseQuickInput(
+    const command = await chooseQuickInput(
       page,
       'reopen editor with',
       /^View: Reopen Editor With(?:\.\.\.|…)?$/u,
     )
+    if (await pickerAppeared(10_000)) return command
+    throw new Error('the palette ran Reopen Editor With but no picker appeared')
   } catch (paletteError) {
     await page.keyboard.press('Escape').catch(() => undefined)
     const file = basename(filePath)
@@ -2751,6 +2796,9 @@ async function openReopenEditorPicker(page, filePath) {
       await menuItem.waitFor({ state: 'visible', timeout: 10_000 })
       const label = await menuItem.innerText()
       await menuItem.click()
+      if (!(await pickerAppeared(15_000))) {
+        throw new Error('the tab context menu opened no editor picker')
+      }
       return `tab context menu: ${label}`
     } catch (contextMenuError) {
       throw new Error(
@@ -2776,7 +2824,9 @@ async function reopenWithNamedEditor(page, filePath, editorName) {
 }
 
 async function runMediaAndEditorAcceptance(page, port) {
-  const cases = []
+  // Push straight into the receipt: a case that passed is evidence even when a later one fails,
+  // and the previous shape lost every earlier case whenever the block threw.
+  const cases = receipt.mediaAcceptance.cases
   const { staged, corrupt } = stageWave2bCorpus()
   const dds = staged.find(entry => entry.id === 'dds-mipchain')
   const png = staged.find(entry => entry.id === 'png-common')
@@ -2960,7 +3010,8 @@ async function runMediaAndEditorAcceptance(page, port) {
     )
     if (loaded?.decoder !== expectedDecoder) {
       throw new Error(
-        `2B-3 ${entry.target} was decoded by ${String(loaded?.decoder)}, not ${expectedDecoder}`,
+        `2B-3 ${entry.target} was decoded by ${String(loaded?.decoder)}, not ${expectedDecoder}; ` +
+          `stage=${JSON.stringify(loaded)}`,
       )
     }
     const play = await clickViewerControl(port, 'Play')
