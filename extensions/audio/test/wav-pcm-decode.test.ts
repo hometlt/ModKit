@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { createAudioMediaSource } from '@modkit/codec-kit'
 import {
   adpcmFramesPerBlock,
   decodeWavPcm,
@@ -153,5 +154,42 @@ describe('WAV IMA ADPCM', () => {
     expect([...(channels[0] as Float32Array)].map(value => Math.round(value * 32_768))).toEqual([
       -2000, -1993, -2003,
     ])
+  })
+})
+
+/**
+ * The audio media source over the capability RPC (Wave 2B, anchor 2B-3).
+ *
+ * JSON has no `undefined`. A viewer asking for "no particular track" in-process passes `undefined`;
+ * the same call arrives as `null` once the codec runs worker-brokered, which is how every installed
+ * VS Code editor runs it. That difference used to make the default request refuse itself.
+ */
+describe('audio media source track selection', () => {
+  const source = () =>
+    createAudioMediaSource(new Uint8Array([1, 2, 3, 4]), 'audio/wav', {
+      durationMs: 10,
+      seekable: true,
+      tracks: [{ id: 'stream-0', codec: 'pcm', channels: 1, sampleRate: 8_000, selected: true }],
+      pcmAccess: false,
+    })
+
+  it('treats null like undefined: both mean "no particular track"', async () => {
+    await expect(source().encoded(undefined)).resolves.toBeDefined()
+    await expect(source().encoded(null as unknown as undefined)).resolves.toBeDefined()
+  })
+
+  it('still refuses a track id that does not exist', async () => {
+    await expect(source().encoded('stream-9')).rejects.toThrow(/unknown audio track stream-9/u)
+  })
+
+  it('refuses to declare pcmAccess without a reader', async () => {
+    expect(() =>
+      createAudioMediaSource(new Uint8Array([1]), 'audio/wav', {
+        durationMs: 1,
+        seekable: true,
+        tracks: [{ id: 'stream-0', codec: 'pcm', channels: 1, sampleRate: 8_000, selected: true }],
+        pcmAccess: true,
+      }),
+    ).toThrow(/pcmAccess without a readPcm/u)
   })
 })

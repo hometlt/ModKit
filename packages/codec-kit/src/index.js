@@ -291,7 +291,20 @@ export function createAudioMediaSource(bytes, mediaType, info, readPcm) {
     },
     async encoded(trackId, signal) {
       if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-      if (trackId !== undefined && !tracks.some(track => track.id === trackId)) {
+      /*
+       * `null` means the same as `undefined` here: "no particular track".
+       *
+       * The capability RPC carries JSON, and JSON has no `undefined` — a viewer that calls
+       * `encoded(undefined)` in-process is calling `encoded(null)` once the codec runs
+       * worker-brokered, which is how every installed VS Code editor runs it. Treating that as a
+       * track id made the default request refuse itself with "unknown audio track null", and the
+       * audio stage showed a decoder error for a file it could decode perfectly well.
+       */
+      if (
+        trackId !== undefined &&
+        trackId !== null &&
+        !tracks.some(track => track.id === trackId)
+      ) {
         throw new RangeError(`unknown audio track ${trackId}`)
       }
       return encoded
