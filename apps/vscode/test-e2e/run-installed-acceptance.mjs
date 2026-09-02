@@ -2167,11 +2167,33 @@ const webviewDocumentExpression = body => `(() => {
   return undefined;
 })()`
 
+/**
+ * Put keyboard focus back on the workbench before a workbench shortcut is pressed.
+ *
+ * Confirming an editor in the picker with Enter (H2) leaves focus inside the chosen editor — and
+ * for a Modkit editor that is a webview iframe, which does not forward Ctrl+P or F1 to the
+ * workbench. The old mouse click on a picker row happened to leave focus in the main document, so
+ * the shortcut worked by accident. Clicking the already-active tab is the ordinary user gesture
+ * that makes it work on purpose.
+ */
+async function focusWorkbench(page) {
+  const tab = page.locator('.tabs-container .tab.active:visible').last()
+  if ((await tab.count().catch(() => 0)) > 0) {
+    await tab.click({ timeout: 5_000 }).catch(() => undefined)
+    return
+  }
+  await page
+    .locator('.monaco-workbench')
+    .click({ position: { x: 8, y: 8 }, timeout: 5_000 })
+    .catch(() => undefined)
+}
+
 async function fillQuickInput(page, query) {
   let lastError
   for (let attempt = 1; attempt <= 5; attempt += 1) {
     await page.keyboard.press('Escape').catch(() => undefined)
     await page.waitForTimeout(100)
+    await focusWorkbench(page)
     await page.keyboard.press('F1')
     const widget = page.locator('.quick-input-widget:visible').last()
     const input = widget.locator('input:visible').last()
@@ -2251,10 +2273,26 @@ async function activateEditor(page, filePath = ddsPath) {
 
 async function openWorkspaceFile(page, filePath) {
   const file = basename(filePath)
-  await page.keyboard.press('Control+P')
-  const widget = page.locator('.quick-input-widget:visible').last()
+  let widget
+  let lastError
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    await page.keyboard.press('Escape').catch(() => undefined)
+    await focusWorkbench(page)
+    await page.keyboard.press('Control+P')
+    widget = page.locator('.quick-input-widget:visible').last()
+    try {
+      await widget.locator('input:visible').last().waitFor({ state: 'visible', timeout: 5_000 })
+      lastError = undefined
+      break
+    } catch (error) {
+      lastError = error
+      await page.waitForTimeout(250)
+    }
+  }
+  if (lastError !== undefined) {
+    throw new Error(`Quick Open did not accept Ctrl+P for ${file}: ${String(lastError)}`)
+  }
   const input = widget.locator('input:visible').last()
-  await input.waitFor({ state: 'visible', timeout: 5_000 })
   await input.fill(file)
   // H2: keyboard selection — Quick Open re-renders its rows while results stream in.
   await selectQuickInputRowByKeyboard(page, widget, {
