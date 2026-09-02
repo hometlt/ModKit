@@ -2131,7 +2131,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:53aa36205b5bcb142b9efd151f95b4951aa65828f948b3b58160c9d298b5bab2',
+        artifactDigest: 'sha256:635314a89da917111341771b7cb0b96ec32fbdfd13666a752647e1816247c9bc',
         fileDigests: {
           'MIGRATION-NOTES-common-audio.json':
             'sha256:9208bc42ef1da984ce9776d9bed7024eaf3f797a1cd56ca193919caf142ee636',
@@ -2163,14 +2163,14 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/ogg/codec.js':
             'sha256:4615fe83734068e90591d68c46614b158c40cd1d10466e5f320170cea719e515',
           'src/wav/codec.js':
-            'sha256:bb0e1a3db1a75cf6af1ac4c4c85b0213d9e4debe80c73f40657156cfbacf03b7',
+            'sha256:4f00c2a91a81f4313d0547b761999e78b8e76b3458ebf30b48f7f71cd0e89201',
           'src/wav/pcm.js':
             'sha256:f67d79a5e25ebd640be028b510fa09b84a9ba06ca0e4cc441026cf30beb48f37',
           'test/wav-pcm-decode.test.ts':
             'sha256:69f5cada4c7a40bc0834dc4b52d03d2d9fcc47f71e406d8b399cc011b2de0c07',
         },
         inventoryRecordId:
-          'artifact:sha256:53aa36205b5bcb142b9efd151f95b4951aa65828f948b3b58160c9d298b5bab2',
+          'artifact:sha256:635314a89da917111341771b7cb0b96ec32fbdfd13666a752647e1816247c9bc',
       },
       artifactRoot: 'extensions/audio/',
       containers: {
