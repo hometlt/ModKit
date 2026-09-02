@@ -932,7 +932,13 @@ async function selectQuickInputRowByKeyboard(page, widget, options) {
     const input = widget.locator('input:visible').last()
     try {
       await input.waitFor({ state: 'visible', timeout: 5_000 })
-      await typeIntoQuickInput(page, input, filter)
+      /*
+       * Plain `fill` here on purpose. Wave 2A proved this exact path on the CASC picker, and the
+       * keystroke trick below is only needed by the F1 command palette, which in VS Code 1.136 does
+       * not re-filter on a filled value. Using it here instead put the archive search back to an
+       * empty result list.
+       */
+      await input.fill(filter)
       filtered = true
     } catch {
       filtered = false
@@ -985,7 +991,7 @@ async function observeAndSelectArchiveSearch(page, expected) {
   const widget = page.locator('.quick-input-widget:visible').last()
   const input = widget.locator('input:visible').last()
   await input.waitFor({ state: 'visible', timeout: 20_000 })
-  await typeIntoQuickInput(page, input, expected.query)
+  await input.fill(expected.query)
   const inputValue = await input.inputValue()
   if (inputValue !== expected.query) {
     throw new Error(
@@ -2349,7 +2355,7 @@ async function openWorkspaceFile(page, filePath) {
     try {
       const input = widget.locator('input:visible').last()
       await input.waitFor({ state: 'visible', timeout: 5_000 })
-      await typeIntoQuickInput(page, input, file)
+      await input.fill(file)
       // H2: keyboard selection — Quick Open re-renders its rows while results stream in.
       await selectQuickInputRowByKeyboard(page, widget, {
         label: `Quick Open ${JSON.stringify(file)}`,
