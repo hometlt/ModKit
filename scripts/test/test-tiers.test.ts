@@ -41,6 +41,7 @@ describe('1C test tier routing', () => {
       'extensions/images/test/ani-raster-decode.test.ts',
       'extensions/images/test/astc-ordinary-ldr.test.ts',
       'extensions/images/test/astc-void-extent.test.ts',
+      'extensions/images/test/dds-subresources.test.ts',
       'extensions/images/test/eac-r11-decode.test.ts',
     ])
   })

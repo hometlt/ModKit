@@ -43,7 +43,8 @@ describe('generated VS Code contributions', () => {
       authorityDocument.fileSystemSchemes.length
     const result = run()
 
-    expect(expectedActivationEventCount).toBe(39)
+    // Wave 2B added three stage-specific custom editors and two association commands.
+    expect(expectedActivationEventCount).toBe(44)
     expect(result.status).toBe(0)
     expect(result.stderr).toBe('')
     expect(result.stdout).toContain(`${expectedActivationEventCount} activation events`)

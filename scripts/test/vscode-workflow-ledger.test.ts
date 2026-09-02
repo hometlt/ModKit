@@ -141,7 +141,8 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       },
       decisionRequired: 0,
       releaseCandidateGaps: 0,
-      currentX3ObservedFacts: 59,
+      // Wave 2B added three custom editors, two commands and three settings.
+      currentX3ObservedFacts: 67,
     })
     expect(ledger.counts.byKind).toEqual({
       'cli-command': 5,
@@ -238,14 +239,15 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
     ).toHaveLength(62)
   })
 
-  it('records the factual 64→35, 11→1, 8→0 and 6→2 surface change', () => {
+  it('records the factual 64→37, 11→4, 8→0 and 6→2 surface change', () => {
     const ledger = JSON.parse(readFileSync(committedLedger, 'utf8'))
     expect(ledger.surfaceComparison).toEqual({
       legacyVsCode: { commands: 64, customEditors: 11, languages: 8, views: 6 },
       currentX3VsCode: {
-        commands: 35,
-        configurationProperties: 4,
-        customEditors: 1,
+        // Wave 2B: two association commands, three settings, three stage-specific editors.
+        commands: 37,
+        configurationProperties: 7,
+        customEditors: 4,
         fileSystemSchemes: 1,
         keybindings: 0,
         languages: 0,
@@ -274,7 +276,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       'Доказанные callers: Automation, CLI, Electron, PWA, `server`, VS Code.',
     )
     expect(status).not.toContain('PWA не заявлен')
-    expect(ledger.currentX3Facts).toHaveLength(59)
+    expect(ledger.currentX3Facts).toHaveLength(67)
     expect(
       ledger.currentX3Facts.every((row: { state: string }) => row.state === 'observed-only'),
     ).toBe(true)
@@ -446,8 +448,10 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.runtime.control',
         'modkit.searchContainer',
         'modkit.selectGameInstallation',
+        'modkit.setCodecDefaultEditor',
         'modkit.showDiagnostics',
         'modkit.showHostProfile',
+        'modkit.syncEditorAssociations',
         'modkit.unloadSource',
       ],
       registeredRuntimeCommands: [
@@ -486,8 +490,10 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
         'modkit.runtime.control',
         'modkit.searchContainer',
         'modkit.selectGameInstallation',
+        'modkit.setCodecDefaultEditor',
         'modkit.showDiagnostics',
         'modkit.showHostProfile',
+        'modkit.syncEditorAssociations',
         'modkit.unloadSource',
       ],
       internalRuntimeCommands: [
