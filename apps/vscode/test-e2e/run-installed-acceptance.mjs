@@ -932,7 +932,7 @@ async function selectQuickInputRowByKeyboard(page, widget, options) {
     const input = widget.locator('input:visible').last()
     try {
       await input.waitFor({ state: 'visible', timeout: 5_000 })
-      await input.fill(filter)
+      await typeIntoQuickInput(page, input, filter)
       filtered = true
     } catch {
       filtered = false
@@ -985,7 +985,7 @@ async function observeAndSelectArchiveSearch(page, expected) {
   const widget = page.locator('.quick-input-widget:visible').last()
   const input = widget.locator('input:visible').last()
   await input.waitFor({ state: 'visible', timeout: 20_000 })
-  await input.fill(expected.query)
+  await typeIntoQuickInput(page, input, expected.query)
   const inputValue = await input.inputValue()
   if (inputValue !== expected.query) {
     throw new Error(
@@ -2205,6 +2205,37 @@ async function focusWorkbench(page) {
     .catch(() => undefined)
 }
 
+/**
+ * Put a query into a quick input the way a person does: focus the box, then type.
+ *
+ * `locator.fill()` sets the value and dispatches one input event, which Monaco's quick input does
+ * not always act on — the acceptance caught it rendering the FULL command list with «recently used»
+ * at the top while the box held the query. Worse, focus stayed outside the widget, so the arrow keys
+ * that select the row went nowhere. Clicking the text box is not a click on a virtualised row, so
+ * H2 still holds: the row itself is chosen with the keyboard.
+ */
+async function typeIntoQuickInput(page, input, text) {
+  /*
+   * `focus()`, not `click()`: the quick input animates as it opens, and a click has to prove the
+   * box is stable first — which it is not, so the click timed out on a widget that was perfectly
+   * usable. Focus only needs the element attached. Select-all then type replaces whatever the
+   * widget was holding, and the events are the ones a person's keyboard produces.
+   */
+  await input.focus({ timeout: 5_000 })
+  await page.keyboard.press('Control+A')
+  await page.keyboard.type(text, { delay: 5 })
+  const settled = await waitFor(
+    async () => ((await input.inputValue().catch(() => '')) === text ? true : undefined),
+    { timeoutMs: 5_000, stepMs: 100 },
+  )
+  if (settled !== true) {
+    throw new Error(
+      `quick input did not accept ${JSON.stringify(text)}; it holds ` +
+        `${JSON.stringify(await input.inputValue().catch(() => ''))}`,
+    )
+  }
+}
+
 async function fillQuickInput(page, query) {
   let lastError
   for (let attempt = 1; attempt <= 5; attempt += 1) {
@@ -2216,9 +2247,9 @@ async function fillQuickInput(page, query) {
     const input = widget.locator('input:visible').last()
     try {
       await input.waitFor({ state: 'visible', timeout: 5_000 })
-      // F1 starts in command mode with a `>` prefix. `fill` replaces the complete value, so keep
-      // that prefix explicitly instead of accidentally turning the request into file Quick Open.
-      await input.fill(`>${query}`, { timeout: 5_000 })
+      // F1 starts in command mode with a `>` prefix. The whole value is replaced, so keep that
+      // prefix explicitly instead of accidentally turning the request into file Quick Open.
+      await typeIntoQuickInput(page, input, `>${query}`)
       return widget
     } catch (error) {
       lastError = error
@@ -2304,7 +2335,7 @@ async function openWorkspaceFile(page, filePath) {
     try {
       const input = widget.locator('input:visible').last()
       await input.waitFor({ state: 'visible', timeout: 5_000 })
-      await input.fill(file)
+      await typeIntoQuickInput(page, input, file)
       // H2: keyboard selection — Quick Open re-renders its rows while results stream in.
       await selectQuickInputRowByKeyboard(page, widget, {
         label: `Quick Open ${JSON.stringify(file)}`,
@@ -2355,82 +2386,16 @@ async function inspectModkitCommands(page) {
   return commandTexts
 }
 
+/**
+ * Generation 1: open the DDS with Modkit through VS Code’s own picker.
+ *
+ * Shares one opener with the Wave 2B media cases. It used to match the palette command with an
+ * anchored regex over the whole row text, which VS Code 1.136 broke by rendering the keybinding
+ * in the same row; the label element carries the title alone.
+ */
 async function reopenWithModkit(page, filePath = ddsPath) {
-  await activateEditor(page, filePath)
-  try {
-    receipt.install.reopenCommand = await chooseQuickInput(
-      page,
-      'reopen editor with',
-      /^View: Reopen Editor With(?:\.\.\.|…)?$/u,
-    )
-  } catch (paletteError) {
-    // VS Code can hide the palette command after an editor association changed earlier in the
-    // same session. The editor-tab context menu is the equivalent ordinary user UI route.
-    await page.keyboard.press('Escape').catch(() => undefined)
-    const file = basename(filePath)
-    const tab = page.locator('.tabs-container .tab:visible').filter({ hasText: file }).last()
-    await tab.click({ button: 'right' })
-    const menuItem = page
-      .getByRole('menuitem', { name: /^Reopen Editor With(?:\.\.\.|…)?$/u })
-      .last()
-    try {
-      await menuItem.waitFor({ state: 'visible', timeout: 10_000 })
-      receipt.install.reopenCommand = `tab context menu: ${await menuItem.innerText()}`
-      await menuItem.click()
-    } catch (contextMenuError) {
-      throw new Error(
-        `Reopen Editor With was unavailable in both command palette and tab context menu; ` +
-          `palette=${String(paletteError)}; context=${String(contextMenuError)}`,
-      )
-    }
-  }
-  const widget = page.locator('.quick-input-widget:visible').last()
-  const rows = widget.locator('.quick-input-list .monaco-list-row:visible')
-  const option = page.locator(':text-is("Modkit Asset Preview"):visible').last()
-  try {
-    await option.waitFor({ state: 'visible', timeout: 20_000 })
-  } catch (error) {
-    const visibleRows = await rows.allInnerTexts().catch(() => [])
-    const allVisibleRows = await page
-      .locator('.monaco-list-row:visible')
-      .allInnerTexts()
-      .catch(() => [])
-    const visibleContexts = await page
-      .locator('.context-view:visible')
-      .allInnerTexts()
-      .catch(() => [])
-    const widgetText = await widget.innerText().catch(() => '<no visible quick input>')
-    const activeTabs = await page
-      .locator('.tabs-container .tab.active:visible')
-      .allInnerTexts()
-      .catch(() => [])
-    const relevantBodyLines = (
-      await page
-        .locator('body')
-        .innerText()
-        .catch(() => '')
-    )
-      .split(/\r?\n/u)
-      .map(line => line.trim())
-      .filter(line => /modkit|editor|wave1a|dds|encoding/iu.test(line))
-      .slice(0, 80)
-    await page.screenshot({ path: screenshotPath, fullPage: false }).catch(() => undefined)
-    throw new Error(
-      `Reopen Editor With exposed no Modkit option; active tabs=${JSON.stringify(activeTabs)}; ` +
-        `picker rows=${JSON.stringify(visibleRows)}; all rows=${JSON.stringify(allVisibleRows)}; ` +
-        `contexts=${JSON.stringify(visibleContexts)}; picker=${JSON.stringify(widgetText)}; ` +
-        `relevant body=${JSON.stringify(relevantBodyLines)}; ` +
-        `cause=${String(error)}`,
-    )
-  }
-  // H2: the editor picker is a virtualised list too — filter and confirm with the keyboard.
-  await selectQuickInputRowByKeyboard(page, widget, {
-    label: 'Reopen Editor With picker',
-    filter: 'Modkit Asset Preview',
-    present: text => quickInputTextMatches('Modkit Asset Preview', text),
-    matches: candidate => candidate.label === 'Modkit Asset Preview',
-    timeoutMs: 20_000,
-  })
+  const reopened = await reopenWithNamedEditor(page, filePath, 'Modkit Asset Preview')
+  receipt.install.reopenCommand = reopened.command
 }
 
 async function observeCorruptInputRefusal(page, port, timeoutMs = 60_000) {
@@ -2688,36 +2653,47 @@ async function openModkitSubjectFormats(port) {
  * actually end up with no editor open and no Modkit subject still holding one.
  */
 async function closeAllEditors(page, port) {
-  const widget = await fillQuickInput(page, 'close all editors')
-  await selectQuickInputRowByKeyboard(page, widget, {
-    label: 'View: Close All Editors',
-    present: rowText => quickInputTextMatches('Close All Editors', rowText),
-    matches: candidate =>
-      candidate.label === 'View: Close All Editors' || candidate.label === 'Close All Editors',
-    timeoutMs: 30_000,
-  })
-  const closed = await waitFor(
-    async () => {
-      const tabs = await page
-        .locator('.tabs-container .tab:visible')
-        .count()
-        .catch(() => 1)
-      if (tabs !== 0) return undefined
-      const subjects = await openModkitSubjectFormats(port)
-      return subjects.length === 0 ? { tabs, subjects } : undefined
-    },
-    { timeoutMs: 30_000, stepMs: 250 },
-  )
-  if (closed === undefined) {
-    const tabs = await page
+  /*
+   * Ask, then check, then ask again if needed. The command is selected by the row LABEL, because
+   * this one renders its keybinding in the same row and an anchored title over the whole row text
+   * can never match it. The outcome is the assertion: no editor tab left and no Modkit subject
+   * still holding one. Retrying the request does not relax that - it only stops one dropped
+   * keystroke from ending a run.
+   */
+  let observed
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    const widget = await fillQuickInput(page, 'close all editors')
+    await selectQuickInputRowByKeyboard(page, widget, {
+      label: 'View: Close All Editors',
+      present: rowText => quickInputTextMatches('Close All Editors', rowText),
+      matches: candidate =>
+        candidate.label === 'View: Close All Editors' || candidate.label === 'Close All Editors',
+      timeoutMs: 30_000,
+    })
+    const closed = await waitFor(
+      async () => {
+        const tabs = await page
+          .locator('.tabs-container .tab:visible')
+          .count()
+          .catch(() => 1)
+        if (tabs !== 0) return undefined
+        const subjects = await openModkitSubjectFormats(port)
+        return subjects.length === 0 ? { tabs, subjects } : undefined
+      },
+      { timeoutMs: 15_000, stepMs: 250 },
+    )
+    if (closed !== undefined) return
+    observed = await page
       .locator('.tabs-container .tab:visible')
       .allInnerTexts()
       .catch(() => [])
-    throw new Error(
-      `the window did not end up with every editor closed; tabs=${JSON.stringify(tabs)}; ` +
-        `Modkit subjects=${JSON.stringify(await openModkitSubjectFormats(port))}`,
-    )
+    await page.waitForTimeout(500)
   }
+  throw new Error(
+    `the window did not end up with every editor closed after three requests; ` +
+      `tabs=${JSON.stringify(observed)}; ` +
+      `Modkit subjects=${JSON.stringify(await openModkitSubjectFormats(port))}`,
+  )
 }
 
 /** Press one of the product's own buttons by its accessible title, inside the webview. */
@@ -2777,13 +2753,27 @@ async function openReopenEditorPicker(page, filePath) {
       { timeoutMs, stepMs: 250 },
     )) === true
   try {
-    const command = await chooseQuickInput(
-      page,
-      'reopen editor with',
-      /^View: Reopen Editor With(?:\.\.\.|…)?$/u,
+    /*
+     * Match the row LABEL, not the whole row text. VS Code 1.136 renders this command with extra
+     * content in the same row, so an anchored title over the row's text no longer matches - the
+     * same trap that hid View: Close All Editors. The label element carries the title alone.
+     */
+    const widget = await fillQuickInput(page, 'reopen editor with')
+    const offered = await widget
+      .locator('.quick-input-list .monaco-list-row:visible')
+      .allInnerTexts()
+      .catch(() => [])
+    const picked = await selectQuickInputRowByKeyboard(page, widget, {
+      label: 'View: Reopen Editor With',
+      present: rowText => quickInputTextMatches('Reopen Editor With', rowText),
+      matches: candidate =>
+        /^(?:View: )?Reopen Editor With(?:...|…)?$/u.test(candidate.label.trim()),
+      timeoutMs: 20_000,
+    })
+    if (await pickerAppeared(10_000)) return picked.label
+    throw new Error(
+      `the palette ran Reopen Editor With but no picker appeared; offered=${JSON.stringify(offered)}`,
     )
-    if (await pickerAppeared(10_000)) return command
-    throw new Error('the palette ran Reopen Editor With but no picker appeared')
   } catch (paletteError) {
     await page.keyboard.press('Escape').catch(() => undefined)
     const file = basename(filePath)
@@ -3005,7 +2995,7 @@ async function runMediaAndEditorAcceptance(page, port) {
     const loaded = await readStageDataset(
       port,
       'audio',
-      ['decoder', 'transport', 'rate', 'position'],
+      ['decoder', 'transport', 'rate', 'position', 'phase'],
       60_000,
     )
     if (loaded?.decoder !== expectedDecoder) {

@@ -88,7 +88,19 @@ export async function collectCodecPcm(
   const windows: (readonly Float32Array[])[] = []
   let sampleRate = 0
   let frames = 0
+  /*
+   * Bounded by window count as well as by frames. A source that answers every request with the
+   * same window — ignoring `fromFrame` — would otherwise spin here forever, and a viewer that
+   * hangs is worse than one that says what went wrong: the stage would sit in "loading" with no
+   * reason to show.
+   */
+  const maximumWindows = Math.ceil(AUDIO_MAXIMUM_PCM_FRAMES / AUDIO_PCM_WINDOW_FRAMES) + 1
   for (let from = 0; frames < AUDIO_MAXIMUM_PCM_FRAMES;) {
+    if (windows.length >= maximumWindows) {
+      throw new TypeError(
+        `the codec returned ${windows.length} PCM windows without reaching the end of the track`,
+      )
+    }
     const block = await source.readPcm(
       {
         trackId,
@@ -121,6 +133,7 @@ export async function collectCodecPcm(
 async function loadWaveform(
   source: AudioMediaSource,
   signal?: AbortSignal,
+  onPhase: (phase: string) => void = () => undefined,
 ): Promise<{
   readonly model: WaveformModel
   readonly mediaType: string
@@ -129,6 +142,7 @@ async function loadWaveform(
   readonly context: AudioContext
   readonly decodedBy: 'codec-pcm' | 'platform-decoder'
 }> {
+  onPhase('encoded')
   const encoded = await source.encoded(undefined, signal)
   const media = await collectEncodedMedia(encoded, AUDIO_MAXIMUM_BYTES, signal)
   const AudioContextCtor = audioContextConstructor()
@@ -136,6 +150,7 @@ async function loadWaveform(
   const context = new AudioContextCtor()
   let disposed = false
   try {
+    onPhase('info')
     const info = await source.info(signal)
     /*
      * Prefer the codec. `pcmAccess` means the codec claims it can decode these samples itself, and
@@ -145,6 +160,7 @@ async function loadWaveform(
     let buffer: AudioBuffer
     let decodedBy: 'codec-pcm' | 'platform-decoder'
     if (info.pcmAccess && source.readPcm !== undefined && track !== undefined) {
+      onPhase('codec-pcm')
       const pcm = await collectCodecPcm(source, track.id, signal)
       const frames = pcm.channels[0]?.length ?? 0
       buffer = context.createBuffer(Math.max(1, pcm.channels.length), frames, pcm.sampleRate)
@@ -154,12 +170,14 @@ async function loadWaveform(
       }
       decodedBy = 'codec-pcm'
     } else {
+      onPhase('platform-decode')
       buffer = await context.decodeAudioData(media.bytes.slice().buffer as ArrayBuffer)
       decodedBy = 'platform-decoder'
     }
     const channels = Array.from({ length: buffer.numberOfChannels }, (_, index) =>
       buffer.getChannelData(index),
     )
+    onPhase('ready')
     disposed = true
     return {
       model: {
@@ -388,8 +406,11 @@ export function createAudioViewer(options: AudioViewerOptions = {}): ViewerModul
       })
 
       setState(stage, ['loading'])
+      stage.dataset['phase'] = 'loading'
       try {
-        const loaded = await loadWaveform(lease.value as AudioMediaSource, scope.signal)
+        const loaded = await loadWaveform(lease.value as AudioMediaSource, scope.signal, phase => {
+          stage.dataset['phase'] = phase
+        })
         model = loaded.model
         audio = loaded.context
         buffer = loaded.buffer
