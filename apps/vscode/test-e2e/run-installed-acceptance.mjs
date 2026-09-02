@@ -2710,6 +2710,26 @@ async function closeAllEditors(page, port) {
   )
 }
 
+/**
+ * The document a Modkit editor renders into: VS Code nests the extension webview twice.
+ */
+const viewerFrame = page => page.frameLocator('iframe.webview').frameLocator('iframe')
+
+/**
+ * Press one of the product's own buttons with a REAL input event.
+ *
+ * `element.click()` from an evaluated script is untrusted, and a browser keeps an AudioContext
+ * suspended until it sees a genuine user gesture — so a scripted press produced a transport that
+ * said "playing" while the clock never moved. Playwright drives the nested webview frames with
+ * actual input, which is both the honest gesture and the one a person makes.
+ */
+async function pressViewerControl(page, title) {
+  const button = viewerFrame(page).getByTitle(title, { exact: true }).last()
+  await button.waitFor({ state: 'visible', timeout: 20_000 })
+  await button.click({ timeout: 20_000 })
+  return { title, clickDispatch: 'trusted-input-event', observedBy: 'cdp' }
+}
+
 /** Press one of the product's own buttons by its accessible title, inside the webview. */
 async function clickViewerControl(port, title, timeoutMs = 20_000) {
   const clicked = await waitFor(
@@ -3018,7 +3038,7 @@ async function runMediaAndEditorAcceptance(page, port) {
           `stage=${JSON.stringify(loaded)}`,
       )
     }
-    const play = await clickViewerControl(port, 'Play')
+    const play = await pressViewerControl(page, 'Play')
     const playing = await waitFor(
       async () => {
         const value = await readStageDataset(port, 'audio', [
@@ -3026,15 +3046,19 @@ async function runMediaAndEditorAcceptance(page, port) {
           'transport',
           'rate',
           'position',
+          'audioContext',
         ])
         return value?.transport === 'playing' && Number(value.position) > 0 ? value : undefined
       },
       { timeoutMs: 30_000, stepMs: 250 },
     )
     if (playing === undefined) {
-      throw new Error(`2B-3 ${entry.target} never reported a playing transport past position 0`)
+      throw new Error(
+        `2B-3 ${entry.target} never reported a playing transport past position 0; ` +
+          `stage=${JSON.stringify(await readStageDataset(port, 'audio', ['decoder', 'transport', 'position', 'audioContext', 'phase']))}`,
+      )
     }
-    const rate = await clickViewerControl(port, 'Cycle the playback rate')
+    const rate = await pressViewerControl(page, 'Cycle the playback rate')
     const rated = await waitFor(
       async () => {
         const value = await readStageDataset(port, 'audio', ['transport', 'rate', 'position'])
@@ -3043,7 +3067,7 @@ async function runMediaAndEditorAcceptance(page, port) {
       { timeoutMs: 20_000, stepMs: 250 },
     )
     if (rated === undefined) throw new Error(`2B-3 ${entry.target} playback rate did not change`)
-    const pause = await clickViewerControl(port, 'Pause')
+    const pause = await pressViewerControl(page, 'Pause')
     const paused = await waitFor(
       async () => {
         const value = await readStageDataset(port, 'audio', ['transport', 'rate', 'position'])

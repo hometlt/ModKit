@@ -318,6 +318,7 @@ export function createAudioViewer(options: AudioViewerOptions = {}): ViewerModul
           })}`,
         )
         stage.dataset['transport'] = playing ? 'playing' : 'paused'
+        stage.dataset['audioContext'] = audio?.state ?? 'none'
         stage.dataset['rate'] = rate.toFixed(2)
         stage.dataset['decoder'] = decodedBy
         stage.dataset['position'] = position().toFixed(3)
@@ -352,6 +353,14 @@ export function createAudioViewer(options: AudioViewerOptions = {}): ViewerModul
       const play = (): void => {
         if (playing || model === undefined) return
         if (audio !== undefined && buffer !== undefined) {
+          /*
+           * Resume before starting, and say so when the platform refuses.
+           *
+           * A browser keeps an AudioContext suspended until a real user gesture. Starting a source
+           * on a suspended context looks like playback - `playing` is true - while the clock never
+           * moves and nothing is heard. Reporting the context state makes that visible instead of
+           * leaving a silent player that claims to be playing.
+           */
           void audio.resume().catch(() => undefined)
           const next = audio.createBufferSource()
           next.buffer = buffer
