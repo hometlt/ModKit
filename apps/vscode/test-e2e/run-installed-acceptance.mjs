@@ -2722,13 +2722,48 @@ async function clickViewerControl(port, title, timeoutMs = 20_000) {
   return { ...clicked, clickDispatch: 'element.click()', observedBy: 'cdp' }
 }
 
+/**
+ * Raise VS Code's own «Reopen Editor With» picker for one file.
+ *
+ * Two ordinary user routes, in order: the command palette, then the editor-tab context menu.
+ * The palette can stop offering the command after an editor association changed in the same
+ * session — which is exactly what Wave 2B introduces — so the fallback is not decoration. It is
+ * the same pair generation 1 has used since Wave 1; the Wave 2B block was calling the palette
+ * alone and ended the run when the palette did not offer the command.
+ */
+async function openReopenEditorPicker(page, filePath) {
+  await activateEditor(page, filePath)
+  try {
+    return await chooseQuickInput(
+      page,
+      'reopen editor with',
+      /^View: Reopen Editor With(?:\.\.\.|…)?$/u,
+    )
+  } catch (paletteError) {
+    await page.keyboard.press('Escape').catch(() => undefined)
+    const file = basename(filePath)
+    const tab = page.locator('.tabs-container .tab:visible').filter({ hasText: file }).last()
+    await tab.click({ button: 'right' })
+    const menuItem = page
+      .getByRole('menuitem', { name: /^Reopen Editor With(?:\.\.\.|…)?$/u })
+      .last()
+    try {
+      await menuItem.waitFor({ state: 'visible', timeout: 10_000 })
+      const label = await menuItem.innerText()
+      await menuItem.click()
+      return `tab context menu: ${label}`
+    } catch (contextMenuError) {
+      throw new Error(
+        `Reopen Editor With was unavailable in both command palette and tab context menu for ` +
+          `${file}; palette=${String(paletteError)}; context=${String(contextMenuError)}`,
+      )
+    }
+  }
+}
+
 /** Reopen the active tab with one named editor, chosen in VS Code's own picker, by keyboard. */
-async function reopenWithNamedEditor(page, editorName) {
-  const command = await chooseQuickInput(
-    page,
-    'reopen editor with',
-    /^View: Reopen Editor With(?:\.\.\.|…)?$/u,
-  )
+async function reopenWithNamedEditor(page, filePath, editorName) {
+  const command = await openReopenEditorPicker(page, filePath)
   const widget = page.locator('.quick-input-widget:visible').last()
   const selected = await selectQuickInputRowByKeyboard(page, widget, {
     label: `Reopen Editor With ${JSON.stringify(editorName)}`,
@@ -2807,12 +2842,7 @@ async function runMediaAndEditorAcceptance(page, port) {
   // The association loop above closed every editor between opens, so the DDS is opened again here.
   await closeAllEditors(page, port)
   await openWorkspaceFile(page, dds.path)
-  await activateEditor(page, dds.path)
-  const pickerCommand = await chooseQuickInput(
-    page,
-    'reopen editor with',
-    /^View: Reopen Editor With(?:\.\.\.|…)?$/u,
-  )
+  const pickerCommand = await openReopenEditorPicker(page, dds.path)
   const pickerWidget = page.locator('.quick-input-widget:visible').last()
   const pickerRows = pickerWidget.locator('.quick-input-list .monaco-list-row:visible')
   const pickerTexts = await waitFor(
@@ -2849,7 +2879,7 @@ async function runMediaAndEditorAcceptance(page, port) {
 
   // ------------------------------------------- 2B-1/2B-2: subresource selection, compare, export
   await activateEditor(page, dds.path)
-  const imageEditor = await reopenWithNamedEditor(page, 'Modkit Image Viewer')
+  const imageEditor = await reopenWithNamedEditor(page, dds.path, 'Modkit Image Viewer')
   const baseStage = await readStageDataset(port, 'image', [])
   if ((baseStage?.canvas?.width ?? 0) <= 0) {
     throw new Error('2B-2 Modkit Image Viewer produced no canvas for the mip-chain DDS')
