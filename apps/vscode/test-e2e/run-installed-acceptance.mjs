@@ -3138,7 +3138,7 @@ async function runMediaAndEditorAcceptance(page, port) {
    */
   const corruptName = basename(corrupt)
   const refusalIn = text =>
-    typeof text === 'string' && text.includes(corruptName) && /x3.[a-z-]+/ / u.test(text)
+    typeof text === 'string' && text.includes(corruptName) && /x3\.[a-z-]+\//u.test(text)
   let refusalRoute = 'editor'
   let refusal = await waitFor(
     async () => {
