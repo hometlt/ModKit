@@ -2389,10 +2389,24 @@ async function observeCorruptInputRefusal(page, port, timeoutMs = 60_000) {
   )
   if (webviewMessage !== undefined) return webviewMessage
 
+  /*
+   * The Problems panel is the second place the same refusal appears, and this is a PROBE: the
+   * caller asks with a short timeout first and escalates to the explicit palette route when the
+   * answer is `undefined`. Throwing out of the fallback broke that contract — a panel that had not
+   * opened yet ended the whole run instead of letting the caller take its second, longer route.
+   * Nothing about the required refusal is relaxed: the caller still fails unless the exact code and
+   * step are observed.
+   */
   await page.keyboard.press('Escape').catch(() => undefined)
   const panel = page.locator('.markers-panel:visible').last()
-  if ((await panel.count()) === 0) await page.keyboard.press('Control+Shift+M')
-  await panel.waitFor({ state: 'visible', timeout: 20_000 })
+  if ((await panel.count()) === 0) {
+    await page.keyboard.press('Control+Shift+M').catch(() => undefined)
+  }
+  try {
+    await panel.waitFor({ state: 'visible', timeout: Math.min(20_000, timeoutMs) })
+  } catch {
+    return undefined
+  }
   return waitFor(
     async () => {
       const text = await panel.innerText().catch(() => '')
@@ -2402,7 +2416,7 @@ async function observeCorruptInputRefusal(page, port, timeoutMs = 60_000) {
         ? text
         : undefined
     },
-    { timeoutMs: 20_000, stepMs: 250 },
+    { timeoutMs: Math.min(20_000, timeoutMs), stepMs: 250 },
   )
 }
 
