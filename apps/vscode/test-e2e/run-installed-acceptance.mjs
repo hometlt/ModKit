@@ -2633,7 +2633,15 @@ async function readStageDataset(port, part, keys, timeoutMs = 30_000) {
       )
       return values.find(value => value !== undefined && value !== null)
     },
-    { timeoutMs, stepMs: 250 },
+    /*
+     * Poll once a second, not four times.
+     *
+     * Each poll lists the CDP targets and opens a socket to every webview to evaluate in it. While
+     * a stage is decoding through the capability RPC, that is load competing with the very work
+     * being waited on - the audio stage failed to finish a request inside its wait while being
+     * polled at 250 ms, and the wait itself is unchanged.
+     */
+    { timeoutMs, stepMs: 1_000 },
   )
 }
 
