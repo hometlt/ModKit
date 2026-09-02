@@ -47,7 +47,16 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       id: 'image',
       label: context.localizer.text('stage.image'),
       contract: 'common.view/raster-image-source',
-      module: createImageViewer({ localizer: context.localizer }),
+      module: createImageViewer({
+        localizer: context.localizer,
+        /*
+         * Export is a host capability, not a viewer one: only the extension host knows where this
+         * window may write. When the shell offers no writer the viewer disables its export
+         * controls and says why, instead of pretending.
+         */
+        ...(context.exportFiles === undefined ? {} : { exportBytes: context.exportFiles }),
+        exportBaseName: descriptor => context.exportBaseName?.(descriptor) ?? 'image',
+      }),
     },
     {
       id: 'vector',

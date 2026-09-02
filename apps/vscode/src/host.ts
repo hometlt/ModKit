@@ -106,6 +106,21 @@ import {
 const CANNOT_CONFIGURE =
   'This window cannot change Modkit configuration, so nothing was written. ' +
   'The same keys can be edited in the editor’s own Settings UI.'
+
+/** Batch export of one texture's subresources; a cubemap mip chain is 6×N, never thousands. */
+const EXPORT_FILE_LIMIT = 512
+const EXPORT_FILE_MAXIMUM_BYTES = 64 * 1024 * 1024
+
+/**
+ * A leaf file name and nothing else: no separator, no drive, no dot-segment, no control character.
+ * The page proposes the name; this is where "propose" is prevented from becoming "traverse".
+ */
+const isSafeExportName = (value: unknown): value is string =>
+  typeof value === 'string' &&
+  value.length > 0 &&
+  value.length <= 200 &&
+  /^[A-Za-z0-9][A-Za-z0-9._-]*$/u.test(value) &&
+  !value.includes('..')
 import {
   createVsCodeDesktopTopology,
   VSCODE_DESKTOP_EXTENSION_REALM,
@@ -562,6 +577,18 @@ export interface VsCodeServeOptions {
   readonly localizer?: UiLocalizer
   /** Confirm discarding unsaved work; a webview iframe cannot show a modal of its own. */
   readonly confirmClose?: (message: string, savable: boolean) => Promise<CloseAnswer>
+  /**
+   * Write viewer-produced export files somewhere this window owns, and say where they went.
+   *
+   * The adapter picks the destination; the page never names one. A host without this option makes
+   * the page's export controls say so instead of failing at click time.
+   */
+  readonly exportFiles?: (
+    files: readonly { readonly name: string; readonly bytes: Uint8Array }[],
+  ) => Promise<
+    | { readonly state: 'written'; readonly names: readonly string[] }
+    | { readonly state: 'refused'; readonly reason: string }
+  >
   /** Native custom-document dirty state, emitted only for the provider's opened path. */
   readonly onDocumentDirty?: (path: string, dirty: boolean) => void
   /** Route an in-page Save button through VS Code's native save command. */
@@ -1180,6 +1207,33 @@ function serveVsCode(
         // No adapter means no way to ask, and discarding silently is the one answer that loses
         // work — so an unanswerable prompt keeps the tab open.
         return (await options.confirmClose?.(request.message, request.savable)) ?? 'cancel'
+      case 'export-files': {
+        if (options.exportFiles === undefined) {
+          return { state: 'refused', reason: 'this window cannot write exported files' }
+        }
+        const files = Array.isArray(request.files) ? request.files : []
+        if (files.length === 0) return { state: 'refused', reason: 'nothing to export' }
+        if (files.length > EXPORT_FILE_LIMIT) {
+          return {
+            state: 'refused',
+            reason: `an export of ${files.length} files is over the limit of ${EXPORT_FILE_LIMIT}`,
+          }
+        }
+        for (const file of files) {
+          if (!isSafeExportName(file?.name)) {
+            return { state: 'refused', reason: `«${String(file?.name)}» is not a plain file name` }
+          }
+          if (!(file.bytes instanceof Uint8Array) || file.bytes.byteLength === 0) {
+            return { state: 'refused', reason: `«${file.name}» carried no bytes` }
+          }
+          if (file.bytes.byteLength > EXPORT_FILE_MAXIMUM_BYTES) {
+            return { state: 'refused', reason: `«${file.name}» is larger than the export ceiling` }
+          }
+        }
+        return await options.exportFiles(
+          files.map(file => ({ name: file.name, bytes: file.bytes })),
+        )
+      }
       case 'settings':
         return settingsView()
       case 'set-contribution': {

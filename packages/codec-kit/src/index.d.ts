@@ -215,6 +215,7 @@ export function createAudioMediaSource(
   bytes: Uint8Array,
   mediaType: string,
   info: AudioMediaInfo,
+  readPcm?: NonNullable<AudioMediaSource['readPcm']>,
 ): AudioMediaSource
 export function createVideoMediaSource(
   bytes: Uint8Array,

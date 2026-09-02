@@ -14,6 +14,7 @@ import {
   ViewerMountScope,
 } from '@modkit/ui/viewer'
 import type { AnyDescriptor, AssetEditPlan, ViewerModule } from '@modkit/sdk'
+import type { ImageExportFile, ImageExportOutcome } from '@modkit/ui/image'
 import type { UiLocalizer } from '@modkit/ui/localization'
 
 import {
@@ -34,6 +35,13 @@ export interface EditPanelOptions {
   lastOutcome(descriptor: Record<string, unknown>): string | undefined
   recordOutcome(descriptor: Record<string, unknown>, outcome: string): void
   onStatus?(status: WebviewEditorStatus): void
+  /** How this window writes viewer exports, when it can write at all. */
+  readonly exportFiles?: (
+    files: readonly ImageExportFile[],
+    signal?: AbortSignal,
+  ) => Promise<ImageExportOutcome>
+  /** Leaf name the image stage derives its export file names from. */
+  readonly exportBaseName?: (descriptor: AnyDescriptor) => string
 }
 
 const asRecord = (descriptor: AnyDescriptor): Record<string, unknown> =>

@@ -24,6 +24,14 @@ import { withEnglishUiFallback } from '../localization/fallback.js'
 export const AUDIO_MAXIMUM_BYTES = 96 * 1024 * 1024
 export const WAVEFORM_BUCKETS = 900
 
+/** Ceiling on codec-decoded PCM held in memory: ten minutes of 48 kHz stereo. */
+export const AUDIO_MAXIMUM_PCM_FRAMES = 10 * 60 * 48_000
+/** One codec PCM request; a long file arrives as several of these rather than one huge one. */
+export const AUDIO_PCM_WINDOW_FRAMES = 1 << 18
+
+/** Playback rates the transport cycles through, matching the MK2 audio preview. */
+export const AUDIO_RATES = Object.freeze([0.5, 0.75, 1, 1.25, 1.5, 2])
+
 export interface WaveformModel {
   /** One min/max pair per bucket, in [-1, 1]. Never the sample buffer itself. */
   readonly peaks: Float32Array
@@ -57,6 +65,59 @@ export function computePeaks(channelData: readonly Float32Array[], buckets: numb
   return peaks
 }
 
+function audioContextConstructor(): typeof AudioContext | undefined {
+  return (
+    (globalThis as { AudioContext?: typeof AudioContext }).AudioContext ??
+    (globalThis as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+  )
+}
+
+/**
+ * Pull the whole track from the codec's own PCM method, one bounded window at a time.
+ *
+ * This is the path StarCraft II's UI sounds need: they are IMA ADPCM inside RIFF, which no browser
+ * decodes, so "let the platform play it" was silence with a waveform of zeros. The codec decodes;
+ * this assembles.
+ */
+export async function collectCodecPcm(
+  source: AudioMediaSource,
+  trackId: string,
+  signal?: AbortSignal,
+): Promise<{ readonly sampleRate: number; readonly channels: readonly Float32Array[] }> {
+  if (source.readPcm === undefined) throw new TypeError('this source exposes no PCM')
+  const windows: (readonly Float32Array[])[] = []
+  let sampleRate = 0
+  let frames = 0
+  for (let from = 0; frames < AUDIO_MAXIMUM_PCM_FRAMES;) {
+    const block = await source.readPcm(
+      {
+        trackId,
+        fromFrame: BigInt(from),
+        frameCount: Math.min(AUDIO_PCM_WINDOW_FRAMES, AUDIO_MAXIMUM_PCM_FRAMES - frames),
+        maxBytes: AUDIO_MAXIMUM_BYTES,
+      },
+      signal,
+    )
+    if (block.frameCount === 0) break
+    sampleRate = block.sampleRate
+    windows.push(block.channels)
+    frames += block.frameCount
+    from += block.frameCount
+  }
+  if (frames === 0 || sampleRate <= 0) throw new TypeError('the codec decoded no PCM frames')
+  const count = windows[0]?.length ?? 0
+  const channels = Array.from({ length: count }, () => new Float32Array(frames))
+  let offset = 0
+  for (const window of windows) {
+    const length = window[0]?.length ?? 0
+    for (let channel = 0; channel < count; channel += 1) {
+      channels[channel]?.set(window[channel] ?? new Float32Array(0), offset)
+    }
+    offset += length
+  }
+  return { sampleRate, channels }
+}
+
 async function loadWaveform(
   source: AudioMediaSource,
   signal?: AbortSignal,
@@ -64,21 +125,42 @@ async function loadWaveform(
   readonly model: WaveformModel
   readonly mediaType: string
   readonly bytes: Uint8Array
+  readonly buffer: AudioBuffer
+  readonly context: AudioContext
+  readonly decodedBy: 'codec-pcm' | 'platform-decoder'
 }> {
   const encoded = await source.encoded(undefined, signal)
   const media = await collectEncodedMedia(encoded, AUDIO_MAXIMUM_BYTES, signal)
-  const AudioContextCtor =
-    (globalThis as { AudioContext?: typeof AudioContext; webkitAudioContext?: typeof AudioContext })
-      .AudioContext ??
-    (globalThis as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+  const AudioContextCtor = audioContextConstructor()
   if (AudioContextCtor === undefined) throw new TypeError('no platform audio decoder is available')
   const context = new AudioContextCtor()
+  let disposed = false
   try {
-    const copy = media.bytes.slice().buffer as ArrayBuffer
-    const buffer = await context.decodeAudioData(copy)
+    const info = await source.info(signal)
+    /*
+     * Prefer the codec. `pcmAccess` means the codec claims it can decode these samples itself, and
+     * the platform decoder is the fallback for the formats it cannot — not the other way round.
+     */
+    const track = info.tracks.find(item => item.selected) ?? info.tracks[0]
+    let buffer: AudioBuffer
+    let decodedBy: 'codec-pcm' | 'platform-decoder'
+    if (info.pcmAccess && source.readPcm !== undefined && track !== undefined) {
+      const pcm = await collectCodecPcm(source, track.id, signal)
+      const frames = pcm.channels[0]?.length ?? 0
+      buffer = context.createBuffer(Math.max(1, pcm.channels.length), frames, pcm.sampleRate)
+      for (const [index, channel] of pcm.channels.entries()) {
+        // `copyToChannel` is typed for a plain ArrayBuffer; the codec's arrays are ArrayBufferLike.
+        buffer.copyToChannel(channel as Float32Array<ArrayBuffer>, index)
+      }
+      decodedBy = 'codec-pcm'
+    } else {
+      buffer = await context.decodeAudioData(media.bytes.slice().buffer as ArrayBuffer)
+      decodedBy = 'platform-decoder'
+    }
     const channels = Array.from({ length: buffer.numberOfChannels }, (_, index) =>
       buffer.getChannelData(index),
     )
+    disposed = true
     return {
       model: {
         peaks: computePeaks(channels, WAVEFORM_BUCKETS),
@@ -89,9 +171,13 @@ async function loadWaveform(
       },
       mediaType: media.mediaType,
       bytes: media.bytes,
+      buffer,
+      context,
+      decodedBy,
     }
   } finally {
-    await context.close()
+    // The context is handed to the caller on success; only a failure closes it here.
+    if (!disposed) await context.close()
   }
 }
 
@@ -130,6 +216,18 @@ export function createAudioViewer(options: AudioViewerOptions = {}): ViewerModul
 
       let model: WaveformModel | undefined
       let cursor = 0
+      /*
+       * Transport state. A viewer that only mounted `<audio controls>` could not play what the
+       * platform cannot decode, and could not report what it was doing — so play/pause/rate are
+       * explicit here and drive whichever engine actually holds the samples.
+       */
+      let audio: AudioContext | undefined
+      let buffer: AudioBuffer | undefined
+      let voice: AudioBufferSourceNode | undefined
+      let rate = 1
+      let playing = false
+      let startedAt = 0
+      let decodedBy: 'codec-pcm' | 'platform-decoder' | 'none' = 'none'
 
       const context = canvas.getContext('2d')
       if (context === null) throw new TypeError('2d canvas context is unavailable')
@@ -168,32 +266,148 @@ export function createAudioViewer(options: AudioViewerOptions = {}): ViewerModul
         }
         setViewerText(
           readout,
-          localizer.text('viewer.audioSummary', {
+          `${localizer.text('viewer.audioSummary', {
             position: clock(cursor),
             duration: clock(model.duration),
             channels: model.channels,
             rate: (model.sampleRate / 1000).toFixed(1),
             size: (model.bytes / 1024).toFixed(0),
-          }),
+          })} · ${localizer.text('viewer.audioTransport', {
+            state: localizer.text(playing ? 'viewer.audioPlaying' : 'viewer.audioPaused'),
+            speed: rate.toFixed(2),
+            decoder: decodedBy,
+          })}`,
         )
+        stage.dataset['transport'] = playing ? 'playing' : 'paused'
+        stage.dataset['rate'] = rate.toFixed(2)
+        stage.dataset['decoder'] = decodedBy
+        stage.dataset['position'] = position().toFixed(3)
       }
+
+      const position = (): number => {
+        if (model === undefined) return 0
+        if (!playing || audio === undefined) return cursor
+        return Math.min(model.duration, cursor + (audio.currentTime - startedAt) * rate)
+      }
+
+      const stopVoice = (): void => {
+        if (voice === undefined) return
+        voice.onended = null
+        try {
+          voice.stop()
+        } catch {
+          // Already stopped; nothing to unwind.
+        }
+        voice.disconnect()
+        voice = undefined
+      }
+
+      const pause = (): void => {
+        if (!playing) return
+        cursor = position()
+        playing = false
+        stopVoice()
+        player.pause()
+      }
+
+      const play = (): void => {
+        if (playing || model === undefined) return
+        if (audio !== undefined && buffer !== undefined) {
+          void audio.resume().catch(() => undefined)
+          const next = audio.createBufferSource()
+          next.buffer = buffer
+          next.playbackRate.value = rate
+          next.connect(audio.destination)
+          next.onended = () => {
+            if (voice !== next) return
+            playing = false
+            cursor = 0
+            voice = undefined
+            paint()
+          }
+          startedAt = audio.currentTime
+          next.start(0, Math.min(cursor, Math.max(0, buffer.duration - 0.001)))
+          voice = next
+        } else {
+          player.playbackRate = rate
+          player.currentTime = cursor
+          void player.play().catch(() => undefined)
+        }
+        playing = true
+      }
+
+      const transportButton = (label: string, title: string, onClick: () => void): void => {
+        const node = element(toolbar, 'button', {
+          text: label,
+          part: 'operations.button',
+        }) as HTMLButtonElement
+        node.type = 'button'
+        node.title = title
+        node.addEventListener('click', () => {
+          onClick()
+          paint()
+        })
+        scope.cleanup(() => node.replaceWith(node.cloneNode(true)))
+      }
+
+      transportButton('▶', localizer.text('viewer.audioPlay'), () => play())
+      transportButton('⏸', localizer.text('viewer.audioPause'), () => pause())
+      transportButton('⏮', localizer.text('viewer.audioRestart'), () => {
+        pause()
+        cursor = 0
+      })
+      transportButton('×', localizer.text('viewer.audioCycleRate'), () => {
+        const index = AUDIO_RATES.indexOf(rate)
+        rate = AUDIO_RATES[(index + 1) % AUDIO_RATES.length] ?? 1
+        if (playing) {
+          pause()
+          play()
+        } else if (voice === undefined) {
+          player.playbackRate = rate
+        }
+      })
 
       canvas.addEventListener('click', event => {
         if (model === undefined) return
         const box = canvas.getBoundingClientRect()
+        const wasPlaying = playing
+        pause()
         cursor = ((event.clientX - box.left) / box.width) * model.duration
+        if (wasPlaying) play()
         paint()
+      })
+
+      // The buffer engine has no `timeupdate` event, so the readout and the cursor are ticked here.
+      const tick = setInterval(() => {
+        if (playing) paint()
+      }, 200)
+      scope.cleanup(() => {
+        clearInterval(tick)
+        stopVoice()
+        void audio?.close().catch(() => undefined)
       })
 
       setState(stage, ['loading'])
       try {
         const loaded = await loadWaveform(lease.value as AudioMediaSource, scope.signal)
         model = loaded.model
-        const objectUrl = URL.createObjectURL(
-          new Blob([loaded.bytes as BlobPart], { type: loaded.mediaType }),
-        )
-        player.src = objectUrl
-        scope.cleanup(() => URL.revokeObjectURL(objectUrl))
+        audio = loaded.context
+        buffer = loaded.buffer
+        decodedBy = loaded.decodedBy
+        /*
+         * The native element stays for the formats the platform can play, so a person still gets
+         * the editor's own controls. It is not the engine when the codec decoded the samples: a
+         * player handed IMA ADPCM would show a control strip that plays nothing.
+         */
+        if (loaded.decodedBy === 'platform-decoder') {
+          const objectUrl = URL.createObjectURL(
+            new Blob([loaded.bytes as BlobPart], { type: loaded.mediaType }),
+          )
+          player.src = objectUrl
+          scope.cleanup(() => URL.revokeObjectURL(objectUrl))
+        } else {
+          player.remove()
+        }
         setState(stage, [])
         paint()
       } catch (error) {

@@ -310,6 +310,34 @@ async function mount(
       onStatus(status) {
         say(status.message)
       },
+      /*
+       * Export travels the same shell channel as every other host capability the page cannot have
+       * itself. The page sends bytes and a leaf name; the extension host picks the folder.
+       */
+      async exportFiles(files) {
+        const answer = await bridge.request({
+          op: 'export-files',
+          files: files.map(file => ({
+            name: file.name,
+            mediaType: file.mediaType,
+            bytes: file.bytes,
+          })),
+        })
+        const outcome = answer as { readonly state?: unknown; readonly names?: unknown }
+        if (outcome?.state === 'written' && Array.isArray(outcome.names)) {
+          say(localizer.text('vscode.webview.exported', { count: outcome.names.length }))
+          return { state: 'written', names: outcome.names.map(String) }
+        }
+        const reason =
+          typeof (outcome as { readonly reason?: unknown })?.reason === 'string'
+            ? (outcome as { readonly reason: string }).reason
+            : 'the window returned no export outcome'
+        return { state: 'refused', reason }
+      },
+      exportBaseName(descriptor) {
+        const record = recordForDescriptor(descriptor as unknown as Record<string, unknown>)
+        return record?.entry.name ?? 'image'
+      },
     }),
     fallback: createVsCodePreviewFallback(localizer),
 

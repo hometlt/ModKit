@@ -269,14 +269,22 @@ export function createRasterImageSource(bytes, mediaType, info, readRegion) {
   return Object.freeze(source)
 }
 
-export function createAudioMediaSource(bytes, mediaType, info) {
+export function createAudioMediaSource(bytes, mediaType, info, readPcm) {
   const tracks = Object.freeze(info.tracks.map(track => Object.freeze({ ...track })))
   const ownedInfo = Object.freeze({ ...info, tracks })
   const encoded = createEncodedMediaSource(bytes, {
     mediaType,
     codecs: tracks.map(track => track.codec),
   })
-  return Object.freeze({
+  /*
+   * `pcmAccess` is what a viewer reads before deciding whether to ask for samples, so it may not
+   * be a wish: a source that says yes without a reader would make every viewer's fallback path
+   * unreachable at exactly the moment it is needed.
+   */
+  if (ownedInfo.pcmAccess === true && readPcm === undefined) {
+    throw new TypeError('audio source declares pcmAccess without a readPcm implementation')
+  }
+  const source = {
     async info(signal) {
       if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
       return ownedInfo
@@ -288,7 +296,9 @@ export function createAudioMediaSource(bytes, mediaType, info) {
       }
       return encoded
     },
-  })
+  }
+  if (readPcm !== undefined) source.readPcm = readPcm
+  return Object.freeze(source)
 }
 
 export function createVideoMediaSource(bytes, mediaType, info) {

@@ -181,6 +181,10 @@ const EN_MESSAGES = Object.freeze({
   'vscode.map.diagnostic.selectionRequired':
     'Map preview needs an explicit selection; choose one of the returned map-preview candidates to continue.',
   'vscode.webview.invalidMapSelection': '{name} · the map ID was not one of the offered choices',
+  'vscode.webview.exported': 'Exported {count} file(s) into the window export folder.',
+  'vscode.export.noFolder':
+    'This window has no folder to export into. Open a folder or workspace, then export again.',
+  'vscode.export.written': 'Modkit exported {count} file(s) to {folder}',
   'vscode.webview.noCodecClaimed':
     '{name} — no codec claimed it ({reason}); showing the raw bytes.',
   'vscode.webview.readOnly': '{name} is open read-only: {reason}',
@@ -486,6 +490,10 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.map.diagnostic.selectionRequired':
     'Для просмотра карты нужно явно выбрать вариант; выберите одну из возвращённых карт и продолжите.',
   'vscode.webview.invalidMapSelection': '{name} · введённый ID карты отсутствует в списке',
+  'vscode.webview.exported': 'Экспортировано файлов: {count} — в папку экспорта этого окна.',
+  'vscode.export.noFolder':
+    'В этом окне нет папки для экспорта. Откройте папку или рабочую область и повторите экспорт.',
+  'vscode.export.written': 'Modkit экспортировал файлов: {count} — в {folder}',
   'vscode.webview.noCodecClaimed':
     '{name} — ни один кодек не распознал файл ({reason}); показаны исходные байты.',
   'vscode.webview.readOnly': '{name} открыт только для чтения: {reason}',

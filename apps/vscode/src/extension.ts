@@ -577,6 +577,47 @@ function workspaceFolders(): readonly string[] {
   )
 }
 
+/** Where viewer exports land: one deterministic folder per window, never a page-supplied path. */
+export const VIEWER_EXPORT_FOLDER = 'modkit-export'
+
+/**
+ * Write viewer-produced export files into this window's export folder.
+ *
+ * The destination is derived here and nowhere else — the page sends leaf names and bytes, never a
+ * location — and a window with no writable folder refuses by saying so rather than choosing a
+ * directory on the user's behalf.
+ */
+async function exportViewerFiles(
+  files: readonly { readonly name: string; readonly bytes: Uint8Array }[],
+): Promise<
+  | { readonly state: 'written'; readonly names: readonly string[] }
+  | {
+      readonly state: 'refused'
+      readonly reason: string
+    }
+> {
+  const localizer = createVscodeLocalizer(vscode.env.language)
+  const folder = (vscode.workspace.workspaceFolders ?? []).find(
+    candidate => candidate.uri.scheme === 'file',
+  )
+  if (folder === undefined) {
+    return { state: 'refused', reason: localizer.text('vscode.export.noFolder') }
+  }
+  const target = vscode.Uri.joinPath(folder.uri, VIEWER_EXPORT_FOLDER)
+  await vscode.workspace.fs.createDirectory(target)
+  const names: string[] = []
+  for (const file of files) {
+    const destination = vscode.Uri.joinPath(target, file.name)
+    // `workspace.fs.writeFile` is typed `Uint8Array`; a Buffer subclass is rejected by the wire.
+    await vscode.workspace.fs.writeFile(destination, new Uint8Array(file.bytes))
+    names.push(file.name)
+  }
+  void vscode.window.showInformationMessage(
+    localizer.text('vscode.export.written', { count: names.length, folder: target.fsPath }),
+  )
+  return { state: 'written', names: Object.freeze(names) }
+}
+
 // ---------------------------------------------------------------------------------------------
 // the page
 
@@ -4646,6 +4687,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             },
           }),
       confirmClose,
+      exportFiles: files => exportViewerFiles(files),
       configuration,
       mapPreviewResourcePlanResolver,
       localizer,

@@ -148,6 +148,20 @@ export type ShellRequest =
       readonly resourceId: string
       readonly role: 'source' | 'license'
     }
+  /**
+   * Write viewer-produced files (today: PNG subresource exports) into this window's export folder.
+   *
+   * The page supplies bytes and a leaf name only. It cannot name a destination: the extension host
+   * resolves the folder from the workspace, so a page cannot turn "export" into "write anywhere".
+   */
+  | {
+      readonly op: 'export-files'
+      readonly files: readonly {
+        readonly name: string
+        readonly mediaType: string
+        readonly bytes: Uint8Array
+      }[]
+    }
   | { readonly op: 'set-extension'; readonly index: number; readonly enabled: boolean }
   | { readonly op: 'remove-extension'; readonly index: number }
   | { readonly op: 'add-extension-folder' }

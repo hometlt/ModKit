@@ -4,9 +4,16 @@ import type { UiMessageCatalog } from './index.js'
 export const AUDIO_FALLBACK_MESSAGES = {
   'viewer.audio': 'Audio viewer',
   'viewer.audioControls': 'Audio controls',
+  'viewer.audioCycleRate': 'Cycle the playback rate',
   'viewer.audioDecodeError':
     'The platform decoder cannot render this audio: {reason}. A format-specific decoder provider is required.',
+  'viewer.audioPause': 'Pause',
+  'viewer.audioPaused': 'paused',
+  'viewer.audioPlay': 'Play',
+  'viewer.audioPlaying': 'playing',
+  'viewer.audioRestart': 'Back to the start',
   'viewer.audioSummary': '{position} / {duration} · {channels} channels · {rate} kHz · {size} KiB',
+  'viewer.audioTransport': '{state} · ×{speed} · decoded by {decoder}',
 } as const satisfies UiMessageCatalog
 
 export const CALCULATIONS_FALLBACK_MESSAGES = {
@@ -267,9 +274,24 @@ export const IMAGE_FALLBACK_MESSAGES = {
   'viewer.fitTitle': 'Fit to the stage',
   'viewer.image': 'Image viewer',
   'viewer.imageChannel': ' · channel {channel}',
+  'viewer.imageCompare': 'Compare',
+  'viewer.imageCompareTitle': 'Cycle comparison: off, side by side, difference',
+  'viewer.imageCompareWith': 'compared with {subresource} ({mode})',
   'viewer.imageControls': 'Image controls',
   'viewer.imageDecodeError':
     'The platform decoder cannot render these bytes: {reason}. A format-specific decoder provider is required.',
+  'viewer.imageExport': 'Export',
+  'viewer.imageExportAll': 'Export all',
+  'viewer.imageExportAllTitle': 'Export every declared subresource as PNG',
+  'viewer.imageExportRefused': 'export refused: {reason}',
+  'viewer.imageExportTitle': 'Export the current subresource as PNG',
+  'viewer.imageExportUnavailable': 'This host cannot write exported files',
+  'viewer.imageExported': 'exported {count} file(s)',
+  'viewer.imageExporting': 'exporting…',
+  'viewer.imageNextSubresource': 'Next {axis}',
+  'viewer.imagePreviousSubresource': 'Previous {axis}',
+  'viewer.imageSubresource': 'subresource {subresource}',
+  'viewer.imageSubresources': 'Subresource, comparison and export',
   'viewer.imageSummary': '{width}×{height} · {size} KiB · {scale}%{channel}',
   'viewer.isolateChannel': 'Isolate the {channel} channel',
   'viewer.zoomIn': 'Zoom in',

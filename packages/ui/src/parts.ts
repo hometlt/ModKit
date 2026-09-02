@@ -112,6 +112,8 @@ export const PARTS = Object.freeze([
   'image.canvas',
   'image.toolbar',
   'image.readout',
+  'image.subresources',
+  'image.metadata',
 
   // image editing surface (MK2 assetsTextureViewer parity)
   'imageedit',

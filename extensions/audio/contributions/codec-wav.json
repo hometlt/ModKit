@@ -21,7 +21,7 @@
     }
   ],
   "limitations": [
-    "PCM integer and 32-bit float samples decode in-process; other RIFF/WAVE codecs require native host playback or an injected transcoder.",
+    "Decoded in-process through readPcm: linear PCM at 8/16/24/32 bits, IEEE float at 32/64 bits, and IMA ADPCM at 4 bits. Other RIFF/WAVE codecs (A-law, mu-law, MP3-in-RIFF and the rest) are reported by format tag and left to native host playback or an injected transcoder.",
     "Declarative routing is extension-first because manifest v1 cannot express the legacy extension-or-RIFF/WAVE-sniffer behavior without making the evidence conjunctive."
   ],
   "spec": {
