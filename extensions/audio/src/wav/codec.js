@@ -134,11 +134,26 @@ const definition = Object.freeze({
         throw new RangeError('WAV PCM fromFrame exceeds the safe integer range')
       }
       const channels = decodeWavPcm(samples, format, fromFrame, request.frameCount)
+      /*
+       * Interleave into ONE buffer before answering. The boundary requires each typed array to own
+       * its whole buffer, so per-channel arrays cross as N separate payloads; one interleaved
+       * buffer is what `AudioPcmBlock` asks for and what the wire is built to carry.
+       */
+      const channelCount = channels.length
+      const decodedFrames = channels[0]?.length ?? 0
+      const interleaved = new Float32Array(decodedFrames * channelCount)
+      for (let channel = 0; channel < channelCount; channel += 1) {
+        const source = channels[channel]
+        for (let frame = 0; frame < decodedFrames; frame += 1) {
+          interleaved[frame * channelCount + channel] = source[frame]
+        }
+      }
       return Object.freeze({
         sampleRate: format.sampleRate,
         fromFrame: BigInt(Math.min(fromFrame, frames)),
-        frameCount: channels[0]?.length ?? 0,
-        channels: Object.freeze(channels),
+        frameCount: decodedFrames,
+        channelCount,
+        samples: interleaved,
       })
     }
 

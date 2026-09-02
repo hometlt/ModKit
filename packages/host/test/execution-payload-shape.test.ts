@@ -85,7 +85,11 @@ const CHANNELS = 2
 
 describe('capability boundary — result shape', () => {
   const surface = capabilitySurfaceFromDataSource('x3.test/payload', 1, {
-    methods: { oneBuffer: { kind: 'value' }, manyBuffers: { kind: 'value' } },
+    methods: {
+      oneBuffer: { kind: 'value' },
+      interleavedBlock: { kind: 'value' },
+      manyBuffers: { kind: 'value' },
+    },
   })
   const registry = createStandardSurfaceRegistry({
     surfaces: [
@@ -102,6 +106,17 @@ describe('capability boundary — result shape', () => {
     async oneBuffer() {
       return { pixels: new Uint8Array(FRAMES * CHANNELS * 4) }
     },
+    /** What `AudioPcmBlock` carries since Wave 2B: one interleaved buffer. */
+    async interleavedBlock() {
+      return {
+        sampleRate: 44_100,
+        fromFrame: 0n,
+        frameCount: FRAMES,
+        channelCount: CHANNELS,
+        samples: new Float32Array(FRAMES * CHANNELS),
+      }
+    },
+    /** What it carried before: one buffer per channel. Kept so the contrast stays measured. */
     async manyBuffers() {
       return {
         sampleRate: 44_100,
@@ -118,6 +133,11 @@ describe('capability boundary — result shape', () => {
     const root = pair.host.materialize(loaded.root)
     const value = (await (root['payload'] as () => Promise<Record<string, unknown>>)()) as {
       oneBuffer(): Promise<{ pixels: Uint8Array }>
+      interleavedBlock(): Promise<{
+        frameCount: number
+        channelCount: number
+        samples: Float32Array
+      }>
       manyBuffers(): Promise<{ frameCount: number; channels: readonly Float32Array[] }>
     }
     return { value, failures: pair.failures }
@@ -129,6 +149,19 @@ describe('capability boundary — result shape', () => {
     const result = await value.oneBuffer()
     const elapsed = performance.now() - started
     expect(result.pixels.byteLength).toBe(FRAMES * CHANNELS * 4)
+    expect(elapsed).toBeLessThan(2_000)
+    expect(failures).toEqual([])
+  })
+
+  it('carries a whole interleaved PCM window as one buffer', async () => {
+    const { value, failures } = await proxy()
+    const started = performance.now()
+    const block = await value.interleavedBlock()
+    const elapsed = performance.now() - started
+    expect(block.frameCount).toBe(FRAMES)
+    expect(block.channelCount).toBe(CHANNELS)
+    expect(block.samples).toBeInstanceOf(Float32Array)
+    expect(block.samples.length).toBe(FRAMES * CHANNELS)
     expect(elapsed).toBeLessThan(2_000)
     expect(failures).toEqual([])
   })

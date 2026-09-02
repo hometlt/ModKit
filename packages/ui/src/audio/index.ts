@@ -28,11 +28,13 @@ export const WAVEFORM_BUCKETS = 900
 export const AUDIO_MAXIMUM_PCM_FRAMES = 10 * 60 * 48_000
 /** One codec PCM request; a long file arrives as several of these rather than one huge one. */
 /*
- * One codec PCM request. Smaller than it could be on purpose: each window crosses the capability
- * RPC as a tagged base64 payload, and a smaller window both keeps a single response modest and lets
- * the stage report progress often enough to tell "slow" from "stuck".
+ * One codec PCM request.
+ *
+ * Large again now that a window is ONE interleaved buffer rather than one buffer per channel: the
+ * cost of a window is a single payload, so fewer, larger windows beat many small ones. 262 144
+ * frames is about six seconds of 44 100 Hz audio, so a game's UI sound crosses in one request.
  */
-export const AUDIO_PCM_WINDOW_FRAMES = 1 << 13
+export const AUDIO_PCM_WINDOW_FRAMES = 1 << 18
 
 /** Playback rates the transport cycles through, matching the MK2 audio preview. */
 export const AUDIO_RATES = Object.freeze([0.5, 0.75, 1, 1.25, 1.5, 2])
@@ -91,8 +93,9 @@ export async function collectCodecPcm(
   onFrames: (frames: number) => void = () => undefined,
 ): Promise<{ readonly sampleRate: number; readonly channels: readonly Float32Array[] }> {
   if (source.readPcm === undefined) throw new TypeError('this source exposes no PCM')
-  const windows: (readonly Float32Array[])[] = []
+  const windows: { readonly samples: Float32Array; readonly frameCount: number }[] = []
   let sampleRate = 0
+  let channelCount = 0
   let frames = 0
   /*
    * Bounded by window count as well as by frames. A source that answers every request with the
@@ -133,22 +136,36 @@ export async function collectCodecPcm(
     if (!Number.isSafeInteger(block.frameCount) || block.frameCount < 0) {
       throw new TypeError(`the codec reported ${String(block.frameCount)} PCM frames`)
     }
+    if (!Number.isSafeInteger(block.channelCount) || block.channelCount <= 0) {
+      throw new TypeError(`the codec reported ${String(block.channelCount)} channels`)
+    }
+    if (block.samples.length !== block.frameCount * block.channelCount) {
+      throw new TypeError(
+        `the codec sent ${block.samples.length} samples for ${block.frameCount} frames of ` +
+          `${block.channelCount} channels`,
+      )
+    }
     sampleRate = block.sampleRate
-    windows.push(block.channels)
+    channelCount = block.channelCount
+    windows.push({ samples: block.samples, frameCount: block.frameCount })
     frames += block.frameCount
     from += block.frameCount
     onFrames(frames)
   }
   if (frames === 0 || sampleRate <= 0) throw new TypeError('the codec decoded no PCM frames')
-  const count = windows[0]?.length ?? 0
-  const channels = Array.from({ length: count }, () => new Float32Array(frames))
+  // De-interleave once, at the end: the wire carried one buffer per window, this splits the track.
+  const channels = Array.from({ length: channelCount }, () => new Float32Array(frames))
   let offset = 0
   for (const window of windows) {
-    const length = window[0]?.length ?? 0
-    for (let channel = 0; channel < count; channel += 1) {
-      channels[channel]?.set(window[channel] ?? new Float32Array(0), offset)
+    for (let frame = 0; frame < window.frameCount; frame += 1) {
+      for (let channel = 0; channel < channelCount; channel += 1) {
+        const target = channels[channel]
+        if (target !== undefined) {
+          target[offset + frame] = window.samples[frame * channelCount + channel] as number
+        }
+      }
     }
-    offset += length
+    offset += window.frameCount
   }
   return { sampleRate, channels }
 }

@@ -391,7 +391,7 @@ const receipt = {
     exclusions: [],
     cases: [],
     failures: [],
-    verdict: 'fail',
+    verdict: 'not-executed',
   },
   mediaAcceptance: {
     kind: 'x3.vscode-installed-media-editor-acceptance',
@@ -399,7 +399,7 @@ const receipt = {
     expectedAnchors: ['2B-1/2B-2', '2B-3', '2B-4', '2B-5', '2B-6'],
     cases: [],
     failures: [],
-    verdict: 'pending',
+    verdict: 'not-executed',
   },
   archiveAcceptance: {
     kind: 'x3.vscode-installed-archive-acceptance',
@@ -407,7 +407,7 @@ const receipt = {
     expectedCases: archiveAcceptanceCaseIds,
     cases: [],
     failures: [],
-    verdict: 'fail',
+    verdict: 'not-executed',
   },
   corruptInput: {
     kind: 'x3.vscode-installed-corrupt-input-refusal',
@@ -416,7 +416,7 @@ const receipt = {
     expectedStep: 'input-open',
     code: null,
     message: null,
-    verdict: 'fail',
+    verdict: 'not-executed',
   },
   runs: [],
   restart: { attempted: false, sameProfile: true, passed: false },
@@ -927,6 +927,20 @@ async function selectQuickInputRowByKeyboard(page, widget, options) {
    * is what actually selects, so a missing input must not stop it. Whether narrowing happened is
    * recorded rather than assumed.
    */
+  /*
+   * Wait for the list to exist before narrowing it.
+   *
+   * Filtering an unrendered list is filtering nothing, and the CASC search failed exactly that way
+   * — «never rendered the required row; visible rows=[]» — after the picker had been asked for but
+   * before it had drawn. This waits on the condition (any row at all), not on a longer clock, and
+   * the requirement below is untouched: the wanted row must take keyboard focus and be the row
+   * Enter accepts.
+   */
+  const anyRow = widget.locator('.quick-input-list .monaco-list-row:visible')
+  await waitFor(async () => ((await anyRow.count().catch(() => 0)) > 0 ? true : undefined), {
+    timeoutMs,
+    stepMs: 250,
+  })
   let filtered = false
   if (typeof filter === 'string') {
     const input = widget.locator('input:visible').last()
@@ -3582,11 +3596,21 @@ async function launchGeneration(generation) {
       receipt.formatSmoke.cases.push(portableFormatSmokeCase(testCase, current, observation))
       receipt.formatSmoke.openedCases = receipt.formatSmoke.cases.length
     }
+    /*
+     * The harness has now seen every A8 case. Record that before anything later can abort the run:
+     * a stage that finished is not "failed" because a different stage stopped afterwards. The
+     * product-side receipt upgrades this to `pass` below, which is a stronger and separate claim.
+     */
+    if (receipt.formatSmoke.openedCases === receipt.formatSmoke.expectedCases) {
+      receipt.formatSmoke.verdict = 'cases-observed'
+    }
     const archiveStart = await waitForArchiveAcceptanceStage('awaiting-archive-acceptance-start')
     if (archiveStart?.archiveAcceptance?.artifactSha256 !== receipt.artifact.sha256) {
       throw new Error('Wave 2A archive acceptance artifact SHA-256 differs from the installed VSIX')
     }
     writeFileSync(archiveAcceptanceStartPath, `${new Date().toISOString()}\n`)
+    // Started: an abort inside this section must not read as 'never ran'.
+    receipt.archiveAcceptance.verdict = 'in-progress'
     for (const expectedCaseId of [
       'mpq-tree-search-lazy',
       'casc-tree-search-lazy',
@@ -3810,6 +3834,7 @@ async function launchGeneration(generation) {
    * an archive one, and so the archive barriers are never waiting on a picker.
    */
   if (generation === 3) {
+    receipt.mediaAcceptance.verdict = 'in-progress'
     const media = await runMediaAndEditorAcceptance(page, port)
     receipt.mediaAcceptance.artifactSha256 = media.artifactSha256
     receipt.mediaAcceptance.cases = portableReceiptValue(media.cases)

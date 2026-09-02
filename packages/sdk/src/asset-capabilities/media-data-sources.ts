@@ -117,11 +117,26 @@ export interface AudioPcmRequest {
   readonly maxBytes: number
 }
 
+/**
+ * One decoded window, as a single interleaved buffer.
+ *
+ * Not an array of per-channel buffers, which is what this carried until Wave 2B. The capability
+ * boundary requires every typed array to own its whole buffer, so N channels can never be views
+ * over one allocation: they are necessarily N allocations, N encodings and N transferables per
+ * window, and the installed VS Code bridge — which turns each frame into a JSON string — paid that
+ * N times over. `readRegion` has always returned one `pixels` buffer for the same reason.
+ *
+ * Samples are interleaved frame-major: frame 0 channel 0, frame 0 channel 1, frame 1 channel 0, …
+ * De-interleaving belongs to the consumer, which is also the form `AudioBuffer.copyToChannel`
+ * wants a stride into.
+ */
 export interface AudioPcmBlock {
   readonly sampleRate: number
   readonly fromFrame: bigint
   readonly frameCount: number
-  readonly channels: readonly Float32Array[]
+  readonly channelCount: number
+  /** `frameCount * channelCount` samples in [-1, 1], interleaved frame-major. */
+  readonly samples: Float32Array
 }
 
 export interface AudioMediaSource {
