@@ -27,7 +27,12 @@ export const WAVEFORM_BUCKETS = 900
 /** Ceiling on codec-decoded PCM held in memory: ten minutes of 48 kHz stereo. */
 export const AUDIO_MAXIMUM_PCM_FRAMES = 10 * 60 * 48_000
 /** One codec PCM request; a long file arrives as several of these rather than one huge one. */
-export const AUDIO_PCM_WINDOW_FRAMES = 1 << 18
+/*
+ * One codec PCM request. Smaller than it could be on purpose: each window crosses the capability
+ * RPC as a tagged base64 payload, and a smaller window both keeps a single response modest and lets
+ * the stage report progress often enough to tell "slow" from "stuck".
+ */
+export const AUDIO_PCM_WINDOW_FRAMES = 1 << 16
 
 /** Playback rates the transport cycles through, matching the MK2 audio preview. */
 export const AUDIO_RATES = Object.freeze([0.5, 0.75, 1, 1.25, 1.5, 2])
@@ -83,6 +88,7 @@ export async function collectCodecPcm(
   source: AudioMediaSource,
   trackId: string,
   signal?: AbortSignal,
+  onFrames: (frames: number) => void = () => undefined,
 ): Promise<{ readonly sampleRate: number; readonly channels: readonly Float32Array[] }> {
   if (source.readPcm === undefined) throw new TypeError('this source exposes no PCM')
   const windows: (readonly Float32Array[])[] = []
@@ -115,6 +121,7 @@ export async function collectCodecPcm(
     windows.push(block.channels)
     frames += block.frameCount
     from += block.frameCount
+    onFrames(frames)
   }
   if (frames === 0 || sampleRate <= 0) throw new TypeError('the codec decoded no PCM frames')
   const count = windows[0]?.length ?? 0
@@ -167,7 +174,9 @@ async function loadWaveform(
     let sizeBytes: number
     if (info.pcmAccess && source.readPcm !== undefined && track !== undefined) {
       onPhase('codec-pcm')
-      const pcm = await collectCodecPcm(source, track.id, signal)
+      const pcm = await collectCodecPcm(source, track.id, signal, frames =>
+        onPhase(`codec-pcm:${frames}`),
+      )
       const frames = pcm.channels[0]?.length ?? 0
       buffer = context.createBuffer(Math.max(1, pcm.channels.length), frames, pcm.sampleRate)
       for (const [index, channel] of pcm.channels.entries()) {
