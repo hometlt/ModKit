@@ -32,7 +32,7 @@ export const AUDIO_MAXIMUM_PCM_FRAMES = 10 * 60 * 48_000
  * RPC as a tagged base64 payload, and a smaller window both keeps a single response modest and lets
  * the stage report progress often enough to tell "slow" from "stuck".
  */
-export const AUDIO_PCM_WINDOW_FRAMES = 1 << 16
+export const AUDIO_PCM_WINDOW_FRAMES = 1 << 13
 
 /** Playback rates the transport cycles through, matching the MK2 audio preview. */
 export const AUDIO_RATES = Object.freeze([0.5, 0.75, 1, 1.25, 1.5, 2])
