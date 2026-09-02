@@ -2654,10 +2654,48 @@ async function openModkitSubjectFormats(port) {
   return values.filter(value => typeof value === 'string')
 }
 
-/** Close every editor, so the next open is the only thing the window is showing. */
-async function closeAllEditors(page) {
-  await chooseQuickInput(page, 'close all editors', /^View: Close All Editors$/u)
-  await page.waitForTimeout(500)
+/**
+ * Close every editor, so the next open is the only thing the window is showing.
+ *
+ * Not `chooseQuickInput`: that matches an anchored regex against the WHOLE row text, and this
+ * command — unlike «Reopen Editor With» — renders its keybinding inside the same row, so an
+ * anchored title can never match it. The row’s own label element carries the title and nothing
+ * else, which is what H2's keyboard selection already reads.
+ *
+ * The outcome is then checked as a fact rather than assumed from the keystroke: the window has to
+ * actually end up with no editor open and no Modkit subject still holding one.
+ */
+async function closeAllEditors(page, port) {
+  const widget = await fillQuickInput(page, 'close all editors')
+  await selectQuickInputRowByKeyboard(page, widget, {
+    label: 'View: Close All Editors',
+    present: rowText => quickInputTextMatches('Close All Editors', rowText),
+    matches: candidate =>
+      candidate.label === 'View: Close All Editors' || candidate.label === 'Close All Editors',
+    timeoutMs: 30_000,
+  })
+  const closed = await waitFor(
+    async () => {
+      const tabs = await page
+        .locator('.tabs-container .tab:visible')
+        .count()
+        .catch(() => 1)
+      if (tabs !== 0) return undefined
+      const subjects = await openModkitSubjectFormats(port)
+      return subjects.length === 0 ? { tabs, subjects } : undefined
+    },
+    { timeoutMs: 30_000, stepMs: 250 },
+  )
+  if (closed === undefined) {
+    const tabs = await page
+      .locator('.tabs-container .tab:visible')
+      .allInnerTexts()
+      .catch(() => [])
+    throw new Error(
+      `the window did not end up with every editor closed; tabs=${JSON.stringify(tabs)}; ` +
+        `Modkit subjects=${JSON.stringify(await openModkitSubjectFormats(port))}`,
+    )
+  }
 }
 
 /** Press one of the product's own buttons by its accessible title, inside the webview. */
@@ -2743,7 +2781,7 @@ async function runMediaAndEditorAcceptance(page, port) {
     [dds, 'dds'],
     [png, 'png'],
   ]) {
-    await closeAllEditors(page)
+    await closeAllEditors(page, port)
     await openWorkspaceFile(page, entry.path)
     const formats = await waitFor(
       async () => {
@@ -2766,6 +2804,9 @@ async function runMediaAndEditorAcceptance(page, port) {
   }
 
   // ------------------------------------------------------------- 2B-6: the native editor picker
+  // The association loop above closed every editor between opens, so the DDS is opened again here.
+  await closeAllEditors(page, port)
+  await openWorkspaceFile(page, dds.path)
   await activateEditor(page, dds.path)
   const pickerCommand = await chooseQuickInput(
     page,
@@ -2877,6 +2918,8 @@ async function runMediaAndEditorAcceptance(page, port) {
     [wav, 'codec-pcm'],
     [ogg, 'platform-decoder'],
   ]) {
+    // One Modkit editor at a time: a stage probe answers from whichever webview replies first.
+    await closeAllEditors(page, port)
     await openWorkspaceFile(page, entry.path)
     await activateEditor(page, entry.path)
     const loaded = await readStageDataset(
@@ -2946,6 +2989,7 @@ async function runMediaAndEditorAcceptance(page, port) {
   }
 
   // ------------------------------------------------- 2B-4: corrupt audio payload, typed refusal
+  await closeAllEditors(page, port)
   await openWorkspaceFile(page, corrupt)
   await activateEditor(page, corrupt)
   const refusal = await waitFor(
@@ -2964,6 +3008,7 @@ async function runMediaAndEditorAcceptance(page, port) {
   if (refusal === undefined) {
     throw new Error('2B-4 corrupt WAV produced no typed refusal in the installed application')
   }
+  await closeAllEditors(page, port)
   await openWorkspaceFile(page, wav.path)
   await activateEditor(page, wav.path)
   const canary = await readStageDataset(port, 'audio', ['decoder', 'transport'], 60_000)
@@ -3015,7 +3060,7 @@ async function runMediaAndEditorAcceptance(page, port) {
    * PNG, whose codec kept its default, must still be claimed, which is what separates «this
    * codec stopped being the default» from «the association sync broke».
    */
-  await closeAllEditors(page)
+  await closeAllEditors(page, port)
   await openWorkspaceFile(page, dds.path)
   await page.waitForTimeout(3_000)
   const afterClearing = await openModkitSubjectFormats(port)
@@ -3025,7 +3070,7 @@ async function runMediaAndEditorAcceptance(page, port) {
         `${JSON.stringify(afterClearing)}`,
     )
   }
-  await closeAllEditors(page)
+  await closeAllEditors(page, port)
   await openWorkspaceFile(page, png.path)
   const pngStillDefault = await waitFor(
     async () => {
