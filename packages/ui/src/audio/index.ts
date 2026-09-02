@@ -136,22 +136,26 @@ async function loadWaveform(
   onPhase: (phase: string) => void = () => undefined,
 ): Promise<{
   readonly model: WaveformModel
-  readonly mediaType: string
-  readonly bytes: Uint8Array
+  readonly encoded?: { readonly mediaType: string; readonly bytes: Uint8Array }
   readonly buffer: AudioBuffer
   readonly context: AudioContext
   readonly decodedBy: 'codec-pcm' | 'platform-decoder'
 }> {
-  onPhase('encoded')
-  const encoded = await source.encoded(undefined, signal)
-  const media = await collectEncodedMedia(encoded, AUDIO_MAXIMUM_BYTES, signal)
+  /*
+   * Ask what this is BEFORE fetching anything.
+   *
+   * The old order took the `encoded` lease first and then called `info`, which left the installed
+   * audio stage stuck in "loading" forever with the phase readout pointing straight at `info`.
+   * Asking first is also the honest shape: when the codec decodes the samples itself, the encoded
+   * bytes are never needed, and materialising up to 96 MiB to throw away was always waste.
+   */
+  onPhase('info')
+  const info = await source.info(signal)
   const AudioContextCtor = audioContextConstructor()
   if (AudioContextCtor === undefined) throw new TypeError('no platform audio decoder is available')
   const context = new AudioContextCtor()
   let disposed = false
   try {
-    onPhase('info')
-    const info = await source.info(signal)
     /*
      * Prefer the codec. `pcmAccess` means the codec claims it can decode these samples itself, and
      * the platform decoder is the fallback for the formats it cannot — not the other way round.
@@ -159,17 +163,26 @@ async function loadWaveform(
     const track = info.tracks.find(item => item.selected) ?? info.tracks[0]
     let buffer: AudioBuffer
     let decodedBy: 'codec-pcm' | 'platform-decoder'
+    let encodedMedia: { readonly mediaType: string; readonly bytes: Uint8Array } | undefined
+    let sizeBytes: number
     if (info.pcmAccess && source.readPcm !== undefined && track !== undefined) {
       onPhase('codec-pcm')
       const pcm = await collectCodecPcm(source, track.id, signal)
       const frames = pcm.channels[0]?.length ?? 0
       buffer = context.createBuffer(Math.max(1, pcm.channels.length), frames, pcm.sampleRate)
       for (const [index, channel] of pcm.channels.entries()) {
-        // `copyToChannel` is typed for a plain ArrayBuffer; the codec's arrays are ArrayBufferLike.
+        // `copyToChannel` is typed for a plain ArrayBuffer; the codec’s arrays are ArrayBufferLike.
         buffer.copyToChannel(channel as Float32Array<ArrayBuffer>, index)
       }
+      // Decoded size: the encoded file is never fetched on this path, so it cannot be reported.
+      sizeBytes = frames * Math.max(1, pcm.channels.length) * 4
       decodedBy = 'codec-pcm'
     } else {
+      onPhase('encoded')
+      const lease = await source.encoded(undefined, signal)
+      const media = await collectEncodedMedia(lease, AUDIO_MAXIMUM_BYTES, signal)
+      encodedMedia = { mediaType: media.mediaType, bytes: media.bytes }
+      sizeBytes = media.bytes.byteLength
       onPhase('platform-decode')
       buffer = await context.decodeAudioData(media.bytes.slice().buffer as ArrayBuffer)
       decodedBy = 'platform-decoder'
@@ -185,10 +198,9 @@ async function loadWaveform(
         duration: buffer.duration,
         channels: buffer.numberOfChannels,
         sampleRate: buffer.sampleRate,
-        bytes: media.bytes.byteLength,
+        bytes: sizeBytes,
       },
-      mediaType: media.mediaType,
-      bytes: media.bytes,
+      ...(encodedMedia === undefined ? {} : { encoded: encodedMedia }),
       buffer,
       context,
       decodedBy,
@@ -420,9 +432,9 @@ export function createAudioViewer(options: AudioViewerOptions = {}): ViewerModul
          * the editor's own controls. It is not the engine when the codec decoded the samples: a
          * player handed IMA ADPCM would show a control strip that plays nothing.
          */
-        if (loaded.decodedBy === 'platform-decoder') {
+        if (loaded.decodedBy === 'platform-decoder' && loaded.encoded !== undefined) {
           const objectUrl = URL.createObjectURL(
-            new Blob([loaded.bytes as BlobPart], { type: loaded.mediaType }),
+            new Blob([loaded.encoded.bytes as BlobPart], { type: loaded.encoded.mediaType }),
           )
           player.src = objectUrl
           scope.cleanup(() => URL.revokeObjectURL(objectUrl))
