@@ -537,6 +537,13 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-command:modkit.setCodecDefaultEditor",
+      "kind": "vscode-command",
+      "key": "modkit.setCodecDefaultEditor",
+      "workflowId": "vscode/manifest-settings",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-command:modkit.showDiagnostics",
       "kind": "vscode-command",
       "key": "modkit.showDiagnostics",
@@ -551,10 +558,24 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-command:modkit.syncEditorAssociations",
+      "kind": "vscode-command",
+      "key": "modkit.syncEditorAssociations",
+      "workflowId": "vscode/manifest-settings",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-command:modkit.unloadSource",
       "kind": "vscode-command",
       "key": "modkit.unloadSource",
       "workflowId": "vscode/source-workspace-lifecycle",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-configuration-property:modkit.defaultEditorForTextFormats",
+      "kind": "vscode-configuration-property",
+      "key": "modkit.defaultEditorForTextFormats",
+      "workflowId": "vscode/manifest-settings",
       "state": "observed-only"
     },
     {
@@ -586,9 +607,44 @@
       "state": "observed-only"
     },
     {
+      "factId": "x3:vscode-configuration-property:modkit.managedEditorAssociations",
+      "kind": "vscode-configuration-property",
+      "key": "modkit.managedEditorAssociations",
+      "workflowId": "vscode/manifest-settings",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-configuration-property:modkit.nonDefaultContributions",
+      "kind": "vscode-configuration-property",
+      "key": "modkit.nonDefaultContributions",
+      "workflowId": "vscode/manifest-settings",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-custom-editor:modkit.archiveViewer",
+      "kind": "vscode-custom-editor",
+      "key": "modkit.archiveViewer",
+      "workflowId": "vscode/asset-inspect-preview-convert",
+      "state": "observed-only"
+    },
+    {
       "factId": "x3:vscode-custom-editor:modkit.genericAssetPreview",
       "kind": "vscode-custom-editor",
       "key": "modkit.genericAssetPreview",
+      "workflowId": "vscode/asset-inspect-preview-convert",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-custom-editor:modkit.hexViewer",
+      "kind": "vscode-custom-editor",
+      "key": "modkit.hexViewer",
+      "workflowId": "vscode/asset-inspect-preview-convert",
+      "state": "observed-only"
+    },
+    {
+      "factId": "x3:vscode-custom-editor:modkit.imageViewer",
+      "kind": "vscode-custom-editor",
+      "key": "modkit.imageViewer",
       "workflowId": "vscode/asset-inspect-preview-convert",
       "state": "observed-only"
     },
