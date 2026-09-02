@@ -841,6 +841,103 @@ function writeArmodProcessTreeMemoryAck(stage, memoryEvidence) {
   renameSync(temporary, archiveAcceptanceAckPath)
 }
 
+/*
+ * Read one Monaco list row without any actionability check. `innerText` only needs the element to
+ * be attached, so a list that repaints under us cannot turn reading into a timeout — unlike a
+ * click, which must first prove the hit box is stable.
+ */
+async function readQuickInputRow(row) {
+  const rowText = await row.innerText().catch(() => undefined)
+  if (rowText === undefined) return undefined
+  /*
+   * The row renders its subject as the QuickPick label and any extra (a member size, a command
+   * category) as a separate description element. Read the label on its own so the receipt records
+   * what the row actually said instead of echoing the expectation.
+   */
+  const labelNodes = row.locator('.label-name')
+  const descriptionNodes = row.locator('.label-description')
+  if ((await labelNodes.count().catch(() => 0)) > 0) {
+    const label = (await labelNodes.first().innerText().catch(() => undefined))?.trim()
+    if (label === undefined) return undefined
+    const description =
+      (await descriptionNodes.count().catch(() => 0)) > 0
+        ? ((await descriptionNodes.first().innerText().catch(() => '')) ?? '').trim()
+        : ''
+    return { rowText, label, description, source: 'quick-input-label-element' }
+  }
+  const collapsed = rowText.replace(/\s+/gu, ' ').trim()
+  const description = (collapsed.match(/\d[\d,. ]*bytes$/u) ?? [''])[0].trim()
+  return {
+    rowText,
+    label: collapsed.slice(0, collapsed.length - description.length).trim(),
+    description,
+    source: 'row-text-minus-description',
+  }
+}
+
+/*
+ * H2 (Fable, acceptance of Wave 2A): picking a row of a virtualised Monaco list with the MOUSE is
+ * a race — the list re-renders under the pointer and Playwright reports
+ * "element is not stable -> not visible" even though the row was found and its aria-label matched.
+ * Reproduced 1 run in 2. Keyboard selection has no hit box to stabilise: narrow with the picker
+ * filter, then walk the focus with arrows until the row that CARRIES KEYBOARD FOCUS is the one the
+ * case demands, then confirm with Enter.
+ *
+ * This does not weaken the functional check, it strengthens it: the label is read from the focused
+ * row at the moment Enter is pressed, i.e. from the row the workbench itself is about to accept.
+ */
+async function selectQuickInputRowByKeyboard(page, widget, options) {
+  const {
+    label: what = 'quick input',
+    filter,
+    present,
+    matches,
+    maxSteps = 80,
+    timeoutMs = 30_000,
+  } = options
+  if (typeof filter === 'string') {
+    const input = widget.locator('input:visible').last()
+    await input.waitFor({ state: 'visible', timeout: 20_000 })
+    await input.fill(filter)
+  }
+  const rows = widget.locator('.quick-input-list .monaco-list-row:visible')
+  // Do not start walking an empty list: wait until the wanted row is actually rendered.
+  const rendered = await waitFor(
+    async () => {
+      const texts = await rows.allInnerTexts().catch(() => [])
+      return texts.some(text => present(text)) ? texts : undefined
+    },
+    { timeoutMs, stepMs: 250 },
+  )
+  if (rendered === undefined) {
+    const texts = await rows.allInnerTexts().catch(() => [])
+    throw new Error(
+      `${what} never rendered the required row; visible rows=${JSON.stringify(texts.slice(0, 40))}`,
+    )
+  }
+  const focused = widget.locator('.quick-input-list .monaco-list-row.focused')
+  const visited = []
+  for (let steps = 0; steps <= maxSteps; steps += 1) {
+    if ((await focused.count().catch(() => 0)) > 0) {
+      const row = await readQuickInputRow(focused.first())
+      if (row !== undefined) {
+        visited.push(row.rowText)
+        if (matches(row)) {
+          await page.keyboard.press('Enter')
+          return { ...row, keyboardSteps: steps, selectionMethod: 'keyboard-filter-arrows-enter' }
+        }
+      }
+    }
+    await page.keyboard.press('ArrowDown')
+    await page.waitForTimeout(60)
+  }
+  throw new Error(
+    `${what} never focused the required row within ${maxSteps} keyboard steps; ` +
+      `visited=${JSON.stringify(visited.slice(0, 40))}; ` +
+      `rendered=${JSON.stringify(rendered.slice(0, 40))}`,
+  )
+}
+
 async function observeAndSelectArchiveSearch(page, expected) {
   const widget = page.locator('.quick-input-widget:visible').last()
   const input = widget.locator('input:visible').last()
@@ -853,47 +950,29 @@ async function observeAndSelectArchiveSearch(page, expected) {
     )
   }
   await page.keyboard.press('Enter')
-  const rows = widget.locator('.quick-input-list .monaco-list-row:visible')
-  const row = rows.filter({ hasText: expected.requiredEntry }).first()
-  await row.waitFor({ state: 'visible', timeout: 30_000 })
-  const rowText = await row.innerText()
-  /*
-   * The row renders the container entry as its QuickPick label and the member size as a separate
-   * description element. Read the label on its own so the receipt records what the row actually
-   * said instead of echoing the expectation, and keep the description as separate evidence.
-   */
-  const labelNodes = row.locator('.label-name')
-  const descriptionNodes = row.locator('.label-description')
-  let pickedLabel
-  let pickedDescription
-  let pickedLabelSource
-  if ((await labelNodes.count()) > 0) {
-    pickedLabel = (await labelNodes.first().innerText()).trim()
-    pickedDescription =
-      (await descriptionNodes.count()) > 0
-        ? (await descriptionNodes.first().innerText()).trim()
-        : ''
-    pickedLabelSource = 'quick-input-label-element'
-  } else {
-    const collapsed = rowText.replace(/\s+/gu, ' ').trim()
-    pickedDescription = (collapsed.match(/\d[\d,. ]*bytes$/u) ?? [''])[0].trim()
-    pickedLabel = collapsed.slice(0, collapsed.length - pickedDescription.length).trim()
-    pickedLabelSource = 'row-text-minus-description'
-  }
-  if (pickedLabel !== expected.requiredEntry) {
+  let selected
+  try {
+    selected = await selectQuickInputRowByKeyboard(page, widget, {
+      label: `${expected.caseId} QuickPick`,
+      filter: expected.requiredEntry,
+      present: text => text.includes(expected.requiredEntry),
+      matches: row => row.label === expected.requiredEntry,
+    })
+  } catch (error) {
     throw new Error(
-      `${expected.caseId} QuickPick label ${JSON.stringify(pickedLabel)} is not its authority entry ` +
-        `(description ${JSON.stringify(pickedDescription)}, row ${JSON.stringify(rowText)})`,
+      `${expected.caseId} QuickPick did not focus its authority entry ` +
+        `${JSON.stringify(expected.requiredEntry)}: ${String(error)}`,
     )
   }
-  await row.click()
   return {
     inputBoxObserved: true,
     quickPickObserved: true,
-    pickedLabel,
-    pickedDescription,
-    pickedLabelSource,
-    rowText,
+    pickedLabel: selected.label,
+    pickedDescription: selected.description,
+    pickedLabelSource: selected.source,
+    pickedSelectionMethod: selected.selectionMethod,
+    pickedKeyboardSteps: selected.keyboardSteps,
+    rowText: selected.rowText,
   }
 }
 
@@ -2086,6 +2165,15 @@ async function fillQuickInput(page, query) {
   )
 }
 
+/** Test one rendered row against a string (substring) or a RegExp, whitespace-normalised. */
+function quickInputTextMatches(expectedText, value) {
+  if (typeof value !== 'string') return false
+  const collapsed = value.replace(/\s+/gu, ' ').trim()
+  return typeof expectedText === 'string'
+    ? collapsed.toLowerCase().includes(expectedText.toLowerCase())
+    : expectedText.test(collapsed)
+}
+
 async function chooseQuickInput(page, query, expectedText) {
   let lastError
   for (let attempt = 1; attempt <= 3; attempt += 1) {
@@ -2096,9 +2184,16 @@ async function chooseQuickInput(page, query, expectedText) {
       .first()
     try {
       await row.waitFor({ state: 'visible', timeout: 20_000 })
-      const selectedText = await row.innerText()
-      await row.click()
-      return selectedText
+      // H2: confirm with the keyboard, never with a click on a virtualised list row.
+      const selected = await selectQuickInputRowByKeyboard(page, widget, {
+        label: `command palette ${JSON.stringify(query)}`,
+        present: text => quickInputTextMatches(expectedText, text),
+        matches: candidate =>
+          quickInputTextMatches(expectedText, candidate.label) ||
+          quickInputTextMatches(expectedText, candidate.rowText),
+        timeoutMs: 20_000,
+      })
+      return selected.rowText
     } catch (error) {
       lastError = error
       await page.keyboard.press('Escape').catch(() => undefined)
@@ -2135,12 +2230,14 @@ async function openWorkspaceFile(page, filePath) {
   const input = widget.locator('input:visible').last()
   await input.waitFor({ state: 'visible', timeout: 5_000 })
   await input.fill(file)
-  const row = widget
-    .locator('.quick-input-list .monaco-list-row:visible')
-    .filter({ hasText: file })
-    .first()
-  await row.waitFor({ state: 'visible', timeout: 20_000 })
-  await row.click()
+  // H2: keyboard selection — Quick Open re-renders its rows while results stream in.
+  await selectQuickInputRowByKeyboard(page, widget, {
+    label: `Quick Open ${JSON.stringify(file)}`,
+    present: text => quickInputTextMatches(file, text),
+    matches: candidate =>
+      candidate.label === file || quickInputTextMatches(file, candidate.rowText),
+    timeoutMs: 20_000,
+  })
   await page
     .locator('.tabs-container .tab:visible')
     .filter({ hasText: file })
@@ -2233,7 +2330,14 @@ async function reopenWithModkit(page, filePath = ddsPath) {
         `cause=${String(error)}`,
     )
   }
-  await option.click()
+  // H2: the editor picker is a virtualised list too — filter and confirm with the keyboard.
+  await selectQuickInputRowByKeyboard(page, widget, {
+    label: 'Reopen Editor With picker',
+    filter: 'Modkit Asset Preview',
+    present: text => quickInputTextMatches('Modkit Asset Preview', text),
+    matches: candidate => candidate.label === 'Modkit Asset Preview',
+    timeoutMs: 20_000,
+  })
 }
 
 async function observeCorruptInputRefusal(page, port, timeoutMs = 60_000) {
