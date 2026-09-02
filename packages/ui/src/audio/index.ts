@@ -117,6 +117,22 @@ export async function collectCodecPcm(
       signal,
     )
     if (block.frameCount === 0) break
+    /*
+     * Every window must be the window that was asked for.
+     *
+     * Paging trusts fromFrame to advance. A source answering every request with the start of the
+     * track would look like progress — the frame total climbs — while the same seconds arrive over
+     * and over, and collection would only end at the window ceiling, minutes later. That is a wrong
+     * answer, so it is refused by name rather than assembled into a track that is not the file.
+     */
+    if (block.fromFrame !== BigInt(from)) {
+      throw new TypeError(
+        `the codec answered from frame ${String(block.fromFrame)} when frame ${from} was requested`,
+      )
+    }
+    if (!Number.isSafeInteger(block.frameCount) || block.frameCount < 0) {
+      throw new TypeError(`the codec reported ${String(block.frameCount)} PCM frames`)
+    }
     sampleRate = block.sampleRate
     windows.push(block.channels)
     frames += block.frameCount
