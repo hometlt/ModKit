@@ -21,9 +21,10 @@
     }
   ],
   "limitations": [
-    "BC6H and BC7 decoding uses the package's asynchronous WASM-backed path; uncommon DXGI formats remain diagnostic-only.",
-    "Browser main-thread and module-worker software decode use an explicit URL-based ESM/WASM boundary; the host controls where those optional assets are deployed.",
-    "Mip, array-layer, cubemap-face, and volume-slice selection is available through the shared descriptor and generic viewer controls.",
+    "Decoded to pixels: BC1/BC2/BC3 (FourCC DXT1/DXT3/DXT5 and the equivalent DXGI numbers 70-78) and uncompressed RGB/RGBA masks at 24 or 32 bits.",
+    "NOT decoded: BC4, BC5, BC6H and BC7. The header parser recognises those DXGI numbers and refuses them by name; this package ships no decoder and no WASM for them, and the manifest no longer claims one.",
+    "Decode is pure JavaScript inside the codec runtime. There is no optional WASM asset, no URL-based ESM boundary and nothing for a host to deploy separately.",
+    "Mip, array-layer, cubemap-face and volume-slice selection is implemented: readRegion resolves any subresource the header declares and refuses out-of-range coordinates by name.",
     "Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global signature sniffing."
   ],
   "spec": {
