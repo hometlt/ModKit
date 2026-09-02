@@ -140,12 +140,20 @@
       "title": "%command.selectGameInstallation%"
     },
     {
+      "command": "modkit.setCodecDefaultEditor",
+      "title": "%command.setCodecDefaultEditor%"
+    },
+    {
       "command": "modkit.showDiagnostics",
       "title": "%command.showDiagnostics%"
     },
     {
       "command": "modkit.showHostProfile",
       "title": "%command.openWorkbench%"
+    },
+    {
+      "command": "modkit.syncEditorAssociations",
+      "title": "%command.syncEditorAssociations%"
     },
     {
       "command": "modkit.unloadSource",
@@ -155,6 +163,11 @@
   "configuration": {
     "title": "%configuration.title%",
     "properties": {
+      "modkit.defaultEditorForTextFormats": {
+        "default": false,
+        "markdownDescription": "%configuration.defaultEditorForTextFormats.description%",
+        "type": "boolean"
+      },
       "modkit.disabledContributions": {
         "default": [],
         "items": {
@@ -202,13 +215,59 @@
         },
         "markdownDescription": "%configuration.extensions.description%",
         "type": "array"
+      },
+      "modkit.managedEditorAssociations": {
+        "default": [],
+        "items": {
+          "type": "string"
+        },
+        "markdownDescription": "%configuration.managedEditorAssociations.description%",
+        "type": "array"
+      },
+      "modkit.nonDefaultContributions": {
+        "default": [],
+        "items": {
+          "type": "string"
+        },
+        "markdownDescription": "%configuration.nonDefaultContributions.description%",
+        "type": "array"
       }
     }
   },
   "customEditors": [
     {
+      "viewType": "modkit.archiveViewer",
+      "displayName": "%customEditor.archiveViewer%",
+      "selector": [
+        {
+          "filenamePattern": "*"
+        }
+      ],
+      "priority": "option"
+    },
+    {
       "viewType": "modkit.genericAssetPreview",
       "displayName": "%customEditor.assetPreview%",
+      "selector": [
+        {
+          "filenamePattern": "*"
+        }
+      ],
+      "priority": "option"
+    },
+    {
+      "viewType": "modkit.hexViewer",
+      "displayName": "%customEditor.hexViewer%",
+      "selector": [
+        {
+          "filenamePattern": "*"
+        }
+      ],
+      "priority": "option"
+    },
+    {
+      "viewType": "modkit.imageViewer",
+      "displayName": "%customEditor.imageViewer%",
       "selector": [
         {
           "filenamePattern": "*"

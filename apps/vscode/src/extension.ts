@@ -148,6 +148,7 @@ import {
   type SelectedContentSource,
 } from './workbench-workflows.js'
 import { runExplicitGameLaunch, VSCODE_GAME_LAUNCH_COMMAND } from './game-launch-workflow.js'
+import { planEditorAssociations, type AssociationPlan } from './editor-associations.js'
 import {
   ARMOD_EXTERNAL_PROCESS_TREE_MEMORY_DELTA_CEILING_BYTES,
   ARMOD_EXTERNAL_PROCESS_TREE_MAX_OBSERVED_INTERVAL_MS,
@@ -157,6 +158,30 @@ import {
 } from './installed-archive-acceptance.js'
 
 const CUSTOM_EDITOR_TYPE = 'modkit.genericAssetPreview'
+
+/**
+ * The stage-specific native editors (owner decision 2026-09-01, wave 2B first slice).
+ *
+ * Each is a real VS Code custom editor, so the modes appear in the editor picker — «Text», then
+ * «Modkit Hex Viewer», then the family viewer — instead of behind a dropdown inside the webview.
+ * The provider is one object: `panel.viewType` tells it which mode it is resolving.
+ *
+ * Boundary, stated rather than implied: a static `customEditors.selector` is a glob list, and «every
+ * binary format but not the text ones» is not expressible as one. Hex is therefore offered for `*`
+ * as an option, never a default; the text carve-out lives in the DEFAULT association sync, where it
+ * can be expressed.
+ */
+const STAGE_CUSTOM_EDITOR_TYPES: Readonly<Record<string, string>> = Object.freeze({
+  'modkit.hexViewer': 'hex',
+  'modkit.imageViewer': 'image',
+  'modkit.archiveViewer': 'archive',
+})
+
+/** Every view type this extension owns; the association sync never removes anyone else's. */
+const MODKIT_VIEW_TYPES: readonly string[] = Object.freeze([
+  CUSTOM_EDITOR_TYPE,
+  ...Object.keys(STAGE_CUSTOM_EDITOR_TYPES),
+])
 
 let activeLanguageShutdown: (() => Promise<void>) | undefined
 
@@ -630,6 +655,8 @@ interface PanelPageOptions {
   readonly localizationCatalogs: readonly UiCatalogDocument[]
   readonly acceptance: ModkitAcceptanceReceipt
   readonly openPath?: string
+  /** The one stage a stage-specific native editor raised this page for. */
+  readonly forcedStage?: string
   readonly extensionCard?: import('./extension-cards.js').ExtensionCardBundle
 }
 
@@ -671,6 +698,7 @@ function panelHtml(options: PanelPageOptions): string {
       diagnostics: options.host.services.host.inventory.diagnostics.length,
       acceptance: options.acceptance,
       ...(options.openPath === undefined ? {} : { openPath: options.openPath }),
+      ...(options.forcedStage === undefined ? {} : { forcedStage: options.forcedStage }),
       ...(options.extensionCard === undefined ? {} : { extensionCard: options.extensionCard }),
     },
   })
@@ -3979,6 +4007,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           activationEligible: false,
           disabled: false,
           path: contribution.path,
+          // Not installed here, so this window knows no formats for it; only inventory rows do.
+          fileExtensions: [],
         })),
       ),
   )
@@ -4616,6 +4646,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     extensionCard?: import('./extension-cards.js').ExtensionCardBundle,
     extensionCardResources?: import('./extension-cards.js').ExtensionCardResourceTargets,
     extensionCardIconPath?: string,
+    forcedStage?: string,
   ): VsCodeServed => {
     const channel: WebviewChannel = {
       post: message => {
@@ -4727,6 +4758,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       localizationCatalogs,
       acceptance: webviewAcceptance(),
       ...(openPath === undefined ? {} : { openPath }),
+      ...(forcedStage === undefined ? {} : { forcedStage }),
       ...(displayedExtensionCard === undefined ? {} : { extensionCard: displayedExtensionCard }),
     })
     return served
@@ -6594,19 +6626,28 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         return
       }
       grantFor(target)
-      const served = attach(panel.webview, target.path, {
-        onDirty(path, dirty) {
-          if (path !== document.state.path) return
-          if (document.state.markDirty(dirty) === 'became-dirty') {
-            customDocumentChanged.fire({ document })
-          }
+      const served = attach(
+        panel.webview,
+        target.path,
+        {
+          onDirty(path, dirty) {
+            if (path !== document.state.path) return
+            if (document.state.markDirty(dirty) === 'became-dirty') {
+              customDocumentChanged.fire({ document })
+            }
+          },
+          onSaveRequested(path) {
+            if (path === document.state.path) {
+              void vscode.commands.executeCommand('workbench.action.files.save')
+            }
+          },
         },
-        onSaveRequested(path) {
-          if (path === document.state.path) {
-            void vscode.commands.executeCommand('workbench.action.files.save')
-          }
-        },
-      })
+        undefined,
+        undefined,
+        undefined,
+        // One provider serves every Modkit view type; the panel says which mode it was chosen as.
+        STAGE_CUSTOM_EDITOR_TYPES[panel.viewType],
+      )
       document.state.attach(served)
       liveArchiveAcceptanceDocuments.set(document.uri.toString(), document)
       liveArchiveAcceptanceServed.set(document.uri.toString(), served)
@@ -6714,12 +6755,145 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       cancellation.dispose()
     }
   }
+  for (const viewType of MODKIT_VIEW_TYPES) {
+    context.subscriptions.push(
+      vscode.window.registerCustomEditorProvider(viewType, customEditor, {
+        webviewOptions: { retainContextWhenHidden: true },
+        supportsMultipleEditorsPerDocument: false,
+      }),
+    )
+  }
+
+  // ------------------------------------------------- per-codec «open by default» (owner decision)
+  /*
+   * An enabled codec is the default editor for the formats it claims, unless the user turns that
+   * one codec's default off or points the association somewhere else with VS Code's own «Open With
+   * → Set Default». The planner in `./editor-associations.js` decides; this writes.
+   *
+   * The write target follows the window: a workspace when one is open, the user's settings when not
+   * — the same rule every other Modkit setting follows, so "where did that change land" has one
+   * answer in this extension.
+   */
+  const associationTarget = (): vscode.ConfigurationTarget =>
+    (vscode.workspace.workspaceFolders?.length ?? 0) > 0
+      ? vscode.ConfigurationTarget.Workspace
+      : vscode.ConfigurationTarget.Global
+
+  const readStringList = (key: string): readonly string[] => {
+    const value = vscode.workspace.getConfiguration().get(key)
+    return Array.isArray(value) ? value.filter(item => typeof item === 'string') : []
+  }
+
+  const syncEditorAssociations = async (reason: string): Promise<AssociationPlan> => {
+    const associations = vscode.workspace.getConfiguration('workbench').get('editorAssociations')
+    const current: Record<string, string> = {}
+    if (associations !== null && typeof associations === 'object' && !Array.isArray(associations)) {
+      for (const [pattern, viewType] of Object.entries(associations)) {
+        if (typeof viewType === 'string') current[pattern] = viewType
+      }
+    }
+    const plan = planEditorAssociations({
+      contributions: host.contributions,
+      nonDefault: readStringList('modkit.nonDefaultContributions'),
+      current,
+      managed: readStringList('modkit.managedEditorAssociations'),
+      ownViewTypes: MODKIT_VIEW_TYPES,
+      defaultViewType: CUSTOM_EDITOR_TYPE,
+      includeTextFormats:
+        vscode.workspace.getConfiguration().get('modkit.defaultEditorForTextFormats') === true,
+    })
+    const managedChanged =
+      JSON.stringify(plan.managed) !==
+      JSON.stringify(readStringList('modkit.managedEditorAssociations'))
+    if (plan.changed || managedChanged) {
+      const target = associationTarget()
+      if (plan.changed) {
+        await vscode.workspace
+          .getConfiguration('workbench')
+          .update('editorAssociations', plan.next, target)
+      }
+      await vscode.workspace
+        .getConfiguration()
+        .update('modkit.managedEditorAssociations', [...plan.managed], target)
+    }
+    log(
+      `[associations] ${reason}: +${plan.added.length} -${plan.removed.length} ` +
+        `respected ${plan.respected.length} managed ${plan.managed.length}`,
+    )
+    return plan
+  }
+
   context.subscriptions.push(
-    vscode.window.registerCustomEditorProvider(CUSTOM_EDITOR_TYPE, customEditor, {
-      webviewOptions: { retainContextWhenHidden: true },
-      supportsMultipleEditorsPerDocument: false,
+    vscode.commands.registerCommand('modkit.syncEditorAssociations', () =>
+      syncEditorAssociations('command'),
+    ),
+    /*
+     * The per-codec switch as an ordinary command. It lists the codecs this window loaded with the
+     * position of their default, and toggling one writes `modkit.nonDefaultContributions` and
+     * re-syncs immediately — so unchecking a default gives the built-in editor back on the next
+     * open, with no reinstall and no window reload.
+     */
+    vscode.commands.registerCommand('modkit.setCodecDefaultEditor', async () => {
+      const nonDefault = new Set(readStringList('modkit.nonDefaultContributions'))
+      const rows = host.contributions.filter(
+        row => row.id !== undefined && !row.disabled && row.fileExtensions.length > 0,
+      )
+      if (rows.length === 0) {
+        void vscode.window.showInformationMessage(
+          `Modkit: ${localizer.text('vscode.associations.noCodecs')}`,
+        )
+        return undefined
+      }
+      const picked = await vscode.window.showQuickPick(
+        rows.map(row => ({
+          label: row.id as string,
+          description: row.fileExtensions.map(extension => `.${extension}`).join(' '),
+          detail: localizer.text(
+            nonDefault.has(row.id as string)
+              ? 'vscode.associations.notDefault'
+              : 'vscode.associations.isDefault',
+          ),
+        })),
+        { title: localizer.text('vscode.associations.pickTitle') },
+      )
+      if (picked === undefined) return undefined
+      if (nonDefault.has(picked.label)) nonDefault.delete(picked.label)
+      else nonDefault.add(picked.label)
+      await vscode.workspace
+        .getConfiguration()
+        .update('modkit.nonDefaultContributions', [...nonDefault].sort(), associationTarget())
+      const plan = await syncEditorAssociations(`toggled ${picked.label}`)
+      void vscode.window.showInformationMessage(
+        `Modkit: ${localizer.text('vscode.associations.applied', {
+          id: picked.label,
+          state: localizer.text(
+            nonDefault.has(picked.label)
+              ? 'vscode.associations.notDefault'
+              : 'vscode.associations.isDefault',
+          ),
+          added: plan.added.length,
+          removed: plan.removed.length,
+        })}`,
+      )
+      return Object.freeze({
+        contributionId: picked.label,
+        isDefault: !nonDefault.has(picked.label),
+        added: plan.added,
+        removed: plan.removed,
+        respected: plan.respected,
+      })
+    }),
+    vscode.workspace.onDidChangeConfiguration(event => {
+      if (
+        event.affectsConfiguration('modkit.nonDefaultContributions') ||
+        event.affectsConfiguration('modkit.defaultEditorForTextFormats') ||
+        event.affectsConfiguration('modkit.disabledContributions')
+      ) {
+        void syncEditorAssociations('settings changed')
+      }
     }),
   )
+  void syncEditorAssociations('activation')
 
   // ---------------------------------------------------------------- views
   /*

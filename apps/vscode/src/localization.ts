@@ -182,6 +182,12 @@ const EN_MESSAGES = Object.freeze({
     'Map preview needs an explicit selection; choose one of the returned map-preview candidates to continue.',
   'vscode.webview.invalidMapSelection': '{name} · the map ID was not one of the offered choices',
   'vscode.webview.exported': 'Exported {count} file(s) into the window export folder.',
+  'vscode.associations.pickTitle': 'Which codec opens its formats with Modkit by default?',
+  'vscode.associations.isDefault': 'Modkit is the default editor for these formats',
+  'vscode.associations.notDefault': 'the built-in editor stays the default for these formats',
+  'vscode.associations.applied': '{id}: {state}. Associations added: {added}, removed: {removed}.',
+  'vscode.associations.noCodecs':
+    'this window loaded no enabled codec that claims a file extension',
   'vscode.export.noFolder':
     'This window has no folder to export into. Open a folder or workspace, then export again.',
   'vscode.export.written': 'Modkit exported {count} file(s) to {folder}',
@@ -491,6 +497,13 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
     'Для просмотра карты нужно явно выбрать вариант; выберите одну из возвращённых карт и продолжите.',
   'vscode.webview.invalidMapSelection': '{name} · введённый ID карты отсутствует в списке',
   'vscode.webview.exported': 'Экспортировано файлов: {count} — в папку экспорта этого окна.',
+  'vscode.associations.pickTitle': 'Какой кодек открывает свои форматы в Modkit по умолчанию?',
+  'vscode.associations.isDefault': 'Modkit — редактор по умолчанию для этих форматов',
+  'vscode.associations.notDefault': 'для этих форматов по умолчанию остаётся встроенный редактор',
+  'vscode.associations.applied':
+    '{id}: {state}. Добавлено ассоциаций: {added}, удалено: {removed}.',
+  'vscode.associations.noCodecs':
+    'в этом окне не загружено ни одного включённого кодека с расширениями файлов',
   'vscode.export.noFolder':
     'В этом окне нет папки для экспорта. Откройте папку или рабочую область и повторите экспорт.',
   'vscode.export.written': 'Modkit экспортировал файлов: {count} — в {folder}',

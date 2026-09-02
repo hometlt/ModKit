@@ -46,6 +46,14 @@ export interface PageBootstrap {
   /** Path-free, immutable installed-product receipt exposed by the page under a stable name. */
   readonly acceptance: ModkitAcceptanceReceipt
   readonly openPath?: string
+  /**
+   * The one stage this page may show, when it was raised by a stage-specific native editor.
+   *
+   * VS Code's own editor picker is the mode switcher (owner decision 2026-09-01), so a page opened
+   * as «Modkit Hex Viewer» shows hex and nothing else — the in-page stage list stops being a second
+   * switcher competing with the native one.
+   */
+  readonly forcedStage?: string
   /** Function-free extension/contribution subject cards for the generic subject-card renderer. */
   readonly extensionCard?: import('./extension-cards.js').ExtensionCardBundle
 }

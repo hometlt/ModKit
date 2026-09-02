@@ -81,6 +81,8 @@ interface Bootstrap {
   readonly acceptance: ModkitAcceptanceReceipt
   /** Opened straight away when the panel was raised from a file (the custom editor). */
   readonly openPath?: string
+  /** The single stage a stage-specific native editor raised this page for. */
+  readonly forcedStage?: string
   readonly extensionCard?: import('./extension-cards.js').ExtensionCardBundle
 }
 
@@ -286,59 +288,74 @@ async function mount(
   const recordForDescriptor = (descriptor: Record<string, unknown>): SubjectRecord | undefined =>
     [...subjects.values()].find(record => record.descriptor === descriptor)
 
+  /**
+   * VS Code's editor picker is the mode switcher. A page raised as one of the stage-specific native
+   * editors therefore offers exactly that stage: keeping the full list would put a second switcher
+   * inside the editor the user already chose a mode for.
+   */
+  const onlyForcedStage = <T extends { readonly id?: string }>(
+    stages: readonly T[],
+  ): readonly T[] => {
+    if (snapshot.forcedStage === undefined) return stages
+    const wanted = stages.filter(stage => stage.id === snapshot.forcedStage)
+    return wanted.length === 0 ? stages : wanted
+  }
+
   const codecPreview = createCodecPreview({
     localizer,
     supported: snapshot.supportedExtensions,
-    stages: createVsCodePreviewStages({
-      localizer,
-      portsFor(descriptor) {
-        const record = recordForDescriptor(descriptor)
-        return record === undefined ? undefined : openPorts.get(record.entry.id)
-      },
-      async reopen(descriptor) {
-        const record = recordForDescriptor(descriptor)
-        return record === undefined ? false : reopenCommittedEntry(editors, record.entry)
-      },
-      lastOutcome(descriptor) {
-        const record = recordForDescriptor(descriptor)
-        return record === undefined ? undefined : editOutcomes.get(record.entry.id)
-      },
-      recordOutcome(descriptor, outcome) {
-        const record = recordForDescriptor(descriptor)
-        if (record !== undefined) editOutcomes.set(record.entry.id, outcome)
-      },
-      onStatus(status) {
-        say(status.message)
-      },
-      /*
-       * Export travels the same shell channel as every other host capability the page cannot have
-       * itself. The page sends bytes and a leaf name; the extension host picks the folder.
-       */
-      async exportFiles(files) {
-        const answer = await bridge.request({
-          op: 'export-files',
-          files: files.map(file => ({
-            name: file.name,
-            mediaType: file.mediaType,
-            bytes: file.bytes,
-          })),
-        })
-        const outcome = answer as { readonly state?: unknown; readonly names?: unknown }
-        if (outcome?.state === 'written' && Array.isArray(outcome.names)) {
-          say(localizer.text('vscode.webview.exported', { count: outcome.names.length }))
-          return { state: 'written', names: outcome.names.map(String) }
-        }
-        const reason =
-          typeof (outcome as { readonly reason?: unknown })?.reason === 'string'
-            ? (outcome as { readonly reason: string }).reason
-            : 'the window returned no export outcome'
-        return { state: 'refused', reason }
-      },
-      exportBaseName(descriptor) {
-        const record = recordForDescriptor(descriptor as unknown as Record<string, unknown>)
-        return record?.entry.name ?? 'image'
-      },
-    }),
+    stages: onlyForcedStage(
+      createVsCodePreviewStages({
+        localizer,
+        portsFor(descriptor) {
+          const record = recordForDescriptor(descriptor)
+          return record === undefined ? undefined : openPorts.get(record.entry.id)
+        },
+        async reopen(descriptor) {
+          const record = recordForDescriptor(descriptor)
+          return record === undefined ? false : reopenCommittedEntry(editors, record.entry)
+        },
+        lastOutcome(descriptor) {
+          const record = recordForDescriptor(descriptor)
+          return record === undefined ? undefined : editOutcomes.get(record.entry.id)
+        },
+        recordOutcome(descriptor, outcome) {
+          const record = recordForDescriptor(descriptor)
+          if (record !== undefined) editOutcomes.set(record.entry.id, outcome)
+        },
+        onStatus(status) {
+          say(status.message)
+        },
+        /*
+         * Export travels the same shell channel as every other host capability the page cannot have
+         * itself. The page sends bytes and a leaf name; the extension host picks the folder.
+         */
+        async exportFiles(files) {
+          const answer = await bridge.request({
+            op: 'export-files',
+            files: files.map(file => ({
+              name: file.name,
+              mediaType: file.mediaType,
+              bytes: file.bytes,
+            })),
+          })
+          const outcome = answer as { readonly state?: unknown; readonly names?: unknown }
+          if (outcome?.state === 'written' && Array.isArray(outcome.names)) {
+            say(localizer.text('vscode.webview.exported', { count: outcome.names.length }))
+            return { state: 'written', names: outcome.names.map(String) }
+          }
+          const reason =
+            typeof (outcome as { readonly reason?: unknown })?.reason === 'string'
+              ? (outcome as { readonly reason: string }).reason
+              : 'the window returned no export outcome'
+          return { state: 'refused', reason }
+        },
+        exportBaseName(descriptor) {
+          const record = recordForDescriptor(descriptor as unknown as Record<string, unknown>)
+          return record?.entry.name ?? 'image'
+        },
+      }),
+    ),
     fallback: createVsCodePreviewFallback(localizer),
 
     async openSession(entry) {

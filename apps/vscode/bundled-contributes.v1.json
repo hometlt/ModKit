@@ -151,6 +151,14 @@
     {
       "command": "modkit.unloadSource",
       "title": "%command.unloadContentSource%"
+    },
+    {
+      "command": "modkit.setCodecDefaultEditor",
+      "title": "%command.setCodecDefaultEditor%"
+    },
+    {
+      "command": "modkit.syncEditorAssociations",
+      "title": "%command.syncEditorAssociations%"
     }
   ],
   "configuration": {
@@ -203,6 +211,27 @@
         "items": {
           "type": "string"
         }
+      },
+      "modkit.nonDefaultContributions": {
+        "type": "array",
+        "default": [],
+        "markdownDescription": "%configuration.nonDefaultContributions.description%",
+        "items": {
+          "type": "string"
+        }
+      },
+      "modkit.defaultEditorForTextFormats": {
+        "type": "boolean",
+        "default": false,
+        "markdownDescription": "%configuration.defaultEditorForTextFormats.description%"
+      },
+      "modkit.managedEditorAssociations": {
+        "type": "array",
+        "default": [],
+        "markdownDescription": "%configuration.managedEditorAssociations.description%",
+        "items": {
+          "type": "string"
+        }
       }
     }
   },
@@ -210,6 +239,36 @@
     {
       "viewType": "modkit.genericAssetPreview",
       "displayName": "%customEditor.assetPreview%",
+      "selector": [
+        {
+          "filenamePattern": "*"
+        }
+      ],
+      "priority": "option"
+    },
+    {
+      "viewType": "modkit.hexViewer",
+      "displayName": "%customEditor.hexViewer%",
+      "selector": [
+        {
+          "filenamePattern": "*"
+        }
+      ],
+      "priority": "option"
+    },
+    {
+      "viewType": "modkit.imageViewer",
+      "displayName": "%customEditor.imageViewer%",
+      "selector": [
+        {
+          "filenamePattern": "*"
+        }
+      ],
+      "priority": "option"
+    },
+    {
+      "viewType": "modkit.archiveViewer",
+      "displayName": "%customEditor.archiveViewer%",
       "selector": [
         {
           "filenamePattern": "*"

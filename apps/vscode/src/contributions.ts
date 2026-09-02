@@ -34,6 +34,33 @@ export interface ContributionRow {
   readonly disabled: boolean
   /** Manifest path inside the extension — the only identity an unparsed record has. */
   readonly path: string
+  /**
+   * File extensions this codec routes on, lower case and without a dot.
+   *
+   * Read straight from the contribution's own `spec.match.extensions`, so the per-codec «open by
+   * default» setting operates on what the codec actually claims rather than on a list maintained
+   * beside it.
+   */
+  readonly fileExtensions: readonly string[]
+}
+
+/** `spec.match.extensions` of a codec contribution, normalised; empty for anything else. */
+function fileExtensionsOf(manifest: unknown): readonly string[] {
+  const spec = (
+    manifest as { readonly spec?: { readonly match?: { readonly extensions?: unknown } } }
+  )?.spec
+  if (!Array.isArray(spec?.match?.extensions)) return Object.freeze([])
+  return Object.freeze(
+    [
+      ...new Set(
+        spec.match.extensions.flatMap(value =>
+          typeof value === 'string' && value.length > 0
+            ? [value.replace(/^\./u, '').toLowerCase()]
+            : [],
+        ),
+      ),
+    ].sort(),
+  )
 }
 
 /** Flatten the inventory, sorted by owner then id, so the list is stable across launches. */
@@ -53,6 +80,10 @@ export function describeInventoryContributions(inventory: Inventory): readonly C
         activationEligible: contribution.activationEligible,
         disabled: contribution.diagnostics.some(item => item.code === CONTRIBUTION_DISABLED_CODE),
         path: contribution.path,
+        fileExtensions:
+          manifest?.contract.id === 'modkit/codec-contribution'
+            ? fileExtensionsOf(manifest)
+            : Object.freeze([]),
       }
     })
   })
