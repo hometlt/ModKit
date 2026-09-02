@@ -3214,8 +3214,18 @@ async function launchGeneration(generation) {
         ),
     { timeoutMs: 30_000 },
   )
-  if (page === undefined)
-    throw new Error(`VS Code generation ${generation} exposed no workbench page`)
+  if (page === undefined) {
+    // Say which targets the endpoint did expose; "no workbench page" alone cannot be diagnosed.
+    const seen = (context?.pages() ?? []).map(candidate => candidate.url())
+    const targets = await fetch(`${endpoint}/json/list`)
+      .then(response => response.json())
+      .then(list => (Array.isArray(list) ? list.map(item => `${item.type}:${item.url}`) : []))
+      .catch(() => [])
+    throw new Error(
+      `VS Code generation ${generation} exposed no workbench page; pages=${JSON.stringify(seen)}; ` +
+        `targets=${JSON.stringify(targets)}`,
+    )
+  }
   page.setDefaultTimeout(30_000)
   await page.waitForFunction(file => document.body?.innerText.includes(file), basename(ddsPath), {
     timeout: 30_000,
