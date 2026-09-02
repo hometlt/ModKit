@@ -2222,8 +2222,22 @@ async function typeIntoQuickInput(page, input, text) {
    * widget was holding, and the events are the ones a person's keyboard produces.
    */
   await input.focus({ timeout: 5_000 })
-  await page.keyboard.press('Control+A')
-  await page.keyboard.type(text, { delay: 5 })
+  /*
+   * Fill everything but the last character, then TYPE that one.
+   *
+   * `fill` alone sets the value without the widget always re-filtering — the acceptance caught the
+   * palette rendering its whole command list with the query sitting in the box. Typing the whole
+   * query instead re-filters on every keystroke, which is fine for a command list and ruinous for
+   * the CASC picker's 131 072 entries: that search went from one filter pass to a hundred and
+   * showed an empty list the whole time. One real keystroke at the end gives exactly one
+   * keystroke-driven pass over the final value.
+   */
+  if (text.length === 0) {
+    await input.fill('')
+  } else {
+    await input.fill(text.slice(0, -1))
+    await page.keyboard.type(text.slice(-1))
+  }
   const settled = await waitFor(
     async () => ((await input.inputValue().catch(() => '')) === text ? true : undefined),
     { timeoutMs: 5_000, stepMs: 100 },
