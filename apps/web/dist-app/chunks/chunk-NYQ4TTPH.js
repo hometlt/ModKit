@@ -3127,10 +3127,20 @@ function capabilitySurfaceFromDataSource(contract, major, surface) {
 }
 function standardDataSourceCapabilitySurfaces() {
   const out = [];
+  const editingSurfaces = {
+    ...STANDARD_EDITING_SURFACES,
+    "common.edit/writer": {
+      ...STANDARD_EDITING_SURFACES["common.edit/writer"],
+      methods: {
+        ...STANDARD_EDITING_SURFACES["common.edit/writer"].methods,
+        snapshotNativePreservingMpq: { kind: "value", optional: true, arity: 1 }
+      }
+    }
+  };
   for (const table of [
     STANDARD_DATA_SOURCE_SURFACES,
     AUXILIARY_DATA_SOURCE_SURFACES,
-    STANDARD_EDITING_SURFACES
+    editingSurfaces
   ]) {
     for (const [contract, surface] of Object.entries(table)) {
       out.push(capabilitySurfaceFromDataSource(contract, 1, surface));

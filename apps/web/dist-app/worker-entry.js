@@ -5,7 +5,7 @@ import {
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
   protocolLimits
-} from "./chunks/chunk-VKDDSZCI.js";
+} from "./chunks/chunk-NYQ4TTPH.js";
 import "./chunks/chunk-F4XKVL72.js";
 import {
   ModkitError

@@ -20,7 +20,7 @@ import {
   sourceRevisionToken,
   sourceUriFor,
   stageIdOf
-} from "./chunks/chunk-XI3LWNKG.js";
+} from "./chunks/chunk-GNXHB5T5.js";
 import {
   define_MODKIT_EMBED_EXTENSION_ORIGINS_default,
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS

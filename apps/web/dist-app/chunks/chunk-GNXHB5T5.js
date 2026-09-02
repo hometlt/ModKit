@@ -8075,6 +8075,7 @@ async function openSubject(options) {
           contributionId: candidate.contributionId,
           extensionId: candidate.extensionId,
           variantId: candidate.offer.runtimeVariant,
+          formatIds: Object.freeze(candidate.spec.formatRefs.map((item) => item.formatId)),
           offerId: candidate.logicalOffer.offerId,
           state: "rejected",
           diagnostics: Object.freeze(local)
@@ -8108,6 +8109,7 @@ async function openSubject(options) {
           contributionId: candidate.contributionId,
           extensionId: candidate.extensionId,
           variantId: candidate.offer.runtimeVariant,
+          formatIds: Object.freeze(candidate.spec.formatRefs.map((item) => item.formatId)),
           offerId: candidate.logicalOffer.offerId,
           state: "rejected",
           diagnostics: Object.freeze(local)
@@ -8200,6 +8202,7 @@ async function openSubject(options) {
           contributionId: candidate.contributionId,
           extensionId: candidate.extensionId,
           variantId: candidate.offer.runtimeVariant,
+          formatIds: Object.freeze(candidate.spec.formatRefs.map((item) => item.formatId)),
           offerId: candidate.logicalOffer.offerId,
           state: "detected",
           confidence: detection.confidence,
@@ -8216,6 +8219,7 @@ async function openSubject(options) {
           contributionId: candidate.contributionId,
           extensionId: candidate.extensionId,
           variantId: candidate.offer.runtimeVariant,
+          formatIds: Object.freeze(candidate.spec.formatRefs.map((item) => item.formatId)),
           offerId: candidate.logicalOffer.offerId,
           state: "rejected",
           diagnostics: Object.freeze(local)
@@ -10069,7 +10073,7 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var diagnostic2 = (severity, code, message) => ({ severity, code, message, path: [] });
 async function resolveFormatWriter(request) {
   const identity = request.opened.descriptor.identity;
-  const formatId = typeof identity?.formatId === "string" ? identity.formatId : void 0;
+  const formatId = request.formatId ?? (typeof identity?.formatId === "string" ? identity.formatId : void 0);
   if (formatId === void 0) {
     return {
       diagnostics: [
@@ -18521,10 +18525,20 @@ function capabilitySurfaceFromDataSource(contract, major, surface) {
 }
 function standardDataSourceCapabilitySurfaces() {
   const out = [];
+  const editingSurfaces = {
+    ...STANDARD_EDITING_SURFACES,
+    "common.edit/writer": {
+      ...STANDARD_EDITING_SURFACES["common.edit/writer"],
+      methods: {
+        ...STANDARD_EDITING_SURFACES["common.edit/writer"].methods,
+        snapshotNativePreservingMpq: { kind: "value", optional: true, arity: 1 }
+      }
+    }
+  };
   for (const table of [
     STANDARD_DATA_SOURCE_SURFACES,
     AUXILIARY_DATA_SOURCE_SURFACES,
-    STANDARD_EDITING_SURFACES
+    editingSurfaces
   ]) {
     for (const [contract, surface] of Object.entries(table)) {
       out.push(capabilitySurfaceFromDataSource(contract, 1, surface));

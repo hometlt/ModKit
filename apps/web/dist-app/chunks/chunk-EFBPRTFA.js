@@ -4,7 +4,7 @@ import {
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
   protocolLimits
-} from "./chunk-VKDDSZCI.js";
+} from "./chunk-NYQ4TTPH.js";
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   CODEC_CONTRIBUTION_CONTRACT,
@@ -3898,6 +3898,7 @@ async function openSubject(options) {
           contributionId: candidate.contributionId,
           extensionId: candidate.extensionId,
           variantId: candidate.offer.runtimeVariant,
+          formatIds: Object.freeze(candidate.spec.formatRefs.map((item) => item.formatId)),
           offerId: candidate.logicalOffer.offerId,
           state: "rejected",
           diagnostics: Object.freeze(local)
@@ -3931,6 +3932,7 @@ async function openSubject(options) {
           contributionId: candidate.contributionId,
           extensionId: candidate.extensionId,
           variantId: candidate.offer.runtimeVariant,
+          formatIds: Object.freeze(candidate.spec.formatRefs.map((item) => item.formatId)),
           offerId: candidate.logicalOffer.offerId,
           state: "rejected",
           diagnostics: Object.freeze(local)
@@ -4023,6 +4025,7 @@ async function openSubject(options) {
           contributionId: candidate.contributionId,
           extensionId: candidate.extensionId,
           variantId: candidate.offer.runtimeVariant,
+          formatIds: Object.freeze(candidate.spec.formatRefs.map((item) => item.formatId)),
           offerId: candidate.logicalOffer.offerId,
           state: "detected",
           confidence: detection.confidence,
@@ -4039,6 +4042,7 @@ async function openSubject(options) {
           contributionId: candidate.contributionId,
           extensionId: candidate.extensionId,
           variantId: candidate.offer.runtimeVariant,
+          formatIds: Object.freeze(candidate.spec.formatRefs.map((item) => item.formatId)),
           offerId: candidate.logicalOffer.offerId,
           state: "rejected",
           diagnostics: Object.freeze(local)
@@ -17479,7 +17483,7 @@ async function createHostComposition(options) {
 var diagnostic2 = (severity, code, message) => ({ severity, code, message, path: [] });
 async function resolveFormatWriter(request) {
   const identity = request.opened.descriptor.identity;
-  const formatId = typeof identity?.formatId === "string" ? identity.formatId : void 0;
+  const formatId = request.formatId ?? (typeof identity?.formatId === "string" ? identity.formatId : void 0);
   if (formatId === void 0) {
     return {
       diagnostics: [

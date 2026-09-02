@@ -72,7 +72,7 @@ import {
   subjectFactsSourceFromWire,
   webExtensionSubjectCardBundle,
   withEnglishUiFallback
-} from "./chunks/chunk-XI3LWNKG.js";
+} from "./chunks/chunk-GNXHB5T5.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunks/chunk-BLWUC7LO.js";
@@ -1362,7 +1362,7 @@ function mountExtensionsUi(documentRef, options) {
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var WEB_OFFLINE_RELEASE = Object.freeze({
   catalogPath: "./managed-packages/catalog.v1.json",
-  catalogSha256: "sha256:ee6eb1fc29c09ebc30049b03840c46c68088a78ac218a1f97a6fe3e7d75de368",
+  catalogSha256: "sha256:b339333e695f7405193752fd1a1901c4a95a14a618bdcb7c8adbffc871ebe089",
   catalogBytes: 2734,
   keyId: "modkit.ga-wave1b-2026-09-01",
   publicJwk: { crv: "Ed25519", x: "V5EtylGXaruEyvfj7TUL2qdNcNdljKcSU60-tIFJbMo", kty: "OKP" },
@@ -3869,7 +3869,7 @@ async function boot() {
   if (pageUrl.searchParams.has("format-smoke")) {
     const loaded = await loadPwaFormatSmokeAuthority(
       new URL("./format-smoke.v1.json", document.baseURI).href,
-      "sha256:557f32f685b4253e247e49ea74c32ced4a8c5ec25765e177ee5ca139ee272970"
+      "sha256:04bd33357c17d85388667166e7ce79bc6c4c5bf90d5b7efad1ec688331a330b5"
     );
     const control = createPwaFormatSmokeAcceptance({
       authority: loaded.authority,
