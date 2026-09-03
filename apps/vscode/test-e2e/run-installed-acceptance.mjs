@@ -379,7 +379,8 @@ const receipt = {
       failures: [],
       error: null,
     },
-    verdict: 'fail',
+    verdict: 'not-executed',
+    verdictReason: null,
   },
   formatSmoke: {
     kind: 'x3.vscode-installed-format-smoke-receipt',
@@ -419,7 +420,13 @@ const receipt = {
     verdict: 'not-executed',
   },
   runs: [],
-  restart: { attempted: false, sameProfile: true, passed: false },
+  restart: {
+    attempted: false,
+    sameProfile: true,
+    passed: false,
+    generationsCompleted: 0,
+    verdict: 'not-executed',
+  },
   cleanup: {
     attempted: !keepProfile,
     profileRemoved: null,
@@ -659,10 +666,90 @@ function readPackageInstallGateReceipt() {
   }
 }
 
+/*
+ * Grade the section from what the gate actually reported, so an abort elsewhere cannot slander it.
+ *
+ * This used to leave `packageInstallGate.verdict` at its skeleton value of `fail` while its own
+ * `runtime.verdict` read `pass` with an empty failure list — the gate had not failed, the run-level
+ * assertion that grades it simply never ran because a later section aborted first. A receipt that
+ * calls that a failure sends the next reader hunting a defect that does not exist. So: `pass` only
+ * from `assertPackageInstallGate`, `fail` only when something is actually wrong, `incomplete` when
+ * the gate itself is clean but was never graded, `not-executed` when it never reported at all.
+ */
+function gradePackageInstallGate() {
+  if (receipt.packageInstallGate.verdict === 'pass') return
+  const runtime = receipt.packageInstallGate.runtime
+  if (!runtime.received) {
+    receipt.packageInstallGate.verdict = 'not-executed'
+    receipt.packageInstallGate.verdictReason =
+      'the installed extension wrote no package/install gate receipt'
+    return
+  }
+  if (runtime.verdict === 'pass' && runtime.failures.length === 0) {
+    receipt.packageInstallGate.verdict = 'incomplete'
+    receipt.packageInstallGate.verdictReason =
+      `the runtime gate reported pass over ${runtime.phases.length} phase(s) with no failures; ` +
+      'the run-level assertion did not execute because the run aborted first'
+    return
+  }
+  receipt.packageInstallGate.verdict = 'fail'
+  receipt.packageInstallGate.verdictReason =
+    runtime.failures.length === 0
+      ? `the runtime gate reported ${JSON.stringify(runtime.verdict)}`
+      : runtime.failures.map(failure => `${failure.code}: ${failure.message}`).join('; ')
+}
+
+/*
+ * Name what actually happened to every graded section before the receipt is written.
+ *
+ * Sections mark themselves `in-progress` (or `cases-observed`) on entry so an abort inside them
+ * cannot read as «never ran». Nothing then converted those markers into a final word, so a reader
+ * had to infer it. The rule the receipt now states outright: a section that reached its verdict
+ * keeps it, a section that started and never reached one is `incomplete`, a section that never
+ * started is `not-executed`. Neither of the last two is a failure, and neither is written over a
+ * `pass`.
+ */
+const gradedSectionNames = ['formatSmoke', 'mediaAcceptance', 'archiveAcceptance', 'corruptInput']
+
+function settleIncompleteSections() {
+  for (const name of gradedSectionNames) {
+    const section = receipt[name]
+    if (section === undefined) continue
+    if (section.verdict !== 'pass' && section.verdict !== 'fail') {
+      section.verdictReason =
+        section.verdict === 'not-executed'
+          ? `${name} never started`
+          : `${name} started (${JSON.stringify(section.verdict)}) and the run aborted before it ` +
+            'reached a verdict'
+      if (section.verdict !== 'not-executed') section.verdict = 'incomplete'
+    }
+  }
+  // Which anchors did produce a case is the difference between «2B-5 failed» and «2B-5 never ran».
+  if (Array.isArray(receipt.mediaAcceptance.cases)) {
+    const observed = new Set(receipt.mediaAcceptance.cases.map(item => item?.anchor))
+    receipt.mediaAcceptance.anchorsObserved = receipt.mediaAcceptance.expectedAnchors.filter(
+      anchor => observed.has(anchor),
+    )
+    receipt.mediaAcceptance.anchorsNotExecuted = receipt.mediaAcceptance.expectedAnchors.filter(
+      anchor => !observed.has(anchor),
+    )
+  }
+  // Restarts that happened are restarts that happened, whatever ended the run afterwards.
+  receipt.restart.generationsCompleted = receipt.runs.length
+  receipt.restart.verdict = receipt.restart.passed
+    ? 'pass'
+    : receipt.restart.attempted
+      ? 'incomplete'
+      : 'not-executed'
+}
+
 function capturePackageInstallGateRuntime() {
   const gateReceipt = readPackageInstallGateReceipt()
   receipt.packageInstallGate.runtime.received = gateReceipt !== undefined
-  if (gateReceipt === undefined) return undefined
+  if (gateReceipt === undefined) {
+    gradePackageInstallGate()
+    return undefined
+  }
   receipt.packageInstallGate.runtime.verdict =
     typeof gateReceipt.verdict === 'string' ? gateReceipt.verdict : null
   receipt.packageInstallGate.runtime.phases = Array.isArray(gateReceipt.phases)
@@ -687,10 +774,26 @@ function capturePackageInstallGateRuntime() {
         message: compact(failure?.message ?? ''),
       }))
     : []
+  gradePackageInstallGate()
   return gateReceipt
 }
 
+/*
+ * The grading assertion. It is the only thing allowed to write `pass` — and, because it is the only
+ * thing that actually examined the gate end to end, the only thing allowed to write `fail`.
+ */
 function assertPackageInstallGate() {
+  try {
+    assertPackageInstallGateChecks()
+  } catch (error) {
+    receipt.packageInstallGate.verdict = 'fail'
+    receipt.packageInstallGate.verdictReason =
+      error instanceof Error ? error.message : String(error)
+    throw error
+  }
+}
+
+function assertPackageInstallGateChecks() {
   const gateReceipt = capturePackageInstallGateRuntime()
   if (gateReceipt === undefined) {
     const message = `A3/A5 package/install gate produced no runtime receipt: ${receipt.packageInstallGate.runtime.receipt}`
@@ -745,6 +848,7 @@ function assertPackageInstallGate() {
     throw new Error(`A3/A5 package/install gate failed: ${failures}`)
   }
   receipt.packageInstallGate.verdict = 'pass'
+  receipt.packageInstallGate.verdictReason = null
 }
 
 async function waitForPackageInstallGatePhase(generation, states, timeoutMs = 180_000) {
@@ -4059,6 +4163,7 @@ try {
       receipt.cleanup.error = error instanceof Error ? error.message : String(error)
     }
   }
+  settleIncompleteSections()
   receipt.finishedAt = new Date().toISOString()
   mkdirSync(dirname(receiptPath), { recursive: true })
   writeFileSync(receiptPath, `${JSON.stringify(receipt, null, 2)}\n`)
