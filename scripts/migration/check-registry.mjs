@@ -629,16 +629,22 @@ if (isDefaultRegistry) {
     )
   }
 
-  let coveredRows = 0
-  let retiredRouteRows = 0
+  let coreCoveredRows = 0
+  let coreRetiredRouteRows = 0
   let coverageChecksSkipped = 0
   for (const row of formatRows) {
     const label = `capability ${row.capabilityId}`
     const declared = row.allocation.x3ContributionId
     const legacyId = row.sourceUnitIds[0]?.replace('legacy/codec-manifest/', '')
-    const identityCovered = legacyId !== undefined && x3.has(legacyId)
+    const identityEntry = legacyId === undefined ? undefined : x3.get(legacyId)
+    const identityCovered = identityEntry !== undefined
+    // scripts/mk2-port-ratchet.json counts core, in-repo ports only (its own $comment says so since
+    // the 2026-08-30 externalization moved publisher codecs into sibling checkouts) — a row's
+    // identity is "core" exactly when deriveX3Facts() found it inside this repository rather than
+    // under one of the five `external:<repository>/...` roots.
+    const isCoreIdentity = identityCovered && !identityEntry.file.startsWith('external:')
     if (row.allocation.state === 'covered') {
-      coveredRows += 1
+      if (isCoreIdentity) coreCoveredRows += 1
       if (!identityCovered) {
         fail(
           `${label}: allocation covered, but no X3 contribution carries the legacy id ${legacyId}`,
@@ -663,12 +669,12 @@ if (isDefaultRegistry) {
       }
     }
     if (row.allocation.state === 'superseded-staging-present') {
-      retiredRouteRows += 1
+      if (isCoreIdentity) coreRetiredRouteRows += 1
       if (!identityCovered) {
         fail(
           `${label}: the staging contribution ${legacyId} is gone, so this row is plainly superseded`,
         )
-      } else if (!x3.get(legacyId)?.file.startsWith('extensions/mk2/')) {
+      } else if (!identityEntry.file.startsWith('extensions/mk2/')) {
         fail(
           `${label}: ${legacyId} does not live in staging, so a retired-route state is not the truth`,
         )
@@ -747,12 +753,27 @@ if (isDefaultRegistry) {
         `cross-check did not.`,
     )
   }
-  // Allocation coverage and the MK2 ratchet are the same fact seen twice. A route retired in
-  // favour of a richer MK3 contribution still leaves its hand-ported module in staging until the
-  // block-30 emptying, so the ratchet keeps counting it and the two states are summed here.
-  if (coveredRows + retiredRouteRows !== ratchetTotal) {
+  // Pre-externalization this was one fact stated twice: every format row was a core row, so
+  // covered + retired-route summed to exactly the ratchet total. scripts/mk2-port-ratchet.json's own
+  // $comment now says it is core-only — publisher-owned port receipts moved to their own
+  // repositories, and the pre-externalization aggregate is archived under
+  // migration/history/externalization — so summing every format row (publisher ones included, as
+  // this comparison used to) against that total compares two things that stopped being the same
+  // fact the day the ratchet was rescoped. The fix is scoped here, in the comparison, not in the
+  // ratchet data: coreCoveredRows/coreRetiredRouteRows above already exclude every row whose
+  // identity resolves into an `external:` root, mirroring the ratchet's own declared scope.
+  //
+  // That still cannot make this an equality, and forcing one would be writing something false: the
+  // ratchet is enforced independently by scripts/check-mk2-ports.mjs (`pnpm ports:check`), which
+  // counts ported *codec modules* under extensions/**/src/**, not capability rows — a population
+  // that includes work with no format row at all (the owner-addition JSON/JSONC text codecs, the
+  // shared extensions/documents/src/odf reader consumed by odg/odp/ods/odt). Core format-row
+  // coverage is a genuine, permanent subset of the ratchet total, never its equal. What is still
+  // real, checkable debt is the direction that matters: this registry must never claim *more* core
+  // coverage than the ratchet backs.
+  if (coreCoveredRows + coreRetiredRouteRows > ratchetTotal) {
     fail(
-      `covered (${coveredRows}) + retired-route (${retiredRouteRows}) format rows must equal the MK2 port ratchet total (${ratchetTotal}); allocation coverage and the ratchet are the same fact`,
+      `core covered (${coreCoveredRows}) + core retired-route (${coreRetiredRouteRows}) format rows exceed the MK2 port ratchet total (${ratchetTotal}); the registry claims more core coverage than scripts/mk2-port-ratchet.json backs`,
     )
   }
 }

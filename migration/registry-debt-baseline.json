@@ -247,7 +247,6 @@
     "capability uv/uvm/live-projection: projection.operations.inspect names «scripts/test/parity-coverage.test.ts», which no test declares and the row does not list in closedBy.tests",
     "capability vertical/starcraft-2/native-to-uv: projection.operations.read names «packages/testkit/test/sc2-casc-real.test.ts», which does not exist",
     "capability vertical/starcraft-2/neutral-definitions-world: projection.operations.inspect names «packages/testkit/test/sc2-casc-real.test.ts», which does not exist",
-    "capability vertical/starcraft-2/neutral-definitions-world: projection.operations.read names «packages/testkit/test/sc2-casc-real.test.ts», which does not exist",
-    "covered (166) + retired-route (3) format rows must equal the MK2 port ratchet total (53); allocation coverage and the ratchet are the same fact"
+    "capability vertical/starcraft-2/neutral-definitions-world: projection.operations.read names «packages/testkit/test/sc2-casc-real.test.ts», which does not exist"
   ]
 }
