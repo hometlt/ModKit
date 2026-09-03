@@ -587,6 +587,28 @@ function deriveX3Facts() {
 
 const commonCoveragePath = path.join(repoRoot, 'scripts/parity/common-coverage.json')
 
+/*
+ * scripts/parity/common-coverage.json cross-check deadline (GA recovery wave 2C rider).
+ *
+ * Reporting the missing file as UNAVAILABLE-and-non-fatal, with no deadline, is the same disease
+ * HOST_EVIDENCE_PENDING was cured of above: a gap that never closes because nothing about it ever
+ * goes red. The cure is the same shape as migration/registry-debt-baseline.json's own emptyByWave —
+ * a deadline that is data, not a comment, printed on every run so it cannot be quietly forgotten.
+ *
+ * It cannot be *enforced* the way the baseline's identity ratchet is, though: this gate has no live
+ * "current wave" clock anywhere, for anything. (Neither does the baseline's own deadline — emptying
+ * registry-debt-baseline.json by wave 6 relies on a human noticing and deleting lines, not on this
+ * script detecting a date.) So the deadline is kept the same blunt, auditable way HOST_EVIDENCE_PENDING
+ * names its closing wave: as an explicit value a human must change at the milestone.
+ * COMMON_COVERAGE_WAVE_REACHED starts false; whoever opens wave 6 — the same wave the debt baseline
+ * commits to — flips it to true. That flip is the entire mechanism: it turns the missing-file
+ * condition below from flagUnavailable (visible, printed, non-fatal) into fail (a real, unbaselined
+ * problem that fails the run like any other). The gate cannot stay green past the deadline simply
+ * because nobody looked.
+ */
+const COMMON_COVERAGE_RESTORE_BY_WAVE = '6'
+const COMMON_COVERAGE_WAVE_REACHED = false
+
 function deriveParityFacts() {
   // scripts/parity/common-coverage.json left the repo with the 2026-08-30 externalization
   // (commit 3fe0232d) and has not been relocated. That is a real gap, not a reason to abort the
@@ -744,13 +766,24 @@ if (isDefaultRegistry) {
       fail(`${label}: parityEvidence.liveSources contradicts the observed X3 sources`)
     }
   }
-  if (coverage === null) {
+  if (coverage === null && COMMON_COVERAGE_WAVE_REACHED) {
+    fail(
+      `parityEvidence.coverageStatus cross-check: scripts/parity/common-coverage.json still not found ` +
+        `(ENOENT) past its wave ${COMMON_COVERAGE_RESTORE_BY_WAVE} restoration deadline — ` +
+        `${coverageChecksSkipped} format row(s) NOT verified against recorded coverage. This file left ` +
+        `the repo in the 2026-08-30 externalization (commit 3fe0232d); COMMON_COVERAGE_WAVE_REACHED ` +
+        `is now true, so the grace period recorded on that commit is over and this is fatal, not ` +
+        `merely unavailable.`,
+    )
+  } else if (coverage === null) {
     flagUnavailable(
       `parityEvidence.coverageStatus cross-check: scripts/parity/common-coverage.json not found (ENOENT) — ` +
         `${coverageChecksSkipped} format row(s) NOT verified against recorded coverage. This file left ` +
         `the repo in the 2026-08-30 externalization (commit 3fe0232d) and has not been relocated to ` +
         `where the parity suite now lives. Every other registry rule still ran; this one specific ` +
-        `cross-check did not.`,
+        `cross-check did not. Must be restored by wave ${COMMON_COVERAGE_RESTORE_BY_WAVE} — once ` +
+        `COMMON_COVERAGE_WAVE_REACHED flips true for that wave, this stops being tolerated and starts ` +
+        `failing the gate.`,
     )
   }
   // Pre-externalization this was one fact stated twice: every format row was a core row, so
@@ -1403,7 +1436,10 @@ console.log(
   `migration:check registry: known debt ${knownDebt.length}` +
     (useBaseline ? ` (must be empty by wave ${baselineEmptyByWave})` : '') +
     `, new problems ${newProblems.length}, stale baseline entries ${staleBaseline.length}, ` +
-    `unavailable checks ${unavailableChecks.length}`,
+    `unavailable checks ${unavailableChecks.length}` +
+    (unavailableChecks.length > 0
+      ? ` (must be restored by wave ${COMMON_COVERAGE_RESTORE_BY_WAVE})`
+      : ''),
 )
 if (newProblems.length > 0 || staleBaseline.length > 0) {
   process.exit(1)
