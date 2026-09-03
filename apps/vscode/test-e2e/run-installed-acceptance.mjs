@@ -902,6 +902,77 @@ async function readQuickInputRow(row) {
 }
 
 /*
+ * Where the focused row sits in the WHOLE list, not in the painted window.
+ *
+ * Monaco's quick input list is virtualised: about nine rows exist in the DOM at any moment, and
+ * each one carries `aria-posinset`/`aria-setsize` describing the full set standing behind them.
+ * That pair is what lets the walk below know how far it still has to go, and know when it has come
+ * all the way round, instead of guessing from whatever happens to be painted. Both are optional —
+ * a list with no accessibility provider reports neither — so both are read defensively and the
+ * walk falls back to its step budget when they are absent.
+ */
+async function readQuickInputRowPosition(row) {
+  // One round trip, not two: the walk pays this per step, and a slow step is a shorter walk.
+  const [rawPosition, rawTotal] = await Promise.all([
+    row.getAttribute('aria-posinset').catch(() => null),
+    row.getAttribute('aria-setsize').catch(() => null),
+  ])
+  const position = Number(rawPosition)
+  const total = Number(rawTotal)
+  return {
+    position: Number.isInteger(position) && position > 0 ? position : undefined,
+    total: Number.isInteger(total) && total > 0 ? total : undefined,
+  }
+}
+
+/*
+ * Put `filter` into the picker that is open NOW, and prove it stayed there.
+ *
+ * VS Code keeps ONE `.quick-input-widget` and hands it to each picker in turn. A picker that is
+ * still opening resets the box as it takes over, so a single `fill` issued a moment too early
+ * lands in the OUTGOING picker and is wiped — and the list then renders unfiltered. Wave 2B caught
+ * exactly that on the codec picker: the value was gone, the list showed its first virtualised
+ * window of nine `blizzard/*` rows, and `modkit/dds`, which sorts below that window, was never
+ * painted at all. The CASC search failed the same way with `visible rows=[]`.
+ *
+ * `observeAndSelectArchiveSearch` has always read the value back; this does the same and
+ * RE-APPLIES, because a picker taking the box over is a race, not a refusal. It demands two
+ * consecutive readings so a value confirmed in the outgoing picker cannot be mistaken for one the
+ * incoming picker holds.
+ *
+ * Returns whether narrowing actually happened. Failing to narrow is never fatal: some pickers
+ * render no filter box at all, and the arrow walk is what selects.
+ */
+async function applyQuickInputFilter(widget, filter) {
+  const input = widget.locator('input:visible').last()
+  try {
+    await input.waitFor({ state: 'visible', timeout: 5_000 })
+  } catch {
+    return false
+  }
+  let consecutive = 0
+  const held = await waitFor(
+    async () => {
+      if ((await input.inputValue().catch(() => undefined)) === filter) {
+        consecutive += 1
+        return consecutive >= 2 ? true : undefined
+      }
+      consecutive = 0
+      /*
+       * Plain `fill`. Wave 2A proved this exact path on the CASC picker, and the keystroke trick in
+       * `typeIntoQuickInput` is only needed by the F1 command palette, which in VS Code 1.136 does
+       * not re-filter on a filled value. Using it here instead put the archive search back to an
+       * empty result list.
+       */
+      await input.fill(filter).catch(() => undefined)
+      return undefined
+    },
+    { timeoutMs: 6_000, stepMs: 250 },
+  )
+  return held === true
+}
+
+/*
  * H2 (Fable, acceptance of Wave 2A): picking a row of a virtualised Monaco list with the MOUSE is
  * a race — the list re-renders under the pointer and Playwright reports
  * "element is not stable -> not visible" even though the row was found and its aria-label matched.
@@ -918,7 +989,7 @@ async function selectQuickInputRowByKeyboard(page, widget, options) {
     filter,
     present,
     matches,
-    maxSteps = 80,
+    maxSteps = 200,
     timeoutMs = 30_000,
   } = options
   /*
@@ -941,43 +1012,48 @@ async function selectQuickInputRowByKeyboard(page, widget, options) {
     timeoutMs,
     stepMs: 250,
   })
-  let filtered = false
-  if (typeof filter === 'string') {
-    const input = widget.locator('input:visible').last()
-    try {
-      await input.waitFor({ state: 'visible', timeout: 5_000 })
-      /*
-       * Plain `fill` here on purpose. Wave 2A proved this exact path on the CASC picker, and the
-       * keystroke trick below is only needed by the F1 command palette, which in VS Code 1.136 does
-       * not re-filter on a filled value. Using it here instead put the archive search back to an
-       * empty result list.
-       */
-      await input.fill(filter)
-      filtered = true
-    } catch {
-      filtered = false
-    }
-  }
+  // Narrowing is recorded, never assumed: `filtered` is true only when the picker that is open now
+  // was proven to be holding the filter, so the receipt says whether the walk below started from a
+  // narrowed list or from the whole one.
+  const filtered = typeof filter === 'string' ? await applyQuickInputFilter(widget, filter) : false
   const rows = widget.locator('.quick-input-list .monaco-list-row:visible')
-  // Do not start walking an empty list: wait until the wanted row is actually rendered.
+  /*
+   * Prefer a list that already paints the wanted row — but do not REQUIRE it.
+   *
+   * Requiring it is what turned a virtualised list into a 30 s timeout. Only the painted window
+   * exists in the DOM, so a row can be perfectly present in the picker and still never appear in
+   * `allInnerTexts()`: Wave 2B's codec picker rendered nine `blizzard/*` rows and `modkit/dds`
+   * sorted below them. Arrowing scrolls that window, so the walk reaches the row instead of
+   * demanding it be pre-rendered.
+   *
+   * This does not weaken anything. Enter is still pressed only on a row that CARRIES KEYBOARD
+   * FOCUS and that `matches()` accepts — the wait below is an optimisation and a piece of evidence
+   * (`rowPreRendered`), not the check.
+   */
   const rendered = await waitFor(
     async () => {
       const texts = await rows.allInnerTexts().catch(() => [])
       return texts.some(text => present(text)) ? texts : undefined
     },
-    { timeoutMs, stepMs: 250 },
+    { timeoutMs: Math.min(timeoutMs, 10_000), stepMs: 250 },
   )
-  if (rendered === undefined) {
-    const texts = await rows.allInnerTexts().catch(() => [])
-    throw new Error(
-      `${what} never rendered the required row; visible rows=${JSON.stringify(texts.slice(0, 40))}`,
-    )
-  }
   const focused = widget.locator('.quick-input-list .monaco-list-row.focused')
   const visited = []
-  for (let steps = 0; steps <= maxSteps; steps += 1) {
+  const deadline = Date.now() + timeoutMs
+  let listSize
+  let startPosition
+  let movedAway = false
+  let wrapped = false
+  let steps = 0
+  // The budget grows to the list's real size once a row reports it, so a row that sorts past the
+  // default step count is still reachable; the wall clock and the wrap check below stop the walk.
+  for (; steps <= Math.max(maxSteps, listSize === undefined ? 0 : listSize + 2); steps += 1) {
+    if (Date.now() >= deadline) break
     if ((await focused.count().catch(() => 0)) > 0) {
-      const row = await readQuickInputRow(focused.first())
+      const target = focused.first()
+      const row = await readQuickInputRow(target)
+      const where = await readQuickInputRowPosition(target)
+      if (where.total !== undefined) listSize = where.total
       if (row !== undefined) {
         visited.push(row.rowText)
         if (matches(row)) {
@@ -986,18 +1062,39 @@ async function selectQuickInputRowByKeyboard(page, widget, options) {
             ...row,
             keyboardSteps: steps,
             filtered,
-            selectionMethod: filtered ? 'keyboard-filter-arrows-enter' : 'keyboard-arrows-enter',
+            listSize: listSize ?? null,
+            rowPreRendered: rendered !== undefined,
+            selectionMethod:
+              `keyboard${filtered ? '-filter' : ''}` +
+              `${rendered === undefined ? '-scroll' : ''}-arrows-enter`,
           }
+        }
+      }
+      /*
+       * Stop as soon as focus comes back to where it started having genuinely moved away: the walk
+       * has then seen every row and the answer is a real «not in this list», not a short budget.
+       * Position-based on purpose — two rows can carry the same text, and a stalled walk (arrows
+       * going nowhere) never sets `movedAway`, so it falls through to the budget as before.
+       */
+      if (where.position !== undefined) {
+        if (startPosition === undefined) startPosition = where.position
+        else if (where.position !== startPosition) movedAway = true
+        else if (movedAway) {
+          wrapped = true
+          break
         }
       }
     }
     await page.keyboard.press('ArrowDown')
     await page.waitForTimeout(60)
   }
+  const painted = await rows.allInnerTexts().catch(() => [])
   throw new Error(
-    `${what} never focused the required row within ${maxSteps} keyboard steps; ` +
+    `${what} never focused the required row after ${steps} keyboard steps` +
+      `${wrapped ? ' (walked the whole list)' : ''}; ` +
+      `filtered=${filtered}; listSize=${listSize ?? 'unknown'}; ` +
       `visited=${JSON.stringify(visited.slice(0, 40))}; ` +
-      `rendered=${JSON.stringify(rendered.slice(0, 40))}`,
+      `painted=${JSON.stringify(painted.slice(0, 40))}`,
   )
 }
 
