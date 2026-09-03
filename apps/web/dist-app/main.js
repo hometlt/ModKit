@@ -72,7 +72,7 @@ import {
   subjectFactsSourceFromWire,
   webExtensionSubjectCardBundle,
   withEnglishUiFallback
-} from "./chunks/chunk-GNXHB5T5.js";
+} from "./chunks/chunk-P4VXS6DE.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunks/chunk-BLWUC7LO.js";
@@ -3869,7 +3869,7 @@ async function boot() {
   if (pageUrl.searchParams.has("format-smoke")) {
     const loaded = await loadPwaFormatSmokeAuthority(
       new URL("./format-smoke.v1.json", document.baseURI).href,
-      "sha256:04bd33357c17d85388667166e7ce79bc6c4c5bf90d5b7efad1ec688331a330b5"
+      "sha256:509e7d874da85925a5e4d560dfcafe39501c917a3915123b9024d0d9309f6bee"
     );
     const control = createPwaFormatSmokeAcceptance({
       authority: loaded.authority,

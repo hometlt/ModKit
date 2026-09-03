@@ -1,9 +1,13 @@
 // Hand-ported from the MK2 codec modkit/wav (OPUS-MK2-02 task G, wave 1).
 //
 // RIFF/WAVE is a chunk list, so the port is a chunk walk: `fmt ` gives the stream shape, `data`
-// gives the sample bytes, everything else is inventoried by id and size. PCM samples are not
-// decoded — the v1 limitation puts decoding behind native playback or an injected transcoder,
-// and this port keeps that line.
+// gives the sample bytes, everything else is inventoried by id and size.
+//
+// Wave 2B moved the decoding line. The v1 limitation put samples "behind native playback", which
+// only works while the platform player can read the file — and it cannot read IMA ADPCM, the
+// encoding StarCraft II uses for its UI sounds. Linear PCM and IMA ADPCM are now decoded here and
+// published through `readPcm`; the encoded view carries the WHOLE RIFF file, because a player
+// handed a bare `data` chunk has no format to play it with.
 //
 // The v1 manifest routed on `.wav` alone, so `detect` earns its confidence from the RIFF/WAVE
 // header and the presence of a well-formed `fmt ` chunk instead of trusting the name.
@@ -13,6 +17,7 @@ import {
   createInspectionCodec,
   createTreeDataSource,
 } from '@modkit/codec-kit'
+import { decodeWavPcm, frameCountFor, isDecodableFormat } from './pcm.js'
 
 const ID = 'modkit/wav'
 const latin1 = new TextDecoder('latin1')
@@ -105,10 +110,56 @@ const definition = Object.freeze({
     if (data === undefined) throw new TypeError('RIFF/WAVE carries no data chunk')
     const durationMs =
       format.byteRate > 0 ? Math.round((data.bytes / format.byteRate) * 1000) : 'unknown'
-    const frames = format.blockAlign > 0 ? Math.floor(data.bytes / format.blockAlign) : 0
+    const frames = frameCountFor(format, data.bytes)
+    const decodable = isDecodableFormat(format)
+    const samples = bytes.subarray(data.start, data.start + data.bytes)
 
+    const readPcm = async (request, signal) => {
+      if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
+      if (request.trackId !== 'stream-0') {
+        throw new RangeError(`unknown audio track ${String(request.trackId)}`)
+      }
+      if (typeof request.fromFrame !== 'bigint' || request.fromFrame < 0n) {
+        throw new RangeError('WAV PCM fromFrame must be a non-negative bigint')
+      }
+      if (!Number.isSafeInteger(request.frameCount) || request.frameCount < 0) {
+        throw new RangeError('WAV PCM frameCount must be a non-negative safe integer')
+      }
+      const needed = request.frameCount * format.channels * 4
+      if (!Number.isSafeInteger(needed) || needed > request.maxBytes) {
+        throw new RangeError('WAV PCM window exceeds maxBytes budget')
+      }
+      const fromFrame = Number(request.fromFrame)
+      if (!Number.isSafeInteger(fromFrame)) {
+        throw new RangeError('WAV PCM fromFrame exceeds the safe integer range')
+      }
+      const channels = decodeWavPcm(samples, format, fromFrame, request.frameCount)
+      /*
+       * Interleave into ONE buffer before answering. The boundary requires each typed array to own
+       * its whole buffer, so per-channel arrays cross as N separate payloads; one interleaved
+       * buffer is what `AudioPcmBlock` asks for and what the wire is built to carry.
+       */
+      const channelCount = channels.length
+      const decodedFrames = channels[0]?.length ?? 0
+      const interleaved = new Float32Array(decodedFrames * channelCount)
+      for (let channel = 0; channel < channelCount; channel += 1) {
+        const source = channels[channel]
+        for (let frame = 0; frame < decodedFrames; frame += 1) {
+          interleaved[frame * channelCount + channel] = source[frame]
+        }
+      }
+      return Object.freeze({
+        sampleRate: format.sampleRate,
+        fromFrame: BigInt(Math.min(fromFrame, frames)),
+        frameCount: decodedFrames,
+        channelCount,
+        samples: interleaved,
+      })
+    }
+
+    // The whole RIFF file, not the bare `data` chunk: a platform player needs the header.
     const audio = createAudioMediaSource(
-      bytes.subarray(data.start, data.start + data.bytes),
+      bytes,
       'audio/wav',
       {
         durationMs,
@@ -123,8 +174,9 @@ const definition = Object.freeze({
             selected: true,
           },
         ],
-        pcmAccess: false, // decoding is out of scope; see the v1 limitation
+        pcmAccess: decodable,
       },
+      ...(decodable ? [readPcm] : []),
     )
     const tree = createTreeDataSource({
       kind: 'audio',
@@ -176,7 +228,11 @@ const definition = Object.freeze({
         'common.view/tree-data-source': tree,
         'common.view/audio-media-source': audio,
       },
-      unsupportedFeatures: ['pcm-decoding', 'cue-and-playlist-chunks', 'broadcast-wave-metadata'],
+      unsupportedFeatures: [
+        ...(decodable ? [] : [`pcm-decoding-for-${format.encoding}-${format.bitsPerSample}bit`]),
+        'cue-and-playlist-chunks',
+        'broadcast-wave-metadata',
+      ],
     }
   },
 })

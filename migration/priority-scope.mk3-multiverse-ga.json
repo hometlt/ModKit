@@ -26,13 +26,13 @@
     },
     "byMigrationState": {
       "equivalent-better": 21,
-      "implemented": 111,
+      "implemented": 112,
       "missing": 3,
-      "partial": 9,
+      "partial": 8,
       "relocated-multiverse": 1
     },
     "byObligation": { "focused-required-addition": 28, "legacy-required": 117 },
-    "byEvidenceLevel": { "E0": 1, "E1": 27, "E2": 66, "E3": 22, "E4": 29 }
+    "byEvidenceLevel": { "E0": 1, "E1": 26, "E2": 63, "E3": 23, "E4": 29, "E5": 3 }
   },
   "deadlines": {
     "block-11": [
@@ -775,10 +775,10 @@
       "plannedBlock": 12,
       "migrationState": "implemented",
       "supportState": "partial",
-      "evidenceLevel": "E2",
+      "evidenceLevel": "E5",
       "allocationState": "covered",
       "portFamily": "common/images",
-      "corpusDescriptors": [],
+      "corpusDescriptors": ["MODKITX_SC2_ROOT"],
       "dependsOn": [],
       "requiredBy": ["block9/casc-mpq-texture-chain"]
     },
@@ -1259,10 +1259,10 @@
       "plannedBlock": 12,
       "migrationState": "equivalent-better",
       "supportState": "unknown",
-      "evidenceLevel": "E2",
+      "evidenceLevel": "E5",
       "allocationState": "superseded",
       "portFamily": "common/audio",
-      "corpusDescriptors": [],
+      "corpusDescriptors": ["MODKITX_SC2_ROOT"],
       "dependsOn": [],
       "requiredBy": []
     },
@@ -1852,12 +1852,12 @@
       "obligation": "legacy-required",
       "owner": "extensions/opensource/warzone-2100",
       "plannedBlock": 17,
-      "migrationState": "partial",
-      "supportState": "partial",
-      "evidenceLevel": "E1",
+      "migrationState": "implemented",
+      "supportState": "supported",
+      "evidenceLevel": "E3",
       "allocationState": "covered",
       "portFamily": "opensource/warzone-2100",
-      "corpusDescriptors": [],
+      "corpusDescriptors": ["MODKITX_WARZONE_ROOT"],
       "dependsOn": [],
       "requiredBy": []
     },
@@ -1888,10 +1888,10 @@
       "plannedBlock": 12,
       "migrationState": "implemented",
       "supportState": "supported",
-      "evidenceLevel": "E2",
+      "evidenceLevel": "E5",
       "allocationState": "covered",
       "portFamily": "common/audio",
-      "corpusDescriptors": [],
+      "corpusDescriptors": ["MODKITX_SC2_ROOT"],
       "dependsOn": [],
       "requiredBy": []
     },

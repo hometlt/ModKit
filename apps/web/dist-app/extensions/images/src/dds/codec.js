@@ -3,11 +3,47 @@ import {
   createRasterImageSource,
   createTreeDataSource,
 } from '@modkit/codec-kit'
+import { levelDimensions, payloadBytes, resolveSubresource, sliceBytes } from './layout.js'
 
 const ID = 'modkit/dds'
 const DDS_MAGIC = 0x20534444
 const DDPF_FOURCC = 0x4
 const DDPF_RGB = 0x40
+const DDSCAPS2_CUBEMAP = 0x200
+const DDSCAPS2_VOLUME = 0x20_0000
+const DDS_HEADER_FLAGS_DEPTH = 0x80_0000
+
+/**
+ * DXGI formats this decoder actually turns into pixels. Recognised-but-undecodable formats are
+ * named separately below so the refusal says which format it is, not "unsupported".
+ */
+const DECODED_DXGI_FORMATS = new Map([
+  [70, 'DXT1'],
+  [71, 'DXT1'],
+  [72, 'DXT1'],
+  [73, 'DXT3'],
+  [74, 'DXT3'],
+  [75, 'DXT3'],
+  [76, 'DXT5'],
+  [77, 'DXT5'],
+  [78, 'DXT5'],
+])
+
+/** DXGI formats the header parser recognises by name and refuses by name. */
+const NAMED_UNDECODED_DXGI_FORMATS = new Map([
+  [79, 'BC4_TYPELESS'],
+  [80, 'BC4_UNORM'],
+  [81, 'BC4_SNORM'],
+  [82, 'BC5_TYPELESS'],
+  [83, 'BC5_UNORM'],
+  [84, 'BC5_SNORM'],
+  [94, 'BC6H_TYPELESS'],
+  [95, 'BC6H_UF16'],
+  [96, 'BC6H_SF16'],
+  [97, 'BC7_TYPELESS'],
+  [98, 'BC7_UNORM'],
+  [99, 'BC7_UNORM_SRGB'],
+])
 
 function viewOf(bytes) {
   return new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength)
@@ -35,48 +71,50 @@ function parseDds(bytes) {
   if (view.getUint32(4, true) !== 124 || view.getUint32(76, true) !== 32) {
     throw new TypeError('DDS header sizes are invalid')
   }
+  const headerFlags = view.getUint32(8, true)
   const height = view.getUint32(12, true)
   const width = view.getUint32(16, true)
   checkedImageBytes(width, height)
   const mipLevels = Math.max(1, view.getUint32(28, true))
+  const caps2 = view.getUint32(112, true)
+  const cubemap = (caps2 & DDSCAPS2_CUBEMAP) !== 0
+  const volume = (caps2 & DDSCAPS2_VOLUME) !== 0 || (headerFlags & DDS_HEADER_FLAGS_DEPTH) !== 0
   const pixelFlags = view.getUint32(80, true)
   const legacyFourCc = fourCc(view, 84)
   let format = 'rgba-mask'
   let dataOffset = 128
+  let layers = 1
+  let dxgiFormat
   if ((pixelFlags & DDPF_FOURCC) !== 0) {
     format = legacyFourCc
     if (legacyFourCc === 'DX10') {
       if (bytes.byteLength < 148) throw new TypeError('DDS DX10 header is truncated')
       dataOffset = 148
-      const dxgi = view.getUint32(128, true)
-      const mapped = new Map([
-        [71, 'DXT1'],
-        [72, 'DXT1'],
-        [74, 'DXT3'],
-        [75, 'DXT3'],
-        [77, 'DXT5'],
-        [78, 'DXT5'],
-      ]).get(dxgi)
-      if (mapped === undefined) throw new TypeError(`DDS DXGI format ${dxgi} is not supported`)
+      dxgiFormat = view.getUint32(128, true)
+      layers = Math.max(1, view.getUint32(140, true))
+      const mapped = DECODED_DXGI_FORMATS.get(dxgiFormat)
+      if (mapped === undefined) {
+        const named = NAMED_UNDECODED_DXGI_FORMATS.get(dxgiFormat)
+        throw new TypeError(
+          named === undefined
+            ? `DDS DXGI format ${dxgiFormat} is not supported`
+            : `DDS DXGI format ${dxgiFormat} (${named}) is recognised but this decoder produces no pixels for it`,
+        )
+      }
       format = mapped
     }
   } else if ((pixelFlags & DDPF_RGB) === 0) {
     throw new TypeError('DDS pixel format is neither FourCC nor RGB')
   }
-  const blockBytes = format === 'DXT1' ? 8 : format === 'DXT3' || format === 'DXT5' ? 16 : 0
-  const firstLevelBytes =
-    blockBytes === 0
-      ? Math.ceil((width * view.getUint32(88, true)) / 8) * height
-      : Math.ceil(width / 4) * Math.ceil(height / 4) * blockBytes
-  if (dataOffset + firstLevelBytes > bytes.byteLength)
-    throw new TypeError('DDS pixel payload is truncated')
-  return Object.freeze({
+  const info = Object.freeze({
     width,
     height,
+    depth: volume ? Math.max(1, view.getUint32(24, true)) : 1,
     mipLevels,
+    layers,
+    faces: cubemap ? 6 : 1,
     format,
     dataOffset,
-    firstLevelBytes,
     rgbBits: view.getUint32(88, true),
     masks: Object.freeze([
       view.getUint32(92, true),
@@ -84,8 +122,14 @@ function parseDds(bytes) {
       view.getUint32(100, true),
       view.getUint32(104, true),
     ]),
-    cubemap: (view.getUint32(112, true) & 0x200) !== 0,
+    cubemap,
+    volume,
+    ...(dxgiFormat === undefined ? {} : { dxgiFormat }),
   })
+  if (info.dataOffset + sliceBytes(info, 0) > bytes.byteLength) {
+    throw new TypeError('DDS pixel payload is truncated')
+  }
+  return info
 }
 
 function expand565(value) {
@@ -156,7 +200,7 @@ function writeBlockPixel(output, width, height, blockX, blockY, pixel, color) {
   output.set(color, (y * width + x) * 4)
 }
 
-function decodeColorBlock(view, offset, output, info, blockX, blockY, allowTransparent, alphas) {
+function decodeColorBlock(view, offset, output, surface, blockX, blockY, allowTransparent, alphas) {
   const palette = colorPalette(
     view.getUint16(offset, true),
     view.getUint16(offset + 2, true),
@@ -166,7 +210,7 @@ function decodeColorBlock(view, offset, output, info, blockX, blockY, allowTrans
   for (let pixel = 0; pixel < 16; pixel += 1) {
     const color = [...palette[(indices >>> (pixel * 2)) & 3]]
     if (alphas !== undefined) color[3] = alphas[pixel]
-    writeBlockPixel(output, info.width, info.height, blockX, blockY, pixel, color)
+    writeBlockPixel(output, surface.width, surface.height, blockX, blockY, pixel, color)
   }
 }
 
@@ -210,45 +254,49 @@ function maskValue(pixel, mask, fallback) {
   return Math.round((((pixel & mask) >>> shift) * 255) / maximum)
 }
 
-function decodeUncompressed(bytes, info, output) {
+function decodeUncompressed(bytes, info, surface, output) {
   if (![24, 32].includes(info.rgbBits)) {
     throw new TypeError(`DDS ${info.rgbBits}-bit RGB payload is not supported`)
   }
   const bytesPerPixel = info.rgbBits / 8
+  const rowStride = Math.ceil((surface.width * info.rgbBits) / 8)
   const view = viewOf(bytes)
-  for (let index = 0; index < info.width * info.height; index += 1) {
-    const offset = info.dataOffset + index * bytesPerPixel
-    let packed = 0
-    for (let byte = 0; byte < bytesPerPixel; byte += 1) {
-      packed |= view.getUint8(offset + byte) << (byte * 8)
+  for (let y = 0; y < surface.height; y += 1) {
+    for (let x = 0; x < surface.width; x += 1) {
+      const offset = surface.offset + y * rowStride + x * bytesPerPixel
+      let packed = 0
+      for (let byte = 0; byte < bytesPerPixel; byte += 1) {
+        packed |= view.getUint8(offset + byte) << (byte * 8)
+      }
+      const target = (y * surface.width + x) * 4
+      output[target] = maskValue(packed, info.masks[0], 0)
+      output[target + 1] = maskValue(packed, info.masks[1], 0)
+      output[target + 2] = maskValue(packed, info.masks[2], 0)
+      output[target + 3] = maskValue(packed, info.masks[3], 255)
     }
-    const target = index * 4
-    output[target] = maskValue(packed, info.masks[0], 0)
-    output[target + 1] = maskValue(packed, info.masks[1], 0)
-    output[target + 2] = maskValue(packed, info.masks[2], 0)
-    output[target + 3] = maskValue(packed, info.masks[3], 255)
   }
 }
 
-function decodeRgba(bytes, info) {
-  const output = new Uint8Array(checkedImageBytes(info.width, info.height))
+/** Decode one already-resolved surface (a single mip/layer/face/slice) to rgba8. */
+function decodeSurface(bytes, info, surface) {
+  const output = new Uint8Array(checkedImageBytes(surface.width, surface.height))
   if (info.format === 'rgba-mask') {
-    decodeUncompressed(bytes, info, output)
+    decodeUncompressed(bytes, info, surface, output)
     return output
   }
   const view = viewOf(bytes)
   const blockBytes = info.format === 'DXT1' ? 8 : 16
-  let offset = info.dataOffset
-  for (let blockY = 0; blockY < Math.ceil(info.height / 4); blockY += 1) {
-    for (let blockX = 0; blockX < Math.ceil(info.width / 4); blockX += 1) {
+  let offset = surface.offset
+  for (let blockY = 0; blockY < Math.ceil(surface.height / 4); blockY += 1) {
+    for (let blockX = 0; blockX < Math.ceil(surface.width / 4); blockX += 1) {
       if (info.format === 'DXT1') {
-        decodeColorBlock(view, offset, output, info, blockX, blockY, true)
+        decodeColorBlock(view, offset, output, surface, blockX, blockY, true)
       } else if (info.format === 'DXT3') {
         decodeColorBlock(
           view,
           offset + 8,
           output,
-          info,
+          surface,
           blockX,
           blockY,
           false,
@@ -259,7 +307,7 @@ function decodeRgba(bytes, info) {
           view,
           offset + 8,
           output,
-          info,
+          surface,
           blockX,
           blockY,
           false,
@@ -274,36 +322,60 @@ function decodeRgba(bytes, info) {
   return output
 }
 
+/** Stable cache key for one subresource of one file. */
+function subresourceKey(coordinates) {
+  return `${coordinates.mipLevel}/${coordinates.layer}/${coordinates.face}/${coordinates.slice}`
+}
+
 function regionReader(bytes, info) {
-  let decoded
+  /*
+   * One decoded surface per requested subresource. A viewer that walks a mip chain asks for each
+   * level once and then pans over it, so caching the level — not just level 0 — is what keeps the
+   * pan interactive; the map is bounded by the subresource count the header declares.
+   */
+  const decoded = new Map()
   return async (request, signal) => {
     if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
     const values = [request.x, request.y, request.width, request.height, request.maxBytes]
     if (!values.every(value => Number.isSafeInteger(value) && value >= 0)) {
       throw new TypeError('DDS region coordinates and budget must be non-negative safe integers')
     }
-    if (
-      request.pixelFormat !== 'rgba8' ||
-      (request.frame ?? 0) !== 0 ||
-      (request.mipLevel ?? 0) !== 0 ||
-      (request.layer ?? 0) !== 0 ||
-      (request.face ?? 0) !== 0 ||
-      (request.slice ?? 0) !== 0
-    ) {
-      throw new RangeError('DDS decoder exposes only the first image as rgba8')
+    if (request.pixelFormat !== 'rgba8') {
+      throw new RangeError('DDS decoder exposes pixels as rgba8 only')
     }
-    if (request.x + request.width > info.width || request.y + request.height > info.height) {
-      throw new RangeError('DDS region is outside the image')
+    if ((request.frame ?? 0) !== 0) {
+      throw new RangeError('DDS holds a single frame; frame 0 is the only one')
+    }
+    const coordinates = {
+      mipLevel: request.mipLevel ?? 0,
+      layer: request.layer ?? 0,
+      face: request.face ?? 0,
+      slice: request.slice ?? 0,
+    }
+    const surface = resolveSubresource(bytes, info, coordinates)
+    if (request.x + request.width > surface.width || request.y + request.height > surface.height) {
+      throw new RangeError(
+        `DDS region is outside subresource ${subresourceKey(coordinates)} ` +
+          `(${surface.width}x${surface.height})`,
+      )
     }
     const length = request.width * request.height * 4
     if (!Number.isSafeInteger(length) || length > request.maxBytes) {
       throw new RangeError('DDS region exceeds maxBytes budget')
     }
-    decoded ??= decodeRgba(bytes, info)
+    const key = subresourceKey(coordinates)
+    let pixelsOfSurface = decoded.get(key)
+    if (pixelsOfSurface === undefined) {
+      pixelsOfSurface = decodeSurface(bytes, info, surface)
+      decoded.set(key, pixelsOfSurface)
+    }
     const pixels = new Uint8Array(length)
     for (let row = 0; row < request.height; row += 1) {
-      const start = ((request.y + row) * info.width + request.x) * 4
-      pixels.set(decoded.subarray(start, start + request.width * 4), row * request.width * 4)
+      const start = ((request.y + row) * surface.width + request.x) * 4
+      pixels.set(
+        pixelsOfSurface.subarray(start, start + request.width * 4),
+        row * request.width * 4,
+      )
     }
     return Object.freeze({
       width: request.width,
@@ -337,9 +409,9 @@ const definition = Object.freeze({
       {
         width: info.width,
         height: info.height,
-        depth: 1,
-        layers: 1,
-        faces: info.cubemap ? 6 : 1,
+        depth: info.depth,
+        layers: info.layers,
+        faces: info.faces,
         mipLevels: info.mipLevels,
         frames: 1,
         channels: 4,
@@ -351,6 +423,15 @@ const definition = Object.freeze({
       },
       regionReader(bytes, info),
     )
+    const subresources = info.mipLevels * info.layers * info.faces
+    const mipChain = Array.from({ length: info.mipLevels }, (_, level) => {
+      const size = levelDimensions(info, level)
+      return {
+        kind: 'field',
+        label: `Mip ${level}`,
+        preview: `${size.width} × ${size.height}${info.depth > 1 ? ` × ${size.depth}` : ''}, ${sliceBytes(info, level)} bytes`,
+      }
+    })
     const tree = createTreeDataSource({
       kind: 'image',
       label: 'DDS',
@@ -358,7 +439,12 @@ const definition = Object.freeze({
       children: [
         { kind: 'field', label: 'Format', preview: info.format },
         { kind: 'field', label: 'Mip levels', preview: String(info.mipLevels) },
-        { kind: 'field', label: 'First level', preview: `${info.firstLevelBytes} bytes` },
+        { kind: 'field', label: 'Array layers', preview: String(info.layers) },
+        { kind: 'field', label: 'Cubemap faces', preview: String(info.faces) },
+        { kind: 'field', label: 'Volume depth', preview: String(info.depth) },
+        { kind: 'field', label: 'Subresources', preview: String(subresources) },
+        { kind: 'field', label: 'Payload', preview: `${payloadBytes(info)} bytes` },
+        { kind: 'group', label: 'Mip chain', children: mipChain },
       ],
     })
     return {
@@ -368,6 +454,10 @@ const definition = Object.freeze({
         height: info.height,
         encoding: info.format,
         mipLevels: info.mipLevels,
+        layers: info.layers,
+        faces: info.faces,
+        depth: info.depth,
+        subresources,
         cubemap: info.cubemap,
       },
       metadata: [
@@ -379,7 +469,15 @@ const definition = Object.freeze({
             { key: 'height', value: info.height },
             { key: 'encoding', value: info.format },
             { key: 'mipLevels', value: info.mipLevels },
+            { key: 'layers', value: info.layers },
+            { key: 'faces', value: info.faces },
+            { key: 'depth', value: info.depth },
+            { key: 'subresources', value: subresources },
+            { key: 'payloadBytes', value: payloadBytes(info) },
             { key: 'cubemap', value: info.cubemap },
+            ...(info.dxgiFormat === undefined
+              ? []
+              : [{ key: 'dxgiFormat', value: info.dxgiFormat }]),
           ],
         },
       ],
@@ -396,12 +494,7 @@ const definition = Object.freeze({
         'common.view/raster-image-source': raster,
       },
       maxDecodedBytes: BigInt(decodedBytes),
-      unsupportedFeatures: [
-        ...(info.mipLevels > 1 ? ['decoded-mip-levels-after-zero'] : []),
-        ...(info.cubemap ? ['decoded-cubemap-faces-after-zero'] : []),
-        'pixel-editing',
-        'dds-writing',
-      ],
+      unsupportedFeatures: ['pixel-editing', 'dds-writing'],
     }
   },
 })

@@ -5538,13 +5538,13 @@ async function buildInventory(inputs, registry, options = {}) {
     diagnostics.push(...expansion.diagnostics.map((d) => ({ ...d, path: [input.source, ...d.path ?? []] })));
     const contributions = [];
     for (const entry2 of expansion.entries) {
-      const document = input.documents.get(entry2.path);
-      if (document === void 0) {
+      const document2 = input.documents.get(entry2.path);
+      if (document2 === void 0) {
         diagnostics.push(diagnostic("error", "x3.host/unreadable-contribution", `declared contribution \xAB${entry2.path}\xBB was not provided by the loader`, [input.source, entry2.path]));
         continue;
       }
       const validationRegistry = registry.validationRegistry();
-      const result = await validateContributionManifest(document, validationRegistry);
+      const result = await validateContributionManifest(document2, validationRegistry);
       const ownedManifest = result.manifest === void 0 ? void 0 : deepFreezeJson(JSON.parse(canonicalJsonStringify(result.manifest)));
       const manifestDigest = input.documentDigests.get(entry2.path);
       const localDiagnostics = [...result.diagnostics];
@@ -10537,9 +10537,9 @@ function catalogNamespace(value2) {
   const descriptor = Object.getOwnPropertyDescriptor(value2, "namespace");
   return descriptor !== void 0 && "value" in descriptor && typeof descriptor.value === "string" ? descriptor.value : void 0;
 }
-async function authorizedPrefixes(candidate, document, authorizer) {
+async function authorizedPrefixes(candidate, document2, authorizer) {
   const requested = Object.freeze([...candidate.resource.messagePrefixes]);
-  const namespace = catalogNamespace(document);
+  const namespace = catalogNamespace(document2);
   if (namespace === void 0) {
     throw new TypeError("localization catalog namespace must be a string data property");
   }
@@ -10618,17 +10618,17 @@ async function loadLocalizationCatalogs(inventory, options) {
   for (const candidate of candidatesFrom(inventory)) {
     try {
       const bytes2 = await readCatalogBytes(candidate, options, maxBytes);
-      let document;
+      let document2;
       try {
-        document = JSON.parse(decoder.decode(bytes2));
+        document2 = JSON.parse(decoder.decode(bytes2));
       } catch (error5) {
         throw new TypeError(`localization catalog is not valid UTF-8 JSON: ${error5 instanceof Error ? error5.message : String(error5)}`);
       }
-      const prefixes = await authorizedPrefixes(candidate, document, options.authorizeMessagePrefixes);
+      const prefixes = await authorizedPrefixes(candidate, document2, options.authorizeMessagePrefixes);
       if (prefixes.length === 0) {
         throw new TypeError("localization catalog was granted no requested message-key prefix");
       }
-      const catalog = options.parseCatalog(document, {
+      const catalog = options.parseCatalog(document2, {
         authorizedMessagePrefixes: prefixes,
         ...options.fallbackCatalog === void 0 ? {} : { fallbackCatalog: options.fallbackCatalog }
       });
@@ -12807,16 +12807,16 @@ async function analyzeResolvedDataWorkspace(request) {
         throw new TypeError(`workspace data exceeds maxTextBytes ${limits.maxTextBytes}`);
       }
       revisions.push(`${requirement.requirementId}@${String(loaded.revision)}`);
-      const document = {
+      const document2 = {
         rootId: requirement.rootId,
         path: requirement.path,
         text: loaded.text,
         revision: loaded.revision
       };
       if (requirement.kind === "catalog")
-        documents.push(document);
+        documents.push(document2);
       else
-        localizationDocuments.push({ ...document, locale: requirement.locale });
+        localizationDocuments.push({ ...document2, locale: requirement.locale });
     }
     if (documents.length === 0) {
       await resolution.release();
@@ -14513,15 +14513,15 @@ function validateDocumentReadRequests(value2) {
   let totalBytes = 0;
   const identities = /* @__PURE__ */ new Set();
   for (const [index, item] of value2.entries()) {
-    const document = recordOf7(item);
-    if (document === void 0 || !Object.keys(document).every((key3) => key3 === "documentId" || key3 === "path" || key3 === "maxBytes") || !nonEmptyString8(document["documentId"]) || document["documentId"].length > 256 || document["documentId"].includes("\0") || !nonEmptyString8(document["path"]) || document["path"].length > MAX_PREVIEW_NAMESPACE_PATH_CHARS || document["path"].includes("\0") || document["path"].startsWith("/") || /^[a-z]:/iu.test(document["path"]) || document["path"].replace(/\\/gu, "/").split("/").some((part) => part === "..") || !Number.isSafeInteger(document["maxBytes"]) || Number(document["maxBytes"]) <= 0 || Number(document["maxBytes"]) > MAX_PREVIEW_DOCUMENT_READ_BYTES) {
+    const document2 = recordOf7(item);
+    if (document2 === void 0 || !Object.keys(document2).every((key3) => key3 === "documentId" || key3 === "path" || key3 === "maxBytes") || !nonEmptyString8(document2["documentId"]) || document2["documentId"].length > 256 || document2["documentId"].includes("\0") || !nonEmptyString8(document2["path"]) || document2["path"].length > MAX_PREVIEW_NAMESPACE_PATH_CHARS || document2["path"].includes("\0") || document2["path"].startsWith("/") || /^[a-z]:/iu.test(document2["path"]) || document2["path"].replace(/\\/gu, "/").split("/").some((part) => part === "..") || !Number.isSafeInteger(document2["maxBytes"]) || Number(document2["maxBytes"]) <= 0 || Number(document2["maxBytes"]) > MAX_PREVIEW_DOCUMENT_READ_BYTES) {
       throw new TypeError(`map preview document read ${index} is malformed`);
     }
-    if (identities.has(document["documentId"])) {
+    if (identities.has(document2["documentId"])) {
       throw new TypeError("map preview document reads contain duplicate document ids");
     }
-    identities.add(document["documentId"]);
-    totalBytes += Number(document["maxBytes"]);
+    identities.add(document2["documentId"]);
+    totalBytes += Number(document2["maxBytes"]);
   }
   if (totalBytes > MAX_PREVIEW_DOCUMENT_TOTAL_BYTES) {
     throw new TypeError("map preview document reads exceed the total byte budget");
@@ -15107,8 +15107,8 @@ async function coordinateMapPreviewAssetSession(request) {
       documentRoundDiagnostics.push(...prepared.diagnostics);
       const documents = validateDocumentReadRequests(prepared.documents);
       const documentReads = await boundedPreparationDocumentReads(request.original, descriptor, documents, request.signal);
-      for (const document of documentReads) {
-        accumulatedDocumentReads.set(document.documentId, document);
+      for (const document2 of documentReads) {
+        accumulatedDocumentReads.set(document2.documentId, document2);
       }
       subject = mapPreviewPreparationSubject(descriptor, namespace, namespaceSearches, Object.freeze([...accumulatedDocumentReads.values()]));
       prepared = validatePreparationResult(await preparation.prepare({
@@ -21133,9 +21133,9 @@ function scalar(value2, raw = JSON.stringify(value2)) {
     return { kind: "number", raw: raw ?? String(value2), finiteValue: value2 };
   return { kind: "string", value: String(value2), raw: raw ?? String(value2) };
 }
-function treeDataSource(document) {
-  const nodes = /* @__PURE__ */ new Map([["root", { value: document, children: [] }]]);
-  const entries = document.root?.kind === "object" ? document.root.members.map((member) => [member.key, member.value]) : Object.entries(document);
+function treeDataSource(document2) {
+  const nodes = /* @__PURE__ */ new Map([["root", { value: document2, children: [] }]]);
+  const entries = document2.root?.kind === "object" ? document2.root.members.map((member) => [member.key, member.value]) : Object.entries(document2);
   nodes.get("root").children = entries.map(([key3, value2], index) => {
     const id = `root/${index}`;
     nodes.set(id, { value: value2, label: String(key3), children: [] });
@@ -23302,15 +23302,15 @@ function linkedExtensionInputs(linked) {
 // packages/host/dist/native-text.js
 var NATIVE_ENVIRONMENTS = Object.freeze(["node", "node-worker", "browser-main", "browser-worker"]);
 var nativeExecutable = (manifest, entrypoint) => {
-  const document = manifest;
-  const variants = Array.isArray(document.runtimeVariants) ? document.runtimeVariants : [];
+  const document2 = manifest;
+  const variants = Array.isArray(document2.runtimeVariants) ? document2.runtimeVariants : [];
   if (variants.length === 0)
     return manifest;
   const selected = variants.find((variant) => typeof variant === "object" && variant !== null && variant.executionProfile === "trusted-in-process") ?? variants[0];
   if (typeof selected !== "object" || selected === null)
     return manifest;
   return {
-    ...document,
+    ...document2,
     runtimeVariants: [
       {
         ...selected,
@@ -23489,6 +23489,8 @@ var PARTS = Object.freeze([
   "image.canvas",
   "image.toolbar",
   "image.readout",
+  "image.subresources",
+  "image.metadata",
   // image editing surface (MK2 assetsTextureViewer parity)
   "imageedit",
   "imageedit.tools",
@@ -24252,6 +24254,13 @@ var EN_MESSAGES = Object.freeze({
   "viewer.audioControls": "Audio controls",
   "viewer.audioDecodeError": "The platform decoder cannot render this audio: {reason}. A format-specific decoder provider is required.",
   "viewer.audioSummary": "{position} / {duration} \xB7 {channels} channels \xB7 {rate} kHz \xB7 {size} KiB",
+  "viewer.audioTransport": "{state} \xB7 \xD7{speed} \xB7 decoded by {decoder}",
+  "viewer.audioPlaying": "playing",
+  "viewer.audioPaused": "paused",
+  "viewer.audioPlay": "Play",
+  "viewer.audioPause": "Pause",
+  "viewer.audioRestart": "Back to the start",
+  "viewer.audioCycleRate": "Cycle the playback rate",
   "viewer.text": "Bounded text viewer",
   "viewer.searchText": "Search text",
   "viewer.search": "Search",
@@ -24273,6 +24282,21 @@ var EN_MESSAGES = Object.freeze({
   "viewer.imageDecodeError": "The platform decoder cannot render these bytes: {reason}. A format-specific decoder provider is required.",
   "viewer.imageSummary": "{width}\xD7{height} \xB7 {size} KiB \xB7 {scale}%{channel}",
   "viewer.imageChannel": " \xB7 channel {channel}",
+  "viewer.imageSubresources": "Subresource, comparison and export",
+  "viewer.imageSubresource": "subresource {subresource}",
+  "viewer.imageCompareWith": "compared with {subresource} ({mode})",
+  "viewer.imagePreviousSubresource": "Previous {axis}",
+  "viewer.imageNextSubresource": "Next {axis}",
+  "viewer.imageCompare": "Compare",
+  "viewer.imageCompareTitle": "Cycle comparison: off, side by side, difference",
+  "viewer.imageExport": "Export",
+  "viewer.imageExportTitle": "Export the current subresource as PNG",
+  "viewer.imageExportAll": "Export all",
+  "viewer.imageExportAllTitle": "Export every declared subresource as PNG",
+  "viewer.imageExportUnavailable": "This host cannot write exported files",
+  "viewer.imageExporting": "exporting\u2026",
+  "viewer.imageExported": "exported {count} file(s)",
+  "viewer.imageExportRefused": "export refused: {reason}",
   "viewer.video": "Video viewer",
   "viewer.videoSummary": "{video} video \xB7 {audio} audio \xB7 {duration}",
   "viewer.durationUnknown": "duration unknown",
@@ -24829,6 +24853,13 @@ var RU_MESSAGES = Object.freeze({
   "viewer.audioControls": "\u0423\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0438\u0435 \u0430\u0443\u0434\u0438\u043E",
   "viewer.audioDecodeError": "\u0421\u0438\u0441\u0442\u0435\u043C\u043D\u044B\u0439 \u0434\u0435\u043A\u043E\u0434\u0435\u0440 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u044D\u0442\u043E \u0430\u0443\u0434\u0438\u043E: {reason}. \u041D\u0443\u0436\u0435\u043D \u0434\u0435\u043A\u043E\u0434\u0435\u0440 \u044D\u0442\u043E\u0433\u043E \u0444\u043E\u0440\u043C\u0430\u0442\u0430.",
   "viewer.audioSummary": "{position} / {duration} \xB7 \u043A\u0430\u043D\u0430\u043B\u043E\u0432: {channels} \xB7 {rate} \u043A\u0413\u0446 \xB7 {size} \u041A\u0438\u0411",
+  "viewer.audioTransport": "{state} \xB7 \xD7{speed} \xB7 \u0434\u0435\u043A\u043E\u0434\u0438\u0440\u043E\u0432\u0430\u043B {decoder}",
+  "viewer.audioPlaying": "\u0432\u043E\u0441\u043F\u0440\u043E\u0438\u0437\u0432\u0435\u0434\u0435\u043D\u0438\u0435",
+  "viewer.audioPaused": "\u043F\u0430\u0443\u0437\u0430",
+  "viewer.audioPlay": "\u0412\u043E\u0441\u043F\u0440\u043E\u0438\u0437\u0432\u0435\u0441\u0442\u0438",
+  "viewer.audioPause": "\u041F\u0430\u0443\u0437\u0430",
+  "viewer.audioRestart": "\u0412 \u043D\u0430\u0447\u0430\u043B\u043E",
+  "viewer.audioCycleRate": "\u0421\u043C\u0435\u043D\u0438\u0442\u044C \u0441\u043A\u043E\u0440\u043E\u0441\u0442\u044C \u0432\u043E\u0441\u043F\u0440\u043E\u0438\u0437\u0432\u0435\u0434\u0435\u043D\u0438\u044F",
   "viewer.text": "\u041F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0442\u0435\u043A\u0441\u0442\u0430",
   "viewer.searchText": "\u041F\u043E\u0438\u0441\u043A \u0432 \u0442\u0435\u043A\u0441\u0442\u0435",
   "viewer.search": "\u041D\u0430\u0439\u0442\u0438",
@@ -24850,6 +24881,21 @@ var RU_MESSAGES = Object.freeze({
   "viewer.imageDecodeError": "\u0421\u0438\u0441\u0442\u0435\u043C\u043D\u044B\u0439 \u0434\u0435\u043A\u043E\u0434\u0435\u0440 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u044D\u0442\u0438 \u0434\u0430\u043D\u043D\u044B\u0435: {reason}. \u041D\u0443\u0436\u0435\u043D \u0434\u0435\u043A\u043E\u0434\u0435\u0440 \u044D\u0442\u043E\u0433\u043E \u0444\u043E\u0440\u043C\u0430\u0442\u0430.",
   "viewer.imageSummary": "{width}\xD7{height} \xB7 {size} \u041A\u0438\u0411 \xB7 {scale}%{channel}",
   "viewer.imageChannel": " \xB7 \u043A\u0430\u043D\u0430\u043B {channel}",
+  "viewer.imageSubresources": "\u0421\u0443\u0431\u0440\u0435\u0441\u0443\u0440\u0441, \u0441\u0440\u0430\u0432\u043D\u0435\u043D\u0438\u0435 \u0438 \u044D\u043A\u0441\u043F\u043E\u0440\u0442",
+  "viewer.imageSubresource": "\u0441\u0443\u0431\u0440\u0435\u0441\u0443\u0440\u0441 {subresource}",
+  "viewer.imageCompareWith": "\u0441\u0440\u0430\u0432\u043D\u0435\u043D\u0438\u0435 \u0441 {subresource} ({mode})",
+  "viewer.imagePreviousSubresource": "\u041F\u0440\u0435\u0434\u044B\u0434\u0443\u0449\u0438\u0439: {axis}",
+  "viewer.imageNextSubresource": "\u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439: {axis}",
+  "viewer.imageCompare": "\u0421\u0440\u0430\u0432\u043D\u0438\u0442\u044C",
+  "viewer.imageCompareTitle": "\u0420\u0435\u0436\u0438\u043C \u0441\u0440\u0430\u0432\u043D\u0435\u043D\u0438\u044F: \u0432\u044B\u043A\u043B., \u0440\u044F\u0434\u043E\u043C, \u0440\u0430\u0437\u043D\u0438\u0446\u0430",
+  "viewer.imageExport": "\u042D\u043A\u0441\u043F\u043E\u0440\u0442",
+  "viewer.imageExportTitle": "\u042D\u043A\u0441\u043F\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0442\u0435\u043A\u0443\u0449\u0438\u0439 \u0441\u0443\u0431\u0440\u0435\u0441\u0443\u0440\u0441 \u0432 PNG",
+  "viewer.imageExportAll": "\u042D\u043A\u0441\u043F\u043E\u0440\u0442 \u0432\u0441\u0435\u0445",
+  "viewer.imageExportAllTitle": "\u042D\u043A\u0441\u043F\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0432\u0441\u0435 \u043E\u0431\u044A\u044F\u0432\u043B\u0435\u043D\u043D\u044B\u0435 \u0441\u0443\u0431\u0440\u0435\u0441\u0443\u0440\u0441\u044B \u0432 PNG",
+  "viewer.imageExportUnavailable": "\u042D\u0442\u043E \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043D\u0435 \u043C\u043E\u0436\u0435\u0442 \u0437\u0430\u043F\u0438\u0441\u044B\u0432\u0430\u0442\u044C \u044D\u043A\u0441\u043F\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u043D\u044B\u0435 \u0444\u0430\u0439\u043B\u044B",
+  "viewer.imageExporting": "\u044D\u043A\u0441\u043F\u043E\u0440\u0442\u2026",
+  "viewer.imageExported": "\u044D\u043A\u0441\u043F\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u0430\u043D\u043E \u0444\u0430\u0439\u043B\u043E\u0432: {count}",
+  "viewer.imageExportRefused": "\u044D\u043A\u0441\u043F\u043E\u0440\u0442 \u043E\u0442\u043A\u043B\u043E\u043D\u0451\u043D: {reason}",
   "viewer.video": "\u041F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0432\u0438\u0434\u0435\u043E",
   "viewer.videoSummary": "\u0412\u0438\u0434\u0435\u043E: {video} \xB7 \u0430\u0443\u0434\u0438\u043E: {audio} \xB7 {duration}",
   "viewer.durationUnknown": "\u0434\u043B\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0441\u0442\u044C \u043D\u0435\u0438\u0437\u0432\u0435\u0441\u0442\u043D\u0430",
@@ -25518,8 +25564,15 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var AUDIO_FALLBACK_MESSAGES = {
   "viewer.audio": "Audio viewer",
   "viewer.audioControls": "Audio controls",
+  "viewer.audioCycleRate": "Cycle the playback rate",
   "viewer.audioDecodeError": "The platform decoder cannot render this audio: {reason}. A format-specific decoder provider is required.",
-  "viewer.audioSummary": "{position} / {duration} \xB7 {channels} channels \xB7 {rate} kHz \xB7 {size} KiB"
+  "viewer.audioPause": "Pause",
+  "viewer.audioPaused": "paused",
+  "viewer.audioPlay": "Play",
+  "viewer.audioPlaying": "playing",
+  "viewer.audioRestart": "Back to the start",
+  "viewer.audioSummary": "{position} / {duration} \xB7 {channels} channels \xB7 {rate} kHz \xB7 {size} KiB",
+  "viewer.audioTransport": "{state} \xB7 \xD7{speed} \xB7 decoded by {decoder}"
 };
 var CALCULATIONS_FALLBACK_MESSAGES = {
   "calculations.capped": "capped by the viewer",
@@ -25731,8 +25784,23 @@ var IMAGE_FALLBACK_MESSAGES = {
   "viewer.fitTitle": "Fit to the stage",
   "viewer.image": "Image viewer",
   "viewer.imageChannel": " \xB7 channel {channel}",
+  "viewer.imageCompare": "Compare",
+  "viewer.imageCompareTitle": "Cycle comparison: off, side by side, difference",
+  "viewer.imageCompareWith": "compared with {subresource} ({mode})",
   "viewer.imageControls": "Image controls",
   "viewer.imageDecodeError": "The platform decoder cannot render these bytes: {reason}. A format-specific decoder provider is required.",
+  "viewer.imageExport": "Export",
+  "viewer.imageExportAll": "Export all",
+  "viewer.imageExportAllTitle": "Export every declared subresource as PNG",
+  "viewer.imageExportRefused": "export refused: {reason}",
+  "viewer.imageExportTitle": "Export the current subresource as PNG",
+  "viewer.imageExportUnavailable": "This host cannot write exported files",
+  "viewer.imageExported": "exported {count} file(s)",
+  "viewer.imageExporting": "exporting\u2026",
+  "viewer.imageNextSubresource": "Next {axis}",
+  "viewer.imagePreviousSubresource": "Previous {axis}",
+  "viewer.imageSubresource": "subresource {subresource}",
+  "viewer.imageSubresources": "Subresource, comparison and export",
   "viewer.imageSummary": "{width}\xD7{height} \xB7 {size} KiB \xB7 {scale}%{channel}",
   "viewer.isolateChannel": "Isolate the {channel} channel",
   "viewer.zoomIn": "Zoom in",
@@ -26376,9 +26444,9 @@ var formatBytes = (bytes2) => {
     return `${(bytes2 / 1024).toFixed(1)} KiB`;
   return `${(bytes2 / (1024 * 1024)).toFixed(1)} MiB`;
 };
-function createEditorArea(document, options) {
+function createEditorArea(document2, options) {
   const localizer = withEnglishUiFallback(options.localizer, EXPLORER_EDITORS_FALLBACK_MESSAGES);
-  const root = document.createElement("div");
+  const root = document2.createElement("div");
   setPart(root, "explorer.editors");
   const groups = [];
   let focused;
@@ -26409,7 +26477,7 @@ function createEditorArea(document, options) {
       return;
     }
     for (const view of handle.views) {
-      const option = document.createElement("option");
+      const option = document2.createElement("option");
       option.value = view.id;
       option.textContent = view.label;
       group2.picker.append(option);
@@ -26736,18 +26804,18 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // packages/ui/dist/primitives/file-tree.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-function createFileTree(document, options) {
+function createFileTree(document2, options) {
   const localizer = withEnglishUiFallback(options.localizer, PRIMITIVES_FILE_TREE_FALLBACK_MESSAGES);
-  const root = document.createElement("div");
+  const root = document2.createElement("div");
   root.className = "modkit-filetree";
   setPart(root, "filetree");
-  const toolbar = document.createElement("div");
+  const toolbar = document2.createElement("div");
   toolbar.className = "modkit-filetree__toolbar";
   toolbar.setAttribute("role", "toolbar");
   toolbar.setAttribute("aria-label", localizer.text("primitives.treeActions", { label: options.label }));
   setPart(toolbar, "filetree.toolbar");
   root.append(toolbar);
-  const list = document.createElement("div");
+  const list = document2.createElement("div");
   list.className = "modkit-filetree__list";
   list.setAttribute("role", "tree");
   list.setAttribute("aria-label", options.label);
@@ -26781,7 +26849,7 @@ function createFileTree(document, options) {
     });
   };
   const renderRow = (node, depth, host) => {
-    const element2 = document.createElement("div");
+    const element2 = document2.createElement("div");
     element2.className = "modkit-filetree__node";
     element2.setAttribute("role", "treeitem");
     element2.setAttribute("aria-level", String(depth + 1));
@@ -26791,38 +26859,38 @@ function createFileTree(document, options) {
     if (node.kind !== void 0)
       element2.dataset["kind"] = node.kind;
     setPart(element2, "filetree.node");
-    const line = document.createElement("div");
+    const line = document2.createElement("div");
     line.className = "modkit-filetree__row";
     setPart(line, "filetree.row");
     setToken(line, "tree.indent-level", String(depth));
     element2.append(line);
-    const twisty = document.createElement("span");
+    const twisty = document2.createElement("span");
     twisty.className = "modkit-filetree__twisty";
     twisty.setAttribute("aria-hidden", "true");
     setPart(twisty, "filetree.twisty");
     twisty.textContent = node.hasChildren ? "\u203A" : "";
     line.append(twisty);
     if (node.icon !== void 0) {
-      const icon = document.createElement("span");
+      const icon = document2.createElement("span");
       icon.className = "modkit-filetree__icon";
       icon.setAttribute("aria-hidden", "true");
       icon.textContent = safeViewerText(node.icon, 4);
       setPart(icon, "filetree.icon");
       line.append(icon);
     }
-    const label = document.createElement("span");
+    const label = document2.createElement("span");
     label.className = "modkit-filetree__label";
     label.textContent = safeViewerText(node.label, 512);
     setPart(label, "filetree.label");
     line.append(label);
     if (node.badge !== void 0) {
-      const badge = document.createElement("span");
+      const badge = document2.createElement("span");
       badge.className = "modkit-filetree__badge";
       badge.textContent = safeViewerText(node.badge, 32);
       setPart(badge, "filetree.badge");
       line.append(badge);
     }
-    const childrenHost = document.createElement("div");
+    const childrenHost = document2.createElement("div");
     childrenHost.className = "modkit-filetree__children";
     childrenHost.setAttribute("role", "group");
     childrenHost.hidden = true;
@@ -26847,7 +26915,7 @@ function createFileTree(document, options) {
     const children = await options.loadChildren(row?.node, controller.signal);
     host.replaceChildren();
     if (children.length === 0 && row === void 0) {
-      const empty = document.createElement("p");
+      const empty = document2.createElement("p");
       empty.className = "modkit-filetree__empty";
       empty.textContent = localizer.text("primitives.nothingToShow");
       setPart(empty, "filetree.empty");
@@ -27106,7 +27174,7 @@ function matchRanges(text3, compiled, firstOnly = false) {
 }
 
 // packages/ui/dist/primitives/search-field.js
-function createSearchField(document, options) {
+function createSearchField(document2, options) {
   const localizer = withEnglishUiFallback(options.localizer, PRIMITIVES_SEARCH_FIELD_FALLBACK_MESSAGES);
   const toggles = [
     { id: "case", label: "Aa", title: localizer.text("primitives.matchCase") },
@@ -27118,11 +27186,11 @@ function createSearchField(document, options) {
     label: "*",
     title: localizer.text("primitives.glob")
   };
-  const root = document.createElement("div");
+  const root = document2.createElement("div");
   root.className = "modkit-search";
   setPart(root, "search");
   root.setAttribute("role", "search");
-  const input = document.createElement("input");
+  const input = document2.createElement("input");
   input.type = "search";
   input.className = "modkit-search__input";
   input.placeholder = options.placeholder ?? `${localizer.text("primitives.filter")}\u2026`;
@@ -27130,7 +27198,7 @@ function createSearchField(document, options) {
   input.value = options.initial?.query ?? "";
   setPart(input, "search.input");
   root.append(input);
-  const toggleBar = document.createElement("div");
+  const toggleBar = document2.createElement("div");
   toggleBar.className = "modkit-search__toggles";
   setPart(toggleBar, "search.toggles");
   toggleBar.setAttribute("role", "group");
@@ -27139,7 +27207,7 @@ function createSearchField(document, options) {
   const specs = options.allowGlob === true ? [...toggles, globToggle] : toggles;
   const buttons = /* @__PURE__ */ new Map();
   for (const spec of specs) {
-    const button = document.createElement("button");
+    const button = document2.createElement("button");
     button.type = "button";
     button.className = "modkit-search__toggle";
     button.textContent = spec.label;
@@ -27150,24 +27218,24 @@ function createSearchField(document, options) {
     toggleBar.append(button);
     buttons.set(spec.id, button);
   }
-  const status = document.createElement("output");
+  const status = document2.createElement("output");
   status.className = "modkit-search__status";
   setPart(status, "search.status");
   root.append(status);
-  const message = document.createElement("p");
+  const message = document2.createElement("p");
   message.className = "modkit-search__message";
   setPart(message, "search.message");
   root.append(message);
   let nav;
   if (options.onNavigate !== void 0) {
-    nav = document.createElement("div");
+    nav = document2.createElement("div");
     nav.className = "modkit-search__nav";
     setPart(nav, "search.nav");
     for (const [label, direction, title] of [
       ["\u2039", -1, localizer.text("primitives.previousMatch")],
       ["\u203A", 1, localizer.text("primitives.nextMatch")]
     ]) {
-      const button = document.createElement("button");
+      const button = document2.createElement("button");
       button.type = "button";
       button.textContent = label;
       button.title = title;
@@ -27300,11 +27368,11 @@ var formatBytes2 = (bytes2) => {
     return `${(bytes2 / 1024).toFixed(1)} KiB`;
   return `${(bytes2 / (1024 * 1024)).toFixed(1)} MiB`;
 };
-function createExplorer(document, options) {
+function createExplorer(document2, options) {
   const localizer = withEnglishUiFallback(options.localizer, EXPLORER_FALLBACK_MESSAGES);
   const maximumBytes = options.maximumBytes ?? EXPLORER_MAXIMUM_BYTES;
   const supported = new Set(options.preview.supported.map((item) => item.toLowerCase()));
-  const root = document.createElement("div");
+  const root = document2.createElement("div");
   root.className = "modkit-viewer modkit-explorer";
   setPart(root, "explorer");
   const toolbar = element(root, "div", { part: "explorer.toolbar", role: "toolbar" });
@@ -27386,7 +27454,7 @@ function createExplorer(document, options) {
       })();
     });
   }
-  const search = createSearchField(document, {
+  const search = createSearchField(document2, {
     localizer,
     label: localizer.text("explorer.filterFiles"),
     placeholder: localizer.text("explorer.filter"),
@@ -27458,7 +27526,7 @@ function createExplorer(document, options) {
       mounted = handle;
       breadcrumb.textContent = safeViewerText(entry2.name, 300);
       viewPicker.replaceChildren(...handle.views.map((view) => {
-        const option = document.createElement("option");
+        const option = document2.createElement("option");
         option.value = view.id;
         option.textContent = view.label;
         return option;
@@ -27482,7 +27550,7 @@ function createExplorer(document, options) {
     if (access === void 0)
       return;
     const current = access;
-    tree = createFileTree(document, {
+    tree = createFileTree(document2, {
       localizer,
       label: current.label,
       async loadChildren(node, signal) {
@@ -29696,7 +29764,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: "sha256:859afeaeca94d2dfd67338c1a9c235861b86a76cfcc0d8defad8ba605211ebca",
+        artifactDigest: "sha256:635314a89da917111341771b7cb0b96ec32fbdfd13666a752647e1816247c9bc",
         fileDigests: {
           "MIGRATION-NOTES-common-audio.json": "sha256:9208bc42ef1da984ce9776d9bed7024eaf3f797a1cd56ca193919caf142ee636",
           "README.md": "sha256:9f5415950310cb89d1ab9de0eb7818546ee38fedcb55632e1454f3319d4f91a3",
@@ -29705,7 +29773,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "contributions/codec-m4a.json": "sha256:fa5b142c50b5a95dff81122bb06919d7e1410e6b9e42986ac8c93d9501408f2a",
           "contributions/codec-mp3.json": "sha256:e61f2c053fdd4f3bdbf37b7b8a496f4ba8e85395806c41e065c6933528c2ad11",
           "contributions/codec-ogg.json": "sha256:eb7ddb19893b6958df00f28a4c9364205f9865e4318afe4fefca3efe9abd4fe5",
-          "contributions/codec-wav.json": "sha256:87bf2b497c23eba9c61a27971a78836cddd90d1163fea99f133a6bc08a0845f9",
+          "contributions/codec-wav.json": "sha256:b9a35b941c7b1442b60f35aa3beb1a91aaf12853f51baf67fe654855d38f3240",
           "package.json": "sha256:44743bfcbcf9f51ab7fb7b62e0c00343ecc962384f784b16c72d8ffc62b06d7c",
           "src/aac/codec.js": "sha256:8fd45809559754220cde4b64a0a51d35a9e0ce60f83b1557b16041321ca4d704",
           "src/flac/codec.js": "sha256:8b0f891618179b92e734e1774a24c910018c000fc2c36a90f418d94de3fdb800",
@@ -29714,9 +29782,11 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "src/m4a/codec.js": "sha256:6a30b4aa492b27d5b4ae8d94529ddee3f3f695fa39c3eb2ee10ac5c379fce097",
           "src/mp3/codec.js": "sha256:791b750035bfac4bf61ba89fc3c234e24461d946fa0abcb91fa07a5fb61ddb3f",
           "src/ogg/codec.js": "sha256:4615fe83734068e90591d68c46614b158c40cd1d10466e5f320170cea719e515",
-          "src/wav/codec.js": "sha256:8aac8c02b7ec948b4ff36dfa1a90e97c1de71e9127382a71e4f23fc59526ffe9"
+          "src/wav/codec.js": "sha256:4f00c2a91a81f4313d0547b761999e78b8e76b3458ebf30b48f7f71cd0e89201",
+          "src/wav/pcm.js": "sha256:f67d79a5e25ebd640be028b510fa09b84a9ba06ca0e4cc441026cf30beb48f37",
+          "test/wav-pcm-decode.test.ts": "sha256:69f5cada4c7a40bc0834dc4b52d03d2d9fcc47f71e406d8b399cc011b2de0c07"
         },
-        inventoryRecordId: "artifact:sha256:859afeaeca94d2dfd67338c1a9c235861b86a76cfcc0d8defad8ba605211ebca"
+        inventoryRecordId: "artifact:sha256:635314a89da917111341771b7cb0b96ec32fbdfd13666a752647e1816247c9bc"
       },
       artifactRoot: "extensions/audio/",
       containers: {
@@ -29789,7 +29859,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           "contributions/codec-wav.json",
-          "sha256:87bf2b497c23eba9c61a27971a78836cddd90d1163fea99f133a6bc08a0845f9"
+          "sha256:b9a35b941c7b1442b60f35aa3beb1a91aaf12853f51baf67fe654855d38f3240"
         ]
       ],
       documents: [
@@ -30512,7 +30582,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
             displayName: "WAV (RIFF)",
             id: "modkit/wav",
             limitations: [
-              "PCM integer and 32-bit float samples decode in-process; other RIFF/WAVE codecs require native host playback or an injected transcoder.",
+              "Decoded in-process through readPcm: linear PCM at 8/16/24/32 bits, IEEE float at 32/64 bits, and IMA ADPCM at 4 bits. Other RIFF/WAVE codecs (A-law, mu-law, MP3-in-RIFF and the rest) are reported by format tag and left to native host playback or an injected transcoder.",
               "Declarative routing is extension-first because manifest v1 cannot express the legacy extension-or-RIFF/WAVE-sniffer behavior without making the evidence conjunctive."
             ],
             runtimeVariants: [
@@ -30638,7 +30708,9 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         "src/m4a/codec.js",
         "src/mp3/codec.js",
         "src/ogg/codec.js",
-        "src/wav/codec.js"
+        "src/wav/codec.js",
+        "src/wav/pcm.js",
+        "test/wav-pcm-decode.test.ts"
       ],
       name: "audio",
       source: "extensions/audio"
@@ -33851,7 +33923,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: "sha256:76119b45d1ee64f11a9786d1798dccbd2a6cb6b19a472c4c98ac8f779ede61f2",
+        artifactDigest: "sha256:6a8e4a21b05eed00bbeae3b9370652916b5bcfe67b61dae21648576a366404f7",
         fileDigests: {
           "MIGRATION-NOTES-common-images.json": "sha256:44c30ea45aaceceff66d53f72e5e0d0ec8efb1a7f2afbc2f9913849720632e93",
           "README.md": "sha256:4f8426d4cb4a5a43b6b37cfb8d3262b2ce94a8ec1436d6d339e7f64dc3adadeb",
@@ -33861,7 +33933,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "contributions/codec-basis.json": "sha256:184ba7dd544a576e53ced752789b435a8d45dbf01b87c248a2e4cfbc3b03547c",
           "contributions/codec-bmp.json": "sha256:51e2e65724d780a313dfeb1072929d9cb9fc3c5230b7597e0a3384dc77523326",
           "contributions/codec-cur.json": "sha256:ca83a2ee185f99c30030382692eb875a4a7301aeb0d072a4bbf109f787d17bdf",
-          "contributions/codec-dds.json": "sha256:c8a01abcac581562cf3d9f951ac1f10152fe8fd026b57d8ce809defdbff66c4b",
+          "contributions/codec-dds.json": "sha256:303693201ab5d818e5c5e831a89895d433be7f0ac6c3c6b0a462295704c05749",
           "contributions/codec-exr.json": "sha256:377eb43959c01dff23c3117a6a1263a9797e91503b79e65a718d049336e6cca7",
           "contributions/codec-gif.json": "sha256:1e0055534bec3b25f02fb42204637d11c4d24447ff87474fbb8460c8703342f4",
           "contributions/codec-hdr.json": "sha256:f9a3809a8285db81095accabea92d22fec03a7aab43d17466f2ffd89a77581b8",
@@ -33886,7 +33958,8 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "src/basis/codec.js": "sha256:467f93b3b49ec4d0a3e7bdb23782949d6ec1126839cebdcde2cfbf25a11d7293",
           "src/bmp/codec.js": "sha256:5b53995e0429115ea6020430dc80c5bd70b208c6666392b7b0f57f9eef25917d",
           "src/cur/codec.js": "sha256:daf34dd18dd2ed3f13ea0d74668fc9c40bdda171899ee0667cd558c9f7fe24a9",
-          "src/dds/codec.js": "sha256:768a15f8f107aaf8c66d94dc0f0d2a4edf74dcb50f90001f218879641d069ab1",
+          "src/dds/codec.js": "sha256:0d482ac028af92426cd4ab3947e04410f5f4bf540df46e71608aeba27c20b36b",
+          "src/dds/layout.js": "sha256:feb37c0f0157512697eaa3f80b4b8545ac33d937ac2a37e95f13ca24e8d92e26",
           "src/exr/codec.js": "sha256:3c46fa55f1ca7aea4ff36011f91ff350832f174e6c82633c037d41cc09daf9a9",
           "src/gif/codec.js": "sha256:90b805088704746c1faf3e7e9166b9976bcf815944958dd8ebb3b51d9425250e",
           "src/hdr/codec.js": "sha256:ed851abdd3d36445a77e407e4b92c14bf7fa3490df00a65da3a69015c2292a94",
@@ -33911,9 +33984,10 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "test/astc-ordinary-ldr.test.ts": "sha256:d2fac9ba212cdebcb662337bad84d9ed32f5f94d578e7c727e11e0a17a593ae2",
           "test/astc-void-extent.test.ts": "sha256:ed0f8d41d2c64a3276ae4f53276ed49846354bf28cc03fd77adecab1931a3bd1",
           "test/codec-session.ts": "sha256:fa6bcdf1bc58315268af02ca9b02076ec655a28bee8a327cf6664f1f0ea163e6",
+          "test/dds-subresources.test.ts": "sha256:600156ad576f93af37451d373b93a488460f95642682c114feb6885f3ea9f8ff",
           "test/eac-r11-decode.test.ts": "sha256:2a0d83d3152224ce7ea530605bb9441912aa9be68b3b4ec60d1e51cb0e5beed4"
         },
-        inventoryRecordId: "artifact:sha256:76119b45d1ee64f11a9786d1798dccbd2a6cb6b19a472c4c98ac8f779ede61f2"
+        inventoryRecordId: "artifact:sha256:6a8e4a21b05eed00bbeae3b9370652916b5bcfe67b61dae21648576a366404f7"
       },
       artifactRoot: "extensions/images/",
       containers: {
@@ -33991,7 +34065,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           "contributions/codec-dds.json",
-          "sha256:c8a01abcac581562cf3d9f951ac1f10152fe8fd026b57d8ce809defdbff66c4b"
+          "sha256:303693201ab5d818e5c5e831a89895d433be7f0ac6c3c6b0a462295704c05749"
         ],
         [
           "contributions/codec-exr.json",
@@ -34833,9 +34907,10 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
             displayName: "DirectDraw Surface",
             id: "modkit/dds",
             limitations: [
-              "BC6H and BC7 decoding uses the package's asynchronous WASM-backed path; uncommon DXGI formats remain diagnostic-only.",
-              "Browser main-thread and module-worker software decode use an explicit URL-based ESM/WASM boundary; the host controls where those optional assets are deployed.",
-              "Mip, array-layer, cubemap-face, and volume-slice selection is available through the shared descriptor and generic viewer controls.",
+              "Decoded to pixels: BC1/BC2/BC3 (FourCC DXT1/DXT3/DXT5 and the equivalent DXGI numbers 70-78) and uncompressed RGB/RGBA masks at 24 or 32 bits.",
+              "NOT decoded: BC4, BC5, BC6H and BC7. The header parser recognises those DXGI numbers and refuses them by name; this package ships no decoder and no WASM for them, and the manifest no longer claims one.",
+              "Decode is pure JavaScript inside the codec runtime. There is no optional WASM asset, no URL-based ESM boundary and nothing for a host to deploy separately.",
+              "Mip, array-layer, cubemap-face and volume-slice selection is implemented: readRegion resolves any subresource the header declares and refuses out-of-range coordinates by name.",
               "Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global signature sniffing."
             ],
             runtimeVariants: [
@@ -37032,6 +37107,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         "src/bmp/codec.js",
         "src/cur/codec.js",
         "src/dds/codec.js",
+        "src/dds/layout.js",
         "src/exr/codec.js",
         "src/gif/codec.js",
         "src/hdr/codec.js",
@@ -37056,6 +37132,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         "test/astc-ordinary-ldr.test.ts",
         "test/astc-void-extent.test.ts",
         "test/codec-session.ts",
+        "test/dds-subresources.test.ts",
         "test/eac-r11-decode.test.ts"
       ],
       name: "images",
@@ -42078,23 +42155,23 @@ async function extensionSubjectRecordToWire(record4, signal) {
   return subjectRecordToWire(record4, signal);
 }
 function subjectFactsSourceFromWire(value2) {
-  const document = snapshotJson(value2, "extension subject card wire document");
-  if (document === null || typeof document !== "object" || Array.isArray(document)) {
+  const document2 = snapshotJson(value2, "extension subject card wire document");
+  if (document2 === null || typeof document2 !== "object" || Array.isArray(document2)) {
     fail5("extension subject card wire document must be an object");
   }
-  if (document.schemaVersion !== 1) {
+  if (document2.schemaVersion !== 1) {
     fail5("extension subject card wire schemaVersion must be 1");
   }
-  if (document.summary === null || typeof document.summary !== "object" || Array.isArray(document.summary)) {
+  if (document2.summary === null || typeof document2.summary !== "object" || Array.isArray(document2.summary)) {
     fail5("extension subject card wire summary must be an object");
   }
-  if (!Array.isArray(document.groups) || !Array.isArray(document.relations)) {
+  if (!Array.isArray(document2.groups) || !Array.isArray(document2.relations)) {
     fail5("extension subject card wire groups and relations must be lists");
   }
   const ids = /* @__PURE__ */ new Set();
   const groups = [];
   const entries = [];
-  for (const [index, wireGroup] of document.groups.entries()) {
+  for (const [index, wireGroup] of document2.groups.entries()) {
     if (wireGroup === null || typeof wireGroup !== "object" || Array.isArray(wireGroup)) {
       fail5(`extension subject card wire groups[${index}] must be an object`);
     }
@@ -42109,22 +42186,22 @@ function subjectFactsSourceFromWire(value2) {
     groups.push(Object.freeze({ id, label, factCount: wireGroup.factCount }));
     entries.push(Object.freeze({ groupId: id, items: wireGroup.facts }));
   }
-  if (document.summary.groupCount !== groups.length) {
+  if (document2.summary.groupCount !== groups.length) {
     fail5("extension subject card wire summary.groupCount does not match its groups");
   }
-  if (document.summary.relationCount !== document.relations.length) {
+  if (document2.summary.relationCount !== document2.relations.length) {
     fail5("extension subject card wire summary.relationCount does not match its relations");
   }
   return factsSource({
-    snapshotId: document.summary.snapshotId,
-    subjectId: document.summary.identity?.subjectId,
-    label: document.summary.identity?.label,
-    kind: document.summary.identity?.kind,
-    type: document.summary.identity?.type,
+    snapshotId: document2.summary.snapshotId,
+    subjectId: document2.summary.identity?.subjectId,
+    label: document2.summary.identity?.label,
+    kind: document2.summary.identity?.kind,
+    type: document2.summary.identity?.type,
     groups: Object.freeze(groups),
     facts: Object.freeze(entries),
-    relations: document.relations,
-    origin: document.summary.identity?.origins ?? Object.freeze([])
+    relations: document2.relations,
+    origin: document2.summary.identity?.origins ?? Object.freeze([])
   });
 }
 function contributionFacts(manifest, ownerId, enabled, effectiveEnabled, provenance) {
@@ -44532,8 +44609,8 @@ function concat(parts) {
   }
   return result;
 }
-function packUvmGlb(document, binary) {
-  const json = pad4(encoder5.encode(JSON.stringify(document)), 32);
+function packUvmGlb(document2, binary) {
+  const json = pad4(encoder5.encode(JSON.stringify(document2)), 32);
   const bin = pad4(binary, 0);
   const length = 12 + 8 + json.byteLength + 8 + bin.byteLength;
   return concat([
@@ -44920,7 +44997,7 @@ function materializeUvmCore(projection, request, { digest } = {}) {
     return value2;
   });
   const binary = buffers.build();
-  const document = {
+  const document2 = {
     asset: {
       version: "2.0",
       generator: `${MATERIALIZER_ID}/${MATERIALIZER_VERSION}`,
@@ -44957,7 +45034,7 @@ function materializeUvmCore(projection, request, { digest } = {}) {
     bufferViews: buffers.views,
     buffers: [{ byteLength: binary.byteLength }]
   };
-  const bytes2 = packUvmGlb(document, binary);
+  const bytes2 = packUvmGlb(document2, binary);
   const receipt = {
     materializer: {
       id: MATERIALIZER_ID,
@@ -44972,7 +45049,7 @@ function materializeUvmCore(projection, request, { digest } = {}) {
     diff,
     ...digest === void 0 ? {} : { artifactDigest: digest(bytes2) }
   };
-  return { bytes: bytes2, document, binary, receipt };
+  return { bytes: bytes2, document: document2, binary, receipt };
 }
 var MATERIALIZER_COORDINATE = Object.freeze({
   id: MATERIALIZER_ID,
@@ -48330,30 +48407,30 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // packages/ui/dist/workbench/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-function createWorkbench(document, options) {
+function createWorkbench(document2, options) {
   const localizer = withEnglishUiFallback(options.localizer, WORKBENCH_FALLBACK_MESSAGES);
-  const root = document.createElement("div");
+  const root = document2.createElement("div");
   root.className = "modkit-viewer modkit-workbench";
   setPart(root, "workbench");
   const embedded = options.embedded !== void 0 && options.embedded !== false;
   const includeAside = typeof options.embedded === "object" && options.embedded.aside === true;
   if (embedded)
     root.classList.add("modkit-workbench--embedded");
-  const titlebar = document.createElement("header");
+  const titlebar = document2.createElement("header");
   titlebar.textContent = safeViewerText(options.title, 256);
   setPart(titlebar, "workbench.titlebar");
-  const activitybar = document.createElement("nav");
+  const activitybar = document2.createElement("nav");
   activitybar.setAttribute("aria-label", localizer.text("workbench.activities"));
   setPart(activitybar, "workbench.activitybar");
-  const sidebar = document.createElement("aside");
+  const sidebar = document2.createElement("aside");
   setPart(sidebar, "workbench.sidebar");
-  const main = document.createElement("main");
+  const main = document2.createElement("main");
   setPart(main, "workbench.main");
-  const panel = document.createElement("section");
+  const panel = document2.createElement("section");
   setPart(panel, "workbench.panel");
-  const statusbar = document.createElement("footer");
+  const statusbar = document2.createElement("footer");
   setPart(statusbar, "workbench.statusbar");
-  const hostStatus = document.createElement("span");
+  const hostStatus = document2.createElement("span");
   setPart(hostStatus, "workbench.host-status");
   statusbar.append(hostStatus);
   if (embedded) {
@@ -48821,11 +48898,11 @@ async function loadManagedExtensionRoots(storage, options) {
       );
       continue;
     }
-    let document;
+    let document2;
     try {
       const bytes2 = await response2.arrayBuffer();
       const text3 = new TextDecoder("utf-8", { fatal: true }).decode(bytes2);
-      document = JSON.parse(text3);
+      document2 = JSON.parse(text3);
     } catch (error5) {
       failures.push(
         failure2(
@@ -48838,7 +48915,7 @@ async function loadManagedExtensionRoots(storage, options) {
     }
     let manifest;
     try {
-      const normalized = normalizeRepositoryManifest(document);
+      const normalized = normalizeRepositoryManifest(document2);
       if (!isNormalizedRepositoryManifest(normalized)) {
         throw new Error("repository normalizer returned an unsupported document");
       }
@@ -49914,8 +49991,8 @@ function createWebTopology(identity, probe = probeWebFacilities()) {
     ]
   });
 }
-function mountWebWorkbench(document, container, app, title, localizer = createWebLocalizer(globalThis.navigator?.languages)) {
-  const workbench = createWorkbench(document, {
+function mountWebWorkbench(document2, container, app, title, localizer = createWebLocalizer(globalThis.navigator?.languages)) {
+  const workbench = createWorkbench(document2, {
     localizer,
     title: title ?? localizer.text("app.title"),
     host: {
@@ -50670,7 +50747,7 @@ var MAXIMUM_TREE_TEXT = 2e5;
 function jsonText(value2, maximum = MAXIMUM_TREE_TEXT) {
   return safeViewerText(JSON.stringify(value2, null, 2), maximum);
 }
-function renderGameTemplatePreview(document, host, preview2, localizer = withEnglishUiFallback(void 0, TEMPLATE_FALLBACK_MESSAGES)) {
+function renderGameTemplatePreview(document2, host, preview2, localizer = withEnglishUiFallback(void 0, TEMPLATE_FALLBACK_MESSAGES)) {
   host.replaceChildren();
   host.dataset["templateKind"] = preview2.templateKind;
   host.dataset["completeness"] = preview2.completeness;
@@ -50704,7 +50781,7 @@ function renderGameTemplatePreview(document, host, preview2, localizer = withEng
   });
   const visible = preview2.displayItems.slice(0, MAXIMUM_DISPLAY_ITEMS);
   for (const item of visible) {
-    const row = document.createElement("li");
+    const row = document2.createElement("li");
     row.className = "modkit-template__item";
     row.setAttribute("data-mk-part", "tree.item");
     row.textContent = jsonText(item, 4096);
@@ -50721,11 +50798,11 @@ function renderGameTemplatePreview(document, host, preview2, localizer = withEng
       part: "viewer.status"
     });
   }
-  const details = document.createElement("details");
+  const details = document2.createElement("details");
   details.className = "modkit-template__details";
-  const summary = document.createElement("summary");
+  const summary = document2.createElement("summary");
   summary.textContent = localizer.text("viewer.resolvedSemanticTree");
-  const tree = document.createElement("pre");
+  const tree = document2.createElement("pre");
   tree.setAttribute("data-mk-part", "text");
   tree.textContent = jsonText(preview2.resolvedTree);
   details.append(summary, tree);
@@ -51161,20 +51238,76 @@ async function collectEncodedMedia(source2, maximumBytes, signal) {
 
 // packages/ui/dist/image/index.js
 var IMAGE_MAXIMUM_BYTES = 64 * 1024 * 1024;
-async function loadBitmap(source2, signal) {
-  const info = await source2.info(signal);
-  const decodedBytes = info.width * info.height * 4;
+var IMAGE_MAXIMUM_EXPORTED_SUBRESOURCES = 256;
+var ZERO_SUBRESOURCE = Object.freeze({
+  mipLevel: 0,
+  layer: 0,
+  face: 0,
+  slice: 0
+});
+var axisCount = (info, axis) => {
+  if (info === void 0)
+    return 1;
+  const counts = {
+    mipLevel: info.mipLevels,
+    layer: info.layers,
+    face: info.faces,
+    slice: info.depth
+  };
+  const value2 = counts[axis];
+  return Number.isSafeInteger(value2) && value2 > 0 ? value2 : 1;
+};
+function subresourceExtent(info, mipLevel) {
+  return {
+    width: Math.max(1, info.width >>> mipLevel),
+    height: Math.max(1, info.height >>> mipLevel)
+  };
+}
+function exportSafeName(value2) {
+  const cleaned = value2.replace(/[^A-Za-z0-9._-]+/gu, "-").replace(/\.{2,}/gu, ".");
+  const trimmed = cleaned.replace(/^[^A-Za-z0-9]+/u, "").slice(0, 96);
+  return trimmed.length === 0 ? "image" : trimmed;
+}
+function subresourceLabel(info, subresource) {
+  const parts = [`mip${subresource.mipLevel}`];
+  if (axisCount(info, "layer") > 1)
+    parts.push(`layer${subresource.layer}`);
+  if (axisCount(info, "face") > 1)
+    parts.push(`face${subresource.face}`);
+  if (axisCount(info, "slice") > 1)
+    parts.push(`slice${subresource.slice}`);
+  return parts.join("-");
+}
+function enumerateSubresources(info, maximum = IMAGE_MAXIMUM_EXPORTED_SUBRESOURCES) {
+  const all = [];
+  for (let layer = 0; layer < axisCount(info, "layer"); layer += 1) {
+    for (let face = 0; face < axisCount(info, "face"); face += 1) {
+      for (let mipLevel = 0; mipLevel < axisCount(info, "mipLevel"); mipLevel += 1) {
+        const depth = Math.max(1, axisCount(info, "slice") >>> mipLevel);
+        for (let slice = 0; slice < depth; slice += 1) {
+          if (all.length >= maximum)
+            return Object.freeze(all);
+          all.push(Object.freeze({ mipLevel, layer, face, slice }));
+        }
+      }
+    }
+  }
+  return Object.freeze(all);
+}
+async function loadSubresource(source2, info, subresource, signal) {
+  const extent = subresourceExtent(info, subresource.mipLevel);
+  const decodedBytes = extent.width * extent.height * 4;
   if (info.decodedAccess && source2.readRegion !== void 0 && Number.isSafeInteger(decodedBytes) && decodedBytes <= IMAGE_MAXIMUM_BYTES) {
     const region = await source2.readRegion({
       x: 0,
       y: 0,
-      width: info.width,
-      height: info.height,
+      width: extent.width,
+      height: extent.height,
       frame: 0,
-      mipLevel: 0,
-      layer: 0,
-      face: 0,
-      slice: 0,
+      mipLevel: subresource.mipLevel,
+      layer: subresource.layer,
+      face: subresource.face,
+      slice: subresource.slice,
       pixelFormat: "rgba8",
       maxBytes: IMAGE_MAXIMUM_BYTES
     }, signal);
@@ -51182,6 +51315,9 @@ async function loadBitmap(source2, signal) {
     pixels.set(region.pixels);
     const bitmap2 = await createImageBitmap(new ImageData(pixels, region.width, region.height));
     return { bitmap: bitmap2, bytes: region.pixels.byteLength };
+  }
+  if (subresource.mipLevel !== 0 || subresource.layer !== 0 || subresource.face !== 0 || subresource.slice !== 0) {
+    throw new TypeError("this image exposes no decoded subresources; only the base image is shown");
   }
   const encoded = await source2.encoded(signal);
   const media = await collectEncodedMedia(encoded, IMAGE_MAXIMUM_BYTES, signal);
@@ -51213,6 +51349,39 @@ function isolateChannel(context, width, height, channel) {
   }
   context.putImageData(frame, 0, 0);
 }
+function differenceOf(left, right) {
+  const width = Math.min(left.width, right.width);
+  const height = Math.min(left.height, right.height);
+  const output = new ImageData(width, height);
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const from = (y * width + x) * 4;
+      const a2 = (y * left.width + x) * 4;
+      const b2 = (y * right.width + x) * 4;
+      for (let channel = 0; channel < 3; channel += 1) {
+        output.data[from + channel] = Math.abs(left.data[a2 + channel] - right.data[b2 + channel]);
+      }
+      output.data[from + 3] = 255;
+    }
+  }
+  return output;
+}
+function metadataGroups(descriptor) {
+  return "identity" in descriptor ? descriptor.metadata ?? [] : [];
+}
+async function encodePng(bitmap) {
+  const canvas = document.createElement("canvas");
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
+  const context = canvas.getContext("2d");
+  if (context === null)
+    throw new TypeError("2d canvas context is unavailable");
+  context.drawImage(bitmap, 0, 0);
+  const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+  if (blob === null)
+    throw new TypeError("the platform encoder produced no PNG");
+  return new Uint8Array(await blob.arrayBuffer());
+}
 function createImageViewer(options = {}) {
   const localizer = withEnglishUiFallback(options.localizer, IMAGE_FALLBACK_MESSAGES);
   return defineViewerModule({
@@ -51223,21 +51392,62 @@ function createImageViewer(options = {}) {
       const stage = element(root, "div", { part: "image" });
       const toolbar = element(stage, "div", { part: "image.toolbar", role: "toolbar" });
       toolbar.setAttribute("aria-label", localizer.text("viewer.imageControls"));
+      const subresourceBar = element(stage, "div", {
+        part: "image.subresources",
+        role: "toolbar"
+      });
+      subresourceBar.setAttribute("aria-label", localizer.text("viewer.imageSubresources"));
       const readout = element(stage, "output", { part: "image.readout" });
       const canvas = element(stage, "canvas", { part: "image.canvas" });
       canvas.tabIndex = 0;
+      const facts = element(stage, "dl", { part: "image.metadata" });
       const lease2 = await unknownSourceLease(args.sources, args.slot, "common.view/raster-image-source");
       if (lease2 === void 0)
         throw new TypeError("image binding is unavailable");
       scope.lease(lease2);
+      const source2 = lease2.value;
+      let info;
       let model;
+      let comparison;
+      let subresource = ZERO_SUBRESOURCE;
+      let compareWith = ZERO_SUBRESOURCE;
+      let compare = "off";
       let zoom = 1;
       let fit = true;
+      let panX = 0;
+      let panY = 0;
       let background = "checker";
       let channel = "rgb";
+      let note = "";
+      const decoded = /* @__PURE__ */ new Map();
       const context = canvas.getContext("2d");
       if (context === null)
         throw new TypeError("2d canvas context is unavailable");
+      const key3 = (value2) => `${value2.mipLevel}/${value2.layer}/${value2.face}/${value2.slice}`;
+      const modelFor = async (value2) => {
+        const cached = decoded.get(key3(value2));
+        if (cached !== void 0)
+          return cached;
+        if (info === void 0)
+          throw new TypeError("image info is unavailable");
+        const loaded = await loadSubresource(source2, info, value2, scope.signal);
+        decoded.set(key3(value2), loaded);
+        return loaded;
+      };
+      const drawInto = (target, bitmap, x, y, width, height) => {
+        target.imageSmoothingEnabled = width < bitmap.width;
+        target.drawImage(bitmap, x, y, width, height);
+      };
+      const bitmapData = (bitmap) => {
+        const scratch = document.createElement("canvas");
+        scratch.width = bitmap.width;
+        scratch.height = bitmap.height;
+        const scratchContext = scratch.getContext("2d");
+        if (scratchContext === null)
+          throw new TypeError("2d canvas context is unavailable");
+        scratchContext.drawImage(bitmap, 0, 0);
+        return scratchContext.getImageData(0, 0, bitmap.width, bitmap.height);
+      };
       const paint = () => {
         if (model === void 0)
           return;
@@ -51245,33 +51455,59 @@ function createImageViewer(options = {}) {
         const box = stage.getBoundingClientRect();
         const available = {
           width: Math.max(64, box.width - 8),
-          height: Math.max(64, box.height - 96)
+          height: Math.max(64, box.height - 160)
         };
-        const scale = fit ? Math.min(available.width / bitmap.width, available.height / bitmap.height, 1) : zoom;
+        const wide = compare === "side-by-side" && comparison !== void 0;
+        const contentWidth = wide ? bitmap.width * 2 + 8 : bitmap.width;
+        const scale = fit ? Math.min(available.width / contentWidth, available.height / bitmap.height, 1) : zoom;
         const width = Math.max(1, Math.round(bitmap.width * scale));
         const height = Math.max(1, Math.round(bitmap.height * scale));
-        canvas.width = width;
+        const gap = wide ? 8 : 0;
+        canvas.width = wide ? width * 2 + gap : width;
         canvas.height = height;
-        setToken(canvas, "size.icon", `${Math.min(width, 4096)}px`);
-        context.imageSmoothingEnabled = scale < 1;
+        setToken(canvas, "size.icon", `${Math.min(canvas.width, 4096)}px`);
         if (background === "checker")
-          drawChecker(context, width, height);
+          drawChecker(context, canvas.width, canvas.height);
         else {
           context.fillStyle = background === "dark" ? "#141414" : "#f4f4f4";
-          context.fillRect(0, 0, width, height);
+          context.fillRect(0, 0, canvas.width, canvas.height);
         }
-        context.drawImage(bitmap, 0, 0, width, height);
-        isolateChannel(context, width, height, channel);
-        setViewerText(readout, localizer.text("viewer.imageSummary", {
+        if (compare === "diff" && comparison !== void 0) {
+          context.putImageData(differenceOf(bitmapData(bitmap), bitmapData(comparison.bitmap)), 0, 0);
+        } else {
+          drawInto(context, bitmap, panX, panY, width, height);
+          if (wide && comparison !== void 0) {
+            drawInto(context, comparison.bitmap, width + gap + panX, panY, width, height);
+          }
+        }
+        isolateChannel(context, canvas.width, canvas.height, channel);
+        setViewerText(readout, `${localizer.text("viewer.imageSummary", {
           width: bitmap.width,
           height: bitmap.height,
           size: (model.bytes / 1024).toFixed(1),
           scale: Math.round(scale * 100),
           channel: channel === "rgb" ? "" : localizer.text("viewer.imageChannel", { channel: channel.toUpperCase() })
-        }));
+        })} \xB7 ${localizer.text("viewer.imageSubresource", {
+          subresource: subresourceLabel(info, subresource)
+        })}${compare === "off" ? "" : ` \xB7 ${localizer.text("viewer.imageCompareWith", {
+          subresource: subresourceLabel(info, compareWith),
+          mode: compare
+        })}`}${note === "" ? "" : ` \xB7 ${note}`}`);
       };
-      const button = (label, title, onClick) => {
-        const node = element(toolbar, "button", {
+      const reload = () => {
+        void (async () => {
+          try {
+            model = await modelFor(subresource);
+            comparison = compare === "off" ? void 0 : await modelFor(compareWith);
+            note = "";
+          } catch (error5) {
+            note = error5 instanceof Error ? error5.message : String(error5);
+          }
+          paint();
+        })();
+      };
+      const button = (parent, label, title, onClick) => {
+        const node = element(parent, "button", {
           text: label,
           part: "operations.button"
         });
@@ -51282,33 +51518,173 @@ function createImageViewer(options = {}) {
           paint();
         });
         scope.cleanup(() => node.replaceWith(node.cloneNode(true)));
+        return node;
       };
-      button(localizer.text("viewer.fit"), localizer.text("viewer.fitTitle"), () => {
+      button(toolbar, localizer.text("viewer.fit"), localizer.text("viewer.fitTitle"), () => {
         fit = true;
+        panX = 0;
+        panY = 0;
       });
-      button("1:1", localizer.text("viewer.actualPixels"), () => {
+      button(toolbar, "1:1", localizer.text("viewer.actualPixels"), () => {
         fit = false;
         zoom = 1;
+        panX = 0;
+        panY = 0;
       });
-      button("\u2212", localizer.text("viewer.zoomOut"), () => {
+      button(toolbar, "\u2212", localizer.text("viewer.zoomOut"), () => {
         fit = false;
         zoom = Math.max(0.1, zoom / 1.5);
       });
-      button("+", localizer.text("viewer.zoomIn"), () => {
+      button(toolbar, "+", localizer.text("viewer.zoomIn"), () => {
         fit = false;
         zoom = Math.min(32, zoom * 1.5);
       });
-      button("BG", localizer.text("viewer.cycleBackdrop"), () => {
+      button(toolbar, "BG", localizer.text("viewer.cycleBackdrop"), () => {
         background = background === "checker" ? "dark" : background === "dark" ? "light" : "checker";
       });
       for (const value2 of ["rgb", "r", "g", "b", "a"]) {
-        button(value2.toUpperCase(), localizer.text("viewer.isolateChannel", { channel: value2.toUpperCase() }), () => {
+        button(toolbar, value2.toUpperCase(), localizer.text("viewer.isolateChannel", { channel: value2.toUpperCase() }), () => {
           channel = value2;
         });
       }
+      let dragging;
+      let originX = 0;
+      let originY = 0;
+      const onPointerDown = (event) => {
+        dragging = event.pointerId;
+        originX = event.clientX - panX;
+        originY = event.clientY - panY;
+        canvas.setPointerCapture(event.pointerId);
+      };
+      const onPointerMove = (event) => {
+        if (dragging !== event.pointerId)
+          return;
+        panX = event.clientX - originX;
+        panY = event.clientY - originY;
+        paint();
+      };
+      const onPointerUp = (event) => {
+        if (dragging !== event.pointerId)
+          return;
+        dragging = void 0;
+        canvas.releasePointerCapture(event.pointerId);
+      };
+      canvas.addEventListener("pointerdown", onPointerDown);
+      canvas.addEventListener("pointermove", onPointerMove);
+      canvas.addEventListener("pointerup", onPointerUp);
+      canvas.addEventListener("pointercancel", onPointerUp);
+      scope.cleanup(() => {
+        canvas.removeEventListener("pointerdown", onPointerDown);
+        canvas.removeEventListener("pointermove", onPointerMove);
+        canvas.removeEventListener("pointerup", onPointerUp);
+        canvas.removeEventListener("pointercancel", onPointerUp);
+      });
+      const renderSubresourceControls = () => {
+        subresourceBar.replaceChildren();
+        if (info === void 0)
+          return;
+        const axes = [
+          ["mipLevel", "mip"],
+          ["layer", "layer"],
+          ["face", "face"],
+          ["slice", "slice"]
+        ];
+        for (const [axis, name] of axes) {
+          const count2 = axisCount(info, axis);
+          if (count2 <= 1)
+            continue;
+          const step = (delta) => {
+            const next = Math.min(count2 - 1, Math.max(0, subresource[axis] + delta));
+            subresource = Object.freeze({ ...subresource, [axis]: next });
+            reload();
+          };
+          button(subresourceBar, `${name}\u2212`, localizer.text("viewer.imagePreviousSubresource", { axis: name }), () => step(-1));
+          button(subresourceBar, `${name}+`, localizer.text("viewer.imageNextSubresource", { axis: name }), () => step(1));
+        }
+        if (enumerateSubresources(info).length > 1) {
+          button(subresourceBar, localizer.text("viewer.imageCompare"), localizer.text("viewer.imageCompareTitle"), () => {
+            compare = compare === "off" ? "side-by-side" : compare === "side-by-side" ? "diff" : "off";
+            if (compare !== "off" && key3(compareWith) === key3(subresource)) {
+              compareWith = Object.freeze({
+                ...subresource,
+                mipLevel: Math.min(axisCount(info, "mipLevel") - 1, subresource.mipLevel + 1)
+              });
+            }
+            reload();
+          });
+        }
+        const canExport = options.exportBytes !== void 0;
+        const baseName = exportSafeName(options.exportBaseName === void 0 ? "image" : options.exportBaseName(args.descriptor));
+        const runExport = (all) => {
+          const write = options.exportBytes;
+          if (write === void 0 || info === void 0)
+            return;
+          note = localizer.text("viewer.imageExporting");
+          paint();
+          void (async () => {
+            try {
+              const wanted = all ? enumerateSubresources(info) : [subresource];
+              const files = [];
+              for (const value2 of wanted) {
+                const loaded = await modelFor(value2);
+                files.push({
+                  name: `${baseName}.${subresourceLabel(info, value2)}.png`,
+                  mediaType: "image/png",
+                  bytes: await encodePng(loaded.bitmap)
+                });
+              }
+              const outcome = await write(files, scope.signal);
+              note = outcome.state === "written" ? localizer.text("viewer.imageExported", { count: outcome.names.length }) : localizer.text("viewer.imageExportRefused", { reason: outcome.reason });
+            } catch (error5) {
+              note = localizer.text("viewer.imageExportRefused", {
+                reason: error5 instanceof Error ? error5.message : String(error5)
+              });
+            }
+            paint();
+          })();
+        };
+        const single = button(subresourceBar, localizer.text("viewer.imageExport"), localizer.text("viewer.imageExportTitle"), () => runExport(false));
+        const batch = button(subresourceBar, localizer.text("viewer.imageExportAll"), localizer.text("viewer.imageExportAllTitle"), () => runExport(true));
+        for (const node of [single, batch]) {
+          node.disabled = !canExport;
+          if (!canExport)
+            node.title = localizer.text("viewer.imageExportUnavailable");
+        }
+      };
+      const renderFacts = (descriptor) => {
+        facts.replaceChildren();
+        if (info !== void 0) {
+          for (const [label, value2] of [
+            ["size", `${info.width} \xD7 ${info.height}`],
+            ["mipLevels", String(axisCount(info, "mipLevel"))],
+            ["layers", String(axisCount(info, "layer"))],
+            ["faces", String(axisCount(info, "face"))],
+            ["depth", String(axisCount(info, "slice"))],
+            ["channels", `${info.channels} \xD7 ${info.bitDepth}-bit`],
+            ["alphaMode", String(info.alphaMode)],
+            ["colorSpace", String(info.colorSpace)]
+          ]) {
+            const row = element(facts, "div", { part: "metadata.row" });
+            element(row, "dt", { text: label, part: "metadata.label" });
+            const cell = element(row, "dd", { part: "metadata.value" });
+            setViewerText(cell, value2, 512);
+          }
+        }
+        for (const group2 of metadataGroups(descriptor)) {
+          for (const entry2 of group2.entries) {
+            const row = element(facts, "div", { part: "metadata.row" });
+            element(row, "dt", { text: `${group2.label} \xB7 ${entry2.key}`, part: "metadata.label" });
+            const cell = element(row, "dd", { part: "metadata.value" });
+            setViewerText(cell, entry2.value, 512);
+          }
+        }
+      };
       setState(stage, ["loading"]);
       try {
-        model = await loadBitmap(lease2.value, scope.signal);
+        info = await source2.info(scope.signal);
+        model = await modelFor(subresource);
+        renderSubresourceControls();
+        renderFacts(args.descriptor);
         setState(stage, []);
         paint();
       } catch (error5) {
@@ -51323,6 +51699,7 @@ function createImageViewer(options = {}) {
       }
       return createViewerMount(root, scope, args, ({ descriptor }) => {
         root.dataset["revision"] = descriptor.revision;
+        renderFacts(descriptor);
         paint();
       });
     }
@@ -51647,17 +52024,17 @@ var AXES = Object.freeze([
 ]);
 function createViewGizmo(host, options = {}) {
   const localizer = withEnglishUiFallback(options.localizer, MODEL_GIZMO_FALLBACK_MESSAGES);
-  const document = host.ownerDocument;
+  const document2 = host.ownerDocument;
   const root = element(host, "div", { part: "gizmo" });
   root.setAttribute("aria-label", localizer.text("viewer.viewAxis"));
   root.setAttribute("role", "group");
-  const svg = document.createElementNS(SVG_NS, "svg");
+  const svg = document2.createElementNS(SVG_NS, "svg");
   svg.setAttribute("width", String(GIZMO_SIZE));
   svg.setAttribute("height", String(GIZMO_SIZE));
   svg.setAttribute("viewBox", `0 0 ${GIZMO_SIZE} ${GIZMO_SIZE}`);
   setPart(svg, "gizmo.svg");
   root.append(svg);
-  const pivot = document.createElementNS(SVG_NS, "circle");
+  const pivot = document2.createElementNS(SVG_NS, "circle");
   pivot.setAttribute("cx", String(CENTER));
   pivot.setAttribute("cy", String(CENTER));
   pivot.setAttribute("r", "3");
@@ -51665,22 +52042,22 @@ function createViewGizmo(host, options = {}) {
   svg.append(pivot);
   const nodes = [];
   for (const spec of AXES) {
-    const line = document.createElementNS(SVG_NS, "line");
+    const line = document2.createElementNS(SVG_NS, "line");
     line.setAttribute("x1", String(CENTER));
     line.setAttribute("y1", String(CENTER));
     line.setAttribute("stroke", `var(${spec.token})`);
     line.setAttribute("stroke-linecap", "round");
     setPart(line, "gizmo.axis");
     svg.append(line);
-    const hit = document.createElementNS(SVG_NS, "g");
+    const hit = document2.createElementNS(SVG_NS, "g");
     hit.setAttribute("role", "button");
     hit.setAttribute("tabindex", "0");
     hit.setAttribute("aria-label", localizer.text("viewer.viewFromAxis", { axis: spec.key.toUpperCase() }));
     setPart(hit, "gizmo.handle");
-    const handle = document.createElementNS(SVG_NS, "circle");
+    const handle = document2.createElementNS(SVG_NS, "circle");
     handle.setAttribute("fill", `var(${spec.token})`);
     hit.append(handle);
-    const label = document.createElementNS(SVG_NS, "text");
+    const label = document2.createElementNS(SVG_NS, "text");
     label.setAttribute("text-anchor", "middle");
     label.setAttribute("dominant-baseline", "central");
     label.setAttribute("fill", "var(--mk-color-fg-inverse)");
@@ -52305,27 +52682,27 @@ async function loadRelationGraphOptions(source2, options) {
   };
 }
 var CATEGORICAL = 6;
-function createRelationGraph(document, options) {
+function createRelationGraph(document2, options) {
   const localizer = withEnglishUiFallback(options.localizer, GRAPH_FALLBACK_MESSAGES);
   const cap = options.cap ?? 500;
-  const root = document.createElement("div");
+  const root = document2.createElement("div");
   root.className = "modkit-graph";
   root.setAttribute("aria-label", options.label);
   setPart(root, "graph");
-  const sidebar = document.createElement("aside");
+  const sidebar = document2.createElement("aside");
   sidebar.className = "modkit-graph__sidebar";
   setPart(sidebar, "graph.sidebar");
-  const sidebarHead = document.createElement("div");
+  const sidebarHead = document2.createElement("div");
   sidebarHead.className = "modkit-graph__sidebar-head";
   setPart(sidebarHead, "graph.sidebar-head");
-  const heading = document.createElement("span");
+  const heading = document2.createElement("span");
   heading.textContent = localizer.text("graph.nodeTypes");
   sidebarHead.append(heading);
   for (const [label, all] of [
     [localizer.text("graph.all"), true],
     [localizer.text("graph.none"), false]
   ]) {
-    const button = document.createElement("button");
+    const button = document2.createElement("button");
     button.type = "button";
     button.textContent = label;
     button.addEventListener("click", () => {
@@ -52337,13 +52714,13 @@ function createRelationGraph(document, options) {
     sidebarHead.append(button);
   }
   sidebar.append(sidebarHead);
-  const filter = document.createElement("input");
+  const filter = document2.createElement("input");
   filter.type = "search";
   filter.placeholder = localizer.text("graph.filterClasses");
   filter.setAttribute("aria-label", localizer.text("graph.filterNodeTypes"));
   filter.className = "modkit-graph__filter";
   sidebar.append(filter);
-  const typeList = document.createElement("div");
+  const typeList = document2.createElement("div");
   typeList.className = "modkit-graph__types";
   typeList.setAttribute("role", "group");
   setPart(typeList, "graph.types");
@@ -52351,17 +52728,17 @@ function createRelationGraph(document, options) {
   const hidden = new Map(options.types.map((type) => [type.id, false]));
   const typeRows = /* @__PURE__ */ new Map();
   for (const type of options.types) {
-    const row = document.createElement("button");
+    const row = document2.createElement("button");
     row.type = "button";
     row.className = "modkit-graph__type";
     row.dataset["tone"] = String(type.tone % CATEGORICAL);
     setPart(row, "graph.type");
-    const swatch = document.createElement("span");
+    const swatch = document2.createElement("span");
     swatch.setAttribute("aria-hidden", "true");
     setPart(swatch, "graph.type-swatch");
-    const label = document.createElement("span");
+    const label = document2.createElement("span");
     label.textContent = safeViewerText(type.label, 64);
-    const count2 = document.createElement("span");
+    const count2 = document2.createElement("span");
     count2.textContent = String(type.count);
     setPart(count2, "graph.type-count");
     row.append(swatch, label, count2);
@@ -52388,26 +52765,26 @@ function createRelationGraph(document, options) {
       setState(row, off ? ["disabled"] : ["active"]);
     }
   };
-  const main = document.createElement("div");
+  const main = document2.createElement("div");
   main.className = "modkit-graph__main";
   setPart(main, "graph.main");
-  const controls = document.createElement("div");
+  const controls = document2.createElement("div");
   controls.className = "modkit-graph__controls";
   controls.setAttribute("role", "toolbar");
   controls.setAttribute("aria-label", localizer.text("graph.controls"));
   setPart(controls, "graph.controls");
-  const status = document.createElement("output");
+  const status = document2.createElement("output");
   status.className = "modkit-graph__status";
   setPart(status, "graph.status");
   controls.append(status);
   const control = (labelText, values, value2) => {
-    const wrapper = document.createElement("label");
+    const wrapper = document2.createElement("label");
     wrapper.className = "modkit-graph__control";
     setPart(wrapper, "graph.control");
-    wrapper.append(document.createTextNode(labelText));
-    const select = document.createElement("select");
+    wrapper.append(document2.createTextNode(labelText));
+    const select = document2.createElement("select");
     for (const item of values) {
-      const option = document.createElement("option");
+      const option = document2.createElement("option");
       option.value = item;
       option.textContent = item;
       select.append(option);
@@ -52417,19 +52794,19 @@ function createRelationGraph(document, options) {
     controls.append(wrapper);
     return select;
   };
-  const labelsWrapper = document.createElement("label");
+  const labelsWrapper = document2.createElement("label");
   labelsWrapper.className = "modkit-graph__control";
   setPart(labelsWrapper, "graph.control");
-  const labels = document.createElement("input");
+  const labels = document2.createElement("input");
   labels.type = "checkbox";
   labels.checked = true;
-  labelsWrapper.append(labels, document.createTextNode(localizer.text("graph.labels")));
+  labelsWrapper.append(labels, document2.createTextNode(localizer.text("graph.labels")));
   controls.append(labelsWrapper);
   const nodeChoices = [.../* @__PURE__ */ new Set([100, 250, 500, 1e3, cap])].sort((left, right) => left - right).map(String);
   const nodesCap = control(localizer.text("graph.nodes"), nodeChoices, String(cap));
   const rendererIds = ["canvas-2d", ...(options.renderers ?? []).map((item) => item.id)];
   const rendererSelect = control(localizer.text("graph.renderer"), [localizer.text("graph.canvas2d"), ...(options.renderers ?? []).map((item) => item.label)], localizer.text("graph.canvas2d"));
-  const reset = document.createElement("button");
+  const reset = document2.createElement("button");
   reset.type = "button";
   reset.textContent = localizer.text("graph.resetView");
   reset.addEventListener("click", () => {
@@ -52441,28 +52818,28 @@ function createRelationGraph(document, options) {
     draw();
   });
   controls.append(reset);
-  const canvas = document.createElement("canvas");
+  const canvas = document2.createElement("canvas");
   canvas.className = "modkit-graph__canvas";
   canvas.setAttribute("role", "img");
   canvas.tabIndex = 0;
   setPart(canvas, "graph.canvas");
-  const hint = document.createElement("p");
+  const hint = document2.createElement("p");
   hint.className = "modkit-graph__hint";
   hint.textContent = localizer.text(options.onOpen === void 0 ? "graph.hint" : "graph.hintOpen");
   setPart(hint, "graph.hint");
   main.append(controls, canvas, hint);
-  const footer = document.createElement("div");
+  const footer = document2.createElement("div");
   footer.className = "modkit-graph__footer";
   setPart(footer, "graph.footer");
   for (const group2 of options.footer ?? []) {
-    const box = document.createElement("section");
+    const box = document2.createElement("section");
     box.className = "modkit-graph__footer-group";
     setPart(box, "graph.footer-group");
-    const title = document.createElement("h4");
+    const title = document2.createElement("h4");
     title.textContent = safeViewerText(group2.title, 64);
     box.append(title);
     for (const item of group2.items) {
-      const row = document.createElement("div");
+      const row = document2.createElement("div");
       row.className = "modkit-graph__footer-item";
       setPart(row, "graph.footer-item");
       row.textContent = `${safeViewerText(item.label, 64)} (${item.count})`;
@@ -52642,7 +53019,7 @@ function createRelationGraph(document, options) {
   }
   labels.addEventListener("change", draw);
   let external;
-  const externalHost = document.createElement("div");
+  const externalHost = document2.createElement("div");
   externalHost.className = "modkit-graph__external";
   externalHost.hidden = true;
   setPart(externalHost, "graph.canvas");
@@ -52795,19 +53172,19 @@ function displayValue(value2, localizer) {
     return String(value2);
   return JSON.stringify(value2);
 }
-function text2(document, part, value2) {
-  const node = document.createElement("span");
+function text2(document2, part, value2) {
+  const node = document2.createElement("span");
   setPart(node, part);
   node.textContent = safeViewerText(value2, 2048);
   return node;
 }
-function createSubjectCalculationsView(document, snapshot3, options = {}) {
+function createSubjectCalculationsView(document2, snapshot3, options = {}) {
   const localizer = withEnglishUiFallback(options.localizer, CALCULATIONS_FALLBACK_MESSAGES);
-  const root = document.createElement("article");
+  const root = document2.createElement("article");
   root.className = "modkit-calculations";
   root.setAttribute("aria-label", localizer.text("calculations.label"));
   setPart(root, "calculations");
-  const summary = document.createElement("p");
+  const summary = document2.createElement("p");
   setPart(summary, "calculations.summary");
   const visible = snapshot3.calculations.length;
   summary.textContent = safeViewerText(localizer.text("calculations.progress", {
@@ -52819,33 +53196,33 @@ function createSubjectCalculationsView(document, snapshot3, options = {}) {
   if (snapshot3.capped || snapshot3.summary.completeness !== "complete")
     setState(summary, ["degraded"]);
   root.append(summary);
-  const list = document.createElement("div");
+  const list = document2.createElement("div");
   setPart(list, "calculations.list");
   root.append(list);
   for (const calculation of snapshot3.calculations) {
-    const item = document.createElement("section");
+    const item = document2.createElement("section");
     setPart(item, "calculations.item");
     item.dataset["status"] = calculation.status;
-    const heading = document.createElement("h3");
+    const heading = document2.createElement("h3");
     setPart(heading, "calculations.heading");
     heading.textContent = safeViewerText(calculation.label, 256);
-    const result = text2(document, "calculations.result", `${displayValue(calculation.value, localizer)}${calculation.unit === void 0 ? "" : ` ${calculation.unit}`} \xB7 ${calculation.status}`);
-    const formula = text2(document, "calculations.formula", `${calculation.formula.name} ${calculation.formula.version}: ${calculation.formula.expression}`);
+    const result = text2(document2, "calculations.result", `${displayValue(calculation.value, localizer)}${calculation.unit === void 0 ? "" : ` ${calculation.unit}`} \xB7 ${calculation.status}`);
+    const formula = text2(document2, "calculations.formula", `${calculation.formula.name} ${calculation.formula.version}: ${calculation.formula.expression}`);
     item.append(heading, result, formula);
     if (calculation.provenance.length > 0) {
-      item.append(text2(document, "calculations.formula", localizer.text("calculations.sources", {
+      item.append(text2(document2, "calculations.formula", localizer.text("calculations.sources", {
         sources: calculation.provenance.map((origin) => origin.label).join(" \xB7 ")
       })));
     }
     if (calculation.inputs.length > 0) {
-      const inputs = document.createElement("dl");
+      const inputs = document2.createElement("dl");
       setPart(inputs, "calculations.inputs");
       for (const input of calculation.inputs) {
-        const row = document.createElement("div");
+        const row = document2.createElement("div");
         setPart(row, "calculations.input");
-        const label = document.createElement("dt");
+        const label = document2.createElement("dt");
         label.textContent = safeViewerText(input.label, 256);
-        const value2 = document.createElement("dd");
+        const value2 = document2.createElement("dd");
         value2.textContent = safeViewerText(`${displayValue(input.value, localizer)}${input.unit === void 0 ? "" : ` ${input.unit}`} \xB7 ${input.state}${input.provenance.length === 0 ? "" : ` \xB7 ${input.provenance.map((origin) => origin.label).join(" \xB7 ")}`}`, 2048);
         row.append(label, value2);
         inputs.append(row);
@@ -52853,10 +53230,10 @@ function createSubjectCalculationsView(document, snapshot3, options = {}) {
       item.append(inputs);
     }
     if (calculation.warnings.length > 0) {
-      const warnings = document.createElement("ul");
+      const warnings = document2.createElement("ul");
       setPart(warnings, "calculations.warnings");
       for (const warning of calculation.warnings) {
-        const entry2 = document.createElement("li");
+        const entry2 = document2.createElement("li");
         entry2.textContent = safeViewerText(`${warning.code}: ${warning.message}`, 2048);
         warnings.append(entry2);
       }
@@ -52865,7 +53242,7 @@ function createSubjectCalculationsView(document, snapshot3, options = {}) {
     list.append(item);
   }
   if (snapshot3.calculations.length === 0) {
-    const empty = document.createElement("p");
+    const empty = document2.createElement("p");
     setPart(empty, "viewer.empty");
     empty.textContent = localizer.text("calculations.empty");
     list.append(empty);
@@ -52909,8 +53286,8 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // packages/ui/dist/primitives/accordion.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-function createAccordion(document, options) {
-  const root = document.createElement("div");
+function createAccordion(document2, options) {
+  const root = document2.createElement("div");
   root.className = "modkit-accordion";
   root.setAttribute("aria-label", options.label);
   setPart(root, "accordion");
@@ -52939,34 +53316,34 @@ function createAccordion(document, options) {
     }
   };
   for (const spec of options.sections) {
-    const section = document.createElement("section");
+    const section = document2.createElement("section");
     section.className = "modkit-accordion__section";
     section.dataset["sectionId"] = spec.id;
     setPart(section, "accordion.section");
-    const header = document.createElement("button");
+    const header = document2.createElement("button");
     header.type = "button";
     header.className = "modkit-accordion__header";
     header.setAttribute("aria-expanded", "false");
     setPart(header, "accordion.header");
-    const twisty = document.createElement("span");
+    const twisty = document2.createElement("span");
     twisty.className = "modkit-accordion__twisty";
     twisty.setAttribute("aria-hidden", "true");
     twisty.textContent = "\u203A";
     setPart(twisty, "accordion.twisty");
     header.append(twisty);
-    const title = document.createElement("span");
+    const title = document2.createElement("span");
     title.className = "modkit-accordion__title";
     title.textContent = safeViewerText(spec.title, 128);
     setPart(title, "accordion.title");
     header.append(title);
     if (spec.hint !== void 0) {
-      const hint = document.createElement("span");
+      const hint = document2.createElement("span");
       hint.className = "modkit-accordion__hint";
       hint.textContent = safeViewerText(spec.hint, 64);
       setPart(hint, "accordion.hint");
       header.append(hint);
     }
-    const body = document.createElement("div");
+    const body = document2.createElement("div");
     body.className = "modkit-accordion__body";
     body.hidden = true;
     setPart(body, "accordion.body");
@@ -53245,8 +53622,8 @@ async function loadSubjectCardSections(source2, options = {}) {
   }
   return Object.freeze(sections);
 }
-function ref(document, item, onNavigate) {
-  const node = document.createElement(onNavigate === void 0 ? "span" : "button");
+function ref(document2, item, onNavigate) {
+  const node = document2.createElement(onNavigate === void 0 ? "span" : "button");
   node.className = "modkit-card__ref";
   setPart(node, "card.ref");
   node.textContent = safeViewerText(item.label, 256);
@@ -53259,41 +53636,41 @@ function ref(document, item, onNavigate) {
   }
   return node;
 }
-function renderHeader(document, host, section, localizer, onNavigate) {
-  const header = document.createElement("div");
+function renderHeader(document2, host, section, localizer, onNavigate) {
+  const header = document2.createElement("div");
   header.className = "modkit-card__header";
   setPart(header, "card.header");
   if (section.portrait !== void 0) {
-    const portrait = document.createElement("div");
+    const portrait = document2.createElement("div");
     portrait.className = "modkit-card__portrait";
     portrait.setAttribute("aria-hidden", "true");
     portrait.textContent = safeViewerText(section.portrait, 8);
     setPart(portrait, "card.portrait");
     header.append(portrait);
   }
-  const identity = document.createElement("div");
+  const identity = document2.createElement("div");
   identity.className = "modkit-card__identity";
   setPart(identity, "card.identity");
   header.append(identity);
-  const title = document.createElement("h2");
+  const title = document2.createElement("h2");
   title.className = "modkit-card__title";
   title.textContent = safeViewerText(section.title, 256);
   setPart(title, "card.title");
   identity.append(title);
   if (section.refs !== void 0 && section.refs.length > 0) {
-    const subtitle = document.createElement("div");
+    const subtitle = document2.createElement("div");
     subtitle.className = "modkit-card__subtitle";
     setPart(subtitle, "card.subtitle");
     for (const item of section.refs)
-      subtitle.append(ref(document, item, onNavigate));
+      subtitle.append(ref(document2, item, onNavigate));
     identity.append(subtitle);
   }
   if (section.chips !== void 0 && section.chips.length > 0) {
-    const chips = document.createElement("div");
+    const chips = document2.createElement("div");
     chips.className = "modkit-card__chips";
     setPart(chips, "card.chips");
     for (const chip of section.chips) {
-      const node = document.createElement("span");
+      const node = document2.createElement("span");
       node.className = "modkit-card__chip";
       node.textContent = safeViewerText(chip.label, 64);
       node.dataset["tone"] = chip.tone ?? "accent";
@@ -53303,40 +53680,40 @@ function renderHeader(document, host, section, localizer, onNavigate) {
     identity.append(chips);
   }
   if (section.description !== void 0) {
-    const description = document.createElement("p");
+    const description = document2.createElement("p");
     description.className = "modkit-card__description";
     description.textContent = safeViewerText(section.description, 2048);
     setPart(description, "card.description");
     identity.append(description);
   }
   for (const note of section.notes ?? []) {
-    const node = document.createElement("p");
+    const node = document2.createElement("p");
     node.className = "modkit-card__note";
     node.textContent = safeViewerText(note, 512);
     setPart(node, "card.note");
     identity.append(node);
   }
   if (section.stats !== void 0 && section.stats.length > 0) {
-    const row = document.createElement("div");
+    const row = document2.createElement("div");
     row.className = "modkit-card__statrow";
     setPart(row, "card.statrow");
     for (const stat of section.stats) {
-      const cell = document.createElement("span");
+      const cell = document2.createElement("span");
       cell.className = "modkit-card__stat";
       cell.dataset["tone"] = stat.tone ?? "neutral";
       if (stat.title !== void 0)
         cell.title = stat.title;
       setPart(cell, "card.stat");
-      const icon = document.createElement("span");
+      const icon = document2.createElement("span");
       icon.setAttribute("aria-hidden", "true");
       icon.textContent = safeViewerText(stat.icon, 4);
       setPart(icon, "card.stat-icon");
-      const value2 = document.createElement("span");
+      const value2 = document2.createElement("span");
       value2.textContent = safeViewerText(stat.value, 32);
       setPart(value2, "card.stat-value");
       cell.append(icon, value2);
       if (stat.delta !== void 0) {
-        const delta = document.createElement("span");
+        const delta = document2.createElement("span");
         delta.textContent = safeViewerText(stat.delta, 32);
         setPart(delta, "card.stat-delta");
         cell.append(delta);
@@ -53346,12 +53723,12 @@ function renderHeader(document, host, section, localizer, onNavigate) {
     identity.append(row);
   }
   if (section.aside !== void 0) {
-    const select = document.createElement("select");
+    const select = document2.createElement("select");
     select.className = "modkit-card__locale";
     select.setAttribute("aria-label", localizer.text("card.locale"));
     setPart(select, "card.locale");
     for (const option of section.aside.options) {
-      const node = document.createElement("option");
+      const node = document2.createElement("option");
       node.value = option;
       node.textContent = safeViewerText(option, 32);
       select.append(node);
@@ -53363,28 +53740,28 @@ function renderHeader(document, host, section, localizer, onNavigate) {
   }
   host.append(header);
 }
-function renderFields(document, host, fields, inspectKnowledge, onNavigate) {
-  const list = document.createElement("div");
+function renderFields(document2, host, fields, inspectKnowledge, onNavigate) {
+  const list = document2.createElement("div");
   list.className = "modkit-card__fields";
   list.setAttribute("role", "table");
   setPart(list, "card.fields");
   for (const field of fields) {
-    const row = document.createElement("div");
+    const row = document2.createElement("div");
     row.className = "modkit-card__field";
     setPart(row, "card.field");
     row.tabIndex = 0;
     if (field.title !== void 0)
       row.title = field.title;
-    const name = field.ref === void 0 ? document.createElement("span") : ref(document, field.ref, onNavigate);
+    const name = field.ref === void 0 ? document2.createElement("span") : ref(document2, field.ref, onNavigate);
     if (field.ref === void 0)
       name.textContent = safeViewerText(field.name, 128);
     setPart(name, "card.field-name");
-    const value2 = document.createElement("span");
+    const value2 = document2.createElement("span");
     value2.textContent = safeViewerText(field.value, 2048);
     setPart(value2, "card.field-value");
     row.append(name, value2);
     if (field.badge !== void 0) {
-      const badge = document.createElement("span");
+      const badge = document2.createElement("span");
       badge.className = "modkit-card__chip";
       badge.dataset["tone"] = "neutral";
       badge.textContent = safeViewerText(field.badge, 48);
@@ -53400,16 +53777,16 @@ function renderFields(document, host, fields, inspectKnowledge, onNavigate) {
   }
   host.append(list);
 }
-function createSubjectCard(document, options) {
+function createSubjectCard(document2, options) {
   const localizer = withEnglishUiFallback(options.localizer, CARD_FALLBACK_MESSAGES);
-  const root = document.createElement("article");
+  const root = document2.createElement("article");
   root.className = "modkit-card";
   root.setAttribute("aria-label", localizer.text("card.namedSubject", { label: options.label }));
   setPart(root, "card");
   const header = options.sections.find((section) => section.kind === "header");
   if (header !== void 0)
-    renderHeader(document, root, header, localizer, options.onNavigate);
-  const knowledge = document.createElement("aside");
+    renderHeader(document2, root, header, localizer, options.onNavigate);
+  const knowledge = document2.createElement("aside");
   knowledge.className = "modkit-card__knowledge";
   knowledge.setAttribute("role", "status");
   knowledge.setAttribute("aria-live", "polite");
@@ -53447,14 +53824,14 @@ function createSubjectCard(document, options) {
   const showKnowledge = (hit) => {
     knowledge.dataset["knowledgeState"] = "resolved";
     knowledge.replaceChildren();
-    const summary = document.createElement("span");
+    const summary = document2.createElement("span");
     summary.textContent = safeViewerText(hit.entry.summary, 512);
     knowledge.append(summary);
     const source2 = directSource(hit);
     if (source2 === void 0)
       return;
-    knowledge.append(document.createTextNode(" "));
-    const link = document.createElement("a");
+    knowledge.append(document2.createTextNode(" "));
+    const link = document2.createElement("a");
     link.href = source2.url.href;
     link.target = "_blank";
     link.rel = "noopener noreferrer";
@@ -53493,7 +53870,7 @@ function createSubjectCard(document, options) {
     })();
   };
   const collapsible = options.sections.filter((section) => section.kind !== "header");
-  const accordion = createAccordion(document, {
+  const accordion = createAccordion(document2, {
     label: localizer.text("card.sections", { label: options.label }),
     sections: collapsible.map((section) => ({
       id: section.id,
@@ -53503,31 +53880,31 @@ function createSubjectCard(document, options) {
         setPart(panel.parentElement ?? panel, "accordion.section");
         switch (section.kind) {
           case "fields":
-            renderFields(document, panel, section.fields, options.knowledge === void 0 ? void 0 : inspectKnowledge, options.onNavigate);
+            renderFields(document2, panel, section.fields, options.knowledge === void 0 ? void 0 : inspectKnowledge, options.onNavigate);
             return;
           case "links": {
-            const list = document.createElement("div");
+            const list = document2.createElement("div");
             list.className = "modkit-card__links";
             setPart(list, "card.links");
             if (section.lead !== void 0) {
-              const lead = document.createElement("span");
+              const lead = document2.createElement("span");
               lead.textContent = safeViewerText(section.lead, 256);
               setPart(lead, "card.link-item");
               list.append(lead);
             }
             for (const link of section.links)
-              list.append(ref(document, link, options.onNavigate));
+              list.append(ref(document2, link, options.onNavigate));
             panel.append(list);
             return;
           }
           case "grid": {
-            const grid = document.createElement("div");
+            const grid = document2.createElement("div");
             grid.className = "modkit-card__grid";
             grid.setAttribute("role", "grid");
             setPart(grid, "card.grid");
             setToken(grid, "card.grid-columns", String(section.columns));
             for (const cell of section.cells) {
-              const node = document.createElement("button");
+              const node = document2.createElement("button");
               node.type = "button";
               node.className = "modkit-card__grid-cell";
               node.disabled = cell.empty === true;
@@ -53537,14 +53914,14 @@ function createSubjectCard(document, options) {
               if (cell.label !== void 0)
                 node.title = cell.label;
               if (cell.hotkey !== void 0) {
-                const hotkey = document.createElement("span");
+                const hotkey = document2.createElement("span");
                 hotkey.setAttribute("aria-hidden", "true");
                 hotkey.textContent = safeViewerText(cell.hotkey, 2);
                 setPart(hotkey, "card.grid-hotkey");
                 node.append(hotkey);
               }
               if (cell.icon !== void 0) {
-                const icon = document.createElement("span");
+                const icon = document2.createElement("span");
                 icon.textContent = safeViewerText(cell.icon, 4);
                 setPart(icon, "card.grid-icon");
                 node.append(icon);
@@ -53556,41 +53933,41 @@ function createSubjectCard(document, options) {
             return;
           }
           case "cards": {
-            const list = document.createElement("div");
+            const list = document2.createElement("div");
             list.className = "modkit-card__subcards";
             setPart(list, "card.subcards");
             for (const card of section.cards) {
-              const item = document.createElement("div");
+              const item = document2.createElement("div");
               item.className = "modkit-card__subcard";
               setPart(item, "card.subcard");
-              const head = document.createElement("div");
+              const head = document2.createElement("div");
               head.className = "modkit-card__subcard-head";
               setPart(head, "card.subcard-head");
               if (card.icon !== void 0) {
-                const icon = document.createElement("span");
+                const icon = document2.createElement("span");
                 icon.setAttribute("aria-hidden", "true");
                 icon.textContent = safeViewerText(card.icon, 4);
                 setPart(icon, "card.stat-icon");
                 head.append(icon);
               }
               head.append(card.ref === void 0 ? (() => {
-                const title = document.createElement("span");
+                const title = document2.createElement("span");
                 title.textContent = safeViewerText(card.title, 128);
                 setPart(title, "card.ref");
                 return title;
-              })() : ref(document, { ...card.ref, label: card.title }, options.onNavigate));
+              })() : ref(document2, { ...card.ref, label: card.title }, options.onNavigate));
               if (card.badge !== void 0) {
-                const badge = document.createElement("span");
+                const badge = document2.createElement("span");
                 badge.className = "modkit-card__chip";
                 badge.dataset["tone"] = "neutral";
                 badge.textContent = safeViewerText(card.badge, 64);
                 setPart(badge, "card.chip");
                 head.append(badge);
               }
-              const body = document.createElement("div");
+              const body = document2.createElement("div");
               body.className = "modkit-card__subcard-body";
               setPart(body, "card.subcard-body");
-              renderFields(document, body, card.fields, inspectKnowledge);
+              renderFields(document2, body, card.fields, inspectKnowledge);
               item.append(head, body);
               list.append(item);
             }
@@ -53598,7 +53975,7 @@ function createSubjectCard(document, options) {
             return;
           }
           case "text": {
-            const pre = document.createElement("pre");
+            const pre = document2.createElement("pre");
             pre.className = "modkit-card__text";
             pre.textContent = safeViewerText(section.text, 2e5);
             setPart(pre, "text");
@@ -53606,7 +53983,7 @@ function createSubjectCard(document, options) {
             return;
           }
           case "custom": {
-            const host = document.createElement("div");
+            const host = document2.createElement("div");
             host.className = "modkit-card__custom";
             setPart(host, "card.custom");
             panel.append(host);
@@ -54220,6 +54597,9 @@ var transportViewer = createTransportViewer();
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var AUDIO_MAXIMUM_BYTES = 96 * 1024 * 1024;
 var WAVEFORM_BUCKETS = 900;
+var AUDIO_MAXIMUM_PCM_FRAMES = 10 * 60 * 48e3;
+var AUDIO_PCM_WINDOW_FRAMES = 1 << 18;
+var AUDIO_RATES = Object.freeze([0.5, 0.75, 1, 1.25, 1.5, 2]);
 function computePeaks(channelData, buckets) {
   const frames = channelData[0]?.length ?? 0;
   const peaks = new Float32Array(buckets * 2);
@@ -54245,30 +54625,118 @@ function computePeaks(channelData, buckets) {
   }
   return peaks;
 }
-async function loadWaveform(source2, signal) {
-  const encoded = await source2.encoded(void 0, signal);
-  const media = await collectEncodedMedia(encoded, AUDIO_MAXIMUM_BYTES, signal);
-  const AudioContextCtor = globalThis.AudioContext ?? globalThis.webkitAudioContext;
+function audioContextConstructor() {
+  return globalThis.AudioContext ?? globalThis.webkitAudioContext;
+}
+async function collectCodecPcm(source2, trackId, signal, onFrames = () => void 0) {
+  if (source2.readPcm === void 0)
+    throw new TypeError("this source exposes no PCM");
+  const windows = [];
+  let sampleRate = 0;
+  let channelCount = 0;
+  let frames = 0;
+  const maximumWindows = Math.ceil(AUDIO_MAXIMUM_PCM_FRAMES / AUDIO_PCM_WINDOW_FRAMES) + 1;
+  for (let from = 0; frames < AUDIO_MAXIMUM_PCM_FRAMES; ) {
+    if (windows.length >= maximumWindows) {
+      throw new TypeError(`the codec returned ${windows.length} PCM windows without reaching the end of the track`);
+    }
+    const block = await source2.readPcm({
+      trackId,
+      fromFrame: BigInt(from),
+      frameCount: Math.min(AUDIO_PCM_WINDOW_FRAMES, AUDIO_MAXIMUM_PCM_FRAMES - frames),
+      maxBytes: AUDIO_MAXIMUM_BYTES
+    }, signal);
+    if (block.frameCount === 0)
+      break;
+    if (block.fromFrame !== BigInt(from)) {
+      throw new TypeError(`the codec answered from frame ${String(block.fromFrame)} when frame ${from} was requested`);
+    }
+    if (!Number.isSafeInteger(block.frameCount) || block.frameCount < 0) {
+      throw new TypeError(`the codec reported ${String(block.frameCount)} PCM frames`);
+    }
+    if (!Number.isSafeInteger(block.channelCount) || block.channelCount <= 0) {
+      throw new TypeError(`the codec reported ${String(block.channelCount)} channels`);
+    }
+    if (block.samples.length !== block.frameCount * block.channelCount) {
+      throw new TypeError(`the codec sent ${block.samples.length} samples for ${block.frameCount} frames of ${block.channelCount} channels`);
+    }
+    sampleRate = block.sampleRate;
+    channelCount = block.channelCount;
+    windows.push({ samples: block.samples, frameCount: block.frameCount });
+    frames += block.frameCount;
+    from += block.frameCount;
+    onFrames(frames);
+  }
+  if (frames === 0 || sampleRate <= 0)
+    throw new TypeError("the codec decoded no PCM frames");
+  const channels = Array.from({ length: channelCount }, () => new Float32Array(frames));
+  let offset = 0;
+  for (const window of windows) {
+    for (let frame = 0; frame < window.frameCount; frame += 1) {
+      for (let channel = 0; channel < channelCount; channel += 1) {
+        const target = channels[channel];
+        if (target !== void 0) {
+          target[offset + frame] = window.samples[frame * channelCount + channel];
+        }
+      }
+    }
+    offset += window.frameCount;
+  }
+  return { sampleRate, channels };
+}
+async function loadWaveform(source2, signal, onPhase = () => void 0) {
+  onPhase("info");
+  const info = await source2.info(signal);
+  const AudioContextCtor = audioContextConstructor();
   if (AudioContextCtor === void 0)
     throw new TypeError("no platform audio decoder is available");
   const context = new AudioContextCtor();
+  let disposed = false;
   try {
-    const copy = media.bytes.slice().buffer;
-    const buffer = await context.decodeAudioData(copy);
+    const track = info.tracks.find((item) => item.selected) ?? info.tracks[0];
+    let buffer;
+    let decodedBy;
+    let encodedMedia;
+    let sizeBytes;
+    if (info.pcmAccess && source2.readPcm !== void 0 && track !== void 0) {
+      onPhase("codec-pcm");
+      const pcm = await collectCodecPcm(source2, track.id, signal, (frames2) => onPhase(`codec-pcm:${frames2}`));
+      const frames = pcm.channels[0]?.length ?? 0;
+      buffer = context.createBuffer(Math.max(1, pcm.channels.length), frames, pcm.sampleRate);
+      for (const [index, channel] of pcm.channels.entries()) {
+        buffer.copyToChannel(channel, index);
+      }
+      sizeBytes = frames * Math.max(1, pcm.channels.length) * 4;
+      decodedBy = "codec-pcm";
+    } else {
+      onPhase("encoded");
+      const lease2 = await source2.encoded(void 0, signal);
+      const media = await collectEncodedMedia(lease2, AUDIO_MAXIMUM_BYTES, signal);
+      encodedMedia = { mediaType: media.mediaType, bytes: media.bytes };
+      sizeBytes = media.bytes.byteLength;
+      onPhase("platform-decode");
+      buffer = await context.decodeAudioData(media.bytes.slice().buffer);
+      decodedBy = "platform-decoder";
+    }
     const channels = Array.from({ length: buffer.numberOfChannels }, (_, index) => buffer.getChannelData(index));
+    onPhase("ready");
+    disposed = true;
     return {
       model: {
         peaks: computePeaks(channels, WAVEFORM_BUCKETS),
         duration: buffer.duration,
         channels: buffer.numberOfChannels,
         sampleRate: buffer.sampleRate,
-        bytes: media.bytes.byteLength
+        bytes: sizeBytes
       },
-      mediaType: media.mediaType,
-      bytes: media.bytes
+      ...encodedMedia === void 0 ? {} : { encoded: encodedMedia },
+      buffer,
+      context,
+      decodedBy
     };
   } finally {
-    await context.close();
+    if (!disposed)
+      await context.close();
   }
 }
 var clock = (seconds) => {
@@ -54296,6 +54764,13 @@ function createAudioViewer(options = {}) {
       scope.lease(lease2);
       let model;
       let cursor4 = 0;
+      let audio;
+      let buffer;
+      let voice;
+      let rate = 1;
+      let playing = false;
+      let startedAt = 0;
+      let decodedBy = "none";
       const context = canvas.getContext("2d");
       if (context === null)
         throw new TypeError("2d canvas context is unavailable");
@@ -54332,28 +54807,142 @@ function createAudioViewer(options = {}) {
           context.fillStyle = styles.getPropertyValue("--mk-color-accent").trim() || "#0078d4";
           context.fillRect(Math.round(cursor4 / model.duration * width), 0, 2, height);
         }
-        setViewerText(readout, localizer.text("viewer.audioSummary", {
+        setViewerText(readout, `${localizer.text("viewer.audioSummary", {
           position: clock(cursor4),
           duration: clock(model.duration),
           channels: model.channels,
           rate: (model.sampleRate / 1e3).toFixed(1),
           size: (model.bytes / 1024).toFixed(0)
-        }));
+        })} \xB7 ${localizer.text("viewer.audioTransport", {
+          state: localizer.text(playing ? "viewer.audioPlaying" : "viewer.audioPaused"),
+          speed: rate.toFixed(2),
+          decoder: decodedBy
+        })}`);
+        stage.dataset["transport"] = playing ? "playing" : "paused";
+        stage.dataset["audioContext"] = audio?.state ?? "none";
+        stage.dataset["rate"] = rate.toFixed(2);
+        stage.dataset["decoder"] = decodedBy;
+        stage.dataset["position"] = position().toFixed(3);
       };
+      const position = () => {
+        if (model === void 0)
+          return 0;
+        if (!playing || audio === void 0)
+          return cursor4;
+        return Math.min(model.duration, cursor4 + (audio.currentTime - startedAt) * rate);
+      };
+      const stopVoice = () => {
+        if (voice === void 0)
+          return;
+        voice.onended = null;
+        try {
+          voice.stop();
+        } catch {
+        }
+        voice.disconnect();
+        voice = void 0;
+      };
+      const pause = () => {
+        if (!playing)
+          return;
+        cursor4 = position();
+        playing = false;
+        stopVoice();
+        player.pause();
+      };
+      const play = () => {
+        if (playing || model === void 0)
+          return;
+        if (audio !== void 0 && buffer !== void 0) {
+          void audio.resume().catch(() => void 0);
+          const next = audio.createBufferSource();
+          next.buffer = buffer;
+          next.playbackRate.value = rate;
+          next.connect(audio.destination);
+          next.onended = () => {
+            if (voice !== next)
+              return;
+            playing = false;
+            cursor4 = 0;
+            voice = void 0;
+            paint();
+          };
+          startedAt = audio.currentTime;
+          next.start(0, Math.min(cursor4, Math.max(0, buffer.duration - 1e-3)));
+          voice = next;
+        } else {
+          player.playbackRate = rate;
+          player.currentTime = cursor4;
+          void player.play().catch(() => void 0);
+        }
+        playing = true;
+      };
+      const transportButton = (label, title, onClick) => {
+        const node = element(toolbar, "button", {
+          text: label,
+          part: "operations.button"
+        });
+        node.type = "button";
+        node.title = title;
+        node.addEventListener("click", () => {
+          onClick();
+          paint();
+        });
+        scope.cleanup(() => node.replaceWith(node.cloneNode(true)));
+      };
+      transportButton("\u25B6", localizer.text("viewer.audioPlay"), () => play());
+      transportButton("\u23F8", localizer.text("viewer.audioPause"), () => pause());
+      transportButton("\u23EE", localizer.text("viewer.audioRestart"), () => {
+        pause();
+        cursor4 = 0;
+      });
+      transportButton("\xD7", localizer.text("viewer.audioCycleRate"), () => {
+        const index = AUDIO_RATES.indexOf(rate);
+        rate = AUDIO_RATES[(index + 1) % AUDIO_RATES.length] ?? 1;
+        if (playing) {
+          pause();
+          play();
+        } else if (voice === void 0) {
+          player.playbackRate = rate;
+        }
+      });
       canvas.addEventListener("click", (event) => {
         if (model === void 0)
           return;
         const box = canvas.getBoundingClientRect();
+        const wasPlaying = playing;
+        pause();
         cursor4 = (event.clientX - box.left) / box.width * model.duration;
+        if (wasPlaying)
+          play();
         paint();
       });
+      const tick = setInterval(() => {
+        if (playing)
+          paint();
+      }, 200);
+      scope.cleanup(() => {
+        clearInterval(tick);
+        stopVoice();
+        void audio?.close().catch(() => void 0);
+      });
       setState(stage, ["loading"]);
+      stage.dataset["phase"] = "loading";
       try {
-        const loaded = await loadWaveform(lease2.value, scope.signal);
+        const loaded = await loadWaveform(lease2.value, scope.signal, (phase) => {
+          stage.dataset["phase"] = phase;
+        });
         model = loaded.model;
-        const objectUrl = URL.createObjectURL(new Blob([loaded.bytes], { type: loaded.mediaType }));
-        player.src = objectUrl;
-        scope.cleanup(() => URL.revokeObjectURL(objectUrl));
+        audio = loaded.context;
+        buffer = loaded.buffer;
+        decodedBy = loaded.decodedBy;
+        if (loaded.decodedBy === "platform-decoder" && loaded.encoded !== void 0) {
+          const objectUrl = URL.createObjectURL(new Blob([loaded.encoded.bytes], { type: loaded.encoded.mediaType }));
+          player.src = objectUrl;
+          scope.cleanup(() => URL.revokeObjectURL(objectUrl));
+        } else {
+          player.remove();
+        }
         setState(stage, []);
         paint();
       } catch (error5) {
@@ -54476,18 +55065,18 @@ function createVectorViewer(options = {}) {
       setState(stage, ["loading"]);
       try {
         const source2 = lease2.value;
-        const [info, document] = await Promise.all([
+        const [info, document2] = await Promise.all([
           source2.info(scope.signal),
           source2.document(scope.signal)
         ]);
-        if (document.profile !== "uvg.secure-static.v1") {
-          throw new TypeError(`unsupported vector security profile ${document.profile}`);
+        if (document2.profile !== "uvg.secure-static.v1") {
+          throw new TypeError(`unsupported vector security profile ${document2.profile}`);
         }
-        const textBytes = new TextEncoder().encode(document.text).byteLength;
+        const textBytes = new TextEncoder().encode(document2.text).byteLength;
         if (textBytes > VECTOR_MAXIMUM_TEXT_BYTES) {
           throw new RangeError(`vector document exceeds the stage budget: ${textBytes} bytes`);
         }
-        const objectUrl = URL.createObjectURL(new Blob([document.text], { type: `${document.mediaType};charset=utf-8` }));
+        const objectUrl = URL.createObjectURL(new Blob([document2.text], { type: `${document2.mediaType};charset=utf-8` }));
         image.src = objectUrl;
         scope.cleanup(() => URL.revokeObjectURL(objectUrl));
         setViewerText(readout, localizer.text("viewer.vectorSummary", {

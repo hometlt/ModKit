@@ -259,26 +259,31 @@ function createRasterImageSource(bytes, mediaType, info, readRegion) {
   if (readRegion !== void 0) source.readRegion = readRegion;
   return Object.freeze(source);
 }
-function createAudioMediaSource(bytes, mediaType, info) {
+function createAudioMediaSource(bytes, mediaType, info, readPcm) {
   const tracks = Object.freeze(info.tracks.map((track) => Object.freeze({ ...track })));
   const ownedInfo = Object.freeze({ ...info, tracks });
   const encoded = createEncodedMediaSource(bytes, {
     mediaType,
     codecs: tracks.map((track) => track.codec)
   });
-  return Object.freeze({
+  if (ownedInfo.pcmAccess === true && readPcm === void 0) {
+    throw new TypeError("audio source declares pcmAccess without a readPcm implementation");
+  }
+  const source = {
     async info(signal) {
       if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
       return ownedInfo;
     },
     async encoded(trackId, signal) {
       if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
-      if (trackId !== void 0 && !tracks.some((track) => track.id === trackId)) {
+      if (trackId !== void 0 && trackId !== null && !tracks.some((track) => track.id === trackId)) {
         throw new RangeError(`unknown audio track ${trackId}`);
       }
       return encoded;
     }
-  });
+  };
+  if (readPcm !== void 0) source.readPcm = readPcm;
+  return Object.freeze(source);
 }
 function createVideoMediaSource(bytes, mediaType, info) {
   const tracks = Object.freeze(info.tracks.map((track) => Object.freeze({ ...track })));

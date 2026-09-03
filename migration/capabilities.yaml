@@ -10790,10 +10790,11 @@ capabilities:
       - 'capability «edit»: 13D editing exists for text sources only; binary edit contracts absent'
       - 'capability «launch»: launch is a runtime side-effect operation (17); not in X3'
       - 'languages → language contribution kind not in X3'
-      - 'operation dropped at port: asset.validate'
+      - '2C ИЗМЕРЕНО: прежние записи «operation dropped at port» для asset.validate, view.render и view.thumbnail были устаревшими и неверными. На реальной упакованной карте (references/MPQ2/input/MineralCage (Publishing Unlocked).SC2Map, 288 167 B, sha256 432a7b41…a248) вклад blizzard/sc2-map объявляет asset.validate, export.raw, container.extract, view.thumbnail, view.render и blizzard/sc2-map.edit-world все в состоянии available, а invoke(validate) отвечает state ok, output kind none. Из шести legacy-операций не перенесена как операция кодека только game.launch-map, и она объяснена отдельной записью ниже. Receipt: artifacts/ga-recovery-wave2c/sc2-map-operation-inventory.receipt.json.'
+      - 'ЧТО ДЕЙСТВИТЕЛЬНО ОТСУТСТВУЕТ (продуктовый пробел карт, волна 4B): asset.validate в MK3 — это общий inspection-обработчик @modkit/codec-kit. Он отвечает ok, как только архив разобран и документы карты распознаны, и возвращает output kind none. Это не семантическая валидация карты: она ничего не сообщает о непринятых файлах проекта, о целостности каталогов и ссылок. Именно эта глубина и остаётся ненаписанной — не операция, а её содержание. Ни один прогон измерения её не закроет; восстанавливает волна 4B.'
       - 'operation dropped at port: game.launch-map'
-      - 'operation dropped at port: view.render'
-      - 'operation dropped at port: view.thumbnail'
+      - 'operation dropped at port: view.render — снято 2C: операция объявлена вкладом и наблюдалась в состоянии available (см. запись об измерении выше). Глубина рендера остаётся ограниченной отдельными записями ниже про terrain и материалы.'
+      - 'operation dropped at port: view.thumbnail — снято 2C: операция объявлена вкладом и наблюдалась в состоянии available (см. запись об измерении выше).'
       - 'world source remains publisher-candidate modkit.blizzard.starcraft2/world-scene-source@1; common.view admission is reserved for block 18'
       - 'the pinned retail TArcade corpus has no PATH document, so real navigation is named unavailable; bounded PATH parsing/paging is synthetic-proof only'
       - 'terrain publishes the exact ordered native HMAP height grid only when the complete payload is decoded; material, water, normalized cliff and cross-space transforms remain explicit unknown/partial facets'
@@ -14315,10 +14316,10 @@ capabilities:
       x3ContributionId: 'modkit/warzone-wz'
       portFamily: 'opensource/warzone-2100'
       portVerdict: 'relocated-and-rewritten'
-    migrationState: 'partial'
-    supportState: 'partial'
+    migrationState: 'implemented'
+    supportState: 'supported'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E1'
+    evidenceLevel: 'E3'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -14328,7 +14329,8 @@ capabilities:
       verdicts: []
       liveSources: []
     fixtures: []
-    corpusDescriptors: []
+    corpusDescriptors:
+      - 'MODKITX_WARZONE_ROOT'
     projection:
       plane: 'container'
       liveProjection: 'planned'
@@ -14337,10 +14339,14 @@ capabilities:
       nativeExport: 'none'
       operations:
         inspect: null
-        validate: null
+        validate: 'extensions/opensource/warzone-2100/test/wz-package-operations-corpus.test.ts'
         read: null
         materialize: null
     knownLoss:
+      - '2C: все четыре объявленные операции доказаны на реальном корпусе Warzone 4.7.0 (MODKIT_WARZONE_ROOT). asset.validate и export.raw закрыты wz-package-operations-corpus.test.ts на data/mp.wz (10 443 521 B, sha256 d698475e…5688): export.raw возвращает байты, чей sha256 совпадает с файлом на диске. view.inspect и container.extract закрыты ранее на том же корпусе.'
+      - 'export.raw ограничен размером источника, и это объявленное поведение, а не пробел: пакет крупнее 64 MiB открывается metadata-first по central directory, поэтому операция объявлена state disabled с причиной «metadata-first sessions do not materialize the complete archive», отказ типизирован (x3.host/disabled), а constraints несут unsupportedFeature whole-archive-export-in-metadata-first-mode. Проверено на data/base.wz (122 957 601 B, sha256 f3f131e7…d71d).'
+      - 'projection.operations.materialize для плоскости container осмысленно пусто, а не забыто: migration/projections.yaml объявляет для container portableProfile none, artifactMaturity reader-only, action project-live и secondaryActions [preserve-opaque] — materialize не входит в её словарь действий, инвариант reader-does-not-imply-writer запрещает его основным действием, а archive-is-not-a-package запрещает выводить pack/repack из browse. Материализуется не контейнер, а его член: это container.extract (handler extract-entry), доказанный на реальном корпусе здесь и в установленном VS Code (archiveAcceptance wz-pie-materialize, modkit.materializeContainerEntry, components/bodies/cybd_run.pie, 22 053 B, sha256 0674a804…fef23, installed-acceptance-wave2b-final-687fd1f8.receipt.json). Извлечённый член дальше маршрутизируется своей плоскостью; контейнер собственного portable-артефакта не получает.'
+      - '2C: прежняя запись «реальный ARmod_4.0.1.wz (около 102 MiB) не открывается общим host и возвращает x3.host/subject-input-open-failed» больше не верна и заменена. ARmod (102 362 635 B, sha256 69997de6…0241) открывается metadata-first: 484 записи, прочитано 65 849 B (installed-acceptance-wave2b-final-687fd1f8.receipt.json, archiveAcceptance armod-open), то же воспроизведено в wz-package-operations-corpus.test.ts. Оставшаяся потеря для ARmod ровно одна и та же, что у base.wz: export.raw недоступен на metadata-first маршруте.'
       - 'АУДИТ 2026-08-31: обязательный реальный ARmod_4.0.1.wz (около 102 MiB) не открывается общим host и возвращает x3.host/subject-input-open-failed; Scavenger_Mod_V2.0.wz, 10p-Riviera.wz и установленный corpus проходят.'
     receipts:
       projection: null
@@ -14349,8 +14355,10 @@ capabilities:
       installedHost: null
     replacementWorkflow: null
     closedBy:
-      commits: []
+      commits:
+        - '7011570'
       tests:
+        - 'extensions/opensource/warzone-2100/test/wz-package-operations-corpus.test.ts'
         - 'packages/testkit/test/detection-collisions.test.ts'
       reports: []
   - capabilityId: 'format/warzone2100-map/open-inspect'
