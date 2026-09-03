@@ -3961,7 +3961,7 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'superseded-staging-present'
+      state: 'superseded'
       x3ContributionId: 'modkit/text-csv'
       portFamily: 'common/text-delimited'
       portVerdict: 'route-retired'
@@ -3995,7 +3995,7 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
-      - 'stage-вклад modkit/csv физически остаётся в extensions/mk2/uncommon-documents: MK3-маршрут выигрывает детекцию (0.94 против 0.9), а физическое опустошение mk2 принадлежит блоку 30'
+      - '2C: stage-вклад modkit/csv больше не существует физически — extensions/mk2 целиком удалён коммитом 3fe0232d (externalization 2026-08-30), раньше запланированного блока 30; modkit/text-csv остаётся единственным маршрутом для .csv'
       - 'диалекты с локальными разделителями и структурное редактирование ячеек не заявляются'
     receipts:
       projection: null
@@ -7380,7 +7380,7 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'superseded-staging-present'
+      state: 'superseded'
       x3ContributionId: 'modkit/document-markdown'
       portFamily: 'common/documents'
       portVerdict: 'route-retired'
@@ -7414,7 +7414,7 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
-      - 'stage-вклад modkit/markdown физически остаётся в extensions/mk2/uncommon-documents: маршрут он больше не выигрывает ни на одном алиасе, а физическое опустошение mk2 принадлежит блоку 30 и перепроверяется блоком 31'
+      - '2C: stage-вклад modkit/markdown больше не существует физически — extensions/mk2 целиком удалён коммитом 3fe0232d (externalization 2026-08-30), раньше запланированного блока 30; modkit/document-markdown остаётся единственным маршрутом'
       - 'предпросмотр безопасен по построению: кодек не объявляет ни render, ни thumbnail; санитизация разметки остаётся заботой viewer-а и здесь не заявляется'
     receipts:
       projection: null
@@ -10149,7 +10149,7 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'superseded-staging-present'
+      state: 'superseded'
       x3ContributionId: 'modkit/document-rtf'
       portFamily: 'common/documents'
       portVerdict: 'route-retired'
@@ -10181,7 +10181,7 @@ capabilities:
         materialize: null
     knownLoss:
       - 'двойной маршрут снят слайсом 12-2: до него обе стороны отдавали ровно 0.995, host объявлял ambiguous и RTF не открывался вообще; теперь modkit/document-rtf выигрывает 0.998 (заголовок и алиас) против 0.99 у отставного стейджинга'
-      - 'стейджинг-вклад modkit/rtf физически остаётся сгенерированной port-pending заглушкой до блока 30; его open() бросает x3.mk2/port-pending, поэтому выиграть маршрут он не может'
+      - '2C: стейджинг-вклад modkit/rtf больше не существует физически — extensions/mk2 целиком удалён коммитом 3fe0232d (externalization 2026-08-30), раньше запланированного блока 30, вместе с его port-pending заглушкой (x3.mk2/port-pending); модуль перестал побеждать маршрут не потому, что он проигрывает детекцию, а потому что его больше нет'
       - 'layout-рендеринг и активация встроенных объектов не поддерживаются; writer не заявлен'
       - 'два маршрута читали RTF по-разному: отставной стейджинг восстанавливал плоский текст (trait content.text), выживший инвентаризует структуру (document.flow) и текстовой плоскости не публикует; канонический оракул исходный текст тоже не отдаёт, поэтому это расхождение X3-маршрутов, а не потеря против legacy — извлечение текста из RTF остаётся отдельной работой'
     receipts:

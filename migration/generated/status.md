@@ -76,14 +76,14 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 Покрытие не доказывает реализацию, реализация не доказывает evidence — это разные поля и разные числа.
 
-| allocation                   | Строк | migrationState         | Строк | evidenceLevel | Строк |
-| ---------------------------- | ----- | ---------------------- | ----- | ------------- | ----- |
-| `absent`                     | 84    | `equivalent-better`    | 21    | E0            | 82    |
-| `covered`                    | 230   | `implemented`          | 217   | E1            | 110   |
-| `not-applicable`             | 1     | `missing`              | 84    | E2            | 72    |
-| `superseded`                 | 13    | `partial`              | 8     | E3            | 25    |
-| `superseded-staging-present` | 3     | `relocated-multiverse` | 1     | E4            | 39    |
-|                              |       |                        |       | E5            | 3     |
+| allocation       | Строк | migrationState         | Строк | evidenceLevel | Строк |
+| ---------------- | ----- | ---------------------- | ----- | ------------- | ----- |
+| `absent`         | 84    | `equivalent-better`    | 21    | E0            | 82    |
+| `covered`        | 194   | `implemented`          | 217   | E1            | 110   |
+| `not-applicable` | 1     | `missing`              | 84    | E2            | 72    |
+| `superseded`     | 52    | `partial`              | 8     | E3            | 25    |
+|                  |       | `relocated-multiverse` | 1     | E4            | 39    |
+|                  |       |                        |       | E5            | 3     |
 
 ### 3.3. Доказанные writers
 
