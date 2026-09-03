@@ -59,6 +59,12 @@ const parityReportPath = path.resolve(
 
 const problems = []
 const fail = message => problems.push(message)
+// A rule that cannot be evaluated (its source data is missing) is not the same as a rule that
+// passed. It must never be silent: every entry here is printed in its own section, separate from
+// `problems`, in both branches of the verdict below, and it forces the same non-zero exit a real
+// problem would — an unavailable check is not a clean run.
+const unavailableChecks = []
+const flagUnavailable = message => unavailableChecks.push(message)
 const readJson = file => JSON.parse(readFileSync(file, 'utf8'))
 const resolvedProductPath = value => {
   const portable = value.replaceAll('\\', '/')
@@ -474,13 +480,16 @@ function deriveX3Facts() {
   return byId
 }
 
+const commonCoveragePath = path.join(repoRoot, 'scripts/parity/common-coverage.json')
+
 function deriveParityFacts() {
-  const coverage = new Map(
-    readJson(path.join(repoRoot, 'scripts/parity/common-coverage.json')).coverage.map(row => [
-      row.contributionId,
-      row.status,
-    ]),
-  )
+  // scripts/parity/common-coverage.json left the repo with the 2026-08-30 externalization
+  // (commit 3fe0232d) and has not been relocated. That is a real gap, not a reason to abort the
+  // whole gate: `coverage` is `null` when the file is absent, and every consumer below must treat
+  // null as "cannot verify" and say so via flagUnavailable — never as "nothing to report".
+  const coverage = existsSync(commonCoveragePath)
+    ? new Map(readJson(commonCoveragePath).coverage.map(row => [row.contributionId, row.status]))
+    : null
   const byShortId = new Map()
   for (const row of readJson(parityReportPath).results) {
     const short = `modkit/${row.contributionId.slice(row.contributionId.lastIndexOf('/') + 1)}`
@@ -517,6 +526,7 @@ if (isDefaultRegistry) {
 
   let coveredRows = 0
   let retiredRouteRows = 0
+  let coverageChecksSkipped = 0
   for (const row of formatRows) {
     const label = `capability ${row.capabilityId}`
     const declared = row.allocation.x3ContributionId
@@ -578,12 +588,18 @@ if (isDefaultRegistry) {
         )
       }
     }
-    const declaredCoverage = row.parityEvidence.coverageStatus
-    const actualCoverage = declared === null ? undefined : coverage.get(declared)
-    if (declaredCoverage !== (actualCoverage ?? null)) {
-      fail(
-        `${label}: parityEvidence.coverageStatus ${JSON.stringify(declaredCoverage)} contradicts common-coverage.json ${JSON.stringify(actualCoverage ?? null)}`,
-      )
+    if (coverage === null) {
+      // Cannot compare against a file that is not there. This is not a pass — it is counted and
+      // reported below via flagUnavailable, once, for the whole batch of skipped rows.
+      coverageChecksSkipped += 1
+    } else {
+      const declaredCoverage = row.parityEvidence.coverageStatus
+      const actualCoverage = declared === null ? undefined : coverage.get(declared)
+      if (declaredCoverage !== (actualCoverage ?? null)) {
+        fail(
+          `${label}: parityEvidence.coverageStatus ${JSON.stringify(declaredCoverage)} contradicts common-coverage.json ${JSON.stringify(actualCoverage ?? null)}`,
+        )
+      }
     }
     const parityRows = declared === null ? [] : (byShortId.get(declared) ?? [])
     const actualRowIds = parityRows.map(entry => entry.id).sort(compareUtf8)
@@ -607,6 +623,15 @@ if (isDefaultRegistry) {
     ) {
       fail(`${label}: parityEvidence.liveSources contradicts the observed X3 sources`)
     }
+  }
+  if (coverage === null) {
+    flagUnavailable(
+      `parityEvidence.coverageStatus cross-check: scripts/parity/common-coverage.json not found (ENOENT) — ` +
+        `${coverageChecksSkipped} format row(s) NOT verified against recorded coverage. This file left ` +
+        `the repo in the 2026-08-30 externalization (commit 3fe0232d) and has not been relocated to ` +
+        `where the parity suite now lives. Every other registry rule still ran; this one specific ` +
+        `cross-check did not.`,
+    )
   }
   // Allocation coverage and the MK2 ratchet are the same fact seen twice. A route retired in
   // favour of a richer MK3 contribution still leaves its hand-ported module in staging until the
@@ -1191,9 +1216,22 @@ if (projections.counts?.planes !== planes.length) {
 
 // --- verdict ---------------------------------------------------------------------------------------
 
+// Unavailable checks are reported first, and unconditionally — in the clean-looking branch as much
+// as the failing one — because the one thing that must never happen is a reader seeing a summary
+// and believing every rule ran. "Unavailable" forces the same non-zero exit "problem" does: a run
+// that could not evaluate one of its own rules is not a passing run.
+if (unavailableChecks.length > 0) {
+  console.error(
+    `migration:check registry: ${unavailableChecks.length} check(s) UNAVAILABLE — not performed, ` +
+      `and that is not the same as passed`,
+  )
+  for (const message of unavailableChecks) console.error(`  ! ${message}`)
+}
 if (problems.length > 0) {
   console.error(`migration:check registry: ${problems.length} problem(s)`)
   for (const problem of problems) console.error(`  - ${problem}`)
+}
+if (problems.length > 0 || unavailableChecks.length > 0) {
   process.exit(1)
 }
 if (!quiet) {
