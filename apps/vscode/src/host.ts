@@ -30,6 +30,7 @@ import { sceneModule } from '@modkit/scene/module'
 import type { PermissionGrant, ResourceBudget, Writer } from '@modkit/sdk'
 import { uvModule } from '@modkit/uv/module'
 import type { MapPreviewResourcePlanResolver } from '@modkit/host/maps'
+import { selectSceneRenderer, type SceneRendererSelection } from '@modkit/host/renderer'
 import type { UiLocalizer } from '@modkit/ui/localization'
 import {
   codecFidelityEvidenceRecords,
@@ -230,6 +231,20 @@ export interface VsCodeSubjectHost {
   readonly services: NodeSubjectServices
   /** The bridge realm's composition, for the snapshot the page is allowed to see. */
   readonly webview: HostComposition
+  /**
+   * Which `common.render/scene-3d` offer the standard resolver selects for the page's realm.
+   *
+   * A decision, taken here because only this side holds an inventory, and carried to the page as
+   * ids. The page cannot resolve — it has no inventory, no grant and no extension root, and it
+   * must not acquire one — but it does have the GPU, so it is the only place a WebGL provider can
+   * draw. Activating the page's offer *here* would import a browser module into Node; forwarding
+   * the frames back would put a megabyte on the bridge per camera move. So the authority stays on
+   * this side and the execution stays on that one.
+   *
+   * `undefined` when nothing matched, which is a normal answer: the page then keeps the model
+   * stage's own 2D fallback and reports why.
+   */
+  readonly webviewRenderer?: SceneRendererSelection
   readonly extensions: VsCodeExtensionReport
   /** Errors from the generated bundled catalog only, before receipt path redaction. */
   readonly bundledLoadErrors: readonly VsCodeBundledLoadError[]
@@ -480,6 +495,31 @@ export async function createVsCodeSubjectHost(
     disabledExtensions: switchedOffExtensions.ids,
     disabledContributions: switchedOff.ids,
   })
+  /*
+   * The renderer decision for that realm, taken once per composition.
+   *
+   * The page is the realm with the GPU and the realm without an inventory; this side is the
+   * reverse. `selectSceneRenderer` runs the standard resolver's matcher against the page realm's
+   * own target and facilities and stops before activation, so what crosses into the page is a
+   * provider id and a variant — the same kind of inert snapshot the page already receives for its
+   * realm's facilities — and never a lease, a grant or an inventory.
+   *
+   * A refusal is not an error here. It is what a machine whose driver has no WebGL2 answers, and
+   * the model stage keeps its 2D fallback on that answer.
+   */
+  const webviewRenderer = await selectSceneRenderer({
+    services: {
+      inventory: webview.inventory,
+      target: webview.target,
+      executionBackends: webview.executionBackends,
+      ...(services.serviceDefinitions === undefined
+        ? {}
+        : { serviceDefinitions: services.serviceDefinitions }),
+    },
+    outputKind: 'rgba8',
+    grant: DEFAULT_OPEN_GRANT,
+  })
+  for (const item of webviewRenderer.diagnostics) options.onDiagnostic?.(item)
 
   const extensions: VsCodeExtensionReport = Object.freeze({
     bundled: bundled.coordinates,
@@ -508,6 +548,7 @@ export async function createVsCodeSubjectHost(
   return Object.freeze({
     services,
     webview,
+    ...(webviewRenderer.state === 'selected' ? { webviewRenderer: webviewRenderer.selection } : {}),
     extensions,
     bundledLoadErrors,
     contributions,

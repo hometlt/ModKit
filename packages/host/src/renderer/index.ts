@@ -15,6 +15,7 @@ import {
 } from '@modkit/sdk/renderer'
 import type {
   DefinitionInventoryResult,
+  JsonValue,
   PermissionGrant,
   ResourceBudget,
   RuntimeTarget,
@@ -26,6 +27,8 @@ import type {
 } from '@modkit/sdk'
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
 import type { Inventory } from '../inventory.js'
+import { offersFromInventory } from '../offers.js'
+import { resolveServiceProvider } from '../resolution/service-resolver.js'
 import { createHostServiceResolver } from '../service-leases.js'
 
 /** Owner id under which the standard scene-renderer definition is registered. */
@@ -297,6 +300,130 @@ export async function resolveSceneRenderer(
       ],
     }
   }
+}
+
+// ---------------------------------------------------------------------------------------------
+// selection without activation
+
+/** The offer the standard resolver selects, named so another realm can act on the decision. */
+export interface SceneRendererSelection {
+  /** The renderer ids the selected offer advertises; the first is the one to instantiate. */
+  readonly rendererIds: readonly string[]
+  readonly providerId: string
+  readonly offerId: string
+  readonly extensionId: string
+  readonly runtimeVariant: string
+  readonly outputKind: SceneRendererOutputKind
+}
+
+export type SceneRendererSelectionResult =
+  | Readonly<{
+      state: 'selected'
+      selection: SceneRendererSelection
+      diagnostics: readonly Diagnostic[]
+    }>
+  | Readonly<{ state: 'unselected'; diagnostics: readonly Diagnostic[] }>
+
+export interface SelectSceneRendererRequest extends SceneRendererRequestFacet {
+  readonly services: RendererHostServices
+  /** Permission classes the requesting realm holds; folded into the target as resolution does. */
+  readonly grant: PermissionGrant
+}
+
+/**
+ * Run the standard resolver's *selection* and stop before activation.
+ *
+ * `resolveSceneRenderer` answers "give me a renderer I can call", which requires activating a
+ * module in this process. That is the wrong question when the realm that will draw is not this
+ * one — a VS Code extension host resolving for its page, say. Activating there would import a
+ * WebGL provider into Node, where it can only fail; forwarding every frame back would put a
+ * megabyte on the bridge per camera move.
+ *
+ * So this answers the other question: *which* offer does the standard resolver select for that
+ * realm, on the same matcher, the same offers and the same target rules. The answer is an id and
+ * a variant — inert data — and the realm that owns the drawing decides whether it can honour it.
+ * Nothing here is a second resolution path: `resolveSceneRenderer` and this share
+ * `resolveServiceProvider`, so a divergence between what is selected and what is activated is not
+ * expressible.
+ */
+export async function selectSceneRenderer(
+  request: SelectSceneRendererRequest,
+): Promise<SceneRendererSelectionResult> {
+  const definitions = request.services.serviceDefinitions
+  if (definitions === undefined) {
+    return {
+      state: 'unselected',
+      diagnostics: [
+        diagnostic(
+          'information',
+          'x3.host/renderer-unavailable',
+          'this host registered no service-contract definitions, so renderers cannot be selected',
+        ),
+      ],
+    }
+  }
+  const facet: SceneRendererRequestFacet = {
+    outputKind: request.outputKind,
+    ...(request.rendererId === undefined ? {} : { rendererId: request.rendererId }),
+  }
+  const target: RuntimeTarget = {
+    ...request.services.target,
+    grantedPermissions: [
+      ...new Set([...(request.services.target.grantedPermissions ?? []), ...request.grant.classes]),
+    ].sort(),
+  }
+  const result = await resolveServiceProvider(
+    {
+      contract: { contract: contractId(SCENE_RENDERER_CONTRACT), major: 1 },
+      target,
+      requestFacet: facet as unknown as JsonValue,
+    },
+    offersFromInventory(request.services.inventory),
+    definitions,
+  )
+  if (result.state !== 'resolved') {
+    return {
+      state: 'unselected',
+      diagnostics: [
+        diagnostic(
+          'information',
+          'x3.host/renderer-unresolved',
+          `no scene renderer offer matched ${request.outputKind} for ${target.environment} (${result.reason})`,
+        ),
+      ],
+    }
+  }
+  const offer = parseOffer(result.selected.resolvedContract.facet)
+  if (offer === undefined) {
+    return {
+      state: 'unselected',
+      diagnostics: [
+        diagnostic(
+          'error',
+          'x3.host/renderer-facet-invalid',
+          `${result.selected.offer.providerId} advertised an unreadable renderer route`,
+        ),
+      ],
+    }
+  }
+  return Object.freeze({
+    state: 'selected',
+    selection: Object.freeze({
+      rendererIds: offer.rendererIds,
+      providerId: result.selected.offer.providerId,
+      offerId: result.selected.resolvedContract.offerId,
+      extensionId: result.selected.offer.extensionId,
+      runtimeVariant: result.selected.offer.runtimeVariant,
+      outputKind: request.outputKind,
+    }),
+    diagnostics: Object.freeze([
+      diagnostic(
+        'information',
+        'x3.host/renderer-selected',
+        `selected ${result.selected.offer.providerId} for ${request.outputKind} in ${target.environment}`,
+      ),
+    ]),
+  })
 }
 
 // ---------------------------------------------------------------------------------------------

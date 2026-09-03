@@ -689,6 +689,9 @@ function panelHtml(options: PanelPageOptions): string {
         realmId: options.host.webview.profile.realmId,
         facilities: options.host.webview.profile.facilities,
       },
+      ...(options.host.webviewRenderer === undefined
+        ? {}
+        : { renderer: options.host.webviewRenderer }),
       topologyId: options.host.services.host.topology.topologyId,
       session: options.session,
       moduleUrl: VSCODE_SUBJECT_SERVICES_URL,

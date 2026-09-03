@@ -13,8 +13,14 @@
       "types": "./src/module.d.ts",
       "default": "./src/module.js"
     },
-    "./render/browser": "./src/render/browser.js",
-    "./render/headless": "./src/render/headless.js",
+    "./render/browser": {
+      "types": "./src/render/browser.d.ts",
+      "default": "./src/render/browser.js"
+    },
+    "./render/headless": {
+      "types": "./src/render/headless.d.ts",
+      "default": "./src/render/headless.js"
+    },
     "./output/png": "./src/output/png.js",
     "./relations": "./src/relations/index.js",
     "./relations/three": "./src/relations/three-graph-renderer.js",

@@ -46,6 +46,8 @@ import { probeWebviewFacilities } from './facilities.js'
 import { createWebviewEditorPorts, type WebviewEditorPorts } from './editor-ports.js'
 import { reopenCommittedEntry } from './edit-reopen.js'
 import { continueVsCodeMapPreviewSelection } from './map-preview-selection.js'
+import type { PageBootstrap } from './page.js'
+import { createWebviewRendererPort } from './renderer-port.js'
 import { createVsCodePreviewFallback, createVsCodePreviewStages } from './stages.js'
 import { preferredStage } from './view-policy.js'
 import { createVscodeLocalizer } from './localization.js'
@@ -61,6 +63,13 @@ interface Bootstrap {
   readonly localizationCatalogs: readonly UiCatalogDocument[]
   readonly extensionHost: RealmSnapshot
   readonly webview: RealmSnapshot
+  /**
+   * The scene-renderer offer the extension host's resolver selected for this page's realm.
+   *
+   * Ids only, like everything else here. `./renderer-port.ts` turns it into a port by looking the
+   * renderer up among the providers this bundle already carries; it loads nothing.
+   */
+  readonly renderer?: PageBootstrap['renderer']
   readonly topologyId: string
   /** Endpoint identity of the subject RPC; the serving side used the same pair. */
   readonly session: string
@@ -279,6 +288,8 @@ async function mount(
   const editOutcomes = new Map<string, string>()
   /** Entry id of the focused tab — the only tab that can receive a keystroke. */
   let focused: string | undefined
+  /** The renderer this page was granted, if any; built once and shared by every model stage. */
+  const rendererPort = createWebviewRendererPort(snapshot.renderer)
 
   const markDirty = (entryId: string, dirty: boolean): void => {
     editors.markDirty(entryId, dirty)
@@ -307,6 +318,13 @@ async function mount(
     stages: onlyForcedStage(
       createVsCodePreviewStages({
         localizer,
+        /*
+         * Built here rather than resolved here: the extension host ran the standard resolver
+         * against this realm and put the answer in the snapshot, and this turns that id into the
+         * provider this bundle already carries. Absent when the host selected nothing, which the
+         * model stage reports rather than hides.
+         */
+        ...(rendererPort === undefined ? {} : { renderer: rendererPort }),
         portsFor(descriptor) {
           const record = recordForDescriptor(descriptor)
           return record === undefined ? undefined : openPorts.get(record.entry.id)

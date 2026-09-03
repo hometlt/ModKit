@@ -173,9 +173,15 @@ describe('model stage materials', () => {
 })
 
 describe('model stage skeleton', () => {
+  /**
+   * A binding whose 4x4 is the *inverse* bind matrix of a bone standing at `at`.
+   *
+   * Row-major, row-vector, as `ModelBoneBinding.restMatrix` is documented and as M3's IREF chunk
+   * fills it: the inverse of a pure translation to `at` is a translation to `-at`.
+   */
   const binding = (
     boneIndex: number,
-    translation: readonly [number, number, number],
+    at: readonly [number, number, number],
     parentBoneIndex?: number | null,
   ): ModelBoneBinding => ({
     partId: 'part',
@@ -183,27 +189,10 @@ describe('model stage skeleton', () => {
     boneName: `bone-${boneIndex}`,
     provenance: 'direct',
     ...(parentBoneIndex === undefined ? {} : { parentBoneIndex }),
-    restMatrix: [
-      1,
-      0,
-      0,
-      0,
-      0,
-      1,
-      0,
-      0,
-      0,
-      0,
-      1,
-      0,
-      translation[0],
-      translation[1],
-      translation[2],
-      1,
-    ],
+    restMatrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -at[0], -at[1], -at[2], 1],
   })
 
-  it('reads joint positions from the rest matrix translation and links parents', () => {
+  it('places a joint where the inverse bind matrix says the bone stands, and links parents', () => {
     const joints = skeletonJoints([
       binding(0, [0, 0, 0], null),
       binding(1, [0, 1, 0], 0),
@@ -217,6 +206,48 @@ describe('model stage skeleton', () => {
     expect(joints.map(joint => joint.parent)).toEqual([undefined, 0, 1])
   })
 
+  it('undoes the bone rotation too, not only its translation', () => {
+    // A bone at (3, 0, 0) rotated a quarter turn about +Z. Its inverse bind matrix is the
+    // transposed rotation, with the translation carried through it.
+    const at: readonly [number, number, number] = [3, 0, 0]
+    const rt = [0, -1, 0, 1, 0, 0, 0, 0, 1] as const
+    const t = [
+      -(at[0] * rt[0] + at[1] * rt[3] + at[2] * rt[6]),
+      -(at[0] * rt[1] + at[1] * rt[4] + at[2] * rt[7]),
+      -(at[0] * rt[2] + at[1] * rt[5] + at[2] * rt[8]),
+    ]
+    const joints = skeletonJoints([
+      {
+        partId: 'part',
+        boneIndex: 0,
+        boneName: 'rotated',
+        provenance: 'direct',
+        restMatrix: [
+          rt[0],
+          rt[1],
+          rt[2],
+          0,
+          rt[3],
+          rt[4],
+          rt[5],
+          0,
+          rt[6],
+          rt[7],
+          rt[8],
+          0,
+          t[0] as number,
+          t[1] as number,
+          t[2] as number,
+          1,
+        ],
+      },
+    ])
+    expect(joints).toHaveLength(1)
+    for (const [axis, value] of (joints[0]?.position ?? []).entries()) {
+      expect(value).toBeCloseTo(at[axis] as number, 6)
+    }
+  })
+
   it('drops a binding with no rest matrix rather than placing it at the origin', () => {
     const named: ModelBoneBinding = {
       partId: 'part',
@@ -225,6 +256,20 @@ describe('model stage skeleton', () => {
       provenance: 'direct',
     }
     expect(skeletonJoints([named])).toEqual([])
+  })
+
+  it('drops a singular matrix rather than dividing by zero', () => {
+    expect(
+      skeletonJoints([
+        {
+          partId: 'part',
+          boneIndex: 0,
+          boneName: 'collapsed',
+          provenance: 'direct',
+          restMatrix: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 2, 3, 1],
+        },
+      ]),
+    ).toEqual([])
   })
 })
 

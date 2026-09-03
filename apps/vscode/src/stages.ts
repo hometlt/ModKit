@@ -74,7 +74,15 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       id: 'model',
       label: context.localizer.text('stage.model'),
       contract: 'common.view/model-scene-source',
-      module: createModelViewer({ localizer: context.localizer }),
+      /*
+       * Shaded through the provider the extension host selected for this page's realm, and through
+       * this stage's own 2D wireframe where it selected none. The page never resolves: it is handed
+       * a port or it is not, exactly as the image stage is handed an export writer or not.
+       */
+      module: createModelViewer({
+        localizer: context.localizer,
+        ...(context.renderer === undefined ? {} : { renderer: context.renderer }),
+      }),
     },
     {
       id: 'audio',

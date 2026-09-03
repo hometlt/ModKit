@@ -327,8 +327,14 @@ describe('host-owned subject opening pipeline', () => {
       interpretation: 'codec',
       sourceBytes: BigInt(bytes.byteLength),
     })
-    // a raster stage declares no optional facets, so nothing is bound beyond the required source
-    expect(eligibility).toEqual({ eligible: true, missing: [], optionalBound: [] })
+    // a raster stage declares no optional facets and asks the host for no service, so nothing is
+    // bound beyond the required source and nothing is requested beside it
+    expect(eligibility).toEqual({
+      eligible: true,
+      missing: [],
+      optionalBound: [],
+      optionalServices: [],
+    })
 
     interface PresentationTicket {
       readonly bindingId: string

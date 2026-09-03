@@ -13,7 +13,7 @@ import {
   setViewerText,
   ViewerMountScope,
 } from '@modkit/ui/viewer'
-import type { AnyDescriptor, AssetEditPlan, ViewerModule } from '@modkit/sdk'
+import type { AnyDescriptor, AssetEditPlan, SceneRendererPort, ViewerModule } from '@modkit/sdk'
 import type { ImageExportFile, ImageExportOutcome } from '@modkit/ui/image'
 import type { UiLocalizer } from '@modkit/ui/localization'
 
@@ -42,6 +42,14 @@ export interface EditPanelOptions {
   ) => Promise<ImageExportOutcome>
   /** Leaf name the image stage derives its export file names from. */
   readonly exportBaseName?: (descriptor: AnyDescriptor) => string
+  /**
+   * Where the model stage asks for a `common.render/scene-3d` provider.
+   *
+   * Built from the renderer the extension host selected for this page's realm (see
+   * `./renderer-port.ts`). Absent means this page was granted none, and the model stage draws its
+   * own 2D wireframe — which is a supported tier, not a failure.
+   */
+  readonly renderer?: SceneRendererPort
 }
 
 const asRecord = (descriptor: AnyDescriptor): Record<string, unknown> =>

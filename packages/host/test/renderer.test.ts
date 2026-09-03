@@ -14,7 +14,11 @@ import {
   type HostComposition,
   type LinkedExtension,
 } from '@modkit/host'
-import { createSceneRendererPort, resolveSceneRenderer } from '@modkit/host/renderer'
+import {
+  createSceneRendererPort,
+  resolveSceneRenderer,
+  selectSceneRenderer,
+} from '@modkit/host/renderer'
 import type { SceneRenderer } from '@modkit/sdk/renderer'
 import { sceneRendererContractSuite } from './scene-renderer-contract.js'
 
@@ -62,6 +66,15 @@ sceneRendererContractSuite('reference software', () => providerRenderer(referenc
 sceneRendererContractSuite('product headless', () => providerRenderer(headlessModule))
 
 const REALM = 'modkit.test/renderer-host'
+/** A page realm beside the node one, so selection for another realm can be asserted. */
+const PAGE_REALM = 'modkit.test/renderer-page'
+const realmBudgets = {
+  maxConcurrentTasks: 2,
+  maxWorkerCount: 0,
+  maxResidentBytes: uint64('134217728'),
+  maxTransferBytes: uint64('16777216'),
+  defaultDeadlineMs: 10_000,
+}
 const topology = createHostTopology({
   schemaVersion: 1,
   topologyId: 'modkit.test/renderer',
@@ -72,14 +85,17 @@ const topology = createHostTopology({
       revision: '1',
       target: { environment: 'node', operatingSystem: 'linux', architecture: 'x64' },
       facilities: [],
-      budgets: {
-        maxConcurrentTasks: 2,
-        maxWorkerCount: 0,
-        maxResidentBytes: uint64('134217728'),
-        maxTransferBytes: uint64('16777216'),
-        defaultDeadlineMs: 10_000,
-      },
+      budgets: realmBudgets,
       policy: { id: 'modkit.test/renderer-policy', revision: '1' },
+    },
+    {
+      schemaVersion: 1,
+      realmId: PAGE_REALM,
+      revision: '1',
+      target: { environment: 'browser-main', operatingSystem: 'linux', architecture: 'x64' },
+      facilities: ['gpu.webgl2'],
+      budgets: realmBudgets,
+      policy: { id: 'modkit.test/renderer-page-policy', revision: '1' },
     },
   ],
   links: [],
@@ -96,6 +112,7 @@ const identity = (): Float32Array =>
   new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1])
 
 let composition: HostComposition
+let pageComposition: HostComposition
 let definitions: ReturnType<typeof createBundledServiceDefinitionRegistry>
 
 beforeAll(async () => {
@@ -104,6 +121,12 @@ beforeAll(async () => {
   composition = await createHostComposition({
     topology,
     realmId: REALM,
+    extensions: linked.inputs,
+    executionBackends,
+  })
+  pageComposition = await createHostComposition({
+    topology,
+    realmId: PAGE_REALM,
     extensions: linked.inputs,
     executionBackends,
   })
@@ -292,5 +315,63 @@ describe('scene renderer port', () => {
     const acquisition = await port.acquire({ outputKind: 'rgba8' })
     expect(acquisition.state).toBe('unresolved')
     expect(acquisition.diagnostics.map(item => item.code)).toEqual(['x3.host/renderer-unavailable'])
+  })
+})
+
+/**
+ * Selecting a renderer for a realm that is not this process.
+ *
+ * The case this exists for is a host whose page draws: the extension host owns the inventory and
+ * therefore the decision, the page owns the GPU and therefore the execution. Asserted here as the
+ * pair of facts that make the split necessary — the same page realm *selects* the WebGL provider,
+ * and that provider cannot produce a frame in this process.
+ */
+describe('scene renderer selection for another realm', () => {
+  it('names the offer the standard resolver picks for a browser-main realm with WebGL2', async () => {
+    const selection = await selectSceneRenderer({
+      services: { ...pageComposition, serviceDefinitions: definitions },
+      outputKind: 'rgba8',
+      grant: { id: 'renderer-select', classes: [] },
+    })
+    expect(selection.state, JSON.stringify(selection.diagnostics)).toBe('selected')
+    if (selection.state !== 'selected') throw new Error('page renderer was not selected')
+    expect(selection.selection.rendererIds).toEqual(['modkit.browser-webgl'])
+    expect(selection.selection.runtimeVariant).toBe('trusted-browser-main')
+    expect(selection.selection.outputKind).toBe('rgba8')
+  })
+
+  it('is a decision only: that page offer cannot draw in this process', async () => {
+    const resolution = await resolveSceneRenderer({
+      services: { ...pageComposition, serviceDefinitions: definitions },
+      rendererId: 'modkit.browser-webgl',
+      outputKind: 'rgba8',
+      grant: { id: 'renderer-select-activate', classes: [] },
+      budgets: activationBudget,
+    })
+    if (resolution.state === 'resolved') {
+      // The module loaded in Node; drawing is what it cannot do without a canvas.
+      await expect(
+        resolution.renderer.render({
+          scene: { primitives: [] },
+          camera: { viewProjection: identity() },
+          viewport: { width: 4, height: 4 },
+          outputKind: 'rgba8',
+        }),
+      ).rejects.toThrow()
+      await resolution.release()
+    } else {
+      expect(resolution.diagnostics.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('names no offer for a renderer route nothing matches', async () => {
+    const selection = await selectSceneRenderer({
+      services: { ...pageComposition, serviceDefinitions: definitions },
+      outputKind: 'rgba8',
+      rendererId: 'nobody.at.all',
+      grant: { id: 'renderer-select-mismatch', classes: [] },
+    })
+    expect(selection.state).toBe('unselected')
+    expect(selection.diagnostics.map(item => item.code)).toContain('x3.host/renderer-unresolved')
   })
 })

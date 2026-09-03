@@ -385,28 +385,78 @@ export interface SkeletonJoint {
 }
 
 /**
- * Joint positions from the rest matrices the skeleton facet publishes.
+ * Where a bone sits, from the 4×4 the skeleton facet publishes for it.
  *
- * `restMatrix` is documented as "publisher-native 4×4 … in row order", so the translation is the
- * last row's first three components — the row-major convention, not the column-major one the
- * renderer contract uses for camera and model transforms. Getting that backwards puts every joint
- * at the origin, which is why it is read in exactly one place.
+ * Two conventions have to be got right together, and getting either wrong puts the whole skeleton
+ * at the origin or inside out.
  *
- * A binding with no `restMatrix` has no position and is not a joint: a skeleton drawn with
- * invented coordinates would be worse than one that says a format publishes names only.
+ * **Row order.** `ModelBoneBinding.restMatrix` is documented as "publisher-native 4×4 … in row
+ * order", which is the opposite of the column-major layout the *renderer* contract uses for camera
+ * and model transforms. With row-major, row-vector maths the translation is the last row —
+ * elements 12..14.
+ *
+ * **Direction.** The only publisher in this workspace that fills the field is M3, and what it fills
+ * it from is the `IREF` chunk — the matrix M3's own writer calls `inverseBindMatrix`. An inverse
+ * bind matrix takes world space *to* bone space, so its translation is not where the bone is; the
+ * bone is at the translation of its inverse. The field's own documentation says "rest/bind" without
+ * choosing, so a viewer cannot read the direction off the contract — this inverts because that is
+ * what the data that exists today means, and a publisher that starts filling a forward rest matrix
+ * would need the contract to say which it is. That ambiguity is worth closing in the facet
+ * contract; until it is, this is the reading that draws real M3 skeletons in the right place.
+ *
+ * A binding whose matrix is missing or singular has no position and is not a joint. A skeleton
+ * drawn from invented coordinates would be worse than one that says a format publishes names only.
  */
+function boneOrigin(matrix: readonly number[]): Vector3 | undefined {
+  if (matrix.length < 16 || !matrix.every(finite)) return undefined
+  // upper 3x3 (rows 0..2, columns 0..2 in row-major order) and the translation row
+  const [a, b, c, , d, e, f, , g, h, i] = matrix as unknown as number[]
+  const tx = matrix[12] as number
+  const ty = matrix[13] as number
+  const tz = matrix[14] as number
+  const A = a as number
+  const B = b as number
+  const C = c as number
+  const D = d as number
+  const E = e as number
+  const F = f as number
+  const G = g as number
+  const H = h as number
+  const I = i as number
+  const determinant = A * (E * I - F * H) - B * (D * I - F * G) + C * (D * H - E * G)
+  if (!finite(determinant) || Math.abs(determinant) < 1e-12) return undefined
+  // inverse of the upper 3x3, as the adjugate over the determinant
+  const inverse = [
+    (E * I - F * H) / determinant,
+    (C * H - B * I) / determinant,
+    (B * F - C * E) / determinant,
+    (F * G - D * I) / determinant,
+    (A * I - C * G) / determinant,
+    (C * D - A * F) / determinant,
+    (D * H - E * G) / determinant,
+    (B * G - A * H) / determinant,
+    (A * E - B * D) / determinant,
+  ]
+  // row-vector convention: the inverse's translation row is -t · R⁻¹
+  const position: Vector3 = [
+    -(tx * (inverse[0] as number) + ty * (inverse[3] as number) + tz * (inverse[6] as number)),
+    -(tx * (inverse[1] as number) + ty * (inverse[4] as number) + tz * (inverse[7] as number)),
+    -(tx * (inverse[2] as number) + ty * (inverse[5] as number) + tz * (inverse[8] as number)),
+  ]
+  return position.every(finite) ? position : undefined
+}
+
+/** Joint positions and parent links from the bindings the skeleton facet published. */
 export function skeletonJoints(bindings: readonly ModelBoneBinding[]): readonly SkeletonJoint[] {
   const byBoneIndex = new Map<number, number>()
   const joints: SkeletonJoint[] = []
   for (const binding of bindings) {
     const matrix = binding.restMatrix
-    if (matrix === undefined || matrix.length < 16) continue
-    const x = matrix[12]
-    const y = matrix[13]
-    const z = matrix[14]
-    if (!finite(x) || !finite(y) || !finite(z)) continue
+    if (matrix === undefined) continue
+    const position = boneOrigin(matrix)
+    if (position === undefined) continue
     byBoneIndex.set(binding.boneIndex, joints.length)
-    joints.push({ boneIndex: binding.boneIndex, name: binding.boneName, position: [x, y, z] })
+    joints.push({ boneIndex: binding.boneIndex, name: binding.boneName, position })
   }
   return Object.freeze(
     joints.map(joint => {

@@ -36,6 +36,26 @@ export interface PageBootstrap {
   readonly localizationCatalogs: readonly UiCatalogDocument[]
   readonly extensionHost: { readonly realmId: string; readonly facilities: readonly string[] }
   readonly webview: { readonly realmId: string; readonly facilities: readonly string[] }
+  /**
+   * The `common.render/scene-3d` offer the standard resolver selected for this page's realm.
+   *
+   * Ids, not authority — the same rule the rest of this snapshot follows. The extension host holds
+   * the inventory and therefore made the decision; the page holds the GPU and therefore does the
+   * drawing, and it may only instantiate a provider that is already inside its own bundle. A page
+   * told about a provider it does not carry declines and keeps the 2D fallback, which is why this
+   * is a name to check rather than a module to load.
+   *
+   * Absent when nothing matched this realm — a machine without WebGL2, most often — and absence is
+   * a supported answer, not a failure.
+   */
+  readonly renderer?: {
+    readonly rendererIds: readonly string[]
+    readonly providerId: string
+    readonly offerId: string
+    readonly extensionId: string
+    readonly runtimeVariant: string
+    readonly outputKind: 'rgba8'
+  }
   readonly topologyId: string
   readonly session: string
   readonly moduleUrl: string
