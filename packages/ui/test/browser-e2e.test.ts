@@ -52,6 +52,7 @@ beforeAll(async () => {
         import * as ui from '@modkit/ui';
         import * as browserHost from '@modkit/testkit/browser';
         import * as host from '@modkit/host';
+        import * as sceneRenderer from '@modkit/scene/render/browser';
         import { plainTextCodec } from './examples/modkit-extension-plain-text/src/codec.js';
         ${imports}
         const codecFactories = {
@@ -74,6 +75,7 @@ beforeAll(async () => {
           ui,
           browserHost,
           host,
+          sceneRenderer,
           fixtures: { plainTextCodec, createTextCodec, createTextSyntaxProvider },
         };
       `,
@@ -3070,5 +3072,233 @@ describe('13C real-browser viewer host', () => {
         (globalThis as unknown as { modelFixture: { releases(): number } }).modelFixture.releases(),
       ),
     ).toBe(5)
+  })
+
+  /**
+   * The two render paths of the model stage, in a real browser, told apart by the evidence.
+   *
+   * This is the pair the wave exists for: a shaded GPU frame where the host resolved a provider,
+   * and the 2D wireframe where it did not — both working, and distinguishable without reading any
+   * localized text. The provider is the shipped `modkit.browser-webgl` module, driven through the
+   * contract's own `SceneRendererPort`, so what is exercised is the product route rather than a
+   * test double of it.
+   */
+  const mountModelStage = async (mode: 'resolved' | 'refused'): Promise<void> => {
+    await page.evaluate(async selection => {
+      const globals = globalThis as unknown as {
+        modkit: {
+          ui: Record<string, unknown>
+          sceneRenderer: {
+            createProvider(request: { contract: string; major: number }): { value: unknown }
+          }
+        }
+      }
+      const typed = globals.modkit.ui as unknown as typeof import('@modkit/ui')
+      const root = document.querySelector('#app') as HTMLElement
+      const port = {
+        async acquire(request: { outputKind: string }) {
+          if (selection === 'refused') {
+            return {
+              state: 'unresolved',
+              diagnostics: [
+                {
+                  severity: 'information',
+                  code: 'x3.test/no-renderer-here',
+                  message: 'this realm offers no renderer',
+                },
+              ],
+            }
+          }
+          const provider = globals.modkit.sceneRenderer.createProvider({
+            contract: 'common.render/scene-3d',
+            major: request.outputKind === 'rgba8' ? 1 : 0,
+          })
+          return {
+            state: 'resolved',
+            diagnostics: [],
+            lease: { renderer: provider.value, release: async () => undefined },
+          }
+        },
+      }
+      // one quad and two bones: enough to cover pixels and to draw a bone overlay over them
+      const scene = {
+        async info() {
+          return {
+            scenes: 1,
+            nodes: 1,
+            meshes: 1,
+            primitives: 1,
+            materials: 1,
+            textures: 0,
+            animations: 0,
+            geometryAccess: 'decoded' as const,
+          }
+        },
+        async nodes() {
+          return { items: [] }
+        },
+        async meshes() {
+          return { items: [{ id: 'mesh', primitiveIds: ['plate'] }] }
+        },
+        async primitive() {
+          return {
+            id: 'plate',
+            topology: 'triangles' as const,
+            positions: new Float32Array([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0]),
+            normals: new Float32Array([0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1]),
+            indices: new Uint32Array([0, 1, 2, 0, 2, 3]),
+            materialId: 'plate-material',
+          }
+        },
+      }
+      const skeleton = {
+        async info() {
+          return { bindings: 2, named: 2, companionBound: 0 }
+        },
+        async bindings() {
+          return {
+            items: [
+              {
+                partId: 'bone/0',
+                boneIndex: 0,
+                boneName: 'Root',
+                provenance: 'direct' as const,
+                parentBoneIndex: null,
+                restMatrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+              },
+              {
+                partId: 'bone/1',
+                boneIndex: 1,
+                boneName: 'Tip',
+                provenance: 'direct' as const,
+                parentBoneIndex: 0,
+                restMatrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, -0.5, 0, 1],
+              },
+            ],
+          }
+        },
+      }
+      const values: Record<string, unknown> = {
+        'common.view/model-scene-source': scene,
+        'common.view/model-skeleton-source': skeleton,
+      }
+      const slot = {
+        slotId: 'model',
+        kind: 'stage',
+        contributionId: 'modkit.ui/model-stage',
+        extensionId: 'modkit/ui',
+        priority: 100,
+        bindings: Object.keys(values).map(contract => ({
+          bindingId: contract,
+          contract,
+          major: 1,
+        })),
+      }
+      const mount = await typed.createModelViewer({ renderer: port as never }).mount({
+        container: root,
+        descriptor: { revision: 'content-hash.sha256:render', operations: [], diagnostics: [] },
+        slot,
+        sources: {
+          async get(binding: { contract: string }) {
+            return { value: values[binding.contract], async release() {} }
+          },
+        },
+        operations: { async dispose() {} },
+      } as never)
+      ;(globalThis as unknown as Record<string, unknown>)['renderFixture'] = { mount }
+    }, mode)
+  }
+
+  const modelCanvasEvidence = async (): Promise<Record<string, unknown>> =>
+    page.evaluate(() => {
+      const canvas = document.querySelector(
+        '[data-mk-part="model.canvas"]',
+      ) as HTMLCanvasElement | null
+      if (canvas === null) return { present: false }
+      const pixels = canvas.getContext('2d')?.getImageData(0, 0, canvas.width, canvas.height).data
+      let opaquePixels = 0
+      const shades = new Set<number>()
+      if (pixels !== undefined) {
+        for (let offset = 0; offset < pixels.length; offset += 4) {
+          if ((pixels[offset + 3] ?? 0) === 0) continue
+          opaquePixels += 1
+          shades.add(pixels[offset] as number)
+        }
+      }
+      return {
+        present: true,
+        renderer: canvas.getAttribute('data-model-renderer'),
+        rendererId: canvas.getAttribute('data-model-renderer-id'),
+        status: canvas.getAttribute('data-model-renderer-status'),
+        diagnostic: canvas.getAttribute('data-model-renderer-diagnostic'),
+        skeleton: canvas.getAttribute('data-model-skeleton'),
+        width: canvas.width,
+        height: canvas.height,
+        opaquePixels,
+        distinctReds: shades.size,
+      }
+    })
+
+  it('draws a shaded frame through the resolved WebGL2 provider and names it in the evidence', async () => {
+    await reset()
+    await mountModelStage('resolved')
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('[data-mk-part="model.canvas"]')
+          ?.getAttribute('data-model-renderer') === 'webgl2',
+    )
+    // the frame arrives asynchronously; wait for it rather than for the attribute alone
+    await page.waitForFunction(() => {
+      const canvas = document.querySelector(
+        '[data-mk-part="model.canvas"]',
+      ) as HTMLCanvasElement | null
+      if (canvas === null) return false
+      const pixels = canvas.getContext('2d')?.getImageData(0, 0, canvas.width, canvas.height).data
+      if (pixels === undefined) return false
+      for (let offset = 3; offset < pixels.length; offset += 4) {
+        if ((pixels[offset] ?? 0) !== 0) return true
+      }
+      return false
+    })
+    const evidence = await modelCanvasEvidence()
+    expect(evidence).toMatchObject({
+      present: true,
+      renderer: 'webgl2',
+      rendererId: 'modkit.browser-webgl',
+      status: 'resolved',
+      skeleton: '2',
+    })
+    expect(evidence['opaquePixels']).toBeGreaterThan(0)
+    await page.evaluate(async () => {
+      await (
+        globalThis as unknown as { renderFixture: { mount: { unmount(): Promise<void> } } }
+      ).renderFixture.mount.unmount()
+    })
+  })
+
+  it('keeps the 2D wireframe when the host offers no renderer, and says which reason', async () => {
+    await reset()
+    await mountModelStage('refused')
+    await page.waitForFunction(
+      () =>
+        (document.querySelector('[data-mk-part="model.canvas"]') as HTMLCanvasElement | null)
+          ?.width > 0,
+    )
+    const evidence = await modelCanvasEvidence()
+    expect(evidence).toMatchObject({
+      present: true,
+      renderer: 'wireframe',
+      rendererId: null,
+      status: 'unresolved',
+      diagnostic: 'x3.test/no-renderer-here',
+      skeleton: '2',
+    })
+    expect(evidence['opaquePixels']).toBeGreaterThan(0)
+    await page.evaluate(async () => {
+      await (
+        globalThis as unknown as { renderFixture: { mount: { unmount(): Promise<void> } } }
+      ).renderFixture.mount.unmount()
+    })
   })
 })
