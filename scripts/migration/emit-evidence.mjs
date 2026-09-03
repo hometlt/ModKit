@@ -36,9 +36,17 @@ const outPath = path.join(repoRoot, 'migration', 'generated', 'evidence.json')
 
 const canonicalTestPath = value => {
   const portable = value.replaceAll('\\', '/')
+  // Sibling checkout directory names are `modkit-extensions-<family>` (verified against the actual
+  // workspace layout: modkit-extensions-blizzard, -ea, -other, -spring, -warzone), not the shorter
+  // `modkit-<family>` these markers used to say. The mismatch meant lastIndexOf() below never found
+  // either marker, canonicalTestPath() fell through to `return portable`, and every warzone
+  // declaration this produced kept its raw, machine-absolute path instead of becoming the same
+  // portable extensions/opensource/warzone-2100/... form the registry itself uses — which is exactly
+  // what registry-debt-baseline.json's 13 "declaration comes from" lines were: not a stale registry
+  // path, but this generator failing to canonicalize a path that was never wrong to begin with.
   const mirrors = [
-    ['/modkit-warzone/', 'extensions/opensource/warzone-2100/'],
-    ['/modkit-blizzard/', 'extensions/blizzard/'],
+    ['/modkit-extensions-warzone/', 'extensions/opensource/warzone-2100/'],
+    ['/modkit-extensions-blizzard/', 'extensions/blizzard/'],
   ]
   for (const [marker, canonicalRoot] of mirrors) {
     const markerIndex = portable.lastIndexOf(marker)
@@ -87,7 +95,7 @@ for (const name of readdirSync(rawDir).sort()) {
      * `packages/testkit/test/evidence.test.ts` exercises `proves()` with invented subjects — that is
      * its job, and those declarations reach this file like any other. Excluding it by name is the
      * honest reading: a fixture used to prove the mechanism works is not a claim about a codec.
-    */
+     */
     if (raw.test === 'packages/testkit/test/evidence.test.ts') continue
     const contributionId =
       raw.contributionId === undefined

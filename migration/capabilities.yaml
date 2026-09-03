@@ -21380,9 +21380,9 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'extensions/opensource/warzone-2100/test/map-provider.test.ts'
+        inspect: 'extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts'
         validate: null
-        read: 'extensions/opensource/warzone-2100/test/map-provider.test.ts'
+        read: 'extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts'
         materialize: null
     knownLoss:
       - 'installed data/world используют один game/workspace/content revision; все 177 object definition refs разрешены, а отсутствие native elevation у двухмерных object records остаётся явно partial с reason'

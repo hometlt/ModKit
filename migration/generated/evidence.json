@@ -24,70 +24,70 @@
       "validate": "extensions/images/test/eac-r11-decode.test.ts"
     },
     "format/warzone-img/open-inspect": {
-      "inspect": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/legacy-codecs.test.ts"
+      "inspect": "extensions/opensource/warzone-2100/test/legacy-codecs.test.ts"
     },
     "format/warzone-lev/open-inspect": {
-      "inspect": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/legacy-codecs.test.ts"
+      "inspect": "extensions/opensource/warzone-2100/test/legacy-codecs.test.ts"
     },
     "format/warzone-pie/open-inspect": {
-      "inspect": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts",
-      "materialize": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts",
-      "read": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts",
-      "validate": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts"
+      "inspect": "extensions/opensource/warzone-2100/test/codec.test.ts",
+      "materialize": "extensions/opensource/warzone-2100/test/codec.test.ts",
+      "read": "extensions/opensource/warzone-2100/test/codec.test.ts",
+      "validate": "extensions/opensource/warzone-2100/test/codec.test.ts"
     },
     "format/warzone-wrf/open-inspect": {
-      "inspect": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/legacy-codecs.test.ts"
+      "inspect": "extensions/opensource/warzone-2100/test/legacy-codecs.test.ts"
     },
     "format/warzone-wz/open-inspect": {
-      "inspect": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
-      "read": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts"
+      "inspect": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
+      "read": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts"
     },
     "format/warzone2100-map/open-inspect": {
-      "inspect": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/legacy-codecs.test.ts"
+      "inspect": "extensions/opensource/warzone-2100/test/legacy-codecs.test.ts"
     },
     "game/warzone-2100/discover-open": {
-      "inspect": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/map-provider.test.ts",
-      "materialize": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
-      "read": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/map-provider.test.ts",
-      "validate": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/map-provider.test.ts"
+      "inspect": "extensions/opensource/warzone-2100/test/map-provider.test.ts",
+      "materialize": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
+      "read": "extensions/opensource/warzone-2100/test/map-provider.test.ts",
+      "validate": "extensions/opensource/warzone-2100/test/map-provider.test.ts"
     },
     "platform/presentation/game-template-preview": {
-      "inspect": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
-      "read": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts"
+      "inspect": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
+      "read": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts"
     },
     "platform/presentation/relation-graph": {
-      "inspect": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
-      "read": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts"
+      "inspect": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
+      "read": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts"
     },
     "platform/presentation/subject-calculations": {
-      "inspect": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
-      "read": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts"
+      "inspect": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
+      "read": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts"
     },
     "platform/presentation/subject-card": {
-      "inspect": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
-      "read": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts"
+      "inspect": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
+      "read": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts"
     },
     "vertical/warzone-2100/native-inspect-authoring": {
-      "inspect": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts",
-      "materialize": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts",
-      "read": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts",
-      "validate": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts"
+      "inspect": "extensions/opensource/warzone-2100/test/codec.test.ts",
+      "materialize": "extensions/opensource/warzone-2100/test/codec.test.ts",
+      "read": "extensions/opensource/warzone-2100/test/codec.test.ts",
+      "validate": "extensions/opensource/warzone-2100/test/codec.test.ts"
     },
     "vertical/warzone-2100/native-round-trip": {
-      "inspect": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
-      "read": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts"
+      "inspect": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
+      "read": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts"
     },
     "vertical/warzone-2100/native-to-uv": {
-      "inspect": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts",
-      "materialize": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts",
-      "read": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts",
-      "validate": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts"
+      "inspect": "extensions/opensource/warzone-2100/test/codec.test.ts",
+      "materialize": "extensions/opensource/warzone-2100/test/codec.test.ts",
+      "read": "extensions/opensource/warzone-2100/test/codec.test.ts",
+      "validate": "extensions/opensource/warzone-2100/test/codec.test.ts"
     },
     "vertical/warzone-2100/neutral-definitions-world": {
-      "inspect": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
-      "materialize": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
-      "read": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
-      "validate": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/map-provider.test.ts"
+      "inspect": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
+      "materialize": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
+      "read": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
+      "validate": "extensions/opensource/warzone-2100/test/map-provider.test.ts"
     }
   },
   "declarations": [
@@ -209,536 +209,536 @@
     {
       "capabilityId": "format/warzone-img/open-inspect",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/legacy-codecs.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/legacy-codecs.test.ts",
       "contributionId": "modkit/warzone-img",
       "note": "the final Warzone owner opens and inspects this migrated format"
     },
     {
       "capabilityId": "format/warzone-lev/open-inspect",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/legacy-codecs.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/legacy-codecs.test.ts",
       "contributionId": "modkit/warzone-lev",
       "note": "the final Warzone owner opens and inspects this migrated format"
     },
     {
       "capabilityId": "format/warzone-pie/open-inspect",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/codec.test.ts",
       "contributionId": "modkit/warzone-pie",
       "note": "decoded PIE publishes model, resource and record-backed animation contracts"
     },
     {
       "capabilityId": "format/warzone-pie/open-inspect",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/corpus-preflight.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/corpus-preflight.test.ts",
       "contributionId": "modkit/warzone-pie",
       "note": "real cybd_run.pie opens from base.wz through the stock nested-subject route"
     },
     {
       "capabilityId": "format/warzone-pie/open-inspect",
       "operation": "materialize",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/codec.test.ts",
       "contributionId": "modkit/warzone-pie",
       "note": "PIE live projection materializes byte-stably and every independently observed diff has a receipt entry"
     },
     {
       "capabilityId": "format/warzone-pie/open-inspect",
       "operation": "materialize",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/corpus-preflight.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/corpus-preflight.test.ts",
       "contributionId": "modkit/warzone-pie",
       "note": "real PIE projection materializes byte-stably with every independently observed diff explained"
     },
     {
       "capabilityId": "format/warzone-pie/open-inspect",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/codec.test.ts",
       "contributionId": "modkit/warzone-pie",
       "note": "facet pages agree with bulk reads and the receipt is portable"
     },
     {
       "capabilityId": "format/warzone-pie/open-inspect",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/corpus-preflight.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/corpus-preflight.test.ts",
       "contributionId": "modkit/warzone-pie",
       "note": "six real ANIMOBJECT blocks yield six 40-record clips and portable projection evidence"
     },
     {
       "capabilityId": "format/warzone-pie/open-inspect",
       "operation": "validate",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/codec.test.ts",
       "contributionId": "modkit/warzone-pie",
       "note": "malformed blocks, traversal, false frame ranges, budgets and cancellation fail closed"
     },
     {
       "capabilityId": "format/warzone-wrf/open-inspect",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/legacy-codecs.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/legacy-codecs.test.ts",
       "contributionId": "modkit/warzone-wrf",
       "note": "the final Warzone owner opens and inspects this migrated format"
     },
     {
       "capabilityId": "format/warzone-wz/open-inspect",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "installed Warzone 4.7.0 mp.wz opens through the final game-owned WZ codec"
     },
     {
       "capabilityId": "format/warzone-wz/open-inspect",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/wz-codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/wz-codec.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "the final owner reads ruleset.json and applies the last-entry-wins WZ overlay"
     },
     {
       "capabilityId": "format/warzone-wz/open-inspect",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "installed mp.wz extracts the pinned Deflate-compressed game.map entry byte-exactly"
     },
     {
       "capabilityId": "format/warzone-wz/open-inspect",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/wz-codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/wz-codec.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "the final owner extracts an effective Deflate-compressed package entry"
     },
     {
       "capabilityId": "format/warzone2100-map/open-inspect",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/legacy-codecs.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/legacy-codecs.test.ts",
       "contributionId": "modkit/warzone2100-map",
       "note": "the final Warzone owner opens and inspects this migrated format"
     },
     {
       "capabilityId": "format/warzone2100-map/open-inspect",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/terrain-types.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/terrain-types.test.ts",
       "contributionId": "modkit/warzone2100-map",
       "note": "ttypes.ttp opens through the final Warzone map contribution with official semantics"
     },
     {
       "capabilityId": "game/warzone-2100/discover-open",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/map-provider.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/map-provider.test.ts",
       "contributionId": "wz2100project/warzone2100-map-semantic",
       "note": "the semantic provider exposes every bounded game.map terrain sample and transform"
     },
     {
       "capabilityId": "game/warzone-2100/discover-open",
       "operation": "materialize",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
       "contributionId": "wz2100project/warzone2100-map-semantic",
       "note": "installed 2c-highground materializes all 4,608 cells to byte-stable UVW candidate bytes"
     },
     {
       "capabilityId": "game/warzone-2100/discover-open",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/map-provider.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/map-provider.test.ts",
       "contributionId": "wz2100project/warzone2100-map-semantic",
       "note": "the semantic provider reads direct Warzone height samples without invented values"
     },
     {
       "capabilityId": "game/warzone-2100/discover-open",
       "operation": "validate",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/map-provider.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/map-provider.test.ts",
       "contributionId": "wz2100project/warzone2100-map-semantic",
       "note": "malformed gateway tables are refused instead of being silently truncated"
     },
     {
       "capabilityId": "platform/presentation/game-template-preview",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "installed Warzone 4.7.0 mp.wz opens through the final game-owned WZ codec"
     },
     {
       "capabilityId": "platform/presentation/game-template-preview",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/wz-codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/wz-codec.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "the final owner reads ruleset.json and applies the last-entry-wins WZ overlay"
     },
     {
       "capabilityId": "platform/presentation/game-template-preview",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "installed mp.wz extracts the pinned Deflate-compressed game.map entry byte-exactly"
     },
     {
       "capabilityId": "platform/presentation/game-template-preview",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/wz-codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/wz-codec.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "the final owner extracts an effective Deflate-compressed package entry"
     },
     {
       "capabilityId": "platform/presentation/relation-graph",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "installed Warzone 4.7.0 mp.wz opens through the final game-owned WZ codec"
     },
     {
       "capabilityId": "platform/presentation/relation-graph",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/wz-codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/wz-codec.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "the final owner reads ruleset.json and applies the last-entry-wins WZ overlay"
     },
     {
       "capabilityId": "platform/presentation/relation-graph",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "installed mp.wz extracts the pinned Deflate-compressed game.map entry byte-exactly"
     },
     {
       "capabilityId": "platform/presentation/relation-graph",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/wz-codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/wz-codec.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "the final owner extracts an effective Deflate-compressed package entry"
     },
     {
       "capabilityId": "platform/presentation/subject-calculations",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "installed Warzone 4.7.0 mp.wz opens through the final game-owned WZ codec"
     },
     {
       "capabilityId": "platform/presentation/subject-calculations",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/wz-codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/wz-codec.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "the final owner reads ruleset.json and applies the last-entry-wins WZ overlay"
     },
     {
       "capabilityId": "platform/presentation/subject-calculations",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "installed mp.wz extracts the pinned Deflate-compressed game.map entry byte-exactly"
     },
     {
       "capabilityId": "platform/presentation/subject-calculations",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/wz-codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/wz-codec.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "the final owner extracts an effective Deflate-compressed package entry"
     },
     {
       "capabilityId": "platform/presentation/subject-card",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "installed Warzone 4.7.0 mp.wz opens through the final game-owned WZ codec"
     },
     {
       "capabilityId": "platform/presentation/subject-card",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/wz-codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/wz-codec.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "the final owner reads ruleset.json and applies the last-entry-wins WZ overlay"
     },
     {
       "capabilityId": "platform/presentation/subject-card",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "installed mp.wz extracts the pinned Deflate-compressed game.map entry byte-exactly"
     },
     {
       "capabilityId": "platform/presentation/subject-card",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/wz-codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/wz-codec.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "the final owner extracts an effective Deflate-compressed package entry"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-inspect-authoring",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/codec.test.ts",
       "contributionId": "modkit/warzone-pie",
       "note": "decoded PIE publishes model, resource and record-backed animation contracts"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-inspect-authoring",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/corpus-preflight.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/corpus-preflight.test.ts",
       "contributionId": "modkit/warzone-pie",
       "note": "real cybd_run.pie opens from base.wz through the stock nested-subject route"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-inspect-authoring",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "installed Warzone 4.7.0 mp.wz opens through the final game-owned WZ codec"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-inspect-authoring",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/legacy-codecs.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/legacy-codecs.test.ts",
       "contributionId": "modkit/warzone2100-map",
       "note": "the final Warzone owner opens and inspects this migrated format"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-inspect-authoring",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/map-provider.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/map-provider.test.ts",
       "contributionId": "wz2100project/warzone2100-map-semantic",
       "note": "the semantic provider exposes every bounded game.map terrain sample and transform"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-inspect-authoring",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/terrain-types.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/terrain-types.test.ts",
       "contributionId": "modkit/warzone2100-map",
       "note": "ttypes.ttp opens through the final Warzone map contribution with official semantics"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-inspect-authoring",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/wz-codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/wz-codec.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "the final owner reads ruleset.json and applies the last-entry-wins WZ overlay"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-inspect-authoring",
       "operation": "materialize",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/codec.test.ts",
       "contributionId": "modkit/warzone-pie",
       "note": "PIE live projection materializes byte-stably and every independently observed diff has a receipt entry"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-inspect-authoring",
       "operation": "materialize",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/corpus-preflight.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/corpus-preflight.test.ts",
       "contributionId": "modkit/warzone-pie",
       "note": "real PIE projection materializes byte-stably with every independently observed diff explained"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-inspect-authoring",
       "operation": "materialize",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
       "contributionId": "wz2100project/warzone2100-map-semantic",
       "note": "installed 2c-highground materializes all 4,608 cells to byte-stable UVW candidate bytes"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-inspect-authoring",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/codec.test.ts",
       "contributionId": "modkit/warzone-pie",
       "note": "facet pages agree with bulk reads and the receipt is portable"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-inspect-authoring",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/corpus-preflight.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/corpus-preflight.test.ts",
       "contributionId": "modkit/warzone-pie",
       "note": "six real ANIMOBJECT blocks yield six 40-record clips and portable projection evidence"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-inspect-authoring",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "installed mp.wz extracts the pinned Deflate-compressed game.map entry byte-exactly"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-inspect-authoring",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/map-provider.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/map-provider.test.ts",
       "contributionId": "wz2100project/warzone2100-map-semantic",
       "note": "the semantic provider reads direct Warzone height samples without invented values"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-inspect-authoring",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/wz-codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/wz-codec.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "the final owner extracts an effective Deflate-compressed package entry"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-inspect-authoring",
       "operation": "validate",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/codec.test.ts",
       "contributionId": "modkit/warzone-pie",
       "note": "malformed blocks, traversal, false frame ranges, budgets and cancellation fail closed"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-inspect-authoring",
       "operation": "validate",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/map-provider.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/map-provider.test.ts",
       "contributionId": "wz2100project/warzone2100-map-semantic",
       "note": "malformed gateway tables are refused instead of being silently truncated"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-round-trip",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "installed Warzone 4.7.0 mp.wz opens through the final game-owned WZ codec"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-round-trip",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/legacy-codecs.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/legacy-codecs.test.ts",
       "contributionId": "modkit/warzone2100-map",
       "note": "the final Warzone owner opens and inspects this migrated format"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-round-trip",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/terrain-types.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/terrain-types.test.ts",
       "contributionId": "modkit/warzone2100-map",
       "note": "ttypes.ttp opens through the final Warzone map contribution with official semantics"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-round-trip",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/wz-codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/wz-codec.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "the final owner reads ruleset.json and applies the last-entry-wins WZ overlay"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-round-trip",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "installed mp.wz extracts the pinned Deflate-compressed game.map entry byte-exactly"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-round-trip",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/wz-codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/wz-codec.test.ts",
       "contributionId": "modkit/warzone-wz",
       "note": "the final owner extracts an effective Deflate-compressed package entry"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-to-uv",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/codec.test.ts",
       "contributionId": "modkit/warzone-pie",
       "note": "decoded PIE publishes model, resource and record-backed animation contracts"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-to-uv",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/corpus-preflight.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/corpus-preflight.test.ts",
       "contributionId": "modkit/warzone-pie",
       "note": "real cybd_run.pie opens from base.wz through the stock nested-subject route"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-to-uv",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/map-provider.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/map-provider.test.ts",
       "contributionId": "wz2100project/warzone2100-map-semantic",
       "note": "the semantic provider exposes every bounded game.map terrain sample and transform"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-to-uv",
       "operation": "materialize",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/codec.test.ts",
       "contributionId": "modkit/warzone-pie",
       "note": "PIE live projection materializes byte-stably and every independently observed diff has a receipt entry"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-to-uv",
       "operation": "materialize",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/corpus-preflight.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/corpus-preflight.test.ts",
       "contributionId": "modkit/warzone-pie",
       "note": "real PIE projection materializes byte-stably with every independently observed diff explained"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-to-uv",
       "operation": "materialize",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
       "contributionId": "wz2100project/warzone2100-map-semantic",
       "note": "installed 2c-highground materializes all 4,608 cells to byte-stable UVW candidate bytes"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-to-uv",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/codec.test.ts",
       "contributionId": "modkit/warzone-pie",
       "note": "facet pages agree with bulk reads and the receipt is portable"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-to-uv",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/corpus-preflight.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/corpus-preflight.test.ts",
       "contributionId": "modkit/warzone-pie",
       "note": "six real ANIMOBJECT blocks yield six 40-record clips and portable projection evidence"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-to-uv",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
       "note": "one installed Warzone workflow proves PIE live projection with receipt-complete UVM reopen and 2c-highground exact candidate UVW materialization without making UVW a production writer"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-to-uv",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/map-provider.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/map-provider.test.ts",
       "contributionId": "wz2100project/warzone2100-map-semantic",
       "note": "the semantic provider reads direct Warzone height samples without invented values"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-to-uv",
       "operation": "validate",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/codec.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/codec.test.ts",
       "contributionId": "modkit/warzone-pie",
       "note": "malformed blocks, traversal, false frame ranges, budgets and cancellation fail closed"
     },
     {
       "capabilityId": "vertical/warzone-2100/native-to-uv",
       "operation": "validate",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/map-provider.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/map-provider.test.ts",
       "contributionId": "wz2100project/warzone2100-map-semantic",
       "note": "malformed gateway tables are refused instead of being silently truncated"
     },
     {
       "capabilityId": "vertical/warzone-2100/neutral-definitions-world",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
       "note": "installed Warzone definitions and world share one game, workspace and content revision; all 177 object definition references resolve and 2D elevation remains explicitly partial"
     },
     {
       "capabilityId": "vertical/warzone-2100/neutral-definitions-world",
       "operation": "inspect",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/map-provider.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/map-provider.test.ts",
       "contributionId": "wz2100project/warzone2100-map-semantic",
       "note": "the semantic provider exposes every bounded game.map terrain sample and transform"
     },
     {
       "capabilityId": "vertical/warzone-2100/neutral-definitions-world",
       "operation": "materialize",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
       "contributionId": "wz2100project/warzone2100-map-semantic",
       "note": "installed 2c-highground materializes all 4,608 cells to byte-stable UVW candidate bytes"
     },
     {
       "capabilityId": "vertical/warzone-2100/neutral-definitions-world",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/installed-vertical-corpus.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts",
       "note": "the live definition and world facets are joined without claiming a portable UVD or production UVW artifact"
     },
     {
       "capabilityId": "vertical/warzone-2100/neutral-definitions-world",
       "operation": "read",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/map-provider.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/map-provider.test.ts",
       "contributionId": "wz2100project/warzone2100-map-semantic",
       "note": "the semantic provider reads direct Warzone height samples without invented values"
     },
     {
       "capabilityId": "vertical/warzone-2100/neutral-definitions-world",
       "operation": "validate",
-      "test": "C:/FILES/SC2Files/coding/modkit-extensions-warzone/test/map-provider.test.ts",
+      "test": "extensions/opensource/warzone-2100/test/map-provider.test.ts",
       "contributionId": "wz2100project/warzone2100-map-semantic",
       "note": "malformed gateway tables are refused instead of being silently truncated"
     }
