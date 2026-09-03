@@ -135,12 +135,12 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       legacyVsCode: 258,
       legacyCli: 8,
       byDisposition: {
-        'already-equivalent': 204,
-        'release-candidate': 0,
-        'post-release': 62,
+        'already-equivalent': 104,
+        'release-candidate': 36,
+        'post-release': 126,
       },
       decisionRequired: 0,
-      releaseCandidateGaps: 0,
+      releaseCandidateGaps: 5,
       // Wave 2B added three custom editors, two commands and three settings.
       currentX3ObservedFacts: 67,
     })
@@ -216,7 +216,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
       ledger.units.find((row: { sourceUnitId: string }) => row.sourceUnitId === sourceUnitId)
         ?.classification.disposition
 
-    expect(disposition('legacy/vscode/command/modkit.explainResolution')).toBe('already-equivalent')
+    expect(disposition('legacy/vscode/command/modkit.explainResolution')).toBe('post-release')
     expect(disposition('legacy/vscode/command/modkit.showLog')).toBe('already-equivalent')
     expect(disposition('legacy/vscode/custom-editor/modkit.replayPlayer')).toBe('post-release')
     expect(disposition('legacy/vscode/command/modkit.inspectModel')).toBe('already-equivalent')
@@ -225,18 +225,27 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
   it('emits a complete Product GA shortlist and explicit post-release backlog', () => {
     const shortlist = JSON.parse(readFileSync(generatedShortlist, 'utf8'))
     const backlog = JSON.parse(readFileSync(generatedBacklog, 'utf8'))
-    expect(shortlist.counts).toEqual({ gaps: 0, facts: 0 })
-    expect(shortlist.gaps).toEqual([])
+    // §5 re-audit (2026-09-03): five release-candidate gaps replaced the "tab present, not
+    // function" already-equivalent claims for CLI check/scripts/texture and two VS Code asset
+    // facts (see gap-*-in migration/vscode-workflows.json for the measured evidence).
+    expect(shortlist.counts).toEqual({ gaps: 5, facts: 36 })
+    expect(shortlist.gaps.map((gap: { gapId: string }) => gap.gapId)).toEqual([
+      'gap-cli-check-project-validate',
+      'gap-cli-scripts-galaxy-live-proof',
+      'gap-cli-texture-convert-live-proof',
+      'gap-vscode-assets-unexercised-media-and-conversion',
+      'gap-vscode-assets-world-render-broken',
+    ])
     expect(
       shortlist.gaps.every(
         (gap: { exactSourceUnitIds: string[]; factCount: number; evidence: string[] }) =>
           gap.exactSourceUnitIds.length > 0 && gap.factCount > 0 && gap.evidence.length > 0,
       ),
     ).toBe(true)
-    expect(backlog.counts).toEqual({ workflows: 6, facts: 62 })
+    expect(backlog.counts).toEqual({ workflows: 7, facts: 126 })
     expect(
       backlog.workflows.flatMap((row: { sourceUnitIds: string[] }) => row.sourceUnitIds),
-    ).toHaveLength(62)
+    ).toHaveLength(126)
   })
 
   it('records the factual 64→37, 11→4, 8→0 and 6→2 surface change', () => {
@@ -786,7 +795,7 @@ describe('Block 20 VS Code + CLI workflow ledger', () => {
     writeFileSync(decisionsPath, JSON.stringify(brokenDecisions))
     const result = run(['--decisions', decisionsPath, '--output', tempPath('ledger.json')])
     expect(result.status).toBe(1)
-    expect(result.stderr).toContain('does not match fact aggregate already-equivalent')
+    expect(result.stderr).toContain('does not match fact aggregate release-candidate')
   })
 
   it('refuses to claim PWA as a caller without runtime wiring evidence', () => {

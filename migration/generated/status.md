@@ -48,7 +48,7 @@
 
 ### 2.1. Block 14A — VS Code + CLI workflow ledger
 
-Ledger распределяет ровно **258 VS Code + 8 CLI = 266** legacy-единиц по трём честным корзинам: **204** уже заменены, **0** входят в 0 точных задач Product GA, **62** явно оставлены после релиза. Короткий список и полный backlog записаны в `migration/generated/vscode-workflow-shortlist.json` и `migration/generated/vscode-workflow-backlog.json`.
+Ledger распределяет ровно **258 VS Code + 8 CLI = 266** legacy-единиц по трём честным корзинам: **104** уже заменены, **36** входят в 5 точных задач Product GA, **126** явно оставлены после релиза. Короткий список и полный backlog записаны в `migration/generated/vscode-workflow-shortlist.json` и `migration/generated/vscode-workflow-backlog.json`.
 
 | Поверхность    | Legacy | X3 сейчас |
 | -------------- | ------ | --------- |

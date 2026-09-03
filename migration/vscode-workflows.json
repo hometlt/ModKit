@@ -6,16 +6,47 @@
     "owner": "modkit-program-owner",
     "reason": "A legacy fact not named by exact replacement evidence or the focused SC2, Warzone and common Product GA shortlist stays visible after release by default."
   },
-  "releaseCandidateGaps": [],
+  "releaseCandidateGaps": [
+    {
+      "gapId": "gap-cli-check-project-validate",
+      "owner": "apps/cli",
+      "replacementCapabilityId": "platform/tools/ga-priority",
+      "summary": "project.validate exists live in apps/cli/src/project-validation.ts, but its only behavioural test (per-file receipts, fail-closed on unclaimed inputs) was migration/history/externalization/former-core-tests/apps/cli/test/cli.test.ts, which vitest.tiers.config.ts excludes as an archived snapshot. Only single-subject subject.validate is proven live through the real CLI process, via the validate-png fixture in scripts/test/command-fixtures-hosts.test.ts."
+    },
+    {
+      "gapId": "gap-cli-scripts-galaxy-live-proof",
+      "owner": "apps/cli and extensions/blizzard/galaxy-language",
+      "replacementCapabilityId": "platform/tools/ga-priority",
+      "summary": "The claim that the shared CLI validates a positive Galaxy source had its sole test in migration/history/externalization/former-core-tests/packages/host/test/language.test.ts, deleted from the live packages/host/test/ tree and excluded from vitest by vitest.tiers.config.ts. COMMAND_FIXTURES in packages/testkit/src/command-fixtures.ts carries no Galaxy fixture, so no live test exercises Galaxy validation through the CLI today."
+    },
+    {
+      "gapId": "gap-cli-texture-convert-live-proof",
+      "owner": "apps/cli and extensions/images",
+      "replacementCapabilityId": "platform/tools/ga-priority",
+      "summary": "subject.convert PNG-to-rgba8 is proven live only through the VS Code host (reports/vscode-focused-ga-smoke/receipt.json, scenario focused-positive-conversion). COMMAND_FIXTURES has no 'convert' fixture, so no live test runs subject.convert through the real CLI process the way the archived migration/history/externalization/former-core-tests/apps/cli/test/cli.test.ts once did."
+    },
+    {
+      "gapId": "gap-vscode-assets-world-render-broken",
+      "owner": "apps/vscode and packages/ui",
+      "replacementCapabilityId": "platform/apps/priority-workflows",
+      "summary": "The focused-ga smoke receipt's own scenario 'focused-world-presentation' for modkit.previewMap3d shows the installed editor rendering 'The world cannot be rendered: world candidate identity changed between source and info', and the receipt defers semantic proof to apps/web/test/presentation-plan-conformance.test.ts, which exists only in migration/history/externalization/former-core-tests/ and is excluded from vitest. Both the direct observation and the deferred proof are currently negative or absent."
+    },
+    {
+      "gapId": "gap-vscode-assets-unexercised-media-and-conversion",
+      "owner": "apps/vscode and extensions/images",
+      "replacementCapabilityId": "platform/apps/priority-workflows",
+      "summary": "reports/vscode-focused-ga-smoke/receipt.json stages m3, pie, SC2Map, wz, odt, png and dds fixtures only. No fixture exercises SC2Layout preview, batch texture conversion, DXT5-to-DXT1, PNG-icon-to-DDS, DDS export-to-PNG, SC2 button-icon prep, audio, video, font, strings-editor or version-file preview, so the generic custom-editor and conversion architecture is unexercised for these eleven legacy facts specifically."
+    }
+  ],
   "factDecisions": [
     {
-      "decisionId": "already-diagnostics-explain",
-      "disposition": "already-equivalent",
+      "decisionId": "gap-diagnostics-explain-repurposed",
+      "disposition": "post-release",
       "gapId": null,
       "replacementWorkflowId": "platform/apps/command-runtime-session-conformance",
       "sourceUnitIds": ["legacy/vscode/command/modkit.explainResolution"],
-      "evidence": ["scripts/check-app-contract-matrix.mjs"],
-      "reason": "The exact command is registered by X3 and executes through the common command runtime."
+      "evidence": ["apps/vscode/src/extension.ts"],
+      "reason": "Legacy 'Modkit: Explain mod resolution' explained per-file codec candidates, rejections and the selected offer (see the archived CLI 'explain' behaviour for the shape). The live command of the same name (apps/vscode/src/extension.ts, registerCommand('modkit.explainResolution', ...)) instead reports host topology: extension-host realm, worker realm, webview realm, loaded/refused extension counts and diagnostics count. It is real, registered and exercised in the installed-editor E5 suite (apps/vscode/test-e2e/suite/index.cjs), so the host stays responsive when it runs, but it is a different function under the same command id, not a replacement for per-file resolution explanation. Re-scoped honestly rather than left as already-equivalent on tab presence."
     },
     {
       "decisionId": "already-container-browse",
@@ -81,32 +112,33 @@
     },
     {
       "decisionId": "candidate-cli-check",
-      "disposition": "already-equivalent",
-      "gapId": null,
+      "disposition": "release-candidate",
+      "gapId": "gap-cli-check-project-validate",
       "replacementWorkflowId": "platform/tools/ga-priority",
       "sourceUnitIds": ["legacy/cli/modkit/check"],
-      "evidence": ["migration/history/externalization/former-core-tests/apps/cli/test/cli.test.ts"],
-      "reason": "project.validate checks every focused project file through subject.validate, emits deterministic per-file protocol receipts and fails closed on unclaimed inputs."
+      "evidence": [
+        "scripts/test/command-fixtures-hosts.test.ts",
+        "apps/cli/src/project-validation.ts"
+      ],
+      "reason": "The real CLI process validates one subject through subject.validate today (validate-png fixture, scripts/test/command-fixtures-hosts.test.ts, run against apps/cli/dist/main.js). project.validate's whole-project, fail-closed-on-unclaimed-inputs behaviour still exists in source (apps/cli/src/project-validation.ts) but its only test was the archived, non-executing migration/history/externalization/former-core-tests/apps/cli/test/cli.test.ts, so that specific claim is unproven live rather than equivalent."
     },
     {
       "decisionId": "candidate-cli-scripts",
-      "disposition": "already-equivalent",
-      "gapId": null,
+      "disposition": "release-candidate",
+      "gapId": "gap-cli-scripts-galaxy-live-proof",
       "replacementWorkflowId": "platform/tools/ga-priority",
       "sourceUnitIds": ["legacy/cli/modkit/scripts"],
-      "evidence": [
-        "migration/history/externalization/former-core-tests/packages/host/test/language.test.ts"
-      ],
-      "reason": "The shared CLI validates a positive Galaxy source through subject.validate and emits a stable modkit-command-protocol-1 receipt."
+      "evidence": ["scripts/test/command-fixtures-hosts.test.ts"],
+      "reason": "The shared command runtime and CLI process are proven live for other subjects (scripts/test/command-fixtures-hosts.test.ts), so the routing mechanism this fact depends on is real. But the specific claim — validating a positive Galaxy source through subject.validate — has no live fixture: COMMAND_FIXTURES carries no Galaxy entry, and the archived migration/history/externalization/former-core-tests/packages/host/test/language.test.ts that once proved it is excluded from vitest and deleted from packages/host/test/."
     },
     {
       "decisionId": "candidate-cli-texture",
-      "disposition": "already-equivalent",
-      "gapId": null,
+      "disposition": "release-candidate",
+      "gapId": "gap-cli-texture-convert-live-proof",
       "replacementWorkflowId": "platform/tools/ga-priority",
       "sourceUnitIds": ["legacy/cli/modkit/texture"],
-      "evidence": ["migration/history/externalization/former-core-tests/apps/cli/test/cli.test.ts"],
-      "reason": "The shared CLI runs subject.convert for a PNG and exports deterministic decoded rgba8 bytes with a machine-readable receipt."
+      "evidence": ["reports/vscode-focused-ga-smoke/receipt.json"],
+      "reason": "subject.convert exporting deterministic rgba8 bytes from a PNG is proven live, but only through the VS Code host (reports/vscode-focused-ga-smoke/receipt.json, scenario focused-positive-conversion). No live test runs subject.convert through the real CLI process: COMMAND_FIXTURES has no convert fixture, and the archived migration/history/externalization/former-core-tests/apps/cli/test/cli.test.ts that once proved the CLI path specifically is excluded from vitest."
     },
     {
       "decisionId": "candidate-vscode-assets",
@@ -114,43 +146,69 @@
       "gapId": null,
       "replacementWorkflowId": "platform/apps/priority-workflows",
       "sourceUnitIds": [
-        "legacy/vscode/command/modkit.assetsTexture.batchConvert",
-        "legacy/vscode/command/modkit.dds.convertDxt5ToDxt1",
-        "legacy/vscode/command/modkit.dds.convertPngIconToDds",
-        "legacy/vscode/command/modkit.dds.exportPng",
-        "legacy/vscode/command/modkit.dds.prepareSc2ButtonIcon",
         "legacy/vscode/command/modkit.inspectModel",
         "legacy/vscode/command/modkit.modelViewer.toggle",
         "legacy/vscode/command/modkit.previewDds",
-        "legacy/vscode/command/modkit.previewLayout",
         "legacy/vscode/command/modkit.previewMap",
-        "legacy/vscode/command/modkit.previewMap3d",
         "legacy/vscode/custom-editor/modkit.archiveExplorer",
         "legacy/vscode/custom-editor/modkit.assetsTextureViewer",
-        "legacy/vscode/custom-editor/modkit.assetsVideoViewer",
-        "legacy/vscode/custom-editor/modkit.audioPreview",
         "legacy/vscode/custom-editor/modkit.documentHeaderPreview",
-        "legacy/vscode/custom-editor/modkit.fontPreview",
         "legacy/vscode/custom-editor/modkit.mapPreview",
-        "legacy/vscode/custom-editor/modkit.modelViewer",
-        "legacy/vscode/custom-editor/modkit.stringsEditor",
-        "legacy/vscode/custom-editor/modkit.versionPreview"
+        "legacy/vscode/custom-editor/modkit.modelViewer"
       ],
       "evidence": [
         "apps/vscode/test-e2e/suite/index.cjs",
         "reports/vscode-focused-ga-smoke/receipt.json"
       ],
-      "reason": "The focused VS Code E5 receipt proves model, map, document and texture previews plus a positive PNG-to-rgba8 conversion in the real editor host."
+      "reason": "The focused VS Code E5 receipt exercises exactly these facts with real fixtures in a real installed editor: sc2-model.m3 and warzone-model.pie open with the Model stage selected and subject.inspect confirms the formatId (inspectModel, modelViewer, modelViewer.toggle); sc2-map.SC2Map and warzone-map.wz open with the Entries stage selected (previewMap, mapPreview, archiveExplorer); fixture.odt opens with the Tree stage (documentHeaderPreview); texture.png and texture.dds open with the Image stage (previewDds, assetsTextureViewer). Narrowed from the prior 21-unit grouping, which cited the same receipt for eleven facts it does not exercise (see gap-vscode-assets-unexercised-media-and-conversion and gap-vscode-assets-world-render-broken)."
+    },
+    {
+      "decisionId": "gap-vscode-assets-world-render-broken",
+      "disposition": "release-candidate",
+      "gapId": "gap-vscode-assets-world-render-broken",
+      "replacementWorkflowId": "platform/apps/priority-workflows",
+      "sourceUnitIds": ["legacy/vscode/command/modkit.previewMap3d"],
+      "evidence": ["reports/vscode-focused-ga-smoke/receipt.json"],
+      "reason": "The receipt's own scenario for this fact (focused-world-presentation) shows the installed editor's World stage rendering 'The world cannot be rendered: world candidate identity changed between source and info', and defers semantic proof to apps/web/test/presentation-plan-conformance.test.ts, a file that exists only in migration/history/externalization/former-core-tests/ and is excluded from vitest. The scenario's PASS verdict checked only that the tab opened and the stage was selected, not that the world actually rendered — exactly the tab-presence check this re-audit was told to stop accepting."
+    },
+    {
+      "decisionId": "gap-vscode-assets-unexercised-media-and-conversion",
+      "disposition": "release-candidate",
+      "gapId": "gap-vscode-assets-unexercised-media-and-conversion",
+      "replacementWorkflowId": "platform/apps/priority-workflows",
+      "sourceUnitIds": [
+        "legacy/vscode/command/modkit.assetsTexture.batchConvert",
+        "legacy/vscode/command/modkit.dds.convertDxt5ToDxt1",
+        "legacy/vscode/command/modkit.dds.convertPngIconToDds",
+        "legacy/vscode/command/modkit.dds.exportPng",
+        "legacy/vscode/command/modkit.dds.prepareSc2ButtonIcon",
+        "legacy/vscode/command/modkit.previewLayout",
+        "legacy/vscode/custom-editor/modkit.assetsVideoViewer",
+        "legacy/vscode/custom-editor/modkit.audioPreview",
+        "legacy/vscode/custom-editor/modkit.fontPreview",
+        "legacy/vscode/custom-editor/modkit.stringsEditor",
+        "legacy/vscode/custom-editor/modkit.versionPreview"
+      ],
+      "evidence": ["reports/vscode-focused-ga-smoke/receipt.json"],
+      "reason": "The focused-ga smoke corpus (m3, pie, SC2Map, wz, odt, png, dds) stages no SC2Layout, audio, video, font, strings or version-marked fixture, and exercises only a generic PNG-to-rgba8 conversion, never a batch conversion or a DDS-specific one (DXT5-to-DXT1, PNG-icon-to-DDS, DDS-to-PNG export, SC2 button-icon prep). The same generic custom-editor and stage architecture that already-equivalent facts rely on plausibly extends to these, but nothing in the cited evidence exercises them, so the prior already-equivalent disposition rested on family resemblance rather than a proof for each fact."
+    },
+    {
+      "decisionId": "already-vscode-game-launch",
+      "disposition": "already-equivalent",
+      "gapId": null,
+      "replacementWorkflowId": "platform/apps/priority-workflows",
+      "sourceUnitIds": ["legacy/vscode/command/modkit.launchMap"],
+      "evidence": ["apps/vscode/test/game-launch-workflow.test.ts"],
+      "reason": "apps/vscode/test/game-launch-workflow.test.ts is live and functional: it exercises runExplicitGameLaunch end to end, proving the user-cancel path issues no process grant and does not execute, and the confirmed path issues an exact-map, short-lived process-launch grant scoped to the resource path before executing exactly once. This is the one fact of the former candidate-vscode-authoring group with real behavioural proof; the other nineteen are re-scoped below."
     },
     {
       "decisionId": "candidate-vscode-authoring",
-      "disposition": "already-equivalent",
+      "disposition": "post-release",
       "gapId": null,
       "replacementWorkflowId": "platform/apps/priority-workflows",
       "sourceUnitIds": [
         "legacy/vscode/command/modkit.gamedata.validateMod",
         "legacy/vscode/command/modkit.gamedata.validateModStrings",
-        "legacy/vscode/command/modkit.launchMap",
         "legacy/vscode/command/modkit.openLaunchSettings",
         "legacy/vscode/command/modkit.openModCard",
         "legacy/vscode/command/modkit.showEntityCard",
@@ -169,12 +227,8 @@
         "legacy/vscode/language/sc2style",
         "legacy/vscode/language/xml"
       ],
-      "evidence": [
-        "migration/history/externalization/former-core-tests/apps/vscode/test/sc2-authoring-workflows.test.ts",
-        "apps/vscode/test/game-launch-workflow.test.ts",
-        "migration/history/externalization/former-core-tests/packages/host/test/game-launch.test.ts"
-      ],
-      "reason": "The exact SC2 authoring and language facts map to shared services, while an explicit confirmed VS Code command launches the active map through the provider-owned safe launch contract."
+      "evidence": ["apps/vscode/package.json", "apps/vscode/bundled-contributes.v1.json"],
+      "reason": "The declarative mapping this group relied on (apps/vscode/src/sc2-authoring-workflows.ts, exporting FOCUSED_SC2_AUTHORING_REPLACEMENTS) no longer exists anywhere outside migration/history/externalization/former-core-tests/, and its only test went with it, excluded from vitest. Measured directly: apps/vscode/package.json and its authority bundled-contributes.v1.json both declare 'languages': [], so none of galaxy, ini, sc2layout, sc2strings, sc2style or xml is a live VS Code language contribution today, and none of the thirteen named commands (gamedata.validateMod, gamedata.validateModStrings, openLaunchSettings, openModCard, showEntityCard, showModWiki, strings.extractChanged, strings.openColumns, strings.openText, verifyGalaxyScript, sc2layout.dtree.revealActiveFile/showInTextEditor/showProperties) appears in apps/vscode/src/extension.ts under any name. Whether the underlying function moved into the generic language-session runtime (apps/vscode/src/language-session.ts) or was dropped is unmeasured; recorded as an honest gap rather than left as already-equivalent on a deleted mapping table."
     },
     {
       "decisionId": "candidate-vscode-container",
@@ -210,7 +264,7 @@
     },
     {
       "decisionId": "candidate-vscode-settings",
-      "disposition": "already-equivalent",
+      "disposition": "post-release",
       "gapId": null,
       "replacementWorkflowId": "platform/apps/priority-workflows",
       "sourceUnitIds": [
@@ -240,11 +294,8 @@
         "legacy/vscode/configuration/modkit.treeview.visible",
         "legacy/vscode/configuration/modkit.xsdPath"
       ],
-      "evidence": [
-        "apps/vscode/test/settings.test.ts",
-        "migration/history/externalization/former-core-tests/apps/vscode/test/priority-settings.test.ts"
-      ],
-      "reason": "Every focused installation, source, launch, diagnostics, locale, delay and renderer setting has one explicit generic ownership mapping."
+      "evidence": ["apps/vscode/package.json"],
+      "reason": "The declarative mapping this group relied on (apps/vscode/src/priority-settings.ts, exporting FOCUSED_PRIORITY_SETTING_REPLACEMENTS with a kind and target per legacy key) no longer exists anywhere outside migration/history/externalization/former-core-tests/, and its only test (priority-settings.test.ts) went with it, excluded from vitest. None of the 25 legacy modkit.* keys appears in apps/vscode/package.json, which is expected under the generic-replacement theory (they were never meant to survive as modkit.* settings) but means no live artifact ties any of the 25 keys to the specific generic setting, provider option, host policy or workflow it was said to become. The live apps/vscode/test/settings.test.ts is real and functional, but it covers a different, generic surface (modkit.extensions, modkit.disabledContributions, modkit.disabledExtensions) — not these 25 keys. Recorded as an honest gap rather than left as already-equivalent on a deleted mapping table."
     },
     {
       "decisionId": "candidate-vscode-navigation",
@@ -831,13 +882,13 @@
       ],
       "unitKinds": ["vscode-custom-editor"],
       "classification": {
-        "disposition": "already-equivalent",
-        "migrationState": "equivalent-better",
+        "disposition": "release-candidate",
+        "migrationState": "partial",
         "releaseTrack": "mk3-priority",
         "owner": "apps/vscode",
-        "targetState": "accepted",
+        "targetState": "equivalent-better",
         "replacementWorkflowId": "platform/apps/priority-workflows",
-        "reason": "The real VS Code E5 workflow proves the focused previews and positive conversion; unrelated viewer facts remain explicitly post-release."
+        "reason": "The focused-ga smoke receipt proves model, map, document and image previews with real fixtures; batch/DDS-specific conversion, SC2Layout preview, audio, video, font, strings-editor and version-file preview are unexercised (gap-vscode-assets-unexercised-media-and-conversion), and the receipt's own World-stage scenario for previewMap3d shows a render error deferred to a now-deleted conformance test (gap-vscode-assets-world-render-broken)."
       }
     },
     {
@@ -868,7 +919,7 @@
         "owner": "apps/vscode and extensions/blizzard",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/priority-workflows",
-        "reason": "The exact Galaxy, SC2 authoring, strings and layout facts map to shared services, and explicit map launch uses the safe game-provider contract."
+        "reason": "Explicit map launch (modkit.launchMap) is proven live and keeps this workflow at already-equivalent by the fact-aggregate rule. The other thirteen commands and all six languages are re-scoped to post-release in candidate-vscode-authoring: the declarative mapping that once justified them (sc2-authoring-workflows.ts) no longer exists live, and apps/vscode/package.json declares zero VS Code languages today."
       }
     },
     {
@@ -920,7 +971,7 @@
         "owner": "apps/vscode",
         "targetState": "accepted",
         "replacementWorkflowId": "platform/apps/priority-workflows",
-        "reason": "Resolution explanation and the bounded readable and exportable diagnostics journal replace the focused diagnostic and log commands."
+        "reason": "The bounded readable and exportable diagnostics journal replaces the focused log commands and keeps this workflow at already-equivalent by the fact-aggregate rule (candidate-vscode-diagnostics). modkit.explainResolution is re-scoped separately (gap-diagnostics-explain-repurposed): the live command answers with host topology, not the per-file resolution explanation legacy provided under the same id."
       }
     },
     {
@@ -930,13 +981,13 @@
       "legacyCommandIds": [],
       "unitKinds": ["vscode-configuration-property", "vscode-contribution"],
       "classification": {
-        "disposition": "already-equivalent",
-        "migrationState": "equivalent-better",
-        "releaseTrack": "mk3-priority",
+        "disposition": "post-release",
+        "migrationState": "deferred-post-ga",
+        "releaseTrack": "post-ga",
         "owner": "apps/vscode and packages/ui",
-        "targetState": "accepted",
+        "targetState": "deferred-post-ga",
         "replacementWorkflowId": "platform/apps/priority-workflows",
-        "reason": "Every focused installation, source, launch, diagnostics and renderer setting has an explicit generic setting, provider option, host policy or workflow mapping; the extension registry is an explicit catalog source whose network refresh requires a user command."
+        "reason": "candidate-vscode-settings moved to post-release: the declarative mapping that once tied each of the 25 legacy keys to a specific generic setting, provider option, host policy or workflow (priority-settings.ts) no longer exists live, and no live test ties any of the 25 keys to its claimed replacement. None of the 25 keys is expected to survive as a literal modkit.* setting, so their absence from apps/vscode/package.json is not itself the gap; the missing link is proof of where each one actually landed."
       }
     },
     {
@@ -1032,13 +1083,13 @@
       "legacyCliCommands": ["check"],
       "unitKinds": [],
       "classification": {
-        "disposition": "already-equivalent",
-        "migrationState": "equivalent-better",
+        "disposition": "release-candidate",
+        "migrationState": "partial",
         "releaseTrack": "mk3-priority",
         "owner": "apps/cli",
-        "targetState": "accepted",
+        "targetState": "equivalent-better",
         "replacementWorkflowId": "platform/tools/ga-priority",
-        "reason": "project.validate checks every focused project file through the shared runtime and emits a deterministic machine-readable receipt."
+        "reason": "Single-subject validate through the real CLI process is proven live (scripts/test/command-fixtures-hosts.test.ts). project.validate exists in source (apps/cli/src/project-validation.ts) but its whole-project, fail-closed behaviour has no live test since the archived cli.test.ts was excluded from vitest (gap-cli-check-project-validate)."
       }
     },
     {
@@ -1083,13 +1134,13 @@
       "legacyCliCommands": ["scripts"],
       "unitKinds": [],
       "classification": {
-        "disposition": "already-equivalent",
-        "migrationState": "equivalent-better",
+        "disposition": "release-candidate",
+        "migrationState": "partial",
         "releaseTrack": "mk3-priority",
         "owner": "apps/cli and extensions/blizzard/galaxy-language",
-        "targetState": "accepted",
+        "targetState": "equivalent-better",
         "replacementWorkflowId": "platform/tools/ga-priority",
-        "reason": "The shared CLI validates positive Galaxy source and returns the stable common command protocol receipt."
+        "reason": "The shared command runtime is proven live for other subjects. Positive Galaxy validation through the CLI has no live fixture: COMMAND_FIXTURES carries no Galaxy entry, and the archived language.test.ts that once proved it was excluded from vitest and deleted from packages/host/test/ (gap-cli-scripts-galaxy-live-proof)."
       }
     },
     {
@@ -1100,13 +1151,13 @@
       "legacyCliCommands": ["texture"],
       "unitKinds": [],
       "classification": {
-        "disposition": "already-equivalent",
-        "migrationState": "equivalent-better",
+        "disposition": "release-candidate",
+        "migrationState": "partial",
         "releaseTrack": "mk3-priority",
         "owner": "apps/cli and extensions/images",
-        "targetState": "accepted",
+        "targetState": "equivalent-better",
         "replacementWorkflowId": "platform/tools/ga-priority",
-        "reason": "The shared CLI performs positive PNG conversion and exports deterministic rgba8 bytes through subject.convert."
+        "reason": "Positive PNG conversion to rgba8 through subject.convert is proven live only via the VS Code host (reports/vscode-focused-ga-smoke/receipt.json). No live test runs subject.convert through the real CLI process: COMMAND_FIXTURES has no convert fixture, and the archived cli.test.ts that once proved the CLI path was excluded from vitest (gap-cli-texture-convert-live-proof)."
       }
     }
   ]
