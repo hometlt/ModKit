@@ -80,9 +80,10 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | ---------------------------- | ----- | ---------------------- | ----- | ------------- | ----- |
 | `absent`                     | 84    | `equivalent-better`    | 21    | E0            | 82    |
 | `covered`                    | 230   | `implemented`          | 216   | E1            | 111   |
-| `not-applicable`             | 1     | `missing`              | 84    | E2            | 75    |
+| `not-applicable`             | 1     | `missing`              | 84    | E2            | 72    |
 | `superseded`                 | 13    | `partial`              | 9     | E3            | 24    |
 | `superseded-staging-present` | 3     | `relocated-multiverse` | 1     | E4            | 39    |
+|                              |       |                        |       | E5            | 3     |
 
 ### 3.3. Доказанные writers
 

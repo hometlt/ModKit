@@ -1209,7 +1209,8 @@ capabilities:
         validate: null
         read: null
         materialize: null
-    knownLoss: []
+    knownLoss:
+      - '2C: якорь 2B-4 установленной приёмки (installed-acceptance-wave2b-final-687fd1f8.receipt.json, corrupt-audio-then-canary) закрыт полностью — типизированный отказ x3.host/subject-input-open-failed доехал до Problems, канарейка декодировала после него. E5 не выставлен: субъект якоря — намеренно испорченный файл, то есть synthetic corpus, а E5 требует реального. Строка остаётся E2 до отказа на реальном повреждённом игровом ассете.'
     receipts:
       projection: null
       materialization: null
@@ -4238,8 +4239,8 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
-    hostEvidence: 'node'
+    evidenceLevel: 'E5'
+    hostEvidence: 'vscode-installed'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: 'compared-synthetic'
@@ -4253,7 +4254,8 @@ capabilities:
         - 'common.view/raster-image-source'
         - 'common.view/tree-data-source'
     fixtures: []
-    corpusDescriptors: []
+    corpusDescriptors:
+      - 'MODKITX_SC2_ROOT'
     projection:
       plane: 'media'
       liveProjection: 'live'
@@ -4266,8 +4268,9 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
-      - 'АУДИТ 2026-08-31: installed VS Code штатно не получает DDS codec root: официальный VSIX не собирается, а временно упакованный shell имеет packagedCodecRoots=[]; Reopen With открывает только оболочку с typed warning. CLI и Electron декодируют реальный CASC DXT1, поэтому это packaging/install regression, а не отказ проверенного DXT1 decoder.'
-      - 'АУДИТ 2026-08-31: contribution metadata обещает BC6H/BC7 и выбор mip/layer/face/slice, но текущий decoder реализует только legacy DXT1/3/5, ограниченный DXGI BC1/2/3 и mip/layer/face/slice=0; manifest должен быть сужен до исполняемой правды.'
+      - 'АУДИТ 2026-08-31 ЗАКРЫТ волнами 1B–2B: packaging/install regression устранён; тот же DDS-маршрут проверен в установленном VS Code (installed-acceptance-wave2b-final-687fd1f8.receipt.json, formatSmoke image-dds и casc-dds, якорь 2B-1/2B-2). Прежняя запись «installed VS Code штатно не получает DDS codec root, packagedCodecRoots=[]» более не соответствует факту.'
+      - 'АУДИТ 2026-08-31: contribution metadata обещает BC6H/BC7 и выбор mip/layer/face/slice, но текущий decoder реализует только legacy DXT1/3/5, ограниченный DXGI BC1/2/3 и mip/layer/face/slice=0; manifest должен быть сужен до исполняемой правды. Волна 10D, при условии валидирующего корпуса: ни в SC2, ни в Warzone его нет.'
+      - 'E5 закрывает live app workflow (mip-навигация, side-by-side сравнение, export всех subresource в PNG) на реальном DXT5 с 8-уровневой цепочкой мипов; sealed-oracle дифференциал остаётся synthetic (parityEvidence corpusKinds synthetic).'
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: image.compressed-read'
       - 'operation dropped at port: image.inspect'
@@ -4277,7 +4280,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
-      installedHost: null
+      installedHost: 'artifacts/ga-recovery-wave2b/installed-acceptance-wave2b-final-687fd1f8.receipt.json#2B-1/2B-2'
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -8221,8 +8224,8 @@ capabilities:
     migrationState: 'equivalent-better'
     supportState: 'unknown'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
-    hostEvidence: 'node'
+    evidenceLevel: 'E5'
+    hostEvidence: 'vscode-installed'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: 'compared-synthetic'
@@ -8235,7 +8238,8 @@ capabilities:
       liveSources:
         - 'common.view/tree-data-source'
     fixtures: []
-    corpusDescriptors: []
+    corpusDescriptors:
+      - 'MODKITX_SC2_ROOT'
     projection:
       plane: 'media'
       liveProjection: 'live'
@@ -8248,13 +8252,14 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
+      - 'E5 закрывает только live app workflow (воспроизведение, смена скорости, пауза) на реальном CASC-корпусе; sealed-oracle дифференциал по-прежнему synthetic и его вердикт — poorer, поэтому E5 здесь не означает «не беднее legacy».'
       - 'operation dropped at port: audio.export'
       - 'operation dropped at port: audio.inspect'
     receipts:
       projection: null
       materialization: null
       nativeExport: null
-      installedHost: null
+      installedHost: 'artifacts/ga-recovery-wave2b/installed-acceptance-wave2b-final-687fd1f8.receipt.json#2B-3'
     replacementWorkflow: 'MK3 contribution modkit/audio-ogg'
     closedBy:
       commits: []
@@ -14439,8 +14444,8 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'supported'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
-    hostEvidence: 'node'
+    evidenceLevel: 'E5'
+    hostEvidence: 'vscode-installed'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: 'compared-synthetic'
@@ -14453,7 +14458,8 @@ capabilities:
       liveSources:
         - 'common.view/tree-data-source'
     fixtures: []
-    corpusDescriptors: []
+    corpusDescriptors:
+      - 'MODKITX_SC2_ROOT'
     projection:
       plane: 'media'
       liveProjection: 'live'
@@ -14466,6 +14472,7 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
+      - 'E5 закрывает live app workflow (воспроизведение IMA ADPCM через codec-pcm, смена скорости, пауза) на реальном CASC-корпусе; sealed-oracle дифференциал остаётся synthetic.'
       - 'operation dropped at port: audio.decode'
       - 'operation dropped at port: audio.export'
       - 'operation dropped at port: audio.inspect'
@@ -14473,7 +14480,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
-      installedHost: null
+      installedHost: 'artifacts/ga-recovery-wave2b/installed-acceptance-wave2b-final-687fd1f8.receipt.json#2B-3'
     replacementWorkflow: null
     closedBy:
       commits: []
