@@ -1,0 +1,6 @@
+{
+  "$comment": "Fixture: debt baseline naming exactly the one problem no-owner.capabilities.yaml produces, for the migration registry gate ratchet regression suite.",
+  "schemaVersion": "registry-debt-baseline-1",
+  "emptyByWave": "6",
+  "problems": ["capability format/demo/open-inspect: owner is required"]
+}

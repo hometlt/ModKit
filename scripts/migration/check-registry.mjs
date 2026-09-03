@@ -18,12 +18,15 @@
 //   5. allocation coverage and implementation/evidence state are different fields, and evidence is
 //      earned rather than inherited from allocation;
 //   6. the scope lock holds and frozen owner additions cannot silently widen the release scope;
-//   7. the projection matrix respects its own declared invariants.
+//   7. the projection matrix respects its own declared invariants;
+//   8. known debt cannot grow: migration/registry-debt-baseline.json freezes today's problems by
+//      exact identity, so this gate fails on any problem that baseline does not already name and on
+//      any baseline line that stops reproducing — paid debt has to be deleted, not just outgrown.
 //
 // Usage: node scripts/migration/check-registry.mjs [--registry <path>] [--projections <path>]
 //                                                  [--inventory <path>] [--workflow-ledger <path>]
 //                                                  [--parity-report <path>] [--artifacts <path>]
-//                                                  [--quiet]
+//                                                  [--baseline <path>] [--quiet]
 
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
@@ -55,6 +58,16 @@ const workflowLedgerPath = path.resolve(
 )
 const parityReportPath = path.resolve(
   argValue('--parity-report') ?? path.join(repoRoot, 'reports/parity/latest.json'),
+)
+const isDefaultRegistry = registryPath === path.join(repoRoot, 'migration/capabilities.yaml')
+// The debt ratchet (migration/registry-debt-baseline.json) is always on for the real registry, and
+// any run that names --baseline explicitly opts in the same way useWorkflowLedger opts in below —
+// which is how the fixture-driven tests exercise it without ever touching the real baseline file. A
+// fixture run that names neither gets an empty baselineSet later, so every problem it finds sorts
+// into newProblems: the pre-ratchet behaviour, unchanged.
+const useBaseline = argValue('--baseline') !== undefined || isDefaultRegistry
+const baselinePath = path.resolve(
+  argValue('--baseline') ?? path.join(repoRoot, 'migration/registry-debt-baseline.json'),
 )
 
 const problems = []
@@ -448,6 +461,56 @@ try {
   // no declarations yet
 }
 
+/**
+ * Debt ratchet baseline (migration/registry-debt-baseline.json).
+ *
+ * Freezes the exact problem identities this gate already knows about, so it can fail on anything new
+ * while the known debt stays visible, counted, and — because identity rather than a count is what is
+ * frozen — impossible to pay down by swapping one bad row for another in the same commit.
+ */
+let baselineProblems = []
+let baselineEmptyByWave = null
+if (useBaseline) {
+  if (!existsSync(baselinePath)) {
+    console.error(
+      `migration:check registry: debt baseline ${baselinePath} is missing; every known problem needs ` +
+        `a frozen identity there before the gate can tell new debt from old`,
+    )
+    process.exit(1)
+  }
+  let baseline
+  try {
+    baseline = readJson(baselinePath)
+  } catch (error) {
+    console.error(
+      `migration:check registry: ${path.basename(baselinePath)} is not readable JSON — ${error.message}`,
+    )
+    process.exit(1)
+  }
+  if (baseline.schemaVersion !== 'registry-debt-baseline-1') {
+    fail(
+      `registry debt baseline: schemaVersion must be "registry-debt-baseline-1", found ${JSON.stringify(baseline.schemaVersion)}`,
+    )
+  }
+  if (typeof baseline.emptyByWave !== 'string' || baseline.emptyByWave === '') {
+    fail(
+      'registry debt baseline: emptyByWave is required — the ratchet needs a deadline, not an open cheque',
+    )
+  }
+  baselineEmptyByWave = baseline.emptyByWave ?? null
+  if (!Array.isArray(baseline.problems)) {
+    fail('registry debt baseline: problems must be a list of exact problem strings')
+  } else {
+    baselineProblems = baseline.problems
+    if (new Set(baselineProblems).size !== baselineProblems.length) {
+      fail(
+        'registry debt baseline: problems contains a duplicate entry — each frozen problem must appear exactly once',
+      )
+    }
+  }
+}
+const baselineSet = new Set(baselineProblems)
+
 if (registry.schemaVersion !== 'capability-registry-1') {
   fail(
     `registry schemaVersion must be "capability-registry-1", found ${JSON.stringify(registry.schemaVersion)}`,
@@ -463,8 +526,6 @@ const capabilities = registry.capabilities ?? []
 const unmappedRules = registry.unmapped ?? []
 
 // --- machine facts, re-derived ----------------------------------------------------------------------
-
-const isDefaultRegistry = registryPath === path.join(repoRoot, 'migration/capabilities.yaml')
 
 function deriveX3Facts() {
   // Contributions live under extensions/** (the original layout) and, since the externalization,
@@ -1269,10 +1330,23 @@ if (projections.counts?.planes !== planes.length) {
 
 // --- verdict ---------------------------------------------------------------------------------------
 
+// The debt ratchet partitions the raw problems above by identity against the frozen baseline: a
+// problem the baseline already names is known debt and does not fail the run; a problem it does not
+// name is new and does; a baseline line that no longer reproduces is stale and also fails — the
+// ratchet only tightens, and paying a debt down means deleting its line in the same commit that fixes
+// it. When useBaseline is false (a fixture run that names no --baseline), baselineSet is empty, so
+// every problem here sorts into newProblems — exactly the pre-ratchet behaviour, unchanged.
+const knownDebt = problems.filter(problem => baselineSet.has(problem))
+const newProblems = problems.filter(problem => !baselineSet.has(problem))
+const currentProblemSet = new Set(problems)
+const staleBaseline = [...baselineSet]
+  .filter(entry => !currentProblemSet.has(entry))
+  .sort(compareUtf8)
+
 // Unavailable checks are reported first, and unconditionally — in the clean-looking branch as much
-// as the failing one — because the one thing that must never happen is a reader seeing a summary
-// and believing every rule ran. "Unavailable" forces the same non-zero exit "problem" does: a run
-// that could not evaluate one of its own rules is not a passing run.
+// as the failing one — because the one thing that must never happen is a reader seeing a summary and
+// believing every rule ran. An unavailable check is a named, loud gap, never silent — but it is not
+// debt this baseline tracks, so unlike the three categories below it does not fail the run.
 if (unavailableChecks.length > 0) {
   console.error(
     `migration:check registry: ${unavailableChecks.length} check(s) UNAVAILABLE — not performed, ` +
@@ -1280,11 +1354,37 @@ if (unavailableChecks.length > 0) {
   )
   for (const message of unavailableChecks) console.error(`  ! ${message}`)
 }
-if (problems.length > 0) {
-  console.error(`migration:check registry: ${problems.length} problem(s)`)
-  for (const problem of problems) console.error(`  - ${problem}`)
+if (knownDebt.length > 0) {
+  console.error(
+    `migration:check registry: ${knownDebt.length} known debt problem(s) — frozen in ` +
+      `${path.basename(baselinePath)}, must be empty by wave ${baselineEmptyByWave}; paying one down ` +
+      `means deleting its line there in the same commit`,
+  )
+  for (const problem of knownDebt) console.error(`  ~ ${problem}`)
 }
-if (problems.length > 0 || unavailableChecks.length > 0) {
+if (newProblems.length > 0) {
+  console.error(
+    `migration:check registry: ${newProblems.length} NEW problem(s) — not in ` +
+      `${path.basename(baselinePath)}, so this is a regression, not known debt`,
+  )
+  for (const problem of newProblems) console.error(`  - ${problem}`)
+}
+if (staleBaseline.length > 0) {
+  console.error(
+    `migration:check registry: ${staleBaseline.length} STALE baseline entry(ies) — ` +
+      `${path.basename(baselinePath)} claims debt that no longer occurs; delete the line, don't leave it`,
+  )
+  for (const entry of staleBaseline) console.error(`  x ${entry}`)
+}
+// The one line a reader cannot miss: all four numbers, every run, pass or fail — so a green exit
+// with a non-empty baseline can never read as "the registry is clean."
+console.log(
+  `migration:check registry: known debt ${knownDebt.length}` +
+    (useBaseline ? ` (must be empty by wave ${baselineEmptyByWave})` : '') +
+    `, new problems ${newProblems.length}, stale baseline entries ${staleBaseline.length}, ` +
+    `unavailable checks ${unavailableChecks.length}`,
+)
+if (newProblems.length > 0 || staleBaseline.length > 0) {
   process.exit(1)
 }
 if (!quiet) {

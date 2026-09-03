@@ -1,0 +1,6 @@
+{
+  "$comment": "Fixture: empty debt baseline for the migration registry gate ratchet regression suite — no known debt is frozen, so every problem the gate finds against it must be new.",
+  "schemaVersion": "registry-debt-baseline-1",
+  "emptyByWave": "6",
+  "problems": []
+}
