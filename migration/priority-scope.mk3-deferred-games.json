@@ -34,7 +34,7 @@
       "relocated-multiverse": 1
     },
     "byObligation": { "focused-required-addition": 33, "legacy-required": 154 },
-    "byEvidenceLevel": { "E0": 26, "E1": 53, "E2": 57, "E3": 19, "E4": 29, "E5": 3 }
+    "byEvidenceLevel": { "E0": 26, "E1": 51, "E2": 57, "E3": 21, "E4": 29, "E5": 3 }
   },
   "deadlines": {
     "block-11": [
@@ -905,10 +905,10 @@
       "plannedBlock": 15,
       "migrationState": "implemented",
       "supportState": "supported",
-      "evidenceLevel": "E1",
+      "evidenceLevel": "E3",
       "allocationState": "superseded",
       "portFamily": "blizzard/casc",
-      "corpusDescriptors": [],
+      "corpusDescriptors": ["MODKITX_SC2_ROOT"],
       "dependsOn": [],
       "requiredBy": [
         "block9/archive-entry-as-subject",
@@ -1424,10 +1424,10 @@
       "plannedBlock": 15,
       "migrationState": "implemented",
       "supportState": "supported",
-      "evidenceLevel": "E1",
+      "evidenceLevel": "E3",
       "allocationState": "superseded",
       "portFamily": "blizzard/mpq",
-      "corpusDescriptors": [],
+      "corpusDescriptors": ["MODKITX_SC2_ROOT"],
       "dependsOn": [],
       "requiredBy": [
         "block9/archive-entry-as-subject",

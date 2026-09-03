@@ -642,8 +642,8 @@ capabilities:
       - 'read-source'
     mk3Contributions:
       - 'modkit/archive-zip'
-      - 'modkit/casc'
-      - 'modkit/mpq'
+      - 'blizzard/casc'
+      - 'blizzard/mpq'
     mk3Operations: []
     allocation:
       state: 'covered'
@@ -713,8 +713,8 @@ capabilities:
     hostFacilities:
       - 'read-source'
     mk3Contributions:
-      - 'modkit/casc'
-      - 'modkit/mpq'
+      - 'blizzard/casc'
+      - 'blizzard/mpq'
       - 'modkit/dds'
     mk3Operations: []
     allocation:
@@ -929,7 +929,7 @@ capabilities:
     hostFacilities:
       - 'read-source'
     mk3Contributions:
-      - 'modkit/m3'
+      - 'blizzard/m3'
     mk3Operations: []
     allocation:
       state: 'covered'
@@ -991,7 +991,7 @@ capabilities:
     hostFacilities:
       - 'read-source'
     mk3Contributions:
-      - 'modkit/m3'
+      - 'blizzard/m3'
     mk3Operations: []
     allocation:
       state: 'covered'
@@ -1055,8 +1055,8 @@ capabilities:
     hostFacilities:
       - 'read-source'
     mk3Contributions:
-      - 'modkit/m3'
-      - 'modkit/casc'
+      - 'blizzard/m3'
+      - 'blizzard/casc'
     mk3Operations: []
     allocation:
       state: 'covered'
@@ -3576,7 +3576,7 @@ capabilities:
     hostFacilities:
       - 'read-source'
     mk3Contributions:
-      - 'modkit/casc'
+      - 'blizzard/casc'
     mk3Operations:
       - 'asset.validate'
       - 'container.extract'
@@ -3589,7 +3589,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'supported'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E1'
+    evidenceLevel: 'E3'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -3599,7 +3599,8 @@ capabilities:
       verdicts: []
       liveSources: []
     fixtures: []
-    corpusDescriptors: []
+    corpusDescriptors:
+      - 'MODKITX_SC2_ROOT'
     projection:
       plane: 'container'
       liveProjection: 'planned'
@@ -3613,6 +3614,7 @@ capabilities:
         materialize: null
     knownLoss:
       - 'operation dropped at port: archive.extract'
+      - '2C: E1 → E3 поднят на реальном доказательстве волны 2A (artifacts/ga-recovery-wave2a/installed-acceptance-wave2a-final-3086af76.receipt.json, verdict pass): casc-tree-search-lazy (реальное CASC-хранилище установленной SC2, 131 072 проиндексированные записи, browse+search+lazy), casc-dds-nested-open, casc-dds-materialize (извлечение в файл, sha256 b0a41b1a…733b79 сверен с диском), corrupt-casc-then-canary (типизированный отказ, canary жив). mk3Contributions исправлен modkit/casc → blizzard/casc по тому же receipt. hostEvidence остаётся node: доказательство получено в установленном VS Code, но receipt несёт caseId, не anchor 2B-харнесса, поэтому vscode-installed/E5 не заявляется (см. решение оркестратора, TASK_SOL_GA_RECOVERY_WAVE2C_2026-09-03.md).'
     receipts:
       projection: null
       materialization: null
@@ -7236,7 +7238,7 @@ capabilities:
     hostFacilities:
       - 'read-source'
     mk3Contributions:
-      - 'modkit/m3'
+      - 'blizzard/m3'
     mk3Operations:
       - 'asset.validate'
       - 'export.raw'
@@ -7788,7 +7790,7 @@ capabilities:
     hostFacilities:
       - 'read-source'
     mk3Contributions:
-      - 'modkit/mpq'
+      - 'blizzard/mpq'
     mk3Operations:
       - 'asset.validate'
       - 'container.extract'
@@ -7802,7 +7804,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'supported'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E1'
+    evidenceLevel: 'E3'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -7812,7 +7814,8 @@ capabilities:
       verdicts: []
       liveSources: []
     fixtures: []
-    corpusDescriptors: []
+    corpusDescriptors:
+      - 'MODKITX_SC2_ROOT'
     projection:
       plane: 'container'
       liveProjection: 'planned'
@@ -7829,6 +7832,7 @@ capabilities:
       - 'operation dropped at port: archive.extract'
       - 'operation dropped at port: archive.inspect'
       - 'operation dropped at port: archive.write'
+      - '2C: E1 → E3 поднят на реальном доказательстве волны 2A (artifacts/ga-recovery-wave2a/installed-acceptance-wave2a-final-3086af76.receipt.json, verdict pass): mpq-m3-nested-open (единственный однозначный generic blizzard/mpq → blizzard/m3 маршрут во всех волнах — 1B/1C доказывали archive-mpq в blizzard/sc2-map, не в blizzard/mpq), mpq-m3-materialize (извлечение в файл, sha256 4b5b6137…2669d250e8 сверен с диском), mpq-tree-search-lazy (49 проиндексированных записей), corrupt-mpq-then-canary (типизированный отказ, canary жив). mk3Contributions исправлен modkit/mpq → blizzard/mpq по тому же receipt. hostEvidence остаётся node: доказательство получено в установленном VS Code, но receipt несёт caseId, не anchor 2B-харнесса, поэтому vscode-installed/E5 не заявляется (см. решение оркестратора, TASK_SOL_GA_RECOVERY_WAVE2C_2026-09-03.md).'
     receipts:
       projection: null
       materialization: null
@@ -10765,7 +10769,7 @@ capabilities:
     hostFacilities:
       - 'read-source'
     mk3Contributions:
-      - 'modkit/sc2-map'
+      - 'blizzard/sc2-map'
       - 'blizzard/starcraft2-map-semantic'
     mk3Operations:
       - 'asset.validate'
@@ -10845,7 +10849,7 @@ capabilities:
     hostFacilities:
       - 'read-source'
     mk3Contributions:
-      - 'modkit/sc2-mod'
+      - 'blizzard/sc2-mod'
     mk3Operations:
       - 'asset.validate'
       - 'export.raw'
@@ -10859,7 +10863,7 @@ capabilities:
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
     evidenceLevel: 'E1'
-    hostEvidence: 'node'
+    hostEvidence: 'electron-smoke'
     writerEvidence: 'not-declared'
     parityEvidence:
       coverageStatus: null
@@ -10881,6 +10885,7 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
+      - '2C: единственное доказательство этой строки — случай C1 волны 1C (artifacts/ga-recovery-wave1c/electron-c1-directory-subject-receipt-final-v3.json, caseId tib-data-sc2mod-directory, verdict pass), выполненный в Electron, не в установленном VS Code, и наблюдавший contribution blizzard/sc2-mod-directory — directory-shaped вариант, отличный от blizzard/sc2-mod, который несёт allocation этой строки. Реальный tib-data.SC2Mod (24 top-level entries) открывается как namespace subject с readOnlyFallback EISDIR; ни asset.validate, ни export.raw, ни view.inspect не исполняются. hostEvidence честно исправлен node → electron-smoke; evidenceLevel остаётся E1 и corpusDescriptors — пустым, потому что доказан только выбор маршрута, а не декодирование содержимого.'
       - 'capability «edit»: 13D editing exists for text sources only; binary edit contracts absent'
       - 'operation dropped at port: asset.compare'
       - 'operation dropped at port: asset.validate'
@@ -11137,7 +11142,7 @@ capabilities:
     hostFacilities:
       - 'read-source'
     mk3Contributions:
-      - 'modkit/sc2-triggers'
+      - 'blizzard/sc2-triggers'
     mk3Operations:
       - 'asset.validate'
       - 'export.raw'
@@ -11173,7 +11178,7 @@ capabilities:
         read: null
         materialize: null
     knownLoss:
-      - 'АУДИТ 2026-08-31: корневой Triggers из реального tib-data.SC2Mod заканчивается x3.host/subject-input-open-failed (no-candidate), хотя contribution объявляет **/Triggers; реальный пользовательский маршрут не закрыт.'
+      - 'АУДИТ 2026-08-31, ИСПРАВЛЕНО волной 1C (REPORT_SOL_GA_RECOVERY_WAVE1C_2026-09-01.md, случай C2): корневой Triggers из реального tib-data.SC2Mod (7 436 388 B) ранее заканчивался x3.host/subject-input-open-failed (no-candidate) — причина была в case-sensitive matcher **/Triggers, не принимавшем файл Triggers в корне subject. Matcher исправлен, принимает root и nested paths без изменения публичного manifest protocol; candidate blizzard/sc2-triggers определяется с confidence 0.995 (regression test extensions/blizzard/test/integration/sc2-triggers-c2-real.test.ts). После выбора candidate реальный большой XML честно останавливается на границе contribution maxNodes — это отдельное и по-прежнему настоящее ограничение, а не прежний баг.'
       - 'capability «edit»: 13D editing exists for text sources only; binary edit contracts absent'
       - 'operation dropped at port: asset.search'
       - 'operation dropped at port: asset.validate'
@@ -20748,7 +20753,7 @@ capabilities:
       - 'blizzard/starcraft2-workspace'
       - 'blizzard/starcraft2-data'
       - 'blizzard/starcraft2-map-semantic'
-      - 'modkit/sc2-map'
+      - 'blizzard/sc2-map'
       - 'blizzard/sc2-authored-text-writers'
       - 'blizzard/sc2-workspace-copy-writer'
       - 'blizzard/mpq-fresh-writer'
@@ -20828,8 +20833,8 @@ capabilities:
       - 'read-source'
       - 'write-source'
     mk3Contributions:
-      - 'modkit/mpq'
-      - 'modkit/sc2-map'
+      - 'blizzard/mpq'
+      - 'blizzard/sc2-map'
       - 'blizzard/mpq-fresh-writer'
       - 'blizzard/sc2-authored-text-writers'
       - 'blizzard/sc2-workspace-copy-writer'
@@ -20901,7 +20906,7 @@ capabilities:
       - 'read-source'
       - 'write-source'
     mk3Contributions:
-      - 'modkit/mpq'
+      - 'blizzard/mpq'
       - 'blizzard/mpq-fresh-writer'
     mk3Operations: []
     allocation:
@@ -20967,7 +20972,7 @@ capabilities:
     hostFacilities:
       - 'read-source'
     mk3Contributions:
-      - 'modkit/m3'
+      - 'blizzard/m3'
       - 'blizzard/starcraft2-map-semantic'
     mk3Operations: []
     allocation:
