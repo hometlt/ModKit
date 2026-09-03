@@ -432,6 +432,7 @@ const receipt = {
     profileRemoved: null,
     applicationCloseAttempts: [],
     applicationCloseErrors: [],
+    teardownUnknowns: [],
     error: null,
   },
   verdict: 'fail',
@@ -685,18 +686,30 @@ function gradePackageInstallGate() {
       'the installed extension wrote no package/install gate receipt'
     return
   }
-  if (runtime.verdict === 'pass' && runtime.failures.length === 0) {
+  /*
+   * The gate's own verdict is a running total, not a judgement on what it has done so far: it reads
+   * `fail` until all three generations have reported, so a run that ends at generation 1 finds it
+   * saying `fail` with one complete phase, that phase passing, and not a single failure recorded.
+   * Nothing failed there either. Only a recorded failure — a typed failure, or a phase that did not
+   * pass — makes this section `fail`; short of that it is `incomplete`, and it says how far it got.
+   */
+  const failedPhases = runtime.phases.filter(phase => phase.verdict !== 'pass')
+  if (runtime.failures.length === 0 && failedPhases.length === 0) {
+    const expected = receipt.packageInstallGate.expected.generations.length
     receipt.packageInstallGate.verdict = 'incomplete'
     receipt.packageInstallGate.verdictReason =
-      `the runtime gate reported pass over ${runtime.phases.length} phase(s) with no failures; ` +
-      'the run-level assertion did not execute because the run aborted first'
+      runtime.phases.length < expected
+        ? `${runtime.phases.length} of ${expected} generations reported, all passing with no ` +
+          'failures; the run ended before the rest'
+        : `all ${expected} generations reported pass with no failures; the run-level assertion ` +
+          'did not execute because the run aborted first'
     return
   }
   receipt.packageInstallGate.verdict = 'fail'
   receipt.packageInstallGate.verdictReason =
-    runtime.failures.length === 0
-      ? `the runtime gate reported ${JSON.stringify(runtime.verdict)}`
-      : runtime.failures.map(failure => `${failure.code}: ${failure.message}`).join('; ')
+    runtime.failures.length > 0
+      ? runtime.failures.map(failure => `${failure.code}: ${failure.message}`).join('; ')
+      : `generation(s) ${failedPhases.map(phase => phase.generation).join(', ')} did not pass`
 }
 
 /*
@@ -1958,7 +1971,13 @@ async function sendBrowserClose(webSocketDebuggerUrl) {
 }
 
 function normalizeProcessList(value) {
-  const processes = Array.isArray(value) ? value : value === undefined ? [] : [value]
+  // A scoped query that matches nothing answers with nothing, and one that matches a single process
+  // answers with a bare object rather than a list. Both are "no list", not "one broken row".
+  const processes = Array.isArray(value)
+    ? value
+    : value === undefined || value === null
+      ? []
+      : [value]
   return processes
     .map(item => ({
       pid: Number(item.ProcessId ?? item.pid),
@@ -1971,17 +1990,73 @@ function normalizeProcessList(value) {
     .filter(item => Number.isInteger(item.pid) && item.pid > 0)
 }
 
-function listProcesses() {
+/*
+ * Make one hostile process's command line stop poisoning the whole listing.
+ *
+ * Windows PowerShell 5.1's ConvertTo-Json copies control characters through verbatim instead of
+ * escaping them, so a single unrelated process whose command line carries a raw newline — a
+ * multi-line shell script running somewhere else on the machine — leaves the WHOLE document
+ * unparseable. Teardown then cannot prove that this run's own VS Code exited and fails a generation
+ * that had already stopped: a Wave 2B run died at generation 1 with «Bad control character in
+ * string literal at position 117987» while its own endpointStoppedAfterCdp already read true.
+ *
+ * `-Compress` emits no insignificant whitespace, so after trimming, every remaining control
+ * character sits inside a string literal and escaping it is lossless. Nothing this harness matches
+ * on — the isolated user-data and extensions paths, the remote debugging port — can contain one,
+ * and the assertion is untouched: the processes still have to be gone.
+ */
+function readProcessListJson(stdout) {
+  return (stdout || '[]')
+    .trim()
+    .replaceAll(
+      /[\u0000-\u001F]/gu,
+      character => `\\u${character.codePointAt(0).toString(16).padStart(4, '0')}`,
+    )
+}
+
+/*
+ * The executable every process of this run answers to, used to scope the process query.
+ *
+ * Electron runs the window, the renderers, the GPU process and the extension host from ONE
+ * executable, so the name of the launcher's binary names every process this harness could own.
+ * Undefined means "could not be resolved" and the query stays unscoped rather than guessing.
+ */
+function vscodeProcessName() {
+  if (process.platform !== 'win32') return undefined
+  try {
+    const name = basename(resolveVsCodeCliLauncher().command)
+    return /^[\w .-]+\.exe$/iu.test(name) ? name : undefined
+  } catch {
+    return undefined
+  }
+}
+
+function listProcesses(nameFilter = undefined) {
   if (process.platform === 'win32') {
     const powershell =
       resolveCommand('powershell.exe') ?? resolveCommand('pwsh.exe') ?? 'powershell.exe'
+    /*
+     * Ask the operating system for THIS application's processes, not for all 357 of them.
+     *
+     * A dump of every process made the acceptance depend on the command lines of programs that have
+     * nothing to do with Modkit: one unrelated process carrying a control character in its
+     * arguments — the Claude Code desktop app, whose --settings blob holds a raw BEL — made the
+     * whole document unparseable, so teardown could not prove that this run's own VS Code had gone
+     * and a generation that HAD exited cleanly was recorded as a failure. A WQL name filter keeps
+     * those processes out of the answer entirely, and the ownership proof below is untouched: a
+     * process still has to carry this run's isolated profile path or its debug port to count.
+     */
+    const query =
+      nameFilter === undefined
+        ? 'Get-CimInstance Win32_Process'
+        : `Get-CimInstance Win32_Process -Filter "Name='${nameFilter}'"`
     const result = spawnSync(
       powershell,
       [
         '-NoProfile',
         '-NonInteractive',
         '-Command',
-        'Get-CimInstance Win32_Process | Select-Object ProcessId,ParentProcessId,Name,CommandLine,WorkingSetSize,PrivatePageCount | ConvertTo-Json -Compress',
+        `${query} | Select-Object ProcessId,ParentProcessId,Name,CommandLine,WorkingSetSize,PrivatePageCount | ConvertTo-Json -Compress`,
       ],
       {
         encoding: 'utf8',
@@ -1997,7 +2072,10 @@ function listProcesses() {
       }
     }
     try {
-      return { processes: normalizeProcessList(JSON.parse(result.stdout || '[]')), error: null }
+      return {
+        processes: normalizeProcessList(JSON.parse(readProcessListJson(result.stdout))),
+        error: null,
+      }
     } catch (error) {
       return { processes: [], error: error instanceof Error ? error.message : String(error) }
     }
@@ -2046,7 +2124,7 @@ function isolatedProcessMatch(processInfo, port) {
 }
 
 function findIsolatedProcesses(port) {
-  const listed = listProcesses()
+  const listed = listProcesses(vscodeProcessName())
   const errors = listed.error === null ? [] : [`process-list: ${listed.error}`]
   const matched = listed.processes
     .map(processInfo => ({ processInfo, reasons: isolatedProcessMatch(processInfo, port) }))
@@ -2099,7 +2177,9 @@ function descendantPids(processes, rootPids) {
 }
 
 function sampleIsolatedProcessTreeMemory(port) {
-  const listed = listProcesses()
+  // Same scoping as the exit check: every process of this tree runs the one Electron executable,
+  // and an unrelated program's arguments must not be able to end an archive-acceptance sample.
+  const listed = listProcesses(vscodeProcessName())
   if (listed.error !== null) return { error: `process-list: ${listed.error}` }
   const matched = listed.processes
     .map(processInfo => ({ processInfo, reasons: isolatedProcessMatch(processInfo, port) }))
@@ -2339,6 +2419,7 @@ async function closeApplication(port, generation = null) {
     finishedAt: null,
     elapsedMs: null,
     verdict: 'fail',
+    verdictReason: null,
   }
   const version = await cdpVersion(port)
   evidence.endpointReachableBefore = version !== undefined
@@ -2360,11 +2441,36 @@ async function closeApplication(port, generation = null) {
     evidence.isolatedProcessesAfterFallback = afterFallbackProcesses.processes
     evidence.isolatedProcessErrorsAfterFallback = afterFallbackProcesses.errors
   }
-  evidence.verdict =
+  /*
+   * Three outcomes, because there are three things that can be true.
+   *
+   * The application is gone when the endpoint has stopped AND no process of this run is left. It is
+   * still here when the endpoint answers or a matched process is still alive — that is a failure and
+   * it still ends the run. But "the endpoint has stopped and the process list could not be read" is
+   * neither: it is an unread instrument, not a live application, and calling it `fail` is how a
+   * generation that had exited cleanly came to be recorded as one that did not. It is named
+   * `incomplete` with the reason that made it unreadable, so it can never pass silently either.
+   */
+  const stopped = evidence.endpointStoppedAfterCdp || evidence.endpointStoppedAfterFallback
+  const proven =
     (evidence.endpointStoppedAfterCdp && evidence.isolatedProcessesExitedAfterCdp) ||
     (evidence.endpointStoppedAfterFallback && evidence.isolatedProcessesExitedAfterFallback)
-      ? 'pass'
+  const unreadable = [
+    ...evidence.isolatedProcessErrorsAfterCdp,
+    ...evidence.isolatedProcessErrorsAfterFallback,
+  ]
+  const stillAlive =
+    evidence.isolatedProcessesAfterCdp.length > 0 ||
+    evidence.isolatedProcessesAfterFallback.length > 0
+  evidence.verdict = proven
+    ? 'pass'
+    : stopped && !stillAlive && unreadable.length > 0
+      ? 'incomplete'
       : 'fail'
+  evidence.verdictReason =
+    evidence.verdict === 'incomplete'
+      ? `the CDP endpoint stopped but the process list could not be read: ${unreadable[0]}`
+      : null
   evidence.finishedAt = new Date().toISOString()
   evidence.elapsedMs = Date.now() - started
   return evidence
@@ -4120,8 +4226,14 @@ async function launchGeneration(generation) {
   const teardown = await closeApplication(port, generation)
   runReceipt.teardown = teardown
   await browser.close().catch(() => undefined)
-  if (teardown.verdict !== 'pass') {
+  if (teardown.verdict === 'fail') {
     throw new Error(`VS Code generation ${generation} did not fully exit`)
+  }
+  if (teardown.verdict === 'incomplete') {
+    // Not proof of a live application, so it does not end the run - and not silence either.
+    receipt.cleanup.teardownUnknowns.push(
+      `generation ${generation}: ${teardown.verdictReason ?? 'exit could not be verified'}`,
+    )
   }
   activeApplications.delete(port)
 }
@@ -4149,8 +4261,12 @@ try {
   for (const [port, application] of activeApplications) {
     const teardown = await closeApplication(port, application.generation ?? null)
     receipt.cleanup.applicationCloseAttempts.push(teardown)
-    if (teardown.verdict !== 'pass') {
+    if (teardown.verdict === 'fail') {
       receipt.cleanup.applicationCloseErrors.push(`CDP endpoint ${port} did not stop`)
+    } else if (teardown.verdict === 'incomplete') {
+      receipt.cleanup.teardownUnknowns.push(
+        `cleanup of port ${port}: ${teardown.verdictReason ?? 'exit could not be verified'}`,
+      )
     }
   }
   activeApplications.clear()
