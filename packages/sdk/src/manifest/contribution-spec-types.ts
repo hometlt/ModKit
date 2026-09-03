@@ -405,6 +405,17 @@ export interface ViewerContributionSpecV1<
    * generic viewer read optional facets without splitting into two contributions.
    */
   readonly optionalDataSources?: readonly DataSourceRefFor<DataSourceContract>[]
+  /**
+   * Service contracts the viewer asks the host for, and does without when the host has none.
+   *
+   * A data source belongs to the opened subject; a service belongs to the realm the viewer runs
+   * in. `common.render/scene-3d` is the first of these: the model stage renders through a resolved
+   * provider where one is offered and through its own 2D fallback where none is, and neither
+   * answer may cost it the stage. Naming it here is what gives the eligibility system a path to
+   * the renderer at all — before this key the dependency could only be written as a data source,
+   * which is a binding the resolver can never make.
+   */
+  readonly optionalServices?: readonly Ids['requirement'][]
   readonly applicability?: ViewerApplicability
   readonly hosts?: readonly HostId[]
   readonly priority: number

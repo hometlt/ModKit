@@ -5,8 +5,12 @@ import {
   SCENE_RENDERER_CONTRACT,
   SCENE_RENDERER_MATCHER_PROFILE,
   type SceneRenderer,
+  type SceneRendererAcquireRequest,
+  type SceneRendererAcquisition,
+  type SceneRendererDiagnostic,
   type SceneRendererOfferFacet,
   type SceneRendererOutputKind,
+  type SceneRendererPort,
   type SceneRendererRequestFacet,
 } from '@modkit/sdk/renderer'
 import type {
@@ -293,4 +297,77 @@ export async function resolveSceneRenderer(
       ],
     }
   }
+}
+
+// ---------------------------------------------------------------------------------------------
+// the port a consumer holds
+
+/**
+ * `Diagnostic` carries `hint`, which the contract's own severity vocabulary does not.
+ *
+ * Mapped rather than widened: the renderer contract crosses the capability RPC and is implemented
+ * by third-party providers, so its severity set is part of the wire and adding a fourth member to
+ * it for one host's convenience would be a contract change. A hint is advice, so it lands on
+ * `information`.
+ */
+function contractSeverity(severity: Diagnostic['severity']): SceneRendererDiagnostic['severity'] {
+  return severity === 'hint' ? 'information' : severity
+}
+
+const contractDiagnostics = (
+  diagnostics: readonly Diagnostic[],
+): readonly SceneRendererDiagnostic[] =>
+  Object.freeze(
+    diagnostics.map(item =>
+      Object.freeze({
+        severity: contractSeverity(item.severity),
+        code: item.code,
+        message: item.message,
+      }),
+    ),
+  )
+
+export interface SceneRendererPortOptions {
+  readonly services: RendererHostServices
+  readonly grant: PermissionGrant
+  readonly budgets: ResourceBudget
+}
+
+/**
+ * The one first-party implementation of `SceneRendererPort`: `resolveSceneRenderer`, wrapped.
+ *
+ * It exists so a consumer can be handed the *ability to obtain* a renderer without being handed the
+ * inventory, grant and execution backends that obtaining one requires. That distinction is what
+ * lets a DOM viewer in `@modkit/ui` — a package that depends on `@modkit/sdk` and nothing else —
+ * request a provider through the standard resolver: the application composes the port on the side
+ * that legitimately holds host authority and passes it in, exactly as it passes an export writer.
+ *
+ * A host with no renderer offer, or one whose realm cannot activate the offers it has, is not an
+ * error here: `acquire` returns `unresolved` with the resolver's own diagnostics, and the consumer
+ * degrades on a stated reason.
+ */
+export function createSceneRendererPort(options: SceneRendererPortOptions): SceneRendererPort {
+  return Object.freeze({
+    async acquire(request: SceneRendererAcquireRequest): Promise<SceneRendererAcquisition> {
+      const resolution = await resolveSceneRenderer({
+        services: options.services,
+        grant: options.grant,
+        budgets: options.budgets,
+        outputKind: request.outputKind,
+        ...(request.rendererId === undefined ? {} : { rendererId: request.rendererId }),
+        ...(request.signal === undefined ? {} : { signal: request.signal }),
+      })
+      const diagnostics = contractDiagnostics(resolution.diagnostics)
+      if (resolution.state !== 'resolved')
+        return Object.freeze({ state: 'unresolved', diagnostics })
+      return Object.freeze({
+        state: 'resolved',
+        diagnostics,
+        lease: Object.freeze({
+          renderer: resolution.renderer,
+          release: () => resolution.release(),
+        }),
+      })
+    },
+  })
 }

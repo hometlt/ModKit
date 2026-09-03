@@ -127,8 +127,19 @@ export type PwaFormatSmokeStageEvidence =
       readonly treeNodes: number
     }
   | {
+      /*
+       * The model stage, whichever backend drew it.
+       *
+       * `renderer` is the backend *class* the stage published on its canvas, so the evidence tells
+       * a shaded GPU frame (`webgl2`) apart from the 2D fallback (`wireframe`) instead of naming
+       * one of them unconditionally. `rendererStatus` says why that backend and not the other, and
+       * `rendererId` names the exact provider when one was resolved — a machine without WebGL2 and
+       * a machine whose provider refused activation are different facts about the run.
+       */
       readonly kind: 'model-or-wireframe'
-      readonly renderer: 'canvas' | 'wireframe'
+      readonly renderer: string
+      readonly rendererStatus?: string
+      readonly rendererId?: string
       readonly width: number
       readonly height: number
     }

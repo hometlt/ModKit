@@ -36,6 +36,7 @@ import {
   type NamespaceEntrySource,
   type OperationSession,
   type PresentationSlot,
+  type SceneRendererPort,
   type ViewerModule,
   type ViewerMount,
 } from '@modkit/sdk'
@@ -85,6 +86,14 @@ export const ARCHIVE_LISTING_PAGES = 25
  */
 export interface WebViewContext {
   readonly localizer?: UiLocalizer
+  /**
+   * Where the model stage asks for a `common.render/scene-3d` provider.
+   *
+   * Supplied by whoever composed the host — `createWebSubjectServices` builds it from the page
+   * realm — because resolving a provider needs an inventory, a grant and execution backends, and a
+   * viewer holds none of those. Omitted, the stage draws its 2D wireframe and says so.
+   */
+  readonly renderer?: SceneRendererPort
   operationsFor(descriptor: AnyDescriptor): OperationSession | undefined
   /**
    * Open one member of this container as a subject of its own (block 13 slice B).
@@ -490,7 +499,12 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
       id: 'model',
       label: text('web.view.model'),
       contract: 'common.view/model-scene-source',
-      module: createModelViewer({ localizer }),
+      module: createModelViewer({
+        localizer,
+        // A GPU frame where this page can resolve a provider, the 2D wireframe where it cannot —
+        // the stage decides on the answer, not on the presence of the option.
+        ...(context.renderer === undefined ? {} : { renderer: context.renderer }),
+      }),
       // optional, never a selection rule: a codec publishing none of these still gets the stage
       optionalContracts: MODEL_FACET_CONTRACTS,
     },

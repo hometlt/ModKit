@@ -14,7 +14,7 @@ import {
   type HostComposition,
   type LinkedExtension,
 } from '@modkit/host'
-import { resolveSceneRenderer } from '@modkit/host/renderer'
+import { createSceneRendererPort, resolveSceneRenderer } from '@modkit/host/renderer'
 import type { SceneRenderer } from '@modkit/sdk/renderer'
 import { sceneRendererContractSuite } from './scene-renderer-contract.js'
 
@@ -218,5 +218,79 @@ describe('standard scene renderer contract and software provider', () => {
     })
     expect(resolution.state).toBe('unresolved')
     expect(resolution.diagnostics.map(item => item.code)).toContain('x3.host/renderer-unresolved')
+  })
+})
+
+/**
+ * The consumer half: what a viewer is handed instead of an inventory.
+ *
+ * The point of the port is that a package which depends on `@modkit/sdk` alone — every viewer in
+ * `@modkit/ui` — can request a provider through the standard resolver without composing a host. So
+ * these assert the two answers a consumer must be able to act on, and that a refusal arrives as a
+ * stated reason rather than as an exception or an empty optional.
+ */
+describe('scene renderer port', () => {
+  it('leases a provider resolved by the standard resolver', async () => {
+    const port = createSceneRendererPort({
+      services: { ...composition, serviceDefinitions: definitions },
+      grant: { id: 'renderer-port', classes: [] },
+      budgets: activationBudget,
+    })
+    const acquisition = await port.acquire({ outputKind: 'rgba8', rendererId: 'modkit.headless' })
+    expect(acquisition.state, JSON.stringify(acquisition.diagnostics)).toBe('resolved')
+    if (acquisition.state !== 'resolved') throw new Error('renderer port did not resolve')
+    try {
+      expect(acquisition.lease.renderer.rendererId).toBe('modkit.headless')
+      expect(acquisition.lease.renderer.contract).toBe('common.render/scene-3d')
+      const frame = await acquisition.lease.renderer.render({
+        scene: {
+          materials: [{ id: 'lit', baseColor: [1, 1, 1, 1], shading: 'lambert' }],
+          primitives: [
+            {
+              id: 'triangle',
+              topology: 'triangles',
+              positions: new Float32Array([-0.8, -0.8, 0, 0.8, -0.8, 0, 0, 0.8, 0]),
+              indices: new Uint32Array([0, 1, 2]),
+              materialId: 'lit',
+            },
+          ],
+          light: { direction: [0, 0, 1], ambient: 0.2 },
+        },
+        camera: { viewProjection: identity() },
+        viewport: { width: 16, height: 16 },
+        clearColor: [0, 0, 0, 1],
+        outputKind: 'rgba8',
+      })
+      expect(frame.statistics.fragments).toBeGreaterThan(0)
+      expect(frame.diagnostics).toEqual([])
+    } finally {
+      await acquisition.lease.release()
+    }
+  })
+
+  it('refuses with typed contract diagnostics rather than throwing', async () => {
+    const port = createSceneRendererPort({
+      services: { ...composition, serviceDefinitions: definitions },
+      grant: { id: 'renderer-port-mismatch', classes: [] },
+      budgets: activationBudget,
+    })
+    const acquisition = await port.acquire({ outputKind: 'rgba8', rendererId: 'nobody.at.all' })
+    expect(acquisition.state).toBe('unresolved')
+    expect(acquisition.diagnostics.map(item => item.code)).toContain('x3.host/renderer-unresolved')
+    // the contract's severity vocabulary has no `hint`; the host's does, and it is mapped, not leaked
+    for (const item of acquisition.diagnostics) {
+      expect(['error', 'warning', 'information']).toContain(item.severity)
+    }
+  })
+
+  it('refuses when the host registered no service-contract definitions', async () => {
+    const port = createSceneRendererPort({
+      services: composition,
+      grant: { id: 'renderer-port-undefined', classes: [] },
+      budgets: activationBudget,
+    })
+    const acquisition = await port.acquire({ outputKind: 'rgba8' })
+    expect(acquisition.state).toBe('unresolved')
+    expect(acquisition.diagnostics.map(item => item.code)).toEqual(['x3.host/renderer-unavailable'])
   })
 })

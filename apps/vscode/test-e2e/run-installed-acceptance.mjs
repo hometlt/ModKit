@@ -1776,14 +1776,30 @@ async function observeFormatSmokeCase(port, testCase, current) {
     evidence.model = await formatSmokeValue(
       port,
       current,
-      `const canvas = doc.querySelector('[data-mk-part="model.canvas"][data-model-renderer="wireframe"]');
+      /*
+       * The backend is read off the canvas, not required to be one particular value. The model
+       * stage draws through whichever `common.render/scene-3d` provider its realm resolved and
+       * through its own 2D wireframe where none resolved, both are supported product paths, and a
+       * probe that selected on `data-model-renderer="wireframe"` would have reported the shaded
+       * path as an absent stage. `rendererStatus` keeps the reason in the receipt, so «this window
+       * has no renderer port» stays distinguishable from «it has one and nothing matched».
+       */
+      `const canvas = doc.querySelector('[data-mk-part="model.canvas"][data-model-renderer]');
        if (!(canvas instanceof win.HTMLCanvasElement) || canvas.width <= 0 || canvas.height <= 0) return undefined;
        const pixels = canvas.getContext('2d')?.getImageData(0, 0, canvas.width, canvas.height).data;
        if (pixels === undefined) return undefined;
        let opaquePixels = 0;
        for (let index = 3; index < pixels.length; index += 4) if (pixels[index] > 0) opaquePixels += 1;
        return opaquePixels > 0
-         ? { canvas: { width: canvas.width, height: canvas.height }, renderer: 'wireframe', opaquePixels }
+         ? {
+             canvas: { width: canvas.width, height: canvas.height },
+             renderer: canvas.getAttribute('data-model-renderer'),
+             rendererStatus: canvas.getAttribute('data-model-renderer-status'),
+             rendererId: canvas.getAttribute('data-model-renderer-id'),
+             skeletonJoints: Number(canvas.getAttribute('data-model-skeleton') ?? 0),
+             textures: Number(canvas.getAttribute('data-model-textures') ?? 0),
+             opaquePixels,
+           }
          : undefined;`,
     )
   } else {

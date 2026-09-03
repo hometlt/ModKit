@@ -9,6 +9,9 @@ import type {
   ModelSceneInfo,
   ModelSceneSource,
   ModelSocketRef,
+  SceneRenderer,
+  SceneRendererPort,
+  SceneRendererTexture,
   ViewerModule,
 } from '@modkit/sdk'
 import {
@@ -23,6 +26,16 @@ import {
 } from '../viewer/index.js'
 import { createOrbitController, type OrbitBasis } from './orbit.js'
 import { createViewGizmo } from './gizmo.js'
+import {
+  framePrimitive,
+  MODEL_KEY_LIGHT,
+  modelCamera,
+  modelSceneRequest,
+  projectPoint,
+  sceneMaterials,
+  skeletonJoints,
+  type SkeletonJoint,
+} from './scene.js'
 import { type UiLocalizer, type UiMessageKey } from '../localization/index.js'
 import { MODEL_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
@@ -35,6 +48,50 @@ export {
   type ViewAxis,
 } from './orbit.js'
 export { createViewGizmo, GIZMO_SIZE, type ViewGizmo, type ViewGizmoOptions } from './gizmo.js'
+export {
+  baseColorResourceOf,
+  framePrimitive,
+  materialColorFor,
+  MODEL_DEFAULT_BASE_COLOR,
+  MODEL_FIELD_OF_VIEW,
+  MODEL_KEY_LIGHT,
+  modelCamera,
+  modelSceneRequest,
+  multiply4x4,
+  projectPoint,
+  sceneMaterials,
+  skeletonJoints,
+  type CameraPlacement,
+  type ModelFraming,
+  type ModelSceneMaterials,
+  type ModelSceneRequestOptions,
+  type SkeletonJoint,
+  type Vector3,
+} from './scene.js'
+
+/**
+ * The backend name published as `data-model-renderer`, keyed by the provider's `rendererId`.
+ *
+ * A *class* of backend rather than a provider identity, because that is the distinction an
+ * installed-product probe and a theme both care about: "this is a shaded GPU frame" against "this
+ * is the 2D fallback". The exact provider is published beside it as `data-model-renderer-id`, so
+ * nothing is lost — a third-party renderer is reported as `provider` here and by its own id there.
+ *
+ * `wireframe` is deliberately the value the built-in 2D path has always used. Three applications'
+ * smoke tests and `packages/ui/test/browser-e2e.test.ts` select on it, and the fallback is a
+ * permanent tier of this viewer, not a legacy path awaiting removal.
+ */
+export const MODEL_RENDERER_BACKENDS: Readonly<Record<string, string>> = Object.freeze({
+  'modkit.browser-webgl': 'webgl2',
+  'modkit.headless': 'cpu-raster',
+})
+
+/** The 2D fallback's backend name; see `MODEL_RENDERER_BACKENDS`. */
+export const MODEL_WIREFRAME_BACKEND = 'wireframe'
+
+export function modelRendererBackend(rendererId: string): string {
+  return MODEL_RENDERER_BACKENDS[rendererId] ?? 'provider'
+}
 
 export const MODEL_MAXIMUM_PRIMITIVE_BYTES = 64 * 1024 * 1024
 export const MODEL_MAXIMUM_PRIMITIVES = 4096
@@ -194,28 +251,40 @@ function facetItem(
   return `${short(item.sourceName ?? item.id)} · ${item.role} · ${item.nodeId}`
 }
 
-/** Read a small, bounded detail page for every optional model facet. */
-export async function readModelFacetDetails(
+/** Facet id → the page method that enumerates it. */
+const FACET_PAGE_METHOD: Readonly<Record<ModelFacetDetail['contract'], string>> = Object.freeze({
+  'common.view/model-resource-refs-source': 'references',
+  'common.view/model-skeleton-source': 'bindings',
+  'common.view/model-animation-source': 'clips',
+  'common.view/model-collision-source': 'volumes',
+  'common.view/model-material-source': 'materials',
+  'common.view/model-socket-source': 'sockets',
+})
+
+export interface ModelFacetPage {
+  readonly items: readonly unknown[]
+  readonly truncated: boolean
+}
+
+/**
+ * One bounded page of every optional facet the subject published, as data.
+ *
+ * Read once and shared, because two consumers now want the same records: the details list renders
+ * them as text, and the stage renders materials as colours and bone rest poses as an overlay.
+ * Leasing each source twice would double the RPC round trips for a facet a codec computes lazily,
+ * and — worse — could show a list and a drawing built from two different reads.
+ */
+export async function readModelFacetPages(
   sources: Parameters<typeof unknownSourceLease>[0],
   slot: Parameters<typeof unknownSourceLease>[1],
   scope: { lease(lease: Lease<unknown>): Lease<unknown> },
   signal?: AbortSignal,
-  localizer: UiLocalizer = withEnglishUiFallback(undefined, MODEL_FALLBACK_MESSAGES),
-): Promise<readonly ModelFacetDetail[]> {
-  const methods: Readonly<Record<ModelFacetDetail['contract'], string>> = {
-    'common.view/model-resource-refs-source': 'references',
-    'common.view/model-skeleton-source': 'bindings',
-    'common.view/model-animation-source': 'clips',
-    'common.view/model-collision-source': 'volumes',
-    'common.view/model-material-source': 'materials',
-    'common.view/model-socket-source': 'sockets',
-  }
-  const details: ModelFacetDetail[] = []
+): Promise<ReadonlyMap<(typeof MODEL_FACET_CONTRACTS)[number], ModelFacetPage>> {
+  const pages = new Map<(typeof MODEL_FACET_CONTRACTS)[number], ModelFacetPage>()
   for (const contract of MODEL_FACET_CONTRACTS) {
     const lease = await unknownSourceLease(sources, slot, contract)
     if (lease === undefined) continue
     scope.lease(lease)
-    const method = methods[contract]
     const source = lease.value as Record<
       string,
       (
@@ -226,7 +295,24 @@ export async function readModelFacetDetails(
         readonly nextCursor?: string
       }>
     >
-    const page = await source[method]?.({ limit: MODEL_FACET_DETAIL_LIMIT }, signal)
+    const page = await source[FACET_PAGE_METHOD[contract]]?.(
+      { limit: MODEL_FACET_DETAIL_LIMIT },
+      signal,
+    )
+    if (page === undefined) continue
+    pages.set(contract, { items: page.items, truncated: page.nextCursor !== undefined })
+  }
+  return pages
+}
+
+/** Render already-read facet pages as the text list the details panel shows. */
+export function describeModelFacetPages(
+  pages: ReadonlyMap<(typeof MODEL_FACET_CONTRACTS)[number], ModelFacetPage>,
+  localizer: UiLocalizer = withEnglishUiFallback(undefined, MODEL_FALLBACK_MESSAGES),
+): readonly ModelFacetDetail[] {
+  const details: ModelFacetDetail[] = []
+  for (const contract of MODEL_FACET_CONTRACTS) {
+    const page = pages.get(contract)
     if (page === undefined) continue
     const readout = FACET_READOUT[contract]
     details.push(
@@ -234,11 +320,22 @@ export async function readModelFacetDetails(
         contract,
         label: readout === undefined ? contract : localizer.text(readout.labelKey),
         items: Object.freeze(page.items.map(item => facetItem(contract, item, localizer))),
-        truncated: page.nextCursor !== undefined,
+        truncated: page.truncated,
       }),
     )
   }
   return Object.freeze(details)
+}
+
+/** Read a small, bounded detail page for every optional model facet. */
+export async function readModelFacetDetails(
+  sources: Parameters<typeof unknownSourceLease>[0],
+  slot: Parameters<typeof unknownSourceLease>[1],
+  scope: { lease(lease: Lease<unknown>): Lease<unknown> },
+  signal?: AbortSignal,
+  localizer: UiLocalizer = withEnglishUiFallback(undefined, MODEL_FALLBACK_MESSAGES),
+): Promise<readonly ModelFacetDetail[]> {
+  return describeModelFacetPages(await readModelFacetPages(sources, slot, scope, signal), localizer)
 }
 
 /**
@@ -256,8 +353,8 @@ function drawPrimitive(
 ): void {
   const context = canvas.getContext('2d')
   if (context === null) throw new TypeError('2d canvas context is unavailable')
-  const width = 720
-  const height = 480
+  const width = MODEL_STAGE_WIDTH
+  const height = MODEL_STAGE_HEIGHT
   canvas.width = width
   canvas.height = height
   context.clearRect(0, 0, width, height)
@@ -361,8 +458,78 @@ function drawPrimitive(
   }
 }
 
+/** Pixel size of the frame this stage asks a provider for, and of its own 2D canvas. */
+const MODEL_STAGE_WIDTH = 720
+const MODEL_STAGE_HEIGHT = 480
+
+/**
+ * Bones over the frame, drawn by this stage rather than by the backend.
+ *
+ * Deliberately an overlay and not scene geometry: the draft scene contract requires overlays to be
+ * switchable independently of the backend and requires the 2D fallback to be able to draw the
+ * skeleton, and a bone drawn as scene geometry would be neither — it would vanish with the
+ * renderer and be depth-tested against the mesh that hides it.
+ */
+function drawSkeleton(
+  context: CanvasRenderingContext2D,
+  joints: readonly SkeletonJoint[],
+  viewProjection: Float32Array,
+  viewport: { readonly width: number; readonly height: number },
+  stroke: string,
+): number {
+  const projected = joints.map(joint => projectPoint(viewProjection, joint.position, viewport))
+  context.save()
+  context.strokeStyle = stroke
+  context.fillStyle = stroke
+  context.lineWidth = 1.5
+  let drawn = 0
+  for (const [index, joint] of joints.entries()) {
+    const point = projected[index]
+    if (point === undefined) continue
+    drawn += 1
+    context.beginPath()
+    context.arc(point[0], point[1], 2.5, 0, Math.PI * 2)
+    context.fill()
+    const parent = joint.parent === undefined ? undefined : projected[joint.parent]
+    if (parent === undefined) continue
+    context.beginPath()
+    context.moveTo(parent[0], parent[1])
+    context.lineTo(point[0], point[1])
+    context.stroke()
+  }
+  context.restore()
+  return drawn
+}
+
+/** Read a CSS custom property off the canvas, so the overlay follows a live theme change. */
+function themeColor(canvas: HTMLCanvasElement, token: string, fallback: string): string {
+  return getComputedStyle(canvas).getPropertyValue(token).trim() || fallback
+}
+
 export interface ModelViewerOptions {
   readonly localizer?: UiLocalizer
+  /**
+   * Where this stage asks for a `common.render/scene-3d` provider.
+   *
+   * A host capability, not a viewer one — the same reason `createImageViewer` takes its export
+   * writer from the host: only the application knows which realm this viewer runs in, what it is
+   * allowed to activate there, and whether that realm has a GPU. Absent, or answering
+   * `unresolved`, the stage draws its own 2D wireframe and says which of the two happened. It
+   * never crashes and never shows an empty frame.
+   */
+  readonly renderer?: SceneRendererPort
+  /**
+   * Decoded base-colour texels, keyed by the `ModelResourceRef.id` a material layer names.
+   *
+   * Supplied by the host for the same reason as the port: resolving a texture reference means
+   * opening another subject, which is a host-owned resource session, and a viewer that built a URI
+   * of its own would be crossing the line block 9 drew. Absent, materials draw their own colour and
+   * the model is shaded but untextured — stated as `data-model-textures="0"` rather than implied.
+   */
+  readonly textures?: (
+    references: readonly ModelResourceRef[],
+    signal?: AbortSignal,
+  ) => Promise<ReadonlyMap<string, SceneRendererTexture>>
 }
 
 export function createModelViewer(options: ModelViewerOptions = {}): ViewerModule {
@@ -380,9 +547,19 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
 
       const canvas = element(stage, 'canvas', { part: 'model.canvas' }) as HTMLCanvasElement
       canvas.setAttribute('role', 'img')
-      // Stable machine evidence for installed-product probes. This viewer is the bounded 2D
-      // wireframe renderer; localized readout text must not be used to infer that fact.
-      canvas.setAttribute('data-model-renderer', 'wireframe')
+      /*
+       * Stable machine evidence for installed-product probes; localized readout text must not be
+       * used to infer any of it.
+       *
+       * `wireframe` is the value until a provider has actually answered, so a probe that catches
+       * the stage mid-mount reads the path that is really drawing rather than one that might be.
+       * `data-model-renderer` is the backend *class* (`wireframe`, `webgl2`, …),
+       * `data-model-renderer-id` the provider's own id, and `data-model-renderer-status` why this
+       * path and not the other — `unavailable` (this host offers no port), `unresolved` (it does
+       * and nothing matched), `failed` (a provider was resolved and its frame threw), `resolved`.
+       */
+      canvas.setAttribute('data-model-renderer', MODEL_WIREFRAME_BACKEND)
+      canvas.setAttribute('data-model-renderer-status', 'unavailable')
       // Focusable so the orbit keyboard bindings are reachable without a pointer (C-15).
       canvas.tabIndex = 0
 
@@ -412,10 +589,11 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
          * is read through the contracts alone — the same loop answers for a SAGE W3X, a Westwood VXL
          * and a Wavefront OBJ, which is what makes this a generic consumer rather than five readers.
          */
-        const [facets, facetDetails] = await Promise.all([
+        const [facets, facetPages] = await Promise.all([
           readModelFacets(args.sources, args.slot, scope, scope.signal, localizer),
-          readModelFacetDetails(args.sources, args.slot, scope, scope.signal, localizer),
+          readModelFacetPages(args.sources, args.slot, scope, scope.signal),
         ])
+        const facetDetails = describeModelFacetPages(facetPages, localizer)
         setViewerText(
           readout,
           localizer.text('viewer.modelSummary', {
@@ -452,25 +630,198 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
           })
         } else {
           let primitive = model.primitive
-          const redraw = (): void => {
+          const viewport = { width: MODEL_STAGE_WIDTH, height: MODEL_STAGE_HEIGHT }
+
+          /*
+           * The renderer, asked for once per mount through the host's port.
+           *
+           * A refusal is not an error: this same viewer runs in a page that composed a GPU realm
+           * and in a bridge realm that holds no host authority at all, and the second case is a
+           * declared degradation tier rather than a fault. Whichever answer comes back, the reason
+           * lands on the canvas as machine-readable evidence.
+           */
+          let provider: SceneRenderer | undefined
+          if (options.renderer !== undefined) {
+            try {
+              const acquisition = await options.renderer.acquire({
+                outputKind: 'rgba8',
+                signal: scope.signal,
+              })
+              if (acquisition.state === 'resolved') {
+                provider = acquisition.lease.renderer
+                scope.cleanup(() => acquisition.lease.release())
+                canvas.setAttribute(
+                  'data-model-renderer',
+                  modelRendererBackend(provider.rendererId),
+                )
+                canvas.setAttribute('data-model-renderer-id', provider.rendererId)
+                canvas.setAttribute('data-model-renderer-status', 'resolved')
+              } else {
+                canvas.setAttribute('data-model-renderer-status', 'unresolved')
+                const reason = acquisition.diagnostics.at(-1)
+                if (reason !== undefined) {
+                  canvas.setAttribute('data-model-renderer-diagnostic', reason.code)
+                }
+              }
+            } catch (error) {
+              canvas.setAttribute('data-model-renderer-status', 'unresolved')
+              canvas.setAttribute('data-model-renderer-diagnostic', 'x3.ui/renderer-acquire-threw')
+              canvas.setAttribute(
+                'data-model-renderer-detail',
+                error instanceof Error ? error.message : String(error),
+              )
+            }
+          }
+
+          /*
+           * Materials, textures and bones from the facets this subject published — read once, above,
+           * for both the details list and this stage. A codec that publishes none of them still gets
+           * a shaded model in the neutral surface colour, which is the parity gap this closes; a
+           * codec that publishes materials gets one colour per material id.
+           */
+          const materialRefs = (facetPages.get('common.view/model-material-source')?.items ??
+            []) as readonly ModelMaterialRef[]
+          const resourceRefs = (facetPages.get('common.view/model-resource-refs-source')?.items ??
+            []) as readonly ModelResourceRef[]
+          const boneBindings = (facetPages.get('common.view/model-skeleton-source')?.items ??
+            []) as readonly ModelBoneBinding[]
+          const joints = skeletonJoints(boneBindings)
+          let texels: ReadonlyMap<string, SceneRendererTexture> = new Map()
+          if (options.textures !== undefined && provider !== undefined && resourceRefs.length > 0) {
+            texels = await options
+              .textures(resourceRefs, scope.signal)
+              .catch(() => new Map<string, SceneRendererTexture>())
+          }
+          const surfaces = sceneMaterials(materialRefs, texels, true)
+          canvas.setAttribute('data-model-textures', String(surfaces.textures.length))
+          canvas.setAttribute('data-model-skeleton', String(joints.length))
+          let skeletonVisible = joints.length > 0
+
+          const framing = () => framePrimitive(primitive)
+
+          /*
+           * One draw at a time. `render` is asynchronous — it may cross a worker boundary — while
+           * the orbit controller emits synchronously on every pointer move, so without a token the
+           * frames could land out of order and the model would jump backwards while being dragged.
+           */
+          let generation = 0
+          const drawWireframe = (): void => {
             const pose = camera.pose
             drawPrimitive(canvas, primitive, camera.basis(), pose.distanceScale)
+            const context = canvas.getContext('2d')
+            if (context !== null && skeletonVisible && joints.length > 0) {
+              const placement = modelCamera(framing(), camera.basis(), pose.distanceScale, viewport)
+              drawSkeleton(
+                context,
+                joints,
+                placement.viewProjection,
+                viewport,
+                themeColor(canvas, '--mk-chart-categorical-3', '#f0a04b'),
+              )
+            }
+          }
+          const redraw = (): void => {
+            const pose = camera.pose
             gizmo.update(pose.yaw, pose.pitch)
+            const request = ++generation
+            if (provider === undefined) {
+              drawWireframe()
+              return
+            }
+            const placement = modelCamera(framing(), camera.basis(), pose.distanceScale, viewport)
+            const renderer = provider
+            void (async () => {
+              try {
+                const frame = await renderer.render(
+                  modelSceneRequest({
+                    primitive,
+                    camera: placement,
+                    viewport,
+                    materials: surfaces.materials,
+                    textures: surfaces.textures,
+                    clearColor: [0, 0, 0, 0],
+                    light: MODEL_KEY_LIGHT,
+                    signal: scope.signal,
+                  }),
+                )
+                if (request !== generation || scope.signal.aborted) return
+                const context = canvas.getContext('2d')
+                if (context === null) throw new TypeError('2d canvas context is unavailable')
+                const expected = frame.width * frame.height * 4
+                if (frame.rgba.length !== expected) {
+                  throw new TypeError(
+                    `renderer returned ${frame.rgba.length} bytes for a ${frame.width}x${frame.height} frame`,
+                  )
+                }
+                canvas.width = frame.width
+                canvas.height = frame.height
+                /*
+                 * Copied rather than wrapped: the frame's buffer may be a `SharedArrayBuffer` that
+                 * a worker still owns, and `ImageData` requires a plain one. A memcpy of the frame
+                 * is far below the cost of producing it.
+                 */
+                const pixels = new Uint8ClampedArray(expected)
+                pixels.set(frame.rgba)
+                context.putImageData(new ImageData(pixels, frame.width, frame.height), 0, 0)
+                if (skeletonVisible && joints.length > 0) {
+                  drawSkeleton(
+                    context,
+                    joints,
+                    placement.viewProjection,
+                    { width: frame.width, height: frame.height },
+                    themeColor(canvas, '--mk-chart-categorical-3', '#f0a04b'),
+                  )
+                }
+              } catch (error) {
+                if (scope.signal.aborted) return
+                /*
+                 * A provider that resolved and then could not draw is the one case where the
+                 * degradation has to be permanent: retrying it on every pointer move would spend
+                 * the user's frame budget failing. The fallback takes over for the rest of the
+                 * mount and says which provider dropped out and why.
+                 */
+                provider = undefined
+                canvas.setAttribute('data-model-renderer', MODEL_WIREFRAME_BACKEND)
+                canvas.setAttribute('data-model-renderer-status', 'failed')
+                canvas.setAttribute('data-model-renderer-diagnostic', 'x3.ui/renderer-frame-failed')
+                canvas.setAttribute(
+                  'data-model-renderer-detail',
+                  error instanceof Error ? error.message : String(error),
+                )
+                canvas.setAttribute('data-model-textures', '0')
+                drawWireframe()
+              }
+            })()
           }
           scope.cleanup(camera.onChange(redraw))
           camera.attach(canvas, scope.signal)
 
-          const button = (label: string, title: string, run: () => void): void => {
+          const button = (label: string, title: string, run: () => void): HTMLElement => {
             const node = element(toolbar, 'button', { part: 'operations.button', text: label })
             node.setAttribute('type', 'button')
             node.title = title
             node.addEventListener('click', run, { signal: scope.signal })
+            return node
           }
           button(localizer.text('viewer.reset'), localizer.text('viewer.resetCamera'), () =>
             camera.reset(),
           )
           button('−', localizer.text('viewer.zoomOut'), () => camera.zoom(1))
           button('+', localizer.text('viewer.zoomIn'), () => camera.zoom(-1))
+          if (joints.length > 0) {
+            const toggle = button(
+              localizer.text('viewer.modelBones'),
+              localizer.text('viewer.modelSkeletonOverlay'),
+              () => {
+                skeletonVisible = !skeletonVisible
+                toggle.setAttribute('aria-pressed', String(skeletonVisible))
+                canvas.setAttribute('data-model-skeleton-visible', String(skeletonVisible))
+                redraw()
+              },
+            )
+            toggle.setAttribute('aria-pressed', String(skeletonVisible))
+            canvas.setAttribute('data-model-skeleton-visible', String(skeletonVisible))
+          }
 
           if (model.primitiveIds.length > 1 && sceneSource.primitive !== undefined) {
             const selector = element(toolbar, 'select', {

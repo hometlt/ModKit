@@ -615,6 +615,7 @@ async function composeEmbedHost(
   const operations = new Map<string, OperationSession>()
   const stages = createWebPreviewStages({
     localizer,
+    renderer: services.renderer,
     operationsFor: descriptor => operations.get(descriptorKey(descriptor)),
   })
   const styles = await loadStyles(assetBase, localizer)

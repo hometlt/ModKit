@@ -60,6 +60,7 @@ export const PREVIEW_STAGES = Object.freeze([
       'common.view/model-animation-source',
       'common.view/model-collision-source',
       'common.view/model-material-source',
+      'common.view/model-socket-source',
     ],
   },
   {
@@ -128,6 +129,7 @@ export const PREVIEW_STAGES_READONLY = Object.freeze([
       'common.view/model-animation-source',
       'common.view/model-collision-source',
       'common.view/model-material-source',
+      'common.view/model-socket-source',
     ],
   },
   {
@@ -216,6 +218,7 @@ export function createPreviewStages(localizer) {
         'common.view/model-animation-source',
         'common.view/model-collision-source',
         'common.view/model-material-source',
+        'common.view/model-socket-source',
       ],
     },
     {
@@ -321,6 +324,7 @@ export function createPreviewStagesReadonly(localizer) {
         'common.view/model-animation-source',
         'common.view/model-collision-source',
         'common.view/model-material-source',
+        'common.view/model-socket-source',
       ],
     },
     {

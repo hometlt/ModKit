@@ -60,6 +60,16 @@ export interface ViewerContributionEligibility {
    * here, once, beside the eligibility it belongs with.
    */
   readonly optionalBound: readonly string[]
+  /**
+   * The service contracts this stage would like the host to resolve for it, verbatim.
+   *
+   * Not a binding and not a gate: a service is offered by the *realm*, not by the subject, so this
+   * evaluation — which sees only a descriptor — cannot say whether one will resolve, and must not
+   * pretend to. What it can do is carry the request forward, so an application composing the stage
+   * knows a renderer was asked for at all. Before this list the model stage's dependency on
+   * `common.render/scene-3d` was unwritten anywhere, and the eligibility system had no path to it.
+   */
+  readonly optionalServices: readonly string[]
 }
 
 export function evaluateViewerApplicability(
@@ -148,7 +158,15 @@ export function evaluateViewerContribution(
       ),
     ].sort(compareUtf8),
   )
-  return Object.freeze({ eligible: ordered.length === 0, missing: ordered, optionalBound })
+  const optionalServices = Object.freeze(
+    [...new Set((spec.optionalServices ?? []).map(service => service.contract))].sort(compareUtf8),
+  )
+  return Object.freeze({
+    eligible: ordered.length === 0,
+    missing: ordered,
+    optionalBound,
+    optionalServices,
+  })
 }
 
 export interface CatalogPresentationCandidate extends PresentationSlot {

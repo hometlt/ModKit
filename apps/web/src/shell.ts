@@ -765,6 +765,7 @@ async function boot(): Promise<void> {
 
   const stages = createWebPreviewStages({
     localizer,
+    renderer: services.renderer,
     operationsFor: descriptor => operationSessions.get(descriptorKey(descriptor)),
     /*
      * The web half of `block9/archive-entry-as-subject` (block 13 slice B).
@@ -1675,20 +1676,31 @@ async function boot(): Promise<void> {
         treeNodes: visibleCount(group, '[data-mk-part="tree.item"]'),
       })
     }
-    const group = await selectFormatSmokeStage('model', () => {
-      const node = visibleInGroup(
-        activeEditorGroup(),
-        '[data-mk-part="model.canvas"][data-model-renderer="wireframe"]',
-      )
+    /*
+     * The model stage draws through whichever backend this page resolved, so the probe selects the
+     * canvas and *reads* the backend rather than requiring one. Requiring `wireframe` would have
+     * turned a page that successfully resolved a GPU renderer into a smoke failure, and reporting
+     * `wireframe` unconditionally — which the previous version did — would have said the fallback
+     * had drawn on a machine where it had not.
+     */
+    const modelCanvas = (root: HTMLElement): HTMLCanvasElement | undefined => {
+      const node = visibleInGroup(root, '[data-mk-part="model.canvas"][data-model-renderer]')
       return node instanceof HTMLCanvasElement && node.width > 0 && node.height > 0
-    })
-    const canvas = visibleInGroup(
-      group,
-      '[data-mk-part="model.canvas"][data-model-renderer="wireframe"]',
-    ) as HTMLCanvasElement
+        ? node
+        : undefined
+    }
+    const group = await selectFormatSmokeStage(
+      'model',
+      () => modelCanvas(activeEditorGroup()) !== undefined,
+    )
+    const canvas = modelCanvas(group) as HTMLCanvasElement
     return Object.freeze({
       kind: 'model-or-wireframe',
-      renderer: 'wireframe',
+      renderer: canvas.getAttribute('data-model-renderer') ?? 'wireframe',
+      rendererStatus: canvas.getAttribute('data-model-renderer-status') ?? 'unavailable',
+      ...(canvas.getAttribute('data-model-renderer-id') === null
+        ? {}
+        : { rendererId: canvas.getAttribute('data-model-renderer-id') as string }),
       width: canvas.width,
       height: canvas.height,
     })

@@ -162,6 +162,11 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
         contract: 'common.view/model-material-source',
         major: 1,
       }),
+      Object.freeze({
+        bindingId: 'model-optional-6',
+        contract: 'common.view/model-socket-source',
+        major: 1,
+      }),
     ]),
     spec: Object.freeze({
       kind: 'stage',
@@ -173,7 +178,9 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
         { contract: 'common.view/model-animation-source', major: 1 },
         { contract: 'common.view/model-collision-source', major: 1 },
         { contract: 'common.view/model-material-source', major: 1 },
+        { contract: 'common.view/model-socket-source', major: 1 },
       ],
+      optionalServices: [{ contract: 'common.render/scene-3d', major: 1 }],
       priority: 350,
       singletonGroup: 'center-stage',
     }),

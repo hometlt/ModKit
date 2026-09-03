@@ -19,7 +19,8 @@
 import { codeModule } from '@modkit/code/module'
 import type { Diagnostic } from '@modkit/core'
 import { sceneModule } from '@modkit/scene/module'
-import type { ServiceContractDefinitionRegistry } from '@modkit/sdk'
+import type { SceneRendererPort, ServiceContractDefinitionRegistry } from '@modkit/sdk'
+import { createSceneRendererPort } from '@modkit/host/renderer'
 import { uvModule } from '@modkit/uv/module'
 import {
   createBundledServiceDefinitionRegistry,
@@ -263,6 +264,17 @@ export interface WebSubjectServices extends SubjectServices {
   readonly commands: WebCommandProtocol
   /** Product boundary for host-backed sources that cannot be represented as browser byte blobs. */
   readonly sourceOpen: WebSourceOpenAdapter
+  /**
+   * Where a stage asks for a `common.render/scene-3d` provider.
+   *
+   * Resolved against the **page** realm, not the worker realm the codecs run in, because the
+   * consumer is a viewer mounted in this document: it is the page that has (or has not) a WebGL2
+   * context, and `probeWebFacilities` already measured that rather than assuming it. So a machine
+   * whose driver refuses WebGL2 composes a main realm without `gpu.webgl2`, the browser provider's
+   * `trusted-browser-main` variant stops matching, and the model stage degrades to its 2D
+   * wireframe on a stated reason instead of a black canvas.
+   */
+  readonly renderer: SceneRendererPort
   /** Terminal page lifecycle: revoke command handles and abort every in-flight command. */
   dispose(): Promise<void>
 }
@@ -433,9 +445,33 @@ export async function createWebSubjectServices(
     ...(definitions === undefined ? {} : { serviceDefinitions: definitions }),
   })
   const commands = createWebCommandProtocol(services)
+  /*
+   * Renderer providers are resolved for the realm that will *draw*, which is this document, so the
+   * port is composed against `main` rather than the worker target `services` carries. The provider
+   * itself is a linked built-in in the application bundle; it asks for no permission class, which
+   * is why the grant carries none — a renderer that needed one would be refused here rather than
+   * quietly widening this page's authority.
+   */
+  const renderer = createSceneRendererPort({
+    services: {
+      inventory: main.inventory,
+      target: main.target,
+      executionBackends,
+      ...(definitions === undefined ? {} : { serviceDefinitions: definitions }),
+    },
+    grant: { id: 'pwa-scene-renderer', classes: [] },
+    budgets: {
+      maxInputBytes: 67_108_864n,
+      maxDepth: 16,
+      maxNodes: 1_000_000,
+      maxScalarBytes: 67_108_864,
+      maxDiagnostics: 100,
+    },
+  })
   return Object.freeze({
     ...services,
     commands,
+    renderer,
     sourceOpen: createWebSourceOpenAdapter(main.profile),
     dispose: () => commands.dispose(),
     main,

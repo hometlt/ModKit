@@ -545,6 +545,17 @@ export const viewerContributionSpecV1Schema = {
      * model facets instead of splitting into a contribution per facet combination.
      */
     optionalDataSources: { type: 'array', items: dataSourceRefWireSchema },
+    /*
+     * Service contracts this viewer asks the host for when the host can offer one.
+     *
+     * Same vocabulary a codec's `requires` uses, and deliberately a separate key from the data
+     * sources above: a renderer is not published by the subject's codec and can never appear in a
+     * descriptor's `dataSources`, so declaring it there would be a dependency the resolver is
+     * structurally unable to bind. Optional because the answer is realm-dependent — the same
+     * viewer runs in a page with a GPU and in a bridge realm without one — and a stage that
+     * disappeared where no provider was offered would be worse than one that degrades and says so.
+     */
+    optionalServices: { type: 'array', items: contractRequirementSchema },
     applicability: viewerApplicabilitySchema,
     hosts: { type: 'array', items: nonEmptyString },
     priority: { type: 'number' },

@@ -173,7 +173,16 @@ const contributions = [
         dataSource('common.view/model-animation-source'),
         dataSource('common.view/model-collision-source'),
         dataSource('common.view/model-material-source'),
+        // MODEL_FACET_CONTRACTS in `src/model/index.ts` has read this one since sockets shipped;
+        // the manifest simply never said so, which made the stage's own declaration narrower than
+        // its behaviour.
+        dataSource('common.view/model-socket-source'),
       ],
+      // The renderer is a service of the *realm*, not a source published by the subject's codec:
+      // a page with a GPU resolves one, a bridge realm without host authority does not, and the
+      // stage keeps its 2D fallback either way. Declaring it is what gives stage eligibility a
+      // path to `common.render/scene-3d` at all.
+      optionalServices: [{ contract: 'common.render/scene-3d', major: 1 }],
       priority: 350,
       singletonGroup: 'center-stage',
     },

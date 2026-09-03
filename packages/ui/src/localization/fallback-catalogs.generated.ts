@@ -335,6 +335,7 @@ export const MODEL_FALLBACK_MESSAGES = {
   'viewer.modelParent': 'parent {parent}',
   'viewer.modelPrimitive': 'Model primitive',
   'viewer.modelResources': 'resources',
+  'viewer.modelSkeletonOverlay': 'Show the bone overlay',
   'viewer.modelSockets': 'sockets',
   'viewer.modelSummary':
     '{nodes} nodes · {meshes} meshes · {primitives} primitives · {materials} materials · {animations} animations{facets}',
