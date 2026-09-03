@@ -66,6 +66,17 @@ const fail = message => problems.push(message)
 const unavailableChecks = []
 const flagUnavailable = message => unavailableChecks.push(message)
 const readJson = file => JSON.parse(readFileSync(file, 'utf8'))
+// Same blind spot as deriveX3Facts, one layer over: a proof path is only as good as the repository
+// this resolves it into. `extensions/ea/` and `extensions/opensource/spring/` were unhandled — not
+// because those repositories are absent (modkit.workspace.json has always declared both) but
+// because nobody added the branch when they joined blizzard/warzone/other here. Both additions
+// below are verified against the real checkouts: `extensions/ea/emperor/test/emperor-xbf-depth.test.ts`
+// resolves to `emperor/test/emperor-xbf-depth.test.ts` in modkit-extensions-ea, and
+// `extensions/opensource/spring/test/codec.test.ts` resolves to `test/codec.test.ts` in
+// modkit-extensions-spring; both files exist on disk. Before this fix every proof path under either
+// prefix fell through to the `repoRoot`-relative default and was reported as "does not exist" —
+// not because the test was deleted (that is a real, separate registry problem elsewhere in this
+// run) but because this function never looked in the right repository.
 const resolvedProductPath = value => {
   const portable = value.replaceAll('\\', '/')
   if (portable.startsWith('extensions/blizzard/')) {
@@ -78,6 +89,18 @@ const resolvedProductPath = value => {
     return path.join(
       externalRepositoryRoot(repoRoot, 'warzone'),
       portable.slice('extensions/opensource/warzone-2100/'.length),
+    )
+  }
+  if (portable.startsWith('extensions/ea/')) {
+    return path.join(
+      externalRepositoryRoot(repoRoot, 'ea'),
+      portable.slice('extensions/ea/'.length),
+    )
+  }
+  if (portable.startsWith('extensions/opensource/spring/')) {
+    return path.join(
+      externalRepositoryRoot(repoRoot, 'spring'),
+      portable.slice('extensions/opensource/spring/'.length),
     )
   }
   if (portable.startsWith('extensions/ps1/')) {
@@ -444,9 +467,23 @@ const unmappedRules = registry.unmapped ?? []
 const isDefaultRegistry = registryPath === path.join(repoRoot, 'migration/capabilities.yaml')
 
 function deriveX3Facts() {
+  // Contributions live under extensions/** (the original layout) and, since the externalization,
+  // also directly under packages/** (e.g. packages/host/native-text, where the plain-text/JSON
+  // family relocated) and examples/** (reference vertical slices that ship a real contribution
+  // alongside their tutorial value, e.g. examples/modkit-extension-plain-text). All three are
+  // scanned so a relocation out of extensions/** cannot silently fall out of the X3 fact base; the
+  // contract.id filter below is what keeps fixture/demo contributions (org.modkitx/*, x3.demo/*)
+  // from ever entering the map, so widening the glob cannot pull in noise.
   const internal = execFileSync(
     'git',
-    ['-C', repoRoot, 'ls-files', ':(glob)extensions/**/contributions/*.json'],
+    [
+      '-C',
+      repoRoot,
+      'ls-files',
+      ':(glob)extensions/**/contributions/*.json',
+      ':(glob)packages/**/contributions/*.json',
+      ':(glob)examples/**/contributions/*.json',
+    ],
     {
       maxBuffer: 1 << 30,
     },
@@ -455,9 +492,16 @@ function deriveX3Facts() {
     .trim()
     .split('\n')
     .filter(Boolean)
+  // modkit.workspace.json declares five sibling sources; the focused-ga profile only activates
+  // blizzard and warzone, but a source being outside the active profile does not mean its
+  // repository is absent from disk or absent from the registry (compare: `other` is not in any
+  // profile either and is scanned below). All five must be read or the fact base is only ever as
+  // complete as the launch profile of the day.
   const external = [
     ['blizzard', externalRepositoryRoot(repoRoot, 'blizzard')],
     ['warzone', externalRepositoryRoot(repoRoot, 'warzone')],
+    ['ea', externalRepositoryRoot(repoRoot, 'ea')],
+    ['spring', externalRepositoryRoot(repoRoot, 'spring')],
     ['other', externalRepositoryRoot(repoRoot, 'other')],
   ].flatMap(([repository, root]) =>
     execFileSync('git', ['-C', root, 'ls-files', 'contributions/*.json', '*/contributions/*.json'])
@@ -577,8 +621,17 @@ if (isDefaultRegistry) {
         fail(`${label}: a retired route must name its replacement workflow`)
       }
     }
+    // A declared x3ContributionId that the (now complete, see deriveX3Facts) scan cannot find must
+    // be recorded, never passed over: a miss here previously left the supportState cross-check
+    // silently unperformed — no failure, no counter, nothing to read. It is now unconditional: a
+    // miss is itself a problem, distinct from (and reported alongside, not instead of) whatever the
+    // state-specific rules above already said about this row's allocation.
     const entry = declared === null ? undefined : x3.get(declared)
-    if (entry !== undefined) {
+    if (declared !== null && entry === undefined) {
+      fail(
+        `${label}: allocation.x3ContributionId names ${declared}, which no X3 contribution carries — supportState cannot be cross-checked against it`,
+      )
+    } else if (entry !== undefined) {
       const status = entry.json.status
       const expected =
         status === 'supported' ? 'supported' : status === 'partial' ? 'partial' : 'unknown'
