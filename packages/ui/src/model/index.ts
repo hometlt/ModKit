@@ -782,6 +782,12 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
                  */
                 provider = undefined
                 canvas.setAttribute('data-model-renderer', MODEL_WIREFRAME_BACKEND)
+                /*
+                 * The id goes with the backend. Leaving it would name a provider that is no longer
+                 * drawing anything, which is exactly the kind of stale evidence an installed probe
+                 * would read as a success. `…-status="failed"` is what says one was tried.
+                 */
+                canvas.removeAttribute('data-model-renderer-id')
                 canvas.setAttribute('data-model-renderer-status', 'failed')
                 canvas.setAttribute('data-model-renderer-diagnostic', 'x3.ui/renderer-frame-failed')
                 canvas.setAttribute(
