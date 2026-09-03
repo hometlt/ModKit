@@ -1351,7 +1351,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/ea-westwood'
+    owner: 'extensions/ea/westwood'
     plannedBlock: 16
     dependsOn:
       - 'format/pal/open-inspect'
@@ -1476,7 +1476,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/ea-tiberian-sun'
+    owner: 'extensions/ea/tiberian-sun'
     plannedBlock: 30
     dependsOn:
       - 'format/red-alert2-vxl/open-inspect'
@@ -2278,7 +2278,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/microsoft-age-series'
+    owner: 'extensions/microsoft-age-series'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -2340,7 +2340,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/microsoft-age-series'
+    owner: 'extensions/microsoft-age-series'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -2402,7 +2402,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/microsoft-age-series'
+    owner: 'extensions/microsoft-age-series'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -2930,7 +2930,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/rad-game-tools-video'
+    owner: 'extensions/rad-game-tools-video'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -3052,7 +3052,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/blizzard-common-formats'
+    owner: 'extensions/blizzard/blizzard-common-formats'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -3109,7 +3109,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/blizzard-common-formats'
+    owner: 'extensions/blizzard/blizzard-common-formats'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -3240,7 +3240,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/audiokinetic-wwise'
+    owner: 'extensions/audiokinetic-wwise'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -3373,7 +3373,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/microsoft-age-series'
+    owner: 'extensions/microsoft-age-series'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -4021,7 +4021,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/microsoft-age-series'
+    owner: 'extensions/microsoft-age-series'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -4297,7 +4297,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/microsoft-age-series'
+    owner: 'extensions/microsoft-age-series'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -4358,7 +4358,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/new-world-computing-heroes-3'
+    owner: 'extensions/new-world-computing-heroes-3'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -4419,7 +4419,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/blizzard-diablo'
+    owner: 'extensions/blizzard/blizzard-diablo'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -4476,7 +4476,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/blizzard-diablo'
+    owner: 'extensions/blizzard/blizzard-diablo'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -4533,7 +4533,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/blizzard-diablo'
+    owner: 'extensions/blizzard/blizzard-diablo'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -4590,7 +4590,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/blizzard-diablo'
+    owner: 'extensions/blizzard/blizzard-diablo'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -4651,7 +4651,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/blizzard-diablo'
+    owner: 'extensions/blizzard/blizzard-diablo'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -4708,7 +4708,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/blizzard-diablo'
+    owner: 'extensions/blizzard/blizzard-diablo'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -5013,7 +5013,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/realitypump-earth-2150'
+    owner: 'extensions/realitypump-earth-2150'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -5074,7 +5074,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/realitypump-earth-2150'
+    owner: 'extensions/realitypump-earth-2150'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -5131,7 +5131,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/realitypump-earth-2150'
+    owner: 'extensions/realitypump-earth-2150'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -5192,7 +5192,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/realitypump-earth2160'
+    owner: 'extensions/realitypump-earth2160'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -5512,7 +5512,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/stainless-steel-studios-empire-earth'
+    owner: 'extensions/stainless-steel-studios-empire-earth'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -5702,7 +5702,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/adobe-flash'
+    owner: 'extensions/adobe-flash'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -5832,7 +5832,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/adobe-flash'
+    owner: 'extensions/adobe-flash'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -5893,7 +5893,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/firelight-fmod'
+    owner: 'extensions/firelight-fmod'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -5954,7 +5954,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/cavedog-total-annihilation'
+    owner: 'extensions/cavedog-total-annihilation'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -6304,7 +6304,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/petroglyph-glyphx'
+    owner: 'extensions/petroglyph-glyphx'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -6436,7 +6436,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/microsoft-halo-wars'
+    owner: 'extensions/microsoft-halo-wars'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -6497,7 +6497,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/microsoft-halo-wars'
+    owner: 'extensions/microsoft-halo-wars'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -6624,7 +6624,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/new-world-computing-heroes-3'
+    owner: 'extensions/new-world-computing-heroes-3'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -6685,7 +6685,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/new-world-computing-heroes-4'
+    owner: 'extensions/new-world-computing-heroes-4'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -6746,7 +6746,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/ubisoft-heroes-6'
+    owner: 'extensions/ubisoft-heroes-6'
     plannedBlock: 30
     dependsOn:
       - 'format/zip/open-inspect'
@@ -7844,7 +7844,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/microsoft-age-series'
+    owner: 'extensions/microsoft-age-series'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -8693,7 +8693,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/petroglyph-glyphx'
+    owner: 'extensions/petroglyph-glyphx'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -9028,7 +9028,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/microsoft-age-series'
+    owner: 'extensions/microsoft-age-series'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -9609,7 +9609,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/relic-essence'
+    owner: 'extensions/relic-essence'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -9666,7 +9666,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/relic-essence'
+    owner: 'extensions/relic-essence'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -9727,7 +9727,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/relic-models'
+    owner: 'extensions/relic-models'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -9788,7 +9788,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/relic-essence'
+    owner: 'extensions/relic-essence'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -9845,7 +9845,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/relic-models'
+    owner: 'extensions/relic-models'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -9906,7 +9906,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/relic-essence'
+    owner: 'extensions/relic-essence'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -9967,7 +9967,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/relic-essence'
+    owner: 'extensions/relic-essence'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -10028,7 +10028,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/relic-essence'
+    owner: 'extensions/relic-essence'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -10089,7 +10089,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/relic-essence'
+    owner: 'extensions/relic-essence'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -10219,7 +10219,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/relic-essence'
+    owner: 'extensions/relic-essence'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -11258,7 +11258,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/microsoft-age-series'
+    owner: 'extensions/microsoft-age-series'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -11319,7 +11319,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/microsoft-age-series'
+    owner: 'extensions/microsoft-age-series'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -11380,7 +11380,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/rad-game-tools-video'
+    owner: 'extensions/rad-game-tools-video'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -11441,7 +11441,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/microsoft-age-series'
+    owner: 'extensions/microsoft-age-series'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -11502,7 +11502,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/microsoft-age-series'
+    owner: 'extensions/microsoft-age-series'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -11563,7 +11563,7 @@ capabilities:
     releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/opensource-spring'
+    owner: 'extensions/opensource/spring'
     plannedBlock: 17
     dependsOn: []
     sourceUnitIds:
@@ -11699,7 +11699,7 @@ capabilities:
     releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/opensource-spring'
+    owner: 'extensions/opensource/spring'
     plannedBlock: 17
     dependsOn:
       - 'format/spring-rapid/open-inspect'
@@ -11762,7 +11762,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/stainless-steel-studios-empire-earth'
+    owner: 'extensions/stainless-steel-studios-empire-earth'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -11823,7 +11823,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'post-ga-required-proof'
-    owner: 'extensions/blizzard/starcraft1'
+    owner: 'unassigned'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -11880,7 +11880,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'post-ga-required-proof'
-    owner: 'extensions/blizzard/starcraft1'
+    owner: 'unassigned'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -11937,7 +11937,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/blizzard/starcraft1'
+    owner: 'unassigned'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -12063,7 +12063,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/annihilation-gas-powered'
+    owner: 'extensions/annihilation-gas-powered'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -12192,7 +12192,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/adobe-flash'
+    owner: 'extensions/adobe-flash'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -12253,7 +12253,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/cavedog-total-annihilation'
+    owner: 'extensions/cavedog-total-annihilation'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -12386,7 +12386,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/stainless-steel-studios-empire-earth'
+    owner: 'extensions/stainless-steel-studios-empire-earth'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -12722,7 +12722,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/epic-games-unreal-engine'
+    owner: 'extensions/epic-games-unreal-engine'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -12783,7 +12783,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/unity-engine'
+    owner: 'extensions/unity-engine'
     plannedBlock: 30
     dependsOn:
       - 'format/unity-mesh/open-inspect'
@@ -12845,7 +12845,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/unity-engine'
+    owner: 'extensions/unity-engine'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -12906,7 +12906,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/unity-engine'
+    owner: 'extensions/unity-engine'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -12967,7 +12967,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/unity-engine'
+    owner: 'extensions/unity-engine'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -13028,7 +13028,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/unity-engine'
+    owner: 'extensions/unity-engine'
     plannedBlock: 30
     dependsOn:
       - 'format/unity-mesh/open-inspect'
@@ -13090,7 +13090,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/epic-games-unreal-engine'
+    owner: 'extensions/epic-games-unreal-engine'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -13151,7 +13151,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/epic-games-unreal-engine'
+    owner: 'extensions/epic-games-unreal-engine'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -13213,7 +13213,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/epic-games-unreal-engine'
+    owner: 'extensions/epic-games-unreal-engine'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -13275,7 +13275,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/epic-games-unreal-engine'
+    owner: 'extensions/epic-games-unreal-engine'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -13336,7 +13336,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/epic-games-unreal-engine'
+    owner: 'extensions/epic-games-unreal-engine'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -13397,7 +13397,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/epic-games-unreal-engine'
+    owner: 'extensions/epic-games-unreal-engine'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -13652,7 +13652,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/blizzard-warcraft-3'
+    owner: 'extensions/blizzard/blizzard-warcraft-3'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -13713,7 +13713,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/blizzard-common-formats'
+    owner: 'extensions/blizzard/blizzard-common-formats'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -13770,7 +13770,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/blizzard-warcraft-3'
+    owner: 'extensions/blizzard/blizzard-warcraft-3'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -13827,7 +13827,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/blizzard-warcraft-3'
+    owner: 'extensions/blizzard/blizzard-warcraft-3'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -13884,7 +13884,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/blizzard-warcraft-3'
+    owner: 'extensions/blizzard/blizzard-warcraft-3'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -13941,7 +13941,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/blizzard-warcraft-3'
+    owner: 'extensions/blizzard/blizzard-warcraft-3'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -13998,7 +13998,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/blizzard-warcraft-3'
+    owner: 'extensions/blizzard/blizzard-warcraft-3'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -14520,7 +14520,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/realitypump-earth2160'
+    owner: 'extensions/realitypump-earth2160'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -14720,7 +14720,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/audiokinetic-wwise'
+    owner: 'extensions/audiokinetic-wwise'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -14988,7 +14988,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/blizzard-common-formats'
+    owner: 'extensions/blizzard/blizzard-common-formats'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -15106,7 +15106,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/relic-essence'
+    owner: 'extensions/relic-essence'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -15167,7 +15167,7 @@ capabilities:
     releaseTrack: 'post-ga'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/audiokinetic-wwise'
+    owner: 'extensions/audiokinetic-wwise'
     plannedBlock: 30
     dependsOn: []
     sourceUnitIds:
@@ -19466,7 +19466,7 @@ capabilities:
     releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/opensource-spring'
+    owner: 'extensions/opensource/spring'
     plannedBlock: 17
     dependsOn:
       - 'game/beyond-all-reason/discover-open'
@@ -19525,7 +19525,7 @@ capabilities:
     releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/opensource-spring'
+    owner: 'extensions/opensource/spring'
     plannedBlock: 17
     dependsOn:
       - 'game/beyond-all-reason/discover-open'
@@ -19583,7 +19583,7 @@ capabilities:
     releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/opensource-spring'
+    owner: 'extensions/opensource/spring'
     plannedBlock: 17
     dependsOn:
       - 'game/beyond-all-reason/discover-open'
@@ -19643,7 +19643,7 @@ capabilities:
     releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/opensource-spring'
+    owner: 'extensions/opensource/spring'
     plannedBlock: 17
     dependsOn:
       - 'game/beyond-all-reason/discover-open'
@@ -19703,7 +19703,7 @@ capabilities:
     releaseTrack: 'deferred-games-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/mk2/opensource-spring'
+    owner: 'extensions/opensource/spring'
     plannedBlock: 17
     dependsOn:
       - 'game/beyond-all-reason/discover-open'

@@ -171,33 +171,33 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 
 ### `mk3-deferred-games` сверх `mk3-multiverse-ga` — 25 строк
 
-| Возможность                                                 | migrationState | evidence | Владелец                           |
-| ----------------------------------------------------------- | -------------- | -------- | ---------------------------------- |
-| `block9/w3d-texture-cross-archive`                          | `missing`      | E0       | `packages/host`                    |
-| `format/sage-asset-bundle/open-inspect`                     | `missing`      | E0       | `extensions/ea/sage`               |
-| `game/cnc3-tiberium-wars/discover-open`                     | `missing`      | E0       | `unassigned`                       |
-| `game/red-alert-3/discover-open`                            | `missing`      | E0       | `unassigned`                       |
-| `vertical/cnc3-kanes-wrath/deterministic-playable-subset`   | `missing`      | E0       | `extensions/ea/sage`               |
-| `vertical/cnc3-kanes-wrath/native-inspect-authoring`        | `missing`      | E0       | `extensions/ea/sage`               |
-| `vertical/cnc3-kanes-wrath/native-round-trip`               | `missing`      | E0       | `extensions/ea/sage`               |
-| `vertical/cnc3-kanes-wrath/native-to-uv`                    | `missing`      | E0       | `extensions/ea/sage`               |
-| `vertical/cnc3-kanes-wrath/neutral-definitions-world`       | `missing`      | E0       | `extensions/ea/sage`               |
-| `vertical/cnc3-tiberium-wars/deterministic-playable-subset` | `missing`      | E0       | `extensions/ea/sage`               |
-| `vertical/cnc3-tiberium-wars/native-inspect-authoring`      | `missing`      | E0       | `extensions/ea/sage`               |
-| `vertical/cnc3-tiberium-wars/native-round-trip`             | `missing`      | E0       | `extensions/ea/sage`               |
-| `vertical/cnc3-tiberium-wars/native-to-uv`                  | `missing`      | E0       | `extensions/ea/sage`               |
-| `vertical/cnc3-tiberium-wars/neutral-definitions-world`     | `missing`      | E0       | `extensions/ea/sage`               |
-| `vertical/red-alert-3/deterministic-playable-subset`        | `missing`      | E0       | `extensions/ea/sage`               |
-| `vertical/red-alert-3/native-inspect-authoring`             | `missing`      | E0       | `extensions/ea/sage`               |
-| `vertical/red-alert-3/native-round-trip`                    | `missing`      | E0       | `extensions/ea/sage`               |
-| `vertical/red-alert-3/native-to-uv`                         | `missing`      | E0       | `extensions/ea/sage`               |
-| `vertical/red-alert-3/neutral-definitions-world`            | `missing`      | E0       | `extensions/ea/sage`               |
-| `game/beyond-all-reason/discover-open`                      | `missing`      | E0       | `unassigned`                       |
-| `vertical/beyond-all-reason/deterministic-playable-subset`  | `missing`      | E0       | `extensions/mk2/opensource-spring` |
-| `vertical/beyond-all-reason/native-inspect-authoring`       | `missing`      | E0       | `extensions/mk2/opensource-spring` |
-| `vertical/beyond-all-reason/native-round-trip`              | `missing`      | E0       | `extensions/mk2/opensource-spring` |
-| `vertical/beyond-all-reason/native-to-uv`                   | `missing`      | E0       | `extensions/mk2/opensource-spring` |
-| `vertical/beyond-all-reason/neutral-definitions-world`      | `missing`      | E0       | `extensions/mk2/opensource-spring` |
+| Возможность                                                 | migrationState | evidence | Владелец                       |
+| ----------------------------------------------------------- | -------------- | -------- | ------------------------------ |
+| `block9/w3d-texture-cross-archive`                          | `missing`      | E0       | `packages/host`                |
+| `format/sage-asset-bundle/open-inspect`                     | `missing`      | E0       | `extensions/ea/sage`           |
+| `game/cnc3-tiberium-wars/discover-open`                     | `missing`      | E0       | `unassigned`                   |
+| `game/red-alert-3/discover-open`                            | `missing`      | E0       | `unassigned`                   |
+| `vertical/cnc3-kanes-wrath/deterministic-playable-subset`   | `missing`      | E0       | `extensions/ea/sage`           |
+| `vertical/cnc3-kanes-wrath/native-inspect-authoring`        | `missing`      | E0       | `extensions/ea/sage`           |
+| `vertical/cnc3-kanes-wrath/native-round-trip`               | `missing`      | E0       | `extensions/ea/sage`           |
+| `vertical/cnc3-kanes-wrath/native-to-uv`                    | `missing`      | E0       | `extensions/ea/sage`           |
+| `vertical/cnc3-kanes-wrath/neutral-definitions-world`       | `missing`      | E0       | `extensions/ea/sage`           |
+| `vertical/cnc3-tiberium-wars/deterministic-playable-subset` | `missing`      | E0       | `extensions/ea/sage`           |
+| `vertical/cnc3-tiberium-wars/native-inspect-authoring`      | `missing`      | E0       | `extensions/ea/sage`           |
+| `vertical/cnc3-tiberium-wars/native-round-trip`             | `missing`      | E0       | `extensions/ea/sage`           |
+| `vertical/cnc3-tiberium-wars/native-to-uv`                  | `missing`      | E0       | `extensions/ea/sage`           |
+| `vertical/cnc3-tiberium-wars/neutral-definitions-world`     | `missing`      | E0       | `extensions/ea/sage`           |
+| `vertical/red-alert-3/deterministic-playable-subset`        | `missing`      | E0       | `extensions/ea/sage`           |
+| `vertical/red-alert-3/native-inspect-authoring`             | `missing`      | E0       | `extensions/ea/sage`           |
+| `vertical/red-alert-3/native-round-trip`                    | `missing`      | E0       | `extensions/ea/sage`           |
+| `vertical/red-alert-3/native-to-uv`                         | `missing`      | E0       | `extensions/ea/sage`           |
+| `vertical/red-alert-3/neutral-definitions-world`            | `missing`      | E0       | `extensions/ea/sage`           |
+| `game/beyond-all-reason/discover-open`                      | `missing`      | E0       | `unassigned`                   |
+| `vertical/beyond-all-reason/deterministic-playable-subset`  | `missing`      | E0       | `extensions/opensource/spring` |
+| `vertical/beyond-all-reason/native-inspect-authoring`       | `missing`      | E0       | `extensions/opensource/spring` |
+| `vertical/beyond-all-reason/native-round-trip`              | `missing`      | E0       | `extensions/opensource/spring` |
+| `vertical/beyond-all-reason/native-to-uv`                   | `missing`      | E0       | `extensions/opensource/spring` |
+| `vertical/beyond-all-reason/neutral-definitions-world`      | `missing`      | E0       | `extensions/opensource/spring` |
 
 ## 7. Готовность корпусов
 
