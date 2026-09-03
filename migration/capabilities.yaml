@@ -2875,8 +2875,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/big'
+      state: 'superseded'
+      x3ContributionId: 'ea/big'
       portFamily: 'ea/big'
       portVerdict: null
     migrationState: 'implemented'
@@ -2918,7 +2918,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution ea/big'
     closedBy:
       commits: []
       tests: []
@@ -3123,8 +3123,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/blp'
+      state: 'superseded'
+      x3ContributionId: 'blizzard/blp'
       portFamily: 'mk2/blizzard-common-formats'
       portVerdict: null
     migrationState: 'implemented'
@@ -3158,7 +3158,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution blizzard/blp'
     closedBy:
       commits: []
       tests: []
@@ -3578,8 +3578,8 @@ capabilities:
       - 'container.extract'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/casc'
+      state: 'superseded'
+      x3ContributionId: 'blizzard/casc'
       portFamily: 'blizzard/casc'
       portVerdict: 'mechanical'
     migrationState: 'implemented'
@@ -3614,7 +3614,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution blizzard/casc'
     closedBy:
       commits: []
       tests: []
@@ -3701,8 +3701,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/cnc3-data'
+      state: 'superseded'
+      x3ContributionId: 'ea/cnc3-data'
       portFamily: 'ea/sage'
       portVerdict: null
     migrationState: 'implemented'
@@ -3741,7 +3741,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution ea/cnc3-data'
     closedBy:
       commits: []
       tests: []
@@ -3767,8 +3767,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/cnc3-localization'
+      state: 'superseded'
+      x3ContributionId: 'ea/cnc3-localization'
       portFamily: 'ea/sage'
       portVerdict: null
     migrationState: 'implemented'
@@ -3807,7 +3807,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution ea/cnc3-localization'
     closedBy:
       commits: []
       tests: []
@@ -3834,8 +3834,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/cnc3-map'
+      state: 'superseded'
+      x3ContributionId: 'ea/cnc3-map'
       portFamily: 'ea/sage'
       portVerdict: null
     migrationState: 'implemented'
@@ -3874,7 +3874,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution ea/cnc3-map'
     closedBy:
       commits: []
       tests: []
@@ -3900,8 +3900,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/cps'
+      state: 'superseded'
+      x3ContributionId: 'ea/cps'
       portFamily: 'ea/westwood'
       portVerdict: null
     migrationState: 'implemented'
@@ -3935,7 +3935,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution ea/cps'
     closedBy:
       commits: []
       tests: []
@@ -4600,8 +4600,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/diablo3-app'
+      state: 'superseded'
+      x3ContributionId: 'blizzard/diablo3-app'
       portFamily: 'mk2/blizzard-diablo'
       portVerdict: null
     migrationState: 'implemented'
@@ -4635,7 +4635,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution blizzard/diablo3-app'
     closedBy:
       commits: []
       tests: []
@@ -4718,8 +4718,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/diablo3-tex'
+      state: 'superseded'
+      x3ContributionId: 'blizzard/diablo3-tex'
       portFamily: 'mk2/blizzard-diablo'
       portVerdict: null
     migrationState: 'implemented'
@@ -4753,7 +4753,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution blizzard/diablo3-tex'
     closedBy:
       commits: []
       tests: []
@@ -5388,8 +5388,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/emperor-rfh-rfd'
+      state: 'superseded'
+      x3ContributionId: 'ea/emperor-rfh-rfd'
       portFamily: 'ea/emperor'
       portVerdict: null
     migrationState: 'implemented'
@@ -5423,7 +5423,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution ea/emperor-rfh-rfd'
     closedBy:
       commits: []
       tests: []
@@ -5449,8 +5449,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/emperor-xbf'
+      state: 'superseded'
+      x3ContributionId: 'ea/emperor-xbf'
       portFamily: 'ea/emperor'
       portVerdict: null
     migrationState: 'implemented'
@@ -5493,7 +5493,7 @@ capabilities:
       materialization: 'MaterializationReceipt'
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution ea/emperor-xbf'
     closedBy:
       commits: []
       tests:
@@ -6023,8 +6023,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/galaxy'
+      state: 'superseded'
+      x3ContributionId: 'blizzard/galaxy'
       portFamily: 'blizzard/starcraft2'
       portVerdict: 'needs-new-contract'
     migrationState: 'implemented'
@@ -6071,7 +6071,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution blizzard/galaxy'
     closedBy:
       commits: []
       tests: []
@@ -7231,8 +7231,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/m3'
+      state: 'superseded'
+      x3ContributionId: 'blizzard/m3'
       portFamily: 'blizzard/models'
       portVerdict: 'needs-new-contract'
     migrationState: 'implemented'
@@ -7283,7 +7283,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution blizzard/m3'
     closedBy:
       commits:
         - 'a7867d0'
@@ -7508,8 +7508,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/mix'
+      state: 'superseded'
+      x3ContributionId: 'ea/mix'
       portFamily: 'ea/archives'
       portVerdict: null
     migrationState: 'implemented'
@@ -7543,7 +7543,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution ea/mix'
     closedBy:
       commits: []
       tests: []
@@ -7782,8 +7782,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/mpq'
+      state: 'superseded'
+      x3ContributionId: 'blizzard/mpq'
       portFamily: 'blizzard/mpq'
       portVerdict: 'needs-new-contract'
     migrationState: 'implemented'
@@ -7821,7 +7821,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution blizzard/mpq'
     closedBy:
       commits: []
       tests: []
@@ -9352,8 +9352,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/r16'
+      state: 'superseded'
+      x3ContributionId: 'ea/r16'
       portFamily: 'ea/westwood'
       portVerdict: null
     migrationState: 'implemented'
@@ -9387,7 +9387,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution ea/r16'
     closedBy:
       commits: []
       tests: []
@@ -9413,8 +9413,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/r8'
+      state: 'superseded'
+      x3ContributionId: 'ea/r8'
       portFamily: 'ea/westwood'
       portVerdict: null
     migrationState: 'implemented'
@@ -9448,7 +9448,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution ea/r8'
     closedBy:
       commits: []
       tests: []
@@ -9539,8 +9539,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/red-alert2-vxl'
+      state: 'superseded'
+      x3ContributionId: 'ea/red-alert2-vxl'
       portFamily: 'ea/tiberian-sun'
       portVerdict: null
     migrationState: 'implemented'
@@ -9582,7 +9582,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution ea/red-alert2-vxl'
     closedBy:
       commits: []
       tests: []
@@ -10336,8 +10336,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/sage-skudef'
+      state: 'superseded'
+      x3ContributionId: 'ea/sage-skudef'
       portFamily: 'ea/sage'
       portVerdict: null
     migrationState: 'implemented'
@@ -10376,7 +10376,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution ea/sage-skudef'
     closedBy:
       commits: []
       tests: []
@@ -10402,8 +10402,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/sage-w3x'
+      state: 'superseded'
+      x3ContributionId: 'ea/sage-w3x'
       portFamily: 'ea/models'
       portVerdict: null
     migrationState: 'implemented'
@@ -10445,7 +10445,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution ea/sage-w3x'
     closedBy:
       commits: []
       tests: []
@@ -10471,8 +10471,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/sc2-bank'
+      state: 'superseded'
+      x3ContributionId: 'blizzard/sc2-bank'
       portFamily: 'blizzard/starcraft2'
       portVerdict: 'needs-new-contract'
     migrationState: 'implemented'
@@ -10515,7 +10515,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution blizzard/sc2-bank'
     closedBy:
       commits: []
       tests: []
@@ -10541,8 +10541,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/sc2-data'
+      state: 'superseded'
+      x3ContributionId: 'blizzard/sc2-data'
       portFamily: 'blizzard/starcraft2'
       portVerdict: 'needs-new-contract'
     migrationState: 'implemented'
@@ -10590,7 +10590,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution blizzard/sc2-data'
     closedBy:
       commits: []
       tests: []
@@ -10616,8 +10616,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/sc2-document-metadata'
+      state: 'superseded'
+      x3ContributionId: 'blizzard/sc2-document-metadata'
       portFamily: 'blizzard/starcraft2'
       portVerdict: 'needs-new-contract'
     migrationState: 'implemented'
@@ -10657,7 +10657,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution blizzard/sc2-document-metadata'
     closedBy:
       commits: []
       tests: []
@@ -10683,8 +10683,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/sc2-layout'
+      state: 'superseded'
+      x3ContributionId: 'blizzard/sc2-layout'
       portFamily: 'blizzard/starcraft2'
       portVerdict: 'needs-new-contract'
     migrationState: 'implemented'
@@ -10728,7 +10728,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution blizzard/sc2-layout'
     closedBy:
       commits: []
       tests: []
@@ -10755,8 +10755,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/sc2-map'
+      state: 'superseded'
+      x3ContributionId: 'blizzard/sc2-map'
       portFamily: 'blizzard/starcraft2'
       portVerdict: 'needs-new-contract'
     migrationState: 'partial'
@@ -10803,7 +10803,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution blizzard/sc2-map'
     closedBy:
       commits: []
       tests:
@@ -10834,8 +10834,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/sc2-mod'
+      state: 'superseded'
+      x3ContributionId: 'blizzard/sc2-mod'
       portFamily: 'blizzard/starcraft2'
       portVerdict: 'needs-new-contract'
     migrationState: 'implemented'
@@ -10878,7 +10878,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution blizzard/sc2-mod'
     closedBy:
       commits: []
       tests: []
@@ -10904,8 +10904,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/sc2-replay'
+      state: 'superseded'
+      x3ContributionId: 'blizzard/sc2-replay'
       portFamily: 'blizzard/starcraft2'
       portVerdict: 'needs-new-contract'
     migrationState: 'implemented'
@@ -10948,7 +10948,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution blizzard/sc2-replay'
     closedBy:
       commits: []
       tests: []
@@ -10977,8 +10977,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/sc2-runtime'
+      state: 'superseded'
+      x3ContributionId: 'blizzard/sc2-runtime'
       portFamily: 'blizzard/starcraft2'
       portVerdict: 'convertible-with-rework'
     migrationState: 'implemented'
@@ -11053,8 +11053,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/sc2-strings'
+      state: 'superseded'
+      x3ContributionId: 'blizzard/sc2-strings'
       portFamily: 'blizzard/starcraft2'
       portVerdict: 'needs-new-contract'
     migrationState: 'implemented'
@@ -11099,7 +11099,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution blizzard/sc2-strings'
     closedBy:
       commits: []
       tests:
@@ -11126,8 +11126,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/sc2-triggers'
+      state: 'superseded'
+      x3ContributionId: 'blizzard/sc2-triggers'
       portFamily: 'blizzard/starcraft2'
       portVerdict: 'needs-new-contract'
     migrationState: 'partial'
@@ -11169,7 +11169,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution blizzard/sc2-triggers'
     closedBy:
       commits: []
       tests:
@@ -11196,8 +11196,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/shp'
+      state: 'superseded'
+      x3ContributionId: 'ea/shp'
       portFamily: 'ea/westwood'
       portVerdict: null
     migrationState: 'implemented'
@@ -11231,7 +11231,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution ea/shp'
     closedBy:
       commits: []
       tests: []
@@ -12584,8 +12584,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/tmp'
+      state: 'superseded'
+      x3ContributionId: 'ea/tmp'
       portFamily: 'ea/westwood'
       portVerdict: null
     migrationState: 'implemented'
@@ -12619,7 +12619,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution ea/tmp'
     closedBy:
       commits: []
       tests: []
@@ -13586,8 +13586,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/vpl'
+      state: 'superseded'
+      x3ContributionId: 'ea/vpl'
       portFamily: 'ea/westwood'
       portVerdict: null
     migrationState: 'implemented'
@@ -13621,7 +13621,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution ea/vpl'
     closedBy:
       commits: []
       tests: []
@@ -13647,8 +13647,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/war3-mdx'
+      state: 'superseded'
+      x3ContributionId: 'blizzard/war3-mdx'
       portFamily: 'mk2/blizzard-warcraft-3'
       portVerdict: null
     migrationState: 'implemented'
@@ -13682,7 +13682,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution blizzard/war3-mdx'
     closedBy:
       commits: []
       tests: []
@@ -14775,8 +14775,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/westwood-w3d'
+      state: 'superseded'
+      x3ContributionId: 'ea/westwood-w3d'
       portFamily: 'ea/models'
       portVerdict: null
     migrationState: 'implemented'
@@ -14820,7 +14820,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution ea/westwood-w3d'
     closedBy:
       commits: []
       tests: []
@@ -15037,8 +15037,8 @@ capabilities:
       - 'export.raw'
       - 'view.inspect'
     allocation:
-      state: 'covered'
-      x3ContributionId: 'modkit/wsa'
+      state: 'superseded'
+      x3ContributionId: 'ea/wsa'
       portFamily: 'ea/westwood'
       portVerdict: null
     migrationState: 'implemented'
@@ -15072,7 +15072,7 @@ capabilities:
       materialization: null
       nativeExport: null
       installedHost: null
-    replacementWorkflow: null
+    replacementWorkflow: 'MK3 contribution ea/wsa'
     closedBy:
       commits: []
       tests: []
