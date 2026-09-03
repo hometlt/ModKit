@@ -22,7 +22,7 @@ capabilities:
     releaseTrack: 'mk3-priority'
     origin: 'legacy'
     obligation: 'legacy-required'
-    owner: 'extensions/common/demo'
+    owner: 'extensions/documents'
     plannedBlock: 12
     dependsOn: []
     sourceUnitIds:

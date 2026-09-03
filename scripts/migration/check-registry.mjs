@@ -381,6 +381,185 @@ function checkInstalledHostReceipt(label, value) {
   }
 }
 
+/*
+ * Owner closed vocabulary (GA recovery step 2C, finding F15).
+ *
+ * `owner` was free text: 71 distinct values across 331 rows, no two authors converging by accident.
+ * `migration/package-owners.json` cannot supply this directly — its own $comment says what it is: a
+ * legacy-publication-unit-to-final-owner matrix (`canonicalUnits`/`currentPackages`/`legacyPackages`),
+ * not a flat list of legal owner strings, and its schema does not fit a per-row registry check.
+ *
+ * The lists below are instead derived from what verifiably exists: every packages/*, apps/*,
+ * .agents/skills/* and extensions/* directory this repository and its five configured extension
+ * checkouts (blizzard, ea, warzone, spring, other — modkit.workspace.json's `sources` at the
+ * programme root) actually carry, checked directory-by-directory against each repository's real
+ * tree — not inferred from name similarity. A handful of real files and named non-path destinations
+ * round it out.
+ *
+ * It is a static list, not a live filesystem walk. The four external checkouts are optional siblings
+ * of this repository (present in a full programme checkout, routinely absent in a bare clone or CI),
+ * so resolving them at gate time would make "closed vocabulary" mean something different on every
+ * machine. Each entry was verified once, by hand, against a full programme checkout; verify again
+ * before adding a new one.
+ */
+const OWNER_LOCAL_DIRECTORIES = [
+  // apps/* — every directory under this repository's apps/, plus the bare "apps" surface used by
+  // rows whose ownership is the product-profile app closure as a whole (platform/apps/*).
+  'apps',
+  'apps/automation-host',
+  'apps/cli',
+  'apps/electron',
+  'apps/mcp',
+  'apps/server',
+  'apps/vscode',
+  'apps/web',
+  // packages/* — every directory under this repository's packages/, plus the bare "packages/host"
+  // export subpath "./node" (packages/host/package.json#exports, backed by packages/host/src/node —
+  // not a literal packages/host/node directory) and the real packages/host/native-text directory.
+  'packages',
+  'packages/code',
+  'packages/codec-kit',
+  'packages/core',
+  'packages/extension-manager',
+  'packages/host',
+  'packages/host/native-text',
+  'packages/host/node',
+  'packages/scene',
+  'packages/sdk',
+  'packages/testkit',
+  'packages/ui',
+  'packages/uv',
+  'packages/vfs',
+  // extensions/* — the local, non-externalized format families that still live in this repository.
+  'extensions/archives',
+  'extensions/audio',
+  'extensions/data',
+  'extensions/documents',
+  'extensions/images',
+  'extensions/models',
+  'extensions/vector',
+  'extensions/video',
+  // scripts/* — the bare "scripts" surface plus the two subdirectories rows actually name.
+  'scripts',
+  'scripts/migration',
+  'scripts/release',
+  // .agents/skills/* — this repository's own skill (the two external skills are listed under their
+  // owning extension checkout below).
+  '.agents/skills/modkit-core',
+]
+const OWNER_LOCAL_FILES = [
+  // Named files, not directories, referenced the same way a directory owner would be.
+  'migration/product-profiles.json',
+  'scripts/scaffold-extension.mjs',
+]
+const OWNER_EXTERNAL_DIRECTORIES = [
+  // modkit-extensions-blizzard (MODKIT_BLIZZARD_ROOT / sources.blizzard): every top-level format or
+  // game family directory the checkout carries, plus its skill.
+  'extensions/blizzard',
+  'extensions/blizzard/blizzard-common-formats',
+  'extensions/blizzard/blizzard-diablo',
+  'extensions/blizzard/blizzard-warcraft-3',
+  'extensions/blizzard/casc',
+  'extensions/blizzard/compat',
+  'extensions/blizzard/galaxy-language',
+  'extensions/blizzard/models',
+  'extensions/blizzard/mpq',
+  'extensions/blizzard/starcraft2',
+  'extensions/blizzard/.agents/skills/modkit-sc2',
+  // modkit-extensions-ea (MODKIT_EA_ROOT / sources.ea): every top-level family directory.
+  'extensions/ea/archives',
+  'extensions/ea/big',
+  'extensions/ea/emperor',
+  'extensions/ea/models',
+  'extensions/ea/sage',
+  'extensions/ea/tiberian-sun',
+  'extensions/ea/westwood',
+  // modkit-extensions-warzone (MODKIT_WARZONE_ROOT / sources.warzone): one family, one skill.
+  'extensions/opensource/warzone-2100',
+  'extensions/opensource/warzone-2100/.agents/skills/modkit-warzone',
+  // modkit-extensions-spring (MODKIT_SPRING_ROOT / sources.spring): one family.
+  'extensions/opensource/spring',
+  // modkit-extensions-other (MODKIT_OTHER_EXTENSIONS_ROOT / sources.other): each entry is a real
+  // top-level extensions/<family> directory in that checkout, verified to carry real codec sources
+  // (not an empty scaffold) — the block-11 MK2→MK3 conversion's actual current homes. `ps1` predates
+  // that conversion and was already a legitimate owner; the rest were extensions/mk2/<family> in this
+  // registry until this pass repointed them (see the commit that added this comment).
+  'extensions/ps1',
+  'extensions/adobe-flash',
+  'extensions/annihilation-gas-powered',
+  'extensions/audiokinetic-wwise',
+  'extensions/cavedog-total-annihilation',
+  'extensions/epic-games-unreal-engine',
+  'extensions/firelight-fmod',
+  'extensions/microsoft-age-series',
+  'extensions/microsoft-halo-wars',
+  'extensions/new-world-computing-heroes-3',
+  'extensions/new-world-computing-heroes-4',
+  'extensions/petroglyph-glyphx',
+  'extensions/rad-game-tools-video',
+  'extensions/realitypump-earth-2150',
+  'extensions/realitypump-earth2160',
+  'extensions/relic-essence',
+  'extensions/relic-models',
+  'extensions/stainless-steel-studios-empire-earth',
+  'extensions/ubisoft-heroes-6',
+  'extensions/uncommon-documents',
+  'extensions/unity-engine',
+]
+/*
+ * Named non-path destinations. package-owners.json documents three legitimate non-package
+ * destinations for a legacy unit: an extension family, Multiverse, or dropped. `unassigned` is this
+ * registry's version of "dropped for now" and earns its own gating rule below, not a free pass — see
+ * `unassignedTrackAllowed`. The other three name a genuine cross-cutting surface that does not reduce
+ * to one directory; each is used by exactly the platform/* rows quoted beside it.
+ */
+const OWNER_NAMED = [
+  'unassigned',
+  // the Multiverse destination — package-owners.json's second legitimate non-package landing spot.
+  'multiverse/specs seed',
+  // platform/release/public-pwa-deployment: the release pipeline across scripts/release and the
+  // apps it packages, not one directory.
+  'release infrastructure',
+  // platform/release/packaged-installers: apps/electron + apps/vscode together, as installer targets.
+  'desktop apps',
+  // platform/extensions/out-of-tree: every app that hosts the UI surface an out-of-tree extension
+  // must render into (apps/web, apps/vscode, apps/electron), not one of them alone.
+  'UI hosts',
+]
+const OWNER_VOCABULARY = new Set([
+  ...OWNER_LOCAL_DIRECTORIES,
+  ...OWNER_LOCAL_FILES,
+  ...OWNER_EXTERNAL_DIRECTORIES,
+  ...OWNER_NAMED,
+])
+/** `releaseTrack`s for which `owner: 'unassigned'` is an honest answer rather than a dodge. */
+const UNASSIGNED_ALLOWED_TRACKS = ['post-ga', 'deferred-games-priority']
+
+/**
+ * Splits a (possibly compound) owner into the components the vocabulary must each recognise.
+ *
+ * Two joiners appear in this registry: `,` and the word `and` ("packages/sdk, packages/host,
+ * apps/vscode, extensions/blizzard and extensions/opensource/warzone-2100"). A third, tighter form
+ * factors a shared parent out of two sibling leaves with `+` ("extensions/blizzard/casc+mpq" names
+ * extensions/blizzard/casc and extensions/blizzard/mpq) and is expanded the same way, so a compound
+ * owner is never accepted as an opaque blob and never passes because only one of its components is
+ * legal.
+ */
+function ownerComponents(owner) {
+  return owner
+    .split(',')
+    .flatMap(part => part.split(/\s+and\s+/u))
+    .map(part => part.trim())
+    .filter(part => part.length > 0)
+    .flatMap(part => {
+      const lastSlash = part.lastIndexOf('/')
+      const leaf = lastSlash === -1 ? part : part.slice(lastSlash + 1)
+      if (!leaf.includes('+')) return [part]
+      const prefix = lastSlash === -1 ? '' : part.slice(0, lastSlash + 1)
+      return leaf.split('+').map(name => `${prefix}${name}`)
+    })
+}
+
 // --- inputs ---------------------------------------------------------------------------------------
 
 if (!existsSync(inventoryPath)) {
@@ -831,7 +1010,26 @@ for (const row of capabilities) {
   if (typeof row.userScenario !== 'string' || row.userScenario.length < 10) {
     fail(`${label}: userScenario must describe what the user can do`)
   }
-  if (typeof row.owner !== 'string' || row.owner === '') fail(`${label}: owner is required`)
+  if (typeof row.owner !== 'string' || row.owner === '') {
+    fail(`${label}: owner is required`)
+  } else {
+    const ownerComponentList = ownerComponents(row.owner)
+    for (const component of ownerComponentList) {
+      if (!OWNER_VOCABULARY.has(component)) {
+        fail(
+          `${label}: owner component ${JSON.stringify(component)} (from owner ${JSON.stringify(row.owner)}) is not in the closed owner vocabulary`,
+        )
+      }
+    }
+    if (
+      ownerComponentList.includes('unassigned') &&
+      !UNASSIGNED_ALLOWED_TRACKS.includes(row.releaseTrack)
+    ) {
+      fail(
+        `${label}: owner unassigned is only honest for releaseTrack ${UNASSIGNED_ALLOWED_TRACKS.join(' | ')}, found ${JSON.stringify(row.releaseTrack)}`,
+      )
+    }
+  }
   if (!Number.isInteger(row.plannedBlock)) fail(`${label}: plannedBlock is required`)
 
   checkEnum(label, 'releaseTrack', row.releaseTrack, ENUMS.releaseTrack)
