@@ -21,6 +21,7 @@ const DDPF_FOURCC = 0x4
 const DDPF_RGB = 0x40
 const DDPF_ALPHAPIXELS = 0x1
 const DDPF_LUMINANCE = 0x2_0000
+const DDPF_ALPHA = 0x2
 const DDSCAPS2_CUBEMAP = 0x200
 const DDSCAPS2_CUBEMAP_ALL_FACES = 0xfc00
 const DDSCAPS2_VOLUME = 0x20_0000
@@ -39,6 +40,8 @@ interface DdsShape {
   readonly fourCc?: string
   /** Build a DDPF_LUMINANCE pixel format with the given bit count instead of a FourCC. */
   readonly luminanceBits?: number
+  /** Build a DDPF_ALPHA (alpha-only) pixel format with the given bit count. */
+  readonly alphaBits?: number
 }
 
 /** RGB565 constants whose expanded RGBA values are unambiguous. */
@@ -115,6 +118,10 @@ function buildDds(shape: DdsShape, surfaces: readonly Uint8Array[]): Uint8Array 
     view.setUint32(96, 0x0000_ff00, true)
     view.setUint32(100, 0x0000_00ff, true)
     view.setUint32(104, 0xff00_0000, true)
+  } else if (shape.alphaBits !== undefined) {
+    view.setUint32(80, DDPF_ALPHA, true)
+    view.setUint32(88, shape.alphaBits, true)
+    view.setUint32(104, 0x0000_00ff, true)
   } else if (shape.luminanceBits !== undefined) {
     /* L8 or L8A8, exactly as SC2's UI gradients are stored. */
     view.setUint32(80, DDPF_LUMINANCE | (shape.luminanceBits === 16 ? DDPF_ALPHAPIXELS : 0), true)
@@ -420,6 +427,15 @@ describe('DDS formats ported from the legacy decoder', () => {
     const raster = await rasterOf(bytes)
     expect(await pixelAt(raster, { width: 4, height: 4 })).toEqual([0x22, 0x22, 0x22, 255])
     expect((await raster.info()).channels).toBe(1)
+  })
+
+  it('decodes an alpha-only surface as transparent black carrying the alpha', async () => {
+    const bytes = buildDds({ width: 4, height: 4, alphaBits: 8 }, [new Uint8Array(16).fill(0x55)])
+    const raster = await rasterOf(bytes)
+    expect(await pixelAt(raster, { width: 4, height: 4 })).toEqual([0, 0, 0, 0x55])
+    const info = await raster.info()
+    expect(info.channels).toBe(1)
+    expect(info.alphaMode).toBe('straight')
   })
 
   it('expands 565 endpoints by bit replication, the way the GPU does', async () => {

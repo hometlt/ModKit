@@ -4276,7 +4276,9 @@ capabilities:
         materialize: null
     knownLoss:
       - 'АУДИТ 2026-08-31 ЗАКРЫТ волнами 1B–2B: packaging/install regression устранён; тот же DDS-маршрут проверен в установленном VS Code (installed-acceptance-wave2b-final-687fd1f8.receipt.json, formatSmoke image-dds и casc-dds, якорь 2B-1/2B-2). Прежняя запись «installed VS Code штатно не получает DDS codec root, packagedCodecRoots=[]» более не соответствует факту.'
-      - 'АУДИТ 2026-08-31: contribution metadata обещает BC6H/BC7 и выбор mip/layer/face/slice, но текущий decoder реализует только legacy DXT1/3/5, ограниченный DXGI BC1/2/3 и mip/layer/face/slice=0; manifest должен быть сужен до исполняемой правды. Волна 10D, при условии валидирующего корпуса: ни в SC2, ни в Warzone его нет.'
+      - 'АУДИТ 2026-08-31 частично закрыт. Выбор mip/layer/face/slice работает с волны 2B. Перенос legacy-декодера 2026-09-03 добавил BC4/BC5 (ATI1/ATI2/BC4U/BC5U/BC4S/BC5S со знаковыми конечными точками), luminance- и alpha-only пиксельные форматы, 8/16-битные несжатые поверхности, написания DXT2/DXT4 и DXGI 28/29/80/81/83/84/87/91. Остаются нереализованными BC6H и BC7: в legacy они шли через сторонний WASM-пакет texture2ddecoder, а не через читаемый алгоритм (та же граница, что зафиксирована в extensions/images/src/pkm/etc.js), и в корпусе SC2 из 63 053 файлов .dds не встречаются ни разу — то есть валидирующего корпуса для них по-прежнему нет.'
+      - 'Перенос legacy DDS 2026-09-03: дифференциал против самого legacy-декодера (legacy:extensions/common/images/codecs/dds/src/dds.ts) на 1283 реальных файлах SC2 — побайтово идентичный вывод на всех уровнях мипов во всех форматах корпуса (DXT1, DXT3, DXT5, ATI2, RGB24, RGB32, L8A8). До переноса L8A8 (33 файла корпуса) не открывался вовсе («pixel format is neither FourCC nor RGB»), а ATI2 (1 файл, карта нормалей) отвергался как «pixel payload is truncated», потому что неизвестный FourCC получал размер из незаполненного dwRGBBitCount. Дополнительно: расширение 565-конечных точек переведено на битовую репликацию, как задаёт D3D и как делал legacy; прежнее рациональное округление расходилось с эталоном на 1 на канал.'
+      - 'Не перенесено из legacy и названо явно: image.write (кодирование DXT1/DXT3/DXT5/RGBA8 — X3 v1 read-only); image.compressed.read (legacy отдавал CompressedTextureDescriptorV1 с GPU-блоками, colorSpace, alphaMode и sourceByteRange — в MK3 нет ни одного контракта common.view/* для сжатых текстур, нужен новый контракт); SC2-операции обработки изображений из legacy ops.ts (convertNormalMapToSc2, combineNormalSpecular, prepareSc2ButtonIcon, applyColorKeyTransparency, applyRoundedAlpha, resizeRgba).'
       - 'E5 закрывает live app workflow (mip-навигация, side-by-side сравнение, export всех subresource в PNG) на реальном DXT5 с 8-уровневой цепочкой мипов; sealed-oracle дифференциал остаётся synthetic (parityEvidence corpusKinds synthetic).'
       - 'capability «write»: X3 v1 is read-only (BRIEF-13A acceptance 19); needs the 13D writer/service contract'
       - 'operation dropped at port: image.compressed-read'
@@ -4290,7 +4292,8 @@ capabilities:
       installedHost: 'artifacts/ga-recovery-wave2b/installed-acceptance-wave2b-final-687fd1f8.receipt.json#2B-1/2B-2'
     replacementWorkflow: null
     closedBy:
-      commits: []
+      commits:
+        - '65bd41a5'
       tests:
         - 'extensions/images/test/dds-subresources.test.ts'
       reports: []

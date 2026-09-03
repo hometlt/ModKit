@@ -142,6 +142,7 @@ function parseDds(bytes) {
   let premultiplied = false
   let srgb = false
   let luminance = false
+  let alphaOnly = false
   /* Block formats leave dwRGBBitCount undefined; only an uncompressed payload may size rows by it. */
   let rgbBits = 0
   let masks = headerMasks
@@ -191,6 +192,7 @@ function parseDds(bytes) {
   } else if ((pixelFlags & DDPF_ALPHA) !== 0) {
     /* Alpha-only surfaces carry no colour; the alpha mask alone drives the projection. */
     rgbBits = headerBits
+    alphaOnly = true
     masks = Object.freeze([0, 0, 0, headerMasks[3] === 0 ? 0xff : headerMasks[3]])
   } else {
     throw new TypeError('DDS pixel format is not FourCC, RGB, luminance or alpha')
@@ -216,6 +218,7 @@ function parseDds(bytes) {
     premultiplied,
     srgb,
     luminance,
+    alphaOnly,
     ...(dxgiFormat === undefined ? {} : { dxgiFormat }),
     ...(resourceDimension === undefined ? {} : { resourceDimension }),
     ...(miscFlag === undefined ? {} : { miscFlag }),
@@ -514,10 +517,8 @@ function decodeSurface(bytes, info, surface) {
 
 /** Human-facing name of the stored encoding, keeping the FourCC the file actually carries. */
 function encodingLabel(info) {
-  const base =
-    info.format === 'rgba-mask'
-      ? `${info.rgbBits}-bit ${info.luminance ? 'luminance' : 'RGB'}`
-      : info.format
+  const kind = info.alphaOnly ? 'alpha' : info.luminance ? 'luminance' : 'RGB'
+  const base = info.format === 'rgba-mask' ? `${info.rgbBits}-bit ${kind}` : info.format
   const spellings = []
   if (info.fourCc !== undefined && info.fourCc !== 'DX10' && info.fourCc !== info.format) {
     spellings.push(info.fourCc)
@@ -550,6 +551,7 @@ function alphaModeOf(info) {
 function channelsOf(info) {
   if (info.format === 'BC4') return 1
   if (info.format === 'BC5') return 2
+  if (info.alphaOnly) return 1
   if (info.luminance) return info.masks[3] === 0 ? 1 : 2
   if (info.format === 'rgba-mask') return info.masks[3] === 0 ? 3 : 4
   return 4

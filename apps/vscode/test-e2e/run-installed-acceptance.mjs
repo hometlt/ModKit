@@ -397,7 +397,7 @@ const receipt = {
   mediaAcceptance: {
     kind: 'x3.vscode-installed-media-editor-acceptance',
     schemaVersion: 1,
-    expectedAnchors: ['2B-1/2B-2', '2B-3', '2B-4', '2B-5', '2B-6'],
+    expectedAnchors: ['2B-1/2B-2', '2B-3', '2B-4', '2B-5', '2B-6', 'TEX-DDS-1'],
     cases: [],
     failures: [],
     verdict: 'not-executed',
@@ -2890,6 +2890,28 @@ const WAVE2B_MEDIA_CORPUS = Object.freeze([
     sha256: 'fdc2cbdcbaf4fd6147c08571efdaf22fb8fc8fed3cd6e323f8af49508726ff9a',
     provenance: 'StarCraft II icon export, DXT5 128x128 with an 8-level mip chain',
   }),
+  /*
+   * Two StarCraft II textures in formats MK3 refused until the legacy DDS decoder was ported.
+   * The BC5 normal map was reported as a truncated payload; the L8A8 gradient did not open at all.
+   */
+  Object.freeze({
+    id: 'dds-bc5-normal',
+    source: 'artifacts/legacy-parity-textures/corpus/sc2-bc5-normal-map.dds',
+    target: 'legacy-parity-bc5-normal.dds',
+    bytes: 349_680,
+    sha256: '12a23c80b9816ed7446219b5f48fab941d0e0f768abd52acd13ab04fa8e61f56',
+    provenance:
+      'StarCraft II mod asset BroodWar-Assets-2025.SC2Mod/.../Textures/wolf_corpse_normal.dds, ATI2/BC5 512x512 with a 10-level mip chain',
+  }),
+  Object.freeze({
+    id: 'dds-luminance',
+    source: 'artifacts/legacy-parity-textures/corpus/sc2-luminance-progress-queue.dds',
+    target: 'legacy-parity-luminance.dds',
+    bytes: 11_054,
+    sha256: '3c8241f8c8a9db8dc674e4a5ec4960363520a84f75d1a60eaabfd55bb67f51dd',
+    provenance:
+      'StarCraft II core.sc2mod/base.sc2assets/assets/textures/progress-queue.dds, L8A8 128x32 with an 8-level mip chain',
+  }),
   Object.freeze({
     id: 'png-common',
     source: 'artifacts/ga-recovery-wave2b/corpus/sc2-galaxy-icon.png',
@@ -3204,6 +3226,8 @@ async function runMediaAndEditorAcceptance(page, port) {
   const cases = receipt.mediaAcceptance.cases
   const { staged, corrupt } = stageWave2bCorpus()
   const dds = staged.find(entry => entry.id === 'dds-mipchain')
+  const bc5 = staged.find(entry => entry.id === 'dds-bc5-normal')
+  const luminance = staged.find(entry => entry.id === 'dds-luminance')
   const png = staged.find(entry => entry.id === 'png-common')
   const wav = staged.find(entry => entry.id === 'wav-ima-adpcm')
   const ogg = staged.find(entry => entry.id === 'ogg-vorbis')
@@ -3367,6 +3391,77 @@ async function runMediaAndEditorAcceptance(page, port) {
     observedBy: 'cdp',
     verdict: 'pass',
   })
+
+  /*
+   * ------------------------------------------------- TEX-DDS-1: formats ported from the legacy
+   * decoder, opened in the installed app.
+   *
+   * Both files come straight out of StarCraft II and both used to fail before any pixel was drawn:
+   * the BC5 normal map was refused as a truncated payload because an unknown FourCC was sized from
+   * `dwRGBBitCount`, and the L8A8 gradient was refused as "neither FourCC nor RGB". The proof is
+   * that the viewer now paints them and can still walk their mip chains.
+   */
+  for (const entry of [bc5, luminance]) {
+    await closeAllEditors(page, port)
+    await openWorkspaceFile(page, entry.path)
+    await activateEditor(page, entry.path)
+    const reopened = await reopenWithNamedEditor(page, entry.path, 'Modkit Image Viewer')
+    const base = await waitFor(
+      async () => {
+        const value = await readStageDataset(port, 'image', [])
+        return (value?.canvas?.width ?? 0) > 0 ? value : undefined
+      },
+      { timeoutMs: 60_000, stepMs: 250 },
+    )
+    if (base === undefined) {
+      throw new Error(
+        `TEX-DDS-1 Modkit Image Viewer produced no canvas for ${entry.target}; ` +
+          `stage=${JSON.stringify(await readStageDataset(port, 'image', []))}`,
+      )
+    }
+    /*
+     * A refusal reaches the readout as a trailing note rather than as a thrown error, so a canvas
+     * alone would not separate "decoded" from "painted the failure". Name the two old messages.
+     */
+    if (/not supported|truncated|neither FourCC nor RGB/iu.test(String(base.readout))) {
+      throw new Error(`TEX-DDS-1 ${entry.target} reported a decode refusal: ${base.readout}`)
+    }
+    const mipControl = await clickViewerControl(port, 'Next mip')
+    const afterMip = await waitFor(
+      async () => {
+        const value = await readStageDataset(port, 'image', [])
+        return value?.readout?.includes('subresource mip1') === true ? value : undefined
+      },
+      { timeoutMs: 30_000, stepMs: 250 },
+    )
+    if (afterMip === undefined) {
+      throw new Error(`TEX-DDS-1 ${entry.target} did not reach subresource mip1`)
+    }
+    cases.push({
+      caseId: `dds-legacy-parity-${entry.id}`,
+      anchor: 'TEX-DDS-1',
+      corpus: {
+        target: entry.target,
+        bytes: entry.bytes,
+        sha256: entry.sha256,
+        provenance: entry.provenance,
+      },
+      editor: 'Modkit Image Viewer',
+      reopen: reopened,
+      baseCanvas: base.canvas,
+      baseReadout: base.readout,
+      mipControl,
+      mipCanvas: afterMip.canvas,
+      mipReadout: afterMip.readout,
+      priorBehaviour:
+        entry.id === 'dds-bc5-normal'
+          ? 'refused: DDS pixel payload is truncated'
+          : 'refused: DDS pixel format is neither FourCC nor RGB',
+      observedBy: 'cdp',
+      verdict: 'pass',
+    })
+  }
+  await closeAllEditors(page, port)
 
   // ----------------------------------------------------------------------- 2B-3: audio playback
   for (const [entry, expectedDecoder] of [
