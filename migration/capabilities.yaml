@@ -725,7 +725,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E3'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -744,7 +744,7 @@ capabilities:
       opaquePreservation: 'not-applicable'
       nativeExport: 'not-applicable'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -884,7 +884,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: 'extensions/images/test/astc-ordinary-ldr.test.ts'
         read: 'extensions/images/test/astc-ordinary-ldr.test.ts'
         materialize: null
@@ -1066,7 +1066,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E3'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -1087,7 +1087,7 @@ capabilities:
       operations:
         inspect: null
         validate: null
-        read: 'packages/testkit/test/blizzard-m3-companion.test.ts'
+        read: null
         materialize: null
     knownLoss:
       - 'pinned retail artifact1.m3 resolves a complete 10-resource closure; absent or unreachable cross-mod references remain explicit reference-only entries rather than invented bytes'
@@ -2255,7 +2255,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/mk2-audio-codecs.test.ts'
         validate: null
         read: null
         materialize: null
@@ -2270,7 +2270,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/mk2-audio-codecs.test.ts'
       reports: []
   - capabilityId: 'format/age-bar/open-inspect'
     userScenario: 'Открыть «BAR (Age of Empires III / Age of Mythology)» в MK3 и выполнить archive.extract, archive.inspect без потери семантики legacy-маршрута.'
@@ -2565,7 +2566,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'extensions/images/test/ani-raster-decode.test.ts'
         validate: null
         read: 'extensions/images/test/ani-raster-decode.test.ts'
         materialize: null
@@ -2633,7 +2634,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'extensions/images/test/astc-ordinary-ldr.test.ts'
         validate: 'extensions/images/test/astc-ordinary-ldr.test.ts'
         read: 'extensions/images/test/astc-ordinary-ldr.test.ts'
         materialize: null
@@ -2702,7 +2703,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/mk2-video-codecs.test.ts'
         validate: null
         read: null
         materialize: null
@@ -2717,7 +2718,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/mk2-video-codecs.test.ts'
       reports: []
   - capabilityId: 'format/avif/open-inspect'
     userScenario: 'Открыть «AV1 Image File Format» в MK3 и выполнить image.inspect без потери семантики legacy-маршрута.'
@@ -2747,7 +2749,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -2769,7 +2771,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -2813,7 +2815,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E3'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -2835,7 +2837,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -3214,7 +3216,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/uvt-materializer.test.ts'
         validate: null
         read: null
         materialize: null
@@ -3230,7 +3232,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/uvt-materializer.test.ts'
       reports: []
   - capabilityId: 'format/bnk/open-inspect'
     userScenario: 'Открыть «Wwise SoundBank» в MK3 и выполнить audio.export, audio.extract, audio.inspect без потери семантики legacy-маршрута.'
@@ -3345,7 +3348,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/mk2-archive-codecs.test.ts'
         validate: null
         read: null
         materialize: null
@@ -3362,7 +3365,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/mk2-archive-codecs.test.ts'
       reports: []
   - capabilityId: 'format/bti/open-inspect'
     userScenario: 'Открыть «AoM BTI texture» в MK3 и выполнить image.inspect, image.read без потери семантики legacy-маршрута.'
@@ -3990,7 +3994,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/text-data.test.ts'
         validate: null
         read: null
         materialize: null
@@ -4101,7 +4105,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -4124,7 +4128,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -4194,7 +4198,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/mk2-model-codecs.test.ts'
         validate: null
         read: null
         materialize: null
@@ -4209,7 +4213,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/mk2-model-codecs.test.ts'
       reports: []
   - capabilityId: 'format/dds/open-inspect'
     userScenario: 'Открыть «DirectDraw Surface» в MK3 и выполнить image.compressed.read, image.inspect, image.read, image.write без потери семантики legacy-маршрута.'
@@ -4263,7 +4268,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'extensions/images/test/dds-subresources.test.ts'
         validate: null
         read: null
         materialize: null
@@ -4284,7 +4289,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'extensions/images/test/dds-subresources.test.ts'
       reports: []
   - capabilityId: 'format/ddt/open-inspect'
     userScenario: 'Открыть «AoE3/AoM DDT texture» в MK3 и выполнить image.inspect, image.read без потери семантики legacy-маршрута.'
@@ -5293,7 +5299,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/mk2-vector-codecs.test.ts'
         validate: null
         read: null
         materialize: null
@@ -5307,7 +5313,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/mk2-vector-codecs.test.ts'
       reports: []
   - capabilityId: 'format/emperor-bag/open-inspect'
     userScenario: 'Открыть «Emperor BAG audio bank» в MK3 и открыть и осмотреть без потери семантики legacy-маршрута.'
@@ -5589,7 +5596,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -5612,7 +5619,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -5802,7 +5809,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/mk2-audio-codecs.test.ts'
         validate: null
         read: null
         materialize: null
@@ -5817,7 +5824,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/mk2-audio-codecs.test.ts'
       reports: []
   - capabilityId: 'format/flv/open-inspect'
     userScenario: 'Открыть «Flash Video» в MK3 и выполнить video.export, video.inspect без потери семантики legacy-маршрута.'
@@ -6104,7 +6112,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -6127,7 +6135,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -6173,7 +6181,7 @@ capabilities:
     migrationState: 'equivalent-better'
     supportState: 'unknown'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E4'
+    evidenceLevel: 'E2'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -6200,7 +6208,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/model-rendering.test.ts'
         validate: null
         read: null
         materialize: null
@@ -6215,7 +6223,8 @@ capabilities:
     replacementWorkflow: 'MK3 contribution modkit/model-gltf'
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/model-rendering.test.ts'
       reports: []
   - capabilityId: 'format/gltf/open-inspect'
     userScenario: 'Открыть «glTF 2.0 JSON» в MK3 и выполнить model.read, model.render без потери семантики legacy-маршрута.'
@@ -6245,7 +6254,7 @@ capabilities:
     migrationState: 'equivalent-better'
     supportState: 'unknown'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E4'
+    evidenceLevel: 'E2'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -6272,7 +6281,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/mk2-model-codecs.test.ts'
         validate: null
         read: null
         materialize: null
@@ -6287,7 +6296,8 @@ capabilities:
     replacementWorkflow: 'MK3 contribution modkit/model-gltf'
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/mk2-model-codecs.test.ts'
       reports: []
   - capabilityId: 'format/grey-goo-alo/open-inspect'
     userScenario: 'Открыть «Grey Goo Alamo ALO model» в MK3 и выполнить model.read, model.render без потери семантики legacy-маршрута.'
@@ -6379,7 +6389,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'supported'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -6402,7 +6412,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -6567,7 +6577,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'supported'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -6590,7 +6600,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -6821,7 +6831,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -6844,7 +6854,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -6892,7 +6902,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'supported'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -6915,7 +6925,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -6986,7 +6996,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/host/test/media-edits.test.ts'
         validate: null
         read: null
         materialize: null
@@ -7031,7 +7041,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -7054,7 +7064,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -7102,7 +7112,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E3'
+    evidenceLevel: 'E2'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -7125,7 +7135,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/uvt-writer.test.ts'
         validate: null
         read: null
         materialize: null
@@ -7143,7 +7153,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/uvt-writer.test.ts'
       reports: []
   - capabilityId: 'format/lzma/open-inspect'
     userScenario: 'Открыть «LZMA compressed payload» в MK3 и выполнить archive.extract, archive.inspect без потери семантики legacy-маршрута.'
@@ -7342,7 +7353,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/mk2-audio-codecs.test.ts'
         validate: null
         read: null
         materialize: null
@@ -7357,7 +7368,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/mk2-audio-codecs.test.ts'
       reports: []
   - capabilityId: 'format/markdown/open-inspect'
     userScenario: 'Открыть «Markdown Document» в MK3 и выполнить asset.validate, edit.content, export.raw, view.inspect, view.render без потери семантики legacy-маршрута.'
@@ -7409,7 +7421,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/common-markdown.test.ts'
         validate: null
         read: null
         materialize: null
@@ -7604,7 +7616,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/host/test/media-edits.test.ts'
         validate: null
         read: null
         materialize: null
@@ -7676,7 +7688,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/reference-codecs.test.ts'
         validate: null
         read: null
         materialize: null
@@ -7691,7 +7703,8 @@ capabilities:
     replacementWorkflow: 'MK3 contribution modkit/video-mp4'
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/reference-codecs.test.ts'
       reports: []
   - capabilityId: 'format/mpeg/open-inspect'
     userScenario: 'Открыть «MPEG-1/2 Video» в MK3 и выполнить video.export, video.inspect без потери семантики legacy-маршрута.'
@@ -7721,7 +7734,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -7743,7 +7756,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -7938,7 +7951,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/mk2-model-codecs.test.ts'
         validate: null
         read: null
         materialize: null
@@ -7956,7 +7969,8 @@ capabilities:
     replacementWorkflow: 'MK3 contribution modkit/model-obj'
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/mk2-model-codecs.test.ts'
       reports: []
   - capabilityId: 'format/odp/open-inspect'
     userScenario: 'Открыть «OpenDocument presentation» в MK3 и выполнить asset.validate, export.raw, view.inspect, view.render без потери семантики legacy-маршрута.'
@@ -7986,7 +8000,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E4'
+    evidenceLevel: 'E2'
     hostEvidence: 'node-and-browser-worker'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -8009,7 +8023,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/common-documents-odf.test.ts'
         validate: null
         read: null
         materialize: null
@@ -8065,7 +8079,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E4'
+    evidenceLevel: 'E2'
     hostEvidence: 'node-and-browser-worker'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -8088,7 +8102,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/common-documents-odf.test.ts'
         validate: null
         read: null
         materialize: null
@@ -8145,7 +8159,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E4'
+    evidenceLevel: 'E2'
     hostEvidence: 'node-and-browser-worker'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -8167,7 +8181,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/common-documents-odf.test.ts'
         validate: null
         read: null
         materialize: null
@@ -8247,7 +8261,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/reference-codecs.test.ts'
         validate: null
         read: null
         materialize: null
@@ -8263,7 +8277,8 @@ capabilities:
     replacementWorkflow: 'MK3 contribution modkit/audio-ogg'
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/reference-codecs.test.ts'
       reports: []
   - capabilityId: 'format/ogv/open-inspect'
     userScenario: 'Открыть «Ogg Theora Video» в MK3 и выполнить video.export, video.inspect без потери семантики legacy-маршрута.'
@@ -8293,7 +8308,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -8315,7 +8330,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -8363,7 +8378,7 @@ capabilities:
     migrationState: 'equivalent-better'
     supportState: 'unknown'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -8385,7 +8400,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -8430,7 +8445,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'supported'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -8453,7 +8468,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -8498,7 +8513,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -8521,7 +8536,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -8631,7 +8646,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'supported'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -8654,7 +8669,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -8785,7 +8800,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/pkm-etc-decode.test.ts'
         validate: 'extensions/images/test/eac-r11-decode.test.ts'
         read: 'extensions/images/test/eac-r11-decode.test.ts'
         materialize: null
@@ -8855,7 +8870,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/mk2-model-codecs.test.ts'
         validate: null
         read: null
         materialize: null
@@ -8870,7 +8885,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/mk2-model-codecs.test.ts'
       reports: []
   - capabilityId: 'format/png/open-inspect'
     userScenario: 'Открыть «Portable Network Graphics» в MK3 и выполнить image.inspect, image.read, image.write без потери семантики legacy-маршрута.'
@@ -8925,7 +8941,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/reference-codecs.test.ts'
         validate: null
         read: null
         materialize: null
@@ -8943,6 +8959,7 @@ capabilities:
     closedBy:
       commits: []
       tests:
+        - 'packages/testkit/test/reference-codecs.test.ts'
         - 'packages/host/test/media-edits.test.ts'
       reports: []
   - capabilityId: 'format/pptx/open-inspect'
@@ -9097,7 +9114,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -9120,7 +9137,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -9290,7 +9307,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -9313,7 +9330,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -10781,9 +10798,9 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'packages/testkit/test/sc2-casc-real.test.ts'
+        inspect: null
         validate: null
-        read: 'apps/electron/test/subject-open-smoke.test.ts'
+        read: null
         materialize: null
     knownLoss:
       - 'АУДИТ 2026-08-31: реальный loose mission-nod.SC2Map не открывается общим CLI как directory subject, project.validate оставляет 24 файла unclaimed, а полный materials/textures/objects 3D user route не доказан; прежний E4 снят до установленного app-сценария и bounded directory routing.'
@@ -11151,7 +11168,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'packages/testkit/test/sc2-scenario-workflows.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -12023,7 +12040,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/mk2-model-codecs.test.ts'
         validate: null
         read: null
         materialize: null
@@ -12038,7 +12055,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/mk2-model-codecs.test.ts'
       reports: []
   - capabilityId: 'format/supcom-scm/open-inspect'
     userScenario: 'Открыть «Supreme Commander SCM model» в MK3 и выполнить model.read, model.render без потери семантики legacy-маршрута.'
@@ -12152,7 +12170,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/reference-codecs.test.ts'
         validate: null
         read: null
         materialize: null
@@ -12166,7 +12184,8 @@ capabilities:
     replacementWorkflow: 'MK3 contribution modkit/vector-svg'
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/reference-codecs.test.ts'
       reports: []
   - capabilityId: 'format/swf/open-inspect'
     userScenario: 'Открыть «Shockwave Flash» в MK3 и выполнить video.export, video.inspect без потери семантики legacy-маршрута.'
@@ -12320,7 +12339,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'supported'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -12343,7 +12362,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -12474,7 +12493,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/uvt-materializer.test.ts'
         validate: null
         read: null
         materialize: null
@@ -12491,7 +12510,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/uvt-materializer.test.ts'
       reports: []
   - capabilityId: 'format/tiff/open-inspect'
     userScenario: 'Открыть «Tagged Image File Format» в MK3 и выполнить image.inspect, image.read, image.write без потери семантики legacy-маршрута.'
@@ -12521,7 +12541,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E2'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -12544,7 +12564,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -12676,7 +12696,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/common-plain-text.test.ts'
         validate: null
         read: null
         materialize: null
@@ -13484,7 +13504,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/uvm-convergence.test.ts'
         validate: null
         read: null
         materialize: null
@@ -13502,7 +13522,8 @@ capabilities:
     replacementWorkflow: 'MK3 contribution modkit/model-uvm'
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/uvm-convergence.test.ts'
       reports: []
   - capabilityId: 'format/visio/open-inspect'
     userScenario: 'Открыть «Microsoft Visio document» в MK3 и выполнить asset.validate, export.raw, view.inspect, view.render без потери семантики legacy-маршрута.'
@@ -14475,7 +14496,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -14609,7 +14630,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/reference-codecs.test.ts'
         validate: null
         read: null
         materialize: null
@@ -14624,7 +14645,8 @@ capabilities:
     replacementWorkflow: 'MK3 contribution modkit/video-webm'
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/reference-codecs.test.ts'
       reports: []
   - capabilityId: 'format/webp/open-inspect'
     userScenario: 'Открыть «WebP» в MK3 и выполнить image.inspect без потери семантики legacy-маршрута.'
@@ -14654,7 +14676,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
-    evidenceLevel: 'E4'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -14677,7 +14699,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: null
         validate: null
         read: null
         materialize: null
@@ -14876,7 +14898,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/mk2-vector-codecs.test.ts'
         validate: null
         read: null
         materialize: null
@@ -14890,7 +14912,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/mk2-vector-codecs.test.ts'
       reports: []
   - capabilityId: 'format/wmv/open-inspect'
     userScenario: 'Открыть «Windows Media Video / ASF» в MK3 и выполнить video.export, video.inspect без потери семантики legacy-маршрута.'
@@ -14942,7 +14965,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/mk2-video-codecs.test.ts'
         validate: null
         read: null
         materialize: null
@@ -14957,7 +14980,8 @@ capabilities:
     replacementWorkflow: null
     closedBy:
       commits: []
-      tests: []
+      tests:
+        - 'packages/testkit/test/mk2-video-codecs.test.ts'
       reports: []
   - capabilityId: 'format/wow-m2/open-inspect'
     userScenario: 'Открыть «World of Warcraft M2» в MK3 и открыть и осмотреть без потери семантики legacy-маршрута.'
@@ -15382,7 +15406,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/reference-codecs.test.ts'
         validate: null
         read: null
         materialize: null
@@ -15400,6 +15424,7 @@ capabilities:
     closedBy:
       commits: []
       tests:
+        - 'packages/testkit/test/reference-codecs.test.ts'
         - 'packages/testkit/test/detection-collisions.test.ts'
       reports: []
   - capabilityId: 'format/zstd/open-inspect'
@@ -16802,7 +16827,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'packages/testkit/test/sc2-casc-real.test.ts'
+        inspect: 'extensions/blizzard/starcraft2/test/map-preview-provider-corpus.test.ts'
         validate: null
         read: null
         materialize: null
@@ -16817,6 +16842,7 @@ capabilities:
     closedBy:
       commits: []
       tests:
+        - 'extensions/blizzard/starcraft2/test/map-preview-provider-corpus.test.ts'
         - 'packages/testkit/test/sc2-casc-real.test.ts'
         - 'packages/testkit/test/sc2-real-corpus.test.ts'
       reports:
@@ -17223,7 +17249,7 @@ capabilities:
         inspect: 'extensions/opensource/warzone-2100/test/map-provider.test.ts'
         validate: 'extensions/opensource/warzone-2100/test/map-provider.test.ts'
         read: 'extensions/opensource/warzone-2100/test/map-provider.test.ts'
-        materialize: 'packages/testkit/test/warzone-real.test.ts'
+        materialize: 'extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts'
     knownLoss:
       - 'E3 covers bounded local installation discovery, exact game.map terrain and static-object semantics, effective template/structure/feature data and byte-stable UVW candidate materialization from installed mp.wz; object elevation/model binding, remaining stats, scripts, native writing, browser discovery and packaged-app E5 remain unavailable'
     receipts:
@@ -17235,6 +17261,7 @@ capabilities:
     closedBy:
       commits: []
       tests:
+        - 'extensions/opensource/warzone-2100/test/installed-vertical-corpus.test.ts'
         - 'extensions/opensource/warzone-2100/test/installation-provider.test.ts'
         - 'extensions/opensource/warzone-2100/test/corpus-preflight.test.ts'
         - 'extensions/opensource/warzone-2100/test/map-provider.test.ts'
@@ -19204,7 +19231,7 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'planned'
       operations:
-        inspect: 'scripts/test/parity-coverage.test.ts'
+        inspect: 'packages/testkit/test/uvm-convergence.test.ts'
         validate: null
         read: 'packages/testkit/test/uvm-convergence.test.ts'
         materialize: 'packages/testkit/test/uvm-convergence.test.ts'
@@ -20951,7 +20978,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'node-only'
-    evidenceLevel: 'E4'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -20972,7 +20999,7 @@ capabilities:
       operations:
         inspect: null
         validate: null
-        read: 'packages/testkit/test/sc2-casc-real.test.ts'
+        read: null
         materialize: null
     knownLoss:
       - 'E4 ограничен доказанными model/world scope: retail artifact1.m3 публикуется как live model и имеет отдельный exact UVM reopen с полным resource closure, а retail TArcade публикуется как live world и даёт byte-stable candidate UVW по 66 049 точкам'
@@ -21017,7 +21044,7 @@ capabilities:
     migrationState: 'implemented'
     supportState: 'partial'
     runtimeAvailability: 'node-only'
-    evidenceLevel: 'E4'
+    evidenceLevel: 'E1'
     hostEvidence: 'node'
     writerEvidence: 'not-declared'
     parityEvidence:
@@ -21036,9 +21063,9 @@ capabilities:
       opaquePreservation: 'none'
       nativeExport: 'none'
       operations:
-        inspect: 'packages/testkit/test/sc2-casc-real.test.ts'
+        inspect: null
         validate: null
-        read: 'packages/testkit/test/sc2-casc-real.test.ts'
+        read: null
         materialize: null
     knownLoss:
       - 'retail resolved-data snapshot остаётся честно partial из-за отсутствующих необязательных active-root документов, но все definition refs опубликованного TArcade world разрешены из того же game/workspace/CASC revision'

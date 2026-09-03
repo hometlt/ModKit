@@ -79,10 +79,10 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | allocation       | Строк | migrationState         | Строк | evidenceLevel | Строк |
 | ---------------- | ----- | ---------------------- | ----- | ------------- | ----- |
 | `absent`         | 84    | `equivalent-better`    | 21    | E0            | 82    |
-| `covered`        | 194   | `implemented`          | 217   | E1            | 110   |
-| `not-applicable` | 1     | `missing`              | 84    | E2            | 72    |
-| `superseded`     | 52    | `partial`              | 8     | E3            | 25    |
-|                  |       | `relocated-multiverse` | 1     | E4            | 39    |
+| `covered`        | 194   | `implemented`          | 217   | E1            | 135   |
+| `not-applicable` | 1     | `missing`              | 84    | E2            | 59    |
+| `superseded`     | 52    | `partial`              | 8     | E3            | 21    |
+|                  |       | `relocated-multiverse` | 1     | E4            | 31    |
 |                  |       |                        |       | E5            | 3     |
 
 ### 3.3. Доказанные writers
@@ -94,7 +94,7 @@ Shared subject commands: `subject.convert`, `subject.extract`, `subject.inspect`
 | `format/csv/open-inspect`                        | `write-reopen-compared`                | `packages/testkit/test/text-data.test.ts`<br>`packages/host/test/text-writers.test.ts`<br>`packages/testkit/test/detection-collisions.test.ts`                                                             |
 | `format/jpg/open-inspect`                        | `write-reopen-compared-metadata-plane` | `packages/host/test/media-edits.test.ts`                                                                                                                                                                   |
 | `format/mp3/open-inspect`                        | `write-reopen-compared-metadata-plane` | `packages/host/test/media-edits.test.ts`                                                                                                                                                                   |
-| `format/png/open-inspect`                        | `write-reopen-compared`                | `packages/host/test/media-edits.test.ts`                                                                                                                                                                   |
+| `format/png/open-inspect`                        | `write-reopen-compared`                | `packages/testkit/test/reference-codecs.test.ts`<br>`packages/host/test/media-edits.test.ts`                                                                                                               |
 | `format/txt/open-inspect`                        | `write-reopen-compared`                | `packages/testkit/test/common-plain-text.test.ts`<br>`packages/host/test/text-writers.test.ts`                                                                                                             |
 | `uv/uvm/materializer-writer`                     | `write-reopen-compared`                | `packages/testkit/test/uvm-materializer.test.ts`<br>`packages/testkit/test/uvt-writer.test.ts`<br>`scripts/test/uv-materializer-boundary.test.ts`<br>`packages/testkit/test/blizzard-m3-companion.test.ts` |
 | `uv/uvt/texture-profile`                         | `write-reopen-compared`                | `packages/testkit/test/uvt-materializer.test.ts`<br>`packages/testkit/test/uvt-writer.test.ts`<br>`scripts/test/specs-pin.test.ts`                                                                         |
