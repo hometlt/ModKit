@@ -78,6 +78,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []

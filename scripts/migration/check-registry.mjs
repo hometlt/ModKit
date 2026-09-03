@@ -22,7 +22,7 @@
 //
 // Usage: node scripts/migration/check-registry.mjs [--registry <path>] [--projections <path>]
 //                                                  [--inventory <path>] [--workflow-ledger <path>]
-//                                                  [--parity-report <path>]
+//                                                  [--parity-report <path>] [--artifacts <path>]
 //                                                  [--quiet]
 
 import { execFileSync } from 'node:child_process'
@@ -116,6 +116,17 @@ const CAPABILITY_KEYS = [
   'closedBy',
 ]
 const ALLOCATION_KEYS = ['state', 'x3ContributionId', 'portFamily', 'portVerdict']
+/*
+ * Receipt slots (GA recovery step 2C, finding F26).
+ *
+ * The first three are projection receipts: they say a machine-checkable artefact was issued for a
+ * projection, a materialization or a native export. `installedHost` is a different kind of claim
+ * and needed its own slot: it names the *acceptance run* in which a live workflow of this row
+ * passed inside an installed application, as `<receipt path>#<anchor>`. Both halves are load
+ * bearing. A receipt without an anchor points at a run and leaves the reader to guess which part
+ * of it belongs to this row, which is how `vscode-manual-pending` became a permanent car park.
+ */
+const RECEIPT_KEYS = ['projection', 'materialization', 'nativeExport', 'installedHost']
 const PARITY_KEYS = ['coverageStatus', 'rows', 'corpusKinds', 'verdicts', 'liveSources']
 const PROJECTION_KEYS = [
   'plane',
@@ -180,13 +191,6 @@ const ENUMS = {
     'none',
   ],
   evidenceLevel: ['E0', 'E1', 'E2', 'E3', 'E4', 'E5'],
-  hostEvidence: [
-    'none',
-    'node',
-    'node-and-browser-worker',
-    'electron-smoke',
-    'vscode-manual-pending',
-  ],
   writerEvidence: [
     'not-declared',
     'declared-not-proven',
@@ -211,6 +215,36 @@ const ENUMS = {
   facetMaturity: ['admitted', 'publisher-candidate'],
 }
 
+/*
+ * `hostEvidence` grammar (GA recovery step 2C, finding F26).
+ *
+ * Until 2C this was a flat five-value enum with two holes in it.
+ *
+ * The first hole: there was no value at all for "this passed in an **installed** application",
+ * even though the installed acceptance of waves 1–2 exists and leaves receipts. The strongest
+ * evidence the programme produces could not be written down, so it was not written down.
+ *
+ * The second hole: `vscode-manual-pending` had no end. A row could sit in it indefinitely and
+ * nothing went red, which is the opposite of what a pending state is for. It now has to name the
+ * wave that will close it, in the value itself, where a reader cannot miss it.
+ *
+ * `vscode-installed` is deliberately *not* self-certifying: the row must also fill
+ * `receipts.installedHost` with a receipt and an anchor, and — when the receipt tree is at hand —
+ * that receipt is opened and the anchor looked up in it. Editing this field cannot turn a gate
+ * green on its own; the run has to have happened.
+ */
+const HOST_EVIDENCE_VALUES = [
+  'none',
+  'node',
+  'node-and-browser-worker',
+  'electron-smoke',
+  'vscode-installed',
+]
+const HOST_EVIDENCE_PENDING = 'vscode-manual-pending'
+const HOST_EVIDENCE_PENDING_PATTERN = /^vscode-manual-pending@wave-(?:[0-9]+[A-Z]?|[a-z0-9-]+)$/u
+/** `<receipt under artifacts/**>#<anchor id>`; both halves required, neither may be empty. */
+const INSTALLED_HOST_RECEIPT_PATTERN = /^(artifacts\/[^#\s]+\.receipt\.json)#([^#\s][^#]*)$/u
+
 const compareUtf8 = (left, right) => Buffer.compare(Buffer.from(left), Buffer.from(right))
 
 function checkKeyOrder(label, value, expected) {
@@ -225,6 +259,84 @@ function checkKeyOrder(label, value, expected) {
 function checkEnum(label, field, value, allowed) {
   if (!allowed.includes(value))
     fail(`${label}: ${field} "${value}" is not one of ${allowed.join(' | ')}`)
+}
+
+/*
+ * Acceptance receipts live beside the checkouts rather than inside one: a run of the installed
+ * application is evidence about the *programme*, not about a repository, and several repositories
+ * cite the same run. A checkout without that sibling tree is a legitimate state (a fresh clone, a
+ * CI job that only builds), so the shape of the claim is always checked and the content of the
+ * receipt is checked whenever the tree is actually there. What is never allowed is the reverse:
+ * naming a receipt that the present tree contradicts.
+ */
+const artifactsRoot = path.resolve(
+  argValue('--artifacts') ?? path.join(repoRoot, '..', 'artifacts'),
+)
+const artifactsTreePresent = existsSync(artifactsRoot)
+
+/** Every anchor a receipt records as executed and passing, wherever in the document it sits. */
+function passingAnchorsOf(receipt) {
+  const anchors = new Set()
+  const notExecuted = new Set()
+  const walk = node => {
+    if (node === null || typeof node !== 'object') return
+    if (Array.isArray(node)) {
+      for (const item of node) walk(item)
+      return
+    }
+    if (typeof node.anchor === 'string' && node.verdict === 'pass') anchors.add(node.anchor)
+    if (Array.isArray(node.anchorsObserved)) {
+      for (const anchor of node.anchorsObserved) {
+        if (typeof anchor === 'string') anchors.add(anchor)
+      }
+    }
+    if (Array.isArray(node.anchorsNotExecuted)) {
+      for (const anchor of node.anchorsNotExecuted) {
+        if (typeof anchor === 'string') notExecuted.add(anchor)
+      }
+    }
+    for (const value of Object.values(node)) walk(value)
+  }
+  walk(receipt)
+  for (const anchor of notExecuted) anchors.delete(anchor)
+  return anchors
+}
+
+/** Validates `receipts.installedHost` down to the anchor inside the named receipt. */
+function checkInstalledHostReceipt(label, value) {
+  const match = INSTALLED_HOST_RECEIPT_PATTERN.exec(value)
+  if (match === null) {
+    fail(
+      `${label}: receipts.installedHost «${value}» must name a receipt under artifacts/** and the anchor inside it, as «artifacts/<wave>/<file>.receipt.json#<anchor>»`,
+    )
+    return
+  }
+  const [, file, anchor] = match
+  if (!artifactsTreePresent) return
+  const absolute = path.join(artifactsRoot, file.slice('artifacts/'.length))
+  if (!existsSync(absolute)) {
+    fail(`${label}: receipts.installedHost names «${file}», which does not exist`)
+    return
+  }
+  let receipt
+  try {
+    receipt = readJson(absolute)
+  } catch (error) {
+    fail(`${label}: receipts.installedHost «${file}» is not readable JSON — ${error.message}`)
+    return
+  }
+  if (receipt.verdict !== 'pass') {
+    fail(
+      `${label}: receipts.installedHost names «${file}», whose overall verdict is ${JSON.stringify(receipt.verdict)} — a run that did not pass is not evidence`,
+    )
+    return
+  }
+  const anchors = passingAnchorsOf(receipt)
+  if (!anchors.has(anchor)) {
+    fail(
+      `${label}: receipts.installedHost names anchor «${anchor}», which «${file}» does not record as executed and passing${anchors.size === 0 ? '' : ` (it records ${[...anchors].sort(compareUtf8).join(', ')})`}`,
+    )
+  }
 }
 
 // --- inputs ---------------------------------------------------------------------------------------
@@ -536,12 +648,46 @@ for (const row of capabilities) {
   checkEnum(label, 'supportState', row.supportState, ENUMS.supportState)
   checkEnum(label, 'runtimeAvailability', row.runtimeAvailability, ENUMS.runtimeAvailability)
   checkEnum(label, 'evidenceLevel', row.evidenceLevel, ENUMS.evidenceLevel)
-  checkEnum(label, 'hostEvidence', row.hostEvidence, ENUMS.hostEvidence)
   checkEnum(label, 'writerEvidence', row.writerEvidence, ENUMS.writerEvidence)
+
+  // --- hostEvidence and its two qualifiers (2C, F26) ---------------------------------------------
+  const installedHostReceipt = row.receipts?.installedHost ?? null
+  if (typeof row.hostEvidence !== 'string') {
+    fail(`${label}: hostEvidence is required`)
+  } else if (row.hostEvidence === HOST_EVIDENCE_PENDING) {
+    fail(
+      `${label}: hostEvidence ${HOST_EVIDENCE_PENDING} must name the wave that closes it, as «${HOST_EVIDENCE_PENDING}@wave-4B» — a pending state without an end is a parking space`,
+    )
+  } else if (row.hostEvidence.startsWith(`${HOST_EVIDENCE_PENDING}@`)) {
+    if (!HOST_EVIDENCE_PENDING_PATTERN.test(row.hostEvidence)) {
+      fail(
+        `${label}: hostEvidence "${row.hostEvidence}" does not name a wave; expected «${HOST_EVIDENCE_PENDING}@wave-<id>»`,
+      )
+    }
+  } else if (!HOST_EVIDENCE_VALUES.includes(row.hostEvidence)) {
+    fail(
+      `${label}: hostEvidence "${row.hostEvidence}" is not one of ${HOST_EVIDENCE_VALUES.join(' | ')} | ${HOST_EVIDENCE_PENDING}@wave-<id>`,
+    )
+  }
+  if (row.hostEvidence === 'vscode-installed') {
+    if (typeof installedHostReceipt !== 'string' || installedHostReceipt.trim() === '') {
+      fail(
+        `${label}: hostEvidence vscode-installed claims the installed route but names no receipt; fill receipts.installedHost with «artifacts/<wave>/<file>.receipt.json#<anchor>»`,
+      )
+    } else {
+      checkInstalledHostReceipt(label, installedHostReceipt)
+    }
+  } else if (installedHostReceipt !== null) {
+    // A receipt nobody claims is decoration; a claim with no receipt is a wish. They travel together.
+    fail(
+      `${label}: receipts.installedHost is filled while hostEvidence is ${JSON.stringify(row.hostEvidence)}; the installed receipt belongs to hostEvidence vscode-installed`,
+    )
+  }
 
   checkKeyOrder(`${label}.allocation`, row.allocation, ALLOCATION_KEYS)
   checkEnum(label, 'allocation.state', row.allocation.state, ENUMS.allocationState)
   checkKeyOrder(`${label}.parityEvidence`, row.parityEvidence, PARITY_KEYS)
+  checkKeyOrder(`${label}.receipts`, row.receipts, RECEIPT_KEYS)
   checkKeyOrder(`${label}.projection`, row.projection, PROJECTION_KEYS)
   for (const field of [
     'liveProjection',
@@ -617,6 +763,26 @@ for (const row of capabilities) {
     if (!realCorpus) {
       fail(
         `${label}: evidenceLevel ${row.evidenceLevel} claims a real corpus but names no corpus descriptor`,
+      )
+    }
+  }
+  /*
+   * E5 is the top rung of plan §3.4: "a named live app workflow passes on the target host". It is
+   * three conditions, not two, and 2C made the third writable. The real corpus above says the
+   * workflow ran over something real; the installed receipt says it ran *in the shipped app*;
+   * the anchor inside that receipt says which named workflow it was. A unit test satisfies none of
+   * the last two, and a run that only nearly closed its anchor satisfies none of them either — the
+   * receipt reader above refuses an anchor the run did not execute and pass.
+   */
+  if (row.evidenceLevel === 'E5') {
+    if (row.hostEvidence !== 'vscode-installed') {
+      fail(
+        `${label}: evidenceLevel E5 is a live app workflow on the target host, so hostEvidence must be vscode-installed, found ${JSON.stringify(row.hostEvidence)}`,
+      )
+    }
+    if (typeof installedHostReceipt !== 'string' || installedHostReceipt.trim() === '') {
+      fail(
+        `${label}: evidenceLevel E5 must name the installed acceptance receipt and the anchor that closed it in receipts.installedHost`,
       )
     }
   }
@@ -1034,10 +1200,14 @@ if (!quiet) {
   const track = {}
   const obligation = {}
   const evidence = {}
+  const installedRows = []
   for (const row of capabilities) {
     track[row.releaseTrack] = (track[row.releaseTrack] ?? 0) + 1
     obligation[row.obligation] = (obligation[row.obligation] ?? 0) + 1
     evidence[row.evidenceLevel] = (evidence[row.evidenceLevel] ?? 0) + 1
+    if (row.hostEvidence === 'vscode-installed') {
+      installedRows.push(`${row.capabilityId} → ${row.receipts.installedHost}`)
+    }
   }
   const render = counts =>
     Object.entries(counts)
@@ -1047,4 +1217,10 @@ if (!quiet) {
   console.log(
     `migration:check registry: ${capabilities.length} capabilities (${render(track)}); obligations ${render(obligation)}; evidence ${render(evidence)}; ${mapped.size} mapped + ${coveredByRule.size} unmapped = ${inventory.units.length} source units; ${planes.length} projection planes`,
   )
+  // The installed rows are printed by name: E5 is the rung a reader is most likely to doubt, and
+  // the receipt plus anchor behind each one should be readable without opening the registry.
+  console.log(
+    `migration:check registry: installed-host evidence on ${installedRows.length} row(s)${artifactsTreePresent ? '' : ' (receipt tree absent; shape checked, content not)'}`,
+  )
+  for (const row of installedRows.sort(compareUtf8)) console.log(`  · ${row}`)
 }

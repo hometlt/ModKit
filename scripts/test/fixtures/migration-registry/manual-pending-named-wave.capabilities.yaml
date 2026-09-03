@@ -1,0 +1,85 @@
+schemaVersion: 'capability-registry-1'
+$comment: 'Fixture registry for the migration registry gate regression suite.'
+ownerAdditionsFrozen: true
+ownerAdditionsFrozenOn: '2026-08-25'
+ownerAdditionsFrozenNote: 'Фикстура: набор owner additions заморожен.'
+evidenceLegend:
+  E0: 'обнаружено'
+  E2: 'synthetic tests'
+scopeLock:
+  legacy-required:
+    - 'demo'
+counts:
+  capabilities: 1
+  unmappedRules: 1
+  unmappedUnits: 1
+  mappedUnits: 1
+  inventoryUnits: 2
+unmapped:
+  - selector: 'script-tool'
+    count: 1
+    reason: 'Репозиторные инструменты legacy не являются пользовательскими возможностями.'
+    plan: 'блок 12'
+capabilities:
+  - capabilityId: 'format/demo/open-inspect'
+    userScenario: 'Открыть демонстрационный формат и осмотреть его содержимое.'
+    releaseTrack: 'mk3-priority'
+    origin: 'legacy'
+    obligation: 'legacy-required'
+    owner: 'extensions/common/demo'
+    plannedBlock: 12
+    dependsOn: []
+    sourceUnitIds:
+      - 'legacy/codec-manifest/org.modkitx/demo'
+    legacyEvidence:
+      - 'legacy:extensions/common/demo/codecs/demo/codec.manifest.json'
+    hostFacilities:
+      - 'read-source'
+    mk3Contributions:
+      - 'org.modkitx/demo'
+    mk3Operations:
+      - 'view.inspect'
+    allocation:
+      state: 'covered'
+      x3ContributionId: 'org.modkitx/demo'
+      portFamily: 'common/demo'
+      portVerdict: 'mechanical'
+    migrationState: 'implemented'
+    supportState: 'partial'
+    runtimeAvailability: 'browser-and-node'
+    evidenceLevel: 'E2'
+    hostEvidence: 'vscode-manual-pending@wave-4B'
+    writerEvidence: 'not-declared'
+    parityEvidence:
+      coverageStatus: 'compared-synthetic'
+      rows:
+        - 'demo-synthetic'
+      corpusKinds:
+        - 'synthetic'
+      verdicts:
+        - 'equal'
+      liveSources: []
+    fixtures: []
+    corpusDescriptors: []
+    projection:
+      plane: 'document'
+      liveProjection: 'live'
+      portableMaterialization: 'none'
+      opaquePreservation: 'none'
+      nativeExport: 'none'
+      operations:
+        inspect: null
+        validate: null
+        read: null
+        materialize: null
+    knownLoss: []
+    receipts:
+      projection: null
+      materialization: null
+      nativeExport: null
+      installedHost: null
+    replacementWorkflow: null
+    closedBy:
+      commits: []
+      tests: []
+      reports: []

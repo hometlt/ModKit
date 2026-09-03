@@ -1,0 +1,23 @@
+{
+  "$comment": "Fixture acceptance receipt for the migration registry gate. Shaped like the real installed-acceptance receipts of the GA recovery waves: an overall verdict, per-case anchors, and the observed/not-executed anchor lists that make a partially closed anchor visible.",
+  "kind": "x3.vscode-installed-package-acceptance-receipt",
+  "schemaVersion": 1,
+  "artifact": {
+    "path": "demo-0.0.0.vsix",
+    "sha256": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "demoAcceptance": {
+    "expectedAnchors": ["D-1", "D-2"],
+    "cases": [
+      {
+        "caseId": "demo-open-inspect",
+        "anchor": "D-1",
+        "verdict": "pass"
+      }
+    ],
+    "anchorsObserved": ["D-1"],
+    "anchorsNotExecuted": ["D-2"],
+    "verdict": "pass"
+  },
+  "verdict": "pass"
+}

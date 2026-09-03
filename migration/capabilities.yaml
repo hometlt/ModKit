@@ -152,6 +152,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits:
@@ -221,6 +222,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -284,6 +286,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits:
@@ -350,6 +353,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -413,6 +417,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -478,6 +483,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits:
@@ -544,6 +550,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -607,6 +614,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -673,6 +681,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -744,6 +753,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -809,6 +819,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits:
@@ -885,6 +896,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits:
@@ -955,6 +967,7 @@ capabilities:
       projection: 'ProjectionReceipt'
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -1016,6 +1029,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -1081,6 +1095,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -1140,6 +1155,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -1198,6 +1214,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -1258,6 +1275,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -1319,6 +1337,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -1383,6 +1402,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -1442,6 +1462,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -1503,6 +1524,7 @@ capabilities:
       projection: 'ProjectionReceipt'
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -1564,6 +1586,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -1625,6 +1648,7 @@ capabilities:
       projection: 'ProjectionReceipt'
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -1685,6 +1709,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -1746,6 +1771,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -1809,6 +1835,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -1870,6 +1897,7 @@ capabilities:
       projection: 'ProjectionReceipt'
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -1931,6 +1959,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -1991,6 +2020,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -2047,6 +2077,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -2101,6 +2132,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -2166,6 +2198,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -2232,6 +2265,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -2293,6 +2327,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -2354,6 +2389,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -2410,6 +2446,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -2470,6 +2507,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -2536,6 +2574,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -2604,6 +2643,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -2672,6 +2712,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -2737,6 +2778,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -2804,6 +2846,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -2873,6 +2916,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -2933,6 +2977,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -2993,6 +3038,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -3049,6 +3095,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -3109,6 +3156,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -3177,6 +3225,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -3237,6 +3286,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -3307,6 +3357,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -3367,6 +3418,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -3433,6 +3485,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -3497,6 +3550,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -3558,6 +3612,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -3618,6 +3673,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -3683,6 +3739,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -3748,6 +3805,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -3814,6 +3872,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -3874,6 +3933,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -3940,6 +4000,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'MK3-вклад modkit/text-csv — единственный активный маршрут для .csv; запись идёт через modkit/text-delimited-writer'
     closedBy:
       commits:
@@ -4005,6 +4066,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -4074,6 +4136,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -4141,6 +4204,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -4213,6 +4277,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -4273,6 +4338,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -4333,6 +4399,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -4389,6 +4456,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -4445,6 +4513,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -4501,6 +4570,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -4561,6 +4631,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -4617,6 +4688,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -4677,6 +4749,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -4741,6 +4814,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -4801,6 +4875,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -4861,6 +4936,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -4917,6 +4993,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -4977,6 +5054,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -5033,6 +5111,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -5093,6 +5172,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -5153,6 +5233,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -5219,6 +5300,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -5275,6 +5357,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -5336,6 +5419,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -5405,6 +5489,7 @@ capabilities:
       projection: 'ProjectionReceipt'
       materialization: 'MaterializationReceipt'
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -5467,6 +5552,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -5534,6 +5620,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -5594,6 +5681,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -5655,6 +5743,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -5721,6 +5810,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -5781,6 +5871,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -5841,6 +5932,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -5901,6 +5993,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -5974,6 +6067,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -6042,6 +6136,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -6113,6 +6208,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'MK3 contribution modkit/model-gltf'
     closedBy:
       commits: []
@@ -6184,6 +6280,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'MK3 contribution modkit/model-gltf'
     closedBy:
       commits: []
@@ -6244,6 +6341,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -6314,6 +6412,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -6374,6 +6473,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -6430,6 +6530,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -6499,6 +6600,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -6559,6 +6661,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -6619,6 +6722,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -6680,6 +6784,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -6749,6 +6854,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -6817,6 +6923,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -6886,6 +6993,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'MK3 contribution modkit/image-jpeg'
     closedBy:
       commits: []
@@ -6957,6 +7065,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -7027,6 +7136,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -7091,6 +7201,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -7168,6 +7279,7 @@ capabilities:
       projection: 'ProjectionReceipt'
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits:
@@ -7238,6 +7350,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -7304,6 +7417,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'MK3-вклад modkit/document-markdown — единственный активный маршрут для .md/.markdown/.mdown/.mkd; правка идёт существующим швом common.edit через формато-слепой writer'
     closedBy:
       commits:
@@ -7364,6 +7478,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -7424,6 +7539,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -7496,6 +7612,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'MK3 contribution modkit/audio-mp3'
     closedBy:
       commits: []
@@ -7567,6 +7684,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'MK3 contribution modkit/video-mp4'
     closedBy:
       commits: []
@@ -7633,6 +7751,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -7698,6 +7817,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -7758,6 +7878,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -7828,6 +7949,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'MK3 contribution modkit/model-obj'
     closedBy:
       commits: []
@@ -7899,6 +8021,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits:
@@ -7978,6 +8101,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits:
@@ -8053,6 +8177,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits:
@@ -8129,6 +8254,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'MK3 contribution modkit/audio-ogg'
     closedBy:
       commits: []
@@ -8195,6 +8321,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -8264,6 +8391,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'MK3 contribution modkit/audio-ogg'
     closedBy:
       commits: []
@@ -8331,6 +8459,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -8401,6 +8530,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -8461,6 +8591,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -8531,6 +8662,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -8591,6 +8723,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -8658,6 +8791,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -8727,6 +8861,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -8798,6 +8933,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'MK3 contribution modkit/image-png'
     closedBy:
       commits: []
@@ -8859,6 +8995,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -8919,6 +9056,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -8988,6 +9126,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -9051,6 +9190,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -9111,6 +9251,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -9179,6 +9320,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -9239,6 +9381,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -9299,6 +9442,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -9363,6 +9507,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -9431,6 +9576,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -9487,6 +9633,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -9547,6 +9694,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -9607,6 +9755,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -9663,6 +9812,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -9723,6 +9873,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -9783,6 +9934,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -9843,6 +9995,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -9903,6 +10056,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -9963,6 +10117,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -10028,6 +10183,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'modkit/document-rtf в extensions/documents: тот же view.inspect/asset.validate/export.raw и тот же tree-data-source, плюс детекция заголовка любой мажорной версии RTF, которую legacy-маршрут принимал, а прежний MK3-маршрут — нет'
     closedBy:
       commits: []
@@ -10091,6 +10247,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -10147,6 +10304,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -10212,6 +10370,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -10280,6 +10439,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -10349,6 +10509,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -10423,6 +10584,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -10489,6 +10651,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -10559,6 +10722,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -10632,6 +10796,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -10706,6 +10871,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -10775,6 +10941,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -10851,6 +11018,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'Resolve common.runtime/provider@1 for blizzard.starcraft2.galaxy-pure-bounded-v1 on the trusted node host; use the official SC2 tool/client externally for signing, launch and playback.'
     closedBy:
       commits: []
@@ -10924,6 +11092,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -10993,6 +11162,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -11054,6 +11224,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -11114,6 +11285,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -11174,6 +11346,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -11234,6 +11407,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -11294,6 +11468,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -11354,6 +11529,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -11414,6 +11590,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -11485,6 +11662,7 @@ capabilities:
       projection: 'ProjectionReceipt'
       materialization: 'MaterializationReceipt'
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -11550,6 +11728,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -11610,6 +11789,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -11666,6 +11846,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -11722,6 +11903,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -11778,6 +11960,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -11845,6 +12028,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -11905,6 +12089,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -11971,6 +12156,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'MK3 contribution modkit/vector-svg'
     closedBy:
       commits: []
@@ -12031,6 +12217,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -12092,6 +12279,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -12162,6 +12350,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -12222,6 +12411,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -12291,6 +12481,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -12360,6 +12551,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -12420,6 +12612,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -12488,6 +12681,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits:
@@ -12552,6 +12746,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -12613,6 +12808,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -12673,6 +12869,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -12733,6 +12930,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -12793,6 +12991,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -12854,6 +13053,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -12914,6 +13114,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -12975,6 +13176,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -13036,6 +13238,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -13096,6 +13299,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -13156,6 +13360,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -13216,6 +13421,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -13286,6 +13492,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'MK3 contribution modkit/model-uvm'
     closedBy:
       commits: []
@@ -13346,6 +13553,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -13406,6 +13614,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -13466,6 +13675,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -13522,6 +13732,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -13578,6 +13789,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -13634,6 +13846,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -13690,6 +13903,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -13746,6 +13960,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -13802,6 +14017,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -13862,6 +14078,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits:
@@ -13924,6 +14141,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits:
@@ -13995,6 +14213,7 @@ capabilities:
       projection: 'ProjectionReceipt'
       materialization: 'MaterializationReceipt'
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -14057,6 +14276,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits:
@@ -14121,6 +14341,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -14182,6 +14403,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits:
@@ -14251,6 +14473,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -14311,6 +14534,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -14381,6 +14605,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'MK3 contribution modkit/video-webm'
     closedBy:
       commits: []
@@ -14447,6 +14672,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -14507,6 +14733,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -14577,6 +14804,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -14643,6 +14871,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -14709,6 +14938,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -14765,6 +14995,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -14825,6 +15056,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -14885,6 +15117,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -14945,6 +15178,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -15005,6 +15239,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -15071,6 +15306,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -15144,6 +15380,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'MK3 contribution modkit/archive-zip'
     closedBy:
       commits: []
@@ -15209,6 +15446,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -15265,6 +15503,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -15322,6 +15561,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -15378,6 +15618,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -15437,6 +15678,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -15496,6 +15738,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -15552,6 +15795,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -15609,6 +15853,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -15665,6 +15910,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -15723,6 +15969,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -15780,6 +16027,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -15837,6 +16085,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -15894,6 +16143,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -15951,6 +16201,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -16010,6 +16261,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -16068,6 +16320,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -16126,6 +16379,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -16183,6 +16437,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -16239,6 +16494,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -16296,6 +16552,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -16354,6 +16611,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -16411,6 +16669,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -16468,6 +16727,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -16537,6 +16797,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -16596,6 +16857,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -16654,6 +16916,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -16712,6 +16975,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -16769,6 +17033,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -16826,6 +17091,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -16883,6 +17149,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -16948,6 +17215,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -17009,6 +17277,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -17074,6 +17343,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'использовать только публичные read-only MCP tools, не читать файл собственным parser и всегда закрывать opaque handle'
     closedBy:
       commits: []
@@ -17150,6 +17420,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'открывать пользовательский SC2 package через Modkit и использовать только exact descriptor-advertised read-only операции'
     closedBy:
       commits: []
@@ -17224,6 +17495,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'открывать пользовательский WZ/map/data/script/PIE через Modkit и сохранять schema, provenance, diagnostics и incomplete state каждого ответа'
     closedBy:
       commits: []
@@ -17312,6 +17584,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'MCP остаётся тонким read-only адаптером публичного host; недостающие discovery/search/resource маршруты должны использовать тот же inventory и permissions без второго реестра'
     closedBy:
       commits: []
@@ -17371,6 +17644,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'общий host command runtime и RuntimeSessionV2 используются всеми приложениями через одинаковые контракты'
     closedBy:
       commits:
@@ -17436,6 +17710,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'пять mk3-ga presets собирают шесть приложений из общих extension families и service providers; VS Code добавляет общий workbench, безопасный запуск карты и live E5 preview/convert без app-specific semantic fork'
     closedBy:
       commits:
@@ -17508,6 +17783,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'единая permission, cancellation, restart и crash матрица проходит через host-owned command/session lifecycle; PWA после реального worker crash ждёт явного нажатия пользователя, проверяет несохранённые вкладки, закрывает services и перезагружает всю композицию'
     closedBy:
       commits:
@@ -17573,6 +17849,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'immutable artifact directories, atomic active pointer, history, quarantine и recovery заменяют ручное копирование extension roots'
     closedBy:
       commits:
@@ -17632,6 +17909,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'scaffold создаёт extension против публичного ABI, release bundle имеет ноль внешних imports, digest-проверенный artifact ставится общим lifecycle и открывается тремя UI hosts без изменения platform/app source'
     closedBy:
       commits:
@@ -17700,6 +17978,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'единый inventory-backed knowledge catalog разрешает exact target и locale fallback; каждая видимая строка показывает найденное описание или явный missing knowledge'
     closedBy:
       commits: []
@@ -17785,6 +18064,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'host владеет document revisions, cancellation и workspace index, а VS Code, Electron, PWA, CLI и headless используют одни protocol-neutral методы'
     closedBy:
       commits: []
@@ -17854,6 +18134,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'host разрешает PresentationPlan из зарегистрированных stage facts, а UI только монтирует выбранные slots без веток по игре, формату или codec id'
     closedBy:
       commits:
@@ -17921,6 +18202,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'игровые расширения строят один GameTemplatePreviewResult, а общий UI рисует его без веток SC2 или Warzone'
     closedBy:
       commits: []
@@ -17995,6 +18277,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'игровые providers публикуют common.view/relation-graph-source, а общий viewer и MCP выполняют bounded paging и traversal без знания игры'
     closedBy:
       commits: []
@@ -18070,6 +18353,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'каждая игра публикует named formula и inputs через common.view/subject-calculations-source, общий UI и MCP только отображают или передают bounded result'
     closedBy:
       commits: []
@@ -18150,6 +18434,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'игровой provider собирает common.view/subject-facts-source, а один общий card stage рисует sections, fields, links и knowledge без веток по игре'
     closedBy:
       commits: []
@@ -18213,6 +18498,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -18287,6 +18573,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'детерминированный workflow ledger показывает 0 release-candidate gaps, priority gate показывает 0 незакрытых mk3-ga строк, а 62 post-GA legacy facts остаются без изменения в отдельном backlog'
     closedBy:
       commits:
@@ -18351,6 +18638,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -18406,6 +18694,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -18466,6 +18755,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'release:rc, release:verify и release:install собирают, проверяют и ставят четыре подписанных Ed25519 артефакта в чистое временное хранилище; release:rollback возвращает immutable предыдущую версию'
     closedBy:
       commits:
@@ -18524,6 +18814,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'shared subject command runtime выполняет whole-project validation, positive Galaxy validation и PNG conversion/export, а VS Code использует общий VFS для поиска, refresh и bounded materialization'
     closedBy:
       commits:
@@ -18585,6 +18876,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -18644,6 +18936,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -18711,6 +19004,7 @@ capabilities:
       projection: 'ProjectionReceipt'
       materialization: 'MaterializationReceipt'
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -18780,6 +19074,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -18840,6 +19135,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -18904,6 +19200,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -18973,6 +19270,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -19045,6 +19343,7 @@ capabilities:
       projection: null
       materialization: 'MaterializationReceipt'
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -19112,6 +19411,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -19172,6 +19472,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -19229,6 +19530,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -19288,6 +19590,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -19347,6 +19650,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -19407,6 +19711,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -19464,6 +19769,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -19520,6 +19826,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -19578,6 +19885,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -19636,6 +19944,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -19695,6 +20004,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -19754,6 +20064,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -19812,6 +20123,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -19872,6 +20184,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -19932,6 +20245,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -19993,6 +20307,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -20051,6 +20366,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -20108,6 +20424,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -20167,6 +20484,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -20226,6 +20544,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -20286,6 +20605,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -20352,6 +20672,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'modkit/sc2-runtime-provider выбирается host-owned common.runtime/provider и открывает RuntimeSessionV2; общий VS Code runtime controller использует тот же runtimeId без SC2 branch'
     closedBy:
       commits:
@@ -20433,6 +20754,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'MK3 discovery/CASC semantic inspect плюс common.edit/writer для authored text, complete loose workspace и bounded native MPQ Save As; запись всегда идёт в host-owned transaction, а retail source не изменяется'
     closedBy:
       commits:
@@ -20509,6 +20831,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'blizzard/mpq-fresh-writer fixed-slot native-source Save As через common.edit/writer и atomic host transaction; authored text и complete loose Map/Mod/Campaign snapshots имеют отдельные writer offers'
     closedBy:
       commits:
@@ -20576,6 +20899,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'native-preserving Save As возвращает типизированную квитанцию signature.present, signature.bytes=preserved-opaque и signature.status=invalidated-by-modification'
     closedBy:
       commits:
@@ -20642,6 +20966,7 @@ capabilities:
       projection: 'ProjectionReceipt'
       materialization: 'MaterializationReceipt'
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -20707,6 +21032,7 @@ capabilities:
       projection: 'ProjectionReceipt'
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -20766,6 +21092,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -20839,6 +21166,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'MK3 Warzone discovery/mount/inspect плюс wz2100project/warzone2100-wz-writer через common.edit/writer и atomic host Save As; installed source остаётся read-only'
     closedBy:
       commits:
@@ -20912,6 +21240,7 @@ capabilities:
       projection: null
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: 'wz2100project/warzone2100-wz-writer применяет typed game.map writer, затем common ZIP preserving edit и сохраняет отдельный atomic .wz через host transaction'
     closedBy:
       commits:
@@ -20981,6 +21310,7 @@ capabilities:
       projection: 'ProjectionReceipt'
       materialization: 'MaterializationReceipt'
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
@@ -21046,6 +21376,7 @@ capabilities:
       projection: 'ProjectionReceipt'
       materialization: null
       nativeExport: null
+      installedHost: null
     replacementWorkflow: null
     closedBy:
       commits: []
