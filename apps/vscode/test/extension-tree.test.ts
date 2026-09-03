@@ -66,6 +66,7 @@ function contribution(
     activationEligible: true,
     disabled: false,
     path: `${id}.json`,
+    fileExtensions: [],
     ...overrides,
   })
 }
@@ -86,6 +87,7 @@ const contributions: readonly ContributionRow[] = Object.freeze([
     activationEligible: false,
     disabled: false,
     path: 'bad.json',
+    fileExtensions: [],
   }),
 ])
 
