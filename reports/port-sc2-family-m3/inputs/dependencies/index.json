@@ -1,0 +1,401 @@
+{
+  "schemaVersion": 1,
+  "source": "MK2-FAMILY-PROVENANCE.json#dependencies",
+  "dependencyRows": 50,
+  "nonBuiltinRows": 32,
+  "uniqueManifestPaths": 14,
+  "uniqueManifestBlobs": 14,
+  "uniqueAssetBlobs": 2,
+  "dependencies": [
+    {
+      "specifier": "@logtape/logtape",
+      "package": "@logtape/logtape",
+      "manifest": "modkit-core/packages/codec-kit/node_modules/@logtape/logtape/package.json",
+      "version": "2.2.4",
+      "reason": "Pinned logger type contract.",
+      "manifestSha256": "9a2df9fd0101b8a1cf4c158687f2932f8462f8281efdf89150f2889648809da4",
+      "archivePath": "dependencies/manifests/9a2df9fd0101b8a1cf4c158687f2932f8462f8281efdf89150f2889648809da4.json"
+    },
+    {
+      "specifier": "@modkit/blizzard-starcraft2/bank/codec",
+      "package": "@modkit/blizzard-starcraft2",
+      "manifest": "modkit-extensions-blizzard/node_modules/@modkit/blizzard-starcraft2/package.json",
+      "version": "1.0.0",
+      "reason": "M2 pinned bank source/test dependency through the actual installed/public package.",
+      "manifestSha256": "572d3fe560e2fbcbf215d2f628a11f51a059059245c80a8f73283fe3b900d2bc",
+      "archivePath": "dependencies/manifests/572d3fe560e2fbcbf215d2f628a11f51a059059245c80a8f73283fe3b900d2bc.json"
+    },
+    {
+      "specifier": "@modkit/codec-kit/crypto/sha1",
+      "package": "@modkit/codec-kit",
+      "manifest": "modkit-core/packages/codec-kit/package.json",
+      "version": "1.0.0",
+      "reason": "M2 pinned bank source/test dependency through the actual installed/public package.",
+      "manifestSha256": "d02e758c9448ace8fa43565eedd3b4d24770d55b04431361434fc0a5581049ee",
+      "archivePath": "dependencies/manifests/d02e758c9448ace8fa43565eedd3b4d24770d55b04431361434fc0a5581049ee.json"
+    },
+    {
+      "specifier": "@modkit/codec-kit/legacy/assets",
+      "package": "@modkit/codec-kit",
+      "manifest": "modkit-core/packages/codec-kit/package.json",
+      "version": "1.0.0",
+      "reason": "M2 pinned bank source/test dependency through the actual installed/public package.",
+      "manifestSha256": "d02e758c9448ace8fa43565eedd3b4d24770d55b04431361434fc0a5581049ee",
+      "archivePath": "dependencies/manifests/d02e758c9448ace8fa43565eedd3b4d24770d55b04431361434fc0a5581049ee.json"
+    },
+    {
+      "specifier": "@modkit/codec-kit/legacy/core",
+      "package": "@modkit/codec-kit",
+      "manifest": "modkit-core/packages/codec-kit/package.json",
+      "version": "1.0.0",
+      "reason": "M2 pinned bank source/test dependency through the actual installed/public package.",
+      "manifestSha256": "d02e758c9448ace8fa43565eedd3b4d24770d55b04431361434fc0a5581049ee",
+      "archivePath": "dependencies/manifests/d02e758c9448ace8fa43565eedd3b4d24770d55b04431361434fc0a5581049ee.json"
+    },
+    {
+      "specifier": "@modkit/codec-kit/legacy/entity-cards",
+      "package": "@modkit/codec-kit",
+      "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
+      "version": "1.0.0",
+      "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+      "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23",
+      "archivePath": "dependencies/manifests/a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23.json"
+    },
+    {
+      "specifier": "@modkit/codec-kit/legacy/games",
+      "package": "@modkit/codec-kit",
+      "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
+      "version": "1.0.0",
+      "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+      "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23",
+      "archivePath": "dependencies/manifests/a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23.json"
+    },
+    {
+      "specifier": "@modkit/codec-kit/legacy/language-contracts",
+      "package": "@modkit/codec-kit",
+      "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
+      "version": "1.0.0",
+      "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+      "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23",
+      "archivePath": "dependencies/manifests/a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23.json"
+    },
+    {
+      "specifier": "@modkit/codec-kit/legacy/runtime",
+      "package": "@modkit/codec-kit",
+      "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
+      "version": "1.0.0",
+      "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+      "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23",
+      "archivePath": "dependencies/manifests/a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23.json"
+    },
+    {
+      "specifier": "@modkit/codec-kit/legacy/sc2-support",
+      "package": "@modkit/codec-kit",
+      "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
+      "version": "1.0.0",
+      "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+      "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23",
+      "archivePath": "dependencies/manifests/a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23.json"
+    },
+    {
+      "specifier": "@modkit/codec-kit/legacy/semantic",
+      "package": "@modkit/codec-kit",
+      "manifest": "modkit-core/packages/codec-kit/package.json",
+      "version": "1.0.0",
+      "reason": "M2 pinned bank source/test dependency through the actual installed/public package.",
+      "manifestSha256": "d02e758c9448ace8fa43565eedd3b4d24770d55b04431361434fc0a5581049ee",
+      "archivePath": "dependencies/manifests/d02e758c9448ace8fa43565eedd3b4d24770d55b04431361434fc0a5581049ee.json"
+    },
+    {
+      "specifier": "@modkit/codec-kit/legacy/semantic/documents",
+      "package": "@modkit/codec-kit",
+      "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
+      "version": "1.0.0",
+      "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+      "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23",
+      "archivePath": "dependencies/manifests/a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23.json"
+    },
+    {
+      "specifier": "@modkit/codec-kit/legacy/semantic/layouts",
+      "package": "@modkit/codec-kit",
+      "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
+      "version": "1.0.0",
+      "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+      "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23",
+      "archivePath": "dependencies/manifests/a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23.json"
+    },
+    {
+      "specifier": "@modkit/codec-kit/legacy/semantic/localization",
+      "package": "@modkit/codec-kit",
+      "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
+      "version": "1.0.0",
+      "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+      "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23",
+      "archivePath": "dependencies/manifests/a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23.json"
+    },
+    {
+      "specifier": "@modkit/codec-kit/legacy/semantic/maps",
+      "package": "@modkit/codec-kit",
+      "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
+      "version": "1.0.0",
+      "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+      "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23",
+      "archivePath": "dependencies/manifests/a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23.json"
+    },
+    {
+      "specifier": "@modkit/codec-kit/legacy/semantic/mods",
+      "package": "@modkit/codec-kit",
+      "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
+      "version": "1.0.0",
+      "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+      "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23",
+      "archivePath": "dependencies/manifests/a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23.json"
+    },
+    {
+      "specifier": "@modkit/codec-kit/legacy/semantic/replays",
+      "package": "@modkit/codec-kit",
+      "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
+      "version": "1.0.0",
+      "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+      "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23",
+      "archivePath": "dependencies/manifests/a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23.json"
+    },
+    {
+      "specifier": "@modkit/codec-kit/legacy/semantic/scripts",
+      "package": "@modkit/codec-kit",
+      "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
+      "version": "1.0.0",
+      "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+      "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23",
+      "archivePath": "dependencies/manifests/a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23.json"
+    },
+    {
+      "specifier": "@modkit/codec-kit/legacy/vfs",
+      "package": "@modkit/codec-kit",
+      "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
+      "version": "1.0.0",
+      "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+      "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23",
+      "archivePath": "dependencies/manifests/a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23.json"
+    },
+    {
+      "specifier": "@modkit/codec-kit/legacy/world",
+      "package": "@modkit/codec-kit",
+      "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
+      "version": "1.0.0",
+      "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+      "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23",
+      "archivePath": "dependencies/manifests/a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23.json"
+    },
+    {
+      "specifier": "@modkit/codec-kit/legacy/xml",
+      "package": "@modkit/codec-kit",
+      "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
+      "version": "1.0.0",
+      "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+      "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23",
+      "archivePath": "dependencies/manifests/a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23.json"
+    },
+    {
+      "specifier": "@modkit/core",
+      "package": "@modkit/core",
+      "manifest": "modkit-core/node_modules/@modkit/core/package.json",
+      "version": "0.1.0",
+      "reason": "MK3 ModkitError in the explicit registry compatibility adapter.",
+      "manifestSha256": "480dff50b31a106b139553df768d37960a49348ab828910a04f9f719f26a2aaa",
+      "archivePath": "dependencies/manifests/480dff50b31a106b139553df768d37960a49348ab828910a04f9f719f26a2aaa.json"
+    },
+    {
+      "specifier": "@modkit/host",
+      "package": "@modkit/host",
+      "manifest": "modkit-extensions-blizzard/node_modules/@modkit/host/package.json",
+      "version": "0.1.0",
+      "reason": "M2 pinned bank source/test dependency through the actual installed/public package.",
+      "manifestSha256": "f2609829e85fe8988d422bde2166cbf0ca5f9961d9754efb25af368fca6b2a36",
+      "archivePath": "dependencies/manifests/f2609829e85fe8988d422bde2166cbf0ca5f9961d9754efb25af368fca6b2a36.json"
+    },
+    {
+      "specifier": "@modkit/host/node",
+      "package": "@modkit/host",
+      "manifest": "modkit-extensions-blizzard/node_modules/@modkit/host/package.json",
+      "version": "0.1.0",
+      "reason": "M2 pinned bank source/test dependency through the actual installed/public package.",
+      "manifestSha256": "f2609829e85fe8988d422bde2166cbf0ca5f9961d9754efb25af368fca6b2a36",
+      "archivePath": "dependencies/manifests/f2609829e85fe8988d422bde2166cbf0ca5f9961d9754efb25af368fca6b2a36.json"
+    },
+    {
+      "specifier": "crypto",
+      "kind": "node-builtin",
+      "reason": "Pinned SHA1 Node hash boundary."
+    },
+    {
+      "specifier": "fast-xml-parser",
+      "package": "fast-xml-parser",
+      "manifest": "modkit-extensions-blizzard/starcraft2/node_modules/fast-xml-parser/package.json",
+      "version": "4.5.6",
+      "reason": "M2 pinned bank source/test dependency through the actual installed/public package.",
+      "manifestSha256": "560cc0d0936ddb7c474ec3788969803f4dde65d15705e8e246851e6efc66f607",
+      "archivePath": "dependencies/manifests/560cc0d0936ddb7c474ec3788969803f4dde65d15705e8e246851e6efc66f607.json"
+    },
+    {
+      "specifier": "fs",
+      "kind": "node-builtin",
+      "reason": "Pinned M3 compatibility source imports this Node builtin."
+    },
+    {
+      "specifier": "node:child_process",
+      "kind": "node-builtin",
+      "reason": "Original Node IO/CLI or real host integration test boundary."
+    },
+    {
+      "specifier": "node:crypto",
+      "kind": "node-builtin",
+      "reason": "Pinned M3 compatibility source imports this Node builtin."
+    },
+    {
+      "specifier": "node:fs",
+      "kind": "node-builtin",
+      "reason": "Original Node IO/CLI or real host integration test boundary."
+    },
+    {
+      "specifier": "node:fs/promises",
+      "kind": "node-builtin",
+      "reason": "Original Node IO/CLI or real host integration test boundary."
+    },
+    {
+      "specifier": "node:module",
+      "kind": "node-builtin",
+      "reason": "Pinned M3 compatibility source imports this Node builtin."
+    },
+    {
+      "specifier": "node:os",
+      "kind": "node-builtin",
+      "reason": "Original Node IO/CLI or real host integration test boundary."
+    },
+    {
+      "specifier": "node:path",
+      "kind": "node-builtin",
+      "reason": "Original Node IO/CLI or real host integration test boundary."
+    },
+    {
+      "specifier": "node:stream",
+      "kind": "node-builtin",
+      "reason": "Pinned M3 compatibility source imports this Node builtin."
+    },
+    {
+      "specifier": "node:stream/promises",
+      "kind": "node-builtin",
+      "reason": "Pinned M3 compatibility source imports this Node builtin."
+    },
+    {
+      "specifier": "node:url",
+      "kind": "node-builtin",
+      "reason": "Original Node IO/CLI or real host integration test boundary."
+    },
+    {
+      "specifier": "node:util",
+      "kind": "node-builtin",
+      "reason": "Pinned M3 compatibility source imports this Node builtin."
+    },
+    {
+      "specifier": "node:zlib",
+      "kind": "node-builtin",
+      "reason": "Pinned M3 compatibility source imports this Node builtin."
+    },
+    {
+      "specifier": "pako",
+      "package": "pako",
+      "manifest": "modkit-core/packages/codec-kit/node_modules/pako/package.json",
+      "version": "2.1.0",
+      "reason": "Genuine deflate/inflate implementation imported by pinned compression.",
+      "manifestSha256": "268f53a4c305b7b49a63f7aadcdc026b00574fafc5fd6a452351bac21d5417ae",
+      "archivePath": "dependencies/manifests/268f53a4c305b7b49a63f7aadcdc026b00574fafc5fd6a452351bac21d5417ae.json"
+    },
+    {
+      "specifier": "path",
+      "kind": "node-builtin",
+      "reason": "Pinned M3 compatibility source imports this Node builtin."
+    },
+    {
+      "specifier": "seek-bzip",
+      "package": "seek-bzip",
+      "manifest": "modkit-core/packages/codec-kit/node_modules/seek-bzip/package.json",
+      "version": "2.0.0",
+      "reason": "Genuine BZip2 implementation used by the authored public compression adapter.",
+      "manifestSha256": "225bd158f4af2dfce074a14d1890ec6d24be0e0926ee9443b0c19ac0fa95ded5",
+      "archivePath": "dependencies/manifests/225bd158f4af2dfce074a14d1890ec6d24be0e0926ee9443b0c19ac0fa95ded5.json"
+    },
+    {
+      "specifier": "texture2ddecoder-wasm",
+      "package": "texture2ddecoder-wasm",
+      "manifest": "modkit-core/packages/codec-kit/node_modules/texture2ddecoder-wasm/package.json",
+      "version": "1.2.2",
+      "reason": "Pinned computed Node import and explicit browser asset URL runtime.",
+      "manifestSha256": "0011267182bbbe44a78330fd834cca12bfc8bfcb9bf4df9535d704d02f4af9e4",
+      "archivePath": "dependencies/manifests/0011267182bbbe44a78330fd834cca12bfc8bfcb9bf4df9535d704d02f4af9e4.json",
+      "assets": [
+        {
+          "path": "modkit-core/packages/codec-kit/node_modules/texture2ddecoder-wasm/wasm/texture2ddecoder.js",
+          "sha256": "0a2b33ff735566fd3184e0421ff38fb7578d1348b3cc44fc4646cce29d001110",
+          "archivePath": "dependencies/assets/0a2b33ff735566fd3184e0421ff38fb7578d1348b3cc44fc4646cce29d001110.js"
+        },
+        {
+          "path": "modkit-core/packages/codec-kit/node_modules/texture2ddecoder-wasm/wasm/texture2ddecoder.wasm",
+          "sha256": "8b819b0622cce57f809b369081bdd6eca09d1c1793da7f82192db39229356c1d",
+          "archivePath": "dependencies/assets/8b819b0622cce57f809b369081bdd6eca09d1c1793da7f82192db39229356c1d.wasm"
+        }
+      ]
+    },
+    {
+      "specifier": "timers",
+      "kind": "node-builtin",
+      "reason": "Pinned M3 compatibility source imports this Node builtin."
+    },
+    {
+      "specifier": "typescript",
+      "package": "typescript",
+      "manifest": "modkit-extensions-blizzard/node_modules/typescript/package.json",
+      "version": "5.9.3",
+      "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+      "manifestSha256": "822ef7ca6452205657b6288b066481ecf508bfbf43455d715cf7d3ec457561e6",
+      "archivePath": "dependencies/manifests/822ef7ca6452205657b6288b066481ecf508bfbf43455d715cf7d3ec457561e6.json"
+    },
+    {
+      "specifier": "url",
+      "kind": "node-builtin",
+      "reason": "Pinned M3 compatibility source imports this Node builtin."
+    },
+    {
+      "specifier": "util",
+      "kind": "node-builtin",
+      "reason": "Pinned M3 compatibility source imports this Node builtin."
+    },
+    {
+      "specifier": "vitest",
+      "package": "vitest",
+      "manifest": "modkit-extensions-blizzard/node_modules/vitest/package.json",
+      "version": "2.1.9",
+      "reason": "M2 pinned bank source/test dependency through the actual installed/public package.",
+      "manifestSha256": "6ea35e567829660d9832744086c18526b9ddebd5358c4a0cadfb0a355925f917",
+      "archivePath": "dependencies/manifests/6ea35e567829660d9832744086c18526b9ddebd5358c4a0cadfb0a355925f917.json"
+    },
+    {
+      "specifier": "vscode-languageserver-textdocument",
+      "package": "vscode-languageserver-textdocument",
+      "manifest": "modkit-core/packages/codec-kit/node_modules/vscode-languageserver-textdocument/package.json",
+      "version": "1.0.13",
+      "reason": "Pinned language document type contract.",
+      "manifestSha256": "01f3f4dfb3a884df9bbfea0c5aac2430bde5da2b8aa490eed5c578b7fe059613",
+      "archivePath": "dependencies/manifests/01f3f4dfb3a884df9bbfea0c5aac2430bde5da2b8aa490eed5c578b7fe059613.json"
+    },
+    {
+      "specifier": "vscode-languageserver/node",
+      "package": "vscode-languageserver",
+      "manifest": "modkit-core/packages/codec-kit/node_modules/vscode-languageserver/package.json",
+      "version": "10.0.1",
+      "reason": "Pinned language protocol types; installed package exports ./node.",
+      "manifestSha256": "e07dfc87e869d10f7d5377a5c5761e3e759a42ac87d374b925fcfa4609ccc1ba",
+      "archivePath": "dependencies/manifests/e07dfc87e869d10f7d5377a5c5761e3e759a42ac87d374b925fcfa4609ccc1ba.json"
+    }
+  ]
+}

@@ -1,0 +1,84 @@
+{
+  "name": "@modkit/host",
+  "version": "0.1.0",
+  "description": "MK3 clean-core lab: inventory, resolver, activation gate (BRIEF-12; not a release)",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./node": {
+      "types": "./dist/node/index.d.ts",
+      "default": "./dist/node/index.js"
+    },
+    "./browser": {
+      "types": "./dist/browser/index.d.ts",
+      "default": "./dist/browser/index.js"
+    },
+    "./execution": {
+      "types": "./dist/execution/index.d.ts",
+      "default": "./dist/execution/index.js"
+    },
+    "./language": {
+      "types": "./dist/language/index.d.ts",
+      "default": "./dist/language/index.js"
+    },
+    "./knowledge": {
+      "types": "./dist/knowledge/index.d.ts",
+      "default": "./dist/knowledge/index.js"
+    },
+    "./runtime": {
+      "types": "./dist/runtime/index.d.ts",
+      "default": "./dist/runtime/index.js"
+    },
+    "./renderer": {
+      "types": "./dist/renderer/index.d.ts",
+      "default": "./dist/renderer/index.js"
+    },
+    "./games": {
+      "types": "./dist/games/index.d.ts",
+      "default": "./dist/games/index.js"
+    },
+    "./mods": {
+      "types": "./dist/mods/index.d.ts",
+      "default": "./dist/mods/index.js"
+    },
+    "./data": {
+      "types": "./dist/data/index.d.ts",
+      "default": "./dist/data/index.js"
+    },
+    "./maps": {
+      "types": "./dist/maps/index.d.ts",
+      "default": "./dist/maps/index.js"
+    },
+    "./node/worker-bootstrap": {
+      "types": "./dist/node/worker-bootstrap.d.ts",
+      "default": "./dist/node/worker-bootstrap.js"
+    },
+    "./browser/worker-entry": {
+      "types": "./dist/browser/worker-entry.d.ts",
+      "default": "./dist/browser/worker-entry.js"
+    }
+  },
+  "files": [
+    "dist",
+    "native-text"
+  ],
+  "dependencies": {
+    "es-module-lexer": "^1.7.0",
+    "jsonc-parser": "^3.3.1",
+    "@modkit/core": "0.1.0",
+    "@modkit/sdk": "0.1.0",
+    "@modkit/vfs": "0.1.0"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "tsc -b --clean"
+  }
+}

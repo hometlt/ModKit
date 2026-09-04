@@ -1,0 +1,284 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M3",
+  "stage": "family-copy-ready",
+  "scope": "Full SC2 family source/test copy and isolated library compilation closure",
+  "verdict": "pass",
+  "ownerAcceptance": "pending",
+  "nextMilestone": "M4 requires separate owner acceptance of M3",
+  "generatedAt": "2026-09-04T23:08:07.323Z",
+  "oracle": {
+    "repository": "references/modkitmk2",
+    "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+    "sourceMode": "git-object-database",
+    "workingTreeObserved": false,
+    "workingTreeModified": false
+  },
+  "prerequisite": {
+    "milestone": "M2",
+    "ownerAcceptedOn": "2026-09-04",
+    "instruction": "continue",
+    "coreEvidenceCommit": "37dc7560",
+    "blizzardSurfaceCommit": "ad53661",
+    "acceptedEvidenceUnchanged": true
+  },
+  "repositories": {
+    "core": {
+      "directory": "modkit-core",
+      "branch": "sol/port-libs",
+      "implementationCommit": "5ea667fe4fc3305283d0e2b3963ffeb7ef842563",
+      "implementationPaths": 63,
+      "outsideAllowlist": 0,
+      "evidenceCommit": "self"
+    },
+    "blizzard": {
+      "directory": "modkit-extensions-blizzard",
+      "branch": "sol/port-sc2",
+      "implementationCommit": "1751abd0d8b54cc03869d996dd2de5550729279d",
+      "implementationPaths": 1339,
+      "outsideAllowlist": 0,
+      "status": "clean"
+    },
+    "docs": {
+      "directory": "references/modkit-docs",
+      "branch": "sol/port-plan-review",
+      "head": "917dca67ee0720d735d8af11756608f4ccf30962",
+      "unrelatedUntrackedFilesUntouched": 5
+    }
+  },
+  "sourceClosure": {
+    "verdict": "pass",
+    "scope": "family",
+    "files": 1460,
+    "sourceFiles": 842,
+    "testFiles": 618,
+    "importOccurrences": 4840,
+    "dependencies": 50,
+    "nonBuiltinDependencyRows": 32,
+    "uniqueDependencyManifestPaths": 14,
+    "importDispositions": 630,
+    "heroesOfTheStormSources": 0,
+    "acceptedCopiesReused": 87,
+    "newlySelectedFiles": 1411,
+    "destinationOwners": {
+      "modkit-core/packages/codec-kit": 94,
+      "modkit-extensions-blizzard/starcraft2": 1301,
+      "modkit-extensions-blizzard/models": 65
+    },
+    "scopes": {
+      "family": {
+        "files": 1460,
+        "imports": 4840,
+        "exitCode": 0
+      },
+      "m1-libs": {
+        "files": 50,
+        "imports": 97,
+        "exitCode": 0
+      },
+      "sc2-bank": {
+        "files": 87,
+        "imports": 217,
+        "exitCode": 0
+      }
+    },
+    "provenance": "inputs/MK2-FAMILY-PROVENANCE.json"
+  },
+  "compilation": {
+    "coreCodecKit": {
+      "exitCode": 0,
+      "errors": 0
+    },
+    "coreM3Libraries": {
+      "exitCode": 0,
+      "errors": 0
+    },
+    "coreM3Tests": {
+      "exitCode": 0,
+      "errors": 0
+    },
+    "blizzardM3Libraries": {
+      "exitCode": 0,
+      "errors": 0
+    },
+    "blizzardProduction": {
+      "exitCode": 0,
+      "errors": 0
+    },
+    "blizzardModelsProduction": {
+      "exitCode": 0,
+      "errors": 0
+    },
+    "coreStrict": {
+      "packages": 8,
+      "problems": 0,
+      "exitCode": 0
+    }
+  },
+  "testBoundary": {
+    "normal": {
+      "quick": {
+        "files": 31,
+        "stagedFiles": 0
+      },
+      "owner": {
+        "files": 34,
+        "stagedFiles": 0
+      },
+      "real": {
+        "files": 11,
+        "stagedFiles": 0
+      }
+    },
+    "dedicated": {
+      "projects": 12,
+      "files": 76,
+      "archiveFiles": 1,
+      "codecBodyFiles": 0
+    },
+    "archive": {
+      "copiedSuites": 6,
+      "declarations": 49,
+      "executable": {
+        "suite": "cache.spec.ts",
+        "tests": 8,
+        "passed": 8,
+        "failed": 0,
+        "exitCode": 0
+      },
+      "deferredByPlan": [
+        "index.spec.ts",
+        "optional-extension-loaders.spec.ts",
+        "source.spec.ts",
+        "vfs-browser-boundary.spec.ts",
+        "vfs-mount.spec.ts"
+      ],
+      "nextMilestone": "M4/P11"
+    }
+  },
+  "tests": {
+    "algorithmBarrier": {
+      "passed": 17,
+      "failed": 0
+    },
+    "legacyOracle": {
+      "passed": 3,
+      "failed": 0
+    },
+    "copyInfrastructure": {
+      "passed": 45,
+      "failed": 0
+    },
+    "migrationInfrastructure": {
+      "passed": 121,
+      "failed": 0
+    },
+    "coreQuick": {
+      "extensionManagerPassed": 62,
+      "vitestFiles": 23,
+      "vitestPassed": 386,
+      "failed": 0
+    },
+    "blizzardQuick": {
+      "exitCode": 0,
+      "vitestFiles": 31,
+      "passed": 153,
+      "conditionalSkipped": 3,
+      "failed": 0,
+      "portableBundlePassed": 2
+    }
+  },
+  "algorithms": {
+    "repositories": 6,
+    "failures": [],
+    "debt": 51,
+    "canonical": 5,
+    "copiedUnwired": 2,
+    "new": 0,
+    "temporaryDispositions": [
+      {
+        "symbol": "crc32#0",
+        "sha256": "d7cd50e2c2035b7091d070071a3abbff30a3eecf25f049160c8f1bc5a9b90737",
+        "exit": "canonicalize-before-activation"
+      },
+      {
+        "symbol": "XMLReader.parseXML#0",
+        "sha256": "f27478587d8d07973c59c136ec14cae5916418a2c2baaf09df2995f2360909c0",
+        "exit": "classify-delegate-before-activation"
+      }
+    ]
+  },
+  "diagnostic": {
+    "role": "diagnostic-only",
+    "requiredGreenForM3": false,
+    "files": 76,
+    "total": 651,
+    "passed": 615,
+    "conditionalSkipped": 29,
+    "failed": 7,
+    "todo": 0,
+    "registryActivationFailuresAssignedToC1": 6,
+    "replayTopologyFailuresAssignedToReplayC1": 1,
+    "summary": "diagnostic/summary.json"
+  },
+  "isolation": {
+    "nonBankCodecBodiesInNormalBuild": 0,
+    "copiedUnwiredAlgorithmsReachableFromProduction": 0,
+    "archiveDeferredSuitesExecutedAsM3Results": 0,
+    "newSkips": 0,
+    "timeoutIncreases": 0
+  },
+  "migration": {
+    "exitCode": 0,
+    "integrity": "pass",
+    "registryLine": "migration:check registry: known debt 38 (must be empty by wave 6), new problems 0, stale baseline entries 0, unavailable checks 1 (must be restored by wave 6)",
+    "knownDebt": 38,
+    "newProblems": 0,
+    "staleBaselineEntries": 0,
+    "unavailableChecks": 1,
+    "protectedE5Rows": 3,
+    "familyFeatureClosureClaimed": false,
+    "capabilityEvidenceRaised": false
+  },
+  "diffChecks": {
+    "coreImplementation": {
+      "exitCode": 0
+    },
+    "blizzardAuthoredConfigProvenance": {
+      "exitCode": 0
+    },
+    "blizzardFullCopiedTreeDiagnostic": {
+      "exitCode": 2,
+      "requiredGreenForM3": false,
+      "historicalWhitespaceLocations": 44,
+      "files": 44,
+      "outsideProvenanceBoundCopiedTrees": 0,
+      "contentGate": "mk2-copy:check family 1460/4840"
+    }
+  },
+  "remaining": [
+    "M4/P11: namespace/container composition and five deferred archive suites",
+    "M5-M6: codec C1-C8 cycles and authored sc2-campaign CMP scope",
+    "M7: full S1-S15, operation/feature ledgers and surfaces",
+    "M8: P12 discovery, installed VS Code acceptance and SC2-family full closure",
+    "M9-M10: project-global closure, frozen debt and retirement"
+  ],
+  "ownerDrops": [],
+  "commands": "commands.json",
+  "evidenceManifest": {
+    "path": "manifest.json",
+    "sha256": "5dd67ac62beeb5d14bc97d31fec7f6cf72263609c8aee3293445d5f115f9a34e",
+    "fileCount": 68,
+    "totalBytes": 5454338
+  },
+  "report": {
+    "path": "../PORT_SC2_FAMILY_M3_2026-09-05.md",
+    "sha256": "1a53434d1977e02755023b6a432f6d65a0668b87aef75e9c14518efb1310c19d"
+  },
+  "replay": {
+    "command": "node reports/port-sc2-family-m3/verify.mjs",
+    "readsMk2WorkingTree": false,
+    "runsNormativeChecks": true,
+    "limitation": "The 76-file support run is preserved and validated as diagnostic-red; it is not converted into an M3 pass."
+  }
+}

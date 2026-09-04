@@ -1,0 +1,11 @@
+models/test/m3-animation.test.ts
+models/test/m3-material.test.ts
+models/test/m3-skeleton.test.ts
+models/test/m3a-corpus-audit.test.ts
+mpq/test/native-preserving-workflow.test.ts
+starcraft2/test/sc2-map-world-writer.test.ts
+test/integration/sc2-runtime-catalog-real.test.ts
+test/integration/sc2-triggers-c2-real.test.ts
+starcraft2/test/full-data-schema-corpus.test.ts
+starcraft2/test/map-preview-provider-corpus.test.ts
+starcraft2/test/resolved-data-placeholders-corpus.test.ts

@@ -1,0 +1,4 @@
+
+> @modkit/blizzard-extensions@1.0.0 typecheck C:\FILES\SC2Files\coding\modkit-extensions-blizzard
+> pnpm exec tsc --pretty false --noEmit -p ./starcraft2/tsconfig.json
+

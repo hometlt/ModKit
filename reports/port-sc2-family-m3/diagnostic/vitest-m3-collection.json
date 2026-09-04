@@ -1,0 +1,3112 @@
+[
+  {
+    "name": "browser-safe root boundary > keeps node APIs and runtime @modkitx/replay imports out of root-reachable source",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/replays-processing/test/browser-safety.test.ts",
+    "projectName": "replays-processing"
+  },
+  {
+    "name": "@modkitx/replays-processing semantic facade > preserves the registry constructor across semantic, submodule, and root exports",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/replays-processing/test/semantic-facade.test.ts",
+    "projectName": "replays-processing"
+  },
+  {
+    "name": "@modkitx/replays-processing semantic facade > preserves bidirectional registry facade type compatibility",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/replays-processing/test/semantic-facade.test.ts",
+    "projectName": "replays-processing"
+  },
+  {
+    "name": "@modkitx/replays-processing semantic facade > registers and summarizes a codec through the root exports, whatever game it serves",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/replays-processing/test/semantic-facade.test.ts",
+    "projectName": "replays-processing"
+  },
+  {
+    "name": "localization semantic compatibility facade > preserves the exact registry constructor identity",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/localization-processing/test/semantic-facade.test.ts",
+    "projectName": "localization-processing"
+  },
+  {
+    "name": "localization semantic compatibility facade > registers, routes, and summarizes a codec without knowing which game it serves",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/localization-processing/test/semantic-facade.test.ts",
+    "projectName": "localization-processing"
+  },
+  {
+    "name": "semantic script compatibility facade > preserves registry constructor identity",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/scripts-processing/test/semantic-facade.test.ts",
+    "projectName": "scripts-processing"
+  },
+  {
+    "name": "semantic script compatibility facade > preserves operation object, array, and constant identities",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/scripts-processing/test/semantic-facade.test.ts",
+    "projectName": "scripts-processing"
+  },
+  {
+    "name": "parseComponentList (Plan 4e-A A1) > parses an enUS-only mod (frontiers) incl. a uiui component",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/component-list.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "parseComponentList (Plan 4e-A A1) > enumerates all declared locales in first-seen order (multi-locale campaign)",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/component-list.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "parseComponentList (Plan 4e-A A1) > ignores <Optimized/> and other non-DataComponent tags (fixture)",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/component-list.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "parseComponentList (Plan 4e-A A1) > strips a BOM and dedups repeated locales",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/component-list.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "parseComponentList (Plan 4e-A A1) > is not XML for the legacy flat-text convention; the legacy reader still works",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/component-list.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "parseCatalogXml > parses root types",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/parser.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "parseCatalogXml > extracts two CUnit entries",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/parser.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "parseCatalogXml > captures id and parent",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/parser.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "parseCatalogXml > collapses single value= attribute to scalar",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/parser.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "parseCatalogXml > parses multi-attribute element as object",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/parser.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "parseCatalogXml > parses indexed attributes array",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/parser.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "parseCatalogXml > parses append array (no index)",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/parser.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "parseSc2Strings > parses key=value string file",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/parser.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "parseSc2Strings > keeps significant trailing whitespace in the value",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/parser.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "parseSc2StringsOrdered — round-trip fidelity > round-trips byte-exact with LF and a trailing newline",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/string-model.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "parseSc2StringsOrdered — round-trip fidelity > round-trips byte-exact with CRLF and no trailing newline",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/string-model.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "parseSc2StringsOrdered — round-trip fidelity > preserves a BOM, blank lines, and value whitespace",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/string-model.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "parseSc2StringsOrdered — round-trip fidelity > preserves duplicate keys and resolves last-wins",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/string-model.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "parseSc2StringsOrdered — round-trip fidelity > keeps values that themselves contain \"=\"",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/string-model.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "parseSc2StringsOrdered — round-trip fidelity > decodes UTF-8 bytes and detects a BOM from raw bytes",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/string-model.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "parseSc2StringsOrdered — round-trip fidelity > treats a line starting with \"//\" as a full-line comment, not an entry",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/string-model.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "parseSc2StringsOrdered — round-trip fidelity > treats a \"//\" line as a comment even when the comment text contains \"=\"",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/string-model.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "parseSc2StringsOrdered — round-trip fidelity > a leading-whitespace \"//\" line is still a comment, not an entry",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/string-model.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "string-model edits — single-line-diff guarantee > setStringValue patches only the last occurrence",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/string-model.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "string-model edits — single-line-diff guarantee > setStringValue is a no-op when value is unchanged",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/string-model.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "string-model edits — single-line-diff guarantee > renameStringKey rewrites every occurrence",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/string-model.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "string-model edits — single-line-diff guarantee > addStringEntry appends and gives the previous last line a terminator",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/string-model.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "string-model edits — single-line-diff guarantee > addStringEntry can insert after a given key",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/xml/string-model.test.ts",
+    "projectName": "xml"
+  },
+  {
+    "name": "AnimatorControllerRuntime > evaluates conditional transitions and crossfades normalized duration",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/animation-controller.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "AnimatorControllerRuntime > consumes triggers when an Any State transition starts",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/animation-controller.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "AnimatorControllerRuntime > evaluates serialized entry selectors and mutable layer weights",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/animation-controller.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "AnimatorControllerRuntime > rechecks a looping exit time on each loop instead of leaving it permanently open",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/animation-controller.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "AnimatorControllerRuntime > uses center and angular interpolation for Simple Directional 2D",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/animation-controller.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "AnimatorControllerRuntime > uses polar gradient bands for Freeform Directional 2D",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/animation-controller.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "AnimatorControllerRuntime > uses Cartesian gradient bands for Freeform Cartesian 2D",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/animation-controller.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelCodecRegistry > rejects duplicate registrations",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/codec.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelCodecRegistry > resolves by extension when unambiguous",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/codec.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelCodecRegistry > falls back to magic sniff when the extension is unknown",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/codec.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelCodecRegistry > disambiguates shared extensions by sniff",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/codec.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelCodecRegistry > lazily loads codecs exactly once",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/codec.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelCodecRegistry > collects the union of registered extensions",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/codec.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "listRenderModelTextureRequests > walks legacy layers and standard material slots without duplicates",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/codec.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "renderer-neutral material color remaps > preserves source brightness for team-color palette ramps",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/color-remap.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "renderer-neutral material color remaps > supports replace and multiply without changing authored alpha",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/color-remap.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "renderer-neutral material color remaps > leaves non-remapped colors unchanged and clamps invalid channels",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/color-remap.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > replays seeded particle spawning deterministically",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > bounds emitter budgets and reuses fixed pool storage after kills",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > emits squirt counts once per animation key",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > uses M3 emit-count tracks for squirt burst size and key timing",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > selects sparse effect tracks by numeric sequence id while retaining static fallback",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > preserves Hermite and Bezier interpolation for effect parameters",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > maintains and unlinks bounded ribbon chains",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > rebuilds SRIB cubic splines at authored spatial cadence",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > resets on sequence changes and rebuilds deterministic seek state",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > keeps model/bone-space particles transformable by the current moving anchor",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > uses analytic M3 drag while retaining collision friction data",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > emits uniformly along authored M3 spline segments",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > samples animated SVC3 particle-spline control points per sequence",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > samples authored mesh-region triangles by surface area",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > rejects bounded inner cutout volumes during emission",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > applies channel-selected wind and one-shot explosion fields",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > applies bounded angular, axial, and radial warp components",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > delegates swept collision and applies authored bounce plus tangent friction",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > culls particles after the authored collision event budget",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > defers bounded collision-linked child emitters at the impact point",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > spawns v23-linked ribbons at particle bounce points",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > emits bounded lifetime projectors at collision splat points",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > bounds fixed-step seek work for hostile targets",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > inherits cached emitter motion without repeated anchor sampling",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > applies M3 spread waveform variation at particle birth",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > sweeps particles against animated model collision primitives",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "ModelEffectSimulation > builds bounded planar, cylindrical, and star ribbon cross-sections",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "humanoid retargeting > maps rest-relative hips translation using human scale",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/humanoid.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "humanoid retargeting > samples and blends normalized muscle curves independently of transform tracks",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/humanoid.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "solveTwoBoneIk > preserves limb lengths and follows the pole plane",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/humanoid.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "solveTwoBoneIk > uniformly stretches both segments up to the configured limit",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/humanoid.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "validateStandardMaterial > accepts a well-formed material",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/material.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "validateStandardMaterial > rejects out-of-range threshold, op, and channels",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/material.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "validateStandardMaterial > flags slot mismatches and sourceless layers",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/material.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "validateStandardMaterial > accepts constant-color layers without a texture",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/material.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "validateStandardMaterial > accepts valid sparse tracks and retains legacy track compatibility",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/material.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "validateStandardMaterial > rejects malformed sparse tracks on every animated layer property",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/material.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "validateStandardMaterial > rejects out-of-order sparse track keys",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/material.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "validateCompositeMaterial > rejects empty composites and propagates pass issues",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/material.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "validateCompositeMaterial > validates sparse alpha-factor tracks with pass context",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/material.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "sequence-indexed material animation tracks > selects only the track authored for the requested sequence",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/material.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "sequence-indexed material animation tracks > indexes a track array once and preserves first-track lookup semantics",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/material.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "validateRenderSequence > accepts a well-formed sequence",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/material.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "validateRenderSequence > rejects out-of-range or duplicate bones and wrap-less concurrent tracks",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/material.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "resolveModelPreviewTextures > keeps binary pixels and enforces the aggregate decode budget",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/preview-textures.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "resolveModelPreviewTextures > reports progressive completion while a stalled read reaches its timeout",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/preview-textures.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "resolveModelPreviewTextures > preserves a compressed-only texture in binary and JSON-safe transport forms",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/preview-textures.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "sampleTrackValue > lerps, clamps, and holds",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/sequence-pose.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "sampleTrackValue > steps on lineType 0",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/sequence-pose.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "sampleTrackValue > wraps concurrent tracks",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/sequence-pose.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "sampleTrackValue > slerps quats along the shortest path",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/sequence-pose.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "matrix helpers > composes TRS and multiplies column-major",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/sequence-pose.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "SequencePoseSampler > chains parent transforms into world matrices",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/sequence-pose.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "SequencePoseSampler > rotating the root carries children around",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/sequence-pose.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "SequencePoseSampler > bind pose × IREF yields identity skinning (the P5 D8 convention)",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/sequence-pose.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "SequencePoseSampler > undriven bones (constant bind tracks) keep the bind pose mid-sequence",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/sequence-pose.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "SequencePoseSampler > reuses buffers across calls (allocation-free steady state)",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/sequence-pose.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "sampleMeshVisibility > applies step visibility tracks per mesh",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/sequence-pose.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "chooseChannelCpu (1.5) > channel 0",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "chooseChannelCpu (1.5) > channel 1",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "chooseChannelCpu (1.5) > channel 2",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "chooseChannelCpu (1.5) > channel 3",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "chooseChannelCpu (1.5) > channel 4",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "chooseChannelCpu (1.5) > channel 5",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "combineLayerColorCpu (1.6) > MOD multiplies",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "combineLayerColorCpu (1.6) > MOD2X multiplies twice",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "combineLayerColorCpu (1.6) > ADD adds rgb*a",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "combineLayerColorCpu (1.6) > LERP mixes by alpha",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "combineLayerColorCpu (1.6) > TEAMCOLOR ops add a*teamColor",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "combineLayerColorCpu (1.6) > ADD_NO_ALPHA adds rgb",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "computeLayerColorCpu (1.7 order) > team color mixes using the RAW texel alpha before invert",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "computeLayerColorCpu (1.7 order) > invert applies after channel select",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "computeLayerColorCpu (1.7 order) > multiply and add affect RGBA before the map-alpha factor scales only alpha",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "decodeNormalCpu (1.9) > dxt5nm reads x from alpha, bc5 from red, rgb8 raw — all agree on the same normal",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "LAYR Fresnel modulation > matches the game exponent/bias/scale formula at center and grazing angles",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "LAYR Fresnel modulation > honors the do-not-mirror flag and modulates RGBA after clamping",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "composeStandardPixelCpu (1.8) > diffuse-only under straight light returns the diffuse color",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "composeStandardPixelCpu (1.8) > blends detail normals through the authored mask-channel factors",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "composeStandardPixelCpu (1.8) > backlit pixels show only ambient (lambert guard)",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "composeStandardPixelCpu (1.8) > emissive ADD accumulates and scales by emisMult even where diffuse is dark",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "composeStandardPixelCpu (1.8) > masks and tints accumulated emissive light",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "composeStandardPixelCpu (1.8) > emissive MOD folds into the shaded color instead of accumulating",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "composeStandardPixelCpu (1.8) > unshaded skips lighting entirely",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "composeStandardPixelCpu (1.8) > doubleLambert remaps the diffuse term",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "composeStandardPixelCpu (1.8) > alpha masks multiply into diffuse alpha and drive the alpha test",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "composeStandardPixelCpu (1.8) > does not square an alpha mask when the diffuse layer is RGB-only",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "composeStandardPixelCpu (1.8) > team color replaces the diffuse where the mask alpha is low",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "composeStandardPixelCpu (1.8) > spec_mode 1 uses the specular alpha channel only",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "composeStandardPixelCpu (1.8) > lightMap multiplies the diffuse term by 2x its color",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "composeStandardPixelCpu (1.8) > adds the environment layer through its mask",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "composeStandardPixelCpu (1.8) > uses ApplyEnv mask alpha once and honors MAT_ v20 environment multipliers",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "composeStandardPixelCpu (1.8) > uses the gloss layer to modulate the specular exponent",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "composeStandardPixelCpu (1.8) > applies composite opacity and gates vertex RGB/alpha independently",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "standardBlendModeName (1.10) > maps blend modes and alpha test",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "define building + GLSL sources > strips disabled layers and keys deterministically (D5)",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "define building + GLSL sources > emits one sampler per enabled textured layer and none for constant-color layers",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "define building + GLSL sources > specializes textured layers to a device sampler budget",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "define building + GLSL sources > emits vertex-texture GPU skinning only for the capability variant",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "define building + GLSL sources > bakes the per-format normal decode (no green negation anywhere)",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "define building + GLSL sources > bakes exact per-layer Fresnel mode, exponent, bias, scale, and mirror behavior",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "define building + GLSL sources > emits both normal-blend masks, detail maps, and factor uniforms",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "define building + GLSL sources > routes explicit uv sets and extends attributes accordingly",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "define building + GLSL sources > emits UV transform uniforms for flipbook-only layers",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "define building + GLSL sources > applies animated Euler UV rotation and axis-specific triplanar projection",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "define building + GLSL sources > emits cube/sphere, planar, screen, and world triplanar UV modes",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "define building + GLSL sources > matches Blizzard spherical, local-planar, and triplanar projection math",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "define building + GLSL sources > composes gloss, environment, mask, and height/parallax layers",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "define building + GLSL sources > emits alpha-test discard only when the threshold is set",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "define building + GLSL sources > vertex source carries the handedness-based binormal (1.9)",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "define building + GLSL sources > uses authored vertex colors and a separate composite-alpha uniform",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "texture cache > keys by full normalized path — basenames do not collide",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/texture-cache.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "texture cache > decodes once per path regardless of separators and case",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/texture-cache.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "texture cache > caches read failures and lists them as diagnostics",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/texture-cache.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "normalizeTexturePath > lowercases and unifies separators",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/texture-cache.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "normal-map format classification > maps format tags onto decode conventions",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/texture-codec.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "RenderModel binary transport > round-trips every buffer and plain field exactly",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/transport.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "RenderModel binary transport > deserializes views on the blob without copying when aligned",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/transport.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "RenderModel binary transport > packs repeated references to one typed-array view only once",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/transport.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "RenderModel binary transport > packs equivalent views of the same buffer range and type only once",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/transport.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "RenderModel binary transport > copies when the received view is not element-aligned",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/transport.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "RenderModel binary transport > rejects foreign blobs",
+    "file": "C:/FILES/SC2Files/coding/modkit-core/packages/codec-kit/test/mk2/models-core/transport.spec.ts",
+    "projectName": "models-core"
+  },
+  {
+    "name": "@modkitx/data-processing semantic facade > re-exports the canonical semantic registry constructor by identity",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/semantic-facade.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "@modkitx/data-processing semantic facade > keeps one operation vocabulary behind both the root and the module",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/semantic-facade.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "@modkitx/data-processing semantic facade > preserves bidirectional registry and operation types",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/semantic-facade.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "@modkitx/data-processing semantic facade > names no game: the operation vocabulary is the facade’s, the codecs are the host’s",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/semantic-facade.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "@modkitx/data-processing semantic facade > registers and summarizes whatever data codec a host hands it",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/semantic-facade.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "TypedCatalog > stores entities and retrieves by namespace + id",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/catalog.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "TypedCatalog > resolves inheritance — child overrides parent scalar",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/catalog.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "TypedCatalog > resolves inheritance — entity without parent returns own data",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/catalog.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "TypedCatalog > resolves multi-level parent chain",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/catalog.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "TypedCatalog > handles dangling parent reference gracefully",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/catalog.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "TypedCatalog > expands parent-chain <?token?> declarations with child-supplied attribute values",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/catalog.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "TypedCatalog > merges indexed arrays from parent chain",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/catalog.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "TypedCatalog > applies indexed overrides to a SCALAR-valued parent array",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/catalog.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "TypedCatalog > appends an indexed override past the end of a scalar parent array",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/catalog.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "TypedCatalog > substitutes $Token in field values",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/catalog.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "TypedCatalog > substitutes ##Token## in field values",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/catalog.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "TypedCatalog > leaves unknown tokens untouched",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/catalog.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "TypedCatalog > TypedNamespace proxy — indexed access",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/catalog.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "TypedCatalog > TypedNamespace proxy — get() method",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/catalog.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "TypedCatalog > TypedNamespace proxy — all(), size, keys()",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/catalog.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "TypedCatalog > merges duplicate entries within a single loadFromFiles call",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/catalog.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "TypedCatalog > cache is invalidated after loadFromFiles",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/catalog.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "TypedCatalog > all() returns raw entities for namespace",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/catalog.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "TypedCatalog > namespaces() lists loaded namespaces",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/catalog.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "TypedCatalog > clear() removes all data",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/catalog.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "unknown class — deep() fallback > scalar: child overrides parent (last wins)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "unknown class — deep() fallback > scalar: inherits from parent when child does not define it",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "unknown class — deep() fallback > object: deep-merged from parent and child (both fields present)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "unknown class — deep() fallback > object: child field overrides parent field of same key",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "unknown class — deep() fallback > array: concat parent and child arrays (merge mode)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "unknown class — deep() fallback > type mismatch — string child wins over array parent",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "unknown class — deep() fallback > type mismatch — object child wins over scalar parent",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "unknown class — deep() fallback > implicit default (id=\"\") used when no explicit parent",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "unknown class — deep() fallback > three-level chain: grandparent → parent → child",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "unknown class — deep() fallback > entity with no data only inherits default",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "resolveIndexedArray — AbilArray (CUnit schema) > items without index appended in order (positional)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "resolveIndexedArray — AbilArray (CUnit schema) > numeric-indexed items go to correct slots",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "resolveIndexedArray — AbilArray (CUnit schema) > positional items + one indexed: indexed replaces its slot",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "resolveIndexedArray — AbilArray (CUnit schema) > removed flag removes the slot",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "resolveIndexedArray — AbilArray (CUnit schema) > indexed item merges with existing object at that slot",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "resolveIndexedArray — AbilArray (CUnit schema) > real Zergling AbilArray pattern: positional + specific index override",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "resolveIndexedArray — AbilArray (CUnit schema) > parent chain: parent items accumulated then child overrides by index",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "resolveIndexedArray — GlossaryStrongArray ({value:x} unwrap) > all {value:x} items unwrapped to scalar array",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "resolveIndexedArray — GlossaryStrongArray ({value:x} unwrap) > plain strings in array kept as-is (already scalars)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "resolveIndexedArray — GlossaryStrongArray ({value:x} unwrap) > mixed scalars + indexed {value:x}: indexed replaces its slot",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "resolveIndexedArray — GlossaryStrongArray ({value:x} unwrap) > single {value:x} object (not in array) normalised to scalar array",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "WeaponArray nested struct > items with Link sub-field preserved",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "WeaponArray nested struct > single object {Link:X} (not in array) normalised to array",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "edge cases > empty data returns empty object",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "edge cases > cycle guard: entity with parent pointing to itself",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "edge cases > missing parent: lookup returns undefined — skips gracefully",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "edge cases > removed item at non-existent slot is a no-op",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "edge cases > scalar null/undefined in data ignored (mirrors deep() null skip)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/resolve-typed.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "classifyField file-link classification > classifies an image/asset link (Icon, texture, …) as a File link",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/schema-fields.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "classifyField file-link classification > does not mark a non-file entity link as a File link",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-catalog/schema-fields.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "parseEditorCategories > parses categories and object usage",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-editor-core/editor-categories.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "parseEditorCategories > returns empty on malformed input without throwing",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-editor-core/editor-categories.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "categoriesForType > resolves applicable categories + values for a namespace (objects scope)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-editor-core/editor-categories.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "categoriesForType > skips dynamic (EntryType/Parent) usages, keeps External",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-editor-core/editor-categories.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "categoriesForType > returns [] for an unknown type",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-editor-core/editor-categories.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "mergeEditorCategories > unions category values (base first) and overrides objectUsage per type",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-editor-core/editor-categories.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "EditorCategoryStrings > parses key=value and resolves display names",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-editor-core/editor-categories.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "SchemaRegistry > returns undefined for unknown type",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/registry.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "SchemaRegistry > resolves builtin CUnit schema",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/registry.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "SchemaRegistry > inherits fields from parent chain",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/registry.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "SchemaRegistry > inheritanceChain returns root-first order",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/registry.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "typeToNamespace > maps CUnit → Unit",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/registry.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "typeToNamespace > maps CAbilResearch → Abil",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/registry.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CBoolean > fromString \"1\" → true",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CBoolean > fromString \"0\" → false",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CBoolean > toString true → \"1\"",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CBoolean > toString false → \"0\"",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CNumber / Int / Real / UInt > Int.fromString parses integer",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CNumber / Int / Real / UInt > Real.fromString parses float",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CNumber / Int / Real / UInt > UInt validates non-negative",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CNumber / Int / Real / UInt > UInt8 rejects out-of-range",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CNumber / Int / Real / UInt > Int32 validates signed 32-bit range",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CNumber / Int / Real / UInt > Real accepts float values",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CNumber / Int / Real / UInt > Int rejects float",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CGameTime / CGameRate > CGameTime.fromString parses as float",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CGameTime / CGameRate > CGameTime rejects negative",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CGameTime / CGameRate > CGameRate.fromString",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CString > fromString passes through plain string",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CString > validate rejects when maxlength exceeded",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CString > CString32 accepts string up to 32 chars",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CEnum > fromString accepts valid enum string",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CEnum > fromString converts integer index to name",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CEnum > validate accepts known value",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CEnum > validate accepts -1 as Unknown sentinel",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CEnum > FromArray creates enum from string array",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CEnum > ETargetFilter is a valid CEnum (has enum list)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CEnum > EGameCatalog contains Abil and Unit",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CFlags > fromString parses semicolon-separated flags",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CFlags > toString serialises active flags",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CFlags > fromString empty string yields empty record",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CFlags > CTargetFilters parses Ground;Air",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CFlags > CTargetFilters toString round-trips",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CLink static link > CActorLink.link === \"Actor\"",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CLink static link > CUnitLink.link === \"Unit\"",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CLink static link > CEffectLink.link === \"Effect\"",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CLink static link > CWeaponLink.link === \"Weapon\"",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CLink static link > CAbilLink.link === \"Abil\"",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CLink static link > CBehaviorLink.link === \"Behavior\"",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CLink static link > CLink.Ex creates subclass with correct link",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CLink static link > CLink.FromNamespace caches and reuses",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CATALOG_DATA_TYPES > contains basic numeric types",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CATALOG_DATA_TYPES > contains SC2-specific time and rate types",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CATALOG_DATA_TYPES > contains string types",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CATALOG_DATA_TYPES > contains link types",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "CATALOG_DATA_TYPES > ETypeId enum contains same keys as CATALOG_DATA_TYPES",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "DATA_CLASS_SCHEMA > contains all major namespaces",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "DATA_CLASS_SCHEMA > CUnit schema has LifeMax field",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "DATA_CLASS_SCHEMA > CUnit schema has WeaponArray field",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "DATA_CLASS_SCHEMA > CAbil schema has Name and EditorCategories",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "DATA_CLASS_SCHEMA > CActor schema has Terms and Flags fields",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "DATA_CLASS_SCHEMA > CActorBase schema has On and Remove event fields",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "DATA_CLASS_SCHEMA > CWeapon schema has Range and Period fields",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "DATA_CLASS_SCHEMA > DATA_CLASS_SCHEMA has hundreds of entries",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/structure-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "tokenTypeNamespace > resolves catalog CLink subclass names to their namespace",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/token-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "tokenTypeNamespace > treats a missing type as a plain string (the default) — not a link",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/token-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "tokenTypeNamespace > ignores links to non-catalog namespaces",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/token-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "tokenTypeNamespace > matches type names exactly (SC2 type names are case-sensitive)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/token-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "tokenTypeNamespace > returns undefined for unknown type names",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/token-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "tokenTypeNamespace > is derived from the declared link classes (no hardcoded token table)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/sc2-schema/token-types.test.ts",
+    "projectName": "data-processing"
+  },
+  {
+    "name": "@modkitx/maps-processing semantic facade > preserves constructor, object, list, and individual operation identities",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/semantic-facade.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "@modkitx/maps-processing semantic facade > preserves bidirectional registry, operation, and composition contract types",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/semantic-facade.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "@modkitx/maps-processing semantic facade > still registers the existing SC2 codec through legacy root exports",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/semantic-facade.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readCellAttribute > reads cells with explicit dimensions and preserves the header",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/cell-attribute.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readCellAttribute > infers a square grid when dimensions are omitted",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/cell-attribute.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readCellAttribute > throws when a non-square payload is given without dimensions",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/cell-attribute.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "writeCellAttribute > round-trips byte-exact",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/cell-attribute.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "writeCellAttribute > rejects a cell/dimension mismatch on write",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/cell-attribute.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readCellFlags > parses dimensions placed after the zero region",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/cell-flags.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readCellFlags > preserves zero region and trailing",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/cell-flags.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readCellFlags > throws on bad magic",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/cell-flags.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readCellFlags > throws on truncated data",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/cell-flags.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "writeCellFlags > round-trips byte-exact",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/cell-flags.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readFluffDoodad > parses doodad positions and types",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/fluff-doodad.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readFluffDoodad > handles an empty list (amount=0)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/fluff-doodad.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readFluffDoodad > throws on bad magic",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/fluff-doodad.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readFluffDoodad > throws on truncated data",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/fluff-doodad.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "writeFluffDoodad > round-trips byte-exact",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/fluff-doodad.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readHeightMap > parses header and cells",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/height-map.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readHeightMap > preserves padding and trailing bytes",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/height-map.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readHeightMap > throws on bad magic",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/height-map.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readHeightMap > throws on truncated data",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/height-map.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "writeHeightMap > round-trips byte-exact",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/height-map.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "writeHeightMap > throws when cell count disagrees with dimensions",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/height-map.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "levelFromCell > dequantizes base and adjustments separately (engine formula)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/height-map.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "levelFromCell > applies heightMap scale/offset geometry",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/height-map.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readMapInfo > parses the reliable header fields",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/map-info.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readMapInfo > preserves the version-dependent body and surfaces strings",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/map-info.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readMapInfo > throws on bad magic",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/map-info.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readMapInfo > throws on truncated header",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/map-info.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "writeMapInfo > round-trips byte-exact",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/map-info.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "writeMapInfo > allows editing width/height while preserving the body",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/map-info.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "parseMapEntries > routes editor names to typed fields and keeps every file raw",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/parse-map.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "parseMapEntries > matches MPQ-alias names and nested paths case-insensitively",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/parse-map.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "parseMapEntries > round-trips a routed file via rawFiles",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/parse-map.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "parseMapEntries > is lenient: a corrupt known file does not throw, reports via onError",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/parse-map.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readPathingInfo > parses the uint16 grid",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/pathing-info.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readPathingInfo > preserves padding and trailing",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/pathing-info.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readPathingInfo > throws on bad magic",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/pathing-info.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readPathingInfo > throws on truncated data",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/pathing-info.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "writePathingInfo > round-trips byte-exact",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/pathing-info.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "PreloadAssetDB.txt > parses sections, entries, repeated keyed values, and canonical round-trips",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/preload-asset-db.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "serializeMapEntries > reproduces the original files when nothing is edited",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/serialize-map.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "serializeMapEntries > reflects edits to a modeled field and preserves unmodeled files",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/serialize-map.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "serializeMapEntries > adds a newly-attached field under its canonical name",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/serialize-map.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "JSON interchange > round-trips model → JSON → model (the writer canary)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/serialize-map.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "JSON interchange > carries edits through JSON",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/serialize-map.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readSyncCliffLevel > parses the uint16 height grid",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/sync-cliff-level.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readSyncCliffLevel > preserves padding and trailing bytes",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/sync-cliff-level.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readSyncCliffLevel > throws on bad magic",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/sync-cliff-level.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readSyncCliffLevel > throws on truncated data",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/sync-cliff-level.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "writeSyncCliffLevel > round-trips byte-exact",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/sync-cliff-level.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readSyncHeightMap > parses signed heights and masks",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/sync-height-map.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readSyncHeightMap > preserves the 48-byte header extra",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/sync-height-map.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readSyncHeightMap > throws on bad magic",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/sync-height-map.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readSyncHeightMap > throws on truncated data",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/sync-height-map.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "writeSyncHeightMap > round-trips byte-exact",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/sync-height-map.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "parseTerrainXml > reads the map-selected cliff catalog ids in index order",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/terrain-params.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "parseTerrainXml > reads authored cliff cells independently of attribute order",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/terrain-params.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "parseTerrainXml > decodes authored ramp frames and omits sentinel values",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/terrain-params.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "parseTerrainXml > extracts the quantize params (scientific notation)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/terrain-params.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "parseTerrainXml > extracts tileSet, dim, and the texture list in order",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/terrain-params.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "parseTerrainXml > feeds levelFromCell",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/terrain-params.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "parseTerrainXml > returns safe defaults when fields are absent",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/terrain-params.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readTextureMasks > parses header and derives tiling/layers",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/texture-masks.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readTextureMasks > decodes nibble weights, high nibble first",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/texture-masks.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readTextureMasks > extractLayerWeights returns a full row-major grid",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/texture-masks.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readTextureMasks > throws on bad magic",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/texture-masks.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "writeTextureMasks > round-trips byte-exact",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/texture-masks.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readWater > parses an empty file (amount=0)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/water.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readWater > decodes templateId up to the null and keeps the raw bytes",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/water.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "readWater > throws on bad magic",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/water.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "writeWater > round-trips byte-exact, preserving garbage after the id terminator",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/water.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "encodeWaterTemplateId > null-pads to 40 bytes",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/sc2-map-core/water.test.ts",
+    "projectName": "maps-processing"
+  },
+  {
+    "name": "@modkitx/documents-processing semantic facade > preserves constructor and operation identities across semantic and legacy exports",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/semantic-facade.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": "@modkitx/documents-processing semantic facade > preserves bidirectional registry and operation types",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/semantic-facade.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": "@modkitx/documents-processing semantic facade > names no game: the facade exports the registry vocabulary and nothing else",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/semantic-facade.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": "@modkitx/documents-processing semantic facade > registers and summarizes whatever document codec a host hands it",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/semantic-facade.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": "round-trip > parse → write reproduces the original bytes exactly",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/document-header.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": "round-trip > preserves a nonzero reserved field (as seen in some map files)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/document-header.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": "accessors > getDocumentInfo extracts DocInfo/* entries",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/document-header.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": "accessors > getMapInfo extracts MapInfo/* entries",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/document-header.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": "accessors > getLoadingScreenInfo extracts LoadingScreen/* entries",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/document-header.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": "accessors > getEntriesByPattern filters by regex",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/document-header.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": "errors > throws when the file is smaller than the fixed header",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/document-header.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": "errors > throws on a wrong magic, including the actual bytes in the message",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/document-header.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": "edge cases > parses a large entry count (200 entries)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/document-header.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": "edge cases > parses a file with zero dependencies",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/document-header.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": "edge cases > preserves an entry with an empty value string",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/document-header.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": "robustness (R4 regression guards) > does not throw \"Invalid array length\" on a garbage entry-count",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/document-header.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": "robustness (R4 regression guards) > does not throw on a tiny truncated file (header only)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/document-header.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": "DocumentInfo > parses values, nested fields, and canonical round-trips",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/document-info.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": ".version file codec > writes and parses v2 using build/version/entry/timestamp fields",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/version-file.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": ".version file codec > writes and parses v1 without buildNumber2",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/version-file.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": ".version file codec > writes and parses v0 without patch, buildNumber2, or entryCount",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/version-file.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": ".version file codec > returns null for an empty sidecar",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/version-file.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": ".version file codec > throws on an unexpected fixed record size",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/version-file.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": ".version file codec > throws on a bad prefix",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/version-file.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": ".version file codec > throws when the embedded format version does not match the fixed size",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/version-file.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": ".version file codec > keeps deprecated aliases mapped to the corrected fields",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/version-file.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": ".version file codec > accepts legacy write field names as compatibility aliases",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/version-file.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": ".version file codec > can infer the type tag from a file type name",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/version-file.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": ".version file codec > can infer the type tag from a ComponentList FourCC",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/version-file.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": ".version file codec > can infer the type tag from an archive version path",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/version-file.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": ".version file codec > rejects unknown writer component identifiers",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/version-file.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": ".version file codec > validates terminal against the editor serializer range",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/version-file.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": ".version type tags > resolves known raw tags",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/version-file.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": ".version type tags > looks up raw tags by file type name",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/version-file.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": ".version type tags > looks up raw tags by version path",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/version-file.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": ".version type tags > preserves the known observed tag table",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/sc2-metadata-core/version-file.test.ts",
+    "projectName": "documents-processing"
+  },
+  {
+    "name": "doodadPlacementsFromObjects > groups placements per model as packed typed arrays",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/doodads.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "doodadPlacementsFromObjects > resolves ground-relative heights now and honors HeightAbsolute",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/doodads.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "doodadPlacementsFromObjects > applies a type-specific model yaw offset after the map rotation",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/doodads.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "doodadPlacementsFromObjects > counts unresolved types without packing them",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/doodads.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "composeDoodadMvp > equals viewProjection · translate · rotateZ · per-axis scale",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/doodads.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "DoodadDraw whole-model culling > culls off-screen models and lets on-screen ones reach model lookup",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/doodads.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "DoodadDraw whole-model culling > draws the most-instanced models first and skips the tail over budget",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/doodads.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "doodadStandIndex > prefers the first Stand-named sequence, else 0",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/doodads.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "buildTerrainChunks > splits the cell grid into 64-cell chunks with welded borders",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/index.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "buildTerrainChunks > heights follow the engine dequantization and geometry offsets",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/index.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "buildTerrainChunks > flat terrain gets straight-up unit normals and a tight AABB",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/index.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "buildTerrainChunks > slopes tilt normals against the gradient and stay unit length",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/index.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "buildTerrainChunks > emits CCW triangles covering every cell",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/index.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "buildTerrainChunks > uvs span the full grid for splat sampling",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/index.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "buildCliffSkirts > emits vertical quads where cliff levels change",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/index.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "buildCliffSkirts > emits nothing on uniform cliff levels",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/index.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "RtsCamera > positions the eye behind the target by yaw/pitch/distance",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/index.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "RtsCamera > clamps target to bounds and distance/pitch to limits",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/index.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "RtsCamera > pan respects the current yaw (screen-aligned axes)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/index.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "RtsCamera > view matrix maps the target onto the -Z axis at the camera distance",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/index.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "RtsCamera > perspective matrix has the standard clip mapping",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/index.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "composeBattleMvp > equals viewProjection · translate · rotateZ · scale",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/battle/draw.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "buildCapsuleGeometry > emits a closed wall + cap with consistent buffer sizes",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/battle/draw.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "BattleScene animation choice (scripted frame stream) > spawn → Stand, move → Walk, stop → Stand",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/battle/scene.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "BattleScene animation choice (scripted frame stream) > under construction → Birth until done",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/battle/scene.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "BattleScene animation choice (scripted frame stream) > attack events play a one-shot with facing snapped to the target",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/battle/scene.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "BattleScene animation choice (scripted frame stream) > attack events fire one tracer per swing, fading then expiring (B6)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/battle/scene.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "BattleScene animation choice (scripted frame stream) > despawn → Death one-shot, corpse lingers, then removal",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/battle/scene.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "BattleScene instance management > derives facing from movement direction",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/battle/scene.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "BattleScene instance management > groups render instances by model and routes unresolved types to placeholders",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/battle/scene.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "BattleScene instance management > renders bind pose while model sequences are loading, then resolves",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/battle/scene.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "BattleScene instance management > rebinds visuals when a unit morphs type in place",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/battle/scene.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "BattleScene instance management > revives a recycled id that reappears while its corpse lingers",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/battle/scene.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "BattleScene instance management > keeps hp and selection on render records",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/battle/scene.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "BattleScene determinism guard (decision 6) > seek = reset + resample matches a fresh scene, occupancy-wise",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/battle/scene.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "BattleScene determinism guard (decision 6) > backward seeks also rebuild cleanly",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/battle/scene.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "classifyBattleSequences > groups by first word, case-insensitive, with plain names first",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/battle/sequences.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "classifyBattleSequences > maps Fly onto walk for air units",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/battle/sequences.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "pickBattleSequence > is deterministic per unit id and varies across ids",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/battle/sequences.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "pickBattleSequence > uses the canonical plain sequence for one-shot kinds",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/battle/sequences.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "pickBattleSequence > falls back kind → stand → first sequence",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/battle/sequences.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "battleUnitHash > handles ids beyond 2^32 deterministically",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/battle/sequences.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "SC2 cliff tile resolution > maps CLIF values to the model naming alphabet",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/cliffs.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "SC2 cliff tile resolution > reuses Q/R/S in every band — the alphabet is relative, not absolute",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/cliffs.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "SC2 cliff tile resolution > leaves levels past the D band unlettered for the caller to report",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/cliffs.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "SC2 cliff tile resolution > places level A a full eight units below B, not on the 0.5-per-level ladder",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/cliffs.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "SC2 cliff tile resolution > emits a C→D ramp tile instead of counting it unsupported",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/cliffs.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "SC2 cliff tile resolution > builds one centred 2x2 tile in documented corner order",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/cliffs.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "SC2 cliff tile resolution > places each tile at its lowest authored cliff level and applies map transforms",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/cliffs.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "SC2 cliff tile resolution > authored <cliffCellList> tiles > takes the cliff set and variation from the map instead of deriving them",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/cliffs.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "SC2 cliff tile resolution > authored <cliffCellList> tiles > takes the tile Z from the lowest corner wherever it sits in the code",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/cliffs.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "SC2 cliff tile resolution > authored <cliffCellList> tiles > skips cells the map painted flat — they carry no wall",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/cliffs.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "SC2 cliff tile resolution > authored <cliffCellList> tiles > trusts the authored flat role even when the underlying levels are non-uniform",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/cliffs.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "SC2 cliff tile resolution > authored <cliffCellList> tiles > skips a wall-role cell whose corners share a level — no uniform code ships",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/cliffs.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "SC2 cliff tile resolution > authored <cliffCellList> tiles > reports an out-of-band uniform wall cell as unsupported before uniform",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/cliffs.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "SC2 cliff tile resolution > authored <cliffCellList> tiles > tags ramp cells so an unresolvable ramp code reads as expected, not failed",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/cliffs.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "SC2 cliff tile resolution > authored <cliffCellList> tiles > applies the map transform the same way the derived path does",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/cliffs.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "SC2 cliff tile resolution > tries variations and rotations without inventing a directory listing",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/cliffs.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "TerrainRenderer > uploads splat textures and draws one call per chunk",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/render.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "TerrainRenderer > falls back to flat shading without masks and reports it",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/render.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "TerrainRenderer > draws cliff skirts and water with restored blend/depth state",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/render.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "TerrainRenderer > frustum-culls chunks fully outside the clip volume",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/render.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "TerrainRenderer > rejects WebGL1 contexts with a clear error",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/render.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "packLayerWeights > packs four layers per RGBA texture, scaled 0–15 → 0–255",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/splat.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "resampleImageNearest > passes through matching sizes and nearest-samples otherwise",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/splat.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "terrain shader assembly > unrolls weight textures per layer count",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/splat.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "terrain shader assembly > emits a flat-color path when no layers resolve",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/splat.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "terrain shader assembly > keeps vertex/water sources GLSL ES 3.00",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/splat.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "aabbIntersectsClip (camera frustum oracle) > accepts boxes in front of the camera and rejects boxes behind it",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/splat.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "waterHeightToWorld > uses the authored height as the world Z directly",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/water.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "waterHeightToWorld > applies the same Z transform as terrain geometry",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/water.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "waterHeightToWorld > does not derive the surface from the terrain frame",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/water.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "waterHeightToWorld > keeps the stock catalog height only as a fallback",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/rendering-3d/src/scene-core/terrain/water.spec.ts",
+    "projectName": "rendering-3d"
+  },
+  {
+    "name": "@modkitx/layouts-processing semantic facade > preserves the registry constructor across semantic, submodule, and root exports",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/semantic-facade.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "@modkitx/layouts-processing semantic facade > preserves bidirectional registry facade type compatibility",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/semantic-facade.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "@modkitx/layouts-processing semantic facade > registers, lists, and summarises whatever codec it is handed",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/semantic-facade.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "layoutToHtml > produces a self-contained HTML document (no external assets or scripts)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/html.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "layoutToHtml > renders the frame tree with collapsible <details> and a type badge",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/html.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "layoutToHtml > nests child frames and defaults unnamed frames to (unnamed)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/html.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "layoutToHtml > honours the collapsed option (omits the open attribute)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/html.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "layoutToHtml > shows template and file-override badges",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/html.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "layoutToHtml > renders an anchors table with side/relative/pos/offset (and defaults)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/html.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "layoutToHtml > classifies reference values by property kind",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/html.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "layoutToHtml > treats a *@-prefixed value as a reference",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/html.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "layoutToHtml > renders constants and reports counts in the header",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/html.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "layoutToHtml > shows the empty-frames placeholder",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/html.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "layoutToHtml > HTML-escapes names and values (no markup injection)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/html.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "locateFrame > finds a top-level frame",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/simple-parse-locate.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "locateFrame > finds nested frames by path, not by first name match",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/simple-parse-locate.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "locateFrame > distinguishes sibling subtrees with equal leaf names",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/simple-parse-locate.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "locateFrame > handles self-closing frames as path targets",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/simple-parse-locate.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "locateFrame > ignores frame-like text inside comments",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/simple-parse-locate.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "locateFrame > is case-insensitive like SC2 desc resolution",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/simple-parse-locate.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "locateFrame > returns undefined for missing paths and empty input",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/simple-parse-locate.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "locateFrame > survives raw > inside quoted attribute values",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/simple-parse-locate.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "locateFrame > reports 0-based line/character of the opening <",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/simple-parse-locate.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "types > TextDocument > getWordRangeAtPosition",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/types.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "types > TextDocument > positionAt",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/types.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "checker > invalid > InvalidFileDesc.SC2Layout",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/checker.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "checker > invalid > InvalidTemplate.SC2Layout",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/checker.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "checker > invalid > PropertyBindInvalidName.SC2Layout",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/checker.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "hierarchy builder > determineContextOfDesc > childs",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/hierarchy.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "hierarchy builder > determineContextOfDesc > direct child of FileDesc",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/hierarchy.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "hierarchy builder > determineContextOfDesc > file override",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/hierarchy.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "hierarchy builder > determineContextOfDesc > fail nicely if not found",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/hierarchy.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "hierarchy builder > node builder > entire tree",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/hierarchy.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "hierarchy builder > node builder > depth1",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/hierarchy.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "hierarchy builder > node builder > incremental expansion",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/hierarchy.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "hierarchy builder > node builder > handle extension of desc contributed from file override by yet another file",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/hierarchy.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "hierarchy navigator > selector > identifier",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/hierarchy.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "hierarchy navigator > selector > custom handle",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/hierarchy.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "hierarchy navigator > selector > $this",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/hierarchy.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "hierarchy navigator > selector > $parent",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/hierarchy.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "hierarchy navigator > selector > $ancestor[@name]",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/hierarchy.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "hierarchy navigator > selector > $ancestor[@type]",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/hierarchy.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "hierarchy navigator > selector > $ancestor[@oftype]",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/hierarchy.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "hierarchy navigator > resolveSelection > [GameUI] WorldPanel/$parent/Group/FillImageContainer/Background",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/hierarchy.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "hierarchy navigator > resolveSelection > [Tpl1/BTemplate] L1/L2",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/hierarchy.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "hierarchy navigator > AnimationNode > valid",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/hierarchy.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "hierarchy navigator > AnimationNode > getEvents",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/hierarchy.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "hierarchy navigator > getContextFrameNode > animation",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/hierarchy.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "FrameNode.propHookupAlias > omits an absent alias attribute instead of storing an empty string",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/hierarchy.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "xray > determineTargetFrameNode > animation key",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/xray.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "xray > determineTargetFrameNode > animation controller",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/xray.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "common > fuzzysearch",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/utils/common.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "schema localization > mdread > EAnimationEventNative",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/schema/localization.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "expression pass > path > $this/$ancestor[@name=m]",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/parser/expressions.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "expression pass > path > $GameUI/$parent",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/parser/expressions.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "expression pass > path > $GameUI//$parent",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/parser/expressions.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "expression pass > path > $ancestor[@name=NHbrConstruct@AntiGround|stuff]",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/parser/expressions.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "expression pass > property > {el/@prop}",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/parser/expressions.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "expression pass > property > {el//@prop}",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/parser/expressions.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "expression pass > property > {$this/$ancestor[@name=m]/@prop}",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/parser/expressions.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "expression pass > property > {$parent/$sibling-1/@prop}",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/parser/expressions.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "expression pass > property > {$layer/UI/@Property[12]}",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/parser/expressions.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "expression fail > property > {$this/}",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/parser/expressions.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "expression fail > property > {}",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/parser/expressions.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "expression fail > property > {@Property}",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/parser/expressions.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "expression fail > property > $ancestor[name=GameUI]",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/parser/expressions.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "expression fail > property > $ancestor[@NotAValidAncestorParam=GameUI]",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/parser/expressions.test.ts",
+    "projectName": "layouts-processing"
+  },
+  {
+    "name": "ModResolver > uses first-hit source order and reports each probe",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/resolver.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "ModResolver > returns semantic absence after every source misses",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/resolver.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "mods-processing semantic compatibility facade > preserves registry constructor identity",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/semantic-facade.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "mods-processing semantic compatibility facade > preserves operation object and array identity",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/semantic-facade.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — DocumentHeader integration > reader parses the DocumentHeader into mod.documentHeader",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/documentheader.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — DocumentHeader integration > the raw bytes are still kept verbatim in opaqueFiles",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/documentheader.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — DocumentHeader integration > re-serializing mod.documentHeader reproduces the original bytes",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/documentheader.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — DocumentHeader integration > reader parses .version sidecars into mod.versionFiles",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/documentheader.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "@modkitx/mods-processing/sc2-mod-core entity helpers > isOwnEntity flags entities the last load-order entry declares or patches",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/entities.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "@modkitx/mods-processing/sc2-mod-core entity helpers > gameDataNamespaceSummaries counts own vs total per namespace",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/entities.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "@modkitx/mods-processing/sc2-mod-core entity helpers > collectModEntities returns id/name/own rows sorted by id",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/entities.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "@modkitx/mods-processing/sc2-mod-core entity helpers > falls back to the single loaded locale when the requested one is absent",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/entities.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "parseFontStyles position capture > captures the line/character of each <Style> tag against the original text",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/font-styles.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "parseFontStyles position capture > keeps positions correct when a comment precedes a style (offset bug regression)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/font-styles.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "parseFontStyles position capture > ignores <Style> tags that appear inside a comment",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/font-styles.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "parseFontStyles position capture > still parses attributes correctly (no regression in style resolution)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/font-styles.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "parseFontStyles position capture > excludes a commented-out <CodepointRange> inside a FontGroup body",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/font-styles.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "Merge fixtures — MergeBase standalone > Soldier has LifeMax = 100",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/merge.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "Merge fixtures — MergeBase standalone > Soldier WeaponArray has 2 slots",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/merge.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "Merge fixtures — MergeBase standalone > Soldier Attributes has Light and Biological",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/merge.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "Merge fixtures — MergeBase standalone > Soldier GlossaryStrongArray has Medic and Engineer",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/merge.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "Merge fixtures — MergeBase standalone > BaseHero LifeMax = 500",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/merge.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "Merge scenarios — MergeBase → MergePatch > load order: MergeBase first, MergePatch second",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/merge.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "Merge scenarios — MergeBase → MergePatch > scalar override: Soldier LifeMax = 120 (patch wins)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/merge.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "Merge scenarios — MergeBase → MergePatch > indexed array: slot 0 is updated to RifleUpgraded",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/merge.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "Merge scenarios — MergeBase → MergePatch > indexed array: slot 1 (Grenade) survives from base",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/merge.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "Merge scenarios — MergeBase → MergePatch > indexed array: slot 2 (Rocket) added by patch",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/merge.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "Merge scenarios — MergeBase → MergePatch > indexed array: base Attributes (Light, Biological) survive",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/merge.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "Merge scenarios — MergeBase → MergePatch > indexed array: Mechanical attribute added by patch",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/merge.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "Merge scenarios — MergeBase → MergePatch > append array: GlossaryStrongArray contains base entries (Medic, Engineer)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/merge.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "Merge scenarios — MergeBase → MergePatch > append array: GlossaryStrongArray also contains patch entry (Sniper)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/merge.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "Merge scenarios — MergeBase → MergePatch > cross-mod inheritance: EliteHero (patch) resolves parent BaseHero (base)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/merge.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "Merge scenarios — MergeBase → MergePatch > BaseHero unchanged by patch (EliteHero patch does not mutate parent)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/merge.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — single mod > loads units namespace",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — single mod > gets Marine by id",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — single mod > loads weapons namespace",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — single mod > resolves Marauder parent chain — inherits ShieldsMax from Marine",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — single mod > loadOrder contains one entry",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — single mod > namespaces() lists Unit and Weapon",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — single mod > parses .SC2Layout files into mod.layouts",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — single mod > keeps layout bytes in opaqueFiles for round-trip",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — single mod > parses BankList.xml into mod.bankList",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — single mod > keeps BankList.xml bytes in opaqueFiles for round-trip",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — single mod > parses FontStyles constants, font groups, and template styles",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — localeFilter > reads all locales when unfiltered",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — localeFilter > reads only the filtered locale (case-insensitive), keeping its font-style overlay",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — localeFilter > drops non-matching locales entirely",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — multi-mod merge > loads BaseMod before TestMod (ComponentList order)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — multi-mod merge > TestMod overrides Marine LifeMax",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — multi-mod merge > Marine ShieldsMax survives override (BaseMod field not overwritten)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — multi-mod merge > Marauder from BaseMod is available",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — multi-mod merge > Marauder inherits from merged Marine (ShieldsMax = 0)",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — multi-mod merge > Ghost from TestMod is available",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — multi-mod merge > units.size includes entities from both mods",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — multi-mod merge > merges FontStyles through dependencies and locale overlays",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — multi-mod merge > merges the @@ asset-alias table through dependencies, later mods winning",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — DocumentInfo dependency chain > loads core first and recursively resolves SC2 file dependencies",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — explicit deps > empty deps skips ComponentList entirely",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — explicit deps > explicit deps load in provided order",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2ModReader — deduplication > loading the same dep twice does not duplicate entities",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2Mod API > namespace() returns TypedNamespace for a custom namespace",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2Mod API > namespace() returns empty TypedNamespace for unknown ns",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2Mod API > getResolved() returns resolved fields directly",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2Mod API > get() returns raw CatalogEntity",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2Mod API > all() returns all raw entities for a namespace",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "SC2Mod API > all() for abils returns empty array when none loaded",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/mods-processing/test/sc2-mod-core/mod.test.ts",
+    "projectName": "mods-processing"
+  },
+  {
+    "name": "ByteBudgetLru > uses the default byte budget and exposes cache accounting",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/cache.spec.ts",
+    "projectName": "archives-processing"
+  },
+  {
+    "name": "ByteBudgetLru > evicts the least recently read entry deterministically",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/cache.spec.ts",
+    "projectName": "archives-processing"
+  },
+  {
+    "name": "ByteBudgetLru > accounts for replacement and promotes the replacement",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/cache.spec.ts",
+    "projectName": "archives-processing"
+  },
+  {
+    "name": "ByteBudgetLru > rejects oversized values without evicting unrelated entries",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/cache.spec.ts",
+    "projectName": "archives-processing"
+  },
+  {
+    "name": "ByteBudgetLru > evicts immediately when the configured budget shrinks",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/cache.spec.ts",
+    "projectName": "archives-processing"
+  },
+  {
+    "name": "ByteBudgetLru > validates configured budgets",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/cache.spec.ts",
+    "projectName": "archives-processing"
+  },
+  {
+    "name": "ByteBudgetLru > supports delete and clear with exact accounting",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/cache.spec.ts",
+    "projectName": "archives-processing"
+  },
+  {
+    "name": "ByteBudgetLru > reuses one decoded solid block across entry reads",
+    "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/cache.spec.ts",
+    "projectName": "archives-processing"
+  }
+]

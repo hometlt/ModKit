@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "implementationCommits": {
+    "core": "5ea667fe4fc3305283d0e2b3963ffeb7ef842563",
+    "blizzard": "1751abd0d8b54cc03869d996dd2de5550729279d"
+  },
+  "normative": [
+    {
+      "id": "family-copy",
+      "cwd": "modkit-core",
+      "command": "node scripts/migration/check-mk2-copy.mjs --family sc2 --scope family",
+      "exitCode": 0,
+      "log": "copy/family.log"
+    },
+    {
+      "id": "m1-copy",
+      "cwd": "modkit-core",
+      "command": "node scripts/migration/check-mk2-copy.mjs --family sc2 --scope m1-libs",
+      "exitCode": 0,
+      "log": "copy/m1-libs.log"
+    },
+    {
+      "id": "bank-copy",
+      "cwd": "modkit-core",
+      "command": "node scripts/migration/check-mk2-copy.mjs --family sc2 --scope sc2-bank",
+      "exitCode": 0,
+      "log": "copy/sc2-bank.log"
+    },
+    {
+      "id": "algorithms-gate",
+      "cwd": "modkit-core",
+      "command": "node scripts/migration/check-algorithms.mjs",
+      "exitCode": 0,
+      "log": "migration/algorithms.log"
+    },
+    {
+      "id": "core-codec-typecheck",
+      "cwd": "modkit-core",
+      "command": "pnpm --dir packages/codec-kit typecheck",
+      "exitCode": 0,
+      "log": "typecheck/core-codec-kit.log"
+    },
+    {
+      "id": "core-m3-source-typecheck",
+      "cwd": "modkit-core",
+      "command": "pnpm --dir packages/codec-kit exec tsc -p tsconfig.mk2-libraries.json --noEmit",
+      "exitCode": 0,
+      "log": "typecheck/core-m3-libraries.log"
+    },
+    {
+      "id": "core-m3-test-typecheck",
+      "cwd": "modkit-core",
+      "command": "pnpm --dir packages/codec-kit exec tsc -p tsconfig.mk2-libraries.test.json --noEmit",
+      "exitCode": 0,
+      "log": "typecheck/core-m3-tests.log"
+    },
+    {
+      "id": "algorithms-tests",
+      "cwd": "modkit-core",
+      "command": "node --test scripts/migration/test/algorithms.test.mjs",
+      "exitCode": 0,
+      "log": "tests/algorithms.log"
+    },
+    {
+      "id": "legacy-oracle-tests",
+      "cwd": "modkit-core",
+      "command": "node --test scripts/migration/test/legacy-oracle.test.mjs",
+      "exitCode": 0,
+      "log": "tests/legacy-oracle.log"
+    },
+    {
+      "id": "mk2-copy-tests",
+      "cwd": "modkit-core",
+      "command": "node --test scripts/migration/test/mk2-copy.test.mjs",
+      "exitCode": 0,
+      "log": "tests/mk2-copy.log"
+    },
+    {
+      "id": "migration-infrastructure",
+      "cwd": "modkit-core",
+      "command": "node --test scripts/migration/test/*.test.mjs",
+      "exitCode": 0,
+      "log": "tests/migration-infrastructure.log"
+    },
+    {
+      "id": "core-ts-strict",
+      "cwd": "modkit-core",
+      "command": "pnpm ts-strict:check",
+      "exitCode": 0,
+      "log": "typecheck/core-ts-strict.log"
+    },
+    {
+      "id": "migration-check",
+      "cwd": "modkit-core",
+      "command": "pnpm migration:check",
+      "exitCode": 0,
+      "log": "migration/migration-check.log"
+    },
+    {
+      "id": "core-quick",
+      "cwd": "modkit-core",
+      "command": "pnpm test:quick",
+      "exitCode": 0,
+      "log": "tests/core-quick.log"
+    },
+    {
+      "id": "blizzard-m3-typecheck",
+      "cwd": "modkit-extensions-blizzard",
+      "command": "pnpm --dir starcraft2 typecheck:mk2-libraries",
+      "exitCode": 0,
+      "log": "typecheck/blizzard-m3-libraries.log"
+    },
+    {
+      "id": "blizzard-production-typecheck",
+      "cwd": "modkit-extensions-blizzard",
+      "command": "pnpm typecheck",
+      "exitCode": 0,
+      "log": "typecheck/blizzard-production.log"
+    },
+    {
+      "id": "blizzard-models-typecheck",
+      "cwd": "modkit-extensions-blizzard",
+      "command": "pnpm exec tsc --pretty false --noEmit -p ./models/tsconfig.json",
+      "exitCode": 0,
+      "log": "typecheck/blizzard-models.log"
+    },
+    {
+      "id": "archive-cache",
+      "cwd": "modkit-extensions-blizzard",
+      "command": "pnpm exec vitest run --workspace starcraft2/test/vitest.m3-family-libraries.workspace.mjs --project archives-processing",
+      "exitCode": 0,
+      "log": "tests/archive-cache.log"
+    },
+    {
+      "id": "m3-dedicated-list",
+      "cwd": "modkit-extensions-blizzard",
+      "command": "pnpm --dir starcraft2 test:mk2-libraries:list",
+      "exitCode": 0,
+      "log": "boundary/m3-dedicated-files.log"
+    },
+    {
+      "id": "normal-quick-list",
+      "cwd": "modkit-extensions-blizzard",
+      "command": "$env:MODKIT_TEST_TIER='quick'; pnpm exec vitest list --config ./test/vitest.config.mjs --filesOnly",
+      "exitCode": 0,
+      "log": "boundary/normal-quick-files.log"
+    },
+    {
+      "id": "normal-owner-list",
+      "cwd": "modkit-extensions-blizzard",
+      "command": "$env:MODKIT_TEST_TIER='owner'; pnpm exec vitest list --config ./test/vitest.config.mjs --filesOnly",
+      "exitCode": 0,
+      "log": "boundary/normal-owner-files.log"
+    },
+    {
+      "id": "normal-real-list",
+      "cwd": "modkit-extensions-blizzard",
+      "command": "$env:MODKIT_TEST_TIER='real'; pnpm exec vitest list --config ./test/vitest.config.mjs --filesOnly",
+      "exitCode": 0,
+      "log": "boundary/normal-real-files.log"
+    },
+    {
+      "id": "blizzard-quick",
+      "cwd": "modkit-extensions-blizzard",
+      "command": "pnpm test:quick",
+      "exitCode": 0,
+      "log": "tests/blizzard-quick.log"
+    }
+  ],
+  "diagnostics": [
+    {
+      "id": "m3-76-file-support-run",
+      "cwd": "modkit-extensions-blizzard",
+      "command": "pnpm --filter @modkit/blizzard-starcraft2 test:mk2-libraries -- --reporter=json --outputFile=<explicit artifact path>",
+      "exitCode": 1,
+      "requiredGreenForM3": false,
+      "result": "diagnostic/summary.json"
+    },
+    {
+      "id": "blizzard-full-diff-check",
+      "cwd": "modkit-extensions-blizzard",
+      "command": "git diff --check 1751abd0^ 1751abd0",
+      "exitCode": 2,
+      "requiredGreenForM3": false,
+      "result": "repositories/implementation.json#diffChecks.blizzardFullCopiedTreeDiagnostic"
+    }
+  ]
+}

@@ -1,0 +1,129 @@
+$ pnpm --filter @modkit/extension-manager test && vitest run --config vitest.quick.config.ts
+$ node --test
+✔ parses the registry schema shape and compares semantic versions deterministically (22.8345ms)
+✔ validator rejects unknown fields, duplicate ids and remote code without signed sha256 metadata (3.2637ms)
+✔ presentation validation confines asset/root paths and HTTP(S) source URLs (1.7561ms)
+✔ signing bytes admit only the missing root signature for an otherwise valid remote catalog (5.4484ms)
+✔ ipfs and unknown absolute schemes cannot bypass remote trust policy (1.2798ms)
+✔ UNC and hosted file URLs cannot inherit unsigned local-user trust (14.2685ms)
+✔ construction and an empty snapshot perform no network, acquisition or writes (3.7284ms)
+✔ snapshot merges cached catalog, installed state and enablement without refreshing (7.9094ms)
+✔ missing enablement is fail-closed for installed packages (1.6423ms)
+✔ an unsigned remote catalog cannot trust even a local file artifact (7.7719ms)
+✔ a signed remote catalog cannot grant ambient local-user authority to a file artifact (1.7619ms)
+✔ a signed remote catalog can trust only sha256-pinned HTTP(S) artifact transport (7.8102ms)
+✔ refresh is the only catalog network boundary (1.493ms)
+✔ explicit local install, update, enablement and removal flow only through their ports (5.4395ms)
+✔ fresh install refuses an already installed package before acquisition (0.7974ms)
+✔ post-store validation failure compensates artifact and enablement state (1.8515ms)
+✔ final enablement failure compensates a freshly installed artifact (1.5469ms)
+✔ concurrent mutations are serialized across artifact and enablement stores (1.1885ms)
+✔ remote install requires a verified catalog signature and the acquired sha256 digest (2.7655ms)
+✔ relative artifacts in an HTTPS catalog resolve remotely before trust checks and acquisition (1.4415ms)
+✔ one installed catalog package preserves every contained extension root (1.2453ms)
+✔ game support planning is metadata-driven, deterministic and applies every package (65.0718ms)
+✔ game support apply rejects a stale preview before making another change (2.6657ms)
+✔ game support batch rolls back fresh installs when a later install fails (9.4164ms)
+✔ game support batch reports partial state when an update cannot be reversed (7.8227ms)
+✔ generic workspace example covers local env override, CDN and VFS sources with a lock (31.8864ms)
+✔ legacy ModkitX workspace and lock identities normalize to their canonical aliases (1.3766ms)
+✔ discovers bounded local candidates from the nearest parent workspace and env overrides (234.9788ms)
+✔ bounds contribution inspection and keeps the extension candidate available (108.4596ms)
+✔ reports confined-path failures without walking or aborting other repositories (80.9702ms)
+✔ enforces explicit discovery bounds before inspecting repository trees (21.6761ms)
+✔ CLI help is inert and documents roots and lock commands (694.4992ms)
+✔ Browser entry exposes only browser-compatible VFS protocols (4.2028ms)
+✔ Node entry exposes every VFS protocol available to the manager (1.4309ms)
+✔ discovers a local repository without copying its extension (70.4839ms)
+✔ materializes a memory repository through VFS and emits a reproducible lock (80.6624ms)
+✔ materializes a portable repository selected through browser-file VFS (36.9542ms)
+✔ materializes a portable repository selected through ranged HTTPS VFS (47.1721ms)
+✔ catalog signing bytes match the registry compact canonical fixed vector (10.2346ms)
+✔ local file catalog installs a package with multiple linked development roots (658.6297ms)
+✔ UNC rapid sources are rejected before Node artifact acquisition gets filesystem authority (28.5949ms)
+✔ signed remote catalogs cannot reach ambient local or UNC VFS transports (229.2838ms)
+✔ cached catalog is ignored after the configured registry source changes (64.5915ms)
+✔ strict signed local catalog persists lifecycle state across manager recreation (614.2357ms)
+✔ strict signature policy never caches rejected refreshes or disturbs an active package (299.1619ms)
+✔ signed HTTP catalog and portable repository materialize without network on cached reopen (447.2965ms)
+✔ artifact redirects enforce the origin allowlist before every request and bound loops (70.2746ms)
+✔ catalog redirects enforce the origin allowlist before every request and bound loops (48.4999ms)
+✔ portable store refuses remote path-only roots and path traversal before state write (38.242ms)
+✔ precreated content-addressed cache must equal the verified staged tree byte-for-byte (111.3786ms)
+✔ linked store confines every public root to its declared repository (23.4066ms)
+✔ portable store accepts canonical empty base64 for zero-byte embedded files (115.1692ms)
+✔ portable store validates large embedded base64 without regex stack overflow (199.8392ms)
+✔ managed update retains the previous immutable roots for crash recovery and later GC (313.3837ms)
+✔ enablement store enforces its exact state schema (49.0969ms)
+✔ standalone pack stages the shared MIT license without dirtying the package (5009.6088ms)
+✔ loads repository JSON profiles through VFS and projects navigable subject wires (94.9376ms)
+✔ keeps extension and contribution records distinct when their coordinates match (5.813ms)
+✔ normalizes strict profiles, confined paths and safe resource URLs (5.2251ms)
+✔ projects extension and contribution subjects grouped by exact manifest contract (19.0506ms)
+✔ projects a real common extension root and contribution manifest (31.9659ms)
+✔ rejects duplicate contributions and malformed pagination (3.8081ms)
+ℹ tests 62
+ℹ suites 0
+ℹ pass 62
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5581.8073
+
+ RUN  v2.1.9 C:/FILES/SC2Files/coding/modkit-core
+
+ ✓ packages/host/test/subject-open.test.ts (17 tests) 7361ms
+   ✓ host-owned subject opening pipeline > matches a case-insensitive **/ glob at the subject root 3921ms
+   ✓ host-owned subject opening pipeline > selects a portable variant only when its execution backend is present 517ms
+   ✓ host-owned subject opening pipeline > opens PNG through the real image inventory and resolves a bounded raster presentation 448ms
+   ✓ detection-hostile: the bounded data-only signature index (NXT-101B / F6) > a PNG+ZIP polyglot shortlists both codecs (start and end signatures); the probes decide, nothing is bypassed 439ms
+   ✓ detection-hostile: the bounded data-only signature index (NXT-101B / F6) > names input-open when a foreign codec exception has crossed an execution boundary 351ms
+   ✓ detection-hostile: the bounded data-only signature index (NXT-101B / F6) > a magic collision (PNG signature, corrupt body) is probed and rejected honestly — shortlisting is not detection 305ms
+ ✓ packages/testkit/test/text-data.test.ts (56 tests) 2411ms
+   ✓ 13B text-data providers and codecs > validates all isolated contribution manifests through the A-1 authorities 641ms
+   ✓ 13B text-data providers and codecs > parses and publishes the right lazy source for common.text-data/json-syntax 306ms
+   ✓ 13B text-data providers and codecs > pages one million delimited rows without materializing an eager document 597ms
+ ✓ packages/sdk/test/contribution-specs.test.ts (23 tests) 674ms
+   ✓ A-1 contribution spec schemas > validates data-source inventory records outside the executable contribution registry 412ms
+ ✓ apps/web/test/browser-extension-manager.test.ts (13 tests) 426ms
+   ✓ common extension manager browser adapter > installs a signed fake-CDN catalog package and loads all portable roots 378ms
+ ✓ packages/sdk/test/subject-descriptor.test.ts (23 tests) 642ms
+   ✓ SubjectDescriptor v2 schema > validates the unresolved codec-less wire state after a JSON round-trip 373ms
+ ✓ packages/testkit/test/reference-codecs.test.ts (22 tests) 1078ms
+   ✓ reference codec specification stress suite > validates twelve isolated codec contribution manifests 319ms
+ ✓ packages/host/test/gate.test.ts (32 tests) 292ms
+ ✓ apps/vscode/test/extension-manager.test.ts (28 tests) 33ms
+ ✓ packages/testkit/test/uvm-convergence.test.ts (2 tests) 505ms
+   ✓ UVM convergence through A-2 inventory and A-3 sessions > resolves, tickets and activates the isolated UVM contribution deterministically 467ms
+ ✓ packages/host/test/modkit-facade.test.ts (13 tests) 4163ms
+   ✓ createModkit — the Node library facade > composes from directories alone, and a broken one is a record, not an exception 475ms
+   ✓ createModkit — the Node library facade > opens a PNG worker-brokered with no host knowledge from the caller 725ms
+   ✓ createModkit — the Node library facade > offers editing inside writableRoots, and a byte edit commits to the real file 632ms
+   ✓ createModkit — the Node library facade > close() sweeps the sessions a caller forgot 614ms
+   ✓ the format writer is preferred over the raw byte splicer (Path B reaches products) > a format with no matching writer falls back to raw, and the diagnostics say so 857ms
+ ✓ apps/electron/test/extensions-settings.test.ts (17 tests) 2506ms
+   ✓ what the codecs section lists > keeps a switched-off codec listed, without activation and with the host reason 421ms
+   ✓ what the codecs section lists > answers the "why did nothing claim this file" question with the host diagnostic 313ms
+   ✓ what the codecs section lists > lists everything as active when nothing is switched off 348ms
+   ✓ a folder the user connected reaches the inventory > loads it as an installed artifact, beside the bundled catalog 377ms
+   ✓ a folder the user connected reaches the inventory > keeps a disabled extension and its cards inventoried while every contribution is inactive 406ms
+   ✓ a folder the user connected reaches the inventory > reports a broken folder as a record and still loads everything else 368ms
+ ✓ apps/web/test/extensions-ui.test.ts (11 tests) 261ms
+ ✓ apps/web/test/managed-extension-storage.test.ts (9 tests) 15ms
+ ✓ packages/vfs/test/vfs.test.ts (12 tests) 276ms
+ ✓ packages/sdk/test/data-source-surfaces.test.ts (25 tests) 286ms
+ ✓ apps/electron/test/extension-manager.test.ts (7 tests) 454ms
+ ✓ packages/host/test/knowledge.test.ts (7 tests) 350ms
+ ✓ apps/web/test/managed-extension-roots.test.ts (7 tests) 318ms
+ ✓ packages/host/test/runtime.test.ts (9 tests) 359ms
+ ✓ packages/host/test/resolver.test.ts (8 tests) 17ms
+ ✓ packages/testkit/test/plain-text.test.ts (7 tests) 400ms
+ ✓ packages/sdk/test/fields.test.ts (35 tests) 374ms
+ ✓ apps/web/test/managed-extensions-controller.test.ts (3 tests) 4ms
+
+ Test Files  23 passed (23)
+      Tests  386 passed (386)
+   Start at  02:53:49
+   Duration  46.19s (transform 8.48s, setup 0ms, collect 14.99s, tests 23.20s, environment 4ms, prepare 2.96s)
+

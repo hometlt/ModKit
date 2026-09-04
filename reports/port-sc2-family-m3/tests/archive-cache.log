@@ -1,0 +1,10 @@
+
+ RUN  v2.1.9 C:/FILES/SC2Files/coding/modkit-extensions-blizzard
+
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/cache.spec.ts (8 tests) 6ms
+
+ Test Files  1 passed (1)
+      Tests  8 passed (8)
+   Start at  02:55:25
+   Duration  835ms (transform 79ms, setup 0ms, collect 95ms, tests 6ms, environment 0ms, prepare 237ms)
+

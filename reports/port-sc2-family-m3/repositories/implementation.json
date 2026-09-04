@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-09-04T23:03:24.990Z",
+  "repositories": [
+    {
+      "directory": "modkit-core",
+      "branch": "sol/port-libs",
+      "implementationCommit": "5ea667fe4fc3305283d0e2b3963ffeb7ef842563",
+      "currentHead": "5ea667fe4fc3305283d0e2b3963ffeb7ef842563",
+      "commitPaths": 63,
+      "outsideAllowlist": 0,
+      "statusOutsideEvidenceInProgress": []
+    },
+    {
+      "directory": "modkit-extensions-blizzard",
+      "branch": "sol/port-sc2",
+      "implementationCommit": "1751abd0d8b54cc03869d996dd2de5550729279d",
+      "currentHead": "1751abd0d8b54cc03869d996dd2de5550729279d",
+      "commitPaths": 1339,
+      "outsideAllowlist": 0,
+      "status": []
+    },
+    {
+      "directory": "references/modkit-docs",
+      "branch": "sol/port-plan-review",
+      "currentHead": "917dca67ee0720d735d8af11756608f4ccf30962",
+      "expectedUntrackedUntouched": [
+        "?? MK3/CLAUDE_GA_IMPLEMENTATION_AND_KODA_REVIEW_2026-09-03.md",
+        "?? MK3/KODA-ARCHITECTURE-AUDIT.md",
+        "?? MK3/KODA-SUGGESTIONS.md",
+        "?? MK3/KODA_AUDITORY.md",
+        "?? MK3/KODA_COMPETITORS.md"
+      ]
+    }
+  ],
+  "diffChecks": {
+    "coreImplementation": {
+      "exitCode": 0,
+      "log": "core-implementation-diff-check.log"
+    },
+    "blizzardAuthoredConfigProvenance": {
+      "exitCode": 0,
+      "log": "blizzard-authored-diff-check.log"
+    },
+    "blizzardFullCopiedTreeDiagnostic": {
+      "exitCode": 2,
+      "acceptanceGate": false,
+      "diagnostics": 44,
+      "files": 44,
+      "outsideProvenanceBoundCopiedTrees": 0,
+      "reason": "Pinned MK2 whitespace is preserved; copied bytes are governed by mk2-copy:check.",
+      "log": "blizzard-full-diff-check-diagnostic.log"
+    }
+  }
+}

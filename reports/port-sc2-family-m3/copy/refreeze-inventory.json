@@ -1,0 +1,31 @@
+{
+  "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "acceptedCopiesReused": 87,
+  "selectedFiles": 1411,
+  "declaredCopies": 1460,
+  "importDispositions": 630,
+  "dependencies": 50,
+  "testFiles": 605,
+  "destinationOwners": {
+    "modkit-core/packages/codec-kit/": 94,
+    "modkit-extensions-blizzard/starcraft2/": 1301,
+    "modkit-extensions-blizzard/models/": 65
+  },
+  "groups": {
+    "extensions/blizzard": 1082,
+    "packages/archives-processing": 23,
+    "packages/core": 1,
+    "packages/data-processing": 43,
+    "packages/documents-processing": 14,
+    "packages/layouts-processing": 59,
+    "packages/localization-processing": 3,
+    "packages/maps-processing": 53,
+    "packages/models-processing": 30,
+    "packages/mods-processing": 46,
+    "packages/rendering-3d": 25,
+    "packages/replays-processing": 4,
+    "packages/scripts-processing": 6,
+    "packages/vfs": 9,
+    "packages/xml": 13
+  }
+}

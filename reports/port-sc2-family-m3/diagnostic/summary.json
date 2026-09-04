@@ -1,0 +1,54 @@
+{
+  "schemaVersion": 1,
+  "role": "diagnostic-only",
+  "requiredGreenForM3": false,
+  "files": 76,
+  "tests": {
+    "total": 651,
+    "passed": 615,
+    "failed": 7,
+    "conditionalSkipped": 29,
+    "todo": 0
+  },
+  "failureDisposition": {
+    "registryActivationAtC1": 6,
+    "replayRelocationTopologyAtReplayC1": 1
+  },
+  "failures": [
+    {
+      "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/localization-processing/test/semantic-facade.test.ts",
+      "test": "localization semantic compatibility facade registers, routes, and summarizes a codec without knowing which game it serves",
+      "firstFailure": "localization codec: register and resolve the adapted contribution through the MK3 host"
+    },
+    {
+      "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/replays-processing/test/browser-safety.test.ts",
+      "test": "browser-safe root boundary keeps node APIs and runtime @modkitx/replay imports out of root-reachable source",
+      "firstFailure": "Error: ENOENT: no such file or directory, scandir 'C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\starcraft2\\test\\mk2\\packages\\replays-processing\\src'"
+    },
+    {
+      "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/replays-processing/test/semantic-facade.test.ts",
+      "test": "@modkitx/replays-processing semantic facade registers and summarizes a codec through the root exports, whatever game it serves",
+      "firstFailure": "replay codec: register and resolve the adapted contribution through the MK3 host"
+    },
+    {
+      "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/semantic-facade.test.ts",
+      "test": "@modkitx/maps-processing semantic facade still registers the existing SC2 codec through legacy root exports",
+      "firstFailure": "map codec: register and resolve the adapted contribution through the MK3 host"
+    },
+    {
+      "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/data-processing/test/semantic-facade.test.ts",
+      "test": "@modkitx/data-processing semantic facade registers and summarizes whatever data codec a host hands it",
+      "firstFailure": "data codec: register and resolve the adapted contribution through the MK3 host"
+    },
+    {
+      "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/semantic-facade.test.ts",
+      "test": "@modkitx/documents-processing semantic facade registers and summarizes whatever document codec a host hands it",
+      "firstFailure": "document codec: register and resolve the adapted contribution through the MK3 host"
+    },
+    {
+      "file": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/semantic-facade.test.ts",
+      "test": "@modkitx/layouts-processing semantic facade registers, lists, and summarises whatever codec it is handed",
+      "firstFailure": "layout codec: register and resolve the adapted contribution through the MK3 host"
+    }
+  ]
+}

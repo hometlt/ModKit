@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "normal": [
+    {
+      "tier": "quick",
+      "files": 31,
+      "stagedFiles": 0,
+      "log": "normal-quick-files.log"
+    },
+    {
+      "tier": "owner",
+      "files": 34,
+      "stagedFiles": 0,
+      "log": "normal-owner-files.log"
+    },
+    {
+      "tier": "real",
+      "files": 11,
+      "stagedFiles": 0,
+      "log": "normal-real-files.log"
+    }
+  ],
+  "dedicated": {
+    "projects": 12,
+    "projectNames": [
+      "archives-processing",
+      "data-processing",
+      "documents-processing",
+      "layouts-processing",
+      "localization-processing",
+      "maps-processing",
+      "models-core",
+      "mods-processing",
+      "rendering-3d",
+      "replays-processing",
+      "scripts-processing",
+      "xml"
+    ],
+    "files": 76,
+    "archiveFiles": ["test/mk2/packages/archives-processing/test/cache.spec.ts"],
+    "codecBodyFiles": 0,
+    "log": "m3-dedicated-files.log"
+  }
+}

@@ -1,0 +1,12 @@
+warning: in the working copy of 'source.ts', LF will be replaced by CRLF the next time Git touches it
+✔ pinned source can disable all working-tree observation (1402.278ms)
+✔ pinned source, exports, data, dependencies and every cache identity dimension (27941.2035ms)
+✔ external snapshots retain required peers, optional installed peers and package self-resolution (4707.5434ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 34171.9217

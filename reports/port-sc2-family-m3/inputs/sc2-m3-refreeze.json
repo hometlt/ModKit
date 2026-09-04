@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "family": "sc2",
+  "scope": "family",
+  "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "selectorVersion": "sc2-m3-family-v5",
+  "planDigest": "2567673b13cd19b77f58669f9acd634dd377770852a0e90acb4bf7f7206fa78c"
+}

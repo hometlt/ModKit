@@ -1,0 +1,167 @@
+{
+  "schemaVersion": 1,
+  "totalSuites": 6,
+  "declarations": 49,
+  "executableInM3": [
+    "cache.spec.ts"
+  ],
+  "deferredByPlan": [
+    "index.spec.ts",
+    "optional-extension-loaders.spec.ts",
+    "source.spec.ts",
+    "vfs-browser-boundary.spec.ts",
+    "vfs-mount.spec.ts"
+  ],
+  "deferredReason": "Requires the excluded registry/generated 44-codec catalog, optional loader, or full VFS mounting/P11; execute unchanged in M4.",
+  "suites": [
+    {
+      "name": "cache.spec.ts",
+      "mk2Path": "packages/archives-processing/test/cache.spec.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/cache.spec.ts",
+      "sha256Mk2": "35bd058157d7897ac2cc635d83455ecff357123db45a27432ebee0ed425ef748",
+      "sha256Mk3": "ea0f6efad085b4742841e1114092c10bef2391b324761b2922f921ccf1787d19",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'../src/core/cache.js'",
+          "to": "'../../../../../src/lib/mk2/packages/archives-processing/src/core/cache.js'",
+          "count": 1,
+          "sha256Before": "35bd058157d7897ac2cc635d83455ecff357123db45a27432ebee0ed425ef748",
+          "sha256After": "ea0f6efad085b4742841e1114092c10bef2391b324761b2922f921ccf1787d19"
+        }
+      ],
+      "declarations": 8,
+      "vitestLeaves": 8,
+      "status": "pass",
+      "milestone": "M3"
+    },
+    {
+      "name": "index.spec.ts",
+      "mk2Path": "packages/archives-processing/test/index.spec.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts",
+      "sha256Mk2": "edb490b3efd35b11346b866b09dce8a6574afefcf6b9fbbfe061d54618acf352",
+      "sha256Mk3": "6fdbe3320f90dea517089f71b55c5b7e3be8d305df10b50624849af154fd3738",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'../src/index.js'",
+          "to": "'../../../../../src/lib/mk2/packages/archives-processing/src/index.js'",
+          "count": 1,
+          "sha256Before": "edb490b3efd35b11346b866b09dce8a6574afefcf6b9fbbfe061d54618acf352",
+          "sha256After": "6fdbe3320f90dea517089f71b55c5b7e3be8d305df10b50624849af154fd3738"
+        }
+      ],
+      "declarations": 27,
+      "vitestLeaves": 29,
+      "status": "deferred-by-plan",
+      "milestone": "M4/P11"
+    },
+    {
+      "name": "optional-extension-loaders.spec.ts",
+      "mk2Path": "packages/archives-processing/test/optional-extension-loaders.spec.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/optional-extension-loaders.spec.ts",
+      "sha256Mk2": "c5b30c3ee86e8e5f8501a47612e76d25f95aeffa955ec4eaee40a2c79b089315",
+      "sha256Mk3": "f9120f50f03797e57bd88274079e239a4e42fd8d910add68bc9614632e5f595c",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'../src/core/core.js'",
+          "to": "'../../../../../src/lib/mk2/packages/archives-processing/src/core/core.js'",
+          "count": 1,
+          "sha256Before": "c5b30c3ee86e8e5f8501a47612e76d25f95aeffa955ec4eaee40a2c79b089315",
+          "sha256After": "f9120f50f03797e57bd88274079e239a4e42fd8d910add68bc9614632e5f595c"
+        }
+      ],
+      "declarations": 1,
+      "vitestLeaves": 1,
+      "status": "deferred-by-plan",
+      "milestone": "M4/P11"
+    },
+    {
+      "name": "source.spec.ts",
+      "mk2Path": "packages/archives-processing/test/source.spec.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/source.spec.ts",
+      "sha256Mk2": "3a34be943604e49011e240044920799f574b2e5a88397779d19aeb23de747d8b",
+      "sha256Mk3": "bb13057170f1ff3efb77c7f57cc69b9ce9608bae0084c97ee861ad6a03e7e98a",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'../src/index.js'",
+          "to": "'../../../../../src/lib/mk2/packages/archives-processing/src/index.js'",
+          "count": 1,
+          "sha256Before": "3a34be943604e49011e240044920799f574b2e5a88397779d19aeb23de747d8b",
+          "sha256After": "bb13057170f1ff3efb77c7f57cc69b9ce9608bae0084c97ee861ad6a03e7e98a"
+        }
+      ],
+      "declarations": 2,
+      "vitestLeaves": 2,
+      "status": "deferred-by-plan",
+      "milestone": "M4/P11"
+    },
+    {
+      "name": "vfs-browser-boundary.spec.ts",
+      "mk2Path": "packages/archives-processing/test/vfs-browser-boundary.spec.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/vfs-browser-boundary.spec.ts",
+      "sha256Mk2": "01872670e0dbdd80591ea6280cfefc9f5e1d17e27e67706f2d2cf50a2f0407b4",
+      "sha256Mk3": "01872670e0dbdd80591ea6280cfefc9f5e1d17e27e67706f2d2cf50a2f0407b4",
+      "rewrites": [],
+      "declarations": 2,
+      "vitestLeaves": 2,
+      "status": "deferred-by-plan",
+      "milestone": "M4/P11"
+    },
+    {
+      "name": "vfs-mount.spec.ts",
+      "mk2Path": "packages/archives-processing/test/vfs-mount.spec.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/vfs-mount.spec.ts",
+      "sha256Mk2": "3103f3adc14ee32b8a45be90aff9d602dc583836918924e6d47b43fc5f1b2f1b",
+      "sha256Mk3": "b61f415fa2dfb026b4ea611774c86990d3836b20ffb1951bd1bbd95fc4abd68c",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/assets'",
+          "to": "'@modkit/codec-kit/legacy/assets'",
+          "count": 1,
+          "sha256Before": "3103f3adc14ee32b8a45be90aff9d602dc583836918924e6d47b43fc5f1b2f1b",
+          "sha256After": "efe2c27b76b603bf626c60d4329f70b96ad73d5a978521f4d8f313b1f4fef81e"
+        },
+        {
+          "kind": "import",
+          "from": "'../src/archive-session-manager.js'",
+          "to": "'../../../../../src/lib/mk2/packages/archives-processing/src/archive-session-manager.js'",
+          "count": 1,
+          "sha256Before": "efe2c27b76b603bf626c60d4329f70b96ad73d5a978521f4d8f313b1f4fef81e",
+          "sha256After": "382b1252f391ea5f34eb80bd0c255d52d89cfd9de73c5d0102722932b8f7d8c6"
+        },
+        {
+          "kind": "import",
+          "from": "'../src/index.js'",
+          "to": "'../../../../../src/lib/mk2/packages/archives-processing/src/index.js'",
+          "count": 1,
+          "sha256Before": "382b1252f391ea5f34eb80bd0c255d52d89cfd9de73c5d0102722932b8f7d8c6",
+          "sha256After": "9aa723da20c121f8a1ba61156a07f2f8fa08fae6b250528f1e38904c86b549bf"
+        },
+        {
+          "kind": "import",
+          "from": "'../src/core/types.js'",
+          "to": "'../../../../../src/lib/mk2/packages/archives-processing/src/core/types.js'",
+          "count": 1,
+          "sha256Before": "9aa723da20c121f8a1ba61156a07f2f8fa08fae6b250528f1e38904c86b549bf",
+          "sha256After": "623c7d01bfe8e9893895107f5327b9f25fc922635909947ec5fe2a955f279c8c"
+        },
+        {
+          "kind": "import",
+          "from": "'../src/vfs-mount.js'",
+          "to": "'../../../../../src/lib/mk2/packages/archives-processing/src/vfs-mount.js'",
+          "count": 1,
+          "sha256Before": "623c7d01bfe8e9893895107f5327b9f25fc922635909947ec5fe2a955f279c8c",
+          "sha256After": "b61f415fa2dfb026b4ea611774c86990d3836b20ffb1951bd1bbd95fc4abd68c"
+        }
+      ],
+      "declarations": 9,
+      "vitestLeaves": 9,
+      "status": "deferred-by-plan",
+      "milestone": "M4/P11"
+    }
+  ]
+}

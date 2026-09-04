@@ -1,0 +1,64 @@
+starcraft2/src/lib/mk2/codecs/sc2-data/src/language/completion.ts:473: new blank line at EOF.
+starcraft2/src/lib/mk2/codecs/sc2-data/src/language/diagnostics.ts:572: new blank line at EOF.
+starcraft2/src/lib/mk2/codecs/sc2-data/src/language/providers/completions.ts:170: new blank line at EOF.
+starcraft2/src/lib/mk2/codecs/sc2-data/src/language/providers/diagnostics.ts:56: new blank line at EOF.
+starcraft2/src/lib/mk2/codecs/sc2-document-metadata/src/describe.ts:342: new blank line at EOF.
+starcraft2/src/lib/mk2/codecs/sc2-document-metadata/src/document.ts:262: new blank line at EOF.
+starcraft2/src/lib/mk2/codecs/sc2-document-metadata/src/edit.ts:253: new blank line at EOF.
+starcraft2/src/lib/mk2/codecs/sc2-mod/src/export.ts:131: new blank line at EOF.
+starcraft2/src/lib/mk2/codecs/sc2-mod/src/workspace/mod-context.ts:1013: new blank line at EOF.
+starcraft2/src/lib/mk2/codecs/sc2-mod/src/workspace/parse-cache.ts:128: new blank line at EOF.
+starcraft2/src/lib/mk2/codecs/sc2-triggers/src/core/trigger-store.ts:264: trailing whitespace.
++    
+starcraft2/src/lib/mk2/packages/data-processing/src/sc2-schema/structure-types/schema.complex.ts:241: trailing whitespace.
++    PlayerHasReward: [CRewardLink],//'!PlayerHasReward SprayUseDecal_Off'.    
+starcraft2/src/lib/mk2/packages/data-processing/src/sc2-schema/structure-types/schema.core.ts:732: new blank line at EOF.
+starcraft2/src/lib/mk2/packages/data-processing/src/sc2-schema/structure-types/schema.enums.ts:757: trailing whitespace.
++//more 'group' links than enums. custom ids possible 
+starcraft2/src/lib/mk2/packages/data-processing/src/sc2-schema/structure-types/schema.types.ts:195: trailing whitespace.
++export class TFootprintBorders extends CSArray.Ex(CUIntArray) { }  //'0,4,2;1,0,2;2,3,2;3,7,2;4,5,2;5,2,2;6,1,2;7,6,2' 
+starcraft2/src/lib/mk2/packages/data-processing/src/sc2-schema/structure-types/schema.types.ts:200: trailing whitespace.
++export class CActorDeathMembers extends CSArray.Ex(CActorDeathMemberLink) { }  // RagdollBasicNoBlood;RagdollGibNoBlood 
+starcraft2/src/lib/mk2/packages/documents-processing/src/sc2-metadata-core/index.ts:77: new blank line at EOF.
+starcraft2/src/lib/mk2/packages/layouts-processing/src/sc2-layout-core/parser/expressions.ts:653: new blank line at EOF.
+starcraft2/src/lib/mk2/packages/mods-processing/src/sc2-mod-core/index.ts:38: new blank line at EOF.
+starcraft2/src/lib/mk2/packages/mods-processing/src/sc2-mod-core/mod.ts:151: new blank line at EOF.
+starcraft2/src/lib/mk2/packages/mods-processing/src/sc2-mod-core/reader.ts:813: new blank line at EOF.
+starcraft2/src/lib/mk2/packages/mods-processing/src/sc2-mod-core/types.ts:88: new blank line at EOF.
+starcraft2/src/lib/mk2/src/language/host/mod-hydrator.ts:390: new blank line at EOF.
+starcraft2/src/lib/mk2/src/language/host/rename-bridge.ts:160: new blank line at EOF.
+starcraft2/src/lib/mk2/src/language/host/workspace-host.ts:337: new blank line at EOF.
+starcraft2/src/lib/mk2/src/language/xref/layout-refs.ts:37: new blank line at EOF.
+starcraft2/test/mk2/codecs/sc2-data/test/language-core/editorcategories.test.ts:138: new blank line at EOF.
+starcraft2/test/mk2/codecs/sc2-document-metadata/test/fixtures.ts:77: new blank line at EOF.
+starcraft2/test/mk2/codecs/sc2-document-metadata/test/parity.test.ts:65: new blank line at EOF.
+starcraft2/test/mk2/codecs/sc2-triggers/test/core-fixtures/fixtures/crlf-map.Triggers:212: trailing whitespace.
++                #AUTOVAR(g, playergroup) = #PARAM(group); 
+starcraft2/test/mk2/packages/layouts-processing/bundled-schema.d.ts:4: new blank line at EOF.
+starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/bootstrap.ts:35: new blank line at EOF.
+starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/helpers.ts:62: new blank line at EOF.
+starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/html.test.ts:113: new blank line at EOF.
+starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/checker.test.ts:34: new blank line at EOF.
+starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/hierarchy.test.ts:231: new blank line at EOF.
+starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/index/xray.test.ts:55: new blank line at EOF.
+starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/parser/expressions.test.ts:110: new blank line at EOF.
+starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/schema/localization.test.ts:18: new blank line at EOF.
+starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/setup.ts:10: new blank line at EOF.
+starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/simple-parse-locate.test.ts:83: new blank line at EOF.
+starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/types.test.ts:29: new blank line at EOF.
+starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/utils/common.test.ts:12: new blank line at EOF.
+starcraft2/test/mk2/src/language/test/fixtures/sc2-map.SC2Map/MapScript.galaxy:2: trailing whitespace.
++// 
+starcraft2/test/mk2/src/language/test/fixtures/sc2-map.SC2Map/MapScript.galaxy:4: trailing whitespace.
++// 
+starcraft2/test/mk2/src/language/test/fixtures/sc2-map.SC2Map/MapScript.galaxy:6: trailing whitespace.
++// 
+starcraft2/test/mk2/src/language/test/fixtures/sc2-map.SC2Map/PreloadAssetDB.txt:4: new blank line at EOF.
+starcraft2/test/mk2/src/language/test/fixtures/sc2-map.SC2Map/Triggers:212: trailing whitespace.
++                #AUTOVAR(g, playergroup) = #PARAM(group); 
+starcraft2/test/mk2/src/language/test/layout/setup.ts:10: new blank line at EOF.
+starcraft2/test/mk2/src/language/test/xref/cross-file-integration.test.ts:127: new blank line at EOF.
+starcraft2/test/mk2/src/language/test/xref/layout-definition.test.ts:51: new blank line at EOF.
+starcraft2/test/mk2/src/language/test/xref/layout-fontstyle-definition.test.ts:57: new blank line at EOF.
+starcraft2/test/mk2/src/language/test/xref/layout-hover.test.ts:56: new blank line at EOF.
+starcraft2/test/mk2/src/language/test/xref/layout-refs.test.ts:60: new blank line at EOF.

@@ -1,0 +1,140 @@
+{
+  "name": "@modkit/codec-kit",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "Optional dependency-neutral runtime kit for small MK3 inspection codecs.",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./text": {
+      "types": "./dist/text/index.d.ts",
+      "default": "./dist/text/index.js"
+    },
+    "./package.json": "./package.json",
+    "./legacy": {
+      "types": "./dist/legacy/index.d.ts",
+      "default": "./dist/legacy/index.js"
+    },
+    "./legacy/core": {
+      "types": "./dist/legacy/core/index.d.ts",
+      "default": "./dist/legacy/core/index.js"
+    },
+    "./legacy/assets": {
+      "types": "./dist/legacy/assets/index.d.ts",
+      "default": "./dist/legacy/assets/index.js"
+    },
+    "./legacy/semantic": {
+      "types": "./dist/legacy/semantic/index.d.ts",
+      "default": "./dist/legacy/semantic/index.js"
+    },
+    "./legacy/semantic/*": {
+      "types": "./dist/legacy/semantic/*.d.ts",
+      "default": "./dist/legacy/semantic/*.js"
+    },
+    "./legacy/games": {
+      "types": "./dist/legacy/games/index.d.ts",
+      "default": "./dist/legacy/games/index.js"
+    },
+    "./legacy/world": {
+      "types": "./dist/legacy/world/index.d.ts",
+      "default": "./dist/legacy/world/index.js"
+    },
+    "./legacy/runtime": {
+      "types": "./dist/legacy/runtime/index.d.ts",
+      "default": "./dist/legacy/runtime/index.js"
+    },
+    "./crypto": {
+      "types": "./dist/crypto/index.d.ts",
+      "default": "./dist/crypto/index.js"
+    },
+    "./crypto/sha1": {
+      "types": "./dist/crypto/sha1.d.ts",
+      "default": "./dist/crypto/sha1.js"
+    },
+    "./texture": {
+      "types": "./dist/texture/index.d.ts",
+      "default": "./dist/texture/index.js"
+    },
+    "./legacy/language-contracts": {
+      "types": "./dist/legacy/language-contracts/index.d.ts",
+      "default": "./dist/legacy/language-contracts/index.js"
+    },
+    "./legacy/entity-cards": {
+      "types": "./dist/legacy/entity-cards/index.d.ts",
+      "default": "./dist/legacy/entity-cards/index.js"
+    },
+    "./legacy/vfs": {
+      "types": "./dist/legacy/vfs/index.d.ts",
+      "default": "./dist/legacy/vfs/index.js"
+    },
+    "./legacy/xml": {
+      "types": "./dist/legacy/xml/index.d.ts",
+      "default": "./dist/legacy/xml/index.js"
+    },
+    "./legacy/xml/positional": {
+      "types": "./dist/legacy/xml/positional/index.d.ts",
+      "default": "./dist/legacy/xml/positional/index.js"
+    },
+    "./legacy/models": {
+      "types": "./dist/legacy-model-support.d.ts",
+      "default": "./dist/legacy-model-support.js"
+    },
+    "./legacy/sc2-support": {
+      "types": "./dist/legacy-sc2-support.d.ts",
+      "default": "./dist/legacy-sc2-support.js"
+    },
+    "./legacy/models/*": {
+      "types": "./dist/legacy/models/*.d.ts",
+      "default": "./dist/legacy/models/*.js"
+    },
+    "./model-math/*": {
+      "types": "./dist/model-math/*.d.ts",
+      "default": "./dist/model-math/*.js"
+    },
+    "./compression": {
+      "types": "./dist/compression/index.d.ts",
+      "default": "./dist/compression/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "dependencies": {
+    "pako": "2.1.0",
+    "seek-bzip": "2.0.0",
+    "texture2ddecoder-wasm": "1.2.2",
+    "@logtape/logtape": "2.2.4",
+    "vscode-languageserver": "10.0.1",
+    "vscode-languageserver-textdocument": "1.0.13",
+    "fast-xml-parser": "4.5.6"
+  },
+  "peerDependencies": {
+    "@modkit/core": "workspace:*",
+    "@modkit/host": "workspace:*",
+    "@modkit/sdk": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@modkit/core": {
+      "optional": true
+    },
+    "@modkit/host": {
+      "optional": true
+    },
+    "@modkit/sdk": {
+      "optional": true
+    }
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "tsc -b --clean",
+    "test": "node --test test/*.test.mjs",
+    "test:legacy": "node --test test/legacy-kit.test.mjs",
+    "typecheck:mk2-libraries": "tsc -p tsconfig.mk2-libraries.json --noEmit",
+    "typecheck:mk2-libraries:test": "tsc -p tsconfig.mk2-libraries.test.json --noEmit"
+  }
+}

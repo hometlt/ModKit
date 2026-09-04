@@ -1,0 +1,25 @@
+✔ baseline editing cannot grant new debt or modify an existing allowance (1.1351ms)
+✔ AST finds named implementation bodies and ignores calls, comments and import declarations (10.8699ms)
+✔ ratchet accepts debt deletion and canonical copies, rejects new peers and changed algorithms (0.527ms)
+✔ actual repository scan excludes build/tests/vendor and validates canonical uniqueness and hashes (50.7277ms)
+✔ copied-unwired classification is exact and hash-bound (274.4458ms)
+✔ an undeclared same-name peer remains new algorithm debt (327.6842ms)
+✔ a copied-unwired destination hash tamper fails closed (185.1046ms)
+✔ a direct import of excluded copied-unwired code from production fails closed (270.3047ms)
+✔ a re-export of excluded copied-unwired code from production fails closed (224.4231ms)
+✔ a direct SC2 package runtime surface to copied-unwired code fails closed (281.807ms)
+✔ an authored JavaScript runtime surface importing copied-unwired code fails closed (362.8459ms)
+✔ a nested conditional export array reaching copied-unwired code fails closed (285.255ms)
+✔ a changed contribution manifest pattern fails closed despite a populated old directory (33.6947ms)
+✔ an orphaned dist JavaScript runtime surface cannot replace authored source (52.0169ms)
+✔ an arbitrary alternate production tsconfig cannot be supplied (102.4177ms)
+✔ an unexpected third copied-unwired allowance fails closed (0.6926ms)
+✔ a stale copied-unwired symbol fails closed (504.2354ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3380.9303

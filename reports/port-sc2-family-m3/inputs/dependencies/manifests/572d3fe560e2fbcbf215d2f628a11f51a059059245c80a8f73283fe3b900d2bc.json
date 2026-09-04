@@ -1,0 +1,105 @@
+{
+  "name": "@modkit/blizzard-starcraft2",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "StarCraft II authored-data, layout, localization, map, replay and runtime codecs for MK3.",
+  "exports": {
+    ".": "./src/game/provider.js",
+    "./workspace": "./src/game/workspace-provider.js",
+    "./data": "./src/game/data-provider.js",
+    "./schema": "./src/game/full-data-schema.js",
+    "./knowledge-data": "./src/game/knowledge-data.js",
+    "./calculations": "./src/game/calculations/index.js",
+    "./facts": "./src/game/subject-facts.js",
+    "./subject-calculations": "./src/game/subject-calculations.js",
+    "./maps": "./src/game/map-provider.js",
+    "./map-preview": "./src/game/map-preview-provider.js",
+    "./launch": "./src/game/launch-provider.js",
+    "./game-linked": "./src/game/linked.js",
+    "./ts-lane": {
+      "types": "./dist/ts-lane/index.d.ts",
+      "default": "./dist/ts-lane/index.js"
+    },
+    "./package.json": "./package.json",
+    "./bank/core": {
+      "types": "./dist/sc2-bank/core.d.ts",
+      "default": "./dist/sc2-bank/core.js"
+    },
+    "./bank/node": {
+      "types": "./dist/sc2-bank/node.d.ts",
+      "default": "./dist/sc2-bank/node.js"
+    },
+    "./bank/codec": {
+      "types": "./dist/sc2-bank/codec.d.ts",
+      "default": "./dist/sc2-bank/codec.js"
+    }
+  },
+  "files": [
+    "assets",
+    "contributions",
+    "dist",
+    "src",
+    "README.md"
+  ],
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "blizzard",
+    "id": "starcraft2",
+    "presentation": {
+      "displayName": "Blizzard StarCraft II Data",
+      "description": "StarCraft II Data authored-data, layout, localization, map, replay and runtime codecs for MK3.",
+      "vendor": {
+        "id": "blizzard",
+        "displayName": "Blizzard"
+      },
+      "games": [
+        {
+          "id": "blizzard/starcraft-2",
+          "displayName": "StarCraft II"
+        }
+      ],
+      "icon": {
+        "path": "assets/icons/blizzard-starcraft2-placeholder.svg",
+        "mediaType": "image/svg+xml"
+      }
+    },
+    "contributionManifests": [
+      "./contributions/*.json"
+    ]
+  },
+  "dependencies": {
+    "@modkit/blizzard-galaxy-language": "workspace:*",
+    "@modkit/blizzard-mpq": "workspace:*",
+    "@modkit/codec-kit": "file:../vendor/modkit-codec-kit-1.0.0.tgz",
+    "@modkit/core": "file:../vendor/modkit-core-0.1.0.tgz",
+    "@modkit/sdk": "file:../vendor/modkit-sdk-0.1.0.tgz",
+    "@rgrove/parse-xml": "^4.2.3",
+    "fast-glob": "^3.3.3",
+    "fast-xml-parser": "4.5.6",
+    "vscode-languageserver-types": "^3.18.0",
+    "vscode-uri": "^3.2.0",
+    "xml-js": "^1.6.11",
+    "xml2js": "^0.4.23"
+  },
+  "peerDependencies": {
+    "@modkit/host": ">=0.1.0 <1"
+  },
+  "peerDependenciesMeta": {
+    "@modkit/host": {
+      "optional": true
+    }
+  },
+  "bin": {
+    "modkitx-bank": "./dist/lib/mk2/codecs/sc2-bank/src/core/cli.js"
+  },
+  "scripts": {
+    "typecheck:mk2-libraries": "tsc --pretty false -p tsconfig.m3-family-libraries.json",
+    "test:mk2-libraries:list": "vitest list --workspace test/vitest.m3-family-libraries.workspace.mjs --filesOnly",
+    "test:mk2-libraries": "vitest run --workspace test/vitest.m3-family-libraries.workspace.mjs"
+  },
+  "devDependencies": {
+    "@types/xml2js": "^0.4.14",
+    "tsx": "^4.23.13"
+  }
+}

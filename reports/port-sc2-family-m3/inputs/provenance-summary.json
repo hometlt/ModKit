@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "declarationDigest": "4f7d2272e4aef64753f2b31c6d50195d7709f923413e13023566654c12fd315a",
+  "divergenceDigest": "703187d943cfe979c33e7b595f9ca4317387cf7760adf7c4dcbab99a2e0d5b57",
+  "files": 1460,
+  "sourceFiles": 842,
+  "testFiles": 618,
+  "imports": 4840,
+  "dependencies": 50,
+  "nonBuiltinDependencyRows": 32,
+  "uniqueNonBuiltinDependencyManifests": 14,
+  "importDispositions": 630,
+  "heroesOfTheStormSources": 0,
+  "provenanceSha256": "815a005e21116faadb76ffb5cc0670527074a855c5ffbd65c39b917521346114"
+}

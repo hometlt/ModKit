@@ -1,0 +1,4 @@
+
+> @modkit/blizzard-starcraft2@1.0.0 typecheck:mk2-libraries C:\FILES\SC2Files\coding\modkit-extensions-blizzard\starcraft2
+> tsc --pretty false -p tsconfig.m3-family-libraries.json
+
