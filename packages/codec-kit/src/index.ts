@@ -35,6 +35,7 @@ import type {
   AudioMediaInfo,
   AudioMediaSource,
   AssetDiagnostic,
+  AssetOperationDescriptor,
   ByteRangeSource,
   Codec,
   CodecCandidateSource,
@@ -105,6 +106,14 @@ export interface InspectionContext {
   readonly input: AssetInput
 }
 
+/** Per-document availability; declarations retain operation identity, handlers and permissions. */
+export type InspectionOperationState =
+  | Pick<Extract<AssetOperationDescriptor, { state: 'available' }>, 'id' | 'state' | 'reason'>
+  | Pick<
+      Extract<AssetOperationDescriptor, { state: 'disabled' | 'dependency-required' }>,
+      'id' | 'state' | 'reason'
+    >
+
 export interface InspectionResult {
   readonly summary: JsonValue
   readonly metadata: readonly MetadataGroup[]
@@ -113,6 +122,8 @@ export interface InspectionResult {
   readonly text?: boolean | string
   readonly dataSources?: Readonly<Record<string, unknown>>
   readonly handlers?: Readonly<Record<string, (input: JsonValue) => Promise<OperationOutput>>>
+  /** Overrides declared operations by id for this open; omitted operations remain available. */
+  readonly operationStates?: readonly InspectionOperationState[]
   readonly diagnostics?: readonly AssetDiagnostic[]
   readonly unsupportedFeatures?: readonly string[]
   readonly maxDecodedBytes?: bigint | number | string
@@ -1036,6 +1047,50 @@ function descriptorMetadata(inspection: InspectionResult) {
   ]
 }
 
+function inspectionOperations(
+  declarations: readonly OperationDecl[],
+  states: readonly InspectionOperationState[] = [],
+): readonly AssetOperationDescriptor[] {
+  const declaredIds = new Set(declarations.map(operation => operation.id))
+  const byId = new Map<AssetOperationDescriptor['id'], InspectionOperationState>()
+  for (const operation of states) {
+    const id = operation.id
+    if (!declaredIds.has(operation.id)) {
+      throw new TypeError(`operation state references undeclared operation ${operation.id}`)
+    }
+    if (byId.has(operation.id)) {
+      throw new TypeError(`duplicate operation state for ${operation.id}`)
+    }
+    if (operation.state === 'available') {
+      if (operation.reason !== undefined) {
+        throw new TypeError(`available operation ${id} cannot have a reason`)
+      }
+    } else if (
+      (operation.state !== 'disabled' && operation.state !== 'dependency-required') ||
+      typeof operation.reason !== 'string' ||
+      operation.reason.length === 0
+    ) {
+      throw new TypeError(`invalid operation state or reason for ${operation.id}`)
+    }
+    byId.set(operation.id, operation)
+  }
+  return Object.freeze(
+    declarations.map((operation): AssetOperationDescriptor => {
+      const override = byId.get(operation.id)
+      const identity = {
+        id: operation.id,
+        handlerId: operation.handlerId,
+        mutatesSource: operation.mutatesSource,
+      }
+      return Object.freeze(
+        override === undefined || override.state === 'available'
+          ? { ...identity, state: 'available' }
+          : { ...identity, state: override.state, reason: override.reason },
+      )
+    }),
+  )
+}
+
 async function readAll(source: ArtifactSource, budget: ResourceBudget, signal?: AbortSignal) {
   if (source.kind !== 'bytes' || source.size === undefined) {
     throw new TypeError('inspection codecs require a sized byte source')
@@ -1120,7 +1175,24 @@ export function createInspectionCodec(
     namespaceDefinition === undefined
       ? INSPECTION_OPERATIONS
       : INSPECTION_OPERATIONS.filter(operation => operation.handlerId !== 'export-raw')
-  const operationDeclarations = Object.freeze([...sharedOperations, ...customOperations])
+  const customIds = new Set<string>()
+  for (const operation of customOperations) {
+    if (customIds.has(operation.id))
+      throw new TypeError(`Duplicate custom operation: ${operation.id}`)
+    customIds.add(operation.id)
+  }
+  // A consumer may supply a genuine implementation/output contract for a shared operation.
+  // Replace its declaration by id; never publish two entries for the same operation.
+  const operationDeclarations = Object.freeze([
+    ...sharedOperations.filter(operation => !customIds.has(operation.id)),
+    ...customOperations,
+  ])
+  const handlerIds = new Set<string>()
+  for (const operation of operationDeclarations) {
+    if (handlerIds.has(operation.handlerId))
+      throw new TypeError(`Duplicate operation handler: ${operation.handlerId}`)
+    handlerIds.add(operation.handlerId)
+  }
   return Object.freeze<Codec>({
     async probe(request, signal) {
       if (namespaceDefinition !== undefined) {
@@ -1268,12 +1340,7 @@ export function createInspectionCodec(
               state: 'available',
               ...(trait.parameters === undefined ? {} : { parameters: trait.parameters }),
             })),
-            operations: operationDeclarations.map(operation => ({
-              id: operation.id,
-              handlerId: operation.handlerId,
-              mutatesSource: operation.mutatesSource,
-              state: 'available',
-            })),
+            operations: inspectionOperations(operationDeclarations, inspection.operationStates),
             constraints: {
               readOnly: !operationDeclarations.some(operation => operation.mutatesSource === true),
               seekable: false,
@@ -1420,12 +1487,7 @@ export function createInspectionCodec(
             state: 'available',
             ...(trait.parameters === undefined ? {} : { parameters: trait.parameters }),
           })),
-          operations: operationDeclarations.map(operation => ({
-            id: operation.id,
-            handlerId: operation.handlerId,
-            mutatesSource: operation.mutatesSource,
-            state: 'available',
-          })),
+          operations: inspectionOperations(operationDeclarations, inspection.operationStates),
           constraints: {
             // a codec with a mutating operation is not read-only (ADR-HOST-002 Path A)
             readOnly: !operationDeclarations.some(operation => operation.mutatesSource === true),

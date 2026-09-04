@@ -277,27 +277,43 @@ export async function loadMk2(entry, options = {}) {
       dependencies: {},
     }
     externalPackages.set(root, record)
-    for (const name of Object.keys(manifest.dependencies ?? {}).sort()) {
+    // Peers resolve from the installed package's own context, just as they do at runtime.
+    // Omitting a required peer leaves an otherwise complete snapshot unable to import it.
+    const dependencyNames = new Set([
+      ...Object.keys(manifest.dependencies ?? {}),
+      ...Object.keys(manifest.peerDependencies ?? {}),
+    ])
+    for (const name of [...dependencyNames].sort()) {
       const request = createRequire(path.join(root, 'package.json'))
       let manifestPath
       try {
-        manifestPath = request.resolve(`${name}/package.json`)
-      } catch {
-        let resolved = request.resolve(name)
-        let current = path.dirname(resolved)
-        while (current !== path.dirname(current)) {
-          try {
-            if (
-              JSON.parse(await readFile(path.join(current, 'package.json'), 'utf8')).name === name
-            ) {
-              manifestPath = path.join(current, 'package.json')
-              break
+        try {
+          manifestPath = request.resolve(`${name}/package.json`)
+        } catch {
+          const resolved = request.resolve(name)
+          let current = path.dirname(resolved)
+          while (current !== path.dirname(current)) {
+            try {
+              if (
+                JSON.parse(await readFile(path.join(current, 'package.json'), 'utf8')).name === name
+              ) {
+                manifestPath = path.join(current, 'package.json')
+                break
+              }
+            } catch (error) {
+              if (error.code !== 'ENOENT') throw error
             }
-          } catch (error) {
-            if (error.code !== 'ENOENT') throw error
+            current = path.dirname(current)
           }
-          current = path.dirname(current)
         }
+      } catch (error) {
+        if (
+          error.code === 'MODULE_NOT_FOUND' &&
+          manifest.peerDependenciesMeta?.[name]?.optional === true &&
+          !Object.hasOwn(manifest.dependencies ?? {}, name)
+        )
+          continue
+        throw error
       }
       if (!manifestPath) throw new Error(`Missing transitive dependency: ${name}`)
       record.dependencies[name] = await realpath(path.dirname(manifestPath))

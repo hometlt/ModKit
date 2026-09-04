@@ -5,8 +5,16 @@ import { coreRoot, workspaceRoot, stateRoot, portContext } from './lib/port-cont
 import { checkLedger, discoverPublications, readJson } from './lib/port-state.mjs'
 import { parseFlags } from './lib/port-cli.mjs'
 
-const args = parseFlags(process.argv.slice(2), ['--ledger', '--operations', '--closure'])
+const args = parseFlags(process.argv.slice(2), [
+  '--ledger',
+  '--operations',
+  '--closure',
+  '--claims',
+])
 const value = flag => args.get(flag)
+if (args.has('--claims') && args.has('--closure'))
+  throw new Error('--claims and --closure are mutually exclusive')
+const claims = args.has('--claims') ? await readJson(value('--claims')) : undefined
 const context = await portContext({ discoverRepositories: true })
 const publications = await discoverPublications(context.repositories, workspaceRoot)
 const ledger = await readJson(value('--ledger') ?? path.join(stateRoot, 'feature-ledger.json'))
@@ -35,9 +43,18 @@ const failures = await checkLedger({
   previous,
   publications,
   ...(closure ? { closure } : {}),
+  ...(claims === undefined ? {} : { claims }),
 })
 for (const failure of failures.slice(0, 30)) console.error(failure)
-console.log(
-  `feature-ledger ${closure ? `closure=${closure}` : 'integrity'}: requirements ${context.requirements.length}, pending ${ledger.entries.filter(row => row.status === 'pending').length}, problems ${failures.length}`,
-)
+const pending = ledger.entries.filter(row => row.status === 'pending')
+if (claims !== undefined) {
+  const selectedIds = new Set(Array.isArray(claims?.requirementIds) ? claims.requirementIds : [])
+  const selected = context.requirements.filter(row => selectedIds.has(row.id))
+  console.log(
+    `feature-ledger claims codec=${claims?.codec ?? '(invalid)'}: selected requirements ${selected.length}, selected pending ${pending.filter(row => selectedIds.has(row.id)).length}, total requirements ${context.requirements.length}, total pending ${pending.length}, problems ${failures.length}`,
+  )
+} else
+  console.log(
+    `feature-ledger ${closure ? `closure=${closure}` : 'integrity'}: requirements ${context.requirements.length}, pending ${pending.length}, problems ${failures.length}`,
+  )
 if (failures.length) process.exitCode = 1

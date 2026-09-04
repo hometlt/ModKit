@@ -28,14 +28,17 @@ export const legacyBoundaryCode = (code: string): string =>
   `codec-kit/legacy-${Array.from(new TextEncoder().encode(code), byte => byte.toString(16).padStart(2, '0')).join('') || 'empty'}`
 
 /** Preserve the original code/category/detail in data; qualify only at the MK3 boundary. */
-export function adaptDiagnostic(value: LegacyDiagnostic): AssetDiagnostic {
+export function adaptDiagnostic(
+  value: LegacyDiagnostic,
+  owner?: { readonly contributionId: string },
+): AssetDiagnostic {
   return {
     id: value.id,
     code: errorCode(legacyBoundaryCode(value.code)),
     severity: value.severity === 'info' ? 'information' : value.severity,
     message: value.message,
     category: LEGACY_DIAGNOSTIC_CATEGORIES[value.category ?? 'other'],
-    ...(value.source === undefined ? {} : { source: { contributionId: value.source } }),
+    ...(owner === undefined ? {} : { source: { contributionId: owner.contributionId } }),
     ...(value.range === undefined
       ? {}
       : {
@@ -48,6 +51,7 @@ export function adaptDiagnostic(value: LegacyDiagnostic): AssetDiagnostic {
     data: {
       legacyCode: value.code,
       legacyCategory: value.category ?? 'other',
+      ...(value.source === undefined ? {} : { legacySource: value.source }),
       ...(value.path === undefined ? {} : { legacyPath: value.path }),
       ...(value.detail === undefined ? {} : { legacyDetail: value.detail }),
     },

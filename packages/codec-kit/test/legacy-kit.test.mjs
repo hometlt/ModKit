@@ -65,6 +65,22 @@ test('all 14 diagnostic categories, identity, byte range and error details survi
   assert.equal(adaptLegacyError(new Error('plain')).message, 'plain')
 })
 
+test('legacy diagnostic source remains data while a real native owner supplies contribution identity', () => {
+  const diagnostic = {
+    id: 'bank.warning',
+    code: 'signature',
+    severity: 'warning',
+    message: 'missing identity',
+    source: 'Legacy Bank Codec',
+  }
+  const anonymous = adaptDiagnostic(diagnostic)
+  assert.equal(anonymous.source, undefined)
+  assert.equal(anonymous.data.legacySource, 'Legacy Bank Codec')
+  const owned = adaptDiagnostic(diagnostic, { contributionId: 'blizzard/sc2-bank' })
+  assert.deepEqual(owned.source, { contributionId: 'blizzard/sc2-bank' })
+  assert.equal(owned.data.legacySource, 'Legacy Bank Codec')
+})
+
 test('compile compatibility registries refuse; operations require explicit owned mapping', () => {
   const registry = new ArtifactCodecRegistry('save')
   for (const method of ['register', 'get', 'list', 'summaries', 'route', 'open'])

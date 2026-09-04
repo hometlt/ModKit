@@ -87,7 +87,9 @@ export function adaptGameArtifactCodec<T>(
         return {
           ...projected,
           diagnostics: [
-            ...descriptor.diagnostics.map(adaptDiagnostic),
+            ...descriptor.diagnostics.map(value =>
+              adaptDiagnostic(value, { contributionId: options.id }),
+            ),
             ...(projected.diagnostics ?? []),
           ],
         }
@@ -183,7 +185,11 @@ export function adaptGameArtifactCodec<T>(
           })),
           ...(result.diagnostics === undefined
             ? {}
-            : { diagnostics: result.diagnostics.map(adaptDiagnostic) }),
+            : {
+                diagnostics: result.diagnostics.map(value =>
+                  adaptDiagnostic(value, { contributionId: options.id }),
+                ),
+              }),
         }
       } catch (error) {
         throw adaptLegacyError(error)
@@ -240,6 +246,6 @@ export function adaptEditPlan(
     planId: options.planId,
     edits,
     fidelity: options.fidelity,
-    diagnostics: plan.diagnostics.map(adaptDiagnostic),
+    diagnostics: plan.diagnostics.map(value => adaptDiagnostic(value)),
   })
 }

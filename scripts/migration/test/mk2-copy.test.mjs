@@ -92,6 +92,56 @@ test('registered exact import relocation preserves before/after hashes', async t
   await writeCopies(prepared)
 })
 
+test('canonical relative source may use its direct public package export, never a replacement', async t => {
+  const f = await fixture(t)
+  const row = f.declaration.copies[0]
+  row.rewrites = [{ from: "'./value.js'", to: "'@fixture/kit/value'", count: 1 }]
+  row.sha256Mk3 = sha256(f.files.get(row.source).replace('./value.js', '@fixture/kit/value'))
+  f.declaration.copies[1].destination = 'kit/src/value.ts'
+  const metadata = {
+    name: '@fixture/kit',
+    version: '1.0.0',
+    exports: {
+      './value': {
+        types: './dist/value.d.ts',
+        default: './dist/value.js',
+      },
+    },
+  }
+  await mkdir(path.join(f.root, 'kit/src'), { recursive: true })
+  await writeFile(path.join(f.root, 'kit/package.json'), JSON.stringify(metadata))
+  await writeFile(
+    path.join(f.root, 'kit/tsconfig.json'),
+    JSON.stringify({
+      compilerOptions: { rootDir: 'src', outDir: 'dist' },
+      include: ['src/**/*.ts'],
+    }),
+  )
+  const dependency = {
+    specifier: '@fixture/kit/value',
+    package: '@fixture/kit',
+    version: '1.0.0',
+    manifest: 'kit/package.json',
+    reason: 'Single canonical source through its public export',
+    canonicalSources: ['src/value.ts'],
+  }
+  f.declaration.scopes['m1-libs'].dependencies = [dependency]
+  const prepared = await f.prepare()
+  assert.equal(prepared.provenance.closure[0].destinationTarget, 'kit/src/value.ts')
+  await writeCopies(prepared)
+  await checkCopies(await f.prepare())
+  dependency.canonicalSources = []
+  await assert.rejects(f.prepare(), /replaced by bare dependency/u)
+  dependency.canonicalSources = ['src/value.ts']
+  metadata.exports['./value'].default = './dist/other.js'
+  await writeFile(path.join(f.root, 'kit/package.json'), JSON.stringify(metadata))
+  await assert.rejects(f.prepare(), /Noncanonical package export target/u)
+  metadata.exports['./value'].default = './dist/value.js'
+  metadata.exports['./value'].browser = './dist/browser-substitute.js'
+  await writeFile(path.join(f.root, 'kit/package.json'), JSON.stringify(metadata))
+  await assert.rejects(f.prepare(), /Noncanonical package export target/u)
+})
+
 for (const [name, mutate, expected] of [
   [
     'empty closure',

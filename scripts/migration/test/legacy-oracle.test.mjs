@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { mkdtemp, mkdir, writeFile, readFile, chmod } from 'node:fs/promises'
+import { mkdtemp, mkdir, writeFile, readFile, chmod, realpath } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { execFileSync } from 'node:child_process'
@@ -185,4 +185,92 @@ test('pinned source, exports, data, dependencies and every cache identity dimens
     'export const value=9000',
     'oracle never repairs the working tree',
   )
+})
+
+test('external snapshots retain required peers, optional installed peers and package self-resolution', async () => {
+  const root = await mkdtemp(path.join(tmpdir(), 'mk2-oracle-peers-'))
+  const repoRoot = path.join(root, 'repo')
+  const cacheDir = path.join(root, 'cache')
+  await mkdir(repoRoot)
+  const git = (...args) =>
+    execFileSync('git', ['-C', repoRoot, ...args], { encoding: 'utf8', windowsHide: true }).trim()
+  async function put(file, content) {
+    const target = path.join(repoRoot, file)
+    await mkdir(path.dirname(target), { recursive: true })
+    await writeFile(target, typeof content === 'string' ? content : JSON.stringify(content))
+  }
+  git('init', '-q')
+  git('config', 'user.name', 'Oracle Test')
+  git('config', 'user.email', 'oracle@test.invalid')
+  git('config', 'core.autocrlf', 'false')
+  await put('package.json', { type: 'module' })
+  await put('entry.ts', 'export { answer } from "example-formatter"')
+  git('add', '.')
+  git('commit', '-qm', 'pinned peer fixture')
+  const options = { repoRoot, cacheDir, commit: git('rev-parse', 'HEAD') }
+  const formatterManifest = {
+    name: 'example-formatter',
+    version: '1.0.0',
+    type: 'module',
+    exports: { '.': './dist/index.js', './self': './dist/self.js' },
+    imports: { '#local': './dist/local.js' },
+    peerDependencies: { 'example-peer': '^1.0.0', 'optional-peer': '^1.0.0' },
+    peerDependenciesMeta: { 'optional-peer': { optional: true } },
+  }
+  await put('node_modules/example-formatter/package.json', formatterManifest)
+  await put(
+    'node_modules/example-formatter/dist/index.js',
+    'import {value} from "example-peer"; import {self} from "example-formatter/self"; import {local} from "#local"; export const answer=value+self+local',
+  )
+  await put('node_modules/example-formatter/dist/self.js', 'export const self=10')
+  await put('node_modules/example-formatter/dist/local.js', 'export const local=2')
+  await put('node_modules/example-peer/package.json', {
+    name: 'example-peer',
+    version: '1.0.0',
+    type: 'module',
+    exports: './index.js',
+  })
+  await put('node_modules/example-peer/index.js', 'export const value=30')
+  const first = await loadMk2('entry.ts', options)
+  assert.equal(first.module.answer, 42)
+  const peer = first.evidence.dependencies.find(item => item.name === 'example-peer')
+  const formatter = first.evidence.dependencies.find(item => item.name === 'example-formatter')
+  assert.equal(peer.version, '1.0.0')
+  assert.equal(formatter.dependencies['example-peer'], peer.root)
+  assert.equal(formatter.dependencies['optional-peer'], undefined)
+  assert.equal(peer.root, await realpath(path.join(repoRoot, 'node_modules/example-peer')))
+  assert.ok(peer.files.some(file => file.path === 'index.js'))
+  assert.equal((await loadMk2('entry.ts', options)).evidence.cacheHit, true)
+
+  await put('node_modules/example-peer/index.js', 'export const value=31')
+  const changed = await loadMk2('entry.ts', options)
+  assert.equal(changed.module.answer, 43)
+  assert.equal(changed.evidence.sourceClosureDigest, first.evidence.sourceClosureDigest)
+  assert.notEqual(changed.evidence.dependenciesDigest, first.evidence.dependenciesDigest)
+  assert.notEqual(changed.evidence.cacheKey, first.evidence.cacheKey)
+  assert.equal(first.module.answer, 42, 'loaded snapshots retain their original peer bytes')
+
+  await put('node_modules/optional-peer/package.json', {
+    name: 'optional-peer',
+    version: '1.0.0',
+    type: 'module',
+    exports: './index.js',
+  })
+  await put('node_modules/optional-peer/index.js', 'export const present=true')
+  const withOptional = await loadMk2('entry.ts', options)
+  const optional = withOptional.evidence.dependencies.find(item => item.name === 'optional-peer')
+  assert.ok(optional)
+  assert.equal(
+    withOptional.evidence.dependencies.find(item => item.name === 'example-formatter').dependencies[
+      'optional-peer'
+    ],
+    optional.root,
+  )
+  assert.notEqual(withOptional.evidence.cacheKey, changed.evidence.cacheKey)
+
+  await put('node_modules/example-formatter/package.json', {
+    ...formatterManifest,
+    peerDependencies: { ...formatterManifest.peerDependencies, 'required-missing-peer': '^1.0.0' },
+  })
+  await assert.rejects(loadMk2('entry.ts', options), /required-missing-peer/u)
 })

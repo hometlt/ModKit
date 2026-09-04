@@ -3,14 +3,14 @@
   "family": "sc2",
   "scope": "m1-libs",
   "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
-  "declarationDigest": "f3d022f22f383431345976dfa1b843d86aff5a76f1f34b523b8cdc1e3c47cf6e",
-  "divergenceDigest": "fa4bba36979c2647c764531c2d1dac7627d8822a67ec1cef6890f4333dfbf5cf",
+  "declarationDigest": "31029f8d7333d3d676ad2e8b58be5e80e9f28f64658c640eeea84519d3fa6875",
+  "divergenceDigest": "703187d943cfe979c33e7b595f9ca4317387cf7760adf7c4dcbab99a2e0d5b57",
   "copiedAt": "2026-09-04",
   "adapters": [
     {
       "destination": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts",
       "reason": "Narrow barrel over pinned neutral assets contracts and explicit registry compatibility boundary; replaces MK2 assets package import.",
-      "sha256": "ae855ecc031d5cc2d08748cd21c961f1fdf40bbc0c90906f203d43652d78a3c8"
+      "sha256": "2731197de24355038bf97d4d89646031b1558cbb2ff551f7ba2b0f765aa84cdc"
     },
     {
       "destination": "modkit-core/packages/codec-kit/src/legacy/assets/registry-compat.ts",

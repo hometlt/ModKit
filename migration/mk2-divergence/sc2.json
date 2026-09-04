@@ -1,5 +1,76 @@
 {
   "schemaVersion": 1,
   "family": "sc2",
-  "entries": []
+  "entries": [
+    {
+      "file": "modkit-extensions-blizzard/starcraft2/test/mk2/codecs/sc2-bank/src/core/core.spec.ts",
+      "semantic": false,
+      "reason": "Test-only relocation: canonical paths or the three registry assertions move to actual MK3 host contracts.",
+      "mk3Contract": "MK3 host owns registration/routing; canonical source paths retain browser guard and manifest assertions.",
+      "proof": [
+        {
+          "path": "modkit-core/migration/mk2-divergence/sc2-bank-test-adaptations.md",
+          "sha256": "0d9d15531f073e0d2a063fb5fc91af7adb3d115040552c3f48dab14c771caf7f"
+        }
+      ],
+      "edits": [
+        {
+          "from": "const files = ['core.ts', 'bank.ts', 'bank-list.ts', 'editor.ts', 'path-core.ts', 'validate.ts', 'sha1.ts', 'types.ts']",
+          "to": "const files = ['../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/core.ts', '../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/bank.ts', '../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/bank-list.ts', '../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/editor.ts', '../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/path-core.ts', '../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/validate.ts', '../../../../../../../../modkit-core/packages/codec-kit/src/crypto/sha1.ts', '../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/types.ts']",
+          "count": 1,
+          "sha256Before": "b9eb2df645c8f84b1e239f50c3cd7d16faeb9777b38a9675b4a8a975dc80acec",
+          "sha256After": "486b27ebef3714f204cd728e4547ad97aa2ec594c93e13d42b3a433d6c19afda"
+        }
+      ]
+    },
+    {
+      "file": "modkit-extensions-blizzard/starcraft2/test/mk2/codecs/sc2-bank/test/codec.test.ts",
+      "semantic": false,
+      "reason": "Test-only relocation: canonical paths or the three registry assertions move to actual MK3 host contracts.",
+      "mk3Contract": "MK3 host owns registration/routing; canonical source paths retain browser guard and manifest assertions.",
+      "proof": [
+        {
+          "path": "modkit-core/migration/mk2-divergence/sc2-bank-test-adaptations.md",
+          "sha256": "0d9d15531f073e0d2a063fb5fc91af7adb3d115040552c3f48dab14c771caf7f"
+        }
+      ],
+      "edits": [
+        {
+          "from": "SAVE_OPERATION_IDS, SavesCodecRegistry",
+          "to": "SAVE_OPERATION_IDS, registerNativeBankRegistryTests",
+          "count": 1,
+          "sha256Before": "dc90020f3594b7bcb7b6f3350882dedce92cea910c4b9fd9a535da35d305f3a6",
+          "sha256After": "24beac10c1d0faae5615dc45a0e9290c7ad97bb32c8da8a5d2ae13c37668455b"
+        },
+        {
+          "from": "describe('SavesCodecRegistry', () => {\n  it('routes a bank source to the registered codec and reports it without host knowledge', async () => {\n    const registry = new SavesCodecRegistry().register(codec)\n    const route = await registry.route(bankSource('/tmp/endofdreamsbank2.SC2Bank'), {\n      gameId: 'starcraft-2',\n    })\n    expect(route.status).toBe('resolved')\n    if (route.status !== 'resolved') return\n    expect(route.primary.detection.pluginId).toBe(SC2_BANK_CODEC_ID)\n\n    const summaries = registry.summaries('starcraft-2')\n    expect(summaries.map(summary => summary.id)).toEqual([SC2_BANK_CODEC_ID])\n    expect(summaries[0]?.kind).toBe('save')\n    expect(summaries[0]?.operationIds).toEqual(SC2_BANK_OPERATIONS.map(operation => operation.id))\n  })\n\n  it('does not route an unrecognized source', async () => {\n    const registry = new SavesCodecRegistry().register(codec)\n    const route = await registry.route(\n      bankSource('/tmp/whatever.txt', new TextEncoder().encode('hello')),\n    )\n    expect(route.status).toBe('unrecognized')\n    expect(\n      await registry.open(bankSource('/tmp/whatever.txt', new TextEncoder().encode('hello'))),\n    ).toBeUndefined()\n  })\n\n  it('rejects double registration', () => {\n    const registry = new SavesCodecRegistry().register(codec)\n    expect(() => registry.register(codec)).toThrow(/already registered/)\n  })\n})\n",
+          "to": "describe('SavesCodecRegistry → native host', () => {\n  registerNativeBankRegistryTests({\n    fixtureXml: FIXTURE_XML,\n    expectedOperationIds: SC2_BANK_OPERATIONS.map(operation => operation.id),\n  })\n})\n",
+          "count": 1,
+          "sha256Before": "24beac10c1d0faae5615dc45a0e9290c7ad97bb32c8da8a5d2ae13c37668455b",
+          "sha256After": "032c4d82a6b40194e1d79ef620b06738f5c66d8582be35a1e237edf46733d52e"
+        }
+      ]
+    },
+    {
+      "file": "modkit-extensions-blizzard/starcraft2/test/mk2/codecs/sc2-bank/test/sc2-bank-manifest.test.ts",
+      "semantic": false,
+      "reason": "Test-only relocation: canonical paths or the three registry assertions move to actual MK3 host contracts.",
+      "mk3Contract": "MK3 host owns registration/routing; canonical source paths retain browser guard and manifest assertions.",
+      "proof": [
+        {
+          "path": "modkit-core/migration/mk2-divergence/sc2-bank-test-adaptations.md",
+          "sha256": "0d9d15531f073e0d2a063fb5fc91af7adb3d115040552c3f48dab14c771caf7f"
+        }
+      ],
+      "edits": [
+        {
+          "from": "const codecRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')",
+          "to": "const codecRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../../../../src/lib/mk2/codecs/sc2-bank')",
+          "count": 1,
+          "sha256Before": "a6d9f71d9de208ce20f4eb64f089c4cbdaaf06ada55c2e48c9157eadc6d58e5b",
+          "sha256After": "26a8f8a6589aef5951782197e2ea4808fe63609e4e6b2fcc82764d0a09d7c983"
+        }
+      ]
+    }
+  ]
 }

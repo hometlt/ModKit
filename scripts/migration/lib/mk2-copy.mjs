@@ -259,6 +259,75 @@ async function applyDivergence(text, divergence, root) {
   return { text, evidence: { ...divergence, proof: proofs } }
 }
 
+// A relative import may cross a package boundary only through a direct public export of
+// that same canonical source. Barrels, fallback targets and arbitrary replacements refuse.
+async function canonicalPackageExport(dependency, sourceTarget, bySource, workspaceRoot) {
+  if (
+    !Array.isArray(dependency.canonicalSources) ||
+    !dependency.canonicalSources.includes(sourceTarget)
+  )
+    throw new Error(`Canonical copied source replaced by bare dependency: ${sourceTarget}`)
+  const destination = bySource.get(sourceTarget)?.destination
+  if (!destination || dependency.kind === 'node-builtin')
+    throw new Error(`Invalid canonical package source: ${sourceTarget}`)
+  const manifestPath = await safeTarget(workspaceRoot, dependency.manifest)
+  const packageRoot = path.dirname(manifestPath)
+  const manifest = JSON.parse(await readFile(manifestPath, 'utf8'))
+  const configPath = path.join(packageRoot, 'tsconfig.json')
+  const config = ts.readConfigFile(configPath, ts.sys.readFile)
+  if (config.error) throw new Error(`Cannot read canonical package tsconfig: ${configPath}`)
+  const parsed = ts.parseJsonConfigFileContent(config.config, ts.sys, packageRoot)
+  if (parsed.errors.some(error => error.code !== 18003))
+    throw new Error(`Invalid canonical package tsconfig: ${configPath}`)
+  const { rootDir, outDir } = parsed.options
+  const within = (parent, child) => {
+    const relative = path.relative(parent, child)
+    return relative !== '..' && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative)
+  }
+  if (!rootDir || !outDir || !within(packageRoot, rootDir) || !within(packageRoot, outDir))
+    throw new Error(`Unbounded canonical package emit directories: ${dependency.package}`)
+  const sourcePath = await safeTarget(workspaceRoot, destination)
+  if (!within(rootDir, sourcePath) || !sourcePath.endsWith('.ts') || sourcePath.endsWith('.d.ts'))
+    throw new Error(`Canonical source is outside package emit scope: ${destination}`)
+  const subpath =
+    dependency.specifier === dependency.package
+      ? '.'
+      : `.${dependency.specifier.slice(dependency.package.length)}`
+  if (
+    dependency.specifier !== dependency.package &&
+    !dependency.specifier.startsWith(`${dependency.package}/`)
+  )
+    throw new Error(`Canonical dependency package mismatch: ${dependency.specifier}`)
+  const stem = path.relative(rootDir, sourcePath).slice(0, -3)
+  const target = extension =>
+    `./${path
+      .relative(packageRoot, path.join(outDir, stem + extension))
+      .split(path.sep)
+      .join('/')}`
+  const exported = manifest.exports?.[subpath]
+  if (
+    !exported ||
+    typeof exported !== 'object' ||
+    Array.isArray(exported) ||
+    exported.types !== target('.d.ts')
+  )
+    throw new Error(`Canonical package needs a direct typed export: ${dependency.specifier}`)
+  let runtimeTargets = 0
+  const check = (value, key) => {
+    if (typeof value === 'string') {
+      if (value !== target(key === 'types' ? '.d.ts' : '.js'))
+        throw new Error(`Noncanonical package export target: ${dependency.specifier}`)
+      if (key !== 'types') runtimeTargets++
+    } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+      for (const [condition, child] of Object.entries(value)) check(child, condition)
+    } else throw new Error(`Unsupported canonical package export: ${dependency.specifier}`)
+  }
+  check(exported, '')
+  if (!runtimeTargets)
+    throw new Error(`Canonical package has no runtime export: ${dependency.specifier}`)
+  return destination
+}
+
 /** Validate the declaration independently of existing destination/provenance files. */
 export async function prepareCopy({
   declaration,
@@ -448,7 +517,12 @@ export async function prepareCopy({
           throw new Error(`Undeclared bare module: ${row.destination} -> ${newImport}`)
         destinationTarget = `dependency:${newImport}`
         if (sourceTarget)
-          throw new Error(`Canonical copied source replaced by bare dependency: ${sourceTarget}`)
+          destinationTarget = await canonicalPackageExport(
+            dependencyMap.get(newImport),
+            sourceTarget,
+            bySource,
+            workspaceRoot,
+          )
       }
       closure.push({
         importer: row.mk2Path,

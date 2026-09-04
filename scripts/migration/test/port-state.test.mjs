@@ -11,6 +11,7 @@ import {
   initialState,
   requirementsFor,
   stable,
+  validateLedgerClaims,
 } from '../lib/port-state.mjs'
 
 const inventory = {
@@ -130,6 +131,160 @@ test('SC2 family closure includes its shared MPQ and CASC consumers', () => {
 test('nonempty executed mapped operation and feature proof close the exact fixture scope', async t => {
   const state = await acceptedFixture(t)
   assert.deepEqual(await checkLedger({ ...state, closure: 'sample' }), [])
+})
+
+test('explicit claims close only selected evidence-backed requirements and retain global pending', async t => {
+  const state = await acceptedFixture(t)
+  const operation = requirements.find(row => row.kind === 'operation')
+  const feature = state.ledger.entries.find(row => row.id !== operation.id)
+  feature.status = 'pending'
+  feature.evidence = []
+  const claims = { schemaVersion: 1, codec: 'sample', requirementIds: [operation.id] }
+  const before = stable({ ledger: state.ledger, operationMap: state.operationMap, claims })
+  assert.deepEqual(await checkLedger({ ...state, claims }), [])
+  assert.deepEqual(await checkLedger({ ...state, closure: 'sample' }), [`pending: ${feature.id}`])
+  assert.deepEqual(await checkLedger({ ...state, closure: 'sc2' }), [`pending: ${feature.id}`])
+  assert.deepEqual(await checkLedger({ ...state, closure: 'all' }), [`pending: ${feature.id}`])
+  assert.equal(stable({ ledger: state.ledger, operationMap: state.operationMap, claims }), before)
+})
+
+test('selected pending requirements fail even when all unselected requirements remain pending', async t => {
+  const state = await fixture(t)
+  const id = requirements[0].id
+  assert.deepEqual(
+    await checkLedger({
+      ...state,
+      claims: { schemaVersion: 1, codec: 'sample', requirementIds: [id] },
+    }),
+    [`pending: ${id}`],
+  )
+})
+
+for (const [label, claims, pattern] of [
+  ['null scope', null, /invalid claims schema/u],
+  ['array scope', [], /invalid claims schema/u],
+  [
+    'wrong schema version',
+    { schemaVersion: 2, codec: 'sample', requirementIds: [requirements[0].id] },
+    /invalid claims schema/u,
+  ],
+  [
+    'unknown schema property',
+    { schemaVersion: 1, codec: 'sample', requirementIds: [requirements[0].id], requiremntIds: [] },
+    /invalid claims schema/u,
+  ],
+  [
+    'empty codec',
+    { schemaVersion: 1, codec: ' ', requirementIds: [requirements[0].id] },
+    /unknown or empty claims codec/u,
+  ],
+  [
+    'unknown codec',
+    { schemaVersion: 1, codec: 'typo', requirementIds: [requirements[0].id] },
+    /unknown or empty claims codec/u,
+  ],
+  [
+    'missing requirements',
+    { schemaVersion: 1, codec: 'sample' },
+    /empty or invalid claims requirementIds/u,
+  ],
+  [
+    'empty requirements',
+    { schemaVersion: 1, codec: 'sample', requirementIds: [] },
+    /empty or invalid claims requirementIds/u,
+  ],
+  [
+    'non-array requirements',
+    { schemaVersion: 1, codec: 'sample', requirementIds: requirements[0].id },
+    /empty or invalid claims requirementIds/u,
+  ],
+  [
+    'empty requirement ID',
+    { schemaVersion: 1, codec: 'sample', requirementIds: [' '] },
+    /invalid claims requirement ID/u,
+  ],
+  [
+    'non-string requirement ID',
+    { schemaVersion: 1, codec: 'sample', requirementIds: [1] },
+    /invalid claims requirement ID/u,
+  ],
+  [
+    'unknown or stale requirement',
+    { schemaVersion: 1, codec: 'sample', requirementIds: ['legacy/codec/sample/feature/stale'] },
+    /unknown or stale claims requirement/u,
+  ],
+  [
+    'duplicate requirement',
+    { schemaVersion: 1, codec: 'sample', requirementIds: [requirements[0].id, requirements[0].id] },
+    /duplicate claims requirement/u,
+  ],
+]) {
+  test(`explicit claims reject ${label}`, async t => {
+    const state = await fixture(t)
+    assert.match((await checkLedger({ ...state, claims })).join('\n'), pattern)
+  })
+}
+
+test('claims cannot select a real requirement owned by another codec', async t => {
+  const state = await fixture(t)
+  const foreign = {
+    ...requirements[0],
+    id: 'legacy/codec/other/feature/actual',
+    codec: 'other',
+    kind: 'feature',
+  }
+  state.requirements = [...requirements, foreign]
+  state.ledger.entries.push({ id: foreign.id, status: 'pending', evidence: [] })
+  assert.deepEqual(await checkLedger(state), [])
+  assert.match(
+    (
+      await checkLedger({
+        ...state,
+        claims: { schemaVersion: 1, codec: 'sample', requirementIds: [foreign.id] },
+      })
+    ).join('\n'),
+    /claims requirement belongs to another codec/u,
+  )
+})
+
+test('claims and full closure cannot be combined through the library API', async t => {
+  const state = await acceptedFixture(t)
+  const claims = { schemaVersion: 1, codec: 'sample', requirementIds: [requirements[0].id] }
+  assert.deepEqual(await checkLedger({ ...state, claims, closure: 'sample' }), [
+    'claims and closure are mutually exclusive',
+  ])
+  assert.deepEqual([...validateLedgerClaims(claims, requirements)], [requirements[0].id])
+})
+
+test('a malformed proof outside the selected claims still fails global integrity', async t => {
+  const state = await acceptedFixture(t)
+  const operation = requirements.find(row => row.kind === 'operation')
+  const feature = requirements.find(row => row.kind === 'feature')
+  const claims = { schemaVersion: 1, codec: 'sample', requirementIds: [feature.id] }
+  const receipt = JSON.parse(await readFile(path.join(state.root, 'receipt.json'), 'utf8'))
+  receipt.proofs.find(proof => proof.requirement === operation.id).executed = false
+  const bytes = stable(receipt)
+  await writeFile(path.join(state.root, 'receipt.json'), bytes)
+  for (const entry of state.ledger.entries) entry.evidence[0].sha256 = hash(bytes)
+  assert.deepEqual(await checkLedger({ ...state, claims }), [
+    `${operation.id}: operation execution proof missing: ${operation.id}`,
+  ])
+})
+
+test('claims retain global mapping, entry and accepted-evidence protection', async t => {
+  const state = await acceptedFixture(t)
+  const previous = structuredClone(state.ledger)
+  const feature = requirements.find(row => row.kind === 'feature')
+  const operation = state.operationMap.entries[0]
+  const claims = { schemaVersion: 1, codec: 'sample', requirementIds: [feature.id] }
+  state.ledger.entries = state.ledger.entries.filter(row => row.id === feature.id)
+  state.operationMap.entries = []
+  state.ledger.protectedEvidence = []
+  const problems = await checkLedger({ ...state, previous, claims })
+  assert.ok(problems.includes(`missing ledger entry: ${operation.id}`))
+  assert.ok(problems.includes(`accepted requirement removed: ${operation.id}`))
+  assert.ok(problems.includes(`accepted requirement proof removed: ${operation.id}`))
+  assert.ok(problems.includes('accepted proof removed: receipt.json'))
 })
 
 test('missing feature, missing operation, empty ledger and duplicate rows fail', async t => {

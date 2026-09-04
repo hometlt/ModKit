@@ -274,6 +274,38 @@ export function validateReceipt(receipt, requirement) {
   return proof
 }
 
+/** Explicit partial acceptance; every selected ID must still belong to the named codec. */
+export function validateLedgerClaims(claims, requirements) {
+  if (
+    !claims ||
+    typeof claims !== 'object' ||
+    Array.isArray(claims) ||
+    claims.schemaVersion !== 1 ||
+    Object.keys(claims).some(key => !['schemaVersion', 'codec', 'requirementIds'].includes(key))
+  )
+    throw new Error('invalid claims schema: expected schemaVersion 1, codec and requirementIds')
+  if (
+    typeof claims.codec !== 'string' ||
+    !claims.codec.trim() ||
+    !requirements.some(requirement => requirement.codec === claims.codec)
+  )
+    throw new Error(`unknown or empty claims codec: ${claims.codec}`)
+  if (!Array.isArray(claims.requirementIds) || !claims.requirementIds.length)
+    throw new Error('empty or invalid claims requirementIds')
+  const required = new Map(requirements.map(requirement => [requirement.id, requirement]))
+  const selected = new Set()
+  for (const id of claims.requirementIds) {
+    if (typeof id !== 'string' || !id.trim()) throw new Error('invalid claims requirement ID')
+    if (selected.has(id)) throw new Error(`duplicate claims requirement: ${id}`)
+    const requirement = required.get(id)
+    if (!requirement) throw new Error(`unknown or stale claims requirement: ${id}`)
+    if (requirement.codec !== claims.codec)
+      throw new Error(`claims requirement belongs to another codec: ${id}`)
+    selected.add(id)
+  }
+  return selected
+}
+
 export async function checkLedger({
   requirements,
   ledger,
@@ -281,11 +313,21 @@ export async function checkLedger({
   root,
   previous,
   closure,
+  claims,
   publications = [],
 }) {
   const failures = []
   const fail = text => failures.push(text)
   if (!Array.isArray(requirements) || !requirements.length) return ['empty requirements']
+  let selectedClaims = new Set()
+  if (claims !== undefined) {
+    if (closure !== undefined) fail('claims and closure are mutually exclusive')
+    try {
+      selectedClaims = validateLedgerClaims(claims, requirements)
+    } catch (error) {
+      fail(error.message)
+    }
+  }
   if (ledger.schemaVersion !== 1 || !Array.isArray(ledger.entries) || !ledger.entries.length)
     return ['empty or invalid ledger']
   if (operationMap.schemaVersion !== 1 || !Array.isArray(operationMap.entries))
@@ -322,7 +364,12 @@ export async function checkLedger({
     if (mapping && mapping.status !== entry.status)
       fail(`operation status drift: ${requirement.id}`)
     if (entry.status === 'pending') {
-      if (closure === 'all' || closure === requirement.family || closure === requirement.codec)
+      if (
+        selectedClaims.has(requirement.id) ||
+        closure === 'all' ||
+        closure === requirement.family ||
+        closure === requirement.codec
+      )
         fail(`pending: ${requirement.id}`)
       if (entry.evidence.length) fail(`pending row carries acceptance evidence: ${requirement.id}`)
       continue
