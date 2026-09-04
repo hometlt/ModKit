@@ -352,12 +352,12 @@ export function serviceProviderFidelityEvidenceRecord(
         }
         const facet = writerFacet(candidate.facet)
         return (
-          facet?.providerId === identity.providerId &&
-          facet.fidelityEvidenceId === selectedOffer.fidelityEvidenceId &&
-          facet.formatId === identity.formatId &&
-          facet.representationId === identity.representationId &&
-          facet.mutationMode === selectedOffer.mutationMode &&
-          facet.minimumRoundTrip === selectedOffer.minimumRoundTrip
+          facet?.['providerId'] === identity.providerId &&
+          facet['fidelityEvidenceId'] === selectedOffer.fidelityEvidenceId &&
+          facet['formatId'] === identity.formatId &&
+          facet['representationId'] === identity.representationId &&
+          facet['mutationMode'] === selectedOffer.mutationMode &&
+          facet['minimumRoundTrip'] === selectedOffer.minimumRoundTrip
         )
       })
       if (offers.length !== 1) continue

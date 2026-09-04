@@ -20,13 +20,13 @@ describe('@modkit/code package boundary', () => {
     expect(packageJson.name).toBe('@modkit/code')
     expect(packageJson.modkit).toBeUndefined()
     expect(packageJson.exports?.['./module']).toMatchObject({
-      types: './src/module.d.ts',
-      default: './src/module.js',
+      types: './dist/module.d.ts',
+      default: './dist/module.js',
     })
   })
 
   it('preserves the published code-stage contribution identity and entrypoint', () => {
     expect(contribution.id).toBe('modkit.ui-monaco/code-stage')
-    expect(contribution.runtimeVariants?.[0]?.entrypoint).toBe('./src/index.js')
+    expect(contribution.runtimeVariants?.[0]?.entrypoint).toBe('./dist/index.js')
   })
 })

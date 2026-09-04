@@ -670,17 +670,17 @@ function invalidPlan(plan: AssetEditPlan): boolean {
         'semanticPath',
         'expectedRevision',
       ]) ||
-      !isNonBlank(target.targetId) ||
-      ids.has(target.targetId) ||
-      !isNonBlank(target.subjectUri) ||
-      !isAssetSource(target.ownerSource) ||
-      !Array.isArray(target.semanticPath) ||
-      !target.semanticPath.every(isNonBlank) ||
-      !isRevision(target.expectedRevision)
+      !isNonBlank(target['targetId']) ||
+      ids.has(target['targetId']) ||
+      !isNonBlank(target['subjectUri']) ||
+      !isAssetSource(target['ownerSource']) ||
+      !Array.isArray(target['semanticPath']) ||
+      !target['semanticPath'].every(isNonBlank) ||
+      !isRevision(target['expectedRevision'])
     ) {
       return true
     }
-    ids.add(target.targetId)
+    ids.add(target['targetId'])
   }
   const editedIds = new Set<string>()
   for (const edit of plan.edits) {

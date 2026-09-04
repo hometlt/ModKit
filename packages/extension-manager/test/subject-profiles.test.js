@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { createBrowserExtensionVfs } from '../src/browser.js'
+import { createBrowserExtensionVfs } from '../dist/browser.js'
 import {
   ExtensionManagerError,
   GAME_SUBJECT_KIND,
@@ -15,7 +15,7 @@ import {
   projectVendorGameSubjects,
   subjectFactsSourceFromWire,
   subjectRecordToWire,
-} from '../src/index.js'
+} from '../dist/index.js'
 
 const json = value => new TextEncoder().encode(JSON.stringify(value))
 

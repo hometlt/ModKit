@@ -227,11 +227,11 @@ export function defineBuiltinModule(init: BuiltinModuleInit): BuiltinModule {
       ...packageJson,
       modkit: {
         ...modkit,
-        schemaVersion: modkit.schemaVersion ?? 1,
+        schemaVersion: modkit['schemaVersion'] ?? 1,
         publisher,
         id,
         contributionManifests:
-          modkit.contributionManifests ??
+          modkit['contributionManifests'] ??
           init.contributions.map(item => `./${item.path.replace(/^\.\//u, '')}`),
       },
     },

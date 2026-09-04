@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 
-import { discoverLocalExtensionCandidates } from '../src/node.js'
+import { discoverLocalExtensionCandidates } from '../dist/node.js'
 
 async function writeExtension(root, publisher, id, overrides = {}) {
   await mkdir(root, { recursive: true })

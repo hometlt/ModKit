@@ -1,4 +1,17 @@
 pnpm-lock.yaml
+# Immutable M1 receipts and exact tested source snapshots; their digests are evidence.
+reports/port-libs-m1/
+# Raw test-runner output is byte-bound by the scoped surfaces receipt.
+reports/port-infra/surfaces-tests.json
+# Accepted byte-identified evidence and signed generated bundles are checked by their own gates.
+reports/legacy-parity-textures-m0/receipt.json
+reports/PORT_TEXTURES_DDS_2026-09-04.md
+reports/vscode-ga-recovery-wave1a/installed-acceptance.json
+packages/extension-manager/generated/offline-release/*.json
+# Deterministic generated port views; emit-codec-map --check owns their exact serialization.
+migration/generated/codec-map.json
+migration/generated/codec-map.md
+migration/generated/port-requirements.json
 packages/sdk/src/manifest/validators.generated.ts
 packages/sdk/src/manifest/validators.generated/
 packages/sdk/src/host-facilities.generated.ts
@@ -32,3 +45,55 @@ extensions/.x3-docs-*/
 # third-party runtimes copied verbatim into an extension; provenance and digests live in the
 # vendor directory README, and reformatting them would break the copy they are supposed to be
 extensions/*/vendor/
+
+# Exact pinned MK2 copies; verified by mk2-copy:check and strict tsc (ADR-CODEC-001).
+packages/codec-kit/src/legacy/assets/artifact-codec.ts
+packages/codec-kit/src/legacy/assets/artifact-session.ts
+packages/codec-kit/src/legacy/assets/source.ts
+packages/codec-kit/src/legacy/assets/operations.ts
+packages/codec-kit/src/legacy/assets/descriptor.ts
+packages/codec-kit/src/legacy/assets/detection.ts
+packages/codec-kit/src/legacy/assets/diagnostics.ts
+packages/codec-kit/src/legacy/assets/capabilities.ts
+packages/codec-kit/src/legacy/assets/cancellation.ts
+packages/codec-kit/src/legacy/assets/json.ts
+packages/codec-kit/src/legacy/assets/editing.ts
+packages/codec-kit/src/legacy/assets/profiles/image-texture.ts
+packages/codec-kit/src/legacy/assets/content.ts
+packages/codec-kit/src/legacy/assets/contributions.ts
+packages/codec-kit/src/legacy/assets/companions.ts
+packages/codec-kit/src/legacy/assets/format-registry.ts
+packages/codec-kit/src/legacy/assets/codec-matching.ts
+packages/codec-kit/src/legacy/assets/codec-manifest.ts
+packages/codec-kit/src/legacy/core/errors.ts
+packages/codec-kit/src/legacy/core/logger.ts
+packages/codec-kit/src/legacy/games/types.ts
+packages/codec-kit/src/legacy/world/contracts.ts
+packages/codec-kit/src/legacy/runtime/contracts.ts
+packages/codec-kit/src/crypto/sha1.ts
+packages/codec-kit/src/crypto/mpq.ts
+packages/codec-kit/src/compression/legacy-original.ts
+packages/codec-kit/src/compression/pako.d.ts
+packages/codec-kit/src/texture/gpu-texture.ts
+packages/codec-kit/src/texture/gpu-texture-wasm.ts
+packages/codec-kit/src/texture/compressed-texture.ts
+packages/codec-kit/src/texture/binary.ts
+packages/codec-kit/src/texture/types.ts
+packages/codec-kit/src/legacy/semantic/data.ts
+packages/codec-kit/src/legacy/semantic/documents.ts
+packages/codec-kit/src/legacy/semantic/layouts.ts
+packages/codec-kit/src/legacy/semantic/localization.ts
+packages/codec-kit/src/legacy/semantic/maps.ts
+packages/codec-kit/src/legacy/semantic/mods.ts
+packages/codec-kit/src/legacy/semantic/replays.ts
+packages/codec-kit/src/legacy/semantic/saves.ts
+packages/codec-kit/src/legacy/semantic/scripts.ts
+packages/codec-kit/src/legacy/language-contracts/module.ts
+packages/codec-kit/src/legacy/language-contracts/document-kind.ts
+packages/codec-kit/src/legacy/language-contracts/contributions.ts
+packages/codec-kit/src/legacy/language-contracts/index.ts
+packages/codec-kit/src/legacy/entity-cards/model.ts
+packages/codec-kit/src/legacy/entity-cards/graph.ts
+packages/codec-kit/src/legacy/entity-cards/providers.ts
+packages/codec-kit/src/legacy/entity-cards/address.ts
+packages/codec-kit/src/legacy/entity-cards/index.ts

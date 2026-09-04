@@ -1,0 +1,36 @@
+{
+  "entries": [
+    {
+      "family": "sc2",
+      "id": "sc2-campaign",
+      "plan": "references/modkit-docs/MK3/plans/PLAN_SC2_CAMPAIGN_2026-09-04.md",
+      "requirements": [
+        {
+          "id": "CMP1",
+          "label": "Research real native campaign variants and record fixtures and unknown fields"
+        },
+        {
+          "id": "CMP2",
+          "label": "Create and open packed and loose campaign documents through shared containers"
+        },
+        {
+          "id": "CMP3",
+          "label": "Edit mission/map references and dependencies with validation"
+        },
+        {
+          "id": "CMP4",
+          "label": "Preserving write, no-op round-trip and unknown data retention"
+        },
+        {
+          "id": "CMP5",
+          "label": "Generic metadata, selector, facts, graph and operation surfaces"
+        },
+        {
+          "id": "CMP6",
+          "label": "Installed host acceptance with real campaign fixtures"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 1
+}

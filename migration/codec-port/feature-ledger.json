@@ -1,0 +1,4472 @@
+{
+  "entries": [
+    {
+      "evidence": [],
+      "id": "authored/sc2-campaign/CMP1",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "authored/sc2-campaign/CMP2",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "authored/sc2-campaign/CMP3",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "authored/sc2-campaign/CMP4",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "authored/sc2-campaign/CMP5",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "authored/sc2-campaign/CMP6",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/7z/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/7z/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/7z/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/7z/operation/archive.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/aac/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/aac/operation/audio.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/aac/operation/audio.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/age-bar/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/age-bar/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/age-bar/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/age-drs/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/age-drs/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/age-drs/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/age-of-mythology-brg/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ai/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ai/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ai/operation/export.raw",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ai/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ai/operation/view.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ani/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ani/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ani/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/astc/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/astc/operation/image.compressed.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/astc/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/astc/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/avi/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/avi/operation/video.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/avi/operation/video.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/avif/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/avif/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/basis/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/basis/operation/image.compressed.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/basis/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/basis/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/big/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/big/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/big/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/big/operation/archive.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/bink/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/bink/operation/video.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/bink/operation/video.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/blend/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/blend/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/blizzard-tbl/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/blp/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/blp/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/blp/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/blp/operation/image.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/bmp/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/bmp/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/bmp/operation/image.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/bnk/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/bnk/operation/audio.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/bnk/operation/audio.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/bnk/operation/audio.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/brotli/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/brotli/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/brotli/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/brotli/operation/archive.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/bti/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/bti/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/bti/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/bzip2/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/bzip2/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/bzip2/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/bzip2/operation/archive.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/cab/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/cab/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/cab/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/casc/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/casc/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/cdr/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/cdr/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/cdr/operation/export.raw",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/cdr/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/cdr/operation/view.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/cnc3-data/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/cnc3-data/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/cnc3-localization/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/cnc3-localization/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/cnc3-map/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/cnc3-map/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/cps/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/cps/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/csv/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/csv/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/csv/operation/edit.content",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/csv/operation/export.raw",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/csv/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/csv/operation/view.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/cub/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/cub/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/cub/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/cur/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/cur/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/cur/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/cur/operation/image.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/dae/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/dae/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/dae/operation/model.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/dds/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/dds/operation/image.compressed.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/dds/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/dds/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/dds/operation/image.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ddt/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ddt/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ddt/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/def/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/def/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/diablo2-character-model/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/diablo2-dc6/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/diablo2-dt1/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/diablo3-app/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/diablo3-app/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/diablo3-app/operation/model.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/diablo3-sno-data/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/diablo3-tex/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/diablo3-tex/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/diablo3-tex/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/dmg/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/dmg/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/dmg/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/docx/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/docx/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/docx/operation/export.raw",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/docx/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/docx/operation/view.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/drawio/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/drawio/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/drawio/operation/export.raw",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/drawio/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/drawio/operation/view.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/dune2000-map/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/earth-par/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/earth-par/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/earth-par/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/earth-res/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/earth-res/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/earth-tex/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/earth-tex/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/earth-tex/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/earth2160-model/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/earth2160-model/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/earth2160-model/operation/model.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/emf/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/emf/operation/vector.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/emperor-bag/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/emperor-rfh-rfd/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/emperor-rfh-rfd/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/emperor-rfh-rfd/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/emperor-xbf/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/emperor-xbf/operation/model.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/emperor-xbf/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/emperor-xbf/operation/model.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/emperor-xbf/operation/model.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/empire-earth-ssa/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/empire-earth-ssa/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/empire-earth-ssa/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/exr/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/exr/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/exr/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/figma/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/figma/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/figma/operation/export.raw",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/figma/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/figma/operation/view.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/fla/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/fla/operation/video.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/fla/operation/video.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/fla/operation/video.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/flac/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/flac/operation/audio.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/flac/operation/audio.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/flv/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/flv/operation/video.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/flv/operation/video.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/fsb/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/fsb/operation/audio.decode",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/fsb/operation/audio.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/fsb/operation/audio.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/gaf/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/gaf/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/02c6d7125242d9cb",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/07d548c77579f8ed",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/1383a83c2b585e7a",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/1a6a061f36dda7ca",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/1d0afa85c36188cf",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/22933635ee31d568",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/252e2cacb2830db7",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/29f65483b2fa01ab",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/429c80cac335d506",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/45527fd6a18938e7",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/478291e85f752326",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/4d66bcba31cfe951",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/4f9a12a69da3135b",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/59a4a5fd3d65ae64",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/8a8d967eb1bbc06e",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/9f0fb87bc2f25373",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/a2ffa463f1509b05",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/aee693bdd0fced58",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/b2dfd6a72d60cafb",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/b4c751d6594c32ce",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/c83412c572a2e7b2",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/d24505df1a08d94b",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/e082264235448ed8",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/e8f590258fb1808d",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/operation/edit.structure",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/operation/export.convert",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/operation/script.completion",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/operation/script.format",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/operation/script.references",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/operation/script.symbols",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/galaxy/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/gif/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/gif/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/gif/operation/image.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/glb/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/glb/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/glb/operation/model.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/gltf/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/gltf/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/gltf/operation/model.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/grey-goo-alo/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/grey-goo-alo/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/grey-goo-alo/operation/model.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/gzip/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/gzip/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/gzip/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/gzip/operation/archive.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/halo-era/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/halo-era/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/halo-era/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/halo-wars-ugx/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/hdr/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/hdr/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/hdr/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/hdr/operation/image.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/heroes3-lod/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/heroes3-lod/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/heroes3-lod/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/heroes4-resource/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/heroes4-resource/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/heroes4-resource/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/heroes6-orc/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/heroes6-orc/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/heroes6-orc/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ico/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ico/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ico/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ico/operation/image.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/iso/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/iso/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/iso/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/jpg/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/jpg/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ktx/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ktx/operation/image.compressed.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ktx/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ktx/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ktx/operation/image.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ktx2/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ktx2/operation/image.compressed.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ktx2/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ktx2/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ktx2/operation/image.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/lzma/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/lzma/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/lzma/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m3/feature/011d6e369f8c2eed",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m3/feature/1f235e68cd31c2fa",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m3/feature/2676d4dd33b49574",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m3/feature/26e692a10da6f8a4",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m3/feature/346084db443ea408",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m3/feature/3664f80d62a5dfcd",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m3/feature/4a8b314c6bed3147",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m3/feature/556e38aab03a4849",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m3/feature/5e78c065d5fcb2ff",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m3/feature/672bfac87be00c0f",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m3/feature/99206020ab1ce4e9",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m3/feature/a1c083966b255d42",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m3/feature/b2a1b78ef3e1041d",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m3/feature/b5d28d944cda398d",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m3/feature/b98cc5d4cc8ca98e",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m3/feature/bc50fe9d083c47a8",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m3/feature/dfad1b27ebd848e8",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m3/feature/efef1db50fad69fb",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m3/operation/model.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m3/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m3/operation/model.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m3/operation/model.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m4a/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m4a/operation/audio.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/m4a/operation/audio.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/markdown/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/markdown/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/markdown/operation/edit.content",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/markdown/operation/export.raw",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/markdown/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/markdown/operation/view.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/max/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/mix/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/mix/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/mix/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/mp3/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/mp3/operation/audio.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/mp3/operation/audio.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/mp4/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/mp4/operation/video.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/mp4/operation/video.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/mpeg/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/mpeg/operation/video.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/mpeg/operation/video.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/mpq/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/mpq/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/mpq/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/mpq/operation/archive.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/mtrl/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/mtrl/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/mtrl/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/obj/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/obj/operation/model.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/obj/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/obj/operation/model.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/obj/operation/model.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/odp/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/odp/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/odp/operation/export.raw",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/odp/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/odp/operation/view.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ods/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ods/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ods/operation/export.raw",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ods/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ods/operation/view.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/odt/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/odt/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/odt/operation/export.raw",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/odt/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/odt/operation/view.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ogg/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ogg/operation/audio.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ogg/operation/audio.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ogv/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ogv/operation/video.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ogv/operation/video.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/opus/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/opus/operation/audio.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/opus/operation/audio.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pal/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pal/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pal/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pcx/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pcx/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pcx/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pcx/operation/image.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pdf/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pdf/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pdf/operation/export.raw",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pdf/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pdf/operation/view.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pe/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pe/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pe/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pe/operation/archive.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/petroglyph-meg/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/petroglyph-meg/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/petroglyph-meg/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pkm/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pkm/operation/image.compressed.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pkm/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pkm/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ply/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ply/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ply/operation/model.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/png/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/png/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/png/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/png/operation/image.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pptx/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pptx/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pptx/operation/export.raw",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pptx/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pptx/operation/view.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/prt/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/prt/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/prt/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ps1-cue-bin/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ps1-cue-bin/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ps1-cue-bin/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ps1-xa/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ps1-xa/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ps1-xa/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/psd/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/psd/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pvr/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pvr/operation/image.compressed.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pvr/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/pvr/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/r16/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/r16/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/r16/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/r8/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/r8/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/r8/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/rar/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/rar/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/rar/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/red-alert2-vxl/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/red-alert2-vxl/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/red-alert2-vxl/operation/model.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/relic-rgm/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/relic-sga/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/relic-sga/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/relic-sga/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/relic-sgm/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/relic-sgm/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/relic-sgm/operation/model.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/relic-ucs/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/relic-whm/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/relic-whm/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/relic-whm/operation/model.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/relic/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/relic/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/relic/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/rgt/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/rgt/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/rgt/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/rgt/operation/image.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/rrtex/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/rrtex/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/rrtex/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/rsh/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/rsh/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/rsh/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/rsh/operation/image.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/rtf/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/rtf/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/rtf/operation/export.raw",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/rtf/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/rtf/operation/view.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/rtx/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/rtx/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/rtx/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/rtx/operation/image.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sage-asset-bundle/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sage-skudef/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sage-skudef/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sage-w3x/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sage-w3x/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sage-w3x/operation/model.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/feature/05d154295c0f920d",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/feature/0b8a8111a4bee7a5",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/feature/1366f797e4c93c82",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/feature/195a72de94bde280",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/feature/2accf19c17872afe",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/feature/2c361e68d5fbe17f",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/feature/43798a3c1fb2eb43",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/feature/5d197c13ed496941",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/feature/652c8ab5f4e58d1b",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/feature/74260e4c491b45c3",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/feature/76a2e574f1e33647",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/feature/8c991e2fe9eddf98",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/feature/9613a2f48123d984",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/feature/a64d56c9c7aa0849",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/feature/aeff20fd6b1162e6",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/feature/c82ea2cedc50fcbb",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/feature/d985ed421c3e42b1",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/feature/dffea872f8e08161",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/feature/e40365a9cf02c976",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/feature/e808d267b7804aa6",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/feature/eb369e7ac8d1b000",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/operation/edit.content",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/operation/export.raw",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/operation/save.sign",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/operation/source.save-as",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-bank/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/feature/13517f4d7b0880dc",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/feature/251819ce1738f4c1",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/feature/35c0b55bf61c4bba",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/feature/3e721fdf60323bc0",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/feature/3ebde0090e0920f9",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/feature/54c4c73b52124350",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/feature/5afd5cea36668f71",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/feature/69adac86d5e8dfc2",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/feature/9dae17bf068b309f",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/feature/b51c6b20ac8cd4d0",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/feature/c044df0bb9be2364",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/feature/cdd8e9bfb9e97b2f",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/feature/d65bac1b13594400",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/feature/d7535085f15f6864",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/feature/da559d406e79b116",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/feature/dca3c258ce6db08c",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/feature/ef20d9871d1f4e6b",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/feature/f8ceabab58c03adb",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/operation/asset.search",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/operation/edit.content",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/operation/export.convert",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/operation/sc2-data.provision",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/operation/sc2-data.references",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/operation/sc2-data.resolve-inheritance",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-data/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/01d23a350ffb0b10",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/0eb044a83b444824",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/2a03e2f8d2c16e36",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/3a78aac39b5556a4",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/437917b026066633",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/47ee2ef6aef62092",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/547c7eb73ef1a273",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/5d6da44ca2681acf",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/62bb89b9e28d598b",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/638009c37a18785e",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/9081602bc75c7f95",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/9506fc40b327f3fc",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/adbe47bf6acd0344",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/dd51cb920062a655",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/edit.content",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/export.convert",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/export.raw",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/0216af8d323d8c33",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/159157d68cde3c76",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/1940be1e2f8edfe4",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/4103ffd9b1e8c390",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/4e6e2b6ebf7c6d34",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/5109d39f694a55ab",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/5731e60ed8b413c7",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/5e7580de2ba43994",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/631facb9fe735bd2",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/86138cdac17f384a",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/86e7ef83ea987380",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/95b537177a847079",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/980fdc91fe95b20f",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/9c15d18d9d1c44ca",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/9fae6c663f40813c",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/a0af35fac1c8fe15",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/b1388f61ccf518e2",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/c64ad18fe9c53cb8",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/c84d66c380624fb6",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/e1bf2ec16a79f80e",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/ef570244a04485ae",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/f3b803a24538e2ef",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/fc1a57ee3ba6a843",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/operation/export.convert",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/operation/export.raw",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/operation/sc2-layout.parse",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-layout/operation/view.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-map/feature/12fe37c7d18dd0fe",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-map/feature/1cbfd40144fe7b13",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-map/feature/1daaa12f09de0595",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-map/feature/1e0e96646216c581",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-map/feature/1f5ef30478b38f0b",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-map/feature/22af60ef3ba2ad4b",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-map/feature/2582e66e0167dad7",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-map/feature/34af3197f5731769",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-map/feature/3bc136e18a5c8264",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-map/feature/62a645cea8713979",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-map/feature/66cc0604ad75fdf6",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-map/feature/974b61f46d425b92",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-map/feature/9ecc335c41704d04",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-map/feature/9ff836268db8cc1c",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-map/feature/ad3b909905d29a00",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-map/feature/b05ee6b4bbe66773",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-map/feature/b1f01880f97540ed",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-map/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-map/operation/container.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-map/operation/game.launch-map",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-map/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-map/operation/view.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-map/operation/view.thumbnail",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/feature/0f9f0dcbd4e44d35",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/feature/2d84560edaa04ec8",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/feature/3ed6709802534e74",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/feature/47287c753221de5f",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/feature/4c36e66efe11f1d0",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/feature/5030c905dd91a52c",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/feature/51f919fb5ce9eda8",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/feature/619acf4170e25919",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/feature/8980821291a9fced",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/feature/8db147153d1b6d5b",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/feature/ad7648f1077075d8",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/feature/c3cd492746b62bd6",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/feature/c42282807588a848",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/feature/cee74bccc6bf8ca0",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/feature/f8700c9dbcbb3984",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/feature/fe45e9ad4ab7d6f8",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/operation/asset.compare",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/operation/container.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/operation/content.mount",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/operation/content.resolve-dependencies",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/operation/edit.structure",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/operation/export.convert",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-mod/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/feature/07f57788363f21f8",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/feature/13d1fd7ef59d4e03",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/feature/1c712da116e4b519",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/feature/25e69931895b3e23",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/feature/39702b3ce0781acd",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/feature/3bd221ae350353f3",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/feature/53eb67335e3124c7",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/feature/61824309047f27a8",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/feature/833247a23381503e",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/feature/84dcfb1324332f4b",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/feature/8954921428619623",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/feature/91eeb1b97a42b1eb",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/feature/94a8faa139141b9a",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/feature/9d560db35b07fed9",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/feature/9de6b428e0a80208",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/feature/b759e743f9fd83e5",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/feature/b9aff055f2372c3d",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/feature/c6a8eeec407e8618",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/feature/edaccd70a189e491",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/operation/export.convert",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/operation/export.raw",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/operation/media.play",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/operation/media.seek",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/operation/sc2-replay.analyze",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-replay/operation/view.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/feature/0081db0f0b5c60ff",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/feature/07b88ebf17aef0de",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/feature/18f5e71cbe789f7a",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/feature/2f91387c1e6ed796",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/feature/4067b4634d60cd45",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/feature/463b1476da476f2c",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/feature/4e683df91a3c853c",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/feature/5b5adec1f7a53d84",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/feature/a81acca90857318d",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/feature/b01c0beb2f9d51d1",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/feature/b2529756e676ad04",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/feature/bf614ef5cb0eadfc",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/operation/runtime.execute",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/operation/runtime.replay-assist",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/operation/runtime.restore",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/operation/runtime.simulation-command",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/operation/runtime.simulation-hash",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/operation/runtime.simulation-step",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/operation/runtime.snapshot",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/feature/088b71698a85b749",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/feature/1f4483c5d1d3421b",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/feature/22683deeeecacce5",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/feature/2ae0fad71087cc8e",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/feature/2b434e6b1640c503",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/feature/34b8b6cee9e8b8d4",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/feature/5ae94808f37f3aa7",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/feature/66eaf6782f1ea833",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/feature/72729169e50d522d",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/feature/7bb7815d3cd1be7d",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/feature/8ae8e29098587892",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/feature/98b3da8119c0b801",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/feature/a26195814e821b56",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/feature/bbd23e4ebde3eb02",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/feature/be54bfae29b91a54",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/feature/beed387a2fcaf6d1",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/feature/c10fd53344cca6e8",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/feature/d16933fb127f448a",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/feature/df064397855703ff",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/feature/e252d2ea05fce2d0",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/operation/edit.content",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/operation/export.convert",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/operation/sc2-strings.references",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/operation/sc2-strings.translate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-strings/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/0276b08d70557635",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/2a1c5bdb373d16cf",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/3e3dc4d96f558126",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/3fcc9a2f9056345e",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/4387bc663cbbb3d0",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/4766443d7a132046",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/50b387f15dffcdfb",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/553ddd3db81b6b58",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/55ee02c47c739487",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/6ea9bf1e1829e502",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/831e47adea12d689",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/8c342f3fbc782916",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/b21bd8948762e076",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/bb4cc9de14f37b6d",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/bfa2ca79d2c2c031",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/d45424b8d63068d9",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/d8436467fd226bfa",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/ec52bbcdd73a885a",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/asset.search",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/export.convert",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/script.references",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/script.symbols",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/shp/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/shp/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/shp/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/shp/operation/image.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sld/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sld/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/slp/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/slp/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/smacker/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/smacker/operation/video.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/smacker/operation/video.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/smp/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/smp/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/smx/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/smx/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/spring-rapid/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/spring-rapid/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/spring-rapid/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/spring-s3o/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/spring-vfs/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/spring-vfs/operation/content.mount",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/spring-vfs/operation/content.resolve-dependencies",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/spring-vfs/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sst/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sst/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/sst/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/starcraft-chk/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/starcraft-grp/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/starcraft-replay/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/stl/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/stl/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/stl/operation/model.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/supcom-scm/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/supcom-scm/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/supcom-scm/operation/model.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/svg/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/svg/operation/vector.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/swf/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/swf/operation/video.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/swf/operation/video.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ta-hpi/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ta-hpi/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/ta-hpi/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/tar/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/tar/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/tar/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/tar/operation/archive.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/texcache/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/texcache/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/texcache/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/tga/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/tga/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/tga/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/tga/operation/image.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/tiff/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/tiff/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/tiff/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/tiff/operation/image.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/tmp/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/tmp/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/tmp/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/txt/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/txt/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/txt/operation/edit.content",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/txt/operation/export.raw",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/txt/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/txt/operation/view.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/uasset/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/uasset/operation/audio.decode",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/uasset/operation/audio.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/uasset/operation/audio.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unity-assets/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unity-assets/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unity-assets/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unity-mesh/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unity-mesh/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unity-mesh/operation/model.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unity-ress/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unity-ress/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unity-ress/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unity/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unity/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unity/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unityfs/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unityfs/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unityfs/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unreal-actorx/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unreal-actorx/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unreal-actorx/operation/model.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unreal-iostore/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unreal-iostore/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unreal-iostore/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unreal-pak/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unreal-pak/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unreal-pak/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unreal-uasset-texture/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unreal-uasset-texture/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unreal-uasset-texture/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unreal-uasset-video/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unreal-uasset-video/operation/video.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unreal-uasset-video/operation/video.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unreal-uasset-video/operation/video.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unreal-uasset/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unreal-uasset/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/unreal-uasset/operation/model.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/uvm/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/uvm/operation/model.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/uvm/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/uvm/operation/model.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/uvm/operation/model.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/visio/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/visio/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/visio/operation/export.raw",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/visio/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/visio/operation/view.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/vpl/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/vpl/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/vpl/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/war3-mdx/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/war3-mdx/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/war3-mdx/operation/model.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/warcraft2-pud/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/warcraft3-map/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/warcraft3-object-data/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/warcraft3-replay/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/warcraft3-script/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/warcraft3-wts/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/warzone-img/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/warzone-img/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/warzone-lev/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/warzone-lev/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/warzone-pie/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/warzone-pie/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/warzone-pie/operation/model.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/warzone-wrf/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/warzone-wrf/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/warzone-wz/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/warzone-wz/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/warzone2100-map/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/warzone2100-map/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wav/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wav/operation/audio.decode",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wav/operation/audio.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wav/operation/audio.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wd/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wd/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wd/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/webm/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/webm/operation/video.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/webm/operation/video.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/webp/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/webp/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wem/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wem/operation/audio.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wem/operation/audio.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/westwood-w3d/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/westwood-w3d/operation/model.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/westwood-w3d/operation/model.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wmf/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wmf/operation/vector.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wmv/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wmv/operation/video.export",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wmv/operation/video.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wow-m2/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wsa/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wsa/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wtp/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wtp/operation/image.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wtp/operation/image.read",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wtp/operation/image.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wwise-pck/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wwise-pck/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/wwise-pck/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/xlsx/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/xlsx/operation/asset.validate",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/xlsx/operation/export.raw",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/xlsx/operation/view.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/xlsx/operation/view.render",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/xz/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/xz/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/xz/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/xz/operation/archive.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/zip/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/zip/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/zip/operation/archive.inspect",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/zip/operation/archive.write",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/zstd/audit",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/zstd/operation/archive.extract",
+      "status": "pending"
+    },
+    {
+      "evidence": [],
+      "id": "legacy/codec-manifest/modkit/zstd/operation/archive.inspect",
+      "status": "pending"
+    }
+  ],
+  "protectedEvidence": [
+    {
+      "acceptance": "Owner accepted M0 on 2026-09-04; historical receipt remains unchanged",
+      "path": "modkit-core/reports/PORT_TEXTURES_DDS_2026-09-04.md",
+      "sha256": "d14ef387a67c38aafc42c07f90affa016e066b0ae467f7962fc7763967d682b0"
+    },
+    {
+      "acceptance": "Owner accepted M0 on 2026-09-04; historical receipt remains unchanged",
+      "path": "modkit-core/reports/legacy-parity-textures-m0/receipt.json",
+      "sha256": "09cb4e4d5e677ae9309c8e6447cc2b9f10966f7bd20c56f7d2c15519ba879548"
+    }
+  ],
+  "schemaVersion": 1
+}

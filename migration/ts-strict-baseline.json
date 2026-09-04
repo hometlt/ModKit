@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "scope": "M1 T1/T2; T3 remains checked by the existing root typecheck and joins this stricter profile during its conversion",
+  "packages": [
+    { "path": "packages/codec-kit", "errors": 0, "javascriptSources": 0 },
+    { "path": "packages/scene", "errors": 0, "javascriptSources": 0 },
+    { "path": "packages/uv", "errors": 0, "javascriptSources": 0 },
+    { "path": "packages/extension-manager", "errors": 0, "javascriptSources": 0 },
+    { "path": "packages/code", "errors": 0, "javascriptSources": 0 },
+    { "path": "packages/host", "errors": 0, "javascriptSources": 0 },
+    { "path": "packages/ui", "errors": 0, "javascriptSources": 0 },
+    { "path": "packages/testkit", "errors": 0, "javascriptSources": 0 }
+  ]
+}

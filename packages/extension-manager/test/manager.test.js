@@ -5,12 +5,12 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 
-import { createBrowserExtensionVfs } from '../src/browser.js'
+import { createBrowserExtensionVfs } from '../dist/browser.js'
 import {
   createNodeExtensionVfs,
   discoverNodeExtensionRoots,
   extensionLockDocument,
-} from '../src/node.js'
+} from '../dist/node.js'
 
 const json = value => new TextEncoder().encode(JSON.stringify(value))
 const base64 = value => Buffer.from(value).toString('base64')
@@ -42,7 +42,7 @@ const portableRepository = (publisher, id) =>
 test('CLI help is inert and documents roots and lock commands', () => {
   const result = spawnSync(
     process.execPath,
-    [join(import.meta.dirname, '..', 'src', 'cli.js'), '-h'],
+    [join(import.meta.dirname, '..', 'dist', 'cli.js'), '-h'],
     {
       encoding: 'utf8',
     },

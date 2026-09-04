@@ -145,7 +145,7 @@ export async function loadUvTools(repoRoot: string): Promise<SpecTools> {
   const specTool = (name: string): string =>
     pathToFileURL(join(repoRoot, 'vendor', 'multiverse-specs', 'specs', 'tools', name)).href
   const uvModule = (...segments: string[]): string =>
-    pathToFileURL(join(repoRoot, 'packages', 'uv', 'src', ...segments)).href
+    pathToFileURL(join(repoRoot, 'packages', 'uv', 'dist', ...segments)).href
   const modelInterchange = (await import(
     specTool('model-interchange.mjs')
   )) as SpecTools['modelInterchange']

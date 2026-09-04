@@ -1,0 +1,21 @@
+{
+  "extends": "../../tsconfig.port-strict.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "noPropertyAccessFromIndexSignature": true,
+    "lib": ["ES2023", "DOM", "DOM.Iterable"]
+  },
+  "include": ["src/**/*.ts"],
+  "references": [
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../sdk"
+    },
+    {
+      "path": "../host"
+    }
+  ]
+}

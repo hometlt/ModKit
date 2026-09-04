@@ -12,7 +12,7 @@ import {
   extensionSubjectRecordToWire,
   projectExtensionSubjects,
   subjectFactsSourceFromWire,
-} from '../src/index.js'
+} from '../dist/index.js'
 
 const extension = Object.freeze({
   schemaVersion: 1,

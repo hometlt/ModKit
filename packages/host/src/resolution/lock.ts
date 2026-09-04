@@ -199,15 +199,15 @@ function lockMajor(value: unknown, label: string): number {
 
 function parseLockedTrait(value: unknown, label: string): TraitDefinitionRequirement {
   const record = exactKeys(value, ['id'], ['definitionRange'], label)
-  const idText = lockString(record.id, `${label}.id`)
+  const idText = lockString(record['id'], `${label}.id`)
   if (!isTraitId(idText)) return failLock(`${label}.id must be a trait id`)
   if (isStandardTraitId(idText)) {
-    if (record.definitionRange !== undefined) {
+    if (record['definitionRange'] !== undefined) {
       return failLock(`${label}: a standard trait cannot carry definitionRange`)
     }
     return Object.freeze({ id: idText })
   }
-  const rangeText = lockString(record.definitionRange, `${label}.definitionRange`)
+  const rangeText = lockString(record['definitionRange'], `${label}.definitionRange`)
   const range = parseVersionRange(rangeText)
   if (range === undefined || range.normalized !== rangeText) {
     return failLock(`${label}.definitionRange is not canonical`)
@@ -232,14 +232,14 @@ function parseLockKey(value: unknown, label: string): ProviderLockKey {
     ['contractSelectionKey', 'operation', 'workload'],
     label,
   )
-  const contractText = lockString(record.contract, `${label}.contract`)
+  const contractText = lockString(record['contract'], `${label}.contract`)
   if (!isQualifiedId(contractText)) return failLock(`${label}.contract must be qualified`)
-  const rangeText = lockString(record.normalizedRange, `${label}.normalizedRange`)
+  const rangeText = lockString(record['normalizedRange'], `${label}.normalizedRange`)
   const range = parseVersionRange(rangeText)
   if (range === undefined || range.normalized !== rangeText) {
     return failLock(`${label}.normalizedRange is not canonical`)
   }
-  const workload = record.workload
+  const workload = record['workload']
   if (
     workload !== undefined &&
     !['thumbnail', 'interactive', 'batch', 'lossless-edit', 'simulation', 'archival'].includes(
@@ -250,25 +250,25 @@ function parseLockKey(value: unknown, label: string): ProviderLockKey {
   }
   return Object.freeze({
     contract: contractId(contractText),
-    major: lockMajor(record.major, `${label}.major`),
+    major: lockMajor(record['major'], `${label}.major`),
     normalizedRange: rangeText,
-    ...(record.contractSelectionKey === undefined
+    ...(record['contractSelectionKey'] === undefined
       ? {}
       : {
           contractSelectionKey: lockString(
-            record.contractSelectionKey,
+            record['contractSelectionKey'],
             `${label}.contractSelectionKey`,
           ),
         }),
-    ...(record.operation === undefined
+    ...(record['operation'] === undefined
       ? {}
       : {
-          operation: lockString(record.operation, `${label}.operation`) as NonNullable<
+          operation: lockString(record['operation'], `${label}.operation`) as NonNullable<
             ProviderLockKey['operation']
           >,
         }),
-    requiredOutputs: parseLockedTraits(record.requiredOutputs, `${label}.requiredOutputs`),
-    preferredOutputs: parseLockedTraits(record.preferredOutputs, `${label}.preferredOutputs`),
+    requiredOutputs: parseLockedTraits(record['requiredOutputs'], `${label}.requiredOutputs`),
+    preferredOutputs: parseLockedTraits(record['preferredOutputs'], `${label}.preferredOutputs`),
     ...(workload === undefined
       ? {}
       : { workload: workload as NonNullable<ProviderLockKey['workload']> }),
@@ -282,14 +282,14 @@ function parseSelection(value: unknown, label: string): ProviderPolicyLockEntry[
     ['releaseRange'],
     label,
   )
-  const extension = lockString(record.extension, `${label}.extension`)
-  const contributionId = lockString(record.contributionId, `${label}.contributionId`)
+  const extension = lockString(record['extension'], `${label}.extension`)
+  const contributionId = lockString(record['contributionId'], `${label}.contributionId`)
   if (!isQualifiedId(extension) || !isQualifiedId(contributionId)) {
     return failLock(`${label} coordinates must be qualified`)
   }
   let releaseRange: string | undefined
-  if (record.releaseRange !== undefined) {
-    releaseRange = lockString(record.releaseRange, `${label}.releaseRange`)
+  if (record['releaseRange'] !== undefined) {
+    releaseRange = lockString(record['releaseRange'], `${label}.releaseRange`)
     const parsed = parseVersionRange(releaseRange)
     if (parsed === undefined || parsed.normalized !== releaseRange) {
       return failLock(`${label}.releaseRange is not canonical`)
@@ -299,8 +299,8 @@ function parseSelection(value: unknown, label: string): ProviderPolicyLockEntry[
     extension,
     ...(releaseRange === undefined ? {} : { releaseRange }),
     contributionId,
-    contractMajor: lockMajor(record.contractMajor, `${label}.contractMajor`),
-    offerId: lockString(record.offerId, `${label}.offerId`),
+    contractMajor: lockMajor(record['contractMajor'], `${label}.contractMajor`),
+    offerId: lockString(record['offerId'], `${label}.offerId`),
   })
 }
 
@@ -313,30 +313,30 @@ export function parsePolicyLock(text: string): ProviderPolicyLock {
     return failLock('policy lock is not valid JSON')
   }
   const root = exactKeys(value, ['schemaVersion', 'entries'], [], 'policy lock')
-  if (root.schemaVersion !== 1 || !Array.isArray(root.entries)) {
+  if (root['schemaVersion'] !== 1 || !Array.isArray(root['entries'])) {
     return failLock('policy lock schemaVersion/entries are invalid')
   }
-  const entries = root.entries.map((raw, index) => {
+  const entries = root['entries'].map((raw, index) => {
     const item = exactKeys(
       raw,
       ['key', 'primary', 'resolverVersion'],
       ['allowedFallbacks'],
       `entries[${index}]`,
     )
-    if (item.resolverVersion !== RESOLVER_VERSION) {
+    if (item['resolverVersion'] !== RESOLVER_VERSION) {
       return failLock(`entries[${index}].resolverVersion is unsupported`)
     }
-    if (item.allowedFallbacks !== undefined && !Array.isArray(item.allowedFallbacks)) {
+    if (item['allowedFallbacks'] !== undefined && !Array.isArray(item['allowedFallbacks'])) {
       return failLock(`entries[${index}].allowedFallbacks must be an array`)
     }
     return Object.freeze({
-      key: parseLockKey(item.key, `entries[${index}].key`),
-      primary: parseSelection(item.primary, `entries[${index}].primary`),
-      ...(item.allowedFallbacks === undefined
+      key: parseLockKey(item['key'], `entries[${index}].key`),
+      primary: parseSelection(item['primary'], `entries[${index}].primary`),
+      ...(item['allowedFallbacks'] === undefined
         ? {}
         : {
             allowedFallbacks: Object.freeze(
-              item.allowedFallbacks.map((entry, fallbackIndex) =>
+              item['allowedFallbacks'].map((entry, fallbackIndex) =>
                 parseSelection(entry, `entries[${index}].allowedFallbacks[${fallbackIndex}]`),
               ),
             ),

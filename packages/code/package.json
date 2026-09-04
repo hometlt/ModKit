@@ -5,24 +5,36 @@
   "type": "module",
   "description": "Built-in MK3 code workspace and Monaco editor implementation.",
   "exports": {
-    ".": "./src/index.js",
-    "./editor": "./src/editor.js",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./editor": {
+      "types": "./dist/editor.d.ts",
+      "default": "./dist/editor.js"
+    },
     "./module": {
-      "types": "./src/module.d.ts",
-      "default": "./src/module.js"
+      "types": "./dist/module.d.ts",
+      "default": "./dist/module.js"
     },
     "./linked": {
-      "types": "./src/module.d.ts",
-      "default": "./src/module.js"
+      "types": "./dist/module.d.ts",
+      "default": "./dist/module.js"
     },
     "./package.json": "./package.json"
   },
   "files": [
     "contributions",
-    "src"
+    "dist"
   ],
   "dependencies": {
     "@modkit/host": "workspace:*",
-    "monaco-editor": "^0.56.0"
+    "monaco-editor": "^0.56.0",
+    "@modkit/sdk": "workspace:*"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "tsc -b --clean"
   }
 }

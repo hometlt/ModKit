@@ -20,7 +20,11 @@
   "files": [
     "dist"
   ],
-  "scripts": {},
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "tsc -b --clean"
+  },
   "dependencies": {
     "@modkit/core": "workspace:*",
     "@modkit/host": "workspace:*",

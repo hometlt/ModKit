@@ -94,25 +94,25 @@ function evidence(value: unknown, label: string): readonly DetectionEvidence[] {
   return Object.freeze(
     value.map((raw, index) => {
       const item = exactObject(raw, ['kind', 'weight'], ['note'], `${label}[${index}]`)
-      if (!EVIDENCE_KINDS.includes(item.kind as DetectionEvidenceKind)) {
+      if (!EVIDENCE_KINDS.includes(item['kind'] as DetectionEvidenceKind)) {
         return fail('x3.host/invalid-detection-selection', `${label}[${index}].kind is invalid`)
       }
-      if (typeof item.weight !== 'number' || !Number.isFinite(item.weight)) {
+      if (typeof item['weight'] !== 'number' || !Number.isFinite(item['weight'])) {
         return fail(
           'x3.host/invalid-detection-selection',
           `${label}[${index}].weight must be finite`,
         )
       }
-      if (item.note !== undefined && typeof item.note !== 'string') {
+      if (item['note'] !== undefined && typeof item['note'] !== 'string') {
         return fail(
           'x3.host/invalid-detection-selection',
           `${label}[${index}].note must be a string`,
         )
       }
       return Object.freeze({
-        kind: item.kind as DetectionEvidenceKind,
-        weight: item.weight,
-        ...(item.note === undefined ? {} : { note: item.note }),
+        kind: item['kind'] as DetectionEvidenceKind,
+        weight: item['weight'],
+        ...(item['note'] === undefined ? {} : { note: item['note'] }),
       })
     }),
   )
@@ -120,12 +120,12 @@ function evidence(value: unknown, label: string): readonly DetectionEvidence[] {
 
 function normalize(value: unknown): CodecDetectionSelection {
   const root = exactObject(value, ['schemaVersion', 'sourceRevision', 'selected'], [], 'selection')
-  if (root.schemaVersion !== 1) {
+  if (root['schemaVersion'] !== 1) {
     return fail('x3.host/invalid-detection-selection', 'selection schemaVersion is unsupported')
   }
-  const sourceRevision = revisionId(nonBlank(root.sourceRevision, 'selection.sourceRevision'))
+  const sourceRevision = revisionId(nonBlank(root['sourceRevision'], 'selection.sourceRevision'))
   const selected = exactObject(
-    root.selected,
+    root['selected'],
     [
       'extensionId',
       'contributionId',
@@ -140,19 +140,19 @@ function normalize(value: unknown): CodecDetectionSelection {
     [],
     'selection.selected',
   )
-  const extensionId = nonBlank(selected.extensionId, 'selection.selected.extensionId')
-  const contributionText = nonBlank(selected.contributionId, 'selection.selected.contributionId')
+  const extensionId = nonBlank(selected['extensionId'], 'selection.selected.extensionId')
+  const contributionText = nonBlank(selected['contributionId'], 'selection.selected.contributionId')
   if (!isQualifiedId(extensionId) || !isQualifiedId(contributionText)) {
     return fail(
       'x3.host/invalid-detection-selection',
       'selection extension and contribution coordinates must be qualified',
     )
   }
-  const topology = selected.sourceTopology
+  const topology = selected['sourceTopology']
   if (!['single', 'bundle', 'namespace', 'derived'].includes(String(topology))) {
     return fail('x3.host/invalid-detection-selection', 'selection sourceTopology is invalid')
   }
-  const confidence = selected.confidence
+  const confidence = selected['confidence']
   if (
     typeof confidence !== 'number' ||
     !Number.isFinite(confidence) ||
@@ -167,13 +167,13 @@ function normalize(value: unknown): CodecDetectionSelection {
     selected: Object.freeze({
       extensionId,
       contributionId: contributionId(contributionText),
-      variantId: nonBlank(selected.variantId, 'selection.selected.variantId'),
-      offerId: nonBlank(selected.offerId, 'selection.selected.offerId'),
-      artifactDigest: nonBlank(selected.artifactDigest, 'selection.selected.artifactDigest'),
-      manifestDigest: nonBlank(selected.manifestDigest, 'selection.selected.manifestDigest'),
+      variantId: nonBlank(selected['variantId'], 'selection.selected.variantId'),
+      offerId: nonBlank(selected['offerId'], 'selection.selected.offerId'),
+      artifactDigest: nonBlank(selected['artifactDigest'], 'selection.selected.artifactDigest'),
+      manifestDigest: nonBlank(selected['manifestDigest'], 'selection.selected.manifestDigest'),
       sourceTopology: topology as CodecSourceTopology,
       confidence,
-      evidence: evidence(selected.evidence, 'selection.selected.evidence'),
+      evidence: evidence(selected['evidence'], 'selection.selected.evidence'),
     }),
   })
 }

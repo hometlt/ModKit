@@ -2,10 +2,20 @@
 // the legacy-vocabulary gate is deliberately NOT an eslint rule — it is the separate
 // scripts/check-legacy.mjs so it also covers JSON schemas and package manifests.
 import tseslint from 'typescript-eslint'
+import { readFileSync } from 'node:fs'
+
+// Exact pinned MK2 copies use source-integrity and strict TypeScript gates. New adapters
+// are deliberately absent from this list and retain the ordinary lint rules.
+const mk2Copies = JSON.parse(
+  readFileSync(new URL('./packages/codec-kit/MK2-PORT-PROVENANCE.json', import.meta.url), 'utf8'),
+).files.map(file => file.destination.replace(/^modkit-core\//u, ''))
 
 export default tseslint.config(
   {
     ignores: [
+      ...mk2Copies,
+      // Immutable execution evidence includes exact historical loaders, not product modules.
+      'reports/port-libs-m1/**',
       // agent worktrees: copies of this repository that run their own gates
       '.claude/**',
       '**/dist/**',

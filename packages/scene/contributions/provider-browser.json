@@ -9,7 +9,7 @@
   "runtimeVariants": [
     {
       "variantId": "trusted-browser-main",
-      "entrypoint": "./src/render/browser.js",
+      "entrypoint": "./dist/render/browser.js",
       "target": {
         "environments": ["browser-main"],
         "requiredHostCapabilities": ["gpu.webgl2"]
@@ -19,7 +19,7 @@
     },
     {
       "variantId": "browser-worker",
-      "entrypoint": "./src/render/browser.js",
+      "entrypoint": "./dist/render/browser.js",
       "target": {
         "environments": ["browser-worker"]
       },

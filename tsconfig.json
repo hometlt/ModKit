@@ -1,6 +1,11 @@
 {
   "files": [],
   "references": [
+    { "path": "packages/codec-kit" },
+    { "path": "packages/scene" },
+    { "path": "packages/uv" },
+    { "path": "packages/extension-manager" },
+    { "path": "packages/code" },
     {
       "path": "packages/core"
     },

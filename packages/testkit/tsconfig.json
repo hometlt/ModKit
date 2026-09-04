@@ -1,5 +1,5 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "../../tsconfig.port-strict.json",
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
@@ -7,10 +7,20 @@
   },
   "include": ["src/**/*.ts"],
   "references": [
-    { "path": "../core" },
-    { "path": "../sdk" },
-    { "path": "../vfs" },
-    { "path": "../host" },
-    { "path": "../ui" }
+    {
+      "path": "../core"
+    },
+    {
+      "path": "../sdk"
+    },
+    {
+      "path": "../vfs"
+    },
+    {
+      "path": "../host"
+    },
+    {
+      "path": "../ui"
+    }
   ]
 }

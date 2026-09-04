@@ -1,0 +1,3382 @@
+{
+  "authored": [
+    {
+      "family": "sc2",
+      "id": "sc2-campaign",
+      "plan": "references/modkit-docs/MK3/plans/PLAN_SC2_CAMPAIGN_2026-09-04.md",
+      "requirements": [
+        {
+          "id": "CMP1",
+          "label": "Research real native campaign variants and record fixtures and unknown fields"
+        },
+        {
+          "id": "CMP2",
+          "label": "Create and open packed and loose campaign documents through shared containers"
+        },
+        {
+          "id": "CMP3",
+          "label": "Edit mission/map references and dependencies with validation"
+        },
+        {
+          "id": "CMP4",
+          "label": "Preserving write, no-op round-trip and unknown data retention"
+        },
+        {
+          "id": "CMP5",
+          "label": "Generic metadata, selector, facts, graph and operation surfaces"
+        },
+        {
+          "id": "CMP6",
+          "label": "Installed host acceptance with real campaign fixtures"
+        }
+      ]
+    }
+  ],
+  "contributionCount": 193,
+  "inventorySha256": "08c3bdad48056914277c7f95a0f97ef4feb85c8ec86a2fa8faf47bd7f9817e8c",
+  "legacyCount": 206,
+  "rows": [
+    {
+      "candidates": [
+        {
+          "id": "modkit/7z",
+          "path": "extensions/archives/contributions/codec-7z.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "7z",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/common/archives/codecs/7z/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/7z",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/aac",
+          "path": "extensions/audio/contributions/codec-aac.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "aac",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/audio/codecs/aac/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/aac",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/age-bar",
+          "path": "extensions/microsoft-age-series/contributions/codec-age-bar.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "age-bar",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/microsoft/age-series/codecs/age-bar/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/age-bar",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/age-drs",
+          "path": "extensions/microsoft-age-series/contributions/codec-age-drs.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "age-drs",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/microsoft/age-series/codecs/age-drs/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/age-drs",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "age-of-mythology-brg",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/microsoft/age-series/codecs/age-of-mythology-brg/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/age-of-mythology-brg",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/ai",
+          "path": "extensions/uncommon-documents/contributions/codec-ai.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "ai",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 5,
+      "requirements": 5,
+      "source": "extensions/uncommon/documents/codecs/ai/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/ai",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/ani",
+          "path": "extensions/images/contributions/codec-ani.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "ani",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/images/codecs/ani/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/ani",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/astc",
+          "path": "extensions/images/contributions/codec-astc.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "astc",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/common/images/codecs/astc/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/astc",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/avi",
+          "path": "extensions/video/contributions/codec-avi.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "avi",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/video/codecs/avi/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/avi",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/avif",
+          "path": "extensions/images/contributions/codec-avif.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "avif",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/common/images/codecs/avif/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/avif",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/basis",
+          "path": "extensions/images/contributions/codec-basis.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "basis",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/common/images/codecs/basis/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/basis",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "ea/big",
+          "path": "big/contributions/codec-big.json",
+          "repository": "ea"
+        }
+      ],
+      "codec": "big",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/ea/sage/codecs/big/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/big",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/bink",
+          "path": "extensions/rad-game-tools-video/contributions/codec-bink.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "bink",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/rad-game-tools/video/codecs/bink/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/bink",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/blend",
+          "path": "extensions/uncommon-documents/contributions/codec-blend.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "blend",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/uncommon/documents/codecs/blend/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/blend",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "blizzard-tbl",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/blizzard/common-formats/codecs/blizzard-tbl/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/blizzard-tbl",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "blizzard/blp",
+          "path": "blizzard-common-formats/contributions/codec-blp.json",
+          "repository": "blizzard"
+        }
+      ],
+      "codec": "blp",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/blizzard/common-formats/codecs/blp/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/blp",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/bmp",
+          "path": "extensions/images/contributions/codec-bmp.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "bmp",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/images/codecs/bmp/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/bmp",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/bnk",
+          "path": "extensions/audiokinetic-wwise/contributions/codec-bnk.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "bnk",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/audiokinetic/wwise/codecs/bnk/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/bnk",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/brotli",
+          "path": "extensions/archives/contributions/codec-brotli.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "brotli",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/common/archives/codecs/brotli/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/brotli",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/bti",
+          "path": "extensions/microsoft-age-series/contributions/codec-bti.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "bti",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/microsoft/age-series/codecs/bti/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/bti",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/bzip2",
+          "path": "extensions/archives/contributions/codec-bzip2.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "bzip2",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/common/archives/codecs/bzip2/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/bzip2",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/cab",
+          "path": "extensions/archives/contributions/codec-cab.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "cab",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/archives/codecs/cab/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/cab",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "blizzard/casc",
+          "path": "casc/contributions/codec-casc.json",
+          "repository": "blizzard"
+        }
+      ],
+      "codec": "casc",
+      "family": "sc2",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/blizzard/archives/codecs/casc/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/casc",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/cdr",
+          "path": "extensions/uncommon-documents/contributions/codec-cdr.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "cdr",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 5,
+      "requirements": 5,
+      "source": "extensions/uncommon/documents/codecs/cdr/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/cdr",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "ea/cnc3-data",
+          "path": "sage/contributions/codec-cnc3-data.json",
+          "repository": "ea"
+        }
+      ],
+      "codec": "cnc3-data",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/ea/sage/codecs/cnc3-data/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/cnc3-data",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "ea/cnc3-localization",
+          "path": "sage/contributions/codec-cnc3-localization.json",
+          "repository": "ea"
+        }
+      ],
+      "codec": "cnc3-localization",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/ea/sage/codecs/cnc3-localization/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/cnc3-localization",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "ea/cnc3-map",
+          "path": "sage/contributions/codec-cnc3-map.json",
+          "repository": "ea"
+        }
+      ],
+      "codec": "cnc3-map",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/ea/sage/codecs/cnc3-map/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/cnc3-map",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "ea/cps",
+          "path": "westwood/contributions/codec-cps.json",
+          "repository": "ea"
+        }
+      ],
+      "codec": "cps",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/ea/westwood/codecs/cps/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/cps",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/text-csv",
+          "path": "extensions/data/contributions/codec-csv.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "csv",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 6,
+      "requirements": 6,
+      "source": "extensions/uncommon/documents/codecs/csv/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/csv",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/cub",
+          "path": "extensions/microsoft-age-series/contributions/codec-cub.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "cub",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/microsoft/age-series/codecs/cub/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/cub",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/cur",
+          "path": "extensions/images/contributions/codec-cur.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "cur",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/common/images/codecs/cur/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/cur",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/dae",
+          "path": "extensions/models/contributions/codec-dae.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "dae",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/models/codecs/dae/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/dae",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/dds",
+          "path": "extensions/images/contributions/codec-dds.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "dds",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 5,
+      "requirements": 5,
+      "source": "extensions/common/images/codecs/dds/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/dds",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/ddt",
+          "path": "extensions/microsoft-age-series/contributions/codec-ddt.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "ddt",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/microsoft/age-series/codecs/ddt/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/ddt",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/def",
+          "path": "extensions/new-world-computing-heroes-3/contributions/codec-def.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "def",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/new-world-computing/heroes-3/codecs/def/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/def",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "diablo2-character-model",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/blizzard/diablo/codecs/diablo2-character-model/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/diablo2-character-model",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "diablo2-dc6",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/blizzard/diablo/codecs/diablo2-dc6/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/diablo2-dc6",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "diablo2-dt1",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/blizzard/diablo/codecs/diablo2-dt1/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/diablo2-dt1",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "blizzard/diablo3-app",
+          "path": "blizzard-diablo/contributions/codec-diablo3-app.json",
+          "repository": "blizzard"
+        }
+      ],
+      "codec": "diablo3-app",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/blizzard/diablo/codecs/diablo3-app/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/diablo3-app",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "diablo3-sno-data",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/blizzard/diablo/codecs/diablo3-sno-data/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/diablo3-sno-data",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "blizzard/diablo3-tex",
+          "path": "blizzard-diablo/contributions/codec-diablo3-tex.json",
+          "repository": "blizzard"
+        }
+      ],
+      "codec": "diablo3-tex",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/blizzard/diablo/codecs/diablo3-tex/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/diablo3-tex",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/dmg",
+          "path": "extensions/archives/contributions/codec-dmg.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "dmg",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/archives/codecs/dmg/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/dmg",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/docx",
+          "path": "extensions/uncommon-documents/contributions/codec-docx.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "docx",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 5,
+      "requirements": 5,
+      "source": "extensions/uncommon/documents/codecs/docx/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/docx",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/drawio",
+          "path": "extensions/uncommon-documents/contributions/codec-drawio.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "drawio",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 5,
+      "requirements": 5,
+      "source": "extensions/uncommon/documents/codecs/drawio/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/drawio",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "dune2000-map",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/ea/dune-2000/codecs/dune2000-map/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/dune2000-map",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/earth-par",
+          "path": "extensions/realitypump-earth-2150/contributions/codec-earth-par.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "earth-par",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/realitypump/earth-2150/codecs/earth-par/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/earth-par",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "earth-res",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/realitypump/earth-2150/codecs/earth-res/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/earth-res",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/earth-tex",
+          "path": "extensions/realitypump-earth-2150/contributions/codec-earth-tex.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "earth-tex",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/realitypump/earth-2150/codecs/earth-tex/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/earth-tex",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/earth2160-model",
+          "path": "extensions/realitypump-earth2160/contributions/codec-earth2160-model.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "earth2160-model",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/realitypump/earth2160/codecs/earth2160-model/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/earth2160-model",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/emf",
+          "path": "extensions/vector/contributions/codec-emf.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "emf",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/common/vector/codecs/emf/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/emf",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "emperor-bag",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/ea/emperor/codecs/emperor-bag/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/emperor-bag",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "ea/emperor-rfh-rfd",
+          "path": "emperor/contributions/codec-emperor-rfh-rfd.json",
+          "repository": "ea"
+        }
+      ],
+      "codec": "emperor-rfh-rfd",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/emperor-rfh-rfd",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "ea/emperor-xbf",
+          "path": "emperor/contributions/codec-emperor-xbf.json",
+          "repository": "ea"
+        }
+      ],
+      "codec": "emperor-xbf",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 5,
+      "requirements": 5,
+      "source": "extensions/ea/emperor/codecs/emperor-xbf/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/emperor-xbf",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/empire-earth-ssa",
+          "path": "extensions/stainless-steel-studios-empire-earth/contributions/codec-empire-earth-ssa.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "empire-earth-ssa",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/stainless-steel-studios/empire-earth/codecs/empire-earth-ssa/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/empire-earth-ssa",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/exr",
+          "path": "extensions/images/contributions/codec-exr.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "exr",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/images/codecs/exr/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/exr",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/figma",
+          "path": "extensions/uncommon-documents/contributions/codec-figma.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "figma",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 5,
+      "requirements": 5,
+      "source": "extensions/uncommon/documents/codecs/figma/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/figma",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/fla",
+          "path": "extensions/adobe-flash/contributions/codec-fla.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "fla",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/adobe/flash/codecs/fla/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/fla",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/flac",
+          "path": "extensions/audio/contributions/codec-flac.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "flac",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/audio/codecs/flac/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/flac",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/flv",
+          "path": "extensions/adobe-flash/contributions/codec-flv.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "flv",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/adobe/flash/codecs/flv/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/flv",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/fsb",
+          "path": "extensions/firelight-fmod/contributions/codec-fsb.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "fsb",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/firelight/fmod/codecs/fsb/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/fsb",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/gaf",
+          "path": "extensions/cavedog-total-annihilation/contributions/codec-gaf.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "gaf",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/cavedog/total-annihilation/codecs/gaf/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/gaf",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "blizzard/galaxy",
+          "path": "starcraft2/contributions/codec-galaxy.json",
+          "repository": "blizzard"
+        }
+      ],
+      "codec": "galaxy",
+      "family": "sc2",
+      "featureAudit": "available",
+      "pending": 32,
+      "requirements": 32,
+      "source": "extensions/blizzard/starcraft-2/codecs/galaxy/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/galaxy",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/gif",
+          "path": "extensions/images/contributions/codec-gif.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "gif",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/images/codecs/gif/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/gif",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/model-gltf",
+          "path": "extensions/models/contributions/codec-gltf.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "glb",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/models/codecs/glb/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/glb",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/model-gltf",
+          "path": "extensions/models/contributions/codec-gltf.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "gltf",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/models/codecs/gltf/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/gltf",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/grey-goo-alo",
+          "path": "extensions/petroglyph-glyphx/contributions/codec-grey-goo-alo.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "grey-goo-alo",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/petroglyph/glyphx/codecs/grey-goo-alo/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/grey-goo-alo",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/gzip",
+          "path": "extensions/archives/contributions/codec-gzip.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "gzip",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/common/archives/codecs/gzip/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/gzip",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/halo-era",
+          "path": "extensions/microsoft-halo-wars/contributions/codec-halo-era.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "halo-era",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/microsoft/halo-wars/codecs/halo-era/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/halo-era",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "halo-wars-ugx",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/microsoft/halo-wars/codecs/halo-wars-ugx/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/halo-wars-ugx",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/hdr",
+          "path": "extensions/images/contributions/codec-hdr.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "hdr",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/common/images/codecs/hdr/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/hdr",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/heroes3-lod",
+          "path": "extensions/new-world-computing-heroes-3/contributions/codec-heroes3-lod.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "heroes3-lod",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/new-world-computing/heroes-3/codecs/heroes3-lod/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/heroes3-lod",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/heroes4-resource",
+          "path": "extensions/new-world-computing-heroes-4/contributions/codec-heroes4-resource.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "heroes4-resource",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/new-world-computing/heroes-4/codecs/heroes4-resource/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/heroes4-resource",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/heroes6-orc",
+          "path": "extensions/ubisoft-heroes-6/contributions/codec-heroes6-orc.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "heroes6-orc",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/ubisoft/heroes-6/codecs/heroes6-orc/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/heroes6-orc",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/ico",
+          "path": "extensions/images/contributions/codec-ico.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "ico",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/common/images/codecs/ico/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/ico",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/iso",
+          "path": "extensions/archives/contributions/codec-iso.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "iso",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/archives/codecs/iso/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/iso",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "jpg",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/common/images/codecs/jpg/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/jpg",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/ktx",
+          "path": "extensions/images/contributions/codec-ktx.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "ktx",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 5,
+      "requirements": 5,
+      "source": "extensions/common/images/codecs/ktx/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/ktx",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/ktx2",
+          "path": "extensions/images/contributions/codec-ktx2.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "ktx2",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 5,
+      "requirements": 5,
+      "source": "extensions/common/images/codecs/ktx2/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/ktx2",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/lzma",
+          "path": "extensions/archives/contributions/codec-lzma.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "lzma",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/archives/codecs/lzma/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/lzma",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "blizzard/m3",
+          "path": "models/contributions/codec-m3.json",
+          "repository": "blizzard"
+        }
+      ],
+      "codec": "m3",
+      "family": "sc2",
+      "featureAudit": "available",
+      "pending": 22,
+      "requirements": 22,
+      "source": "extensions/blizzard/starcraft-2/codecs/m3/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/m3",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/m4a",
+          "path": "extensions/audio/contributions/codec-m4a.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "m4a",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/audio/codecs/m4a/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/m4a",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/document-markdown",
+          "path": "extensions/documents/contributions/codec-markdown.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "markdown",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 6,
+      "requirements": 6,
+      "source": "extensions/uncommon/documents/codecs/markdown/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/markdown",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "max",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/uncommon/documents/codecs/max/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/max",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "ea/mix",
+          "path": "archives/contributions/codec-mix.json",
+          "repository": "ea"
+        }
+      ],
+      "codec": "mix",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/ea/archives/codecs/mix/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/mix",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/audio-mp3",
+          "path": "extensions/audio/contributions/codec-mp3.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "mp3",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/audio/codecs/mp3/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/mp3",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/video-mp4",
+          "path": "extensions/video/contributions/codec-mp4.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "mp4",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/video/codecs/mp4/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/mp4",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/mpeg",
+          "path": "extensions/video/contributions/codec-mpeg.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "mpeg",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/video/codecs/mpeg/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/mpeg",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "blizzard/mpq",
+          "path": "mpq/contributions/codec-mpq.json",
+          "repository": "blizzard"
+        }
+      ],
+      "codec": "mpq",
+      "family": "sc2",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/blizzard/archives/codecs/mpq/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/mpq",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/mtrl",
+          "path": "extensions/microsoft-age-series/contributions/codec-mtrl.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "mtrl",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/microsoft/age-series/codecs/mtrl/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/mtrl",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/model-obj",
+          "path": "extensions/models/contributions/codec-obj.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "obj",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 5,
+      "requirements": 5,
+      "source": "extensions/common/models/codecs/obj/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/obj",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/odp",
+          "path": "extensions/documents/contributions/codec-odp.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "odp",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 5,
+      "requirements": 5,
+      "source": "extensions/uncommon/documents/codecs/odp/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/odp",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/ods",
+          "path": "extensions/documents/contributions/codec-ods.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "ods",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 5,
+      "requirements": 5,
+      "source": "extensions/uncommon/documents/codecs/ods/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/ods",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/odt",
+          "path": "extensions/documents/contributions/codec-odt.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "odt",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 5,
+      "requirements": 5,
+      "source": "extensions/uncommon/documents/codecs/odt/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/odt",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/audio-ogg",
+          "path": "extensions/audio/contributions/codec-ogg.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "ogg",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/audio/codecs/ogg/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/ogg",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/ogv",
+          "path": "extensions/video/contributions/codec-ogv.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "ogv",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/video/codecs/ogv/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/ogv",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "opus",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/audio/codecs/opus/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/opus",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/pal",
+          "path": "extensions/images/contributions/codec-pal.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "pal",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/images/codecs/pal/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/pal",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/pcx",
+          "path": "extensions/images/contributions/codec-pcx.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "pcx",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/common/images/codecs/pcx/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/pcx",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/pdf",
+          "path": "extensions/uncommon-documents/contributions/codec-pdf.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "pdf",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 5,
+      "requirements": 5,
+      "source": "extensions/uncommon/documents/codecs/pdf/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/pdf",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/pe",
+          "path": "extensions/archives/contributions/codec-pe.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "pe",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/common/archives/codecs/pe/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/pe",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/petroglyph-meg",
+          "path": "extensions/petroglyph-glyphx/contributions/codec-petroglyph-meg.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "petroglyph-meg",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/petroglyph/glyphx/codecs/petroglyph-meg/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/petroglyph-meg",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/pkm",
+          "path": "extensions/images/contributions/codec-pkm.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "pkm",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/common/images/codecs/pkm/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/pkm",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/ply",
+          "path": "extensions/models/contributions/codec-ply.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "ply",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/models/codecs/ply/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/ply",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/image-png",
+          "path": "extensions/images/contributions/codec-png.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "png",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/common/images/codecs/png/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/png",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/pptx",
+          "path": "extensions/uncommon-documents/contributions/codec-pptx.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "pptx",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 5,
+      "requirements": 5,
+      "source": "extensions/uncommon/documents/codecs/pptx/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/pptx",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/prt",
+          "path": "extensions/microsoft-age-series/contributions/codec-prt.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "prt",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/microsoft/age-series/codecs/prt/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/prt",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/ps1-cue-bin",
+          "path": "extensions/ps1/contributions/codec-ps1-cue-bin.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "ps1-cue-bin",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/containers/codecs/ps1-cue-bin/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/ps1-cue-bin",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/ps1-xa",
+          "path": "extensions/ps1/contributions/codec-ps1-xa.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "ps1-xa",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/archives/codecs/ps1-xa/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/ps1-xa",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/psd",
+          "path": "extensions/uncommon-documents/contributions/codec-psd.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "psd",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/uncommon/documents/codecs/psd/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/psd",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/pvr",
+          "path": "extensions/images/contributions/codec-pvr.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "pvr",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/common/images/codecs/pvr/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/pvr",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "ea/r16",
+          "path": "westwood/contributions/codec-r16.json",
+          "repository": "ea"
+        }
+      ],
+      "codec": "r16",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/ea/westwood/codecs/r16/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/r16",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "ea/r8",
+          "path": "westwood/contributions/codec-r8.json",
+          "repository": "ea"
+        }
+      ],
+      "codec": "r8",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/ea/westwood/codecs/r8/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/r8",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/rar",
+          "path": "extensions/archives/contributions/codec-rar.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "rar",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/archives/codecs/rar/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/rar",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "ea/red-alert2-vxl",
+          "path": "tiberian-sun/contributions/codec-red-alert2-vxl.json",
+          "repository": "ea"
+        }
+      ],
+      "codec": "red-alert2-vxl",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/red-alert2-vxl",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/relic",
+          "path": "extensions/relic-essence/contributions/codec-relic.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "relic",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/relic/essence/codecs/relic/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/relic",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "relic-rgm",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/relic/essence/codecs/relic-rgm/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/relic-rgm",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/relic-sga",
+          "path": "extensions/relic-essence/contributions/codec-relic-sga.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "relic-sga",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/relic/essence/codecs/relic-sga/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/relic-sga",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/relic-sgm",
+          "path": "extensions/relic-models/contributions/codec-relic-sgm.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "relic-sgm",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/relic/models/codecs/relic-sgm/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/relic-sgm",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "relic-ucs",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/relic/essence/codecs/relic-ucs/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/relic-ucs",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/relic-whm",
+          "path": "extensions/relic-models/contributions/codec-relic-whm.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "relic-whm",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/relic/models/codecs/relic-whm/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/relic-whm",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/rgt",
+          "path": "extensions/relic-essence/contributions/codec-rgt.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "rgt",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/relic/essence/codecs/rgt/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/rgt",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/rrtex",
+          "path": "extensions/relic-essence/contributions/codec-rrtex.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "rrtex",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/relic/essence/codecs/rrtex/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/rrtex",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/rsh",
+          "path": "extensions/relic-essence/contributions/codec-rsh.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "rsh",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/relic/essence/codecs/rsh/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/rsh",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/document-rtf",
+          "path": "extensions/documents/contributions/codec-rtf.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "rtf",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 5,
+      "requirements": 5,
+      "source": "extensions/uncommon/documents/codecs/rtf/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/rtf",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/rtx",
+          "path": "extensions/relic-essence/contributions/codec-rtx.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "rtx",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/relic/essence/codecs/rtx/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/rtx",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "sage-asset-bundle",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/ea/sage/codecs/sage-asset-bundle/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/sage-asset-bundle",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "ea/sage-skudef",
+          "path": "sage/contributions/codec-sage-skudef.json",
+          "repository": "ea"
+        }
+      ],
+      "codec": "sage-skudef",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/ea/sage/codecs/sage-skudef/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/sage-skudef",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "ea/sage-w3x",
+          "path": "models/contributions/codec-sage-w3x.json",
+          "repository": "ea"
+        }
+      ],
+      "codec": "sage-w3x",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/ea/models/codecs/sage-w3x/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/sage-w3x",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "blizzard/sc2-bank",
+          "path": "starcraft2/contributions/codec-sc2-bank.json",
+          "repository": "blizzard"
+        }
+      ],
+      "codec": "sc2-bank",
+      "family": "sc2",
+      "featureAudit": "available",
+      "pending": 27,
+      "requirements": 27,
+      "source": "extensions/blizzard/starcraft-2/codecs/sc2-bank/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/sc2-bank",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "blizzard/sc2-data",
+          "path": "starcraft2/contributions/codec-sc2-data.json",
+          "repository": "blizzard"
+        }
+      ],
+      "codec": "sc2-data",
+      "family": "sc2",
+      "featureAudit": "available",
+      "pending": 26,
+      "requirements": 26,
+      "source": "extensions/blizzard/starcraft-2/codecs/sc2-data/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/sc2-data",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "blizzard/sc2-document-metadata",
+          "path": "starcraft2/contributions/codec-sc2-document-metadata.json",
+          "repository": "blizzard"
+        }
+      ],
+      "codec": "sc2-document-metadata",
+      "family": "sc2",
+      "featureAudit": "available",
+      "pending": 19,
+      "requirements": 19,
+      "source": "extensions/blizzard/starcraft-2/codecs/sc2-document-metadata/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/sc2-document-metadata",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "blizzard/sc2-layout",
+          "path": "starcraft2/contributions/codec-sc2-layout.json",
+          "repository": "blizzard"
+        }
+      ],
+      "codec": "sc2-layout",
+      "family": "sc2",
+      "featureAudit": "available",
+      "pending": 28,
+      "requirements": 28,
+      "source": "extensions/blizzard/starcraft-2/codecs/sc2-layout/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/sc2-layout",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "blizzard/sc2-map",
+          "path": "starcraft2/contributions/codec-sc2-map.json",
+          "repository": "blizzard"
+        }
+      ],
+      "codec": "sc2-map",
+      "family": "sc2",
+      "featureAudit": "available",
+      "pending": 23,
+      "requirements": 23,
+      "source": "extensions/blizzard/starcraft-2/codecs/sc2-map/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/sc2-map",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "blizzard/sc2-mod",
+          "path": "starcraft2/contributions/codec-sc2-mod.json",
+          "repository": "blizzard"
+        }
+      ],
+      "codec": "sc2-mod",
+      "family": "sc2",
+      "featureAudit": "available",
+      "pending": 24,
+      "requirements": 24,
+      "source": "extensions/blizzard/starcraft-2/codecs/sc2-mod/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/sc2-mod",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "blizzard/sc2-replay",
+          "path": "starcraft2/contributions/codec-sc2-replay.json",
+          "repository": "blizzard"
+        }
+      ],
+      "codec": "sc2-replay",
+      "family": "sc2",
+      "featureAudit": "available",
+      "pending": 27,
+      "requirements": 27,
+      "source": "extensions/blizzard/starcraft-2/codecs/sc2-replay/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/sc2-replay",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "blizzard/sc2-runtime",
+          "path": "starcraft2/contributions/codec-sc2-runtime.json",
+          "repository": "blizzard"
+        }
+      ],
+      "codec": "sc2-runtime",
+      "family": "sc2",
+      "featureAudit": "available",
+      "pending": 19,
+      "requirements": 19,
+      "source": "extensions/blizzard/starcraft-2/codecs/sc2-runtime/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/sc2-runtime",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "blizzard/sc2-strings",
+          "path": "starcraft2/contributions/codec-sc2-strings.json",
+          "repository": "blizzard"
+        }
+      ],
+      "codec": "sc2-strings",
+      "family": "sc2",
+      "featureAudit": "available",
+      "pending": 26,
+      "requirements": 26,
+      "source": "extensions/blizzard/starcraft-2/codecs/sc2-strings/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/sc2-strings",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "blizzard/sc2-triggers",
+          "path": "starcraft2/contributions/codec-sc2-triggers.json",
+          "repository": "blizzard"
+        }
+      ],
+      "codec": "sc2-triggers",
+      "family": "sc2",
+      "featureAudit": "available",
+      "pending": 24,
+      "requirements": 24,
+      "source": "extensions/blizzard/starcraft-2/codecs/sc2-triggers/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/sc2-triggers",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "ea/shp",
+          "path": "westwood/contributions/codec-shp.json",
+          "repository": "ea"
+        }
+      ],
+      "codec": "shp",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/ea/westwood/codecs/shp/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/shp",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/sld",
+          "path": "extensions/microsoft-age-series/contributions/codec-sld.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "sld",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/microsoft/age-series/codecs/sld/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/sld",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/slp",
+          "path": "extensions/microsoft-age-series/contributions/codec-slp.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "slp",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/microsoft/age-series/codecs/slp/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/slp",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/smacker",
+          "path": "extensions/rad-game-tools-video/contributions/codec-smacker.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "smacker",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/rad-game-tools/video/codecs/smacker/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/smacker",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/smp",
+          "path": "extensions/microsoft-age-series/contributions/codec-smp.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "smp",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/microsoft/age-series/codecs/smp/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/smp",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/smx",
+          "path": "extensions/microsoft-age-series/contributions/codec-smx.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "smx",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/microsoft/age-series/codecs/smx/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/smx",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/spring-rapid",
+          "path": "contributions/codec-spring-rapid.json",
+          "repository": "spring"
+        }
+      ],
+      "codec": "spring-rapid",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/opensource/spring/codecs/spring-rapid/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/spring-rapid",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/spring-s3o",
+          "path": "contributions/codec-spring-s3o.json",
+          "repository": "spring"
+        }
+      ],
+      "codec": "spring-s3o",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/opensource/spring/codecs/spring-s3o/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/spring-s3o",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/spring-vfs",
+          "path": "contributions/codec-spring-vfs.json",
+          "repository": "spring"
+        }
+      ],
+      "codec": "spring-vfs",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/opensource/spring/codecs/spring-vfs/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/spring-vfs",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/sst",
+          "path": "extensions/stainless-steel-studios-empire-earth/contributions/codec-sst.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "sst",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/stainless-steel-studios/empire-earth/codecs/sst/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/sst",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "starcraft-chk",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/blizzard/starcraft-1/codecs/starcraft-chk/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/starcraft-chk",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "starcraft-grp",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/blizzard/starcraft-1/codecs/starcraft-grp/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/starcraft-grp",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "starcraft-replay",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/blizzard/starcraft-1/codecs/starcraft-replay/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/starcraft-replay",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/stl",
+          "path": "extensions/models/contributions/codec-stl.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "stl",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/models/codecs/stl/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/stl",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/supcom-scm",
+          "path": "extensions/annihilation-gas-powered/contributions/codec-supcom-scm.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "supcom-scm",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/annihilation/gas-powered/codecs/supcom-scm/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/supcom-scm",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/vector-svg",
+          "path": "extensions/vector/contributions/codec-svg.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "svg",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/common/vector/codecs/svg/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/svg",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/swf",
+          "path": "extensions/adobe-flash/contributions/codec-swf.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "swf",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/adobe/flash/codecs/swf/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/swf",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/ta-hpi",
+          "path": "extensions/cavedog-total-annihilation/contributions/codec-ta-hpi.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "ta-hpi",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/cavedog/total-annihilation/codecs/ta-hpi/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/ta-hpi",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/tar",
+          "path": "extensions/archives/contributions/codec-tar.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "tar",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/common/archives/codecs/tar/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/tar",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/texcache",
+          "path": "extensions/stainless-steel-studios-empire-earth/contributions/codec-texcache.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "texcache",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/stainless-steel-studios/empire-earth/codecs/texcache/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/texcache",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/tga",
+          "path": "extensions/images/contributions/codec-tga.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "tga",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/common/images/codecs/tga/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/tga",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/tiff",
+          "path": "extensions/images/contributions/codec-tiff.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "tiff",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/common/images/codecs/tiff/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/tiff",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "ea/tmp",
+          "path": "westwood/contributions/codec-tmp.json",
+          "repository": "ea"
+        }
+      ],
+      "codec": "tmp",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/ea/westwood/codecs/tmp/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/tmp",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "txt",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 6,
+      "requirements": 6,
+      "source": "extensions/uncommon/documents/codecs/txt/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/txt",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/uasset",
+          "path": "extensions/epic-games-unreal-engine/contributions/codec-uasset.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "uasset",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/epic-games/unreal-engine/codecs/uasset/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/uasset",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/unity",
+          "path": "extensions/unity-engine/contributions/codec-unity.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "unity",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/unity/engine/codecs/unity/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/unity",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/unity-assets",
+          "path": "extensions/unity-engine/contributions/codec-unity-assets.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "unity-assets",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/unity/engine/codecs/unity-assets/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/unity-assets",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/unity-mesh",
+          "path": "extensions/unity-engine/contributions/codec-unity-mesh.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "unity-mesh",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/unity/engine/codecs/unity-mesh/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/unity-mesh",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/unity-ress",
+          "path": "extensions/unity-engine/contributions/codec-unity-ress.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "unity-ress",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/unity/engine/codecs/unity-ress/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/unity-ress",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/unityfs",
+          "path": "extensions/unity-engine/contributions/codec-unityfs.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "unityfs",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/unity/engine/codecs/unityfs/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/unityfs",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/unreal-actorx",
+          "path": "extensions/epic-games-unreal-engine/contributions/codec-unreal-actorx.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "unreal-actorx",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/epic-games/unreal-engine/codecs/unreal-actorx/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/unreal-actorx",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/unreal-iostore",
+          "path": "extensions/epic-games-unreal-engine/contributions/codec-unreal-iostore.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "unreal-iostore",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/epic-games/unreal-engine/codecs/unreal-iostore/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/unreal-iostore",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/unreal-pak",
+          "path": "extensions/epic-games-unreal-engine/contributions/codec-unreal-pak.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "unreal-pak",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/epic-games/unreal-engine/codecs/unreal-pak/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/unreal-pak",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/unreal-uasset",
+          "path": "extensions/epic-games-unreal-engine/contributions/codec-unreal-uasset.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "unreal-uasset",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/epic-games/unreal-engine/codecs/unreal-uasset/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/unreal-uasset",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/unreal-uasset-texture",
+          "path": "extensions/epic-games-unreal-engine/contributions/codec-unreal-uasset-texture.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "unreal-uasset-texture",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/epic-games/unreal-engine/codecs/unreal-uasset-texture/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/unreal-uasset-texture",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/unreal-uasset-video",
+          "path": "extensions/epic-games-unreal-engine/contributions/codec-unreal-uasset-video.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "unreal-uasset-video",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/epic-games/unreal-engine/codecs/unreal-uasset-video/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/unreal-uasset-video",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/model-uvm",
+          "path": "extensions/models/contributions/codec-uvm.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "uvm",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 5,
+      "requirements": 5,
+      "source": "extensions/common/models/codecs/uvm/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/uvm",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/visio",
+          "path": "extensions/uncommon-documents/contributions/codec-visio.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "visio",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 5,
+      "requirements": 5,
+      "source": "extensions/uncommon/documents/codecs/visio/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/visio",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "ea/vpl",
+          "path": "westwood/contributions/codec-vpl.json",
+          "repository": "ea"
+        }
+      ],
+      "codec": "vpl",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/ea/westwood/codecs/vpl/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/vpl",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "blizzard/war3-mdx",
+          "path": "blizzard-warcraft-3/contributions/codec-war3-mdx.json",
+          "repository": "blizzard"
+        }
+      ],
+      "codec": "war3-mdx",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/blizzard/warcraft-3/codecs/war3-mdx/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/war3-mdx",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "warcraft2-pud",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/blizzard/warcraft-2/codecs/warcraft2-pud/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/warcraft2-pud",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "warcraft3-map",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/blizzard/warcraft-3/codecs/warcraft3-map/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/warcraft3-map",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "warcraft3-object-data",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/blizzard/warcraft-3/codecs/warcraft3-object-data/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/warcraft3-object-data",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "warcraft3-replay",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/blizzard/warcraft-3/codecs/warcraft3-replay/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/warcraft3-replay",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "warcraft3-script",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/blizzard/warcraft-3/codecs/warcraft3-script/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/warcraft3-script",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "warcraft3-wts",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/blizzard/warcraft-3/codecs/warcraft3-wts/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/warcraft3-wts",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/warzone-img",
+          "path": "contributions/codec-warzone-img.json",
+          "repository": "warzone"
+        }
+      ],
+      "codec": "warzone-img",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/opensource/warzone-2100/codecs/warzone-img/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/warzone-img",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/warzone-lev",
+          "path": "contributions/codec-warzone-lev.json",
+          "repository": "warzone"
+        }
+      ],
+      "codec": "warzone-lev",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/opensource/warzone-2100/codecs/warzone-lev/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/warzone-lev",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/warzone-pie",
+          "path": "contributions/codec-warzone-pie.json",
+          "repository": "warzone"
+        }
+      ],
+      "codec": "warzone-pie",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/opensource/warzone-2100/codecs/warzone-pie/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/warzone-pie",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/warzone-wrf",
+          "path": "contributions/codec-warzone-wrf.json",
+          "repository": "warzone"
+        }
+      ],
+      "codec": "warzone-wrf",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/opensource/warzone-2100/codecs/warzone-wrf/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/warzone-wrf",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/warzone-wz",
+          "path": "contributions/codec-warzone-wz.json",
+          "repository": "warzone"
+        }
+      ],
+      "codec": "warzone-wz",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/opensource/warzone-2100/codecs/warzone-wz/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/warzone-wz",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/warzone2100-map",
+          "path": "contributions/codec-warzone2100-map.json",
+          "repository": "warzone"
+        }
+      ],
+      "codec": "warzone2100-map",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/opensource/warzone-2100/codecs/warzone2100-map/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/warzone2100-map",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/wav",
+          "path": "extensions/audio/contributions/codec-wav.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "wav",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/common/audio/codecs/wav/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/wav",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/wd",
+          "path": "extensions/realitypump-earth2160/contributions/codec-wd.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "wd",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/realitypump/earth2160/codecs/wd/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/wd",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/video-webm",
+          "path": "extensions/video/contributions/codec-webm.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "webm",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/video/codecs/webm/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/webm",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/webp",
+          "path": "extensions/images/contributions/codec-webp.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "webp",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/common/images/codecs/webp/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/webp",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/wem",
+          "path": "extensions/audiokinetic-wwise/contributions/codec-wem.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "wem",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/audiokinetic/wwise/codecs/wem/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/wem",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "ea/westwood-w3d",
+          "path": "models/contributions/codec-westwood-w3d.json",
+          "repository": "ea"
+        }
+      ],
+      "codec": "westwood-w3d",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/ea/models/codecs/westwood-w3d/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/westwood-w3d",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/wmf",
+          "path": "extensions/vector/contributions/codec-wmf.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "wmf",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/common/vector/codecs/wmf/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/wmf",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/wmv",
+          "path": "extensions/video/contributions/codec-wmv.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "wmv",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/video/codecs/wmv/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/wmv",
+      "status": "pending"
+    },
+    {
+      "candidates": [],
+      "codec": "wow-m2",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 1,
+      "requirements": 1,
+      "source": "extensions/blizzard/world-of-warcraft/codecs/wow-m2/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/wow-m2",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "ea/wsa",
+          "path": "westwood/contributions/codec-wsa.json",
+          "repository": "ea"
+        }
+      ],
+      "codec": "wsa",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 2,
+      "requirements": 2,
+      "source": "extensions/ea/westwood/codecs/wsa/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/wsa",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/wtp",
+          "path": "extensions/relic-essence/contributions/codec-wtp.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "wtp",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/relic/essence/codecs/wtp/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/wtp",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/wwise-pck",
+          "path": "extensions/audiokinetic-wwise/contributions/codec-wwise-pck.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "wwise-pck",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/audiokinetic/wwise/codecs/wwise-pck/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/wwise-pck",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/xlsx",
+          "path": "extensions/uncommon-documents/contributions/codec-xlsx.json",
+          "repository": "other"
+        }
+      ],
+      "codec": "xlsx",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 5,
+      "requirements": 5,
+      "source": "extensions/uncommon/documents/codecs/xlsx/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/xlsx",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/xz",
+          "path": "extensions/archives/contributions/codec-xz.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "xz",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/common/archives/codecs/xz/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/xz",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/archive-zip",
+          "path": "extensions/archives/contributions/codec-zip.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "zip",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 4,
+      "requirements": 4,
+      "source": "extensions/common/archives/codecs/zip/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/zip",
+      "status": "pending"
+    },
+    {
+      "candidates": [
+        {
+          "id": "modkit/zstd",
+          "path": "extensions/archives/contributions/codec-zstd.json",
+          "repository": "core"
+        }
+      ],
+      "codec": "zstd",
+      "family": "other",
+      "featureAudit": "pending",
+      "pending": 3,
+      "requirements": 3,
+      "source": "extensions/common/archives/codecs/zstd/codec.manifest.json",
+      "sourceUnitId": "legacy/codec-manifest/modkit/zstd",
+      "status": "pending"
+    }
+  ],
+  "sc2AuditCount": 12,
+  "schemaVersion": 1
+}

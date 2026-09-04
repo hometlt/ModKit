@@ -4,6 +4,9 @@ This package is the neutral discovery and installation layer between Modkit host
 repositories. It does not contain a list of games and it does not give the core a dependency on any
 game extension.
 
+The package exports JavaScript and declarations from `dist`. Run `pnpm build` before `pnpm test`
+or `pnpm pack:standalone`; `pnpm typecheck` checks the TypeScript sources without emitting files.
+
 The manager reads three small, versioned documents:
 
 - `modkit.workspace.json` selects sources, a profile and an optional lock file;

@@ -8,7 +8,7 @@ import {
   isRemoteCatalogUri,
   parseExtensionCatalog,
   validateExtensionCatalog,
-} from '../src/index.js'
+} from '../dist/index.js'
 
 const signature = Object.freeze({
   algorithm: 'Ed25519',

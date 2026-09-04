@@ -9,7 +9,7 @@
  * proves it does not is a host-side counter, not a codec-side assertion.
  */
 
-import { createInspectionCodec } from '../../../../../packages/codec-kit/src/index.js'
+import { createInspectionCodec } from '../../../../../packages/codec-kit/dist/index.js'
 
 /**
  * @param {{

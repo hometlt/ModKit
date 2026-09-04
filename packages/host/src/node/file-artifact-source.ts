@@ -156,9 +156,7 @@ export async function openFileArtifactSource(
       const start = range?.offset ?? 0n
       const total = range?.length ?? (snapshot.size > start ? snapshot.size - start : 0n)
       try {
-        options.onStream?.(
-          Object.freeze({ uri, offset: String(start), length: String(total) }),
-        )
+        options.onStream?.(Object.freeze({ uri, offset: String(start), length: String(total) }))
       } catch {
         // Observation is never allowed to turn a successful product stream into a failure.
       }

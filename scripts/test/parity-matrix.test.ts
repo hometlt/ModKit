@@ -43,7 +43,7 @@ describe('generated parity matrix (F12)', () => {
       expect(matrix).toContain(`\`${disposition}\``)
       expect(matrix).toContain(String(ledger.counts.byDisposition[disposition]))
     }
-    for (const workflow of ledger.workflows as Array<{ workflowId: string }>) {
+    for (const workflow of ledger.workflows as { workflowId: string }[]) {
       expect(matrix).toContain(`\`${workflow.workflowId}\``)
     }
     expect(matrix).toContain(String(ledger.counts.total))

@@ -4,7 +4,7 @@ import { dirname, resolve } from 'node:path'
 import { test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 
-import { normalizeExtensionLock, normalizeWorkspaceConfiguration } from '../src/index.js'
+import { normalizeExtensionLock, normalizeWorkspaceConfiguration } from '../dist/index.js'
 
 const exampleRoot = resolve(
   dirname(fileURLToPath(import.meta.url)),

@@ -1,0 +1,596 @@
+{
+  "schemaVersion": 1,
+  "scanned": [
+    {
+      "repository": "modkit-core",
+      "sourceFiles": 770
+    },
+    {
+      "repository": "modkit-extensions-blizzard",
+      "sourceFiles": 138
+    },
+    {
+      "repository": "modkit-extensions-ea",
+      "sourceFiles": 23
+    },
+    {
+      "repository": "modkit-extensions-other",
+      "sourceFiles": 85
+    },
+    {
+      "repository": "modkit-extensions-spring",
+      "sourceFiles": 9
+    },
+    {
+      "repository": "modkit-extensions-warzone",
+      "sourceFiles": 35
+    }
+  ],
+  "implementations": [
+    {
+      "id": "modkit-core/extensions/archives/src/7z/codec.js:crc32#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/extensions/archives/src/7z/codec.js",
+      "symbol": "crc32#0",
+      "name": "crc32",
+      "line": 17,
+      "implementationSha256": "a4dbfcd600624a380c95db5efbbb90b9249b73227799c49ceb3342634877da6b",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-core/extensions/archives/src/gzip/codec.js:crc32#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/extensions/archives/src/gzip/codec.js",
+      "symbol": "crc32#0",
+      "name": "crc32",
+      "line": 26,
+      "implementationSha256": "a4dbfcd600624a380c95db5efbbb90b9249b73227799c49ceb3342634877da6b",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-core/extensions/archives/src/rar/codec.js:crc32#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/extensions/archives/src/rar/codec.js",
+      "symbol": "crc32#0",
+      "name": "crc32",
+      "line": 17,
+      "implementationSha256": "a4dbfcd600624a380c95db5efbbb90b9249b73227799c49ceb3342634877da6b",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-core/extensions/archives/src/xz/codec.js:crc32#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/extensions/archives/src/xz/codec.js",
+      "symbol": "crc32#0",
+      "name": "crc32",
+      "line": 17,
+      "implementationSha256": "a4dbfcd600624a380c95db5efbbb90b9249b73227799c49ceb3342634877da6b",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-core/extensions/archives/src/zip/codec.js:crc32#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/extensions/archives/src/zip/codec.js",
+      "symbol": "crc32#0",
+      "name": "crc32",
+      "line": 95,
+      "implementationSha256": "80781ce5f00baeb3ef3162b73def0c5131df4c88bbacae9a38ccf98fc59a51db",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-core/extensions/archives/src/zip/codec.js:inflateRaw#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/extensions/archives/src/zip/codec.js",
+      "symbol": "inflateRaw#0",
+      "name": "inflateRaw",
+      "line": 188,
+      "implementationSha256": "ec4ca15a3d263800057cf117bbd4b38e214a3e8b35877ff5653577dd4202a2ba",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-core/extensions/data/src/xml/provider.js:parseXmlDocument#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/extensions/data/src/xml/provider.js",
+      "symbol": "parseXmlDocument#0",
+      "name": "parseXmlDocument",
+      "line": 45,
+      "implementationSha256": "b25182caec4adb11401b7cb8efb13e19fca019123ef080d05feac72f7778cec1",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-core/extensions/documents/src/odf/package.js:crc32#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/extensions/documents/src/odf/package.js",
+      "symbol": "crc32#0",
+      "name": "crc32",
+      "line": 106,
+      "implementationSha256": "cda2b23aa663cb22082b93df4714e99c7b22f3817b913c19136cf2cf0b2d3611",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-core/extensions/documents/src/odf/package.js:inflateRaw#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/extensions/documents/src/odf/package.js",
+      "symbol": "inflateRaw#0",
+      "name": "inflateRaw",
+      "line": 289,
+      "implementationSha256": "106bbf9a0bfc17481d7720645d1d26f0dd2ea9a648db6af4cafac6c2e38fe2f1",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-core/extensions/images/src/dds/bptc.js:decodeBc6h#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/extensions/images/src/dds/bptc.js",
+      "symbol": "decodeBc6h#0",
+      "name": "decodeBc6h",
+      "line": 88,
+      "implementationSha256": "1b67e7d5404e9e8ec460a8c446945eddf2f2ac7a6a04a1cfe97c76ea817ca873",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-core/extensions/images/src/dds/bptc.js:decodeBc7#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/extensions/images/src/dds/bptc.js",
+      "symbol": "decodeBc7#0",
+      "name": "decodeBc7",
+      "line": 93,
+      "implementationSha256": "7932f91227573a13910ef0488cbaedeb399b7bfc3f3faec10811c728ef9e0056",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-core/extensions/images/src/dds/codec.js:decodeBc4Block#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/extensions/images/src/dds/codec.js",
+      "symbol": "decodeBc4Block#0",
+      "name": "decodeBc4Block",
+      "line": 406,
+      "implementationSha256": "227a27d41a32c6e83c7983b5b8f00caff9f9e056a44de94dc5f798d6bee4d4ec",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-core/extensions/images/src/dds/codec.js:decodeBc5Block#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/extensions/images/src/dds/codec.js",
+      "symbol": "decodeBc5Block#0",
+      "name": "decodeBc5Block",
+      "line": 426,
+      "implementationSha256": "ca4fa8e8d2e3b09db890643e1fbd8a2c800b0e50bd7a24775b13ecf058be6eec",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-core/extensions/images/src/png/codec.js:crc32#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/extensions/images/src/png/codec.js",
+      "symbol": "crc32#0",
+      "name": "crc32",
+      "line": 21,
+      "implementationSha256": "87acb5671d6e9881865ae50ca4d9358d45a6f3697614ac164ee2d508bb6656a0",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-core/extensions/images/src/png/codec.js:inflateBounded#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/extensions/images/src/png/codec.js",
+      "symbol": "inflateBounded#0",
+      "name": "inflateBounded",
+      "line": 108,
+      "implementationSha256": "edf2b78dc34974dfe92fe3933cb2189d5aaae76780721dca4e11d890c66e6f26",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-core/extensions/images/src/writers/png-encoder.js:crc32#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/extensions/images/src/writers/png-encoder.js",
+      "symbol": "crc32#0",
+      "name": "crc32",
+      "line": 23,
+      "implementationSha256": "87acb5671d6e9881865ae50ca4d9358d45a6f3697614ac164ee2d508bb6656a0",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-core/extensions/models/src/dae/codec.js:parseXml#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/extensions/models/src/dae/codec.js",
+      "symbol": "parseXml#0",
+      "name": "parseXml",
+      "line": 92,
+      "implementationSha256": "ba3ccdd70a4eb7dd6a87feb223368f18b090ab322890bbbf24588141169b5215",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-core/packages/codec-kit/src/compression/legacy-original.ts:inflate#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/packages/codec-kit/src/compression/legacy-original.ts",
+      "symbol": "inflate#0",
+      "name": "inflate",
+      "line": 60,
+      "implementationSha256": "afd16de3bbb25bb4b5c191ca74307876a9791f5401cd2ad84b853876d977f5b1",
+      "disposition": "canonical-copy",
+      "mk2Path": "packages/archives-processing/src/lib/compression/index.ts"
+    },
+    {
+      "id": "modkit-core/packages/codec-kit/src/crypto/mpq.ts:crc32#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/packages/codec-kit/src/crypto/mpq.ts",
+      "symbol": "crc32#0",
+      "name": "crc32",
+      "line": 207,
+      "implementationSha256": "6836c5ca97c216acd0c7a364a464ca6140708d6dcd279a2cbd6eab606b5bb800",
+      "disposition": "canonical-copy",
+      "mk2Path": "packages/archives-processing/src/lib/crypto/index.ts"
+    },
+    {
+      "id": "modkit-core/packages/codec-kit/src/crypto/mpq.ts:md5#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/packages/codec-kit/src/crypto/mpq.ts",
+      "symbol": "md5#0",
+      "name": "md5",
+      "line": 229,
+      "implementationSha256": "6a56c2b9b934e83c7f25f83ef509ee8ff8a7a378bcb3c023bf0be7c3a1d7e086",
+      "disposition": "canonical-copy",
+      "mk2Path": "packages/archives-processing/src/lib/crypto/index.ts"
+    },
+    {
+      "id": "modkit-core/packages/codec-kit/src/crypto/mpq.ts:mpqHash#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/packages/codec-kit/src/crypto/mpq.ts",
+      "symbol": "mpqHash#0",
+      "name": "mpqHash",
+      "line": 61,
+      "implementationSha256": "df9d1b653a90df5f82b09b232b33568adafd9721b7034267033da22ddd042e95",
+      "disposition": "canonical-copy",
+      "mk2Path": "packages/archives-processing/src/lib/crypto/index.ts"
+    },
+    {
+      "id": "modkit-core/packages/codec-kit/src/crypto/sha1.ts:sha1Hex#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/packages/codec-kit/src/crypto/sha1.ts",
+      "symbol": "sha1Hex#0",
+      "name": "sha1Hex",
+      "line": 3,
+      "implementationSha256": "885262fd6d3f82eb541c498e25c621771656b1f918a55f8fecb730ea1e6f1983",
+      "disposition": "canonical-copy",
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/sha1.ts"
+    },
+    {
+      "id": "modkit-core/packages/scene/src/output/png.ts:crc32#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/packages/scene/src/output/png.ts",
+      "symbol": "crc32#0",
+      "name": "crc32",
+      "line": 4,
+      "implementationSha256": "af05225b7bb868e46ab75c42c50978d8ff2f321629810f1bceac88803e868fe2",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-core/packages/testkit/src/command-fixtures.ts:crc32#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/packages/testkit/src/command-fixtures.ts",
+      "symbol": "crc32#0",
+      "name": "crc32",
+      "line": 104,
+      "implementationSha256": "aa6ba8d6bec5ffcf95a8c61662a550313eff45e8b3fd65e3b3d01621ac5b950c",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-core/packages/uv/src/model/materializer.ts:boundsOf#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/packages/uv/src/model/materializer.ts",
+      "symbol": "boundsOf#0",
+      "name": "boundsOf",
+      "line": 178,
+      "implementationSha256": "1b2148050ae9d0f9416509d75c241c6ac3dd9f56123676e35170bea3380c345e",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-blizzard/blizzard-diablo/src/diablo3-app/codec.js:boundsOf#0",
+      "repository": "modkit-extensions-blizzard",
+      "path": "modkit-extensions-blizzard/blizzard-diablo/src/diablo3-app/codec.js",
+      "symbol": "boundsOf#0",
+      "name": "boundsOf",
+      "line": 278,
+      "implementationSha256": "8742341ae8d2432a7ef1197b20e337da70168cc1725ccfd0cba782a969efbbaa",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-blizzard/models/src/m3/geometry.node.js:boundsOf#0",
+      "repository": "modkit-extensions-blizzard",
+      "path": "modkit-extensions-blizzard/models/src/m3/geometry.node.js",
+      "symbol": "boundsOf#0",
+      "name": "boundsOf",
+      "line": 23,
+      "implementationSha256": "4729b8bd7ad4d7f91a15038f093ddbb588b5106bb6821dba71410aa383d126a4",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-blizzard/mpq/src/mpq/codec.js:inflate#0",
+      "repository": "modkit-extensions-blizzard",
+      "path": "modkit-extensions-blizzard/mpq/src/mpq/codec.js",
+      "symbol": "inflate#0",
+      "name": "inflate",
+      "line": 209,
+      "implementationSha256": "a2fe7b7319a952e263cce9538a044d1dac4f9bbc6caa96183af58f17b19a0c0f",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-blizzard/mpq/src/mpq/codec.js:mpqHash#0",
+      "repository": "modkit-extensions-blizzard",
+      "path": "modkit-extensions-blizzard/mpq/src/mpq/codec.js",
+      "symbol": "mpqHash#0",
+      "name": "mpqHash",
+      "line": 46,
+      "implementationSha256": "9817a417b5a603b1bc89f231e5dc1cdd734e16af16f74c12672f1a6830c4239e",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-blizzard/mpq/src/mpq/fresh-writer.js:mpqHash#0",
+      "repository": "modkit-extensions-blizzard",
+      "path": "modkit-extensions-blizzard/mpq/src/mpq/fresh-writer.js",
+      "symbol": "mpqHash#0",
+      "name": "mpqHash",
+      "line": 87,
+      "implementationSha256": "82990c3fd22a4c4c8210d9cf4f1e035cce764fa6d74002f52b5b6f33bc082e35",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-blizzard/mpq/src/mpq/native-preserving.js:inflate#0",
+      "repository": "modkit-extensions-blizzard",
+      "path": "modkit-extensions-blizzard/mpq/src/mpq/native-preserving.js",
+      "symbol": "inflate#0",
+      "name": "inflate",
+      "line": 375,
+      "implementationSha256": "c819c447297be3ffe20a99fd1bb17098f833a26869e5ffdbdea5613b30e7a980",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-blizzard/mpq/src/mpq/native-preserving.js:mpqHash#0",
+      "repository": "modkit-extensions-blizzard",
+      "path": "modkit-extensions-blizzard/mpq/src/mpq/native-preserving.js",
+      "symbol": "mpqHash#0",
+      "name": "mpqHash",
+      "line": 138,
+      "implementationSha256": "8e441f25b59fa8c3d36a77dbf7ae8c8de4d2d27a586f49501428b4563790fb51",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-blizzard/starcraft2/src/galaxy/codec.js:parseXmlElements#0",
+      "repository": "modkit-extensions-blizzard",
+      "path": "modkit-extensions-blizzard/starcraft2/src/galaxy/codec.js",
+      "symbol": "parseXmlElements#0",
+      "name": "parseXmlElements",
+      "line": 93,
+      "implementationSha256": "eac48d894c45c57320a31b051b3640e5a24678bc6abdd934f5496852b241eee2",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-blizzard/starcraft2/src/sc2-layout/xml.js:parseXmlDocument#0",
+      "repository": "modkit-extensions-blizzard",
+      "path": "modkit-extensions-blizzard/starcraft2/src/sc2-layout/xml.js",
+      "symbol": "parseXmlDocument#0",
+      "name": "parseXmlDocument",
+      "line": 177,
+      "implementationSha256": "d915803e2dacd4b29bc1659bbb58453838c9192fda6f89467bfa27575c893a8c",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-blizzard/starcraft2/src/sc2-map/mpq.js:mpqHash#0",
+      "repository": "modkit-extensions-blizzard",
+      "path": "modkit-extensions-blizzard/starcraft2/src/sc2-map/mpq.js",
+      "symbol": "mpqHash#0",
+      "name": "mpqHash",
+      "line": 56,
+      "implementationSha256": "10514b083a143158e9f17859fc145e33f030191687294fe9e0f2bafac3e0f8cb",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-blizzard/starcraft2/src/sc2-map/preview.js:adler32#0",
+      "repository": "modkit-extensions-blizzard",
+      "path": "modkit-extensions-blizzard/starcraft2/src/sc2-map/preview.js",
+      "symbol": "adler32#0",
+      "name": "adler32",
+      "line": 60,
+      "implementationSha256": "d6ef2d84d72442f835cd49a9cce2a38c718b65450ef7c53251e194e2050969f7",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-blizzard/starcraft2/src/sc2-map/preview.js:crc32#0",
+      "repository": "modkit-extensions-blizzard",
+      "path": "modkit-extensions-blizzard/starcraft2/src/sc2-map/preview.js",
+      "symbol": "crc32#0",
+      "name": "crc32",
+      "line": 54,
+      "implementationSha256": "5dcf81410277a79f6c7ee9510218879d8254ad4bd21674133195930e20f05a8d",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-ea/emperor/src/emperor-rfh-rfd/codec.js:inflate#0",
+      "repository": "modkit-extensions-ea",
+      "path": "modkit-extensions-ea/emperor/src/emperor-rfh-rfd/codec.js",
+      "symbol": "inflate#0",
+      "name": "inflate",
+      "line": 194,
+      "implementationSha256": "b0ebeb007b353c1d99328614d7d2f6131cec24103279ed6f69e03e6bfc3b6f0f",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-other/extensions/adobe-flash/src/fla/codec.js:crc32#0",
+      "repository": "modkit-extensions-other",
+      "path": "modkit-extensions-other/extensions/adobe-flash/src/fla/codec.js",
+      "symbol": "crc32#0",
+      "name": "crc32",
+      "line": 137,
+      "implementationSha256": "a4dbfcd600624a380c95db5efbbb90b9249b73227799c49ceb3342634877da6b",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-other/extensions/adobe-flash/src/fla/codec.js:inflateRaw#0",
+      "repository": "modkit-extensions-other",
+      "path": "modkit-extensions-other/extensions/adobe-flash/src/fla/codec.js",
+      "symbol": "inflateRaw#0",
+      "name": "inflateRaw",
+      "line": 143,
+      "implementationSha256": "ec4ca15a3d263800057cf117bbd4b38e214a3e8b35877ff5653577dd4202a2ba",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-other/extensions/cavedog-total-annihilation/src/ta-hpi/codec.js:inflateZlib#0",
+      "repository": "modkit-extensions-other",
+      "path": "modkit-extensions-other/extensions/cavedog-total-annihilation/src/ta-hpi/codec.js",
+      "symbol": "inflateZlib#0",
+      "name": "inflateZlib",
+      "line": 300,
+      "implementationSha256": "dc487fadb1b939312087aa19c33ea9dd2f9c68f6bdf999272b7917f3b452b9de",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/unreal-actorx/codec.js:boundsOf#0",
+      "repository": "modkit-extensions-other",
+      "path": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/unreal-actorx/codec.js",
+      "symbol": "boundsOf#0",
+      "name": "boundsOf",
+      "line": 265,
+      "implementationSha256": "f7bb0dc10a0c42abfbda8263870c29ace17f4e61d421850a50d1438b0b9a6dcd",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/unreal-uasset/codec.js:boundsOf#0",
+      "repository": "modkit-extensions-other",
+      "path": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/unreal-uasset/codec.js",
+      "symbol": "boundsOf#0",
+      "name": "boundsOf",
+      "line": 309,
+      "implementationSha256": "f7bb0dc10a0c42abfbda8263870c29ace17f4e61d421850a50d1438b0b9a6dcd",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-other/extensions/microsoft-age-series/src/age-bar/codec.js:inflateBounded#0",
+      "repository": "modkit-extensions-other",
+      "path": "modkit-extensions-other/extensions/microsoft-age-series/src/age-bar/codec.js",
+      "symbol": "inflateBounded#0",
+      "name": "inflateBounded",
+      "line": 216,
+      "implementationSha256": "c40e93daea53a73e36a44dad5b66744295d9dfacfe574b2fdd32632a57d10573",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-other/extensions/microsoft-halo-wars/src/halo-era/codec.js:inflateRaw#0",
+      "repository": "modkit-extensions-other",
+      "path": "modkit-extensions-other/extensions/microsoft-halo-wars/src/halo-era/codec.js",
+      "symbol": "inflateRaw#0",
+      "name": "inflateRaw",
+      "line": 117,
+      "implementationSha256": "55ad34ca85d7cf6c62b1dff76eacc60323a7ec9a2bd0dcab87165082439862d7",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-other/extensions/new-world-computing-heroes-3/src/heroes3-lod/codec.js:inflate#0",
+      "repository": "modkit-extensions-other",
+      "path": "modkit-extensions-other/extensions/new-world-computing-heroes-3/src/heroes3-lod/codec.js",
+      "symbol": "inflate#0",
+      "name": "inflate",
+      "line": 178,
+      "implementationSha256": "81dabf8955bcf946b4582372297e438b356770be5d259896fc8071d997655784",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-other/extensions/realitypump-earth2160/src/wd/codec.js:inflate#0",
+      "repository": "modkit-extensions-other",
+      "path": "modkit-extensions-other/extensions/realitypump-earth2160/src/wd/codec.js",
+      "symbol": "inflate#0",
+      "name": "inflate",
+      "line": 5,
+      "implementationSha256": "d7f00e2626837c54984f6db0064f89c6245da84153cab6e8d8146b0fdee6f369",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-other/extensions/uncommon-documents/src/docx/office-package.js:crc32#0",
+      "repository": "modkit-extensions-other",
+      "path": "modkit-extensions-other/extensions/uncommon-documents/src/docx/office-package.js",
+      "symbol": "crc32#0",
+      "name": "crc32",
+      "line": 169,
+      "implementationSha256": "a18eea0e9c53a2a500d3a8db4e3df635befdc314517056ef661b91fa666dcd03",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-other/extensions/uncommon-documents/src/docx/office-package.js:inflateRaw#0",
+      "repository": "modkit-extensions-other",
+      "path": "modkit-extensions-other/extensions/uncommon-documents/src/docx/office-package.js",
+      "symbol": "inflateRaw#0",
+      "name": "inflateRaw",
+      "line": 128,
+      "implementationSha256": "82f10b982da027fd5ca13d2ef1159606afa8fb98cc9574b083cc031f50b0b111",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-other/extensions/uncommon-documents/src/drawio/drawio-document.js:inflateRaw#0",
+      "repository": "modkit-extensions-other",
+      "path": "modkit-extensions-other/extensions/uncommon-documents/src/drawio/drawio-document.js",
+      "symbol": "inflateRaw#0",
+      "name": "inflateRaw",
+      "line": 78,
+      "implementationSha256": "7eccb71e4790a95f29db9ca1c1b9df6fdaea26524ac9b0852dbc0feb79dd1261",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-other/extensions/uncommon-documents/src/figma/figma-document.js:inflateRaw#0",
+      "repository": "modkit-extensions-other",
+      "path": "modkit-extensions-other/extensions/uncommon-documents/src/figma/figma-document.js",
+      "symbol": "inflateRaw#0",
+      "name": "inflateRaw",
+      "line": 17,
+      "implementationSha256": "e885730ba409c76962502c06224f781975e3a80bf1ae8a7e8bcb1e4a2f49b60f",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-other/extensions/unity-engine/src/unity-mesh/codec.js:boundsOf#0",
+      "repository": "modkit-extensions-other",
+      "path": "modkit-extensions-other/extensions/unity-engine/src/unity-mesh/codec.js",
+      "symbol": "boundsOf#0",
+      "name": "boundsOf",
+      "line": 157,
+      "implementationSha256": "8742341ae8d2432a7ef1197b20e337da70168cc1725ccfd0cba782a969efbbaa",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-spring/src/spring-s3o/codec.js:boundsOf#0",
+      "repository": "modkit-extensions-spring",
+      "path": "modkit-extensions-spring/src/spring-s3o/codec.js",
+      "symbol": "boundsOf#0",
+      "name": "boundsOf",
+      "line": 86,
+      "implementationSha256": "3e2c6c41baacdd389a104e756c00c7a34ae47105ffa819b2800dc45e64ef0ac3",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-warzone/src/warzone-pie/semantic.js:boundsOf#0",
+      "repository": "modkit-extensions-warzone",
+      "path": "modkit-extensions-warzone/src/warzone-pie/semantic.js",
+      "symbol": "boundsOf#0",
+      "name": "boundsOf",
+      "line": 108,
+      "implementationSha256": "3e2c6c41baacdd389a104e756c00c7a34ae47105ffa819b2800dc45e64ef0ac3",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-warzone/src/warzone-wz/range-codec.js:crc32#0",
+      "repository": "modkit-extensions-warzone",
+      "path": "modkit-extensions-warzone/src/warzone-wz/range-codec.js",
+      "symbol": "crc32#0",
+      "name": "crc32",
+      "line": 34,
+      "implementationSha256": "a4dbfcd600624a380c95db5efbbb90b9249b73227799c49ceb3342634877da6b",
+      "disposition": "existing-debt"
+    },
+    {
+      "id": "modkit-extensions-warzone/src/warzone-wz/range-codec.js:inflateRaw#0",
+      "repository": "modkit-extensions-warzone",
+      "path": "modkit-extensions-warzone/src/warzone-wz/range-codec.js",
+      "symbol": "inflateRaw#0",
+      "name": "inflateRaw",
+      "line": 221,
+      "implementationSha256": "ec4ca15a3d263800057cf117bbd4b38e214a3e8b35877ff5653577dd4202a2ba",
+      "disposition": "existing-debt"
+    }
+  ]
+}

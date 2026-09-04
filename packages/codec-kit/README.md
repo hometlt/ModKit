@@ -1,5 +1,10 @@
 # `@modkit/codec-kit`
 
+M1 adds explicit `legacy`, `crypto`, `compression`, and `texture` subpaths. The compatibility
+boundaries and pending surfaces are documented in `adr/ADR-CODEC-001-legacy-kit.md` in the repository.
+Build with `pnpm --filter @modkit/codec-kit build` before `pnpm --filter @modkit/codec-kit test`;
+the permanent test command executes the compiled public modules and real compression/WASM fixtures.
+
 Optional runtime helper for small, portable inspection codecs. It owns only format-neutral
 probe/open/session plumbing and generic tree/transport adapters. Format parsing stays inside the
 extension that owns that format.

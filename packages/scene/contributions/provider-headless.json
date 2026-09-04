@@ -9,7 +9,7 @@
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
-      "entrypoint": "./src/render/headless.js",
+      "entrypoint": "./dist/render/headless.js",
       "target": {
         "environments": ["node"]
       },
@@ -18,7 +18,7 @@
     },
     {
       "variantId": "portable-worker",
-      "entrypoint": "./src/render/headless.js",
+      "entrypoint": "./dist/render/headless.js",
       "target": {
         "environments": ["browser-worker", "node-worker"]
       },

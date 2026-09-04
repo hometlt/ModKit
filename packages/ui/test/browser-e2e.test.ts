@@ -3282,8 +3282,8 @@ describe('13C real-browser viewer host', () => {
     await mountModelStage('refused')
     await page.waitForFunction(
       () =>
-        (document.querySelector('[data-mk-part="model.canvas"]') as HTMLCanvasElement | null)
-          ?.width > 0,
+        ((document.querySelector('[data-mk-part="model.canvas"]') as HTMLCanvasElement | null)
+          ?.width as number) > 0,
     )
     const evidence = await modelCanvasEvidence()
     expect(evidence).toMatchObject({

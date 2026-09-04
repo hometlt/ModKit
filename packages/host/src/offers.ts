@@ -61,26 +61,26 @@ function safeMajor(value: JsonValue | undefined, label: string): number {
 function parseRequirement(value: JsonValue, label: string): ContractRequirement {
   const item = object(value, label)
   return Object.freeze({
-    contract: contractId(string(item.contract, `${label}.contract`)),
-    major: safeMajor(item.major, `${label}.major`),
-    ...(item.range === undefined ? {} : { range: string(item.range, `${label}.range`) }),
+    contract: contractId(string(item['contract'], `${label}.contract`)),
+    major: safeMajor(item['major'], `${label}.major`),
+    ...(item['range'] === undefined ? {} : { range: string(item['range'], `${label}.range`) }),
   })
 }
 
 function parseContractOffer(value: JsonValue, label: string): ContractOffer {
   const item = object(value, label)
-  const version = string(item.version, `${label}.version`)
-  const major = safeMajor(item.major, `${label}.major`)
+  const version = string(item['version'], `${label}.version`)
+  const major = safeMajor(item['major'], `${label}.major`)
   const parsed = parseSemver(version)
   if (parsed === undefined || parsed.major !== major) {
     throw new TypeError(`${label}.version must be exact SemVer in declared major`)
   }
   return Object.freeze({
-    offerId: string(item.offerId, `${label}.offerId`),
-    contract: contractId(string(item.contract, `${label}.contract`)),
+    offerId: string(item['offerId'], `${label}.offerId`),
+    contract: contractId(string(item['contract'], `${label}.contract`)),
     major,
     version,
-    ...(item.facet === undefined ? {} : { facet: item.facet }),
+    ...(item['facet'] === undefined ? {} : { facet: item['facet'] }),
   })
 }
 
@@ -90,15 +90,15 @@ function parseOutputs(value: JsonValue | undefined): readonly TraitDefinitionOff
   return Object.freeze(
     value.map((raw, index) => {
       const item = object(raw, `outputs[${index}]`)
-      const id = string(item.id, `outputs[${index}].id`)
+      const id = string(item['id'], `outputs[${index}].id`)
       if (!isTraitId(id)) throw new TypeError(`outputs[${index}].id is not a trait id`)
       return Object.freeze({
         id,
-        ...(item.definitionVersion === undefined
+        ...(item['definitionVersion'] === undefined
           ? {}
           : {
               definitionVersion: string(
-                item.definitionVersion,
+                item['definitionVersion'],
                 `outputs[${index}].definitionVersion`,
               ),
             }),
@@ -116,17 +116,17 @@ function parseTarget(value: JsonValue | undefined): RuntimeTargetConstraint {
 
 function parseProviderOffer(value: JsonValue): ProviderOffer {
   const item = object(value, 'provider offer fact')
-  const provides = item.provides
+  const provides = item['provides']
   if (!Array.isArray(provides) || provides.length === 0) {
     throw new TypeError('provider offer fact needs at least one logical offer')
   }
-  const kind = item.kind
+  const kind = item['kind']
   if (
     !['primary', 'replacement', 'augmentation', 'projection', 'operation'].includes(String(kind))
   ) {
     throw new TypeError('provider offer kind is invalid')
   }
-  const providerId = string(item.providerId, 'providerId')
+  const providerId = string(item['providerId'], 'providerId')
   if (!isQualifiedId(providerId)) throw new TypeError('providerId must be qualified')
   const parseRequirementArray = (
     raw: JsonValue | undefined,
@@ -136,23 +136,23 @@ function parseProviderOffer(value: JsonValue): ProviderOffer {
     if (!Array.isArray(raw)) throw new TypeError(`${label} must be an array`)
     return Object.freeze(raw.map((entry, index) => parseRequirement(entry, `${label}[${index}]`)))
   }
-  const operations = item.operations
+  const operations = item['operations']
   if (operations !== undefined && !Array.isArray(operations)) {
     throw new TypeError('operations must be an array')
   }
-  const requires = parseRequirementArray(item.requires, 'requires')
-  const outputs = parseOutputs(item.outputs)
-  const requiredPermissions = item.requiredPermissions
+  const requires = parseRequirementArray(item['requires'], 'requires')
+  const outputs = parseOutputs(item['outputs'])
+  const requiredPermissions = item['requiredPermissions']
   if (requiredPermissions !== undefined && !Array.isArray(requiredPermissions)) {
     throw new TypeError('requiredPermissions must be an array')
   }
   return Object.freeze({
     kind: kind as ProviderOffer['kind'],
-    extensionId: string(item.extensionId, 'extensionId'),
-    extensionVersion: string(item.extensionVersion, 'extensionVersion'),
+    extensionId: string(item['extensionId'], 'extensionId'),
+    extensionVersion: string(item['extensionVersion'], 'extensionVersion'),
     providerId,
-    runtimeVariant: string(item.runtimeVariant, 'runtimeVariant'),
-    target: parseTarget(item.target),
+    runtimeVariant: string(item['runtimeVariant'], 'runtimeVariant'),
+    target: parseTarget(item['target']),
     ...(requiredPermissions === undefined
       ? {}
       : {
@@ -172,9 +172,9 @@ function parseProviderOffer(value: JsonValue): ProviderOffer {
             operations.map((entry, index) => string(entry, `operations[${index}]`) as OperationId),
           ),
         }),
-    ...(item.replaces === undefined
+    ...(item['replaces'] === undefined
       ? {}
-      : { replaces: parseRequirement(item.replaces, 'replaces') }),
+      : { replaces: parseRequirement(item['replaces'], 'replaces') }),
   })
 }
 

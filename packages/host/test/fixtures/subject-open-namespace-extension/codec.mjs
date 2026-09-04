@@ -1,4 +1,4 @@
-import { createInspectionCodec } from '../../../../../packages/codec-kit/src/index.js'
+import { createInspectionCodec } from '../../../../../packages/codec-kit/dist/index.js'
 
 export const abiVersion = 1
 

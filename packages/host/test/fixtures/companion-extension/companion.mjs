@@ -8,7 +8,7 @@
  * bound nothing, the codec reports the capability as unavailable rather than inventing it.
  */
 
-import { createInspectionCodec } from '../../../../../packages/codec-kit/src/index.js'
+import { createInspectionCodec } from '../../../../../packages/codec-kit/dist/index.js'
 
 const decoder = new TextDecoder()
 

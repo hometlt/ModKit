@@ -30,7 +30,7 @@ const NATIVE_ENVIRONMENTS = Object.freeze(['node', 'node-worker', 'browser-main'
 
 const nativeExecutable = (manifest: unknown, entrypoint?: string): unknown => {
   const document = manifest as Readonly<Record<string, unknown>>
-  const variants = Array.isArray(document.runtimeVariants) ? document.runtimeVariants : []
+  const variants = Array.isArray(document['runtimeVariants']) ? document['runtimeVariants'] : []
   if (variants.length === 0) return manifest
   const selected =
     variants.find(

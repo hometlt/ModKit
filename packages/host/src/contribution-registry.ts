@@ -11,6 +11,7 @@ import {
   LOCALIZATION_CONTRIBUTION_CONTRACT,
   SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
   TRAIT_DEFINITION_CONTRIBUTION_CONTRACT,
+  SUBJECT_KIND_DEFINITION_CONTRIBUTION_CONTRACT,
   VIEWER_CONTRIBUTION_CONTRACT,
   activationRequiredPermissionClasses,
   createContributionContractRegistry,
@@ -156,11 +157,13 @@ function builtins(): readonly ContributionContractRegistration[] {
   const viewer = entry(VIEWER_CONTRIBUTION_CONTRACT)
   const editor = entry(EDITOR_CONTRIBUTION_CONTRACT)
   const trait = entry(TRAIT_DEFINITION_CONTRIBUTION_CONTRACT)
+  const subjectKind = entry(SUBJECT_KIND_DEFINITION_CONTRIBUTION_CONTRACT)
   const definition = entry(CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT)
   const knowledge = entry(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT)
   const localization = entry(LOCALIZATION_CONTRIBUTION_CONTRACT)
   if (
     trait.registration === undefined ||
+    subjectKind.registration === undefined ||
     definition.registration === undefined ||
     knowledge.registration === undefined ||
     localization.registration === undefined
@@ -207,6 +210,14 @@ function builtins(): readonly ContributionContractRegistration[] {
       validateSemantics: editor.validateSemantics,
       moduleAbi: { export: 'default', abiVersion: 1 },
       conformanceProfile: 'modkit/editor-contribution-v1',
+    },
+    {
+      contract: { id: subjectKind.contract, major: subjectKind.major },
+      schema: subjectKind.schema,
+      mode: 'data-only',
+      project: subjectKind.registration.project,
+      validateSemantics: subjectKind.validateSemantics,
+      conformanceProfile: subjectKind.registration.conformanceProfile,
     },
     {
       contract: { id: trait.contract, major: trait.major },

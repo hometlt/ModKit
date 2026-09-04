@@ -29,6 +29,9 @@
 //   The marker is honored ONLY under a /fixtures/ path: a marker in ordinary public
 //   source is itself a violation (rule marker-outside-fixtures), so the marker cannot be
 //   used to exempt real code.
+//   - exact canonical MK2 copies under codec-kit/src/legacy, only after reconstructing
+//     and checking the pinned M1 source closure/provenance (ADR-CODEC-001). Authored
+//     adapters and neighboring files remain scanned; copy verification failures fail this gate.
 //
 // Known blind spot (recorded, not hidden): "category-as-path" runtime identity cannot be
 // caught by grep; it is enforced by S1 loader tests and review instead. Prose comments
@@ -38,12 +41,13 @@
 // Usage: node scripts/check-legacy.mjs [--root <dir>] [--quiet]
 // (--root exists so the committed regression suite can point the gate at fixture trees.)
 //
-// Zero dependencies; deterministic order; exit 1 on any finding.
+// Deterministic order; exit 1 on any finding, including failed canonical copy verification.
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, relative, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
+import { legacyCopyExclusions } from './legacy-copy-boundary.mjs'
 
 const args = process.argv.slice(2)
 const rootArgIndex = args.indexOf('--root')
@@ -229,6 +233,17 @@ function checkPackageManifest(file, relPosix, findings, requireLabScope) {
 
 const findings = []
 let scannedFiles = 0
+let canonicalLegacyCopies = new Set()
+try {
+  canonicalLegacyCopies = await legacyCopyExclusions(root)
+} catch (error) {
+  findings.push({
+    file: 'packages/codec-kit/MK2-PORT-PROVENANCE.json',
+    line: 1,
+    rule: 'canonical-copy-provenance',
+    why: error.message,
+  })
+}
 
 for (const scanRoot of SCAN_ROOTS) {
   const rootDir = join(root, scanRoot.name)
@@ -254,6 +269,7 @@ for (const scanRoot of SCAN_ROOTS) {
     }
 
     if (kind === undefined) continue
+    if (canonicalLegacyCopies.has(relPosix)) continue
     if (relPosix.includes(LEGACY_PATH_SEGMENT)) continue
     if (!hasTextExtension(file)) continue
 

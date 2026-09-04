@@ -321,7 +321,7 @@ const extractCommand: CommandDescriptor = {
   mutatesSource: false,
   operationId: CONTAINER_EXTRACT_OPERATION_ID,
   async run(context, input) {
-    const entry = typeof input.entry === 'string' ? input.entry : ''
+    const entry = typeof input['entry'] === 'string' ? input['entry'] : ''
     if (entry === '') {
       return failed(EXTRACT_COMMAND, 'x3.command/input-invalid', 'subject.extract needs an «entry»')
     }
@@ -425,7 +425,8 @@ const convertCommand: CommandDescriptor = {
           )
         }
         context.progress?.({ step: 'convert', message: 'running the codec’s export' })
-        const request: JsonValue = typeof input.target === 'string' ? { target: input.target } : {}
+        const request: JsonValue =
+          typeof input['target'] === 'string' ? { target: input['target'] } : {}
         const answer = await invoke(
           CONVERT_COMMAND,
           context,
@@ -441,7 +442,7 @@ const convertCommand: CommandDescriptor = {
           bytes === undefined || context.writeOutput === undefined
             ? undefined
             : await context.writeOutput(
-                `${(input.target as string | undefined) ?? 'export'}`,
+                `${(input['target'] as string | undefined) ?? 'export'}`,
                 bytes,
                 context.signal,
               )

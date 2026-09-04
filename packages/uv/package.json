@@ -5,26 +5,56 @@
   "type": "module",
   "description": "Built-in universal visual materialization for UVM and UVT.",
   "exports": {
-    ".": "./src/index.js",
-    "./module": {
-      "types": "./src/module.d.ts",
-      "default": "./src/module.js"
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     },
-    "./model/materializer": "./src/model/materializer.js",
-    "./model/provider": "./src/model/provider.js",
-    "./model/writer": "./src/model/writer.js",
-    "./texture/materializer": "./src/texture/materializer.js",
-    "./texture/provider": "./src/texture/provider.js",
-    "./texture/writer": "./src/texture/writer.js",
-    "./world": "./src/world/index.js",
+    "./module": {
+      "types": "./dist/module.d.ts",
+      "default": "./dist/module.js"
+    },
+    "./model/materializer": {
+      "types": "./dist/model/materializer.d.ts",
+      "default": "./dist/model/materializer.js"
+    },
+    "./model/provider": {
+      "types": "./dist/model/provider.d.ts",
+      "default": "./dist/model/provider.js"
+    },
+    "./model/writer": {
+      "types": "./dist/model/writer.d.ts",
+      "default": "./dist/model/writer.js"
+    },
+    "./texture/materializer": {
+      "types": "./dist/texture/materializer.d.ts",
+      "default": "./dist/texture/materializer.js"
+    },
+    "./texture/provider": {
+      "types": "./dist/texture/provider.d.ts",
+      "default": "./dist/texture/provider.js"
+    },
+    "./texture/writer": {
+      "types": "./dist/texture/writer.d.ts",
+      "default": "./dist/texture/writer.js"
+    },
+    "./world": {
+      "types": "./dist/world/index.d.ts",
+      "default": "./dist/world/index.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
     "contributions",
-    "src",
+    "dist",
     "README.md"
   ],
   "dependencies": {
-    "@modkit/host": "workspace:*"
+    "@modkit/host": "workspace:*",
+    "@modkit/sdk": "workspace:*"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "tsc -b --clean"
   }
 }

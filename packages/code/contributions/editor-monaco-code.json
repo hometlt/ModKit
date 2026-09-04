@@ -6,7 +6,7 @@
   "runtimeVariants": [
     {
       "variantId": "browser",
-      "entrypoint": "./src/index.js",
+      "entrypoint": "./dist/index.js",
       "target": {
         "environments": ["browser-main"],
         "requiredHostCapabilities": ["editor.monaco"]

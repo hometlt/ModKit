@@ -75,5 +75,10 @@
     "@modkit/vfs": "workspace:*",
     "es-module-lexer": "^1.7.0",
     "jsonc-parser": "^3.3.1"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "tsc -b --clean"
   }
 }

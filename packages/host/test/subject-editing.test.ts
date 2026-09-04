@@ -439,6 +439,21 @@ describe('ADR-HOST-002 Path B — writer provider by facet, across the boundary,
     expect(committed.state).toBe('committed')
     expect(Buffer.compare(readFileSync(path), Buffer.from(original))).toBe(0)
 
+    // M1 surface fixture: a fresh public open observes the identical no-op writer result.
+    const reopened = await svc.open({
+      source: await openFileArtifactSource(path),
+      path,
+      intent: 'full',
+      grant: WRITE,
+      budget,
+    })
+    expect(reopened.state).toBe('opened')
+    if (reopened.state !== 'opened') throw new Error('no-op writer output did not reopen')
+    if (!('metadata' in reopened.descriptor) || !('metadata' in result.descriptor))
+      throw new Error('no-op writer fixture must resolve image metadata')
+    expect(reopened.descriptor.metadata).toEqual(result.descriptor.metadata)
+    await reopened.session.dispose()
+
     // a request the facet rule cannot satisfy is refused at resolution
     await expect(
       resolver.port.resolve({

@@ -155,7 +155,10 @@
     "manifests:emit": "node scripts/generate-manifests.mjs",
     "manifests:check": "node scripts/generate-manifests.mjs --check",
     "tokens:emit": "node scripts/generate-tokens.mjs",
-    "tokens:check": "node scripts/generate-tokens.mjs --check"
+    "tokens:check": "node scripts/generate-tokens.mjs --check",
+    "build": "tsc -b",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "tsc -b --clean"
   },
   "dependencies": {
     "@modkit/core": "workspace:*",

@@ -2,6 +2,10 @@
 # byte against the digests in PIN.json, so git must not translate anything on checkout.
 vendor/multiverse-specs/** -text
 
+# Immutable M1 receipts and exact loader snapshots retain their recorded byte hashes.
+reports/port-libs-m1/** -text
+reports/port-infra/surfaces-receipt.json -text
+reports/port-infra/surfaces-tests.json -text
 # These deterministic fixtures exercise structurally significant CRLF bytes.
 packages/testkit/test/fixtures/mk2-synthetic/minimal.csv binary
 packages/testkit/test/fixtures/mk2-synthetic/minimal.txt binary
@@ -19,5 +23,56 @@ packages/testkit/test/fixtures/mk2-synthetic/minimal.blend binary
 packages/extension-manager/generated/offline-release/*.bundle.json binary
 packages/extension-manager/generated/offline-release/catalog.v1.json -text
 packages/extension-manager/generated/offline-release/release.v1.json -text
+# Canonical MK2 copies are validated byte-for-byte by mk2-copy:check.
+packages/codec-kit/src/legacy/assets/artifact-codec.ts -text
+packages/codec-kit/src/legacy/assets/artifact-session.ts -text
+packages/codec-kit/src/legacy/assets/source.ts -text
+packages/codec-kit/src/legacy/assets/operations.ts -text
+packages/codec-kit/src/legacy/assets/descriptor.ts -text
+packages/codec-kit/src/legacy/assets/detection.ts -text
+packages/codec-kit/src/legacy/assets/diagnostics.ts -text
+packages/codec-kit/src/legacy/assets/capabilities.ts -text
+packages/codec-kit/src/legacy/assets/cancellation.ts -text
+packages/codec-kit/src/legacy/assets/json.ts -text
+packages/codec-kit/src/legacy/assets/editing.ts -text
+packages/codec-kit/src/legacy/assets/profiles/image-texture.ts -text
+packages/codec-kit/src/legacy/assets/content.ts -text
+packages/codec-kit/src/legacy/assets/contributions.ts -text
+packages/codec-kit/src/legacy/assets/companions.ts -text
+packages/codec-kit/src/legacy/assets/format-registry.ts -text
+packages/codec-kit/src/legacy/assets/codec-matching.ts -text
+packages/codec-kit/src/legacy/assets/codec-manifest.ts -text
+packages/codec-kit/src/legacy/core/errors.ts -text
+packages/codec-kit/src/legacy/core/logger.ts -text
+packages/codec-kit/src/legacy/games/types.ts -text
+packages/codec-kit/src/legacy/world/contracts.ts -text
+packages/codec-kit/src/legacy/runtime/contracts.ts -text
+packages/codec-kit/src/crypto/sha1.ts -text
+packages/codec-kit/src/crypto/mpq.ts -text
+packages/codec-kit/src/compression/legacy-original.ts -text
+packages/codec-kit/src/compression/pako.d.ts -text
+packages/codec-kit/src/texture/gpu-texture.ts -text
+packages/codec-kit/src/texture/gpu-texture-wasm.ts -text
+packages/codec-kit/src/texture/compressed-texture.ts -text
+packages/codec-kit/src/texture/binary.ts -text
+packages/codec-kit/src/texture/types.ts -text
+packages/codec-kit/src/legacy/semantic/data.ts -text
+packages/codec-kit/src/legacy/semantic/documents.ts -text
+packages/codec-kit/src/legacy/semantic/layouts.ts -text
+packages/codec-kit/src/legacy/semantic/localization.ts -text
+packages/codec-kit/src/legacy/semantic/maps.ts -text
+packages/codec-kit/src/legacy/semantic/mods.ts -text
+packages/codec-kit/src/legacy/semantic/replays.ts -text
+packages/codec-kit/src/legacy/semantic/saves.ts -text
+packages/codec-kit/src/legacy/semantic/scripts.ts -text
+packages/codec-kit/src/legacy/language-contracts/module.ts -text
+packages/codec-kit/src/legacy/language-contracts/document-kind.ts -text
+packages/codec-kit/src/legacy/language-contracts/contributions.ts -text
+packages/codec-kit/src/legacy/language-contracts/index.ts -text
+packages/codec-kit/src/legacy/entity-cards/model.ts -text
+packages/codec-kit/src/legacy/entity-cards/graph.ts -text
+packages/codec-kit/src/legacy/entity-cards/providers.ts -text
+packages/codec-kit/src/legacy/entity-cards/address.ts -text
+packages/codec-kit/src/legacy/entity-cards/index.ts -text
 /packages/extension-manager/generated/offline-release/blizzard-starcraft2-suite-0.1.0.bundle.json filter=lfs diff=lfs merge=lfs -text
 /apps/web/dist-app/managed-packages/blizzard-starcraft2-suite-0.1.0.bundle.json filter=lfs diff=lfs merge=lfs -text

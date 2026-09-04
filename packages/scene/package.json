@@ -8,36 +8,52 @@
     "node": ">=22"
   },
   "exports": {
-    ".": "./src/index.js",
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
     "./module": {
-      "types": "./src/module.d.ts",
-      "default": "./src/module.js"
+      "types": "./dist/module.d.ts",
+      "default": "./dist/module.js"
     },
     "./render/browser": {
-      "types": "./src/render/browser.d.ts",
-      "default": "./src/render/browser.js"
+      "types": "./dist/render/browser.d.ts",
+      "default": "./dist/render/browser.js"
     },
     "./render/headless": {
-      "types": "./src/render/headless.d.ts",
-      "default": "./src/render/headless.js"
+      "types": "./dist/render/headless.d.ts",
+      "default": "./dist/render/headless.js"
     },
-    "./output/png": "./src/output/png.js",
-    "./relations": "./src/relations/index.js",
-    "./relations/three": "./src/relations/three-graph-renderer.js",
+    "./output/png": {
+      "types": "./dist/output/png.d.ts",
+      "default": "./dist/output/png.js"
+    },
+    "./relations": {
+      "types": "./dist/relations/index.d.ts",
+      "default": "./dist/relations/index.js"
+    },
+    "./relations/three": {
+      "types": "./dist/relations/three-graph-renderer.d.ts",
+      "default": "./dist/relations/three-graph-renderer.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [
     "contributions",
-    "src",
+    "dist",
     "README.md"
   ],
   "scripts": {
-    "test": "node --test test/*.test.js"
+    "test": "node --import ./scripts/test-typescript.mjs --test test/*.test.js",
+    "build": "tsc -b",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "clean": "tsc -b --clean"
   },
   "dependencies": {
     "@modkit/host": "workspace:*",
     "@modkit/sdk": "workspace:*",
-    "three": "^0.180.0"
+    "three": "^0.180.0",
+    "@modkit/ui": "workspace:*"
   },
   "sideEffects": false
 }

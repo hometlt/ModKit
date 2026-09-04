@@ -14,7 +14,7 @@ import {
   createNodeExtensionManager,
   extensionCatalogSigningBytes,
   verifyExtensionCatalogSignature,
-} from '../src/node.js'
+} from '../dist/node.js'
 
 function sorted(value) {
   if (Array.isArray(value)) return value.map(sorted)

@@ -1,0 +1,3302 @@
+{
+  "entries": [
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/7z/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/7z/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/7z/operation/archive.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/aac/operation/audio.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/aac/operation/audio.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/age-bar/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/age-bar/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/age-drs/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/age-drs/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ai/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ai/operation/export.raw",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ai/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ai/operation/view.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ani/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ani/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/astc/operation/image.compressed.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/astc/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/astc/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/avi/operation/video.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/avi/operation/video.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/avif/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/basis/operation/image.compressed.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/basis/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/basis/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/big/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/big/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/big/operation/archive.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/bink/operation/video.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/bink/operation/video.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/blend/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/blp/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/blp/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/blp/operation/image.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/bmp/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/bmp/operation/image.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/bnk/operation/audio.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/bnk/operation/audio.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/bnk/operation/audio.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/brotli/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/brotli/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/brotli/operation/archive.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/bti/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/bti/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/bzip2/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/bzip2/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/bzip2/operation/archive.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/cab/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/cab/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/casc/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/cdr/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/cdr/operation/export.raw",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/cdr/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/cdr/operation/view.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/cnc3-data/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/cnc3-localization/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/cnc3-map/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/cps/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/csv/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/csv/operation/edit.content",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/csv/operation/export.raw",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/csv/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/csv/operation/view.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/cub/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/cub/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/cur/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/cur/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/cur/operation/image.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/dae/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/dae/operation/model.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/dds/operation/image.compressed.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/dds/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/dds/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/dds/operation/image.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ddt/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ddt/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/def/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/diablo3-app/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/diablo3-app/operation/model.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/diablo3-tex/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/diablo3-tex/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/dmg/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/dmg/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/docx/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/docx/operation/export.raw",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/docx/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/docx/operation/view.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/drawio/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/drawio/operation/export.raw",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/drawio/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/drawio/operation/view.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/earth-par/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/earth-par/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/earth-res/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/earth-tex/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/earth-tex/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/earth2160-model/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/earth2160-model/operation/model.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/emf/operation/vector.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/emperor-rfh-rfd/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/emperor-rfh-rfd/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/emperor-xbf/operation/model.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/emperor-xbf/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/emperor-xbf/operation/model.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/emperor-xbf/operation/model.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/empire-earth-ssa/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/empire-earth-ssa/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/exr/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/exr/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/figma/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/figma/operation/export.raw",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/figma/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/figma/operation/view.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/fla/operation/video.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/fla/operation/video.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/fla/operation/video.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/flac/operation/audio.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/flac/operation/audio.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/flv/operation/video.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/flv/operation/video.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/fsb/operation/audio.decode",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/fsb/operation/audio.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/fsb/operation/audio.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/gaf/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/galaxy/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/galaxy/operation/edit.structure",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/galaxy/operation/export.convert",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/galaxy/operation/script.completion",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/galaxy/operation/script.format",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/galaxy/operation/script.references",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/galaxy/operation/script.symbols",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/galaxy/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/gif/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/gif/operation/image.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/glb/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/glb/operation/model.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/gltf/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/gltf/operation/model.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/grey-goo-alo/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/grey-goo-alo/operation/model.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/gzip/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/gzip/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/gzip/operation/archive.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/halo-era/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/halo-era/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/hdr/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/hdr/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/hdr/operation/image.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/heroes3-lod/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/heroes3-lod/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/heroes4-resource/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/heroes4-resource/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/heroes6-orc/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/heroes6-orc/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ico/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ico/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ico/operation/image.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/iso/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/iso/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/jpg/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ktx/operation/image.compressed.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ktx/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ktx/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ktx/operation/image.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ktx2/operation/image.compressed.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ktx2/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ktx2/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ktx2/operation/image.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/lzma/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/lzma/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/m3/operation/model.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/m3/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/m3/operation/model.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/m3/operation/model.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/m4a/operation/audio.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/m4a/operation/audio.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/markdown/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/markdown/operation/edit.content",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/markdown/operation/export.raw",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/markdown/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/markdown/operation/view.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/mix/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/mix/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/mp3/operation/audio.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/mp3/operation/audio.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/mp4/operation/video.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/mp4/operation/video.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/mpeg/operation/video.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/mpeg/operation/video.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/mpq/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/mpq/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/mpq/operation/archive.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/mtrl/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/mtrl/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/obj/operation/model.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/obj/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/obj/operation/model.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/obj/operation/model.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/odp/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/odp/operation/export.raw",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/odp/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/odp/operation/view.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ods/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ods/operation/export.raw",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ods/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ods/operation/view.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/odt/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/odt/operation/export.raw",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/odt/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/odt/operation/view.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ogg/operation/audio.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ogg/operation/audio.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ogv/operation/video.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ogv/operation/video.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/opus/operation/audio.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/opus/operation/audio.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/pal/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/pal/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/pcx/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/pcx/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/pcx/operation/image.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/pdf/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/pdf/operation/export.raw",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/pdf/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/pdf/operation/view.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/pe/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/pe/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/pe/operation/archive.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/petroglyph-meg/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/petroglyph-meg/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/pkm/operation/image.compressed.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/pkm/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/pkm/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ply/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ply/operation/model.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/png/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/png/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/png/operation/image.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/pptx/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/pptx/operation/export.raw",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/pptx/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/pptx/operation/view.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/prt/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/prt/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ps1-cue-bin/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ps1-cue-bin/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ps1-xa/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ps1-xa/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/psd/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/pvr/operation/image.compressed.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/pvr/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/pvr/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/r16/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/r16/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/r8/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/r8/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/rar/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/rar/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/red-alert2-vxl/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/red-alert2-vxl/operation/model.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/relic-sga/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/relic-sga/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/relic-sgm/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/relic-sgm/operation/model.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/relic-whm/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/relic-whm/operation/model.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/relic/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/relic/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/rgt/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/rgt/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/rgt/operation/image.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/rrtex/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/rrtex/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/rsh/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/rsh/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/rsh/operation/image.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/rtf/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/rtf/operation/export.raw",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/rtf/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/rtf/operation/view.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/rtx/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/rtx/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/rtx/operation/image.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sage-skudef/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sage-w3x/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sage-w3x/operation/model.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-bank/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-bank/operation/edit.content",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-bank/operation/export.raw",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-bank/operation/save.sign",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-bank/operation/source.save-as",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-bank/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-data/operation/asset.search",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-data/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-data/operation/edit.content",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-data/operation/export.convert",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-data/operation/sc2-data.provision",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-data/operation/sc2-data.references",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-data/operation/sc2-data.resolve-inheritance",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-data/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/edit.content",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/export.convert",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/export.raw",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-layout/operation/export.convert",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-layout/operation/export.raw",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-layout/operation/sc2-layout.parse",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-layout/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-layout/operation/view.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-map/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-map/operation/container.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-map/operation/game.launch-map",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-map/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-map/operation/view.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-map/operation/view.thumbnail",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-mod/operation/asset.compare",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-mod/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-mod/operation/container.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-mod/operation/content.mount",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-mod/operation/content.resolve-dependencies",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-mod/operation/edit.structure",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-mod/operation/export.convert",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-mod/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-replay/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-replay/operation/export.convert",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-replay/operation/export.raw",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-replay/operation/media.play",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-replay/operation/media.seek",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-replay/operation/sc2-replay.analyze",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-replay/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-replay/operation/view.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/operation/runtime.execute",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/operation/runtime.replay-assist",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/operation/runtime.restore",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/operation/runtime.simulation-command",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/operation/runtime.simulation-hash",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/operation/runtime.simulation-step",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-runtime/operation/runtime.snapshot",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-strings/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-strings/operation/edit.content",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-strings/operation/export.convert",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-strings/operation/sc2-strings.references",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-strings/operation/sc2-strings.translate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-strings/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/asset.search",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/export.convert",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/script.references",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/script.symbols",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/shp/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/shp/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/shp/operation/image.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sld/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/slp/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/smacker/operation/video.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/smacker/operation/video.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/smp/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/smx/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/spring-rapid/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/spring-rapid/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/spring-vfs/operation/content.mount",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/spring-vfs/operation/content.resolve-dependencies",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/spring-vfs/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sst/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/sst/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/stl/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/stl/operation/model.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/supcom-scm/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/supcom-scm/operation/model.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/svg/operation/vector.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/swf/operation/video.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/swf/operation/video.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ta-hpi/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/ta-hpi/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/tar/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/tar/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/tar/operation/archive.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/texcache/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/texcache/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/tga/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/tga/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/tga/operation/image.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/tiff/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/tiff/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/tiff/operation/image.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/tmp/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/tmp/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/txt/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/txt/operation/edit.content",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/txt/operation/export.raw",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/txt/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/txt/operation/view.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/uasset/operation/audio.decode",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/uasset/operation/audio.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/uasset/operation/audio.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/unity-assets/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/unity-assets/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/unity-mesh/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/unity-mesh/operation/model.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/unity-ress/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/unity-ress/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/unity/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/unity/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/unityfs/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/unityfs/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/unreal-actorx/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/unreal-actorx/operation/model.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/unreal-iostore/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/unreal-iostore/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/unreal-pak/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/unreal-pak/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/unreal-uasset-texture/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/unreal-uasset-texture/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/unreal-uasset-video/operation/video.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/unreal-uasset-video/operation/video.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/unreal-uasset-video/operation/video.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/unreal-uasset/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/unreal-uasset/operation/model.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/uvm/operation/model.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/uvm/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/uvm/operation/model.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/uvm/operation/model.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/visio/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/visio/operation/export.raw",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/visio/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/visio/operation/view.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/vpl/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/vpl/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/war3-mdx/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/war3-mdx/operation/model.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/warzone-img/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/warzone-lev/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/warzone-pie/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/warzone-pie/operation/model.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/warzone-wrf/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/warzone-wz/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/warzone2100-map/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/wav/operation/audio.decode",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/wav/operation/audio.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/wav/operation/audio.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/wd/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/wd/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/webm/operation/video.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/webm/operation/video.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/webp/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/wem/operation/audio.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/wem/operation/audio.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/westwood-w3d/operation/model.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/westwood-w3d/operation/model.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/wmf/operation/vector.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/wmv/operation/video.export",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/wmv/operation/video.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/wsa/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/wtp/operation/image.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/wtp/operation/image.read",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/wtp/operation/image.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/wwise-pck/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/wwise-pck/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/xlsx/operation/asset.validate",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/xlsx/operation/export.raw",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/xlsx/operation/view.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/xlsx/operation/view.render",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/xz/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/xz/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/xz/operation/archive.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/zip/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/zip/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/zip/operation/archive.write",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/zstd/operation/archive.extract",
+      "status": "pending",
+      "targetOperation": null
+    },
+    {
+      "contribution": null,
+      "handlerId": null,
+      "id": "legacy/codec-manifest/modkit/zstd/operation/archive.inspect",
+      "status": "pending",
+      "targetOperation": null
+    }
+  ],
+  "schemaVersion": 1
+}

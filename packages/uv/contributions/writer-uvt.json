@@ -9,14 +9,14 @@
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
-      "entrypoint": "./src/texture/writer.js",
+      "entrypoint": "./dist/texture/writer.js",
       "target": { "environments": ["node"] },
       "executionProfile": "trusted-in-process",
       "requestedPermissionClasses": []
     },
     {
       "variantId": "portable",
-      "entrypoint": "./src/texture/writer.js",
+      "entrypoint": "./dist/texture/writer.js",
       "target": {
         "environments": ["browser-worker", "node-worker"]
       },

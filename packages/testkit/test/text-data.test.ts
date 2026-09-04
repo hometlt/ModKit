@@ -995,12 +995,12 @@ describe('13B text-data providers and codecs', () => {
     }
     const sharedRoot = join(repositoryRoot, 'packages', 'codec-kit', 'src', 'text')
     for (const path of [
-      'index.js',
-      'codec-runtime.js',
-      'provider-runtime.js',
-      'scalars.js',
-      'text.js',
-      'tree-data-source.js',
+      'index.ts',
+      'codec-runtime.ts',
+      'provider-runtime.ts',
+      'scalars.ts',
+      'text.ts',
+      'tree-data-source.ts',
     ]) {
       expect(await readFile(join(sharedRoot, path), 'utf8'), path).not.toMatch(/node:/u)
     }
