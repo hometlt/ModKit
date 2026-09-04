@@ -4,7 +4,11 @@ import ts from 'typescript'
 import { fileURLToPath } from 'node:url'
 import { builtinModules } from 'node:module'
 import { createPinnedSource, MK2_PIN, sha256, digestManifest } from './legacy-oracle.mjs'
-import { SC2_M3_SELECTOR_VERSION, sc2M3FamilyPlanDigest } from './sc2-m3-refreeze.mjs'
+import {
+  SC2_M3_REFREEZE_PIN,
+  SC2_M3_SELECTOR_VERSION,
+  sc2M3FamilyPlanDigest,
+} from './sc2-m3-refreeze.mjs'
 
 const acceptedScopePins = new Map([
   [
@@ -461,9 +465,9 @@ export async function prepareCopy({
   if (scope === 'family') {
     if (
       selected.selectorVersion !== SC2_M3_SELECTOR_VERSION ||
-      typeof selected.refreezePin !== 'string'
+      selected.refreezePin !== SC2_M3_REFREEZE_PIN
     )
-      throw new Error('Family scope requires the tracked M3 refreeze pin')
+      throw new Error('Family scope requires the canonical tracked M3 refreeze pin')
     const pin = JSON.parse(
       await readFile(await safeTarget(workspaceRoot, selected.refreezePin), 'utf8'),
     )

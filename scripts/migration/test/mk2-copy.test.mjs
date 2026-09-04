@@ -698,6 +698,13 @@ test('family dry-run rejects a consistently removed row and a mutated destinatio
     allowPending: true,
   }
   const source = 'packages/rendering-3d/src/scene.ts'
+  const alternatePin = structuredClone(declaration)
+  alternatePin.scopes.family.refreezePin =
+    'modkit-core/migration/mk2-copy/alternate-self-authored.json'
+  await assert.rejects(
+    prepareCopy({ ...options, declaration: alternatePin }),
+    /canonical tracked M3 refreeze pin/u,
+  )
   const removed = structuredClone(declaration)
   removed.scopes.family.requiredSources = removed.scopes.family.requiredSources.filter(
     item => item !== source,

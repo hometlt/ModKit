@@ -13,7 +13,11 @@ import {
   modelMath,
   triggerTmpTest,
 } from './lib/sc2-m3-destinations.mjs'
-import { SC2_M3_SELECTOR_VERSION, sc2M3FamilyPlanDigest } from './lib/sc2-m3-refreeze.mjs'
+import {
+  SC2_M3_REFREEZE_PIN,
+  SC2_M3_SELECTOR_VERSION,
+  sc2M3FamilyPlanDigest,
+} from './lib/sc2-m3-refreeze.mjs'
 
 const workspaceRoot = fileURLToPath(new URL('../../..', import.meta.url))
 const declarationPath = path.join(workspaceRoot, 'modkit-core/migration/mk2-copy/sc2.json')
@@ -22,7 +26,7 @@ const reportPath = path.join(
   workspaceRoot,
   'artifacts/legacy-parity-sc2/m3/implementation/refreeze-inventory.json',
 )
-const pinRelative = 'modkit-core/migration/mk2-copy/sc2-m3-refreeze.json'
+const pinRelative = SC2_M3_REFREEZE_PIN
 const pinPath = path.join(workspaceRoot, pinRelative)
 const args = process.argv.slice(2)
 if (args.some(arg => arg !== '--write-pin') || new Set(args).size !== args.length)
