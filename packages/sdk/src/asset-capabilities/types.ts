@@ -14,7 +14,13 @@ import type {
   TraitId,
   UInt64String,
 } from '@modkit/core'
-import type { DataSourceOffer, DataSourceOfferWire } from './data-sources.js'
+import type {
+  DataSourceOffer,
+  DataSourceOfferWire,
+  SubjectFactProvenanceFor,
+} from './data-sources.js'
+import type { FieldEditableFor, FieldType } from '../fields/index.js'
+import type { KnowledgeTarget } from '../knowledge/index.js'
 import {
   parseRevisionRef,
   serializeRevisionRef,
@@ -314,16 +320,29 @@ export interface AssetConstraintsFor<MaxBytes extends string> {
 export type AssetConstraints = AssetConstraintsFor<UInt64String>
 export type AssetConstraintsWire = AssetConstraintsFor<UInt64StringWire>
 
-export interface MetadataEntry {
+export interface MetadataEntryFor<Operation extends string, Span extends SourceSpanWire> {
   readonly key: string
   readonly value: JsonValue
+  readonly type?: FieldType
+  readonly unit?: string
+  readonly diagnosticIds?: readonly string[]
+  readonly provenance?: readonly SubjectFactProvenanceFor<Span>[]
+  readonly knowledgeTarget?: KnowledgeTarget
+  readonly editable?: FieldEditableFor<Operation>
 }
 
-export interface MetadataGroup {
+export type MetadataEntry = MetadataEntryFor<OperationId, SourceSpan>
+export type MetadataEntryWire = MetadataEntryFor<string, SourceSpanWire>
+
+export interface MetadataGroupFor<Operation extends string, Span extends SourceSpanWire> {
   readonly id: string
   readonly label: string
-  readonly entries: readonly MetadataEntry[]
+  readonly entries: readonly MetadataEntryFor<Operation, Span>[]
+  readonly order?: number
 }
+
+export type MetadataGroup = MetadataGroupFor<OperationId, SourceSpan>
+export type MetadataGroupWire = MetadataGroupFor<string, SourceSpanWire>
 
 interface CompanionDescriptorCore {
   /** Stable CompanionRule/AssetInputRequirement identity. */
@@ -485,7 +504,7 @@ export interface ResolvedAssetDescriptor extends SubjectDescriptor {
 export interface ResolvedAssetDescriptorWire extends SubjectDescriptorWire {
   readonly interpretation: 'codec'
   readonly identity: ResolvedAssetDescriptor['identity']
-  readonly metadata: readonly MetadataGroup[]
+  readonly metadata: readonly MetadataGroupWire[]
   readonly companions?: readonly CompanionDescriptorWire[]
 }
 

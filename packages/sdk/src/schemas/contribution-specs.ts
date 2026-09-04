@@ -564,7 +564,7 @@ export const viewerContributionSpecV1Schema = {
   },
 } as const
 
-const writerRequirementSchema = {
+export const writerRequirementSchema = {
   type: 'object',
   additionalProperties: false,
   required: ['formatId', 'representationId', 'mutationMode', 'minimumRoundTrip'],
@@ -662,7 +662,7 @@ const knowledgeSchemaCoordinate = {
   },
 } as const
 
-const knowledgeTargetSchema = {
+export const knowledgeTargetSchema = {
   oneOf: [
     {
       type: 'object',

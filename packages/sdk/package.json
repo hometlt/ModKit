@@ -8,6 +8,10 @@
     "node": ">=22"
   },
   "exports": {
+    "./fields": {
+      "types": "./dist/fields/index.d.ts",
+      "default": "./dist/fields/index.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"

@@ -56,6 +56,15 @@ import type { EditorContributionSpecV1Wire } from '../editing.js'
 import { knowledgeTargetKey, type KnowledgePackSpecV1Wire } from '../knowledge/index.js'
 import type { ContractRequirementWire } from '../resolution/types.js'
 import { snapshotJsonWireObject } from './validate.js'
+import { subjectKindDefinitionSpecV1Schema } from '../schemas/fields.js'
+import type { SubjectKindDefinitionSpecV1 } from '../fields/index.js'
+
+export const SUBJECT_KIND_DEFINITION_CONTRIBUTION_CONTRACT: ContractId = contractId(
+  'modkit/subject-kind-definition',
+)
+export const SUBJECT_KIND_DEFINITION_FACT: ContractId = contractId(
+  'modkit.inventory/subject-kind-definition',
+)
 
 export const CODEC_CONTRIBUTION_CONTRACT: ContractId = contractId('modkit/codec-contribution')
 export const SERVICE_PROVIDER_CONTRIBUTION_CONTRACT: ContractId = contractId(
@@ -1110,6 +1119,51 @@ function dataOnlyProjector(factContract: ContractId): SpecInventoryProjector {
 
 /** A-1 schema registrations. Full registration quartets are assembled by A-2. */
 export const A1_SPEC_SCHEMA_ENTRIES: readonly SpecSchemaEntry[] = [
+  {
+    contract: SUBJECT_KIND_DEFINITION_CONTRIBUTION_CONTRACT,
+    major: 1,
+    schema: subjectKindDefinitionSpecV1Schema,
+    validateSemantics: manifest => {
+      const spec = manifest.spec as unknown as SubjectKindDefinitionSpecV1
+      const diagnostics = [
+        ...duplicateFieldDiagnostics(
+          spec.parentKinds ?? [],
+          ['spec', 'parentKinds'],
+          'parent kind',
+        ),
+        ...duplicateFieldDiagnostics(
+          spec.card?.sections ?? [],
+          ['spec', 'card', 'sections'],
+          'card section',
+        ),
+        ...duplicateFieldDiagnostics(
+          spec.selector?.facets ?? [],
+          ['spec', 'selector', 'facets'],
+          'selector facet',
+        ),
+        ...duplicateFieldDiagnostics(
+          spec.selector?.predicates.map(item => item.id) ?? [],
+          ['spec', 'selector', 'predicates'],
+          'selector predicate',
+        ),
+      ]
+      if (spec.parentKinds?.includes(spec.kindId))
+        diagnostics.push(
+          diagnostic(
+            'error',
+            'x3.sdk/subject-kind-self-parent',
+            'a subject kind cannot inherit itself',
+            ['spec', 'parentKinds'],
+          ),
+        )
+      return diagnostics
+    },
+    registration: {
+      mode: 'data-only',
+      project: dataOnlyProjector(SUBJECT_KIND_DEFINITION_FACT),
+      conformanceProfile: 'modkit/subject-kind-definition-v1',
+    },
+  },
   {
     contract: CODEC_CONTRIBUTION_CONTRACT,
     major: 1,

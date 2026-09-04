@@ -48,6 +48,13 @@ export {
   writerRequirementV1Schema,
 } from './schemas/contribution-specs.js'
 export * from './editing.js'
+export * from './fields/index.js'
+export {
+  fieldTypeV1Schema,
+  fieldSchemaV1Schema,
+  fieldWriteRequestV1Schema,
+  subjectKindDefinitionSpecV1Schema,
+} from './schemas/fields.js'
 export {
   activationRequiredPermissionClasses,
   operationScopedPermissionClasses,
@@ -88,6 +95,8 @@ export {
 } from './manifest/spec-registry.js'
 export {
   A1_SPEC_SCHEMA_ENTRIES,
+  SUBJECT_KIND_DEFINITION_CONTRIBUTION_CONTRACT,
+  SUBJECT_KIND_DEFINITION_FACT,
   CODEC_CONTRIBUTION_CONTRACT,
   CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT,
   CONTRACT_DEFINITION_FACT,
@@ -575,7 +584,9 @@ export type {
   JsonSchemaRef,
   JsonValue,
   MetadataEntry,
+  MetadataEntryWire,
   MetadataGroup,
+  MetadataGroupWire,
   MaterializedAsset,
   MaterializedAssetFor,
   MaterializedAssetWire,

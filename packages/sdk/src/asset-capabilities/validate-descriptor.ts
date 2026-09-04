@@ -376,6 +376,34 @@ export async function validateSubjectDescriptorV2(
       )
     }
   })
+  if (wire.interpretation !== 'none') {
+    wire.metadata.forEach((group, groupIndex) =>
+      group.entries.forEach((entry, entryIndex) => {
+        const write = entry.editable?.write
+        if (write !== undefined && 'operation' in write) {
+          try {
+            operationId(write.operation, { contributionId: operationOwner })
+            if (
+              !wire.operations.some(
+                operation => operation.id === write.operation && operation.mutatesSource,
+              )
+            ) {
+              throw new TypeError('field write must name a published mutating operation')
+            }
+          } catch {
+            semanticDiagnostics.push(
+              diagnostic(
+                'error',
+                'x3.sdk/invalid-field-write-operation',
+                `field write ${write.operation} is not a declared owned mutation`,
+                ['metadata', groupIndex, 'entries', entryIndex, 'editable', 'write', 'operation'],
+              ),
+            )
+          }
+        }
+      }),
+    )
+  }
   if (wire.origin.kind === 'bundle') {
     const bindingIds = new Set<string>()
     wire.origin.bindings.forEach((binding, index) => {
@@ -575,6 +603,49 @@ export async function validateSubjectDescriptorV2(
       ? { ...base, candidates: Object.freeze(wire.candidates.map(normalizeDetection)) }
       : {
           ...base,
+          metadata: Object.freeze(
+            wire.metadata.map(group =>
+              Object.freeze({
+                ...group,
+                entries: Object.freeze(
+                  group.entries.map(entry =>
+                    Object.freeze({
+                      ...entry,
+                      ...(entry.provenance === undefined
+                        ? {}
+                        : {
+                            provenance: Object.freeze(
+                              entry.provenance.map(origin =>
+                                Object.freeze({
+                                  ...origin,
+                                  ...(origin.range === undefined
+                                    ? {}
+                                    : { range: normalizeSourceSpan(origin.range) }),
+                                }),
+                              ),
+                            ),
+                          }),
+                      ...(entry.editable === undefined
+                        ? {}
+                        : {
+                            editable: Object.freeze({
+                              ...entry.editable,
+                              write:
+                                'operation' in entry.editable.write
+                                  ? Object.freeze({
+                                      operation: operationId(entry.editable.write.operation, {
+                                        contributionId: operationOwner,
+                                      }),
+                                    })
+                                  : entry.editable.write,
+                            }),
+                          }),
+                    }),
+                  ),
+                ),
+              }),
+            ),
+          ),
           ...(wire.companions === undefined
             ? {}
             : { companions: Object.freeze(wire.companions.map(normalizeCompanion)) }),

@@ -164,7 +164,10 @@ describe('A-1 contribution spec schemas', () => {
 
   it('validates data-source inventory records outside the executable contribution registry', async () => {
     expect(await validateWithSchema(dataSourceContributionSpecV1Schema, dataSourceSpec)).toEqual([])
-    expect(A1_SPEC_SCHEMA_ENTRIES).toHaveLength(8)
+    expect(A1_SPEC_SCHEMA_ENTRIES).toHaveLength(9)
+    expect(A1_SPEC_SCHEMA_ENTRIES.map(entry => entry.contract)).toContain(
+      'modkit/subject-kind-definition',
+    )
   })
 
   it.each([

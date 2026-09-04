@@ -66,6 +66,7 @@ import type {
 } from '../src/definitions.js'
 import type { EditorContributionSpecV1Wire } from '../src/editing.js'
 import type { KnowledgePackSpecV1Wire } from '../src/knowledge/index.js'
+import type { FieldType } from '../src/fields/index.js'
 
 type Equal<A, B> =
   (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false
@@ -83,15 +84,17 @@ type DeepMutable<T> = T extends readonly (infer U)[]
     : T
 
 /** Avoid recursively expanding JsonValue while normalizing descriptor readonly fields. */
-type DeepMutableDescriptor<T> = T extends readonly (infer U)[]
-  ? DeepMutableDescriptor<U>[]
-  : T extends object
-    ? {
-        -readonly [K in keyof T]: K extends 'parameters' | 'data' | 'value'
-          ? JsonValue
-          : DeepMutableDescriptor<T[K]>
-      }
-    : T
+type DeepMutableDescriptor<T> = T extends FieldType
+  ? T
+  : T extends readonly (infer U)[]
+    ? DeepMutableDescriptor<U>[]
+    : T extends object
+      ? {
+          -readonly [K in keyof T]: K extends 'parameters' | 'data' | 'value' | 'params'
+            ? JsonValue
+            : DeepMutableDescriptor<T[K]>
+        }
+      : T
 
 /** Published core schema: the three exclusive coordinate branches must track the wire DTO. */
 export type SourceSpanWireDriftGate = Expect<
@@ -220,7 +223,12 @@ export type ContractDefinitionSpecDriftGate = Expect<
 >
 type SubjectDescriptorV2FromSchema = FromSchema<
   typeof subjectDescriptorV2InferenceSchema,
-  { deserialize: [{ pattern: { title: 'JsonValue' }; output: JsonValue }] }
+  {
+    deserialize: [
+      { pattern: { title: 'JsonValue' }; output: JsonValue },
+      { pattern: { title: 'FieldType' }; output: FieldType },
+    ]
+  }
 >
 type SubjectDescriptorV2PublicType = DeepMutableDescriptor<AnyDescriptorWire>
 /** Two-way structural equivalence; union/intersection normalization makes `Equal` too strict. */

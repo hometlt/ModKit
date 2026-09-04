@@ -35,6 +35,7 @@ export const REAL_TEST_INCLUDE = [
 export const QUICK_TEST_INCLUDE = [
   'packages/vfs/test/vfs.test.ts',
   'packages/sdk/test/contribution-specs.test.ts',
+  'packages/sdk/test/fields.test.ts',
   'packages/sdk/test/subject-descriptor.test.ts',
   'packages/sdk/test/data-source-surfaces.test.ts',
   'packages/host/test/gate.test.ts',

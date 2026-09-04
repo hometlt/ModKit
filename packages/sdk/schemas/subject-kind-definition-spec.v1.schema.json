@@ -1,0 +1,139 @@
+{
+  "$id": "https://schemas.modkit.org/x3/subject-kind-definition-spec.v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "card": {
+      "additionalProperties": false,
+      "properties": {
+        "preview": {
+          "enum": [
+            "raster",
+            "model",
+            "none"
+          ]
+        },
+        "sections": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "sections"
+      ],
+      "type": "object"
+    },
+    "diff": {
+      "additionalProperties": false,
+      "properties": {
+        "profile": {
+          "enum": [
+            "generic",
+            "provider"
+          ]
+        }
+      },
+      "required": [
+        "profile"
+      ],
+      "type": "object"
+    },
+    "icon": {
+      "additionalProperties": false,
+      "properties": {
+        "displayName": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "mediaType": {
+          "minLength": 1,
+          "type": "string"
+        },
+        "path": {
+          "pattern": "^(?:\\./)?(?![A-Za-z]:)(?!\\\\)(?!.*\\\\)(?!.*\\u0000)(?!\\.{1,2}(?:/|$))(?!.*\\/\\.{1,2}(?:/|$))[^/]+(?:/[^/]+)*$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "type": "object"
+    },
+    "kindId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "knowledgeEcosystem": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "parentKinds": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "selector": {
+      "additionalProperties": false,
+      "properties": {
+        "facets": {
+          "items": {
+            "minLength": 1,
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "predicates": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "minLength": 1,
+                "type": "string"
+              },
+              "label": {
+                "type": "string"
+              },
+              "params": {
+                "additionalProperties": false,
+                "properties": {
+                  "$ref": {
+                    "minLength": 1,
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "$ref"
+                ],
+                "type": "object"
+              }
+            },
+            "required": [
+              "id",
+              "label"
+            ],
+            "type": "object"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "facets",
+        "predicates"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "kindId",
+    "label"
+  ],
+  "type": "object"
+}

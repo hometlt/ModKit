@@ -19,6 +19,19 @@ const Ajv2020 = sdkRequire('ajv/dist/2020.js').default
 const standaloneCode = sdkRequire('ajv/dist/standalone/index.js').default
 
 const artifacts = new Map([
+  [join(root, 'packages', 'sdk', 'schemas', 'field-type.v1.schema.json'), sdk.fieldTypeV1Schema],
+  [
+    join(root, 'packages', 'sdk', 'schemas', 'field-schema.v1.schema.json'),
+    sdk.fieldSchemaV1Schema,
+  ],
+  [
+    join(root, 'packages', 'sdk', 'schemas', 'field-write-request.v1.schema.json'),
+    sdk.fieldWriteRequestV1Schema,
+  ],
+  [
+    join(root, 'packages', 'sdk', 'schemas', 'subject-kind-definition-spec.v1.schema.json'),
+    sdk.subjectKindDefinitionSpecV1Schema,
+  ],
   [join(root, 'packages', 'core', 'schemas', 'source-span.v1.schema.json'), sourceSpanSchema],
   [
     join(root, 'packages', 'sdk', 'schemas', 'extension-manifest.v1.schema.json'),

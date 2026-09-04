@@ -3,7 +3,7 @@
  * Implementations belong to later host/extension slices; this module owns contracts only.
  */
 
-import { compareUtf8, isQualifiedId, type SourceSpan } from '@modkit/core'
+import { compareUtf8, isQualifiedId, type SourceSpan, type SourceSpanWire } from '@modkit/core'
 import type { KnowledgeTarget } from '../knowledge/index.js'
 import { snapshotJsonWireData } from '../manifest/validate.js'
 import { validateWithSchema } from '../manifest/validate.js'
@@ -406,12 +406,15 @@ export interface RelationGraphSource {
   edges(page: PageRequest, signal?: AbortSignal): Promise<Page<RelationGraphEdge>>
 }
 
-export interface SubjectFactProvenance {
+export interface SubjectFactProvenanceFor<Span extends SourceSpanWire> {
   readonly label: string
   readonly source?: AssetSourceRef
-  readonly range?: SourceSpan
+  readonly range?: Span
   readonly semanticPath?: readonly string[]
 }
+
+export type SubjectFactProvenance = SubjectFactProvenanceFor<SourceSpan>
+export type SubjectFactProvenanceWire = SubjectFactProvenanceFor<SourceSpanWire>
 
 export interface SubjectFactsIdentity {
   readonly subjectId: string
@@ -549,6 +552,7 @@ export interface SubjectSelectorSummary {
 
 /** Optional publisher-applied filters for large nested-subject catalogs. */
 export interface SubjectSelectorQuery extends PageRequest {
+  readonly filter?: import('../fields/index.js').SubjectFilter
   /** Exact semantic kind, for example a publisher-defined data namespace. */
   readonly kind?: string
   /** Exact publisher type within the kind. */

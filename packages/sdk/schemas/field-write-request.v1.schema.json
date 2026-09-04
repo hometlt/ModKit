@@ -1,0 +1,712 @@
+{
+  "$defs": {
+    "fieldType": {
+      "oneOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "text"
+            },
+            "maxLength": {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            },
+            "multiline": {
+              "type": "boolean"
+            },
+            "pattern": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "integer": {
+              "type": "boolean"
+            },
+            "kind": {
+              "const": "number"
+            },
+            "max": {
+              "type": "number"
+            },
+            "min": {
+              "type": "number"
+            },
+            "unit": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "boolean"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "enum"
+            },
+            "members": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "unknown": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "members"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "flags"
+            },
+            "members": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "label": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "kind",
+            "members"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "color"
+            },
+            "model": {
+              "enum": [
+                "rgb",
+                "rgba",
+                "argb"
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "model"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "vector"
+            },
+            "size": {
+              "enum": [
+                2,
+                3,
+                4
+              ]
+            },
+            "unit": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "size"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "enum": [
+                "duration",
+                "date",
+                "bytes",
+                "id",
+                "path"
+              ]
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "catalog": {
+              "minLength": 1,
+              "type": "string"
+            },
+            "kind": {
+              "const": "text-key"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "filter": {
+              "additionalProperties": false,
+              "properties": {
+                "excludeTags": {
+                  "items": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "predicate": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "params": {
+                      "$ref": "#/$defs/jsonValue"
+                    }
+                  },
+                  "required": [
+                    "id"
+                  ],
+                  "type": "object"
+                },
+                "requireTags": {
+                  "items": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "sameTypeAs": {
+                  "minLength": 1,
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "type": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "type": "object"
+            },
+            "kind": {
+              "const": "subject-ref"
+            },
+            "subjectKind": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "subjectKind"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "accepts": {
+              "additionalProperties": false,
+              "properties": {
+                "formatIds": {
+                  "items": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                "traits": {
+                  "items": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "type": "array"
+                }
+              },
+              "type": "object"
+            },
+            "kind": {
+              "const": "asset-ref"
+            }
+          },
+          "required": [
+            "kind",
+            "accepts"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "script"
+            },
+            "language": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "language"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "fields": {
+              "items": {
+                "additionalProperties": false,
+                "properties": {
+                  "cardinality": {
+                    "enum": [
+                      "scalar",
+                      "append",
+                      "indexed"
+                    ]
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "key": {
+                    "minLength": 1,
+                    "type": "string"
+                  },
+                  "knowledgeTarget": {
+                    "oneOf": [
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "canonicalPath": {
+                            "items": {
+                              "maxLength": 128,
+                              "minLength": 1,
+                              "type": "string"
+                            },
+                            "maxItems": 32,
+                            "minItems": 1,
+                            "type": "array"
+                          },
+                          "ecosystem": {
+                            "maxLength": 128,
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "kind": {
+                            "const": "field"
+                          },
+                          "schema": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "contract": {
+                                "maxLength": 256,
+                                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*\\/[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+                                "type": "string"
+                              },
+                              "major": {
+                                "maximum": 9007199254740991,
+                                "minimum": 0,
+                                "type": "integer"
+                              },
+                              "revision": {
+                                "maxLength": 256,
+                                "minLength": 1,
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "contract",
+                              "major",
+                              "revision"
+                            ],
+                            "type": "object"
+                          },
+                          "typeId": {
+                            "maxLength": 128,
+                            "minLength": 1,
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "ecosystem",
+                          "schema",
+                          "typeId",
+                          "canonicalPath"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "ecosystem": {
+                            "maxLength": 128,
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "kind": {
+                            "const": "subject"
+                          },
+                          "subjectId": {
+                            "maxLength": 512,
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "subjectKind": {
+                            "maxLength": 128,
+                            "minLength": 1,
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "ecosystem",
+                          "subjectKind"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "ecosystem": {
+                            "maxLength": 128,
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "formatId": {
+                            "maxLength": 128,
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "kind": {
+                            "const": "format"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "ecosystem",
+                          "formatId"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "code": {
+                            "maxLength": 256,
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "ecosystem": {
+                            "maxLength": 128,
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "kind": {
+                            "const": "diagnostic"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "ecosystem",
+                          "code"
+                        ],
+                        "type": "object"
+                      },
+                      {
+                        "additionalProperties": false,
+                        "properties": {
+                          "conceptId": {
+                            "maxLength": 128,
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "ecosystem": {
+                            "maxLength": 128,
+                            "minLength": 1,
+                            "type": "string"
+                          },
+                          "kind": {
+                            "const": "concept"
+                          }
+                        },
+                        "required": [
+                          "kind",
+                          "ecosystem",
+                          "conceptId"
+                        ],
+                        "type": "object"
+                      }
+                    ]
+                  },
+                  "label": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "$ref": "#/$defs/fieldType"
+                  }
+                },
+                "required": [
+                  "key",
+                  "label",
+                  "type"
+                ],
+                "type": "object"
+              },
+              "type": "array"
+            },
+            "kind": {
+              "const": "struct"
+            }
+          },
+          "required": [
+            "kind",
+            "fields"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "item": {
+              "$ref": "#/$defs/fieldType"
+            },
+            "kind": {
+              "const": "array"
+            },
+            "max": {
+              "maximum": 9007199254740991,
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "kind",
+            "item"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "key": {
+              "$ref": "#/$defs/fieldType"
+            },
+            "kind": {
+              "const": "record"
+            },
+            "value": {
+              "$ref": "#/$defs/fieldType"
+            }
+          },
+          "required": [
+            "kind",
+            "key",
+            "value"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "delimiter": {
+              "type": "string"
+            },
+            "keywords": {
+              "additionalProperties": {
+                "items": {
+                  "$ref": "#/$defs/fieldType"
+                },
+                "type": "array"
+              },
+              "type": "object"
+            },
+            "kind": {
+              "const": "instructions"
+            },
+            "listDelimiter": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "keywords",
+            "delimiter"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "json"
+            },
+            "schema": {
+              "additionalProperties": false,
+              "properties": {
+                "$ref": {
+                  "minLength": 1,
+                  "type": "string"
+                }
+              },
+              "required": [
+                "$ref"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "custom"
+            },
+            "params": {
+              "$ref": "#/$defs/jsonValue"
+            },
+            "typeId": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "typeId"
+          ],
+          "type": "object"
+        }
+      ],
+      "title": "FieldType"
+    },
+    "jsonValue": {
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "boolean"
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "string"
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/jsonValue"
+          },
+          "type": "array"
+        },
+        {
+          "additionalProperties": {
+            "$ref": "#/$defs/jsonValue"
+          },
+          "type": "object"
+        }
+      ],
+      "title": "JsonValue"
+    }
+  },
+  "$id": "https://schemas.modkit.org/x3/field-write-request.v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "groupId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "key": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "path": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "value": {
+      "$ref": "#/$defs/jsonValue"
+    }
+  },
+  "required": [
+    "groupId",
+    "key",
+    "value"
+  ],
+  "type": "object"
+}

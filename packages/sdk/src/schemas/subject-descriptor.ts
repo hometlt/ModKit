@@ -1,7 +1,8 @@
 /** Strict, wire-first schema authority for the MK3 AnyDescriptor v2 union. */
 
 import { deepFreeze, sourceSpanSchema, UINT64_DECIMAL_PATTERN } from '@modkit/core'
-import { dataSourceRefWireSchema } from './contribution-specs.js'
+import { dataSourceRefWireSchema, knowledgeTargetSchema } from './contribution-specs.js'
+import { fieldSchemaDefinitions, fieldEditableValueSchema } from './fields.js'
 import { REVISION_ID_PATTERN } from '../subjects/refs.js'
 import {
   NAMESPACED_DOTTED_PATTERN,
@@ -273,6 +274,25 @@ const metadataEntrySchema = {
   properties: {
     key: nonEmptyString,
     value: jsonValueRef,
+    type: { $ref: '#/$defs/fieldType' },
+    unit: { type: 'string' },
+    diagnosticIds: stringArray,
+    provenance: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['label'],
+        properties: {
+          label: { type: 'string' },
+          source: assetSourceRefSchema,
+          range: sourceSpanValueSchema,
+          semanticPath: stringArray,
+        },
+      },
+    },
+    knowledgeTarget: knowledgeTargetSchema,
+    editable: fieldEditableValueSchema,
   },
 } as const
 
@@ -284,6 +304,7 @@ const metadataGroupSchema = {
     id: nonEmptyString,
     label: { type: 'string' },
     entries: { type: 'array', items: metadataEntrySchema },
+    order: { type: 'number' },
   },
 } as const
 
@@ -530,20 +551,21 @@ const resolvedAssetDescriptorSchema = {
 export const subjectDescriptorV2Schema = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   $id: 'https://schemas.modkit.org/x3/subject-descriptor.v2.schema.json',
-  $defs: { jsonValue: jsonValueSchema },
+  $defs: { ...fieldSchemaDefinitions, jsonValue: jsonValueSchema },
   oneOf: [unresolvedSourceDescriptorSchema, resolvedAssetDescriptorSchema],
 } as const
 
 /**
  * Type-inference adapter for json-schema-to-ts, which cannot recurse through `$ref` cycles.
- * It is derived from the wire authority and replaces only the recursive JSON-value definition;
- * schema-drift deserializes that marker back to the public `JsonValue` type.
+ * It replaces recursive JSON and field definitions with typed inference markers. Separate
+ * one-level field drift checks verify every arm and recursive edge against the field authority.
  */
 export const subjectDescriptorV2InferenceSchema = {
   ...subjectDescriptorV2Schema,
   $defs: {
     ...subjectDescriptorV2Schema.$defs,
     jsonValue: { title: 'JsonValue' },
+    fieldType: { title: 'FieldType' },
   },
 } as const
 
