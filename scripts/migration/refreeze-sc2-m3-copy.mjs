@@ -14,6 +14,7 @@ import {
   triggerTmpTest,
 } from './lib/sc2-m3-destinations.mjs'
 import {
+  parseSc2M3RefreezeArgs,
   SC2_M3_REFREEZE_PIN,
   SC2_M3_SELECTOR_VERSION,
   sc2M3FamilyPlanDigest,
@@ -28,10 +29,7 @@ const reportPath = path.join(
 )
 const pinRelative = SC2_M3_REFREEZE_PIN
 const pinPath = path.join(workspaceRoot, pinRelative)
-const args = process.argv.slice(2)
-if (args.some(arg => arg !== '--write-pin') || new Set(args).size !== args.length)
-  throw new Error('Use no arguments or the explicit --write-pin update mode')
-const writePin = args.includes('--write-pin')
+const { writePin, admitReady } = parseSc2M3RefreezeArgs(process.argv.slice(2))
 const processingPackages = [
   'data-processing',
   'documents-processing',
@@ -326,7 +324,7 @@ const requiredSources = [
   ...new Set([...original.scopes['m1-libs'].requiredSources, ...selected]),
 ].sort()
 const family = {
-  status: 'pending-m3',
+  status: admitReady ? 'ready' : 'pending-m3',
   copiedAt: '2026-09-04',
   selectorVersion: SC2_M3_SELECTOR_VERSION,
   refreezePin: pinRelative,

@@ -20,6 +20,7 @@ import {
   canonicalM3Destination,
   isM3TestOwnedSource,
 } from '../lib/sc2-m3-destinations.mjs'
+import { parseSc2M3RefreezeArgs } from '../lib/sc2-m3-refreeze.mjs'
 
 async function fixture(t) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'mk2-copy-test-'))
@@ -705,6 +706,18 @@ test('family dry-run rejects a consistently removed row and a mutated destinatio
     prepareCopy({ ...options, declaration: alternatePin }),
     /canonical tracked M3 refreeze pin/u,
   )
+  const manuallyAdmitted = structuredClone(declaration)
+  manuallyAdmitted.scopes.family.status = 'ready'
+  await assert.rejects(
+    prepareCopy({ ...options, declaration: manuallyAdmitted }),
+    /Family refreeze pin mismatch/u,
+  )
+  const unknownStatus = structuredClone(declaration)
+  unknownStatus.scopes.family.status = 'manually-admitted'
+  await assert.rejects(
+    prepareCopy({ ...options, declaration: unknownStatus }),
+    /Family refreeze pin mismatch/u,
+  )
   const removed = structuredClone(declaration)
   removed.scopes.family.requiredSources = removed.scopes.family.requiredSources.filter(
     item => item !== source,
@@ -721,6 +734,28 @@ test('family dry-run rejects a consistently removed row and a mutated destinatio
     prepareCopy({ ...options, declaration: relocated }),
     /Family refreeze pin mismatch/u,
   )
+})
+
+test('M3 refreeze CLI requires an explicit paired ready admission', () => {
+  assert.deepEqual(parseSc2M3RefreezeArgs([]), { writePin: false, admitReady: false })
+  assert.deepEqual(parseSc2M3RefreezeArgs(['--write-pin']), {
+    writePin: true,
+    admitReady: false,
+  })
+  assert.deepEqual(parseSc2M3RefreezeArgs(['--admit-ready', '--write-pin']), {
+    writePin: true,
+    admitReady: true,
+  })
+  assert.deepEqual(parseSc2M3RefreezeArgs(['--write-pin', '--admit-ready']), {
+    writePin: true,
+    admitReady: true,
+  })
+  assert.throws(
+    () => parseSc2M3RefreezeArgs(['--admit-ready']),
+    /requires the explicit --write-pin/u,
+  )
+  assert.throws(() => parseSc2M3RefreezeArgs(['--unknown']), /paired/u)
+  assert.throws(() => parseSc2M3RefreezeArgs(['--write-pin', '--write-pin']), /paired/u)
 })
 
 test('registered import-type rewrite preserves emitted behavior and import identity', () => {
