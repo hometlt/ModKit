@@ -1,0 +1,16 @@
+
+ RUN  v2.1.9 C:/FILES/SC2Files/coding/modkit-extensions-blizzard
+
+ ✓ starcraft2/test/sc2-bank-native.test.ts (6 tests) 556ms
+   ✓ SC2 bank native M2 operation and data surfaces > publishes the actual native operation mapping and validates both manifests 316ms
+ ✓ starcraft2/test/sc2-bank-product-ga.test.ts (7 tests) 568ms
+   ✓ StarCraft II bank Product-GA read surfaces > keeps bank, BankList, package and writer contributions schema-valid 406ms
+ ✓ starcraft2/test/sc2-bank-native-host.test.ts (2 tests) 17231ms
+   ✓ SC2 bank native host routing and persistence > activates the published bank contribution through the minimal native host 3126ms
+   ✓ SC2 bank native host routing and persistence > commits native edit.content through the file backend, then commits a resolved writer no-op and reopens both 14102ms
+
+ Test Files  3 passed (3)
+      Tests  15 passed (15)
+   Start at  21:01:21
+   Duration  19.52s (transform 723ms, setup 0ms, collect 3.79s, tests 18.36s, environment 2ms, prepare 1.34s)
+

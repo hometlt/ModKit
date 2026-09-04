@@ -1,0 +1,7 @@
+pending: legacy/codec-manifest/modkit/sc2-bank/operation/asset.validate
+feature-ledger claims codec=sc2-bank: selected requirements 6, selected pending 6, total requirements 891, total pending 891, problems 6
+pending: legacy/codec-manifest/modkit/sc2-bank/operation/edit.content
+pending: legacy/codec-manifest/modkit/sc2-bank/operation/export.raw
+pending: legacy/codec-manifest/modkit/sc2-bank/operation/save.sign
+pending: legacy/codec-manifest/modkit/sc2-bank/operation/source.save-as
+pending: legacy/codec-manifest/modkit/sc2-bank/operation/view.inspect

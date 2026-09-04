@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "checkedAt": "2026-09-04T17:38:27.216Z",
+  "files": 38,
+  "allOriginalBytesUnchanged": true,
+  "corpusManifest": "oracle/corpus/view.inspect.json",
+  "method": "Read-only comparison of every original file against manifest byteLength and SHA256; no bank bytes archived."
+}

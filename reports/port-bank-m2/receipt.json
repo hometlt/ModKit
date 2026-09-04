@@ -1,0 +1,507 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M2",
+  "codec": "sc2-bank",
+  "stage": "port-ready",
+  "verdict": "pass",
+  "ownerAcceptance": "pending",
+  "nextMilestone": "M3 requires separate owner acceptance of M2",
+  "generatedAt": "2026-09-04T17:38:27.216Z",
+  "oraclePin": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "prerequisite": {
+    "milestone": "M1",
+    "ownerAcceptedOn": "2026-09-04",
+    "instruction": "продолжай м2",
+    "coreCommit": "7ff0a9e2",
+    "acceptedArchiveUnchanged": true
+  },
+  "repositories": [
+    {
+      "directory": "modkit-core",
+      "branch": "sol/port-libs",
+      "head": "ce05ac2e89dfb2d78dd9727ddc577d2741f58f21"
+    },
+    {
+      "directory": "modkit-extensions-blizzard",
+      "branch": "sol/port-sc2",
+      "head": "ad53661cbf709e7b6a20e9be33b939e5e80105ea"
+    },
+    {
+      "directory": "references/modkit-docs",
+      "branch": "sol/port-plan-review",
+      "head": "b7b791da7c518c044f17c02a9f54649aefe8501d"
+    }
+  ],
+  "repositoryStatus": "final-gates/repositories.json",
+  "scope": {
+    "claimFile": "claims.json",
+    "requirementIds": [
+      "legacy/codec-manifest/modkit/sc2-bank/operation/asset.validate",
+      "legacy/codec-manifest/modkit/sc2-bank/operation/edit.content",
+      "legacy/codec-manifest/modkit/sc2-bank/operation/export.raw",
+      "legacy/codec-manifest/modkit/sc2-bank/operation/save.sign",
+      "legacy/codec-manifest/modkit/sc2-bank/operation/source.save-as",
+      "legacy/codec-manifest/modkit/sc2-bank/operation/view.inspect"
+    ],
+    "featureClaimsPending": 21,
+    "full": false
+  },
+  "sourceClosure": {
+    "verdict": "pass",
+    "scope": "sc2-bank",
+    "files": 87,
+    "importOccurrences": 217,
+    "m1LibraryScope": {
+      "files": 50,
+      "importOccurrences": 97
+    },
+    "bank": {
+      "sourcePrefixFiles": 38,
+      "newlyAddedCanonicalFiles": 37,
+      "canonicalLines": 4044,
+      "canonicalBytes": 141828,
+      "importRewriteRules": 32,
+      "importRewriteOccurrences": 33,
+      "testOnlyDivergences": 3
+    },
+    "sourceDigestAuthority": "inputs/MK2-PORT-PROVENANCE.json",
+    "sharedSha1": "modkit-core/packages/codec-kit/src/crypto/sha1.ts"
+  },
+  "tests": {
+    "adapter": [
+      {
+        "command": "node node_modules/typescript/bin/tsc -b starcraft2/tsconfig.json --pretty false",
+        "exitCode": 0
+      },
+      {
+        "command": "node node_modules/vitest/vitest.mjs run --config test/vitest.config.mjs starcraft2/test/sc2-bank-native.test.ts starcraft2/test/sc2-bank-product-ga.test.ts starcraft2/test/sc2-bank-native-host.test.ts",
+        "exitCode": 0,
+        "files": 3,
+        "passed": 15,
+        "skipped": 0,
+        "log": "native-final.log"
+      },
+      {
+        "command": "node node_modules/vitest/vitest.mjs run --config starcraft2/test/vitest.mk2.config.mjs sc2-bank",
+        "exitCode": 0,
+        "files": 12,
+        "passed": 54,
+        "skipped": 0,
+        "log": "mk2-final.log"
+      },
+      {
+        "command": "pnpm run test:quick",
+        "exitCode": 0,
+        "passed": 204,
+        "skipped": 3,
+        "skippedScope": "pre-existing M3 installed-corpus checks",
+        "log": "blizzard-quick-final.log"
+      },
+      {
+        "command": "esbuild browser bundle of public @modkit/blizzard-starcraft2/bank/codec and /bank/core exports",
+        "exitCode": 0,
+        "inputFiles": 248,
+        "log": "browser-final.log",
+        "metafile": "browser/metafile.json"
+      },
+      {
+        "command": "node starcraft2/dist/lib/mk2/codecs/sc2-bank/src/core/cli.js --help",
+        "exitCode": 0,
+        "log": "cli-public-final.log"
+      }
+    ],
+    "core": {
+      "migrationInfrastructurePassed": 91,
+      "codecKitPassed": 39,
+      "quickVitest": {
+        "files": 23,
+        "passed": 386
+      },
+      "strictPackages": 8,
+      "strictErrors": 0,
+      "logs": "core-seam/"
+    },
+    "publicConsumer": {
+      "exitCode": 0,
+      "command": "adapter/public-consumer/command.txt",
+      "skipLibCheck": false
+    },
+    "browserBoundary": {
+      "inputs": 248,
+      "edges": 598,
+      "nodeImports": 0,
+      "externalImports": 0,
+      "evidence": "adapter/public-consumer/browser-check.json"
+    }
+  },
+  "differential": {
+    "realFiles": 38,
+    "pinnedFixtures": 1,
+    "synthetic": "targeted typed values, custom nodes, encoding and error boundaries",
+    "operations": [
+      {
+        "operation": "view.inspect",
+        "exitCode": 0,
+        "identical": 40,
+        "different": 0,
+        "bothRefused": 0,
+        "verdict": "pass"
+      },
+      {
+        "operation": "asset.validate",
+        "exitCode": 0,
+        "identical": 41,
+        "different": 0,
+        "bothRefused": 0,
+        "verdict": "pass"
+      },
+      {
+        "operation": "export.raw",
+        "exitCode": 0,
+        "identical": 40,
+        "different": 0,
+        "bothRefused": 0,
+        "verdict": "pass"
+      },
+      {
+        "operation": "edit.content",
+        "exitCode": 0,
+        "identical": 39,
+        "different": 0,
+        "bothRefused": 2,
+        "verdict": "pass"
+      },
+      {
+        "operation": "source.save-as",
+        "exitCode": 0,
+        "identical": 40,
+        "different": 0,
+        "bothRefused": 0,
+        "verdict": "pass"
+      },
+      {
+        "operation": "save.sign",
+        "exitCode": 0,
+        "identical": 39,
+        "different": 0,
+        "bothRefused": 1,
+        "verdict": "pass"
+      },
+      {
+        "operation": "blizzard/sc2-bank.verify",
+        "exitCode": 0,
+        "identical": 40,
+        "different": 0,
+        "bothRefused": 0,
+        "verdict": "pass"
+      }
+    ],
+    "legacyTotals": {
+      "cases": 242,
+      "successfulIdentical": 239,
+      "bothRefused": 3,
+      "different": 0
+    },
+    "allSevenTotals": {
+      "cases": 282,
+      "successfulIdentical": 279,
+      "bothRefused": 3,
+      "different": 0
+    },
+    "exactCommands": "oracle/logs/final-run.json",
+    "negativeNonAcceptance": {
+      "runs": [
+        {
+          "receipt": "oracle/receipts/negative/asset.validate-malformed.json",
+          "operation": "asset.validate",
+          "counts": {
+            "bothRefused": 0,
+            "differing": 1,
+            "identical": 0,
+            "total": 1
+          },
+          "verdict": "fail"
+        },
+        {
+          "receipt": "oracle/receipts/negative/blizzard_sc2-bank.verify-malformed.json",
+          "operation": "blizzard/sc2-bank.verify",
+          "counts": {
+            "bothRefused": 0,
+            "differing": 1,
+            "identical": 0,
+            "total": 1
+          },
+          "verdict": "fail"
+        },
+        {
+          "receipt": "oracle/receipts/negative/edit.content-malformed.json",
+          "operation": "edit.content",
+          "counts": {
+            "bothRefused": 0,
+            "differing": 1,
+            "identical": 0,
+            "total": 1
+          },
+          "verdict": "fail"
+        },
+        {
+          "receipt": "oracle/receipts/negative/save.sign-malformed.json",
+          "operation": "save.sign",
+          "counts": {
+            "bothRefused": 0,
+            "differing": 2,
+            "identical": 0,
+            "total": 2
+          },
+          "verdict": "fail"
+        },
+        {
+          "receipt": "oracle/receipts/negative/source.save-as-malformed.json",
+          "operation": "source.save-as",
+          "counts": {
+            "bothRefused": 0,
+            "differing": 1,
+            "identical": 0,
+            "total": 1
+          },
+          "verdict": "fail"
+        },
+        {
+          "receipt": "oracle/receipts/negative/view.inspect-malformed.json",
+          "operation": "view.inspect",
+          "counts": {
+            "bothRefused": 0,
+            "differing": 1,
+            "identical": 0,
+            "total": 1
+          },
+          "verdict": "fail"
+        }
+      ],
+      "different": 7,
+      "identical": 0,
+      "bothRefused": 0,
+      "appliedToLedger": false,
+      "note": "Strict XML guards and unconfigured signature identity; retained failing diagnostics, outside valid/configured operation acceptance."
+    },
+    "originalBankBytesArchived": false,
+    "originalBankBytesUnchanged": true,
+    "inputEvidence": "Each operation receipt contains its oracle source/dependency/loader digests, operation options and corpus hashes."
+  },
+  "surfaces": {
+    "verdict": "pass",
+    "scope": "m2",
+    "full": false,
+    "tests": {
+      "filesDiscovered": 2,
+      "filesExecuted": 2,
+      "testsDiscovered": 8,
+      "testsExecuted": 8,
+      "passed": 8,
+      "failed": 0,
+      "pending": 0,
+      "skipped": 0,
+      "todo": 0
+    },
+    "claims": [
+      "data-source.subject-facts",
+      "operation.view.inspect",
+      "operation.asset.validate",
+      "operation.export.raw",
+      "operation.edit.content",
+      "operation.source.save-as",
+      "operation.save.sign",
+      "operation.verify",
+      "host.edit-commit-reopen",
+      "writer.unsigned-no-op-commit-reopen",
+      "manifest.native-operation-declarations",
+      "host.minimal-activation"
+    ],
+    "receipt": "adapter/root-surfaces/receipt.json"
+  },
+  "textureLoaderRegression": {
+    "receipt": "loader-texture-regression/receipt.json",
+    "verdict": "pass",
+    "compared": 10766,
+    "differing": 0,
+    "confirmedBothRefusedWithinComparisons": 144,
+    "unclassifiedMalformedWithinComparisons": 3,
+    "legacyOnlyRefusedOutsideComparisons": 1280,
+    "harnesses": [
+      {
+        "name": "compare-legacy-dds",
+        "exitCode": 0,
+        "measurements": {
+          "compared": 1284,
+          "unit": "file",
+          "identical": 1284,
+          "differing": 0
+        },
+        "refusals": {
+          "legacyOnly": 0,
+          "confirmedBoth": 0,
+          "unclassifiedIdenticalMalformed": 0
+        },
+        "matchesM1": true
+      },
+      {
+        "name": "compare-legacy-dds-bptc",
+        "exitCode": 0,
+        "measurements": {
+          "compared": 6400,
+          "unit": "surface",
+          "identical": 6400,
+          "differing": 0
+        },
+        "refusals": {
+          "legacyOnly": 1280,
+          "confirmedBoth": 0,
+          "unclassifiedIdenticalMalformed": 0
+        },
+        "matchesM1": true
+      },
+      {
+        "name": "compare-legacy-dds-compressed",
+        "exitCode": 0,
+        "measurements": {
+          "compared": 417,
+          "unit": "file",
+          "identical": 417,
+          "differing": 0
+        },
+        "refusals": {
+          "legacyOnly": 0,
+          "confirmedBoth": 130,
+          "unclassifiedIdenticalMalformed": 0
+        },
+        "matchesM1": true
+      },
+      {
+        "name": "compare-legacy-dds-encode",
+        "exitCode": 0,
+        "measurements": {
+          "compared": 770,
+          "unit": "case",
+          "identical": 770,
+          "differing": 0
+        },
+        "refusals": {
+          "legacyOnly": 0,
+          "confirmedBoth": 5,
+          "unclassifiedIdenticalMalformed": 3
+        },
+        "matchesM1": true
+      },
+      {
+        "name": "compare-legacy-image-ops",
+        "exitCode": 0,
+        "measurements": {
+          "compared": 1895,
+          "unit": "case",
+          "identical": 1895,
+          "differing": 0
+        },
+        "refusals": {
+          "legacyOnly": 0,
+          "confirmedBoth": 9,
+          "unclassifiedIdenticalMalformed": 0
+        },
+        "matchesM1": true
+      }
+    ],
+    "acceptedM0M1ArchivesUnchanged": true
+  },
+  "migration": {
+    "registryLine": "migration:check registry: known debt 38 (must be empty by wave 6), new problems 0, stale baseline entries 0, unavailable checks 1 (must be restored by wave 6)",
+    "knownDebt": 38,
+    "newProblems": 0,
+    "staleBaselineEntries": 0,
+    "unavailableChecks": 1,
+    "integrity": "pass",
+    "scopedClaims": {
+      "selected": 6,
+      "pending": 0,
+      "exitCode": 0
+    },
+    "familyClosure": {
+      "exitCode": 1,
+      "pending": 303,
+      "accepted": false
+    },
+    "globalClosure": {
+      "exitCode": 1,
+      "pending": 885,
+      "accepted": false
+    },
+    "familySourceClosure": {
+      "exitCode": 1,
+      "status": "pending-m3",
+      "accepted": false
+    },
+    "capabilityAggregateLevelChanges": [],
+    "protectedE5Rows": 3,
+    "ledgerAppliedBy": "scripts/migration/apply-port-evidence.mjs",
+    "evidenceApplyLog": "core-seam/evidence-apply-final.json",
+    "finalGates": "final-gates/commands.json"
+  },
+  "remaining": [
+    "M3: full family source closure after owner acceptance of M2",
+    "M4-M6: remaining codecs and container composition; authored campaign uses CMP acceptance",
+    "M7: 21 bank feature claims, full S1-S15 mapping and surface/feature acceptance",
+    "M8: SC2 installed VS Code acceptance and family full closure; requires P12 discovery",
+    "M9/M10: project-global closure and retirement; original wave 6 debt deadline remains"
+  ],
+  "ownerDrops": [],
+  "evidenceInputs": [
+    {
+      "path": "inputs/sc2-copy.json",
+      "sha256": "942542a368c3a4558cc242e63b866d06c36d0240a07cf62c969fcd8a48d12f9b"
+    },
+    {
+      "path": "inputs/sc2-divergence.json",
+      "sha256": "49fb8abb0fe8d056fa9ced517cd07ec2fa46f03a1c6e0cd1972e3f84bd27045a"
+    },
+    {
+      "path": "inputs/MK2-PORT-PROVENANCE.json",
+      "sha256": "7f45ca679d7468b597b22acf59cc07d5d0f50441ced20e16ec6aeef8b42aa381"
+    },
+    {
+      "path": "claims.json",
+      "sha256": "abfc62bc8a2106a990204b14b7181992e67ccc23c73e1e8f984d23910d8ac697"
+    },
+    {
+      "path": "adapter/freeze.json",
+      "sha256": "b9354b796ad97bf8a95f3dc3b692eb187629e72b5075dc3c6ea3c756bc8c08fb"
+    },
+    {
+      "path": "adapter/root-surfaces/receipt.json",
+      "sha256": "eb2727364808e8d82ebdd3b0d081b2c783706bf4830ff452d286468a11d25577"
+    },
+    {
+      "path": "oracle/logs/final-run.json",
+      "sha256": "620dba78faeaf5124c3dd033607ed95a17653938ee6f7cd1f0b97244da329b2a"
+    },
+    {
+      "path": "loader-texture-regression/receipt.json",
+      "sha256": "a9ec75f00e781373885018bb1cfc620bdb597f72c0d6a8cd7c425dbad75a2ab4"
+    },
+    {
+      "path": "final-gates/commands.json",
+      "sha256": "cc2f34fe1bf0ade1ec2fff9fd4fd8a3df8e7ed8ddfe6ec8b1f7cb47a56108009"
+    }
+  ],
+  "evidenceManifest": {
+    "path": "manifest.json",
+    "sha256": "0ce14e531cca08e5634d27029a0ec03a17022b9476ee9fd16e944287780dca18",
+    "fileCount": 1353,
+    "totalBytes": 169669393
+  },
+  "report": {
+    "path": "../PORT_SC2_sc2-bank_2026-09-04.md",
+    "sha256": "c66de15f090a8929f7eb6be04f4f9b62ffe5ef7d1247235b2bf5c89c60fc06e5"
+  },
+  "replay": {
+    "archiveVerifier": "node reports/port-bank-m2/verify.mjs",
+    "limitation": "Verifier checks recorded bytes only, not fresh acceptance. Oracle replay requires original corpus/layout; source and dependency snapshot links are archived. Earlier diagnostic logs retain historical status."
+  }
+}

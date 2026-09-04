@@ -1,0 +1,44 @@
+[
+  {
+    "command": "node scripts/migration/apply-port-evidence.mjs --receipt modkit-core/reports/port-bank-m2/oracle/receipts/view.inspect.json",
+    "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+    "exitCode": 0,
+    "stdout": "evidence applied: 1 requirements; regenerate codec-map before migration:check\n",
+    "stderr": ""
+  },
+  {
+    "command": "node scripts/migration/apply-port-evidence.mjs --receipt modkit-core/reports/port-bank-m2/oracle/receipts/asset.validate.json",
+    "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+    "exitCode": 0,
+    "stdout": "evidence applied: 1 requirements; regenerate codec-map before migration:check\n",
+    "stderr": ""
+  },
+  {
+    "command": "node scripts/migration/apply-port-evidence.mjs --receipt modkit-core/reports/port-bank-m2/oracle/receipts/export.raw.json",
+    "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+    "exitCode": 0,
+    "stdout": "evidence applied: 1 requirements; regenerate codec-map before migration:check\n",
+    "stderr": ""
+  },
+  {
+    "command": "node scripts/migration/apply-port-evidence.mjs --receipt modkit-core/reports/port-bank-m2/oracle/receipts/edit.content.json",
+    "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+    "exitCode": 0,
+    "stdout": "evidence applied: 1 requirements; regenerate codec-map before migration:check\n",
+    "stderr": ""
+  },
+  {
+    "command": "node scripts/migration/apply-port-evidence.mjs --receipt modkit-core/reports/port-bank-m2/oracle/receipts/source.save-as.json",
+    "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+    "exitCode": 0,
+    "stdout": "evidence applied: 1 requirements; regenerate codec-map before migration:check\n",
+    "stderr": ""
+  },
+  {
+    "command": "node scripts/migration/apply-port-evidence.mjs --receipt modkit-core/reports/port-bank-m2/oracle/receipts/save.sign.json",
+    "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+    "exitCode": 0,
+    "stdout": "evidence applied: 1 requirements; regenerate codec-map before migration:check\n",
+    "stderr": ""
+  }
+]

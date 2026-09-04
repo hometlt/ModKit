@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "codec": "sc2-bank",
+  "requirementIds": [
+    "legacy/codec-manifest/modkit/sc2-bank/operation/asset.validate",
+    "legacy/codec-manifest/modkit/sc2-bank/operation/edit.content",
+    "legacy/codec-manifest/modkit/sc2-bank/operation/export.raw",
+    "legacy/codec-manifest/modkit/sc2-bank/operation/save.sign",
+    "legacy/codec-manifest/modkit/sc2-bank/operation/source.save-as",
+    "legacy/codec-manifest/modkit/sc2-bank/operation/view.inspect"
+  ]
+}

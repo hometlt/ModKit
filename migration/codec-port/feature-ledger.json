@@ -2401,34 +2401,64 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/port-bank-m2/oracle/receipts/asset.validate.json",
+          "sha256": "e5bcc037440fae3b26fdaae377467ac55cc30830eb8e3c5b660199bef685d71d"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-bank/operation/asset.validate",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/port-bank-m2/oracle/receipts/edit.content.json",
+          "sha256": "33a5e53aa6ac7fb62f6f375baf532552324135469755ee3642ef91769f4415ea"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-bank/operation/edit.content",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/port-bank-m2/oracle/receipts/export.raw.json",
+          "sha256": "8406ba8158492f800d04b586b7316cf00bd2f3d6bf754d1280b210b525bffce4"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-bank/operation/export.raw",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/port-bank-m2/oracle/receipts/save.sign.json",
+          "sha256": "aaede61d91ef82d21c61c5fd41e2d1d50198262d90b94d82f167096c1d42d22d"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-bank/operation/save.sign",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/port-bank-m2/oracle/receipts/source.save-as.json",
+          "sha256": "70fb9d75710ca60d2c0b78fac92628be09667b0f8ffa4630e37f291ccfbbd4c8"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-bank/operation/source.save-as",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/port-bank-m2/oracle/receipts/view.inspect.json",
+          "sha256": "38d96b4e97a843a90463325dc217c086724fb75cf01dc8a10b4c822bd3d3c77b"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-bank/operation/view.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],

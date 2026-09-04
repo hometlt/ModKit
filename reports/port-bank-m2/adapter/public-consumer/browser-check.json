@@ -1,0 +1,25 @@
+{
+  "publicEntrypoints": [
+    "@modkit/blizzard-starcraft2/bank/codec",
+    "@modkit/blizzard-starcraft2/bank/core"
+  ],
+  "compiler": "esbuild",
+  "platform": "browser",
+  "inputFiles": 248,
+  "importEdges": 598,
+  "nodeImports": [],
+  "externalImports": [],
+  "outputs": [
+    {
+      "path": "../artifacts/legacy-parity-sc2/sc2-bank/m2-2026-09-04/adapter/browser/codec.js",
+      "bytes": 4683378,
+      "sha256": "87c81570efb52dd4a996f821dbeb6cbdeec3f484f5095b4935806972fe9f14ce"
+    },
+    {
+      "path": "../artifacts/legacy-parity-sc2/sc2-bank/m2-2026-09-04/adapter/browser/core.js",
+      "bytes": 142736,
+      "sha256": "6b7616aa5e7e77ee0114b8ebd9c3f77480af20bebba7fef38de2aaedac1f6bbf"
+    }
+  ],
+  "pass": true
+}

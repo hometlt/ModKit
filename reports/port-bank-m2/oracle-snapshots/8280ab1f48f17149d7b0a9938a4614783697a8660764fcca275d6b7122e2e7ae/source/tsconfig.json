@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["ES2022"],
+    "strict": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@modkitx/xml": ["./packages/xml/src/index.ts"],
+      "@modkitx/maps-processing/sc2-map-core": [
+        "./packages/maps-processing/src/sc2-map-core/index.ts"
+      ],
+      "@modkitx/models-processing/m3": ["./extensions/blizzard/starcraft-2/codecs/m3/src/index.ts"],
+      "@modkitx/rendering-3d/webgl": ["./packages/rendering-3d/src/webgl.ts"],
+      "@modkitx/archives-processing/casc": [
+        "./extensions/blizzard/archives/codecs/casc/src/index.ts"
+      ],
+      "@modkitx/archives-processing/mpq": [
+        "./extensions/blizzard/archives/codecs/mpq/src/index.ts"
+      ],
+      "@modkitx/archives-processing/zip": ["./extensions/common/archives/codecs/zip/src/index.ts"],
+      "@modkitx/archives-processing": ["./packages/archives-processing/src/index.ts"]
+    }
+  }
+}

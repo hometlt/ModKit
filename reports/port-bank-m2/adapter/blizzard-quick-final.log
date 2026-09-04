@@ -1,0 +1,217 @@
+
+> @modkit/blizzard-extensions@1.0.0 test:quick C:\FILES\SC2Files\coding\modkit-extensions-blizzard
+> pnpm run build && pnpm run test:smoke && pnpm run test:inventory && pnpm run test:subjects && pnpm run test:behavior-coverage && pnpm run test:ownership && pnpm run test:portable-bundle && pnpm run test:typescript-lane && pnpm run test:behavior && pnpm run test:tiers && pnpm run test:extensions:quick
+
+
+> @modkit/blizzard-extensions@1.0.0 build C:\FILES\SC2Files\coding\modkit-extensions-blizzard
+> pnpm exec tsc -b ./starcraft2/tsconfig.json
+
+
+> @modkit/blizzard-extensions@1.0.0 test:smoke C:\FILES\SC2Files\coding\modkit-extensions-blizzard
+> node --test ./test/standalone-provider-smoke.test.mjs
+
+✔ the exported StarCraft II discovery provider loads without the Modkit workspace (2.9068ms)
+✔ the former game package forwards to the single merged extension (0.2603ms)
+✔ every former game subpath forwards the same public bindings (707.0948ms)
+✔ the repository advertises one StarCraft II extension root (14.0519ms)
+✔ the standalone repository loads its SC2 codecs, language layers, and linked extensions (492.9421ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1473.4342
+
+> @modkit/blizzard-extensions@1.0.0 test:inventory C:\FILES\SC2Files\coding\modkit-extensions-blizzard
+> node --test ./test/standalone-inventory.test.mjs
+
+✔ all Blizzard roots load into one valid standalone inventory (3007.2017ms)
+✔ every migrated runtime entrypoint imports as a codec module (66.1956ms)
+✔ runtime roots contain no migration receipts or nested license directories (7.6785ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3969.6137
+
+> @modkit/blizzard-extensions@1.0.0 test:subjects C:\FILES\SC2Files\coding\modkit-extensions-blizzard
+> node --test ./test/subject-profiles.test.mjs
+
+✔ repository subject profiles are confined, linked and complete (160.021ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 395.9141
+
+> @modkit/blizzard-extensions@1.0.0 test:behavior-coverage C:\FILES\SC2Files\coding\modkit-extensions-blizzard
+> node --test ./test/behavior-coverage.test.mjs
+
+✔ behavior coverage receipt owns only the migrated Blizzard format families (7.7568ms)
+✔ copied behavior tests and their Core source snapshots are pinned (16.4854ms)
+✔ copied fixtures remain byte-identical to the Core testkit evidence (8.4956ms)
+✔ behavior tests use the current Modkit SDK and Host package artifacts (2.8366ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 240.1541
+
+> @modkit/blizzard-extensions@1.0.0 test:ownership C:\FILES\SC2Files\coding\modkit-extensions-blizzard
+> node --test ./test/former-core-test-ownership.test.mjs
+
+✔ every audited former Core loader has one explicit owner and rationale (3.6159ms)
+✔ historical Core source identities remain pinned without reading Core (0.8405ms)
+✔ copied suites and fixtures are pinned in the Blizzard repository (24.5034ms)
+✔ installed SC2 corpus suites declare conditional execution (10.9911ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 249.2256
+
+> @modkit/blizzard-extensions@1.0.0 test:portable-bundle C:\FILES\SC2Files\coding\modkit-extensions-blizzard
+> node ./scripts/run-vendor-test.mjs --test ./test/portable-bundle.test.mjs
+
+✔ portable Blizzard bundle is deterministic, self-contained and has exactly eight roots (51049.6331ms)
+✔ portable-bundle CLI stages atomically and refuses an existing output (25494.9861ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 2
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 76916.2563
+
+> @modkit/blizzard-extensions@1.0.0 test:typescript-lane C:\FILES\SC2Files\coding\modkit-extensions-blizzard
+> node --test ./test/typescript-lane.test.mjs
+
+✔ the TypeScript lane emits a runtime enum and preserves a type-only declaration edge (16.6783ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 233.255
+
+> @modkit/blizzard-extensions@1.0.0 test:behavior C:\FILES\SC2Files\coding\modkit-extensions-blizzard
+> vitest run --config ./test/behavior/vitest.config.mjs
+
+
+ RUN  v2.1.9 C:/FILES/SC2Files/coding/modkit-extensions-blizzard
+
+ ✓ test/behavior/mk2-blizzard-common-formats-codec.test.ts (3 tests) 939ms
+   ✓ ported Blizzard common-formats BLP codec > decodes a BLP2 BGRA top mip to bounded RGBA regions 899ms
+ ✓ test/behavior/mk2-warcraft3-codec.test.ts (3 tests) 956ms
+   ✓ ported Warcraft III model codec > walks an MDLX container and reads VERS and MODL metadata 912ms
+ ✓ test/behavior/mk2-diablo-codecs.test.ts (3 tests) 1014ms
+   ✓ ported Diablo III codecs > decodes APP v260 fixed-record triangle geometry 921ms
+
+ Test Files  3 passed (3)
+      Tests  9 passed (9)
+   Start at  21:03:47
+   Duration  2.51s (transform 447ms, setup 0ms, collect 1.02s, tests 2.91s, environment 2ms, prepare 1.18s)
+
+
+> @modkit/blizzard-extensions@1.0.0 test:tiers C:\FILES\SC2Files\coding\modkit-extensions-blizzard
+> node --test ./test/test-tier-routing.test.mjs
+
+✔ quick and owner never select installed-game corpus routes (12.9769ms)
+✔ real and full explicitly retain the physical-corpus failure routes (5.7624ms)
+✔ sealed SC2 oracle tests call the pinned externalized probe snapshot (8.5929ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 239.7387
+
+> @modkit/blizzard-extensions@1.0.0 test:extensions:quick C:\FILES\SC2Files\coding\modkit-extensions-blizzard
+> node ./scripts/run-vitest-tier.mjs quick
+
+
+ RUN  v2.1.9 C:/FILES/SC2Files/coding/modkit-extensions-blizzard
+
+ ✓ starcraft2/test/map-preview-provider.test.ts (9 tests) 125ms
+ ✓ mpq/test/native-preserving-writer.test.ts (5 tests) 305ms
+ ✓ starcraft2/test/subject-facts.test.ts (10 tests) 182ms
+ ✓ starcraft2/test/sc2-workspace-codec.test.ts (4 tests) 149ms
+ ✓ starcraft2/test/full-data-schema.test.ts (9 tests) 401ms
+ ✓ models/test/m3-writer.test.ts (5 tests) 631ms
+   ✓ M3/M3A native writer > is deterministic, byte-identical for no-op, and reopens scale/sequence/texture edits 304ms
+ ✓ models/test/m3-attachments-sidecar.test.ts (7 tests) 385ms
+ ✓ starcraft2/test/sc2-bank-product-ga.test.ts (7 tests) 847ms
+   ✓ StarCraft II bank Product-GA read surfaces > keeps bank, BankList, package and writer contributions schema-valid 615ms
+ ✓ starcraft2/test/sc2-bank-native.test.ts (6 tests) 762ms
+   ✓ SC2 bank native M2 operation and data surfaces > publishes the actual native operation mapping and validates both manifests 467ms
+ ✓ models/test/m3-skeleton.test.ts (7 tests | 1 skipped) 1680ms
+   ✓ M3 BONE decoding > reports a truncated BONE table and keeps the subject inspectable 1409ms
+ ✓ starcraft2/test/semantic-conversion.test.ts (6 tests) 612ms
+ ✓ starcraft2/test/sc2-layout-language.test.ts (5 tests) 174ms
+ ✓ models/test/m3-material.test.ts (10 tests | 1 skipped) 2475ms
+   ✓ M3 MATM/MAT_/LAYR decoding > publishes material semantics and bounded layer fields in its ABI 1439ms
+   ✓ M3 MATM/MAT_/LAYR decoding > reports a truncated MAT_ table without parser escape 428ms
+   ✓ M3 MATM/MAT_/LAYR decoding > reports a truncated LAYR table without parser escape 312ms
+ ✓ models/test/m3-animation.test.ts (12 tests | 1 skipped) 2829ms
+   ✓ M3 SEQS/STC decoding > normalizes native millisecond timestamps into one explicitly targeted BONE channel 314ms
+   ✓ M3 SEQS/STC decoding > publishes the animation source with decoded keyframes 1267ms
+   ✓ M3 SEQS/STC decoding > names a truncated SEQS table before schema parsing 337ms
+   ✓ M3 SEQS/STC decoding > separates the pinned declared sequence from executable motion and scene resources 336ms
+ ✓ starcraft2/test/unit-weapon-dps.test.ts (4 tests) 27ms
+ ✓ starcraft2/test/resolved-data-subject-services.test.ts (2 tests) 144ms
+ ✓ starcraft2/test/sc2-map-world-writer.test.ts (8 tests) 3520ms
+   ✓ Product GA SC2 semantic map/world writer > exposes a normal host edit-plan operation and reopens the resulting archive 690ms
+   ✓ Product GA SC2 semantic map/world writer > edits and reopens a writable copy of an installed SC2Map without touching the installation 2163ms
+ ✓ starcraft2/test/sc2-map-preview-parity.test.ts (4 tests) 769ms
+   ✓ legacy SC2 map 2D preview parity > exposes thumbnail and render through the normal codec operation session 726ms
+ ✓ starcraft2/test/sc2-layout-preview.test.ts (4 tests) 151ms
+ ✓ casc/test/casc.test.ts (5 tests) 148ms
+ ✓ starcraft2/test/sc2-cross-language.test.ts (4 tests) 167ms
+ ✓ galaxy-language/test/legacy-fixture-parity.test.ts (2 tests) 309ms
+ ✓ starcraft2/test/mk2/codecs/sc2-bank/test/round-trip.test.ts (3 tests) 28ms
+ ✓ starcraft2/test/sc2-layout-codec.test.ts (2 tests) 647ms
+   ✓ SC2Layout codec Product-GA routing > keeps codec and language-provider contributions schema-valid 422ms
+ ✓ starcraft2/test/resolved-data-placeholders.test.ts (2 tests) 88ms
+ ✓ models/test/m3-writer-host.test.ts (1 test) 2313ms
+   ✓ M3 writer through the ordinary host/editor workflow > opens, proposes, deterministically plans, atomically commits, reopens and undoes 2298ms
+ ✓ starcraft2/test/installation-candidates.test.ts (3 tests) 15ms
+ ✓ starcraft2/test/codec-conversion-operations.test.ts (2 tests) 741ms
+   ✓ SC2 Trigger codec public conversion operations > keeps the contribution manifest valid with namespaced read-only operations 415ms
+   ✓ SC2 Trigger codec public conversion operations > exposes both directions through the generic read-only operation session 323ms
+ ✓ starcraft2/test/mk2/codecs/sc2-bank/test/sc2-bank-manifest.test.ts (1 test) 18ms
+ ✓ starcraft2/test/schema-knowledge-pack.test.ts (2 tests) 206ms
+ ✓ starcraft2/test/knowledge-pack.test.ts (1 test) 292ms
+ ✓ starcraft2/test/sc2-data-language.test.ts (6 tests) 6620ms
+   ✓ SC2 Data schema-aware language provider > passes the real host boundary for analysis, completion and document symbols 6566ms
+ ✓ starcraft2/test/mk2/codecs/sc2-bank/test/codec.test.ts (15 tests) 16785ms
+   ✓ SavesCodecRegistry → native host > routes a registered bank through the real native host and reports its mapped operations 8143ms
+   ✓ SavesCodecRegistry → native host > does not open an unrecognized source through the native host 4268ms
+   ✓ SavesCodecRegistry → native host > rejects duplicate bank registration in native inventory 4304ms
+ ✓ starcraft2/test/sc2-bank-native-host.test.ts (2 tests) 19287ms
+   ✓ SC2 bank native host routing and persistence > activates the published bank contribution through the minimal native host 5163ms
+   ✓ SC2 bank native host routing and persistence > commits native edit.content through the file backend, then commits a resolved writer no-op and reopens both 14122ms
+
+ Test Files  34 passed (34)
+      Tests  172 passed | 3 skipped (175)
+   Start at  21:03:56
+   Duration  25.82s (transform 9.06s, setup 0ms, collect 50.79s, tests 63.83s, environment 26ms, prepare 19.37s)
+

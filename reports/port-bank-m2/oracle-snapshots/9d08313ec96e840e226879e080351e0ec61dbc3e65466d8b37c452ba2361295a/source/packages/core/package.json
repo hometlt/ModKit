@@ -1,0 +1,39 @@
+{
+  "name": "@modkitx/core",
+  "version": "0.1.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/src/index.d.ts",
+      "default": "./dist/src/index.js"
+    },
+    "./errors": {
+      "types": "./dist/src/errors.d.ts",
+      "default": "./dist/src/errors.js"
+    },
+    "./logger": {
+      "types": "./dist/src/logger.d.ts",
+      "default": "./dist/src/logger.js"
+    }
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "scripts": {
+    "clean": "rm -rf dist/",
+    "build": "tsc",
+    "typecheck": "tsx ../../scripts/typecheck-codec-owner-package.ts packages/core/tsconfig.json",
+    "test": "vitest run",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "@logtape/logtape": "catalog:",
+    "@logtape/pretty": "catalog:",
+    "@logtape/file": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

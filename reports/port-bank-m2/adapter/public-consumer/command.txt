@@ -1,0 +1,11 @@
+cwd: C:/FILES/SC2Files/coding/modkit-extensions-blizzard
+
+Probe source: ../artifacts/legacy-parity-sc2/sc2-bank/m2-2026-09-04/adapter/public-consumer/probe.mts
+Temporary resolution location: test/.sc2-bank-public-consumer.mts
+The owned temporary file was copied from the external probe, then removed in finally.
+
+node node_modules/typescript/bin/tsc --strict --skipLibCheck false --noEmit --target ES2023 --lib ES2023,DOM --module NodeNext --moduleResolution NodeNext --types node --exactOptionalPropertyTypes --noUncheckedIndexedAccess --noPropertyAccessFromIndexSignature --noImplicitOverride --noFallthroughCasesInSwitch --verbatimModuleSyntax test/.sc2-bank-public-consumer.mts
+
+Exit code: 0
+Resolution: actual package exports only; no aliases, no paths mapping, no source imports.
+Public entrypoints: @modkit/blizzard-starcraft2/bank/core, /bank/node, /bank/codec.

@@ -1,0 +1,11 @@
+2026-09-04T17:06:15.690Z START compare-legacy-dds
+2026-09-04T17:11:38.836Z END compare-legacy-dds exit=0 identical=1284 differing=0 verdict=pass
+2026-09-04T17:11:39.091Z START compare-legacy-dds-bptc
+2026-09-04T17:17:00.076Z END compare-legacy-dds-bptc exit=0 identical=6400 differing=0 verdict=pass
+2026-09-04T17:17:00.091Z START compare-legacy-dds-compressed
+2026-09-04T17:19:33.037Z END compare-legacy-dds-compressed exit=0 identical=417 differing=0 verdict=pass
+2026-09-04T17:19:33.055Z START compare-legacy-dds-encode
+2026-09-04T17:21:35.426Z END compare-legacy-dds-encode exit=0 identical=770 differing=0 verdict=pass
+2026-09-04T17:21:35.439Z START compare-legacy-image-ops
+2026-09-04T17:23:34.744Z END compare-legacy-image-ops exit=0 identical=1895 differing=0 verdict=pass
+FINAL pass; implementationUnchanged=true; loaderUnchanged=true

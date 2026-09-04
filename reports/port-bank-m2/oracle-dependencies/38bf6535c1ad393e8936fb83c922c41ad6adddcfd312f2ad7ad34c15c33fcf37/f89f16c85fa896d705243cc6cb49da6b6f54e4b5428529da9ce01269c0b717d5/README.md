@@ -1,0 +1,43 @@
+<!-- deno-fmt-ignore-file -->
+
+File sinks for LogTape
+======================
+
+[![JSR][JSR badge]][JSR]
+[![npm][npm badge]][npm]
+
+This package provides file sinks for [LogTape].  You can use the file sinks to
+write log records to files.  For details, read the docs:
+
+ -  [File sink]
+ -  [Rotating file sink]
+
+[JSR badge]: https://jsr.io/badges/@logtape/file
+[JSR]: https://jsr.io/@logtape/file
+[npm badge]: https://img.shields.io/npm/v/@logtape/file?logo=npm
+[npm]: https://www.npmjs.com/package/@logtape/file
+[LogTape]: https://logtape.org/
+[File sink]: https://logtape.org/sinks/file
+[Rotating file sink]: https://logtape.org/sinks/file#rotating-file-sink
+
+
+Installation
+------------
+
+This package is available on [JSR] and [npm].  You can install it for various
+JavaScript runtimes and package managers:
+
+~~~~ sh
+deno add jsr:@logtape/file  # for Deno
+npm  add     @logtape/file  # for npm
+pnpm add     @logtape/file  # for pnpm
+yarn add     @logtape/file  # for Yarn
+bun  add     @logtape/file  # for Bun
+~~~~
+
+
+Docs
+----
+
+The docs of this package is available at <https://logtape.org/sinks/file>.
+For the API references, see <https://jsr.io/@logtape/file>.

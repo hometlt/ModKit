@@ -1,0 +1,316 @@
+{
+  "schemaVersion": 1,
+  "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "entry": "packages/assets/src/source.ts",
+  "source": [
+    {
+      "path": "package.json",
+      "sha256": "801d820bdbfea47c3da11f02bb4e330536149a5e277b7b053650efae7808ea7f",
+      "gitBlob": "c6d864122c608e6adc40878c0d05ddc12469f677"
+    },
+    {
+      "path": "packages/assets/src/cancellation.ts",
+      "sha256": "f7c2202facc93ef36f2bec58e018a24798975b6c63e5838703a09aeec59a9c00",
+      "gitBlob": "f3f942256c9cffd2f8055477be175a98d775b47a"
+    },
+    {
+      "path": "packages/assets/src/capabilities.ts",
+      "sha256": "46a38586304ace9ef258f8d8204f0212bb00ebc0914ecaf3c7b3e1f691ae64dc",
+      "gitBlob": "600ac23eb9cfad2c7b05f6e6adda86678866748e"
+    },
+    {
+      "path": "packages/assets/src/codec-manifest.ts",
+      "sha256": "8dc829b32526c0c6c62de342f8290e8e3ac7e48cfa202e8791be118b97880592",
+      "gitBlob": "e77b711c651c418808c17b928e847b8325fe1e48"
+    },
+    {
+      "path": "packages/assets/src/codec-matching.ts",
+      "sha256": "899ef6078a45e99570db905f9afe84094b99a2546b62183e3454c3e80eb52fb1",
+      "gitBlob": "be4d26c9facbac09a54e0a125a4f43cdfb2eb3dd"
+    },
+    {
+      "path": "packages/assets/src/format-registry.ts",
+      "sha256": "574e1818c892be45b1c94c87782c42b727eafe3c673226b3b6997e64268d60a3",
+      "gitBlob": "6ea9f263fea954e4fa9f007ff9ace7cae81ae55c"
+    },
+    {
+      "path": "packages/assets/src/operations.ts",
+      "sha256": "7dd2c86bd0dbd06c4bfa78656bd4f3a36e0303a71ed0076e45b9014ca13b36f3",
+      "gitBlob": "0b8dab34e8fb438fdaae451bfc56c9dc111531b8"
+    },
+    {
+      "path": "packages/assets/src/source.ts",
+      "sha256": "beaa0779256b9dbbd0fd0b253a11ab7975919e778af6b84ee2d784adfa82a122",
+      "gitBlob": "20947903e77fb580e40bfc6483eab3f9ec0985f3"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "sha256": "1d01882dc1a3e00f918b08977bab09b5fa73deec6310644838ad16374cf8c296",
+      "gitBlob": "0622de93d73526af611cecfdada3e69ea7d74e10"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "sha256": "386e54acc7666b3a76bc5edba0d4bbf06bada6f28882169d1106885efc92ed1a",
+      "gitBlob": "44e9289e360928f5efa7446128cc2e2092465e8d"
+    },
+    {
+      "path": "tsconfig.base.json",
+      "sha256": "ecfe908e6bd1cc0d8369707f6488d8d54cf945750f07a24cf4909782e40bfc76",
+      "gitBlob": "d32176af2d4f65c1e55ca115e8add031fad01b99"
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "de14f0580bf35c4ab062c9e92501c80447663f50b6d024b71b450421301dee92",
+      "gitBlob": "cd19a6ddf32838e95e0e9e7d4a537cd4dcaf5546"
+    }
+  ],
+  "loader": [
+    {
+      "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs",
+      "sha256": "aff3a93efd6d5fc05864c7655b4a31e19fba2e5b4a2df301589f26bfd7912a7d"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\sc2-bank\\m2-2026-09-04\\oracle\\sc2-bank-legacy-adapter.mjs",
+      "sha256": "31ba8b4c7b97c71dda4077e847e901fba1eb5090b51b77e74239ba518111ce1e"
+    }
+  ],
+  "dependencies": [
+    {
+      "root": "C:\\FILES\\SC2Files\\coding\\modkit-core\\node_modules\\.pnpm\\@esbuild+win32-x64@0.28.2\\node_modules\\@esbuild\\win32-x64",
+      "name": "@esbuild/win32-x64",
+      "version": "0.28.2",
+      "files": [
+        {
+          "path": "esbuild.exe",
+          "sha256": "c7bee37877d0aa6a046e52783fa0a2cf1a9ce5579d68bb3083bda99d4bff18ef"
+        },
+        {
+          "path": "package.json",
+          "sha256": "89382df45735edcd917c492a810ab514920fa07d36c653cdc122bdfd8f526964"
+        },
+        {
+          "path": "README.md",
+          "sha256": "29cf512fa580b72392176bf694933ae0decaf18116fdeee917511b445411ce16"
+        }
+      ],
+      "dependencies": {}
+    },
+    {
+      "root": "C:\\FILES\\SC2Files\\coding\\modkit-core\\node_modules\\.pnpm\\esbuild@0.28.2\\node_modules\\esbuild",
+      "name": "esbuild",
+      "version": "0.28.2",
+      "files": [
+        {
+          "path": "bin/esbuild",
+          "sha256": "183d6ead2dbc3af51aec767d5395f86fe54fbbc2d2aa8e54feb4e31d76a62f7e"
+        },
+        {
+          "path": "install.js",
+          "sha256": "612294e278914443bdcf81cb17f54afec34dbdd2ebd999a6ee187912320cc315"
+        },
+        {
+          "path": "lib/main.d.ts",
+          "sha256": "e078310f23f0ccfa28a6ac81b5fad81f27150e921f92ab6e648caab42e2d9a14"
+        },
+        {
+          "path": "lib/main.js",
+          "sha256": "61ec0ba144ff93f4bf0e96ad6fab6f430ede0aa13e27ace8063ed63ba416b3cd"
+        },
+        {
+          "path": "LICENSE.md",
+          "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+        },
+        {
+          "path": "package.json",
+          "sha256": "9d0bc453f4e791553c4cc2298ba023b409241fd9801e494741666eb0f6051490"
+        },
+        {
+          "path": "README.md",
+          "sha256": "6d481cd60ec3c679e5e395f547ab4221147f35642894f6b95a8df38fd25c87bd"
+        }
+      ],
+      "dependencies": {}
+    }
+  ],
+  "runtime": {
+    "node": "v24.16.0",
+    "platform": "win32",
+    "arch": "x64",
+    "esbuild": "0.28.2",
+    "binaryDigest": "c7bee37877d0aa6a046e52783fa0a2cf1a9ce5579d68bb3083bda99d4bff18ef"
+  },
+  "build": {
+    "format": "esm",
+    "target": "es2022",
+    "compilerOptions": {
+      "target": "ES2022",
+      "module": "NodeNext",
+      "moduleResolution": "NodeNext",
+      "lib": [
+        "ES2022",
+        "DOM"
+      ],
+      "strict": true,
+      "exactOptionalPropertyTypes": true,
+      "noUncheckedIndexedAccess": true,
+      "noImplicitOverride": true,
+      "noPropertyAccessFromIndexSignature": true,
+      "forceConsistentCasingInFileNames": true,
+      "declaration": true,
+      "declarationMap": true,
+      "sourceMap": true,
+      "outDir": "./dist",
+      "rootDir": "./src",
+      "skipLibCheck": true,
+      "esModuleInterop": true
+    },
+    "experimentalDecorators": true
+  },
+  "operation": "save.sign",
+  "operationOptions": {
+    "adapterProtocol": "sc2-bank-oracle-v2",
+    "execution": "pinned-createMemoryAssetSource"
+  },
+  "corpusManifest": {
+    "schemaVersion": 1,
+    "kind": "synthetic",
+    "codec": "sc2-bank",
+    "operation": "save.sign",
+    "purpose": "Explicit asymmetric malformed-XML audit. This corpus is never operation-proof evidence.",
+    "cases": [
+      {
+        "id": "synthetic:malformed",
+        "input": {
+          "xml": "<Bank><Section name=\"broken\"><Key name=\"K\"><Value int=\"1\"/></Key></Section>",
+          "path": "/synthetic/malformed.SC2Bank",
+          "signatureInfo": {
+            "bankName": "endofdreamsbank2",
+            "authorId": "2-S2-1-2355723",
+            "playerId": "2-S2-1-98765"
+          }
+        }
+      },
+      {
+        "id": "synthetic:sign-without-info",
+        "input": {
+          "xml": "<Bank><Section name=\"S\"><Key name=\"K\"><Value int=\"1\"/></Key></Section></Bank>",
+          "path": "/readonly/no-identity.SC2Bank",
+          "signatureInfo": null
+        }
+      }
+    ],
+    "proofs": []
+  },
+  "additionalFiles": [],
+  "runtimeDependencies": [],
+  "workspaceScopes": [
+    "@modkitx"
+  ],
+  "stubs": [],
+  "cacheKey": "8bd79a5e94c95f753073b0cc41c9d4be45010091f7660ab794b7ace5d83022b8",
+  "sourceClosureDigest": "ad63d3721364a55176640d99b11cafc39e7dd86c90640d68a7468fac1ad433b6",
+  "loaderDigest": "336fcc89b83a8fe313ae057b2cf19d59822db88428251e9f2111b604bdeb7eae",
+  "dependenciesDigest": "eb22efd477f7a73a9752399120202e045534fd70f15adc558f8aefe7bbaeb6e0",
+  "corpusDigest": "c3c37b39596e1070a02d001679f5a173ae14ddeec86b818dc654046e54697c3e",
+  "bundleSha256": "d8778da42cd519330bbf3c68df4a9800f5e24c7c5a44573bd1c020b530484d0f",
+  "sourceFiles": [
+    {
+      "path": "package.json",
+      "sha256": "801d820bdbfea47c3da11f02bb4e330536149a5e277b7b053650efae7808ea7f",
+      "gitBlob": "c6d864122c608e6adc40878c0d05ddc12469f677",
+      "workingTreeSha256": "84c13988140e36023ebf8a68f17aa4042b60da6a814c372e31a74e46a56ab30c",
+      "workingTreeMatchesPin": false
+    },
+    {
+      "path": "packages/assets/src/cancellation.ts",
+      "sha256": "f7c2202facc93ef36f2bec58e018a24798975b6c63e5838703a09aeec59a9c00",
+      "gitBlob": "f3f942256c9cffd2f8055477be175a98d775b47a",
+      "workingTreeSha256": "fb40f66126440886e53c15e0fbe151fd742042eeb64f27c6cd8c177904402b31",
+      "workingTreeMatchesPin": false
+    },
+    {
+      "path": "packages/assets/src/capabilities.ts",
+      "sha256": "46a38586304ace9ef258f8d8204f0212bb00ebc0914ecaf3c7b3e1f691ae64dc",
+      "gitBlob": "600ac23eb9cfad2c7b05f6e6adda86678866748e",
+      "workingTreeSha256": "6fdda3244a0fd69adfb47d6bf07fc7bc71c34a5b848d9bb5e36ecdfb76b5226f",
+      "workingTreeMatchesPin": false
+    },
+    {
+      "path": "packages/assets/src/codec-manifest.ts",
+      "sha256": "8dc829b32526c0c6c62de342f8290e8e3ac7e48cfa202e8791be118b97880592",
+      "gitBlob": "e77b711c651c418808c17b928e847b8325fe1e48",
+      "workingTreeSha256": "8dc829b32526c0c6c62de342f8290e8e3ac7e48cfa202e8791be118b97880592",
+      "workingTreeMatchesPin": true
+    },
+    {
+      "path": "packages/assets/src/codec-matching.ts",
+      "sha256": "899ef6078a45e99570db905f9afe84094b99a2546b62183e3454c3e80eb52fb1",
+      "gitBlob": "be4d26c9facbac09a54e0a125a4f43cdfb2eb3dd",
+      "workingTreeSha256": "18c0a620e5ac6b016c85947ba02d825c9e895c85bf535e9687d80831547c0bd7",
+      "workingTreeMatchesPin": false
+    },
+    {
+      "path": "packages/assets/src/format-registry.ts",
+      "sha256": "574e1818c892be45b1c94c87782c42b727eafe3c673226b3b6997e64268d60a3",
+      "gitBlob": "6ea9f263fea954e4fa9f007ff9ace7cae81ae55c",
+      "workingTreeSha256": "574e1818c892be45b1c94c87782c42b727eafe3c673226b3b6997e64268d60a3",
+      "workingTreeMatchesPin": true
+    },
+    {
+      "path": "packages/assets/src/operations.ts",
+      "sha256": "7dd2c86bd0dbd06c4bfa78656bd4f3a36e0303a71ed0076e45b9014ca13b36f3",
+      "gitBlob": "0b8dab34e8fb438fdaae451bfc56c9dc111531b8",
+      "workingTreeSha256": "7dd2c86bd0dbd06c4bfa78656bd4f3a36e0303a71ed0076e45b9014ca13b36f3",
+      "workingTreeMatchesPin": true
+    },
+    {
+      "path": "packages/assets/src/source.ts",
+      "sha256": "beaa0779256b9dbbd0fd0b253a11ab7975919e778af6b84ee2d784adfa82a122",
+      "gitBlob": "20947903e77fb580e40bfc6483eab3f9ec0985f3",
+      "workingTreeSha256": "5c0412a2dab15d2b36479444118d91230257ef5efb52071e29466d55ecd377af",
+      "workingTreeMatchesPin": false
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "sha256": "1d01882dc1a3e00f918b08977bab09b5fa73deec6310644838ad16374cf8c296",
+      "gitBlob": "0622de93d73526af611cecfdada3e69ea7d74e10",
+      "workingTreeSha256": "1d01882dc1a3e00f918b08977bab09b5fa73deec6310644838ad16374cf8c296",
+      "workingTreeMatchesPin": true
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "sha256": "386e54acc7666b3a76bc5edba0d4bbf06bada6f28882169d1106885efc92ed1a",
+      "gitBlob": "44e9289e360928f5efa7446128cc2e2092465e8d",
+      "workingTreeSha256": "23797fc86f95d8d65ac3e0f968026c7d495cac30f06a95ea4d7bb1f9f0f996dd",
+      "workingTreeMatchesPin": false
+    },
+    {
+      "path": "tsconfig.base.json",
+      "sha256": "ecfe908e6bd1cc0d8369707f6488d8d54cf945750f07a24cf4909782e40bfc76",
+      "gitBlob": "d32176af2d4f65c1e55ca115e8add031fad01b99",
+      "workingTreeSha256": "ecfe908e6bd1cc0d8369707f6488d8d54cf945750f07a24cf4909782e40bfc76",
+      "workingTreeMatchesPin": true
+    },
+    {
+      "path": "tsconfig.json",
+      "sha256": "de14f0580bf35c4ab062c9e92501c80447663f50b6d024b71b450421301dee92",
+      "gitBlob": "cd19a6ddf32838e95e0e9e7d4a537cd4dcaf5546",
+      "workingTreeSha256": "f994142349dae8f47dcb4234ff5211037a0b8683c02e8939458e21ea49a34249",
+      "workingTreeMatchesPin": false
+    }
+  ],
+  "loaderSnapshots": [
+    {
+      "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs",
+      "sha256": "aff3a93efd6d5fc05864c7655b4a31e19fba2e5b4a2df301589f26bfd7912a7d",
+      "snapshot": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\sc2-bank\\m2-2026-09-04\\oracle\\cache\\8bd79a5e94c95f753073b0cc41c9d4be45010091f7660ab794b7ace5d83022b8\\loader\\0-legacy-oracle.mjs"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\sc2-bank\\m2-2026-09-04\\oracle\\sc2-bank-legacy-adapter.mjs",
+      "sha256": "31ba8b4c7b97c71dda4077e847e901fba1eb5090b51b77e74239ba518111ce1e",
+      "snapshot": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\sc2-bank\\m2-2026-09-04\\oracle\\cache\\8bd79a5e94c95f753073b0cc41c9d4be45010091f7660ab794b7ace5d83022b8\\loader\\1-sc2-bank-legacy-adapter.mjs"
+    }
+  ],
+  "cacheHit": false,
+  "directory": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\sc2-bank\\m2-2026-09-04\\oracle\\cache\\8bd79a5e94c95f753073b0cc41c9d4be45010091f7660ab794b7ace5d83022b8"
+}

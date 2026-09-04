@@ -1,0 +1,12 @@
+modkitx-bank <command> [args]
+
+Commands:
+  read <file.SC2Bank> [--json]
+  validate <file.SC2Bank> [--require-signature] [--bank-name N --author-id ID --player-id ID]
+  verify <file.SC2Bank> [--bank-name N --author-id ID --player-id ID]
+  sign <file.SC2Bank> [--out file] [--bank-name N --author-id ID --player-id ID]
+  set <file.SC2Bank> <section> <key> <type> <value> [--out file] [--sign|--no-sign]
+  list-banklist <BankList.xml> [--json] [--discover root]
+  discover <rootPath> [--json] [--max-depth N]
+
+Types: int, fixed, string, flag, text, point

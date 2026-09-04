@@ -4,6 +4,8 @@ vendor/multiverse-specs/** -text
 
 # Immutable M1 receipts and exact loader snapshots retain their recorded byte hashes.
 reports/port-libs-m1/** -text
+reports/port-bank-m2/** -text
+reports/PORT_SC2_sc2-bank_2026-09-04.md -text
 reports/port-infra/surfaces-receipt.json -text
 reports/port-infra/surfaces-tests.json -text
 # These deterministic fixtures exercise structurally significant CRLF bytes.

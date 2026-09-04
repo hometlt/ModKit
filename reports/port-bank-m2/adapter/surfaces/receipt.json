@@ -1,0 +1,272 @@
+{
+  "schemaVersion": 1,
+  "stage": "scoped-surfaces",
+  "codec": "sc2-bank",
+  "codecId": "blizzard/sc2-bank",
+  "scope": "m2",
+  "verdict": "pass",
+  "runId": "0750c5d3-3811-456b-a166-fe8338d0aab2",
+  "startedAt": "2026-09-04T17:20:37.850Z",
+  "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard",
+  "command": [
+    "C:\\Program Files\\nodejs\\node.exe",
+    "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\scripts\\check-port-surfaces.mjs",
+    "--codec",
+    "sc2-bank",
+    "--scope",
+    "m2",
+    "--out",
+    "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\sc2-bank\\m2-2026-09-04\\adapter\\surfaces"
+  ],
+  "testCommand": [
+    "C:\\Program Files\\nodejs\\node.exe",
+    "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\node_modules\\vitest\\vitest.mjs",
+    "run",
+    "--config",
+    "./test/vitest.config.mjs",
+    "starcraft2/test/sc2-bank-native.test.ts",
+    "starcraft2/test/sc2-bank-native-host.test.ts",
+    "--reporter=json",
+    "--outputFile=C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\sc2-bank\\m2-2026-09-04\\adapter\\surfaces\\vitest-0750c5d3-3811-456b-a166-fe8338d0aab2.json"
+  ],
+  "testEnvironment": {
+    "MODKIT_TEST_TIER": "quick"
+  },
+  "reportPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\sc2-bank\\m2-2026-09-04\\adapter\\surfaces\\vitest-0750c5d3-3811-456b-a166-fe8338d0aab2.json",
+  "inputs": [
+    {
+      "path": "starcraft2/test/sc2-bank-native.test.ts",
+      "sha256": "462b1232658e2b86fa0250dc48a669625220d36e66a0e3930bc5e64f5c869aae"
+    },
+    {
+      "path": "starcraft2/test/sc2-bank-native-host.test.ts",
+      "sha256": "33cf0e01163172c0b35b8cc321eb4433a9df1fae5ec4a1f559775b4cec16521f"
+    },
+    {
+      "path": "starcraft2/dist/sc2-bank/codec.js",
+      "sha256": "6f24b19be3f356a335fd255dbd2fffb7c795181282ed43790e73cd2e571be9fa"
+    },
+    {
+      "path": "starcraft2/contributions/codec-sc2-bank.json",
+      "sha256": "73afce1f25380372fb267052162f5a65a99965c5f54563401283225e16f8bfc9"
+    },
+    {
+      "path": "test/vitest.config.mjs",
+      "sha256": "c287d5f260afe12f59149662358a12b9a4b471e9fe92ebde74fcbb7a0cee4aae"
+    },
+    {
+      "path": "scripts/check-port-surfaces.mjs",
+      "sha256": "61c0a49f902167869277ee1b555d86c4f43f6f3a2b17ebd04646e6a00bfebf16"
+    },
+    {
+      "path": "package.json",
+      "sha256": "d77c12e11502660f5e77344b52c774c15a0ee8fb103cdb3479f6443e537ebec1"
+    }
+  ],
+  "claims": [
+    {
+      "id": "data-source.subject-facts",
+      "state": "passed",
+      "successfulCaseIds": [
+        "starcraft2/test/sc2-bank-native.test.ts::invokes exact legacy inspect/validate products and retains native facts, hierarchy and raw bytes"
+      ],
+      "contract": "common.view/subject-facts-source"
+    },
+    {
+      "id": "operation.view.inspect",
+      "state": "passed",
+      "successfulCaseIds": [
+        "starcraft2/test/sc2-bank-native.test.ts::invokes exact legacy inspect/validate products and retains native facts, hierarchy and raw bytes"
+      ],
+      "contributionId": "blizzard/sc2-bank",
+      "legacyOperationId": "view.inspect",
+      "nativeHandlerId": "inspect",
+      "nativeOperationId": "view.inspect"
+    },
+    {
+      "id": "operation.asset.validate",
+      "state": "passed",
+      "successfulCaseIds": [
+        "starcraft2/test/sc2-bank-native.test.ts::invokes exact legacy inspect/validate products and retains native facts, hierarchy and raw bytes"
+      ],
+      "contributionId": "blizzard/sc2-bank",
+      "legacyOperationId": "asset.validate",
+      "nativeHandlerId": "validate",
+      "nativeOperationId": "asset.validate"
+    },
+    {
+      "id": "operation.export.raw",
+      "state": "passed",
+      "successfulCaseIds": [
+        "starcraft2/test/sc2-bank-native.test.ts::invokes exact legacy inspect/validate products and retains native facts, hierarchy and raw bytes"
+      ],
+      "contributionId": "blizzard/sc2-bank",
+      "legacyOperationId": "export.raw",
+      "nativeHandlerId": "export-raw",
+      "nativeOperationId": "export.raw"
+    },
+    {
+      "id": "operation.edit.content",
+      "state": "passed",
+      "successfulCaseIds": [
+        "starcraft2/test/sc2-bank-native.test.ts::patches same-type values without touching comments, quotes, CRLF or other keys and preserves no-op bytes"
+      ],
+      "contributionId": "blizzard/sc2-bank",
+      "legacyOperationId": "edit.content",
+      "nativeHandlerId": "patch-value",
+      "nativeOperationId": "edit.content"
+    },
+    {
+      "id": "operation.source.save-as",
+      "state": "passed",
+      "successfulCaseIds": [
+        "starcraft2/test/sc2-bank-native.test.ts::patches same-type values without touching comments, quotes, CRLF or other keys and preserves no-op bytes"
+      ],
+      "contributionId": "blizzard/sc2-bank",
+      "legacyOperationId": "source.save-as",
+      "nativeHandlerId": "save-as",
+      "nativeOperationId": "source.save-as"
+    },
+    {
+      "id": "operation.save.sign",
+      "state": "passed",
+      "successfulCaseIds": [
+        "starcraft2/test/sc2-bank-native.test.ts::disables signing when identity is missing and enables explicit identity with verify after reopen"
+      ],
+      "contributionId": "blizzard/sc2-bank",
+      "legacyOperationId": "save.sign",
+      "nativeHandlerId": "sign",
+      "nativeOperationId": "blizzard/sc2-bank.sign"
+    },
+    {
+      "id": "operation.verify",
+      "state": "passed",
+      "successfulCaseIds": [
+        "starcraft2/test/sc2-bank-native.test.ts::disables signing when identity is missing and enables explicit identity with verify after reopen"
+      ],
+      "contributionId": "blizzard/sc2-bank",
+      "nativeOperationId": "blizzard/sc2-bank.verify",
+      "nativeHandlerId": "verify"
+    },
+    {
+      "id": "host.edit-commit-reopen",
+      "state": "passed",
+      "successfulCaseIds": [
+        "starcraft2/test/sc2-bank-native-host.test.ts::commits native edit.content through the file backend, then commits a resolved writer no-op and reopens both"
+      ]
+    },
+    {
+      "id": "writer.unsigned-no-op-commit-reopen",
+      "state": "passed",
+      "successfulCaseIds": [
+        "starcraft2/test/sc2-bank-native-host.test.ts::commits native edit.content through the file backend, then commits a resolved writer no-op and reopens both"
+      ],
+      "contributionId": "blizzard/sc2-authored-text-writers",
+      "contract": "common.edit/writer"
+    },
+    {
+      "id": "manifest.native-operation-declarations",
+      "state": "passed",
+      "successfulCaseIds": [
+        "starcraft2/test/sc2-bank-native.test.ts::publishes the actual native operation mapping and validates both manifests"
+      ]
+    },
+    {
+      "id": "host.minimal-activation",
+      "state": "passed",
+      "successfulCaseIds": [
+        "starcraft2/test/sc2-bank-native-host.test.ts::activates the published bank contribution through the minimal native host"
+      ]
+    }
+  ],
+  "full": false,
+  "pending": [
+    {
+      "scope": "full",
+      "milestone": "M7/M8",
+      "requirements": [
+        "S1",
+        "S2",
+        "S3",
+        "S4",
+        "S5",
+        "S6",
+        "S7",
+        "S8",
+        "S9",
+        "S10",
+        "S11",
+        "S12",
+        "S13",
+        "S14",
+        "S15"
+      ],
+      "reason": "This M2 receipt proves only the listed executable scoped claims; full S1-S15 surface acceptance remains pending."
+    }
+  ],
+  "ledgerApplied": false,
+  "exitCode": 0,
+  "counts": {
+    "filesDiscovered": 2,
+    "filesExecuted": 2,
+    "testsDiscovered": 8,
+    "testsExecuted": 8,
+    "passed": 8,
+    "failed": 0,
+    "pending": 0,
+    "skipped": 0,
+    "todo": 0
+  },
+  "tests": [
+    {
+      "id": "starcraft2/test/sc2-bank-native.test.ts::publishes the actual native operation mapping and validates both manifests",
+      "file": "starcraft2/test/sc2-bank-native.test.ts",
+      "title": "publishes the actual native operation mapping and validates both manifests",
+      "status": "passed"
+    },
+    {
+      "id": "starcraft2/test/sc2-bank-native.test.ts::invokes exact legacy inspect/validate products and retains native facts, hierarchy and raw bytes",
+      "file": "starcraft2/test/sc2-bank-native.test.ts",
+      "title": "invokes exact legacy inspect/validate products and retains native facts, hierarchy and raw bytes",
+      "status": "passed"
+    },
+    {
+      "id": "starcraft2/test/sc2-bank-native.test.ts::disables signing when identity is missing and enables explicit identity with verify after reopen",
+      "file": "starcraft2/test/sc2-bank-native.test.ts",
+      "title": "disables signing when identity is missing and enables explicit identity with verify after reopen",
+      "status": "passed"
+    },
+    {
+      "id": "starcraft2/test/sc2-bank-native.test.ts::patches same-type values without touching comments, quotes, CRLF or other keys and preserves no-op bytes",
+      "file": "starcraft2/test/sc2-bank-native.test.ts",
+      "title": "patches same-type values without touching comments, quotes, CRLF or other keys and preserves no-op bytes",
+      "status": "passed"
+    },
+    {
+      "id": "starcraft2/test/sc2-bank-native.test.ts::preserves UTF-8 BOM on raw export and raw-preserving edits",
+      "file": "starcraft2/test/sc2-bank-native.test.ts",
+      "title": "preserves UTF-8 BOM on raw export and raw-preserving edits",
+      "status": "passed"
+    },
+    {
+      "id": "starcraft2/test/sc2-bank-native.test.ts::keeps the published unsigned no-op writer byte-identical",
+      "file": "starcraft2/test/sc2-bank-native.test.ts",
+      "title": "keeps the published unsigned no-op writer byte-identical",
+      "status": "passed"
+    },
+    {
+      "id": "starcraft2/test/sc2-bank-native-host.test.ts::activates the published bank contribution through the minimal native host",
+      "file": "starcraft2/test/sc2-bank-native-host.test.ts",
+      "title": "activates the published bank contribution through the minimal native host",
+      "status": "passed"
+    },
+    {
+      "id": "starcraft2/test/sc2-bank-native-host.test.ts::commits native edit.content through the file backend, then commits a resolved writer no-op and reopens both",
+      "file": "starcraft2/test/sc2-bank-native-host.test.ts",
+      "title": "commits native edit.content through the file backend, then commits a resolved writer no-op and reopens both",
+      "status": "passed"
+    }
+  ],
+  "reportSha256": "3b1c9e805cb019af40fee379d3ccbcb2f7ba539608ebe22af2558b857fbcdc6d",
+  "completedAt": "2026-09-04T17:20:59.377Z"
+}

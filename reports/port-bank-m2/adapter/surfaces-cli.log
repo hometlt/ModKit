@@ -1,0 +1,6 @@
+
+> @modkit/blizzard-extensions@1.0.0 surfaces:check C:\FILES\SC2Files\coding\modkit-extensions-blizzard
+> node ./scripts/check-port-surfaces.mjs "--codec" "sc2-bank" "--scope" "m2" "--out" "../artifacts/legacy-parity-sc2/sc2-bank/m2-2026-09-04/adapter/surfaces"
+
+JSON report written to C:/FILES/SC2Files/coding/artifacts/legacy-parity-sc2/sc2-bank/m2-2026-09-04/adapter/surfaces/vitest-0750c5d3-3811-456b-a166-fe8338d0aab2.json
+surfaces:check sc2-bank m2: pass (2 files, 8 tests); full S1-S15 pending; receipt C:\FILES\SC2Files\coding\artifacts\legacy-parity-sc2\sc2-bank\m2-2026-09-04\adapter\surfaces\receipt.json

@@ -1,0 +1,74 @@
+
+ RUN  v2.1.9 C:/FILES/SC2Files/coding/modkit-core
+
+ ✓ packages/host/test/subject-open.test.ts (17 tests) 8046ms
+   ✓ host-owned subject opening pipeline > matches a case-insensitive **/ glob at the subject root 4134ms
+   ✓ host-owned subject opening pipeline > selects a portable variant only when its execution backend is present 581ms
+   ✓ host-owned subject opening pipeline > opens PNG through the real image inventory and resolves a bounded raster presentation 538ms
+   ✓ detection-hostile: the bounded data-only signature index (NXT-101B / F6) > a renamed PNG (.dat) reaches the PNG probe through its declared signature and opens; the reads stay bounded 329ms
+   ✓ detection-hostile: the bounded data-only signature index (NXT-101B / F6) > a PNG+ZIP polyglot shortlists both codecs (start and end signatures); the probes decide, nothing is bypassed 565ms
+   ✓ detection-hostile: the bounded data-only signature index (NXT-101B / F6) > names input-open when a foreign codec exception has crossed an execution boundary 370ms
+   ✓ detection-hostile: the bounded data-only signature index (NXT-101B / F6) > a magic collision (PNG signature, corrupt body) is probed and rejected honestly — shortlisting is not detection 323ms
+ ✓ packages/testkit/test/text-data.test.ts (56 tests) 3039ms
+   ✓ 13B text-data providers and codecs > validates all isolated contribution manifests through the A-1 authorities 899ms
+   ✓ 13B text-data providers and codecs > parses and publishes the right lazy source for common.text-data/json-syntax 435ms
+   ✓ 13B text-data providers and codecs > pages one million delimited rows without materializing an eager document 656ms
+ ✓ packages/sdk/test/contribution-specs.test.ts (23 tests) 972ms
+   ✓ A-1 contribution spec schemas > validates data-source inventory records outside the executable contribution registry 627ms
+ ✓ apps/web/test/browser-extension-manager.test.ts (13 tests) 723ms
+   ✓ common extension manager browser adapter > installs a signed fake-CDN catalog package and loads all portable roots 638ms
+ ✓ packages/sdk/test/subject-descriptor.test.ts (23 tests) 1248ms
+   ✓ SubjectDescriptor v2 schema > validates the unresolved codec-less wire state after a JSON round-trip 658ms
+ ✓ packages/testkit/test/reference-codecs.test.ts (22 tests) 2728ms
+   ✓ reference codec specification stress suite > validates twelve isolated codec contribution manifests 840ms
+   ✓ reference codec specification stress suite > probes and opens the zip codec 657ms
+   ✓ reference codec specification stress suite > keeps every codec entrypoint and package index import-isolated 450ms
+ ✓ packages/host/test/gate.test.ts (32 tests) 732ms
+   ✓ activation gate — refusals never reach an import (MK3/24 §8) > refuses trusted-in-process unless the host explicitly authorized the artifact 585ms
+ ✓ apps/vscode/test/extension-manager.test.ts (28 tests) 248ms
+ ✓ packages/testkit/test/uvm-convergence.test.ts (2 tests) 1958ms
+   ✓ UVM convergence through A-2 inventory and A-3 sessions > resolves, tickets and activates the isolated UVM contribution deterministically 1689ms
+ ✓ packages/host/test/modkit-facade.test.ts (13 tests) 12793ms
+   ✓ createModkit — the Node library facade > composes from directories alone, and a broken one is a record, not an exception 1832ms
+   ✓ createModkit — the Node library facade > opens a PNG worker-brokered with no host knowledge from the caller 2502ms
+   ✓ createModkit — the Node library facade > offers editing inside writableRoots, and a byte edit commits to the real file 1864ms
+   ✓ createModkit — the Node library facade > close() sweeps the sessions a caller forgot 1798ms
+   ✓ disabling a contribution (the settings-page seam) > a disabled codec stays listed, loses activation, and the subject answers unresolved 651ms
+   ✓ disabling an extension (the settings-page seam) > keeps its contributions listed while the Node facade refuses to activate them 571ms
+   ✓ the format writer is preferred over the raw byte splicer (Path B reaches products) > a format with no matching writer falls back to raw, and the diagnostics say so 2423ms
+   ✓ a switched-off codec is named, not merely absent (A14 request 5) > an unresolved open says which contribution matched the file and could not run 630ms
+ ✓ apps/electron/test/extensions-settings.test.ts (17 tests) 5806ms
+   ✓ probing a folder the user picked > answers with the coordinate the directory declares 543ms
+   ✓ what the codecs section lists > keeps a switched-off codec listed, without activation and with the host reason 1096ms
+   ✓ what the codecs section lists > answers the "why did nothing claim this file" question with the host diagnostic 798ms
+   ✓ what the codecs section lists > lists everything as active when nothing is switched off 760ms
+   ✓ a folder the user connected reaches the inventory > loads it as an installed artifact, beside the bundled catalog 771ms
+   ✓ a folder the user connected reaches the inventory > keeps a disabled extension and its cards inventoried while every contribution is inactive 896ms
+   ✓ a folder the user connected reaches the inventory > reports a broken folder as a record and still loads everything else 868ms
+ ✓ apps/web/test/extensions-ui.test.ts (11 tests) 684ms
+   ✓ the installed-extensions panel > shows a granted folder with its coordinate, the folder name, and a provenance that is not an attestation 632ms
+ ✓ apps/web/test/managed-extension-storage.test.ts (9 tests) 42ms
+ ✓ packages/vfs/test/vfs.test.ts (12 tests) 426ms
+   ✓ file VFS provider > opens a sparse file above 512 MiB and reads small ranges on both sides of that offset 305ms
+ ✓ packages/sdk/test/data-source-surfaces.test.ts (25 tests) 725ms
+   ✓ NXT-103 — data-source method surface schema > accepts every kind, keeps result/wrapper exclusive to lease, and bounds names 585ms
+ ✓ apps/electron/test/extension-manager.test.ts (7 tests) 1060ms
+   ✓ Electron distribution package manager > keeps a package with two extension roots as one package row and a read-only snapshot 504ms
+   ✓ Electron extension root composition > adds all managed roots on activation and every reload, and removes disabled roots 466ms
+ ✓ packages/host/test/knowledge.test.ts (7 tests) 871ms
+   ✓ inventory-backed knowledge catalog > resolves locales, provenance and direct external links without executable activation 668ms
+ ✓ apps/web/test/managed-extension-roots.test.ts (7 tests) 805ms
+   ✓ downloaded browser extension roots > derives one cross-root module map from a multi-root distribution package 533ms
+ ✓ packages/host/test/runtime.test.ts (9 tests) 874ms
+ ✓ packages/host/test/resolver.test.ts (8 tests) 32ms
+ ✓ packages/testkit/test/plain-text.test.ts (7 tests) 832ms
+   ✓ A-7 external common/plain-text vertical slice > validates the executable manifest, standard traits, operation namespaces, and read-only v1 636ms
+ ✓ packages/sdk/test/fields.test.ts (35 tests) 926ms
+   ✓ field contracts > validates 'text' and rejects extra wire properties 580ms
+ ✓ apps/web/test/managed-extensions-controller.test.ts (3 tests) 10ms
+
+ Test Files  23 passed (23)
+      Tests  386 passed (386)
+   Start at  21:03:22
+   Duration  89.93s (transform 10.72s, setup 0ms, collect 26.68s, tests 45.58s, environment 11ms, prepare 7.17s)
+

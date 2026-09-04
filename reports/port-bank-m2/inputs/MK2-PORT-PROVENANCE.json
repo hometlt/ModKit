@@ -1,0 +1,3005 @@
+{
+  "schemaVersion": 1,
+  "family": "sc2",
+  "scope": "sc2-bank",
+  "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "declarationDigest": "31029f8d7333d3d676ad2e8b58be5e80e9f28f64658c640eeea84519d3fa6875",
+  "divergenceDigest": "703187d943cfe979c33e7b595f9ca4317387cf7760adf7c4dcbab99a2e0d5b57",
+  "copiedAt": "2026-09-04",
+  "adapters": [
+    {
+      "destination": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts",
+      "reason": "Narrow barrel over pinned neutral assets contracts and explicit registry compatibility boundary; replaces MK2 assets package import.",
+      "sha256": "2731197de24355038bf97d4d89646031b1558cbb2ff551f7ba2b0f765aa84cdc"
+    },
+    {
+      "destination": "modkit-core/packages/codec-kit/src/legacy/assets/registry-compat.ts",
+      "reason": "Compile compatibility for copied semantic declarations. Every runtime registry operation refuses explicitly; MK3 host remains the registration/routing owner.",
+      "sha256": "07fabda88e70b37cc1cb38a3fc9a362816063af1c354cd40600e3649f317199f"
+    },
+    {
+      "destination": "modkit-core/packages/codec-kit/src/legacy/core/index.ts",
+      "reason": "Narrow barrel over the uniquely copied MK2 errors and logger contracts; replaces MK2 core package imports.",
+      "sha256": "c218e8286f4e245f4a39ca8f2601a711db65395ed9bcb8bf03babde3860e9c58"
+    },
+    {
+      "destination": "modkit-extensions-blizzard/test/mk2/support/sc2-bank-host.ts",
+      "reason": "Exactly three real MK3 host tests replace the retired registry contract; no production resolver.",
+      "sha256": "b892d0aaf4c24e880a07f828f0e141d9f81f753fcb4efe14144ab50bc4f1fab0"
+    }
+  ],
+  "dependencies": [
+    {
+      "specifier": "@logtape/logtape",
+      "package": "@logtape/logtape",
+      "manifest": "modkit-core/packages/codec-kit/node_modules/@logtape/logtape/package.json",
+      "version": "2.2.4",
+      "reason": "Pinned logger type contract."
+    },
+    {
+      "specifier": "pako",
+      "package": "pako",
+      "manifest": "modkit-core/packages/codec-kit/node_modules/pako/package.json",
+      "version": "2.1.0",
+      "reason": "Genuine deflate/inflate implementation imported by pinned compression."
+    },
+    {
+      "specifier": "seek-bzip",
+      "package": "seek-bzip",
+      "manifest": "modkit-core/packages/codec-kit/node_modules/seek-bzip/package.json",
+      "version": "2.0.0",
+      "reason": "Genuine BZip2 implementation used by the authored public compression adapter."
+    },
+    {
+      "specifier": "texture2ddecoder-wasm",
+      "package": "texture2ddecoder-wasm",
+      "manifest": "modkit-core/packages/codec-kit/node_modules/texture2ddecoder-wasm/package.json",
+      "version": "1.2.2",
+      "reason": "Pinned computed Node import and explicit browser asset URL runtime.",
+      "assets": [
+        {
+          "path": "modkit-core/packages/codec-kit/node_modules/texture2ddecoder-wasm/wasm/texture2ddecoder.js",
+          "sha256": "0a2b33ff735566fd3184e0421ff38fb7578d1348b3cc44fc4646cce29d001110"
+        },
+        {
+          "path": "modkit-core/packages/codec-kit/node_modules/texture2ddecoder-wasm/wasm/texture2ddecoder.wasm",
+          "sha256": "8b819b0622cce57f809b369081bdd6eca09d1c1793da7f82192db39229356c1d"
+        }
+      ]
+    },
+    {
+      "specifier": "vscode-languageserver/node",
+      "package": "vscode-languageserver",
+      "manifest": "modkit-core/packages/codec-kit/node_modules/vscode-languageserver/package.json",
+      "version": "10.0.1",
+      "reason": "Pinned language protocol types; installed package exports ./node."
+    },
+    {
+      "specifier": "vscode-languageserver-textdocument",
+      "package": "vscode-languageserver-textdocument",
+      "manifest": "modkit-core/packages/codec-kit/node_modules/vscode-languageserver-textdocument/package.json",
+      "version": "1.0.13",
+      "reason": "Pinned language document type contract."
+    },
+    {
+      "specifier": "@modkit/core",
+      "package": "@modkit/core",
+      "manifest": "modkit-core/node_modules/@modkit/core/package.json",
+      "version": "0.1.0",
+      "reason": "MK3 ModkitError in the explicit registry compatibility adapter."
+    },
+    {
+      "specifier": "crypto",
+      "kind": "node-builtin",
+      "reason": "Pinned SHA1 Node hash boundary."
+    },
+    {
+      "specifier": "@modkit/codec-kit/legacy/assets",
+      "package": "@modkit/codec-kit",
+      "manifest": "modkit-core/packages/codec-kit/package.json",
+      "version": "1.0.0",
+      "reason": "M2 pinned bank source/test dependency through the actual installed/public package."
+    },
+    {
+      "specifier": "@modkit/codec-kit/legacy/core",
+      "package": "@modkit/codec-kit",
+      "manifest": "modkit-core/packages/codec-kit/package.json",
+      "version": "1.0.0",
+      "reason": "M2 pinned bank source/test dependency through the actual installed/public package."
+    },
+    {
+      "specifier": "@modkit/codec-kit/legacy/semantic",
+      "package": "@modkit/codec-kit",
+      "manifest": "modkit-core/packages/codec-kit/package.json",
+      "version": "1.0.0",
+      "reason": "M2 pinned bank source/test dependency through the actual installed/public package."
+    },
+    {
+      "specifier": "@modkit/codec-kit/crypto/sha1",
+      "package": "@modkit/codec-kit",
+      "manifest": "modkit-core/packages/codec-kit/package.json",
+      "version": "1.0.0",
+      "reason": "M2 pinned bank source/test dependency through the actual installed/public package.",
+      "canonicalSources": [
+        "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/sha1.ts"
+      ]
+    },
+    {
+      "specifier": "fast-xml-parser",
+      "package": "fast-xml-parser",
+      "manifest": "modkit-extensions-blizzard/starcraft2/node_modules/fast-xml-parser/package.json",
+      "version": "4.5.6",
+      "reason": "M2 pinned bank source/test dependency through the actual installed/public package."
+    },
+    {
+      "specifier": "vitest",
+      "package": "vitest",
+      "manifest": "modkit-extensions-blizzard/node_modules/vitest/package.json",
+      "version": "2.1.9",
+      "reason": "M2 pinned bank source/test dependency through the actual installed/public package."
+    },
+    {
+      "specifier": "@modkit/host",
+      "package": "@modkit/host",
+      "manifest": "modkit-extensions-blizzard/node_modules/@modkit/host/package.json",
+      "version": "0.1.0",
+      "reason": "M2 pinned bank source/test dependency through the actual installed/public package."
+    },
+    {
+      "specifier": "@modkit/host/node",
+      "package": "@modkit/host",
+      "manifest": "modkit-extensions-blizzard/node_modules/@modkit/host/package.json",
+      "version": "0.1.0",
+      "reason": "M2 pinned bank source/test dependency through the actual installed/public package."
+    },
+    {
+      "specifier": "@modkit/blizzard-starcraft2/bank/codec",
+      "package": "@modkit/blizzard-starcraft2",
+      "manifest": "modkit-extensions-blizzard/node_modules/@modkit/blizzard-starcraft2/package.json",
+      "version": "1.0.0",
+      "reason": "M2 pinned bank source/test dependency through the actual installed/public package."
+    },
+    {
+      "specifier": "node:fs",
+      "kind": "node-builtin",
+      "reason": "Original Node IO/CLI or real host integration test boundary."
+    },
+    {
+      "specifier": "node:fs/promises",
+      "kind": "node-builtin",
+      "reason": "Original Node IO/CLI or real host integration test boundary."
+    },
+    {
+      "specifier": "node:path",
+      "kind": "node-builtin",
+      "reason": "Original Node IO/CLI or real host integration test boundary."
+    },
+    {
+      "specifier": "node:url",
+      "kind": "node-builtin",
+      "reason": "Original Node IO/CLI or real host integration test boundary."
+    },
+    {
+      "specifier": "node:os",
+      "kind": "node-builtin",
+      "reason": "Original Node IO/CLI or real host integration test boundary."
+    },
+    {
+      "specifier": "node:child_process",
+      "kind": "node-builtin",
+      "reason": "Original Node IO/CLI or real host integration test boundary."
+    }
+  ],
+  "dynamicImports": [
+    {
+      "source": "packages/image-processing/src/core/gpu-texture-wasm.ts",
+      "expression": "moduleUrl",
+      "specifier": "texture2ddecoder-wasm",
+      "reason": "Browser caller supplies assetBaseUrl; loader resolves wasm/texture2ddecoder.js and its companion .wasm. Required package assets are hashed in dependencies."
+    },
+    {
+      "source": "packages/image-processing/src/core/gpu-texture-wasm.ts",
+      "expression": "packageName",
+      "specifier": "texture2ddecoder-wasm",
+      "reason": "Pinned Node fallback constructs texture2ddecoder-wasm from two literal words."
+    }
+  ],
+  "closure": [
+    {
+      "importer": "packages/assets/src/artifact-codec.ts",
+      "sourceSpecifier": "./operations.js",
+      "destinationSpecifier": "./operations.js",
+      "sourceTarget": "packages/assets/src/operations.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/operations.ts"
+    },
+    {
+      "importer": "packages/assets/src/artifact-codec.ts",
+      "sourceSpecifier": "./content.js",
+      "destinationSpecifier": "./content.js",
+      "sourceTarget": "packages/assets/src/content.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/content.ts"
+    },
+    {
+      "importer": "packages/assets/src/artifact-codec.ts",
+      "sourceSpecifier": "./cancellation.js",
+      "destinationSpecifier": "./cancellation.js",
+      "sourceTarget": "packages/assets/src/cancellation.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/cancellation.ts"
+    },
+    {
+      "importer": "packages/assets/src/artifact-codec.ts",
+      "sourceSpecifier": "./detection.js",
+      "destinationSpecifier": "./detection.js",
+      "sourceTarget": "packages/assets/src/detection.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/detection.ts"
+    },
+    {
+      "importer": "packages/assets/src/artifact-codec.ts",
+      "sourceSpecifier": "./descriptor.js",
+      "destinationSpecifier": "./descriptor.js",
+      "sourceTarget": "packages/assets/src/descriptor.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/descriptor.ts"
+    },
+    {
+      "importer": "packages/assets/src/artifact-codec.ts",
+      "sourceSpecifier": "./source.js",
+      "destinationSpecifier": "./source.js",
+      "sourceTarget": "packages/assets/src/source.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/source.ts"
+    },
+    {
+      "importer": "packages/assets/src/artifact-codec.ts",
+      "sourceSpecifier": "./contributions.js",
+      "destinationSpecifier": "./contributions.js",
+      "sourceTarget": "packages/assets/src/contributions.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/contributions.ts"
+    },
+    {
+      "importer": "packages/assets/src/artifact-codec.ts",
+      "sourceSpecifier": "./artifact-session.js",
+      "destinationSpecifier": "./artifact-session.js",
+      "sourceTarget": "packages/assets/src/artifact-session.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/artifact-session.ts"
+    },
+    {
+      "importer": "packages/assets/src/artifact-session.ts",
+      "sourceSpecifier": "@modkitx/core/errors",
+      "destinationSpecifier": "../core/errors.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/core/errors.ts"
+    },
+    {
+      "importer": "packages/assets/src/artifact-session.ts",
+      "sourceSpecifier": "./cancellation.js",
+      "destinationSpecifier": "./cancellation.js",
+      "sourceTarget": "packages/assets/src/cancellation.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/cancellation.ts"
+    },
+    {
+      "importer": "packages/assets/src/artifact-session.ts",
+      "sourceSpecifier": "./artifact-codec.js",
+      "destinationSpecifier": "./artifact-codec.js",
+      "sourceTarget": "packages/assets/src/artifact-codec.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/artifact-codec.ts"
+    },
+    {
+      "importer": "packages/assets/src/artifact-session.ts",
+      "sourceSpecifier": "./descriptor.js",
+      "destinationSpecifier": "./descriptor.js",
+      "sourceTarget": "packages/assets/src/descriptor.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/descriptor.ts"
+    },
+    {
+      "importer": "packages/assets/src/artifact-session.ts",
+      "sourceSpecifier": "./json.js",
+      "destinationSpecifier": "./json.js",
+      "sourceTarget": "packages/assets/src/json.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/json.ts"
+    },
+    {
+      "importer": "packages/assets/src/artifact-session.ts",
+      "sourceSpecifier": "./operations.js",
+      "destinationSpecifier": "./operations.js",
+      "sourceTarget": "packages/assets/src/operations.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/operations.ts"
+    },
+    {
+      "importer": "packages/assets/src/source.ts",
+      "sourceSpecifier": "./cancellation.js",
+      "destinationSpecifier": "./cancellation.js",
+      "sourceTarget": "packages/assets/src/cancellation.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/cancellation.ts"
+    },
+    {
+      "importer": "packages/assets/src/source.ts",
+      "sourceSpecifier": "./companions.js",
+      "destinationSpecifier": "./companions.js",
+      "sourceTarget": "packages/assets/src/companions.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/companions.ts"
+    },
+    {
+      "importer": "packages/assets/src/source.ts",
+      "sourceSpecifier": "./format-registry.js",
+      "destinationSpecifier": "./format-registry.js",
+      "sourceTarget": "packages/assets/src/format-registry.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/format-registry.ts"
+    },
+    {
+      "importer": "packages/assets/src/descriptor.ts",
+      "sourceSpecifier": "./capabilities.js",
+      "destinationSpecifier": "./capabilities.js",
+      "sourceTarget": "packages/assets/src/capabilities.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/capabilities.ts"
+    },
+    {
+      "importer": "packages/assets/src/descriptor.ts",
+      "sourceSpecifier": "./contributions.js",
+      "destinationSpecifier": "./contributions.js",
+      "sourceTarget": "packages/assets/src/contributions.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/contributions.ts"
+    },
+    {
+      "importer": "packages/assets/src/descriptor.ts",
+      "sourceSpecifier": "./detection.js",
+      "destinationSpecifier": "./detection.js",
+      "sourceTarget": "packages/assets/src/detection.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/detection.ts"
+    },
+    {
+      "importer": "packages/assets/src/descriptor.ts",
+      "sourceSpecifier": "./diagnostics.js",
+      "destinationSpecifier": "./diagnostics.js",
+      "sourceTarget": "packages/assets/src/diagnostics.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/diagnostics.ts"
+    },
+    {
+      "importer": "packages/assets/src/descriptor.ts",
+      "sourceSpecifier": "./json.js",
+      "destinationSpecifier": "./json.js",
+      "sourceTarget": "packages/assets/src/json.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/json.ts"
+    },
+    {
+      "importer": "packages/assets/src/descriptor.ts",
+      "sourceSpecifier": "./operations.js",
+      "destinationSpecifier": "./operations.js",
+      "sourceTarget": "packages/assets/src/operations.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/operations.ts"
+    },
+    {
+      "importer": "packages/assets/src/descriptor.ts",
+      "sourceSpecifier": "./source.js",
+      "destinationSpecifier": "./source.js",
+      "sourceTarget": "packages/assets/src/source.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/source.ts"
+    },
+    {
+      "importer": "packages/assets/src/detection.ts",
+      "sourceSpecifier": "./diagnostics.js",
+      "destinationSpecifier": "./diagnostics.js",
+      "sourceTarget": "packages/assets/src/diagnostics.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/diagnostics.ts"
+    },
+    {
+      "importer": "packages/assets/src/detection.ts",
+      "sourceSpecifier": "./source.js",
+      "destinationSpecifier": "./source.js",
+      "sourceTarget": "packages/assets/src/source.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/source.ts"
+    },
+    {
+      "importer": "packages/assets/src/diagnostics.ts",
+      "sourceSpecifier": "./json.js",
+      "destinationSpecifier": "./json.js",
+      "sourceTarget": "packages/assets/src/json.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/json.ts"
+    },
+    {
+      "importer": "packages/assets/src/diagnostics.ts",
+      "sourceSpecifier": "./source.js",
+      "destinationSpecifier": "./source.js",
+      "sourceTarget": "packages/assets/src/source.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/source.ts"
+    },
+    {
+      "importer": "packages/assets/src/editing.ts",
+      "sourceSpecifier": "./diagnostics.js",
+      "destinationSpecifier": "./diagnostics.js",
+      "sourceTarget": "packages/assets/src/diagnostics.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/diagnostics.ts"
+    },
+    {
+      "importer": "packages/assets/src/editing.ts",
+      "sourceSpecifier": "./source.js",
+      "destinationSpecifier": "./source.js",
+      "sourceTarget": "packages/assets/src/source.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/source.ts"
+    },
+    {
+      "importer": "packages/assets/src/content.ts",
+      "sourceSpecifier": "./companions.js",
+      "destinationSpecifier": "./companions.js",
+      "sourceTarget": "packages/assets/src/companions.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/companions.ts"
+    },
+    {
+      "importer": "packages/assets/src/content.ts",
+      "sourceSpecifier": "./source.js",
+      "destinationSpecifier": "./source.js",
+      "sourceTarget": "packages/assets/src/source.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/source.ts"
+    },
+    {
+      "importer": "packages/assets/src/contributions.ts",
+      "sourceSpecifier": "./capabilities.js",
+      "destinationSpecifier": "./capabilities.js",
+      "sourceTarget": "packages/assets/src/capabilities.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/capabilities.ts"
+    },
+    {
+      "importer": "packages/assets/src/contributions.ts",
+      "sourceSpecifier": "./operations.js",
+      "destinationSpecifier": "./operations.js",
+      "sourceTarget": "packages/assets/src/operations.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/operations.ts"
+    },
+    {
+      "importer": "packages/assets/src/format-registry.ts",
+      "sourceSpecifier": "./codec-matching.js",
+      "destinationSpecifier": "./codec-matching.js",
+      "sourceTarget": "packages/assets/src/codec-matching.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/codec-matching.ts"
+    },
+    {
+      "importer": "packages/assets/src/codec-matching.ts",
+      "sourceSpecifier": "./codec-manifest.js",
+      "destinationSpecifier": "./codec-manifest.js",
+      "sourceTarget": "packages/assets/src/codec-manifest.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/codec-manifest.ts"
+    },
+    {
+      "importer": "packages/assets/src/codec-manifest.ts",
+      "sourceSpecifier": "./capabilities.js",
+      "destinationSpecifier": "./capabilities.js",
+      "sourceTarget": "packages/assets/src/capabilities.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/capabilities.ts"
+    },
+    {
+      "importer": "packages/assets/src/codec-manifest.ts",
+      "sourceSpecifier": "./operations.js",
+      "destinationSpecifier": "./operations.js",
+      "sourceTarget": "packages/assets/src/operations.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/operations.ts"
+    },
+    {
+      "importer": "packages/assets/src/codec-manifest.ts",
+      "sourceSpecifier": "./source.js",
+      "destinationSpecifier": "./source.js",
+      "sourceTarget": "packages/assets/src/source.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/source.ts"
+    },
+    {
+      "importer": "packages/core/src/logger.ts",
+      "sourceSpecifier": "@logtape/logtape",
+      "destinationSpecifier": "@logtape/logtape",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:@logtape/logtape"
+    },
+    {
+      "importer": "packages/runtime/src/contracts.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "../assets/index.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
+    },
+    {
+      "importer": "packages/archives-processing/src/lib/crypto/index.ts",
+      "sourceSpecifier": "crypto",
+      "destinationSpecifier": "crypto",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:crypto"
+    },
+    {
+      "importer": "packages/archives-processing/src/lib/compression/index.ts",
+      "sourceSpecifier": "pako",
+      "destinationSpecifier": "pako",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:pako"
+    },
+    {
+      "importer": "packages/archives-processing/src/lib/compression/index.ts",
+      "sourceSpecifier": "./pako.d.ts",
+      "destinationSpecifier": "./pako.d.ts",
+      "sourceTarget": "packages/archives-processing/src/lib/compression/pako.d.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/compression/pako.d.ts"
+    },
+    {
+      "importer": "packages/image-processing/src/core/gpu-texture.ts",
+      "sourceSpecifier": "./types.js",
+      "destinationSpecifier": "./types.js",
+      "sourceTarget": "packages/image-processing/src/core/types.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/texture/types.ts"
+    },
+    {
+      "importer": "packages/image-processing/src/core/gpu-texture.ts",
+      "sourceSpecifier": "./compressed-texture.js",
+      "destinationSpecifier": "./compressed-texture.js",
+      "sourceTarget": "packages/image-processing/src/core/compressed-texture.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/texture/compressed-texture.ts"
+    },
+    {
+      "importer": "packages/image-processing/src/core/gpu-texture.ts",
+      "sourceSpecifier": "./binary.js",
+      "destinationSpecifier": "./binary.js",
+      "sourceTarget": "packages/image-processing/src/core/binary.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/texture/binary.ts"
+    },
+    {
+      "importer": "packages/image-processing/src/core/gpu-texture.ts",
+      "sourceSpecifier": "./gpu-texture-wasm.js",
+      "destinationSpecifier": "./gpu-texture-wasm.js",
+      "sourceTarget": "packages/image-processing/src/core/gpu-texture-wasm.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/texture/gpu-texture-wasm.ts"
+    },
+    {
+      "importer": "packages/image-processing/src/core/gpu-texture-wasm.ts",
+      "sourceSpecifier": "@modkitx/core/errors",
+      "destinationSpecifier": "../legacy/core/errors.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/core/errors.ts"
+    },
+    {
+      "importer": "packages/image-processing/src/core/gpu-texture-wasm.ts",
+      "sourceSpecifier": "texture2ddecoder-wasm",
+      "destinationSpecifier": "texture2ddecoder-wasm",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:texture2ddecoder-wasm"
+    },
+    {
+      "importer": "packages/image-processing/src/core/gpu-texture-wasm.ts",
+      "sourceSpecifier": "texture2ddecoder-wasm",
+      "destinationSpecifier": "texture2ddecoder-wasm",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:texture2ddecoder-wasm"
+    },
+    {
+      "importer": "packages/image-processing/src/core/compressed-texture.ts",
+      "sourceSpecifier": "@modkitx/core/errors",
+      "destinationSpecifier": "../legacy/core/errors.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/core/errors.ts"
+    },
+    {
+      "importer": "packages/image-processing/src/core/compressed-texture.ts",
+      "sourceSpecifier": "@modkitx/assets/profiles/image-texture",
+      "destinationSpecifier": "../legacy/assets/profiles/image-texture.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/profiles/image-texture.ts"
+    },
+    {
+      "importer": "packages/image-processing/src/core/compressed-texture.ts",
+      "sourceSpecifier": "@modkitx/assets/profiles/image-texture",
+      "destinationSpecifier": "../legacy/assets/profiles/image-texture.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/profiles/image-texture.ts"
+    },
+    {
+      "importer": "packages/image-processing/src/core/compressed-texture.ts",
+      "sourceSpecifier": "@modkitx/assets/profiles/image-texture",
+      "destinationSpecifier": "../legacy/assets/profiles/image-texture.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/profiles/image-texture.ts"
+    },
+    {
+      "importer": "packages/image-processing/src/core/types.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "../legacy/assets/index.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
+    },
+    {
+      "importer": "packages/image-processing/src/core/types.ts",
+      "sourceSpecifier": "./compressed-texture.js",
+      "destinationSpecifier": "./compressed-texture.js",
+      "sourceTarget": "packages/image-processing/src/core/compressed-texture.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/texture/compressed-texture.ts"
+    },
+    {
+      "importer": "packages/semantic/src/data.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "../assets/index.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
+    },
+    {
+      "importer": "packages/semantic/src/data.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "../assets/index.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
+    },
+    {
+      "importer": "packages/semantic/src/documents.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "../assets/index.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
+    },
+    {
+      "importer": "packages/semantic/src/documents.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "../assets/index.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
+    },
+    {
+      "importer": "packages/semantic/src/layouts.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "../assets/index.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
+    },
+    {
+      "importer": "packages/semantic/src/layouts.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "../assets/index.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
+    },
+    {
+      "importer": "packages/semantic/src/localization.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "../assets/index.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
+    },
+    {
+      "importer": "packages/semantic/src/localization.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "../assets/index.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
+    },
+    {
+      "importer": "packages/semantic/src/maps.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "../assets/index.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
+    },
+    {
+      "importer": "packages/semantic/src/maps.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "../assets/index.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
+    },
+    {
+      "importer": "packages/semantic/src/mods.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "../assets/index.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
+    },
+    {
+      "importer": "packages/semantic/src/mods.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "../assets/index.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
+    },
+    {
+      "importer": "packages/semantic/src/replays.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "../assets/index.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
+    },
+    {
+      "importer": "packages/semantic/src/replays.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "../assets/index.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
+    },
+    {
+      "importer": "packages/semantic/src/saves.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "../assets/index.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
+    },
+    {
+      "importer": "packages/semantic/src/saves.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "../assets/index.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
+    },
+    {
+      "importer": "packages/semantic/src/scripts.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "../assets/index.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
+    },
+    {
+      "importer": "packages/semantic/src/scripts.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "../assets/index.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
+    },
+    {
+      "importer": "packages/language-contracts/src/module.ts",
+      "sourceSpecifier": "vscode-languageserver/node",
+      "destinationSpecifier": "vscode-languageserver/node",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:vscode-languageserver/node"
+    },
+    {
+      "importer": "packages/language-contracts/src/module.ts",
+      "sourceSpecifier": "vscode-languageserver-textdocument",
+      "destinationSpecifier": "vscode-languageserver-textdocument",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:vscode-languageserver-textdocument"
+    },
+    {
+      "importer": "packages/language-contracts/src/document-kind.ts",
+      "sourceSpecifier": "./module.js",
+      "destinationSpecifier": "./module.js",
+      "sourceTarget": "packages/language-contracts/src/module.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/language-contracts/module.ts"
+    },
+    {
+      "importer": "packages/language-contracts/src/contributions.ts",
+      "sourceSpecifier": "@modkitx/core",
+      "destinationSpecifier": "../core/index.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/core/index.ts"
+    },
+    {
+      "importer": "packages/language-contracts/src/contributions.ts",
+      "sourceSpecifier": "./document-kind.js",
+      "destinationSpecifier": "./document-kind.js",
+      "sourceTarget": "packages/language-contracts/src/document-kind.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/language-contracts/document-kind.ts"
+    },
+    {
+      "importer": "packages/language-contracts/src/contributions.ts",
+      "sourceSpecifier": "./document-kind.js",
+      "destinationSpecifier": "./document-kind.js",
+      "sourceTarget": "packages/language-contracts/src/document-kind.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/language-contracts/document-kind.ts"
+    },
+    {
+      "importer": "packages/language-contracts/src/contributions.ts",
+      "sourceSpecifier": "./module.js",
+      "destinationSpecifier": "./module.js",
+      "sourceTarget": "packages/language-contracts/src/module.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/language-contracts/module.ts"
+    },
+    {
+      "importer": "packages/language-contracts/src/index.ts",
+      "sourceSpecifier": "./module.js",
+      "destinationSpecifier": "./module.js",
+      "sourceTarget": "packages/language-contracts/src/module.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/language-contracts/module.ts"
+    },
+    {
+      "importer": "packages/language-contracts/src/index.ts",
+      "sourceSpecifier": "./module.js",
+      "destinationSpecifier": "./module.js",
+      "sourceTarget": "packages/language-contracts/src/module.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/language-contracts/module.ts"
+    },
+    {
+      "importer": "packages/language-contracts/src/index.ts",
+      "sourceSpecifier": "./document-kind.js",
+      "destinationSpecifier": "./document-kind.js",
+      "sourceTarget": "packages/language-contracts/src/document-kind.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/language-contracts/document-kind.ts"
+    },
+    {
+      "importer": "packages/language-contracts/src/index.ts",
+      "sourceSpecifier": "./document-kind.js",
+      "destinationSpecifier": "./document-kind.js",
+      "sourceTarget": "packages/language-contracts/src/document-kind.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/language-contracts/document-kind.ts"
+    },
+    {
+      "importer": "packages/language-contracts/src/index.ts",
+      "sourceSpecifier": "./contributions.js",
+      "destinationSpecifier": "./contributions.js",
+      "sourceTarget": "packages/language-contracts/src/contributions.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/language-contracts/contributions.ts"
+    },
+    {
+      "importer": "packages/language-contracts/src/index.ts",
+      "sourceSpecifier": "./contributions.js",
+      "destinationSpecifier": "./contributions.js",
+      "sourceTarget": "packages/language-contracts/src/contributions.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/language-contracts/contributions.ts"
+    },
+    {
+      "importer": "packages/entity-cards/src/model.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "../assets/index.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/assets/index.ts"
+    },
+    {
+      "importer": "packages/entity-cards/src/graph.ts",
+      "sourceSpecifier": "./model.js",
+      "destinationSpecifier": "./model.js",
+      "sourceTarget": "packages/entity-cards/src/model.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/entity-cards/model.ts"
+    },
+    {
+      "importer": "packages/entity-cards/src/providers.ts",
+      "sourceSpecifier": "./model.js",
+      "destinationSpecifier": "./model.js",
+      "sourceTarget": "packages/entity-cards/src/model.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/entity-cards/model.ts"
+    },
+    {
+      "importer": "packages/entity-cards/src/address.ts",
+      "sourceSpecifier": "./model.js",
+      "destinationSpecifier": "./model.js",
+      "sourceTarget": "packages/entity-cards/src/model.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/entity-cards/model.ts"
+    },
+    {
+      "importer": "packages/entity-cards/src/index.ts",
+      "sourceSpecifier": "./model.js",
+      "destinationSpecifier": "./model.js",
+      "sourceTarget": "packages/entity-cards/src/model.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/entity-cards/model.ts"
+    },
+    {
+      "importer": "packages/entity-cards/src/index.ts",
+      "sourceSpecifier": "./graph.js",
+      "destinationSpecifier": "./graph.js",
+      "sourceTarget": "packages/entity-cards/src/graph.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/entity-cards/graph.ts"
+    },
+    {
+      "importer": "packages/entity-cards/src/index.ts",
+      "sourceSpecifier": "./graph.js",
+      "destinationSpecifier": "./graph.js",
+      "sourceTarget": "packages/entity-cards/src/graph.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/entity-cards/graph.ts"
+    },
+    {
+      "importer": "packages/entity-cards/src/index.ts",
+      "sourceSpecifier": "./address.js",
+      "destinationSpecifier": "./address.js",
+      "sourceTarget": "packages/entity-cards/src/address.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/entity-cards/address.ts"
+    },
+    {
+      "importer": "packages/entity-cards/src/index.ts",
+      "sourceSpecifier": "./providers.js",
+      "destinationSpecifier": "./providers.js",
+      "sourceTarget": "packages/entity-cards/src/providers.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/legacy/entity-cards/providers.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/codec.ts",
+      "sourceSpecifier": "./core/core.js",
+      "destinationSpecifier": "./core/core.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/core.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/core.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/codec.ts",
+      "sourceSpecifier": "./core/core.js",
+      "destinationSpecifier": "./core/core.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/core.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/core.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/codec.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "@modkit/codec-kit/legacy/assets",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:@modkit/codec-kit/legacy/assets"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/codec.ts",
+      "sourceSpecifier": "@modkitx/core",
+      "destinationSpecifier": "@modkit/codec-kit/legacy/core",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:@modkit/codec-kit/legacy/core"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/codec.ts",
+      "sourceSpecifier": "@modkitx/semantic/saves",
+      "destinationSpecifier": "@modkit/codec-kit/legacy/semantic",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:@modkit/codec-kit/legacy/semantic"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/codec.ts",
+      "sourceSpecifier": "./describe.js",
+      "destinationSpecifier": "./describe.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/describe.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/describe.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/codec.ts",
+      "sourceSpecifier": "./detect.js",
+      "destinationSpecifier": "./detect.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/detect.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/detect.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/codec.ts",
+      "sourceSpecifier": "./document.js",
+      "destinationSpecifier": "./document.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/document.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/document.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/codec.ts",
+      "sourceSpecifier": "./identity.js",
+      "destinationSpecifier": "./identity.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/identity.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/identity.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/bank-list.spec.ts",
+      "sourceSpecifier": "vitest",
+      "destinationSpecifier": "vitest",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:vitest"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/bank-list.spec.ts",
+      "sourceSpecifier": "./index.js",
+      "destinationSpecifier": "../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/index.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/index.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/index.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/bank-list.ts",
+      "sourceSpecifier": "fast-xml-parser",
+      "destinationSpecifier": "fast-xml-parser",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:fast-xml-parser"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/bank-list.ts",
+      "sourceSpecifier": "./types.js",
+      "destinationSpecifier": "./types.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/types.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/types.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/bank.spec.ts",
+      "sourceSpecifier": "vitest",
+      "destinationSpecifier": "vitest",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:vitest"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/bank.spec.ts",
+      "sourceSpecifier": "node:fs",
+      "destinationSpecifier": "node:fs",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:fs"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/bank.spec.ts",
+      "sourceSpecifier": "./index.js",
+      "destinationSpecifier": "../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/index.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/index.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/index.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/bank.ts",
+      "sourceSpecifier": "fast-xml-parser",
+      "destinationSpecifier": "fast-xml-parser",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:fast-xml-parser"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/bank.ts",
+      "sourceSpecifier": "./sha1.js",
+      "destinationSpecifier": "@modkit/codec-kit/crypto/sha1",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/sha1.ts",
+      "destinationTarget": "modkit-core/packages/codec-kit/src/crypto/sha1.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/bank.ts",
+      "sourceSpecifier": "./types.js",
+      "destinationSpecifier": "./types.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/types.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/types.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/cli.spec.ts",
+      "sourceSpecifier": "node:fs/promises",
+      "destinationSpecifier": "node:fs/promises",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:fs/promises"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/cli.spec.ts",
+      "sourceSpecifier": "node:path",
+      "destinationSpecifier": "node:path",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:path"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/cli.spec.ts",
+      "sourceSpecifier": "node:os",
+      "destinationSpecifier": "node:os",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:os"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/cli.spec.ts",
+      "sourceSpecifier": "vitest",
+      "destinationSpecifier": "vitest",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:vitest"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/cli.spec.ts",
+      "sourceSpecifier": "./index.js",
+      "destinationSpecifier": "../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/index.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/index.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/index.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/cli.spec.ts",
+      "sourceSpecifier": "./cli.js",
+      "destinationSpecifier": "../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/cli.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/cli.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/cli.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/cli.ts",
+      "sourceSpecifier": "node:fs/promises",
+      "destinationSpecifier": "node:fs/promises",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:fs/promises"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/cli.ts",
+      "sourceSpecifier": "node:path",
+      "destinationSpecifier": "node:path",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:path"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/cli.ts",
+      "sourceSpecifier": "node:url",
+      "destinationSpecifier": "node:url",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:url"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/cli.ts",
+      "sourceSpecifier": "./index.js",
+      "destinationSpecifier": "./index.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/index.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/index.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/cli.ts",
+      "sourceSpecifier": "./types.js",
+      "destinationSpecifier": "./types.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/types.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/types.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/cli.ts",
+      "sourceSpecifier": "./types.js",
+      "destinationSpecifier": "./types.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/types.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/types.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/core.spec.ts",
+      "sourceSpecifier": "node:fs",
+      "destinationSpecifier": "node:fs",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:fs"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/core.spec.ts",
+      "sourceSpecifier": "node:path",
+      "destinationSpecifier": "node:path",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:path"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/core.spec.ts",
+      "sourceSpecifier": "node:url",
+      "destinationSpecifier": "node:url",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:url"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/core.spec.ts",
+      "sourceSpecifier": "vitest",
+      "destinationSpecifier": "vitest",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:vitest"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/core.spec.ts",
+      "sourceSpecifier": "./core.js",
+      "destinationSpecifier": "../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/core.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/core.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/core.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/core.ts",
+      "sourceSpecifier": "./bank.js",
+      "destinationSpecifier": "./bank.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/bank.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/bank.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/core.ts",
+      "sourceSpecifier": "./bank-list.js",
+      "destinationSpecifier": "./bank-list.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/bank-list.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/bank-list.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/core.ts",
+      "sourceSpecifier": "./editor.js",
+      "destinationSpecifier": "./editor.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/editor.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/editor.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/core.ts",
+      "sourceSpecifier": "./path-core.js",
+      "destinationSpecifier": "./path-core.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/path-core.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/path-core.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/core.ts",
+      "sourceSpecifier": "./validate.js",
+      "destinationSpecifier": "./validate.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/validate.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/validate.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/core.ts",
+      "sourceSpecifier": "./patcher.js",
+      "destinationSpecifier": "./patcher.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/patcher.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/patcher.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/core.ts",
+      "sourceSpecifier": "./patcher.js",
+      "destinationSpecifier": "./patcher.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/patcher.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/patcher.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/core.ts",
+      "sourceSpecifier": "./types.js",
+      "destinationSpecifier": "./types.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/types.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/types.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/editor.spec.ts",
+      "sourceSpecifier": "vitest",
+      "destinationSpecifier": "vitest",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:vitest"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/editor.spec.ts",
+      "sourceSpecifier": "node:fs",
+      "destinationSpecifier": "node:fs",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:fs"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/editor.spec.ts",
+      "sourceSpecifier": "./index.js",
+      "destinationSpecifier": "../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/index.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/index.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/index.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/editor.ts",
+      "sourceSpecifier": "./bank.js",
+      "destinationSpecifier": "./bank.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/bank.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/bank.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/editor.ts",
+      "sourceSpecifier": "./types.js",
+      "destinationSpecifier": "./types.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/types.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/types.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/index.ts",
+      "sourceSpecifier": "./node.js",
+      "destinationSpecifier": "./node.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/node.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/node.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/io.spec.ts",
+      "sourceSpecifier": "vitest",
+      "destinationSpecifier": "vitest",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:vitest"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/io.spec.ts",
+      "sourceSpecifier": "node:fs/promises",
+      "destinationSpecifier": "node:fs/promises",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:fs/promises"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/io.spec.ts",
+      "sourceSpecifier": "node:path",
+      "destinationSpecifier": "node:path",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:path"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/io.spec.ts",
+      "sourceSpecifier": "node:os",
+      "destinationSpecifier": "node:os",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:os"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/io.spec.ts",
+      "sourceSpecifier": "./index.js",
+      "destinationSpecifier": "../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/index.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/index.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/index.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/io.ts",
+      "sourceSpecifier": "node:fs/promises",
+      "destinationSpecifier": "node:fs/promises",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:fs/promises"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/io.ts",
+      "sourceSpecifier": "node:path",
+      "destinationSpecifier": "node:path",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:path"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/io.ts",
+      "sourceSpecifier": "./bank.js",
+      "destinationSpecifier": "./bank.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/bank.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/bank.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/io.ts",
+      "sourceSpecifier": "./editor.js",
+      "destinationSpecifier": "./editor.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/editor.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/editor.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/io.ts",
+      "sourceSpecifier": "./path.js",
+      "destinationSpecifier": "./path.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/path.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/path.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/io.ts",
+      "sourceSpecifier": "./validate.js",
+      "destinationSpecifier": "./validate.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/validate.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/validate.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/io.ts",
+      "sourceSpecifier": "./types.js",
+      "destinationSpecifier": "./types.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/types.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/types.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/node.ts",
+      "sourceSpecifier": "./core.js",
+      "destinationSpecifier": "./core.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/core.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/core.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/node.ts",
+      "sourceSpecifier": "./path.js",
+      "destinationSpecifier": "./path.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/path.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/path.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/node.ts",
+      "sourceSpecifier": "./io.js",
+      "destinationSpecifier": "./io.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/io.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/io.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/node.ts",
+      "sourceSpecifier": "./io.js",
+      "destinationSpecifier": "./io.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/io.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/io.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/node.ts",
+      "sourceSpecifier": "./types.js",
+      "destinationSpecifier": "./types.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/types.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/types.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/patcher.spec.ts",
+      "sourceSpecifier": "vitest",
+      "destinationSpecifier": "vitest",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:vitest"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/patcher.spec.ts",
+      "sourceSpecifier": "node:fs",
+      "destinationSpecifier": "node:fs",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:fs"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/patcher.spec.ts",
+      "sourceSpecifier": "node:path",
+      "destinationSpecifier": "node:path",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:path"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/patcher.spec.ts",
+      "sourceSpecifier": "node:url",
+      "destinationSpecifier": "node:url",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:url"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/patcher.spec.ts",
+      "sourceSpecifier": "./patcher.js",
+      "destinationSpecifier": "../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/patcher.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/patcher.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/patcher.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/path-core.ts",
+      "sourceSpecifier": "./types.js",
+      "destinationSpecifier": "./types.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/types.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/types.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/path.spec.ts",
+      "sourceSpecifier": "vitest",
+      "destinationSpecifier": "vitest",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:vitest"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/path.spec.ts",
+      "sourceSpecifier": "node:fs/promises",
+      "destinationSpecifier": "node:fs/promises",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:fs/promises"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/path.spec.ts",
+      "sourceSpecifier": "node:path",
+      "destinationSpecifier": "node:path",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:path"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/path.spec.ts",
+      "sourceSpecifier": "node:os",
+      "destinationSpecifier": "node:os",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:os"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/path.spec.ts",
+      "sourceSpecifier": "./index.js",
+      "destinationSpecifier": "../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/index.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/index.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/index.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/path.ts",
+      "sourceSpecifier": "node:fs/promises",
+      "destinationSpecifier": "node:fs/promises",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:fs/promises"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/path.ts",
+      "sourceSpecifier": "node:fs",
+      "destinationSpecifier": "node:fs",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:fs"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/path.ts",
+      "sourceSpecifier": "./path-core.js",
+      "destinationSpecifier": "./path-core.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/path-core.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/path-core.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/path.ts",
+      "sourceSpecifier": "./types.js",
+      "destinationSpecifier": "./types.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/types.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/types.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/path.ts",
+      "sourceSpecifier": "./path-core.js",
+      "destinationSpecifier": "./path-core.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/path-core.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/path-core.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/validate.spec.ts",
+      "sourceSpecifier": "vitest",
+      "destinationSpecifier": "vitest",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:vitest"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/validate.spec.ts",
+      "sourceSpecifier": "./index.js",
+      "destinationSpecifier": "../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/index.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/index.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/index.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/validate.ts",
+      "sourceSpecifier": "./bank.js",
+      "destinationSpecifier": "./bank.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/bank.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/bank.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/validate.ts",
+      "sourceSpecifier": "./types.js",
+      "destinationSpecifier": "./types.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/types.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/types.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/describe.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "@modkit/codec-kit/legacy/assets",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:@modkit/codec-kit/legacy/assets"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/describe.ts",
+      "sourceSpecifier": "@modkitx/semantic/saves",
+      "destinationSpecifier": "@modkit/codec-kit/legacy/semantic",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:@modkit/codec-kit/legacy/semantic"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/describe.ts",
+      "sourceSpecifier": "./document.js",
+      "destinationSpecifier": "./document.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/document.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/document.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/describe.ts",
+      "sourceSpecifier": "./identity.js",
+      "destinationSpecifier": "./identity.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/identity.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/identity.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/detect.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "@modkit/codec-kit/legacy/assets",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:@modkit/codec-kit/legacy/assets"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/detect.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "@modkit/codec-kit/legacy/assets",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:@modkit/codec-kit/legacy/assets"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/detect.ts",
+      "sourceSpecifier": "./identity.js",
+      "destinationSpecifier": "./identity.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/identity.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/identity.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/document.ts",
+      "sourceSpecifier": "./core/core.js",
+      "destinationSpecifier": "./core/core.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/core.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/core.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/document.ts",
+      "sourceSpecifier": "./core/core.js",
+      "destinationSpecifier": "./core/core.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/core.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/core.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/document.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "@modkit/codec-kit/legacy/assets",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:@modkit/codec-kit/legacy/assets"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/document.ts",
+      "sourceSpecifier": "./identity.js",
+      "destinationSpecifier": "./identity.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/identity.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/identity.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/codec.test.ts",
+      "sourceSpecifier": "node:fs",
+      "destinationSpecifier": "node:fs",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:fs"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/codec.test.ts",
+      "sourceSpecifier": "vitest",
+      "destinationSpecifier": "vitest",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:vitest"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/codec.test.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "@modkit/codec-kit/legacy/assets",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:@modkit/codec-kit/legacy/assets"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/codec.test.ts",
+      "sourceSpecifier": "../src/codec.js",
+      "destinationSpecifier": "../../../../../src/lib/mk2/codecs/sc2-bank/src/codec.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/codec.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/codec.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/codec.test.ts",
+      "sourceSpecifier": "../src/describe.js",
+      "destinationSpecifier": "../../../../../src/lib/mk2/codecs/sc2-bank/src/describe.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/describe.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/describe.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/codec.test.ts",
+      "sourceSpecifier": "../src/detect.js",
+      "destinationSpecifier": "../../../../../src/lib/mk2/codecs/sc2-bank/src/detect.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/detect.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/detect.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/codec.test.ts",
+      "sourceSpecifier": "../src/identity.js",
+      "destinationSpecifier": "../../../../../src/lib/mk2/codecs/sc2-bank/src/identity.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/identity.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/identity.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/codec.test.ts",
+      "sourceSpecifier": "@modkitx/saves-processing",
+      "destinationSpecifier": "../../../../../../test/mk2/support/sc2-bank-host.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-extensions-blizzard/test/mk2/support/sc2-bank-host.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/round-trip.test.ts",
+      "sourceSpecifier": "node:fs",
+      "destinationSpecifier": "node:fs",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:fs"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/round-trip.test.ts",
+      "sourceSpecifier": "vitest",
+      "destinationSpecifier": "vitest",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:vitest"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/round-trip.test.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "@modkit/codec-kit/legacy/assets",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:@modkit/codec-kit/legacy/assets"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/round-trip.test.ts",
+      "sourceSpecifier": "../src/core/core.js",
+      "destinationSpecifier": "../../../../../src/lib/mk2/codecs/sc2-bank/src/core/core.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/core.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/core.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/round-trip.test.ts",
+      "sourceSpecifier": "../src/codec.js",
+      "destinationSpecifier": "../../../../../src/lib/mk2/codecs/sc2-bank/src/codec.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/codec.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/codec.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/sc2-bank-manifest.test.ts",
+      "sourceSpecifier": "node:fs/promises",
+      "destinationSpecifier": "node:fs/promises",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:fs/promises"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/sc2-bank-manifest.test.ts",
+      "sourceSpecifier": "node:path",
+      "destinationSpecifier": "node:path",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:path"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/sc2-bank-manifest.test.ts",
+      "sourceSpecifier": "node:url",
+      "destinationSpecifier": "node:url",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:node:url"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/sc2-bank-manifest.test.ts",
+      "sourceSpecifier": "@modkitx/assets",
+      "destinationSpecifier": "@modkit/codec-kit/legacy/assets",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:@modkit/codec-kit/legacy/assets"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/sc2-bank-manifest.test.ts",
+      "sourceSpecifier": "vitest",
+      "destinationSpecifier": "vitest",
+      "sourceTarget": null,
+      "destinationTarget": "dependency:vitest"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/sc2-bank-manifest.test.ts",
+      "sourceSpecifier": "../src/codec.js",
+      "destinationSpecifier": "../../../../../src/lib/mk2/codecs/sc2-bank/src/codec.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/codec.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/codec.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/sc2-bank-manifest.test.ts",
+      "sourceSpecifier": "../src/describe.js",
+      "destinationSpecifier": "../../../../../src/lib/mk2/codecs/sc2-bank/src/describe.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/describe.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/describe.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/sc2-bank-manifest.test.ts",
+      "sourceSpecifier": "../src/identity.js",
+      "destinationSpecifier": "../../../../../src/lib/mk2/codecs/sc2-bank/src/identity.js",
+      "sourceTarget": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/identity.ts",
+      "destinationTarget": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/identity.ts"
+    },
+    {
+      "importer": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/sc2-bank-manifest.test.ts",
+      "sourceSpecifier": "@modkitx/saves-processing",
+      "destinationSpecifier": "../../../../../../test/mk2/support/sc2-bank-host.js",
+      "sourceTarget": null,
+      "destinationTarget": "modkit-extensions-blizzard/test/mk2/support/sc2-bank-host.ts"
+    }
+  ],
+  "files": [
+    {
+      "mk2Path": "packages/assets/src/artifact-codec.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/assets/artifact-codec.ts",
+      "sha256Mk2": "e7f2d8879fc567c5a0b9b573d40c7378c327a697b1227522335e938bdd391434",
+      "sha256Mk3": "e7f2d8879fc567c5a0b9b573d40c7378c327a697b1227522335e938bdd391434",
+      "gitBlob": "513992101f48d70f5d9749a781bff3765f3070d3",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/assets/src/artifact-session.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/assets/artifact-session.ts",
+      "sha256Mk2": "bf793763560709d654b3aa313a28e1c07f55fc95401a37e0803e6bc086f55490",
+      "sha256Mk3": "d09360f2c88b37fe970fc3853b11c86706a6fd75712960c6520e034d76c48b1c",
+      "gitBlob": "aaef41b228996e534979a9ce79f8730d4fae0995",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/core/errors'",
+          "to": "'../core/errors.js'",
+          "count": 1,
+          "sha256Before": "bf793763560709d654b3aa313a28e1c07f55fc95401a37e0803e6bc086f55490",
+          "sha256After": "d09360f2c88b37fe970fc3853b11c86706a6fd75712960c6520e034d76c48b1c"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/assets/src/source.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/assets/source.ts",
+      "sha256Mk2": "beaa0779256b9dbbd0fd0b253a11ab7975919e778af6b84ee2d784adfa82a122",
+      "sha256Mk3": "beaa0779256b9dbbd0fd0b253a11ab7975919e778af6b84ee2d784adfa82a122",
+      "gitBlob": "20947903e77fb580e40bfc6483eab3f9ec0985f3",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/assets/src/operations.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/assets/operations.ts",
+      "sha256Mk2": "7dd2c86bd0dbd06c4bfa78656bd4f3a36e0303a71ed0076e45b9014ca13b36f3",
+      "sha256Mk3": "7dd2c86bd0dbd06c4bfa78656bd4f3a36e0303a71ed0076e45b9014ca13b36f3",
+      "gitBlob": "0b8dab34e8fb438fdaae451bfc56c9dc111531b8",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/assets/src/descriptor.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/assets/descriptor.ts",
+      "sha256Mk2": "23ed304bf71ff461a594f5322ecd2cf0a2c49263dd91f3d08dd41a6b51745c40",
+      "sha256Mk3": "23ed304bf71ff461a594f5322ecd2cf0a2c49263dd91f3d08dd41a6b51745c40",
+      "gitBlob": "7c8c95b1896b1105f6ef05934a505a340a59426c",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/assets/src/detection.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/assets/detection.ts",
+      "sha256Mk2": "3b29a2505d6287f39ffe02f324187d295c67f55e073788a8cb5842a3dc080bb9",
+      "sha256Mk3": "3b29a2505d6287f39ffe02f324187d295c67f55e073788a8cb5842a3dc080bb9",
+      "gitBlob": "9594c33c12e6ad9d1505fa0ad176dde7e4b9601f",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/assets/src/diagnostics.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/assets/diagnostics.ts",
+      "sha256Mk2": "22f992154fd099a4f867baf6e1ae1e7c84bf6682af65a5ad5d54cd30f4ced76b",
+      "sha256Mk3": "22f992154fd099a4f867baf6e1ae1e7c84bf6682af65a5ad5d54cd30f4ced76b",
+      "gitBlob": "e8f344d8562f33381ccd42210164c066e9f24bc1",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/assets/src/capabilities.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/assets/capabilities.ts",
+      "sha256Mk2": "46a38586304ace9ef258f8d8204f0212bb00ebc0914ecaf3c7b3e1f691ae64dc",
+      "sha256Mk3": "46a38586304ace9ef258f8d8204f0212bb00ebc0914ecaf3c7b3e1f691ae64dc",
+      "gitBlob": "600ac23eb9cfad2c7b05f6e6adda86678866748e",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/assets/src/cancellation.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/assets/cancellation.ts",
+      "sha256Mk2": "f7c2202facc93ef36f2bec58e018a24798975b6c63e5838703a09aeec59a9c00",
+      "sha256Mk3": "f7c2202facc93ef36f2bec58e018a24798975b6c63e5838703a09aeec59a9c00",
+      "gitBlob": "f3f942256c9cffd2f8055477be175a98d775b47a",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/assets/src/json.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/assets/json.ts",
+      "sha256Mk2": "f044a80c402d72142fdf2c0f5345882cbcba828050b90704a022e4e01b00f4c5",
+      "sha256Mk3": "f044a80c402d72142fdf2c0f5345882cbcba828050b90704a022e4e01b00f4c5",
+      "gitBlob": "c81b98081f92c116056e2c86632259d54353721c",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/assets/src/editing.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/assets/editing.ts",
+      "sha256Mk2": "331d2cd15839ab62339dc3dabd14a7ea0152af2fc9a0893015dffa004213c707",
+      "sha256Mk3": "331d2cd15839ab62339dc3dabd14a7ea0152af2fc9a0893015dffa004213c707",
+      "gitBlob": "1102c8383fd141fa66bc6de63ab5ca5fbe1e8a06",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/assets/src/profiles/image-texture.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/assets/profiles/image-texture.ts",
+      "sha256Mk2": "b4d972f883cb9cfec292c880d76ccec22a9e18d292a12dfb70df48cfcc20e48e",
+      "sha256Mk3": "b4d972f883cb9cfec292c880d76ccec22a9e18d292a12dfb70df48cfcc20e48e",
+      "gitBlob": "ead1e656603608f07fb9c4c35ba0e92356356e81",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/assets/src/content.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/assets/content.ts",
+      "sha256Mk2": "652751e3977d4fbd391d4b3c98b73505caf4567abb1fb134f1dec31447667f73",
+      "sha256Mk3": "652751e3977d4fbd391d4b3c98b73505caf4567abb1fb134f1dec31447667f73",
+      "gitBlob": "8fe59decde18c184ce739bb92c1bcb9c4acbe2a1",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/assets/src/contributions.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/assets/contributions.ts",
+      "sha256Mk2": "07b7b48dd5a47fbbf0cbc984bc4eccd28d27ad84a315bfeafbfd71856fbb570b",
+      "sha256Mk3": "07b7b48dd5a47fbbf0cbc984bc4eccd28d27ad84a315bfeafbfd71856fbb570b",
+      "gitBlob": "5058369d401507a7e57850d87a646cf22f4174b7",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/assets/src/companions.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/assets/companions.ts",
+      "sha256Mk2": "1873fa801b0c8beb20f56ddafb8e7d5d6f0d324d58b4b55249495ca9e03bce6f",
+      "sha256Mk3": "1873fa801b0c8beb20f56ddafb8e7d5d6f0d324d58b4b55249495ca9e03bce6f",
+      "gitBlob": "533a81f2b6929a95360fb0800789b9ecda79c707",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/assets/src/format-registry.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/assets/format-registry.ts",
+      "sha256Mk2": "574e1818c892be45b1c94c87782c42b727eafe3c673226b3b6997e64268d60a3",
+      "sha256Mk3": "574e1818c892be45b1c94c87782c42b727eafe3c673226b3b6997e64268d60a3",
+      "gitBlob": "6ea9f263fea954e4fa9f007ff9ace7cae81ae55c",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/assets/src/codec-matching.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/assets/codec-matching.ts",
+      "sha256Mk2": "899ef6078a45e99570db905f9afe84094b99a2546b62183e3454c3e80eb52fb1",
+      "sha256Mk3": "899ef6078a45e99570db905f9afe84094b99a2546b62183e3454c3e80eb52fb1",
+      "gitBlob": "be4d26c9facbac09a54e0a125a4f43cdfb2eb3dd",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/assets/src/codec-manifest.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/assets/codec-manifest.ts",
+      "sha256Mk2": "8dc829b32526c0c6c62de342f8290e8e3ac7e48cfa202e8791be118b97880592",
+      "sha256Mk3": "8dc829b32526c0c6c62de342f8290e8e3ac7e48cfa202e8791be118b97880592",
+      "gitBlob": "e77b711c651c418808c17b928e847b8325fe1e48",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/core/src/errors.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/core/errors.ts",
+      "sha256Mk2": "4d5a594261ffa101005198d024cae9fa9ebefc3c617c49d4d6b1f45589857d20",
+      "sha256Mk3": "4d5a594261ffa101005198d024cae9fa9ebefc3c617c49d4d6b1f45589857d20",
+      "gitBlob": "712ccca88394d6b5bae1248d9ae9b3bb3c05fbc2",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/core/src/logger.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/core/logger.ts",
+      "sha256Mk2": "67aec5c576ae89d0a06e64b8e8b8c8898b83a28276f923f7722931ce56f6b485",
+      "sha256Mk3": "67aec5c576ae89d0a06e64b8e8b8c8898b83a28276f923f7722931ce56f6b485",
+      "gitBlob": "2250e8a54bb6a37664a7730c077aca2a8e7d066e",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/games/src/types.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/games/types.ts",
+      "sha256Mk2": "041dc18bb56f2c9babe4068f58ccc4af6c97a6451b6ff645212bf45488db4be5",
+      "sha256Mk3": "041dc18bb56f2c9babe4068f58ccc4af6c97a6451b6ff645212bf45488db4be5",
+      "gitBlob": "18408edbe79b63dd763558d02bba0b601d0f6018",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/world/src/contracts.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/world/contracts.ts",
+      "sha256Mk2": "d89105e5ce474e8c1bf77b0eb1b248ad60e58d61df69a279af7b995c40485527",
+      "sha256Mk3": "d89105e5ce474e8c1bf77b0eb1b248ad60e58d61df69a279af7b995c40485527",
+      "gitBlob": "f5f4bc2bd1d22f115f3bb550513bc3c3a8143080",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/runtime/src/contracts.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/runtime/contracts.ts",
+      "sha256Mk2": "af52f0aeb80a6fca943bee2b394e9a5cc88fedb9da050f845b0b24c3b63c998d",
+      "sha256Mk3": "a592905e1dcb21881c12a8f77e9167b64608e0ac8db75c611e9df8e7fe9296c1",
+      "gitBlob": "ba372b91204e75488d3d37b0c57d505f1be7b2a6",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/assets'",
+          "to": "'../assets/index.js'",
+          "count": 1,
+          "sha256Before": "af52f0aeb80a6fca943bee2b394e9a5cc88fedb9da050f845b0b24c3b63c998d",
+          "sha256After": "a592905e1dcb21881c12a8f77e9167b64608e0ac8db75c611e9df8e7fe9296c1"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/sha1.ts",
+      "destination": "modkit-core/packages/codec-kit/src/crypto/sha1.ts",
+      "sha256Mk2": "555632b06d8f94bf21053ef034d694aee6b8ee66ec345987310dd6993817e0ac",
+      "sha256Mk3": "555632b06d8f94bf21053ef034d694aee6b8ee66ec345987310dd6993817e0ac",
+      "gitBlob": "1cbbf5a56591719988f734272bf3ca5ac860a082",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/archives-processing/src/lib/crypto/index.ts",
+      "destination": "modkit-core/packages/codec-kit/src/crypto/mpq.ts",
+      "sha256Mk2": "596dfa5f7f152d494bd5bf0cb59b76f5d5159ff4680197340247689a212b104e",
+      "sha256Mk3": "596dfa5f7f152d494bd5bf0cb59b76f5d5159ff4680197340247689a212b104e",
+      "gitBlob": "027c39d88dcf9fa3479d8b6fb557b54d36ed0b66",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/archives-processing/src/lib/compression/index.ts",
+      "destination": "modkit-core/packages/codec-kit/src/compression/legacy-original.ts",
+      "sha256Mk2": "935ca7040412c316276f56a3f75247ac4020955c6f6be5be601be2a421ff0eba",
+      "sha256Mk3": "935ca7040412c316276f56a3f75247ac4020955c6f6be5be601be2a421ff0eba",
+      "gitBlob": "3688f597099c97ba4a97c3719403532a6a8e4fb0",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/archives-processing/src/lib/compression/pako.d.ts",
+      "destination": "modkit-core/packages/codec-kit/src/compression/pako.d.ts",
+      "sha256Mk2": "e72f0906129420465336b2c9b974bdfe25f2a858e385f159928db2293386c33e",
+      "sha256Mk3": "e72f0906129420465336b2c9b974bdfe25f2a858e385f159928db2293386c33e",
+      "gitBlob": "38a7317f0e895ac3ef05ace8c3880eb4a9474a03",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/image-processing/src/core/gpu-texture.ts",
+      "destination": "modkit-core/packages/codec-kit/src/texture/gpu-texture.ts",
+      "sha256Mk2": "cd2a3c4418083a1701905cc5955bb4469d95e70702fa9467a2d15565525302d6",
+      "sha256Mk3": "cd2a3c4418083a1701905cc5955bb4469d95e70702fa9467a2d15565525302d6",
+      "gitBlob": "dc827026b97adfece895ca382288c4cc6585d492",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/image-processing/src/core/gpu-texture-wasm.ts",
+      "destination": "modkit-core/packages/codec-kit/src/texture/gpu-texture-wasm.ts",
+      "sha256Mk2": "acd1d88e84688a78399e8d099df5d660e8a86585752b7fc758064fe335e0ebe0",
+      "sha256Mk3": "9bbf5b9d1db0eb03f0fb800a4240766010365dfa4a5202a61961486c129f9bdb",
+      "gitBlob": "68be4c67f2b62db36e017ca13f2c1282729bfdb1",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/core/errors'",
+          "to": "'../legacy/core/errors.js'",
+          "count": 1,
+          "sha256Before": "acd1d88e84688a78399e8d099df5d660e8a86585752b7fc758064fe335e0ebe0",
+          "sha256After": "9bbf5b9d1db0eb03f0fb800a4240766010365dfa4a5202a61961486c129f9bdb"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/image-processing/src/core/compressed-texture.ts",
+      "destination": "modkit-core/packages/codec-kit/src/texture/compressed-texture.ts",
+      "sha256Mk2": "9599b48a1dfdc29d50ec2e9b9c588589f23ae4d0bb4d38e9ab686f634a299435",
+      "sha256Mk3": "b58583611f262489ce6e6d58feb48c965c09f734d642dfe53c27ec8ed1247c04",
+      "gitBlob": "f6cfa1b6cb40534ccd4782a534f56c0be4f5aea5",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/core/errors'",
+          "to": "'../legacy/core/errors.js'",
+          "count": 1,
+          "sha256Before": "9599b48a1dfdc29d50ec2e9b9c588589f23ae4d0bb4d38e9ab686f634a299435",
+          "sha256After": "4bac20b259eca0e7e4b7d9f4480d3056606c135f86b0a453a74470cb69a95f98"
+        },
+        {
+          "kind": "import",
+          "from": "'@modkitx/assets/profiles/image-texture'",
+          "to": "'../legacy/assets/profiles/image-texture.js'",
+          "count": 3,
+          "sha256Before": "4bac20b259eca0e7e4b7d9f4480d3056606c135f86b0a453a74470cb69a95f98",
+          "sha256After": "b58583611f262489ce6e6d58feb48c965c09f734d642dfe53c27ec8ed1247c04"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/image-processing/src/core/binary.ts",
+      "destination": "modkit-core/packages/codec-kit/src/texture/binary.ts",
+      "sha256Mk2": "26533516ef6d7846bff3577b10bb86dbaad4c4eff3c3a04dc9d965b8554e0b1c",
+      "sha256Mk3": "26533516ef6d7846bff3577b10bb86dbaad4c4eff3c3a04dc9d965b8554e0b1c",
+      "gitBlob": "e033c57b6e2a6088413296fe3dbeb123bf5263e3",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/image-processing/src/core/types.ts",
+      "destination": "modkit-core/packages/codec-kit/src/texture/types.ts",
+      "sha256Mk2": "d0e58e8fb64841636eea5bdc4ddb16bd92d7034e53b9767b14c8877e1393f842",
+      "sha256Mk3": "0054971112318a8e4b866e33a9102a688dc7d7bda19990177bbd403081619540",
+      "gitBlob": "97963f8387d961da4d2f72191bd11081e5c3d710",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/assets'",
+          "to": "'../legacy/assets/index.js'",
+          "count": 1,
+          "sha256Before": "d0e58e8fb64841636eea5bdc4ddb16bd92d7034e53b9767b14c8877e1393f842",
+          "sha256After": "0054971112318a8e4b866e33a9102a688dc7d7bda19990177bbd403081619540"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/semantic/src/data.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/semantic/data.ts",
+      "sha256Mk2": "cc11c66049dea81ab45b2c74bf8c8d5d3b730ac2927c0ba3aad111c91c994702",
+      "sha256Mk3": "9be674fcb1ad972e1a47594036cd6154f49fc14411902b949a1793b811e92a48",
+      "gitBlob": "3752496dfa0a418750dc09852dd4fbee8fddd702",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/assets'",
+          "to": "'../assets/index.js'",
+          "count": 2,
+          "sha256Before": "cc11c66049dea81ab45b2c74bf8c8d5d3b730ac2927c0ba3aad111c91c994702",
+          "sha256After": "9be674fcb1ad972e1a47594036cd6154f49fc14411902b949a1793b811e92a48"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/semantic/src/documents.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/semantic/documents.ts",
+      "sha256Mk2": "33a6aac98234170fe189c3d566583cc0cbd7a22c2685b0f8663b8af35adae5b6",
+      "sha256Mk3": "276589d5850d2eca6a34fb521f4e57ef64b2ddc7b84c789956fe7016e81b7e8b",
+      "gitBlob": "207c496c9a369dd398abe546193a595053f328af",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/assets'",
+          "to": "'../assets/index.js'",
+          "count": 2,
+          "sha256Before": "33a6aac98234170fe189c3d566583cc0cbd7a22c2685b0f8663b8af35adae5b6",
+          "sha256After": "276589d5850d2eca6a34fb521f4e57ef64b2ddc7b84c789956fe7016e81b7e8b"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/semantic/src/layouts.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/semantic/layouts.ts",
+      "sha256Mk2": "92d099a85b2bf2783feb07fc9891b94ee09954275c1d01a1574dc94f241cd249",
+      "sha256Mk3": "43a239c1f6c1d8e28b4d0180e86e3e1af38eb9d55205b0a4fc975da04fa2f131",
+      "gitBlob": "6f719a1db5dd0c2026690a7bd2c696fa322e3192",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/assets'",
+          "to": "'../assets/index.js'",
+          "count": 2,
+          "sha256Before": "92d099a85b2bf2783feb07fc9891b94ee09954275c1d01a1574dc94f241cd249",
+          "sha256After": "43a239c1f6c1d8e28b4d0180e86e3e1af38eb9d55205b0a4fc975da04fa2f131"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/semantic/src/localization.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/semantic/localization.ts",
+      "sha256Mk2": "ff253b8ebbeee12334a9e56f8f5f046bc97358fec8c1a6802b94091ba1c85be7",
+      "sha256Mk3": "ad47ad7cfa0c4ed7d559f29534f5f25f64254032f90c0886edc2e5be81b033f2",
+      "gitBlob": "a0e5eb881af8dfd2746e762ead2ca63ac70ab532",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/assets'",
+          "to": "'../assets/index.js'",
+          "count": 2,
+          "sha256Before": "ff253b8ebbeee12334a9e56f8f5f046bc97358fec8c1a6802b94091ba1c85be7",
+          "sha256After": "ad47ad7cfa0c4ed7d559f29534f5f25f64254032f90c0886edc2e5be81b033f2"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/semantic/src/maps.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/semantic/maps.ts",
+      "sha256Mk2": "244d9aac199a5cfe8ec3f4f4fef07a1f098891ba43bb61c8d4dacccf89366191",
+      "sha256Mk3": "b7dca4d06e546490c463609783f31266a894c00d2a091857a8ba48d67ec55ec8",
+      "gitBlob": "032494f870fc2ae107804a546bd4521cc1e66e6d",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/assets'",
+          "to": "'../assets/index.js'",
+          "count": 2,
+          "sha256Before": "244d9aac199a5cfe8ec3f4f4fef07a1f098891ba43bb61c8d4dacccf89366191",
+          "sha256After": "b7dca4d06e546490c463609783f31266a894c00d2a091857a8ba48d67ec55ec8"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/semantic/src/mods.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/semantic/mods.ts",
+      "sha256Mk2": "8bb3b5039ee5877f9f4006adc5fc690bf9f815e7a443201dbe60ac6d23cb72c7",
+      "sha256Mk3": "faed282997406c0120ba2bbc810aa25b9c98af91fa2424f57cd8238bd2e2d1a3",
+      "gitBlob": "139e390e1cc7b7c17b133b77b22d69dafba2a8c2",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/assets'",
+          "to": "'../assets/index.js'",
+          "count": 2,
+          "sha256Before": "8bb3b5039ee5877f9f4006adc5fc690bf9f815e7a443201dbe60ac6d23cb72c7",
+          "sha256After": "faed282997406c0120ba2bbc810aa25b9c98af91fa2424f57cd8238bd2e2d1a3"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/semantic/src/replays.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/semantic/replays.ts",
+      "sha256Mk2": "2d222897aef9df972325d8e3be5527a16e93cc10f36325013a3f4db7db52fb78",
+      "sha256Mk3": "9a60574d43a71805d6fad1d37cce962441a0f1badcf65066027665021f06f67a",
+      "gitBlob": "00855c80db997d8721147de8de5d8b17b93ebe23",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/assets'",
+          "to": "'../assets/index.js'",
+          "count": 2,
+          "sha256Before": "2d222897aef9df972325d8e3be5527a16e93cc10f36325013a3f4db7db52fb78",
+          "sha256After": "9a60574d43a71805d6fad1d37cce962441a0f1badcf65066027665021f06f67a"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/semantic/src/saves.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/semantic/saves.ts",
+      "sha256Mk2": "8a43b66bd3c397734b72770ed8e962c7af329667140cb12c1435bdf0e8e7611b",
+      "sha256Mk3": "ea507d7d2fb6672ecbd4c318667660d17b1a82201c990a1f919662035ef000a8",
+      "gitBlob": "02ab731151f42bb95b901f42cf537fb888106b3e",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/assets'",
+          "to": "'../assets/index.js'",
+          "count": 2,
+          "sha256Before": "8a43b66bd3c397734b72770ed8e962c7af329667140cb12c1435bdf0e8e7611b",
+          "sha256After": "ea507d7d2fb6672ecbd4c318667660d17b1a82201c990a1f919662035ef000a8"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/semantic/src/scripts.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/semantic/scripts.ts",
+      "sha256Mk2": "708aa45c0c62b1ce4da02cc0d3f50f8e31c0b46003790a86241a7466769b3e70",
+      "sha256Mk3": "fcf1cb5b3486ec1ca8979247303d69305c13b5b32a9e95ffed02b2f6eae6cb1c",
+      "gitBlob": "3d6d461a4c14cfb87dcdc68546af7fd78a652c12",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/assets'",
+          "to": "'../assets/index.js'",
+          "count": 2,
+          "sha256Before": "708aa45c0c62b1ce4da02cc0d3f50f8e31c0b46003790a86241a7466769b3e70",
+          "sha256After": "fcf1cb5b3486ec1ca8979247303d69305c13b5b32a9e95ffed02b2f6eae6cb1c"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/language-contracts/src/module.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/language-contracts/module.ts",
+      "sha256Mk2": "34686cf244e430e03c736bd6bd82da54c16529738d487a9e56bfb83f56df5eb6",
+      "sha256Mk3": "34686cf244e430e03c736bd6bd82da54c16529738d487a9e56bfb83f56df5eb6",
+      "gitBlob": "6d7cd2ec870ce135a10e8e61e7003e05baf90bd9",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/language-contracts/src/document-kind.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/language-contracts/document-kind.ts",
+      "sha256Mk2": "97acbdfb4becbcda955eac79a3acc4aef08efe2a85b3f7bad229ef065e3709cb",
+      "sha256Mk3": "97acbdfb4becbcda955eac79a3acc4aef08efe2a85b3f7bad229ef065e3709cb",
+      "gitBlob": "23de4b07c542a2658af298d3fe50fc3b305f1b66",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/language-contracts/src/contributions.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/language-contracts/contributions.ts",
+      "sha256Mk2": "9af65bc91a0e88458978999f12a3dda73c2d746d2f5975d78d38793385f836d6",
+      "sha256Mk3": "259b51df2522d71ad8112896570203270c8ecc902822bd5c1f4d88a5a165da80",
+      "gitBlob": "420022696fe0990f4f58cfd249d84c6695cdb2b7",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/core'",
+          "to": "'../core/index.js'",
+          "count": 1,
+          "sha256Before": "9af65bc91a0e88458978999f12a3dda73c2d746d2f5975d78d38793385f836d6",
+          "sha256After": "259b51df2522d71ad8112896570203270c8ecc902822bd5c1f4d88a5a165da80"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/language-contracts/src/index.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/language-contracts/index.ts",
+      "sha256Mk2": "d5b7b051fd1aa057af39ea5d751f3f6f0befa91a066bb44726c9dd943b48ca2c",
+      "sha256Mk3": "d5b7b051fd1aa057af39ea5d751f3f6f0befa91a066bb44726c9dd943b48ca2c",
+      "gitBlob": "ffa2cd56c95cea457cef145a873ffd001eeb05d5",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/entity-cards/src/model.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/entity-cards/model.ts",
+      "sha256Mk2": "7d09a00c9887ec76c75a211f6156b086de6e21350fcbb82308897876ae6e365f",
+      "sha256Mk3": "1903681b76ba989860e21bc9e28170bff563f1c205621f30c4799d82d5932c2a",
+      "gitBlob": "ff699000d255b69dbdcab15f5013b783ce912be7",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/assets'",
+          "to": "'../assets/index.js'",
+          "count": 1,
+          "sha256Before": "7d09a00c9887ec76c75a211f6156b086de6e21350fcbb82308897876ae6e365f",
+          "sha256After": "1903681b76ba989860e21bc9e28170bff563f1c205621f30c4799d82d5932c2a"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/entity-cards/src/graph.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/entity-cards/graph.ts",
+      "sha256Mk2": "0373a6629c0ab6186fef7078f3a87b9c0a75507aba709c5c9cbb0ad1b0c188d5",
+      "sha256Mk3": "0373a6629c0ab6186fef7078f3a87b9c0a75507aba709c5c9cbb0ad1b0c188d5",
+      "gitBlob": "742311e473eb3f1e0e36cc31fc17cfa0e079e0cd",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/entity-cards/src/providers.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/entity-cards/providers.ts",
+      "sha256Mk2": "ca860d2dfea22b46ecb8e70941819cb39531cfca89d9f153b897648e88757a00",
+      "sha256Mk3": "ca860d2dfea22b46ecb8e70941819cb39531cfca89d9f153b897648e88757a00",
+      "gitBlob": "00e7045d87dc6069df3175dda8bba3b477c5d549",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/entity-cards/src/address.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/entity-cards/address.ts",
+      "sha256Mk2": "ad16f68cf21d1a67a0abda99107240c92deaed254357b3dd9ff712c43d560274",
+      "sha256Mk3": "ad16f68cf21d1a67a0abda99107240c92deaed254357b3dd9ff712c43d560274",
+      "gitBlob": "63e848622cf84c72b8ed9e0a6868ca13b9d5e56e",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "packages/entity-cards/src/index.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/entity-cards/index.ts",
+      "sha256Mk2": "a073f2af7473a29718f101319cfc34f83ed9dc3aec843584a00322e67caa7873",
+      "sha256Mk3": "a073f2af7473a29718f101319cfc34f83ed9dc3aec843584a00322e67caa7873",
+      "gitBlob": "32e4663aa71ca89349f017d1dff10842991ee6f7",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/README.md",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/README.md",
+      "sha256Mk2": "7f0cea4fe989cb8d541a372182a256968dc4478d7a4fe8134cff0c22ebb63c60",
+      "sha256Mk3": "7f0cea4fe989cb8d541a372182a256968dc4478d7a4fe8134cff0c22ebb63c60",
+      "gitBlob": "de9fbda6109524210e20ad7832f2492e45faf482",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/codec.manifest.json",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/codec.manifest.json",
+      "sha256Mk2": "30c751b8ab9f6e46c259bee55d39314e9d4c9b1ed102264d2f9bcf55289fa683",
+      "sha256Mk3": "30c751b8ab9f6e46c259bee55d39314e9d4c9b1ed102264d2f9bcf55289fa683",
+      "gitBlob": "6c97617a0e153ba3a33a135a73ed73bfb05d1862",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/codec.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/codec.ts",
+      "sha256Mk2": "6ef89d8df0a1ec293501107b02cdb5e4dce53f70ca32c4d9e71ee1fc4494e90b",
+      "sha256Mk3": "4d05703446e80fbfe2013266038b05a9e82f9c5a840bd554ef2b68edd59119b9",
+      "gitBlob": "46dba48ff0c44906dad536aa0e35f02f1ff44063",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/assets'",
+          "to": "'@modkit/codec-kit/legacy/assets'",
+          "count": 1,
+          "sha256Before": "6ef89d8df0a1ec293501107b02cdb5e4dce53f70ca32c4d9e71ee1fc4494e90b",
+          "sha256After": "4efe3eed064935ae265325e80fc276ee6fc10b5d2da62353d6319151d03c7a6c"
+        },
+        {
+          "kind": "import",
+          "from": "'@modkitx/core'",
+          "to": "'@modkit/codec-kit/legacy/core'",
+          "count": 1,
+          "sha256Before": "4efe3eed064935ae265325e80fc276ee6fc10b5d2da62353d6319151d03c7a6c",
+          "sha256After": "a30db3a84b9bf50de78bf99bdf38a610a60aec8be4d42ba73a85d3bc7247b856"
+        },
+        {
+          "kind": "import",
+          "from": "'@modkitx/semantic/saves'",
+          "to": "'@modkit/codec-kit/legacy/semantic'",
+          "count": 1,
+          "sha256Before": "a30db3a84b9bf50de78bf99bdf38a610a60aec8be4d42ba73a85d3bc7247b856",
+          "sha256After": "4d05703446e80fbfe2013266038b05a9e82f9c5a840bd554ef2b68edd59119b9"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/NEXT-ADDITIONS.md",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/NEXT-ADDITIONS.md",
+      "sha256Mk2": "d0037bdf1ff3106483d4a3e73035ef01d3861fc8cf7705421509647d0497ea9f",
+      "sha256Mk3": "d0037bdf1ff3106483d4a3e73035ef01d3861fc8cf7705421509647d0497ea9f",
+      "gitBlob": "e44c13d5dd67baa9186d93ba8f208285ed32592e",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/PROMPT.md",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/PROMPT.md",
+      "sha256Mk2": "b6b1c9480c0cbc14d2c9d932638e925d613372a79cb21bce7a0acc51eeae7465",
+      "sha256Mk3": "b6b1c9480c0cbc14d2c9d932638e925d613372a79cb21bce7a0acc51eeae7465",
+      "gitBlob": "68a6b292f75836e0c00eb26632de964e1303eddc",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/README.md",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/README.md",
+      "sha256Mk2": "47e59a5f901d718d8bab446c4488c62920f349faa9dc6c6175fac79aa3e56f40",
+      "sha256Mk3": "47e59a5f901d718d8bab446c4488c62920f349faa9dc6c6175fac79aa3e56f40",
+      "gitBlob": "410ca71e256c6cda67a0b6c60afca2a17ca429e6",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/bank-list.spec.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/codecs/sc2-bank/src/core/bank-list.spec.ts",
+      "sha256Mk2": "b6a7ee41ba16393339fddf0adcf08294baf7aeeef2ed54be6c8f59cf27345489",
+      "sha256Mk3": "925b74b8f8d976aa7f17e199eede207cc676a1a65508da369259cfa629161f8f",
+      "gitBlob": "e3b7ed66981154693f9febcf4da855f731833f7f",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'./index.js'",
+          "to": "'../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/index.js'",
+          "count": 1,
+          "sha256Before": "b6a7ee41ba16393339fddf0adcf08294baf7aeeef2ed54be6c8f59cf27345489",
+          "sha256After": "925b74b8f8d976aa7f17e199eede207cc676a1a65508da369259cfa629161f8f"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/bank-list.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/bank-list.ts",
+      "sha256Mk2": "f5928a9477e261b5eaacd181b21b6f6ecf8b2aae2b834965226cffa4e47db033",
+      "sha256Mk3": "f5928a9477e261b5eaacd181b21b6f6ecf8b2aae2b834965226cffa4e47db033",
+      "gitBlob": "d9f634f3aca3359e66bc5e575737a2f31894a939",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/bank.spec.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/codecs/sc2-bank/src/core/bank.spec.ts",
+      "sha256Mk2": "65cf20e8d71046f5ec81aef7956cbf46fb6d2b9b9353f9688f4a33098da74ec5",
+      "sha256Mk3": "1a80b2ccc4848a14dc66e297105a77c87d322471a6d20ce7e243d2ccee8f7e7a",
+      "gitBlob": "e2fda04626ef56b29af68a50c679fa804e5bc7ac",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'./index.js'",
+          "to": "'../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/index.js'",
+          "count": 1,
+          "sha256Before": "65cf20e8d71046f5ec81aef7956cbf46fb6d2b9b9353f9688f4a33098da74ec5",
+          "sha256After": "1a80b2ccc4848a14dc66e297105a77c87d322471a6d20ce7e243d2ccee8f7e7a"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/bank.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/bank.ts",
+      "sha256Mk2": "29fe18d0457d8e9c84c497523f5a88c385eff99959033dc798f0268538cde92b",
+      "sha256Mk3": "de7b3e1e6356c224e8011861d0e9bac66d0ed37d0ff46895c701de87596ffc9d",
+      "gitBlob": "dcf8fd076e957a4237f12faea46437a07b51cddf",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'./sha1.js'",
+          "to": "'@modkit/codec-kit/crypto/sha1'",
+          "count": 1,
+          "sha256Before": "29fe18d0457d8e9c84c497523f5a88c385eff99959033dc798f0268538cde92b",
+          "sha256After": "de7b3e1e6356c224e8011861d0e9bac66d0ed37d0ff46895c701de87596ffc9d"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/cli.spec.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/codecs/sc2-bank/src/core/cli.spec.ts",
+      "sha256Mk2": "e05aaa6b4f449ac828df18b296b99cc6452ecadc31e70aefa329b626aacfd4e6",
+      "sha256Mk3": "fc32ff09f6c3b06bf4a13175170444466b0e491766953e5bed975ac693de5ffa",
+      "gitBlob": "4abfbf43d68bfeb5425cd36915a5d46e214271c6",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'./index.js'",
+          "to": "'../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/index.js'",
+          "count": 1,
+          "sha256Before": "e05aaa6b4f449ac828df18b296b99cc6452ecadc31e70aefa329b626aacfd4e6",
+          "sha256After": "0cb82209254035368d1a7d5a7227f88a4ea762fb3f52f2d02844a268a313a637"
+        },
+        {
+          "kind": "import",
+          "from": "'./cli.js'",
+          "to": "'../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/cli.js'",
+          "count": 1,
+          "sha256Before": "0cb82209254035368d1a7d5a7227f88a4ea762fb3f52f2d02844a268a313a637",
+          "sha256After": "fc32ff09f6c3b06bf4a13175170444466b0e491766953e5bed975ac693de5ffa"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/cli.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/cli.ts",
+      "sha256Mk2": "d098bc4610779141b57ea55c7e137c650491c279f0bbd8fe66cf79d4923e9017",
+      "sha256Mk3": "d098bc4610779141b57ea55c7e137c650491c279f0bbd8fe66cf79d4923e9017",
+      "gitBlob": "0a7e6b97977f83561b9b148cb199da22e4d7a089",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/core.spec.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/codecs/sc2-bank/src/core/core.spec.ts",
+      "sha256Mk2": "0e4d501e3c159e1e8543297dffeaadf337173bb890922563f39a5a3a96178e2e",
+      "sha256Mk3": "486b27ebef3714f204cd728e4547ad97aa2ec594c93e13d42b3a433d6c19afda",
+      "gitBlob": "ebc64c6db30556de3f0b69ee4e3d387e8c3d15ea",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'./core.js'",
+          "to": "'../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/core.js'",
+          "count": 1,
+          "sha256Before": "0e4d501e3c159e1e8543297dffeaadf337173bb890922563f39a5a3a96178e2e",
+          "sha256After": "b9eb2df645c8f84b1e239f50c3cd7d16faeb9777b38a9675b4a8a975dc80acec"
+        }
+      ],
+      "divergence": {
+        "file": "modkit-extensions-blizzard/starcraft2/test/mk2/codecs/sc2-bank/src/core/core.spec.ts",
+        "semantic": false,
+        "reason": "Test-only relocation: canonical paths or the three registry assertions move to actual MK3 host contracts.",
+        "mk3Contract": "MK3 host owns registration/routing; canonical source paths retain browser guard and manifest assertions.",
+        "proof": [
+          {
+            "path": "modkit-core/migration/mk2-divergence/sc2-bank-test-adaptations.md",
+            "sha256": "0d9d15531f073e0d2a063fb5fc91af7adb3d115040552c3f48dab14c771caf7f"
+          }
+        ],
+        "edits": [
+          {
+            "from": "const files = ['core.ts', 'bank.ts', 'bank-list.ts', 'editor.ts', 'path-core.ts', 'validate.ts', 'sha1.ts', 'types.ts']",
+            "to": "const files = ['../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/core.ts', '../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/bank.ts', '../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/bank-list.ts', '../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/editor.ts', '../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/path-core.ts', '../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/validate.ts', '../../../../../../../../modkit-core/packages/codec-kit/src/crypto/sha1.ts', '../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/types.ts']",
+            "count": 1,
+            "sha256Before": "b9eb2df645c8f84b1e239f50c3cd7d16faeb9777b38a9675b4a8a975dc80acec",
+            "sha256After": "486b27ebef3714f204cd728e4547ad97aa2ec594c93e13d42b3a433d6c19afda"
+          }
+        ]
+      }
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/core.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/core.ts",
+      "sha256Mk2": "18af63fecc00bb177fc2a5a961a052153cea2e0ea425e97e52596d768a0368db",
+      "sha256Mk3": "18af63fecc00bb177fc2a5a961a052153cea2e0ea425e97e52596d768a0368db",
+      "gitBlob": "89291ac3caa7162c1d7e34d0ec3c4862c456b0df",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/editor.spec.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/codecs/sc2-bank/src/core/editor.spec.ts",
+      "sha256Mk2": "e1fe709aa6e6612fad8d8e92f03d8a1fa804323dfe0a3f34cce1ad2b22c1a67b",
+      "sha256Mk3": "8c10007fe7f2ac1aa02d8c0e6ed2629b104d5ce1dc9ae27dec26bcb221ecfb2e",
+      "gitBlob": "f31e44035639a280697286aa3c7e2b587b5fd2c9",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'./index.js'",
+          "to": "'../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/index.js'",
+          "count": 1,
+          "sha256Before": "e1fe709aa6e6612fad8d8e92f03d8a1fa804323dfe0a3f34cce1ad2b22c1a67b",
+          "sha256After": "8c10007fe7f2ac1aa02d8c0e6ed2629b104d5ce1dc9ae27dec26bcb221ecfb2e"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/editor.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/editor.ts",
+      "sha256Mk2": "c52c973c6e2ab2512e2b9d153a19a6058ecd7ea9ad5bb2394070f0f465a8f80e",
+      "sha256Mk3": "c52c973c6e2ab2512e2b9d153a19a6058ecd7ea9ad5bb2394070f0f465a8f80e",
+      "gitBlob": "8746f55d2bae27c363185a72fef9a9823a47e86e",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/fixtures/endofdreamsbank2.SC2Bank",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/codecs/sc2-bank/src/core/fixtures/endofdreamsbank2.SC2Bank",
+      "sha256Mk2": "925126109547379dd4325d3fe1ff8690255f51566786805794f8c415fc69d9ee",
+      "sha256Mk3": "925126109547379dd4325d3fe1ff8690255f51566786805794f8c415fc69d9ee",
+      "gitBlob": "f7d7ddf8a79d855f1af43a3ed5b508fe43b1502a",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/index.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/index.ts",
+      "sha256Mk2": "4061337ed2eb3aa720768d1bb78b0cd44922e0d06f972caeb2be6ed4e88bdc4f",
+      "sha256Mk3": "4061337ed2eb3aa720768d1bb78b0cd44922e0d06f972caeb2be6ed4e88bdc4f",
+      "gitBlob": "e6496b0add8e693c812ca7696df4488d3d2399e9",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/io.spec.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/codecs/sc2-bank/src/core/io.spec.ts",
+      "sha256Mk2": "f2b0f97bfce9bded13decd6c808cd2dc7eec25bc1dc03d76b44ce22f36b5fe43",
+      "sha256Mk3": "419fb70d4ee93ef9ee81af05e8888f79be4e383c9f39a52fba48678a901a6df5",
+      "gitBlob": "33d517b4355b9c0c132031076e7fc21d90f27675",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'./index.js'",
+          "to": "'../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/index.js'",
+          "count": 1,
+          "sha256Before": "f2b0f97bfce9bded13decd6c808cd2dc7eec25bc1dc03d76b44ce22f36b5fe43",
+          "sha256After": "419fb70d4ee93ef9ee81af05e8888f79be4e383c9f39a52fba48678a901a6df5"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/io.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/io.ts",
+      "sha256Mk2": "83f949fc439417e86bd217f55760a53b22207fff94a4d40a1deb0472e84c0fe5",
+      "sha256Mk3": "83f949fc439417e86bd217f55760a53b22207fff94a4d40a1deb0472e84c0fe5",
+      "gitBlob": "557fc787719c8acd8c8bb204026bcc3adb8aec0f",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/node.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/node.ts",
+      "sha256Mk2": "4d165494e9d47b20c6be44354d85713ea9da983ce0fb950e49ff38b938f2200b",
+      "sha256Mk3": "4d165494e9d47b20c6be44354d85713ea9da983ce0fb950e49ff38b938f2200b",
+      "gitBlob": "b25a5c9921af723dbca73a072afe71813186adb8",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/patcher.spec.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/codecs/sc2-bank/src/core/patcher.spec.ts",
+      "sha256Mk2": "b168fe29085c8e29ad6495695a44d314e6b2cc45334909d0496e41ed296f1daa",
+      "sha256Mk3": "a53a39fd1dd57e335c99804e748d13923fd345a1ce75743b5ed4a058969f62c4",
+      "gitBlob": "670d8b0a8a86ada6814cc13b08cd25c163b5b02c",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'./patcher.js'",
+          "to": "'../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/patcher.js'",
+          "count": 1,
+          "sha256Before": "b168fe29085c8e29ad6495695a44d314e6b2cc45334909d0496e41ed296f1daa",
+          "sha256After": "a53a39fd1dd57e335c99804e748d13923fd345a1ce75743b5ed4a058969f62c4"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/patcher.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/patcher.ts",
+      "sha256Mk2": "d5c6196dd54708755006b0acae6a71bd47fac3e05373c46228e7b2df74090166",
+      "sha256Mk3": "d5c6196dd54708755006b0acae6a71bd47fac3e05373c46228e7b2df74090166",
+      "gitBlob": "eb66d2bf2efa7436a015e1d7033fed0fdd3af957",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/path-core.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/path-core.ts",
+      "sha256Mk2": "b36277ffb80761972c93a978df0add9afc90310fed8861474b4f0fb69f129856",
+      "sha256Mk3": "b36277ffb80761972c93a978df0add9afc90310fed8861474b4f0fb69f129856",
+      "gitBlob": "24447a8578316a28631000c19bdd477978120674",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/path.spec.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/codecs/sc2-bank/src/core/path.spec.ts",
+      "sha256Mk2": "3ca2c2816182ee94c456078452db9fd2470b32ff46ed4064c600c2d7176eb73f",
+      "sha256Mk3": "cb3b8fdda6d12c884dfe14b94637e9c36d17f47635e666b1e4055286a561864f",
+      "gitBlob": "6c553b873e3573052bea002ad5bed39795436d07",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'./index.js'",
+          "to": "'../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/index.js'",
+          "count": 1,
+          "sha256Before": "3ca2c2816182ee94c456078452db9fd2470b32ff46ed4064c600c2d7176eb73f",
+          "sha256After": "cb3b8fdda6d12c884dfe14b94637e9c36d17f47635e666b1e4055286a561864f"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/path.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/path.ts",
+      "sha256Mk2": "492936d333a36153bfa3c78b82b4b95ec85b390ba63005117a404b191334838a",
+      "sha256Mk3": "492936d333a36153bfa3c78b82b4b95ec85b390ba63005117a404b191334838a",
+      "gitBlob": "79278e865ca2910dfd0a65a3561616072097a5aa",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/types.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/types.ts",
+      "sha256Mk2": "1d5eaf9d46541065f0c6fe28343934e60e8d508bef13058b7eaf6708b289520a",
+      "sha256Mk3": "1d5eaf9d46541065f0c6fe28343934e60e8d508bef13058b7eaf6708b289520a",
+      "gitBlob": "40dd73821be58989c78202469e01e64907800b2f",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/validate.spec.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/codecs/sc2-bank/src/core/validate.spec.ts",
+      "sha256Mk2": "767faca7e9f6afee53e6204afcb3f55191e0ff4cfc9b1b850269c56e45e5b23c",
+      "sha256Mk3": "d7ad4251e86d87dea6656a049e82ced460f5e72e1885c8f3b0348322bd73cc9c",
+      "gitBlob": "ce4f28a186e963a5cea54ebb1182940de5bc1f6a",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'./index.js'",
+          "to": "'../../../../../../src/lib/mk2/codecs/sc2-bank/src/core/index.js'",
+          "count": 1,
+          "sha256Before": "767faca7e9f6afee53e6204afcb3f55191e0ff4cfc9b1b850269c56e45e5b23c",
+          "sha256After": "d7ad4251e86d87dea6656a049e82ced460f5e72e1885c8f3b0348322bd73cc9c"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/validate.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/core/validate.ts",
+      "sha256Mk2": "fa2aff272dc58a2d0af8091a2c518c4c25a3f44de271e9c8123799a4a155133f",
+      "sha256Mk3": "fa2aff272dc58a2d0af8091a2c518c4c25a3f44de271e9c8123799a4a155133f",
+      "gitBlob": "b7a664c0d6b297383e9268790aef51a7beb83b9d",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/describe.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/describe.ts",
+      "sha256Mk2": "adf13c9a5876a31b9b9186f3a50194576cfb0e86272ff89838baeaad6b2c9428",
+      "sha256Mk3": "7d1d069fbaea9ad7530a2b56000414455fe80211cc47997b4652babc9eb08e45",
+      "gitBlob": "cb4351ed5a3c6fdd10003f48fd1f3671ce08c197",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/assets'",
+          "to": "'@modkit/codec-kit/legacy/assets'",
+          "count": 1,
+          "sha256Before": "adf13c9a5876a31b9b9186f3a50194576cfb0e86272ff89838baeaad6b2c9428",
+          "sha256After": "d7166e738091eff5947971d8a8dd3964a9be1ef4bd741487fbf23c61aca32c81"
+        },
+        {
+          "kind": "import",
+          "from": "'@modkitx/semantic/saves'",
+          "to": "'@modkit/codec-kit/legacy/semantic'",
+          "count": 1,
+          "sha256Before": "d7166e738091eff5947971d8a8dd3964a9be1ef4bd741487fbf23c61aca32c81",
+          "sha256After": "7d1d069fbaea9ad7530a2b56000414455fe80211cc47997b4652babc9eb08e45"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/detect.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/detect.ts",
+      "sha256Mk2": "72ecaacf1ea68ec07e5ff5b3ee0786eb78e8a077a2e28c5edd7134d480de9d09",
+      "sha256Mk3": "ed2661b061d90540a907c35d2b78872d637666fed43e41e8133c2ea934751e21",
+      "gitBlob": "f9dc77125a638b10a5abb9afb149911e560c38c5",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/assets'",
+          "to": "'@modkit/codec-kit/legacy/assets'",
+          "count": 2,
+          "sha256Before": "72ecaacf1ea68ec07e5ff5b3ee0786eb78e8a077a2e28c5edd7134d480de9d09",
+          "sha256After": "ed2661b061d90540a907c35d2b78872d637666fed43e41e8133c2ea934751e21"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/document.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/document.ts",
+      "sha256Mk2": "14925fdd90185b5c29ca1d408011e3230844782af5fa6f673eae56cc168fa519",
+      "sha256Mk3": "5f85008f3fc1fdf93407a103176c6e700505ca21029cea251f8c14d056a897a1",
+      "gitBlob": "e14f3245572cf5962f3236d6fd67f19ee2fade14",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/assets'",
+          "to": "'@modkit/codec-kit/legacy/assets'",
+          "count": 1,
+          "sha256Before": "14925fdd90185b5c29ca1d408011e3230844782af5fa6f673eae56cc168fa519",
+          "sha256After": "5f85008f3fc1fdf93407a103176c6e700505ca21029cea251f8c14d056a897a1"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/identity.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-bank/src/identity.ts",
+      "sha256Mk2": "e97b3779b8121faa73fc33fc317fa858c3966195a8985acc1a42b1804afd3a96",
+      "sha256Mk3": "e97b3779b8121faa73fc33fc317fa858c3966195a8985acc1a42b1804afd3a96",
+      "gitBlob": "a08a67a1a79047b328ff7a705d8da42db94027ba",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/codec.test.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/codecs/sc2-bank/test/codec.test.ts",
+      "sha256Mk2": "2bfd753a98bac40e47a3bd4f2581afa38248477d4f9901e4ab92dfea936678ee",
+      "sha256Mk3": "032c4d82a6b40194e1d79ef620b06738f5c66d8582be35a1e237edf46733d52e",
+      "gitBlob": "e2ed8e6845c0560944cbaa427058cbdd4f48cbe2",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/assets'",
+          "to": "'@modkit/codec-kit/legacy/assets'",
+          "count": 1,
+          "sha256Before": "2bfd753a98bac40e47a3bd4f2581afa38248477d4f9901e4ab92dfea936678ee",
+          "sha256After": "786e4dccf814fb8167122a6315dfd7213c4d3ef2483826198ae1174fb5113eea"
+        },
+        {
+          "kind": "import",
+          "from": "'../src/codec.js'",
+          "to": "'../../../../../src/lib/mk2/codecs/sc2-bank/src/codec.js'",
+          "count": 1,
+          "sha256Before": "786e4dccf814fb8167122a6315dfd7213c4d3ef2483826198ae1174fb5113eea",
+          "sha256After": "0d9c044ce47dd24fadc4ee1e06b82c2a1a6fa70785ffdc56d74b8c195fc64138"
+        },
+        {
+          "kind": "import",
+          "from": "'../src/describe.js'",
+          "to": "'../../../../../src/lib/mk2/codecs/sc2-bank/src/describe.js'",
+          "count": 1,
+          "sha256Before": "0d9c044ce47dd24fadc4ee1e06b82c2a1a6fa70785ffdc56d74b8c195fc64138",
+          "sha256After": "0f3c7161971084764049383306fa1a7ca823fb75cf9454e9b661280e5ab1c11e"
+        },
+        {
+          "kind": "import",
+          "from": "'../src/detect.js'",
+          "to": "'../../../../../src/lib/mk2/codecs/sc2-bank/src/detect.js'",
+          "count": 1,
+          "sha256Before": "0f3c7161971084764049383306fa1a7ca823fb75cf9454e9b661280e5ab1c11e",
+          "sha256After": "1eb0004fcd7f6f1da006ee8bc4da4e25a7e9cdf4f9ad3f625a4cec0f097d291e"
+        },
+        {
+          "kind": "import",
+          "from": "'../src/identity.js'",
+          "to": "'../../../../../src/lib/mk2/codecs/sc2-bank/src/identity.js'",
+          "count": 1,
+          "sha256Before": "1eb0004fcd7f6f1da006ee8bc4da4e25a7e9cdf4f9ad3f625a4cec0f097d291e",
+          "sha256After": "739051e7bcedab5914b6c37268715e784f7098b10c3ee67f8048462913fac88c"
+        },
+        {
+          "kind": "import",
+          "from": "'@modkitx/saves-processing'",
+          "to": "'../../../../../../test/mk2/support/sc2-bank-host.js'",
+          "count": 1,
+          "sha256Before": "739051e7bcedab5914b6c37268715e784f7098b10c3ee67f8048462913fac88c",
+          "sha256After": "dc90020f3594b7bcb7b6f3350882dedce92cea910c4b9fd9a535da35d305f3a6"
+        }
+      ],
+      "divergence": {
+        "file": "modkit-extensions-blizzard/starcraft2/test/mk2/codecs/sc2-bank/test/codec.test.ts",
+        "semantic": false,
+        "reason": "Test-only relocation: canonical paths or the three registry assertions move to actual MK3 host contracts.",
+        "mk3Contract": "MK3 host owns registration/routing; canonical source paths retain browser guard and manifest assertions.",
+        "proof": [
+          {
+            "path": "modkit-core/migration/mk2-divergence/sc2-bank-test-adaptations.md",
+            "sha256": "0d9d15531f073e0d2a063fb5fc91af7adb3d115040552c3f48dab14c771caf7f"
+          }
+        ],
+        "edits": [
+          {
+            "from": "SAVE_OPERATION_IDS, SavesCodecRegistry",
+            "to": "SAVE_OPERATION_IDS, registerNativeBankRegistryTests",
+            "count": 1,
+            "sha256Before": "dc90020f3594b7bcb7b6f3350882dedce92cea910c4b9fd9a535da35d305f3a6",
+            "sha256After": "24beac10c1d0faae5615dc45a0e9290c7ad97bb32c8da8a5d2ae13c37668455b"
+          },
+          {
+            "from": "describe('SavesCodecRegistry', () => {\n  it('routes a bank source to the registered codec and reports it without host knowledge', async () => {\n    const registry = new SavesCodecRegistry().register(codec)\n    const route = await registry.route(bankSource('/tmp/endofdreamsbank2.SC2Bank'), {\n      gameId: 'starcraft-2',\n    })\n    expect(route.status).toBe('resolved')\n    if (route.status !== 'resolved') return\n    expect(route.primary.detection.pluginId).toBe(SC2_BANK_CODEC_ID)\n\n    const summaries = registry.summaries('starcraft-2')\n    expect(summaries.map(summary => summary.id)).toEqual([SC2_BANK_CODEC_ID])\n    expect(summaries[0]?.kind).toBe('save')\n    expect(summaries[0]?.operationIds).toEqual(SC2_BANK_OPERATIONS.map(operation => operation.id))\n  })\n\n  it('does not route an unrecognized source', async () => {\n    const registry = new SavesCodecRegistry().register(codec)\n    const route = await registry.route(\n      bankSource('/tmp/whatever.txt', new TextEncoder().encode('hello')),\n    )\n    expect(route.status).toBe('unrecognized')\n    expect(\n      await registry.open(bankSource('/tmp/whatever.txt', new TextEncoder().encode('hello'))),\n    ).toBeUndefined()\n  })\n\n  it('rejects double registration', () => {\n    const registry = new SavesCodecRegistry().register(codec)\n    expect(() => registry.register(codec)).toThrow(/already registered/)\n  })\n})\n",
+            "to": "describe('SavesCodecRegistry → native host', () => {\n  registerNativeBankRegistryTests({\n    fixtureXml: FIXTURE_XML,\n    expectedOperationIds: SC2_BANK_OPERATIONS.map(operation => operation.id),\n  })\n})\n",
+            "count": 1,
+            "sha256Before": "24beac10c1d0faae5615dc45a0e9290c7ad97bb32c8da8a5d2ae13c37668455b",
+            "sha256After": "032c4d82a6b40194e1d79ef620b06738f5c66d8582be35a1e237edf46733d52e"
+          }
+        ]
+      }
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/fixtures/endofdreamsbank2.SC2Bank",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/codecs/sc2-bank/test/fixtures/endofdreamsbank2.SC2Bank",
+      "sha256Mk2": "925126109547379dd4325d3fe1ff8690255f51566786805794f8c415fc69d9ee",
+      "sha256Mk3": "925126109547379dd4325d3fe1ff8690255f51566786805794f8c415fc69d9ee",
+      "gitBlob": "f7d7ddf8a79d855f1af43a3ed5b508fe43b1502a",
+      "rewrites": [],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/round-trip.test.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/codecs/sc2-bank/test/round-trip.test.ts",
+      "sha256Mk2": "31809c49cb68fff6dff520ef6310e58232dd9350d6ab63d08296e363adbc9cc9",
+      "sha256Mk3": "d710cf9076dd2b8d056da51e98694db6b3c476eceee1ffee0e62b3bb2b41b994",
+      "gitBlob": "cfca5e6de48880f7e54ebb8b0889b30ce6199ce7",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/assets'",
+          "to": "'@modkit/codec-kit/legacy/assets'",
+          "count": 1,
+          "sha256Before": "31809c49cb68fff6dff520ef6310e58232dd9350d6ab63d08296e363adbc9cc9",
+          "sha256After": "f002a9d1c88f53ea7ee115d15fc1c99195f335090a779f7ffd18726c83ee7e6c"
+        },
+        {
+          "kind": "import",
+          "from": "'../src/core/core.js'",
+          "to": "'../../../../../src/lib/mk2/codecs/sc2-bank/src/core/core.js'",
+          "count": 1,
+          "sha256Before": "f002a9d1c88f53ea7ee115d15fc1c99195f335090a779f7ffd18726c83ee7e6c",
+          "sha256After": "523ead28208571a42c992b631a36b9e00a38283b3d088b7af10edea16be24882"
+        },
+        {
+          "kind": "import",
+          "from": "'../src/codec.js'",
+          "to": "'../../../../../src/lib/mk2/codecs/sc2-bank/src/codec.js'",
+          "count": 1,
+          "sha256Before": "523ead28208571a42c992b631a36b9e00a38283b3d088b7af10edea16be24882",
+          "sha256After": "d710cf9076dd2b8d056da51e98694db6b3c476eceee1ffee0e62b3bb2b41b994"
+        }
+      ],
+      "divergence": null
+    },
+    {
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/test/sc2-bank-manifest.test.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/codecs/sc2-bank/test/sc2-bank-manifest.test.ts",
+      "sha256Mk2": "0c5f94dedcab5dcc8ce1ca9f65ec113297d7a19d29179797df4fa8068ea0cdac",
+      "sha256Mk3": "26a8f8a6589aef5951782197e2ea4808fe63609e4e6b2fcc82764d0a09d7c983",
+      "gitBlob": "df091651d6d8a6d9aad06ffe6d6c5215a747780e",
+      "rewrites": [
+        {
+          "kind": "import",
+          "from": "'@modkitx/assets'",
+          "to": "'@modkit/codec-kit/legacy/assets'",
+          "count": 1,
+          "sha256Before": "0c5f94dedcab5dcc8ce1ca9f65ec113297d7a19d29179797df4fa8068ea0cdac",
+          "sha256After": "82a3183857f4e6e9d44e442fa8b67d571d8d5563e4c2951d782497fc33fe5e00"
+        },
+        {
+          "kind": "import",
+          "from": "'../src/codec.js'",
+          "to": "'../../../../../src/lib/mk2/codecs/sc2-bank/src/codec.js'",
+          "count": 1,
+          "sha256Before": "82a3183857f4e6e9d44e442fa8b67d571d8d5563e4c2951d782497fc33fe5e00",
+          "sha256After": "06a977dee20f7154974df959aa828729af487e6e3cc5b9ee277078dbe801f2ce"
+        },
+        {
+          "kind": "import",
+          "from": "'../src/describe.js'",
+          "to": "'../../../../../src/lib/mk2/codecs/sc2-bank/src/describe.js'",
+          "count": 1,
+          "sha256Before": "06a977dee20f7154974df959aa828729af487e6e3cc5b9ee277078dbe801f2ce",
+          "sha256After": "786a78cca4d059e740ca3feabd4e44b5a342e1c5fd54e1134eb59d1a0e1867db"
+        },
+        {
+          "kind": "import",
+          "from": "'../src/identity.js'",
+          "to": "'../../../../../src/lib/mk2/codecs/sc2-bank/src/identity.js'",
+          "count": 1,
+          "sha256Before": "786a78cca4d059e740ca3feabd4e44b5a342e1c5fd54e1134eb59d1a0e1867db",
+          "sha256After": "9a527884a25ff4cd1760e43977f4f0704b3b9dcf8cc6037dd080d061ea191ba8"
+        },
+        {
+          "kind": "import",
+          "from": "'@modkitx/saves-processing'",
+          "to": "'../../../../../../test/mk2/support/sc2-bank-host.js'",
+          "count": 1,
+          "sha256Before": "9a527884a25ff4cd1760e43977f4f0704b3b9dcf8cc6037dd080d061ea191ba8",
+          "sha256After": "a6d9f71d9de208ce20f4eb64f089c4cbdaaf06ada55c2e48c9157eadc6d58e5b"
+        }
+      ],
+      "divergence": {
+        "file": "modkit-extensions-blizzard/starcraft2/test/mk2/codecs/sc2-bank/test/sc2-bank-manifest.test.ts",
+        "semantic": false,
+        "reason": "Test-only relocation: canonical paths or the three registry assertions move to actual MK3 host contracts.",
+        "mk3Contract": "MK3 host owns registration/routing; canonical source paths retain browser guard and manifest assertions.",
+        "proof": [
+          {
+            "path": "modkit-core/migration/mk2-divergence/sc2-bank-test-adaptations.md",
+            "sha256": "0d9d15531f073e0d2a063fb5fc91af7adb3d115040552c3f48dab14c771caf7f"
+          }
+        ],
+        "edits": [
+          {
+            "from": "const codecRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..')",
+            "to": "const codecRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../../../../src/lib/mk2/codecs/sc2-bank')",
+            "count": 1,
+            "sha256Before": "a6d9f71d9de208ce20f4eb64f089c4cbdaaf06ada55c2e48c9157eadc6d58e5b",
+            "sha256After": "26a8f8a6589aef5951782197e2ea4808fe63609e4e6b2fcc82764d0a09d7c983"
+          }
+        ]
+      }
+    }
+  ]
+}

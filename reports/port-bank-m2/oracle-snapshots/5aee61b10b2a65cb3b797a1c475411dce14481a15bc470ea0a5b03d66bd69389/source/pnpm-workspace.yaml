@@ -1,0 +1,27 @@
+packages:
+  - 'packages/*'
+  # One workspace package per extension; codecs and games inside it are plain source directories.
+  - 'extensions/*/*'
+  - 'foundations/*'
+  - 'apps/*'
+  - 'apps/*/*'
+# Catalog for vendored sc2-galaxy-toolkit packages (Stage 1 integration).
+catalog:
+  typescript: '~6.0.3'
+  '@types/node': '^22'
+  esbuild: '^0.25'
+  vitest: '^3'
+  eslint: '^9'
+  typescript-eslint: '^8'
+  '@logtape/logtape': '^2.2.4'
+  '@logtape/pretty': '^2.2.4'
+  '@logtape/file': '^2.2.4'
+allowBuilds:
+  '@vscode/vsce-sign': true
+  canvas: true
+  esbuild: true
+  gl: true
+  keytar: true
+  koffi: false
+patchedDependencies:
+  vscode-languageserver@10.0.1: patches/vscode-languageserver@10.0.1.patch

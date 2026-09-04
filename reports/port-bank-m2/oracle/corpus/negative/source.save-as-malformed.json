@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "kind": "synthetic",
+  "codec": "sc2-bank",
+  "operation": "source.save-as",
+  "purpose": "Explicit asymmetric malformed-XML audit. This corpus is never operation-proof evidence.",
+  "cases": [
+    {
+      "id": "synthetic:malformed",
+      "input": {
+        "xml": "<Bank><Section name=\"broken\"><Key name=\"K\"><Value int=\"1\"/></Key></Section>",
+        "path": "/synthetic/malformed.SC2Bank"
+      }
+    }
+  ],
+  "proofs": []
+}

@@ -1,0 +1,614 @@
+{
+  "schemaVersion": 1,
+  "kind": "mixed",
+  "codec": "sc2-bank",
+  "operation": "edit.content",
+  "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "corpusPolicy": {
+    "real": "all 38 eligible user-save paths from discovery.json; source bytes remain in place and are checked before every legacy invocation",
+    "pinnedFixture": {
+      "path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/fixtures/endofdreamsbank2.SC2Bank",
+      "gitBlob": "f7d7ddf8a79d855f1af43a3ed5b508fe43b1502a",
+      "byteLength": 696,
+      "sha256": "925126109547379dd4325d3fe1ff8690255f51566786805794f8c415fc69d9ee",
+      "signature": "B786E6B04930A2B9D6789019D9D7DAD476A3A9DB"
+    },
+    "synthetic": [
+      "typed-values",
+      "custom-nodes",
+      "UTF-8 encoding",
+      "unknown patch target"
+    ],
+    "exclusions": []
+  },
+  "files": [
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\CampaignPS.SC2Bank",
+      "byteLength": 267,
+      "sha256": "def9d21c34a22735d3ea50fecdc60dc458a515834e3b4ab1b160bc2f62162b34"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\NArchive.SC2Bank",
+      "byteLength": 3391,
+      "sha256": "c8a17744310f9144321e475ca36e31aff8cf7316325197eb29798fd4fba64994"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\NArmy.SC2Bank",
+      "byteLength": 1709,
+      "sha256": "73a99ccdb157e2677add2efa78cc7892215d5ccd94f4f93a15a9e3276cba430b"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\NCampaign.SC2Bank",
+      "byteLength": 91995,
+      "sha256": "407826a33f6051d23ec2168fc9789073a09bbba7afb953c95452e5e9719849cf"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\NStory.SC2Bank",
+      "byteLength": 1251,
+      "sha256": "b258ccc57ab58530dc47a6115da9c26b2c9efac92a2d20084ab3a37a781cb525"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\PArchive.SC2Bank",
+      "byteLength": 10268,
+      "sha256": "18a87ca2783e063d9f0e15a15e740d16805a29b25a14bb2bf1244f2eaab85905"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\PPrologue.SC2Bank",
+      "byteLength": 9163,
+      "sha256": "6f37fc8f1ea70a3cb962f1b70810a02255e1365caad3d10bf19b1cf3fe6eceff"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\PrologueArchive.SC2Bank",
+      "byteLength": 850,
+      "sha256": "3f395ad3259a7a846d1271944dc89bb60bdd875214fdce9c1ded33bf7fee1136"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\THanson01.SC2Bank",
+      "byteLength": 7689,
+      "sha256": "9b622799866e20f3fcde3afbf49c12dfba986f5bcdb5c784a9c033aee23a5245"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\THanson02.SC2Bank",
+      "byteLength": 20769,
+      "sha256": "61b02b04262a6d3372dcfe898a813ef3115a2fc839057003188ff527ec2597e8"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\THanson03A.SC2Bank",
+      "byteLength": 21548,
+      "sha256": "9844791299bab1ffb630de964009683af1c6535f85870cb4d4a3a87ddd2c0dca"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\THanson03B.SC2Bank",
+      "byteLength": 21548,
+      "sha256": "9844791299bab1ffb630de964009683af1c6535f85870cb4d4a3a87ddd2c0dca"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\THorner01.SC2Bank",
+      "byteLength": 11851,
+      "sha256": "88aef56df80471a6bfb89d3a2d31577dfe7edf8f1550ac9d15af3cb65f6cdd8d"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\THorner02.SC2Bank",
+      "byteLength": 12608,
+      "sha256": "fa1189dd4fca29af3020610ff3f5c6eb1cc197f5dad64919ff026e439ee8ccfa"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\THorner03.SC2Bank",
+      "byteLength": 13491,
+      "sha256": "ccf76c381c853c94d78bbc9bef6c32299874c6e4a4bd6c8dd0609877606cb670"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\THorner04.SC2Bank",
+      "byteLength": 14935,
+      "sha256": "d282b722e5112b9e65d62247f30307c2d43b24e2f3fdb60127c4efa0e1516fad"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TRaynor01.SC2Bank",
+      "byteLength": 905,
+      "sha256": "3deb01797f761b27c911d48491a9d4800576a9fd79e68a7703fc2e26bc6ab0af"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TRaynor02.SC2Bank",
+      "byteLength": 3459,
+      "sha256": "e36bb7835cfbc1a558711ecb20815d086fec4635673f36775f15d223cc91027d"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TRaynor03.SC2Bank",
+      "byteLength": 6602,
+      "sha256": "3c7d7a049700996c551944cc6a9c57b6e9a5b0e73dac420a9943a31f6fd4ea32"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TTosh01.SC2Bank",
+      "byteLength": 9423,
+      "sha256": "aa4201c13aa93ff36f8a0c63e3a17b78881863eaf251f0ff69ffd196f67aba56"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TTosh02.SC2Bank",
+      "byteLength": 14186,
+      "sha256": "818cb49a55aaf344c4f236c5516e60818dcb724e3f49bd083c3e322a6c88513b"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TTosh03A.SC2Bank",
+      "byteLength": 16999,
+      "sha256": "fdd618e01e7049553744639b2307c68849ef3e272900fc2507673df88e1667d6"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TTosh03B.SC2Bank",
+      "byteLength": 16999,
+      "sha256": "fdd618e01e7049553744639b2307c68849ef3e272900fc2507673df88e1667d6"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TTychus01.SC2Bank",
+      "byteLength": 10904,
+      "sha256": "35efec1c7301d087fa4a9eb24f9d58249ce0021c7ffa5f7bbd6171e0a7b3e7a6"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TTychus02.SC2Bank",
+      "byteLength": 15544,
+      "sha256": "fb3eb8dbbdc786ed261c6d1d1373d9a51d8ea3ed628692739711f8cf0fb1a76b"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TTychus03.SC2Bank",
+      "byteLength": 16460,
+      "sha256": "40c4f9cb9a1fae1a00e4146b315189bd00a12dff413d91b9cebb86039106cbb3"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TTychus04.SC2Bank",
+      "byteLength": 19410,
+      "sha256": "f6eeed0262e890cfe9d981aa92752fe9b29f16767db892b52da92b10182b92cd"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TTychus05.SC2Bank",
+      "byteLength": 20269,
+      "sha256": "4dd41b873edb9f5cd5f78fa1eb6a6f9d030aadd715533b09a3bbc4603819dcb9"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TValerian01.SC2Bank",
+      "byteLength": 22637,
+      "sha256": "0b58df7a42cf5866855e5be938d58cfa02fd1edd4fb8ef3a7263b0952b8b77fe"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TValerian02A.SC2Bank",
+      "byteLength": 23198,
+      "sha256": "4de466b183156586a51c875ff77ee52901362aafea747743a15ab8e0edaab37f"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TValerian02B.SC2Bank",
+      "byteLength": 23198,
+      "sha256": "4de466b183156586a51c875ff77ee52901362aafea747743a15ab8e0edaab37f"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TValerian03.SC2Bank",
+      "byteLength": 23359,
+      "sha256": "40870bc64ac524506ac074b097c527383cfae3bc21723658bfd8c663f617a36d"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TZeratul01.SC2Bank",
+      "byteLength": 17568,
+      "sha256": "b1adb29e5d628b2639bc038b0b4b42347e3d0cdfff9ca4ea0e16087c2bd84873"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TZeratul02.SC2Bank",
+      "byteLength": 18012,
+      "sha256": "6de579d27ffccce0a0dd07d26ae1b225ec212dceacbfa964df15e3db56150234"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TZeratul03.SC2Bank",
+      "byteLength": 18488,
+      "sha256": "b59fccfc1e11888d31d0e80bca3f494066b394b08b7a7672540a53289878dd22"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TZeratul04.SC2Bank",
+      "byteLength": 19209,
+      "sha256": "18fa197c5061653d942b1de64f595a3c308e470e0c69c05a50173c8a3eebff45"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\ZArchive.SC2Bank",
+      "byteLength": 61,
+      "sha256": "b82ec5dd929ce002137738a8d205e19b966464eec606efbb94c0ddca4835b30f"
+    },
+    {
+      "path": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\ZCampaignStats.SC2Bank",
+      "byteLength": 29710,
+      "sha256": "0470f015cd669a23ecc9a14b61952dc827637a8b633c77a4b226beaffce420d6"
+    }
+  ],
+  "cases": [
+    {
+      "id": "real:CampaignPS.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\CampaignPS.SC2Bank",
+        "expectedByteLength": 267,
+        "expectedSha256": "def9d21c34a22735d3ea50fecdc60dc458a515834e3b4ab1b160bc2f62162b34",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:NArchive.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\NArchive.SC2Bank",
+        "expectedByteLength": 3391,
+        "expectedSha256": "c8a17744310f9144321e475ca36e31aff8cf7316325197eb29798fd4fba64994",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:NArmy.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\NArmy.SC2Bank",
+        "expectedByteLength": 1709,
+        "expectedSha256": "73a99ccdb157e2677add2efa78cc7892215d5ccd94f4f93a15a9e3276cba430b",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:NCampaign.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\NCampaign.SC2Bank",
+        "expectedByteLength": 91995,
+        "expectedSha256": "407826a33f6051d23ec2168fc9789073a09bbba7afb953c95452e5e9719849cf",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:NStory.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\NStory.SC2Bank",
+        "expectedByteLength": 1251,
+        "expectedSha256": "b258ccc57ab58530dc47a6115da9c26b2c9efac92a2d20084ab3a37a781cb525",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:PArchive.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\PArchive.SC2Bank",
+        "expectedByteLength": 10268,
+        "expectedSha256": "18a87ca2783e063d9f0e15a15e740d16805a29b25a14bb2bf1244f2eaab85905",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:PPrologue.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\PPrologue.SC2Bank",
+        "expectedByteLength": 9163,
+        "expectedSha256": "6f37fc8f1ea70a3cb962f1b70810a02255e1365caad3d10bf19b1cf3fe6eceff",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:PrologueArchive.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\PrologueArchive.SC2Bank",
+        "expectedByteLength": 850,
+        "expectedSha256": "3f395ad3259a7a846d1271944dc89bb60bdd875214fdce9c1ded33bf7fee1136",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:THanson01.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\THanson01.SC2Bank",
+        "expectedByteLength": 7689,
+        "expectedSha256": "9b622799866e20f3fcde3afbf49c12dfba986f5bcdb5c784a9c033aee23a5245",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:THanson02.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\THanson02.SC2Bank",
+        "expectedByteLength": 20769,
+        "expectedSha256": "61b02b04262a6d3372dcfe898a813ef3115a2fc839057003188ff527ec2597e8",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:THanson03A.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\THanson03A.SC2Bank",
+        "expectedByteLength": 21548,
+        "expectedSha256": "9844791299bab1ffb630de964009683af1c6535f85870cb4d4a3a87ddd2c0dca",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:THanson03B.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\THanson03B.SC2Bank",
+        "expectedByteLength": 21548,
+        "expectedSha256": "9844791299bab1ffb630de964009683af1c6535f85870cb4d4a3a87ddd2c0dca",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:THorner01.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\THorner01.SC2Bank",
+        "expectedByteLength": 11851,
+        "expectedSha256": "88aef56df80471a6bfb89d3a2d31577dfe7edf8f1550ac9d15af3cb65f6cdd8d",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:THorner02.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\THorner02.SC2Bank",
+        "expectedByteLength": 12608,
+        "expectedSha256": "fa1189dd4fca29af3020610ff3f5c6eb1cc197f5dad64919ff026e439ee8ccfa",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:THorner03.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\THorner03.SC2Bank",
+        "expectedByteLength": 13491,
+        "expectedSha256": "ccf76c381c853c94d78bbc9bef6c32299874c6e4a4bd6c8dd0609877606cb670",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:THorner04.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\THorner04.SC2Bank",
+        "expectedByteLength": 14935,
+        "expectedSha256": "d282b722e5112b9e65d62247f30307c2d43b24e2f3fdb60127c4efa0e1516fad",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:TRaynor01.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TRaynor01.SC2Bank",
+        "expectedByteLength": 905,
+        "expectedSha256": "3deb01797f761b27c911d48491a9d4800576a9fd79e68a7703fc2e26bc6ab0af",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:TRaynor02.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TRaynor02.SC2Bank",
+        "expectedByteLength": 3459,
+        "expectedSha256": "e36bb7835cfbc1a558711ecb20815d086fec4635673f36775f15d223cc91027d",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:TRaynor03.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TRaynor03.SC2Bank",
+        "expectedByteLength": 6602,
+        "expectedSha256": "3c7d7a049700996c551944cc6a9c57b6e9a5b0e73dac420a9943a31f6fd4ea32",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:TTosh01.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TTosh01.SC2Bank",
+        "expectedByteLength": 9423,
+        "expectedSha256": "aa4201c13aa93ff36f8a0c63e3a17b78881863eaf251f0ff69ffd196f67aba56",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:TTosh02.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TTosh02.SC2Bank",
+        "expectedByteLength": 14186,
+        "expectedSha256": "818cb49a55aaf344c4f236c5516e60818dcb724e3f49bd083c3e322a6c88513b",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:TTosh03A.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TTosh03A.SC2Bank",
+        "expectedByteLength": 16999,
+        "expectedSha256": "fdd618e01e7049553744639b2307c68849ef3e272900fc2507673df88e1667d6",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:TTosh03B.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TTosh03B.SC2Bank",
+        "expectedByteLength": 16999,
+        "expectedSha256": "fdd618e01e7049553744639b2307c68849ef3e272900fc2507673df88e1667d6",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:TTychus01.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TTychus01.SC2Bank",
+        "expectedByteLength": 10904,
+        "expectedSha256": "35efec1c7301d087fa4a9eb24f9d58249ce0021c7ffa5f7bbd6171e0a7b3e7a6",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:TTychus02.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TTychus02.SC2Bank",
+        "expectedByteLength": 15544,
+        "expectedSha256": "fb3eb8dbbdc786ed261c6d1d1373d9a51d8ea3ed628692739711f8cf0fb1a76b",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:TTychus03.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TTychus03.SC2Bank",
+        "expectedByteLength": 16460,
+        "expectedSha256": "40c4f9cb9a1fae1a00e4146b315189bd00a12dff413d91b9cebb86039106cbb3",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:TTychus04.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TTychus04.SC2Bank",
+        "expectedByteLength": 19410,
+        "expectedSha256": "f6eeed0262e890cfe9d981aa92752fe9b29f16767db892b52da92b10182b92cd",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:TTychus05.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TTychus05.SC2Bank",
+        "expectedByteLength": 20269,
+        "expectedSha256": "4dd41b873edb9f5cd5f78fa1eb6a6f9d030aadd715533b09a3bbc4603819dcb9",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:TValerian01.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TValerian01.SC2Bank",
+        "expectedByteLength": 22637,
+        "expectedSha256": "0b58df7a42cf5866855e5be938d58cfa02fd1edd4fb8ef3a7263b0952b8b77fe",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:TValerian02A.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TValerian02A.SC2Bank",
+        "expectedByteLength": 23198,
+        "expectedSha256": "4de466b183156586a51c875ff77ee52901362aafea747743a15ab8e0edaab37f",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:TValerian02B.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TValerian02B.SC2Bank",
+        "expectedByteLength": 23198,
+        "expectedSha256": "4de466b183156586a51c875ff77ee52901362aafea747743a15ab8e0edaab37f",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:TValerian03.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TValerian03.SC2Bank",
+        "expectedByteLength": 23359,
+        "expectedSha256": "40870bc64ac524506ac074b097c527383cfae3bc21723658bfd8c663f617a36d",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:TZeratul01.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TZeratul01.SC2Bank",
+        "expectedByteLength": 17568,
+        "expectedSha256": "b1adb29e5d628b2639bc038b0b4b42347e3d0cdfff9ca4ea0e16087c2bd84873",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:TZeratul02.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TZeratul02.SC2Bank",
+        "expectedByteLength": 18012,
+        "expectedSha256": "6de579d27ffccce0a0dd07d26ae1b225ec212dceacbfa964df15e3db56150234",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:TZeratul03.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TZeratul03.SC2Bank",
+        "expectedByteLength": 18488,
+        "expectedSha256": "b59fccfc1e11888d31d0e80bca3f494066b394b08b7a7672540a53289878dd22",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:TZeratul04.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\TZeratul04.SC2Bank",
+        "expectedByteLength": 19209,
+        "expectedSha256": "18fa197c5061653d942b1de64f595a3c308e470e0c69c05a50173c8a3eebff45",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:ZArchive.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\ZArchive.SC2Bank",
+        "expectedByteLength": 61,
+        "expectedSha256": "b82ec5dd929ce002137738a8d205e19b966464eec606efbb94c0ddca4835b30f",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "real:ZCampaignStats.SC2Bank",
+      "input": {
+        "file": "C:\\Users\\Admin\\Documents\\StarCraft II\\Accounts\\462903617\\2-S2-1-7985305\\Banks\\ZCampaignStats.SC2Bank",
+        "expectedByteLength": 29710,
+        "expectedSha256": "0470f015cd669a23ecc9a14b61952dc827637a8b633c77a4b226beaffce420d6",
+        "patchMode": "first-value-noop"
+      }
+    },
+    {
+      "id": "pinned:endofdreams",
+      "input": {
+        "pinnedFixture": true,
+        "path": "/Accounts/123/2-S2-1-98765/Banks/2-S2-1-2355723/endofdreamsbank2.SC2Bank",
+        "patch": {
+          "section": "Ranks",
+          "key": "Rank",
+          "type": "string",
+          "value": "Legend"
+        }
+      }
+    },
+    {
+      "id": "synthetic:typed-custom-encoding",
+      "input": {
+        "xml": "<Bank version=\"1\"><Section name=\"S\"><Key name=\"I\"><Value int=\"-7\"/></Key><Key name=\"F\"><Value fixed=\"1.25\"/></Key><Key name=\"Flag\"><Value flag=\"true\"/></Key><Key name=\"Point\"><Value point=\"1.5,-2\"/></Key><Key name=\"Text\"><Value string=\"Mëngsk &amp; Co\"/></Key><Key name=\"Nodes\"><Unit id=\"Marine\"/><Item text=\"ignored-for-signature\"/></Key></Section></Bank>",
+        "path": "/synthetic/typed-custom.SC2Bank",
+        "patch": {
+          "section": "S",
+          "key": "I",
+          "type": "int",
+          "value": "-8"
+        }
+      }
+    },
+    {
+      "id": "synthetic:patch-unknown-key",
+      "input": {
+        "xml": "<Bank version=\"1\"><Section name=\"S\"><Key name=\"I\"><Value int=\"-7\"/></Key><Key name=\"F\"><Value fixed=\"1.25\"/></Key><Key name=\"Flag\"><Value flag=\"true\"/></Key><Key name=\"Point\"><Value point=\"1.5,-2\"/></Key><Key name=\"Text\"><Value string=\"Mëngsk &amp; Co\"/></Key><Key name=\"Nodes\"><Unit id=\"Marine\"/><Item text=\"ignored-for-signature\"/></Key></Section></Bank>",
+        "patch": {
+          "section": "S",
+          "key": "missing",
+          "type": "int",
+          "value": "1"
+        }
+      }
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/sc2-bank/operation/edit.content",
+      "kind": "operation",
+      "legacyOperation": "edit.content",
+      "adapterOperation": "edit.content",
+      "targetOperation": "edit.content",
+      "handlerId": "patch-value",
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-bank.json",
+      "executed": true,
+      "caseIds": [
+        "real:CampaignPS.SC2Bank",
+        "pinned:endofdreams"
+      ]
+    }
+  ]
+}

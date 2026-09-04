@@ -1,0 +1,63 @@
+{
+  "name": "@modkitx/assets",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Browser-safe presentation-neutral asset contracts: sources, descriptors, detection, operation sessions, semantic registries, and the validated codec-manifest v1 contract. Depends only on @modkitx/core.",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./viewer": {
+      "import": "./dist/viewer.js",
+      "types": "./dist/viewer.d.ts"
+    },
+    "./registry": {
+      "import": "./dist/public/registry.js",
+      "types": "./dist/public/registry.d.ts"
+    },
+    "./capabilities": {
+      "import": "./dist/public/capabilities.js",
+      "types": "./dist/public/capabilities.d.ts"
+    },
+    "./operations": {
+      "import": "./dist/public/operations.js",
+      "types": "./dist/public/operations.d.ts"
+    },
+    "./profiles/image-texture": {
+      "import": "./dist/profiles/image-texture.js",
+      "types": "./dist/profiles/image-texture.d.ts"
+    },
+    "./sources": {
+      "import": "./dist/public/sources.js",
+      "types": "./dist/public/sources.d.ts"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "multiverse:validate": "tsx scripts/multiverse-validate.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit && tsc -p tsconfig.codegen.json --noEmit",
+    "test": "vitest run && vitest run --config codegen/codec-catalog/vitest.config.ts"
+  },
+  "dependencies": {
+    "@modkitx/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ajv": "^8.20.0",
+    "prettier": "^3.3.0",
+    "typescript": "^5.0.0",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}

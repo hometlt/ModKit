@@ -1,0 +1,47 @@
+✔ the direct SHA1 export resolves the canonical implementation (4.3789ms)
+✔ single: explicit shared operation contracts replace defaults without duplicates (307.3778ms)
+✔ single: omitted states retain shared and custom operation behavior (17.3207ms)
+✔ single: disabled is published and refused before the custom handler (32.2881ms)
+✔ single: dependency-required is published and refused before the custom handler (35.1042ms)
+✔ single: explicit availability retains declaration identity and permission checks (16.7273ms)
+✔ single: shared operations can be disabled for a document (16.8181ms)
+✔ single: rejects unknown id and releases the opened input (1.088ms)
+✔ single: rejects duplicate id and releases the opened input (0.9717ms)
+✔ single: rejects invalid state and releases the opened input (0.8682ms)
+✔ single: rejects missing reason and releases the opened input (0.5541ms)
+✔ single: rejects empty reason and releases the opened input (0.4544ms)
+✔ single: rejects object reason and releases the opened input (0.7305ms)
+✔ single: rejects available reason and releases the opened input (0.4434ms)
+✔ namespace: explicit shared operation contracts replace defaults without duplicates (18.0522ms)
+✔ namespace: omitted states retain shared and custom operation behavior (12.0447ms)
+✔ namespace: disabled is published and refused before the custom handler (24.9383ms)
+✔ namespace: dependency-required is published and refused before the custom handler (22.2733ms)
+✔ namespace: explicit availability retains declaration identity and permission checks (13.856ms)
+✔ namespace: shared operations can be disabled for a document (10.1067ms)
+✔ namespace: rejects unknown id and releases the opened input (0.3234ms)
+✔ namespace: rejects duplicate id and releases the opened input (0.2105ms)
+✔ namespace: rejects invalid state and releases the opened input (0.1576ms)
+✔ namespace: rejects missing reason and releases the opened input (0.1441ms)
+✔ namespace: rejects empty reason and releases the opened input (0.1288ms)
+✔ namespace: rejects object reason and releases the opened input (0.1563ms)
+✔ namespace: rejects available reason and releases the opened input (0.1215ms)
+✔ all 14 diagnostic categories, identity, byte range and error details survive the MK3 boundary (6.1271ms)
+✔ legacy diagnostic source remains data while a real native owner supplies contribution identity (0.4661ms)
+✔ compile compatibility registries refuse; operations require explicit owned mapping (2.105ms)
+✔ real legacy sessions retain permission, state, cancellation and disposal checks (2.4177ms)
+✔ source adapter enforces exact ranges, maxBytes, cancellation and safe integer size (1.8726ms)
+✔ artifact adapter is a native MK3 Codec and probes the selected real legacy detector (2.7504ms)
+✔ edit projection preserves payload/offset and rejects unsupported edits and overlap (3.0694ms)
+✔ runtime bridge reserves before execution and preserves result, refusal and lease disposal (2.9128ms)
+✔ language bridge returns actual projection, rejects wrong snapshots and cancellation (1.9937ms)
+✔ SHA1/CRC and real compression fixtures, corrupt bzip2, early output cap and explicit ADPCM refusal (91.3091ms)
+✔ texture CPU footprint and allocation guards preserve pinned behavior (1.5117ms)
+✔ real Texture2DDecoder WASM Node and explicit browser entrypoint produce equal BC1 pixels; missing assets refuse then retry (60.6096ms)
+ℹ tests 39
+ℹ suites 0
+ℹ pass 39
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1356.4202

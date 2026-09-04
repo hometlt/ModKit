@@ -1,0 +1,1 @@
+{"publicEntrypoints":["@modkit/blizzard-starcraft2/bank/codec","@modkit/blizzard-starcraft2/bank/core"],"inputFiles":248,"outputs":["../artifacts/legacy-parity-sc2/sc2-bank/m2-2026-09-04/adapter/browser/codec.js","../artifacts/legacy-parity-sc2/sc2-bank/m2-2026-09-04/adapter/browser/core.js"]}

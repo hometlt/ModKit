@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "status": "superseded-by-pinned-codec-oracle-v2",
+  "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "legacySuiteCount": 12,
+  "realCorpusFiles": 38,
+  "realCorpusPinnedRead": { "operation": "view.inspect", "parsed": 38, "failed": 0 },
+  "corpora": {
+    "view.inspect": { "files": 38, "cases": 41, "proofs": 1 },
+    "asset.validate": { "files": 38, "cases": 42, "proofs": 1 },
+    "export.raw": { "files": 38, "cases": 40, "proofs": 1 },
+    "edit.content": { "files": 38, "cases": 42, "proofs": 1 },
+    "source.save-as": { "files": 38, "cases": 41, "proofs": 1 },
+    "save.sign": { "files": 38, "cases": 42, "proofs": 1 },
+    "blizzard/sc2-bank.verify": { "files": 38, "cases": 41, "proofs": 0 }
+  },
+  "oracleCache": {
+    "cacheKey": "fd92db7464710da4c7bbb818e5fbfe527f2c88b3b48dd0e0875ae013e500b06c",
+    "sourceFiles": 18,
+    "sourceClosureDigest": "c571caaf67cf913cfe0d64428aa0725e94acb1330eb80c0038949476ea3926fa",
+    "loaderDigest": "7149366baeaf643e3ff180a18ee059293675976ff53b9aacab2de18add87b52a",
+    "dependenciesDigest": "8384a7c463f474a0cf3c623a1bbcbb5e267ab2fe7ba38cf11c12d8e9a1db7486",
+    "corpusDigest": "1307aef6812480c8be01c26b8ac9d6f4e6ad90f3245106f9919a0e13b623b2e5",
+    "bundleSha256": "b70a08f13d568c3c16e03a2a93e1103c81b93f70d59a33fbc55715aba33e4d6d",
+    "fastXmlParser": "4.5.6"
+  },
+  "notRun": [
+    "No native differential or receipt was run before COPY READY.",
+    "No evidence was applied.",
+    "The recorded v1 cache used core-level calls only and is retained as provenance, not as Z3 evidence.",
+    "The v2 oracle uses pinned Sc2BankCodec and createMemoryAssetSource, but its first load is blocked by the loadMk2 @logtape/logtape snapshot-resolution defect."
+  ]
+}

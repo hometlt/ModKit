@@ -1,0 +1,13 @@
+migration:check: 1120 source units up to date (206 codec + 31 game manifests = 237; VS Code 64/11/8 commands/editors/languages)
+migration:check workflow ledger: 266 facts in three baskets, 5 Product GA gaps and 67 observed X3 facts up to date
+package-owners: 37 legacy unit(s), one owner each (demoted 1, dropped 1, planned 7, ported 28); catalogue 8 units in 6 directories; bootstrap 4
+migration:report --check: status.md up to date (8 open mk3-ga gaps)
+migration:check parity matrix: 331 capability rows across 9 families, 266 ledger facts up to date
+migration:check registry: known debt 38 (must be empty by wave 6), new problems 0, stale baseline entries 0, unavailable checks 1 (must be restored by wave 6)
+migration:check registry: 331 capabilities (deferred-games-priority 42, mk3-priority 135, multiverse-priority 10, post-ga 144); obligations experimental-optional 2, focused-required-addition 33, legacy-required 289, post-ga-required-proof 7; evidence E0 82, E1 133, E2 59, E3 23, E4 31, E5 3; 512 mapped + 608 unmapped = 1120 source units; 8 projection planes
+migration:check registry: installed-host evidence on 3 row(s)
+  · format/dds/open-inspect → artifacts/ga-recovery-wave2b/installed-acceptance-wave2b-final-687fd1f8.receipt.json#2B-1/2B-2
+  · format/ogg/open-inspect → artifacts/ga-recovery-wave2b/installed-acceptance-wave2b-final-687fd1f8.receipt.json#2B-3
+  · format/wav/open-inspect → artifacts/ga-recovery-wave2b/installed-acceptance-wave2b-final-687fd1f8.receipt.json#2B-3
+codec-map: legacy 206, SC2 audits 12, contributions 193, authored 1
+feature-ledger integrity: requirements 891, pending 891, problems 0

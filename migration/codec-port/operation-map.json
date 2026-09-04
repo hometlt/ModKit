@@ -1996,46 +1996,46 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-bank.json",
+      "handlerId": "validate",
       "id": "legacy/codec-manifest/modkit/sc2-bank/operation/asset.validate",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "asset.validate"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-bank.json",
+      "handlerId": "patch-value",
       "id": "legacy/codec-manifest/modkit/sc2-bank/operation/edit.content",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "edit.content"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-bank.json",
+      "handlerId": "export-raw",
       "id": "legacy/codec-manifest/modkit/sc2-bank/operation/export.raw",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "export.raw"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-bank.json",
+      "handlerId": "sign",
       "id": "legacy/codec-manifest/modkit/sc2-bank/operation/save.sign",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "blizzard/sc2-bank.sign"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-bank.json",
+      "handlerId": "save-as",
       "id": "legacy/codec-manifest/modkit/sc2-bank/operation/source.save-as",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "source.save-as"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-bank.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/sc2-bank/operation/view.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,

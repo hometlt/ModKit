@@ -1,0 +1,210 @@
+{
+  "schemaVersion": 1,
+  "verdict": "pass",
+  "note": "Expected red closure checks prove pending scope remains visible; they are not passed family acceptance.",
+  "executions": [
+    {
+      "name": "bank-copy",
+      "command": [
+        "node",
+        "scripts/migration/check-mk2-copy.mjs",
+        "--family",
+        "sc2",
+        "--scope",
+        "sc2-bank"
+      ],
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "passed": true,
+      "log": "bank-copy.log"
+    },
+    {
+      "name": "library-copy",
+      "command": [
+        "node",
+        "scripts/migration/check-mk2-copy.mjs",
+        "--family",
+        "sc2",
+        "--scope",
+        "m1-libs"
+      ],
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "passed": true,
+      "log": "library-copy.log"
+    },
+    {
+      "name": "scoped-claims",
+      "command": [
+        "node",
+        "scripts/migration/check-feature-ledger.mjs",
+        "--claims",
+        "reports/port-bank-m2/claims.json"
+      ],
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "passed": true,
+      "log": "scoped-claims.log"
+    },
+    {
+      "name": "ledger-integrity",
+      "command": [
+        "node",
+        "scripts/migration/check-feature-ledger.mjs"
+      ],
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "passed": true,
+      "log": "ledger-integrity.log"
+    },
+    {
+      "name": "family-closure-pending",
+      "command": [
+        "node",
+        "scripts/migration/check-feature-ledger.mjs",
+        "--closure",
+        "sc2"
+      ],
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "passed": true,
+      "log": "family-closure-pending.log"
+    },
+    {
+      "name": "global-closure-pending",
+      "command": [
+        "node",
+        "scripts/migration/check-feature-ledger.mjs",
+        "--closure",
+        "all"
+      ],
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "passed": true,
+      "log": "global-closure-pending.log"
+    },
+    {
+      "name": "family-source-pending",
+      "command": [
+        "node",
+        "scripts/migration/check-mk2-copy.mjs",
+        "--family",
+        "sc2",
+        "--scope",
+        "family"
+      ],
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "exitCode": 1,
+      "expectedExitCode": 1,
+      "passed": true,
+      "log": "family-source-pending.log"
+    },
+    {
+      "name": "migration-check-0",
+      "command": [
+        "node",
+        "scripts/migration/emit-inventory.mjs",
+        "--check"
+      ],
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "passed": true,
+      "log": "migration-check-0.log"
+    },
+    {
+      "name": "migration-check-1",
+      "command": [
+        "node",
+        "scripts/migration/emit-vscode-workflow-ledger.mjs",
+        "--check"
+      ],
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "passed": true,
+      "log": "migration-check-1.log"
+    },
+    {
+      "name": "migration-check-2",
+      "command": [
+        "node",
+        "scripts/migration/check-package-owners.mjs"
+      ],
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "passed": true,
+      "log": "migration-check-2.log"
+    },
+    {
+      "name": "migration-check-3",
+      "command": [
+        "node",
+        "scripts/migration/emit-status.mjs",
+        "--check"
+      ],
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "passed": true,
+      "log": "migration-check-3.log"
+    },
+    {
+      "name": "migration-check-4",
+      "command": [
+        "node",
+        "scripts/migration/emit-parity-matrix.mjs",
+        "--check"
+      ],
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "passed": true,
+      "log": "migration-check-4.log"
+    },
+    {
+      "name": "migration-check-5",
+      "command": [
+        "node",
+        "scripts/migration/check-registry.mjs"
+      ],
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "passed": true,
+      "log": "migration-check-5.log"
+    },
+    {
+      "name": "migration-check-6",
+      "command": [
+        "node",
+        "scripts/migration/emit-codec-map.mjs",
+        "--check"
+      ],
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "passed": true,
+      "log": "migration-check-6.log"
+    },
+    {
+      "name": "migration-check-7",
+      "command": [
+        "node",
+        "scripts/migration/check-feature-ledger.mjs"
+      ],
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "exitCode": 0,
+      "expectedExitCode": 0,
+      "passed": true,
+      "log": "migration-check-7.log"
+    }
+  ]
+}

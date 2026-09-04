@@ -1,0 +1,14 @@
+[
+  {
+    "from": "oracle-dependencies/38bf6535c1ad393e8936fb83c922c41ad6adddcfd312f2ad7ad34c15c33fcf37/f89f16c85fa896d705243cc6cb49da6b6f54e4b5428529da9ce01269c0b717d5/node_modules/@logtape/logtape",
+    "to": "oracle-dependencies/38bf6535c1ad393e8936fb83c922c41ad6adddcfd312f2ad7ad34c15c33fcf37/b54204e8a2ad841390678857444a7b57fe6ff1706d115599d03767c01750f47e"
+  },
+  {
+    "from": "oracle-dependencies/38bf6535c1ad393e8936fb83c922c41ad6adddcfd312f2ad7ad34c15c33fcf37/75a9aa8273eca25bff617030b453866ef88026dc2d1fd57b6f1e48927a17c781/node_modules/@logtape/logtape",
+    "to": "oracle-dependencies/38bf6535c1ad393e8936fb83c922c41ad6adddcfd312f2ad7ad34c15c33fcf37/b54204e8a2ad841390678857444a7b57fe6ff1706d115599d03767c01750f47e"
+  },
+  {
+    "from": "oracle-dependencies/38bf6535c1ad393e8936fb83c922c41ad6adddcfd312f2ad7ad34c15c33fcf37/244b5dde4eaa63f0bb6b66e972a7667067d3d4328c5c1771a470764a157bb592/node_modules/strnum",
+    "to": "oracle-dependencies/38bf6535c1ad393e8936fb83c922c41ad6adddcfd312f2ad7ad34c15c33fcf37/1977e8fb0fbbf2c8843d4a0addc0dbb2203bf7ec27525a0f9f78bbd87133d0d1"
+  }
+]

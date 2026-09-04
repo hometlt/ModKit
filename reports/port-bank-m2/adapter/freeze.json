@@ -1,0 +1,141 @@
+{
+  "schemaVersion": 1,
+  "codecId": "blizzard/sc2-bank",
+  "stage": "adapter-tested",
+  "pinnedSource": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "operationMappingVersion": 1,
+  "legacyOperations": 6,
+  "nativeOperations": 7,
+  "sourceCounts": {
+    "canonicalSourceTs": 18,
+    "copiedTestFiles": 12,
+    "copiedTests": 54,
+    "authoredBankTsIncludingDeclarations": 4
+  },
+  "verification": [
+    {
+      "command": "node node_modules/typescript/bin/tsc -b starcraft2/tsconfig.json --pretty false",
+      "exitCode": 0
+    },
+    {
+      "command": "node node_modules/vitest/vitest.mjs run --config test/vitest.config.mjs starcraft2/test/sc2-bank-native.test.ts starcraft2/test/sc2-bank-product-ga.test.ts starcraft2/test/sc2-bank-native-host.test.ts",
+      "exitCode": 0,
+      "files": 3,
+      "passed": 15,
+      "skipped": 0,
+      "log": "native-final.log"
+    },
+    {
+      "command": "node node_modules/vitest/vitest.mjs run --config starcraft2/test/vitest.mk2.config.mjs sc2-bank",
+      "exitCode": 0,
+      "files": 12,
+      "passed": 54,
+      "skipped": 0,
+      "log": "mk2-final.log"
+    },
+    {
+      "command": "pnpm run test:quick",
+      "exitCode": 0,
+      "passed": 204,
+      "skipped": 3,
+      "skippedScope": "pre-existing M3 installed-corpus checks",
+      "log": "blizzard-quick-final.log"
+    },
+    {
+      "command": "esbuild browser bundle of public @modkit/blizzard-starcraft2/bank/codec and /bank/core exports",
+      "exitCode": 0,
+      "inputFiles": 248,
+      "log": "browser-final.log",
+      "metafile": "browser/metafile.json"
+    },
+    {
+      "command": "node starcraft2/dist/lib/mk2/codecs/sc2-bank/src/core/cli.js --help",
+      "exitCode": 0,
+      "log": "cli-public-final.log"
+    }
+  ],
+  "preservedMk3Surfaces": [
+    "BankList parser/codec",
+    "strict XML and budget guards",
+    "typed semantic values including safe integers",
+    "facts and relation graph",
+    "workspace BankLoad and BankList relationships",
+    "unsigned complete-source writer"
+  ],
+  "nativeProof": [
+    "per-document signing state",
+    "inspect and validation exact legacy products",
+    "original source-byte export including BOM",
+    "raw-preserving value edits",
+    "sign and verify",
+    "save-as serialization",
+    "minimal host activation",
+    "real worker host file commit and reopen",
+    "resolved writer no-op commit and reopen",
+    "browser-safe public entrypoints",
+    "Node CLI entrypoint"
+  ],
+  "pending": [
+    "independent oracle differential and root evidence application",
+    "root scoped migration and provenance acceptance gates",
+    "M7/M8 full S1-S15 and end-user surface acceptance"
+  ],
+  "files": [
+    {
+      "path": "starcraft2/package.json",
+      "sha256": "fa6aa62e24a840a528c3ebc2d95c4040fc4102da17b79fd13ffdb3b377a46068"
+    },
+    {
+      "path": "starcraft2/contributions/codec-sc2-bank.json",
+      "sha256": "73afce1f25380372fb267052162f5a65a99965c5f54563401283225e16f8bfc9"
+    },
+    {
+      "path": "starcraft2/contributions/subject-kind-sc2-bank.json",
+      "sha256": "1c979e0da33b0695875e76f1c15833e895da649afb2effb82d2298356e918b9b"
+    },
+    {
+      "path": "starcraft2/src/sc2-bank/codec.js",
+      "sha256": "3b1fa9caa362affb9d8feba2591bb372a3823937b765fca3a01fc7fe5cb88f21"
+    },
+    {
+      "path": "starcraft2/src/sc2-bank/codec.ts",
+      "sha256": "902f81ed916f79021679f58cd9805b14372e8e45cd763b0035297969c5a6a2bd"
+    },
+    {
+      "path": "starcraft2/src/sc2-bank/core.ts",
+      "sha256": "dead0056b30226a6480fa7c9b8ff5b31c14848ab40cac3030dd2e0291abcb216"
+    },
+    {
+      "path": "starcraft2/src/sc2-bank/node.ts",
+      "sha256": "ff719d1249a9b58c7806c03e6fe058b988325c7137760e84f2ac2aa1f29140af"
+    },
+    {
+      "path": "starcraft2/src/sc2-bank/inspection.js",
+      "sha256": "3aa8baff1216d21dc3ca7cdc9c148e6e6177fcbd1273cc3fc2a0a694c2a1c905"
+    },
+    {
+      "path": "starcraft2/src/sc2-bank/inspection.d.ts",
+      "sha256": "085717ecca71011216e2db44021ab3bedb729dac3be88f1d4d3b9c44be407163"
+    },
+    {
+      "path": "starcraft2/test/sc2-bank-product-ga.test.ts",
+      "sha256": "4eee30c6bfbc9069934c6a1bd3e8ffc5d29a5bc40bf2f874a974fef1060d3407"
+    },
+    {
+      "path": "starcraft2/test/sc2-bank-native.test.ts",
+      "sha256": "462b1232658e2b86fa0250dc48a669625220d36e66a0e3930bc5e64f5c869aae"
+    },
+    {
+      "path": "starcraft2/test/sc2-bank-native-host.test.ts",
+      "sha256": "33cf0e01163172c0b35b8cc321eb4433a9df1fae5ec4a1f559775b4cec16521f"
+    },
+    {
+      "path": "starcraft2/test/vitest.mk2.config.mjs",
+      "sha256": "652f1abb1644af310f14442c6627412f937c43e44604529e73fb81af2ef46673"
+    },
+    {
+      "path": "test/mk2/support/sc2-bank-host.ts",
+      "sha256": "b892d0aaf4c24e880a07f828f0e141d9f81f753fcb4efe14144ab50bc4f1fab0"
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 pnpm-lock.yaml
 # Immutable M1 receipts and exact tested source snapshots; their digests are evidence.
 reports/port-libs-m1/
+reports/port-bank-m2/
 # Raw test-runner output is byte-bound by the scoped surfaces receipt.
 reports/port-infra/surfaces-tests.json
 # Accepted byte-identified evidence and signed generated bundles are checked by their own gates.

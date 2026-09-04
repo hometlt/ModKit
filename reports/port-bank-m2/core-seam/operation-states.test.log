@@ -1,0 +1,33 @@
+✔ the direct SHA1 export resolves the canonical implementation (2.7248ms)
+✔ single: omitted states retain shared and custom operation behavior (307.4368ms)
+✔ single: disabled is published and refused before the custom handler (30.3136ms)
+✔ single: dependency-required is published and refused before the custom handler (25.8643ms)
+✔ single: explicit availability retains declaration identity and permission checks (16.2535ms)
+✔ single: shared operations can be disabled for a document (15.8429ms)
+✔ single: rejects unknown id and releases the opened input (2.3626ms)
+✔ single: rejects duplicate id and releases the opened input (0.8435ms)
+✔ single: rejects invalid state and releases the opened input (1.334ms)
+✔ single: rejects missing reason and releases the opened input (0.9991ms)
+✔ single: rejects empty reason and releases the opened input (0.5135ms)
+✔ single: rejects object reason and releases the opened input (0.4085ms)
+✔ single: rejects available reason and releases the opened input (0.6491ms)
+✔ namespace: omitted states retain shared and custom operation behavior (16.8597ms)
+✔ namespace: disabled is published and refused before the custom handler (26.8495ms)
+✔ namespace: dependency-required is published and refused before the custom handler (25.6696ms)
+✔ namespace: explicit availability retains declaration identity and permission checks (9.1483ms)
+✔ namespace: shared operations can be disabled for a document (9.1825ms)
+✔ namespace: rejects unknown id and releases the opened input (0.3207ms)
+✔ namespace: rejects duplicate id and releases the opened input (0.2025ms)
+✔ namespace: rejects invalid state and releases the opened input (0.1553ms)
+✔ namespace: rejects missing reason and releases the opened input (0.1373ms)
+✔ namespace: rejects empty reason and releases the opened input (0.1208ms)
+✔ namespace: rejects object reason and releases the opened input (0.1178ms)
+✔ namespace: rejects available reason and releases the opened input (0.1148ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1289.0161

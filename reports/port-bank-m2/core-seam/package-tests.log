@@ -1,0 +1,44 @@
+✔ the direct SHA1 export resolves the canonical implementation (2.5949ms)
+✔ single: omitted states retain shared and custom operation behavior (284.676ms)
+✔ single: disabled is published and refused before the custom handler (33.9904ms)
+✔ single: dependency-required is published and refused before the custom handler (30.4851ms)
+✔ single: explicit availability retains declaration identity and permission checks (14.5086ms)
+✔ single: shared operations can be disabled for a document (10.5245ms)
+✔ single: rejects unknown id and releases the opened input (1.4988ms)
+✔ single: rejects duplicate id and releases the opened input (0.4764ms)
+✔ single: rejects invalid state and releases the opened input (1.0004ms)
+✔ single: rejects missing reason and releases the opened input (0.6232ms)
+✔ single: rejects empty reason and releases the opened input (0.7815ms)
+✔ single: rejects object reason and releases the opened input (0.4892ms)
+✔ single: rejects available reason and releases the opened input (0.5744ms)
+✔ namespace: omitted states retain shared and custom operation behavior (13.3932ms)
+✔ namespace: disabled is published and refused before the custom handler (23.444ms)
+✔ namespace: dependency-required is published and refused before the custom handler (21.489ms)
+✔ namespace: explicit availability retains declaration identity and permission checks (8.5367ms)
+✔ namespace: shared operations can be disabled for a document (8.2202ms)
+✔ namespace: rejects unknown id and releases the opened input (0.2894ms)
+✔ namespace: rejects duplicate id and releases the opened input (0.4267ms)
+✔ namespace: rejects invalid state and releases the opened input (0.2143ms)
+✔ namespace: rejects missing reason and releases the opened input (0.1439ms)
+✔ namespace: rejects empty reason and releases the opened input (0.1333ms)
+✔ namespace: rejects object reason and releases the opened input (0.1221ms)
+✔ namespace: rejects available reason and releases the opened input (0.117ms)
+✔ all 14 diagnostic categories, identity, byte range and error details survive the MK3 boundary (5.3064ms)
+✔ compile compatibility registries refuse; operations require explicit owned mapping (1.5629ms)
+✔ real legacy sessions retain permission, state, cancellation and disposal checks (5.1977ms)
+✔ source adapter enforces exact ranges, maxBytes, cancellation and safe integer size (1.6659ms)
+✔ artifact adapter is a native MK3 Codec and probes the selected real legacy detector (2.2524ms)
+✔ edit projection preserves payload/offset and rejects unsupported edits and overlap (2.2143ms)
+✔ runtime bridge reserves before execution and preserves result, refusal and lease disposal (1.9634ms)
+✔ language bridge returns actual projection, rejects wrong snapshots and cancellation (1.4918ms)
+✔ SHA1/CRC and real compression fixtures, corrupt bzip2, early output cap and explicit ADPCM refusal (87.1511ms)
+✔ texture CPU footprint and allocation guards preserve pinned behavior (1.4619ms)
+✔ real Texture2DDecoder WASM Node and explicit browser entrypoint produce equal BC1 pixels; missing assets refuse then retry (61.3389ms)
+ℹ tests 36
+ℹ suites 0
+ℹ pass 36
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1152.7441

@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-04T17:38:27.216Z",
+  "stage": "after implementation commits, before final core evidence commit",
+  "commands": [
+    "git branch --show-current",
+    "git rev-parse HEAD",
+    "git status --porcelain"
+  ],
+  "repositories": [
+    {
+      "directory": "modkit-core",
+      "branch": "sol/port-libs",
+      "head": "ce05ac2e89dfb2d78dd9727ddc577d2741f58f21",
+      "statusPorcelain": "M .gitattributes\n M .prettierignore\n M migration/codec-port/feature-ledger.json\n M migration/codec-port/operation-map.json\n M migration/generated/codec-map.json\n M migration/generated/codec-map.md\n?? reports/PORT_SC2_sc2-bank_2026-09-04.md\n?? reports/port-bank-m2/"
+    },
+    {
+      "directory": "modkit-extensions-blizzard",
+      "branch": "sol/port-sc2",
+      "head": "ad53661cbf709e7b6a20e9be33b939e5e80105ea",
+      "statusPorcelain": ""
+    },
+    {
+      "directory": "references/modkit-docs",
+      "branch": "sol/port-plan-review",
+      "head": "b7b791da7c518c044f17c02a9f54649aefe8501d",
+      "statusPorcelain": "?? MK3/CLAUDE_GA_IMPLEMENTATION_AND_KODA_REVIEW_2026-09-03.md\n?? MK3/KODA-ARCHITECTURE-AUDIT.md\n?? MK3/KODA-SUGGESTIONS.md\n?? MK3/KODA_AUDITORY.md\n?? MK3/KODA_COMPETITORS.md"
+    }
+  ]
+}

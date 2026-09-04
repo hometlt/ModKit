@@ -1,0 +1,39 @@
+✔ acceptance flags reject typos, duplicates and missing scope values (3.9701ms)
+✔ ledger claims and closure are mutually exclusive before any repository or file reads (184.2366ms)
+✔ ledger CLI refuses a missing claims value instead of falling back to integrity (174.0859ms)
+✔ pending ledger passes integrity but fails requested family closure (22.872ms)
+✔ SC2 family closure includes its shared MPQ and CASC consumers (0.7605ms)
+✔ nonempty executed mapped operation and feature proof close the exact fixture scope (64.1181ms)
+✔ explicit claims close only selected evidence-backed requirements and retain global pending (61.5609ms)
+✔ selected pending requirements fail even when all unselected requirements remain pending (4.3241ms)
+✔ explicit claims reject null scope (3.14ms)
+✔ explicit claims reject array scope (2.766ms)
+✔ explicit claims reject wrong schema version (2.8704ms)
+✔ explicit claims reject unknown schema property (3.2041ms)
+✔ explicit claims reject empty codec (3.1832ms)
+✔ explicit claims reject unknown codec (3.2555ms)
+✔ explicit claims reject missing requirements (3.2421ms)
+✔ explicit claims reject empty requirements (2.6958ms)
+✔ explicit claims reject non-array requirements (2.9223ms)
+✔ explicit claims reject empty requirement ID (3.1295ms)
+✔ explicit claims reject non-string requirement ID (5.0999ms)
+✔ explicit claims reject unknown or stale requirement (2.5679ms)
+✔ explicit claims reject duplicate requirement (3.3368ms)
+✔ claims cannot select a real requirement owned by another codec (3.7935ms)
+✔ claims and full closure cannot be combined through the library API (32.8749ms)
+✔ a malformed proof outside the selected claims still fails global integrity (34.9666ms)
+✔ claims retain global mapping, entry and accepted-evidence protection (24.8106ms)
+✔ missing feature, missing operation, empty ledger and duplicate rows fail (10.7382ms)
+✔ missing, altered or empty receipts cannot carry accepted evidence (47.9814ms)
+✔ accepted claims and protected proof cannot disappear from a later ledger (26.8882ms)
+✔ operation alias requires the actual published handler and evidence execution (43.7372ms)
+✔ a detached manifest and unrelated execution cannot close published operation claims (77.7085ms)
+✔ discovery reads authored manifest globs and excludes fixtures and build artifacts (34.8498ms)
+ℹ tests 31
+ℹ suites 0
+ℹ pass 31
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 832.8611

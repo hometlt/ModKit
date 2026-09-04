@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "purpose": "M2 loader peer-dependency regression against accepted M1 texture products",
+  "name": "compare-legacy-dds-bptc",
+  "command": "node --experimental-strip-types artifacts/legacy-parity-textures/compare-legacy-dds-bptc.mjs --corpus C:/FILES/SC2Files/Mods",
+  "cwd": "C:\\FILES\\SC2Files\\coding",
+  "startedAt": "2026-09-04T17:11:39.091Z",
+  "finishedAt": "2026-09-04T17:17:00.076Z",
+  "exitCode": 0,
+  "baselineReceipt": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\port-libs-m1\\current-parity\\compare-legacy-dds-bptc.current.receipt.json",
+  "loader": {
+    "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs",
+    "sha256": "aff3a93efd6d5fc05864c7655b4a31e19fba2e5b4a2df301589f26bfd7912a7d"
+  },
+  "harnessSha256": "3c0c53b22a1e3bd3897d0a6593fc8a76433048ff9a9f705cecd18a958f9b2e25",
+  "measurements": {
+    "compared": 6400,
+    "unit": "surface",
+    "identical": 6400,
+    "differing": 0
+  },
+  "expectedM1": {
+    "compared": 6400,
+    "unit": "surface",
+    "identical": 6400,
+    "differing": 0
+  },
+  "refusals": {
+    "legacyOnly": 1280,
+    "confirmedBoth": 0,
+    "unclassifiedIdenticalMalformed": 0
+  },
+  "corpusFiles": 58470,
+  "matchesM1": true,
+  "stdoutMatchesM1": true,
+  "corpusMatchesM1": true,
+  "usesFrozenLoader": true,
+  "stdoutSha256": "96f69001dae2b19aa57672c5a557b05fea1e3afa3f034b00af4fd12d4e2b6d36",
+  "stderrSha256": "444b096a1cecbb785536d5222498f772a13f932b708e1a6da5aadb6bf9dd2069",
+  "verdict": "pass",
+  "limitations": [
+    "Summary identical includes matched refusals and scalar results; legacy-only refusals do not execute MK3.",
+    "Encoder retains three malformed-input identical outcomes not classified by its stdout as accepted or refused."
+  ]
+}

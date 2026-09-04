@@ -1,0 +1,56 @@
+[
+  {
+    "name": "full-scope",
+    "args": [
+      "--codec",
+      "sc2-bank",
+      "--scope",
+      "full",
+      "--out",
+      "../artifacts/legacy-parity-sc2/sc2-bank/m2-2026-09-04/adapter/surfaces-rejected-full"
+    ],
+    "exitCode": 2,
+    "stdout": "",
+    "stderr": "usage: surfaces:check --codec sc2-bank --scope m2 --out <directory>; only the explicit sc2-bank M2 scope is implemented\n"
+  },
+  {
+    "name": "unknown-codec",
+    "args": [
+      "--codec",
+      "unknown",
+      "--scope",
+      "m2",
+      "--out",
+      "../artifacts/legacy-parity-sc2/sc2-bank/m2-2026-09-04/adapter/surfaces-rejected-codec"
+    ],
+    "exitCode": 2,
+    "stdout": "",
+    "stderr": "usage: surfaces:check --codec sc2-bank --scope m2 --out <directory>; only the explicit sc2-bank M2 scope is implemented\n"
+  },
+  {
+    "name": "missing-explicit-out",
+    "args": [
+      "--codec",
+      "sc2-bank",
+      "--scope",
+      "m2"
+    ],
+    "exitCode": 2,
+    "stdout": "",
+    "stderr": "usage: surfaces:check --codec sc2-bank --scope m2 --out <directory>; only the explicit sc2-bank M2 scope is implemented\n"
+  },
+  {
+    "name": "unknown-scope",
+    "args": [
+      "--codec",
+      "sc2-bank",
+      "--scope",
+      "unknown",
+      "--out",
+      "../artifacts/legacy-parity-sc2/sc2-bank/m2-2026-09-04/adapter/surfaces-rejected-unknown"
+    ],
+    "exitCode": 2,
+    "stdout": "",
+    "stderr": "usage: surfaces:check --codec sc2-bank --scope m2 --out <directory>; only the explicit sc2-bank M2 scope is implemented\n"
+  }
+]

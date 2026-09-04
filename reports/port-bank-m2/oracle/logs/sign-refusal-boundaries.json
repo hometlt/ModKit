@@ -1,0 +1,38 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Supplemental raw transport trace. It is diagnostic-only and is excluded from positive proof claims.",
+  "source": {
+    "command": "node artifacts/legacy-parity-sc2/compare-legacy-sc2-bank.mjs --legacy <legacy-adapter-v2> --migrated <native-adapter-before-transport-normalization> --corpus <save.sign positive corpus> --operation save.sign --receipt <diagnostic receipt>",
+    "receipt": "logs/save.sign-pre-transport-normalization.json"
+  },
+  "cases": [
+    {
+      "id": "real:ZArchive.SC2Bank",
+      "legacyActual": {
+        "transport": "pinned Sc2BankCodec.sign(document, explicitSignatureInfo)",
+        "value": { "ok": false, "reason": "</Bank> closing tag not found" }
+      },
+      "nativeActualBeforeNormalization": {
+        "transport": "SDK session.operations().invoke(sign)",
+        "errorMessage": "operation handler sign failed: </Bank> closing tag not found",
+        "cause": { "name": "TypeError", "message": "</Bank> closing tag not found" }
+      },
+      "positiveReceiptNormalization": {
+        "category": "PATCH_REFUSED",
+        "basis": "same canonical refusal reason only; no CONFIG_INVALID or general-error conversion"
+      }
+    },
+    {
+      "id": "synthetic:sign-without-info",
+      "legacyActual": {
+        "transport": "pinned Sc2BankCodec session handler without explicit identity",
+        "error": { "code": "CONFIG_INVALID", "message": "SC2Bank signing cannot proceed because no signatureInfo was inferred or provided." }
+      },
+      "nativeActual": {
+        "transport": "native SDK session handler without codec signatureInfo",
+        "state": "disabled"
+      },
+      "classification": "asymmetric contract-boundary refusal; retained in negative/save.sign-malformed.json and excluded from positive proof claims"
+    }
+  ]
+}

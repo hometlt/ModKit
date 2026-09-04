@@ -1,0 +1,66 @@
+{
+  "name": "@modkitx/semantic",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Browser-safe game-neutral semantic artifact registries and contracts.",
+  "exports": {
+    "./data": {
+      "import": "./dist/data.js",
+      "types": "./dist/data.d.ts"
+    },
+    "./documents": {
+      "import": "./dist/documents.js",
+      "types": "./dist/documents.d.ts"
+    },
+    "./layouts": {
+      "import": "./dist/layouts.js",
+      "types": "./dist/layouts.d.ts"
+    },
+    "./localization": {
+      "import": "./dist/localization.js",
+      "types": "./dist/localization.d.ts"
+    },
+    "./maps": {
+      "import": "./dist/maps.js",
+      "types": "./dist/maps.d.ts"
+    },
+    "./mods": {
+      "import": "./dist/mods.js",
+      "types": "./dist/mods.d.ts"
+    },
+    "./replays": {
+      "import": "./dist/replays.js",
+      "types": "./dist/replays.d.ts"
+    },
+    "./saves": {
+      "import": "./dist/saves.js",
+      "types": "./dist/saves.d.ts"
+    },
+    "./scripts": {
+      "import": "./dist/scripts.js",
+      "types": "./dist/scripts.d.ts"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@modkitx/assets": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}

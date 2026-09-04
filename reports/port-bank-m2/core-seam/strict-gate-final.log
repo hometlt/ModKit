@@ -1,0 +1,9 @@
+ts-strict packages/codec-kit: 77 TypeScript files, structural problems 0, compiler exit 0
+ts-strict packages/scene: 7 TypeScript files, structural problems 0, compiler exit 0
+ts-strict packages/uv: 10 TypeScript files, structural problems 0, compiler exit 0
+ts-strict packages/extension-manager: 18 TypeScript files, structural problems 0, compiler exit 0
+ts-strict packages/code: 4 TypeScript files, structural problems 0, compiler exit 0
+ts-strict packages/host: 98 TypeScript files, structural problems 0, compiler exit 0
+ts-strict packages/ui: 50 TypeScript files, structural problems 0, compiler exit 0
+ts-strict packages/testkit: 17 TypeScript files, structural problems 0, compiler exit 0
+ts-strict: 8 packages, problems 0
