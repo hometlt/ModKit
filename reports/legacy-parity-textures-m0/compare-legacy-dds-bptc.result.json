@@ -1,0 +1,7 @@
+{
+  "command": "node --experimental-strip-types artifacts/legacy-parity-textures/compare-legacy-dds-bptc.mjs --corpus C:/FILES/SC2Files/Mods",
+  "exitCode": 0,
+  "finishedAt": "2026-09-04T12:24:56.7438154Z",
+  "logSha256": "96f69001dae2b19aa57672c5a557b05fea1e3afa3f034b00af4fd12d4e2b6d36",
+  "rawLogSha256": "364e8b94ca74f43b74bc7c4c27565a32e85365c53e103d29b6cd3f37af62a6de"
+}

@@ -1,0 +1,123 @@
+{
+  "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "oracleDdsDiffAgainstPin": [],
+  "oracleSources": [
+    {
+      "path": "extensions/common/images/codecs/dds/src/dds.ts",
+      "sha256": "7818ec0661eebc60e71830a352fcc58316c7c019dd210d47bc3fbd88b4c6f1de"
+    },
+    {
+      "path": "extensions/common/images/codecs/dds/src/codec.ts",
+      "sha256": "b5a1c2b5f4e70f9bda5832199ec316273f533cb8b17b0b1fe068b24a37370cf9"
+    },
+    {
+      "path": "extensions/common/images/codecs/dds/src/helpers.ts",
+      "sha256": "eac4d0b6ddef299cd84d22898ea10705e2e55478f06e9bfbecd5e819f61a57fc"
+    },
+    {
+      "path": "extensions/common/images/codecs/dds/src/ops.ts",
+      "sha256": "5e7a79784710603bc56ca7b6f443103b7125ec090dda4c43da7f331f346c3454"
+    },
+    {
+      "path": "extensions/common/images/codecs/dds/src/metadata.ts",
+      "sha256": "e1703a7abd4a172e7d82ee04865a8b6f27ed4297551de7c39a414c2c08a39d66"
+    },
+    {
+      "path": "extensions/common/images/codecs/dds/src/types.ts",
+      "sha256": "ec239e6d5f8a520ea8bbaa487bf48b7e152a6e716d6bc5636039bceee87a2ade"
+    }
+  ],
+  "portCommit": "ca54cdb83534e6b7d40afca8b32460590a67cb55",
+  "portFiles": [
+    {
+      "path": ".prettierignore",
+      "sha256": "8f6530980b730961e7fd1d423ac0876bc8b84d14f1c9e2792d3f24de23b8c6aa"
+    },
+    {
+      "path": "eslint.config.mjs",
+      "sha256": "449d75dd19861f40bb7c6a230d2db8434ffaad0509f2a209751bcea96e817d8d"
+    },
+    {
+      "path": "extensions/images/contributions/codec-dds.json",
+      "sha256": "f500c919ceb5328c6dd24b82f0df025a42d6dff3a5df5975a3df769ada77f65e"
+    },
+    {
+      "path": "extensions/images/contributions/writer-dds.json",
+      "sha256": "811f3e474aa56eb4317369fdb2e628be861ed9e26a4be5660fce16fe75f3b448"
+    },
+    {
+      "path": "extensions/images/package.json",
+      "sha256": "58b890127452522b69a3439c9452958590b14b490c67da491d3e5fd608a6cee1"
+    },
+    {
+      "path": "extensions/images/src/dds/bptc.js",
+      "sha256": "f3a0636b0f5dde9b7f7ccc2e6874425bfef0f5e86f6a1801a8032885f61a39b4"
+    },
+    {
+      "path": "extensions/images/src/dds/codec.js",
+      "sha256": "eb6e45ace449513b0b12d021baba82597808f9c746dcc85e9606f6e634d6f5f4"
+    },
+    {
+      "path": "extensions/images/src/dds/compressed.js",
+      "sha256": "af63c9438834ec0618e5ce3a207d45195cc603dcf4376c7964dfd3e939f7823e"
+    },
+    {
+      "path": "extensions/images/src/dds/encode.js",
+      "sha256": "5f28fb28df56882fd869bcb0ea24d3fa0e2f66ba3988ef4e0c3ffb6fd6c84254"
+    },
+    {
+      "path": "extensions/images/src/dds/layout.js",
+      "sha256": "ad84d000700f52fb29f3fb4a6ea7cf421f9a9d1e9335fa5c247d1e70fc13b6b0"
+    },
+    {
+      "path": "extensions/images/src/ops/raster-ops.js",
+      "sha256": "01cf3696184a2597c96233219ab3c1084c6250cc78800e64e93e5e220b4ff798"
+    },
+    {
+      "path": "extensions/images/src/writers/dds-encoder.js",
+      "sha256": "c4123ea5aa1089b6b53f6c8580e525cd7886c5be354ade13db3836ee53471cf1"
+    },
+    {
+      "path": "extensions/images/vendor/texture2ddecoder/LICENSE",
+      "sha256": "49e3169a509b9a5311fe50957a334e9e1975164f27da6004358c22e91e10747c"
+    },
+    {
+      "path": "extensions/images/vendor/texture2ddecoder/README.md",
+      "sha256": "62e287f319c051b451df4516dd94c0a14d1a3d95dc52690ee4f477e07921ab85"
+    },
+    {
+      "path": "extensions/images/vendor/texture2ddecoder/texture2ddecoder.js",
+      "sha256": "0a2b33ff735566fd3184e0421ff38fb7578d1348b3cc44fc4646cce29d001110"
+    },
+    {
+      "path": "extensions/images/vendor/texture2ddecoder/texture2ddecoder.wasm",
+      "sha256": "8b819b0622cce57f809b369081bdd6eca09d1c1793da7f82192db39229356c1d"
+    }
+  ],
+  "harnesses": [
+    {
+      "path": "compare-legacy-dds-bptc.mjs",
+      "sha256": "38cbc840bd9e420169583c31c8a76e2b74ed67e799250617ab4ad2522abc4643"
+    },
+    {
+      "path": "compare-legacy-dds-compressed.mjs",
+      "sha256": "559b2983aa12bc7a986400a641e4bfcc86c2173637af2a4fccdedc79dff0173c"
+    },
+    {
+      "path": "compare-legacy-dds-encode.mjs",
+      "sha256": "4ba5d8ad4b4a5507ab6b2a103bd7e8a7a9f6e663b834506b891c12f2bb2152d2"
+    },
+    {
+      "path": "compare-legacy-dds.mjs",
+      "sha256": "6c847f362235d8bd76f1ddd1b2a0d4079a85d91b525c4d69fcb830475c9ad2f5"
+    },
+    {
+      "path": "compare-legacy-image-ops.mjs",
+      "sha256": "f5d44fc80b727f41a6dccbf3740c5e324e1ec186a428db70bf49111f6a15994b"
+    },
+    {
+      "path": "legacy-mk2.mjs",
+      "sha256": "2280ba2daeaa0a277c98adfcf9cba2bd8620ebf40d9e52a06df7624a5ba4f84e"
+    }
+  ]
+}

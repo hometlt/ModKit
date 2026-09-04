@@ -1,0 +1,10 @@
+
+--- legacy MK2 decodeDdsAsync vs MK3 modkit/dds, BC6H and BC7 ---
+ 1280  synthetic BC6H_SF16 :: IDENTICAL
+ 1280  synthetic BC6H_TYPELESS :: IDENTICAL
+ 1280  synthetic BC6H_UF16 :: IDENTICAL
+ 1280  synthetic BC7_TYPELESS :: legacy-refused: DDS: unsupported DXGI format 97
+ 1280  synthetic BC7_UNORM :: IDENTICAL
+ 1280  synthetic BC7_UNORM_SRGB :: IDENTICAL
+
+compared 6400 surface(s) against the legacy decoder: 6400 byte-identical, 0 differing

@@ -1,0 +1,12 @@
+{
+  "milestone": "M0",
+  "commit": "ca54cdb83534e6b7d40afca8b32460590a67cb55",
+  "branch": "sol/legacy-parity-textures",
+  "coreStatus": [],
+  "blizzardStatus": [],
+  "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "oracleDirtyPaths": 1072,
+  "nodeVersion": "v24.16.0",
+  "pnpmVersion": "11.8.0",
+  "startedAt": "2026-09-04T12:16:14.1596973Z"
+}

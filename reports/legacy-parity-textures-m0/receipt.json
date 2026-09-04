@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M0",
+  "step": "0.1",
+  "verdict": "pass",
+  "acceptanceStatus": "submitted-to-owner",
+  "generatedAt": "2026-09-04T12:28:35.764Z",
+  "preflight": {
+    "milestone": "M0",
+    "commit": "ca54cdb83534e6b7d40afca8b32460590a67cb55",
+    "branch": "sol/legacy-parity-textures",
+    "coreStatus": [],
+    "blizzardStatus": [],
+    "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+    "oracleDirtyPaths": 1072,
+    "nodeVersion": "v24.16.0",
+    "pnpmVersion": "11.8.0",
+    "startedAt": "2026-09-04T12:16:14.1596973Z"
+  },
+  "corpus": {
+    "roots": [
+      "C:/FILES/SC2Files/Mods"
+    ],
+    "suppliedBy": "--corpus",
+    "sampling": "Existing harness defaults; no --cap override",
+    "includesSynthetic": true
+  },
+  "sourceDigests": "source-digests.json",
+  "gates": [
+    {
+      "id": "compare-legacy-dds",
+      "command": "node --experimental-strip-types artifacts/legacy-parity-textures/compare-legacy-dds.mjs --corpus C:/FILES/SC2Files/Mods",
+      "exitCode": 0,
+      "finishedAt": "2026-09-04T12:27:43.3561323Z",
+      "logSha256": "fc38c6997d540a8dbbec3ba60863b4680f030c59548d1aad74e82412f27322c7",
+      "log": "compare-legacy-dds.log",
+      "measurements": {
+        "compared": 1284,
+        "unit": "file",
+        "identical": 1284,
+        "differing": 0
+      },
+      "summary": "compared 1284 file(s) against the legacy decoder: 1284 byte-identical, 0 differing",
+      "legacyRefused": 0,
+      "bothRefusedExplicitlyReported": 0,
+      "rawLogSha256": "bc7ee4347a40e59457c8a20f9caa547c5636e1bc7fac0b8ea316e7444c64a51b"
+    },
+    {
+      "id": "compare-legacy-dds-bptc",
+      "command": "node --experimental-strip-types artifacts/legacy-parity-textures/compare-legacy-dds-bptc.mjs --corpus C:/FILES/SC2Files/Mods",
+      "exitCode": 0,
+      "finishedAt": "2026-09-04T12:24:56.7438154Z",
+      "logSha256": "96f69001dae2b19aa57672c5a557b05fea1e3afa3f034b00af4fd12d4e2b6d36",
+      "log": "compare-legacy-dds-bptc.log",
+      "measurements": {
+        "compared": 6400,
+        "unit": "surface",
+        "identical": 6400,
+        "differing": 0
+      },
+      "summary": "compared 6400 surface(s) against the legacy decoder: 6400 byte-identical, 0 differing",
+      "legacyRefused": 1280,
+      "bothRefusedExplicitlyReported": 0,
+      "rawLogSha256": "364e8b94ca74f43b74bc7c4c27565a32e85365c53e103d29b6cd3f37af62a6de"
+    },
+    {
+      "id": "compare-legacy-dds-compressed",
+      "command": "node --experimental-strip-types artifacts/legacy-parity-textures/compare-legacy-dds-compressed.mjs --corpus C:/FILES/SC2Files/Mods",
+      "exitCode": 0,
+      "finishedAt": "2026-09-04T12:24:07.1079498Z",
+      "logSha256": "c43376197e167a79c5f60ca1a30e3524295ed82ad515e9cdf6c0292a192a07d9",
+      "log": "compare-legacy-dds-compressed.log",
+      "measurements": {
+        "compared": 417,
+        "unit": "file",
+        "identical": 417,
+        "differing": 0
+      },
+      "summary": "compared 417 file(s): 417 identical, 0 differing",
+      "legacyRefused": 0,
+      "bothRefusedExplicitlyReported": 130,
+      "rawLogSha256": "7dda5de8355a666d7f5fafaa58072b0d5277e8b761bc0b60520a91322d3bd82e"
+    },
+    {
+      "id": "compare-legacy-dds-encode",
+      "command": "node --experimental-strip-types artifacts/legacy-parity-textures/compare-legacy-dds-encode.mjs --corpus C:/FILES/SC2Files/Mods",
+      "exitCode": 0,
+      "finishedAt": "2026-09-04T12:24:14.6156209Z",
+      "logSha256": "ff5fa18833f8d1df59e798440df0dca5d6e5c32c29533ecfbd580a92e1728ae9",
+      "log": "compare-legacy-dds-encode.log",
+      "measurements": {
+        "compared": 770,
+        "unit": "case",
+        "identical": 770,
+        "differing": 0
+      },
+      "summary": "compared 770 case(s): 770 byte-identical, 0 differing",
+      "legacyRefused": 0,
+      "bothRefusedExplicitlyReported": 5,
+      "rawLogSha256": "a74b087daf05629cc0f325d2a9f73fe3c8507dcbb3394d5475af065f93e0e9d2"
+    },
+    {
+      "id": "compare-legacy-image-ops",
+      "command": "node --experimental-strip-types artifacts/legacy-parity-textures/compare-legacy-image-ops.mjs --corpus C:/FILES/SC2Files/Mods",
+      "exitCode": 0,
+      "finishedAt": "2026-09-04T12:24:09.3012135Z",
+      "logSha256": "aaf8ac06424be59cbc47e8c173f10b8ae95e4d92e1181a70ecba8687e5796e5a",
+      "log": "compare-legacy-image-ops.log",
+      "measurements": {
+        "compared": 1895,
+        "unit": "case",
+        "identical": 1895,
+        "differing": 0
+      },
+      "summary": "compared 1895 case(s): 1895 byte-identical, 0 differing",
+      "legacyRefused": 0,
+      "bothRefusedExplicitlyReported": 9,
+      "rawLogSha256": "59e8a6e9ce052900757063a73dad973b0055bc4da6dbd9c077aaf35762e25010"
+    },
+    {
+      "id": "migration-check",
+      "command": "pnpm --dir modkit-core migration:check",
+      "exitCode": 0,
+      "finishedAt": "2026-09-04T12:17:46.0095711Z",
+      "logSha256": "e97a3c8d79eb9f73f71989822b015cb49977a2a14e494929fcfe9edf92be4f6d",
+      "log": "migration-check.log",
+      "registryLines": [
+        "migration:check registry: 1 check(s) UNAVAILABLE — not performed, and that is not the same as passed",
+        "migration:check registry: 38 known debt problem(s) — frozen in registry-debt-baseline.json, must be empty by wave 6; paying one down means deleting its line there in the same commit",
+        "migration:check registry: known debt 38 (must be empty by wave 6), new problems 0, stale baseline entries 0, unavailable checks 1 (must be restored by wave 6)",
+        "migration:check registry: 331 capabilities (deferred-games-priority 42, mk3-priority 135, multiverse-priority 10, post-ga 144); obligations experimental-optional 2, focused-required-addition 33, legacy-required 289, post-ga-required-proof 7; evidence E0 82, E1 133, E2 59, E3 23, E4 31, E5 3; 512 mapped + 608 unmapped = 1120 source units; 8 projection planes",
+        "migration:check registry: installed-host evidence on 3 row(s)"
+      ],
+      "rawLogSha256": "761304fb35a2bac61a1d53988a6ad866667c46f3f7131f83ffc5d0047b71fa2c"
+    }
+  ],
+  "gitStatusAfterGates": {
+    "core": "",
+    "blizzard": ""
+  },
+  "evidenceLimits": [
+    "M0 preserves the existing DDS JavaScript snapshot; it does not claim the later TypeScript-copy or Z1-Z7 gates.",
+    "DDS and BPTC legacy-refused cases do not execute MK3 and are not evidence of matching refusals.",
+    "Harness identical totals include equal refusals. bothRefusedExplicitlyReported counts only outcomes exposed in stdout; three malformed encoder cases report equality without printing whether accepted or refused.",
+    "Synthetic BC6H/BC7 blocks and dimensions, compressed profiles, encoder inputs and raster edge cases supplement the sampled real corpus.",
+    "MK2 unit suites were not run by this step: 37 static it declarations found, zero executed as MK2 unit tests. Oracle cases are reported separately.",
+    "surfaces:check is not yet defined; its introduction belongs to M1 and full surface acceptance to later milestones.",
+    "The pre-existing installed-acceptance-texdds.receipt.json has verdict fail and is not used as passing evidence.",
+    "The current loaders use documented temporary import replacements; the universal oracle loader is step 0.3.",
+    "No migration capability rows or frozen debt were changed."
+  ],
+  "ownerDecisions": [
+    {
+      "date": "2026-09-04",
+      "source": "Explicit user reply in this orchestrator task",
+      "decision": "Keep scripts/*.mjs as JavaScript; execute T3 applications conversion alongside codec ports."
+    }
+  ],
+  "remainingWithinM0": [],
+  "nextMilestone": "M1, after owner acceptance of this receipt",
+  "archivalEncoding": "UTF-8/LF; rawLogSha256 identifies original CRLF logs preserved in artifacts/legacy-parity-textures/m0-2026-09-04-ca54cdb8; logSha256 identifies this archived LF copy."
+}

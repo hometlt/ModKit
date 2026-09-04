@@ -1,0 +1,7 @@
+{
+  "command": "pnpm --dir modkit-core migration:check",
+  "exitCode": 0,
+  "finishedAt": "2026-09-04T12:17:46.0095711Z",
+  "logSha256": "e97a3c8d79eb9f73f71989822b015cb49977a2a14e494929fcfe9edf92be4f6d",
+  "rawLogSha256": "761304fb35a2bac61a1d53988a6ad866667c46f3f7131f83ffc5d0047b71fa2c"
+}

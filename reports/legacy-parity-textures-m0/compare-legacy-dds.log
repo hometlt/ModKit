@@ -1,0 +1,10 @@
+--- legacy MK2 decodeDds vs MK3 modkit/dds, real SC2 files, every mip level ---
+    1  FOURCC:ATI2 :: IDENTICAL
+  250  FOURCC:DXT1 :: IDENTICAL
+  250  FOURCC:DXT3 :: IDENTICAL
+  250  FOURCC:DXT5 :: IDENTICAL
+   33  LUMINANCE:16 :: IDENTICAL
+  250  RGB:24 :: IDENTICAL
+  250  RGB:32 :: IDENTICAL
+
+compared 1284 file(s) against the legacy decoder: 1284 byte-identical, 0 differing
