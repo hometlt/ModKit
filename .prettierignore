@@ -29,3 +29,6 @@ scripts/release/generated/
 extensions/.x3-scaffold-*/
 extensions/.x3-docs-*/
 .x3-docs-check-*/
+# third-party runtimes copied verbatim into an extension; provenance and digests live in the
+# vendor directory README, and reformatting them would break the copy they are supposed to be
+extensions/*/vendor/

@@ -10,12 +10,17 @@
     "./formats/png/codec": "./src/png/codec.js",
     "./formats/jpeg/codec": "./src/jpeg/codec.js",
     "./formats/*/codec": "./src/*/codec.js",
+    "./formats/dds/compressed": "./src/dds/compressed.js",
+    "./formats/dds/encode": "./src/dds/encode.js",
+    "./ops/raster": "./src/ops/raster-ops.js",
     "./writers/png-encoder": "./src/writers/png-encoder.js",
+    "./writers/dds-encoder": "./src/writers/dds-encoder.js",
     "./package.json": "./package.json"
   },
   "files": [
     "contributions",
     "src",
+    "vendor",
     "README.md"
   ],
   "modkit": {

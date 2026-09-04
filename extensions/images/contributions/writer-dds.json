@@ -1,0 +1,34 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "modkit/service-provider-contribution", "major": 1 },
+  "id": "modkit/dds-encoder-writer",
+  "displayName": "DDS encoder (writer)",
+  "runtimeVariants": [
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/writers/dds-encoder.js",
+      "target": { "environments": ["node-worker", "browser-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "lifecycleScope": "session",
+    "provides": [
+      {
+        "offerId": "dds-rgba8-encoder",
+        "contract": "common.edit/writer",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": {
+          "providerId": "modkit/dds-encoder-writer",
+          "fidelityEvidenceId": "dds-encoder-v1",
+          "formatId": "dds",
+          "representationId": "rgba8",
+          "mutationMode": "mutate",
+          "minimumRoundTrip": "lossy"
+        }
+      }
+    ]
+  }
+}

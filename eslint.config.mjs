@@ -24,6 +24,10 @@ export default tseslint.config(
       // `pnpm specs:check`. Linting or reformatting it would break the digests that make the pin
       // meaningful — it is edited in the multiverse repository and re-pinned, never here.
       'vendor/multiverse-specs/**',
+      // third-party runtimes copied verbatim into an extension (Emscripten output and the .wasm
+      // beside it). Their provenance and digests are recorded in the vendor directory's README;
+      // linting or reformatting them would break the copy they are supposed to be.
+      'extensions/*/vendor/**',
     ],
   },
   ...tseslint.configs.strict,

@@ -3,6 +3,7 @@ import {
   createRasterImageSource,
   createTreeDataSource,
 } from '@modkit/codec-kit'
+import { decodeBc6h, decodeBc7 } from './bptc.js'
 import {
   blockBytesFor,
   levelDimensions,
@@ -67,25 +68,28 @@ const DECODED_DXGI_FORMATS = new Map([
   [84, { format: 'BC5', snorm: true }],
   [87, { format: 'rgba-mask', bits: 32, masks: BGRA8_MASKS }],
   [91, { format: 'rgba-mask', bits: 32, masks: BGRA8_MASKS, srgb: true }],
+  /*
+   * BPTC. The blocks are decoded by the vendored texture2ddecoder runtime through `bptc.js`, the
+   * same implementation the legacy MK2 codec called. BC6H_TYPELESS carries no signedness of its
+   * own; legacy read it as the unsigned profile and so does this.
+   */
+  [94, { format: 'BC6H' }],
+  [95, { format: 'BC6H' }],
+  [96, { format: 'BC6H', signedFloat: true }],
+  [97, { format: 'BC7' }],
+  [98, { format: 'BC7' }],
+  [99, { format: 'BC7', srgb: true }],
 ])
 
 /**
  * DXGI formats the header parser recognises by name and refuses by name.
  *
- * BC6H and BC7 stay here deliberately. Their block layouts need a mode/partition decoder an order
- * of magnitude larger than BCn, and the canonical stack reaches them through a third-party WASM
- * package rather than an algorithm that can be read across — the same boundary `pkm/etc.js`
- * records. Naming them keeps the refusal specific instead of "unsupported".
+ * Naming them keeps the refusal specific instead of "unsupported". Legacy refused these two as
+ * well, so nothing decodable is being withheld here.
  */
 const NAMED_UNDECODED_DXGI_FORMATS = new Map([
   [79, 'BC4_TYPELESS'],
   [82, 'BC5_TYPELESS'],
-  [94, 'BC6H_TYPELESS'],
-  [95, 'BC6H_UF16'],
-  [96, 'BC6H_SF16'],
-  [97, 'BC7_TYPELESS'],
-  [98, 'BC7_UNORM'],
-  [99, 'BC7_UNORM_SRGB'],
 ])
 
 /** Uncompressed pixel-format bit counts the masked reader handles. */
@@ -110,7 +114,14 @@ function checkedImageBytes(width, height) {
   return length
 }
 
-function parseDds(bytes) {
+/**
+ * Read the DDS header into the shape the rest of this codec works from.
+ *
+ * Exported because `compressed.js` needs the same parse to describe the stored blocks; the codec
+ * module surface the host marshals is `abiVersion` and `createCodec`, so an extra named export
+ * changes nothing about how the codec is loaded.
+ */
+export function parseDds(bytes) {
   if (bytes.byteLength < 128) throw new TypeError('DDS header is truncated')
   const view = viewOf(bytes)
   if (view.getUint32(0, true) !== DDS_MAGIC) throw new TypeError('DDS magic is missing')
@@ -139,6 +150,7 @@ function parseDds(bytes) {
   let layers = 1
   let dxgiFormat
   let snorm = false
+  let signedFloat = false
   let premultiplied = false
   let srgb = false
   let luminance = false
@@ -169,6 +181,7 @@ function parseDds(bytes) {
       }
       format = mapped.format
       snorm = mapped.snorm === true
+      signedFloat = mapped.signedFloat === true
       srgb = mapped.srgb === true
       if (mapped.bits !== undefined) {
         rgbBits = mapped.bits
@@ -215,6 +228,7 @@ function parseDds(bytes) {
     cubemap,
     volume,
     snorm,
+    signedFloat,
     premultiplied,
     srgb,
     luminance,
@@ -465,12 +479,22 @@ function decodeUncompressed(bytes, info, surface, output) {
   }
 }
 
-/** Decode one already-resolved surface (a single mip/layer/face/slice) to rgba8. */
-function decodeSurface(bytes, info, surface) {
+/**
+ * Decode one already-resolved surface (a single mip/layer/face/slice) to rgba8.
+ *
+ * BC6H and BC7 leave through `bptc.js` to the vendored runtime, which is why this is async: every
+ * other format is decoded inline here and returns without ever awaiting.
+ */
+async function decodeSurface(bytes, info, surface) {
   const output = new Uint8Array(checkedImageBytes(surface.width, surface.height))
   if (info.format === 'rgba-mask') {
     decodeUncompressed(bytes, info, surface, output)
     return output
+  }
+  if (info.format === 'BC6H' || info.format === 'BC7') {
+    const blocks = bytes.subarray(surface.offset, surface.offset + surface.length)
+    const decode = info.format === 'BC6H' ? decodeBc6h : decodeBc7
+    return decode(blocks, surface.width, surface.height)
   }
   const view = viewOf(bytes)
   const blockBytes = blockBytesFor(info.format)
@@ -524,6 +548,7 @@ function encodingLabel(info) {
     spellings.push(info.fourCc)
   }
   if (info.snorm) spellings.push('SNORM')
+  if (info.signedFloat) spellings.push('SF16')
   return spellings.length === 0 ? base : `${base} (${spellings.join(', ')})`
 }
 
@@ -540,7 +565,7 @@ function alphaModeOf(info) {
     if (declared === 2) return 'premultiplied'
     if (declared === 3) return 'none'
   }
-  if (info.format === 'BC4' || info.format === 'BC5') return 'none'
+  if (info.format === 'BC4' || info.format === 'BC5' || info.format === 'BC6H') return 'none'
   if (info.premultiplied) return 'premultiplied'
   if (info.format === 'DXT1') return 'straight'
   if (info.format === 'rgba-mask') return info.masks[3] === 0 ? 'none' : 'straight'
@@ -551,6 +576,8 @@ function alphaModeOf(info) {
 function channelsOf(info) {
   if (info.format === 'BC4') return 1
   if (info.format === 'BC5') return 2
+  /* BC6H stores three half-float channels and no alpha; BC7 stores four. */
+  if (info.format === 'BC6H') return 3
   if (info.alphaOnly) return 1
   if (info.luminance) return info.masks[3] === 0 ? 1 : 2
   if (info.format === 'rgba-mask') return info.masks[3] === 0 ? 3 : 4
@@ -601,7 +628,7 @@ function regionReader(bytes, info) {
     const key = subresourceKey(coordinates)
     let pixelsOfSurface = decoded.get(key)
     if (pixelsOfSurface === undefined) {
-      pixelsOfSurface = decodeSurface(bytes, info, surface)
+      pixelsOfSurface = await decodeSurface(bytes, info, surface)
       decoded.set(key, pixelsOfSurface)
     }
     const pixels = new Uint8Array(length)
