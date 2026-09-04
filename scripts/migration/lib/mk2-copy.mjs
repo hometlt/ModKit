@@ -5,6 +5,58 @@ import { fileURLToPath } from 'node:url'
 import { builtinModules } from 'node:module'
 import { createPinnedSource, MK2_PIN, sha256, digestManifest } from './legacy-oracle.mjs'
 
+const acceptedScopePins = new Map([
+  [
+    'sc2-m1-libs-2026-09-04',
+    {
+      family: 'sc2',
+      scopeName: 'm1-libs',
+      oracleCommit: MK2_PIN,
+      scopeDigest: '1a48d645dedbd3f5e057e2c1c8c7e5d6f1bf54dfb8b8740323b5987793b6ec4e',
+      legacyDeclarationDigest: '31029f8d7333d3d676ad2e8b58be5e80e9f28f64658c640eeea84519d3fa6875',
+    },
+  ],
+  [
+    'sc2-bank-2026-09-04',
+    {
+      family: 'sc2',
+      scopeName: 'sc2-bank',
+      oracleCommit: MK2_PIN,
+      scopeDigest: 'f10e67644357ca4fc3b6aee5d0b82bcacb411d0cd35861e00501fcf6104de35d',
+      legacyDeclarationDigest: '31029f8d7333d3d676ad2e8b58be5e80e9f28f64658c640eeea84519d3fa6875',
+    },
+  ],
+])
+
+export function scopeDeclarationDigest(declaration, scopeName, copies) {
+  const scope = { ...declaration.scopes[scopeName] }
+  delete scope.acceptancePin
+  return digestManifest({
+    schemaVersion: declaration.schemaVersion,
+    family: declaration.family,
+    oracleCommit: declaration.oracleCommit,
+    scopeName,
+    scope,
+    copies,
+  })
+}
+
+function compatibleDeclarationDigest(declaration, scopeName, copies) {
+  const digest = scopeDeclarationDigest(declaration, scopeName, copies)
+  const pinName = declaration.scopes[scopeName].acceptancePin
+  if (!pinName) return digest
+  const pin = acceptedScopePins.get(pinName)
+  if (
+    !pin ||
+    pin.family !== declaration.family ||
+    pin.scopeName !== scopeName ||
+    pin.oracleCommit !== declaration.oracleCommit ||
+    pin.scopeDigest !== digest
+  )
+    throw new Error(`Accepted scope pin mismatch: ${scopeName}`)
+  return pin.legacyDeclarationDigest
+}
+
 export function safeRelative(value) {
   if (
     typeof value !== 'string' ||
@@ -140,26 +192,25 @@ export function rewriteSource(original, rewrites, filename) {
     const { from, to } = rewrite
     if (!from || typeof to !== 'string' || from === to)
       throw new Error(`Invalid exact rewrite: ${filename}`)
-    const occurrences = [
+    let occurrences = [
       ...text.matchAll(new RegExp(from.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&'), 'gu')),
     ]
-    if (
-      !occurrences.length ||
-      (rewrite.count !== undefined && rewrite.count !== occurrences.length)
-    )
-      throw new Error(`Rewrite occurrence mismatch: ${filename}: ${from}`)
+    if (!occurrences.length) throw new Error(`Rewrite occurrence mismatch: ${filename}: ${from}`)
     const kind = rewrite.kind ?? 'import'
     if (kind === 'import') {
       const imports = importsOf(text, filename)
-      if (
-        occurrences.some(
-          match => !imports.some(item => item.start === match.index && item.literal === from),
-        )
-      )
+      occurrences = imports
+        .filter(item => item.literal === from)
+        .map(item => ({ index: item.start }))
+      if (!occurrences.length)
         throw new Error(`Rewrite is not exclusively an import specifier: ${filename}: ${from}`)
+      if (rewrite.count !== undefined && rewrite.count !== occurrences.length)
+        throw new Error(`Rewrite import occurrence mismatch: ${filename}: ${from}`)
       if (!/^(['"])[^'"\r\n]+\1$/u.test(to))
         throw new Error(`Invalid rewritten import literal: ${to}`)
     } else if (kind === 'import-type') {
+      if (rewrite.count !== undefined && rewrite.count !== occurrences.length)
+        throw new Error(`Rewrite occurrence mismatch: ${filename}: ${from}`)
       const originalAst = ts.createSourceFile(filename, text, ts.ScriptTarget.Latest, true)
       const replacementAst = ts.createSourceFile(filename, to, ts.ScriptTarget.Latest, true)
       const replacement = replacementAst.statements[0]
@@ -200,7 +251,10 @@ export function rewriteSource(original, rewrites, filename) {
         throw new Error(`Type rewrite changes import target: ${filename}`)
     } else throw new Error(`Unsupported rewrite kind: ${kind}`)
     const before = sha256(text)
-    text = text.replaceAll(from, to)
+    if (kind === 'import')
+      for (const occurrence of occurrences.toReversed())
+        text = `${text.slice(0, occurrence.index)}${to}${text.slice(occurrence.index + from.length)}`
+    else text = text.replaceAll(from, to)
     evidence.push({
       kind,
       from,
@@ -221,6 +275,10 @@ function unique(rows, key, label) {
     if (seen.has(canonical)) throw new Error(`Duplicate canonical ${label}: ${value}`)
     seen.add(canonical)
   }
+}
+
+function codecOwner(sourcePath) {
+  return sourcePath.match(/^extensions\/blizzard\/starcraft-2\/codecs\/([^/]+)\//u)?.[1]
 }
 
 async function applyDivergence(text, divergence, root) {
@@ -336,6 +394,7 @@ export async function prepareCopy({
   workspaceRoot,
   repoRoot,
   source: suppliedSource,
+  allowPending = false,
 }) {
   if (!scope) throw new Error('Explicit --scope required (m1-libs, sc2-bank, family)')
   if (
@@ -389,6 +448,7 @@ export async function prepareCopy({
     for (const file of files) required.add(file)
   }
   if (!required.size) throw new Error(`Empty required closure: ${scope}`)
+  source.prefetch?.([...required])
   const bySource = new Map(declaration.copies.map(row => [row.source, row]))
   const rows = []
   for (const file of required) {
@@ -397,7 +457,8 @@ export async function prepareCopy({
     if (!row) throw new Error(`Incomplete declared closure: ${file}`)
     rows.push(row)
   }
-  if (selected.status !== 'ready')
+  const declarationDigest = compatibleDeclarationDigest(declaration, scope, rows)
+  if (selected.status !== 'ready' && !(allowPending && selected.status === 'pending-m3'))
     throw new Error(
       `Scope ${scope} remains ${selected.status}; copied family acceptance is pending`,
     )
@@ -468,10 +529,39 @@ export async function prepareCopy({
         throw new Error(`Dependency asset hash mismatch: ${asset.path}`)
     }
   }
+  const importDispositions = selected.importDispositions ?? []
+  const dispositionMap = new Map()
+  const dispositionUses = new Map()
+  for (const disposition of importDispositions) {
+    safeRelative(disposition.source)
+    const hasSpecifier =
+      typeof disposition.specifier === 'string' && disposition.specifier.length > 0
+    const hasExpression =
+      typeof disposition.expression === 'string' && disposition.expression.length > 0
+    if (
+      disposition.kind !== 'copied-unwired' ||
+      hasSpecifier === hasExpression ||
+      (hasExpression && disposition.destinationSpecifier !== undefined) ||
+      (disposition.destinationSpecifier !== undefined &&
+        (typeof disposition.destinationSpecifier !== 'string' ||
+          !disposition.destinationSpecifier.length)) ||
+      !disposition.reason?.trim() ||
+      !Number.isInteger(disposition.count) ||
+      disposition.count < 1
+    )
+      throw new Error('Invalid import disposition')
+    const target = hasSpecifier ? disposition.specifier : `expression:${disposition.expression}`
+    const key = `${disposition.source}\0${target}`
+    if (dispositionMap.has(key)) throw new Error(`Duplicate import disposition: ${key}`)
+    dispositionMap.set(key, disposition)
+    dispositionUses.set(key, 0)
+  }
   const closure = []
   const dynamicImports = selected.dynamicImports ?? []
   const resolveDynamic = (item, row) => {
     if (item.specifier !== null) return item.specifier
+    const dispositionToken = `expression:${item.expression}`
+    if (dispositionMap.has(`${row.mk2Path}\0${dispositionToken}`)) return dispositionToken
     const bindings = dynamicImports.filter(
       binding => binding.source === row.mk2Path && binding.expression === item.expression,
     )
@@ -491,14 +581,21 @@ export async function prepareCopy({
         `Divergence changed import topology without a declared adapter: ${row.destination}`,
       )
     for (let index = 0; index < before.length; index++) {
+      const oldDispositionTarget =
+        before[index].specifier ?? `expression:${before[index].expression}`
       const oldImport = resolveDynamic(before[index], row)
       const newImport = resolveDynamic(after[index], row)
+      const dispositionKey = `${row.mk2Path}\0${oldDispositionTarget}`
+      const disposition = dispositionMap.get(dispositionKey) ?? null
+      if (disposition) dispositionUses.set(dispositionKey, dispositionUses.get(dispositionKey) + 1)
+      if (disposition && newImport !== (disposition.destinationSpecifier ?? oldImport))
+        throw new Error(`Import disposition destination mismatch: ${row.mk2Path} -> ${newImport}`)
       let sourceTarget = null
       if (oldImport.startsWith('.')) {
-        sourceTarget = candidates(row.mk2Path, oldImport).find(file => source.has(file))
-        if (!sourceTarget)
+        sourceTarget = candidates(row.mk2Path, oldImport).find(file => source.has(file)) ?? null
+        if (!sourceTarget && !disposition)
           throw new Error(`Unresolved pinned relative import: ${row.mk2Path} -> ${oldImport}`)
-        if (!required.has(sourceTarget))
+        if (sourceTarget && !required.has(sourceTarget) && !disposition)
           throw new Error(
             `Incomplete type/runtime import closure: ${row.mk2Path} -> ${sourceTarget}`,
           )
@@ -508,30 +605,54 @@ export async function prepareCopy({
         destinationTarget = candidates(row.destination, newImport).find(
           file => destinations.has(file) || adapterMap.has(file),
         )
-        if (!destinationTarget)
+        if (!destinationTarget && disposition) destinationTarget = `copied-unwired:${newImport}`
+        else if (!destinationTarget)
           throw new Error(`Unresolved copied relative import: ${row.destination} -> ${newImport}`)
-        if (sourceTarget && bySource.get(sourceTarget)?.destination !== destinationTarget)
+        if (
+          sourceTarget &&
+          required.has(sourceTarget) &&
+          bySource.get(sourceTarget)?.destination !== destinationTarget
+        )
           throw new Error(`Noncanonical import relocation: ${row.destination} -> ${newImport}`)
       } else {
-        if (!dependencyMap.has(newImport))
-          throw new Error(`Undeclared bare module: ${row.destination} -> ${newImport}`)
-        destinationTarget = `dependency:${newImport}`
-        if (sourceTarget)
-          destinationTarget = await canonicalPackageExport(
-            dependencyMap.get(newImport),
-            sourceTarget,
-            bySource,
-            workspaceRoot,
-          )
+        if (!dependencyMap.has(newImport)) {
+          if (!disposition)
+            throw new Error(`Undeclared bare module: ${row.destination} -> ${newImport}`)
+          destinationTarget = `copied-unwired:${newImport}`
+        } else {
+          destinationTarget = `dependency:${newImport}`
+          if (sourceTarget)
+            destinationTarget = await canonicalPackageExport(
+              dependencyMap.get(newImport),
+              sourceTarget,
+              bySource,
+              workspaceRoot,
+            )
+        }
       }
+      const sourceCodec = codecOwner(row.mk2Path)
+      const targetCodec = sourceTarget ? codecOwner(sourceTarget) : null
+      if (sourceCodec && targetCodec && sourceCodec !== targetCodec && !disposition)
+        throw new Error(
+          `Cross-codec import needs copied-unwired disposition: ${row.mk2Path} -> ${sourceTarget}`,
+        )
       closure.push({
         importer: row.mk2Path,
         sourceSpecifier: oldImport,
         destinationSpecifier: newImport,
         sourceTarget,
         destinationTarget,
+        ...(disposition ? { disposition } : {}),
       })
     }
+  }
+  for (const [key, disposition] of dispositionMap) {
+    if (!records.some(record => record.mk2Path === disposition.source))
+      throw new Error(`Stale import disposition source: ${disposition.source}`)
+    if (dispositionUses.get(key) !== disposition.count)
+      throw new Error(
+        `Import disposition count mismatch: ${disposition.source} -> ${disposition.specifier ?? disposition.expression}`,
+      )
   }
   for (const binding of dynamicImports) {
     const row = records.find(record => record.mk2Path === binding.source)
@@ -568,12 +689,13 @@ export async function prepareCopy({
     family: declaration.family,
     scope,
     oracleCommit: declaration.oracleCommit,
-    declarationDigest: digestManifest(declaration),
+    declarationDigest,
     divergenceDigest: digestManifest(divergences),
     copiedAt: selected.copiedAt,
     adapters,
     dependencies,
     dynamicImports,
+    ...(importDispositions.length ? { importDispositions } : {}),
     closure,
     files: records.map(record => ({
       mk2Path: record.mk2Path,
@@ -690,6 +812,7 @@ export async function copyCli(mode, argv = process.argv.slice(2)) {
     scope: values.get('--scope'),
     workspaceRoot,
     repoRoot: values.get('--source-root') ?? path.join(workspaceRoot, 'references/modkitmk2'),
+    allowPending: values.has('--dry-run'),
   })
   const result = values.has('--dry-run')
     ? { scope: prepared.provenance.scope, files: prepared.records.length, dryRun: true }

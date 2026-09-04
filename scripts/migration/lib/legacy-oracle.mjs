@@ -79,10 +79,11 @@ function relativePath(value) {
 export async function createPinnedSource({ repoRoot, commit = MK2_PIN }) {
   repoRoot = path.resolve(repoRoot)
   if (!/^[a-f0-9]{40}$/u.test(commit)) throw new Error('Oracle commit must be a full immutable SHA')
-  const git = args =>
+  const git = (args, options = {}) =>
     execFileSync('git', ['-C', repoRoot, ...args], {
       maxBuffer: 128 * 1024 * 1024,
       windowsHide: true,
+      ...options,
     })
   const resolved = git(['rev-parse', `${commit}^{commit}`])
     .toString()
@@ -100,11 +101,44 @@ export async function createPinnedSource({ repoRoot, commit = MK2_PIN }) {
       }),
   )
   const reads = new Map()
+  const pinnedBytes = new Map()
+  const prefetch = requested => {
+    const paths = [...new Set(requested.map(relativePath))]
+    const blobs = []
+    for (const file of paths) {
+      const item = files.get(file)
+      if (!item || item.type !== 'blob' || item.mode === '120000')
+        throw new Error(`Missing or unsafe pinned source: ${file}`)
+      if (!pinnedBytes.has(item.blob)) blobs.push(item.blob)
+    }
+    if (!blobs.length) return
+    const output = git(['cat-file', '--batch'], {
+      input: Buffer.from(`${blobs.join('\n')}\n`),
+      maxBuffer: 1024 * 1024 * 1024,
+    })
+    let offset = 0
+    for (const expected of blobs) {
+      const newline = output.indexOf(0x0a, offset)
+      if (newline < 0) throw new Error('Truncated pinned Git batch header')
+      const [actual, type, sizeText] = output.subarray(offset, newline).toString().split(' ')
+      const size = Number(sizeText)
+      if (actual !== expected || type !== 'blob' || !Number.isSafeInteger(size) || size < 0)
+        throw new Error(`Invalid pinned Git batch record: ${expected}`)
+      const start = newline + 1
+      const end = start + size
+      if (end >= output.length || output[end] !== 0x0a)
+        throw new Error(`Truncated pinned Git batch blob: ${expected}`)
+      pinnedBytes.set(expected, Buffer.from(output.subarray(start, end)))
+      offset = end + 1
+    }
+    if (offset !== output.length) throw new Error('Unexpected trailing pinned Git batch data')
+  }
   return {
     repoRoot,
     commit,
     listFiles: () => [...files.keys()].sort(),
     has: file => files.has(relativePath(file)),
+    prefetch,
     async read(file) {
       file = relativePath(file)
       const item = files.get(file)
@@ -114,7 +148,8 @@ export async function createPinnedSource({ repoRoot, commit = MK2_PIN }) {
         reads.set(
           file,
           (async () => {
-            const bytes = git(['cat-file', 'blob', item.blob])
+            if (!pinnedBytes.has(item.blob)) prefetch([file])
+            const bytes = pinnedBytes.get(item.blob)
             let workingTreeSha256 = null
             try {
               workingTreeSha256 = sha256(await readFile(path.join(repoRoot, file)))

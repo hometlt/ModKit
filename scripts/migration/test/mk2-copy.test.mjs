@@ -3,12 +3,14 @@ import assert from 'node:assert/strict'
 import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import {
   prepareCopy,
   writeCopies,
   checkCopies,
   importsOf,
   rewriteSource,
+  scopeDeclarationDigest,
   copyCli,
   safeRelative,
 } from '../lib/mk2-copy.mjs'
@@ -90,6 +92,19 @@ test('registered exact import relocation preserves before/after hashes', async t
   assert.equal(prepared.provenance.files[0].rewrites[0].sha256Before, row.sha256Mk2)
   assert.equal(prepared.provenance.files[0].rewrites[0].sha256After, row.sha256Mk3)
   await writeCopies(prepared)
+})
+
+test('import relocation changes only AST import literals when prose repeats the same text', () => {
+  const source = "import value from '../src/value.js'\ndescribe('../src/value.js', () => value)\n"
+  const result = rewriteSource(
+    source,
+    [{ from: "'../src/value.js'", to: "'../../src/value.js'", count: 1 }],
+    'value.test.ts',
+  )
+  assert.equal(
+    result.text,
+    "import value from '../../src/value.js'\ndescribe('../src/value.js', () => value)\n",
+  )
 })
 
 test('canonical relative source may use its direct public package export, never a replacement', async t => {
@@ -318,6 +333,200 @@ test('bare modules and computed imports require explicit dependency bindings', a
   await writeCopies(await f.prepare())
 })
 
+test('copied-unwired imports require exact source, specifier, count and reason', async t => {
+  const f = await fixture(t)
+  const text = "import 'legacy-codec'\n"
+  f.files.set('src/value.ts', text)
+  Object.assign(f.declaration.copies[1], { sha256Mk2: sha256(text), sha256Mk3: sha256(text) })
+  const selected = f.declaration.scopes['m1-libs']
+  selected.importDispositions = [
+    {
+      source: 'src/value.ts',
+      specifier: 'legacy-codec',
+      kind: 'copied-unwired',
+      count: 1,
+      reason: 'Compatibility copy is deliberately excluded from production and C1 compilation.',
+    },
+  ]
+  const prepared = await f.prepare()
+  assert.equal(prepared.provenance.closure[1].destinationTarget, 'copied-unwired:legacy-codec')
+  assert.equal(prepared.provenance.closure[1].disposition.kind, 'copied-unwired')
+  selected.importDispositions[0].count = 2
+  await assert.rejects(f.prepare, /Import disposition count mismatch/u)
+  selected.importDispositions[0].count = 1
+  selected.importDispositions[0].reason = ''
+  await assert.rejects(f.prepare, /Invalid import disposition/u)
+})
+
+test('copied-unwired bare disposition cannot authorize a rewritten target implicitly', async t => {
+  const f = await fixture(t)
+  const text = "import 'legacy-codec'\n"
+  f.files.set('src/value.ts', text)
+  f.declaration.copies[1] = {
+    ...f.declaration.copies[1],
+    sha256Mk2: sha256(text),
+    sha256Mk3: sha256("import 'other-unwired'\n"),
+    rewrites: [{ from: "'legacy-codec'", to: "'other-unwired'", count: 1 }],
+  }
+  f.declaration.scopes['m1-libs'].importDispositions = [
+    {
+      source: 'src/value.ts',
+      specifier: 'legacy-codec',
+      kind: 'copied-unwired',
+      count: 1,
+      reason: 'Original legacy edge only.',
+    },
+  ]
+  await assert.rejects(f.prepare, /Import disposition destination mismatch/u)
+  f.declaration.scopes['m1-libs'].importDispositions[0].destinationSpecifier = 'other-unwired'
+  const prepared = await f.prepare()
+  assert.equal(prepared.provenance.closure[1].destinationTarget, 'copied-unwired:other-unwired')
+})
+
+test('computed imports can only remain in copied-unwired source through an exact expression disposition', async t => {
+  const f = await fixture(t)
+  const text = 'const moduleName = "legacy"\nexport const load = () => import(moduleName)\n'
+  f.files.set('src/value.ts', text)
+  Object.assign(f.declaration.copies[1], { sha256Mk2: sha256(text), sha256Mk3: sha256(text) })
+  const selected = f.declaration.scopes['m1-libs']
+  selected.importDispositions = [
+    {
+      source: 'src/value.ts',
+      expression: 'moduleName',
+      kind: 'copied-unwired',
+      count: 1,
+      reason: 'The computed loader is retained for provenance outside production compilation.',
+    },
+  ]
+  const prepared = await f.prepare()
+  assert.equal(
+    prepared.provenance.closure[1].destinationTarget,
+    'copied-unwired:expression:moduleName',
+  )
+  selected.importDispositions[0].destinationSpecifier = 'other'
+  await assert.rejects(f.prepare, /Invalid import disposition/u)
+})
+
+test('cross-codec relative imports must be recorded as copied-unwired', async t => {
+  const f = await fixture(t)
+  const sourceA = 'extensions/blizzard/starcraft-2/codecs/a/src/main.ts'
+  const sourceB = 'extensions/blizzard/starcraft-2/codecs/b/src/value.ts'
+  const textA = "import type { Value } from '../../b/src/value.js'\nexport type A = Value\n"
+  const textB = 'export type Value = number\n'
+  f.files.clear()
+  f.files.set(sourceA, textA)
+  f.files.set(sourceB, textB)
+  const selected = f.declaration.scopes['m1-libs']
+  selected.requiredSources = [sourceA, sourceB]
+  f.declaration.copies = [
+    {
+      source: sourceA,
+      destination: 'target/codecs/a/src/main.ts',
+      sha256Mk2: sha256(textA),
+      sha256Mk3: sha256(textA),
+      rewrites: [],
+    },
+    {
+      source: sourceB,
+      destination: 'target/codecs/b/src/value.ts',
+      sha256Mk2: sha256(textB),
+      sha256Mk3: sha256(textB),
+      rewrites: [],
+    },
+  ]
+  await assert.rejects(f.prepare, /Cross-codec import needs copied-unwired disposition/u)
+  selected.importDispositions = [
+    {
+      source: sourceA,
+      specifier: '../../b/src/value.js',
+      kind: 'copied-unwired',
+      count: 1,
+      reason: 'Pinned codec edge is retained only in the isolated compatibility tree.',
+    },
+  ]
+  const prepared = await f.prepare()
+  assert.equal(prepared.provenance.closure[0].disposition.kind, 'copied-unwired')
+})
+
+test('copied-unwired disposition can preserve a relative edge outside the admitted copy unit', async t => {
+  const f = await fixture(t)
+  const text = "export { legacy } from './legacy.js'\n"
+  f.files.set('src/value.ts', text)
+  f.files.set('src/legacy.ts', 'export const legacy = true\n')
+  Object.assign(f.declaration.copies[1], { sha256Mk2: sha256(text), sha256Mk3: sha256(text) })
+  f.declaration.scopes['m1-libs'].importDispositions = [
+    {
+      source: 'src/value.ts',
+      specifier: './legacy.js',
+      kind: 'copied-unwired',
+      count: 1,
+      reason: 'The source-only edge stays visible while its separate owner milestone is pending.',
+    },
+  ]
+  const prepared = await f.prepare()
+  assert.equal(prepared.provenance.closure[1].sourceTarget, 'src/legacy.ts')
+  assert.equal(prepared.provenance.closure[1].destinationTarget, 'copied-unwired:./legacy.js')
+})
+
+test('copied-unwired disposition records a pinned unresolved relative edge exactly', async t => {
+  const f = await fixture(t)
+  const text = "export { missing } from './missing.js'\n"
+  f.files.set('src/value.ts', text)
+  Object.assign(f.declaration.copies[1], { sha256Mk2: sha256(text), sha256Mk3: sha256(text) })
+  f.declaration.scopes['m1-libs'].importDispositions = [
+    {
+      source: 'src/value.ts',
+      specifier: './missing.js',
+      kind: 'copied-unwired',
+      count: 1,
+      reason: 'The pinned source already contains this unresolved compatibility-only edge.',
+    },
+  ]
+  const prepared = await f.prepare()
+  assert.equal(prepared.provenance.closure[1].sourceTarget, null)
+  assert.equal(prepared.provenance.closure[1].destinationTarget, 'copied-unwired:./missing.js')
+})
+
+test('relative copied-unwired disposition binds the relocated destination specifier', async t => {
+  const f = await fixture(t)
+  const sourceA = 'extensions/blizzard/starcraft-2/codecs/a/src/main.ts'
+  const sourceB = 'extensions/blizzard/starcraft-2/codecs/b/src/value.ts'
+  const textA = "export { value } from '../../b/src/value.js'\n"
+  const textB = 'export const value = 1\n'
+  f.files.clear()
+  f.files.set(sourceA, textA)
+  f.files.set(sourceB, textB)
+  f.declaration.scopes['m1-libs'].requiredSources = [sourceA, sourceB]
+  f.declaration.copies = [
+    {
+      source: sourceA,
+      destination: 'target/a/main.ts',
+      sha256Mk2: sha256(textA),
+      sha256Mk3: sha256("export { value } from '../b/value.js'\n"),
+      rewrites: [{ from: "'../../b/src/value.js'", to: "'../b/value.js'", count: 1 }],
+    },
+    {
+      source: sourceB,
+      destination: 'target/b/value.ts',
+      sha256Mk2: sha256(textB),
+      sha256Mk3: sha256(textB),
+      rewrites: [],
+    },
+  ]
+  const disposition = {
+    source: sourceA,
+    specifier: '../../b/src/value.js',
+    kind: 'copied-unwired',
+    count: 1,
+    reason: 'Cross-codec compatibility edge.',
+  }
+  f.declaration.scopes['m1-libs'].importDispositions = [disposition]
+  await assert.rejects(f.prepare, /Import disposition destination mismatch/u)
+  disposition.destinationSpecifier = '../b/value.js'
+  const prepared = await f.prepare()
+  assert.equal(prepared.provenance.closure[0].destinationSpecifier, '../b/value.js')
+})
+
 test('bounded divergence requires exact edits, proof hash and contract', async t => {
   const f = await fixture(t)
   const proof = 'proof.test.ts'
@@ -352,6 +561,66 @@ test('gate rejects copy-only bypass flags', async () => {
   await assert.rejects(
     () => copyCli('check', ['--family', 'sc2', '--scope', 'm1-libs', '--dry-run']),
     /copy-only flags/u,
+  )
+})
+
+test('dry-run preflight may validate pending M3 without making copy/check accept it', async t => {
+  const f = await fixture(t)
+  f.declaration.scopes['m1-libs'].status = 'pending-m3'
+  await assert.rejects(f.prepare, /remains pending/u)
+  const prepared = await prepareCopy({ ...f.options, allowPending: true })
+  assert.equal(prepared.records.length, 2)
+})
+
+test('scope declaration digest ignores future scopes but binds accepted scope config and copy rows', async t => {
+  const f = await fixture(t)
+  const rows = f.declaration.copies
+  const before = scopeDeclarationDigest(f.declaration, 'm1-libs', rows)
+  f.declaration.scopes.future = { status: 'pending-future', requiredSources: ['future.ts'] }
+  assert.equal(scopeDeclarationDigest(f.declaration, 'm1-libs', rows), before)
+  f.declaration.scopes['m1-libs'].note = 'mutated accepted scope'
+  assert.notEqual(scopeDeclarationDigest(f.declaration, 'm1-libs', rows), before)
+  delete f.declaration.scopes['m1-libs'].note
+  const mutatedRows = structuredClone(rows)
+  mutatedRows[0].sha256Mk3 = '0'.repeat(64)
+  assert.notEqual(scopeDeclarationDigest(f.declaration, 'm1-libs', mutatedRows), before)
+})
+
+test('prepareCopy rejects unknown and mutated accepted scope pins', async () => {
+  const workspaceRoot = fileURLToPath(new URL('../../../../', import.meta.url))
+  const declaration = JSON.parse(
+    await readFile(path.join(workspaceRoot, 'modkit-core/migration/mk2-copy/sc2.json'), 'utf8'),
+  )
+  const divergences = JSON.parse(
+    await readFile(
+      path.join(workspaceRoot, 'modkit-core/migration/mk2-divergence/sc2.json'),
+      'utf8',
+    ),
+  )
+  const options = {
+    divergences,
+    scope: 'm1-libs',
+    workspaceRoot,
+    repoRoot: path.join(workspaceRoot, 'references/modkitmk2'),
+  }
+  const unknown = structuredClone(declaration)
+  unknown.scopes['m1-libs'].acceptancePin = 'unknown-pin'
+  await assert.rejects(
+    prepareCopy({ ...options, declaration: unknown }),
+    /Accepted scope pin mismatch/u,
+  )
+  const changedScope = structuredClone(declaration)
+  changedScope.scopes['m1-libs'].note = 'mutated accepted scope'
+  await assert.rejects(
+    prepareCopy({ ...options, declaration: changedScope }),
+    /Accepted scope pin mismatch/u,
+  )
+  const changedRow = structuredClone(declaration)
+  const first = changedRow.scopes['m1-libs'].requiredSources[0]
+  changedRow.copies.find(row => row.source === first).sha256Mk3 = '0'.repeat(64)
+  await assert.rejects(
+    prepareCopy({ ...options, declaration: changedRow }),
+    /Accepted scope pin mismatch/u,
   )
 })
 
