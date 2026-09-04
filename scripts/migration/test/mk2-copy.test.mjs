@@ -15,6 +15,11 @@ import {
   safeRelative,
 } from '../lib/mk2-copy.mjs'
 import { MK2_PIN, sha256 } from '../lib/legacy-oracle.mjs'
+import {
+  assertM3TestDestination,
+  canonicalM3Destination,
+  isM3TestOwnedSource,
+} from '../lib/sc2-m3-destinations.mjs'
 
 async function fixture(t) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'mk2-copy-test-'))
@@ -137,6 +142,7 @@ test('canonical relative source may use its direct public package export, never 
     package: '@fixture/kit',
     version: '1.0.0',
     manifest: 'kit/package.json',
+    manifestSha256: sha256(JSON.stringify(metadata)),
     reason: 'Single canonical source through its public export',
     canonicalSources: ['src/value.ts'],
   }
@@ -145,15 +151,25 @@ test('canonical relative source may use its direct public package export, never 
   assert.equal(prepared.provenance.closure[0].destinationTarget, 'kit/src/value.ts')
   await writeCopies(prepared)
   await checkCopies(await f.prepare())
+  delete dependency.manifestSha256
+  await assert.rejects(f.prepare(), /Unpinned dependency manifest/u)
+  dependency.manifestSha256 = sha256(JSON.stringify(metadata))
+  metadata.description = 'same identity, changed manifest bytes'
+  await writeFile(path.join(f.root, 'kit/package.json'), JSON.stringify(metadata))
+  await assert.rejects(f.prepare(), /Dependency manifest hash mismatch/u)
+  delete metadata.description
+  await writeFile(path.join(f.root, 'kit/package.json'), JSON.stringify(metadata))
   dependency.canonicalSources = []
   await assert.rejects(f.prepare(), /replaced by bare dependency/u)
   dependency.canonicalSources = ['src/value.ts']
   metadata.exports['./value'].default = './dist/other.js'
   await writeFile(path.join(f.root, 'kit/package.json'), JSON.stringify(metadata))
+  dependency.manifestSha256 = sha256(JSON.stringify(metadata))
   await assert.rejects(f.prepare(), /Noncanonical package export target/u)
   metadata.exports['./value'].default = './dist/value.js'
   metadata.exports['./value'].browser = './dist/browser-substitute.js'
   await writeFile(path.join(f.root, 'kit/package.json'), JSON.stringify(metadata))
+  dependency.manifestSha256 = sha256(JSON.stringify(metadata))
   await assert.rejects(f.prepare(), /Noncanonical package export target/u)
 })
 
@@ -621,6 +637,82 @@ test('prepareCopy rejects unknown and mutated accepted scope pins', async () => 
   await assert.rejects(
     prepareCopy({ ...options, declaration: changedRow }),
     /Accepted scope pin mismatch/u,
+  )
+})
+
+test('M3 destination normalization cannot preserve a mutated current copy destination', () => {
+  const renderingSpec = 'packages/rendering-3d/src/scene-core/terrain/render.spec.ts'
+  const renderingFixture =
+    'packages/rendering-3d/src/scene-core/terrain/fixtures/terrain-golden.png'
+  const triggerTmp =
+    'extensions/blizzard/starcraft-2/codecs/sc2-triggers/src/core/to-engine.e2e.spec.ts.tmp'
+  for (const source of [renderingSpec, renderingFixture, triggerTmp]) {
+    assert.equal(isM3TestOwnedSource(source), true)
+    const mutated = {
+      source,
+      destination: `modkit-extensions-blizzard/starcraft2/src/lib/mk2/${path.basename(source)}`,
+    }
+    assert.throws(
+      () => assertM3TestDestination(mutated.source, mutated.destination),
+      /Test-owned blob placed under src\/lib/u,
+    )
+    const normalized = { ...mutated, destination: canonicalM3Destination(mutated.source) }
+    assert.notDeepEqual(normalized, mutated)
+    assert.doesNotThrow(() => assertM3TestDestination(normalized.source, normalized.destination))
+  }
+})
+
+test('real M3 declaration keeps every selected test artifact outside src/lib', async () => {
+  const workspaceRoot = fileURLToPath(new URL('../../../../', import.meta.url))
+  const declaration = JSON.parse(
+    await readFile(path.join(workspaceRoot, 'modkit-core/migration/mk2-copy/sc2.json'), 'utf8'),
+  )
+  const testOwned = declaration.copies.filter(row => isM3TestOwnedSource(row.source))
+  assert.ok(testOwned.length > 0)
+  assert.deepEqual(
+    testOwned.filter(row => row.destination.includes('/src/lib/mk2/')),
+    [],
+  )
+  assert.equal(
+    declaration.copies.find(row => row.source.endsWith('/to-engine.e2e.spec.ts.tmp'))?.destination,
+    'modkit-extensions-blizzard/starcraft2/test/mk2/codecs/sc2-triggers/src/core/to-engine.e2e.spec.ts.tmp',
+  )
+})
+
+test('family dry-run rejects a consistently removed row and a mutated destination', async () => {
+  const workspaceRoot = fileURLToPath(new URL('../../../../', import.meta.url))
+  const declaration = JSON.parse(
+    await readFile(path.join(workspaceRoot, 'modkit-core/migration/mk2-copy/sc2.json'), 'utf8'),
+  )
+  const divergences = JSON.parse(
+    await readFile(
+      path.join(workspaceRoot, 'modkit-core/migration/mk2-divergence/sc2.json'),
+      'utf8',
+    ),
+  )
+  const options = {
+    divergences,
+    scope: 'family',
+    workspaceRoot,
+    repoRoot: path.join(workspaceRoot, 'references/modkitmk2'),
+    allowPending: true,
+  }
+  const source = 'packages/rendering-3d/src/scene.ts'
+  const removed = structuredClone(declaration)
+  removed.scopes.family.requiredSources = removed.scopes.family.requiredSources.filter(
+    item => item !== source,
+  )
+  removed.copies = removed.copies.filter(row => row.source !== source)
+  await assert.rejects(
+    prepareCopy({ ...options, declaration: removed }),
+    /Family refreeze pin mismatch/u,
+  )
+  const relocated = structuredClone(declaration)
+  relocated.copies.find(row => row.source === source).destination =
+    'modkit-extensions-blizzard/starcraft2/src/lib/mk2/tampered-scene.ts'
+  await assert.rejects(
+    prepareCopy({ ...options, declaration: relocated }),
+    /Family refreeze pin mismatch/u,
   )
 })
 

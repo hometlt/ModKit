@@ -4,6 +4,7 @@ import ts from 'typescript'
 import { fileURLToPath } from 'node:url'
 import { builtinModules } from 'node:module'
 import { createPinnedSource, MK2_PIN, sha256, digestManifest } from './legacy-oracle.mjs'
+import { SC2_M3_SELECTOR_VERSION, sc2M3FamilyPlanDigest } from './sc2-m3-refreeze.mjs'
 
 const acceptedScopePins = new Map([
   [
@@ -448,7 +449,6 @@ export async function prepareCopy({
     for (const file of files) required.add(file)
   }
   if (!required.size) throw new Error(`Empty required closure: ${scope}`)
-  source.prefetch?.([...required])
   const bySource = new Map(declaration.copies.map(row => [row.source, row]))
   const rows = []
   for (const file of required) {
@@ -458,6 +458,27 @@ export async function prepareCopy({
     rows.push(row)
   }
   const declarationDigest = compatibleDeclarationDigest(declaration, scope, rows)
+  if (scope === 'family') {
+    if (
+      selected.selectorVersion !== SC2_M3_SELECTOR_VERSION ||
+      typeof selected.refreezePin !== 'string'
+    )
+      throw new Error('Family scope requires the tracked M3 refreeze pin')
+    const pin = JSON.parse(
+      await readFile(await safeTarget(workspaceRoot, selected.refreezePin), 'utf8'),
+    )
+    const planDigest = sc2M3FamilyPlanDigest(declaration, scope, rows)
+    if (
+      pin.schemaVersion !== 1 ||
+      pin.family !== declaration.family ||
+      pin.scope !== scope ||
+      pin.oracleCommit !== declaration.oracleCommit ||
+      pin.selectorVersion !== SC2_M3_SELECTOR_VERSION ||
+      pin.planDigest !== planDigest
+    )
+      throw new Error('Family refreeze pin mismatch')
+  }
+  source.prefetch?.([...required])
   if (selected.status !== 'ready' && !(allowPending && selected.status === 'pending-m3'))
     throw new Error(
       `Scope ${scope} remains ${selected.status}; copied family acceptance is pending`,
@@ -517,9 +538,15 @@ export async function prepareCopy({
     } else {
       if (!dependency.manifest || !dependency.version)
         throw new Error('Declared dependency needs manifest and version')
-      const manifest = JSON.parse(
-        await readFile(await safeTarget(workspaceRoot, dependency.manifest), 'utf8'),
+      if (!selected.acceptancePin && !/^[a-f0-9]{64}$/u.test(dependency.manifestSha256 ?? ''))
+        throw new Error(`Unpinned dependency manifest: ${dependency.specifier}`)
+      const manifestBytes = await readFile(await safeTarget(workspaceRoot, dependency.manifest))
+      if (
+        dependency.manifestSha256 !== undefined &&
+        sha256(manifestBytes) !== dependency.manifestSha256
       )
+        throw new Error(`Dependency manifest hash mismatch: ${dependency.specifier}`)
+      const manifest = JSON.parse(manifestBytes.toString('utf8'))
       if (manifest.version !== dependency.version || manifest.name !== dependency.package)
         throw new Error(`Dependency identity mismatch: ${dependency.specifier}`)
     }

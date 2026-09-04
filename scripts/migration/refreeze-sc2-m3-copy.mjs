@@ -5,6 +5,15 @@ import { readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { createPinnedSource, sha256 } from './lib/legacy-oracle.mjs'
 import { importsOf, rewriteSource } from './lib/mk2-copy.mjs'
+import {
+  assertM3TestDestination,
+  canonicalM3Destination,
+  isM3TestOwnedSource,
+  modelCompatibility,
+  modelMath,
+  triggerTmpTest,
+} from './lib/sc2-m3-destinations.mjs'
+import { SC2_M3_SELECTOR_VERSION, sc2M3FamilyPlanDigest } from './lib/sc2-m3-refreeze.mjs'
 
 const workspaceRoot = fileURLToPath(new URL('../../..', import.meta.url))
 const declarationPath = path.join(workspaceRoot, 'modkit-core/migration/mk2-copy/sc2.json')
@@ -13,6 +22,12 @@ const reportPath = path.join(
   workspaceRoot,
   'artifacts/legacy-parity-sc2/m3/implementation/refreeze-inventory.json',
 )
+const pinRelative = 'modkit-core/migration/mk2-copy/sc2-m3-refreeze.json'
+const pinPath = path.join(workspaceRoot, pinRelative)
+const args = process.argv.slice(2)
+if (args.some(arg => arg !== '--write-pin') || new Set(args).size !== args.length)
+  throw new Error('Use no arguments or the explicit --write-pin update mode')
+const writePin = args.includes('--write-pin')
 const processingPackages = [
   'data-processing',
   'documents-processing',
@@ -23,27 +38,6 @@ const processingPackages = [
   'replays-processing',
   'scripts-processing',
 ]
-const modelCompatibility = new Set([
-  'animation.ts',
-  'material.ts',
-  'render-contracts.ts',
-  'codec.ts',
-  'format-detection.ts',
-  'registry-detectors.ts',
-  'texture-codec.ts',
-  'preview-textures.ts',
-  'texture-cache.ts',
-])
-const modelMath = new Set([
-  'animation-controller.ts',
-  'color-remap.ts',
-  'effects-sim.ts',
-  'humanoid.ts',
-  'sequence-pose.ts',
-  'standard-material-glsl.ts',
-  'transport.ts',
-  'westwood-bind-pose.ts',
-])
 const corePackageRewrites = new Map([
   ['@modkitx/assets', '@modkit/codec-kit/legacy/assets'],
   ['@modkitx/core', '@modkit/codec-kit/legacy/core'],
@@ -95,45 +89,6 @@ function included(file) {
       !file.startsWith('packages/archives-processing/src/lib/crypto/')
     )
   return file.startsWith('packages/archives-processing/test/')
-}
-
-function destination(source) {
-  const extensionPrefix = 'extensions/blizzard/starcraft-2/'
-  if (source.startsWith(`${extensionPrefix}codecs/m3/`))
-    return `modkit-extensions-blizzard/models/src/lib/mk2/m3/${source.slice(
-      `${extensionPrefix}codecs/m3/`.length,
-    )}`
-  if (source.startsWith(extensionPrefix)) {
-    const relative = source.slice(extensionPrefix.length)
-    if (/^(?:codecs\/[^/]+|games\/starcraft-2)\/test\//u.test(relative))
-      return `modkit-extensions-blizzard/starcraft2/test/mk2/${relative}`
-    if (relative.startsWith('src/') && relative.includes('/test/'))
-      return `modkit-extensions-blizzard/starcraft2/test/mk2/${relative}`
-    return `modkit-extensions-blizzard/starcraft2/src/lib/mk2/${relative}`
-  }
-  if (source.startsWith('packages/xml/src/'))
-    return `modkit-core/packages/codec-kit/src/legacy/xml/${source.slice('packages/xml/src/'.length)}`
-  if (source.startsWith('packages/xml/test/'))
-    return `modkit-core/packages/codec-kit/test/mk2/xml/${source.slice('packages/xml/test/'.length)}`
-  if (source.startsWith('packages/models-processing/src/core/')) {
-    const name = source.slice('packages/models-processing/src/core/'.length)
-    if (modelCompatibility.has(name))
-      return `modkit-core/packages/codec-kit/src/legacy/models/${name}`
-    if (modelMath.has(name)) return `modkit-core/packages/codec-kit/src/model-math/${name}`
-    return `modkit-core/packages/codec-kit/src/embedded/${name}`
-  }
-  if (source.startsWith('packages/models-processing/test/core/'))
-    return `modkit-core/packages/codec-kit/test/mk2/models-core/${source.slice(
-      'packages/models-processing/test/core/'.length,
-    )}`
-  const match = source.match(/^packages\/([^/]+)\/(src|test)\/(.+)$/u)
-  if (!match) throw new Error(`No M3 destination: ${source}`)
-  const [, packageName, kind, relative] = match
-  const root =
-    kind === 'src'
-      ? 'modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages'
-      : 'modkit-extensions-blizzard/starcraft2/test/mk2/packages'
-  return `${root}/${packageName}/${kind}/${relative}`
 }
 
 function sourceCandidates(importer, specifier) {
@@ -207,6 +162,12 @@ async function externalDependency(specifier, baseDependencies) {
   return null
 }
 
+async function bindDependencyManifest(dependency) {
+  if (dependency.kind === 'node-builtin') return { ...dependency }
+  const bytes = await readFile(path.join(workspaceRoot, dependency.manifest))
+  return { ...dependency, manifestSha256: sha256(bytes) }
+}
+
 const original = JSON.parse(await readFile(declarationPath, 'utf8'))
 const source = await createPinnedSource({ repoRoot: oracleRoot, commit: original.oracleCommit })
 const selected = source.listFiles().filter(included)
@@ -219,29 +180,15 @@ for (const prefix of original.scopes['sc2-bank'].sourcePrefixes ?? [])
 const accepted = original.copies.filter(row => acceptedSources.has(row.source))
 const acceptedBySource = new Map(accepted.map(row => [row.source, row]))
 const allDestinations = new Map(accepted.map(row => [row.source, row.destination]))
-const plannedBySource = new Map(
-  [...(original.plannedCopies ?? []), ...original.copies].map(row => [row.source, row]),
-)
+const legacyPlannedBySource = new Map((original.plannedCopies ?? []).map(row => [row.source, row]))
 for (const file of selected)
-  allDestinations.set(
-    file,
-    acceptedBySource.get(file)?.destination ??
-      plannedBySource.get(file)?.destination ??
-      destination(file),
-  )
+  allDestinations.set(file, acceptedBySource.get(file)?.destination ?? canonicalM3Destination(file))
 for (const file of selected.filter(row => row.startsWith('extensions/blizzard/starcraft-2/'))) {
-  const planned = plannedBySource.get(file)
-  if (!planned) throw new Error(`Missing canonical extension destination: ${file}`)
-  if (allDestinations.get(file) !== planned.destination)
+  const planned = legacyPlannedBySource.get(file)
+  if (planned && file !== triggerTmpTest && canonicalM3Destination(file) !== planned.destination)
     throw new Error(`Extension destination differs from canonical plan: ${file}`)
-  if (
-    (/(?:^|\/)test\//u.test(file) ||
-      /\.(?:spec|test)\.[cm]?[jt]sx?$/u.test(file) ||
-      /(?:^|\/)fixtures\//u.test(file)) &&
-    allDestinations.get(file).includes('/src/lib/mk2/')
-  )
-    throw new Error(`Test-owned extension blob placed under src/lib/mk2: ${file}`)
 }
+for (const file of selected) assertM3TestDestination(file, allDestinations.get(file))
 const imports = new Map()
 for (const file of selected) {
   if (!/\.[cm]?[jt]sx?$/u.test(file)) continue
@@ -377,10 +324,14 @@ const requiredSources = [
 const family = {
   status: 'pending-m3',
   copiedAt: '2026-09-04',
+  selectorVersion: SC2_M3_SELECTOR_VERSION,
+  refreezePin: pinRelative,
   requiredSources,
   provenance: 'modkit-extensions-blizzard/starcraft2/MK2-FAMILY-PROVENANCE.json',
   adapters: original.scopes['sc2-bank'].adapters,
-  dependencies: [...dependencies.values()].sort((a, b) => a.specifier.localeCompare(b.specifier)),
+  dependencies: (await Promise.all([...dependencies.values()].map(bindDependencyManifest))).sort(
+    (a, b) => a.specifier.localeCompare(b.specifier),
+  ),
   dynamicImports: original.scopes['sc2-bank'].dynamicImports,
   importDispositions: [...dispositions.values()].sort(
     (a, b) =>
@@ -404,6 +355,20 @@ if (selected.some(file => file.includes('/games/heroes-of-the-storm/')))
   throw new Error('Heroes of the Storm leaked into M3')
 if (new Set(rows.map(row => row.destination.toLowerCase())).size !== rows.length)
   throw new Error('Destination collision in M3 refreeze')
+const pin = {
+  schemaVersion: 1,
+  family: declaration.family,
+  scope: 'family',
+  oracleCommit: declaration.oracleCommit,
+  selectorVersion: SC2_M3_SELECTOR_VERSION,
+  planDigest: sc2M3FamilyPlanDigest(declaration, 'family', rows),
+}
+if (writePin) await writeFile(pinPath, `${JSON.stringify(pin, null, 2)}\n`)
+else {
+  const acceptedPin = JSON.parse(await readFile(pinPath, 'utf8'))
+  if (JSON.stringify(acceptedPin) !== JSON.stringify(pin))
+    throw new Error('Refreeze output differs from the tracked M3 plan pin; review with --write-pin')
+}
 await writeFile(declarationPath, `${JSON.stringify(declaration, null, 2)}\n`)
 const groups = Object.fromEntries(
   [...new Set(selected.map(file => file.split('/').slice(0, 2).join('/')))]
@@ -417,9 +382,7 @@ const destinationOwners = Object.fromEntries(
     'modkit-extensions-blizzard/models/',
   ].map(prefix => [prefix, rows.filter(row => row.destination.startsWith(prefix)).length]),
 )
-const testFiles = selected.filter(
-  file => /(?:^|\/)test\//u.test(file) || /\.(?:spec|test)\.[cm]?[jt]sx?$/u.test(file),
-)
+const testFiles = selected.filter(isM3TestOwnedSource)
 await writeFile(
   reportPath,
   `${JSON.stringify(
