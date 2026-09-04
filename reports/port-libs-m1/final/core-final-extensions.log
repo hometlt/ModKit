@@ -1,0 +1,2 @@
+$ node scripts/check-extension-inventory.mjs
+extension-inventory gate: clean (14 extension director(y/ies) checked)

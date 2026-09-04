@@ -1,0 +1,4 @@
+(node:25336) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/FILES/SC2Files/coding/artifacts/legacy-oracle/cache/dependencies/dadc9ecaa50f06c9658dc74e3d9f91dc2cbbdd3dfc8be289c7dea4f2a9c1a58b/fa126d4b28996485d19005d960176ed9bc1f6614b91fcb9e97dcf5a58e1e695f/esm/browser.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\FILES\SC2Files\coding\artifacts\legacy-oracle\cache\dependencies\dadc9ecaa50f06c9658dc74e3d9f91dc2cbbdd3dfc8be289c7dea4f2a9c1a58b\fa126d4b28996485d19005d960176ed9bc1f6614b91fcb9e97dcf5a58e1e695f\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)

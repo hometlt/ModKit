@@ -1,0 +1,108 @@
+{
+  "baselineCommit": "878f9cd7658bc065a3eaa034a7f89e5020c887fe",
+  "esbuildVersion": "0.28.2",
+  "files": 10,
+  "identical": 10,
+  "records": [
+    {
+      "file": "packages/uv/src/index.js",
+      "currentFile": "packages/uv/src/index.ts",
+      "packagingRewrite": false,
+      "sourceSha256": "abbab96ce3c509616c009148aa2d1a70ca179f65eb88510ad283fe972b2cecbb",
+      "currentSourceSha256": "abbab96ce3c509616c009148aa2d1a70ca179f65eb88510ad283fe972b2cecbb",
+      "normalizedBeforeSha256": "746db4f0803058288f1bbc509f8ca72add8099a12f682c83be52e7ad77c05b89",
+      "normalizedAfterSha256": "746db4f0803058288f1bbc509f8ca72add8099a12f682c83be52e7ad77c05b89",
+      "equal": true
+    },
+    {
+      "file": "packages/uv/src/model/materializer.js",
+      "currentFile": "packages/uv/src/model/materializer.ts",
+      "packagingRewrite": false,
+      "sourceSha256": "05521e62456f8fcab221ec9d476031faafd50a88076dd8fb4a2c9ae3e3f4f91d",
+      "currentSourceSha256": "0f2043c72b19feffe5623e39f53aabd171f5034de2188c1d9040c3dd5495a755",
+      "normalizedBeforeSha256": "e74f1261f41df5a654782d7dc0615fd5e0aa820604b56eb425d88b161ca3375f",
+      "normalizedAfterSha256": "e74f1261f41df5a654782d7dc0615fd5e0aa820604b56eb425d88b161ca3375f",
+      "equal": true
+    },
+    {
+      "file": "packages/uv/src/model/provider.js",
+      "currentFile": "packages/uv/src/model/provider.ts",
+      "packagingRewrite": false,
+      "sourceSha256": "caddab29068aca59edf90f354d6039c140943119c9aa6f465a14f7a83b6338f4",
+      "currentSourceSha256": "34ece59ecd656eadcfc85d8556c621ca110a1b3f63b8b1a687218ffcbe2ac93c",
+      "normalizedBeforeSha256": "74b7549c76b73ea5e3df8d4cf1ac1bb862848678faee4fdb537fdaa8ad7bf29f",
+      "normalizedAfterSha256": "74b7549c76b73ea5e3df8d4cf1ac1bb862848678faee4fdb537fdaa8ad7bf29f",
+      "equal": true
+    },
+    {
+      "file": "packages/uv/src/model/writer.js",
+      "currentFile": "packages/uv/src/model/writer.ts",
+      "packagingRewrite": false,
+      "sourceSha256": "1a72f5fcaecd27386a75d4b61e3bb101d8ff911f94754802255aac3884a27d95",
+      "currentSourceSha256": "65bd672020dfffe5522959735367c4f3778844d66c2b3212ecc5fa28685dc3e4",
+      "normalizedBeforeSha256": "191a01d893d689f83891d82ec4b2c32feacbf656b8fc421893f7594cc07a9119",
+      "normalizedAfterSha256": "191a01d893d689f83891d82ec4b2c32feacbf656b8fc421893f7594cc07a9119",
+      "equal": true
+    },
+    {
+      "file": "packages/uv/src/module.js",
+      "currentFile": "packages/uv/src/module.ts",
+      "packagingRewrite": true,
+      "sourceSha256": "7fba745901d0ead20cdd657543b0309bff08a350f0101c4c119c8f325d583a9b",
+      "currentSourceSha256": "eebcfbf052fb1cd7b5eaaa60081b41add836c814ab2384bce36c6b8252430b1b",
+      "normalizedBeforeSha256": "ae49642a821b1de658cdeff9e303429ef04d2121a8739960175ac4c663057fcc",
+      "normalizedAfterSha256": "ae49642a821b1de658cdeff9e303429ef04d2121a8739960175ac4c663057fcc",
+      "equal": true
+    },
+    {
+      "file": "packages/uv/src/support.js",
+      "currentFile": "packages/uv/src/support.ts",
+      "packagingRewrite": false,
+      "sourceSha256": "0a8324de5ecd673f51bc5e537d5ccbf0eba2ba0948d640fd4944205ec4d34534",
+      "currentSourceSha256": "efbabda2e87d681f91b93841fc91469dd5410e8c871a25da0862d212d66b5179",
+      "normalizedBeforeSha256": "54e30f04ea006fb3f0272aa6392ae6c94f0e0d8cc972d91dbc3eb85f1c89d803",
+      "normalizedAfterSha256": "54e30f04ea006fb3f0272aa6392ae6c94f0e0d8cc972d91dbc3eb85f1c89d803",
+      "equal": true
+    },
+    {
+      "file": "packages/uv/src/texture/materializer.js",
+      "currentFile": "packages/uv/src/texture/materializer.ts",
+      "packagingRewrite": false,
+      "sourceSha256": "ee1eb38d0c6feee8335358491e47e9cacca3d057a7a74d12d9beb37c927758fa",
+      "currentSourceSha256": "95b8b054d48e9b58aad14f1d7fcea682eb8c9d54faa7111dcaa6f3652130377e",
+      "normalizedBeforeSha256": "ee37140179d94ac124dc1cea6e8681eb8f00ed224960381ddd8316dd6b81c570",
+      "normalizedAfterSha256": "ee37140179d94ac124dc1cea6e8681eb8f00ed224960381ddd8316dd6b81c570",
+      "equal": true
+    },
+    {
+      "file": "packages/uv/src/texture/provider.js",
+      "currentFile": "packages/uv/src/texture/provider.ts",
+      "packagingRewrite": false,
+      "sourceSha256": "64baa0f852b508cb48017900b367f900dc17f0e5f2c3e49f461e4059ac7adb39",
+      "currentSourceSha256": "6ad83778030216f869d6cc729b3f87027e64cc5076014d84f4595d0608460655",
+      "normalizedBeforeSha256": "0c096584754c7c7b57e475a5d537e3a0f207c33484563b5c885f67c677d84885",
+      "normalizedAfterSha256": "0c096584754c7c7b57e475a5d537e3a0f207c33484563b5c885f67c677d84885",
+      "equal": true
+    },
+    {
+      "file": "packages/uv/src/texture/writer.js",
+      "currentFile": "packages/uv/src/texture/writer.ts",
+      "packagingRewrite": false,
+      "sourceSha256": "c0690990c4ddaa6f2d1d99c2a3f3c9eded57d52a250593b52eb42b5bebd1f650",
+      "currentSourceSha256": "10b4c8bcec89b400c8bc4a862d914ce7f5c217784506f6b403a3c767101e505a",
+      "normalizedBeforeSha256": "6d4f763717cb55c3717de3d72c3eb55d218f1811dd7ab279cee673b3a801e03f",
+      "normalizedAfterSha256": "6d4f763717cb55c3717de3d72c3eb55d218f1811dd7ab279cee673b3a801e03f",
+      "equal": true
+    },
+    {
+      "file": "packages/uv/src/world/index.js",
+      "currentFile": "packages/uv/src/world/index.ts",
+      "packagingRewrite": false,
+      "sourceSha256": "944f40cbb5cda375f3a6f9443ad342c379df1047c1784009c4490be2f01bf648",
+      "currentSourceSha256": "944f40cbb5cda375f3a6f9443ad342c379df1047c1784009c4490be2f01bf648",
+      "normalizedBeforeSha256": "4e09a0f8480138f585236ba4fb6d319ee94253f850a2c0b7c9d30fe1fa262a29",
+      "normalizedAfterSha256": "4e09a0f8480138f585236ba4fb6d319ee94253f850a2c0b7c9d30fe1fa262a29",
+      "equal": true
+    }
+  ]
+}

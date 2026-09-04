@@ -1,0 +1,33 @@
+
+ RUN  v2.1.9 C:/FILES/SC2Files/coding/modkit-core
+
+ ✓ packages/sdk/test/contribution-specs.test.ts (23 tests) 4264ms
+   ✓ A-1 contribution spec schemas > validates data-source inventory records outside the executable contribution registry 3923ms
+ ✓ packages/sdk/test/subject-descriptor.test.ts (23 tests) 1232ms
+   ✓ SubjectDescriptor v2 schema > validates the unresolved codec-less wire state after a JSON round-trip 652ms
+ ✓ packages/sdk/test/asset-capabilities.test.ts (17 tests) 563ms
+   ✓ data-source inventory registry > replaces one owner atomically and preserves the old inventory after a rejected batch 518ms
+ ✓ packages/sdk/test/data-source-surfaces.test.ts (25 tests) 684ms
+   ✓ NXT-103 — data-source method surface schema > accepts every kind, keeps result/wrapper exclusive to lease, and bounds names 565ms
+ ✓ packages/sdk/test/extension-manifest.test.ts (20 tests) 611ms
+   ✓ normalizeExtensionManifest (canon §5.13, 27 §0.2, Q75/Q76) > normalizes the npm container, inheriting version/license from package.json 544ms
+ ✓ packages/sdk/test/contribution-manifest.test.ts (9 tests) 565ms
+   ✓ ContributionManifestV1 envelope (27 §6 + §0.5) > rejects unknown unqualified facilities but preserves extension-owned qualified IDs 526ms
+ ✓ packages/sdk/test/visual-composition.test.ts (4 tests) 33ms
+ ✓ packages/sdk/test/fields.test.ts (35 tests) 950ms
+   ✓ field contracts > validates 'text' and rejects extra wire properties 604ms
+ ✓ packages/sdk/test/subjects.test.ts (7 tests) 24ms
+ ✓ packages/sdk/test/authoring.test.ts (5 tests) 21ms
+ ✓ packages/sdk/test/data.test.ts (3 tests) 38ms
+ ✓ packages/sdk/test/uv-projection-abi.test.ts (8 tests) 21ms
+ ✓ packages/sdk/test/mods.test.ts (3 tests) 9ms
+ ✓ packages/sdk/test/knowledge.test.ts (4 tests) 15ms
+ ✓ packages/sdk/test/host-profile.test.ts (4 tests) 17ms
+ ✓ packages/sdk/test/maps.test.ts (2 tests) 10ms
+ ✓ packages/sdk/test/templates.test.ts (2 tests) 5ms
+
+ Test Files  17 passed (17)
+      Tests  194 passed (194)
+   Start at  18:41:28
+   Duration  26.85s (transform 4.94s, setup 0ms, collect 5.63s, tests 9.06s, environment 8ms, prepare 5.03s)
+

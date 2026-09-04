@@ -1,0 +1,465 @@
+{
+  "schemaVersion": 1,
+  "operation": "compare-legacy-image-ops.mjs",
+  "argv": [
+    "--corpus",
+    "C:/FILES/SC2Files/Mods"
+  ],
+  "files": [
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\allraces-version\\BroodWar-Assets-2025.SC2Mod\\Base.SC2Assets\\Assets\\Textures\\wolf_corpse_normal.dds",
+      "byteLength": 349680,
+      "sha256": "12a23c80b9816ed7446219b5f48fab941d0e0f768abd52acd13ab04fa8e61f56"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\-samples\\archives\\Sample-big\\cnc-sources\\EUlorienwarrior.dds",
+      "byteLength": 174904,
+      "sha256": "2d8c55ecfaed469fb62729babf2de04c1882542342395305ab25baf38bba96a4"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\btn-Xelnaga-core-crystal.dds",
+      "byteLength": 3016,
+      "sha256": "17f345528ea144d754757d2e42e2d5d71051160f8e5d8e54331650fb557b488f"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Icons\\energies.dds",
+      "byteLength": 3016,
+      "sha256": "defdb0a3b9e9fb1b605154ec56d5035ecb374c783b5a49c5028774e19b5539c6"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Portraits\\Terran\\mulegreyportrait_static.dds",
+      "byteLength": 23816,
+      "sha256": "02b116bb57ac0c50960184a2cce798c68ee11724fe468f4f6005458678710f60"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Textures\\AetherPortal_Gem_Holo.dds",
+      "byteLength": 87528,
+      "sha256": "d3be6531a3377f31edc82a08c8c4169c6eb8107688964c43ea54e830eef870b7"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Textures\\Aether_VoidPortal_Gem_Diff.dds",
+      "byteLength": 87528,
+      "sha256": "0811c2f80e746d4a9435f5733ea34f31f3720e419d1a85161307e9a6ee38fd5a"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Textures\\Aether_VoidPortal_Gem_Emis.dds",
+      "byteLength": 87528,
+      "sha256": "ce683aaf88c04314496c7205fd4bb35c8c795636d328fbea410b64aafac69ea0"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Textures\\aether_void_tendril_corruption_pillar_emmi.dds",
+      "byteLength": 699192,
+      "sha256": "bf296bec98058a15275fb9911b9667d48d5512dc193f2efc7214fa5db8dc0604"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Textures\\artanisportrait_static.dds",
+      "byteLength": 17760,
+      "sha256": "04f2dbcef231240931029b9c60c8f393fd5797564be86e3a77a50ab925721b33"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Textures\\astromissiletexture.dds",
+      "byteLength": 21992,
+      "sha256": "1f19250d8904e798a204566f74b2522ce33bf8574c2095388cd4ca90a8cf48b1"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Textures\\banshee_mengsk_coop_emis.dds",
+      "byteLength": 174904,
+      "sha256": "c282254cf4e053ea54b89930d4fac152aef65e527e4e8dd02122f7c066d422e8"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Textures\\battlecruiser_mengsk_collection_portrait_diff.dds",
+      "byteLength": 699192,
+      "sha256": "f9aa40b77f30dca261c72cc76971aadce2494364d5af2a58d1d217dff7f27814"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Textures\\battlecruiser_mengsk_collection_portrait_static.dds",
+      "byteLength": 17760,
+      "sha256": "fc5faa14b1fec04b3f6aac0e562948ecbf3416c296f00d5e9389b4e9fb308c5e"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Textures\\blinkalphaadd2_green.dds",
+      "byteLength": 43848,
+      "sha256": "3db59e760e7abf7887f63a2ade407cfa87747ec55ee8c5bcc13b8ee74e35d442"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Textures\\BlueDoubleSide_Grad_B.dds",
+      "byteLength": 2872,
+      "sha256": "775116091d99dc2d67ded61394df4bc6efef96803e699366d681c3b4eee24f26"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-building-xelnaga-assimilatorhighyield.dds",
+      "byteLength": 5904,
+      "sha256": "b8e70c24425420478a44a9b8a2a773f9f01c9b4fe7399bb0e6237826225ec382"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Icons\\autoassimhybrid.dds",
+      "byteLength": 5904,
+      "sha256": "ba196685b507eb3677917c692136bd4b93080fa81a5bbf4bdd6fa21733240837"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Icons\\btn-ability-apparition-mode.dds",
+      "byteLength": 5904,
+      "sha256": "5261994f58f21d2f783dd2aa9b24c7efc980a999a585c4421185196e6b9c2ad1"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Icons\\btn-ability-protoss-forstentity.dds",
+      "byteLength": 8096,
+      "sha256": "c5e8966b9de3b7549a4c4ed7fcf7b5aac98f52332661542466a38f97adac2147"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Icons\\btn-ability-protoss-mindwarpbluedds.dds",
+      "byteLength": 8096,
+      "sha256": "45a1020dc774649c13402ecb6b820c012447b280c19cee9988e9b8e1ee773ceb"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Icons\\btn-evileyes.dds",
+      "byteLength": 5904,
+      "sha256": "798753f8df6af08e2e2cb71c639c704d5d2a27ec6102c22a96e7dc50025a9ac7"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Icons\\btn-prismaticvoidbeam.dds",
+      "byteLength": 5904,
+      "sha256": "abb877281b286f51da1d66cc7bc1798ec399654414a0b411548bf6341def1d08"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Icons\\btn-scannersweep-purple.dds",
+      "byteLength": 5904,
+      "sha256": "c858735dc9772160395be29a485a7719369855e0eec14ce797ed45eac0f43d48"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Icons\\btn-upgrade-protoss-energysurgebluedds.dds",
+      "byteLength": 8096,
+      "sha256": "fdab350272865da4bb768c5487848d6edb550ce7bf7aa5dd58c86f53e326de8c"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Icons\\btn-wireframe-hybrid-Artifact-shield01.dds",
+      "byteLength": 22000,
+      "sha256": "0ce2b4dd1371596ee0c45203d41f7ebdce04be5545d3dfe720caf81351a5d8fa"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Icons\\btn-wireframe-hybrid-Artifact-shield02.dds",
+      "byteLength": 22000,
+      "sha256": "89696e68ba0a06d66eb2dbcf6dd447c6eccd8d505d697fee945dc992c8c17a74"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Icons\\btn-wireframe-hybrid-Artifact-shield03.dds",
+      "byteLength": 22000,
+      "sha256": "da763bf1cd1d6282d5755863c0ced4478938d9b7b7321ead6e380437fcf2b0f2"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Icons\\shadowcannonimproved.dds",
+      "byteLength": 5904,
+      "sha256": "feacca17797dff6ba0ea023e9ce3bb7bf92fc9375bd6f510d3bfd0a9e98b2f68"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Textures\\btn-ability-disharmonious-repudiate.dds",
+      "byteLength": 5904,
+      "sha256": "80abd1cf208465ea4b48c5ed5aa2c976bc2e48dd14a818692d1ae9a6d6a93faf"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Textures\\btn-ability-icon-advanced-mimicry.dds",
+      "byteLength": 5904,
+      "sha256": "1ca594d92a7f2af40f8c287d31ad4a8296d2c899381f40b615db4514147c5d1b"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\-samples\\archives\\Sample-big\\cnc-sources\\HC_EUlorienwarrior.dds",
+      "byteLength": 5616,
+      "sha256": "b81b81a4a468e9ea535a79a4b30fc5f155c37fa7d53349f6ed38c3cc22dc09b5"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-ability-terran-selfixarmor.dds",
+      "byteLength": 5904,
+      "sha256": "74f8fe6ae170c1e6095a23349b6fdfb435139d656fd756644dd085f1dd7afdfd"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-building-aether-abyssalconstruct.dds",
+      "byteLength": 8096,
+      "sha256": "18d18f43f78d667b64e73a7e8b69e24c3eb4868aa7d2ed919fb9537115a9c33e"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-building-aether-abyssalwatcher-transit.dds",
+      "byteLength": 8096,
+      "sha256": "2fb0314e5036dfc51797d9b0872707b5b7522ea47b423e7a627deca4d4e2eaa8"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-building-aether-abyssalwatcher.dds",
+      "byteLength": 8096,
+      "sha256": "39b070949eed02168f1309461034c90ff4a56a386d813ffb8672bd317e19daed"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-building-aether-gammafusiondrive.dds",
+      "byteLength": 8096,
+      "sha256": "d6d695d90b759cf0e221fd0fa15465d21e5244d7b499ee03334d1195854fa472"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-building-aether-genesischamber.dds",
+      "byteLength": 8096,
+      "sha256": "1a17ac0c26256faa2c8024ab482dac995b977712585809aa746e740abf536c17"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-building-aether-harvester.dds",
+      "byteLength": 8096,
+      "sha256": "7e5590205ecb1ef5ca04e9cb823815937a5c7c7e7b04d842e3f65b13d6dd0134"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-building-aether-ripfieldgenerator.dds",
+      "byteLength": 8096,
+      "sha256": "b2faa1d44a6aaac7fe56acef1d6bd222594cff47d2532bd1454ec5d726264cf7"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-building-aether-tachyonconcentrator.dds",
+      "byteLength": 8096,
+      "sha256": "4315280b6e17c9c81c4c17f0d3656e2e4973ef82645ab20d210aabda6ebe0794"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-building-aether-templeoforigin.dds",
+      "byteLength": 8096,
+      "sha256": "1e70b3748bd46bb6ff20e5088eb2903a5213471f98dfa43e3d4764837a3810a0"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-building-aether-voidrift.dds",
+      "byteLength": 8096,
+      "sha256": "575519ef4e931ed83b3d02ec0d31c0e523fe3d5ca12ab7f2e2cf99e5b6e5d9fa"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-icon-building-hybrid-artifact.dds",
+      "byteLength": 8096,
+      "sha256": "f7b2714e8c8118190c02cf760fb7d888c628f8f88d7940582718af1922bf51da"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-icon-building-hybrid-shrine.dds",
+      "byteLength": 8096,
+      "sha256": "e61c6a5567f00fcf9aafa263632ce53e4404775e27087c4e4aa5991cbc6ed43d"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-techupgrade-terran-titaniumhousing.dds",
+      "byteLength": 5904,
+      "sha256": "20c2b88008aed82f4d6d507bfb8445522f095466cd90b9c6953b38121b5ed69e"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\crossover-factions\\WarCraft-Assets.SC2Mod\\Assets\\TexturesUnused\\ui_healthbar_bar_01.dds",
+      "byteLength": 480,
+      "sha256": "808b0b801d617ce71567e80afbf4ad4f3d5d34fb18be9779161a835d1c8e3c3f"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\mods-native\\core.sc2mod\\base.sc2assets\\assets\\textures\\cooldownburst.dds",
+      "byteLength": 65664,
+      "sha256": "dd385124da95faa81c52b0dc15db4ec77a80c3877b3a8d318d7b36e178cfa433"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\mods-native\\core.sc2mod\\base.sc2assets\\assets\\textures\\perficon_ai.dds",
+      "byteLength": 8320,
+      "sha256": "b470bc56973cf2e0b24188cc1b627d80e9c04e5efcaef08443c12b1def1fc1ab"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\mods-native\\core.sc2mod\\base.sc2assets\\assets\\textures\\perficon_galaxy.dds",
+      "byteLength": 8320,
+      "sha256": "e379413913ebed72c5ad0818b089aa0e73f83b7f35ec6194bb91237599af614f"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\mods-native\\core.sc2mod\\base.sc2assets\\assets\\textures\\perficon_models.dds",
+      "byteLength": 8320,
+      "sha256": "4e9b4d71dc824a5bc4bc371cf0263403fbd11c68b1514d3070c332b85642a2b4"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\mods-native\\core.sc2mod\\base.sc2assets\\assets\\textures\\perficon_network.dds",
+      "byteLength": 8320,
+      "sha256": "e9021be6b250b7cfbdb6d1b5449761a753424fedfcd059f136c6d1608cf81fc0"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\mods-native\\core.sc2mod\\base.sc2assets\\assets\\textures\\perficon_physics.dds",
+      "byteLength": 8320,
+      "sha256": "fc5ffbe82617fcc8a93fced64d465a0eed0fe7667e4ca5c0557e74996d54dfd7"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\mods-native\\core.sc2mod\\base.sc2assets\\assets\\textures\\perficon_reflection.dds",
+      "byteLength": 8320,
+      "sha256": "86d1a93d239fa9e146d390769d9d4271a3d7203b33136c2c4de658e4fbc8a5fa"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\mods-native\\core.sc2mod\\base.sc2assets\\assets\\textures\\perficon_render.dds",
+      "byteLength": 8320,
+      "sha256": "4e734f0f00621d60e61af612e198ce533d4cf6e0f2351effcb8edbb4376546ec"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\mods-native\\core.sc2mod\\base.sc2assets\\assets\\textures\\perficon_ribbons.dds",
+      "byteLength": 8320,
+      "sha256": "29a27e68be78de91ed55b79d11feea9feed1fb358dbe8e80c67dc1250942901a"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\mods-native\\core.sc2mod\\base.sc2assets\\assets\\textures\\perficon_sound.dds",
+      "byteLength": 8320,
+      "sha256": "2f0532ec0bba052900ffa5ddcb93ff144164b7c8f2aacb098b412afeb94f720d"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\mods-native\\core.sc2mod\\base.sc2assets\\assets\\textures\\perficon_splats.dds",
+      "byteLength": 8320,
+      "sha256": "b8858129eccea5bcb7be8f5a2a113796bece9dfb30567426dac65dc8a496655c"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\mods-native\\core.sc2mod\\base.sc2assets\\assets\\textures\\perficon_ui.dds",
+      "byteLength": 8320,
+      "sha256": "1386ed05c78150c77798eec49819e13de51c4b952d8d1fe1525452a0f042d8b7"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\mods-native\\core.sc2mod\\base.sc2assets\\assets\\textures\\progress-queue.dds",
+      "byteLength": 11054,
+      "sha256": "3c8241f8c8a9db8dc674e4a5ec4960363520a84f75d1a60eaabfd55bb67f51dd"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\mods-native\\core.sc2mod\\base.sc2assets\\assets\\textures\\radaricon1.dds",
+      "byteLength": 8320,
+      "sha256": "d348f0f8164be7d4d869bf9fa1cbf0e47eae6549e6425365fc822bdd5c246069"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Textures\\battlecruiser_mengsk_collection_heroicon.dds",
+      "byteLength": 30128,
+      "sha256": "e308f728c12afd4540771aeed6830e1687d8bce8a784c5885b7cf6f96b0a9ed0"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Textures\\DarktemplarIhanrii_DS_Heroicon.dds",
+      "byteLength": 30128,
+      "sha256": "3480d1350ec3e72a48829b7909afb3bcccbb1d0f573d2b72d154accd7314edf6"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Textures\\imperialwitness_mengsk_collection_heroicon.dds",
+      "byteLength": 30128,
+      "sha256": "9daba32cef671150210cb284477891d5ec580896d734f2992acb048677c5f743"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Textures\\medivac_mengsk_collection_heroicon.dds",
+      "byteLength": 30128,
+      "sha256": "7d6f3a59e37e0506c16b8e46bc1f7c832aead1680760e316bcbe3ffb4bb8fadc"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Textures\\siegetank_mengsk_collection_heroicon.dds",
+      "byteLength": 30128,
+      "sha256": "84c4270526c57527f5967bc74be3a3851bdfc799a8a0ccb6eb96eb5adf154e10"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Textures\\thor_mengsk_collection_heroicon.dds",
+      "byteLength": 30128,
+      "sha256": "3609eca551e1615b3d7fcddda751f6706853dd948e711e625492cbde9d0d8bf4"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Textures\\viking_mengsk_collection_heroicon.dds",
+      "byteLength": 30128,
+      "sha256": "d7fee74de8fa48b2435434755f23bc44439d5e1b5275063eec90a0ce570b1c6e"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_02.SC2Mod\\Base.SC2Assets\\Assets\\Portraits\\NydusWorm_Updated_Portrait_Static.dds",
+      "byteLength": 105920,
+      "sha256": "d9084e96bba3434c0a8bf7c2d5307ce5aed7ee011b2401454edcd5e6270110e8"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_02.SC2Mod\\Base.SC2Assets\\Assets\\Textures\\LeviathanAH@HeroIcon.dds",
+      "byteLength": 30128,
+      "sha256": "506ceca8514cc8673ec2e9b4f34ce8afd3c3cc4f1293a70e24498ec8e261a121"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_02.SC2Mod\\Base.SC2Assets\\Assets\\Units\\Zerg\\Sovroleth\\sovroleth_devourer_portrait_static.dds",
+      "byteLength": 105920,
+      "sha256": "5bef9352ed4852be814c692586a0b3a9851469f40bac21283a04276f7dd56441"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Alevice-StarBattle\\Mods\\SBC\\Assets2.SC2Mod\\Assets\\Textures\\BQportraitdiffuse.dds",
+      "byteLength": 3145856,
+      "sha256": "eb9098f4810cdadee542301da9f92d3a33fbe71491678d429b8d4bd6e8dd3903"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Alevice-StarBattle\\Mods\\SBC\\Assets2.SC2Mod\\Assets\\Textures\\BQportraitemmisive.dds",
+      "byteLength": 3145856,
+      "sha256": "5a668d8c41eba38e372bd9a5b86fea89d6647c738a399806e96b69e4e2e64480"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Alevice-StarBattle\\Mods\\SBC\\Assets2.SC2Mod\\Assets\\Textures\\BroodQueenPort1.dds",
+      "byteLength": 3145856,
+      "sha256": "3852d6d08e41930fa79478144705b3108e034f9946f4bc4d516b733b72be294a"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Alevice-StarBattle\\Mods\\SBC\\Assets2.SC2Mod\\Assets\\Textures\\BroodQueen_Portrait_Static.dds",
+      "byteLength": 105920,
+      "sha256": "c5f5b3bae2f15992df3a93dd86307341d982d26720171dfd83ef83ed567b53c3"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Alevice-StarBattle\\Mods\\SBC\\Assets2.SC2Mod\\Assets\\Textures\\BroodQueen_Portrait_Webby_Collection_Static.dds",
+      "byteLength": 105920,
+      "sha256": "14882d3ac0be645c139f38b900da79d573c31a5a4b3c3f58bd2dbdd36e8b531e"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\-samples\\archives\\Sample-big\\cnc-sources\\PackedImages_220.dds",
+      "byteLength": 65664,
+      "sha256": "3723702f542fad8a4790bea81dc122fc9856e8723edc120b71dc51e6c2788c5f"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\-samples\\images\\sample-local.dds",
+      "byteLength": 6056,
+      "sha256": "3df20ed5d0060902630c7d15f033affa87c90178cf4efbe855cc803a6f194634"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-ability-protoss-chronobeam.dds",
+      "byteLength": 23232,
+      "sha256": "38fbcaece699a6e712725e9bb592494cfe897c055487d095d85f3eaa7ec1034d"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-ability-protoss-prismaticbeam-Ihan-rii.dds",
+      "byteLength": 23232,
+      "sha256": "64c929295a348ca42bd8133577681cae0fdc18f07ca7bfd24f4efe8b0f783577"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-ability-protoss-prismaticrange-Ihan-rii.dds",
+      "byteLength": 23232,
+      "sha256": "e225fcf445b7b97f0daa7fef38f8391254020643e86087cb27286d3320f15e68"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-ability-protoss-voidrayprismaticalignment-Ihan-rii.dds",
+      "byteLength": 23232,
+      "sha256": "a207d9147b3d19393044f52a9ba64d4363aaeaabbf22bc961d4b15f9804793ce"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-ability-urun-phoenixsquadron.dds",
+      "byteLength": 23232,
+      "sha256": "4c47230e71349fd8877684699706c9141908b1fb1b3534739a8c255bce8bc4d9"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-research-matrix-acceleration.dds",
+      "byteLength": 23232,
+      "sha256": "69c115f1eedbb7496c6fedd637d6fa95efd25fcfb012fa9d51c0ff332ba209c7"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-structure-terran-hivemindemulator-umojan.dds",
+      "byteLength": 23232,
+      "sha256": "1d4c357bd0b1d09f0fc449039870a1b87358ede5df259dee85399382b390dfad"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-unit-terran-MULE-umojan.dds",
+      "byteLength": 23232,
+      "sha256": "6245ec4cffd108bd1422ec0030fa7af4d5f4fa197fff3c4610eab26cdb932e1f"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-unit-terran-MULE-Umojan_V2.dds",
+      "byteLength": 23232,
+      "sha256": "05282e017ab05b51045c7ef8852ca5cf74e01cf6885a993eab116e0a96655da6"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Buttons\\btn-upgrade-protoss-fluxvanes-Ihan-rii.dds",
+      "byteLength": 23232,
+      "sha256": "e8bdf018672c9a3ac355ffe1353b0fd835b653ca75cb410d8eff8477cbaa141f"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Icons\\amonshards_weapon-blue-purple.dds",
+      "byteLength": 30860,
+      "sha256": "fce6468b9e9c1db95612860091ee289e36c7fe159ee7aa0a77627e622d43e044"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Icons\\ancientshrineicon.dds",
+      "byteLength": 23232,
+      "sha256": "816ea47636417fa5191f302f1d19c9ee46f82b6413b3561d02d5d987d7065a34"
+    },
+    {
+      "path": "C:\\FILES\\SC2Files\\Mods\\Aether-Hybrids\\Aether_Assets_01.SC2Mod\\Base.SC2Assets\\Assets\\Icons\\Apparition_Mode_Doppleganger.dds",
+      "byteLength": 30860,
+      "sha256": "3186d9973aaefb022c5d0429ebebc18582410575913ae82c52d25e303c691f16"
+    }
+  ]
+}

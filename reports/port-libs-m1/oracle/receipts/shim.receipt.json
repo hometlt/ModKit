@@ -1,0 +1,140 @@
+{
+  "schemaVersion": 1,
+  "verdict": "pass",
+  "gates": [
+    {
+      "name": "format-write",
+      "command": "node node_modules/prettier/bin/prettier.cjs --write packages/codec-kit/src/legacy/index.ts packages/codec-kit/src/legacy/adapter.ts packages/codec-kit/src/legacy/adapters.ts packages/codec-kit/src/legacy/diagnostics.ts packages/codec-kit/src/legacy/operations.ts packages/codec-kit/src/legacy/runtime-adapter.ts packages/codec-kit/src/legacy/language-adapter.ts packages/codec-kit/src/legacy/vfs/index.ts packages/codec-kit/src/legacy/core/index.ts packages/codec-kit/src/legacy/assets/index.ts packages/codec-kit/src/legacy/assets/registry-compat.ts packages/codec-kit/src/legacy/semantic/index.ts packages/codec-kit/src/legacy/games/index.ts packages/codec-kit/src/legacy/world/index.ts packages/codec-kit/src/legacy/runtime/index.ts packages/codec-kit/src/crypto/index.ts packages/codec-kit/src/texture/index.ts packages/codec-kit/src/compression/index.ts packages/codec-kit/src/compression/bzip2.ts packages/codec-kit/src/compression/seek-bzip.d.ts packages/codec-kit/test/legacy-kit.test.mjs packages/codec-kit/package.json adr/ADR-CODEC-001-legacy-kit.md",
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "exitCode": 0,
+      "logSha256": "46c9caa50ed79e8c7311b12627ec9b398818f5aee5917798a85561095cd6360f"
+    },
+    {
+      "name": "build",
+      "command": "node node_modules/typescript/bin/tsc -b packages/codec-kit",
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "exitCode": 0,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "typecheck",
+      "command": "node node_modules/typescript/bin/tsc -p packages/codec-kit/tsconfig.json --noEmit",
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "exitCode": 0,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "lint",
+      "command": "node node_modules/eslint/bin/eslint.js packages/codec-kit/src/legacy/index.ts packages/codec-kit/src/legacy/adapter.ts packages/codec-kit/src/legacy/adapters.ts packages/codec-kit/src/legacy/diagnostics.ts packages/codec-kit/src/legacy/operations.ts packages/codec-kit/src/legacy/runtime-adapter.ts packages/codec-kit/src/legacy/language-adapter.ts packages/codec-kit/src/legacy/vfs/index.ts packages/codec-kit/src/legacy/core/index.ts packages/codec-kit/src/legacy/assets/index.ts packages/codec-kit/src/legacy/assets/registry-compat.ts packages/codec-kit/src/legacy/semantic/index.ts packages/codec-kit/src/legacy/games/index.ts packages/codec-kit/src/legacy/world/index.ts packages/codec-kit/src/legacy/runtime/index.ts packages/codec-kit/src/crypto/index.ts packages/codec-kit/src/texture/index.ts packages/codec-kit/src/compression/index.ts packages/codec-kit/src/compression/bzip2.ts packages/codec-kit/src/compression/seek-bzip.d.ts packages/codec-kit/test/legacy-kit.test.mjs",
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "exitCode": 0,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "fixtures",
+      "command": "node --test packages/codec-kit/test/legacy-kit.test.mjs",
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "exitCode": 0,
+      "logSha256": "ba46688be5c7f3bad104b3239a154ebbf8d56332265f1189ae2eae0a3ca666fd"
+    }
+  ],
+  "authored": [
+    {
+      "path": "packages/codec-kit/src/legacy/index.ts",
+      "sha256": "72f6b6cd53a95f66f110d9a3b6fabaa907c866377799808e34b3841e38dc9bca"
+    },
+    {
+      "path": "packages/codec-kit/src/legacy/adapter.ts",
+      "sha256": "04053aa7aa9a1dc919a686623282d247af2156c863c9a734f5376288b38884e1"
+    },
+    {
+      "path": "packages/codec-kit/src/legacy/adapters.ts",
+      "sha256": "1c1e08cdb00891207788b22a354cc7632ed0c3b677db7c7e619e5fa40edc25cc"
+    },
+    {
+      "path": "packages/codec-kit/src/legacy/diagnostics.ts",
+      "sha256": "0e4395f41630d2a668955ad3ccf0ff9480b9e8ec703691aa1a86ae7eae9bb88f"
+    },
+    {
+      "path": "packages/codec-kit/src/legacy/operations.ts",
+      "sha256": "0eec666605e3076031c297ce6cdc8ad86240ac1fc0b61013a0a68f6f4f062f5f"
+    },
+    {
+      "path": "packages/codec-kit/src/legacy/runtime-adapter.ts",
+      "sha256": "f24942f2be87606c9836cfc23453a4f9a6ad6c071d1c2b9ac83874a582a660fd"
+    },
+    {
+      "path": "packages/codec-kit/src/legacy/language-adapter.ts",
+      "sha256": "a0933ee3ae03056c92f887c12da7027c70da8df0afd768cfda7b02eb9664bc1b"
+    },
+    {
+      "path": "packages/codec-kit/src/legacy/vfs/index.ts",
+      "sha256": "69988d1800e6836437dbf2edfd776ddb2f6cd26579ff115ca1cef192c820ac71"
+    },
+    {
+      "path": "packages/codec-kit/src/legacy/core/index.ts",
+      "sha256": "c218e8286f4e245f4a39ca8f2601a711db65395ed9bcb8bf03babde3860e9c58"
+    },
+    {
+      "path": "packages/codec-kit/src/legacy/assets/index.ts",
+      "sha256": "ae855ecc031d5cc2d08748cd21c961f1fdf40bbc0c90906f203d43652d78a3c8"
+    },
+    {
+      "path": "packages/codec-kit/src/legacy/assets/registry-compat.ts",
+      "sha256": "07fabda88e70b37cc1cb38a3fc9a362816063af1c354cd40600e3649f317199f"
+    },
+    {
+      "path": "packages/codec-kit/src/legacy/semantic/index.ts",
+      "sha256": "05a75449da6cc5fbab6524b1103dcd7470f22fcac2e9d6e5c531b654fdcb4fc4"
+    },
+    {
+      "path": "packages/codec-kit/src/legacy/games/index.ts",
+      "sha256": "760b0635584a1f1ae5d9f165d185ab2687c5bb881d58935b32047c68e6a7da21"
+    },
+    {
+      "path": "packages/codec-kit/src/legacy/world/index.ts",
+      "sha256": "33e09794a1f6450b16a68bdda624e1c5f6440849abf8db37ee413b8817dfe4a5"
+    },
+    {
+      "path": "packages/codec-kit/src/legacy/runtime/index.ts",
+      "sha256": "33e09794a1f6450b16a68bdda624e1c5f6440849abf8db37ee413b8817dfe4a5"
+    },
+    {
+      "path": "packages/codec-kit/src/crypto/index.ts",
+      "sha256": "c679aca4edba038ccddc2127a68856c9607e84a977ac211d5e3910d482cce387"
+    },
+    {
+      "path": "packages/codec-kit/src/texture/index.ts",
+      "sha256": "592d33db1d04c83596384210a7edac5be2cf68c350a73c3b7dd97368b34f15cc"
+    },
+    {
+      "path": "packages/codec-kit/src/compression/index.ts",
+      "sha256": "0ad97f306274ccb7de4a7ace041c49564f34ccbb5bf0e4f8069bb7fc5546a415"
+    },
+    {
+      "path": "packages/codec-kit/src/compression/bzip2.ts",
+      "sha256": "f4652d56f20df9c77f4117daf45e93138c0ccdb3c0518e9725c1ab4228bb77a4"
+    },
+    {
+      "path": "packages/codec-kit/src/compression/seek-bzip.d.ts",
+      "sha256": "6f6ec3728eb16431e05038fc9a501edbee214d5988ed41c5302628d4c2f52eb9"
+    },
+    {
+      "path": "packages/codec-kit/test/legacy-kit.test.mjs",
+      "sha256": "1e23207ba622d462b0ee8fe2dd296bb8402b14d03bb67ebebfbaf769c7932356"
+    },
+    {
+      "path": "packages/codec-kit/package.json",
+      "sha256": "610e0202232f6c51b2f6f1a2d3dbe3395a2f70d5c19b17ccb124eb14bc01f72c"
+    },
+    {
+      "path": "adr/ADR-CODEC-001-legacy-kit.md",
+      "sha256": "c900516a2cd8264c2fdbde0908d938c8974b824816d14ded61371dc5ab0fd0d6"
+    }
+  ],
+  "limitations": [
+    "Compile-compatible registry declarations do not establish feature/operation coverage.",
+    "Browser fixture exercises the explicit asset URL boundary under Node, not a browser host.",
+    "Bzip2 is new bounded functionality; ADPCM is explicitly unavailable."
+  ]
+}

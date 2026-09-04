@@ -1,0 +1,41 @@
+{
+  "milestone": "M1",
+  "step": "0.3",
+  "mode": "current",
+  "name": "compare-legacy-image-ops",
+  "command": "node --experimental-strip-types artifacts/legacy-parity-textures/compare-legacy-image-ops.mjs --corpus C:/FILES/SC2Files/Mods",
+  "environment": {
+    "MK3_REFERENCE_MANIFEST": null
+  },
+  "mk3WorkingTree": {
+    "head": "69d4055c2012232eb71724d852854649c9c6e8d2",
+    "diffSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "mk3Commit": "69d4055c2012232eb71724d852854649c9c6e8d2",
+  "startedAt": "2026-09-04T16:09:18.460Z",
+  "finishedAt": "2026-09-04T16:11:09.040Z",
+  "exitCode": 0,
+  "measurements": {
+    "compared": 1895,
+    "unit": "case",
+    "identical": 1895,
+    "differing": 0
+  },
+  "expectedM0": {
+    "compared": 1895,
+    "unit": "case",
+    "identical": 1895,
+    "differing": 0
+  },
+  "summaryMatchesM0": true,
+  "outputMatchesOld": true,
+  "corpusFiles": 91,
+  "corpusDigest": "7d9822d12071339ee2f3b9360b462431bcee16e2784a0bf5b71cf3ab51696761",
+  "logSha256": "0e3dd40e0949712a05ecdebeab5afb7d33cb4b62226b6b62469db5cbb30b94dc",
+  "verdict": "pass",
+  "limitations": [
+    "Legacy-only refusals remain legacy-only, not both-refused or successful semantic coverage.",
+    "Synthetic inputs and case order are identified by preserved harness digest; actual real DDS reads are recorded with order and byte hashes.",
+    "MK3 side is the frozen current M1 working tree, identified by HEAD and binary diff digest."
+  ]
+}

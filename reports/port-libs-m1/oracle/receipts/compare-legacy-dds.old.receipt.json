@@ -1,0 +1,37 @@
+{
+  "milestone": "M1",
+  "step": "0.3",
+  "mode": "old",
+  "name": "compare-legacy-dds",
+  "command": "node --experimental-strip-types artifacts/legacy-parity-textures/compare-legacy-dds.old-m1.mjs --corpus C:/FILES/SC2Files/Mods",
+  "environment": {
+    "MK3_REFERENCE_MANIFEST": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\mk3-reference.json"
+  },
+  "mk3Commit": "878f9cd7658bc065a3eaa034a7f89e5020c887fe",
+  "startedAt": "2026-09-04T13:46:31.349Z",
+  "finishedAt": "2026-09-04T13:53:43.708Z",
+  "exitCode": 0,
+  "measurements": {
+    "compared": 1284,
+    "unit": "file",
+    "identical": 1284,
+    "differing": 0
+  },
+  "expectedM0": {
+    "compared": 1284,
+    "unit": "file",
+    "identical": 1284,
+    "differing": 0
+  },
+  "summaryMatchesM0": true,
+  "outputMatchesOld": null,
+  "corpusFiles": 1284,
+  "corpusDigest": "ba1c74935cfe4a0621f5f453614995d2a11a08b7c47eed8240688d57c4cd4222",
+  "logSha256": "fc38c6997d540a8dbbec3ba60863b4680f030c59548d1aad74e82412f27322c7",
+  "verdict": "pass",
+  "limitations": [
+    "Legacy-only refusals remain legacy-only, not both-refused or successful semantic coverage.",
+    "Synthetic inputs and case order are identified by preserved harness digest; actual real DDS reads are recorded with order and byte hashes.",
+    "MK3 side is isolated accepted M0; current M1 tree parity requires a separate post-freeze run."
+  ]
+}

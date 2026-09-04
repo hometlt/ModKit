@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M1",
+  "stage": "infrastructure-ready",
+  "verdict": "pass",
+  "ownerAcceptance": "pending",
+  "generatedAt": "2026-09-04T16:13:02.075Z",
+  "repositories": {
+    "core": "69d4055c2012232eb71724d852854649c9c6e8d2",
+    "blizzard": "3b3e64b11470f3106a885b45767643a8324592be",
+    "docs": "852c62346d08060be430a4b98a89dd760017a42f"
+  },
+  "oraclePin": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "acceptedM0": "878f9cd7658bc065a3eaa034a7f89e5020c887fe",
+  "strict": {
+    "packages": 8,
+    "sourceFiles": 281,
+    "errors": 0,
+    "remainingJavaScriptSources": 0
+  },
+  "tests": {
+    "packages": {
+      "passed": 1152,
+      "failed": 0,
+      "skipped": 0
+    },
+    "quick": {
+      "vitestPassed": 386,
+      "extensionManagerPassed": 62
+    },
+    "migrationInfrastructure": {
+      "passed": 68
+    },
+    "boundaryGates": {
+      "passed": 11
+    },
+    "surfaceFixtures": {
+      "passed": 64,
+      "fullFamilyAcceptance": false
+    },
+    "pinnedP9Comparisons": 53
+  },
+  "currentM0Parity": [
+    {
+      "name": "compare-legacy-dds",
+      "exitCode": 0,
+      "measurements": {
+        "compared": 1284,
+        "unit": "file",
+        "identical": 1284,
+        "differing": 0
+      },
+      "corpusDigest": "ba1c74935cfe4a0621f5f453614995d2a11a08b7c47eed8240688d57c4cd4222",
+      "outputMatchesOld": true,
+      "receipt": "current-parity/compare-legacy-dds.current.receipt.json"
+    },
+    {
+      "name": "compare-legacy-dds-bptc",
+      "exitCode": 0,
+      "measurements": {
+        "compared": 6400,
+        "unit": "surface",
+        "identical": 6400,
+        "differing": 0
+      },
+      "corpusDigest": "a2fe7855563389931a9da4056222d12becafff1e8161395c6371f13cdf706a2c",
+      "outputMatchesOld": true,
+      "receipt": "current-parity/compare-legacy-dds-bptc.current.receipt.json"
+    },
+    {
+      "name": "compare-legacy-dds-compressed",
+      "exitCode": 0,
+      "measurements": {
+        "compared": 417,
+        "unit": "file",
+        "identical": 417,
+        "differing": 0
+      },
+      "corpusDigest": "f42f4a2995981d98fbd5e413d7bcb8100653ed977ea19043ef6105a7c9845f37",
+      "outputMatchesOld": true,
+      "receipt": "current-parity/compare-legacy-dds-compressed.current.receipt.json"
+    },
+    {
+      "name": "compare-legacy-dds-encode",
+      "exitCode": 0,
+      "measurements": {
+        "compared": 770,
+        "unit": "case",
+        "identical": 770,
+        "differing": 0
+      },
+      "corpusDigest": "46a53a2d50ce22e54a1ab065728c4342dcd16de8b092722e3586651d246f1a81",
+      "outputMatchesOld": true,
+      "receipt": "current-parity/compare-legacy-dds-encode.current.receipt.json"
+    },
+    {
+      "name": "compare-legacy-image-ops",
+      "exitCode": 0,
+      "measurements": {
+        "compared": 1895,
+        "unit": "case",
+        "identical": 1895,
+        "differing": 0
+      },
+      "corpusDigest": "7d9822d12071339ee2f3b9360b462431bcee16e2784a0bf5b71cf3ab51696761",
+      "outputMatchesOld": true,
+      "receipt": "current-parity/compare-legacy-image-ops.current.receipt.json"
+    }
+  ],
+  "integrity": {
+    "frozenLegacyCodecs": 206,
+    "auditedSc2Codecs": 12,
+    "publishedContributions": 193,
+    "authoredCampaignRows": 1,
+    "pendingRequirements": 891,
+    "sc2ClosurePending": 309,
+    "registry": {
+      "knownDebt": 38,
+      "newProblems": 0,
+      "staleBaselineEntries": 0,
+      "unavailableChecks": 1
+    },
+    "preservedE5Rows": 3
+  },
+  "copies": {
+    "scope": "m1-libs",
+    "files": 50,
+    "importRewrites": 97,
+    "authoredAdapterBindings": 3,
+    "algorithmDebt": 51,
+    "canonicalAlgorithms": 5,
+    "newAlgorithmDebt": 0
+  },
+  "gates": [
+    {
+      "log": "final/core-final-m1-check.log",
+      "exitCode": 0
+    },
+    {
+      "log": "final/core-final-lint.log",
+      "exitCode": 0
+    },
+    {
+      "log": "final/core-final-format.log",
+      "exitCode": 0
+    },
+    {
+      "log": "final/core-final-quick.log",
+      "exitCode": 0
+    },
+    {
+      "log": "final/core-final-packages.log",
+      "exitCode": 0
+    },
+    {
+      "log": "final/core-final-boundaries.log",
+      "exitCode": 0
+    },
+    {
+      "log": "final/core-final-committed-gates.log",
+      "exitCode": 0
+    },
+    {
+      "log": "final/core-final-current-parity.log",
+      "exitCode": 0
+    },
+    {
+      "log": "final/blizzard-final-quick.log",
+      "exitCode": 0
+    },
+    {
+      "log": "final/blizzard-final-link.log",
+      "exitCode": 0
+    },
+    {
+      "log": "final/blizzard-final-pack.log",
+      "exitCode": 0
+    }
+  ],
+  "expectedIncompleteGate": {
+    "log": "final/core-final-sc2-closure.log",
+    "command": "pnpm port:closure",
+    "exitCode": 1,
+    "reason": "SC2 family obligations remain pending; M1 establishes infrastructure only."
+  },
+  "limitations": [
+    "M2 sc2-bank has not started; next milestone requires explicit owner acceptance of M1.",
+    "sc2-campaign is separately authored CMP1-CMP6 scope, not parity against an MK2 stub.",
+    "BPTC includes 1280 legacy-only refusals; they are not both-refused or successful semantic coverage.",
+    "Old/new loader step 0.3 uses accepted M0 MK3 snapshot; current-parity is a separate frozen M1 run.",
+    "MPQ ADPCM remains explicitly unavailable; inherited broken MD5 is internal and excluded from the public crypto barrel.",
+    "Bzip2 is a new bounded adapter, not legacy parity; texture browser asset path is exercised under Node, not a browser-host acceptance.",
+    "Blizzard quick/link retain three pre-existing skips; none were added.",
+    "Real harness verifies oracle artifact identity; semantic correctness of each adapter still requires review.",
+    "Full family surfaces, detailed MPQ/CASC audits, P1-P12 consumers and installed host acceptance remain at their planned milestones."
+  ],
+  "evidenceManifest": {
+    "path": "manifest.json",
+    "sha256": "40c70633751902fa495bbfaa28bd3aeea0b217d919c97c2bda74e1f338a9f773",
+    "fileCount": 276,
+    "bytes": 46024381
+  }
+}

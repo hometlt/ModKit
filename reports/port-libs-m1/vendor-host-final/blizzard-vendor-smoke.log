@@ -1,0 +1,19 @@
+
+> @modkit/blizzard-extensions@1.0.0 test:smoke C:\FILES\SC2Files\coding\modkit-extensions-blizzard
+> node --test ./test/standalone-provider-smoke.test.mjs
+
+✔ the exported StarCraft II discovery provider loads without the Modkit workspace (4.4319ms)
+✔ the former game package forwards to the single merged extension (0.5465ms)
+✔ every former game subpath forwards the same public bindings (736.5925ms)
+✔ the repository advertises one StarCraft II extension root (14.7884ms)
+✔ the standalone repository loads its SC2 codecs, language layers, and linked extensions (352.1725ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1399.3641
+
+[exit-code] 0

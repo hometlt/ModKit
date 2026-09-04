@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "verdict": "pass",
+  "gates": [
+    {
+      "name": "oracle-lint",
+      "command": "node node_modules/eslint/bin/eslint.js scripts/migration/lib/legacy-oracle.mjs scripts/migration/test/legacy-oracle.test.mjs",
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "exitCode": 0,
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "oracle-format",
+      "command": "node node_modules/prettier/bin/prettier.cjs --check scripts/migration/lib/legacy-oracle.mjs scripts/migration/test/legacy-oracle.test.mjs",
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "exitCode": 0,
+      "logSha256": "17aa973d3f004560237d9a95171210b0671deff23d61628eecf7322ff5938f20"
+    },
+    {
+      "name": "oracle-test",
+      "command": "node --test scripts/migration/test/legacy-oracle.test.mjs",
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "exitCode": 0,
+      "logSha256": "78bbf20a909bf03995f90b72814e9e2195423050695862b7d0e91b00786697d9"
+    },
+    {
+      "name": "p9-parity",
+      "command": "node artifacts/legacy-oracle/check-p9-parity.mjs",
+      "cwd": "C:\\FILES\\SC2Files\\coding",
+      "exitCode": 0,
+      "logSha256": "11e8eeedb54f4902139c86ebe9fdb0a1ce58b74e62bc493337a8d16e62224e39"
+    }
+  ],
+  "implementation": [
+    {
+      "path": "scripts/migration/lib/legacy-oracle.mjs",
+      "sha256": "d46b1bcd0566ee7656816e5ecd28fe7b019eee0e7b635e3fc06cc635bfeb4bf0"
+    },
+    {
+      "path": "scripts/migration/test/legacy-oracle.test.mjs",
+      "sha256": "671ebb168cdc20ad2c50cdffce97e555a449f94eb65e54b4683aa589e6d25c1f"
+    }
+  ]
+}

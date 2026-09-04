@@ -1,0 +1,7 @@
+
+> @modkit/blizzard-extensions@1.0.0 check:pack C:\FILES\SC2Files\coding\modkit-extensions-blizzard
+> node ./scripts/check-pack.mjs
+
+Blizzard distribution pack verified: 289 files
+
+[exit-code] 0

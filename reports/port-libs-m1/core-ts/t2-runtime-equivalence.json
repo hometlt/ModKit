@@ -1,0 +1,38 @@
+[
+  {
+    "file": "packages/host/src/commands/subject-commands.ts",
+    "equal": true
+  },
+  {
+    "file": "packages/host/src/detection-selection.ts",
+    "equal": true
+  },
+  {
+    "file": "packages/host/src/editing-evidence.ts",
+    "equal": true
+  },
+  {
+    "file": "packages/host/src/editing.ts",
+    "equal": true
+  },
+  {
+    "file": "packages/host/src/linked.ts",
+    "equal": true
+  },
+  {
+    "file": "packages/host/src/native-text.ts",
+    "equal": true
+  },
+  {
+    "file": "packages/host/src/offers.ts",
+    "equal": true
+  },
+  {
+    "file": "packages/host/src/resolution/lock.ts",
+    "equal": true
+  },
+  {
+    "file": "packages/ui/test/browser-e2e.test.ts",
+    "equal": true
+  }
+]

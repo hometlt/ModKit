@@ -1,0 +1,30 @@
+CHECK schemas:check
+$ node scripts/emit-schemas.mjs --check
+schemas and standalone validators up to date (22)
+CHECK check:imports
+$ node scripts/check-app-imports.mjs
+app-import gate: clean (505 file(s) scanned)
+CHECK check:extensions
+$ node scripts/check-extension-inventory.mjs
+extension-inventory gate: clean (14 extension director(y/ies) checked)
+
+ RUN  v2.1.9 C:/FILES/SC2Files/coding/modkit-core
+
+ ✓ scripts/test/check-legacy.test.ts (7 tests) 15727ms
+   ✓ legacy gate (BRIEF-12 §3.5) > flags every seeded violation class in the violations tree 767ms
+   ✓ legacy gate (BRIEF-12 §3.5) > scans extension contributions and example sources, not only platform packages 750ms
+   ✓ legacy gate (BRIEF-12 §3.5) > requires the @modkit scope only for platform packages/apps (27 §0.2 names are free) 1506ms
+   ✓ legacy gate (BRIEF-12 §3.5) > still scans a file that abuses the marker outside fixtures/ 747ms
+   ✓ legacy gate (BRIEF-12 §3.5) > passes the clean tree and actually scans files 775ms
+   ✓ legacy gate (BRIEF-12 §3.5) > excludes fixtures/legacy paths and marked files under fixtures/ 757ms
+   ✓ legacy gate (BRIEF-12 §3.5) > keeps the real repository green and scans a non-zero number of sources 10423ms
+ ✓ scripts/test/check-app-imports.test.ts (4 tests) 1610ms
+   ✓ extension-implementation import gate (MK3/27 §7/§11/§12.5) > known debt is a ratchet: tracked files pass, others still fail, stale entries fail 349ms
+   ✓ extension-implementation import gate (MK3/27 §7/§11/§12.5) > keeps the real repository green (tracked debt or none) and scans real sources 888ms
+
+ Test Files  2 passed (2)
+      Tests  11 passed (11)
+   Start at  19:57:49
+   Duration  19.25s (transform 149ms, setup 0ms, collect 205ms, tests 17.34s, environment 1ms, prepare 694ms)
+
+[exit-code] 0

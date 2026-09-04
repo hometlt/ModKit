@@ -1,0 +1,176 @@
+$ pnpm typecheck && pnpm ts-strict:check && pnpm test:migration-infra && pnpm test:legacy-kit && pnpm surfaces:check && pnpm migration:check && pnpm mk2-copy:check && pnpm check:legacy && pnpm check:imports && pnpm algorithms:check
+$ tsc -b && tsc -p tsconfig.tooling.json
+$ node scripts/migration/check-ts-strict.mjs
+ts-strict packages/codec-kit: 77 TypeScript files, structural problems 0, compiler exit 0
+ts-strict packages/scene: 7 TypeScript files, structural problems 0, compiler exit 0
+ts-strict packages/uv: 10 TypeScript files, structural problems 0, compiler exit 0
+ts-strict packages/extension-manager: 18 TypeScript files, structural problems 0, compiler exit 0
+ts-strict packages/code: 4 TypeScript files, structural problems 0, compiler exit 0
+ts-strict packages/host: 98 TypeScript files, structural problems 0, compiler exit 0
+ts-strict packages/ui: 50 TypeScript files, structural problems 0, compiler exit 0
+ts-strict packages/testkit: 17 TypeScript files, structural problems 0, compiler exit 0
+ts-strict: 8 packages, problems 0
+$ node --test scripts/migration/test/*.test.mjs
+✔ baseline editing cannot grant new debt or modify an existing allowance (5.3478ms)
+✔ AST finds named implementation bodies and ignores calls, comments and import declarations (48.5735ms)
+✔ ratchet accepts debt deletion and canonical copies, rejects new peers and changed algorithms (2.3882ms)
+✔ actual repository scan excludes build/tests/vendor and validates canonical uniqueness and hashes (130.4388ms)
+✔ exempts only verified canonical paths, never neighboring authored legacy sources (938.2801ms)
+✔ refuses changed canonical bytes even if their vocabulary is now clean (63.2936ms)
+✔ refuses a forged provenance file list instead of trusting its destinations (68.4648ms)
+✔ refuses an unapproved reconstructed destination modkit-core/packages/codec-kit/src/legacy/assets/adapter.ts (52.1533ms)
+✔ refuses an unapproved reconstructed destination modkit-core/packages/other/src/legacy.ts (55.8297ms)
+✔ refuses an unapproved reconstructed destination ../outside.ts (59.5082ms)
+✔ does not accept fixture-local declarations or provenance as the exception authority (1284.0941ms)
+✔ pinned source, exports, data, dependencies and every cache identity dimension (27223.0258ms)
+✔ nonempty pinned closure copies type-only imports and reconstructs provenance (155.2372ms)
+✔ registered exact import relocation preserves before/after hashes (52.4983ms)
+✔ fails closed: empty closure (5.2031ms)
+✔ fails closed: empty copy list (3.9214ms)
+✔ fails closed: incomplete copy list (4.9197ms)
+✔ fails closed: type-only dependency omitted from roots (5.5383ms)
+✔ fails closed: missing pinned source (5.6006ms)
+✔ fails closed: tampered pinned hash (3.8378ms)
+✔ fails closed: tampered destination hash (4.1047ms)
+✔ fails closed: duplicate source (4.691ms)
+✔ fails closed: duplicate destination (3.5967ms)
+✔ fails closed: unsafe destination (3.2058ms)
+✔ fails closed: noncanonical import relocation (5.1422ms)
+✔ fails closed: source pin mismatch (3.2833ms)
+✔ fails closed: family remains pending (3.1998ms)
+✔ fails closed: scope must be explicit (3.0897ms)
+✔ missing, tampered copies and missing/tampered provenance fail (69.4547ms)
+✔ provenance-only validates existing copies and never creates runtime files (73.5501ms)
+✔ arbitrary non-import replacements cannot masquerade as import rewrites (3.2346ms)
+✔ AST closure includes import types, reexports, references and computed imports (5.2211ms)
+✔ bare modules and computed imports require explicit dependency bindings (46.6119ms)
+✔ bounded divergence requires exact edits, proof hash and contract (49.8636ms)
+✔ gate rejects copy-only bypass flags (1.218ms)
+✔ registered import-type rewrite preserves emitted behavior and import identity (104.6113ms)
+✔ planned canonical destination cannot disagree with the actual relocation (8.8399ms)
+✔ adapter closure is explicit, hash-checked and cannot hide unresolved imports (62.3645ms)
+✔ binary fixture copies preserve exact bytes without UTF-8 conversion (51.1471ms)
+✔ Windows canonical paths reject aliases and alternate data streams (0.8947ms)
+✔ acceptance flags reject typos, duplicates and missing scope values (3.3183ms)
+✔ real oracle evidence binds source, loader, dependencies and the executed corpus (8.474ms)
+✔ briefs retain every obligation and refuse empty or unknown scopes (1.425ms)
+✔ generated harness actually executes two adapters and rejects missing adapters/cases (760.9999ms)
+✔ both-refused does not prove an implementation and special values cannot collapse (4.3049ms)
+✔ evidence application preserves input and accepts only executed, published operation proofs (104.7016ms)
+▶ actual pinned SHA1 preparation binds artifacts, full identity and wrapper
+  ✔ nonempty genuine loadMk2 evidence passes and still calls for adapter review (1475.4411ms)
+  ✔ multiple real modules and an insignificant cacheHit change are accepted (3330.903ms)
+  ✔ self-consistent metadata without actual cache files is rejected (398.9137ms)
+  ✔ tampered actual bundle is rejected (355.2502ms)
+  ✔ tampered actual source snapshot is rejected (518.9883ms)
+  ✔ even consistent on-disk source metadata must match the pinned Git blob (620.3491ms)
+  ✔ adapter edits and substituting a different wrapper path are rejected (2650.4976ms)
+  ✔ corpus and operation must match the executed call (737.132ms)
+  ✔ options and dependency identities cannot be swapped independently of the artifact (732.3551ms)
+  ✔ tampered on-disk manifest, loader snapshot and dependency snapshot are rejected (3026.9643ms)
+  ✔ restored original artifacts still verify after negative probes (1430.1486ms)
+✔ actual pinned SHA1 preparation binds artifacts, full identity and wrapper (17553.9483ms)
+✔ pending ledger passes integrity but fails requested family closure (24.4267ms)
+✔ SC2 family closure includes its shared MPQ and CASC consumers (1.8356ms)
+✔ nonempty executed mapped operation and feature proof close the exact fixture scope (61.0987ms)
+✔ missing feature, missing operation, empty ledger and duplicate rows fail (13.5556ms)
+✔ missing, altered or empty receipts cannot carry accepted evidence (50.2683ms)
+✔ accepted claims and protected proof cannot disappear from a later ledger (34.8723ms)
+✔ operation alias requires the actual published handler and evidence execution (60.8271ms)
+✔ a detached manifest and unrelated execution cannot close published operation claims (105.4309ms)
+✔ discovery reads authored manifest globs and excludes fixtures and build artifacts (30.8215ms)
+✔ strict admission rejects unchecked, excluded and JavaScript sources (124.56ms)
+ℹ tests 68
+ℹ suites 0
+ℹ pass 68
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 27558.1302
+$ node --test packages/codec-kit/test/*.test.mjs
+✔ all 14 diagnostic categories, identity, byte range and error details survive the MK3 boundary (5.0121ms)
+✔ compile compatibility registries refuse; operations require explicit owned mapping (1.5148ms)
+✔ real legacy sessions retain permission, state, cancellation and disposal checks (4.8549ms)
+✔ source adapter enforces exact ranges, maxBytes, cancellation and safe integer size (1.4012ms)
+✔ artifact adapter is a native MK3 Codec and probes the selected real legacy detector (2.5614ms)
+✔ edit projection preserves payload/offset and rejects unsupported edits and overlap (3.0878ms)
+✔ runtime bridge reserves before execution and preserves result, refusal and lease disposal (2.5869ms)
+✔ language bridge returns actual projection, rejects wrong snapshots and cancellation (1.6265ms)
+✔ SHA1/CRC and real compression fixtures, corrupt bzip2, early output cap and explicit ADPCM refusal (84.0804ms)
+✔ texture CPU footprint and allocation guards preserve pinned behavior (1.5478ms)
+✔ real Texture2DDecoder WASM Node and explicit browser entrypoint produce equal BC1 pixels; missing assets refuse then retry (65.1695ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 992.3178
+$ node scripts/migration/check-surfaces.mjs --scope m1-fixtures
+JSON report written to C:/FILES/SC2Files/coding/modkit-core/reports/port-infra/surfaces-tests.json
+surfaces M1 fixtures: pass, 64 passed, 0 failed; full family acceptance pending
+$ node scripts/migration/emit-inventory.mjs --check && node scripts/migration/emit-vscode-workflow-ledger.mjs --check && node scripts/migration/check-package-owners.mjs && node scripts/migration/emit-status.mjs --check && node scripts/migration/emit-parity-matrix.mjs --check && node scripts/migration/check-registry.mjs && node scripts/migration/emit-codec-map.mjs --check && node scripts/migration/check-feature-ledger.mjs
+migration:check: 1120 source units up to date (206 codec + 31 game manifests = 237; VS Code 64/11/8 commands/editors/languages)
+migration:check workflow ledger: 266 facts in three baskets, 5 Product GA gaps and 67 observed X3 facts up to date
+package-owners: 37 legacy unit(s), one owner each (demoted 1, dropped 1, planned 7, ported 28); catalogue 8 units in 6 directories; bootstrap 4
+migration:report --check: status.md up to date (8 open mk3-ga gaps)
+migration:check parity matrix: 331 capability rows across 9 families, 266 ledger facts up to date
+migration:check registry: 1 check(s) UNAVAILABLE — not performed, and that is not the same as passed
+  ! parityEvidence.coverageStatus cross-check: scripts/parity/common-coverage.json not found (ENOENT) — 206 format row(s) NOT verified against recorded coverage. This file left the repo in the 2026-08-30 externalization (commit 3fe0232d) and has not been relocated to where the parity suite now lives. Every other registry rule still ran; this one specific cross-check did not. Must be restored by wave 6 — once COMMON_COVERAGE_WAVE_REACHED flips true for that wave, this stops being tolerated and starts failing the gate.
+migration:check registry: 38 known debt problem(s) — frozen in registry-debt-baseline.json, must be empty by wave 6; paying one down means deleting its line there in the same commit
+  ~ capability format/basis/open-inspect: parityEvidence.rows contradicts reports/parity/latest.json
+  ~ capability format/basis/open-inspect: parityEvidence.liveSources contradicts the observed X3 sources
+  ~ capability format/big/open-inspect: parityEvidence.rows contradicts reports/parity/latest.json
+  ~ capability format/big/open-inspect: parityEvidence.liveSources contradicts the observed X3 sources
+  ~ capability format/cnc3-data/open-inspect: parityEvidence.rows contradicts reports/parity/latest.json
+  ~ capability format/cnc3-data/open-inspect: parityEvidence.liveSources contradicts the observed X3 sources
+  ~ capability format/cnc3-localization/open-inspect: parityEvidence.rows contradicts reports/parity/latest.json
+  ~ capability format/cnc3-localization/open-inspect: parityEvidence.liveSources contradicts the observed X3 sources
+  ~ capability format/cnc3-map/open-inspect: parityEvidence.rows contradicts reports/parity/latest.json
+  ~ capability format/cnc3-map/open-inspect: parityEvidence.liveSources contradicts the observed X3 sources
+  ~ capability format/emperor-xbf/open-inspect: parityEvidence.rows contradicts reports/parity/latest.json
+  ~ capability format/emperor-xbf/open-inspect: parityEvidence.liveSources contradicts the observed X3 sources
+  ~ capability format/glb/open-inspect: parityEvidence.rows contradicts reports/parity/latest.json
+  ~ capability format/gltf/open-inspect: parityEvidence.rows contradicts reports/parity/latest.json
+  ~ capability format/jpg/open-inspect: parityEvidence.rows contradicts reports/parity/latest.json
+  ~ capability format/jpg/open-inspect: parityEvidence.liveSources contradicts the observed X3 sources
+  ~ capability format/ktx2/open-inspect: parityEvidence.rows contradicts reports/parity/latest.json
+  ~ capability format/ktx2/open-inspect: parityEvidence.liveSources contradicts the observed X3 sources
+  ~ capability format/m3/open-inspect: parityEvidence.rows contradicts reports/parity/latest.json
+  ~ capability format/m3/open-inspect: parityEvidence.liveSources contradicts the observed X3 sources
+  ~ capability format/mp3/open-inspect: parityEvidence.rows contradicts reports/parity/latest.json
+  ~ capability format/mp3/open-inspect: parityEvidence.liveSources contradicts the observed X3 sources
+  ~ capability format/red-alert2-vxl/open-inspect: parityEvidence.rows contradicts reports/parity/latest.json
+  ~ capability format/red-alert2-vxl/open-inspect: parityEvidence.liveSources contradicts the observed X3 sources
+  ~ capability format/sage-skudef/open-inspect: parityEvidence.rows contradicts reports/parity/latest.json
+  ~ capability format/sage-skudef/open-inspect: parityEvidence.liveSources contradicts the observed X3 sources
+  ~ capability format/sage-w3x/open-inspect: parityEvidence.rows contradicts reports/parity/latest.json
+  ~ capability format/sage-w3x/open-inspect: parityEvidence.liveSources contradicts the observed X3 sources
+  ~ capability format/spring-s3o/open-inspect: parityEvidence.rows contradicts reports/parity/latest.json
+  ~ capability format/spring-s3o/open-inspect: parityEvidence.liveSources contradicts the observed X3 sources
+  ~ capability format/svg/open-inspect: parityEvidence.rows contradicts reports/parity/latest.json
+  ~ capability format/svg/open-inspect: parityEvidence.liveSources contradicts the observed X3 sources
+  ~ capability format/warzone-pie/open-inspect: parityEvidence.rows contradicts reports/parity/latest.json
+  ~ capability format/warzone-pie/open-inspect: parityEvidence.liveSources contradicts the observed X3 sources
+  ~ capability format/webp/open-inspect: parityEvidence.rows contradicts reports/parity/latest.json
+  ~ capability format/webp/open-inspect: parityEvidence.liveSources contradicts the observed X3 sources
+  ~ capability format/westwood-w3d/open-inspect: parityEvidence.rows contradicts reports/parity/latest.json
+  ~ capability format/westwood-w3d/open-inspect: parityEvidence.liveSources contradicts the observed X3 sources
+migration:check registry: known debt 38 (must be empty by wave 6), new problems 0, stale baseline entries 0, unavailable checks 1 (must be restored by wave 6)
+migration:check registry: 331 capabilities (deferred-games-priority 42, mk3-priority 135, multiverse-priority 10, post-ga 144); obligations experimental-optional 2, focused-required-addition 33, legacy-required 289, post-ga-required-proof 7; evidence E0 82, E1 133, E2 59, E3 23, E4 31, E5 3; 512 mapped + 608 unmapped = 1120 source units; 8 projection planes
+migration:check registry: installed-host evidence on 3 row(s)
+  · format/dds/open-inspect → artifacts/ga-recovery-wave2b/installed-acceptance-wave2b-final-687fd1f8.receipt.json#2B-1/2B-2
+  · format/ogg/open-inspect → artifacts/ga-recovery-wave2b/installed-acceptance-wave2b-final-687fd1f8.receipt.json#2B-3
+  · format/wav/open-inspect → artifacts/ga-recovery-wave2b/installed-acceptance-wave2b-final-687fd1f8.receipt.json#2B-3
+codec-map: legacy 206, SC2 audits 12, contributions 193, authored 1
+feature-ledger integrity: requirements 891, pending 891, problems 0
+$ node scripts/migration/check-mk2-copy.mjs --family sc2 --scope m1-libs
+{"scope":"m1-libs","files":50,"imports":97}
+$ node scripts/check-legacy.mjs
+legacy gate: clean (560 file(s) scanned)
+$ node scripts/check-app-imports.mjs
+app-import gate: clean (505 file(s) scanned)
+$ node scripts/migration/check-algorithms.mjs
+{"repositories":6,"failures":[],"debt":51,"canonical":5,"retired":[]}

@@ -1,0 +1,1028 @@
+[
+  {
+    "path": "final/blizzard-final-link.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/blizzard-final-link.log",
+    "originSha256": "974090d83934f4389ef4f01f05be28da0b98ea1eb2389a18fa5089aae648ceb4",
+    "originBytes": 10419,
+    "encoding": "identity",
+    "sha256": "974090d83934f4389ef4f01f05be28da0b98ea1eb2389a18fa5089aae648ceb4",
+    "bytes": 10419
+  },
+  {
+    "path": "final/blizzard-final-pack.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/blizzard-final-pack.log",
+    "originSha256": "011a719cc8a70a7e5a48b647702fe5ce33b09b2fa0c53c2d353009fb75c07d2d",
+    "originBytes": 201,
+    "encoding": "identity",
+    "sha256": "011a719cc8a70a7e5a48b647702fe5ce33b09b2fa0c53c2d353009fb75c07d2d",
+    "bytes": 201
+  },
+  {
+    "path": "final/blizzard-final-quick.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/blizzard-final-quick.log",
+    "originSha256": "7a63c4e6bcff9ed4488079482c56faa9d23a92b273a94d3c7509b670284fb2e8",
+    "originBytes": 9033,
+    "encoding": "identity",
+    "sha256": "7a63c4e6bcff9ed4488079482c56faa9d23a92b273a94d3c7509b670284fb2e8",
+    "bytes": 9033
+  },
+  {
+    "path": "final/core-final-boundaries.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/core-final-boundaries.log",
+    "originSha256": "bfb8d1cf8d8ee5a1cfd9b5dd69b9813cc6f86a58c0869976367a57d7a19ca396",
+    "originBytes": 1842,
+    "encoding": "identity",
+    "sha256": "bfb8d1cf8d8ee5a1cfd9b5dd69b9813cc6f86a58c0869976367a57d7a19ca396",
+    "bytes": 1842
+  },
+  {
+    "path": "final/core-final-committed-gates.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/core-final-committed-gates.log",
+    "originSha256": "a486828e4bcbe265cf2dbb6aacec4fde5a9e17d856b660053ce56a493935056f",
+    "originBytes": 7149,
+    "encoding": "identity",
+    "sha256": "a486828e4bcbe265cf2dbb6aacec4fde5a9e17d856b660053ce56a493935056f",
+    "bytes": 7149
+  },
+  {
+    "path": "final/core-final-current-parity.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/core-final-current-parity.log",
+    "originSha256": "24ebf4025569f0d8552cba8d6ca88992070be5dc18957cfe348f0cdbc600b2dd",
+    "originBytes": 417,
+    "encoding": "identity",
+    "sha256": "24ebf4025569f0d8552cba8d6ca88992070be5dc18957cfe348f0cdbc600b2dd",
+    "bytes": 417
+  },
+  {
+    "path": "final/core-final-diff-check.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/core-final-diff-check.log",
+    "originSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "originBytes": 0,
+    "encoding": "identity",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  {
+    "path": "final/core-final-extensions.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/core-final-extensions.log",
+    "originSha256": "fae580d259e4b8c2af4d33c143f9bcdbd9ca8b24caa4f6592cc218013d8a631d",
+    "originBytes": 118,
+    "encoding": "identity",
+    "sha256": "fae580d259e4b8c2af4d33c143f9bcdbd9ca8b24caa4f6592cc218013d8a631d",
+    "bytes": 118
+  },
+  {
+    "path": "final/core-final-format.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/core-final-format.log",
+    "originSha256": "0b95efe7a1df96aa81440f70658e5c8169546d284587f7ba2e8d268fd1aaea15",
+    "originBytes": 90,
+    "encoding": "identity",
+    "sha256": "0b95efe7a1df96aa81440f70658e5c8169546d284587f7ba2e8d268fd1aaea15",
+    "bytes": 90
+  },
+  {
+    "path": "final/core-final-install.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/core-final-install.log",
+    "originSha256": "8aed06ebda64c36e0351522e8be1f5e2f373f6150d774fb18026e4997c190f84",
+    "originBytes": 275,
+    "encoding": "identity",
+    "sha256": "8aed06ebda64c36e0351522e8be1f5e2f373f6150d774fb18026e4997c190f84",
+    "bytes": 275
+  },
+  {
+    "path": "final/core-final-lint.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/core-final-lint.log",
+    "originSha256": "9f55fa4f442193f038d9ed374e8109193ef8f404f0e87c8a57c77a8f64a3aa40",
+    "originBytes": 29,
+    "encoding": "identity",
+    "sha256": "9f55fa4f442193f038d9ed374e8109193ef8f404f0e87c8a57c77a8f64a3aa40",
+    "bytes": 29
+  },
+  {
+    "path": "final/core-final-m1-check.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/core-final-m1-check.log",
+    "originSha256": "d4120c0e6c848520bb49af03f22ebf698c9528f32a4a9352ae71109c774abc8d",
+    "originBytes": 15849,
+    "encoding": "identity",
+    "sha256": "d4120c0e6c848520bb49af03f22ebf698c9528f32a4a9352ae71109c774abc8d",
+    "bytes": 15849
+  },
+  {
+    "path": "final/core-final-packages.json",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/core-final-packages.json",
+    "originSha256": "ed970f502dc39362d5608d123b73f85aeacc99b8c931a9a340bf5fb2f6589c3e",
+    "originBytes": 423439,
+    "encoding": "identity",
+    "sha256": "ed970f502dc39362d5608d123b73f85aeacc99b8c931a9a340bf5fb2f6589c3e",
+    "bytes": 423439
+  },
+  {
+    "path": "final/core-final-packages.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/core-final-packages.log",
+    "originSha256": "50e5840d9ebe654197cd55a9ddf168de5f979284c2b8f98ae4990ace87d6ca59",
+    "originBytes": 31890,
+    "encoding": "identity",
+    "sha256": "50e5840d9ebe654197cd55a9ddf168de5f979284c2b8f98ae4990ace87d6ca59",
+    "bytes": 31890
+  },
+  {
+    "path": "final/core-final-quick.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/core-final-quick.log",
+    "originSha256": "3d1e5787c3afb36e26aac58ec7ee965b9e43e54c956de723ccc0ccc4ca6be6a3",
+    "originBytes": 13140,
+    "encoding": "identity",
+    "sha256": "3d1e5787c3afb36e26aac58ec7ee965b9e43e54c956de723ccc0ccc4ca6be6a3",
+    "bytes": 13140
+  },
+  {
+    "path": "final/core-final-sc2-closure.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/core-final-sc2-closure.log",
+    "originSha256": "e76ba9466b6cb2c75597d2bf430073c87cb42d1e1c5880505f907459c49f3a97",
+    "originBytes": 2104,
+    "encoding": "identity",
+    "sha256": "e76ba9466b6cb2c75597d2bf430073c87cb42d1e1c5880505f907459c49f3a97",
+    "bytes": 2104
+  },
+  {
+    "path": "final/migration-preflight.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/migration-preflight.log",
+    "originSha256": "4881e137512c9bc2af9856b612aed55cc65b1de5e4be0d40a0304e11b764b354",
+    "originBytes": 6699,
+    "encoding": "identity",
+    "sha256": "4881e137512c9bc2af9856b612aed55cc65b1de5e4be0d40a0304e11b764b354",
+    "bytes": 6699
+  },
+  {
+    "path": "final/p0-sdk-tests.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/p0-sdk-tests.log",
+    "originSha256": "87aeed0b38b1d71359d2f0957a0ed70eb0826f2be38770e84ed1f9d0d2bd09b9",
+    "originBytes": 2196,
+    "encoding": "identity",
+    "sha256": "87aeed0b38b1d71359d2f0957a0ed70eb0826f2be38770e84ed1f9d0d2bd09b9",
+    "bytes": 2196
+  },
+  {
+    "path": "current-parity/compare-legacy-dds-bptc.current.corpus.json.gz",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds-bptc.current.corpus.json",
+    "originSha256": "ac29ff0af802a121babe57589483464908780ba35f195e21271696104e8c0d17",
+    "originBytes": 15160730,
+    "encoding": "gzip",
+    "sha256": "aaef54bad2b326cadc12fe07f8b14d0d15e7ff5e249c15345809c8e1d6bdf527",
+    "bytes": 2713729
+  },
+  {
+    "path": "current-parity/compare-legacy-dds-bptc.current.loader.json.gz",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds-bptc.current.loader.json",
+    "originSha256": "116c0525eae600726e84032e62a1aa2344c2edb372886bd0d3744ec10db32f75",
+    "originBytes": 84673787,
+    "encoding": "gzip",
+    "sha256": "7549c4439b924ad0829c8f9eb3fb367ac638a269f83324797623f7cbeabdd9e5",
+    "bytes": 13606024
+  },
+  {
+    "path": "current-parity/compare-legacy-dds-bptc.current.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds-bptc.current.log",
+    "originSha256": "bf3a4a9414ec05d25a4d3f176d0b9003b3c809064e901d0ceefc369937924843",
+    "originBytes": 1930,
+    "encoding": "identity",
+    "sha256": "bf3a4a9414ec05d25a4d3f176d0b9003b3c809064e901d0ceefc369937924843",
+    "bytes": 1930
+  },
+  {
+    "path": "current-parity/compare-legacy-dds-bptc.current.receipt.json",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds-bptc.current.receipt.json",
+    "originSha256": "30b02750f8084fa2a8a72c4c521d76e6ed38ba979d419ce469d7d1354a256a31",
+    "originBytes": 1487,
+    "encoding": "identity",
+    "sha256": "30b02750f8084fa2a8a72c4c521d76e6ed38ba979d419ce469d7d1354a256a31",
+    "bytes": 1487
+  },
+  {
+    "path": "current-parity/compare-legacy-dds-bptc.current.stderr.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds-bptc.current.stderr.log",
+    "originSha256": "a32137ffb3abae3b692661172d526b49b2bc49f0e6afeb3efc24cbae5d36f2d7",
+    "originBytes": 1486,
+    "encoding": "identity",
+    "sha256": "a32137ffb3abae3b692661172d526b49b2bc49f0e6afeb3efc24cbae5d36f2d7",
+    "bytes": 1486
+  },
+  {
+    "path": "current-parity/compare-legacy-dds-bptc.current.stdout.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds-bptc.current.stdout.log",
+    "originSha256": "96f69001dae2b19aa57672c5a557b05fea1e3afa3f034b00af4fd12d4e2b6d36",
+    "originBytes": 444,
+    "encoding": "identity",
+    "sha256": "96f69001dae2b19aa57672c5a557b05fea1e3afa3f034b00af4fd12d4e2b6d36",
+    "bytes": 444
+  },
+  {
+    "path": "current-parity/compare-legacy-dds-compressed.current.corpus.json",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds-compressed.current.corpus.json",
+    "originSha256": "a64513f8904f50cc25848c1a06d25d12aa7ab88a99ca5a7dea7712dea5aacb4c",
+    "originBytes": 83137,
+    "encoding": "identity",
+    "sha256": "a64513f8904f50cc25848c1a06d25d12aa7ab88a99ca5a7dea7712dea5aacb4c",
+    "bytes": 83137
+  },
+  {
+    "path": "current-parity/compare-legacy-dds-compressed.current.loader.json",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds-compressed.current.loader.json",
+    "originSha256": "3dab66db72e9c1351d9d8c18dedf5106f5f0f34ca363a443f202cf7f502c29cb",
+    "originBytes": 561803,
+    "encoding": "identity",
+    "sha256": "3dab66db72e9c1351d9d8c18dedf5106f5f0f34ca363a443f202cf7f502c29cb",
+    "bytes": 561803
+  },
+  {
+    "path": "current-parity/compare-legacy-dds-compressed.current.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds-compressed.current.log",
+    "originSha256": "23c721fc6bf3d254645b1e3ad89850e960bc45d67d774c2fa812acd1a13503df",
+    "originBytes": 7294,
+    "encoding": "identity",
+    "sha256": "23c721fc6bf3d254645b1e3ad89850e960bc45d67d774c2fa812acd1a13503df",
+    "bytes": 7294
+  },
+  {
+    "path": "current-parity/compare-legacy-dds-compressed.current.receipt.json",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds-compressed.current.receipt.json",
+    "originSha256": "807679c7453bb66adc1fa6c33f2b977a82cff58ad9814ba429560a55d7421dc7",
+    "originBytes": 1487,
+    "encoding": "identity",
+    "sha256": "807679c7453bb66adc1fa6c33f2b977a82cff58ad9814ba429560a55d7421dc7",
+    "bytes": 1487
+  },
+  {
+    "path": "current-parity/compare-legacy-dds-compressed.current.stderr.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds-compressed.current.stderr.log",
+    "originSha256": "cbabf76fce81e6051896bbf2f3f8c0851296adde08e5384667b1565323d68128",
+    "originBytes": 774,
+    "encoding": "identity",
+    "sha256": "cbabf76fce81e6051896bbf2f3f8c0851296adde08e5384667b1565323d68128",
+    "bytes": 774
+  },
+  {
+    "path": "current-parity/compare-legacy-dds-compressed.current.stdout.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds-compressed.current.stdout.log",
+    "originSha256": "c43376197e167a79c5f60ca1a30e3524295ed82ad515e9cdf6c0292a192a07d9",
+    "originBytes": 6520,
+    "encoding": "identity",
+    "sha256": "c43376197e167a79c5f60ca1a30e3524295ed82ad515e9cdf6c0292a192a07d9",
+    "bytes": 6520
+  },
+  {
+    "path": "current-parity/compare-legacy-dds-encode.current.corpus.json",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds-encode.current.corpus.json",
+    "originSha256": "723bf6af489af3fec2e093ed254f16e05833735f341c000d33a5ee776e2c6ca8",
+    "originBytes": 32776,
+    "encoding": "identity",
+    "sha256": "723bf6af489af3fec2e093ed254f16e05833735f341c000d33a5ee776e2c6ca8",
+    "bytes": 32776
+  },
+  {
+    "path": "current-parity/compare-legacy-dds-encode.current.loader.json",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds-encode.current.loader.json",
+    "originSha256": "33184a613fd5d9afb1ef7b3bc430a9b26b6f0779d274d3cdf1f5906ab49f678e",
+    "originBytes": 281714,
+    "encoding": "identity",
+    "sha256": "33184a613fd5d9afb1ef7b3bc430a9b26b6f0779d274d3cdf1f5906ab49f678e",
+    "bytes": 281714
+  },
+  {
+    "path": "current-parity/compare-legacy-dds-encode.current.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds-encode.current.log",
+    "originSha256": "382a69fb33bf1a863621f3db418315db9aa7de5b2e379f2f2f216625a57b0392",
+    "originBytes": 5006,
+    "encoding": "identity",
+    "sha256": "382a69fb33bf1a863621f3db418315db9aa7de5b2e379f2f2f216625a57b0392",
+    "bytes": 5006
+  },
+  {
+    "path": "current-parity/compare-legacy-dds-encode.current.receipt.json",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds-encode.current.receipt.json",
+    "originSha256": "7bcff8ab93bb7d70abc69a45b1e361e952f3735ff7948283ac45e35ebd2b5e44",
+    "originBytes": 1479,
+    "encoding": "identity",
+    "sha256": "7bcff8ab93bb7d70abc69a45b1e361e952f3735ff7948283ac45e35ebd2b5e44",
+    "bytes": 1479
+  },
+  {
+    "path": "current-parity/compare-legacy-dds-encode.current.stderr.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds-encode.current.stderr.log",
+    "originSha256": "c24fc996e2abbd8eb0e09f2e453a15b101027341f77407cde200fec867bf8c6d",
+    "originBytes": 774,
+    "encoding": "identity",
+    "sha256": "c24fc996e2abbd8eb0e09f2e453a15b101027341f77407cde200fec867bf8c6d",
+    "bytes": 774
+  },
+  {
+    "path": "current-parity/compare-legacy-dds-encode.current.stdout.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds-encode.current.stdout.log",
+    "originSha256": "ff5fa18833f8d1df59e798440df0dca5d6e5c32c29533ecfbd580a92e1728ae9",
+    "originBytes": 4232,
+    "encoding": "identity",
+    "sha256": "ff5fa18833f8d1df59e798440df0dca5d6e5c32c29533ecfbd580a92e1728ae9",
+    "bytes": 4232
+  },
+  {
+    "path": "current-parity/compare-legacy-dds.current.corpus.json",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds.current.corpus.json",
+    "originSha256": "f26ba16896bc91693b21438cfbcf8ee3985db3bf02f92fd148a002583cd66ea9",
+    "originBytes": 346563,
+    "encoding": "identity",
+    "sha256": "f26ba16896bc91693b21438cfbcf8ee3985db3bf02f92fd148a002583cd66ea9",
+    "bytes": 346563
+  },
+  {
+    "path": "current-parity/compare-legacy-dds.current.loader.json",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds.current.loader.json",
+    "originSha256": "2927c86e308de1fd568ede8d9609e1b3564aad161dacba7f72d3dc48c5c007c6",
+    "originBytes": 2024947,
+    "encoding": "identity",
+    "sha256": "2927c86e308de1fd568ede8d9609e1b3564aad161dacba7f72d3dc48c5c007c6",
+    "bytes": 2024947
+  },
+  {
+    "path": "current-parity/compare-legacy-dds.current.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds.current.log",
+    "originSha256": "cd413aebd00bbe4245e70f16ff1f864383bc472462cc8f8780065de8168c8561",
+    "originBytes": 1152,
+    "encoding": "identity",
+    "sha256": "cd413aebd00bbe4245e70f16ff1f864383bc472462cc8f8780065de8168c8561",
+    "bytes": 1152
+  },
+  {
+    "path": "current-parity/compare-legacy-dds.current.receipt.json",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds.current.receipt.json",
+    "originSha256": "9cc227861c5283f715eabb7b9d0bf54d8e2efa41be171c3c0304169d7e746d7c",
+    "originBytes": 1470,
+    "encoding": "identity",
+    "sha256": "9cc227861c5283f715eabb7b9d0bf54d8e2efa41be171c3c0304169d7e746d7c",
+    "bytes": 1470
+  },
+  {
+    "path": "current-parity/compare-legacy-dds.current.stderr.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds.current.stderr.log",
+    "originSha256": "85bbb342f8f70a3e44f2c0cba5c6d70a4779d37ab28c5b51c7a635a603b3033a",
+    "originBytes": 773,
+    "encoding": "identity",
+    "sha256": "85bbb342f8f70a3e44f2c0cba5c6d70a4779d37ab28c5b51c7a635a603b3033a",
+    "bytes": 773
+  },
+  {
+    "path": "current-parity/compare-legacy-dds.current.stdout.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-dds.current.stdout.log",
+    "originSha256": "fc38c6997d540a8dbbec3ba60863b4680f030c59548d1aad74e82412f27322c7",
+    "originBytes": 379,
+    "encoding": "identity",
+    "sha256": "fc38c6997d540a8dbbec3ba60863b4680f030c59548d1aad74e82412f27322c7",
+    "bytes": 379
+  },
+  {
+    "path": "current-parity/compare-legacy-image-ops.current.corpus.json",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-image-ops.current.corpus.json",
+    "originSha256": "a2232901a34ae3c37cc5ba116582264b9cd49f4b3f57e5e5f657a2abb27cdc42",
+    "originBytes": 24621,
+    "encoding": "identity",
+    "sha256": "a2232901a34ae3c37cc5ba116582264b9cd49f4b3f57e5e5f657a2abb27cdc42",
+    "bytes": 24621
+  },
+  {
+    "path": "current-parity/compare-legacy-image-ops.current.loader.json",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-image-ops.current.loader.json",
+    "originSha256": "fe88e539e898361905e9a577e90ab3199f3778a8f4271fa16b559f658f96a159",
+    "originBytes": 236418,
+    "encoding": "identity",
+    "sha256": "fe88e539e898361905e9a577e90ab3199f3778a8f4271fa16b559f658f96a159",
+    "bytes": 236418
+  },
+  {
+    "path": "current-parity/compare-legacy-image-ops.current.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-image-ops.current.log",
+    "originSha256": "0e3dd40e0949712a05ecdebeab5afb7d33cb4b62226b6b62469db5cbb30b94dc",
+    "originBytes": 2078,
+    "encoding": "identity",
+    "sha256": "0e3dd40e0949712a05ecdebeab5afb7d33cb4b62226b6b62469db5cbb30b94dc",
+    "bytes": 2078
+  },
+  {
+    "path": "current-parity/compare-legacy-image-ops.current.receipt.json",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-image-ops.current.receipt.json",
+    "originSha256": "f71b2ea342469f4d47e90498dfde017205e0d73ce1a5444a3077f0084a253081",
+    "originBytes": 1480,
+    "encoding": "identity",
+    "sha256": "f71b2ea342469f4d47e90498dfde017205e0d73ce1a5444a3077f0084a253081",
+    "bytes": 1480
+  },
+  {
+    "path": "current-parity/compare-legacy-image-ops.current.stderr.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-image-ops.current.stderr.log",
+    "originSha256": "46a4f87daa7cfe5e1175f0a053e3d4585f640c2e6b0041f3333491fc25ccc3df",
+    "originBytes": 772,
+    "encoding": "identity",
+    "sha256": "46a4f87daa7cfe5e1175f0a053e3d4585f640c2e6b0041f3333491fc25ccc3df",
+    "bytes": 772
+  },
+  {
+    "path": "current-parity/compare-legacy-image-ops.current.stdout.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/oracle/compare-legacy-image-ops.current.stdout.log",
+    "originSha256": "aaf8ac06424be59cbc47e8c173f10b8ae95e4d92e1181a70ecba8687e5796e5a",
+    "originBytes": 1306,
+    "encoding": "identity",
+    "sha256": "aaf8ac06424be59cbc47e8c173f10b8ae95e4d92e1181a70ecba8687e5796e5a",
+    "bytes": 1306
+  },
+  {
+    "path": "extension-manager/compare-runtime-root-final.mjs",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/compare-runtime-root-final.mjs",
+    "originSha256": "57eaf3a71bb72e7fdac0cd5c6db4c6165b36472d37e4c40f6d71b50a310701b9",
+    "originBytes": 3867,
+    "encoding": "identity",
+    "sha256": "57eaf3a71bb72e7fdac0cd5c6db4c6165b36472d37e4c40f6d71b50a310701b9",
+    "bytes": 3867
+  },
+  {
+    "path": "extension-manager/verification.json",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/verification.json",
+    "originSha256": "b066a9f5dd47ee03408957cfc8a79b7a35db041d563e2788041d5853d4d7e98d",
+    "originBytes": 2755,
+    "encoding": "identity",
+    "sha256": "b066a9f5dd47ee03408957cfc8a79b7a35db041d563e2788041d5853d4d7e98d",
+    "bytes": 2755
+  },
+  {
+    "path": "extension-manager/build.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/build.log",
+    "originSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "originBytes": 0,
+    "encoding": "identity",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  {
+    "path": "extension-manager/typecheck.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/typecheck.log",
+    "originSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "originBytes": 0,
+    "encoding": "identity",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  {
+    "path": "extension-manager/lint.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/lint.log",
+    "originSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "originBytes": 0,
+    "encoding": "identity",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  {
+    "path": "extension-manager/format.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/format.log",
+    "originSha256": "17aa973d3f004560237d9a95171210b0671deff23d61628eecf7322ff5938f20",
+    "originBytes": 66,
+    "encoding": "identity",
+    "sha256": "17aa973d3f004560237d9a95171210b0671deff23d61628eecf7322ff5938f20",
+    "bytes": 66
+  },
+  {
+    "path": "extension-manager/test.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/test.log",
+    "originSha256": "1eefead5fa0dc778c9a186c77c2a9d72eb2b18040e311716cca401d2bb75e4f9",
+    "originBytes": 5721,
+    "encoding": "identity",
+    "sha256": "1eefead5fa0dc778c9a186c77c2a9d72eb2b18040e311716cca401d2bb75e4f9",
+    "bytes": 5721
+  },
+  {
+    "path": "extension-manager/root-final/browser.js.after.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/browser.js.after.js",
+    "originSha256": "630fef4e318831a57a1b80280552f40349858805da2c196ef19f7a5edfd01086",
+    "originBytes": 96,
+    "encoding": "identity",
+    "sha256": "630fef4e318831a57a1b80280552f40349858805da2c196ef19f7a5edfd01086",
+    "bytes": 96
+  },
+  {
+    "path": "extension-manager/root-final/browser.js.before.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/browser.js.before.js",
+    "originSha256": "630fef4e318831a57a1b80280552f40349858805da2c196ef19f7a5edfd01086",
+    "originBytes": 96,
+    "encoding": "identity",
+    "sha256": "630fef4e318831a57a1b80280552f40349858805da2c196ef19f7a5edfd01086",
+    "bytes": 96
+  },
+  {
+    "path": "extension-manager/root-final/catalog.js.after.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/catalog.js.after.js",
+    "originSha256": "5d670738eb3bc62db71ebe1c6bf8c195d09463b451fb3a97e81ca43e18f6abda",
+    "originBytes": 18318,
+    "encoding": "identity",
+    "sha256": "5d670738eb3bc62db71ebe1c6bf8c195d09463b451fb3a97e81ca43e18f6abda",
+    "bytes": 18318
+  },
+  {
+    "path": "extension-manager/root-final/catalog.js.before.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/catalog.js.before.js",
+    "originSha256": "bd7e3140b73b25cad1c242a3a6dfa38ffad73a674ddbec9fbf34c117ec9725bf",
+    "originBytes": 18247,
+    "encoding": "identity",
+    "sha256": "bd7e3140b73b25cad1c242a3a6dfa38ffad73a674ddbec9fbf34c117ec9725bf",
+    "bytes": 18247
+  },
+  {
+    "path": "extension-manager/root-final/cli.js.after.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/cli.js.after.js",
+    "originSha256": "3a34822a1ee795e02b7f03eb0d22f4ec7711043944786a6a821e360cd20dac3b",
+    "originBytes": 2074,
+    "encoding": "identity",
+    "sha256": "3a34822a1ee795e02b7f03eb0d22f4ec7711043944786a6a821e360cd20dac3b",
+    "bytes": 2074
+  },
+  {
+    "path": "extension-manager/root-final/cli.js.before.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/cli.js.before.js",
+    "originSha256": "3a34822a1ee795e02b7f03eb0d22f4ec7711043944786a6a821e360cd20dac3b",
+    "originBytes": 2074,
+    "encoding": "identity",
+    "sha256": "3a34822a1ee795e02b7f03eb0d22f4ec7711043944786a6a821e360cd20dac3b",
+    "bytes": 2074
+  },
+  {
+    "path": "extension-manager/root-final/client.js.after.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/client.js.after.js",
+    "originSha256": "c30ba15e7c37fb12c0ac0df2039f423ed233e18bd66ef59d2623407d98b37252",
+    "originBytes": 23091,
+    "encoding": "identity",
+    "sha256": "c30ba15e7c37fb12c0ac0df2039f423ed233e18bd66ef59d2623407d98b37252",
+    "bytes": 23091
+  },
+  {
+    "path": "extension-manager/root-final/client.js.before.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/client.js.before.js",
+    "originSha256": "4382fb56714bc38f713f30d1119c919b307f73dd59bb222e5add7e4a0b01f460",
+    "originBytes": 23002,
+    "encoding": "identity",
+    "sha256": "4382fb56714bc38f713f30d1119c919b307f73dd59bb222e5add7e4a0b01f460",
+    "bytes": 23002
+  },
+  {
+    "path": "extension-manager/root-final/game-support.js.after.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/game-support.js.after.js",
+    "originSha256": "3e3038713b0079ea49870de0236943060a9e2d14fafb5cbc7aa208b7a963546a",
+    "originBytes": 3958,
+    "encoding": "identity",
+    "sha256": "3e3038713b0079ea49870de0236943060a9e2d14fafb5cbc7aa208b7a963546a",
+    "bytes": 3958
+  },
+  {
+    "path": "extension-manager/root-final/game-support.js.before.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/game-support.js.before.js",
+    "originSha256": "3fd431b53f8fdec508417ca7999c9b84276695ab08af5270d24c3ac01d94927d",
+    "originBytes": 3952,
+    "encoding": "identity",
+    "sha256": "3fd431b53f8fdec508417ca7999c9b84276695ab08af5270d24c3ac01d94927d",
+    "bytes": 3952
+  },
+  {
+    "path": "extension-manager/root-final/index.js.after.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/index.js.after.js",
+    "originSha256": "1eb5aa0d6a86ffeb2d59841539cb4d9166c0f3f5aca3d2574e00d33b5f347577",
+    "originBytes": 925,
+    "encoding": "identity",
+    "sha256": "1eb5aa0d6a86ffeb2d59841539cb4d9166c0f3f5aca3d2574e00d33b5f347577",
+    "bytes": 925
+  },
+  {
+    "path": "extension-manager/root-final/index.js.before.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/index.js.before.js",
+    "originSha256": "1eb5aa0d6a86ffeb2d59841539cb4d9166c0f3f5aca3d2574e00d33b5f347577",
+    "originBytes": 925,
+    "encoding": "identity",
+    "sha256": "1eb5aa0d6a86ffeb2d59841539cb4d9166c0f3f5aca3d2574e00d33b5f347577",
+    "bytes": 925
+  },
+  {
+    "path": "extension-manager/root-final/local-candidates.js.after.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/local-candidates.js.after.js",
+    "originSha256": "557f5a643116394379624d313ead56d4a75f15794d9424f35f818d0f8003a26e",
+    "originBytes": 31448,
+    "encoding": "identity",
+    "sha256": "557f5a643116394379624d313ead56d4a75f15794d9424f35f818d0f8003a26e",
+    "bytes": 31448
+  },
+  {
+    "path": "extension-manager/root-final/local-candidates.js.before.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/local-candidates.js.before.js",
+    "originSha256": "11fbd097a8ffa459f024b73de48f0f31fe774c7485ddcfd8d983052399067677",
+    "originBytes": 31254,
+    "encoding": "identity",
+    "sha256": "11fbd097a8ffa459f024b73de48f0f31fe774c7485ddcfd8d983052399067677",
+    "bytes": 31254
+  },
+  {
+    "path": "extension-manager/root-final/node-adapters.js.after.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/node-adapters.js.after.js",
+    "originSha256": "78ecc3bc011d52e1a7f01840295b1bdb2217a93d74d19220e64f78e1a2b0fd26",
+    "originBytes": 56565,
+    "encoding": "identity",
+    "sha256": "78ecc3bc011d52e1a7f01840295b1bdb2217a93d74d19220e64f78e1a2b0fd26",
+    "bytes": 56565
+  },
+  {
+    "path": "extension-manager/root-final/node-adapters.js.before.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/node-adapters.js.before.js",
+    "originSha256": "4a2f692c335cb2405bbba724a81425f282f02fb4d8af826d3b88715eff4ed611",
+    "originBytes": 56437,
+    "encoding": "identity",
+    "sha256": "4a2f692c335cb2405bbba724a81425f282f02fb4d8af826d3b88715eff4ed611",
+    "bytes": 56437
+  },
+  {
+    "path": "extension-manager/root-final/node.js.after.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/node.js.after.js",
+    "originSha256": "2f14c51cf97e8d07657c41c115af5ee92cbfdbb328de2407869e7ffc05c5c999",
+    "originBytes": 22506,
+    "encoding": "identity",
+    "sha256": "2f14c51cf97e8d07657c41c115af5ee92cbfdbb328de2407869e7ffc05c5c999",
+    "bytes": 22506
+  },
+  {
+    "path": "extension-manager/root-final/node.js.before.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/node.js.before.js",
+    "originSha256": "369086c94ed20ad4881f47ec96a04b0a8554110703ad5e7580961047909791d6",
+    "originBytes": 22463,
+    "encoding": "identity",
+    "sha256": "369086c94ed20ad4881f47ec96a04b0a8554110703ad5e7580961047909791d6",
+    "bytes": 22463
+  },
+  {
+    "path": "extension-manager/root-final/providers-browser.js.after.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/providers-browser.js.after.js",
+    "originSha256": "f44f9c49cdca9ecee9271ce929971c0a3488f3d017a8100e1fb66b29906b4271",
+    "originBytes": 1629,
+    "encoding": "identity",
+    "sha256": "f44f9c49cdca9ecee9271ce929971c0a3488f3d017a8100e1fb66b29906b4271",
+    "bytes": 1629
+  },
+  {
+    "path": "extension-manager/root-final/providers-browser.js.before.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/providers-browser.js.before.js",
+    "originSha256": "9eccfbced88bc3c1b49ca8b1694c874e23ecdf8d3290d352566f79fa39fdc5be",
+    "originBytes": 1605,
+    "encoding": "identity",
+    "sha256": "9eccfbced88bc3c1b49ca8b1694c874e23ecdf8d3290d352566f79fa39fdc5be",
+    "bytes": 1605
+  },
+  {
+    "path": "extension-manager/root-final/providers-node.js.after.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/providers-node.js.after.js",
+    "originSha256": "6b263ec5dfcc560a495e6225d6ae203a50a249bfca456c4b4b4e3fdfe32f77fa",
+    "originBytes": 2189,
+    "encoding": "identity",
+    "sha256": "6b263ec5dfcc560a495e6225d6ae203a50a249bfca456c4b4b4e3fdfe32f77fa",
+    "bytes": 2189
+  },
+  {
+    "path": "extension-manager/root-final/providers-node.js.before.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/providers-node.js.before.js",
+    "originSha256": "6b263ec5dfcc560a495e6225d6ae203a50a249bfca456c4b4b4e3fdfe32f77fa",
+    "originBytes": 2189,
+    "encoding": "identity",
+    "sha256": "6b263ec5dfcc560a495e6225d6ae203a50a249bfca456c4b4b4e3fdfe32f77fa",
+    "bytes": 2189
+  },
+  {
+    "path": "extension-manager/root-final/runtime-comparison.json",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/runtime-comparison.json",
+    "originSha256": "8116c981f049bcb20b6ad0fc993c662c7fa25b71e27fa0d28fd549a322aebe65",
+    "originBytes": 8795,
+    "encoding": "identity",
+    "sha256": "8116c981f049bcb20b6ad0fc993c662c7fa25b71e27fa0d28fd549a322aebe65",
+    "bytes": 8795
+  },
+  {
+    "path": "extension-manager/root-final/schema.js.after.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/schema.js.after.js",
+    "originSha256": "8d9958a4af59be05664076e18fe8045c9cd2990f2af41b18a11f56ca130f8c35",
+    "originBytes": 10404,
+    "encoding": "identity",
+    "sha256": "8d9958a4af59be05664076e18fe8045c9cd2990f2af41b18a11f56ca130f8c35",
+    "bytes": 10404
+  },
+  {
+    "path": "extension-manager/root-final/schema.js.before.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/schema.js.before.js",
+    "originSha256": "009e57f4a9537c55c49ec8e866f749ef933a003626e32d2974abd932ac6a2f02",
+    "originBytes": 10358,
+    "encoding": "identity",
+    "sha256": "009e57f4a9537c55c49ec8e866f749ef933a003626e32d2974abd932ac6a2f02",
+    "bytes": 10358
+  },
+  {
+    "path": "extension-manager/root-final/subject-profiles.js.after.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/subject-profiles.js.after.js",
+    "originSha256": "c2cbd747c55af52f512b23ec08a81c33c0c513ef1530965cfbae63cac8e4e9c1",
+    "originBytes": 7885,
+    "encoding": "identity",
+    "sha256": "c2cbd747c55af52f512b23ec08a81c33c0c513ef1530965cfbae63cac8e4e9c1",
+    "bytes": 7885
+  },
+  {
+    "path": "extension-manager/root-final/subject-profiles.js.before.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/subject-profiles.js.before.js",
+    "originSha256": "8b770c41b74b97fa874d5d62b2117d9d6acc9a04a8525ea14e43187af519ced6",
+    "originBytes": 7763,
+    "encoding": "identity",
+    "sha256": "8b770c41b74b97fa874d5d62b2117d9d6acc9a04a8525ea14e43187af519ced6",
+    "bytes": 7763
+  },
+  {
+    "path": "extension-manager/root-final/subjects.js.after.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/subjects.js.after.js",
+    "originSha256": "9dcffbc394b2a874394b6679b8ecab8ef96758225086b1bbbd757d96b455e2b8",
+    "originBytes": 36116,
+    "encoding": "identity",
+    "sha256": "9dcffbc394b2a874394b6679b8ecab8ef96758225086b1bbbd757d96b455e2b8",
+    "bytes": 36116
+  },
+  {
+    "path": "extension-manager/root-final/subjects.js.before.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/subjects.js.before.js",
+    "originSha256": "3b1ffb2346c7e768389fc684ab424acb6437fb2e4f5dbc5d74d44b1adbba9d8d",
+    "originBytes": 36104,
+    "encoding": "identity",
+    "sha256": "3b1ffb2346c7e768389fc684ab424acb6437fb2e4f5dbc5d74d44b1adbba9d8d",
+    "bytes": 36104
+  },
+  {
+    "path": "extension-manager/root-final/vfs.js.after.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/vfs.js.after.js",
+    "originSha256": "e3688e1affac7a72754dc5582f12949aa97e2a11bca16b1cec202389907caf9a",
+    "originBytes": 4371,
+    "encoding": "identity",
+    "sha256": "e3688e1affac7a72754dc5582f12949aa97e2a11bca16b1cec202389907caf9a",
+    "bytes": 4371
+  },
+  {
+    "path": "extension-manager/root-final/vfs.js.before.js",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/extension-manager-ts/root-final/vfs.js.before.js",
+    "originSha256": "d0a6850de79d23855d72e9100022d175dbeb7b7f4ec6a65f85be510da00edd3d",
+    "originBytes": 4347,
+    "encoding": "identity",
+    "sha256": "d0a6850de79d23855d72e9100022d175dbeb7b7f4ec6a65f85be510da00edd3d",
+    "bytes": 4347
+  },
+  {
+    "path": "vendor-host-final/blizzard-check-pack.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/vendor-host-final/blizzard-check-pack.log",
+    "originSha256": "011a719cc8a70a7e5a48b647702fe5ce33b09b2fa0c53c2d353009fb75c07d2d",
+    "originBytes": 201,
+    "encoding": "identity",
+    "sha256": "011a719cc8a70a7e5a48b647702fe5ce33b09b2fa0c53c2d353009fb75c07d2d",
+    "bytes": 201
+  },
+  {
+    "path": "vendor-host-final/blizzard-install.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/vendor-host-final/blizzard-install.log",
+    "originSha256": "d30848b3e2eb719cf535002a642a2b7ce4bc6eef13205f0dff82e359c84e4523",
+    "originBytes": 1293,
+    "encoding": "identity",
+    "sha256": "d30848b3e2eb719cf535002a642a2b7ce4bc6eef13205f0dff82e359c84e4523",
+    "bytes": 1293
+  },
+  {
+    "path": "vendor-host-final/blizzard-vendor-smoke.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/vendor-host-final/blizzard-vendor-smoke.log",
+    "originSha256": "2a614d98e5022717ff6932916a8a5f10670ec6a1a75a3fa2db71b36dfcef32fd",
+    "originBytes": 733,
+    "encoding": "identity",
+    "sha256": "2a614d98e5022717ff6932916a8a5f10670ec6a1a75a3fa2db71b36dfcef32fd",
+    "bytes": 733
+  },
+  {
+    "path": "vendor-host-final/consumer-install.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/vendor-host-final/consumer-install.log",
+    "originSha256": "f01a67362b9b5ad66694ec34c97a4b24d693ec13c6a2277c6680ee145b476ec7",
+    "originBytes": 299,
+    "encoding": "identity",
+    "sha256": "f01a67362b9b5ad66694ec34c97a4b24d693ec13c6a2277c6680ee145b476ec7",
+    "bytes": 299
+  },
+  {
+    "path": "vendor-host-final/consumer-runtime.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/vendor-host-final/consumer-runtime.log",
+    "originSha256": "9317e1fe44bbdf44ebc2b8bb2a5be6703486cd8fbbe71819fe528d03409a8dbc",
+    "originBytes": 114,
+    "encoding": "identity",
+    "sha256": "9317e1fe44bbdf44ebc2b8bb2a5be6703486cd8fbbe71819fe528d03409a8dbc",
+    "bytes": 114
+  },
+  {
+    "path": "vendor-host-final/consumer-typecheck-57-imports.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/vendor-host-final/consumer-typecheck-57-imports.log",
+    "originSha256": "bb934a5a2d8289d26ba95f4aced25e535e139ceab4e825a8163b491989a8eb6d",
+    "originBytes": 16,
+    "encoding": "identity",
+    "sha256": "bb934a5a2d8289d26ba95f4aced25e535e139ceab4e825a8163b491989a8eb6d",
+    "bytes": 16
+  },
+  {
+    "path": "vendor-host-final/consumer-vendor-after.json",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/vendor-host-final/consumer-vendor-after.json",
+    "originSha256": "973959a4eef1f08a7437c22366ddf8e4ad9f58600895d4a2cb855fe4c4b0dbac",
+    "originBytes": 927,
+    "encoding": "identity",
+    "sha256": "973959a4eef1f08a7437c22366ddf8e4ad9f58600895d4a2cb855fe4c4b0dbac",
+    "bytes": 927
+  },
+  {
+    "path": "vendor-host-final/consumer-vendor-before.json",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/vendor-host-final/consumer-vendor-before.json",
+    "originSha256": "92cfe718a61059efa12898e72ae4dcdf7af4cbd0733ef8bb7a4f4a0d7f708a89",
+    "originBytes": 927,
+    "encoding": "identity",
+    "sha256": "92cfe718a61059efa12898e72ae4dcdf7af4cbd0733ef8bb7a4f4a0d7f708a89",
+    "bytes": 927
+  },
+  {
+    "path": "vendor-host-final/hashes-after-install.json",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/vendor-host-final/hashes-after-install.json",
+    "originSha256": "1fcf396878f117ca9dd0c4c996ec25ee6e859b217ec0a0311b98fb1cb15400de",
+    "originBytes": 228,
+    "encoding": "identity",
+    "sha256": "1fcf396878f117ca9dd0c4c996ec25ee6e859b217ec0a0311b98fb1cb15400de",
+    "bytes": 228
+  },
+  {
+    "path": "vendor-host-final/hashes-before.json",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/vendor-host-final/hashes-before.json",
+    "originSha256": "32f747c4559912d1cd0bf6539c172bbad18245f02c2328758e41e9bdcc54b084",
+    "originBytes": 316,
+    "encoding": "identity",
+    "sha256": "32f747c4559912d1cd0bf6539c172bbad18245f02c2328758e41e9bdcc54b084",
+    "bytes": 316
+  },
+  {
+    "path": "vendor-host-final/host-build.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/vendor-host-final/host-build.log",
+    "originSha256": "bb934a5a2d8289d26ba95f4aced25e535e139ceab4e825a8163b491989a8eb6d",
+    "originBytes": 16,
+    "encoding": "identity",
+    "sha256": "bb934a5a2d8289d26ba95f4aced25e535e139ceab4e825a8163b491989a8eb6d",
+    "bytes": 16
+  },
+  {
+    "path": "vendor-host-final/host-dist-tgz-file-hashes.json",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/vendor-host-final/host-dist-tgz-file-hashes.json",
+    "originSha256": "677f0289a2ed64e7c11e6aab0964323f9ef94b3ae8540ddeadbba49ef300b793",
+    "originBytes": 117767,
+    "encoding": "identity",
+    "sha256": "677f0289a2ed64e7c11e6aab0964323f9ef94b3ae8540ddeadbba49ef300b793",
+    "bytes": 117767
+  },
+  {
+    "path": "vendor-host-final/host-dist-tgz-summary.json",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/vendor-host-final/host-dist-tgz-summary.json",
+    "originSha256": "0250d296f6fe11a61e8535dad022092ed9eb616564138f4ea90e91d34506704c",
+    "originBytes": 219,
+    "encoding": "identity",
+    "sha256": "0250d296f6fe11a61e8535dad022092ed9eb616564138f4ea90e91d34506704c",
+    "bytes": 219
+  },
+  {
+    "path": "vendor-host-final/host-pack.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/vendor-host-final/host-pack.log",
+    "originSha256": "417bd95c28fe378c93b5a407a3b28a2bdedf0bf51310f70a40366b61977cd103",
+    "originBytes": 13901,
+    "encoding": "identity",
+    "sha256": "417bd95c28fe378c93b5a407a3b28a2bdedf0bf51310f70a40366b61977cd103",
+    "bytes": 13901
+  },
+  {
+    "path": "vendor-host-final/RECEIPT.md",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/vendor-host-final/RECEIPT.md",
+    "originSha256": "c11e0bfb0e2fef19bae6165e8fe03562145d767a4f32e7b35d29a239e8150462",
+    "originBytes": 1906,
+    "encoding": "identity",
+    "sha256": "c11e0bfb0e2fef19bae6165e8fe03562145d767a4f32e7b35d29a239e8150462",
+    "bytes": 1906
+  },
+  {
+    "path": "core-ts/check-uv-boundary-runtime.mjs",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/core-ts/check-uv-boundary-runtime.mjs",
+    "originSha256": "927d208d0855f823304381ec5cef75a6817ec1d3fb44e80acd48e1569e0db283",
+    "originBytes": 2040,
+    "encoding": "identity",
+    "sha256": "927d208d0855f823304381ec5cef75a6817ec1d3fb44e80acd48e1569e0db283",
+    "bytes": 2040
+  },
+  {
+    "path": "core-ts/port-oracle-proof-lint.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/core-ts/port-oracle-proof-lint.log",
+    "originSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "originBytes": 0,
+    "encoding": "identity",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  {
+    "path": "core-ts/port-oracle-proof-tests.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/core-ts/port-oracle-proof-tests.log",
+    "originSha256": "3fed40027bf74575ce67bf666a2a24b407e71f0b225aed32559227a5f41281d8",
+    "originBytes": 1226,
+    "encoding": "identity",
+    "sha256": "3fed40027bf74575ce67bf666a2a24b407e71f0b225aed32559227a5f41281d8",
+    "bytes": 1226
+  },
+  {
+    "path": "core-ts/uv-boundary-build.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/core-ts/uv-boundary-build.log",
+    "originSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "originBytes": 0,
+    "encoding": "identity",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  {
+    "path": "core-ts/uv-boundary-lint.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/core-ts/uv-boundary-lint.log",
+    "originSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "originBytes": 0,
+    "encoding": "identity",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  {
+    "path": "core-ts/uv-boundary-typecheck.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/core-ts/uv-boundary-typecheck.log",
+    "originSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "originBytes": 0,
+    "encoding": "identity",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  {
+    "path": "core-ts/uv-final-build.log",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/core-ts/uv-final-build.log",
+    "originSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "originBytes": 0,
+    "encoding": "identity",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "bytes": 0
+  },
+  {
+    "path": "core-ts/uv-runtime-equivalence.json",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/core-ts/uv-runtime-equivalence.json",
+    "originSha256": "b5ae0c22c5729ad63c6d9f187572a494bc402d39994a37a7f4996c1948f8a98f",
+    "originBytes": 5725,
+    "encoding": "identity",
+    "sha256": "b5ae0c22c5729ad63c6d9f187572a494bc402d39994a37a7f4996c1948f8a98f",
+    "bytes": 5725
+  },
+  {
+    "path": "generator-examples/BRIEF_SC2_BANK.final.md",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/generated/BRIEF_SC2_BANK.final.md",
+    "originSha256": "39d15dcb4f23d8a7e51527a9686bc24b30576d899f1df7e08dd4385cec1dd4c5",
+    "originBytes": 5826,
+    "encoding": "identity",
+    "sha256": "39d15dcb4f23d8a7e51527a9686bc24b30576d899f1df7e08dd4385cec1dd4c5",
+    "bytes": 5826
+  },
+  {
+    "path": "generator-examples/sc2-bank-parity.final.mjs",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/generated/sc2-bank-parity.final.mjs",
+    "originSha256": "edf2b683a31b101d3cf814e0411d414e4cd8de31a5a6d6706b69f9ff7134a59e",
+    "originBytes": 2008,
+    "encoding": "identity",
+    "sha256": "edf2b683a31b101d3cf814e0411d414e4cd8de31a5a6d6706b69f9ff7134a59e",
+    "bytes": 2008
+  },
+  {
+    "path": "final/surfaces-receipt.json",
+    "origin": "modkit-core/reports/port-infra/surfaces-receipt.json",
+    "originSha256": "4c9d699441aade3d320d52caa4a3dd4b9c336c57509229814ea423def4f6e034",
+    "originBytes": 1349,
+    "encoding": "identity",
+    "sha256": "4c9d699441aade3d320d52caa4a3dd4b9c336c57509229814ea423def4f6e034",
+    "bytes": 1349
+  },
+  {
+    "path": "final/surfaces-tests.json",
+    "origin": "modkit-core/reports/port-infra/surfaces-tests.json",
+    "originSha256": "eb67c6c08a4d848d9f526b4ece68987d46e5ae4c072fb872f4b294d8797418ac",
+    "originBytes": 19992,
+    "encoding": "identity",
+    "sha256": "eb67c6c08a4d848d9f526b4ece68987d46e5ae4c072fb872f4b294d8797418ac",
+    "bytes": 19992
+  },
+  {
+    "path": "archive-final.mjs",
+    "origin": "artifacts/legacy-parity-sc2/m1-2026-09-04/archive-final.mjs",
+    "originSha256": "9989f164fec02e7679e3aca9396e49ec73c194914463790f825e2b2d48d7e322",
+    "originBytes": 17813,
+    "encoding": "identity",
+    "sha256": "9989f164fec02e7679e3aca9396e49ec73c194914463790f825e2b2d48d7e322",
+    "bytes": 17813
+  }
+]

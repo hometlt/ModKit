@@ -1,0 +1,21 @@
+▶ actual pinned SHA1 preparation binds artifacts, full identity and wrapper
+  ✔ nonempty genuine loadMk2 evidence passes and still calls for adapter review (1112.8094ms)
+  ✔ multiple real modules and an insignificant cacheHit change are accepted (2437.0071ms)
+  ✔ self-consistent metadata without actual cache files is rejected (283.3359ms)
+  ✔ tampered actual bundle is rejected (334.7895ms)
+  ✔ tampered actual source snapshot is rejected (448.625ms)
+  ✔ even consistent on-disk source metadata must match the pinned Git blob (468.75ms)
+  ✔ adapter edits and substituting a different wrapper path are rejected (1941.8015ms)
+  ✔ corpus and operation must match the executed call (532.3599ms)
+  ✔ options and dependency identities cannot be swapped independently of the artifact (530.4824ms)
+  ✔ tampered on-disk manifest, loader snapshot and dependency snapshot are rejected (2271.8832ms)
+  ✔ restored original artifacts still verify after negative probes (1150.8003ms)
+✔ actual pinned SHA1 preparation binds artifacts, full identity and wrapper (13284.3754ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 13494.3216

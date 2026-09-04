@@ -1,0 +1,237 @@
+
+ RUN  v2.1.9 C:/FILES/SC2Files/coding/modkit-core
+
+ ✓ packages/host/test/execution-endpoint.test.ts (29 tests) 820ms
+ ✓ packages/ui/test/browser-e2e.test.ts (25 tests) 9648ms
+   ✓ 13C real-browser viewer host > renders bounded and virtual text, searches, and pages a 100 MiB logical line 796ms
+   ✓ 13C real-browser viewer host > renders bigint hex, lazy tree/table and hostile cell text without markup execution 1037ms
+   ✓ 13C real-browser viewer host > resolves focused table-cell knowledge through the host and ignores stale hover results 305ms
+   ✓ 13C real-browser viewer host > resolves exact subject-card field knowledge and cancels stale requests 323ms
+   ✓ 13C real-browser viewer host > opens plain text, unknown binary, and all eight text-data formats into real viewer plans 313ms
+   ✓ 13C real-browser viewer host > routes diagnostics and toolbar state without exposing markup or invoking disabled operations 338ms
+   ✓ 13C real-browser viewer host > drives transport and namespace through typed operations/events and isolates third-party frames 436ms
+   ✓ 13C real-browser viewer host > edits, commits, reports conflicts, and replays undo/redo through host-owned ports 643ms
+   ✓ 13C real-browser viewer host > routes the picker and a drop through the host, not into a replaced preview pane 441ms
+   ✓ 13C real-browser viewer host > keeps tab mounts alive across switches and opens a focused split group 324ms
+ ✓ packages/host/test/subject-open.test.ts (17 tests) 6482ms
+   ✓ host-owned subject opening pipeline > matches a case-insensitive **/ glob at the subject root 2640ms
+   ✓ host-owned subject opening pipeline > selects a portable variant only when its execution backend is present 769ms
+   ✓ host-owned subject opening pipeline > opens PNG through the real image inventory and resolves a bounded raster presentation 597ms
+   ✓ detection-hostile: the bounded data-only signature index (NXT-101B / F6) > a renamed PNG (.dat) reaches the PNG probe through its declared signature and opens; the reads stay bounded 359ms
+   ✓ detection-hostile: the bounded data-only signature index (NXT-101B / F6) > a PNG+ZIP polyglot shortlists both codecs (start and end signatures); the probes decide, nothing is bypassed 498ms
+   ✓ detection-hostile: the bounded data-only signature index (NXT-101B / F6) > names input-open when a foreign codec exception has crossed an execution boundary 319ms
+ ✓ packages/testkit/test/text-data.test.ts (56 tests) 1519ms
+   ✓ 13B text-data providers and codecs > validates all isolated contribution manifests through the A-1 authorities 425ms
+   ✓ 13B text-data providers and codecs > pages one million delimited rows without materializing an eager document 338ms
+ ✓ packages/host/test/companion-input-resolution.test.ts (49 tests) 572ms
+   ✓ companion input resolution — expected traits > validates expected traits from the inventory signature index, without activating a codec 545ms
+ ✓ packages/host/test/node-worker-backend.test.ts (18 tests) 5655ms
+   ✓ node worker backend — restart is a new generation of the same session (acc-8) > concurrent callers after a death share one restart; the policy bounds restarts per lease 314ms
+   ✓ node worker backend — restart is a new generation of the same session (acc-8) > a restart re-verifies the entrypoint: bytes changed since activation are refused, the lease reports why 305ms
+   ✓ node worker backend — verified multi-file loading through module hooks > a helper modified after the inventory is refused with a digest mismatch; a file the inventory never listed is refused too 336ms
+   ✓ node worker backend — verified multi-file loading through module hooks > dependencies resolved through the artifact node_modules load (unverified, SB-1); other escapes are refused 324ms
+   ✓ node worker backend — a real bundled extension codec runs in the worker > text-csv: inventoried through loadExtensionDirectory, its multi-file entrypoint and workspace dependencies load, probe detects CSV 668ms
+   ✓ node worker backend — a real codec opens a session with a host-resolved provider > text-csv open(): contracts.resolve crosses to the host and the provider data source runs on the host 943ms
+   ✓ node worker backend — provider in one worker, codec in another, the host bridges them (S1b product path) > text-csv: the provider leases in worker B and its codec in worker A crosses both boundaries 847ms
+ ✓ packages/host/test/nested-subject-companion.test.ts (14 tests) 1354ms
+   ✓ a container entry opens as its own subject, with companions from the same container > binds the deflated texture beside the mesh and hands the codec byte-exact bytes 610ms
+ ✓ packages/testkit/test/common-documents-odf.test.ts (49 tests) 1326ms
+   ✓ 11B common/documents — the OpenDocument quartet > ships exactly four ODF contributions and every one of them validates 408ms
+   ✓ 11B common/documents — the OpenDocument quartet > publishes only the representations each format actually recovered 646ms
+ ✓ packages/host/test/resource-session.test.ts (27 tests) 36ms
+ ✓ packages/testkit/test/uvw-candidate.test.ts (11 tests) 253ms
+ ✓ packages/host/test/archive-edits.test.ts (7 tests) 10296ms
+   ✓ A4 — ZIP editing on the 13D seam (ADR-HOST-002 Path A) > lists what the container knows about an entry: stored size, method, timestamp and its own CRC 1104ms
+   ✓ A4 — ZIP editing on the 13D seam (ADR-HOST-002 Path A) > edit.structure adds and removes entries worker-brokered; kept entries are copied byte for byte and a kept deflated entry still inflates 1753ms
+   ✓ A4 — ZIP editing on the 13D seam (ADR-HOST-002 Path A) > edit.content replaces one entry (stored, fresh CRC) and leaves every other entry byte-identical 850ms
+   ✓ A4 — ZIP editing on the 13D seam (ADR-HOST-002 Path A) > without write-source the archive still opens (degraded) and both mutating operations are refused by the host 518ms
+   ✓ A4 — ZIP editing on the 13D seam (ADR-HOST-002 Path A) > edit.structure renames an entry without touching its data, and a non-canonical archive downgrades the fidelity claim honestly 1148ms
+   ✓ A4 — ZIP editing on the 13D seam (ADR-HOST-002 Path A) > an assembled archive above the host inline-payload cap is payload-unavailable; under the cap it commits 2716ms
+   ✓ A4 — ZIP editing on the 13D seam (ADR-HOST-002 Path A) > ZIP64 and encrypted archives are refused with the reason on the descriptor and nothing is written 2202ms
+ ✓ packages/host/test/editing.test.ts (7 tests) 337ms
+   ✓ 13D universal editing contracts and host transaction coordinator > discovers a declarative editor and refuses trait/data-only lookalikes (D-01/D-02) 314ms
+ ✓ packages/testkit/test/reference-codecs.test.ts (22 tests) 1824ms
+   ✓ reference codec specification stress suite > validates twelve isolated codec contribution manifests 436ms
+   ✓ reference codec specification stress suite > probes and opens the zip codec 492ms
+   ✓ reference codec specification stress suite > keeps every codec entrypoint and package index import-isolated 462ms
+ ✓ packages/testkit/test/uvm-materializer.test.ts (18 tests) 457ms
+ ✓ packages/host/test/gate.test.ts (32 tests) 385ms
+ ✓ packages/host/test/editing-evidence.test.ts (7 tests) 2631ms
+   ✓ F3 evidence registry > joins bundled codec proof citations with inventory-owned writer coordinates 741ms
+   ✓ F3 raw writer — a format-blind editor saves through the coordinator > commits a UTF-16 range edit through the coordinator and the codec still opens the result 378ms
+   ✓ F3 raw writer — a format-blind editor saves through the coordinator > commits a markdown range edit through the same seam and reopens it as markdown 1401ms
+ ✓ packages/host/test/media-edits.test.ts (6 tests) 13401ms
+   ✓ A5 Path A — JPEG metadata edits on the 13D seam > edit.field writes the COM segment after the APP block, byte-identical elsewhere, and replaces it in place on the second call 3189ms
+   ✓ A5 Path A — JPEG metadata edits on the 13D seam > edit.structure removes one metadata segment and refuses a structural marker 2253ms
+   ✓ A5 Path A — MP3 ID3v2 text frames on the 13D seam > edit.field rewrites one text frame, keeps every other frame and the padding, and never moves an audio byte 1748ms
+   ✓ A5 Path A — MP3 ID3v2 text frames on the 13D seam > edit.field creates an ID3v2.4 tag when the file has none, and refuses an unsynchronised tag 3139ms
+   ✓ A5 Path B — the PNG encoder writer resolves by facet and its plan commits > encodes a 2×2 RGBA payload; the committed file reopens as a 2×2 PNG whose decoded pixels are the payload 3047ms
+ ✓ packages/testkit/test/uvt-writer.test.ts (3 tests) 593ms
+   ✓ 12-2 UVT export writes through the host coordinator and reopens > plans the two-artifact export, is refused for want of a namespace target, and reopens 522ms
+ ✓ packages/testkit/test/uvm-convergence.test.ts (2 tests) 700ms
+   ✓ UVM convergence through A-2 inventory and A-3 sessions > resolves, tickets and activates the isolated UVM contribution deterministically 653ms
+ ✓ packages/host/test/node-map-preview-resource-resolver.test.ts (10 tests) 398ms
+ ✓ packages/testkit/test/hostile-worker.test.ts (19 tests) 4342ms
+   ✓ hostile workers — positive control across a real thread boundary > demo-worker: 8 MiB round trip keeps bytes intact; arguments are copied, results transferred 363ms
+   ✓ hostile workers — positive control across a real thread boundary > release() is idempotent: every call resolves with the same end, one termination at most (acc-9) 486ms
+   ✓ hostile workers — hangs and the watchdog (T3/T13, acc-4) > hang-sync: a dead event loop is ended by terminate() after deadline + grace 364ms
+   ✓ hostile workers — hangs and the watchdog (T3/T13, acc-4) > hang-async: a live worker that ignores cancel is terminated after grace; one that honours it is not 565ms
+   ✓ hostile workers — a restart is a new endpoint and a new generation (acc-8) > demo-worker: generation 2 serves the same session; handles from generation 1 do not travel 359ms
+ ✓ packages/host/test/command-runtime.test.ts (19 tests) 17ms
+ ✓ packages/host/test/subject-editing.test.ts (4 tests) 6390ms
+   ✓ ADR-HOST-002 Path A — codec operation → edit plan → host commit > PNG edit.field sets a tEXt chunk worker-brokered; the file backend commits atomically; a reopen sees it and every other byte is untouched 2583ms
+   ✓ ADR-HOST-002 Path A — codec operation → edit plan → host commit > without write-source the PNG still opens (degraded) and the mutating operation is refused by the host 521ms
+   ✓ ADR-HOST-002 Path A — codec operation → edit plan → host commit > a file that changed between plan and prepare is a conflict; a snapshot without write-source is permission-missing; a foreign plan is refused 2074ms
+   ✓ ADR-HOST-002 Path B — writer provider by facet, across the boundary, backing an edit session > resolves common.edit/writer@1 for png/source, leases it worker-brokered, and commits a writer-planned change set 1208ms
+ ✓ packages/host/test/execution-protocol.test.ts (37 tests) 21ms
+ ✓ packages/host/test/execution-surface-adapter.test.ts (9 tests) 46ms
+ ✓ packages/host/test/modkit-facade.test.ts (13 tests) 6623ms
+   ✓ createModkit — the Node library facade > composes from directories alone, and a broken one is a record, not an exception 676ms
+   ✓ createModkit — the Node library facade > opens a PNG worker-brokered with no host knowledge from the caller 980ms
+   ✓ createModkit — the Node library facade > offers editing inside writableRoots, and a byte edit commits to the real file 1067ms
+   ✓ createModkit — the Node library facade > close() sweeps the sessions a caller forgot 1173ms
+   ✓ disabling a contribution (the settings-page seam) > a disabled codec stays listed, loses activation, and the subject answers unresolved 408ms
+   ✓ disabling an extension (the settings-page seam) > keeps its contributions listed while the Node facade refuses to activate them 383ms
+   ✓ the format writer is preferred over the raw byte splicer (Path B reaches products) > a format with no matching writer falls back to raw, and the diagnostics say so 1280ms
+   ✓ a switched-off codec is named, not merely absent (A14 request 5) > an unresolved open says which contribution matched the file and could not run 399ms
+ ✓ packages/host/test/text-writers.test.ts (5 tests) 4704ms
+   ✓ A6 — text writers resolve by facet and save through the host coordinator > json: a UTF-16 range edit is proposed, planned, committed and reopened 636ms
+   ✓ A6 — text writers resolve by facet and save through the host coordinator > ini: a UTF-16 range edit is proposed, planned, committed and reopened 1698ms
+   ✓ A6 — text writers resolve by facet and save through the host coordinator > csv: a UTF-16 range edit is proposed, planned, committed and reopened 1967ms
+   ✓ A6 — text writers resolve by facet and save through the host coordinator > an export-only request is satisfied by a mutating offer; a format no extension owns is unresolved 333ms
+ ✓ packages/host/test/renderer.test.ts (15 tests) 498ms
+ ✓ packages/ui/test/model-scene.test.ts (17 tests) 47ms
+ ✓ packages/host/test/companion-sibling.test.ts (10 tests) 1239ms
+   ✓ sibling companion resolution, end to end through the Node path opener > binds the HVA beside the VXL and hands it to the codec only as a binding 599ms
+stdout | packages/testkit/test/uvt-materializer.test.ts > a decoded raster region materialises into a conforming UVT projection > 'bmp': the sidecar agrees with its container and the two paths hash the same
+[uvt] bmp: 1x1, 268 bytes, digest sha256:192fc7ba151f6752…, receipt entries 1, losses 0
+
+stdout | packages/testkit/test/uvt-materializer.test.ts > a decoded raster region materialises into a conforming UVT projection > 'tga': the sidecar agrees with its container and the two paths hash the same
+[uvt] tga: 1x1, 268 bytes, digest sha256:192fc7ba151f6752…, receipt entries 1, losses 0
+
+ ✓ packages/testkit/test/uvt-materializer.test.ts (9 tests) 391ms
+   ✓ a decoded raster region materialises into a conforming UVT projection > 'bmp': the sidecar agrees with its container and the two paths hash the same 354ms
+ ✓ packages/host/test/extension-artifact-store.test.ts (10 tests) 1110ms
+   ✓ local extension artifact lifecycle > atomically installs, updates, uninstalls and rolls back immutable local artifacts 421ms
+ ✓ packages/ui/test/viewers.test.ts (8 tests) 325ms
+   ✓ 13C universal viewer contracts and models > validates twenty-one declarative viewer contributions and resolves them shuffle-stably 315ms
+ ✓ packages/host/test/knowledge.test.ts (7 tests) 392ms
+ ✓ packages/host/test/runtime.test.ts (9 tests) 445ms
+ ✓ packages/host/test/resolver.test.ts (8 tests) 17ms
+ ✓ packages/testkit/test/capability-rpc-conformance.test.ts (13 tests) 20004ms
+   ✓ capability-rpc conformance kit — reference transports pass > loopback with microtask delivery passes every case and detaches transferred bytes 695ms
+   ✓ capability-rpc conformance kit — reference transports pass > loopback with macrotask delivery (real event-loop hops) passes every case 4836ms
+   ✓ capability-rpc conformance kit — reference transports pass > a real Node MessageChannel (structured clone + transfer over MessagePort) passes every case 733ms
+   ✓ capability-rpc conformance kit — reference transports pass > the Electron MessagePortMain event shape passes (emitter-event: listeners receive { data }) — the R6 main-side adapter 691ms
+   ✓ capability-rpc conformance kit — JSON text transport (F1: bigint and bytes as tagged JSON, nothing transferred) > passes every case over JSON text with copied bytes 4403ms
+   ✓ capability-rpc conformance kit — broken transports are caught > a transport that silently drops frames fails the run (calls time out instead of settling) 2012ms
+   ✓ capability-rpc conformance kit — the production transport of the Node worker backend (acc-12) > a pair spawned through spawnWorkerRealm (the backend spawn path: isolation options, policy limits, capped stdio, dedicated port) passes the host-observable suite 3304ms
+   ✓ capability-rpc conformance kit — host-only mode over a real thread > runs the host-observable subset against the demo-worker fixture in worker_threads and skips the rest 3300ms
+ ✓ packages/testkit/test/stress-gate.test.ts (3 tests) 391ms
+   ✓ A-5 eight-case schema stress gate > validates the seven executable manifest families through the same codec authority 353ms
+ ✓ packages/host/test/nested-subject-containers.test.ts (3 tests) 983ms
+   ✓ a container inside another container uses the same nested route twice > opens ZIP → ZIP → mesh and resolves the companion from the inner namespace 733ms
+ ✓ packages/testkit/test/plain-text.test.ts (7 tests) 480ms
+   ✓ A-7 external common/plain-text vertical slice > validates the executable manifest, standard traits, operation namespaces, and read-only v1 351ms
+ ✓ packages/testkit/test/mixed-visual-composition.test.ts (1 test) 352ms
+   ✓ neutral mixed visual composition > loads a synthetic world and common glTF through one visual-only pipeline 351ms
+ ✓ packages/host/test/subject-rpc-editing.test.ts (4 tests) 1098ms
+   ✓ editing over the subject RPC (S14) > a consumer with no grant proposes, plans, prepares and commits — the file changes and the ids are single-use 709ms
+ ✓ packages/host/test/subject-services.test.ts (8 tests) 2559ms
+   ✓ supportedExtensionHints > collects the codec match extensions of an inventory: lowercase, unique, sorted 856ms
+   ✓ createNodeSubjectServices (host realm inventory, worker realm target) > opens a real PNG worker-brokered through the composed pair and exposes both compositions 1425ms
+ ✓ packages/testkit/test/mk2-model-codecs.test.ts (22 tests) 1162ms
+   ✓ ported MK2 geometry model codecs > obj publishes bounded decoded triangle geometry 886ms
+ ✓ packages/host/test/inventory.test.ts (9 tests) 393ms
+   ✓ buildInventory (S1 acceptance) > is deterministic under shuffled input and listing order (byte-identical) 334ms
+ ✓ packages/host/test/namespace-write-seam.test.ts (3 tests) 401ms
+   ✓ 12-3 a writer can create a new artifact through the commit coordinator > pins the namespace revision on the edit target a directory subject yields 337ms
+ ✓ packages/host/test/browser-worker-realm.test.ts (3 tests) 52ms
+ ✓ packages/ui/test/visual-composition.test.ts (3 tests) 13ms
+ ✓ packages/host/test/file-editing-backend.test.ts (4 tests) 113ms
+ ✓ packages/host/test/browser-verified-loader.test.ts (9 tests) 53ms
+ ✓ packages/ui/test/card-knowledge.test.ts (6 tests) 9ms
+ ✓ packages/host/test/localization.test.ts (8 tests) 359ms
+ ✓ packages/ui/test/tokens-and-parts.test.ts (19 tests) 64ms
+ ✓ packages/testkit/test/common-plain-text.test.ts (5 tests) 714ms
+   ✓ 11A common/plain-text > reads UTF-8, UTF-8 with a mark, and UTF-16 in both byte orders as the same document 390ms
+ ✓ packages/ui/test/settings.test.ts (10 tests) 11ms
+ ✓ packages/host/test/browser-worker-backend.test.ts (3 tests) 85ms
+ ✓ packages/ui/test/relation-graph-source.test.ts (7 tests) 52ms
+ ✓ packages/testkit/test/pkm-etc-decode.test.ts (6 tests) 413ms
+   ✓ 12-5 PKM publishes decoded ETC pixels > opens the shipped fixture and serves its pixel through the raster contract 384ms
+ ✓ packages/host/test/namespace-candidate-discovery.test.ts (6 tests) 17ms
+ ✓ packages/ui/test/localization.test.ts (13 tests) 58ms
+ ✓ packages/host/test/execution-handles.test.ts (7 tests) 16ms
+ ✓ packages/testkit/test/common-markdown.test.ts (2 tests) 875ms
+   ✓ 11A common/documents markdown > answers for every legacy alias through structure plus the alias, never the extension alone 502ms
+   ✓ 11A common/documents markdown > keeps preview safe: hostile HTML and script survive as text and nothing renders them 371ms
+ ✓ packages/testkit/test/runtime-session-v2.test.ts (4 tests) 7ms
+ ✓ packages/host/test/browser-editing-backend.test.ts (4 tests) 10ms
+ ✓ packages/ui/test/world-candidate.test.ts (3 tests) 8ms
+ ✓ packages/testkit/test/model-facet-contracts.test.ts (4 tests) 771ms
+   ✓ common model facet contracts > publishes OBJ materials and sidecar references through generic contracts 729ms
+ ✓ packages/testkit/test/model-rendering.test.ts (1 test) 907ms
+   ✓ decoded model to headless PNG vertical > 'glb' geometry renders to a deterministic PNG fixture 906ms
+ ✓ packages/host/test/presentation.test.ts (2 tests) 356ms
+   ✓ A-6 global presentation catalog resolution > resolves singleton stages, exact bindings/tickets/digest, and a fallback 345ms
+ ✓ packages/testkit/test/mk2-audio-codecs.test.ts (4 tests) 841ms
+   ✓ ported common audio codecs > walks every ADTS frame and publishes bounded AAC media 776ms
+ ✓ packages/host/test/session.test.ts (3 tests) 380ms
+   ✓ A-3 asset and operation sessions > makes all eight operation rejection reasons reachable and dispatches owned JSON 359ms
+ ✓ packages/host/test/execution-payload-shape.test.ts (3 tests) 17ms
+ ✓ packages/host/test/linked-extensions.test.ts (6 tests) 1132ms
+   ✓ statically linked extensions (import lane) > a linked extension opens a subject in-process, and the audit notice says so 1046ms
+ ✓ packages/host/test/frame-json.test.ts (8 tests) 16ms
+ ✓ packages/testkit/test/mk2-video-codecs.test.ts (8 tests) 981ms
+   ✓ ported MK2 AVI and WMV container codecs > avi publishes validated video metadata and bounded sources 906ms
+ ✓ packages/host/test/presentation-stage-eligibility.test.ts (4 tests) 449ms
+   ✓ 12-3 the host decides which optional facets a stage binds > binds exactly the optional facets the subject publishes, and no others 416ms
+ ✓ packages/testkit/test/mk2-archive-codecs.test.ts (15 tests) 1075ms
+   ✓ ported MK2 archive subset codecs > 'brotli' lists and extracts its validated source 928ms
+ ✓ packages/host/test/service-resolver.test.ts (2 tests) 9ms
+ ✓ packages/testkit/test/detection-collisions.test.ts (6 tests) 1714ms
+ ✓ packages/testkit/test/mk2-vector-codecs.test.ts (3 tests) 988ms
+   ✓ ported Windows metafile codecs > replays EMF rectangle records to a secure SVG 942ms
+ ✓ packages/host/test/editing-definitions.test.ts (4 tests) 9ms
+ ✓ packages/host/test/data-sources.test.ts (3 tests) 51ms
+ ✓ packages/host/test/editing-format-proofs.test.ts (4 tests) 6ms
+ ✓ packages/testkit/test/minimal-host.test.ts (3 tests) 415ms
+   ✓ testkit minimal host — the one public route (S4) > load → inventory → resolve → grant → import → execute, deterministically 352ms
+ ✓ packages/host/test/directory-artifact-source.test.ts (3 tests) 66ms
+ ✓ packages/testkit/test/common-documents-rtf.test.ts (3 tests) 821ms
+   ✓ common RTF codec > detects both named and renamed RTF from content 451ms
+   ✓ common RTF codec > opens bounded structured text through the common tree contract 366ms
+ ✓ packages/host/test/vfs-source.test.ts (2 tests) 5962ms
+   ✓ public VFS to Host namespace bridge > opens small ranges above 512 MiB without materializing the file 5952ms
+ ✓ packages/host/test/composition.test.ts (2 tests) 493ms
+   ✓ host composition root > starts with only the native text inventory and keeps realm facilities isolated 432ms
+ ✓ packages/ui/test/orbit.test.ts (10 tests) 12ms
+ ✓ packages/host/test/execution-message-port.test.ts (4 tests) 9ms
+ ✓ packages/ui/test/search.test.ts (10 tests) 9ms
+ ✓ packages/ui/test/media-viewers.test.ts (4 tests) 11ms
+ ✓ packages/host/test/source-bridge.test.ts (3 tests) 23ms
+ ✓ packages/testkit/test/evidence.test.ts (6 tests) 40ms
+ ✓ packages/testkit/test/mk2-image-detection.test.ts (1 test) 496ms
+   ✓ common image detector isolation > requires a plausible CUR directory and does not outrank a colliding TGA header 494ms
+ ✓ packages/ui/test/explorer-fallback.test.ts (3 tests) 12ms
+ ✓ packages/ui/test/workbench.test.ts (3 tests) 6ms
+ ✓ packages/host/test/browser-sources.test.ts (2 tests) 17ms
+ ✓ packages/host/test/subject-rpc-snapshot.test.ts (2 tests) 7ms
+ ✓ packages/host/test/v1-projection.test.ts (2 tests) 443ms
+   ✓ A-3 host-local descriptor v2 → v1 projection > projects only catalog-evaluated data and preserves a proven zero-match 431ms
+ ✓ packages/ui/test/app-themes.test.ts (2 tests) 7ms
+ ✓ packages/host/test/contribution-registry.test.ts (1 test) 32ms
+ ✓ packages/host/test/extension-roots.test.ts (4 tests) 19176ms
+   ✓ loadExtensionRoots > keeps every root that loads and reports the ones that do not 531ms
+   ✓ loadExtensionRoots > reports a duplicate coordinate instead of loading the same extension twice 15651ms
+ ✓ packages/host/test/file-source.test.ts (2 tests) 322ms
+   ✓ host/node file source (S2) > random access, streams and disposal over a real file 314ms
+ ✓ packages/code/test/package.test.ts (2 tests) 8ms
+ ✓ packages/testkit/test/golden-path.test.ts (1 test) 4ms
+
+ Test Files  105 passed (105)
+      Tests  958 passed (958)
+   Start at  17:29:55
+   Duration  133.56s (transform 8.58s, setup 0ms, collect 61.00s, tests 154.14s, environment 30ms, prepare 19.67s)
+

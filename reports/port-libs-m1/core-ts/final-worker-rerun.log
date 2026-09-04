@@ -1,0 +1,18 @@
+
+ RUN  v2.1.9 C:/FILES/SC2Files/coding/modkit-core
+
+ ✓ packages/testkit/test/capability-rpc-conformance.test.ts (13 tests) 25068ms
+   ✓ capability-rpc conformance kit — reference transports pass > loopback with microtask delivery passes every case and detaches transferred bytes 718ms
+   ✓ capability-rpc conformance kit — reference transports pass > loopback with macrotask delivery (real event-loop hops) passes every case 5551ms
+   ✓ capability-rpc conformance kit — reference transports pass > a real Node MessageChannel (structured clone + transfer over MessagePort) passes every case 711ms
+   ✓ capability-rpc conformance kit — reference transports pass > the Electron MessagePortMain event shape passes (emitter-event: listeners receive { data }) — the R6 main-side adapter 698ms
+   ✓ capability-rpc conformance kit — JSON text transport (F1: bigint and bytes as tagged JSON, nothing transferred) > passes every case over JSON text with copied bytes 4951ms
+   ✓ capability-rpc conformance kit — broken transports are caught > a transport that silently drops frames fails the run (calls time out instead of settling) 2018ms
+   ✓ capability-rpc conformance kit — the production transport of the Node worker backend (acc-12) > a pair spawned through spawnWorkerRealm (the backend spawn path: isolation options, policy limits, capped stdio, dedicated port) passes the host-observable suite 5465ms
+   ✓ capability-rpc conformance kit — host-only mode over a real thread > runs the host-observable subset against the demo-worker fixture in worker_threads and skips the rest 4921ms
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  18:28:46
+   Duration  29.67s (transform 2.21s, setup 0ms, collect 3.87s, tests 25.07s, environment 1ms, prepare 277ms)
+

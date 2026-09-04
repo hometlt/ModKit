@@ -1,0 +1,461 @@
+{
+  "fresh": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-vendor-m1-Po2TPH",
+  "imports": 57,
+  "records": [
+    {
+      "name": "@modkit/core",
+      "version": "0.1.0",
+      "file": "modkit-core-0.1.0.tgz",
+      "byteLength": 22399,
+      "sha256": "92fbc403613f4ba019446d59efbf9ca39b27f591a0d1da3bf5437e3a1910c364",
+      "entries": 46,
+      "exportTargets": 4,
+      "manifest": {
+        "name": "@modkit/core",
+        "version": "0.1.0",
+        "description": "MK3 clean-core lab: IDs, structured errors/diagnostics, deterministic ordering/serialization, cancellation, lifecycle (BRIEF-12; not a release)",
+        "license": "UNLICENSED",
+        "type": "module",
+        "engines": {
+          "node": ">=22"
+        },
+        "exports": {
+          ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+          },
+          "./schemas/*.schema.json": "./schemas/*.schema.json",
+          "./package.json": "./package.json"
+        },
+        "files": [
+          "dist",
+          "schemas"
+        ]
+      }
+    },
+    {
+      "name": "@modkit/sdk",
+      "version": "0.1.0",
+      "file": "modkit-sdk-0.1.0.tgz",
+      "byteLength": 861309,
+      "sha256": "3c28502d464b452e9cb3d0f5a315bdc686b28d505ee5c769b9e734bb36f98611",
+      "entries": 354,
+      "exportTargets": 62,
+      "manifest": {
+        "name": "@modkit/sdk",
+        "version": "0.1.0",
+        "description": "MK3 clean-core lab: extension/contribution envelope, schemas, subjects (BRIEF-12; not a release)",
+        "license": "UNLICENSED",
+        "type": "module",
+        "engines": {
+          "node": ">=22"
+        },
+        "exports": {
+          "./fields": {
+            "types": "./dist/fields/index.d.ts",
+            "default": "./dist/fields/index.js"
+          },
+          ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+          },
+          "./manifest/validators.generated": {
+            "types": "./dist/manifest/validators.generated.d.ts",
+            "default": "./dist/manifest/validators.generated.js"
+          },
+          "./subjects": {
+            "types": "./dist/subjects/index.d.ts",
+            "default": "./dist/subjects/index.js"
+          },
+          "./authoring": {
+            "types": "./dist/authoring/index.d.ts",
+            "default": "./dist/authoring/index.js"
+          },
+          "./formats": {
+            "types": "./dist/formats/index.d.ts",
+            "default": "./dist/formats/index.js"
+          },
+          "./data-sources": {
+            "types": "./dist/data-sources.d.ts",
+            "default": "./dist/data-sources.js"
+          },
+          "./service-contracts": {
+            "types": "./dist/service-contracts.d.ts",
+            "default": "./dist/service-contracts.js"
+          },
+          "./language": {
+            "types": "./dist/language/index.d.ts",
+            "default": "./dist/language/index.js"
+          },
+          "./knowledge": {
+            "types": "./dist/knowledge/index.d.ts",
+            "default": "./dist/knowledge/index.js"
+          },
+          "./templates": {
+            "types": "./dist/templates/index.d.ts",
+            "default": "./dist/templates/index.js"
+          },
+          "./runtime": {
+            "types": "./dist/runtime/index.d.ts",
+            "default": "./dist/runtime/index.js"
+          },
+          "./renderer": {
+            "types": "./dist/renderer/index.d.ts",
+            "default": "./dist/renderer/index.js"
+          },
+          "./games": {
+            "types": "./dist/games/index.d.ts",
+            "default": "./dist/games/index.js"
+          },
+          "./mods": {
+            "types": "./dist/mods/index.d.ts",
+            "default": "./dist/mods/index.js"
+          },
+          "./data": {
+            "types": "./dist/data/index.d.ts",
+            "default": "./dist/data/index.js"
+          },
+          "./maps": {
+            "types": "./dist/maps/index.d.ts",
+            "default": "./dist/maps/index.js"
+          },
+          "./text-data": {
+            "types": "./dist/text-data/index.d.ts",
+            "default": "./dist/text-data/index.js"
+          },
+          "./editing": {
+            "types": "./dist/editing.d.ts",
+            "default": "./dist/editing.js"
+          },
+          "./ui-contracts": {
+            "types": "./dist/ui-contracts/index.d.ts",
+            "default": "./dist/ui-contracts/index.js"
+          },
+          "./schemas/*.schema.json": "./schemas/*.schema.json",
+          "./package.json": "./package.json"
+        },
+        "files": [
+          "dist",
+          "schemas"
+        ],
+        "dependencies": {
+          "ajv": "^8.17.1",
+          "@modkit/core": "0.1.0"
+        },
+        "devDependencies": {
+          "json-schema-to-ts": "^3.1.1"
+        }
+      }
+    },
+    {
+      "name": "@modkit/vfs",
+      "version": "0.1.0",
+      "file": "modkit-vfs-0.1.0.tgz",
+      "byteLength": 34015,
+      "sha256": "deb44db4a8704893ff94528e8ce6ed1b72bd5919e88cda217850881ebf66148d",
+      "entries": 37,
+      "exportTargets": 12,
+      "manifest": {
+        "name": "@modkit/vfs",
+        "version": "0.1.0",
+        "description": "MK3 clean-core lab: portable VFS contracts with explicitly loaded providers (not a release)",
+        "license": "UNLICENSED",
+        "type": "module",
+        "sideEffects": false,
+        "engines": {
+          "node": ">=22"
+        },
+        "exports": {
+          ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+          },
+          "./providers/file": {
+            "types": "./dist/providers/file/index.d.ts",
+            "default": "./dist/providers/file/index.js"
+          },
+          "./providers/memory": {
+            "types": "./dist/providers/memory/index.d.ts",
+            "default": "./dist/providers/memory/index.js"
+          },
+          "./providers/http": {
+            "types": "./dist/providers/http/index.d.ts",
+            "default": "./dist/providers/http/index.js"
+          },
+          "./providers/browser-file": {
+            "types": "./dist/providers/browser-file/index.d.ts",
+            "default": "./dist/providers/browser-file/index.js"
+          },
+          "./providers/rapid": {
+            "types": "./dist/providers/rapid/index.d.ts",
+            "default": "./dist/providers/rapid/index.js"
+          }
+        },
+        "files": [
+          "dist"
+        ],
+        "dependencies": {
+          "@modkit/core": "0.1.0"
+        }
+      }
+    },
+    {
+      "name": "@modkit/host",
+      "version": "0.1.0",
+      "file": "modkit-host-0.1.0.tgz",
+      "byteLength": 595489,
+      "sha256": "2598d5834b719af32777f93cd54affe30ff6a9be5197bcb57108c7ad743bfa94",
+      "entries": 423,
+      "exportTargets": 28,
+      "manifest": {
+        "name": "@modkit/host",
+        "version": "0.1.0",
+        "description": "MK3 clean-core lab: inventory, resolver, activation gate (BRIEF-12; not a release)",
+        "license": "UNLICENSED",
+        "type": "module",
+        "engines": {
+          "node": ">=22"
+        },
+        "exports": {
+          ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+          },
+          "./node": {
+            "types": "./dist/node/index.d.ts",
+            "default": "./dist/node/index.js"
+          },
+          "./browser": {
+            "types": "./dist/browser/index.d.ts",
+            "default": "./dist/browser/index.js"
+          },
+          "./execution": {
+            "types": "./dist/execution/index.d.ts",
+            "default": "./dist/execution/index.js"
+          },
+          "./language": {
+            "types": "./dist/language/index.d.ts",
+            "default": "./dist/language/index.js"
+          },
+          "./knowledge": {
+            "types": "./dist/knowledge/index.d.ts",
+            "default": "./dist/knowledge/index.js"
+          },
+          "./runtime": {
+            "types": "./dist/runtime/index.d.ts",
+            "default": "./dist/runtime/index.js"
+          },
+          "./renderer": {
+            "types": "./dist/renderer/index.d.ts",
+            "default": "./dist/renderer/index.js"
+          },
+          "./games": {
+            "types": "./dist/games/index.d.ts",
+            "default": "./dist/games/index.js"
+          },
+          "./mods": {
+            "types": "./dist/mods/index.d.ts",
+            "default": "./dist/mods/index.js"
+          },
+          "./data": {
+            "types": "./dist/data/index.d.ts",
+            "default": "./dist/data/index.js"
+          },
+          "./maps": {
+            "types": "./dist/maps/index.d.ts",
+            "default": "./dist/maps/index.js"
+          },
+          "./node/worker-bootstrap": {
+            "types": "./dist/node/worker-bootstrap.d.ts",
+            "default": "./dist/node/worker-bootstrap.js"
+          },
+          "./browser/worker-entry": {
+            "types": "./dist/browser/worker-entry.d.ts",
+            "default": "./dist/browser/worker-entry.js"
+          }
+        },
+        "files": [
+          "dist",
+          "native-text"
+        ],
+        "dependencies": {
+          "es-module-lexer": "^1.7.0",
+          "jsonc-parser": "^3.3.1",
+          "@modkit/core": "0.1.0",
+          "@modkit/sdk": "0.1.0",
+          "@modkit/vfs": "0.1.0"
+        },
+        "scripts": {
+          "build": "tsc -b",
+          "typecheck": "tsc -p tsconfig.json --noEmit",
+          "clean": "tsc -b --clean"
+        }
+      }
+    },
+    {
+      "name": "@modkit/codec-kit",
+      "version": "1.0.0",
+      "file": "modkit-codec-kit-1.0.0.tgz",
+      "byteLength": 211034,
+      "sha256": "6cd60d526ba84e0fd8758b9cafbee4568ecb0c3022445868d8d9bf434bd159af",
+      "entries": 302,
+      "exportTargets": 31,
+      "manifest": {
+        "name": "@modkit/codec-kit",
+        "version": "1.0.0",
+        "license": "MIT",
+        "type": "module",
+        "description": "Optional dependency-neutral runtime kit for small MK3 inspection codecs.",
+        "exports": {
+          ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+          },
+          "./text": {
+            "types": "./dist/text/index.d.ts",
+            "default": "./dist/text/index.js"
+          },
+          "./package.json": "./package.json",
+          "./legacy": {
+            "types": "./dist/legacy/index.d.ts",
+            "default": "./dist/legacy/index.js"
+          },
+          "./legacy/core": {
+            "types": "./dist/legacy/core/index.d.ts",
+            "default": "./dist/legacy/core/index.js"
+          },
+          "./legacy/assets": {
+            "types": "./dist/legacy/assets/index.d.ts",
+            "default": "./dist/legacy/assets/index.js"
+          },
+          "./legacy/semantic": {
+            "types": "./dist/legacy/semantic/index.d.ts",
+            "default": "./dist/legacy/semantic/index.js"
+          },
+          "./legacy/games": {
+            "types": "./dist/legacy/games/index.d.ts",
+            "default": "./dist/legacy/games/index.js"
+          },
+          "./legacy/world": {
+            "types": "./dist/legacy/world/index.d.ts",
+            "default": "./dist/legacy/world/index.js"
+          },
+          "./legacy/runtime": {
+            "types": "./dist/legacy/runtime/index.d.ts",
+            "default": "./dist/legacy/runtime/index.js"
+          },
+          "./crypto": {
+            "types": "./dist/crypto/index.d.ts",
+            "default": "./dist/crypto/index.js"
+          },
+          "./texture": {
+            "types": "./dist/texture/index.d.ts",
+            "default": "./dist/texture/index.js"
+          },
+          "./legacy/language-contracts": {
+            "types": "./dist/legacy/language-contracts/index.d.ts",
+            "default": "./dist/legacy/language-contracts/index.js"
+          },
+          "./legacy/entity-cards": {
+            "types": "./dist/legacy/entity-cards/index.d.ts",
+            "default": "./dist/legacy/entity-cards/index.js"
+          },
+          "./legacy/vfs": {
+            "types": "./dist/legacy/vfs/index.d.ts",
+            "default": "./dist/legacy/vfs/index.js"
+          },
+          "./compression": {
+            "types": "./dist/compression/index.d.ts",
+            "default": "./dist/compression/index.js"
+          }
+        },
+        "files": [
+          "dist",
+          "README.md"
+        ],
+        "dependencies": {
+          "pako": "2.1.0",
+          "seek-bzip": "2.0.0",
+          "texture2ddecoder-wasm": "1.2.2",
+          "@logtape/logtape": "2.2.4",
+          "vscode-languageserver": "10.0.1",
+          "vscode-languageserver-textdocument": "1.0.13"
+        },
+        "peerDependencies": {
+          "@modkit/host": "0.1.0",
+          "@modkit/core": "0.1.0",
+          "@modkit/sdk": "0.1.0"
+        },
+        "peerDependenciesMeta": {
+          "@modkit/core": {
+            "optional": true
+          },
+          "@modkit/host": {
+            "optional": true
+          },
+          "@modkit/sdk": {
+            "optional": true
+          }
+        },
+        "scripts": {
+          "build": "tsc -b",
+          "typecheck": "tsc -p tsconfig.json --noEmit",
+          "clean": "tsc -b --clean",
+          "test": "node --test test/*.test.mjs",
+          "test:legacy": "node --test test/legacy-kit.test.mjs"
+        }
+      }
+    },
+    {
+      "name": "@modkit/testkit",
+      "version": "0.1.0",
+      "file": "modkit-testkit-0.1.0.tgz",
+      "byteLength": 106617,
+      "sha256": "78a49b7b022818c49490cec4a27085bbb620bbb4b500dbffedbf952e8c3398c1",
+      "entries": 74,
+      "exportTargets": 4,
+      "manifest": {
+        "name": "@modkit/testkit",
+        "version": "0.1.0",
+        "description": "MK3 clean-core lab: minimal host + conformance harness (dev-only closure; BRIEF-12; not a release)",
+        "license": "UNLICENSED",
+        "type": "module",
+        "engines": {
+          "node": ">=22"
+        },
+        "exports": {
+          ".": {
+            "types": "./dist/index.d.ts",
+            "default": "./dist/index.js"
+          },
+          "./browser": {
+            "types": "./dist/browser/index.d.ts",
+            "default": "./dist/browser/index.js"
+          }
+        },
+        "files": [
+          "dist"
+        ],
+        "dependencies": {
+          "@modkit/host": "0.1.0",
+          "@modkit/sdk": "0.1.0",
+          "@modkit/core": "0.1.0",
+          "@modkit/vfs": "0.1.0"
+        },
+        "peerDependencies": {
+          "@modkit/ui": "0.1.0"
+        },
+        "peerDependenciesMeta": {
+          "@modkit/ui": {
+            "optional": true
+          }
+        },
+        "scripts": {
+          "build": "tsc -b",
+          "typecheck": "tsc -p tsconfig.json --noEmit",
+          "clean": "tsc -b --clean"
+        }
+      }
+    }
+  ]
+}

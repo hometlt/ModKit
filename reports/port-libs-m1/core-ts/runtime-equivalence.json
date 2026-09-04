@@ -1,0 +1,137 @@
+[
+  {
+    "file": "packages/codec-kit/src/index.js",
+    "equal": true,
+    "packagingRewrite": false
+  },
+  {
+    "file": "packages/codec-kit/src/text/codec-runtime.js",
+    "equal": true,
+    "packagingRewrite": false
+  },
+  {
+    "file": "packages/codec-kit/src/text/index.js",
+    "equal": true,
+    "packagingRewrite": false
+  },
+  {
+    "file": "packages/codec-kit/src/text/provider-runtime.js",
+    "equal": true,
+    "packagingRewrite": false
+  },
+  {
+    "file": "packages/codec-kit/src/text/scalars.js",
+    "equal": true,
+    "packagingRewrite": false
+  },
+  {
+    "file": "packages/codec-kit/src/text/text.js",
+    "equal": true,
+    "packagingRewrite": false
+  },
+  {
+    "file": "packages/codec-kit/src/text/tree-data-source.js",
+    "equal": true,
+    "packagingRewrite": false
+  },
+  {
+    "file": "packages/code/src/editor.js",
+    "equal": true,
+    "packagingRewrite": false
+  },
+  {
+    "file": "packages/code/src/index.js",
+    "equal": true,
+    "packagingRewrite": false
+  },
+  {
+    "file": "packages/code/src/module.js",
+    "equal": true,
+    "packagingRewrite": true
+  },
+  {
+    "file": "packages/scene/src/index.js",
+    "equal": true,
+    "packagingRewrite": false
+  },
+  {
+    "file": "packages/scene/src/module.js",
+    "equal": true,
+    "packagingRewrite": true
+  },
+  {
+    "file": "packages/scene/src/output/png.js",
+    "equal": true,
+    "packagingRewrite": false
+  },
+  {
+    "file": "packages/scene/src/relations/index.js",
+    "equal": true,
+    "packagingRewrite": false
+  },
+  {
+    "file": "packages/scene/src/relations/three-graph-renderer.js",
+    "equal": true,
+    "packagingRewrite": false
+  },
+  {
+    "file": "packages/scene/src/render/browser.js",
+    "equal": true,
+    "packagingRewrite": false
+  },
+  {
+    "file": "packages/scene/src/render/headless.js",
+    "equal": true,
+    "packagingRewrite": false
+  },
+  {
+    "file": "packages/uv/src/index.js",
+    "equal": true,
+    "packagingRewrite": false
+  },
+  {
+    "file": "packages/uv/src/model/materializer.js",
+    "equal": true,
+    "packagingRewrite": false
+  },
+  {
+    "file": "packages/uv/src/model/provider.js",
+    "equal": true,
+    "packagingRewrite": false
+  },
+  {
+    "file": "packages/uv/src/model/writer.js",
+    "equal": true,
+    "packagingRewrite": false
+  },
+  {
+    "file": "packages/uv/src/module.js",
+    "equal": true,
+    "packagingRewrite": true
+  },
+  {
+    "file": "packages/uv/src/support.js",
+    "equal": true,
+    "packagingRewrite": false
+  },
+  {
+    "file": "packages/uv/src/texture/materializer.js",
+    "equal": true,
+    "packagingRewrite": false
+  },
+  {
+    "file": "packages/uv/src/texture/provider.js",
+    "equal": true,
+    "packagingRewrite": false
+  },
+  {
+    "file": "packages/uv/src/texture/writer.js",
+    "equal": true,
+    "packagingRewrite": false
+  },
+  {
+    "file": "packages/uv/src/world/index.js",
+    "equal": true,
+    "packagingRewrite": false
+  }
+]

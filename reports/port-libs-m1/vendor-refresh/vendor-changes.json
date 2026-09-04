@@ -1,0 +1,32 @@
+[
+  {
+    "file": "modkit-core-0.1.0.tgz",
+    "before": "d222baa0e8f426cb5c0c5a54d082d344a357eef7eb514c7b9e98adac446b08ed",
+    "after": "92fbc403613f4ba019446d59efbf9ca39b27f591a0d1da3bf5437e3a1910c364"
+  },
+  {
+    "file": "modkit-sdk-0.1.0.tgz",
+    "before": "52512949fedb9bfce2a3a50bca58b2b8c1904948fff1441554a7a53a43360f12",
+    "after": "3c28502d464b452e9cb3d0f5a315bdc686b28d505ee5c769b9e734bb36f98611"
+  },
+  {
+    "file": "modkit-vfs-0.1.0.tgz",
+    "before": "47a9b5dc3fc1bf3d6b54a10b8989466e111b45e5576e11484902c9bcaaa3f695",
+    "after": "deb44db4a8704893ff94528e8ce6ed1b72bd5919e88cda217850881ebf66148d"
+  },
+  {
+    "file": "modkit-host-0.1.0.tgz",
+    "before": "ab44b387c5a9affef60aa2694ef3c3f87516427868af6f5a0261b45c46e98ffb",
+    "after": "2598d5834b719af32777f93cd54affe30ff6a9be5197bcb57108c7ad743bfa94"
+  },
+  {
+    "file": "modkit-codec-kit-1.0.0.tgz",
+    "before": "54eb1a7daf1f24d2728263c2b3e8644c8cc81b96497e46e44f7be7f7b0a9795a",
+    "after": "6cd60d526ba84e0fd8758b9cafbee4568ecb0c3022445868d8d9bf434bd159af"
+  },
+  {
+    "file": "modkit-testkit-0.1.0.tgz",
+    "before": "c7b8968b6a781c1496ed0f53407393248d85c8444d52372ddef5c2aa0312c229",
+    "after": "78a49b7b022818c49490cec4a27085bbb620bbb4b500dbffedbf952e8c3398c1"
+  }
+]

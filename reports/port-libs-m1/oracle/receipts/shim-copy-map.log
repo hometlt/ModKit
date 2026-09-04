@@ -1,0 +1,202 @@
+[
+  {
+    "source": "packages/assets/src/artifact-codec.ts",
+    "destination": "packages/codec-kit/src/legacy/assets/artifact-codec.ts"
+  },
+  {
+    "source": "packages/assets/src/artifact-session.ts",
+    "destination": "packages/codec-kit/src/legacy/assets/artifact-session.ts"
+  },
+  {
+    "source": "packages/assets/src/source.ts",
+    "destination": "packages/codec-kit/src/legacy/assets/source.ts"
+  },
+  {
+    "source": "packages/assets/src/operations.ts",
+    "destination": "packages/codec-kit/src/legacy/assets/operations.ts"
+  },
+  {
+    "source": "packages/assets/src/descriptor.ts",
+    "destination": "packages/codec-kit/src/legacy/assets/descriptor.ts"
+  },
+  {
+    "source": "packages/assets/src/detection.ts",
+    "destination": "packages/codec-kit/src/legacy/assets/detection.ts"
+  },
+  {
+    "source": "packages/assets/src/diagnostics.ts",
+    "destination": "packages/codec-kit/src/legacy/assets/diagnostics.ts"
+  },
+  {
+    "source": "packages/assets/src/capabilities.ts",
+    "destination": "packages/codec-kit/src/legacy/assets/capabilities.ts"
+  },
+  {
+    "source": "packages/assets/src/cancellation.ts",
+    "destination": "packages/codec-kit/src/legacy/assets/cancellation.ts"
+  },
+  {
+    "source": "packages/assets/src/json.ts",
+    "destination": "packages/codec-kit/src/legacy/assets/json.ts"
+  },
+  {
+    "source": "packages/assets/src/editing.ts",
+    "destination": "packages/codec-kit/src/legacy/assets/editing.ts"
+  },
+  {
+    "source": "packages/assets/src/profiles/image-texture.ts",
+    "destination": "packages/codec-kit/src/legacy/assets/profiles/image-texture.ts"
+  },
+  {
+    "source": "packages/assets/src/content.ts",
+    "destination": "packages/codec-kit/src/legacy/assets/content.ts"
+  },
+  {
+    "source": "packages/assets/src/contributions.ts",
+    "destination": "packages/codec-kit/src/legacy/assets/contributions.ts"
+  },
+  {
+    "source": "packages/assets/src/companions.ts",
+    "destination": "packages/codec-kit/src/legacy/assets/companions.ts"
+  },
+  {
+    "source": "packages/assets/src/format-registry.ts",
+    "destination": "packages/codec-kit/src/legacy/assets/format-registry.ts"
+  },
+  {
+    "source": "packages/assets/src/codec-matching.ts",
+    "destination": "packages/codec-kit/src/legacy/assets/codec-matching.ts"
+  },
+  {
+    "source": "packages/assets/src/codec-manifest.ts",
+    "destination": "packages/codec-kit/src/legacy/assets/codec-manifest.ts"
+  },
+  {
+    "source": "packages/core/src/errors.ts",
+    "destination": "packages/codec-kit/src/legacy/core/errors.ts"
+  },
+  {
+    "source": "packages/core/src/logger.ts",
+    "destination": "packages/codec-kit/src/legacy/core/logger.ts"
+  },
+  {
+    "source": "packages/games/src/types.ts",
+    "destination": "packages/codec-kit/src/legacy/games/types.ts"
+  },
+  {
+    "source": "packages/world/src/contracts.ts",
+    "destination": "packages/codec-kit/src/legacy/world/contracts.ts"
+  },
+  {
+    "source": "packages/runtime/src/contracts.ts",
+    "destination": "packages/codec-kit/src/legacy/runtime/contracts.ts"
+  },
+  {
+    "source": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/sha1.ts",
+    "destination": "packages/codec-kit/src/crypto/sha1.ts"
+  },
+  {
+    "source": "packages/archives-processing/src/lib/crypto/index.ts",
+    "destination": "packages/codec-kit/src/crypto/mpq.ts"
+  },
+  {
+    "source": "packages/archives-processing/src/lib/compression/index.ts",
+    "destination": "packages/codec-kit/src/compression/legacy-original.ts"
+  },
+  {
+    "source": "packages/archives-processing/src/lib/compression/pako.d.ts",
+    "destination": "packages/codec-kit/src/compression/pako.d.ts"
+  },
+  {
+    "source": "packages/image-processing/src/core/gpu-texture.ts",
+    "destination": "packages/codec-kit/src/texture/gpu-texture.ts"
+  },
+  {
+    "source": "packages/image-processing/src/core/gpu-texture-wasm.ts",
+    "destination": "packages/codec-kit/src/texture/gpu-texture-wasm.ts"
+  },
+  {
+    "source": "packages/image-processing/src/core/compressed-texture.ts",
+    "destination": "packages/codec-kit/src/texture/compressed-texture.ts"
+  },
+  {
+    "source": "packages/image-processing/src/core/binary.ts",
+    "destination": "packages/codec-kit/src/texture/binary.ts"
+  },
+  {
+    "source": "packages/image-processing/src/core/types.ts",
+    "destination": "packages/codec-kit/src/texture/types.ts"
+  },
+  {
+    "source": "packages/semantic/src/data.ts",
+    "destination": "packages/codec-kit/src/legacy/semantic/data.ts"
+  },
+  {
+    "source": "packages/semantic/src/documents.ts",
+    "destination": "packages/codec-kit/src/legacy/semantic/documents.ts"
+  },
+  {
+    "source": "packages/semantic/src/layouts.ts",
+    "destination": "packages/codec-kit/src/legacy/semantic/layouts.ts"
+  },
+  {
+    "source": "packages/semantic/src/localization.ts",
+    "destination": "packages/codec-kit/src/legacy/semantic/localization.ts"
+  },
+  {
+    "source": "packages/semantic/src/maps.ts",
+    "destination": "packages/codec-kit/src/legacy/semantic/maps.ts"
+  },
+  {
+    "source": "packages/semantic/src/mods.ts",
+    "destination": "packages/codec-kit/src/legacy/semantic/mods.ts"
+  },
+  {
+    "source": "packages/semantic/src/replays.ts",
+    "destination": "packages/codec-kit/src/legacy/semantic/replays.ts"
+  },
+  {
+    "source": "packages/semantic/src/saves.ts",
+    "destination": "packages/codec-kit/src/legacy/semantic/saves.ts"
+  },
+  {
+    "source": "packages/semantic/src/scripts.ts",
+    "destination": "packages/codec-kit/src/legacy/semantic/scripts.ts"
+  },
+  {
+    "source": "packages/language-contracts/src/module.ts",
+    "destination": "packages/codec-kit/src/legacy/language-contracts/module.ts"
+  },
+  {
+    "source": "packages/language-contracts/src/document-kind.ts",
+    "destination": "packages/codec-kit/src/legacy/language-contracts/document-kind.ts"
+  },
+  {
+    "source": "packages/language-contracts/src/contributions.ts",
+    "destination": "packages/codec-kit/src/legacy/language-contracts/contributions.ts"
+  },
+  {
+    "source": "packages/language-contracts/src/index.ts",
+    "destination": "packages/codec-kit/src/legacy/language-contracts/index.ts"
+  },
+  {
+    "source": "packages/entity-cards/src/model.ts",
+    "destination": "packages/codec-kit/src/legacy/entity-cards/model.ts"
+  },
+  {
+    "source": "packages/entity-cards/src/graph.ts",
+    "destination": "packages/codec-kit/src/legacy/entity-cards/graph.ts"
+  },
+  {
+    "source": "packages/entity-cards/src/providers.ts",
+    "destination": "packages/codec-kit/src/legacy/entity-cards/providers.ts"
+  },
+  {
+    "source": "packages/entity-cards/src/address.ts",
+    "destination": "packages/codec-kit/src/legacy/entity-cards/address.ts"
+  },
+  {
+    "source": "packages/entity-cards/src/index.ts",
+    "destination": "packages/codec-kit/src/legacy/entity-cards/index.ts"
+  }
+]

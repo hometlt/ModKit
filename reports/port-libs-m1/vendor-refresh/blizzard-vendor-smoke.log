@@ -1,0 +1,17 @@
+✔ all Blizzard roots load into one valid standalone inventory (4146.5342ms)
+✔ every migrated runtime entrypoint imports as a codec module (63.7158ms)
+✔ runtime roots contain no migration receipts or nested license directories (4.1008ms)
+✔ the exported StarCraft II discovery provider loads without the Modkit workspace (2.3901ms)
+✔ the former game package forwards to the single merged extension (0.3497ms)
+✔ every former game subpath forwards the same public bindings (678.4436ms)
+✔ the repository advertises one StarCraft II extension root (8.3716ms)
+✔ the standalone repository loads its SC2 codecs, language layers, and linked extensions (277.4842ms)
+✔ the TypeScript lane emits a runtime enum and preserves a type-only declaration edge (13.9094ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5062.6048

@@ -1,0 +1,40 @@
+✔ baseline editing cannot grant new debt or modify an existing allowance (3.8948ms)
+✔ AST finds named implementation bodies and ignores calls, comments and import declarations (43.0088ms)
+✔ ratchet accepts debt deletion and canonical copies, rejects new peers and changed algorithms (1.3468ms)
+✔ actual repository scan excludes build/tests/vendor and validates canonical uniqueness and hashes (94.0771ms)
+✔ nonempty pinned closure copies type-only imports and reconstructs provenance (111.7832ms)
+✔ registered exact import relocation preserves before/after hashes (35.2886ms)
+✔ fails closed: empty closure (4.6946ms)
+✔ fails closed: empty copy list (3.5965ms)
+✔ fails closed: incomplete copy list (3.508ms)
+✔ fails closed: type-only dependency omitted from roots (4.3736ms)
+✔ fails closed: missing pinned source (3.5855ms)
+✔ fails closed: tampered pinned hash (3.0025ms)
+✔ fails closed: tampered destination hash (5.4955ms)
+✔ fails closed: duplicate source (3.3126ms)
+✔ fails closed: duplicate destination (2.2679ms)
+✔ fails closed: unsafe destination (2.1046ms)
+✔ fails closed: noncanonical import relocation (3.1748ms)
+✔ fails closed: source pin mismatch (3.0466ms)
+✔ fails closed: family remains pending (1.7852ms)
+✔ fails closed: scope must be explicit (1.6725ms)
+✔ missing, tampered copies and missing/tampered provenance fail (36.4081ms)
+✔ provenance-only validates existing copies and never creates runtime files (45.2504ms)
+✔ arbitrary non-import replacements cannot masquerade as import rewrites (2.3097ms)
+✔ AST closure includes import types, reexports, references and computed imports (3.8711ms)
+✔ bare modules and computed imports require explicit dependency bindings (35.8014ms)
+✔ bounded divergence requires exact edits, proof hash and contract (35.0961ms)
+✔ gate rejects copy-only bypass flags (1.2642ms)
+✔ registered import-type rewrite preserves emitted behavior and import identity (73.9046ms)
+✔ planned canonical destination cannot disagree with the actual relocation (7.2823ms)
+✔ adapter closure is explicit, hash-checked and cannot hide unresolved imports (45.5511ms)
+✔ binary fixture copies preserve exact bytes without UTF-8 conversion (31.7839ms)
+✔ Windows canonical paths reject aliases and alternate data streams (0.621ms)
+ℹ tests 32
+ℹ suites 0
+ℹ pass 32
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1165.9647

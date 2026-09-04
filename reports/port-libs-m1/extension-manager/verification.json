@@ -1,0 +1,88 @@
+{
+  "schemaVersion": 1,
+  "receipts": [
+    {
+      "name": "build",
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/typescript/bin/tsc",
+        "-b",
+        "packages/extension-manager",
+        "--pretty",
+        "false"
+      ],
+      "started": "2026-09-04T15:27:14.137Z",
+      "finished": "2026-09-04T15:27:14.514Z",
+      "exitCode": 0,
+      "log": "build.log",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "typecheck",
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/typescript/bin/tsc",
+        "-p",
+        "packages/extension-manager/tsconfig.json",
+        "--noEmit",
+        "--pretty",
+        "false"
+      ],
+      "started": "2026-09-04T15:27:14.519Z",
+      "finished": "2026-09-04T15:27:18.142Z",
+      "exitCode": 0,
+      "log": "typecheck.log",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "lint",
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/eslint/bin/eslint.js",
+        "packages/extension-manager/src",
+        "--max-warnings",
+        "0"
+      ],
+      "started": "2026-09-04T15:27:18.142Z",
+      "finished": "2026-09-04T15:27:25.484Z",
+      "exitCode": 0,
+      "log": "lint.log",
+      "logSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "format",
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "node_modules/prettier/bin/prettier.cjs",
+        "--check",
+        "packages/extension-manager/src",
+        "packages/extension-manager/package.json",
+        "packages/extension-manager/tsconfig.json",
+        "packages/extension-manager/test"
+      ],
+      "started": "2026-09-04T15:27:25.484Z",
+      "finished": "2026-09-04T15:27:28.610Z",
+      "exitCode": 0,
+      "log": "format.log",
+      "logSha256": "17aa973d3f004560237d9a95171210b0671deff23d61628eecf7322ff5938f20"
+    },
+    {
+      "name": "test",
+      "cwd": "C:\\FILES\\SC2Files\\coding\\modkit-core\\packages\\extension-manager",
+      "command": [
+        "C:\\Program Files\\nodejs\\node.exe",
+        "--test"
+      ],
+      "started": "2026-09-04T15:27:28.611Z",
+      "finished": "2026-09-04T15:27:33.192Z",
+      "exitCode": 0,
+      "log": "test.log",
+      "logSha256": "1eefead5fa0dc778c9a186c77c2a9d72eb2b18040e311716cca401d2bb75e4f9"
+    }
+  ],
+  "verdict": "pass"
+}

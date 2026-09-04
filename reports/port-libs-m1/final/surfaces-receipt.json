@@ -1,0 +1,44 @@
+{
+  "corpusKind": "synthetic",
+  "coverage": [
+    "typed metadata and schema refusal",
+    "load/inventory/resolve/activate and permission refusal",
+    "descriptor and lazy data sources",
+    "operation/edit-plan/commit/reopen",
+    "writer no-op/commit/reopen and incompatible facet refusal"
+  ],
+  "fullFamilyAcceptance": false,
+  "milestone": "M1",
+  "missing": [],
+  "runnerReport": {
+    "path": "modkit-core/reports/port-infra/surfaces-tests.json",
+    "sha256": "eb67c6c08a4d848d9f526b4ece68987d46e5ae4c072fb872f4b294d8797418ac"
+  },
+  "schemaVersion": 1,
+  "scope": "m1-fixtures",
+  "sources": [
+    {
+      "path": "packages/sdk/test/fields.test.ts",
+      "sha256": "2a737f626937f75bcb3c702f5c0006e289ea39e983f574e5dad55d8a2be1fdf8"
+    },
+    {
+      "path": "packages/testkit/test/minimal-host.test.ts",
+      "sha256": "4b9ac2df56a19bd775dab21203679c128bff1a8921b3c529b19a14fca25f04f0"
+    },
+    {
+      "path": "packages/testkit/test/reference-codecs.test.ts",
+      "sha256": "8add93c171a0e837b4a8b290ec264ea59d42ed5ceaacf7f9a5515be911a0ebd0"
+    },
+    {
+      "path": "packages/host/test/subject-editing.test.ts",
+      "sha256": "33b3b031677cbbe9e28753a3a0cb31ae31d8c9d520522a1ea24a60107c480617"
+    }
+  ],
+  "stage": "infrastructure",
+  "tests": {
+    "failed": 0,
+    "passed": 64,
+    "skipped": 0
+  },
+  "verdict": "pass"
+}

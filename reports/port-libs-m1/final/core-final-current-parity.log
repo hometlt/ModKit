@@ -1,0 +1,5 @@
+current compare-legacy-dds-bptc: exit 0, counts 6400, M0 true, old/new true, pass
+current compare-legacy-dds: exit 0, counts 1284, M0 true, old/new true, pass
+current compare-legacy-dds-compressed: exit 0, counts 417, M0 true, old/new true, pass
+current compare-legacy-dds-encode: exit 0, counts 770, M0 true, old/new true, pass
+current compare-legacy-image-ops: exit 0, counts 1895, M0 true, old/new true, pass

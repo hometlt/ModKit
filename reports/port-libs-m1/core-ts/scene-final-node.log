@@ -1,0 +1,17 @@
+▶ headless scene renderer
+  ✔ renders a neutral triangle without DOM or game-specific knowledge (9.566ms)
+✔ headless scene renderer (13.3141ms)
+▶ built-in scene module
+  ✔ retains renderer protocol identifiers under a product-module coordinate (4.2292ms)
+✔ built-in scene module (7.6411ms)
+▶ scene PNG output
+  ✔ encodes deterministic RGBA output (42.8637ms)
+✔ scene PNG output (46.1733ms)
+ℹ tests 3
+ℹ suites 3
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1316.7342

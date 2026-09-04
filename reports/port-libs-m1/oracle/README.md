@@ -1,0 +1,9 @@
+# M1 oracle and shared-library evidence
+
+This selection contains receipts, text logs, ordered corpus hash manifests and exact loader/harness source versions. It includes no game binary corpus, cache bundles, node_modules or WASM binary. The original working artifacts remain intact. JSON above 5 MiB uses lossless gzip; manifest originSha256 is the decompressed digest.
+
+Absolute C:/FILES/SC2Files paths identify the original local execution environment. To reproduce elsewhere, place the listed repositories at the corresponding layout or adjust the harness corpus root explicitly and record a new receipt. The game corpus is externally supplied and must match each ordered path/size/hash manifest; filenames or counts alone are insufficient. MK2 git commit and accepted MK3 git commit are pinned in the receipts. npm dependency files and runtime data are identified by digests in loader evidence and resolved from installed dependencies, not silently replaced.
+
+The exact sources used by old/new runs are in tested-loader-snapshots with per-receipt references. The final engine was formatted for lint and its discarded destructured bytes variable explicitly marked used; the additional fixture proves enum, legacy decorator and parameter-property transforms. Final current-source files are distinct from tested snapshots and have separate verification. Historical OLD DDS source raw hashes differ from git blobs only in CRLF, proven by normalized digests. NEW always read pinned git blobs.
+
+All five OLD/NEW runs used isolated accepted MK3 M0; they do not claim final-current-M1 parity. run-dds-current.mjs is a separate full-corpus post-freeze runner and writes distinct current receipts. ADPCM and inherited WebCrypto MD5 are not implemented P9 claims. The public bzip2 adapter is new bounded functionality, not parity with the inherited throwing placeholder.

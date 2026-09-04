@@ -1,0 +1,81 @@
+[
+  {
+    "package": "codec-kit",
+    "jsLeft": 0,
+    "tsFiles": 7,
+    "ambientDeclarations": [],
+    "exportTargets": 5,
+    "missingExportTargets": [],
+    "strictProfile": "../../tsconfig.port-strict.json",
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  {
+    "package": "code",
+    "jsLeft": 0,
+    "tsFiles": 3,
+    "ambientDeclarations": [
+      "monaco-module.d.ts"
+    ],
+    "exportTargets": 9,
+    "missingExportTargets": [],
+    "strictProfile": "../../tsconfig.port-strict.json",
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  {
+    "package": "scene",
+    "jsLeft": 0,
+    "tsFiles": 7,
+    "ambientDeclarations": [],
+    "exportTargets": 15,
+    "missingExportTargets": [],
+    "strictProfile": "../../tsconfig.port-strict.json",
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  {
+    "package": "uv",
+    "jsLeft": 0,
+    "tsFiles": 10,
+    "ambientDeclarations": [],
+    "exportTargets": 19,
+    "missingExportTargets": [],
+    "strictProfile": "../../tsconfig.port-strict.json",
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  {
+    "package": "host",
+    "jsLeft": 0,
+    "tsFiles": 98,
+    "ambientDeclarations": [],
+    "exportTargets": 28,
+    "missingExportTargets": [],
+    "strictProfile": "../../tsconfig.port-strict.json",
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  {
+    "package": "ui",
+    "jsLeft": 0,
+    "tsFiles": 50,
+    "ambientDeclarations": [],
+    "exportTargets": 68,
+    "missingExportTargets": [],
+    "strictProfile": "../../tsconfig.port-strict.json",
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  {
+    "package": "testkit",
+    "jsLeft": 0,
+    "tsFiles": 17,
+    "ambientDeclarations": [],
+    "exportTargets": 4,
+    "missingExportTargets": [],
+    "strictProfile": "../../tsconfig.port-strict.json",
+    "rootDir": "src",
+    "outDir": "dist"
+  }
+]

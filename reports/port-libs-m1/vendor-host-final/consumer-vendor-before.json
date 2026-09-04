@@ -1,0 +1,32 @@
+[
+  {
+    "Name": "modkit-codec-kit-1.0.0.tgz",
+    "Bytes": 211034,
+    "Sha256": "6cd60d526ba84e0fd8758b9cafbee4568ecb0c3022445868d8d9bf434bd159af"
+  },
+  {
+    "Name": "modkit-core-0.1.0.tgz",
+    "Bytes": 22399,
+    "Sha256": "92fbc403613f4ba019446d59efbf9ca39b27f591a0d1da3bf5437e3a1910c364"
+  },
+  {
+    "Name": "modkit-host-0.1.0.tgz",
+    "Bytes": 595489,
+    "Sha256": "2598d5834b719af32777f93cd54affe30ff6a9be5197bcb57108c7ad743bfa94"
+  },
+  {
+    "Name": "modkit-sdk-0.1.0.tgz",
+    "Bytes": 861309,
+    "Sha256": "3c28502d464b452e9cb3d0f5a315bdc686b28d505ee5c769b9e734bb36f98611"
+  },
+  {
+    "Name": "modkit-testkit-0.1.0.tgz",
+    "Bytes": 106617,
+    "Sha256": "78a49b7b022818c49490cec4a27085bbb620bbb4b500dbffedbf952e8c3398c1"
+  },
+  {
+    "Name": "modkit-vfs-0.1.0.tgz",
+    "Bytes": 34015,
+    "Sha256": "deb44db4a8704893ff94528e8ce6ed1b72bd5919e88cda217850881ebf66148d"
+  }
+]

@@ -1,0 +1,41 @@
+package: @modkit/vfs@0.1.0
+Tarball Contents
+dist/index.d.ts
+dist/index.d.ts.map
+dist/index.js
+dist/index.js.map
+dist/providers/browser-file/index.d.ts
+dist/providers/browser-file/index.d.ts.map
+dist/providers/browser-file/index.js
+dist/providers/browser-file/index.js.map
+dist/providers/file/index.d.ts
+dist/providers/file/index.d.ts.map
+dist/providers/file/index.js
+dist/providers/file/index.js.map
+dist/providers/http/index.d.ts
+dist/providers/http/index.d.ts.map
+dist/providers/http/index.js
+dist/providers/http/index.js.map
+dist/providers/memory/index.d.ts
+dist/providers/memory/index.d.ts.map
+dist/providers/memory/index.js
+dist/providers/memory/index.js.map
+dist/providers/rapid/index.d.ts
+dist/providers/rapid/index.d.ts.map
+dist/providers/rapid/index.js
+dist/providers/rapid/index.js.map
+dist/read-budget.d.ts
+dist/read-budget.d.ts.map
+dist/read-budget.js
+dist/read-budget.js.map
+dist/source.d.ts
+dist/source.d.ts.map
+dist/source.js
+dist/source.js.map
+dist/vfs.d.ts
+dist/vfs.d.ts.map
+dist/vfs.js
+dist/vfs.js.map
+package.json
+Tarball Details
+C:\FILES\SC2Files\coding\artifacts\legacy-parity-sc2\m1-2026-09-04\core-ts\vendor-refresh\staging\modkit-vfs-0.1.0.tgz

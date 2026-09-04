@@ -1,0 +1,616 @@
+
+ RUN  v2.1.9 C:/FILES/SC2Files/coding/modkit-core
+
+ ✓ packages/host/test/execution-endpoint.test.ts (29 tests) 729ms
+ ✓ packages/ui/test/browser-e2e.test.ts (25 tests) 13971ms
+   ✓ 13C real-browser viewer host > renders bounded and virtual text, searches, and pages a 100 MiB logical line 770ms
+   ✓ 13C real-browser viewer host > renders bigint hex, lazy tree/table and hostile cell text without markup execution 1019ms
+   ✓ 13C real-browser viewer host > resolves focused table-cell knowledge through the host and ignores stale hover results 334ms
+   ✓ 13C real-browser viewer host > marks table-cell knowledge missing without a port, target, or matching description 306ms
+   ✓ 13C real-browser viewer host > resolves exact subject-card field knowledge and cancels stale requests 375ms
+   ✓ 13C real-browser viewer host > mounts the bounded relation viewer and releases its aborted lease on unmount 484ms
+   ✓ 13C real-browser viewer host > mounts subject cards and auditable calculations from their shared contracts 334ms
+   ✓ 13C real-browser viewer host > renders a source-neutral semantic game template through view.template 304ms
+   ✓ 13C real-browser viewer host > switches stages 100 times without reopening the asset and releases every lease 411ms
+   ✓ 13C real-browser viewer host > opens plain text, unknown binary, and all eight text-data formats into real viewer plans 505ms
+   ✓ 13C real-browser viewer host > routes diagnostics and toolbar state without exposing markup or invoking disabled operations 480ms
+   ✓ 13C real-browser viewer host > drives transport and namespace through typed operations/events and isolates third-party frames 661ms
+   ✓ 13C real-browser viewer host > edits, commits, reports conflicts, and replays undo/redo through host-owned ports 804ms
+   ✓ 13C real-browser viewer host > mounts a host-owned session once while switching its resolved stages 315ms
+   ✓ 13C real-browser viewer host > routes the picker and a drop through the host, not into a replaced preview pane 469ms
+   ✓ 13C real-browser viewer host > falls back to bounded Text/Hex views and lets the explorer switch views 462ms
+   ✓ 13C real-browser viewer host > shows exactly one tab at a time: the inactive content is hidden, kept mounted, and switching flips it 383ms
+   ✓ 13C real-browser viewer host > gives the editor area the full pane even when the host hides the toolbar 434ms
+   ✓ 13C real-browser viewer host > keeps tab mounts alive across switches and opens a focused split group 534ms
+   ✓ 13C real-browser viewer host > hosts extra settings groups in one shell and replaces a built-in group by id 322ms
+   ✓ 13C real-browser viewer host > shows semantic model facets and switches between decoded primitives 476ms
+   ✓ 13C real-browser viewer host > draws a shaded frame through the resolved WebGL2 provider and names it in the evidence 539ms
+   ✓ 13C real-browser viewer host > keeps the 2D wireframe when the host offers no renderer, and says which reason 384ms
+ ❯ packages/host/test/subject-open.test.ts (17 tests | 1 failed) 10996ms
+   ✓ host-owned subject opening pipeline > matches a case-insensitive **/ glob at the subject root 4661ms
+   ✓ host-owned subject opening pipeline > selects a portable variant only when its execution backend is present 950ms
+   ✓ host-owned subject opening pipeline > opens PNG through the real image inventory and resolves a bounded raster presentation 876ms
+   ✓ host-owned subject opening pipeline > opens a real UVM artifact through inventory, ticket, bounded probe and session 436ms
+   × host-owned subject opening pipeline > opens a real directory through file VFS, the namespace bridge, Host and codec-kit 188ms
+     → unexpected no-match: {"state":"unresolved","reason":"no-match","descriptor":{"revision":"provider-token:1712487449-4503599630810133-0-1788529943516855808","diagnostics":[],"dataSources":[],"constraints":{"trusted":false,"randomAccess":false,"seekable":false,"readOnly":true},"operations":[],"traits":[{"state":"available","descriptorVersion":1,"id":"container.directories"}],"candidates":[],"interpretation":"none","origin":{"kind":"namespace","root":{"uri":"file:///C:/Users/Admin/AppData/Local/Temp/modkit-namespace-hTNPXF","id":"file:///C:/Users/Admin/AppData/Local/Temp/modkit-namespace-hTNPXF"},"revision":"provider-token:1712487449-4503599630810133-0-1788529943516855808"},"subjectUri":"file:///C:/Users/Admin/AppData/Local/Temp/modkit-namespace-hTNPXF","schemaVersion":2},"fallback":{"preferred":"none","available":[]},"candidates":[{"contributionId":"org.example/namespace-overread","extensionId":"org.example/subject-open-namespace","variantId":"trusted-node","formatIds":["namespace-overread"],"offerId":"namespace-overread","state":"rejected","diagnostics":[{"code":"x3.host/full-process-authority","severity":"warning","message":"«org.example/namespace-overread» runs as trusted-in-process: the host checks grants at dispatch and brokers what it owns, but it cannot technically prevent this code from reaching Node.js filesystem/network built-ins or the process itself. This is an audit/policy boundary, not a sandbox (24 §5.1).","path":["org.example/namespace-overread"],"data":{"grant":"subject-open-namespace/org.example/namespace-overread#trusted-node#probe","classes":["read-source"]}},{"code":"x3.host/namespace-probe-byte-budget-exceeded","severity":"error","message":"namespace probe exceeded its declared 64-byte budget","path":[],"data":{"error":"namespace probe exceeded its declared 64-byte budget"}}]},{"contributionId":"org.example/namespace-project","extensionId":"org.example/subject-open-namespace","variantId":"trusted-node","formatIds":["namespace-project"],"offerId":"namespace-project","state":"rejected","diagnostics":[{"code":"x3.host/subject-probe-failed","severity":"error","message":"subject probe failed closed: Failed to load url ../../../../../packages/codec-kit/src/index.js (resolved id: ../../../../../packages/codec-kit/src/index.js) in C:/FILES/SC2Files/coding/modkit-core/packages/host/test/fixtures/subject-open-namespace-extension/codec.mjs. Does the file exist?","path":[],"data":{"error":"Failed to load url ../../../../../packages/codec-kit/src/index.js (resolved id: ../../../../../packages/codec-kit/src/index.js) in C:/FILES/SC2Files/coding/modkit-core/packages/host/test/fixtures/subject-open-namespace-extension/codec.mjs. Does the file exist?"}}]},{"contributionId":"org.example/namespace-traversal","extensionId":"org.example/subject-open-namespace","variantId":"trusted-node","formatIds":["namespace-traversal"],"offerId":"namespace-traversal","state":"rejected","diagnostics":[{"code":"x3.host/full-process-authority","severity":"warning","message":"«org.example/namespace-traversal» runs as trusted-in-process: the host checks grants at dispatch and brokers what it owns, but it cannot technically prevent this code from reaching Node.js filesystem/network built-ins or the process itself. This is an audit/policy boundary, not a sandbox (24 §5.1).","path":["org.example/namespace-traversal"],"data":{"grant":"subject-open-namespace/org.example/namespace-traversal#trusted-node#probe","classes":["read-source"]}},{"code":"x3.host/namespace-probe-traversal-refused","severity":"error","message":"namespace-wide enumeration is forbidden during codec probing","path":[],"data":{"error":"namespace-wide enumeration is forbidden during codec probing"}}]}],"diagnostics":[]}
+   ✓ detection-hostile: the bounded data-only signature index (NXT-101B / F6) > a renamed PNG (.dat) reaches the PNG probe through its declared signature and opens; the reads stay bounded 612ms
+   ✓ detection-hostile: the bounded data-only signature index (NXT-101B / F6) > a PNG+ZIP polyglot shortlists both codecs (start and end signatures); the probes decide, nothing is bypassed 917ms
+   ✓ detection-hostile: the bounded data-only signature index (NXT-101B / F6) > names input-open when a foreign codec exception has crossed an execution boundary 613ms
+   ✓ detection-hostile: the bounded data-only signature index (NXT-101B / F6) > a magic collision (PNG signature, corrupt body) is probed and rejected honestly — shortlisting is not detection 556ms
+   ✓ detection-hostile: the bounded data-only signature index (NXT-101B / F6) > a subject with no matching name and no matching signature stays no-candidate with bounded reads 423ms
+ ❯ packages/testkit/test/text-data.test.ts (56 tests | 1 failed) 3191ms
+   ✓ 13B text-data providers and codecs > validates all isolated contribution manifests through the A-1 authorities 748ms
+   ✓ 13B text-data providers and codecs > parses and publishes the right lazy source for common.text-data/json-syntax 739ms
+   ✓ 13B text-data providers and codecs > pages one million delimited rows without materializing an eager document 664ms
+   × 13B text-data providers and codecs > keeps the public index provider-free and all portable sources free of node imports 36ms
+     → ENOENT: no such file or directory, open 'C:\FILES\SC2Files\coding\modkit-core\packages\codec-kit\src\text\index.js'
+ ✓ packages/host/test/companion-input-resolution.test.ts (49 tests) 956ms
+   ✓ companion input resolution — expected traits > validates expected traits from the inventory signature index, without activating a codec 902ms
+ ✓ packages/host/test/node-worker-backend.test.ts (18 tests) 12068ms
+   ✓ node worker backend — activation, probe and open through the backend SPI > activates a single-file codec in a real worker, reports the shared-process diagnostic, and probes through a host-executed source 428ms
+   ✓ node worker backend — activation, probe and open through the backend SPI > opens a session: the asset input crosses with its fields and host-executed openers, the session comes back as an ABI-shaped adapter 309ms
+   ✓ node worker backend — verify-after-load, containment and policy > an entrypoint changed between the host digest and the worker evaluation is refused (acc-6) and leaves no worker behind 360ms
+   ✓ node worker backend — verify-after-load, containment and policy > refuses an entrypoint outside the artifact root and a module that needs relative imports (not pinned) 464ms
+   ✓ node worker backend — verify-after-load, containment and policy > release is idempotent and a released module answers structurally 359ms
+   ✓ node worker backend — restart is a new generation of the same session (acc-8) > after the worker died, the next createCodec brings up generation 2; the old codec stays dead and no handle travels 701ms
+   ✓ node worker backend — restart is a new generation of the same session (acc-8) > concurrent callers after a death share one restart; the policy bounds restarts per lease 725ms
+   ✓ node worker backend — restart is a new generation of the same session (acc-8) > a restart re-verifies the entrypoint: bytes changed since activation are refused, the lease reports why 748ms
+   ✓ node worker backend — verified multi-file loading through module hooks > a multi-file entrypoint loads when every artifact file is verified against the inventory digests 350ms
+   ✓ node worker backend — verified multi-file loading through module hooks > a helper modified after the inventory is refused with a digest mismatch; a file the inventory never listed is refused too 723ms
+   ✓ node worker backend — verified multi-file loading through module hooks > dependencies resolved through the artifact node_modules load (unverified, SB-1); other escapes are refused 764ms
+   ✓ node worker backend — a real bundled extension codec runs in the worker > text-csv: inventoried through loadExtensionDirectory, its multi-file entrypoint and workspace dependencies load, probe detects CSV 1641ms
+   ✓ node worker backend — a real codec opens a session with a host-resolved provider > text-csv open(): contracts.resolve crosses to the host and the provider data source runs on the host 2083ms
+   ✓ node worker backend — provider in one worker, codec in another, the host bridges them (S1b product path) > text-csv: the provider leases in worker B and its codec in worker A crosses both boundaries 2144ms
+ ❯ packages/host/test/nested-subject-companion.test.ts (14 tests | 6 failed) 2537ms
+   × a container entry opens as its own subject, with companions from the same container > binds the deflated texture beside the mesh and hands the codec byte-exact bytes 1064ms
+     → []
+   × a container entry opens as its own subject, with companions from the same container > refuses the nested open when the required texture is absent, and releases the container 142ms
+     → expected 'no-match' to be 'input-unresolved' // Object.is equality
+   × a container entry opens as its own subject, with companions from the same container > refuses to choose between two entries that share the declared name 135ms
+     → expected [] to include 'x3.host/companion-ambiguous'
+   × a container entry opens as its own subject, with companions from the same container > opens the optional variant without its texture and names the capability unavailable 141ms
+     → []
+   × a container entry opens as its own subject, with companions from the same container > refuses a parent that is not a container at all 125ms
+     → setup: the nested model did not open
+   × the container lease the route retains is released exactly once, on every path > holds the container while the child lives and gives it back on dispose 117ms
+     → the nested model did not open
+ ✓ packages/testkit/test/common-documents-odf.test.ts (49 tests) 1835ms
+   ✓ 11B common/documents — the OpenDocument quartet > ships exactly four ODF contributions and every one of them validates 588ms
+   ✓ 11B common/documents — the OpenDocument quartet > publishes only the representations each format actually recovered 894ms
+ ✓ packages/host/test/resource-session.test.ts (27 tests) 39ms
+ ✓ packages/testkit/test/uvw-candidate.test.ts (11 tests) 261ms
+ ✓ packages/host/test/archive-edits.test.ts (7 tests) 20838ms
+   ✓ A4 — ZIP editing on the 13D seam (ADR-HOST-002 Path A) > lists what the container knows about an entry: stored size, method, timestamp and its own CRC 2266ms
+   ✓ A4 — ZIP editing on the 13D seam (ADR-HOST-002 Path A) > edit.structure adds and removes entries worker-brokered; kept entries are copied byte for byte and a kept deflated entry still inflates 4234ms
+   ✓ A4 — ZIP editing on the 13D seam (ADR-HOST-002 Path A) > edit.content replaces one entry (stored, fresh CRC) and leaves every other entry byte-identical 2131ms
+   ✓ A4 — ZIP editing on the 13D seam (ADR-HOST-002 Path A) > without write-source the archive still opens (degraded) and both mutating operations are refused by the host 1273ms
+   ✓ A4 — ZIP editing on the 13D seam (ADR-HOST-002 Path A) > edit.structure renames an entry without touching its data, and a non-canonical archive downgrades the fidelity claim honestly 2129ms
+   ✓ A4 — ZIP editing on the 13D seam (ADR-HOST-002 Path A) > an assembled archive above the host inline-payload cap is payload-unavailable; under the cap it commits 4640ms
+   ✓ A4 — ZIP editing on the 13D seam (ADR-HOST-002 Path A) > ZIP64 and encrypted archives are refused with the reason on the descriptor and nothing is written 4156ms
+ ✓ packages/host/test/editing.test.ts (7 tests) 573ms
+   ✓ 13D universal editing contracts and host transaction coordinator > discovers a declarative editor and refuses trait/data-only lookalikes (D-01/D-02) 537ms
+ ✓ packages/testkit/test/reference-codecs.test.ts (22 tests) 3045ms
+   ✓ reference codec specification stress suite > validates twelve isolated codec contribution manifests 913ms
+   ✓ reference codec specification stress suite > probes and opens the zip codec 815ms
+   ✓ reference codec specification stress suite > keeps every codec entrypoint and package index import-isolated 414ms
+ ❯ packages/testkit/test/uvm-materializer.test.ts (18 tests | 17 failed) 194ms
+   × canonical case — exact semantic equality > uvm-core-triangle: live and materialized-then-reopened hash identically 129ms
+     → Failed to load url C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js (resolved id: C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js). Does the file exist?
+   × canonical case — exact semantic equality > uvm-core-triangle: repeat export is byte-stable 4ms
+     → Failed to load url C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js (resolved id: C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js). Does the file exist?
+   × canonical case — exact semantic equality > uvm-core-rig: live and materialized-then-reopened hash identically 3ms
+     → Failed to load url C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js (resolved id: C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js). Does the file exist?
+   × canonical case — exact semantic equality > uvm-core-rig: repeat export is byte-stable 5ms
+     → Failed to load url C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js (resolved id: C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js). Does the file exist?
+   × canonical case — exact semantic equality > drains a real paged source and reaches the same hash as the in-memory projection 4ms
+     → Failed to load url C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js (resolved id: C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js). Does the file exist?
+   × canonical case — exact semantic equality > writes UV_game_socket only for an exact existing scene-node join 3ms
+     → Failed to load url C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js (resolved id: C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js). Does the file exist?
+   × canonical case — exact semantic equality > resolves image identity through ResourceSessionPort and reopens an exact resource closure 3ms
+     → Failed to load url C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js (resolved id: C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js). Does the file exist?
+   × canonical case — exact semantic equality > does not fabricate closure identity for an unresolved resource 3ms
+     → Failed to load url C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js (resolved id: C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js). Does the file exist?
+   × honest loss — what the profile could not carry > does not invent textures to make a count match 3ms
+     → Failed to load url C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js (resolved id: C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js). Does the file exist?
+   × honest loss — what the profile could not carry > renumbers a source whose ids are not positional, and says so per plane 3ms
+     → Failed to load url C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js (resolved id: C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js). Does the file exist?
+   × honest loss — what the profile could not carry > reports a metadata-only source as an excluded geometry facet, not as empty geometry 4ms
+     → Failed to load url C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js (resolved id: C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js). Does the file exist?
+   × optional facets stay optional > a simple static model needs neither materials, textures, animations nor bounds 4ms
+     → Failed to load url C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js (resolved id: C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js). Does the file exist?
+   × optional facets stay optional > refuses a projection that contradicts itself rather than materializing a half-truth 3ms
+     → Failed to load url C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js (resolved id: C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js). Does the file exist?
+   × optional facets stay optional > refuses to guess an identity or a source format 3ms
+     → Failed to load url C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js (resolved id: C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js). Does the file exist?
+   × two oracles > the produced artifact satisfies the pinned UVM/core profile 3ms
+     → Failed to load url C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js (resolved id: C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js). Does the file exist?
+   × two oracles > the old validator’s own UVM check accepts the materialized artifact 3ms
+     → Failed to load url C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js (resolved id: C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js). Does the file exist?
+   × two oracles > the sealed legacy canonical implementation reproduces the scope hash digit for digit 4ms
+     → Failed to load url C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js (resolved id: C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js). Does the file exist?
+ ✓ packages/host/test/gate.test.ts (32 tests) 656ms
+   ✓ activation gate — refusals never reach an import (MK3/24 §8) > refuses trusted-in-process unless the host explicitly authorized the artifact 518ms
+ ✓ packages/host/test/editing-evidence.test.ts (7 tests) 4000ms
+   ✓ F3 evidence registry > joins bundled codec proof citations with inventory-owned writer coordinates 1018ms
+   ✓ F3 raw writer — a format-blind editor saves through the coordinator > commits a UTF-16 range edit through the coordinator and the codec still opens the result 524ms
+   ✓ F3 raw writer — a format-blind editor saves through the coordinator > commits a markdown range edit through the same seam and reopens it as markdown 2276ms
+ ❯ packages/testkit/test/uvt-writer.test.ts (3 tests | 2 failed) 704ms
+   × 12-2 UVT export writes through the host coordinator and reopens > plans the two-artifact export, is refused for want of a namespace target, and reopens 621ms
+     → Failed to load url C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js (resolved id: C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js). Does the file exist?
+   × 12-3 the UVM export takes the same coordinator seam > commits a materialized UVM artifact and reads back exactly those bytes 7ms
+     → Failed to load url C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js (resolved id: C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js). Does the file exist?
+ ✓ packages/host/test/media-edits.test.ts (6 tests) 24959ms
+   ✓ A5 Path A — JPEG metadata edits on the 13D seam > edit.field writes the COM segment after the APP block, byte-identical elsewhere, and replaces it in place on the second call 5821ms
+   ✓ A5 Path A — JPEG metadata edits on the 13D seam > edit.structure removes one metadata segment and refuses a structural marker 4469ms
+   ✓ A5 Path A — MP3 ID3v2 text frames on the 13D seam > edit.field rewrites one text frame, keeps every other frame and the padding, and never moves an audio byte 4002ms
+   ✓ A5 Path A — MP3 ID3v2 text frames on the 13D seam > edit.field creates an ID3v2.4 tag when the file has none, and refuses an unsynchronised tag 5574ms
+   ✓ A5 Path B — the PNG encoder writer resolves by facet and its plan commits > encodes a 2×2 RGBA payload; the committed file reopens as a 2×2 PNG whose decoded pixels are the payload 5055ms
+ ✓ packages/testkit/test/uvm-convergence.test.ts (2 tests) 1163ms
+   ✓ UVM convergence through A-2 inventory and A-3 sessions > resolves, tickets and activates the isolated UVM contribution deterministically 1099ms
+ ✓ packages/host/test/node-map-preview-resource-resolver.test.ts (10 tests) 1051ms
+   ✓ Node game-installation map-preview resource resolver > combines the opened map archive with exact installed archives and releases every lease once 756ms
+ ✓ packages/testkit/test/hostile-worker.test.ts (19 tests) 6507ms
+   ✓ hostile workers — positive control across a real thread boundary > demo-worker: load, callbacks into a host lease, transfer, iterate, events, cancel, close → exit 0 337ms
+   ✓ hostile workers — positive control across a real thread boundary > demo-worker: 8 MiB round trip keeps bytes intact; arguments are copied, results transferred 320ms
+   ✓ hostile workers — positive control across a real thread boundary > release() is idempotent: every call resolves with the same end, one termination at most (acc-9) 597ms
+   ✓ hostile workers — hangs and the watchdog (T3/T13, acc-4) > hang-sync: a dead event loop is ended by terminate() after deadline + grace 411ms
+   ✓ hostile workers — hangs and the watchdog (T3/T13, acc-4) > hang-async: a live worker that ignores cancel is terminated after grace; one that honours it is not 651ms
+   ✓ hostile workers — hangs and the watchdog (T3/T13, acc-4) > ignore-terminate: release() resolves within grace even when the worker keeps its port 312ms
+   ✓ hostile workers — resource abuse (T4, acc-5) > noisy: a stdout/stderr flood is capped by the harness and flagged truncated (acc-10) 317ms
+   ✓ hostile workers — protocol violations fail closed and terminate (T1/T7/T8, acc-3) > bad-values: NaN, partial views, shared buffers, deep nesting and unknown frame keys are violations 501ms
+   ✓ hostile workers — protocol violations fail closed and terminate (T1/T7/T8, acc-3) > wrong-session: forged session/domain are bad-envelope, any other generation is stale-generation 390ms
+   ✓ hostile workers — protocol violations fail closed and terminate (T1/T7/T8, acc-3) > reply-games: duplicate, orphan and mistyped replies are violations; a late reply after cancel is only counted 482ms
+   ✓ hostile workers — protocol violations fail closed and terminate (T1/T7/T8, acc-3) > forged-handles: unknown or foreign-owner handles are violations; a released handle is a structured error 407ms
+   ✓ hostile workers — a restart is a new endpoint and a new generation (acc-8) > demo-worker: generation 2 serves the same session; handles from generation 1 do not travel 834ms
+ ✓ packages/host/test/command-runtime.test.ts (19 tests) 34ms
+ ✓ packages/host/test/subject-editing.test.ts (4 tests) 13894ms
+   ✓ ADR-HOST-002 Path A — codec operation → edit plan → host commit > PNG edit.field sets a tEXt chunk worker-brokered; the file backend commits atomically; a reopen sees it and every other byte is untouched 5605ms
+   ✓ ADR-HOST-002 Path A — codec operation → edit plan → host commit > without write-source the PNG still opens (degraded) and the mutating operation is refused by the host 1293ms
+   ✓ ADR-HOST-002 Path A — codec operation → edit plan → host commit > a file that changed between plan and prepare is a conflict; a snapshot without write-source is permission-missing; a foreign plan is refused 4390ms
+   ✓ ADR-HOST-002 Path B — writer provider by facet, across the boundary, backing an edit session > resolves common.edit/writer@1 for png/source, leases it worker-brokered, and commits a writer-planned change set 2598ms
+ ✓ packages/host/test/execution-protocol.test.ts (37 tests) 33ms
+ ✓ packages/host/test/modkit-facade.test.ts (13 tests) 13453ms
+   ✓ createModkit — the Node library facade > composes from directories alone, and a broken one is a record, not an exception 1157ms
+   ✓ createModkit — the Node library facade > opens a PNG worker-brokered with no host knowledge from the caller 2230ms
+   ✓ createModkit — the Node library facade > offers editing inside writableRoots, and a byte edit commits to the real file 2262ms
+   ✓ createModkit — the Node library facade > close() sweeps the sessions a caller forgot 2169ms
+   ✓ disabling a contribution (the settings-page seam) > a disabled codec stays listed, loses activation, and the subject answers unresolved 846ms
+   ✓ disabling an extension (the settings-page seam) > keeps its contributions listed while the Node facade refuses to activate them 779ms
+   ✓ the format writer is preferred over the raw byte splicer (Path B reaches products) > a format with no matching writer falls back to raw, and the diagnostics say so 2731ms
+   ✓ a switched-off codec is named, not merely absent (A14 request 5) > an unresolved open says which contribution matched the file and could not run 721ms
+ ✓ packages/host/test/execution-surface-adapter.test.ts (9 tests) 73ms
+ ✓ packages/host/test/text-writers.test.ts (5 tests) 13228ms
+   ✓ A6 — text writers resolve by facet and save through the host coordinator > json: a UTF-16 range edit is proposed, planned, committed and reopened 1200ms
+   ✓ A6 — text writers resolve by facet and save through the host coordinator > ini: a UTF-16 range edit is proposed, planned, committed and reopened 5371ms
+   ✓ A6 — text writers resolve by facet and save through the host coordinator > csv: a UTF-16 range edit is proposed, planned, committed and reopened 5537ms
+   ✓ A6 — text writers resolve by facet and save through the host coordinator > an export-only request is satisfied by a mutating offer; a format no extension owns is unresolved 934ms
+ ✓ packages/host/test/renderer.test.ts (15 tests) 850ms
+ ✓ packages/ui/test/model-scene.test.ts (17 tests) 81ms
+ ❯ packages/host/test/companion-sibling.test.ts (10 tests | 8 failed) 1825ms
+   × sibling companion resolution, end to end through the Node path opener > binds the HVA beside the VXL and hands it to the codec only as a binding 841ms
+     → expected 'unresolved' to be 'opened' // Object.is equality
+   × sibling companion resolution, end to end through the Node path opener > refuses the open when a required companion is gone, naming requirement, role and scopes 121ms
+     → expected 'no-match' to be 'input-unresolved' // Object.is equality
+   × sibling companion resolution, end to end through the Node path opener > opens without the optional companion and says the capability is unavailable 136ms
+     → expected 'unresolved' to be 'opened' // Object.is equality
+   × sibling companion resolution, end to end through the Node path opener > binds the optional companion when it is present 127ms
+     → []
+   × sibling companion resolution, end to end through the Node path opener > never offers a sibling the requirement did not ask for 131ms
+     → []
+   × subject services carry the resolver a product supplies > opens a composite plan when the caller passes resolveInput, and fails closed without it 134ms
+     → expected [] to include 'x3.host/input-resolver-required'
+   × subject services carry the resolver a product supplies > reports the structured refusal a product needs to explain the failure 139ms
+     → expected [] to deeply equal [ ObjectContaining{…} ]
+   × subject services carry the resolver a product supplies > refuses a composite plan for an in-memory source that has no origin at all 122ms
+     → expected [] to include 'x3.host/input-resolver-required'
+ ❯ packages/testkit/test/uvt-materializer.test.ts (9 tests | 3 failed) 912ms
+   × a decoded raster region materialises into a conforming UVT projection > 'bmp': the sidecar agrees with its container and the two paths hash the same 775ms
+     → Failed to load url C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js (resolved id: C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js). Does the file exist?
+   × a decoded raster region materialises into a conforming UVT projection > 'tga': the sidecar agrees with its container and the two paths hash the same 61ms
+     → Failed to load url C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js (resolved id: C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js). Does the file exist?
+   × a decoded raster region materialises into a conforming UVT projection > separates the semantic hash from the picture: one changed pixel moves only the digest 5ms
+     → Failed to load url C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js (resolved id: C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js). Does the file exist?
+ ✓ packages/host/test/extension-artifact-store.test.ts (10 tests) 2546ms
+   ✓ local extension artifact lifecycle > atomically installs, updates, uninstalls and rolls back immutable local artifacts 1012ms
+ ✓ packages/ui/test/viewers.test.ts (8 tests) 615ms
+   ✓ 13C universal viewer contracts and models > validates twenty-one declarative viewer contributions and resolves them shuffle-stably 596ms
+ ✓ packages/host/test/knowledge.test.ts (7 tests) 741ms
+   ✓ inventory-backed knowledge catalog > resolves locales, provenance and direct external links without executable activation 583ms
+ ✓ packages/host/test/runtime.test.ts (9 tests) 835ms
+ ✓ packages/host/test/resolver.test.ts (8 tests) 34ms
+ ✓ packages/testkit/test/stress-gate.test.ts (3 tests) 668ms
+   ✓ A-5 eight-case schema stress gate > validates the seven executable manifest families through the same codec authority 606ms
+ ❯ packages/host/test/nested-subject-containers.test.ts (3 tests | 1 failed) 1703ms
+   × a container inside another container uses the same nested route twice > opens ZIP → ZIP → mesh and resolves the companion from the inner namespace 1126ms
+     → []
+   ✓ large namespace companion resolution remains bounded > refuses a name-only requirement before an unbounded scan can complete 309ms
+ ✓ packages/testkit/test/plain-text.test.ts (7 tests) 784ms
+   ✓ A-7 external common/plain-text vertical slice > validates the executable manifest, standard traits, operation namespaces, and read-only v1 595ms
+ ✓ packages/testkit/test/mixed-visual-composition.test.ts (1 test) 597ms
+   ✓ neutral mixed visual composition > loads a synthetic world and common glTF through one visual-only pipeline 595ms
+ ✓ packages/host/test/subject-rpc-editing.test.ts (4 tests) 1413ms
+   ✓ editing over the subject RPC (S14) > a consumer with no grant proposes, plans, prepares and commits — the file changes and the ids are single-use 905ms
+ ✓ packages/host/test/subject-services.test.ts (8 tests) 3742ms
+   ✓ supportedExtensionHints > collects the codec match extensions of an inventory: lowercase, unique, sorted 1007ms
+   ✓ createNodeSubjectServices (host realm inventory, worker realm target) > opens a real PNG worker-brokered through the composed pair and exposes both compositions 2195ms
+   ✓ createNodeSubjectServices (host realm inventory, worker realm target) > serviceDefinitions: false composes without a registry; a registry of the root is used as given 304ms
+ ✓ packages/testkit/test/mk2-model-codecs.test.ts (22 tests) 1579ms
+   ✓ ported MK2 geometry model codecs > obj publishes bounded decoded triangle geometry 1209ms
+ ✓ packages/host/test/inventory.test.ts (9 tests) 737ms
+   ✓ buildInventory (S1 acceptance) > is deterministic under shuffled input and listing order (byte-identical) 534ms
+ ✓ packages/host/test/browser-worker-realm.test.ts (3 tests) 98ms
+ ✓ packages/host/test/namespace-write-seam.test.ts (3 tests) 822ms
+   ✓ 12-3 a writer can create a new artifact through the commit coordinator > pins the namespace revision on the edit target a directory subject yields 690ms
+ ✓ packages/ui/test/visual-composition.test.ts (3 tests) 26ms
+ ✓ packages/host/test/file-editing-backend.test.ts (4 tests) 162ms
+ ✓ packages/host/test/browser-verified-loader.test.ts (9 tests) 89ms
+ ✓ packages/ui/test/card-knowledge.test.ts (6 tests) 18ms
+ ✓ packages/host/test/localization.test.ts (8 tests) 749ms
+   ✓ localization contributions through the host VFS boundary > loads a valid enabled data-only catalog and never needs an executable variant 604ms
+ ✓ packages/ui/test/tokens-and-parts.test.ts (19 tests) 124ms
+ ✓ packages/testkit/test/common-plain-text.test.ts (5 tests) 1509ms
+   ✓ 11A common/plain-text > validates its contributions and keeps the codec read-only with the writer beside it 633ms
+   ✓ 11A common/plain-text > reads UTF-8, UTF-8 with a mark, and UTF-16 in both byte orders as the same document 802ms
+ ✓ packages/ui/test/settings.test.ts (10 tests) 22ms
+ ✓ packages/host/test/browser-worker-backend.test.ts (3 tests) 151ms
+ ✓ packages/ui/test/relation-graph-source.test.ts (7 tests) 194ms
+ ✓ packages/testkit/test/pkm-etc-decode.test.ts (6 tests) 1238ms
+   ✓ 12-5 PKM publishes decoded ETC pixels > opens the shipped fixture and serves its pixel through the raster contract 1183ms
+ ✓ packages/host/test/namespace-candidate-discovery.test.ts (6 tests) 33ms
+ ✓ packages/ui/test/localization.test.ts (13 tests) 115ms
+ ✓ packages/host/test/execution-handles.test.ts (7 tests) 31ms
+ ✓ packages/testkit/test/common-markdown.test.ts (2 tests) 1690ms
+   ✓ 11A common/documents markdown > answers for every legacy alias through structure plus the alias, never the extension alone 810ms
+   ✓ 11A common/documents markdown > keeps preview safe: hostile HTML and script survive as text and nothing renders them 877ms
+ ✓ packages/testkit/test/runtime-session-v2.test.ts (4 tests) 26ms
+ ✓ packages/host/test/browser-editing-backend.test.ts (4 tests) 24ms
+ ✓ packages/ui/test/world-candidate.test.ts (3 tests) 16ms
+ ✓ packages/testkit/test/model-facet-contracts.test.ts (4 tests) 1779ms
+   ✓ common model facet contracts > publishes OBJ materials and sidecar references through generic contracts 1681ms
+ ✓ packages/testkit/test/model-rendering.test.ts (1 test) 1489ms
+   ✓ decoded model to headless PNG vertical > 'glb' geometry renders to a deterministic PNG fixture 1486ms
+ ✓ packages/host/test/presentation.test.ts (2 tests) 563ms
+   ✓ A-6 global presentation catalog resolution > resolves singleton stages, exact bindings/tickets/digest, and a fallback 545ms
+ ✓ packages/testkit/test/mk2-audio-codecs.test.ts (4 tests) 1202ms
+   ✓ ported common audio codecs > walks every ADTS frame and publishes bounded AAC media 1141ms
+ ✓ packages/host/test/session.test.ts (3 tests) 790ms
+   ✓ A-3 asset and operation sessions > makes all eight operation rejection reasons reachable and dispatches owned JSON 755ms
+ ✓ packages/host/test/execution-payload-shape.test.ts (3 tests) 23ms
+ ✓ packages/host/test/linked-extensions.test.ts (6 tests) 1988ms
+   ✓ statically linked extensions (import lane) > a linked extension opens a subject in-process, and the audit notice says so 1845ms
+ ✓ packages/testkit/test/mk2-video-codecs.test.ts (8 tests) 1241ms
+   ✓ ported MK2 AVI and WMV container codecs > avi publishes validated video metadata and bounded sources 1145ms
+ ✓ packages/host/test/frame-json.test.ts (8 tests) 17ms
+ ✓ packages/testkit/test/mk2-archive-codecs.test.ts (15 tests) 1678ms
+   ✓ ported MK2 archive subset codecs > 'brotli' lists and extracts its validated source 1404ms
+ ✓ packages/host/test/presentation-stage-eligibility.test.ts (4 tests) 769ms
+   ✓ 12-3 the host decides which optional facets a stage binds > binds exactly the optional facets the subject publishes, and no others 730ms
+ ✓ packages/host/test/service-resolver.test.ts (2 tests) 16ms
+ ✓ packages/testkit/test/detection-collisions.test.ts (6 tests) 2032ms
+   ✓ common codec collision arbitration > keeps the generic route for settings.xml 310ms
+ ✓ packages/testkit/test/mk2-vector-codecs.test.ts (3 tests) 1150ms
+   ✓ ported Windows metafile codecs > replays EMF rectangle records to a secure SVG 1096ms
+ ✓ packages/host/test/editing-definitions.test.ts (4 tests) 16ms
+ ✓ packages/host/test/data-sources.test.ts (3 tests) 64ms
+ ✓ packages/host/test/editing-format-proofs.test.ts (4 tests) 10ms
+ ✓ packages/host/test/vfs-source.test.ts (2 tests) 383ms
+   ✓ public VFS to Host namespace bridge > opens small ranges above 512 MiB without materializing the file 373ms
+ ✓ packages/testkit/test/minimal-host.test.ts (3 tests) 720ms
+   ✓ testkit minimal host — the one public route (S4) > load → inventory → resolve → grant → import → execute, deterministically 622ms
+ ✓ packages/host/test/directory-artifact-source.test.ts (3 tests) 70ms
+ ✓ packages/testkit/test/common-documents-rtf.test.ts (3 tests) 1138ms
+   ✓ common RTF codec > detects both named and renamed RTF from content 572ms
+   ✓ common RTF codec > opens bounded structured text through the common tree contract 563ms
+ ✓ packages/host/test/composition.test.ts (2 tests) 817ms
+   ✓ host composition root > starts with only the native text inventory and keeps realm facilities isolated 746ms
+ ✓ packages/ui/test/orbit.test.ts (10 tests) 16ms
+ ✓ packages/host/test/execution-message-port.test.ts (4 tests) 13ms
+ ✓ packages/ui/test/search.test.ts (10 tests) 15ms
+ ✓ packages/ui/test/media-viewers.test.ts (4 tests) 15ms
+ ✓ packages/host/test/source-bridge.test.ts (3 tests) 24ms
+ ✓ packages/testkit/test/evidence.test.ts (6 tests) 52ms
+ ✓ packages/testkit/test/mk2-image-detection.test.ts (1 test) 650ms
+   ✓ common image detector isolation > requires a plausible CUR directory and does not outrank a colliding TGA header 647ms
+ ✓ packages/ui/test/explorer-fallback.test.ts (3 tests) 15ms
+ ✓ packages/ui/test/workbench.test.ts (3 tests) 10ms
+ ✓ packages/host/test/browser-sources.test.ts (2 tests) 19ms
+ ✓ packages/host/test/subject-rpc-snapshot.test.ts (2 tests) 8ms
+ ✓ packages/host/test/v1-projection.test.ts (2 tests) 566ms
+   ✓ A-3 host-local descriptor v2 → v1 projection > projects only catalog-evaluated data and preserves a proven zero-match 550ms
+ ✓ packages/ui/test/app-themes.test.ts (2 tests) 8ms
+ ✓ packages/host/test/contribution-registry.test.ts (1 test) 31ms
+ ✓ packages/host/test/file-source.test.ts (2 tests) 278ms
+ ✓ packages/code/test/package.test.ts (2 tests) 7ms
+ ✓ packages/host/test/extension-roots.test.ts (4 tests) 25323ms
+   ✓ loadExtensionRoots > keeps every root that loads and reports the ones that do not 846ms
+   ✓ loadExtensionRoots > reports a duplicate coordinate instead of loading the same extension twice 20465ms
+ ✓ packages/testkit/test/golden-path.test.ts (1 test) 5ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 39 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  packages/host/test/companion-sibling.test.ts > sibling companion resolution, end to end through the Node path opener > binds the HVA beside the VXL and hands it to the codec only as a binding
+AssertionError: expected 'unresolved' to be 'opened' // Object.is equality
+
+Expected: "opened"
+Received: "unresolved"
+
+ ❯ packages/host/test/companion-sibling.test.ts:123:28
+    121| 
+    122|     const { snapshot, session } = await open(join(directory, 'sample.v…
+    123|     expect(snapshot.state).toBe('opened')
+       |                            ^
+    124|     if (snapshot.state !== 'opened') throw new Error(JSON.stringify(sn…
+    125|     expect(snapshot.selected.contributionId).toBe('org.example/compani…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/39]⎯
+
+ FAIL  packages/host/test/companion-sibling.test.ts > sibling companion resolution, end to end through the Node path opener > refuses the open when a required companion is gone, naming requirement, role and scopes
+AssertionError: expected 'no-match' to be 'input-unresolved' // Object.is equality
+
+Expected: "input-unresolved"
+Received: "no-match"
+
+ ❯ packages/host/test/companion-sibling.test.ts:157:29
+    155|     expect(snapshot.state).toBe('unresolved')
+    156|     if (snapshot.state !== 'unresolved') throw new Error('a missing re…
+    157|     expect(snapshot.reason).toBe('input-unresolved')
+       |                             ^
+    158|     const refusal = snapshot.diagnostics.find(item => item.code === CO…
+    159|     expect(refusal).toBeDefined()
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/39]⎯
+
+ FAIL  packages/host/test/companion-sibling.test.ts > sibling companion resolution, end to end through the Node path opener > opens without the optional companion and says the capability is unavailable
+AssertionError: expected 'unresolved' to be 'opened' // Object.is equality
+
+Expected: "opened"
+Received: "unresolved"
+
+ ❯ packages/host/test/companion-sibling.test.ts:177:28
+    175| 
+    176|     const { snapshot, session } = await open(join(directory, 'sample-o…
+    177|     expect(snapshot.state).toBe('opened')
+       |                            ^
+    178|     if (snapshot.state !== 'opened') throw new Error(JSON.stringify(sn…
+    179|     expect(snapshot.selected.contributionId).toBe('org.example/compani…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/39]⎯
+
+ FAIL  packages/host/test/companion-sibling.test.ts > sibling companion resolution, end to end through the Node path opener > binds the optional companion when it is present
+Error: []
+ ❯ packages/host/test/companion-sibling.test.ts:201:44
+    199| 
+    200|     const { snapshot, session } = await open(join(directory, 'sample-o…
+    201|     if (snapshot.state !== 'opened') throw new Error(JSON.stringify(sn…
+       |                                            ^
+    202|     const descriptor = snapshot.descriptor as unknown as DescriptorSha…
+    203|     expect(descriptor.companions).toEqual([
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/39]⎯
+
+ FAIL  packages/host/test/companion-sibling.test.ts > sibling companion resolution, end to end through the Node path opener > never offers a sibling the requirement did not ask for
+Error: []
+ ❯ packages/host/test/companion-sibling.test.ts:219:44
+    217| 
+    218|     const { snapshot, session } = await open(join(directory, 'sample.v…
+    219|     if (snapshot.state !== 'opened') throw new Error(JSON.stringify(sn…
+       |                                            ^
+    220|     const descriptor = snapshot.descriptor as unknown as DescriptorSha…
+    221|     expect(descriptor.origin.bindings?.map(item => item.id)).toEqual([
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/39]⎯
+
+ FAIL  packages/host/test/companion-sibling.test.ts > subject services carry the resolver a product supplies > opens a composite plan when the caller passes resolveInput, and fails closed without it
+AssertionError: expected [] to include 'x3.host/input-resolver-required'
+ ❯ packages/host/test/companion-sibling.test.ts:293:64
+    291|     const withoutResolver = await services.open(request)
+    292|     expect(withoutResolver.state).toBe('unresolved')
+    293|     expect(withoutResolver.diagnostics.map(item => item.code)).toConta…
+       |                                                                ^
+    294|       'x3.host/input-resolver-required',
+    295|     )
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/39]⎯
+
+ FAIL  packages/host/test/companion-sibling.test.ts > subject services carry the resolver a product supplies > reports the structured refusal a product needs to explain the failure
+AssertionError: expected [] to deeply equal [ ObjectContaining{…} ]
+
+- Expected
++ Received
+
+- Array [
+-   ObjectContaining {
+-     "code": "x3.host/companion-required-missing",
+-     "data": ObjectContaining {
+-       "cardinality": "one",
+-       "checkedScopes": Array [
+-         "sibling-directory",
+-       ],
+-       "requirementId": "motion",
+-       "role": "animation",
+-     },
+-     "severity": "error",
+-   },
+- ]
++ Array []
+
+ ❯ packages/host/test/companion-sibling.test.ts:326:22
+    324| 
+    325|     expect(result.state).toBe('unresolved')
+    326|     expect(reported).toEqual([
+       |                      ^
+    327|       expect.objectContaining({
+    328|         code: COMPANION_REQUIRED_MISSING,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/39]⎯
+
+ FAIL  packages/host/test/companion-sibling.test.ts > subject services carry the resolver a product supplies > refuses a composite plan for an in-memory source that has no origin at all
+AssertionError: expected [] to include 'x3.host/input-resolver-required'
+ ❯ packages/host/test/companion-sibling.test.ts:365:55
+    363| 
+    364|     expect(result.state).toBe('unresolved')
+    365|     expect(result.diagnostics.map(item => item.code)).toContain('x3.ho…
+       |                                                       ^
+    366|   })
+    367| })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/39]⎯
+
+ FAIL  packages/host/test/nested-subject-companion.test.ts > a container entry opens as its own subject, with companions from the same container > binds the deflated texture beside the mesh and hands the codec byte-exact bytes
+Error: []
+ ❯ packages/host/test/nested-subject-companion.test.ts:335:42
+    333| 
+    334|     expect(entry.path).toBe('assets/models/cube.mesh')
+    335|     if (result.state !== 'opened') throw new Error(JSON.stringify(resu…
+       |                                          ^
+    336|     expect(result.selected.contributionId).toBe('org.example/nested-re…
+    337| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/39]⎯
+
+ FAIL  packages/host/test/nested-subject-companion.test.ts > a container entry opens as its own subject, with companions from the same container > refuses the nested open when the required texture is absent, and releases the container
+AssertionError: expected 'no-match' to be 'input-unresolved' // Object.is equality
+
+Expected: "input-unresolved"
+Received: "no-match"
+
+ ❯ packages/host/test/nested-subject-companion.test.ts:451:27
+    449|     expect(result.state).toBe('unresolved')
+    450|     if (result.state !== 'unresolved') throw new Error('a missing requ…
+    451|     expect(result.reason).toBe('input-unresolved')
+       |                           ^
+    452|     const refusal = result.diagnostics.find(item => item.code === COMP…
+    453|     expect(refusal?.message).toContain('skin')
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/39]⎯
+
+ FAIL  packages/host/test/nested-subject-companion.test.ts > a container entry opens as its own subject, with companions from the same container > refuses to choose between two entries that share the declared name
+AssertionError: expected [] to include 'x3.host/companion-ambiguous'
+ ❯ packages/host/test/nested-subject-companion.test.ts:485:55
+    483| 
+    484|     expect(result.state).toBe('unresolved')
+    485|     expect(result.diagnostics.map(item => item.code)).toContain(COMPAN…
+       |                                                       ^
+    486|   })
+    487| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/39]⎯
+
+ FAIL  packages/host/test/nested-subject-companion.test.ts > a container entry opens as its own subject, with companions from the same container > opens the optional variant without its texture and names the capability unavailable
+Error: []
+ ❯ packages/host/test/nested-subject-companion.test.ts:509:42
+    507|     })
+    508| 
+    509|     if (result.state !== 'opened') throw new Error(JSON.stringify(resu…
+       |                                          ^
+    510|     expect(result.selected.contributionId).toBe('org.example/nested-op…
+    511|     expect(reported).toContain(COMPANION_UNAVAILABLE)
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/39]⎯
+
+ FAIL  packages/host/test/nested-subject-companion.test.ts > a container entry opens as its own subject, with companions from the same container > refuses a parent that is not a container at all
+Error: setup: the nested model did not open
+ ❯ packages/host/test/nested-subject-companion.test.ts:533:42
+    531|       budget,
+    532|     })
+    533|     if (result.state !== 'opened') throw new Error('setup: the nested …
+       |                                          ^
+    534|     openSessions.push(result.session)
+    535| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/39]⎯
+
+ FAIL  packages/host/test/nested-subject-companion.test.ts > the container lease the route retains is released exactly once, on every path > holds the container while the child lives and gives it back on dispose
+Error: the nested model did not open
+ ❯ packages/host/test/nested-subject-companion.test.ts:668:49
+    666|   it('holds the container while the child lives and gives it back on d…
+    667|     const { counted, nested } = await nestedOver(await standardEntries…
+    668|     if (nested.result.state !== 'opened') throw new Error('the nested …
+       |                                                 ^
+    669| 
+    670|     // still held: the child is alive and its companion is reachable t…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/39]⎯
+
+ FAIL  packages/host/test/nested-subject-containers.test.ts > a container inside another container uses the same nested route twice > opens ZIP → ZIP → mesh and resolves the companion from the inner namespace
+Error: []
+ ❯ packages/host/test/nested-subject-containers.test.ts:256:51
+    254|           budget,
+    255|         })
+    256|         if (mesh.result.state !== 'opened') throw new Error(JSON.strin…
+       |                                                   ^
+    257|         expect(mesh.result.selected.contributionId).toBe('org.example/…
+    258|         const inspected = await mesh.result.session.operations().invok…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/39]⎯
+
+ FAIL  packages/host/test/subject-open.test.ts > host-owned subject opening pipeline > opens a real directory through file VFS, the namespace bridge, Host and codec-kit
+TypeError: unexpected no-match: {"state":"unresolved","reason":"no-match","descriptor":{"revision":"provider-token:1712487449-4503599630810133-0-1788529943516855808","diagnostics":[],"dataSources":[],"constraints":{"trusted":false,"randomAccess":false,"seekable":false,"readOnly":true},"operations":[],"traits":[{"state":"available","descriptorVersion":1,"id":"container.directories"}],"candidates":[],"interpretation":"none","origin":{"kind":"namespace","root":{"uri":"file:///C:/Users/Admin/AppData/Local/Temp/modkit-namespace-hTNPXF","id":"file:///C:/Users/Admin/AppData/Local/Temp/modkit-namespace-hTNPXF"},"revision":"provider-token:1712487449-4503599630810133-0-1788529943516855808"},"subjectUri":"file:///C:/Users/Admin/AppData/Local/Temp/modkit-namespace-hTNPXF","schemaVersion":2},"fallback":{"preferred":"none","available":[]},"candidates":[{"contributionId":"org.example/namespace-overread","extensionId":"org.example/subject-open-namespace","variantId":"trusted-node","formatIds":["namespace-overread"],"offerId":"namespace-overread","state":"rejected","diagnostics":[{"code":"x3.host/full-process-authority","severity":"warning","message":"«org.example/namespace-overread» runs as trusted-in-process: the host checks grants at dispatch and brokers what it owns, but it cannot technically prevent this code from reaching Node.js filesystem/network built-ins or the process itself. This is an audit/policy boundary, not a sandbox (24 §5.1).","path":["org.example/namespace-overread"],"data":{"grant":"subject-open-namespace/org.example/namespace-overread#trusted-node#probe","classes":["read-source"]}},{"code":"x3.host/namespace-probe-byte-budget-exceeded","severity":"error","message":"namespace probe exceeded its declared 64-byte budget","path":[],"data":{"error":"namespace probe exceeded its declared 64-byte budget"}}]},{"contributionId":"org.example/namespace-project","extensionId":"org.example/subject-open-namespace","variantId":"trusted-node","formatIds":["namespace-project"],"offerId":"namespace-project","state":"rejected","diagnostics":[{"code":"x3.host/subject-probe-failed","severity":"error","message":"subject probe failed closed: Failed to load url ../../../../../packages/codec-kit/src/index.js (resolved id: ../../../../../packages/codec-kit/src/index.js) in C:/FILES/SC2Files/coding/modkit-core/packages/host/test/fixtures/subject-open-namespace-extension/codec.mjs. Does the file exist?","path":[],"data":{"error":"Failed to load url ../../../../../packages/codec-kit/src/index.js (resolved id: ../../../../../packages/codec-kit/src/index.js) in C:/FILES/SC2Files/coding/modkit-core/packages/host/test/fixtures/subject-open-namespace-extension/codec.mjs. Does the file exist?"}}]},{"contributionId":"org.example/namespace-traversal","extensionId":"org.example/subject-open-namespace","variantId":"trusted-node","formatIds":["namespace-traversal"],"offerId":"namespace-traversal","state":"rejected","diagnostics":[{"code":"x3.host/full-process-authority","severity":"warning","message":"«org.example/namespace-traversal» runs as trusted-in-process: the host checks grants at dispatch and brokers what it owns, but it cannot technically prevent this code from reaching Node.js filesystem/network built-ins or the process itself. This is an audit/policy boundary, not a sandbox (24 §5.1).","path":["org.example/namespace-traversal"],"data":{"grant":"subject-open-namespace/org.example/namespace-traversal#trusted-node#probe","classes":["read-source"]}},{"code":"x3.host/namespace-probe-traversal-refused","severity":"error","message":"namespace-wide enumeration is forbidden during codec probing","path":[],"data":{"error":"namespace-wide enumeration is forbidden during codec probing"}}]}],"diagnostics":[]}
+ ❯ packages/host/test/subject-open.test.ts:734:15
+    732| 
+    733|       if (result.state !== 'opened') {
+    734|         throw new TypeError(`unexpected ${result.reason}: ${JSON.strin…
+       |               ^
+    735|       }
+    736|       expect(result.selected).toMatchObject({
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/39]⎯
+
+ FAIL  packages/testkit/test/text-data.test.ts > 13B text-data providers and codecs > keeps the public index provider-free and all portable sources free of node imports
+Error: ENOENT: no such file or directory, open 'C:\FILES\SC2Files\coding\modkit-core\packages\codec-kit\src\text\index.js'
+ ❯ packages/testkit/test/text-data.test.ts:1005:14
+    1003|       'tree-data-source.js',
+    1004|     ]) {
+    1005|       expect(await readFile(join(sharedRoot, path), 'utf8'), path).not…
+       |              ^
+    1006|     }
+    1007|     for (const format of Object.values(providerFormatByContract)) {
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/39]⎯
+
+ FAIL  packages/testkit/test/uvm-materializer.test.ts > canonical case — exact semantic equality > uvm-core-triangle: live and materialized-then-reopened hash identically
+ FAIL  packages/testkit/test/uvm-materializer.test.ts > canonical case — exact semantic equality > uvm-core-triangle: repeat export is byte-stable
+ FAIL  packages/testkit/test/uvm-materializer.test.ts > canonical case — exact semantic equality > uvm-core-rig: live and materialized-then-reopened hash identically
+ FAIL  packages/testkit/test/uvm-materializer.test.ts > canonical case — exact semantic equality > uvm-core-rig: repeat export is byte-stable
+ FAIL  packages/testkit/test/uvm-materializer.test.ts > canonical case — exact semantic equality > drains a real paged source and reaches the same hash as the in-memory projection
+ FAIL  packages/testkit/test/uvm-materializer.test.ts > canonical case — exact semantic equality > writes UV_game_socket only for an exact existing scene-node join
+ FAIL  packages/testkit/test/uvm-materializer.test.ts > canonical case — exact semantic equality > resolves image identity through ResourceSessionPort and reopens an exact resource closure
+ FAIL  packages/testkit/test/uvm-materializer.test.ts > canonical case — exact semantic equality > does not fabricate closure identity for an unresolved resource
+ FAIL  packages/testkit/test/uvm-materializer.test.ts > honest loss — what the profile could not carry > does not invent textures to make a count match
+ FAIL  packages/testkit/test/uvm-materializer.test.ts > honest loss — what the profile could not carry > renumbers a source whose ids are not positional, and says so per plane
+ FAIL  packages/testkit/test/uvm-materializer.test.ts > honest loss — what the profile could not carry > reports a metadata-only source as an excluded geometry facet, not as empty geometry
+ FAIL  packages/testkit/test/uvm-materializer.test.ts > optional facets stay optional > a simple static model needs neither materials, textures, animations nor bounds
+ FAIL  packages/testkit/test/uvm-materializer.test.ts > optional facets stay optional > refuses a projection that contradicts itself rather than materializing a half-truth
+ FAIL  packages/testkit/test/uvm-materializer.test.ts > optional facets stay optional > refuses to guess an identity or a source format
+ FAIL  packages/testkit/test/uvm-materializer.test.ts > two oracles > the produced artifact satisfies the pinned UVM/core profile
+ FAIL  packages/testkit/test/uvm-materializer.test.ts > two oracles > the old validator’s own UVM check accepts the materialized artifact
+ FAIL  packages/testkit/test/uvm-materializer.test.ts > two oracles > the sealed legacy canonical implementation reproduces the scope hash digit for digit
+ FAIL  packages/testkit/test/uvt-materializer.test.ts > a decoded raster region materialises into a conforming UVT projection > 'bmp': the sidecar agrees with its container and the two paths hash the same
+ FAIL  packages/testkit/test/uvt-materializer.test.ts > a decoded raster region materialises into a conforming UVT projection > 'tga': the sidecar agrees with its container and the two paths hash the same
+ FAIL  packages/testkit/test/uvt-materializer.test.ts > a decoded raster region materialises into a conforming UVT projection > separates the semantic hash from the picture: one changed pixel moves only the digest
+ FAIL  packages/testkit/test/uvt-writer.test.ts > 12-2 UVT export writes through the host coordinator and reopens > plans the two-artifact export, is refused for want of a namespace target, and reopens
+ FAIL  packages/testkit/test/uvt-writer.test.ts > 12-3 the UVM export takes the same coordinator seam > commits a materialized UVM artifact and reads back exactly those bytes
+Error: Failed to load url C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js (resolved id: C:/FILES/SC2Files/coding/modkit-core/packages/uv/src/model/materializer.js). Does the file exist?
+ ❯ loadAndTransform node_modules/.pnpm/vite@5.4.21_@types+node@22.20.1/node_modules/vite/dist/node/chunks/dep-BK3b2jBa.js:51969:17
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/39]⎯
+
+⎯⎯⎯⎯⎯⎯ Unhandled Errors ⎯⎯⎯⎯⎯⎯
+
+Vitest caught 1 unhandled error during the test run.
+This might cause false positive tests. Resolve unhandled errors to make sure your tests are not affected.
+
+⎯⎯⎯⎯⎯⎯ Unhandled Error ⎯⎯⎯⎯⎯⎯⎯
+Error: Worker exited unexpectedly
+ ❯ ChildProcess.onUnexpectedExit node_modules/.pnpm/tinypool@1.1.1/node_modules/tinypool/dist/index.js:118:30
+ ❯ ChildProcess.emit node:events:521:24
+ ❯ ChildProcess._handle.onexit node:internal/child_process:295:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯
+
+ Test Files  8 failed | 96 passed (105)
+      Tests  39 failed | 917 passed (958)
+     Errors  1 error
+   Start at  17:52:08
+   Duration  211.43s (transform 16.25s, setup 0ms, collect 93.35s, tests 222.79s, environment 46ms, prepare 32.13s)
+

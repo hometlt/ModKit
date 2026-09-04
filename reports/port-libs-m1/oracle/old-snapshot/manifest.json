@@ -1,0 +1,28 @@
+{
+  "files": [
+    {
+      "path": "compare-legacy-dds.mjs",
+      "sha256": "6c847f362235d8bd76f1ddd1b2a0d4079a85d91b525c4d69fcb830475c9ad2f5"
+    },
+    {
+      "path": "compare-legacy-dds-bptc.mjs",
+      "sha256": "38cbc840bd9e420169583c31c8a76e2b74ed67e799250617ab4ad2522abc4643"
+    },
+    {
+      "path": "compare-legacy-dds-compressed.mjs",
+      "sha256": "559b2983aa12bc7a986400a641e4bfcc86c2173637af2a4fccdedc79dff0173c"
+    },
+    {
+      "path": "compare-legacy-dds-encode.mjs",
+      "sha256": "4ba5d8ad4b4a5507ab6b2a103bd7e8a7a9f6e663b834506b891c12f2bb2152d2"
+    },
+    {
+      "path": "compare-legacy-image-ops.mjs",
+      "sha256": "f5d44fc80b727f41a6dccbf3740c5e324e1ec186a428db70bf49111f6a15994b"
+    },
+    {
+      "path": "legacy-mk2.mjs",
+      "sha256": "2280ba2daeaa0a277c98adfcf9cba2bd8620ebf40d9e52a06df7624a5ba4f84e"
+    }
+  ]
+}

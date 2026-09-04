@@ -1,0 +1,13 @@
+{
+  "previousCount": 55,
+  "currentCount": 56,
+  "previousSha256": "4edbc095d40f3136582c9ebda3aa1c27eb330074ac8a79ffbce756b6b03bd0a6",
+  "currentSha256": "99cd32d5020775639360722557bd68f9f566441b08d835b48db145c45e0b9c0a",
+  "additions": [
+    {
+      "id": "modkit-core/packages/codec-kit/src/crypto/sha1.ts:sha1Hex#0",
+      "proof": "verified-canonical-provenance",
+      "mk2Path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/sha1.ts"
+    }
+  ]
+}

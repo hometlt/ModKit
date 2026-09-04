@@ -1,0 +1,10 @@
+{
+  "milestone": "M1",
+  "date": "2026-09-04T17:23:06.1393906+04:00",
+  "coreCommit": "878f9cd7658bc065a3eaa034a7f89e5020c887fe",
+  "coreBranch": "sol/port-libs",
+  "blizzardCommit": "57922dd4e3f1988e0e63337532a1a4c8a3d7d22b",
+  "blizzardBranch": "sol/port-sc2",
+  "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "ownerAcceptedM0": true
+}

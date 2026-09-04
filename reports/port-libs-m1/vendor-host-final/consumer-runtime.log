@@ -1,0 +1,3 @@
+{"packages":6,"isolatedResolutions":true,"vectors":["CRC32","SHA1","deflate/inflate roundtrip"]}
+
+[exit-code] 0

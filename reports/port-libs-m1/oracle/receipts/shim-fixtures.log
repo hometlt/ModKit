@@ -1,0 +1,19 @@
+✔ all 14 diagnostic categories, identity, byte range and error details survive the MK3 boundary (8.7461ms)
+✔ compile compatibility registries refuse; operations require explicit owned mapping (1.6463ms)
+✔ real legacy sessions retain permission, state, cancellation and disposal checks (1.8949ms)
+✔ source adapter enforces exact ranges, maxBytes, cancellation and safe integer size (1.3559ms)
+✔ artifact adapter is a native MK3 Codec and probes the selected real legacy detector (1.9156ms)
+✔ edit projection preserves payload/offset and rejects unsupported edits and overlap (2.1747ms)
+✔ runtime bridge reserves before execution and preserves result, refusal and lease disposal (2.9556ms)
+✔ language bridge returns actual projection, rejects wrong snapshots and cancellation (1.7715ms)
+✔ SHA1/CRC and real compression fixtures, corrupt bzip2, early output cap and explicit ADPCM refusal (65.3234ms)
+✔ texture CPU footprint and allocation guards preserve pinned behavior (0.8527ms)
+✔ real Texture2DDecoder WASM Node and explicit browser entrypoint produce equal BC1 pixels; missing assets refuse then retry (48.922ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 11
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 796.084

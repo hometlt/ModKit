@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "stage": "agent-pre-integration-evidence",
+  "files": [
+    {
+      "path": "RECEIPT.md",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\core-ts\\RECEIPT.md",
+      "sha256": "c1b157fc6ddf9a4a908ffff40c41383c2e965a252093269b313996404f388e1b"
+    },
+    {
+      "path": "baseline-vitest-repeat.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\core-ts\\baseline-vitest-repeat.log",
+      "sha256": "15d6e0fef774100d460d0ee71ef62942f246928917ba5dd2296da52f6ae24b3b"
+    },
+    {
+      "path": "final-build.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\core-ts\\final-build.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "scoped-lint-final.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\core-ts\\scoped-lint-final.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "runtime-equivalence.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\core-ts\\runtime-equivalence.json",
+      "sha256": "b915878bdfa847c1e7cd5860782a0c41edade2d859a7db44de5647bab90d25c0"
+    },
+    {
+      "path": "t2-runtime-equivalence.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\core-ts\\t2-runtime-equivalence.json",
+      "sha256": "035a8d17d0062432f4629eb509208c869e3dca0691e9c2376651b2d2358b43f6"
+    },
+    {
+      "path": "package-verification.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\core-ts\\package-verification.json",
+      "sha256": "1fd8de57d19ee33d2fa970dcc3c30ced8cb45775525e6a424089c146a69d8570"
+    },
+    {
+      "path": "host-subject-kind-registry.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\core-ts\\host-subject-kind-registry.json",
+      "sha256": "fbcffae4b2bd0b8d6b839acc4a7d1e6eec8c9cebc2a9bf79be236d73411a0174"
+    },
+    {
+      "path": "scene-final-node.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\core-ts\\scene-final-node.log",
+      "sha256": "d3d354d8d7f21aa6d99410b3986d7a5100cba2c2de78621473396ade812c90fa"
+    },
+    {
+      "path": "final-vitest.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\core-ts\\final-vitest.log",
+      "sha256": "27c17681bd463934523285ec5a4dcda0ada2e04678f578b40e8ecbf57f39043f"
+    },
+    {
+      "path": "final-affected-vitest.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\core-ts\\final-affected-vitest.log",
+      "sha256": "5720242b9121a3c302d1c4f7b06327266712435b0edbb3a46d70dc539b246cd9"
+    },
+    {
+      "path": "final-worker-rerun.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\core-ts\\final-worker-rerun.log",
+      "sha256": "a8cab1af2efcd8e60eabcb98b59085f38d942f1ebfa8208e05d335cc553b2111"
+    }
+  ]
+}

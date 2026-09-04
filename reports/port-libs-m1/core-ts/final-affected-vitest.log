@@ -1,0 +1,41 @@
+
+ RUN  v2.1.9 C:/FILES/SC2Files/coding/modkit-core
+
+ ✓ packages/testkit/test/text-data.test.ts (56 tests) 4392ms
+   ✓ 13B text-data providers and codecs > validates all isolated contribution manifests through the A-1 authorities 2666ms
+   ✓ 13B text-data providers and codecs > parses and publishes the right lazy source for common.text-data/json-syntax 334ms
+   ✓ 13B text-data providers and codecs > pages one million delimited rows without materializing an eager document 500ms
+ ✓ packages/host/test/subject-open.test.ts (17 tests) 7603ms
+   ✓ host-owned subject opening pipeline > matches a case-insensitive **/ glob at the subject root 3249ms
+   ✓ host-owned subject opening pipeline > selects a portable variant only when its execution backend is present 707ms
+   ✓ host-owned subject opening pipeline > opens PNG through the real image inventory and resolves a bounded raster presentation 596ms
+   ✓ detection-hostile: the bounded data-only signature index (NXT-101B / F6) > a renamed PNG (.dat) reaches the PNG probe through its declared signature and opens; the reads stay bounded 385ms
+   ✓ detection-hostile: the bounded data-only signature index (NXT-101B / F6) > a PNG+ZIP polyglot shortlists both codecs (start and end signatures); the probes decide, nothing is bypassed 618ms
+   ✓ detection-hostile: the bounded data-only signature index (NXT-101B / F6) > names input-open when a foreign codec exception has crossed an execution boundary 473ms
+   ✓ detection-hostile: the bounded data-only signature index (NXT-101B / F6) > a magic collision (PNG signature, corrupt body) is probed and rejected honestly — shortlisting is not detection 385ms
+   ✓ detection-hostile: the bounded data-only signature index (NXT-101B / F6) > a subject with no matching name and no matching signature stays no-candidate with bounded reads 316ms
+ ✓ packages/host/test/nested-subject-companion.test.ts (14 tests) 2023ms
+   ✓ a container entry opens as its own subject, with companions from the same container > binds the deflated texture beside the mesh and hands the codec byte-exact bytes 976ms
+ ✓ packages/testkit/test/uvm-materializer.test.ts (18 tests) 652ms
+ ✓ packages/testkit/test/uvt-writer.test.ts (3 tests) 805ms
+   ✓ 12-2 UVT export writes through the host coordinator and reopens > plans the two-artifact export, is refused for want of a namespace target, and reopens 715ms
+ ✓ packages/host/test/companion-sibling.test.ts (10 tests) 1454ms
+   ✓ sibling companion resolution, end to end through the Node path opener > binds the HVA beside the VXL and hands it to the codec only as a binding 797ms
+stdout | packages/testkit/test/uvt-materializer.test.ts > a decoded raster region materialises into a conforming UVT projection > 'bmp': the sidecar agrees with its container and the two paths hash the same
+[uvt] bmp: 1x1, 268 bytes, digest sha256:192fc7ba151f6752…, receipt entries 1, losses 0
+
+stdout | packages/testkit/test/uvt-materializer.test.ts > a decoded raster region materialises into a conforming UVT projection > 'tga': the sidecar agrees with its container and the two paths hash the same
+[uvt] tga: 1x1, 268 bytes, digest sha256:192fc7ba151f6752…, receipt entries 1, losses 0
+
+ ✓ packages/testkit/test/uvt-materializer.test.ts (9 tests) 658ms
+   ✓ a decoded raster region materialises into a conforming UVT projection > 'bmp': the sidecar agrees with its container and the two paths hash the same 588ms
+ ✓ packages/host/test/nested-subject-containers.test.ts (3 tests) 2137ms
+   ✓ a container inside another container uses the same nested route twice > opens ZIP → ZIP → mesh and resolves the companion from the inner namespace 1408ms
+   ✓ large namespace companion resolution remains bounded > uses a path-qualified pattern to list only the exact companion 321ms
+   ✓ large namespace companion resolution remains bounded > refuses a name-only requirement before an unbounded scan can complete 406ms
+
+ Test Files  8 passed (8)
+      Tests  130 passed (130)
+   Start at  18:28:03
+   Duration  22.20s (transform 6.53s, setup 0ms, collect 14.57s, tests 19.72s, environment 3ms, prepare 1.97s)
+

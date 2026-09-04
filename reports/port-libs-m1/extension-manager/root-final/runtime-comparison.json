@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "originalCommit": "2045ff5251cee015414864bb6f76650a25e4237a",
+  "normalization": "TypeScript transpile ESNext removes types/comments; structural JS AST ignores source positions/parentheses and equates dot/static-string property access plus ordinary shorthand properties with explicit same-identifier assignments (excluding __proto__). Preserves identifiers/literals/operators/control flow/defaults/undefined keys.",
+  "files": [
+    {
+      "original": "packages/extension-manager/src/browser.js",
+      "destination": "packages/extension-manager/src/browser.ts",
+      "originalSha256": "8c2b123224b11366dca42e605de9c18909b39fff79789dbd77aa9b11aaa202f7",
+      "destinationSha256": "c1f7774c8e4415a83da93b71d7172eab73177dee203cd7baa52dcfb4e28a6e7f",
+      "originalRuntimeSha256": "d9ef1ba3a9af10de37728a243f577e13778474685f1fe95538cf2db8d90e8fd0",
+      "destinationRuntimeSha256": "d9ef1ba3a9af10de37728a243f577e13778474685f1fe95538cf2db8d90e8fd0",
+      "equal": true
+    },
+    {
+      "original": "packages/extension-manager/src/catalog.js",
+      "destination": "packages/extension-manager/src/catalog.ts",
+      "originalSha256": "f9b699281f697042886260fd8cc428d7d3d804e5eddc730233ae73b7209e4f23",
+      "destinationSha256": "f67da5bab62662e93569011b5a54d19b4c748fcd5b10b3cb411da4df9dc69e99",
+      "originalRuntimeSha256": "8bd4d433a4ff358c95a9f8f70ea59a8935e5ad3b93d4a8b40cb022f10bbfb0a7",
+      "destinationRuntimeSha256": "8bd4d433a4ff358c95a9f8f70ea59a8935e5ad3b93d4a8b40cb022f10bbfb0a7",
+      "equal": true
+    },
+    {
+      "original": "packages/extension-manager/src/cli.js",
+      "destination": "packages/extension-manager/src/cli.ts",
+      "originalSha256": "73509a74585bbdea261b9351b5c95f1fc1855fe82f758c8aaa320e6f19da8ac8",
+      "destinationSha256": "3bf8d567cc94de6890ef91e012228ef3689d5727bd38d889db617be3f97a5264",
+      "originalRuntimeSha256": "acbdfb2c6cb2a1d46395805ca384c0eb4642bead81fb4c31309c6ac7c976f85c",
+      "destinationRuntimeSha256": "acbdfb2c6cb2a1d46395805ca384c0eb4642bead81fb4c31309c6ac7c976f85c",
+      "equal": true
+    },
+    {
+      "original": "packages/extension-manager/src/client.js",
+      "destination": "packages/extension-manager/src/client.ts",
+      "originalSha256": "d3e85d8ed0cfd42189ed0b75ece7bcd9ead38ba7a62641a847a6e10acf48a99f",
+      "destinationSha256": "c7c3cb4f512a30ced810c3f5c0e72b06fe87e37470ffc865be31ddc499c10e4f",
+      "originalRuntimeSha256": "02182353d014faa814ffb384ee64e996462ba6ac618810b013f0a1964c50ebe3",
+      "destinationRuntimeSha256": "02182353d014faa814ffb384ee64e996462ba6ac618810b013f0a1964c50ebe3",
+      "equal": true
+    },
+    {
+      "original": "packages/extension-manager/src/game-support.js",
+      "destination": "packages/extension-manager/src/game-support.ts",
+      "originalSha256": "7811671b64fcafc273b959ad79dec9a2ee848772e7c4120760ec8b9ed39d3f03",
+      "destinationSha256": "4453f2505571d95865512619a4d8030f523ab8836e0dcde869e93ea8d277e75a",
+      "originalRuntimeSha256": "635c1f5af9a2ca1f03d41fbd0e04751dd591b40ad8823f7b73f8f1ef5be532dd",
+      "destinationRuntimeSha256": "635c1f5af9a2ca1f03d41fbd0e04751dd591b40ad8823f7b73f8f1ef5be532dd",
+      "equal": true
+    },
+    {
+      "original": "packages/extension-manager/src/index.js",
+      "destination": "packages/extension-manager/src/index.ts",
+      "originalSha256": "3dcf9fd25cbe50ddaa5c81adb87fc0ad968e2248af2d0da19a64bc8f6b3a7c4e",
+      "destinationSha256": "2bffa37edec66bb56a44ace449fa8496520029439847d95935744aca61b78939",
+      "originalRuntimeSha256": "96afa802c48c26d0fdf9113b61fbe78d6073c5cc2bfe0580adae3af98cdc7487",
+      "destinationRuntimeSha256": "96afa802c48c26d0fdf9113b61fbe78d6073c5cc2bfe0580adae3af98cdc7487",
+      "equal": true
+    },
+    {
+      "original": "packages/extension-manager/src/local-candidates.js",
+      "destination": "packages/extension-manager/src/local-candidates.ts",
+      "originalSha256": "9c43998d7cc28da1d4fd69bd49cd03f9fa87808708df8022cd1fa2d8e70b1785",
+      "destinationSha256": "574346487b53849f82a8446ade006e6d0c3e94d0180bb82cffd9f22732fda802",
+      "originalRuntimeSha256": "5404ae61167258a03f1535328cf7a345043e9bd400239c6ec24c5c98b95e12f0",
+      "destinationRuntimeSha256": "5404ae61167258a03f1535328cf7a345043e9bd400239c6ec24c5c98b95e12f0",
+      "equal": true
+    },
+    {
+      "original": "packages/extension-manager/src/node-adapters.js",
+      "destination": "packages/extension-manager/src/node-adapters.ts",
+      "originalSha256": "ce99bd5f3554d0a0179ef7b057fc1e63779625c747873ad358d64e228ad6ce8b",
+      "destinationSha256": "f75c59776d1df51a8958c9e55952d3f25b1477299ebdb3425a0ec326993ee8a5",
+      "originalRuntimeSha256": "33c9c918d40b7b58f8ebaca47151e4ee5dcb799e07047ee5b5a7309db732a4e3",
+      "destinationRuntimeSha256": "33c9c918d40b7b58f8ebaca47151e4ee5dcb799e07047ee5b5a7309db732a4e3",
+      "equal": true
+    },
+    {
+      "original": "packages/extension-manager/src/node.js",
+      "destination": "packages/extension-manager/src/node.ts",
+      "originalSha256": "f02a3cae5baf3d45e5b77b47b5d7076ffaaeac538ccc847dbbbb8418c6e229af",
+      "destinationSha256": "a30516ad05eac60176e78cc0d5b2e6e3eec5a80fbc5fbb2c01a397c86d0e4196",
+      "originalRuntimeSha256": "751ac539b170875537ea897031111991206ad1b7cb71875da77c0e34a9dfa705",
+      "destinationRuntimeSha256": "751ac539b170875537ea897031111991206ad1b7cb71875da77c0e34a9dfa705",
+      "equal": true
+    },
+    {
+      "original": "packages/extension-manager/src/providers-browser.js",
+      "destination": "packages/extension-manager/src/providers-browser.ts",
+      "originalSha256": "baaac81a08cb4fee899ea50ee403712816a8c7027db3096c7d6020e68a0e2f2e",
+      "destinationSha256": "893cb930e6beeba5beed97ef20a806535f3ac3f535d04c3d42b5c0775fa0f605",
+      "originalRuntimeSha256": "79632fefb5be4cd8a26d5257cd8f9addf3ef27df0e00bd272474ead214c72c6c",
+      "destinationRuntimeSha256": "79632fefb5be4cd8a26d5257cd8f9addf3ef27df0e00bd272474ead214c72c6c",
+      "equal": true
+    },
+    {
+      "original": "packages/extension-manager/src/providers-node.js",
+      "destination": "packages/extension-manager/src/providers-node.ts",
+      "originalSha256": "cd65fbd638b711e68c76a777ef7782677ca0e0a87dae1198b2fb2c66b6fcba39",
+      "destinationSha256": "84ab89c65490e28504e2591aea1ff0fef4f958f643618661abba51ed0c0e0c96",
+      "originalRuntimeSha256": "b0b9afcd46823927148456b264f6f41eaa7de350cc2fa2982a48d2700bd91686",
+      "destinationRuntimeSha256": "b0b9afcd46823927148456b264f6f41eaa7de350cc2fa2982a48d2700bd91686",
+      "equal": true
+    },
+    {
+      "original": "packages/extension-manager/src/schema.js",
+      "destination": "packages/extension-manager/src/schema.ts",
+      "originalSha256": "3592ecaab00cb727c17cd90283ee4dee6b4bb2938bf7b9cbf5015c75a0102b65",
+      "destinationSha256": "1ba5b9a3199eaf7cf181668ea9b917a39046f0701df1a31116c76c3fe92690f1",
+      "originalRuntimeSha256": "a6a94d55d87fc916309f7c59b6b0d06d6f63f6dc20d5a6be3aa10973245039ff",
+      "destinationRuntimeSha256": "a6a94d55d87fc916309f7c59b6b0d06d6f63f6dc20d5a6be3aa10973245039ff",
+      "equal": true
+    },
+    {
+      "original": "packages/extension-manager/src/subject-profiles.js",
+      "destination": "packages/extension-manager/src/subject-profiles.ts",
+      "originalSha256": "a517f6a20af76ff7bdf9763c8176a197fc5098e7bde15a11d522dac82b63f51f",
+      "destinationSha256": "f2ce2bcb7745e22af469326d25ef33cf2fdede46bb039b89ab515e3afd2d1afc",
+      "originalRuntimeSha256": "e581dd3c730d1af4c094804dc1ec0fd519189876cae664a37a9363b9233367f1",
+      "destinationRuntimeSha256": "e581dd3c730d1af4c094804dc1ec0fd519189876cae664a37a9363b9233367f1",
+      "equal": true
+    },
+    {
+      "original": "packages/extension-manager/src/subjects.js",
+      "destination": "packages/extension-manager/src/subjects.ts",
+      "originalSha256": "f2dfef1bc71d5c8f01d1f0ca54d8be1515026ec241e7b1f0855b5dfe3c1b1113",
+      "destinationSha256": "c6821091480361947570d30ca6d2cb3a37fab16120db2580a5aac6575e91bfcd",
+      "originalRuntimeSha256": "fab53e0ccc8025ce081c9c68b188782fc770ef0749b5d2c108c575d62563b9cc",
+      "destinationRuntimeSha256": "fab53e0ccc8025ce081c9c68b188782fc770ef0749b5d2c108c575d62563b9cc",
+      "equal": true
+    },
+    {
+      "original": "packages/extension-manager/src/vfs.js",
+      "destination": "packages/extension-manager/src/vfs.ts",
+      "originalSha256": "7377c98c06b31542bd88a3022629aa1f1abf5285e317a5351c52715af706a242",
+      "destinationSha256": "47428582d2b233d7c96518880f80f6cb857fc93231142eff86e31cc33ad70655",
+      "originalRuntimeSha256": "3c716897eb4407b3da2811dd35483831f6c2019cdf5c81eecb1e3f8a57174158",
+      "destinationRuntimeSha256": "3c716897eb4407b3da2811dd35483831f6c2019cdf5c81eecb1e3f8a57174158",
+      "equal": true
+    }
+  ],
+  "verdict": "pass"
+}

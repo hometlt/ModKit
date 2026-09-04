@@ -1,0 +1,1947 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-09-04T15:08:47.877Z",
+  "files": [
+    {
+      "path": "receipts/compare-legacy-dds-bptc.new.corpus.json.gz",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-bptc.new.corpus.json",
+      "sha256": "aaef54bad2b326cadc12fe07f8b14d0d15e7ff5e249c15345809c8e1d6bdf527",
+      "byteLength": 2713729,
+      "originSha256": "ac29ff0af802a121babe57589483464908780ba35f195e21271696104e8c0d17",
+      "originByteLength": 15160730,
+      "encoding": "gzip"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-bptc.new.loader.json.gz",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-bptc.new.loader.json",
+      "sha256": "ca086306ca23c236c107b196ccf479222399f307b475de19f16c4565a3a81600",
+      "byteLength": 13606066,
+      "originSha256": "9f22733d239c0eca44ecbfc72e17ba710f7f3b41a50ed95c783a45a578680258",
+      "originByteLength": 84673787,
+      "encoding": "gzip"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-bptc.new.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-bptc.new.log",
+      "sha256": "a4c46fa2775067b03f5899082e92f810cb359706ac59c0dc66915fab0be53bad",
+      "byteLength": 1930,
+      "originSha256": "a4c46fa2775067b03f5899082e92f810cb359706ac59c0dc66915fab0be53bad",
+      "originByteLength": 1930,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-bptc.new.receipt.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-bptc.new.receipt.json",
+      "sha256": "7bb6d4cac1dd530c29dfe97fc206a6fca81ebe8691763032517684522b3cec69",
+      "byteLength": 1416,
+      "originSha256": "7bb6d4cac1dd530c29dfe97fc206a6fca81ebe8691763032517684522b3cec69",
+      "originByteLength": 1416,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-bptc.new.stderr.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-bptc.new.stderr.log",
+      "sha256": "906557df173bc1674ce2dc72b6ed449fa169b0bf82819a1e179c949b572e9261",
+      "byteLength": 1486,
+      "originSha256": "906557df173bc1674ce2dc72b6ed449fa169b0bf82819a1e179c949b572e9261",
+      "originByteLength": 1486,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-bptc.new.stdout.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-bptc.new.stdout.log",
+      "sha256": "96f69001dae2b19aa57672c5a557b05fea1e3afa3f034b00af4fd12d4e2b6d36",
+      "byteLength": 444,
+      "originSha256": "96f69001dae2b19aa57672c5a557b05fea1e3afa3f034b00af4fd12d4e2b6d36",
+      "originByteLength": 444,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-bptc.old.corpus.json.gz",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-bptc.old.corpus.json",
+      "sha256": "aaef54bad2b326cadc12fe07f8b14d0d15e7ff5e249c15345809c8e1d6bdf527",
+      "byteLength": 2713729,
+      "originSha256": "ac29ff0af802a121babe57589483464908780ba35f195e21271696104e8c0d17",
+      "originByteLength": 15160730,
+      "encoding": "gzip"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-bptc.old.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-bptc.old.log",
+      "sha256": "96f69001dae2b19aa57672c5a557b05fea1e3afa3f034b00af4fd12d4e2b6d36",
+      "byteLength": 444,
+      "originSha256": "96f69001dae2b19aa57672c5a557b05fea1e3afa3f034b00af4fd12d4e2b6d36",
+      "originByteLength": 444,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-bptc.old.receipt.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-bptc.old.receipt.json",
+      "sha256": "46aba5ea194c2cf309ec7fd66b970d07de5202d08aa5a267eecb6e8d899d2b0f",
+      "byteLength": 1423,
+      "originSha256": "46aba5ea194c2cf309ec7fd66b970d07de5202d08aa5a267eecb6e8d899d2b0f",
+      "originByteLength": 1423,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-compressed.new.corpus.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-compressed.new.corpus.json",
+      "sha256": "a64513f8904f50cc25848c1a06d25d12aa7ab88a99ca5a7dea7712dea5aacb4c",
+      "byteLength": 83137,
+      "originSha256": "a64513f8904f50cc25848c1a06d25d12aa7ab88a99ca5a7dea7712dea5aacb4c",
+      "originByteLength": 83137,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-compressed.new.loader.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-compressed.new.loader.json",
+      "sha256": "0a17b0080391d8509d53f2278c5f6ffca3b5bcb4d78ad3c151611607e10304fc",
+      "byteLength": 561803,
+      "originSha256": "0a17b0080391d8509d53f2278c5f6ffca3b5bcb4d78ad3c151611607e10304fc",
+      "originByteLength": 561803,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-compressed.new.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-compressed.new.log",
+      "sha256": "25779efa3339afa4a9bf80ce6ccda34916f9fda507ac221a18b2eecf26a90b68",
+      "byteLength": 7294,
+      "originSha256": "25779efa3339afa4a9bf80ce6ccda34916f9fda507ac221a18b2eecf26a90b68",
+      "originByteLength": 7294,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-compressed.new.receipt.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-compressed.new.receipt.json",
+      "sha256": "bddafd6d9f109ef80162f79af489f65fac1c83bee033594f86eb2605cecbd720",
+      "byteLength": 1416,
+      "originSha256": "bddafd6d9f109ef80162f79af489f65fac1c83bee033594f86eb2605cecbd720",
+      "originByteLength": 1416,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-compressed.new.stderr.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-compressed.new.stderr.log",
+      "sha256": "db36daedfcef6feecd98b73659ac6602444cc75c0a961842b5ef3e05a21735ae",
+      "byteLength": 774,
+      "originSha256": "db36daedfcef6feecd98b73659ac6602444cc75c0a961842b5ef3e05a21735ae",
+      "originByteLength": 774,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-compressed.new.stdout.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-compressed.new.stdout.log",
+      "sha256": "c43376197e167a79c5f60ca1a30e3524295ed82ad515e9cdf6c0292a192a07d9",
+      "byteLength": 6520,
+      "originSha256": "c43376197e167a79c5f60ca1a30e3524295ed82ad515e9cdf6c0292a192a07d9",
+      "originByteLength": 6520,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-compressed.old.corpus.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-compressed.old.corpus.json",
+      "sha256": "a64513f8904f50cc25848c1a06d25d12aa7ab88a99ca5a7dea7712dea5aacb4c",
+      "byteLength": 83137,
+      "originSha256": "a64513f8904f50cc25848c1a06d25d12aa7ab88a99ca5a7dea7712dea5aacb4c",
+      "originByteLength": 83137,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-compressed.old.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-compressed.old.log",
+      "sha256": "c43376197e167a79c5f60ca1a30e3524295ed82ad515e9cdf6c0292a192a07d9",
+      "byteLength": 6520,
+      "originSha256": "c43376197e167a79c5f60ca1a30e3524295ed82ad515e9cdf6c0292a192a07d9",
+      "originByteLength": 6520,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-compressed.old.receipt.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-compressed.old.receipt.json",
+      "sha256": "d2a045a0fd22dd1f89bce0ad3f7e700f566a458e766cbf6d1fb17f32e52a4312",
+      "byteLength": 1423,
+      "originSha256": "d2a045a0fd22dd1f89bce0ad3f7e700f566a458e766cbf6d1fb17f32e52a4312",
+      "originByteLength": 1423,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-encode.new.corpus.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-encode.new.corpus.json",
+      "sha256": "723bf6af489af3fec2e093ed254f16e05833735f341c000d33a5ee776e2c6ca8",
+      "byteLength": 32776,
+      "originSha256": "723bf6af489af3fec2e093ed254f16e05833735f341c000d33a5ee776e2c6ca8",
+      "originByteLength": 32776,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-encode.new.loader.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-encode.new.loader.json",
+      "sha256": "666c8ec6d62b44edc3070ee015c2250a36b7366cf12b1a6e4c9888d9fd256a86",
+      "byteLength": 281714,
+      "originSha256": "666c8ec6d62b44edc3070ee015c2250a36b7366cf12b1a6e4c9888d9fd256a86",
+      "originByteLength": 281714,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-encode.new.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-encode.new.log",
+      "sha256": "a6684454a67bca1c2a2aa9b5490e51a83319841378954272ead1a4b72bc21751",
+      "byteLength": 5006,
+      "originSha256": "a6684454a67bca1c2a2aa9b5490e51a83319841378954272ead1a4b72bc21751",
+      "originByteLength": 5006,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-encode.new.receipt.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-encode.new.receipt.json",
+      "sha256": "0961e1b4526d93b166e42e8d73f8bf56931acd30cd5b4b710674622ebf4e27e4",
+      "byteLength": 1408,
+      "originSha256": "0961e1b4526d93b166e42e8d73f8bf56931acd30cd5b4b710674622ebf4e27e4",
+      "originByteLength": 1408,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-encode.new.stderr.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-encode.new.stderr.log",
+      "sha256": "ce69d9679ed43b8ad6a40b2cffe8698b79753800702f2400220987ffe85492b2",
+      "byteLength": 774,
+      "originSha256": "ce69d9679ed43b8ad6a40b2cffe8698b79753800702f2400220987ffe85492b2",
+      "originByteLength": 774,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-encode.new.stdout.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-encode.new.stdout.log",
+      "sha256": "ff5fa18833f8d1df59e798440df0dca5d6e5c32c29533ecfbd580a92e1728ae9",
+      "byteLength": 4232,
+      "originSha256": "ff5fa18833f8d1df59e798440df0dca5d6e5c32c29533ecfbd580a92e1728ae9",
+      "originByteLength": 4232,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-encode.old.corpus.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-encode.old.corpus.json",
+      "sha256": "723bf6af489af3fec2e093ed254f16e05833735f341c000d33a5ee776e2c6ca8",
+      "byteLength": 32776,
+      "originSha256": "723bf6af489af3fec2e093ed254f16e05833735f341c000d33a5ee776e2c6ca8",
+      "originByteLength": 32776,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-encode.old.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-encode.old.log",
+      "sha256": "ff5fa18833f8d1df59e798440df0dca5d6e5c32c29533ecfbd580a92e1728ae9",
+      "byteLength": 4232,
+      "originSha256": "ff5fa18833f8d1df59e798440df0dca5d6e5c32c29533ecfbd580a92e1728ae9",
+      "originByteLength": 4232,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds-encode.old.receipt.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds-encode.old.receipt.json",
+      "sha256": "64271fd99018e2d11f2560c9cb0f8570f482798d73369d3aa9f40b9cbd5dd28c",
+      "byteLength": 1415,
+      "originSha256": "64271fd99018e2d11f2560c9cb0f8570f482798d73369d3aa9f40b9cbd5dd28c",
+      "originByteLength": 1415,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds.new.corpus.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds.new.corpus.json",
+      "sha256": "f26ba16896bc91693b21438cfbcf8ee3985db3bf02f92fd148a002583cd66ea9",
+      "byteLength": 346563,
+      "originSha256": "f26ba16896bc91693b21438cfbcf8ee3985db3bf02f92fd148a002583cd66ea9",
+      "originByteLength": 346563,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds.new.loader.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds.new.loader.json",
+      "sha256": "24a18b2fc11e75688e743168a6446f9fd33c55471ab5e2b3ac6dfb1b15ce1eeb",
+      "byteLength": 2024947,
+      "originSha256": "24a18b2fc11e75688e743168a6446f9fd33c55471ab5e2b3ac6dfb1b15ce1eeb",
+      "originByteLength": 2024947,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds.new.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds.new.log",
+      "sha256": "143d9cc88ab43029903b81dba4395c59362ffd1cbf3b49db54fa52f6b3efe661",
+      "byteLength": 1153,
+      "originSha256": "143d9cc88ab43029903b81dba4395c59362ffd1cbf3b49db54fa52f6b3efe661",
+      "originByteLength": 1153,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds.new.receipt.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds.new.receipt.json",
+      "sha256": "052b75839ab5c1fef4a2348d1c7ecd68cd9e46a06938e3c90e5609e7bd2f0ef7",
+      "byteLength": 1399,
+      "originSha256": "052b75839ab5c1fef4a2348d1c7ecd68cd9e46a06938e3c90e5609e7bd2f0ef7",
+      "originByteLength": 1399,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds.new.stderr.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds.new.stderr.log",
+      "sha256": "a29813b3640b5873e003607c0cbbd1cff85f91f9b120844b4c6f5486315a189e",
+      "byteLength": 774,
+      "originSha256": "a29813b3640b5873e003607c0cbbd1cff85f91f9b120844b4c6f5486315a189e",
+      "originByteLength": 774,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds.new.stdout.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds.new.stdout.log",
+      "sha256": "fc38c6997d540a8dbbec3ba60863b4680f030c59548d1aad74e82412f27322c7",
+      "byteLength": 379,
+      "originSha256": "fc38c6997d540a8dbbec3ba60863b4680f030c59548d1aad74e82412f27322c7",
+      "originByteLength": 379,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds.old.corpus.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds.old.corpus.json",
+      "sha256": "f26ba16896bc91693b21438cfbcf8ee3985db3bf02f92fd148a002583cd66ea9",
+      "byteLength": 346563,
+      "originSha256": "f26ba16896bc91693b21438cfbcf8ee3985db3bf02f92fd148a002583cd66ea9",
+      "originByteLength": 346563,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds.old.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds.old.log",
+      "sha256": "fc38c6997d540a8dbbec3ba60863b4680f030c59548d1aad74e82412f27322c7",
+      "byteLength": 379,
+      "originSha256": "fc38c6997d540a8dbbec3ba60863b4680f030c59548d1aad74e82412f27322c7",
+      "originByteLength": 379,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-dds.old.receipt.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-dds.old.receipt.json",
+      "sha256": "16d70fe0b7e2bcefeae9ec1f9768efa395362a83b71a30cbe4cf35a5afad3211",
+      "byteLength": 1406,
+      "originSha256": "16d70fe0b7e2bcefeae9ec1f9768efa395362a83b71a30cbe4cf35a5afad3211",
+      "originByteLength": 1406,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-image-ops.new.corpus.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-image-ops.new.corpus.json",
+      "sha256": "a2232901a34ae3c37cc5ba116582264b9cd49f4b3f57e5e5f657a2abb27cdc42",
+      "byteLength": 24621,
+      "originSha256": "a2232901a34ae3c37cc5ba116582264b9cd49f4b3f57e5e5f657a2abb27cdc42",
+      "originByteLength": 24621,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-image-ops.new.loader.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-image-ops.new.loader.json",
+      "sha256": "1bfc4f34ba300cce56d59d7d1d6336e82549ef0396c60e8dac765fdb737670bb",
+      "byteLength": 236418,
+      "originSha256": "1bfc4f34ba300cce56d59d7d1d6336e82549ef0396c60e8dac765fdb737670bb",
+      "originByteLength": 236418,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-image-ops.new.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-image-ops.new.log",
+      "sha256": "714929b760f3215cb2c9ac1255a628c5ffa45759348df3b69eb5f1f3fb6ba73d",
+      "byteLength": 2080,
+      "originSha256": "714929b760f3215cb2c9ac1255a628c5ffa45759348df3b69eb5f1f3fb6ba73d",
+      "originByteLength": 2080,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-image-ops.new.receipt.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-image-ops.new.receipt.json",
+      "sha256": "b646c6ff721c17ad700c3effd178a557e1bd1e30bc881b918ca81d54c087848b",
+      "byteLength": 1409,
+      "originSha256": "b646c6ff721c17ad700c3effd178a557e1bd1e30bc881b918ca81d54c087848b",
+      "originByteLength": 1409,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-image-ops.new.stderr.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-image-ops.new.stderr.log",
+      "sha256": "50ee7c68a551d52f3798684982fcaff6b3274e5bb5859c8448ebb1dc99a2ac96",
+      "byteLength": 774,
+      "originSha256": "50ee7c68a551d52f3798684982fcaff6b3274e5bb5859c8448ebb1dc99a2ac96",
+      "originByteLength": 774,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-image-ops.new.stdout.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-image-ops.new.stdout.log",
+      "sha256": "aaf8ac06424be59cbc47e8c173f10b8ae95e4d92e1181a70ecba8687e5796e5a",
+      "byteLength": 1306,
+      "originSha256": "aaf8ac06424be59cbc47e8c173f10b8ae95e4d92e1181a70ecba8687e5796e5a",
+      "originByteLength": 1306,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-image-ops.old.corpus.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-image-ops.old.corpus.json",
+      "sha256": "a2232901a34ae3c37cc5ba116582264b9cd49f4b3f57e5e5f657a2abb27cdc42",
+      "byteLength": 24621,
+      "originSha256": "a2232901a34ae3c37cc5ba116582264b9cd49f4b3f57e5e5f657a2abb27cdc42",
+      "originByteLength": 24621,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-image-ops.old.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-image-ops.old.log",
+      "sha256": "aaf8ac06424be59cbc47e8c173f10b8ae95e4d92e1181a70ecba8687e5796e5a",
+      "byteLength": 1306,
+      "originSha256": "aaf8ac06424be59cbc47e8c173f10b8ae95e4d92e1181a70ecba8687e5796e5a",
+      "originByteLength": 1306,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/compare-legacy-image-ops.old.receipt.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\compare-legacy-image-ops.old.receipt.json",
+      "sha256": "8aa08d0440392823cb055c7d517241f155bbd79a674025704a114064dde5ade4",
+      "byteLength": 1416,
+      "originSha256": "8aa08d0440392823cb055c7d517241f155bbd79a674025704a114064dde5ade4",
+      "originByteLength": 1416,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/mk3-reference.initial.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\mk3-reference.initial.json",
+      "sha256": "8df221fa080305ce3ff41e4f572e4071837facaca28a6ee1dac897c17bed886c",
+      "byteLength": 451174,
+      "originSha256": "8df221fa080305ce3ff41e4f572e4071837facaca28a6ee1dac897c17bed886c",
+      "originByteLength": 451174,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/mk3-reference.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\mk3-reference.json",
+      "sha256": "b80a5bc81d58a15ee6a5038ac1c5ede53e20fa8ff1c9f48840be469ad59d12bd",
+      "byteLength": 456150,
+      "originSha256": "b80a5bc81d58a15ee6a5038ac1c5ede53e20fa8ff1c9f48840be469ad59d12bd",
+      "originByteLength": 456150,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/oracle-format.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\oracle-format.log",
+      "sha256": "17aa973d3f004560237d9a95171210b0671deff23d61628eecf7322ff5938f20",
+      "byteLength": 66,
+      "originSha256": "17aa973d3f004560237d9a95171210b0671deff23d61628eecf7322ff5938f20",
+      "originByteLength": 66,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/oracle-lint.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\oracle-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "byteLength": 0,
+      "originSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originByteLength": 0,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/oracle-test.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\oracle-test.log",
+      "sha256": "78bbf20a909bf03995f90b72814e9e2195423050695862b7d0e91b00786697d9",
+      "byteLength": 212,
+      "originSha256": "78bbf20a909bf03995f90b72814e9e2195423050695862b7d0e91b00786697d9",
+      "originByteLength": 212,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/oracle-verification.receipt.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\oracle-verification.receipt.json",
+      "sha256": "df312aad8233b7b2af32b9e346ca4f261d2c12d20c915b78e3285dbdacf124f9",
+      "byteLength": 1662,
+      "originSha256": "df312aad8233b7b2af32b9e346ca4f261d2c12d20c915b78e3285dbdacf124f9",
+      "originByteLength": 1662,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/p9-parity.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\p9-parity.log",
+      "sha256": "11e8eeedb54f4902139c86ebe9fdb0a1ce58b74e62bc493337a8d16e62224e39",
+      "byteLength": 120,
+      "originSha256": "11e8eeedb54f4902139c86ebe9fdb0a1ce58b74e62bc493337a8d16e62224e39",
+      "originByteLength": 120,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/p9-parity.receipt.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\p9-parity.receipt.json",
+      "sha256": "7234f6cb2141ddc30cfc376aab9c38336cb52e4e92ef5aec0ad99bc901abd0e0",
+      "byteLength": 51286,
+      "originSha256": "7234f6cb2141ddc30cfc376aab9c38336cb52e4e92ef5aec0ad99bc901abd0e0",
+      "originByteLength": 51286,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/receipt.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\receipt.json",
+      "sha256": "87fafa5c285ed1f85aabc24a0ed21170eacca193b0a7b45f1bc55f609b3d48a7",
+      "byteLength": 19785,
+      "originSha256": "87fafa5c285ed1f85aabc24a0ed21170eacca193b0a7b45f1bc55f609b3d48a7",
+      "originByteLength": 19785,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/shim-build.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\shim-build.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "byteLength": 0,
+      "originSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originByteLength": 0,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/shim-copy-map.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\shim-copy-map.log",
+      "sha256": "03166844626eecc41a7a298a98623bd141a3f921b0631bfc5ed67e3294f9a9ce",
+      "byteLength": 6827,
+      "originSha256": "03166844626eecc41a7a298a98623bd141a3f921b0631bfc5ed67e3294f9a9ce",
+      "originByteLength": 6827,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/shim-fixtures.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\shim-fixtures.log",
+      "sha256": "ba46688be5c7f3bad104b3239a154ebbf8d56332265f1189ae2eae0a3ca666fd",
+      "byteLength": 1252,
+      "originSha256": "ba46688be5c7f3bad104b3239a154ebbf8d56332265f1189ae2eae0a3ca666fd",
+      "originByteLength": 1252,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/shim-format-write.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\shim-format-write.log",
+      "sha256": "46c9caa50ed79e8c7311b12627ec9b398818f5aee5917798a85561095cd6360f",
+      "byteLength": 1377,
+      "originSha256": "46c9caa50ed79e8c7311b12627ec9b398818f5aee5917798a85561095cd6360f",
+      "originByteLength": 1377,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/shim-lint.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\shim-lint.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "byteLength": 0,
+      "originSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originByteLength": 0,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/shim-typecheck.log",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\shim-typecheck.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "byteLength": 0,
+      "originSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "originByteLength": 0,
+      "encoding": "identity"
+    },
+    {
+      "path": "receipts/shim.receipt.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\shim.receipt.json",
+      "sha256": "1721b2ea189e9b670c4bfd666adc6d8cbeb44582a33abdf59a2e6655a69c6439",
+      "byteLength": 7335,
+      "originSha256": "1721b2ea189e9b670c4bfd666adc6d8cbeb44582a33abdf59a2e6655a69c6439",
+      "originByteLength": 7335,
+      "encoding": "identity"
+    },
+    {
+      "path": "tested-loader-snapshots/540f9c6b3ba68483eab6ada793df437299990f3494e3cd91c87a7c11fde22100/legacy-oracle.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\cache\\bb27b06075732f8985195b287de7978a0ab9bfdd47e18c3b9003e4f99b97dfcd\\loader\\0-legacy-oracle.mjs",
+      "sha256": "540f9c6b3ba68483eab6ada793df437299990f3494e3cd91c87a7c11fde22100",
+      "byteLength": 22659,
+      "originSha256": "540f9c6b3ba68483eab6ada793df437299990f3494e3cd91c87a7c11fde22100",
+      "originByteLength": 22659,
+      "encoding": "identity",
+      "referencedBy": [
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "bb27b06075732f8985195b287de7978a0ab9bfdd47e18c3b9003e4f99b97dfcd",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "b32993b2d0ab701bf25a44db06e8aa7b755ebaa15e850bf8c1717ade4595479a",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "5fb200faab753075cae9618dc729f40e61a16dcf4d4fddcdcc0aa805237dc6c6",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "9e7292ba1001e13bd6df7475f5572241a5ecaae0f795225de6bd8a69c66d8cd2",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "4a0d5310de5da83236dadb1da5af2f575e7fa653d0fcfe5110948fe7d92c405f",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "9974a1193266469c9b02e67f46086f49d7c85fdcb928e59490f233a5c21c640e",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "d896913f26659f6661e410c704fe2dcd559bb494d8c02aa63474eaf13d690825",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "e16661d6caa0f9605efe41a545c084dcab98d2539dc57044a9e380c27deb2339",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "399228ff2cfc094eb2943414ae2f58f823e2cb4f0d7fb05544bf8af0cb138a1f",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "38cb818c5991d3c363fd953ed9341baed1b6ecdbd119800ad3012373de908931",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "830bee7b7457190759d6eebee16931984e80591c7026611bfd2a18bca044d75b",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "70b43846b7684373dc54a606245172219562ca598dc102c59cb791b992e6ea06",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "736c942941c15edecf618a14725e065897af2ca9e821791ad0d8117742490cec",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "c0304dff4ca4e59232c3d089844f267ed84d8dfb19440db926b556683b983b0e",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "1304adbff16641712c6fb05028338244a0937f284b3b8bb9258f9419add3763d",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "e6d092bcbf6025a1970010e1ca8ea218fc96d8414131ecd63739a414269265ac",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "1f1a6e7b5b930be85ded0c9180e8a7fceb5fa67cae82b20bef90ae4236de1e84",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "74578e2f246108c8529a201593190037c6eb3ee62449aec4f22f2e9e5fb105b0",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "20f02189f245298ef1914a269e85c5f00226a27a59085270142e69fa4ea7bb2b",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "b30c689d4bd0394ed3ac33e4d48b2e775deec556d888aa530af643038c6d2efb",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "8c814db0330492bd7ad3ffeec20e5f7b999f43b8ec1856ecc26e7cc24ebcf017",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "93d581044a6793bc692de8736520cab9ebc183fb84bb15a04a270f7cc2e67419",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "b5d2db0fafc984aeb3e6608105725a91b90ad102b82e0840c08e5271b65c9256",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "b8a81411219dc5c606f593a83be082d9b4421a07e2cf2b490a129a7f2543a218",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "6fe1f6468a4fa913f6df6cac957f2b20c183babc60702ef4447d9e529a61331f",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "mk3-reference.json",
+          "cacheKey": "dda96d9c01994d1b0531a5ac3012663b020d259cd6e322dfd37d2b5186e64a32",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "mk3-reference.json",
+          "cacheKey": "805591ba5efd5b33865e71f7a06f7d0f444811b5d7e82aab856118ef61b3125b",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "mk3-reference.json",
+          "cacheKey": "21fe35157ccdbec7a2d8f27b693631f52602a99660c970c8b2119d700cfd4457",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "mk3-reference.json",
+          "cacheKey": "a19e27c14d8b3d557781a660aa72eec3084abc517c56ad54a47f23847165c2aa",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        }
+      ]
+    },
+    {
+      "path": "tested-loader-snapshots/b84e2198184759fcf3c1907aee95e7095fa22091c5486dd6c3bfd03b73798092/load-mk2.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\cache\\bb27b06075732f8985195b287de7978a0ab9bfdd47e18c3b9003e4f99b97dfcd\\loader\\1-load-mk2.mjs",
+      "sha256": "b84e2198184759fcf3c1907aee95e7095fa22091c5486dd6c3bfd03b73798092",
+      "byteLength": 719,
+      "originSha256": "b84e2198184759fcf3c1907aee95e7095fa22091c5486dd6c3bfd03b73798092",
+      "originByteLength": 719,
+      "encoding": "identity",
+      "referencedBy": [
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "bb27b06075732f8985195b287de7978a0ab9bfdd47e18c3b9003e4f99b97dfcd",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "b32993b2d0ab701bf25a44db06e8aa7b755ebaa15e850bf8c1717ade4595479a",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "5fb200faab753075cae9618dc729f40e61a16dcf4d4fddcdcc0aa805237dc6c6",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "9e7292ba1001e13bd6df7475f5572241a5ecaae0f795225de6bd8a69c66d8cd2",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "4a0d5310de5da83236dadb1da5af2f575e7fa653d0fcfe5110948fe7d92c405f",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "9974a1193266469c9b02e67f46086f49d7c85fdcb928e59490f233a5c21c640e",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "d896913f26659f6661e410c704fe2dcd559bb494d8c02aa63474eaf13d690825",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "e16661d6caa0f9605efe41a545c084dcab98d2539dc57044a9e380c27deb2339",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "399228ff2cfc094eb2943414ae2f58f823e2cb4f0d7fb05544bf8af0cb138a1f",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "38cb818c5991d3c363fd953ed9341baed1b6ecdbd119800ad3012373de908931",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "830bee7b7457190759d6eebee16931984e80591c7026611bfd2a18bca044d75b",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "70b43846b7684373dc54a606245172219562ca598dc102c59cb791b992e6ea06",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "736c942941c15edecf618a14725e065897af2ca9e821791ad0d8117742490cec",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "c0304dff4ca4e59232c3d089844f267ed84d8dfb19440db926b556683b983b0e",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "1304adbff16641712c6fb05028338244a0937f284b3b8bb9258f9419add3763d",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "e6d092bcbf6025a1970010e1ca8ea218fc96d8414131ecd63739a414269265ac",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "1f1a6e7b5b930be85ded0c9180e8a7fceb5fa67cae82b20bef90ae4236de1e84",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "74578e2f246108c8529a201593190037c6eb3ee62449aec4f22f2e9e5fb105b0",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "20f02189f245298ef1914a269e85c5f00226a27a59085270142e69fa4ea7bb2b",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "b30c689d4bd0394ed3ac33e4d48b2e775deec556d888aa530af643038c6d2efb",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "8c814db0330492bd7ad3ffeec20e5f7b999f43b8ec1856ecc26e7cc24ebcf017",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "93d581044a6793bc692de8736520cab9ebc183fb84bb15a04a270f7cc2e67419",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "b5d2db0fafc984aeb3e6608105725a91b90ad102b82e0840c08e5271b65c9256",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "b8a81411219dc5c606f593a83be082d9b4421a07e2cf2b490a129a7f2543a218",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "6fe1f6468a4fa913f6df6cac957f2b20c183babc60702ef4447d9e529a61331f",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "mk3-reference.json",
+          "cacheKey": "dda96d9c01994d1b0531a5ac3012663b020d259cd6e322dfd37d2b5186e64a32",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "mk3-reference.json",
+          "cacheKey": "805591ba5efd5b33865e71f7a06f7d0f444811b5d7e82aab856118ef61b3125b",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "mk3-reference.json",
+          "cacheKey": "21fe35157ccdbec7a2d8f27b693631f52602a99660c970c8b2119d700cfd4457",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "mk3-reference.json",
+          "cacheKey": "a19e27c14d8b3d557781a660aa72eec3084abc517c56ad54a47f23847165c2aa",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "p9-parity.receipt.json",
+          "cacheKey": "ab232427355e211c30a043cb9fda81ce0ba859d61a2020f574b2a3ffbbde78e6",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "p9-parity.receipt.json",
+          "cacheKey": "a3a13a201cf7d26d8e1422f00abf0d0d9673feb6c10d34ca62951f4d7bc9e3d7",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "p9-parity.receipt.json",
+          "cacheKey": "09cb69a49a54e0f0057ea8c4dc06becbf4527b5e78c2eb0c771047c5a51e0040",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        },
+        {
+          "receipt": "p9-parity.receipt.json",
+          "cacheKey": "d748ebc87fcc35612d520066b4758650d8826641ea538b4f7e8e21dea6b2037f",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs"
+        }
+      ]
+    },
+    {
+      "path": "tested-loader-snapshots/3c0c53b22a1e3bd3897d0a6593fc8a76433048ff9a9f705cecd18a958f9b2e25/compare-legacy-dds-bptc.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\cache\\bb27b06075732f8985195b287de7978a0ab9bfdd47e18c3b9003e4f99b97dfcd\\loader\\2-compare-legacy-dds-bptc.mjs",
+      "sha256": "3c0c53b22a1e3bd3897d0a6593fc8a76433048ff9a9f705cecd18a958f9b2e25",
+      "byteLength": 8201,
+      "originSha256": "3c0c53b22a1e3bd3897d0a6593fc8a76433048ff9a9f705cecd18a958f9b2e25",
+      "originByteLength": 8201,
+      "encoding": "identity",
+      "referencedBy": [
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "bb27b06075732f8985195b287de7978a0ab9bfdd47e18c3b9003e4f99b97dfcd",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds-bptc.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "b32993b2d0ab701bf25a44db06e8aa7b755ebaa15e850bf8c1717ade4595479a",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds-bptc.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "5fb200faab753075cae9618dc729f40e61a16dcf4d4fddcdcc0aa805237dc6c6",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds-bptc.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "9e7292ba1001e13bd6df7475f5572241a5ecaae0f795225de6bd8a69c66d8cd2",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds-bptc.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "4a0d5310de5da83236dadb1da5af2f575e7fa653d0fcfe5110948fe7d92c405f",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds-bptc.mjs"
+        }
+      ]
+    },
+    {
+      "path": "tested-loader-snapshots/cf567d2d186b5faa5534e02f8dfc395d2ac0a7411765d3b19d3ad5d8c2cf1086/track-corpus.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\cache\\bb27b06075732f8985195b287de7978a0ab9bfdd47e18c3b9003e4f99b97dfcd\\loader\\3-track-corpus.mjs",
+      "sha256": "cf567d2d186b5faa5534e02f8dfc395d2ac0a7411765d3b19d3ad5d8c2cf1086",
+      "byteLength": 2772,
+      "originSha256": "cf567d2d186b5faa5534e02f8dfc395d2ac0a7411765d3b19d3ad5d8c2cf1086",
+      "originByteLength": 2772,
+      "encoding": "identity",
+      "referencedBy": [
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "bb27b06075732f8985195b287de7978a0ab9bfdd47e18c3b9003e4f99b97dfcd",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "b32993b2d0ab701bf25a44db06e8aa7b755ebaa15e850bf8c1717ade4595479a",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "5fb200faab753075cae9618dc729f40e61a16dcf4d4fddcdcc0aa805237dc6c6",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "9e7292ba1001e13bd6df7475f5572241a5ecaae0f795225de6bd8a69c66d8cd2",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "4a0d5310de5da83236dadb1da5af2f575e7fa653d0fcfe5110948fe7d92c405f",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "9974a1193266469c9b02e67f46086f49d7c85fdcb928e59490f233a5c21c640e",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "d896913f26659f6661e410c704fe2dcd559bb494d8c02aa63474eaf13d690825",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "e16661d6caa0f9605efe41a545c084dcab98d2539dc57044a9e380c27deb2339",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "399228ff2cfc094eb2943414ae2f58f823e2cb4f0d7fb05544bf8af0cb138a1f",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "38cb818c5991d3c363fd953ed9341baed1b6ecdbd119800ad3012373de908931",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "830bee7b7457190759d6eebee16931984e80591c7026611bfd2a18bca044d75b",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "70b43846b7684373dc54a606245172219562ca598dc102c59cb791b992e6ea06",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "736c942941c15edecf618a14725e065897af2ca9e821791ad0d8117742490cec",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "c0304dff4ca4e59232c3d089844f267ed84d8dfb19440db926b556683b983b0e",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "1304adbff16641712c6fb05028338244a0937f284b3b8bb9258f9419add3763d",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "e6d092bcbf6025a1970010e1ca8ea218fc96d8414131ecd63739a414269265ac",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "1f1a6e7b5b930be85ded0c9180e8a7fceb5fa67cae82b20bef90ae4236de1e84",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "74578e2f246108c8529a201593190037c6eb3ee62449aec4f22f2e9e5fb105b0",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "20f02189f245298ef1914a269e85c5f00226a27a59085270142e69fa4ea7bb2b",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "b30c689d4bd0394ed3ac33e4d48b2e775deec556d888aa530af643038c6d2efb",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "8c814db0330492bd7ad3ffeec20e5f7b999f43b8ec1856ecc26e7cc24ebcf017",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "93d581044a6793bc692de8736520cab9ebc183fb84bb15a04a270f7cc2e67419",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "b5d2db0fafc984aeb3e6608105725a91b90ad102b82e0840c08e5271b65c9256",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "b8a81411219dc5c606f593a83be082d9b4421a07e2cf2b490a129a7f2543a218",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "6fe1f6468a4fa913f6df6cac957f2b20c183babc60702ef4447d9e529a61331f",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs"
+        }
+      ]
+    },
+    {
+      "path": "tested-loader-snapshots/971c16c9f59325618cc220a5ac4a9613210f52812e977a70f905feac22401d5b/legacy-mk2.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\cache\\bb27b06075732f8985195b287de7978a0ab9bfdd47e18c3b9003e4f99b97dfcd\\loader\\4-legacy-mk2.mjs",
+      "sha256": "971c16c9f59325618cc220a5ac4a9613210f52812e977a70f905feac22401d5b",
+      "byteLength": 1457,
+      "originSha256": "971c16c9f59325618cc220a5ac4a9613210f52812e977a70f905feac22401d5b",
+      "originByteLength": 1457,
+      "encoding": "identity",
+      "referencedBy": [
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "bb27b06075732f8985195b287de7978a0ab9bfdd47e18c3b9003e4f99b97dfcd",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "b32993b2d0ab701bf25a44db06e8aa7b755ebaa15e850bf8c1717ade4595479a",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "5fb200faab753075cae9618dc729f40e61a16dcf4d4fddcdcc0aa805237dc6c6",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "9e7292ba1001e13bd6df7475f5572241a5ecaae0f795225de6bd8a69c66d8cd2",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "4a0d5310de5da83236dadb1da5af2f575e7fa653d0fcfe5110948fe7d92c405f",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "9974a1193266469c9b02e67f46086f49d7c85fdcb928e59490f233a5c21c640e",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "d896913f26659f6661e410c704fe2dcd559bb494d8c02aa63474eaf13d690825",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "e16661d6caa0f9605efe41a545c084dcab98d2539dc57044a9e380c27deb2339",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "399228ff2cfc094eb2943414ae2f58f823e2cb4f0d7fb05544bf8af0cb138a1f",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "38cb818c5991d3c363fd953ed9341baed1b6ecdbd119800ad3012373de908931",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "830bee7b7457190759d6eebee16931984e80591c7026611bfd2a18bca044d75b",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "70b43846b7684373dc54a606245172219562ca598dc102c59cb791b992e6ea06",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "736c942941c15edecf618a14725e065897af2ca9e821791ad0d8117742490cec",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "c0304dff4ca4e59232c3d089844f267ed84d8dfb19440db926b556683b983b0e",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "1304adbff16641712c6fb05028338244a0937f284b3b8bb9258f9419add3763d",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "e6d092bcbf6025a1970010e1ca8ea218fc96d8414131ecd63739a414269265ac",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "1f1a6e7b5b930be85ded0c9180e8a7fceb5fa67cae82b20bef90ae4236de1e84",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "74578e2f246108c8529a201593190037c6eb3ee62449aec4f22f2e9e5fb105b0",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "20f02189f245298ef1914a269e85c5f00226a27a59085270142e69fa4ea7bb2b",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "b30c689d4bd0394ed3ac33e4d48b2e775deec556d888aa530af643038c6d2efb",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "8c814db0330492bd7ad3ffeec20e5f7b999f43b8ec1856ecc26e7cc24ebcf017",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "93d581044a6793bc692de8736520cab9ebc183fb84bb15a04a270f7cc2e67419",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "b5d2db0fafc984aeb3e6608105725a91b90ad102b82e0840c08e5271b65c9256",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "b8a81411219dc5c606f593a83be082d9b4421a07e2cf2b490a129a7f2543a218",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "6fe1f6468a4fa913f6df6cac957f2b20c183babc60702ef4447d9e529a61331f",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs"
+        }
+      ]
+    },
+    {
+      "path": "tested-loader-snapshots/4df04e260f762e0b3d049742580f5d2b86747772bc81047b7fd15f54977d0cc6/dds-host-isolation.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\cache\\bb27b06075732f8985195b287de7978a0ab9bfdd47e18c3b9003e4f99b97dfcd\\loader\\5-dds-host-isolation.mjs",
+      "sha256": "4df04e260f762e0b3d049742580f5d2b86747772bc81047b7fd15f54977d0cc6",
+      "byteLength": 726,
+      "originSha256": "4df04e260f762e0b3d049742580f5d2b86747772bc81047b7fd15f54977d0cc6",
+      "originByteLength": 726,
+      "encoding": "identity",
+      "referencedBy": [
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "bb27b06075732f8985195b287de7978a0ab9bfdd47e18c3b9003e4f99b97dfcd",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "b32993b2d0ab701bf25a44db06e8aa7b755ebaa15e850bf8c1717ade4595479a",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "5fb200faab753075cae9618dc729f40e61a16dcf4d4fddcdcc0aa805237dc6c6",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "9e7292ba1001e13bd6df7475f5572241a5ecaae0f795225de6bd8a69c66d8cd2",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-bptc.new.loader.json",
+          "cacheKey": "4a0d5310de5da83236dadb1da5af2f575e7fa653d0fcfe5110948fe7d92c405f",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "9974a1193266469c9b02e67f46086f49d7c85fdcb928e59490f233a5c21c640e",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "d896913f26659f6661e410c704fe2dcd559bb494d8c02aa63474eaf13d690825",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "e16661d6caa0f9605efe41a545c084dcab98d2539dc57044a9e380c27deb2339",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "399228ff2cfc094eb2943414ae2f58f823e2cb4f0d7fb05544bf8af0cb138a1f",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "38cb818c5991d3c363fd953ed9341baed1b6ecdbd119800ad3012373de908931",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "830bee7b7457190759d6eebee16931984e80591c7026611bfd2a18bca044d75b",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "70b43846b7684373dc54a606245172219562ca598dc102c59cb791b992e6ea06",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "736c942941c15edecf618a14725e065897af2ca9e821791ad0d8117742490cec",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "c0304dff4ca4e59232c3d089844f267ed84d8dfb19440db926b556683b983b0e",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "1304adbff16641712c6fb05028338244a0937f284b3b8bb9258f9419add3763d",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "e6d092bcbf6025a1970010e1ca8ea218fc96d8414131ecd63739a414269265ac",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "1f1a6e7b5b930be85ded0c9180e8a7fceb5fa67cae82b20bef90ae4236de1e84",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "74578e2f246108c8529a201593190037c6eb3ee62449aec4f22f2e9e5fb105b0",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "20f02189f245298ef1914a269e85c5f00226a27a59085270142e69fa4ea7bb2b",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "b30c689d4bd0394ed3ac33e4d48b2e775deec556d888aa530af643038c6d2efb",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "8c814db0330492bd7ad3ffeec20e5f7b999f43b8ec1856ecc26e7cc24ebcf017",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "93d581044a6793bc692de8736520cab9ebc183fb84bb15a04a270f7cc2e67419",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "b5d2db0fafc984aeb3e6608105725a91b90ad102b82e0840c08e5271b65c9256",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "b8a81411219dc5c606f593a83be082d9b4421a07e2cf2b490a129a7f2543a218",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "6fe1f6468a4fa913f6df6cac957f2b20c183babc60702ef4447d9e529a61331f",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs"
+        }
+      ]
+    },
+    {
+      "path": "tested-loader-snapshots/8074aa36b036bc120c160d1fe9df046af9c68f5c71b81eba3bf02fff157d6963/compare-legacy-dds-compressed.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\cache\\9974a1193266469c9b02e67f46086f49d7c85fdcb928e59490f233a5c21c640e\\loader\\2-compare-legacy-dds-compressed.mjs",
+      "sha256": "8074aa36b036bc120c160d1fe9df046af9c68f5c71b81eba3bf02fff157d6963",
+      "byteLength": 9441,
+      "originSha256": "8074aa36b036bc120c160d1fe9df046af9c68f5c71b81eba3bf02fff157d6963",
+      "originByteLength": 9441,
+      "encoding": "identity",
+      "referencedBy": [
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "9974a1193266469c9b02e67f46086f49d7c85fdcb928e59490f233a5c21c640e",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds-compressed.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "d896913f26659f6661e410c704fe2dcd559bb494d8c02aa63474eaf13d690825",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds-compressed.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "e16661d6caa0f9605efe41a545c084dcab98d2539dc57044a9e380c27deb2339",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds-compressed.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "399228ff2cfc094eb2943414ae2f58f823e2cb4f0d7fb05544bf8af0cb138a1f",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds-compressed.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-compressed.new.loader.json",
+          "cacheKey": "38cb818c5991d3c363fd953ed9341baed1b6ecdbd119800ad3012373de908931",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds-compressed.mjs"
+        }
+      ]
+    },
+    {
+      "path": "tested-loader-snapshots/4154a389e345314bb62dde4e189acd232615740400f346c08706fc2f24be1516/compare-legacy-dds-encode.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\cache\\830bee7b7457190759d6eebee16931984e80591c7026611bfd2a18bca044d75b\\loader\\2-compare-legacy-dds-encode.mjs",
+      "sha256": "4154a389e345314bb62dde4e189acd232615740400f346c08706fc2f24be1516",
+      "byteLength": 8154,
+      "originSha256": "4154a389e345314bb62dde4e189acd232615740400f346c08706fc2f24be1516",
+      "originByteLength": 8154,
+      "encoding": "identity",
+      "referencedBy": [
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "830bee7b7457190759d6eebee16931984e80591c7026611bfd2a18bca044d75b",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds-encode.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "70b43846b7684373dc54a606245172219562ca598dc102c59cb791b992e6ea06",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds-encode.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "736c942941c15edecf618a14725e065897af2ca9e821791ad0d8117742490cec",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds-encode.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "c0304dff4ca4e59232c3d089844f267ed84d8dfb19440db926b556683b983b0e",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds-encode.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds-encode.new.loader.json",
+          "cacheKey": "1304adbff16641712c6fb05028338244a0937f284b3b8bb9258f9419add3763d",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds-encode.mjs"
+        }
+      ]
+    },
+    {
+      "path": "tested-loader-snapshots/cce8fbea841eb02d8471ccea67b5245519b09b7807cd0d39fab44aa238f86214/compare-legacy-dds.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\cache\\e6d092bcbf6025a1970010e1ca8ea218fc96d8414131ecd63739a414269265ac\\loader\\2-compare-legacy-dds.mjs",
+      "sha256": "cce8fbea841eb02d8471ccea67b5245519b09b7807cd0d39fab44aa238f86214",
+      "byteLength": 8337,
+      "originSha256": "cce8fbea841eb02d8471ccea67b5245519b09b7807cd0d39fab44aa238f86214",
+      "originByteLength": 8337,
+      "encoding": "identity",
+      "referencedBy": [
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "e6d092bcbf6025a1970010e1ca8ea218fc96d8414131ecd63739a414269265ac",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "1f1a6e7b5b930be85ded0c9180e8a7fceb5fa67cae82b20bef90ae4236de1e84",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "74578e2f246108c8529a201593190037c6eb3ee62449aec4f22f2e9e5fb105b0",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "20f02189f245298ef1914a269e85c5f00226a27a59085270142e69fa4ea7bb2b",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds.mjs"
+        },
+        {
+          "receipt": "compare-legacy-dds.new.loader.json",
+          "cacheKey": "b30c689d4bd0394ed3ac33e4d48b2e775deec556d888aa530af643038c6d2efb",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds.mjs"
+        }
+      ]
+    },
+    {
+      "path": "tested-loader-snapshots/58e182fb57d99b7fb37f86ceec30096633c5c6ef1a06943e6fc099421802751e/compare-legacy-image-ops.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\cache\\8c814db0330492bd7ad3ffeec20e5f7b999f43b8ec1856ecc26e7cc24ebcf017\\loader\\2-compare-legacy-image-ops.mjs",
+      "sha256": "58e182fb57d99b7fb37f86ceec30096633c5c6ef1a06943e6fc099421802751e",
+      "byteLength": 9973,
+      "originSha256": "58e182fb57d99b7fb37f86ceec30096633c5c6ef1a06943e6fc099421802751e",
+      "originByteLength": 9973,
+      "encoding": "identity",
+      "referencedBy": [
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "8c814db0330492bd7ad3ffeec20e5f7b999f43b8ec1856ecc26e7cc24ebcf017",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-image-ops.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "93d581044a6793bc692de8736520cab9ebc183fb84bb15a04a270f7cc2e67419",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-image-ops.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "b5d2db0fafc984aeb3e6608105725a91b90ad102b82e0840c08e5271b65c9256",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-image-ops.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "b8a81411219dc5c606f593a83be082d9b4421a07e2cf2b490a129a7f2543a218",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-image-ops.mjs"
+        },
+        {
+          "receipt": "compare-legacy-image-ops.new.loader.json",
+          "cacheKey": "6fe1f6468a4fa913f6df6cac957f2b20c183babc60702ef4447d9e529a61331f",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-image-ops.mjs"
+        }
+      ]
+    },
+    {
+      "path": "tested-loader-snapshots/cd3cabcd5a8d653477e621f324c4f08f3fa40a7e4b8765ccbfd7d9faa67c1ecc/prepare-mk3-reference.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\mk3-reference-cache\\dda96d9c01994d1b0531a5ac3012663b020d259cd6e322dfd37d2b5186e64a32\\loader\\2-prepare-mk3-reference.mjs",
+      "sha256": "cd3cabcd5a8d653477e621f324c4f08f3fa40a7e4b8765ccbfd7d9faa67c1ecc",
+      "byteLength": 1359,
+      "originSha256": "cd3cabcd5a8d653477e621f324c4f08f3fa40a7e4b8765ccbfd7d9faa67c1ecc",
+      "originByteLength": 1359,
+      "encoding": "identity",
+      "referencedBy": [
+        {
+          "receipt": "mk3-reference.json",
+          "cacheKey": "dda96d9c01994d1b0531a5ac3012663b020d259cd6e322dfd37d2b5186e64a32",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\prepare-mk3-reference.mjs"
+        },
+        {
+          "receipt": "mk3-reference.json",
+          "cacheKey": "805591ba5efd5b33865e71f7a06f7d0f444811b5d7e82aab856118ef61b3125b",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\prepare-mk3-reference.mjs"
+        },
+        {
+          "receipt": "mk3-reference.json",
+          "cacheKey": "21fe35157ccdbec7a2d8f27b693631f52602a99660c970c8b2119d700cfd4457",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\prepare-mk3-reference.mjs"
+        },
+        {
+          "receipt": "mk3-reference.json",
+          "cacheKey": "a19e27c14d8b3d557781a660aa72eec3084abc517c56ad54a47f23847165c2aa",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\prepare-mk3-reference.mjs"
+        }
+      ]
+    },
+    {
+      "path": "tested-loader-snapshots/d46b1bcd0566ee7656816e5ecd28fe7b019eee0e7b635e3fc06cc635bfeb4bf0/legacy-oracle.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\cache\\ab232427355e211c30a043cb9fda81ce0ba859d61a2020f574b2a3ffbbde78e6\\loader\\0-legacy-oracle.mjs",
+      "sha256": "d46b1bcd0566ee7656816e5ecd28fe7b019eee0e7b635e3fc06cc635bfeb4bf0",
+      "byteLength": 24595,
+      "originSha256": "d46b1bcd0566ee7656816e5ecd28fe7b019eee0e7b635e3fc06cc635bfeb4bf0",
+      "originByteLength": 24595,
+      "encoding": "identity",
+      "referencedBy": [
+        {
+          "receipt": "p9-parity.receipt.json",
+          "cacheKey": "ab232427355e211c30a043cb9fda81ce0ba859d61a2020f574b2a3ffbbde78e6",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "p9-parity.receipt.json",
+          "cacheKey": "a3a13a201cf7d26d8e1422f00abf0d0d9673feb6c10d34ca62951f4d7bc9e3d7",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "p9-parity.receipt.json",
+          "cacheKey": "09cb69a49a54e0f0057ea8c4dc06becbf4527b5e78c2eb0c771047c5a51e0040",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        },
+        {
+          "receipt": "p9-parity.receipt.json",
+          "cacheKey": "d748ebc87fcc35612d520066b4758650d8826641ea538b4f7e8e21dea6b2037f",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs"
+        }
+      ]
+    },
+    {
+      "path": "tested-loader-snapshots/e1995d7384e21b18a3944650d1936ff8ed8eadbb301bd178111e22cecb15ac8c/check-p9-parity.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\cache\\ab232427355e211c30a043cb9fda81ce0ba859d61a2020f574b2a3ffbbde78e6\\loader\\2-check-p9-parity.mjs",
+      "sha256": "e1995d7384e21b18a3944650d1936ff8ed8eadbb301bd178111e22cecb15ac8c",
+      "byteLength": 3995,
+      "originSha256": "e1995d7384e21b18a3944650d1936ff8ed8eadbb301bd178111e22cecb15ac8c",
+      "originByteLength": 3995,
+      "encoding": "identity",
+      "referencedBy": [
+        {
+          "receipt": "p9-parity.receipt.json",
+          "cacheKey": "ab232427355e211c30a043cb9fda81ce0ba859d61a2020f574b2a3ffbbde78e6",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\check-p9-parity.mjs"
+        },
+        {
+          "receipt": "p9-parity.receipt.json",
+          "cacheKey": "a3a13a201cf7d26d8e1422f00abf0d0d9673feb6c10d34ca62951f4d7bc9e3d7",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\check-p9-parity.mjs"
+        },
+        {
+          "receipt": "p9-parity.receipt.json",
+          "cacheKey": "09cb69a49a54e0f0057ea8c4dc06becbf4527b5e78c2eb0c771047c5a51e0040",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\check-p9-parity.mjs"
+        },
+        {
+          "receipt": "p9-parity.receipt.json",
+          "cacheKey": "d748ebc87fcc35612d520066b4758650d8826641ea538b4f7e8e21dea6b2037f",
+          "originalPath": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\check-p9-parity.mjs"
+        }
+      ]
+    },
+    {
+      "path": "old-snapshot/compare-legacy-dds-bptc.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\old-snapshot\\compare-legacy-dds-bptc.mjs",
+      "sha256": "38cbc840bd9e420169583c31c8a76e2b74ed67e799250617ab4ad2522abc4643",
+      "byteLength": 10801,
+      "originSha256": "38cbc840bd9e420169583c31c8a76e2b74ed67e799250617ab4ad2522abc4643",
+      "originByteLength": 10801,
+      "encoding": "identity"
+    },
+    {
+      "path": "old-snapshot/compare-legacy-dds-compressed.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\old-snapshot\\compare-legacy-dds-compressed.mjs",
+      "sha256": "559b2983aa12bc7a986400a641e4bfcc86c2173637af2a4fccdedc79dff0173c",
+      "byteLength": 10237,
+      "originSha256": "559b2983aa12bc7a986400a641e4bfcc86c2173637af2a4fccdedc79dff0173c",
+      "originByteLength": 10237,
+      "encoding": "identity"
+    },
+    {
+      "path": "old-snapshot/compare-legacy-dds-encode.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\old-snapshot\\compare-legacy-dds-encode.mjs",
+      "sha256": "4ba5d8ad4b4a5507ab6b2a103bd7e8a7a9f6e663b834506b891c12f2bb2152d2",
+      "byteLength": 8690,
+      "originSha256": "4ba5d8ad4b4a5507ab6b2a103bd7e8a7a9f6e663b834506b891c12f2bb2152d2",
+      "originByteLength": 8690,
+      "encoding": "identity"
+    },
+    {
+      "path": "old-snapshot/compare-legacy-dds.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\old-snapshot\\compare-legacy-dds.mjs",
+      "sha256": "6c847f362235d8bd76f1ddd1b2a0d4079a85d91b525c4d69fcb830475c9ad2f5",
+      "byteLength": 10710,
+      "originSha256": "6c847f362235d8bd76f1ddd1b2a0d4079a85d91b525c4d69fcb830475c9ad2f5",
+      "originByteLength": 10710,
+      "encoding": "identity"
+    },
+    {
+      "path": "old-snapshot/compare-legacy-image-ops.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\old-snapshot\\compare-legacy-image-ops.mjs",
+      "sha256": "f5d44fc80b727f41a6dccbf3740c5e324e1ec186a428db70bf49111f6a15994b",
+      "byteLength": 10368,
+      "originSha256": "f5d44fc80b727f41a6dccbf3740c5e324e1ec186a428db70bf49111f6a15994b",
+      "originByteLength": 10368,
+      "encoding": "identity"
+    },
+    {
+      "path": "old-snapshot/legacy-mk2.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\old-snapshot\\legacy-mk2.mjs",
+      "sha256": "2280ba2daeaa0a277c98adfcf9cba2bd8620ebf40d9e52a06df7624a5ba4f84e",
+      "byteLength": 5569,
+      "originSha256": "2280ba2daeaa0a277c98adfcf9cba2bd8620ebf40d9e52a06df7624a5ba4f84e",
+      "originByteLength": 5569,
+      "encoding": "identity"
+    },
+    {
+      "path": "old-snapshot/manifest.json",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-sc2\\m1-2026-09-04\\oracle\\old-snapshot\\manifest.json",
+      "sha256": "4f2375422f172f560a77964c138ce3cd5e4cb1911016600c071f9a922b393233",
+      "byteLength": 857,
+      "originSha256": "4f2375422f172f560a77964c138ce3cd5e4cb1911016600c071f9a922b393233",
+      "originByteLength": 857,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-oracle/apply-shim-copies.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\apply-shim-copies.mjs",
+      "sha256": "13be4de321022538aa3af80090e61cdfa397b882cfdf5f697982181a59b01fe1",
+      "byteLength": 1272,
+      "originSha256": "13be4de321022538aa3af80090e61cdfa397b882cfdf5f697982181a59b01fe1",
+      "originByteLength": 1272,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-oracle/check-p9-parity.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\check-p9-parity.mjs",
+      "sha256": "e1995d7384e21b18a3944650d1936ff8ed8eadbb301bd178111e22cecb15ac8c",
+      "byteLength": 3995,
+      "originSha256": "e1995d7384e21b18a3944650d1936ff8ed8eadbb301bd178111e22cecb15ac8c",
+      "originByteLength": 3995,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-oracle/dds-host-isolation.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\dds-host-isolation.mjs",
+      "sha256": "4df04e260f762e0b3d049742580f5d2b86747772bc81047b7fd15f54977d0cc6",
+      "byteLength": 726,
+      "originSha256": "4df04e260f762e0b3d049742580f5d2b86747772bc81047b7fd15f54977d0cc6",
+      "originByteLength": 726,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-oracle/finalize-dds-transition.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\finalize-dds-transition.mjs",
+      "sha256": "0559ea65370d3744d464ab8293f5d31ebcc0f00019776c9dd9ceda21f8d8d576",
+      "byteLength": 4431,
+      "originSha256": "0559ea65370d3744d464ab8293f5d31ebcc0f00019776c9dd9ceda21f8d8d576",
+      "originByteLength": 4431,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-oracle/load-mk2.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\load-mk2.mjs",
+      "sha256": "b84e2198184759fcf3c1907aee95e7095fa22091c5486dd6c3bfd03b73798092",
+      "byteLength": 719,
+      "originSha256": "b84e2198184759fcf3c1907aee95e7095fa22091c5486dd6c3bfd03b73798092",
+      "originByteLength": 719,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-oracle/migrate-dds-harnesses.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\migrate-dds-harnesses.mjs",
+      "sha256": "3c07248a6feec1dd60bb24984d2ee374b22c242b291cf1ba112f3e8b910735a8",
+      "byteLength": 2281,
+      "originSha256": "3c07248a6feec1dd60bb24984d2ee374b22c242b291cf1ba112f3e8b910735a8",
+      "originByteLength": 2281,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-oracle/mk3-reference.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\mk3-reference.mjs",
+      "sha256": "75f2ba861ff475c0f7d1bd23c550b828c89f807a83d18255900565e7897cc7f7",
+      "byteLength": 790,
+      "originSha256": "75f2ba861ff475c0f7d1bd23c550b828c89f807a83d18255900565e7897cc7f7",
+      "originByteLength": 790,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-oracle/plan-shim-copies.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\plan-shim-copies.mjs",
+      "sha256": "266b4e16d1c15d7d5f54f5f1863a99543c2b2b7089076cfe965eaec409db995f",
+      "byteLength": 3910,
+      "originSha256": "266b4e16d1c15d7d5f54f5f1863a99543c2b2b7089076cfe965eaec409db995f",
+      "originByteLength": 3910,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-oracle/prepare-current-runner.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\prepare-current-runner.mjs",
+      "sha256": "eb33556bcffa3c46e86ca5d4ec8566f22bce110a1437858a4f03e324ffc8e690",
+      "byteLength": 1830,
+      "originSha256": "eb33556bcffa3c46e86ca5d4ec8566f22bce110a1437858a4f03e324ffc8e690",
+      "originByteLength": 1830,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-oracle/prepare-dds-transition.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\prepare-dds-transition.mjs",
+      "sha256": "0845c9675889ea467fda52d0089180fe4a05d5f162646f1af9a451bf9f60e6ae",
+      "byteLength": 1535,
+      "originSha256": "0845c9675889ea467fda52d0089180fe4a05d5f162646f1af9a451bf9f60e6ae",
+      "originByteLength": 1535,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-oracle/prepare-mk3-reference.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\prepare-mk3-reference.mjs",
+      "sha256": "cd3cabcd5a8d653477e621f324c4f08f3fa40a7e4b8765ccbfd7d9faa67c1ecc",
+      "byteLength": 1359,
+      "originSha256": "cd3cabcd5a8d653477e621f324c4f08f3fa40a7e4b8765ccbfd7d9faa67c1ecc",
+      "originByteLength": 1359,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-oracle/prepare-versionable-evidence.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\prepare-versionable-evidence.mjs",
+      "sha256": "65d32ba616927f9b4659b7ca0f8bf22b4179f728d912cac61411c0967a8ea695",
+      "byteLength": 6150,
+      "originSha256": "65d32ba616927f9b4659b7ca0f8bf22b4179f728d912cac61411c0967a8ea695",
+      "originByteLength": 6150,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-oracle/README.md",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\README.md",
+      "sha256": "e3b6f3ce4a2358122e0e70e71c29fc3ace9879c7adef8b8299deff3b78e8fb82",
+      "byteLength": 4671,
+      "originSha256": "e3b6f3ce4a2358122e0e70e71c29fc3ace9879c7adef8b8299deff3b78e8fb82",
+      "originByteLength": 4671,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-oracle/run-dds-current.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\run-dds-current.mjs",
+      "sha256": "3251dd04d7daa246485dad31926a633201086762e9b1316f44405ec349066e31",
+      "byteLength": 4936,
+      "originSha256": "3251dd04d7daa246485dad31926a633201086762e9b1316f44405ec349066e31",
+      "originByteLength": 4936,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-oracle/run-dds-transition.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\run-dds-transition.mjs",
+      "sha256": "afc9219da4cd27659bdb798fcf812a8e34045f025be9fa69eca1c2d7ce1bbcdf",
+      "byteLength": 4628,
+      "originSha256": "afc9219da4cd27659bdb798fcf812a8e34045f025be9fa69eca1c2d7ce1bbcdf",
+      "originByteLength": 4628,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-oracle/track-corpus.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\track-corpus.mjs",
+      "sha256": "cf567d2d186b5faa5534e02f8dfc395d2ac0a7411765d3b19d3ad5d8c2cf1086",
+      "byteLength": 2772,
+      "originSha256": "cf567d2d186b5faa5534e02f8dfc395d2ac0a7411765d3b19d3ad5d8c2cf1086",
+      "originByteLength": 2772,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-oracle/verify-final-oracle.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\verify-final-oracle.mjs",
+      "sha256": "7b6598c01f2b19cdadeb49335a1ae8d18e8c5d0d24d75e47f71251be1c561d8d",
+      "byteLength": 1774,
+      "originSha256": "7b6598c01f2b19cdadeb49335a1ae8d18e8c5d0d24d75e47f71251be1c561d8d",
+      "originByteLength": 1774,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-oracle/verify-shim.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\verify-shim.mjs",
+      "sha256": "cede525f6d7d77e4b3cc5d8c1d5d858d838c6ac8d5418c420c58d328257ff20f",
+      "byteLength": 2821,
+      "originSha256": "cede525f6d7d77e4b3cc5d8c1d5d858d838c6ac8d5418c420c58d328257ff20f",
+      "originByteLength": 2821,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-oracle/wire-mk3-reference.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\wire-mk3-reference.mjs",
+      "sha256": "fb91c49f9a093efe315bea45481b5576c4405345493b713263132d12b9e3a4d7",
+      "byteLength": 1165,
+      "originSha256": "fb91c49f9a093efe315bea45481b5576c4405345493b713263132d12b9e3a4d7",
+      "originByteLength": 1165,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-oracle/write-shim-barrels.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-oracle\\write-shim-barrels.mjs",
+      "sha256": "60a23bca97615571262c48fcd782dfc071a5d7d747c5831f13740f6c9c5f4a56",
+      "byteLength": 1479,
+      "originSha256": "60a23bca97615571262c48fcd782dfc071a5d7d747c5831f13740f6c9c5f4a56",
+      "originByteLength": 1479,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-parity-textures/compare-legacy-dds-bptc.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds-bptc.mjs",
+      "sha256": "3c0c53b22a1e3bd3897d0a6593fc8a76433048ff9a9f705cecd18a958f9b2e25",
+      "byteLength": 8201,
+      "originSha256": "3c0c53b22a1e3bd3897d0a6593fc8a76433048ff9a9f705cecd18a958f9b2e25",
+      "originByteLength": 8201,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-parity-textures/compare-legacy-dds-bptc.old-m1.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds-bptc.old-m1.mjs",
+      "sha256": "df007e619d6c57f71f50e683a020cc9d3b53531f0602a7a2921828eb51cb6aa0",
+      "byteLength": 10947,
+      "originSha256": "df007e619d6c57f71f50e683a020cc9d3b53531f0602a7a2921828eb51cb6aa0",
+      "originByteLength": 10947,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-parity-textures/compare-legacy-dds-compressed.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds-compressed.mjs",
+      "sha256": "8074aa36b036bc120c160d1fe9df046af9c68f5c71b81eba3bf02fff157d6963",
+      "byteLength": 9441,
+      "originSha256": "8074aa36b036bc120c160d1fe9df046af9c68f5c71b81eba3bf02fff157d6963",
+      "originByteLength": 9441,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-parity-textures/compare-legacy-dds-compressed.old-m1.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds-compressed.old-m1.mjs",
+      "sha256": "05029c6710abb9d97e5d5d84bf62e92f927b290d946e04a4ce3bbf7ec34d1229",
+      "byteLength": 10391,
+      "originSha256": "05029c6710abb9d97e5d5d84bf62e92f927b290d946e04a4ce3bbf7ec34d1229",
+      "originByteLength": 10391,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-parity-textures/compare-legacy-dds-encode.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds-encode.mjs",
+      "sha256": "4154a389e345314bb62dde4e189acd232615740400f346c08706fc2f24be1516",
+      "byteLength": 8154,
+      "originSha256": "4154a389e345314bb62dde4e189acd232615740400f346c08706fc2f24be1516",
+      "originByteLength": 8154,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-parity-textures/compare-legacy-dds-encode.old-m1.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds-encode.old-m1.mjs",
+      "sha256": "bedc3a6375269eb013ce4398310a980b29814a50dfc476f2242a6f9586c7c7f3",
+      "byteLength": 8840,
+      "originSha256": "bedc3a6375269eb013ce4398310a980b29814a50dfc476f2242a6f9586c7c7f3",
+      "originByteLength": 8840,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-parity-textures/compare-legacy-dds.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds.mjs",
+      "sha256": "cce8fbea841eb02d8471ccea67b5245519b09b7807cd0d39fab44aa238f86214",
+      "byteLength": 8337,
+      "originSha256": "cce8fbea841eb02d8471ccea67b5245519b09b7807cd0d39fab44aa238f86214",
+      "originByteLength": 8337,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-parity-textures/compare-legacy-dds.old-m1.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-dds.old-m1.mjs",
+      "sha256": "e774f50434a1f2127646f2e2aa96049c1935b74b8905ccff8858529ef68260ff",
+      "byteLength": 10856,
+      "originSha256": "e774f50434a1f2127646f2e2aa96049c1935b74b8905ccff8858529ef68260ff",
+      "originByteLength": 10856,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-parity-textures/compare-legacy-image-ops.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-image-ops.mjs",
+      "sha256": "58e182fb57d99b7fb37f86ceec30096633c5c6ef1a06943e6fc099421802751e",
+      "byteLength": 9973,
+      "originSha256": "58e182fb57d99b7fb37f86ceec30096633c5c6ef1a06943e6fc099421802751e",
+      "originByteLength": 9973,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-parity-textures/compare-legacy-image-ops.old-m1.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\compare-legacy-image-ops.old-m1.mjs",
+      "sha256": "de149738331a18247831816107fee11d8a8183bee67ab4e6b7379eb5a4219857",
+      "byteLength": 10522,
+      "originSha256": "de149738331a18247831816107fee11d8a8183bee67ab4e6b7379eb5a4219857",
+      "originByteLength": 10522,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-parity-textures/legacy-mk2.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.mjs",
+      "sha256": "971c16c9f59325618cc220a5ac4a9613210f52812e977a70f905feac22401d5b",
+      "byteLength": 1457,
+      "originSha256": "971c16c9f59325618cc220a5ac4a9613210f52812e977a70f905feac22401d5b",
+      "originByteLength": 1457,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/artifacts/legacy-parity-textures/legacy-mk2.old-m1.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\artifacts\\legacy-parity-textures\\legacy-mk2.old-m1.mjs",
+      "sha256": "2280ba2daeaa0a277c98adfcf9cba2bd8620ebf40d9e52a06df7624a5ba4f84e",
+      "byteLength": 5569,
+      "originSha256": "2280ba2daeaa0a277c98adfcf9cba2bd8620ebf40d9e52a06df7624a5ba4f84e",
+      "originByteLength": 5569,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/modkit-core/scripts/migration/lib/legacy-oracle.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs",
+      "sha256": "d46b1bcd0566ee7656816e5ecd28fe7b019eee0e7b635e3fc06cc635bfeb4bf0",
+      "byteLength": 24595,
+      "originSha256": "d46b1bcd0566ee7656816e5ecd28fe7b019eee0e7b635e3fc06cc635bfeb4bf0",
+      "originByteLength": 24595,
+      "encoding": "identity"
+    },
+    {
+      "path": "current-source/modkit-core/scripts/migration/test/legacy-oracle.test.mjs",
+      "origin": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\test\\legacy-oracle.test.mjs",
+      "sha256": "671ebb168cdc20ad2c50cdffce97e555a449f94eb65e54b4683aa589e6d25c1f",
+      "byteLength": 8260,
+      "originSha256": "671ebb168cdc20ad2c50cdffce97e555a449f94eb65e54b4683aa589e6d25c1f",
+      "originByteLength": 8260,
+      "encoding": "identity"
+    },
+    {
+      "path": "README.md",
+      "origin": "generated by prepare-versionable-evidence.mjs",
+      "sha256": "41352ec623cf759dd09f7e1a8539718ab2e0a976e3e1fabe40e98b43511ededb",
+      "byteLength": 1864,
+      "encoding": "identity"
+    }
+  ],
+  "filesDigest": "2b188517435793a0d340f18ac523ac7457d2bf07ca7b85285fee8868998376f3",
+  "fileCount": 116,
+  "totalBytes": 24522055
+}

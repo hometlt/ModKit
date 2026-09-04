@@ -1,0 +1,361 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M1",
+  "step": "0.3",
+  "verdict": "pass",
+  "generatedAt": "2026-09-04T15:08:41.314Z",
+  "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "mk3Commit": "878f9cd7658bc065a3eaa034a7f89e5020c887fe",
+  "mk3Reference": "mk3-reference.json",
+  "originalSourceChecks": [
+    {
+      "path": "extensions/common/images/codecs/dds/src/dds.ts",
+      "sha256": "7df82645f22544717aba6ee34fbf76f5310178391c614d25d9886cdeca60ec25",
+      "gitBlob": "aacfc1c7067d8e4adbf39abea276b9970e1a2b9f",
+      "workingTreeSha256": "7818ec0661eebc60e71830a352fcc58316c7c019dd210d47bc3fbd88b4c6f1de",
+      "workingTreeMatchesPin": false,
+      "lineEndingNormalizedEqual": true,
+      "normalizedSha256": "7df82645f22544717aba6ee34fbf76f5310178391c614d25d9886cdeca60ec25"
+    },
+    {
+      "path": "extensions/common/images/codecs/dds/src/helpers.ts",
+      "sha256": "f3ccb9b93f0c04c5222e0a37d561466c5bde36dd33a9ad14d0cb153127433e21",
+      "gitBlob": "64d2b44a4839a20a5d015fdecb36eb766b84d0fd",
+      "workingTreeSha256": "eac4d0b6ddef299cd84d22898ea10705e2e55478f06e9bfbecd5e819f61a57fc",
+      "workingTreeMatchesPin": false,
+      "lineEndingNormalizedEqual": true,
+      "normalizedSha256": "f3ccb9b93f0c04c5222e0a37d561466c5bde36dd33a9ad14d0cb153127433e21"
+    },
+    {
+      "path": "extensions/common/images/codecs/dds/src/ops.ts",
+      "sha256": "7ad43ac96fdb72f8246cc2fa0aa24c7429429f50aefe5f276502cc0b81e4537c",
+      "gitBlob": "c7d6e19d076de9a3a0683463a6bf7222cef5d590",
+      "workingTreeSha256": "5e7a79784710603bc56ca7b6f443103b7125ec090dda4c43da7f331f346c3454",
+      "workingTreeMatchesPin": false,
+      "lineEndingNormalizedEqual": true,
+      "normalizedSha256": "7ad43ac96fdb72f8246cc2fa0aa24c7429429f50aefe5f276502cc0b81e4537c"
+    },
+    {
+      "path": "extensions/common/images/codecs/dds/src/metadata.ts",
+      "sha256": "258bdb1f19e7844366094d9bfd3edfe470b70efa6c3b7791d287023ffc2b2b61",
+      "gitBlob": "034ba7983016e4a5e45df9ca0f7cf800449bcdc7",
+      "workingTreeSha256": "e1703a7abd4a172e7d82ee04865a8b6f27ed4297551de7c39a414c2c08a39d66",
+      "workingTreeMatchesPin": false,
+      "lineEndingNormalizedEqual": true,
+      "normalizedSha256": "258bdb1f19e7844366094d9bfd3edfe470b70efa6c3b7791d287023ffc2b2b61"
+    },
+    {
+      "path": "extensions/common/images/codecs/dds/src/codec.ts",
+      "sha256": "f52998d774d7d405524c560a0181e5866dd8b6b8bebec2ccab77e667fd9f3224",
+      "gitBlob": "838386e9baf7d0a17388484d265084ead8d5bd0b",
+      "workingTreeSha256": "b5a1c2b5f4e70f9bda5832199ec316273f533cb8b17b0b1fe068b24a37370cf9",
+      "workingTreeMatchesPin": false,
+      "lineEndingNormalizedEqual": true,
+      "normalizedSha256": "f52998d774d7d405524c560a0181e5866dd8b6b8bebec2ccab77e667fd9f3224"
+    }
+  ],
+  "gates": [
+    {
+      "name": "compare-legacy-dds",
+      "oldReceipt": "compare-legacy-dds.old.receipt.json",
+      "newReceipt": "compare-legacy-dds.new.receipt.json",
+      "measurements": {
+        "compared": 1284,
+        "unit": "file",
+        "identical": 1284,
+        "differing": 0
+      },
+      "corpusDigest": "ba1c74935cfe4a0621f5f453614995d2a11a08b7c47eed8240688d57c4cd4222",
+      "corpusFiles": 1284,
+      "outputMatchesOld": true,
+      "loaderEvidence": "compare-legacy-dds.new.loader.json",
+      "sourceClosures": [
+        {
+          "entry": "extensions/common/images/codecs/dds/src/dds.ts",
+          "cacheKey": "e6d092bcbf6025a1970010e1ca8ea218fc96d8414131ecd63739a414269265ac",
+          "sourceClosureDigest": "709018c4e06adefd28101415a190203a33ec52d062b33cdccdc93ea7627c1225",
+          "loaderDigest": "14b3e6d28a934d43709029cc68130893d237f759fe5ce0ada8e03cc69de9d0a4",
+          "dependenciesDigest": "8b11885590b04835388e618f61fa5f24534279e8188838072fd3335a833c56fe"
+        },
+        {
+          "entry": "extensions/common/images/codecs/dds/src/helpers.ts",
+          "cacheKey": "1f1a6e7b5b930be85ded0c9180e8a7fceb5fa67cae82b20bef90ae4236de1e84",
+          "sourceClosureDigest": "0cc49141ad97cbe0e71b7c7204abc7a9bf3274ad523f6e9e43a5cdc073e172d6",
+          "loaderDigest": "14b3e6d28a934d43709029cc68130893d237f759fe5ce0ada8e03cc69de9d0a4",
+          "dependenciesDigest": "dadc9ecaa50f06c9658dc74e3d9f91dc2cbbdd3dfc8be289c7dea4f2a9c1a58b"
+        },
+        {
+          "entry": "extensions/common/images/codecs/dds/src/ops.ts",
+          "cacheKey": "74578e2f246108c8529a201593190037c6eb3ee62449aec4f22f2e9e5fb105b0",
+          "sourceClosureDigest": "3ecc10dfc92c258a0345ec78985521b953d45eb1e34270abaf0993174aab443c",
+          "loaderDigest": "14b3e6d28a934d43709029cc68130893d237f759fe5ce0ada8e03cc69de9d0a4",
+          "dependenciesDigest": "8b11885590b04835388e618f61fa5f24534279e8188838072fd3335a833c56fe"
+        },
+        {
+          "entry": "extensions/common/images/codecs/dds/src/metadata.ts",
+          "cacheKey": "20f02189f245298ef1914a269e85c5f00226a27a59085270142e69fa4ea7bb2b",
+          "sourceClosureDigest": "eeaffe9d602b86743024b0b6d115f22847ae0509c7b31a9d1e22fbe0f056be78",
+          "loaderDigest": "14b3e6d28a934d43709029cc68130893d237f759fe5ce0ada8e03cc69de9d0a4",
+          "dependenciesDigest": "8b11885590b04835388e618f61fa5f24534279e8188838072fd3335a833c56fe"
+        },
+        {
+          "entry": "extensions/common/images/codecs/dds/src/codec.ts",
+          "cacheKey": "b30c689d4bd0394ed3ac33e4d48b2e775deec556d888aa530af643038c6d2efb",
+          "sourceClosureDigest": "7fa6ff0574c3959f5e6e75e682560c3135fc89c06df6c5e8f9679010e9365ea9",
+          "loaderDigest": "14b3e6d28a934d43709029cc68130893d237f759fe5ce0ada8e03cc69de9d0a4",
+          "dependenciesDigest": "8b11885590b04835388e618f61fa5f24534279e8188838072fd3335a833c56fe"
+        }
+      ]
+    },
+    {
+      "name": "compare-legacy-dds-bptc",
+      "oldReceipt": "compare-legacy-dds-bptc.old.receipt.json",
+      "newReceipt": "compare-legacy-dds-bptc.new.receipt.json",
+      "measurements": {
+        "compared": 6400,
+        "unit": "surface",
+        "identical": 6400,
+        "differing": 0
+      },
+      "corpusDigest": "a2fe7855563389931a9da4056222d12becafff1e8161395c6371f13cdf706a2c",
+      "corpusFiles": 58470,
+      "outputMatchesOld": true,
+      "loaderEvidence": "compare-legacy-dds-bptc.new.loader.json",
+      "sourceClosures": [
+        {
+          "entry": "extensions/common/images/codecs/dds/src/dds.ts",
+          "cacheKey": "bb27b06075732f8985195b287de7978a0ab9bfdd47e18c3b9003e4f99b97dfcd",
+          "sourceClosureDigest": "709018c4e06adefd28101415a190203a33ec52d062b33cdccdc93ea7627c1225",
+          "loaderDigest": "cc257026e75912cfffaa9a117e9654088391edbae52b05a9cd8f05efd2add110",
+          "dependenciesDigest": "8b11885590b04835388e618f61fa5f24534279e8188838072fd3335a833c56fe"
+        },
+        {
+          "entry": "extensions/common/images/codecs/dds/src/helpers.ts",
+          "cacheKey": "b32993b2d0ab701bf25a44db06e8aa7b755ebaa15e850bf8c1717ade4595479a",
+          "sourceClosureDigest": "0cc49141ad97cbe0e71b7c7204abc7a9bf3274ad523f6e9e43a5cdc073e172d6",
+          "loaderDigest": "cc257026e75912cfffaa9a117e9654088391edbae52b05a9cd8f05efd2add110",
+          "dependenciesDigest": "dadc9ecaa50f06c9658dc74e3d9f91dc2cbbdd3dfc8be289c7dea4f2a9c1a58b"
+        },
+        {
+          "entry": "extensions/common/images/codecs/dds/src/ops.ts",
+          "cacheKey": "5fb200faab753075cae9618dc729f40e61a16dcf4d4fddcdcc0aa805237dc6c6",
+          "sourceClosureDigest": "3ecc10dfc92c258a0345ec78985521b953d45eb1e34270abaf0993174aab443c",
+          "loaderDigest": "cc257026e75912cfffaa9a117e9654088391edbae52b05a9cd8f05efd2add110",
+          "dependenciesDigest": "8b11885590b04835388e618f61fa5f24534279e8188838072fd3335a833c56fe"
+        },
+        {
+          "entry": "extensions/common/images/codecs/dds/src/metadata.ts",
+          "cacheKey": "9e7292ba1001e13bd6df7475f5572241a5ecaae0f795225de6bd8a69c66d8cd2",
+          "sourceClosureDigest": "eeaffe9d602b86743024b0b6d115f22847ae0509c7b31a9d1e22fbe0f056be78",
+          "loaderDigest": "cc257026e75912cfffaa9a117e9654088391edbae52b05a9cd8f05efd2add110",
+          "dependenciesDigest": "8b11885590b04835388e618f61fa5f24534279e8188838072fd3335a833c56fe"
+        },
+        {
+          "entry": "extensions/common/images/codecs/dds/src/codec.ts",
+          "cacheKey": "4a0d5310de5da83236dadb1da5af2f575e7fa653d0fcfe5110948fe7d92c405f",
+          "sourceClosureDigest": "7fa6ff0574c3959f5e6e75e682560c3135fc89c06df6c5e8f9679010e9365ea9",
+          "loaderDigest": "cc257026e75912cfffaa9a117e9654088391edbae52b05a9cd8f05efd2add110",
+          "dependenciesDigest": "8b11885590b04835388e618f61fa5f24534279e8188838072fd3335a833c56fe"
+        }
+      ]
+    },
+    {
+      "name": "compare-legacy-dds-compressed",
+      "oldReceipt": "compare-legacy-dds-compressed.old.receipt.json",
+      "newReceipt": "compare-legacy-dds-compressed.new.receipt.json",
+      "measurements": {
+        "compared": 417,
+        "unit": "file",
+        "identical": 417,
+        "differing": 0
+      },
+      "corpusDigest": "f42f4a2995981d98fbd5e413d7bcb8100653ed977ea19043ef6105a7c9845f37",
+      "corpusFiles": 309,
+      "outputMatchesOld": true,
+      "loaderEvidence": "compare-legacy-dds-compressed.new.loader.json",
+      "sourceClosures": [
+        {
+          "entry": "extensions/common/images/codecs/dds/src/dds.ts",
+          "cacheKey": "9974a1193266469c9b02e67f46086f49d7c85fdcb928e59490f233a5c21c640e",
+          "sourceClosureDigest": "709018c4e06adefd28101415a190203a33ec52d062b33cdccdc93ea7627c1225",
+          "loaderDigest": "a2086e9fb83ba5c78cb8466d14e844272941f31536ab5e62042a8fa87a265cad",
+          "dependenciesDigest": "8b11885590b04835388e618f61fa5f24534279e8188838072fd3335a833c56fe"
+        },
+        {
+          "entry": "extensions/common/images/codecs/dds/src/helpers.ts",
+          "cacheKey": "d896913f26659f6661e410c704fe2dcd559bb494d8c02aa63474eaf13d690825",
+          "sourceClosureDigest": "0cc49141ad97cbe0e71b7c7204abc7a9bf3274ad523f6e9e43a5cdc073e172d6",
+          "loaderDigest": "a2086e9fb83ba5c78cb8466d14e844272941f31536ab5e62042a8fa87a265cad",
+          "dependenciesDigest": "dadc9ecaa50f06c9658dc74e3d9f91dc2cbbdd3dfc8be289c7dea4f2a9c1a58b"
+        },
+        {
+          "entry": "extensions/common/images/codecs/dds/src/ops.ts",
+          "cacheKey": "e16661d6caa0f9605efe41a545c084dcab98d2539dc57044a9e380c27deb2339",
+          "sourceClosureDigest": "3ecc10dfc92c258a0345ec78985521b953d45eb1e34270abaf0993174aab443c",
+          "loaderDigest": "a2086e9fb83ba5c78cb8466d14e844272941f31536ab5e62042a8fa87a265cad",
+          "dependenciesDigest": "8b11885590b04835388e618f61fa5f24534279e8188838072fd3335a833c56fe"
+        },
+        {
+          "entry": "extensions/common/images/codecs/dds/src/metadata.ts",
+          "cacheKey": "399228ff2cfc094eb2943414ae2f58f823e2cb4f0d7fb05544bf8af0cb138a1f",
+          "sourceClosureDigest": "eeaffe9d602b86743024b0b6d115f22847ae0509c7b31a9d1e22fbe0f056be78",
+          "loaderDigest": "a2086e9fb83ba5c78cb8466d14e844272941f31536ab5e62042a8fa87a265cad",
+          "dependenciesDigest": "8b11885590b04835388e618f61fa5f24534279e8188838072fd3335a833c56fe"
+        },
+        {
+          "entry": "extensions/common/images/codecs/dds/src/codec.ts",
+          "cacheKey": "38cb818c5991d3c363fd953ed9341baed1b6ecdbd119800ad3012373de908931",
+          "sourceClosureDigest": "7fa6ff0574c3959f5e6e75e682560c3135fc89c06df6c5e8f9679010e9365ea9",
+          "loaderDigest": "a2086e9fb83ba5c78cb8466d14e844272941f31536ab5e62042a8fa87a265cad",
+          "dependenciesDigest": "8b11885590b04835388e618f61fa5f24534279e8188838072fd3335a833c56fe"
+        }
+      ]
+    },
+    {
+      "name": "compare-legacy-dds-encode",
+      "oldReceipt": "compare-legacy-dds-encode.old.receipt.json",
+      "newReceipt": "compare-legacy-dds-encode.new.receipt.json",
+      "measurements": {
+        "compared": 770,
+        "unit": "case",
+        "identical": 770,
+        "differing": 0
+      },
+      "corpusDigest": "46a53a2d50ce22e54a1ab065728c4342dcd16de8b092722e3586651d246f1a81",
+      "corpusFiles": 121,
+      "outputMatchesOld": true,
+      "loaderEvidence": "compare-legacy-dds-encode.new.loader.json",
+      "sourceClosures": [
+        {
+          "entry": "extensions/common/images/codecs/dds/src/dds.ts",
+          "cacheKey": "830bee7b7457190759d6eebee16931984e80591c7026611bfd2a18bca044d75b",
+          "sourceClosureDigest": "709018c4e06adefd28101415a190203a33ec52d062b33cdccdc93ea7627c1225",
+          "loaderDigest": "21bc8f00d6b6b698b8273413c76f64559396b9a20479a15d803ff9cc7bde8df2",
+          "dependenciesDigest": "8b11885590b04835388e618f61fa5f24534279e8188838072fd3335a833c56fe"
+        },
+        {
+          "entry": "extensions/common/images/codecs/dds/src/helpers.ts",
+          "cacheKey": "70b43846b7684373dc54a606245172219562ca598dc102c59cb791b992e6ea06",
+          "sourceClosureDigest": "0cc49141ad97cbe0e71b7c7204abc7a9bf3274ad523f6e9e43a5cdc073e172d6",
+          "loaderDigest": "21bc8f00d6b6b698b8273413c76f64559396b9a20479a15d803ff9cc7bde8df2",
+          "dependenciesDigest": "dadc9ecaa50f06c9658dc74e3d9f91dc2cbbdd3dfc8be289c7dea4f2a9c1a58b"
+        },
+        {
+          "entry": "extensions/common/images/codecs/dds/src/ops.ts",
+          "cacheKey": "736c942941c15edecf618a14725e065897af2ca9e821791ad0d8117742490cec",
+          "sourceClosureDigest": "3ecc10dfc92c258a0345ec78985521b953d45eb1e34270abaf0993174aab443c",
+          "loaderDigest": "21bc8f00d6b6b698b8273413c76f64559396b9a20479a15d803ff9cc7bde8df2",
+          "dependenciesDigest": "8b11885590b04835388e618f61fa5f24534279e8188838072fd3335a833c56fe"
+        },
+        {
+          "entry": "extensions/common/images/codecs/dds/src/metadata.ts",
+          "cacheKey": "c0304dff4ca4e59232c3d089844f267ed84d8dfb19440db926b556683b983b0e",
+          "sourceClosureDigest": "eeaffe9d602b86743024b0b6d115f22847ae0509c7b31a9d1e22fbe0f056be78",
+          "loaderDigest": "21bc8f00d6b6b698b8273413c76f64559396b9a20479a15d803ff9cc7bde8df2",
+          "dependenciesDigest": "8b11885590b04835388e618f61fa5f24534279e8188838072fd3335a833c56fe"
+        },
+        {
+          "entry": "extensions/common/images/codecs/dds/src/codec.ts",
+          "cacheKey": "1304adbff16641712c6fb05028338244a0937f284b3b8bb9258f9419add3763d",
+          "sourceClosureDigest": "7fa6ff0574c3959f5e6e75e682560c3135fc89c06df6c5e8f9679010e9365ea9",
+          "loaderDigest": "21bc8f00d6b6b698b8273413c76f64559396b9a20479a15d803ff9cc7bde8df2",
+          "dependenciesDigest": "8b11885590b04835388e618f61fa5f24534279e8188838072fd3335a833c56fe"
+        }
+      ]
+    },
+    {
+      "name": "compare-legacy-image-ops",
+      "oldReceipt": "compare-legacy-image-ops.old.receipt.json",
+      "newReceipt": "compare-legacy-image-ops.new.receipt.json",
+      "measurements": {
+        "compared": 1895,
+        "unit": "case",
+        "identical": 1895,
+        "differing": 0
+      },
+      "corpusDigest": "7d9822d12071339ee2f3b9360b462431bcee16e2784a0bf5b71cf3ab51696761",
+      "corpusFiles": 91,
+      "outputMatchesOld": true,
+      "loaderEvidence": "compare-legacy-image-ops.new.loader.json",
+      "sourceClosures": [
+        {
+          "entry": "extensions/common/images/codecs/dds/src/dds.ts",
+          "cacheKey": "8c814db0330492bd7ad3ffeec20e5f7b999f43b8ec1856ecc26e7cc24ebcf017",
+          "sourceClosureDigest": "709018c4e06adefd28101415a190203a33ec52d062b33cdccdc93ea7627c1225",
+          "loaderDigest": "4eb99d26595e568a3646468ecbcf51f2908c186004462b595ff6f7713967d1be",
+          "dependenciesDigest": "8b11885590b04835388e618f61fa5f24534279e8188838072fd3335a833c56fe"
+        },
+        {
+          "entry": "extensions/common/images/codecs/dds/src/helpers.ts",
+          "cacheKey": "93d581044a6793bc692de8736520cab9ebc183fb84bb15a04a270f7cc2e67419",
+          "sourceClosureDigest": "0cc49141ad97cbe0e71b7c7204abc7a9bf3274ad523f6e9e43a5cdc073e172d6",
+          "loaderDigest": "4eb99d26595e568a3646468ecbcf51f2908c186004462b595ff6f7713967d1be",
+          "dependenciesDigest": "dadc9ecaa50f06c9658dc74e3d9f91dc2cbbdd3dfc8be289c7dea4f2a9c1a58b"
+        },
+        {
+          "entry": "extensions/common/images/codecs/dds/src/ops.ts",
+          "cacheKey": "b5d2db0fafc984aeb3e6608105725a91b90ad102b82e0840c08e5271b65c9256",
+          "sourceClosureDigest": "3ecc10dfc92c258a0345ec78985521b953d45eb1e34270abaf0993174aab443c",
+          "loaderDigest": "4eb99d26595e568a3646468ecbcf51f2908c186004462b595ff6f7713967d1be",
+          "dependenciesDigest": "8b11885590b04835388e618f61fa5f24534279e8188838072fd3335a833c56fe"
+        },
+        {
+          "entry": "extensions/common/images/codecs/dds/src/metadata.ts",
+          "cacheKey": "b8a81411219dc5c606f593a83be082d9b4421a07e2cf2b490a129a7f2543a218",
+          "sourceClosureDigest": "eeaffe9d602b86743024b0b6d115f22847ae0509c7b31a9d1e22fbe0f056be78",
+          "loaderDigest": "4eb99d26595e568a3646468ecbcf51f2908c186004462b595ff6f7713967d1be",
+          "dependenciesDigest": "8b11885590b04835388e618f61fa5f24534279e8188838072fd3335a833c56fe"
+        },
+        {
+          "entry": "extensions/common/images/codecs/dds/src/codec.ts",
+          "cacheKey": "6fe1f6468a4fa913f6df6cac957f2b20c183babc60702ef4447d9e529a61331f",
+          "sourceClosureDigest": "7fa6ff0574c3959f5e6e75e682560c3135fc89c06df6c5e8f9679010e9365ea9",
+          "loaderDigest": "4eb99d26595e568a3646468ecbcf51f2908c186004462b595ff6f7713967d1be",
+          "dependenciesDigest": "8b11885590b04835388e618f61fa5f24534279e8188838072fd3335a833c56fe"
+        }
+      ]
+    }
+  ],
+  "implementation": [
+    {
+      "path": "modkit-core/scripts/migration/lib/legacy-oracle.mjs",
+      "sha256": "d46b1bcd0566ee7656816e5ecd28fe7b019eee0e7b635e3fc06cc635bfeb4bf0"
+    },
+    {
+      "path": "modkit-core/scripts/migration/test/legacy-oracle.test.mjs",
+      "sha256": "671ebb168cdc20ad2c50cdffce97e555a449f94eb65e54b4683aa589e6d25c1f"
+    },
+    {
+      "path": "artifacts/legacy-oracle/load-mk2.mjs",
+      "sha256": "b84e2198184759fcf3c1907aee95e7095fa22091c5486dd6c3bfd03b73798092"
+    },
+    {
+      "path": "artifacts/legacy-oracle/dds-host-isolation.mjs",
+      "sha256": "4df04e260f762e0b3d049742580f5d2b86747772bc81047b7fd15f54977d0cc6"
+    },
+    {
+      "path": "artifacts/legacy-oracle/track-corpus.mjs",
+      "sha256": "cf567d2d186b5faa5534e02f8dfc395d2ac0a7411765d3b19d3ad5d8c2cf1086"
+    },
+    {
+      "path": "artifacts/legacy-oracle/mk3-reference.mjs",
+      "sha256": "75f2ba861ff475c0f7d1bd23c550b828c89f807a83d18255900565e7897cc7f7"
+    },
+    {
+      "path": "artifacts/legacy-oracle/run-dds-transition.mjs",
+      "sha256": "afc9219da4cd27659bdb798fcf812a8e34045f025be9fa69eca1c2d7ce1bbcdf"
+    },
+    {
+      "path": "artifacts/legacy-parity-textures/legacy-mk2.mjs",
+      "sha256": "971c16c9f59325618cc220a5ac4a9613210f52812e977a70f905feac22401d5b"
+    }
+  ],
+  "implementationDigest": "63b5a329d7989efcdf8616d7fafd9184da3fce7a1db2c005ae3224f206f7d129",
+  "limitations": [
+    "This is loader-transition evidence against isolated accepted MK3 M0, not final current M1-tree parity.",
+    "All original counts and refusal semantics are preserved: MK2-only refusals are not both-refused.",
+    "Static source closure plus explicitly declared runtime data/dependencies defines each entry; arbitrary runtime filesystem I/O must be declared by its harness.",
+    "M1 infrastructure readiness does not claim M2 port readiness or M7/M8 full surfaces."
+  ],
+  "loaderVersionNote": "Each new.loader.json loaderSnapshots list identifies the exact tested sources, preserved by sha256 in the versionable selection. Final lint/prettier-only engine cleanup and added syntax fixture are verified separately by oracle-verification.receipt.json. The current implementation hashes below do not replace the tested loader hashes."
+}

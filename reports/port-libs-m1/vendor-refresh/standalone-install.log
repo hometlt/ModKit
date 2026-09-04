@@ -1,0 +1,21 @@
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Progress: resolved 22, reused 21, downloaded 0, added 0
+Packages: +26
+++++++++++++++++++++++++++
+Progress: resolved 26, reused 25, downloaded 1, added 10
+Progress: resolved 26, reused 25, downloaded 1, added 16
+Progress: resolved 26, reused 25, downloaded 1, added 26, done
+
+dependencies:
++ @modkit/codec-kit 1.0.0
++ @modkit/core 0.1.0
++ @modkit/host 0.1.0
++ @modkit/sdk 0.1.0
++ @modkit/testkit 0.1.0
++ @modkit/vfs 0.1.0
+
+devDependencies:
++ @types/node 22.20.1 (26.4.0 is available)
++ typescript 5.9.3 (7.0.2 is available)
+
+Done in 4.6s using pnpm v10.12.1
