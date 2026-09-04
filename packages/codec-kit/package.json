@@ -30,6 +30,10 @@
       "types": "./dist/legacy/semantic/index.d.ts",
       "default": "./dist/legacy/semantic/index.js"
     },
+    "./legacy/semantic/*": {
+      "types": "./dist/legacy/semantic/*.d.ts",
+      "default": "./dist/legacy/semantic/*.js"
+    },
     "./legacy/games": {
       "types": "./dist/legacy/games/index.d.ts",
       "default": "./dist/legacy/games/index.js"
@@ -66,6 +70,30 @@
       "types": "./dist/legacy/vfs/index.d.ts",
       "default": "./dist/legacy/vfs/index.js"
     },
+    "./legacy/xml": {
+      "types": "./dist/legacy/xml/index.d.ts",
+      "default": "./dist/legacy/xml/index.js"
+    },
+    "./legacy/xml/positional": {
+      "types": "./dist/legacy/xml/positional/index.d.ts",
+      "default": "./dist/legacy/xml/positional/index.js"
+    },
+    "./legacy/models": {
+      "types": "./dist/legacy-model-support.d.ts",
+      "default": "./dist/legacy-model-support.js"
+    },
+    "./legacy/sc2-support": {
+      "types": "./dist/legacy-sc2-support.d.ts",
+      "default": "./dist/legacy-sc2-support.js"
+    },
+    "./legacy/models/*": {
+      "types": "./dist/legacy/models/*.d.ts",
+      "default": "./dist/legacy/models/*.js"
+    },
+    "./model-math/*": {
+      "types": "./dist/model-math/*.d.ts",
+      "default": "./dist/model-math/*.js"
+    },
     "./compression": {
       "types": "./dist/compression/index.d.ts",
       "default": "./dist/compression/index.js"
@@ -81,7 +109,8 @@
     "texture2ddecoder-wasm": "1.2.2",
     "@logtape/logtape": "2.2.4",
     "vscode-languageserver": "10.0.1",
-    "vscode-languageserver-textdocument": "1.0.13"
+    "vscode-languageserver-textdocument": "1.0.13",
+    "fast-xml-parser": "4.5.6"
   },
   "peerDependencies": {
     "@modkit/core": "workspace:*",
@@ -104,6 +133,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "clean": "tsc -b --clean",
     "test": "node --test test/*.test.mjs",
-    "test:legacy": "node --test test/legacy-kit.test.mjs"
+    "test:legacy": "node --test test/legacy-kit.test.mjs",
+    "typecheck:mk2-libraries": "tsc -p tsconfig.mk2-libraries.json --noEmit",
+    "typecheck:mk2-libraries:test": "tsc -p tsconfig.mk2-libraries.test.json --noEmit"
   }
 }

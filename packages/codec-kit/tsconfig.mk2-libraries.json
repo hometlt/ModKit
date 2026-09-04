@@ -1,0 +1,19 @@
+{
+  "extends": "../../tsconfig.port-strict.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "lib": ["ES2023", "DOM", "DOM.Iterable"]
+  },
+  "include": [
+    "src/legacy-model-support.ts",
+    "src/legacy-model-assets-support.ts",
+    "src/legacy-sc2-support.ts",
+    "src/legacy/assets/**/*.ts",
+    "src/legacy/core/**/*.ts",
+    "src/legacy/models/**/*.ts",
+    "src/legacy/xml/**/*.ts",
+    "src/legacy/support/**/*.ts",
+    "src/model-math/**/*.ts"
+  ]
+}

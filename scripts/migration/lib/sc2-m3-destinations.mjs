@@ -26,6 +26,8 @@ export const modelMath = new Set([
 export const triggerTmpTest =
   'extensions/blizzard/starcraft-2/codecs/sc2-triggers/src/core/to-engine.e2e.spec.ts.tmp'
 
+const layoutTestSupportPrefix = 'packages/layouts-processing/'
+
 export function isM3TestOwnedSource(file) {
   return (
     /(?:^|\/)test\//u.test(file) ||
@@ -65,6 +67,19 @@ export function canonicalM3Destination(source) {
     return `modkit-core/packages/codec-kit/test/mk2/models-core/${source.slice(
       'packages/models-processing/test/core/'.length,
     )}`
+  if (source === 'packages/core/src/events.ts')
+    return 'modkit-core/packages/codec-kit/src/legacy/support/events.ts'
+  if (source.startsWith('packages/vfs/src/'))
+    return `modkit-extensions-blizzard/starcraft2/test/mk2/support/vfs/src/${source.slice(
+      'packages/vfs/src/'.length,
+    )}`
+  if (
+    source.startsWith(`${layoutTestSupportPrefix}generated/`) ||
+    source.startsWith(`${layoutTestSupportPrefix}scripts/`) ||
+    source === `${layoutTestSupportPrefix}bundled-schema.js` ||
+    source === `${layoutTestSupportPrefix}bundled-schema.d.ts`
+  )
+    return `modkit-extensions-blizzard/starcraft2/test/mk2/${source}`
   const match = source.match(/^packages\/([^/]+)\/(src|test)\/(.+)$/u)
   if (!match) throw new Error(`No M3 destination: ${source}`)
   const [, packageName, kind, relative] = match

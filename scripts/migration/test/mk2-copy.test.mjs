@@ -174,6 +174,29 @@ test('canonical relative source may use its direct public package export, never 
   await assert.rejects(f.prepare(), /Noncanonical package export target/u)
 })
 
+test('exact copied-unwired disposition may redirect an excluded relative source to a dependency', async t => {
+  const f = await fixture(t)
+  const row = f.declaration.copies[0]
+  const rewritten = f.files.get(row.source).replace('./value.js', 'node:path')
+  row.rewrites = [{ from: "'./value.js'", to: "'node:path'", count: 1 }]
+  row.sha256Mk3 = sha256(rewritten)
+  f.declaration.scopes['m1-libs'].dependencies = [
+    { specifier: 'node:path', kind: 'node-builtin', reason: 'Exact test dependency.' },
+  ]
+  f.declaration.scopes['m1-libs'].importDispositions = [
+    {
+      source: 'src/main.ts',
+      specifier: './value.js',
+      destinationSpecifier: 'node:path',
+      kind: 'copied-unwired',
+      count: 1,
+      reason: 'The excluded legacy source is replaced by a reviewed dependency boundary.',
+    },
+  ]
+  const prepared = await f.prepare()
+  assert.equal(prepared.provenance.closure[0].destinationTarget, 'copied-unwired:node:path')
+})
+
 for (const [name, mutate, expected] of [
   [
     'empty closure',
@@ -707,7 +730,8 @@ test('family dry-run rejects a consistently removed row and a mutated destinatio
     /canonical tracked M3 refreeze pin/u,
   )
   const manuallyAdmitted = structuredClone(declaration)
-  manuallyAdmitted.scopes.family.status = 'ready'
+  assert.equal(manuallyAdmitted.scopes.family.status, 'ready')
+  manuallyAdmitted.scopes.family.status = 'pending-m3'
   await assert.rejects(
     prepareCopy({ ...options, declaration: manuallyAdmitted }),
     /Family refreeze pin mismatch/u,
@@ -772,6 +796,18 @@ test('registered import-type rewrite preserves emitted behavior and import ident
     'source.ts',
   )
   assert.equal(result.evidence[0].kind, 'import-type')
+  const exported = rewriteSource(
+    "export { RuntimeValue, TypeValue } from './value.js'",
+    [
+      {
+        kind: 'export-type',
+        from: "export { RuntimeValue, TypeValue } from './value.js'",
+        to: "export { RuntimeValue, type TypeValue } from './value.js'",
+      },
+    ],
+    'source.ts',
+  )
+  assert.equal(exported.text, "export { RuntimeValue, type TypeValue } from './value.js'")
   assert.throws(
     () =>
       rewriteSource(

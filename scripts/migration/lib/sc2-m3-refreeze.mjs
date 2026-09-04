@@ -1,6 +1,6 @@
 import { digestManifest } from './legacy-oracle.mjs'
 
-export const SC2_M3_SELECTOR_VERSION = 'sc2-m3-family-v3'
+export const SC2_M3_SELECTOR_VERSION = 'sc2-m3-family-v5'
 export const SC2_M3_REFREEZE_PIN = 'modkit-core/migration/mk2-copy/sc2-m3-refreeze.json'
 
 export function parseSc2M3RefreezeArgs(args) {

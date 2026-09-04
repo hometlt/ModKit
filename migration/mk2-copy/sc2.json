@@ -419,9 +419,9 @@
       "acceptancePin": "sc2-bank-2026-09-04"
     },
     "family": {
-      "status": "pending-m3",
+      "status": "ready",
       "copiedAt": "2026-09-04",
-      "selectorVersion": "sc2-m3-family-v3",
+      "selectorVersion": "sc2-m3-family-v5",
       "refreezePin": "modkit-core/migration/mk2-copy/sc2-m3-refreeze.json",
       "requiredSources": [
         "extensions/blizzard/starcraft-2/codecs/galaxy/README.md",
@@ -1551,6 +1551,7 @@
         "packages/assets/src/profiles/image-texture.ts",
         "packages/assets/src/source.ts",
         "packages/core/src/errors.ts",
+        "packages/core/src/events.ts",
         "packages/core/src/logger.ts",
         "packages/data-processing/src/index.ts",
         "packages/data-processing/src/operations.ts",
@@ -1624,6 +1625,10 @@
         "packages/language-contracts/src/document-kind.ts",
         "packages/language-contracts/src/index.ts",
         "packages/language-contracts/src/module.ts",
+        "packages/layouts-processing/bundled-schema.d.ts",
+        "packages/layouts-processing/bundled-schema.js",
+        "packages/layouts-processing/generated/sc2layout-schema-data.json",
+        "packages/layouts-processing/scripts/sc2-layout-core/compile-schema.ts",
         "packages/layouts-processing/src/index.ts",
         "packages/layouts-processing/src/operations.ts",
         "packages/layouts-processing/src/sc2-layout-core/bin/s2l-update-docs.ts",
@@ -1645,6 +1650,7 @@
         "packages/layouts-processing/src/sc2-layout-core/schema/base.ts",
         "packages/layouts-processing/src/sc2-layout-core/schema/localization.ts",
         "packages/layouts-processing/src/sc2-layout-core/schema/reader.ts",
+        "packages/layouts-processing/src/sc2-layout-core/schema/registry.ts",
         "packages/layouts-processing/src/sc2-layout-core/schema/validation.ts",
         "packages/layouts-processing/src/sc2-layout-core/simple-parse/index.ts",
         "packages/layouts-processing/src/sc2-layout-core/simple-parse/locate.ts",
@@ -1855,6 +1861,15 @@
         "packages/semantic/src/replays.ts",
         "packages/semantic/src/saves.ts",
         "packages/semantic/src/scripts.ts",
+        "packages/vfs/src/core/directory.ts",
+        "packages/vfs/src/core/mount.ts",
+        "packages/vfs/src/core/path.ts",
+        "packages/vfs/src/core/provider.ts",
+        "packages/vfs/src/core/random-access.ts",
+        "packages/vfs/src/core/resolver.ts",
+        "packages/vfs/src/core/source.ts",
+        "packages/vfs/src/providers/file/index.ts",
+        "packages/vfs/src/providers/file/node.ts",
         "packages/world/src/contracts.ts",
         "packages/xml/src/formats.ts",
         "packages/xml/src/index.ts",
@@ -1891,6 +1906,29 @@
           "destination": "modkit-extensions-blizzard/test/mk2/support/sc2-bank-host.ts",
           "reason": "Exactly three real MK3 host tests replace the retired registry contract; no production resolver.",
           "sha256": "b892d0aaf4c24e880a07f828f0e141d9f81f753fcb4efe14144ab50bc4f1fab0"
+        },
+        {
+          "destination": "modkit-core/packages/codec-kit/src/legacy-model-support.ts",
+          "replacesSources": [
+            "packages/models-processing/src/index.ts"
+          ],
+          "reason": "Narrow M3 support barrel for renderer-neutral model contracts and admitted pure helpers; no concrete codec, renderer, registry, or embedded-resource activation.",
+          "sha256": "72c0e2bf79212902945ff5c77be371ca593e235ecfc10ce8b4d64a1969a05bcb"
+        },
+        {
+          "destination": "modkit-core/packages/codec-kit/src/legacy-model-assets-support.ts",
+          "reason": "Narrow M3 import seam recomposing accepted neutral asset contracts for the copied model registry; no codec activation.",
+          "sha256": "2cc6eedbc2a8ebf04b650702a1350805f931b05407dd0ced118f9460acf8b912"
+        },
+        {
+          "destination": "modkit-core/packages/codec-kit/src/legacy-sc2-support.ts",
+          "reason": "Narrow shared compatibility surface for legacy SC2 layout events/logging and the type-only mod VFS contract; no host or codec activation.",
+          "sha256": "13454364bae9925ddd0f0b59b2e8fd0d2f6574b48e580c81733bec1344157bdb"
+        },
+        {
+          "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/support/vfs-node.ts",
+          "reason": "Test-only barrel over the exact pinned file VFS closure required by the admitted mods-processing suites.",
+          "sha256": "e4737cb23269b5be85c5b1850708d2d1f2bcbde75d2b701fbad26e5af5fe7ffb"
         }
       ],
       "dependencies": [
@@ -1908,7 +1946,7 @@
           "manifest": "modkit-extensions-blizzard/node_modules/@modkit/blizzard-starcraft2/package.json",
           "version": "1.0.0",
           "reason": "M2 pinned bank source/test dependency through the actual installed/public package.",
-          "manifestSha256": "fa6aa62e24a840a528c3ebc2d95c4040fc4102da17b79fd13ffdb3b377a46068"
+          "manifestSha256": "572d3fe560e2fbcbf215d2f628a11f51a059059245c80a8f73283fe3b900d2bc"
         },
         {
           "specifier": "@modkit/codec-kit/crypto/sha1",
@@ -1919,7 +1957,7 @@
           "canonicalSources": [
             "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/sha1.ts"
           ],
-          "manifestSha256": "1fdc8214386ce5527afd689a8d1bea80bb47fd4bba1dbaeb94337338180eca4e"
+          "manifestSha256": "d02e758c9448ace8fa43565eedd3b4d24770d55b04431361434fc0a5581049ee"
         },
         {
           "specifier": "@modkit/codec-kit/legacy/assets",
@@ -1927,7 +1965,7 @@
           "manifest": "modkit-core/packages/codec-kit/package.json",
           "version": "1.0.0",
           "reason": "M2 pinned bank source/test dependency through the actual installed/public package.",
-          "manifestSha256": "1fdc8214386ce5527afd689a8d1bea80bb47fd4bba1dbaeb94337338180eca4e"
+          "manifestSha256": "d02e758c9448ace8fa43565eedd3b4d24770d55b04431361434fc0a5581049ee"
         },
         {
           "specifier": "@modkit/codec-kit/legacy/core",
@@ -1935,7 +1973,7 @@
           "manifest": "modkit-core/packages/codec-kit/package.json",
           "version": "1.0.0",
           "reason": "M2 pinned bank source/test dependency through the actual installed/public package.",
-          "manifestSha256": "1fdc8214386ce5527afd689a8d1bea80bb47fd4bba1dbaeb94337338180eca4e"
+          "manifestSha256": "d02e758c9448ace8fa43565eedd3b4d24770d55b04431361434fc0a5581049ee"
         },
         {
           "specifier": "@modkit/codec-kit/legacy/entity-cards",
@@ -1970,12 +2008,76 @@
           "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
         },
         {
+          "specifier": "@modkit/codec-kit/legacy/sc2-support",
+          "package": "@modkit/codec-kit",
+          "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
+          "version": "1.0.0",
+          "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+          "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
+        },
+        {
           "specifier": "@modkit/codec-kit/legacy/semantic",
           "package": "@modkit/codec-kit",
           "manifest": "modkit-core/packages/codec-kit/package.json",
           "version": "1.0.0",
           "reason": "M2 pinned bank source/test dependency through the actual installed/public package.",
-          "manifestSha256": "1fdc8214386ce5527afd689a8d1bea80bb47fd4bba1dbaeb94337338180eca4e"
+          "manifestSha256": "d02e758c9448ace8fa43565eedd3b4d24770d55b04431361434fc0a5581049ee"
+        },
+        {
+          "specifier": "@modkit/codec-kit/legacy/semantic/documents",
+          "package": "@modkit/codec-kit",
+          "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
+          "version": "1.0.0",
+          "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+          "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
+        },
+        {
+          "specifier": "@modkit/codec-kit/legacy/semantic/layouts",
+          "package": "@modkit/codec-kit",
+          "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
+          "version": "1.0.0",
+          "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+          "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
+        },
+        {
+          "specifier": "@modkit/codec-kit/legacy/semantic/localization",
+          "package": "@modkit/codec-kit",
+          "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
+          "version": "1.0.0",
+          "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+          "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
+        },
+        {
+          "specifier": "@modkit/codec-kit/legacy/semantic/maps",
+          "package": "@modkit/codec-kit",
+          "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
+          "version": "1.0.0",
+          "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+          "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
+        },
+        {
+          "specifier": "@modkit/codec-kit/legacy/semantic/mods",
+          "package": "@modkit/codec-kit",
+          "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
+          "version": "1.0.0",
+          "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+          "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
+        },
+        {
+          "specifier": "@modkit/codec-kit/legacy/semantic/replays",
+          "package": "@modkit/codec-kit",
+          "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
+          "version": "1.0.0",
+          "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+          "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
+        },
+        {
+          "specifier": "@modkit/codec-kit/legacy/semantic/scripts",
+          "package": "@modkit/codec-kit",
+          "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
+          "version": "1.0.0",
+          "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
+          "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
         },
         {
           "specifier": "@modkit/codec-kit/legacy/vfs",
@@ -6138,9 +6240,10 @@
         {
           "source": "packages/documents-processing/src/index.ts",
           "specifier": "./registry.js",
+          "destinationSpecifier": "@modkit/codec-kit/legacy/semantic/documents",
           "kind": "copied-unwired",
           "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
+          "reason": "The excluded legacy package registry is replaced by the accepted domain-neutral semantic registry copy."
         },
         {
           "source": "packages/documents-processing/src/operations.ts",
@@ -6152,9 +6255,10 @@
         {
           "source": "packages/documents-processing/test/semantic-facade.test.ts",
           "specifier": "../src/registry.js",
+          "destinationSpecifier": "@modkit/codec-kit/legacy/semantic/documents",
           "kind": "copied-unwired",
           "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
+          "reason": "The excluded legacy package registry is replaced by the accepted domain-neutral semantic registry copy."
         },
         {
           "source": "packages/documents-processing/test/semantic-facade.test.ts",
@@ -6164,18 +6268,19 @@
           "reason": "Legacy package edge remains copied-unwired until its owner-specific C1 adapter is admitted."
         },
         {
-          "source": "packages/layouts-processing/src/index.ts",
-          "specifier": "./registry.js",
+          "source": "packages/layouts-processing/bundled-schema.d.ts",
+          "specifier": "@modkitx/layouts-processing/sc2-layout",
           "kind": "copied-unwired",
           "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
+          "reason": "Legacy package edge remains copied-unwired until its owner-specific C1 adapter is admitted."
         },
         {
-          "source": "packages/layouts-processing/src/sc2-layout-core/bin/s2l-update-docs.ts",
-          "specifier": "../schema/registry.js",
+          "source": "packages/layouts-processing/src/index.ts",
+          "specifier": "./registry.js",
+          "destinationSpecifier": "@modkit/codec-kit/legacy/semantic/layouts",
           "kind": "copied-unwired",
           "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
+          "reason": "The excluded legacy package registry is replaced by the accepted domain-neutral semantic registry copy."
         },
         {
           "source": "packages/layouts-processing/src/sc2-layout-core/common.ts",
@@ -6190,20 +6295,6 @@
           "kind": "copied-unwired",
           "count": 2,
           "reason": "Optional or unavailable legacy dependency is retained only in the isolated compatibility copy."
-        },
-        {
-          "source": "packages/layouts-processing/src/sc2-layout-core/core.ts",
-          "specifier": "./schema/registry.js",
-          "kind": "copied-unwired",
-          "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
-        },
-        {
-          "source": "packages/layouts-processing/src/sc2-layout-core/index.ts",
-          "specifier": "./schema/registry.js",
-          "kind": "copied-unwired",
-          "count": 2,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
         },
         {
           "source": "packages/layouts-processing/src/sc2-layout-core/index/checker.ts",
@@ -6284,13 +6375,6 @@
         },
         {
           "source": "packages/layouts-processing/test/sc2-layout-core/setup.ts",
-          "specifier": "../../src/sc2-layout-core/schema/registry.js",
-          "kind": "copied-unwired",
-          "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
-        },
-        {
-          "source": "packages/layouts-processing/test/sc2-layout-core/setup.ts",
           "specifier": "@modkitx/layouts-processing/sc2-layout/bundled-schema",
           "kind": "copied-unwired",
           "count": 1,
@@ -6299,9 +6383,10 @@
         {
           "source": "packages/layouts-processing/test/semantic-facade.test.ts",
           "specifier": "../src/registry.js",
+          "destinationSpecifier": "@modkit/codec-kit/legacy/semantic/layouts",
           "kind": "copied-unwired",
           "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
+          "reason": "The excluded legacy package registry is replaced by the accepted domain-neutral semantic registry copy."
         },
         {
           "source": "packages/layouts-processing/test/semantic-facade.test.ts",
@@ -6313,9 +6398,10 @@
         {
           "source": "packages/localization-processing/src/index.ts",
           "specifier": "./registry.js",
+          "destinationSpecifier": "@modkit/codec-kit/legacy/semantic/localization",
           "kind": "copied-unwired",
           "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
+          "reason": "The excluded legacy package registry is replaced by the accepted domain-neutral semantic registry copy."
         },
         {
           "source": "packages/localization-processing/test/semantic-facade.test.ts",
@@ -6327,9 +6413,10 @@
         {
           "source": "packages/maps-processing/src/index.ts",
           "specifier": "./registry.js",
+          "destinationSpecifier": "@modkit/codec-kit/legacy/semantic/maps",
           "kind": "copied-unwired",
           "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
+          "reason": "The excluded legacy package registry is replaced by the accepted domain-neutral semantic registry copy."
         },
         {
           "source": "packages/maps-processing/src/operations.ts",
@@ -6341,9 +6428,10 @@
         {
           "source": "packages/maps-processing/test/semantic-facade.test.ts",
           "specifier": "../src/registry.js",
+          "destinationSpecifier": "@modkit/codec-kit/legacy/semantic/maps",
           "kind": "copied-unwired",
           "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
+          "reason": "The excluded legacy package registry is replaced by the accepted domain-neutral semantic registry copy."
         },
         {
           "source": "packages/maps-processing/test/semantic-facade.test.ts",
@@ -6353,130 +6441,12 @@
           "reason": "Legacy package edge remains copied-unwired until its owner-specific C1 adapter is admitted."
         },
         {
-          "source": "packages/models-processing/src/core/animation.ts",
-          "specifier": "../index.js",
-          "kind": "copied-unwired",
-          "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
-        },
-        {
-          "source": "packages/models-processing/src/core/codec.ts",
-          "specifier": "../index.js",
-          "kind": "copied-unwired",
-          "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
-        },
-        {
-          "source": "packages/models-processing/src/core/effects-sim.ts",
-          "specifier": "../index.js",
-          "kind": "copied-unwired",
-          "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
-        },
-        {
-          "source": "packages/models-processing/src/core/format-detection.ts",
-          "specifier": "../index.js",
-          "kind": "copied-unwired",
-          "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
-        },
-        {
-          "source": "packages/models-processing/src/core/humanoid.ts",
-          "specifier": "../index.js",
-          "kind": "copied-unwired",
-          "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
-        },
-        {
-          "source": "packages/models-processing/src/core/material.ts",
-          "specifier": "../index.js",
-          "kind": "copied-unwired",
-          "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
-        },
-        {
-          "source": "packages/models-processing/src/core/preview-textures.ts",
-          "specifier": "@modkitx/assets/profiles/image-texture",
-          "kind": "copied-unwired",
-          "count": 1,
-          "reason": "Legacy package edge remains copied-unwired until its owner-specific C1 adapter is admitted."
-        },
-        {
-          "source": "packages/models-processing/src/core/sequence-pose.ts",
-          "specifier": "../index.js",
-          "kind": "copied-unwired",
-          "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
-        },
-        {
-          "source": "packages/models-processing/src/core/texture-codec.ts",
-          "specifier": "../index.js",
-          "kind": "copied-unwired",
-          "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
-        },
-        {
-          "source": "packages/models-processing/src/core/transport.ts",
-          "specifier": "../index.js",
-          "kind": "copied-unwired",
-          "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
-        },
-        {
-          "source": "packages/models-processing/src/core/westwood-bind-pose.ts",
-          "specifier": "../index.js",
-          "kind": "copied-unwired",
-          "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
-        },
-        {
-          "source": "packages/models-processing/test/core/codec.spec.ts",
-          "specifier": "../../src/index.js",
-          "kind": "copied-unwired",
-          "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
-        },
-        {
-          "source": "packages/models-processing/test/core/effects-sim.spec.ts",
-          "specifier": "../../src/index.js",
-          "kind": "copied-unwired",
-          "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
-        },
-        {
-          "source": "packages/models-processing/test/core/material.spec.ts",
-          "specifier": "../../src/index.js",
-          "kind": "copied-unwired",
-          "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
-        },
-        {
-          "source": "packages/models-processing/test/core/sequence-pose.spec.ts",
-          "specifier": "../../src/index.js",
-          "kind": "copied-unwired",
-          "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
-        },
-        {
-          "source": "packages/models-processing/test/core/standard-material-glsl.spec.ts",
-          "specifier": "../../src/index.js",
-          "kind": "copied-unwired",
-          "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
-        },
-        {
-          "source": "packages/models-processing/test/core/transport.spec.ts",
-          "specifier": "../../src/index.js",
-          "kind": "copied-unwired",
-          "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
-        },
-        {
           "source": "packages/mods-processing/src/index.ts",
           "specifier": "./registry.js",
+          "destinationSpecifier": "@modkit/codec-kit/legacy/semantic/mods",
           "kind": "copied-unwired",
           "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
+          "reason": "The excluded legacy package registry is replaced by the accepted domain-neutral semantic registry copy."
         },
         {
           "source": "packages/mods-processing/src/operations.ts",
@@ -6726,16 +6696,18 @@
         {
           "source": "packages/replays-processing/src/index.ts",
           "specifier": "./registry.js",
+          "destinationSpecifier": "@modkit/codec-kit/legacy/semantic/replays",
           "kind": "copied-unwired",
           "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
+          "reason": "The excluded legacy package registry is replaced by the accepted domain-neutral semantic registry copy."
         },
         {
           "source": "packages/replays-processing/test/semantic-facade.test.ts",
           "specifier": "../src/registry.js",
+          "destinationSpecifier": "@modkit/codec-kit/legacy/semantic/replays",
           "kind": "copied-unwired",
           "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
+          "reason": "The excluded legacy package registry is replaced by the accepted domain-neutral semantic registry copy."
         },
         {
           "source": "packages/replays-processing/test/semantic-facade.test.ts",
@@ -6747,9 +6719,10 @@
         {
           "source": "packages/scripts-processing/src/index.ts",
           "specifier": "./registry.js",
+          "destinationSpecifier": "@modkit/codec-kit/legacy/semantic/scripts",
           "kind": "copied-unwired",
           "count": 1,
-          "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
+          "reason": "The excluded legacy package registry is replaced by the accepted domain-neutral semantic registry copy."
         },
         {
           "source": "packages/scripts-processing/src/operations.ts",
@@ -11040,7 +11013,13 @@
       "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-map/src/image/png.ts",
       "sha256Mk2": "d7cd50e2c2035b7091d070071a3abbff30a3eecf25f049160c8f1bc5a9b90737",
       "sha256Mk3": "d7cd50e2c2035b7091d070071a3abbff30a3eecf25f049160c8f1bc5a9b90737",
-      "rewrites": []
+      "rewrites": [],
+      "algorithmDisposition": {
+        "symbol": "crc32#0",
+        "kind": "copied-unwired-copy",
+        "reason": "Exact pinned SC2 map PNG CRC implementation remains staged outside the normal StarCraft II production graph.",
+        "exit": "canonicalize-before-activation"
+      }
     },
     {
       "source": "extensions/blizzard/starcraft-2/codecs/sc2-map/src/image/README.md",
@@ -19611,6 +19590,13 @@
       "rewrites": []
     },
     {
+      "source": "packages/core/src/events.ts",
+      "destination": "modkit-core/packages/codec-kit/src/legacy/support/events.ts",
+      "sha256Mk2": "03d7adbcf16a9c2dba383158f1b8ae12b2d681eefc988bf6807224645e2cc07b",
+      "sha256Mk3": "03d7adbcf16a9c2dba383158f1b8ae12b2d681eefc988bf6807224645e2cc07b",
+      "rewrites": []
+    },
+    {
       "source": "packages/core/src/logger.ts",
       "destination": "modkit-core/packages/codec-kit/src/legacy/core/logger.ts",
       "sha256Mk2": "67aec5c576ae89d0a06e64b8e8b8c8898b83a28276f923f7722931ce56f6b485",
@@ -20083,11 +20069,16 @@
       "source": "packages/documents-processing/src/index.ts",
       "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/documents-processing/src/index.ts",
       "sha256Mk2": "1cbd498506d3ec81dcbeba71156ecb7a4b98bf3571f8a34a4fb9149eb279d855",
-      "sha256Mk3": "be177dd6290c15bc5ba78ce45c1733943e75736600f83f322d83a930dbc01aa3",
+      "sha256Mk3": "ac1f86ce7a7b6b02b3eaddf91057498a1e5180eb49e3c286b88c0b593fff5e99",
       "rewrites": [
         {
           "from": "'@modkitx/assets'",
           "to": "'@modkit/codec-kit/legacy/assets'",
+          "count": 1
+        },
+        {
+          "from": "'./registry.js'",
+          "to": "'@modkit/codec-kit/legacy/semantic/documents'",
           "count": 1
         }
       ]
@@ -20198,7 +20189,7 @@
       "source": "packages/documents-processing/test/semantic-facade.test.ts",
       "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/packages/documents-processing/test/semantic-facade.test.ts",
       "sha256Mk2": "dc54548f6d62bb72cb534899eac8b677076aabe0a4ebd7488806dab8015e9ec3",
-      "sha256Mk3": "87a899d49747ae81b274838ea0b19abf11e7e009d2a6b424897ad6947f2401de",
+      "sha256Mk3": "92eb854d565eec39dd3af73ef12fe81ca9ae219cedc72eab8d6a4ff0b8f54d56",
       "rewrites": [
         {
           "from": "'@modkitx/assets'",
@@ -20213,6 +20204,11 @@
         {
           "from": "'../src/operations.js'",
           "to": "'../../../../../src/lib/mk2/packages/documents-processing/src/operations.js'",
+          "count": 1
+        },
+        {
+          "from": "'../src/registry.js'",
+          "to": "'@modkit/codec-kit/legacy/semantic/documents'",
           "count": 1
         }
       ]
@@ -20352,14 +20348,53 @@
       "rewrites": []
     },
     {
+      "source": "packages/layouts-processing/bundled-schema.d.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/bundled-schema.d.ts",
+      "sha256Mk2": "9cb417cf6f96e9cae93e137eca6a40f532f3a07958b64245f25d4de67baf0bea",
+      "sha256Mk3": "9cb417cf6f96e9cae93e137eca6a40f532f3a07958b64245f25d4de67baf0bea",
+      "rewrites": []
+    },
+    {
+      "source": "packages/layouts-processing/bundled-schema.js",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/bundled-schema.js",
+      "sha256Mk2": "88956ee81138c27037a0cf2801a452e03c2b72a066de43e8f290fa4b1e4ace50",
+      "sha256Mk3": "88956ee81138c27037a0cf2801a452e03c2b72a066de43e8f290fa4b1e4ace50",
+      "rewrites": []
+    },
+    {
+      "source": "packages/layouts-processing/generated/sc2layout-schema-data.json",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/generated/sc2layout-schema-data.json",
+      "sha256Mk2": "b2fb2c1302c9338a66a1d6787b19206eaf4bc38676ccd59de83ceb37275dba1f",
+      "sha256Mk3": "b2fb2c1302c9338a66a1d6787b19206eaf4bc38676ccd59de83ceb37275dba1f",
+      "rewrites": []
+    },
+    {
+      "source": "packages/layouts-processing/scripts/sc2-layout-core/compile-schema.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/scripts/sc2-layout-core/compile-schema.ts",
+      "sha256Mk2": "3cdaafc878bb1b68510209c820c70a312595eec762ad00c94cc0e53bd0f19f7a",
+      "sha256Mk3": "c764a5cf769d23cc61200d4eda09043cd138888f7219bd78659f288f47b3ed6d",
+      "rewrites": [
+        {
+          "from": "'../../src/sc2-layout-core/schema/registry.js'",
+          "to": "'../../../../../../src/lib/mk2/packages/layouts-processing/src/sc2-layout-core/schema/registry.js'",
+          "count": 1
+        }
+      ]
+    },
+    {
       "source": "packages/layouts-processing/src/index.ts",
       "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/layouts-processing/src/index.ts",
       "sha256Mk2": "c577deb7989cc2dc42f9b469b84fa4cecca71293c9ab9150c972a73dce962543",
-      "sha256Mk3": "8b82d45bcd024deb653987e9967db3718d412ca89ea2f5c60ac92f4d777f87f0",
+      "sha256Mk3": "934ff97519c7b95709d2d5422ecf37451d91fa57dad1887537930c0519897d8f",
       "rewrites": [
         {
           "from": "'@modkitx/assets'",
           "to": "'@modkit/codec-kit/legacy/assets'",
+          "count": 1
+        },
+        {
+          "from": "'./registry.js'",
+          "to": "'@modkit/codec-kit/legacy/semantic/layouts'",
           "count": 1
         }
       ]
@@ -20416,11 +20451,23 @@
       "source": "packages/layouts-processing/src/sc2-layout-core/index.ts",
       "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/layouts-processing/src/sc2-layout-core/index.ts",
       "sha256Mk2": "aa58f95780665b3577751e5c293135d089b08a28814a2cc56a583d0671565354",
-      "sha256Mk3": "373bf678ff23fa071715b7b0bf563cacce21c9d94f76a1c0e961e101a59e8a42",
+      "sha256Mk3": "b78377dceb82971dfeee652798cec489c8ca7abf490c107187e87bfa841627d4",
       "rewrites": [
         {
+          "kind": "export-type",
+          "from": "export { SC2Layout } from './types.js';",
+          "to": "export { type SC2Layout } from './types.js';",
+          "count": 1
+        },
+        {
+          "kind": "export-type",
+          "from": "export { ExpressionParser, PathSelector, PropertyBindExpr, SelectorFragment, SelHandleKind, SyntaxKind } from './parser/expressions.js';",
+          "to": "export { ExpressionParser, type PathSelector, type PropertyBindExpr, type SelectorFragment, SelHandleKind, SyntaxKind } from './parser/expressions.js';",
+          "count": 1
+        },
+        {
           "from": "'@modkitx/core'",
-          "to": "'@modkit/codec-kit/legacy/core'",
+          "to": "'@modkit/codec-kit/legacy/sc2-support'",
           "count": 1
         }
       ]
@@ -20457,11 +20504,11 @@
       "source": "packages/layouts-processing/src/sc2-layout-core/index/store.ts",
       "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/layouts-processing/src/sc2-layout-core/index/store.ts",
       "sha256Mk2": "a59c801b945abe3e3dcd65ecfa43624465fb94050b5a66c37b45019f042674c4",
-      "sha256Mk3": "a9fdb58eb38ffec71ed345eead8e61baa19e562a0a98c50a103468f69bcaa295",
+      "sha256Mk3": "0a6d51e0d63599a4272054d2d31f411fcd98a4b26ba73b50b3803c5e90fe28e3",
       "rewrites": [
         {
           "from": "'@modkitx/core'",
-          "to": "'@modkit/codec-kit/legacy/core'",
+          "to": "'@modkit/codec-kit/legacy/sc2-support'",
           "count": 1
         }
       ]
@@ -20523,6 +20570,13 @@
       "rewrites": []
     },
     {
+      "source": "packages/layouts-processing/src/sc2-layout-core/schema/registry.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/layouts-processing/src/sc2-layout-core/schema/registry.ts",
+      "sha256Mk2": "3441e16d646c0e110e3ac2a843d6aeff031dfbf6209033e0480f0ffd7193f7bb",
+      "sha256Mk3": "3441e16d646c0e110e3ac2a843d6aeff031dfbf6209033e0480f0ffd7193f7bb",
+      "rewrites": []
+    },
+    {
       "source": "packages/layouts-processing/src/sc2-layout-core/schema/validation.ts",
       "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/layouts-processing/src/sc2-layout-core/schema/validation.ts",
       "sha256Mk2": "bc88f1266ffdbf690a275ace219a139cb8002cb74e4e411db913518a3eb7d592",
@@ -20561,8 +20615,15 @@
       "source": "packages/layouts-processing/src/sc2-layout-core/types.ts",
       "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/layouts-processing/src/sc2-layout-core/types.ts",
       "sha256Mk2": "72fc8ffeb5a70fb4ec248989fe24f5c3a733b5a9d7ddd3c8745b0a5c0c6692a6",
-      "sha256Mk3": "72fc8ffeb5a70fb4ec248989fe24f5c3a733b5a9d7ddd3c8745b0a5c0c6692a6",
-      "rewrites": []
+      "sha256Mk3": "2de99a47e8b820e7bda8dc1e4f2bc99337c50504b2de39413cce1b92f8986f17",
+      "rewrites": [
+        {
+          "kind": "export-type",
+          "from": "export {\n    XMLNodeKind,\n    XMLAttr,\n    TokenType,\n    ScannerState,\n    DiagnosticCategory,\n    DiagnosticReport,\n    CharacterCodes,\n    createScanner,\n    buildLineMap,\n    findFirst,\n    binarySearch,\n} from '@modkitx/xml/positional';",
+          "to": "export {\n    XMLNodeKind,\n    type XMLAttr,\n    TokenType,\n    ScannerState,\n    DiagnosticCategory,\n    type DiagnosticReport,\n    CharacterCodes,\n    createScanner,\n    buildLineMap,\n    findFirst,\n    binarySearch,\n} from '@modkitx/xml/positional';",
+          "count": 1
+        }
+      ]
     },
     {
       "source": "packages/layouts-processing/test/sc2-layout-core/bootstrap.ts",
@@ -20814,8 +20875,14 @@
       "source": "packages/layouts-processing/test/sc2-layout-core/setup.ts",
       "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/sc2-layout-core/setup.ts",
       "sha256Mk2": "c3c0b35fe083dbaf8eef2fc880e6dc29733a9ed2a5c6b69a8f3eab0eff3ae0c1",
-      "sha256Mk3": "c3c0b35fe083dbaf8eef2fc880e6dc29733a9ed2a5c6b69a8f3eab0eff3ae0c1",
-      "rewrites": []
+      "sha256Mk3": "c733d61557dc7f35106eed26098022e367f47d2621ba64ffac563f37002626dc",
+      "rewrites": [
+        {
+          "from": "'../../src/sc2-layout-core/schema/registry.js'",
+          "to": "'../../../../../../src/lib/mk2/packages/layouts-processing/src/sc2-layout-core/schema/registry.js'",
+          "count": 1
+        }
+      ]
     },
     {
       "source": "packages/layouts-processing/test/sc2-layout-core/simple-parse-locate.test.ts",
@@ -20860,7 +20927,7 @@
       "source": "packages/layouts-processing/test/semantic-facade.test.ts",
       "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/packages/layouts-processing/test/semantic-facade.test.ts",
       "sha256Mk2": "b68d6cef9f5cd20cb684659d119b24d31303ef0ad81680189485f471cdb93bba",
-      "sha256Mk3": "1657b5827ecb4067c0f2db91a5ddd7aa2763d623cb2e9a154efb971ab0200205",
+      "sha256Mk3": "3a1eae66b6000ec89dcd7c607382c4dc397c2ae1c166d7f3a6ee16a9409cae9e",
       "rewrites": [
         {
           "from": "'@modkitx/assets'",
@@ -20871,6 +20938,11 @@
           "from": "'../src/index.js'",
           "to": "'../../../../../src/lib/mk2/packages/layouts-processing/src/index.js'",
           "count": 1
+        },
+        {
+          "from": "'../src/registry.js'",
+          "to": "'@modkit/codec-kit/legacy/semantic/layouts'",
+          "count": 1
         }
       ]
     },
@@ -20878,11 +20950,16 @@
       "source": "packages/localization-processing/src/index.ts",
       "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/localization-processing/src/index.ts",
       "sha256Mk2": "e17399135e7917cd3013ffe5b3d8b2ca2c3218351457fc9c29d2dcc5c60e9e89",
-      "sha256Mk3": "e6b12a1e6dee99338214c3855a4e1522f9f64eccef219eb2ccb151f6c99630bc",
+      "sha256Mk3": "4c1df50ef094962940947bde1bc3964ff0e0752560442925c87e72f73e63d3bc",
       "rewrites": [
         {
           "from": "'@modkitx/assets'",
           "to": "'@modkit/codec-kit/legacy/assets'",
+          "count": 1
+        },
+        {
+          "from": "'./registry.js'",
+          "to": "'@modkit/codec-kit/legacy/semantic/localization'",
           "count": 1
         }
       ]
@@ -20917,11 +20994,16 @@
       "source": "packages/maps-processing/src/index.ts",
       "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/maps-processing/src/index.ts",
       "sha256Mk2": "f867474a87a6786d65ca2b40e900a664ef6313bdd8f5074f705044c87fabd302",
-      "sha256Mk3": "9dfbbdb929f4edcaf9ac3683ea193da845ffd2d919d1f9884cd2ea88d3cde0f7",
+      "sha256Mk3": "d9dc12901059b759f68fc99049ef10debab8106355076e20b8c6a46960d95c9e",
       "rewrites": [
         {
           "from": "'@modkitx/assets'",
           "to": "'@modkit/codec-kit/legacy/assets'",
+          "count": 1
+        },
+        {
+          "from": "'./registry.js'",
+          "to": "'@modkit/codec-kit/legacy/semantic/maps'",
           "count": 1
         }
       ]
@@ -21391,7 +21473,7 @@
       "source": "packages/maps-processing/test/semantic-facade.test.ts",
       "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/packages/maps-processing/test/semantic-facade.test.ts",
       "sha256Mk2": "bb56d2b501e1dd43b4c2d1788b2b164221776a5400e97b540dd23347bdb66bbe",
-      "sha256Mk3": "88e176b4dbfae03f523cabef6cb21054028dacfed0e763b52eacc7ffa65555c1",
+      "sha256Mk3": "cfb85553bae4999be2aa2ede3ee994e6f7dce53e15524ff1f7cdbd3e804154f5",
       "rewrites": [
         {
           "from": "'../src/index.js'",
@@ -21401,6 +21483,11 @@
         {
           "from": "'../src/operations.js'",
           "to": "'../../../../../src/lib/mk2/packages/maps-processing/src/operations.js'",
+          "count": 1
+        },
+        {
+          "from": "'../src/registry.js'",
+          "to": "'@modkit/codec-kit/legacy/semantic/maps'",
           "count": 1
         }
       ]
@@ -21416,18 +21503,29 @@
       "source": "packages/models-processing/src/core/animation.ts",
       "destination": "modkit-core/packages/codec-kit/src/legacy/models/animation.ts",
       "sha256Mk2": "f2de26fc014fde2a2acd934c5314f68a6c709ac5613b0f2e3ade5368d471916f",
-      "sha256Mk3": "f2de26fc014fde2a2acd934c5314f68a6c709ac5613b0f2e3ade5368d471916f",
-      "rewrites": []
+      "sha256Mk3": "786588032fcd19072b61e51a2d57f620443855479cb6e67fe67339db2d296747",
+      "rewrites": [
+        {
+          "from": "'../index.js'",
+          "to": "'../../legacy-model-support.js'",
+          "count": 1
+        }
+      ]
     },
     {
       "source": "packages/models-processing/src/core/codec.ts",
       "destination": "modkit-core/packages/codec-kit/src/legacy/models/codec.ts",
       "sha256Mk2": "cf5dfecefffcd3fdab1890846424c4606d93867758243d1f76a06a7bbc48d65a",
-      "sha256Mk3": "1b16c242d2b7d2c157a23bcf237797222338eb3c957eedab1673094ac7ee4dff",
+      "sha256Mk3": "d823fe6709f66ba2171b053c2af8330f731d0460dc556d73b7545ed89d9e45d1",
       "rewrites": [
         {
+          "from": "'../index.js'",
+          "to": "'../../legacy-model-support.js'",
+          "count": 1
+        },
+        {
           "from": "'@modkitx/assets'",
-          "to": "'@modkit/codec-kit/legacy/assets'",
+          "to": "'../../legacy-model-assets-support.js'",
           "count": 1
         }
       ]
@@ -21443,8 +21541,14 @@
       "source": "packages/models-processing/src/core/effects-sim.ts",
       "destination": "modkit-core/packages/codec-kit/src/model-math/effects-sim.ts",
       "sha256Mk2": "0792d2e33f49056eafa5b7e11d17e911f4915ff5cc2efb367f90d20bedbfd193",
-      "sha256Mk3": "0792d2e33f49056eafa5b7e11d17e911f4915ff5cc2efb367f90d20bedbfd193",
-      "rewrites": []
+      "sha256Mk3": "6046cc96dc1850b33f10e7a39612b86fedd13c73a587f9839459844cf3246617",
+      "rewrites": [
+        {
+          "from": "'../index.js'",
+          "to": "'../legacy-model-support.js'",
+          "count": 1
+        }
+      ]
     },
     {
       "source": "packages/models-processing/src/core/embedded-vfs.ts",
@@ -21457,18 +21561,29 @@
       "source": "packages/models-processing/src/core/format-detection.ts",
       "destination": "modkit-core/packages/codec-kit/src/legacy/models/format-detection.ts",
       "sha256Mk2": "ff1fec156bd2e5eccb0f5224f41c2d5a4b11a9a332b081f315f590afcd2bad4e",
-      "sha256Mk3": "ff1fec156bd2e5eccb0f5224f41c2d5a4b11a9a332b081f315f590afcd2bad4e",
-      "rewrites": []
+      "sha256Mk3": "cfb30dcb82422847bc3d35f2e54805e4168c68330d41f1f2b497529f043e0632",
+      "rewrites": [
+        {
+          "from": "'../index.js'",
+          "to": "'../../legacy-model-support.js'",
+          "count": 1
+        }
+      ]
     },
     {
       "source": "packages/models-processing/src/core/humanoid.ts",
       "destination": "modkit-core/packages/codec-kit/src/model-math/humanoid.ts",
       "sha256Mk2": "7e2a7930c8f8f57f929b9f5ecd2ed0e2ae922a650d6985f90c40b718260069b3",
-      "sha256Mk3": "bf8b5cbf1437ee65f98900efd56a7dd7b113e62a1844ecbd228a123822e5a91e",
+      "sha256Mk3": "382da42d0e34f54b081807cc20031eec019780b067244990febd29e362202059",
       "rewrites": [
         {
           "from": "'./animation.js'",
           "to": "'../legacy/models/animation.js'",
+          "count": 1
+        },
+        {
+          "from": "'../index.js'",
+          "to": "'../legacy-model-support.js'",
           "count": 1
         }
       ]
@@ -21477,15 +21592,27 @@
       "source": "packages/models-processing/src/core/material.ts",
       "destination": "modkit-core/packages/codec-kit/src/legacy/models/material.ts",
       "sha256Mk2": "301ae2cfb75671fa4700fcd9dcaa1c416b96c9f67f1e6d7f91787c9f593b3c41",
-      "sha256Mk3": "301ae2cfb75671fa4700fcd9dcaa1c416b96c9f67f1e6d7f91787c9f593b3c41",
-      "rewrites": []
+      "sha256Mk3": "6018ca4725dbe3cf3e6610b07c9895438cebef93d29abd80313b24b107054812",
+      "rewrites": [
+        {
+          "from": "'../index.js'",
+          "to": "'../../legacy-model-support.js'",
+          "count": 1
+        }
+      ]
     },
     {
       "source": "packages/models-processing/src/core/preview-textures.ts",
       "destination": "modkit-core/packages/codec-kit/src/legacy/models/preview-textures.ts",
       "sha256Mk2": "f68026c2a181ffc265637b7851118c4cd2b76c0e0f254184881fb4d907453534",
-      "sha256Mk3": "f68026c2a181ffc265637b7851118c4cd2b76c0e0f254184881fb4d907453534",
-      "rewrites": []
+      "sha256Mk3": "ff0dd64b1542fa131fbc12d1280d0947a95f9323e00260a5d1cc34b915d7ee82",
+      "rewrites": [
+        {
+          "from": "'@modkitx/assets/profiles/image-texture'",
+          "to": "'../../legacy-model-assets-support.js'",
+          "count": 1
+        }
+      ]
     },
     {
       "source": "packages/models-processing/src/core/registry-detectors.ts",
@@ -21505,8 +21632,13 @@
       "source": "packages/models-processing/src/core/sequence-pose.ts",
       "destination": "modkit-core/packages/codec-kit/src/model-math/sequence-pose.ts",
       "sha256Mk2": "3cc30db4e3f0511d42e972f894a30dbcec00558c76487e45e03ab0859d2d0c9e",
-      "sha256Mk3": "d3d3ef8de86fd27accb6c2cec8e4b1d7cf8968b25e84febc0739dd764321259c",
+      "sha256Mk3": "d65a734d3664b0a9b6aadce9e6d66a8595aeab87b3d177e1c18981318e49b563",
       "rewrites": [
+        {
+          "from": "'../index.js'",
+          "to": "'../legacy-model-support.js'",
+          "count": 1
+        },
         {
           "from": "'./animation.js'",
           "to": "'../legacy/models/animation.js'",
@@ -21538,25 +21670,42 @@
       "source": "packages/models-processing/src/core/texture-codec.ts",
       "destination": "modkit-core/packages/codec-kit/src/legacy/models/texture-codec.ts",
       "sha256Mk2": "3c9ace7e08458adea9264d2ce670b485c2dff910170aebd826ae9a7008f06f2e",
-      "sha256Mk3": "3c9ace7e08458adea9264d2ce670b485c2dff910170aebd826ae9a7008f06f2e",
-      "rewrites": []
+      "sha256Mk3": "460495a5b8c042995553422a0d7b805ffda832710ceba0a81a985128ad3957dc",
+      "rewrites": [
+        {
+          "from": "'../index.js'",
+          "to": "'../../legacy-model-support.js'",
+          "count": 1
+        }
+      ]
     },
     {
       "source": "packages/models-processing/src/core/transport.ts",
       "destination": "modkit-core/packages/codec-kit/src/model-math/transport.ts",
       "sha256Mk2": "9532304a97c2cbb5989de0403bd8383e075f16ae3e778f7276524a8d00eba4a4",
-      "sha256Mk3": "9532304a97c2cbb5989de0403bd8383e075f16ae3e778f7276524a8d00eba4a4",
-      "rewrites": []
+      "sha256Mk3": "07e8d8c7eb53c1cf751b50ec26808f3387f1a832fb1b5f7583decd4d712939d5",
+      "rewrites": [
+        {
+          "from": "'../index.js'",
+          "to": "'../legacy-model-support.js'",
+          "count": 1
+        }
+      ]
     },
     {
       "source": "packages/models-processing/src/core/westwood-bind-pose.ts",
       "destination": "modkit-core/packages/codec-kit/src/model-math/westwood-bind-pose.ts",
       "sha256Mk2": "dbb250e1af51398b1f09045248e11f1449c32372d0dd6e6b151962e751ab7cc6",
-      "sha256Mk3": "e0df6a6524352d5f113c85cbf9225e9e8ecddffc36f5d5e8856c9d8c3a211a7f",
+      "sha256Mk3": "3ee2f1fd10f1b2235764c347e084befa36f0639486bc3ad3cbe263b0ac6fbb50",
       "rewrites": [
         {
           "from": "'./codec.js'",
           "to": "'../legacy/models/codec.js'",
+          "count": 1
+        },
+        {
+          "from": "'../index.js'",
+          "to": "'../legacy-model-support.js'",
           "count": 1
         }
       ]
@@ -21578,8 +21727,14 @@
       "source": "packages/models-processing/test/core/codec.spec.ts",
       "destination": "modkit-core/packages/codec-kit/test/mk2/models-core/codec.spec.ts",
       "sha256Mk2": "21e33b95197b3b4993599b09fc82f42ef0e5fc136e3509f853b057acd83e7a69",
-      "sha256Mk3": "21e33b95197b3b4993599b09fc82f42ef0e5fc136e3509f853b057acd83e7a69",
-      "rewrites": []
+      "sha256Mk3": "23baca124d3054cbcbeff4e8b353fecd1f77077f18ba5a21c713d8549dbefef2",
+      "rewrites": [
+        {
+          "from": "'../../src/index.js'",
+          "to": "'../../../src/legacy-model-support.js'",
+          "count": 1
+        }
+      ]
     },
     {
       "source": "packages/models-processing/test/core/color-remap.spec.ts",
@@ -21598,8 +21753,14 @@
       "source": "packages/models-processing/test/core/effects-sim.spec.ts",
       "destination": "modkit-core/packages/codec-kit/test/mk2/models-core/effects-sim.spec.ts",
       "sha256Mk2": "19002e48c07af6eb77856795d7b8891b3a2940bffc12cac534aedcb45843e567",
-      "sha256Mk3": "19002e48c07af6eb77856795d7b8891b3a2940bffc12cac534aedcb45843e567",
-      "rewrites": []
+      "sha256Mk3": "8e6f39e821ffc4df6d3e3fd6d11ea6c7ee0737b17f5f9415913ec1ecc6d3ce05",
+      "rewrites": [
+        {
+          "from": "'../../src/index.js'",
+          "to": "'../../../src/legacy-model-support.js'",
+          "count": 1
+        }
+      ]
     },
     {
       "source": "packages/models-processing/test/core/humanoid.spec.ts",
@@ -21618,8 +21779,14 @@
       "source": "packages/models-processing/test/core/material.spec.ts",
       "destination": "modkit-core/packages/codec-kit/test/mk2/models-core/material.spec.ts",
       "sha256Mk2": "b81ffdbc21344f59fc051a124cb2b96ed181325457c11bde0116cfcdc6a1f68c",
-      "sha256Mk3": "b81ffdbc21344f59fc051a124cb2b96ed181325457c11bde0116cfcdc6a1f68c",
-      "rewrites": []
+      "sha256Mk3": "a2a9d2ed8c8e1b539c3d3389bc8ed4fa191764a1de411d41c2ca6cefff1337e4",
+      "rewrites": [
+        {
+          "from": "'../../src/index.js'",
+          "to": "'../../../src/legacy-model-support.js'",
+          "count": 1
+        }
+      ]
     },
     {
       "source": "packages/models-processing/test/core/preview-textures.spec.ts",
@@ -21638,15 +21805,27 @@
       "source": "packages/models-processing/test/core/sequence-pose.spec.ts",
       "destination": "modkit-core/packages/codec-kit/test/mk2/models-core/sequence-pose.spec.ts",
       "sha256Mk2": "957941ef993c7718cf05ac0f8e4e675d4ced4f03ea53b0ecefe3f9026bdf537f",
-      "sha256Mk3": "957941ef993c7718cf05ac0f8e4e675d4ced4f03ea53b0ecefe3f9026bdf537f",
-      "rewrites": []
+      "sha256Mk3": "afce99342e9ffd83d5e34b946bf639e4f869b26bc9a2ab5c34bc979e3ae6f648",
+      "rewrites": [
+        {
+          "from": "'../../src/index.js'",
+          "to": "'../../../src/legacy-model-support.js'",
+          "count": 1
+        }
+      ]
     },
     {
       "source": "packages/models-processing/test/core/standard-material-glsl.spec.ts",
       "destination": "modkit-core/packages/codec-kit/test/mk2/models-core/standard-material-glsl.spec.ts",
       "sha256Mk2": "3e162f62e54d7014d4e9cb500f10a976dd4367af8756e1bda38068e040e90dbb",
-      "sha256Mk3": "3e162f62e54d7014d4e9cb500f10a976dd4367af8756e1bda38068e040e90dbb",
-      "rewrites": []
+      "sha256Mk3": "b62135b42cf947805fca2154c5ebfa635592c12e5120b95f55bbec71a35c2cd1",
+      "rewrites": [
+        {
+          "from": "'../../src/index.js'",
+          "to": "'../../../src/legacy-model-support.js'",
+          "count": 1
+        }
+      ]
     },
     {
       "source": "packages/models-processing/test/core/texture-cache.spec.ts",
@@ -21683,18 +21862,29 @@
       "source": "packages/models-processing/test/core/transport.spec.ts",
       "destination": "modkit-core/packages/codec-kit/test/mk2/models-core/transport.spec.ts",
       "sha256Mk2": "12fda94972bf064e2776235d60f77a9cb198632990dcd5cbb522692db20f4238",
-      "sha256Mk3": "12fda94972bf064e2776235d60f77a9cb198632990dcd5cbb522692db20f4238",
-      "rewrites": []
+      "sha256Mk3": "b11248857b086ce6f796f1d2a7dc63ca7fec5ad24a0c56c0702a94915b33aee0",
+      "rewrites": [
+        {
+          "from": "'../../src/index.js'",
+          "to": "'../../../src/legacy-model-support.js'",
+          "count": 1
+        }
+      ]
     },
     {
       "source": "packages/mods-processing/src/index.ts",
       "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/mods-processing/src/index.ts",
       "sha256Mk2": "30b68a412fb75e6db55c1473f1812d34a66b7a46ee0d15309a2b7adc31558134",
-      "sha256Mk3": "3e52e3403eb448f6d5826672cb683c92b591188b310301b95d69f8f7d33b4d91",
+      "sha256Mk3": "706893857be5366c6b1e6619913f13f819100e3f2e1934763569d823b2e1ef98",
       "rewrites": [
         {
           "from": "'@modkitx/assets'",
           "to": "'@modkit/codec-kit/legacy/assets'",
+          "count": 1
+        },
+        {
+          "from": "'./registry.js'",
+          "to": "'@modkit/codec-kit/legacy/semantic/mods'",
           "count": 1
         }
       ]
@@ -21703,11 +21893,11 @@
       "source": "packages/mods-processing/src/metadata-cache.ts",
       "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/mods-processing/src/metadata-cache.ts",
       "sha256Mk2": "9bf381ba7d2bdb67d6e4314fceb618d9ff0c6c9ed1b0b56458d34ff58ec8a20b",
-      "sha256Mk3": "ee6871dc780fddb828a9828150be068c83ec84adf9506c38c693808c9a738c2c",
+      "sha256Mk3": "e8b3297680c654b275469f56d54722cfaa88ffa6d364600e370424b2d335ac0b",
       "rewrites": [
         {
           "from": "'@modkitx/core'",
-          "to": "'@modkit/codec-kit/legacy/core'",
+          "to": "'@modkit/codec-kit/legacy/sc2-support'",
           "count": 1
         }
       ]
@@ -21810,11 +22000,11 @@
       "source": "packages/mods-processing/src/sc2-mod-core/types.ts",
       "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/mods-processing/src/sc2-mod-core/types.ts",
       "sha256Mk2": "c6de45b28bf4c2ae8a228a3e7cf7255860536111a88dc9cb96af0c6583c47b61",
-      "sha256Mk3": "5a3e8bd9e5b9e91a5062e6e48a63d8d40226f31c7df368b1aeafae8e6eb371d6",
+      "sha256Mk3": "41f96fe76bf491b0dd0eeff4e82e775df146a77cb914b811060a4aa1b1a4d06d",
       "rewrites": [
         {
           "from": "'@modkitx/vfs'",
-          "to": "'@modkit/codec-kit/legacy/vfs'",
+          "to": "'@modkit/codec-kit/legacy/sc2-support'",
           "count": 1
         },
         {
@@ -22401,11 +22591,16 @@
       "source": "packages/replays-processing/src/index.ts",
       "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/replays-processing/src/index.ts",
       "sha256Mk2": "bf93b4bc683718d209680d528921f4e93bb65dfdc911957f07aacc83e5d63328",
-      "sha256Mk3": "f81ffa0ec1d2e1c70c3cdf8f4a617b28b9557a2813f4f2881ba5a009f7fd68ba",
+      "sha256Mk3": "c2d2ccb392f124c309ad80f6d4db9e282a5c87f69cf78f5099658c428ec0480c",
       "rewrites": [
         {
           "from": "'@modkitx/assets'",
           "to": "'@modkit/codec-kit/legacy/assets'",
+          "count": 1
+        },
+        {
+          "from": "'./registry.js'",
+          "to": "'@modkit/codec-kit/legacy/semantic/replays'",
           "count": 1
         }
       ]
@@ -22434,11 +22629,16 @@
       "source": "packages/replays-processing/test/semantic-facade.test.ts",
       "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/packages/replays-processing/test/semantic-facade.test.ts",
       "sha256Mk2": "6bc6cd07900aafc58dd6d6747de72d7532102a48a4cb19863daf114a37e63258",
-      "sha256Mk3": "31e474466deadada5c39e7f01c449b31d7c14e93387e2751a41421a32b5d2ee7",
+      "sha256Mk3": "74cde87ac5b3b6267ded2fe3ffbbf9d8d5ce9b53d64d44638e36914a156d95e6",
       "rewrites": [
         {
           "from": "'../src/index.js'",
           "to": "'../../../../../src/lib/mk2/packages/replays-processing/src/index.js'",
+          "count": 1
+        },
+        {
+          "from": "'../src/registry.js'",
+          "to": "'@modkit/codec-kit/legacy/semantic/replays'",
           "count": 1
         }
       ]
@@ -22466,11 +22666,16 @@
       "source": "packages/scripts-processing/src/index.ts",
       "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/scripts-processing/src/index.ts",
       "sha256Mk2": "875ff9f0dfc7328aa0f44046bc64a3bde67e7c8bc166270fa2d43d8d20087cf4",
-      "sha256Mk3": "88be79d522b7c6f9fbfb1ef1b02d94d6e98cf6f822771fcbff54d523b8d9b23b",
+      "sha256Mk3": "ed3f57f119e2a7f56fa81ae59ed60c10f75f0232db9ccd3720d1c72c749edbff",
       "rewrites": [
         {
           "from": "'@modkitx/assets'",
           "to": "'@modkit/codec-kit/legacy/assets'",
+          "count": 1
+        },
+        {
+          "from": "'./registry.js'",
+          "to": "'@modkit/codec-kit/legacy/semantic/scripts'",
           "count": 1
         }
       ]
@@ -22494,7 +22699,13 @@
       "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/scripts-processing/src/trigger-store/store.ts",
       "sha256Mk2": "f27478587d8d07973c59c136ec14cae5916418a2c2baaf09df2995f2360909c0",
       "sha256Mk3": "f27478587d8d07973c59c136ec14cae5916418a2c2baaf09df2995f2360909c0",
-      "rewrites": []
+      "rewrites": [],
+      "algorithmDisposition": {
+        "symbol": "XMLReader.parseXML#0",
+        "kind": "copied-unwired-copy",
+        "reason": "Exact pinned public XMLReader delegate is staged outside the normal StarCraft II production graph; this is not an XML parser implementation.",
+        "exit": "classify-delegate-before-activation"
+      }
     },
     {
       "source": "packages/scripts-processing/test/semantic-facade.test.ts",
@@ -22618,6 +22829,104 @@
       ]
     },
     {
+      "source": "packages/vfs/src/core/directory.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/support/vfs/src/core/directory.ts",
+      "sha256Mk2": "6bd437626c3bd075ea00ef306e71bb58ede9ad898ad31b6c1aa75c7b6ba6f9aa",
+      "sha256Mk3": "6bd437626c3bd075ea00ef306e71bb58ede9ad898ad31b6c1aa75c7b6ba6f9aa",
+      "rewrites": []
+    },
+    {
+      "source": "packages/vfs/src/core/mount.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/support/vfs/src/core/mount.ts",
+      "sha256Mk2": "488f9d7b3b5a6badd3971235d5a7ff1ab67ac19d19906f62e44e6a5f2b18cd3b",
+      "sha256Mk3": "488f9d7b3b5a6badd3971235d5a7ff1ab67ac19d19906f62e44e6a5f2b18cd3b",
+      "rewrites": []
+    },
+    {
+      "source": "packages/vfs/src/core/path.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/support/vfs/src/core/path.ts",
+      "sha256Mk2": "00973e2af34d20503c9062c15227dd41f0b7e7ffcc838d7dbd229b47eb08d2ea",
+      "sha256Mk3": "25580b3650325261af0d2e4729ecf45c046190680f6b8ed5c6ae6d9c98bc3c2d",
+      "rewrites": [
+        {
+          "from": "'@modkitx/core/errors'",
+          "to": "'@modkit/codec-kit/legacy/core'",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "source": "packages/vfs/src/core/provider.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/support/vfs/src/core/provider.ts",
+      "sha256Mk2": "68d3429e01eeaab154491c0649210bdeb4742e8839d8d399d797f91452c31aed",
+      "sha256Mk3": "ab93e747a5915ab3acd36db32c7474d834751d30dbc29d4c568f29dcff0619ec",
+      "rewrites": [
+        {
+          "from": "'@modkitx/assets'",
+          "to": "'@modkit/codec-kit/legacy/assets'",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "source": "packages/vfs/src/core/random-access.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/support/vfs/src/core/random-access.ts",
+      "sha256Mk2": "2d0dd0815e20aed34447d7b659da0d4bcd10e4aa76c179fa8d762dae7e15e906",
+      "sha256Mk3": "b1b01cf6ee9fe2b9c9ca5facc9fc24a6acf86dd33a84e9d6f6eb90f9bac663b6",
+      "rewrites": [
+        {
+          "from": "'@modkitx/core/errors'",
+          "to": "'@modkit/codec-kit/legacy/core'",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "source": "packages/vfs/src/core/resolver.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/support/vfs/src/core/resolver.ts",
+      "sha256Mk2": "4cb4010413eb22db87a0fe183041fb8dcbbba7dd030642425390cea9e2b3eb1f",
+      "sha256Mk3": "d250d287ac270a515de5c05e7c6dd3047247b8b53bc0f0375c69a1589d022b6a",
+      "rewrites": [
+        {
+          "from": "'@modkitx/core/errors'",
+          "to": "'@modkit/codec-kit/legacy/core'",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "source": "packages/vfs/src/core/source.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/support/vfs/src/core/source.ts",
+      "sha256Mk2": "fcff7a118b53644d174b2a9f2b77b37d7e7a43cd36007be89f4d6a8d6f6986ee",
+      "sha256Mk3": "fcff7a118b53644d174b2a9f2b77b37d7e7a43cd36007be89f4d6a8d6f6986ee",
+      "rewrites": []
+    },
+    {
+      "source": "packages/vfs/src/providers/file/index.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/support/vfs/src/providers/file/index.ts",
+      "sha256Mk2": "123901d778fee779154f5cd9669536ab2004f554df6d7917260917ea2b1fa139",
+      "sha256Mk3": "123901d778fee779154f5cd9669536ab2004f554df6d7917260917ea2b1fa139",
+      "rewrites": []
+    },
+    {
+      "source": "packages/vfs/src/providers/file/node.ts",
+      "destination": "modkit-extensions-blizzard/starcraft2/test/mk2/support/vfs/src/providers/file/node.ts",
+      "sha256Mk2": "e6931a04b6c72e109c29a7efdda38b6c5003c1dfdd5ede1945c93ce94dc49487",
+      "sha256Mk3": "67ff633cca28125f3c7f519002bfa07e6d66ae15f2cbf64c55f2690cacfcc469",
+      "rewrites": [
+        {
+          "from": "'@modkitx/assets'",
+          "to": "'@modkit/codec-kit/legacy/assets'",
+          "count": 1
+        },
+        {
+          "from": "'@modkitx/core/errors'",
+          "to": "'@modkit/codec-kit/legacy/core'",
+          "count": 1
+        }
+      ]
+    },
+    {
       "source": "packages/world/src/contracts.ts",
       "destination": "modkit-core/packages/codec-kit/src/legacy/world/contracts.ts",
       "sha256Mk2": "d89105e5ce474e8c1bf77b0eb1b248ad60e58d61df69a279af7b995c40485527",
@@ -22649,22 +22958,48 @@
       "source": "packages/xml/src/positional/index.ts",
       "destination": "modkit-core/packages/codec-kit/src/legacy/xml/positional/index.ts",
       "sha256Mk2": "45675f314fde86beaa1cc1d2ee0346682164a5ce6a3195d839b7be665a84d527",
-      "sha256Mk3": "45675f314fde86beaa1cc1d2ee0346682164a5ce6a3195d839b7be665a84d527",
-      "rewrites": []
+      "sha256Mk3": "afbe3796b474a1249fe0909f4704a585acd28aa65e0072f15982489b8e901777",
+      "rewrites": [
+        {
+          "kind": "export-type",
+          "from": "export {\n  XMLNodeKind,\n  XMLNode,\n  XMLDocument,\n  XMLElement,\n  XMLAttr,\n  TokenType,\n  ScannerState,\n  Scanner,\n  DiagnosticCategory,\n  DiagnosticReport,\n} from './types.js'",
+          "to": "export {\n  XMLNodeKind,\n  XMLNode,\n  XMLDocument,\n  XMLElement,\n  type XMLAttr,\n  TokenType,\n  ScannerState,\n  type Scanner,\n  DiagnosticCategory,\n  type DiagnosticReport,\n} from './types.js'",
+          "count": 1
+        },
+        {
+          "kind": "export-type",
+          "from": "export { ParserHooks, parse } from './parser.js'",
+          "to": "export { type ParserHooks, parse } from './parser.js'",
+          "count": 1
+        }
+      ]
     },
     {
       "source": "packages/xml/src/positional/parser.ts",
       "destination": "modkit-core/packages/codec-kit/src/legacy/xml/positional/parser.ts",
       "sha256Mk2": "6e39e0f4bcfce2df3ff415972870c889f90411f82eccf0dbfafe928d3edc29a3",
-      "sha256Mk3": "6e39e0f4bcfce2df3ff415972870c889f90411f82eccf0dbfafe928d3edc29a3",
-      "rewrites": []
+      "sha256Mk3": "90824202a01a2f4d022669d368f665555fdddb0fd6f924fc90ad538ccdf625a0",
+      "rewrites": [
+        {
+          "kind": "import-type",
+          "from": "import {\n  TokenType,\n  ScannerState,\n  XMLElement,\n  DiagnosticReport,\n  DiagnosticCategory,\n  XMLDocument,\n  XMLNode,\n  XMLNodeKind,\n} from './types.js'",
+          "to": "import {\n  TokenType,\n  ScannerState,\n  XMLElement,\n  type DiagnosticReport,\n  DiagnosticCategory,\n  XMLDocument,\n  XMLNode,\n  XMLNodeKind,\n} from './types.js'",
+          "count": 1
+        }
+      ]
     },
     {
       "source": "packages/xml/src/positional/scanner.ts",
       "destination": "modkit-core/packages/codec-kit/src/legacy/xml/positional/scanner.ts",
       "sha256Mk2": "0f2aaae6a05736b234e2d06bb8d506ebe5f724cb6b9b9734b25853480221ff11",
-      "sha256Mk3": "c409939668d263939d8734c9ff5ac88827dfab26e53f17ca6ba72f2e4f793492",
+      "sha256Mk3": "58cd4917f766496ae8d84708743b35e7759cc9bd337ab4b71fa5dcaa63e1e379",
       "rewrites": [
+        {
+          "kind": "import-type",
+          "from": "import { TokenType, ScannerState, Scanner, DiagnosticReport, DiagnosticCategory } from './types.js'",
+          "to": "import { TokenType, ScannerState, type Scanner, type DiagnosticReport, DiagnosticCategory } from './types.js'",
+          "count": 1
+        },
         {
           "from": "'@modkitx/core'",
           "to": "'@modkit/codec-kit/legacy/core'",

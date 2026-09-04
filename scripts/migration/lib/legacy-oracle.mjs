@@ -76,9 +76,15 @@ function relativePath(value) {
 }
 
 /** Reads git blobs, never executes or repairs the dirty checkout. */
-export async function createPinnedSource({ repoRoot, commit = MK2_PIN }) {
+export async function createPinnedSource({
+  repoRoot,
+  commit = MK2_PIN,
+  observeWorkingTree = true,
+}) {
   repoRoot = path.resolve(repoRoot)
   if (!/^[a-f0-9]{40}$/u.test(commit)) throw new Error('Oracle commit must be a full immutable SHA')
+  if (typeof observeWorkingTree !== 'boolean')
+    throw new Error('observeWorkingTree must be boolean')
   const git = (args, options = {}) =>
     execFileSync('git', ['-C', repoRoot, ...args], {
       maxBuffer: 128 * 1024 * 1024,
@@ -151,10 +157,12 @@ export async function createPinnedSource({ repoRoot, commit = MK2_PIN }) {
             if (!pinnedBytes.has(item.blob)) prefetch([file])
             const bytes = pinnedBytes.get(item.blob)
             let workingTreeSha256 = null
-            try {
-              workingTreeSha256 = sha256(await readFile(path.join(repoRoot, file)))
-            } catch (error) {
-              if (error.code !== 'ENOENT') throw error
+            if (observeWorkingTree) {
+              try {
+                workingTreeSha256 = sha256(await readFile(path.join(repoRoot, file)))
+              } catch (error) {
+                if (error.code !== 'ENOENT') throw error
+              }
             }
             const hash = sha256(bytes)
             return {
@@ -163,7 +171,7 @@ export async function createPinnedSource({ repoRoot, commit = MK2_PIN }) {
               sha256: hash,
               gitBlob: item.blob,
               workingTreeSha256,
-              workingTreeMatchesPin: workingTreeSha256 === hash,
+              workingTreeMatchesPin: observeWorkingTree ? workingTreeSha256 === hash : null,
             }
           })(),
         )

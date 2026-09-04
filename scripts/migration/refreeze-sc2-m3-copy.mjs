@@ -30,6 +30,34 @@ const reportPath = path.join(
 const pinRelative = SC2_M3_REFREEZE_PIN
 const pinPath = path.join(workspaceRoot, pinRelative)
 const { writePin, admitReady } = parseSc2M3RefreezeArgs(process.argv.slice(2))
+const modelSupportAdapterPath = 'modkit-core/packages/codec-kit/src/legacy-model-support.ts'
+const modelAssetsSupportAdapterPath =
+  'modkit-core/packages/codec-kit/src/legacy-model-assets-support.ts'
+const sc2SupportAdapterPath = 'modkit-core/packages/codec-kit/src/legacy-sc2-support.ts'
+const vfsNodeTestAdapterPath =
+  'modkit-extensions-blizzard/starcraft2/test/mk2/support/vfs-node.ts'
+const algorithmDispositions = new Map([
+  [
+    'extensions/blizzard/starcraft-2/codecs/sc2-map/src/image/png.ts',
+    {
+      symbol: 'crc32#0',
+      kind: 'copied-unwired-copy',
+      reason:
+        'Exact pinned SC2 map PNG CRC implementation remains staged outside the normal StarCraft II production graph.',
+      exit: 'canonicalize-before-activation',
+    },
+  ],
+  [
+    'packages/scripts-processing/src/trigger-store/store.ts',
+    {
+      symbol: 'XMLReader.parseXML#0',
+      kind: 'copied-unwired-copy',
+      reason:
+        'Exact pinned public XMLReader delegate is staged outside the normal StarCraft II production graph; this is not an XML parser implementation.',
+      exit: 'classify-delegate-before-activation',
+    },
+  ],
+])
 const processingPackages = [
   'data-processing',
   'documents-processing',
@@ -40,6 +68,33 @@ const processingPackages = [
   'replays-processing',
   'scripts-processing',
 ]
+const semanticRegistryDomains = new Map([
+  ['documents-processing', 'documents'],
+  ['layouts-processing', 'layouts'],
+  ['localization-processing', 'localization'],
+  ['maps-processing', 'maps'],
+  ['mods-processing', 'mods'],
+  ['replays-processing', 'replays'],
+  ['scripts-processing', 'scripts'],
+])
+const layoutTestSupportFiles = new Set([
+  'packages/layouts-processing/bundled-schema.d.ts',
+  'packages/layouts-processing/bundled-schema.js',
+  'packages/layouts-processing/generated/sc2layout-schema-data.json',
+  'packages/layouts-processing/scripts/sc2-layout-core/compile-schema.ts',
+  'packages/layouts-processing/src/sc2-layout-core/schema/registry.ts',
+])
+const vfsTestSupportFiles = new Set([
+  'packages/vfs/src/core/directory.ts',
+  'packages/vfs/src/core/mount.ts',
+  'packages/vfs/src/core/path.ts',
+  'packages/vfs/src/core/provider.ts',
+  'packages/vfs/src/core/random-access.ts',
+  'packages/vfs/src/core/resolver.ts',
+  'packages/vfs/src/core/source.ts',
+  'packages/vfs/src/providers/file/index.ts',
+  'packages/vfs/src/providers/file/node.ts',
+])
 const corePackageRewrites = new Map([
   ['@modkitx/assets', '@modkit/codec-kit/legacy/assets'],
   ['@modkitx/core', '@modkit/codec-kit/legacy/core'],
@@ -53,6 +108,185 @@ const corePackageRewrites = new Map([
   ['@modkitx/xml', '@modkit/codec-kit/legacy/xml'],
 ])
 
+const typeOnlyRewrites = new Map([
+  [
+    'packages/layouts-processing/src/sc2-layout-core/index.ts',
+    [
+      {
+        kind: 'export-type',
+        from: `export { SC2Layout } from './types.js';`,
+        to: `export { type SC2Layout } from './types.js';`,
+        count: 1,
+      },
+      {
+        kind: 'export-type',
+        from: `export { ExpressionParser, PathSelector, PropertyBindExpr, SelectorFragment, SelHandleKind, SyntaxKind } from './parser/expressions.js';`,
+        to: `export { ExpressionParser, type PathSelector, type PropertyBindExpr, type SelectorFragment, SelHandleKind, SyntaxKind } from './parser/expressions.js';`,
+        count: 1,
+      },
+    ],
+  ],
+  [
+    'packages/layouts-processing/src/sc2-layout-core/types.ts',
+    [
+      {
+        kind: 'export-type',
+        from: `export {
+    XMLNodeKind,
+    XMLAttr,
+    TokenType,
+    ScannerState,
+    DiagnosticCategory,
+    DiagnosticReport,
+    CharacterCodes,
+    createScanner,
+    buildLineMap,
+    findFirst,
+    binarySearch,
+} from '@modkitx/xml/positional';`,
+        to: `export {
+    XMLNodeKind,
+    type XMLAttr,
+    TokenType,
+    ScannerState,
+    DiagnosticCategory,
+    type DiagnosticReport,
+    CharacterCodes,
+    createScanner,
+    buildLineMap,
+    findFirst,
+    binarySearch,
+} from '@modkitx/xml/positional';`,
+        count: 1,
+      },
+    ],
+  ],
+  [
+    'packages/xml/src/positional/index.ts',
+    [
+      {
+        kind: 'export-type',
+        from: `export {
+  XMLNodeKind,
+  XMLNode,
+  XMLDocument,
+  XMLElement,
+  XMLAttr,
+  TokenType,
+  ScannerState,
+  Scanner,
+  DiagnosticCategory,
+  DiagnosticReport,
+} from './types.js'`,
+        to: `export {
+  XMLNodeKind,
+  XMLNode,
+  XMLDocument,
+  XMLElement,
+  type XMLAttr,
+  TokenType,
+  ScannerState,
+  type Scanner,
+  DiagnosticCategory,
+  type DiagnosticReport,
+} from './types.js'`,
+        count: 1,
+      },
+      {
+        kind: 'export-type',
+        from: `export { ParserHooks, parse } from './parser.js'`,
+        to: `export { type ParserHooks, parse } from './parser.js'`,
+        count: 1,
+      },
+    ],
+  ],
+  [
+    'packages/xml/src/positional/parser.ts',
+    [
+      {
+        kind: 'import-type',
+        from: `import {
+  TokenType,
+  ScannerState,
+  XMLElement,
+  DiagnosticReport,
+  DiagnosticCategory,
+  XMLDocument,
+  XMLNode,
+  XMLNodeKind,
+} from './types.js'`,
+        to: `import {
+  TokenType,
+  ScannerState,
+  XMLElement,
+  type DiagnosticReport,
+  DiagnosticCategory,
+  XMLDocument,
+  XMLNode,
+  XMLNodeKind,
+} from './types.js'`,
+        count: 1,
+      },
+    ],
+  ],
+  [
+    'packages/xml/src/positional/scanner.ts',
+    [
+      {
+        kind: 'import-type',
+        from: `import { TokenType, ScannerState, Scanner, DiagnosticReport, DiagnosticCategory } from './types.js'`,
+        to: `import { TokenType, ScannerState, type Scanner, type DiagnosticReport, DiagnosticCategory } from './types.js'`,
+        count: 1,
+      },
+    ],
+  ],
+])
+
+function modelSupportReplacement(file, specifier) {
+  if (file.startsWith('packages/models-processing/src/core/') && specifier === '../index.js')
+    return modelSupportAdapterPath
+  if (
+    file.startsWith('packages/models-processing/src/core/') &&
+    (specifier === '@modkitx/assets' || specifier === '@modkitx/assets/profiles/image-texture')
+  )
+    return modelAssetsSupportAdapterPath
+  if (
+    file.startsWith('packages/models-processing/test/core/') &&
+    specifier === '../../src/index.js'
+  )
+    return modelSupportAdapterPath
+  return null
+}
+
+function semanticRegistryReplacement(file, specifier) {
+  const match = file.match(/^packages\/([^/]+)\/(?:src|test)\//u)
+  if (!match) return null
+  const domain = semanticRegistryDomains.get(match[1])
+  if (!domain) return null
+  const registry = `packages/${match[1]}/src/registry.ts`
+  return sourceCandidates(file, specifier).includes(registry)
+    ? `@modkit/codec-kit/legacy/semantic/${domain}`
+    : null
+}
+
+function sc2SupportReplacement(file, specifier) {
+  if (specifier === '@modkitx/core/errors' && vfsTestSupportFiles.has(file))
+    return '@modkit/codec-kit/legacy/core'
+  if (
+    specifier === '@modkitx/core' &&
+    (file === 'packages/layouts-processing/src/sc2-layout-core/index.ts' ||
+      file === 'packages/layouts-processing/src/sc2-layout-core/index/store.ts' ||
+      file === 'packages/mods-processing/src/metadata-cache.ts')
+  )
+    return '@modkit/codec-kit/legacy/sc2-support'
+  if (
+    specifier === '@modkitx/vfs' &&
+    file === 'packages/mods-processing/src/sc2-mod-core/types.ts'
+  )
+    return '@modkit/codec-kit/legacy/sc2-support'
+  return null
+}
+
 function included(file) {
   if (file.endsWith('/.npmignore')) return false
   if (file.includes('/games/heroes-of-the-storm/')) return false
@@ -65,6 +299,8 @@ function included(file) {
     file.startsWith('packages/xml/test/')
   )
     return true
+  if (layoutTestSupportFiles.has(file)) return true
+  if (file === 'packages/core/src/events.ts' || vfsTestSupportFiles.has(file)) return true
   for (const packageName of processingPackages) {
     const prefix = `packages/${packageName}/`
     if (!file.startsWith(prefix)) continue
@@ -171,7 +407,11 @@ async function bindDependencyManifest(dependency) {
 }
 
 const original = JSON.parse(await readFile(declarationPath, 'utf8'))
-const source = await createPinnedSource({ repoRoot: oracleRoot, commit: original.oracleCommit })
+const source = await createPinnedSource({
+  repoRoot: oracleRoot,
+  commit: original.oracleCommit,
+  observeWorkingTree: false,
+})
 const selected = source.listFiles().filter(included)
 source.prefetch(selected)
 const selectedSet = new Set(selected)
@@ -223,7 +463,7 @@ for (const file of selected) {
   if (acceptedBySource.has(file)) continue
   const pinned = await source.read(file)
   const destinationPath = allDestinations.get(file)
-  const rewrites = []
+  const rewrites = [...(typeOnlyRewrites.get(file) ?? [])]
   for (const item of imports.get(file) ?? []) {
     if (!item.specifier) {
       addDisposition(
@@ -234,6 +474,48 @@ for (const file of selected) {
       continue
     }
     const specifier = item.specifier
+    const modelReplacement = modelSupportReplacement(file, specifier)
+    if (modelReplacement) {
+      let relocated = path.posix.relative(path.posix.dirname(destinationPath), modelReplacement)
+      if (!relocated.startsWith('.')) relocated = `./${relocated}`
+      relocated = relocated.replace(/\.ts$/u, '.js')
+      rewrites.push({
+        from: item.literal,
+        to: `${item.literal[0]}${relocated}${item.literal[0]}`,
+        count: 1,
+      })
+      continue
+    }
+    const semanticReplacement = semanticRegistryReplacement(file, specifier)
+    if (semanticReplacement) {
+      rewrites.push({
+        from: item.literal,
+        to: `${item.literal[0]}${semanticReplacement}${item.literal[0]}`,
+        count: 1,
+      })
+      const dependency = await externalDependency(semanticReplacement, baseDependencies)
+      if (!dependency) throw new Error(`Missing semantic registry dependency: ${semanticReplacement}`)
+      dependencies.set(semanticReplacement, dependency)
+      addDisposition(
+        file,
+        item,
+        'The excluded legacy package registry is replaced by the accepted domain-neutral semantic registry copy.',
+        semanticReplacement,
+      )
+      continue
+    }
+    const supportReplacement = sc2SupportReplacement(file, specifier)
+    if (supportReplacement) {
+      rewrites.push({
+        from: item.literal,
+        to: `${item.literal[0]}${supportReplacement}${item.literal[0]}`,
+        count: 1,
+      })
+      const dependency = await externalDependency(supportReplacement, baseDependencies)
+      if (!dependency) throw new Error(`Missing SC2 support dependency: ${supportReplacement}`)
+      dependencies.set(supportReplacement, dependency)
+      continue
+    }
     if (specifier.startsWith('.')) {
       const target = sourceCandidates(file, specifier).find(candidate => source.has(candidate))
       if (!target) {
@@ -316,8 +598,15 @@ for (const file of selected) {
     sha256Mk2: pinned.sha256,
     sha256Mk3: sha256(destinationBytes),
     rewrites: deduplicated,
+    ...(algorithmDispositions.has(file)
+      ? { algorithmDisposition: algorithmDispositions.get(file) }
+      : {}),
   })
 }
+
+for (const sourcePath of algorithmDispositions.keys())
+  if (rows.filter(row => row.source === sourcePath && row.algorithmDisposition).length !== 1)
+    throw new Error(`Missing or duplicate algorithm disposition row: ${sourcePath}`)
 
 rows.sort((a, b) => a.source.localeCompare(b.source))
 const requiredSources = [
@@ -330,7 +619,34 @@ const family = {
   refreezePin: pinRelative,
   requiredSources,
   provenance: 'modkit-extensions-blizzard/starcraft2/MK2-FAMILY-PROVENANCE.json',
-  adapters: original.scopes['sc2-bank'].adapters,
+  adapters: [
+    ...original.scopes['sc2-bank'].adapters,
+    {
+      destination: modelSupportAdapterPath,
+      replacesSources: ['packages/models-processing/src/index.ts'],
+      reason:
+        'Narrow M3 support barrel for renderer-neutral model contracts and admitted pure helpers; no concrete codec, renderer, registry, or embedded-resource activation.',
+      sha256: sha256(await readFile(path.join(workspaceRoot, modelSupportAdapterPath))),
+    },
+    {
+      destination: modelAssetsSupportAdapterPath,
+      reason:
+        'Narrow M3 import seam recomposing accepted neutral asset contracts for the copied model registry; no codec activation.',
+      sha256: sha256(await readFile(path.join(workspaceRoot, modelAssetsSupportAdapterPath))),
+    },
+    {
+      destination: sc2SupportAdapterPath,
+      reason:
+        'Narrow shared compatibility surface for legacy SC2 layout events/logging and the type-only mod VFS contract; no host or codec activation.',
+      sha256: sha256(await readFile(path.join(workspaceRoot, sc2SupportAdapterPath))),
+    },
+    {
+      destination: vfsNodeTestAdapterPath,
+      reason:
+        'Test-only barrel over the exact pinned file VFS closure required by the admitted mods-processing suites.',
+      sha256: sha256(await readFile(path.join(workspaceRoot, vfsNodeTestAdapterPath))),
+    },
+  ],
   dependencies: (await Promise.all([...dependencies.values()].map(bindDependencyManifest))).sort(
     (a, b) => a.specifier.localeCompare(b.specifier),
   ),

@@ -8,6 +8,10 @@ import {
   scanAlgorithms,
   checkAlgorithmDebt,
   checkBaselineRatchet,
+  ratchetAlgorithmSnapshot,
+  sc2RuntimeSurfaceRoots,
+  SC2_ALGORITHM_PRODUCTION_TSCONFIG,
+  validateCopiedUnwiredAllowanceIds,
 } from '../lib/algorithms.mjs'
 import { sha256 } from '../lib/legacy-oracle.mjs'
 
@@ -133,4 +137,221 @@ test('actual repository scan excludes build/tests/vendor and validates canonical
   )
   await writeFile(path.join(root, 'repo/src/hash.ts'), `${text}\n// tamper`)
   await assert.rejects(() => scanAlgorithms(options), /hash mismatch/u)
+})
+
+async function copiedUnwiredFixture(
+  t,
+  {
+    symbol = 'crc32#0',
+    active = 'none',
+    surface = 'active',
+    contributionPattern = './contributions/*.json',
+  } = {},
+) {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'algorithm-unwired-test-'))
+  t.after(async () => {
+    assert.equal(path.dirname(root), os.tmpdir())
+    assert.ok(path.basename(root).startsWith('algorithm-unwired-test-'))
+    await rm(root, { recursive: true, force: true })
+  })
+  const packageRoot = 'modkit-extensions-blizzard/starcraft2'
+  const destination = `${packageRoot}/src/lib/mk2/staged/hash.ts`
+  const text = 'export function crc32() { return 42 }'
+  await mkdir(path.dirname(path.join(root, destination)), { recursive: true })
+  await mkdir(path.join(root, packageRoot, 'src'), { recursive: true })
+  await mkdir(path.join(root, packageRoot, 'contributions'), { recursive: true })
+  await writeFile(path.join(root, destination), text)
+  const activeText =
+    active === 'import'
+      ? "import './lib/mk2/staged/hash.js'\nexport const active = true\n"
+      : active === 'reexport'
+        ? "export { crc32 } from './lib/mk2/staged/hash.js'\n"
+        : 'export const active = true\n'
+  await writeFile(path.join(root, packageRoot, 'src/active.ts'), activeText)
+  await writeFile(path.join(root, packageRoot, 'src/cli.ts'), 'export const cli = true\n')
+  await mkdir(path.join(root, packageRoot, 'dist'), { recursive: true })
+  await writeFile(path.join(root, packageRoot, 'dist/orphan.js'), 'export const orphan = true\n')
+  await writeFile(
+    path.join(root, packageRoot, 'src/surface.js'),
+    "import './lib/mk2/staged/hash.js'\nexport const surface = true\n",
+  )
+  await writeFile(
+    path.join(root, packageRoot, 'package.json'),
+    JSON.stringify({
+      exports:
+        surface === 'array-staged'
+          ? { '.': ['./src/active.js', ['./src/lib/mk2/staged/hash.js']] }
+          : {
+              '.':
+                surface === 'staged'
+                  ? './src/lib/mk2/staged/hash.js'
+                  : surface === 'js-wrapper'
+                    ? './src/surface.js'
+                    : surface === 'dist-orphan'
+                      ? './dist/orphan.js'
+                      : './src/active.js',
+            },
+      bin: { fixture: './dist/cli.js' },
+      modkit: { contributionManifests: [contributionPattern] },
+    }),
+  )
+  await writeFile(
+    path.join(root, packageRoot, 'contributions/codec.json'),
+    JSON.stringify({ runtimeVariants: [{ entrypoint: './src/active.js' }] }),
+  )
+  await writeFile(
+    path.join(root, packageRoot, 'tsconfig.json'),
+    JSON.stringify({ include: ['src/**/*.ts'], exclude: ['src/lib/mk2/**'] }),
+  )
+  const runtimeSurfaceRoots = await sc2RuntimeSurfaceRoots({ workspaceRoot: root })
+  return {
+    root,
+    destination,
+    text,
+    options: {
+      workspaceRoot: root,
+      repositories: ['modkit-extensions-blizzard'],
+      productionTsconfig: SC2_ALGORITHM_PRODUCTION_TSCONFIG,
+      runtimeSurfaceRoots,
+      copiedUnwiredFiles: [
+        {
+          mk2Path: 'legacy/hash.ts',
+          destination,
+          sha256Mk3: sha256(text),
+          algorithmDisposition: {
+            symbol,
+            kind: 'copied-unwired-copy',
+            reason: 'Exact fixture allowance.',
+            exit: 'canonicalize-before-activation',
+          },
+        },
+      ],
+    },
+  }
+}
+
+test('copied-unwired classification is exact and hash-bound', async t => {
+  const fixture = await copiedUnwiredFixture(t)
+  const scan = await scanAlgorithms(fixture.options)
+  const row = scan.implementations.find(item => item.path === fixture.destination)
+  assert.equal(row.disposition, 'copied-unwired-copy')
+  assert.equal(row.symbol, 'crc32#0')
+  assert.deepEqual(
+    ratchetAlgorithmSnapshot(scan).implementations.filter(
+      item => item.disposition === 'copied-unwired-copy',
+    ),
+    [],
+  )
+})
+
+test('an undeclared same-name peer remains new algorithm debt', async t => {
+  const fixture = await copiedUnwiredFixture(t)
+  const baseline = await scanAlgorithms(fixture.options)
+  await writeFile(
+    path.join(fixture.root, path.dirname(fixture.destination), 'peer.ts'),
+    fixture.text,
+  )
+  const scan = await scanAlgorithms(fixture.options)
+  const peer = scan.implementations.find(item => item.path.endsWith('/peer.ts'))
+  assert.equal(peer.disposition, 'existing-debt')
+  assert.match(checkAlgorithmDebt(scan, baseline).failures[0], /New undeclared/u)
+})
+
+test('a copied-unwired destination hash tamper fails closed', async t => {
+  const fixture = await copiedUnwiredFixture(t)
+  await writeFile(path.join(fixture.root, fixture.destination), `${fixture.text}\n// tampered`)
+  await assert.rejects(() => scanAlgorithms(fixture.options), /copy hash mismatch/u)
+})
+
+test('a direct import of excluded copied-unwired code from production fails closed', async t => {
+  const fixture = await copiedUnwiredFixture(t, { active: 'import' })
+  await assert.rejects(
+    () => scanAlgorithms(fixture.options),
+    /copied-unwired algorithm became active/u,
+  )
+})
+
+test('a re-export of excluded copied-unwired code from production fails closed', async t => {
+  const fixture = await copiedUnwiredFixture(t, { active: 'reexport' })
+  await assert.rejects(
+    () => scanAlgorithms(fixture.options),
+    /copied-unwired algorithm became active/u,
+  )
+})
+
+test('a direct SC2 package runtime surface to copied-unwired code fails closed', async t => {
+  const fixture = await copiedUnwiredFixture(t, { surface: 'staged' })
+  await assert.rejects(
+    () => scanAlgorithms(fixture.options),
+    /copied-unwired algorithm became active/u,
+  )
+})
+
+test('an authored JavaScript runtime surface importing copied-unwired code fails closed', async t => {
+  const fixture = await copiedUnwiredFixture(t, { surface: 'js-wrapper' })
+  await assert.rejects(
+    () => scanAlgorithms(fixture.options),
+    /copied-unwired algorithm became active/u,
+  )
+})
+
+test('a nested conditional export array reaching copied-unwired code fails closed', async t => {
+  const fixture = await copiedUnwiredFixture(t, { surface: 'array-staged' })
+  await assert.rejects(
+    () => scanAlgorithms(fixture.options),
+    /copied-unwired algorithm became active/u,
+  )
+})
+
+test('a changed contribution manifest pattern fails closed despite a populated old directory', async t => {
+  await assert.rejects(
+    () => copiedUnwiredFixture(t, { contributionPattern: './other/*.json' }),
+    /Unexpected SC2 contribution manifest inventory pattern/u,
+  )
+})
+
+test('an orphaned dist JavaScript runtime surface cannot replace authored source', async t => {
+  await assert.rejects(
+    () => copiedUnwiredFixture(t, { surface: 'dist-orphan' }),
+    /Missing SC2 runtime surface source/u,
+  )
+})
+
+test('an arbitrary alternate production tsconfig cannot be supplied', async t => {
+  const fixture = await copiedUnwiredFixture(t)
+  await assert.rejects(
+    () => scanAlgorithms({ ...fixture.options, productionTsconfig: 'repo/tsconfig.json' }),
+    /Trusted SC2 production tsconfig is required/u,
+  )
+})
+
+test('an unexpected third copied-unwired allowance fails closed', () => {
+  const expected = ['repo/a.ts:crc32#0', 'repo/b.ts:parseXml#0']
+  const records = expected.map(id => {
+    const split = id.lastIndexOf(':')
+    return {
+      destination: id.slice(0, split),
+      algorithmDisposition: { symbol: id.slice(split + 1) },
+    }
+  })
+  assert.deepEqual(validateCopiedUnwiredAllowanceIds(records, expected), records)
+  assert.throws(
+    () =>
+      validateCopiedUnwiredAllowanceIds(
+        [
+          ...records,
+          { destination: 'repo/c.ts', algorithmDisposition: { symbol: 'sha1#0' } },
+        ],
+        expected,
+      ),
+    /Unexpected copied-unwired algorithm allowance/u,
+  )
+})
+
+test('a stale copied-unwired symbol fails closed', async t => {
+  const fixture = await copiedUnwiredFixture(t, { symbol: 'crc32#1' })
+  await assert.rejects(
+    () => scanAlgorithms(fixture.options),
+    /Stale copied-unwired algorithm disposition/u,
+  )
 })

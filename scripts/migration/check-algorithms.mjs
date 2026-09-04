@@ -3,7 +3,15 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readFile, writeFile } from 'node:fs/promises'
 import { execFileSync } from 'node:child_process'
-import { scanAlgorithms, checkAlgorithmDebt, checkBaselineRatchet } from './lib/algorithms.mjs'
+import {
+  scanAlgorithms,
+  checkAlgorithmDebt,
+  checkBaselineRatchet,
+  ratchetAlgorithmSnapshot,
+  sc2RuntimeSurfaceRoots,
+  SC2_ALGORITHM_PRODUCTION_TSCONFIG,
+  validateCopiedUnwiredAllowanceIds,
+} from './lib/algorithms.mjs'
 import { prepareCopy, checkCopies } from './lib/mk2-copy.mjs'
 
 try {
@@ -27,20 +35,41 @@ try {
       'utf8',
     ),
   )
-  const prepared = await prepareCopy({
-    declaration,
-    divergences,
-    scope: 'm1-libs',
-    workspaceRoot,
-    repoRoot: path.join(workspaceRoot, 'references/modkitmk2'),
-  })
-  await checkCopies(prepared)
-  const provenance = prepared.provenance
-  if (!provenance.files?.length)
+  const prepare = scope =>
+    prepareCopy({
+      declaration,
+      divergences,
+      scope,
+      workspaceRoot,
+      repoRoot: path.join(workspaceRoot, 'references/modkitmk2'),
+    })
+  const canonical = await prepare('m1-libs')
+  const family = await prepare('family')
+  await checkCopies(canonical)
+  await checkCopies(family)
+  if (!canonical.provenance.files?.length || !family.provenance.files?.length)
     throw new Error('Canonical copy provenance is required before algorithms scan')
-  const current = await scanAlgorithms({ workspaceRoot, canonicalFiles: provenance.files })
+  const copiedUnwiredFiles = validateCopiedUnwiredAllowanceIds(
+    family.provenance.files.filter(row => row.algorithmDisposition),
+    [
+      'modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-map/src/image/png.ts:crc32#0',
+      'modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/scripts-processing/src/trigger-store/store.ts:XMLReader.parseXML#0',
+    ],
+  )
+  const runtimeSurfaceRoots = await sc2RuntimeSurfaceRoots({ workspaceRoot })
+  const current = await scanAlgorithms({
+    workspaceRoot,
+    canonicalFiles: canonical.provenance.files,
+    copiedUnwiredFiles,
+    productionTsconfig: SC2_ALGORITHM_PRODUCTION_TSCONFIG,
+    runtimeSurfaceRoots,
+  })
   if (args.includes('--write-baseline')) {
-    await writeFile(baselinePath, `${JSON.stringify(current, null, 2)}\n`, { flag: 'wx' })
+    await writeFile(
+      baselinePath,
+      `${JSON.stringify(ratchetAlgorithmSnapshot(current), null, 2)}\n`,
+      { flag: 'wx' },
+    )
     console.log(
       JSON.stringify({
         baselineCreated: true,
@@ -77,7 +106,10 @@ try {
       )
       process.exitCode = 1
     } else if (args.includes('--ratchet'))
-      await writeFile(baselinePath, `${JSON.stringify(current, null, 2)}\n`)
+      await writeFile(
+        baselinePath,
+        `${JSON.stringify(ratchetAlgorithmSnapshot(current), null, 2)}\n`,
+      )
     console.log(JSON.stringify({ repositories: current.scanned.length, ...result }))
   }
 } catch (error) {

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { mkdtemp, mkdir, writeFile, readFile, chmod, realpath } from 'node:fs/promises'
+import { mkdtemp, mkdir, writeFile, readFile, chmod, realpath, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { execFileSync } from 'node:child_process'
@@ -10,6 +10,37 @@ import {
   digestManifest,
   createCorpusManifest,
 } from '../lib/legacy-oracle.mjs'
+
+test('pinned source can disable all working-tree observation', async t => {
+  const root = await mkdtemp(path.join(tmpdir(), 'mk2-pinned-only-test-'))
+  t.after(async () => {
+    assert.equal(path.dirname(root), tmpdir())
+    assert.ok(path.basename(root).startsWith('mk2-pinned-only-test-'))
+    await rm(root, { recursive: true, force: true })
+  })
+  const repoRoot = path.join(root, 'repo')
+  await mkdir(repoRoot)
+  const git = (...args) =>
+    execFileSync('git', ['-C', repoRoot, ...args], { encoding: 'utf8', windowsHide: true }).trim()
+  git('init', '-q')
+  git('config', 'user.name', 'Pinned Source Test')
+  git('config', 'user.email', 'pinned-source@test.invalid')
+  await writeFile(path.join(repoRoot, 'source.ts'), 'export const pinned = true\n')
+  git('add', 'source.ts')
+  git('commit', '-qm', 'pinned source')
+  const commit = git('rev-parse', 'HEAD')
+  await rm(path.join(repoRoot, 'source.ts'))
+  await mkdir(path.join(repoRoot, 'source.ts'))
+
+  const observed = await createPinnedSource({ repoRoot, commit })
+  await assert.rejects(observed.read('source.ts'), error => error.code !== 'ENOENT')
+
+  const pinnedOnly = await createPinnedSource({ repoRoot, commit, observeWorkingTree: false })
+  const record = await pinnedOnly.read('source.ts')
+  assert.equal(record.bytes.toString('utf8'), 'export const pinned = true\n')
+  assert.equal(record.workingTreeSha256, null)
+  assert.equal(record.workingTreeMatchesPin, null)
+})
 
 test('pinned source, exports, data, dependencies and every cache identity dimension', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'mk2-oracle-test-'))

@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.mk2-libraries.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": [
+    "src/legacy-model-support.ts",
+    "src/legacy-model-assets-support.ts",
+    "src/legacy-sc2-support.ts",
+    "src/legacy/assets/**/*.ts",
+    "src/legacy/core/**/*.ts",
+    "src/legacy/models/**/*.ts",
+    "src/legacy/xml/**/*.ts",
+    "src/legacy/support/**/*.ts",
+    "src/model-math/**/*.ts",
+    "test/mk2/xml/**/*.test.ts",
+    "test/mk2/models-core/**/*.spec.ts"
+  ]
+}

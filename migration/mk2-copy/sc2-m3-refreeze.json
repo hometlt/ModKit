@@ -3,6 +3,6 @@
   "family": "sc2",
   "scope": "family",
   "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
-  "selectorVersion": "sc2-m3-family-v3",
-  "planDigest": "5814c31c392354310091493877cbbd722887fe59d059ccec12d40c7836322563"
+  "selectorVersion": "sc2-m3-family-v5",
+  "planDigest": "2567673b13cd19b77f58669f9acd634dd377770852a0e90acb4bf7f7206fa78c"
 }

@@ -219,24 +219,18 @@ export function rewriteSource(original, rewrites, filename) {
       const originalAst = ts.createSourceFile(filename, text, ts.ScriptTarget.Latest, true)
       const replacementAst = ts.createSourceFile(filename, to, ts.ScriptTarget.Latest, true)
       const replacement = replacementAst.statements[0]
+      const originalDeclarations = occurrences.map(match =>
+        originalAst.statements.find(node => node.getStart(originalAst) === match.index),
+      )
       if (
         replacementAst.parseDiagnostics.length ||
         replacementAst.statements.length !== 1 ||
         !ts.isImportDeclaration(replacement) ||
-        !replacement.importClause
+        !replacement.importClause ||
+        !originalDeclarations.every(node => node && ts.isImportDeclaration(node))
       )
         throw new Error(`Invalid import-type rewrite: ${filename}`)
-      if (
-        occurrences.some(
-          match =>
-            !originalAst.statements.some(
-              node =>
-                ts.isImportDeclaration(node) &&
-                node.getStart(originalAst) === match.index &&
-                node.getText(originalAst) === from,
-            ),
-        )
-      )
+      if (originalDeclarations.some(node => node?.getText(originalAst) !== from))
         throw new Error(`Type rewrite must cover an exact import declaration: ${filename}`)
       const emit = input =>
         ts.transpileModule(input, {
@@ -254,6 +248,53 @@ export function rewriteSource(original, rewrites, filename) {
         JSON.stringify(importsOf(to, filename).map(item => item.specifier))
       )
         throw new Error(`Type rewrite changes import target: ${filename}`)
+    } else if (kind === 'export-type') {
+      if (rewrite.count !== undefined && rewrite.count !== occurrences.length)
+        throw new Error(`Rewrite occurrence mismatch: ${filename}: ${from}`)
+      const parse = input =>
+        ts.createSourceFile(filename, input, ts.ScriptTarget.Latest, true).statements[0]
+      const originalExport = parse(from)
+      const replacementExport = parse(to)
+      const named = node =>
+        node &&
+        ts.isExportDeclaration(node) &&
+        node.moduleSpecifier &&
+        node.exportClause &&
+        ts.isNamedExports(node.exportClause)
+          ? node.exportClause.elements
+          : null
+      const beforeElements = named(originalExport)
+      const afterElements = named(replacementExport)
+      if (
+        !beforeElements ||
+        !afterElements ||
+        originalExport.moduleSpecifier.text !== replacementExport.moduleSpecifier.text ||
+        beforeElements.length !== afterElements.length ||
+        !beforeElements.every(
+          (element, index) =>
+            element.name.text === afterElements[index].name.text &&
+            element.propertyName?.text === afterElements[index].propertyName?.text &&
+            (!element.isTypeOnly || afterElements[index].isTypeOnly),
+        ) ||
+        !afterElements.some(
+          (element, index) => element.isTypeOnly && !beforeElements[index].isTypeOnly,
+        )
+      )
+        throw new Error(`Invalid export-type rewrite: ${filename}`)
+      if (
+        occurrences.some(
+          match =>
+            !ts
+              .createSourceFile(filename, text, ts.ScriptTarget.Latest, true)
+              .statements.some(
+                node =>
+                  ts.isExportDeclaration(node) &&
+                  node.getStart() === match.index &&
+                  node.getText() === from,
+              ),
+        )
+      )
+        throw new Error(`Type rewrite must cover an exact export declaration: ${filename}`)
     } else throw new Error(`Unsupported rewrite kind: ${kind}`)
     const before = sha256(text)
     if (kind === 'import')
@@ -324,13 +365,20 @@ async function applyDivergence(text, divergence, root) {
 
 // A relative import may cross a package boundary only through a direct public export of
 // that same canonical source. Barrels, fallback targets and arbitrary replacements refuse.
-async function canonicalPackageExport(dependency, sourceTarget, bySource, workspaceRoot) {
+async function canonicalPackageExport(
+  dependency,
+  sourceTarget,
+  bySource,
+  adapterSourceDestinations,
+  workspaceRoot,
+) {
   if (
     !Array.isArray(dependency.canonicalSources) ||
     !dependency.canonicalSources.includes(sourceTarget)
   )
     throw new Error(`Canonical copied source replaced by bare dependency: ${sourceTarget}`)
-  const destination = bySource.get(sourceTarget)?.destination
+  const destination =
+    bySource.get(sourceTarget)?.destination ?? adapterSourceDestinations.get(sourceTarget)
   if (!destination || dependency.kind === 'node-builtin')
     throw new Error(`Invalid canonical package source: ${sourceTarget}`)
   const manifestPath = await safeTarget(workspaceRoot, dependency.manifest)
@@ -436,7 +484,12 @@ export async function prepareCopy({
     throw new Error('Invalid divergence register')
   unique(divergences.entries, 'file', 'divergence')
   const source =
-    suppliedSource ?? (await createPinnedSource({ repoRoot, commit: declaration.oracleCommit }))
+    suppliedSource ??
+    (await createPinnedSource({
+      repoRoot,
+      commit: declaration.oracleCommit,
+      observeWorkingTree: false,
+    }))
   if (source.commit !== declaration.oracleCommit) throw new Error('Pinned source commit mismatch')
   const required = new Set(selected.requiredSources ?? [])
   for (const prefix of selected.sourcePrefixes ?? []) {
@@ -491,6 +544,7 @@ export async function prepareCopy({
   unique(adapters, 'destination', 'adapter')
   const copiedDestinations = new Set(declaration.copies.map(row => row.destination))
   const adapterMap = new Map()
+  const adapterSourceDestinations = new Map()
   for (const adapter of adapters) {
     if (copiedDestinations.has(adapter.destination) || !adapter.reason?.trim())
       throw new Error(`Invalid canonical adapter: ${adapter.destination}`)
@@ -498,6 +552,16 @@ export async function prepareCopy({
     if (sha256(bytes) !== adapter.sha256)
       throw new Error(`Adapter hash mismatch: ${adapter.destination}`)
     adapterMap.set(adapter.destination, adapter)
+    for (const sourcePath of adapter.replacesSources ?? []) {
+      safeRelative(sourcePath)
+      if (
+        required.has(sourcePath) ||
+        !source.has(sourcePath) ||
+        adapterSourceDestinations.has(sourcePath)
+      )
+        throw new Error(`Invalid adapter source replacement: ${sourcePath}`)
+      adapterSourceDestinations.set(sourcePath, adapter.destination)
+    }
   }
   const records = []
   for (const row of rows) {
@@ -510,6 +574,26 @@ export async function prepareCopy({
     const bytes = !row.rewrites?.length && !divergence ? pinned.bytes : Buffer.from(adapted.text)
     if (row.sha256Mk3 !== sha256(bytes))
       throw new Error(`Declared destination hash mismatch: ${row.destination}`)
+    let algorithmDisposition
+    if (row.algorithmDisposition !== undefined) {
+      const candidate = row.algorithmDisposition
+      if (
+        !candidate ||
+        typeof candidate !== 'object' ||
+        Array.isArray(candidate) ||
+        Object.keys(candidate).sort().join(',') !== 'exit,kind,reason,symbol' ||
+        candidate.kind !== 'copied-unwired-copy' ||
+        !['canonicalize-before-activation', 'classify-delegate-before-activation'].includes(
+          candidate.exit,
+        ) ||
+        typeof candidate.symbol !== 'string' ||
+        !candidate.symbol.trim() ||
+        typeof candidate.reason !== 'string' ||
+        !candidate.reason.trim()
+      )
+        throw new Error(`Invalid algorithm disposition: ${row.destination}`)
+      algorithmDisposition = candidate
+    }
     records.push({
       mk2Path: row.source,
       destination: row.destination,
@@ -521,6 +605,7 @@ export async function prepareCopy({
       text: adapted.text,
       bytes,
       original: pinned.bytes.toString('utf8'),
+      ...(algorithmDisposition ? { algorithmDisposition } : {}),
     })
   }
   for (const divergence of divergences.entries)
@@ -626,7 +711,12 @@ export async function prepareCopy({
         sourceTarget = candidates(row.mk2Path, oldImport).find(file => source.has(file)) ?? null
         if (!sourceTarget && !disposition)
           throw new Error(`Unresolved pinned relative import: ${row.mk2Path} -> ${oldImport}`)
-        if (sourceTarget && !required.has(sourceTarget) && !disposition)
+        if (
+          sourceTarget &&
+          !required.has(sourceTarget) &&
+          !disposition &&
+          (newImport === oldImport || !adapterSourceDestinations.has(sourceTarget))
+        )
           throw new Error(
             `Incomplete type/runtime import closure: ${row.mk2Path} -> ${sourceTarget}`,
           )
@@ -652,11 +742,14 @@ export async function prepareCopy({
           destinationTarget = `copied-unwired:${newImport}`
         } else {
           destinationTarget = `dependency:${newImport}`
-          if (sourceTarget)
+          if (sourceTarget && disposition)
+            destinationTarget = `copied-unwired:${newImport}`
+          else if (sourceTarget)
             destinationTarget = await canonicalPackageExport(
               dependencyMap.get(newImport),
               sourceTarget,
               bySource,
+              adapterSourceDestinations,
               workspaceRoot,
             )
         }
@@ -736,6 +829,9 @@ export async function prepareCopy({
       gitBlob: record.gitBlob,
       rewrites: record.rewrites,
       divergence: record.divergence,
+      ...(record.algorithmDisposition
+        ? { algorithmDisposition: record.algorithmDisposition }
+        : {}),
     })),
   }
   if (!/^\d{4}-\d{2}-\d{2}$/u.test(provenance.copiedAt ?? ''))
