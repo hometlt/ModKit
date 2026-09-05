@@ -29,6 +29,9 @@ test('SC2 document metadata support matches its partial contribution', () => {
 })
 
 test('registry cross-checks the preserved common coverage ledger', () => {
+  const baseline = JSON.parse(
+    readFileSync(resolve(repoRoot, 'migration/registry-debt-baseline.json'), 'utf8'),
+  )
   const result = spawnSync(process.execPath, ['scripts/migration/check-registry.mjs'], {
     cwd: repoRoot,
     encoding: 'utf8',
@@ -40,7 +43,10 @@ test('registry cross-checks the preserved common coverage ledger', () => {
   assert.equal(result.status, 0, output)
   assert.match(
     output,
-    /known debt 38 .*new problems 0, stale baseline entries 0, unavailable checks 0/u,
+    new RegExp(
+      `known debt ${baseline.problems.length} .*new problems 0, stale baseline entries 0, unavailable checks 0`,
+      'u',
+    ),
   )
   assert.doesNotMatch(output, /common-coverage\.json not found/u)
 })
