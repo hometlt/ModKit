@@ -3,6 +3,137 @@
   "family": "sc2",
   "entries": [
     {
+      "file": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/archives-processing/src/archive-session-manager.ts",
+      "semantic": true,
+      "reason": "M4 archive suite execution requires the isolated family copy to retain the original MK2 package identity and local archive utility edges.",
+      "mk3Contract": "The copy is reachable only from the pinned M3 family test workspace; production host registration and routing remain unchanged.",
+      "ownerDecision": "M4 decision 8 admits exactly six archives-processing suites (51 leaf tests) with provenance for both the automatic rewrite chain and the final isolated destination bytes.",
+      "proof": [
+        {
+          "path": "modkit-core/migration/mk2-divergence/sc2-m4-archive-family.md",
+          "sha256": "decbcc54fba7e2f2be87488640890fb17494dff093d502f12e53319662aad056"
+        }
+      ],
+      "edits": [
+        {
+          "from": "'@modkit/codec-kit/legacy/assets'",
+          "to": "'@modkitx/assets'",
+          "count": 1,
+          "sha256Before": "b7fabb7dd9bb62cb742320395590e796825da4478635c588cdd34b6ca7014101",
+          "sha256After": "9584215d8891f720b9378cbf41893adb18d77a6d1690a9d4ed29a24bc728076d"
+        },
+        {
+          "from": "'@modkit/codec-kit/legacy/vfs'",
+          "to": "'@modkitx/vfs'",
+          "count": 1,
+          "sha256Before": "9584215d8891f720b9378cbf41893adb18d77a6d1690a9d4ed29a24bc728076d",
+          "sha256After": "72734c0dc851209a91f1ceb116f5c17130f00d236fdf262527bcb056b6aac061"
+        }
+      ]
+    },
+    {
+      "file": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/archives-processing/src/core/asset-source.ts",
+      "semantic": true,
+      "reason": "M4 archive suite execution requires the isolated family copy to retain the original MK2 package identity and local archive utility edges.",
+      "mk3Contract": "The copy is reachable only from the pinned M3 family test workspace; production host registration and routing remain unchanged.",
+      "ownerDecision": "M4 decision 8 admits exactly six archives-processing suites (51 leaf tests) with provenance for both the automatic rewrite chain and the final isolated destination bytes.",
+      "proof": [
+        {
+          "path": "modkit-core/migration/mk2-divergence/sc2-m4-archive-family.md",
+          "sha256": "decbcc54fba7e2f2be87488640890fb17494dff093d502f12e53319662aad056"
+        }
+      ],
+      "edits": [
+        {
+          "from": "'@modkit/codec-kit/legacy/assets'",
+          "to": "'@modkitx/assets'",
+          "count": 1,
+          "sha256Before": "82512429a14e63ea3374adb63f34dc451b68db71faf7adb5f32e3ac892449cf1",
+          "sha256After": "efddd7a658ea3adbc1d3793a3e61629c47d09abdf9be8184c78de3756bef2425"
+        }
+      ]
+    },
+    {
+      "file": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/archives-processing/src/core/registry.ts",
+      "semantic": true,
+      "reason": "M4 archive suite execution requires the isolated family copy to retain the original MK2 package identity and local archive utility edges.",
+      "mk3Contract": "The copy is reachable only from the pinned M3 family test workspace; production host registration and routing remain unchanged.",
+      "ownerDecision": "M4 decision 8 admits exactly six archives-processing suites (51 leaf tests) with provenance for both the automatic rewrite chain and the final isolated destination bytes.",
+      "proof": [
+        {
+          "path": "modkit-core/migration/mk2-divergence/sc2-m4-archive-family.md",
+          "sha256": "decbcc54fba7e2f2be87488640890fb17494dff093d502f12e53319662aad056"
+        }
+      ],
+      "edits": [
+        {
+          "from": "'@modkit/codec-kit/legacy/assets'",
+          "to": "'@modkitx/assets'",
+          "count": 1,
+          "sha256Before": "44c5b11135bb42c5991dcf423f40d832d75442f1c479aad6542b68aae0655a42",
+          "sha256After": "31891b0d6f71f126f766662d985f32f03c399f1f08be0d6cab9ef46d59232f71"
+        }
+      ]
+    },
+    {
+      "file": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/archives-processing/src/lib/index.ts",
+      "semantic": true,
+      "reason": "M4 archive suite execution requires the isolated family copy to retain the original MK2 package identity and local archive utility edges.",
+      "mk3Contract": "The copy is reachable only from the pinned M3 family test workspace; production host registration and routing remain unchanged.",
+      "ownerDecision": "M4 decision 8 admits exactly six archives-processing suites (51 leaf tests) with provenance for both the automatic rewrite chain and the final isolated destination bytes.",
+      "proof": [
+        {
+          "path": "modkit-core/migration/mk2-divergence/sc2-m4-archive-family.md",
+          "sha256": "decbcc54fba7e2f2be87488640890fb17494dff093d502f12e53319662aad056"
+        }
+      ],
+      "edits": [
+        {
+          "from": "'../../../../../../../../../modkit-core/packages/codec-kit/src/compression/legacy-original.js'",
+          "to": "'./compression/index.js'",
+          "count": 1,
+          "sha256Before": "85a64c6471effc03a267cde56e331969db947f077c6bc21758da783b71211854",
+          "sha256After": "b94f47743eab680928e3be6ccd77d63f173a534b7e2a9f70c9dcb7a4d2978fd6"
+        },
+        {
+          "from": "'../../../../../../../../../modkit-core/packages/codec-kit/src/crypto/mpq.js'",
+          "to": "'./crypto/index.js'",
+          "count": 1,
+          "sha256Before": "b94f47743eab680928e3be6ccd77d63f173a534b7e2a9f70c9dcb7a4d2978fd6",
+          "sha256After": "b9a3abb9f045c637fc39115cbe272f40e41670cfb322661b83b8d30a5ecea1e6"
+        }
+      ]
+    },
+    {
+      "file": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/archives-processing/src/vfs-mount.ts",
+      "semantic": true,
+      "reason": "M4 archive suite execution requires the isolated family copy to retain the original MK2 package identity and local archive utility edges.",
+      "mk3Contract": "The copy is reachable only from the pinned M3 family test workspace; production host registration and routing remain unchanged.",
+      "ownerDecision": "M4 decision 8 admits exactly six archives-processing suites (51 leaf tests) with provenance for both the automatic rewrite chain and the final isolated destination bytes.",
+      "proof": [
+        {
+          "path": "modkit-core/migration/mk2-divergence/sc2-m4-archive-family.md",
+          "sha256": "decbcc54fba7e2f2be87488640890fb17494dff093d502f12e53319662aad056"
+        }
+      ],
+      "edits": [
+        {
+          "from": "'@modkit/codec-kit/legacy/assets'",
+          "to": "'@modkitx/assets'",
+          "count": 1,
+          "sha256Before": "c13e0c3436f74908e240366356b68053bcf4feb9f2a6dbceded2ebae86a941ed",
+          "sha256After": "ba9934e28cb88f64427eb1b5da11252b3be2269500eb90f7bfd53ee1654019e2"
+        },
+        {
+          "from": "'@modkit/codec-kit/legacy/vfs'",
+          "to": "'@modkitx/vfs'",
+          "count": 1,
+          "sha256Before": "ba9934e28cb88f64427eb1b5da11252b3be2269500eb90f7bfd53ee1654019e2",
+          "sha256After": "c6d5c2c16ab2b9b6f168160603f678d176cad2b0c3d134d9e689775cd136b4c4"
+        }
+      ]
+    },
+    {
       "file": "modkit-extensions-blizzard/starcraft2/test/mk2/codecs/sc2-bank/src/core/core.spec.ts",
       "semantic": false,
       "reason": "Test-only relocation: canonical paths or the three registry assertions move to actual MK3 host contracts.",

@@ -4,7 +4,7 @@ import { builtinModules } from 'node:module'
 import { readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { createPinnedSource, sha256 } from './lib/legacy-oracle.mjs'
-import { importsOf, rewriteSource } from './lib/mk2-copy.mjs'
+import { applyDivergence, importsOf, rewriteSource } from './lib/mk2-copy.mjs'
 import {
   assertM3TestDestination,
   canonicalM3Destination,
@@ -22,6 +22,7 @@ import {
 
 const workspaceRoot = fileURLToPath(new URL('../../..', import.meta.url))
 const declarationPath = path.join(workspaceRoot, 'modkit-core/migration/mk2-copy/sc2.json')
+const divergencePath = path.join(workspaceRoot, 'modkit-core/migration/mk2-divergence/sc2.json')
 const oracleRoot = path.join(workspaceRoot, 'references/modkitmk2')
 const reportPath = path.join(
   workspaceRoot,
@@ -30,12 +31,12 @@ const reportPath = path.join(
 const pinRelative = SC2_M3_REFREEZE_PIN
 const pinPath = path.join(workspaceRoot, pinRelative)
 const { writePin, admitReady } = parseSc2M3RefreezeArgs(process.argv.slice(2))
+const divergences = JSON.parse(await readFile(divergencePath, 'utf8'))
 const modelSupportAdapterPath = 'modkit-core/packages/codec-kit/src/legacy-model-support.ts'
 const modelAssetsSupportAdapterPath =
   'modkit-core/packages/codec-kit/src/legacy-model-assets-support.ts'
 const sc2SupportAdapterPath = 'modkit-core/packages/codec-kit/src/legacy-sc2-support.ts'
-const vfsNodeTestAdapterPath =
-  'modkit-extensions-blizzard/starcraft2/test/mk2/support/vfs-node.ts'
+const vfsNodeTestAdapterPath = 'modkit-extensions-blizzard/starcraft2/test/mk2/support/vfs-node.ts'
 const algorithmDispositions = new Map([
   [
     'extensions/blizzard/starcraft-2/codecs/sc2-map/src/image/png.ts',
@@ -279,10 +280,7 @@ function sc2SupportReplacement(file, specifier) {
       file === 'packages/mods-processing/src/metadata-cache.ts')
   )
     return '@modkit/codec-kit/legacy/sc2-support'
-  if (
-    specifier === '@modkitx/vfs' &&
-    file === 'packages/mods-processing/src/sc2-mod-core/types.ts'
-  )
+  if (specifier === '@modkitx/vfs' && file === 'packages/mods-processing/src/sc2-mod-core/types.ts')
     return '@modkit/codec-kit/legacy/sc2-support'
   return null
 }
@@ -494,7 +492,8 @@ for (const file of selected) {
         count: 1,
       })
       const dependency = await externalDependency(semanticReplacement, baseDependencies)
-      if (!dependency) throw new Error(`Missing semantic registry dependency: ${semanticReplacement}`)
+      if (!dependency)
+        throw new Error(`Missing semantic registry dependency: ${semanticReplacement}`)
       dependencies.set(semanticReplacement, dependency)
       addDisposition(
         file,
@@ -591,7 +590,28 @@ for (const file of selected) {
   }
   const originalText = pinned.bytes.toString('utf8')
   const rewritten = rewriteSource(originalText, deduplicated, file).text
-  const destinationBytes = deduplicated.length ? Buffer.from(rewritten) : pinned.bytes
+  const divergence = divergences.entries.find(entry => entry.file === destinationPath)
+  const adapted = await applyDivergence(rewritten, divergence, workspaceRoot)
+  if (divergence) {
+    const originalImports = imports.get(file) ?? []
+    const rewrittenImports = importsOf(rewritten, file)
+    const adaptedImports = importsOf(adapted.text, file)
+    for (let index = 0; index < adaptedImports.length; index++) {
+      const item = adaptedImports[index]
+      if (
+        item.specifier &&
+        item.specifier === originalImports[index]?.specifier &&
+        item.specifier !== rewrittenImports[index]?.specifier
+      )
+        addDisposition(
+          file,
+          item,
+          'Registered M3 divergence preserves this original edge only in the isolated copied-unwired family tree.',
+        )
+    }
+  }
+  const destinationBytes =
+    deduplicated.length || divergence ? Buffer.from(adapted.text) : pinned.bytes
   rows.push({
     source: file,
     destination: destinationPath,

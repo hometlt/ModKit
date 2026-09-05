@@ -567,6 +567,54 @@ test('relative copied-unwired disposition binds the relocated destination specif
   assert.equal(prepared.provenance.closure[0].destinationSpecifier, '../b/value.js')
 })
 
+test('bounded divergence may preserve an isolated noncanonical overlap', async t => {
+  const f = await fixture(t)
+  const sourceMain = "export { value } from './value.js'\n"
+  const rewrittenMain = "export { value } from '../core/value.js'\n"
+  const proof = 'proof.test.ts'
+  await writeFile(path.join(f.root, proof), 'assert.equal(isolatedSuites, 6)')
+  f.files.set('src/main.ts', sourceMain)
+  f.declaration.copies[0] = {
+    source: 'src/main.ts',
+    destination: 'target/archive/main.ts',
+    sha256Mk2: sha256(sourceMain),
+    sha256Mk3: sha256(sourceMain),
+    rewrites: [{ from: "'./value.js'", to: "'../core/value.js'", count: 1 }],
+  }
+  f.declaration.copies[1].destination = 'target/core/value.ts'
+  f.declaration.scopes['m1-libs'].importDispositions = [
+    {
+      source: 'src/main.ts',
+      specifier: './value.js',
+      kind: 'copied-unwired',
+      count: 1,
+      reason: 'The bounded divergence retains an isolated duplicate of the canonical source.',
+    },
+  ]
+  f.divergences.entries.push({
+    file: 'target/archive/main.ts',
+    semantic: true,
+    reason: 'The test-only tree exercises its isolated overlap.',
+    mk3Contract: 'Production registration remains unchanged.',
+    ownerDecision: 'Execute the exact isolated compatibility suite.',
+    proof: [{ path: proof, sha256: sha256('assert.equal(isolatedSuites, 6)') }],
+    edits: [
+      {
+        from: "'../core/value.js'",
+        to: "'./value.js'",
+        count: 1,
+        sha256Before: sha256(rewrittenMain),
+        sha256After: sha256(sourceMain),
+      },
+    ],
+  })
+  const prepared = await f.prepare()
+  assert.equal(prepared.provenance.closure[0].destinationTarget, 'copied-unwired:./value.js')
+  assert.equal(prepared.provenance.files[0].sha256Mk2, prepared.provenance.files[0].sha256Mk3)
+  assert.equal(prepared.provenance.files[0].rewrites.length, 1)
+  assert.equal(prepared.provenance.files[0].divergence.edits.length, 1)
+})
+
 test('bounded divergence requires exact edits, proof hash and contract', async t => {
   const f = await fixture(t)
   const proof = 'proof.test.ts'

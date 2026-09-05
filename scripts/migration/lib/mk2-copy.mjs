@@ -327,7 +327,7 @@ function codecOwner(sourcePath) {
   return sourcePath.match(/^extensions\/blizzard\/starcraft-2\/codecs\/([^/]+)\//u)?.[1]
 }
 
-async function applyDivergence(text, divergence, root) {
+export async function applyDivergence(text, divergence, root) {
   if (!divergence) return { text, evidence: null }
   if (
     !divergence.reason?.trim() ||
@@ -732,7 +732,8 @@ export async function prepareCopy({
         if (
           sourceTarget &&
           required.has(sourceTarget) &&
-          bySource.get(sourceTarget)?.destination !== destinationTarget
+          bySource.get(sourceTarget)?.destination !== destinationTarget &&
+          !(disposition && row.divergence)
         )
           throw new Error(`Noncanonical import relocation: ${row.destination} -> ${newImport}`)
       } else {
@@ -742,8 +743,7 @@ export async function prepareCopy({
           destinationTarget = `copied-unwired:${newImport}`
         } else {
           destinationTarget = `dependency:${newImport}`
-          if (sourceTarget && disposition)
-            destinationTarget = `copied-unwired:${newImport}`
+          if (sourceTarget && disposition) destinationTarget = `copied-unwired:${newImport}`
           else if (sourceTarget)
             destinationTarget = await canonicalPackageExport(
               dependencyMap.get(newImport),
@@ -829,9 +829,7 @@ export async function prepareCopy({
       gitBlob: record.gitBlob,
       rewrites: record.rewrites,
       divergence: record.divergence,
-      ...(record.algorithmDisposition
-        ? { algorithmDisposition: record.algorithmDisposition }
-        : {}),
+      ...(record.algorithmDisposition ? { algorithmDisposition: record.algorithmDisposition } : {}),
     })),
   }
   if (!/^\d{4}-\d{2}-\d{2}$/u.test(provenance.copiedAt ?? ''))
