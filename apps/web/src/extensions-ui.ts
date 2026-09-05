@@ -24,6 +24,7 @@ import { subjectFactsSourceFromWire } from '@modkit/extension-manager'
 import {
   createSubjectCard,
   loadSubjectCardSections,
+  SubjectNavigationHistory,
   type CardRef,
   type SubjectCard,
 } from '@modkit/ui/card'
@@ -316,6 +317,7 @@ export function mountExtensionsUi(
   let activeSubjectId: string | undefined
   let activeCard: SubjectCard | undefined
   let cardRevision = 0
+  const subjectHistory = new SubjectNavigationHistory()
 
   const loadOptions = () => ({
     subtle: options.subtle,
@@ -449,6 +451,7 @@ export function mountExtensionsUi(
   const selectSubject = (entry: WebExtensionSubjectEntry, subjectId: string): void => {
     activeExtensionId = entry.id
     activeSubjectId = subjectId
+    subjectHistory.reset(subjectId)
     render()
   }
 
@@ -564,6 +567,22 @@ export function mountExtensionsUi(
         if (revision !== cardRevision || !host.isConnected) return
         const toolbar = documentRef.createElement('div')
         toolbar.dataset['mkPart'] = 'settings.adder'
+        const historyBack = button(toolbar, 'settings.add', '←', () => {
+          const subjectId = subjectHistory.back()
+          if (subjectId === undefined || !documents.has(subjectId)) return
+          activeSubjectId = subjectId
+          render()
+        }) as HTMLButtonElement
+        historyBack.disabled = !subjectHistory.canBack
+        historyBack.setAttribute('aria-label', localizer.text('card.historyBack'))
+        const historyForward = button(toolbar, 'settings.add', '→', () => {
+          const subjectId = subjectHistory.forward()
+          if (subjectId === undefined || !documents.has(subjectId)) return
+          activeSubjectId = subjectId
+          render()
+        }) as HTMLButtonElement
+        historyForward.disabled = !subjectHistory.canForward
+        historyForward.setAttribute('aria-label', localizer.text('card.historyForward'))
         const subject = active.subject
         if (
           subject.kind === 'modkit/contribution' &&
@@ -597,6 +616,7 @@ export function mountExtensionsUi(
         activeCard?.destroy()
         const navigate = (ref: CardRef): void => {
           if (ref.href !== undefined && documents.has(ref.href)) {
+            subjectHistory.open(ref.href)
             activeSubjectId = ref.href
             render()
           }

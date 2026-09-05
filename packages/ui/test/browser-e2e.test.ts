@@ -204,6 +204,59 @@ describe('13C real-browser viewer host', () => {
     })
   })
 
+  it('opens a live relation target from the shared card and leaves dead targets inert', async () => {
+    const result = await page.evaluate(() => {
+      const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
+      const root = document.querySelector('#app') as HTMLElement
+      const opened: string[] = []
+      const card = (
+        ui['createSubjectCard'] as (
+          document: Document,
+          options: Record<string, unknown>,
+        ) => { root: HTMLElement; destroy(): void }
+      )(document, {
+        label: 'Marine',
+        sections: [
+          { kind: 'header', title: 'Marine' },
+          {
+            kind: 'links',
+            id: 'relations',
+            title: 'Related subjects',
+            expanded: true,
+            links: [
+              { label: 'Gauss Rifle', href: 'x3-subject:weapon' },
+              { label: 'Missing Weapon', href: 'x3-subject:missing', dead: true },
+            ],
+          },
+        ],
+        onNavigate(ref: { href?: string }) {
+          if (ref.href !== undefined) opened.push(ref.href)
+        },
+      })
+      root.append(card.root)
+      ;[...card.root.querySelectorAll('button')]
+        .find(button => button.textContent === 'Gauss Rifle')
+        ?.click()
+      const dead = [...card.root.querySelectorAll('[aria-disabled="true"]')].find(
+        node => node.textContent === 'Missing Weapon',
+      )
+      ;(dead as HTMLElement | undefined)?.click()
+      const result = {
+        opened,
+        deadTag: dead?.tagName,
+        deadState: dead?.getAttribute('data-mk-state'),
+      }
+      card.destroy()
+      return result
+    })
+
+    expect(result).toEqual({
+      opened: ['x3-subject:weapon'],
+      deadTag: 'SPAN',
+      deadState: 'disabled',
+    })
+  })
+
   it('renders bounded and virtual text, searches, and pages a 100 MiB logical line', async () => {
     await page.evaluate(async () => {
       const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit

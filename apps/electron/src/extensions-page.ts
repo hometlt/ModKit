@@ -19,6 +19,7 @@ import {
   loadSubjectCardSections,
   safeViewerText,
   setState,
+  SubjectNavigationHistory,
   type CardRef,
   type SettingsDocument,
   type SettingsStore,
@@ -482,6 +483,7 @@ export function createExtensionsSettingsGroups(
   let selectedSubjectId: string | undefined
   let mountedCard: SubjectCard | undefined
   let cardLoadRevision = 0
+  const subjectHistory = new SubjectNavigationHistory()
   /** Busy while main recomposes: a second toggle mid-flight would compose against stale bytes. */
   const operation = createExtensionOperationLifecycle()
   /**
@@ -605,6 +607,7 @@ export function createExtensionsSettingsGroups(
       return
     }
     selectedSubjectId = document.subject.subjectId
+    subjectHistory.reset(document.subject.subjectId)
     draw()
   }
 
@@ -675,6 +678,34 @@ export function createExtensionsSettingsGroups(
         wire.subject.displayName,
       )
     }
+    const historyBack = element(actions, 'button', {
+      part: 'settings.add',
+      text: '←',
+    }) as HTMLButtonElement
+    historyBack.type = 'button'
+    historyBack.disabled = !subjectHistory.canBack
+    historyBack.setAttribute('aria-label', localizer.text('card.historyBack'))
+    historyBack.dataset['action'] = 'subject-history-back'
+    historyBack.addEventListener('click', () => {
+      const subjectId = subjectHistory.back()
+      if (subjectId === undefined) return
+      selectedSubjectId = subjectId
+      draw()
+    })
+    const historyForward = element(actions, 'button', {
+      part: 'settings.add',
+      text: '→',
+    }) as HTMLButtonElement
+    historyForward.type = 'button'
+    historyForward.disabled = !subjectHistory.canForward
+    historyForward.setAttribute('aria-label', localizer.text('card.historyForward'))
+    historyForward.dataset['action'] = 'subject-history-forward'
+    historyForward.addEventListener('click', () => {
+      const subjectId = subjectHistory.forward()
+      if (subjectId === undefined) return
+      selectedSubjectId = subjectId
+      draw()
+    })
     const back = element(actions, 'button', {
       part: 'settings.add',
       text: copy.back,
@@ -736,6 +767,7 @@ export function createExtensionsSettingsGroups(
             ) {
               return
             }
+            subjectHistory.open(reference.href)
             selectedSubjectId = reference.href
             draw()
           },

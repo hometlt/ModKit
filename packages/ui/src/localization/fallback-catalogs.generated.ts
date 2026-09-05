@@ -66,6 +66,7 @@ export const CARD_FALLBACK_MESSAGES = {
   'card.loadingDescription': 'Loading description…',
   'card.locale': 'Locale',
   'card.namedSubject': '{label} subject card',
+  'card.preview': 'Preview',
   'card.relatedCapped': 'Related subjects are capped.',
   'card.relatedSubjects': 'Related subjects',
   'card.repository.fact.displayName': 'Display name',

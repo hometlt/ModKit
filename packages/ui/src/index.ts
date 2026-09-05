@@ -150,6 +150,7 @@ export {
 export {
   createSubjectCard,
   loadSubjectCardSections,
+  SubjectNavigationHistory,
   subjectCardViewer,
   createSubjectCardViewer,
   type CardChip,

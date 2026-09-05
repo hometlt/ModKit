@@ -27,6 +27,7 @@ import type { UiCatalogDocument, UiLocale, UiLocalizer } from '@modkit/ui/locali
 import {
   createSubjectCard,
   loadSubjectCardSections,
+  SubjectNavigationHistory,
   type CardRef,
   type SubjectCard,
 } from '@modkit/ui/card'
@@ -689,6 +690,7 @@ async function mountExtensionSubjectCard(
           return image
         })()
   let card: SubjectCard | undefined
+  const subjectHistory = new SubjectNavigationHistory()
 
   const configure = async (
     request:
@@ -884,9 +886,28 @@ async function mountExtensionSubjectCard(
       localizer,
     })
     card?.destroy()
-    toolbar.replaceChildren(...(icon === undefined ? [] : [icon]), ...actionButtons(active), status)
+    const historyBack = button('←', () => {
+      const previous = subjectHistory.back()
+      if (previous !== undefined && documents.has(previous)) void render(previous)
+    })
+    historyBack.disabled = !subjectHistory.canBack
+    historyBack.setAttribute('aria-label', localizer.text('card.historyBack'))
+    const historyForward = button('→', () => {
+      const next = subjectHistory.forward()
+      if (next !== undefined && documents.has(next)) void render(next)
+    })
+    historyForward.disabled = !subjectHistory.canForward
+    historyForward.setAttribute('aria-label', localizer.text('card.historyForward'))
+    toolbar.replaceChildren(
+      ...(icon === undefined ? [] : [icon]),
+      historyBack,
+      historyForward,
+      ...actionButtons(active),
+      status,
+    )
     const navigate = (ref: CardRef): void => {
       if (ref.href !== undefined && documents.has(ref.href)) {
+        subjectHistory.open(ref.href)
         void render(ref.href)
       }
     }
@@ -901,5 +922,6 @@ async function mountExtensionSubjectCard(
   }
 
   workbench.setMain(root)
+  subjectHistory.reset(bundle.activeSubjectId)
   await render(bundle.activeSubjectId)
 }

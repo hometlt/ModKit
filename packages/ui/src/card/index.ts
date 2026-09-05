@@ -39,6 +39,79 @@ export interface CardRef {
   /** Where the value came from: a file and line, another subject, a schema node. */
   readonly href?: string
   readonly title?: string
+  /** A stable unresolved target. It remains visible but cannot be opened. */
+  readonly dead?: boolean
+}
+
+/** Host-neutral back/forward state for serialized subject references. */
+export class SubjectNavigationHistory {
+  private currentAddress: string | undefined
+  private readonly backStack: string[] = []
+  private readonly forwardStack: string[] = []
+
+  get current(): string | undefined {
+    return this.currentAddress
+  }
+
+  get canBack(): boolean {
+    return this.backStack.length > 0
+  }
+
+  get canForward(): boolean {
+    return this.forwardStack.length > 0
+  }
+
+  get breadcrumbs(): readonly string[] {
+    return Object.freeze([
+      ...this.backStack,
+      ...(this.currentAddress === undefined ? [] : [this.currentAddress]),
+    ])
+  }
+
+  reset(address: string): void {
+    this.backStack.length = 0
+    this.forwardStack.length = 0
+    this.currentAddress = address
+  }
+
+  open(address: string): void {
+    if (address === this.currentAddress) return
+    if (this.currentAddress !== undefined) this.backStack.push(this.currentAddress)
+    this.currentAddress = address
+    this.forwardStack.length = 0
+  }
+
+  back(): string | undefined {
+    const address = this.backStack.pop()
+    if (address !== undefined) {
+      if (this.currentAddress !== undefined) this.forwardStack.push(this.currentAddress)
+      this.currentAddress = address
+    }
+    return address
+  }
+
+  forward(): string | undefined {
+    const address = this.forwardStack.pop()
+    if (address !== undefined) {
+      if (this.currentAddress !== undefined) this.backStack.push(this.currentAddress)
+      this.currentAddress = address
+    }
+    return address
+  }
+
+  /** Jump to an earlier breadcrumb while retaining the newer branch for forward navigation. */
+  jump(address: string): string | undefined {
+    const index = this.backStack.indexOf(address)
+    if (index < 0) return undefined
+    const skipped = this.backStack.splice(index)
+    if (this.currentAddress !== undefined) this.forwardStack.push(this.currentAddress)
+    for (let item = skipped.length - 1; item > 0; item -= 1) {
+      const next = skipped[item]
+      if (next !== undefined) this.forwardStack.push(next)
+    }
+    this.currentAddress = address
+    return address
+  }
 }
 
 export interface CardChip {
@@ -347,6 +420,30 @@ function repositorySubjectTableField(fact: SubjectFact): CardField | undefined {
   }
 }
 
+function applyCardLayout(
+  sections: readonly CardSection[],
+  layout: readonly string[] | undefined,
+): readonly CardSection[] {
+  if (layout === undefined || layout.length === 0) return Object.freeze([...sections])
+  const rank = new Map(layout.map((id, index) => [id, index]))
+  const layoutId = (section: CardSection): string => {
+    if (section.kind === 'header') return 'identity'
+    if (rank.has(section.id)) return section.id
+    if (section.id === 'related-subjects' || section.id === 'contributions') return 'relations'
+    return section.id
+  }
+  return Object.freeze(
+    sections
+      .map((section, index) => ({ section, index, rank: rank.get(layoutId(section)) }))
+      .sort(
+        (left, right) =>
+          (left.rank ?? Number.MAX_SAFE_INTEGER) - (right.rank ?? Number.MAX_SAFE_INTEGER) ||
+          left.index - right.index,
+      )
+      .map(item => item.section),
+  )
+}
+
 /** Default host projection. The source publishes facts and never chooses a card component. */
 export async function loadSubjectCardSections(
   source: SubjectFactsSource,
@@ -413,6 +510,21 @@ export async function loadSubjectCardSections(
   if (typeof description === 'string' && description.trim() !== '') {
     const header = sections[0]
     if (header?.kind === 'header') sections[0] = { ...header, description }
+  }
+  if (summary.preview !== undefined && summary.card?.preview !== 'none') {
+    sections.push({
+      kind: 'links',
+      id: 'preview',
+      title: localizer.text('card.preview'),
+      links: [
+        {
+          label: summary.preview.label ?? summary.preview.source.id,
+          href: summary.preview.source.uri,
+          ...(summary.preview.mediaType === undefined ? {} : { title: summary.preview.mediaType }),
+        },
+      ],
+      expanded: true,
+    })
   }
   for (const { group, page } of factGroups) {
     // Extension-owned contributions are navigable subjects, not opaque JSON fields. Their
@@ -481,20 +593,26 @@ export async function loadSubjectCardSections(
         label: item.label,
         href: item.subjectId,
         title: `${item.role} · ${item.kind}`,
+        ...(item.dead === undefined ? {} : { dead: item.dead }),
       })),
       ...(extensionContributions ? { expanded: true } : {}),
     })
   }
-  return Object.freeze(sections)
+  return applyCardLayout(sections, summary.card?.sections)
 }
 
 function ref(document: Document, item: CardRef, onNavigate?: (ref: CardRef) => void): HTMLElement {
-  const node = document.createElement(onNavigate === undefined ? 'span' : 'button')
+  const navigable = onNavigate !== undefined && item.href !== undefined && item.dead !== true
+  const node = document.createElement(navigable ? 'button' : 'span')
   node.className = 'modkit-card__ref'
   setPart(node, 'card.ref')
   node.textContent = safeViewerText(item.label, 256)
   if (item.title !== undefined) node.title = item.title
-  if (onNavigate !== undefined) {
+  if (item.dead === true) {
+    node.setAttribute('aria-disabled', 'true')
+    setState(node, ['disabled'])
+  }
+  if (navigable) {
     ;(node as HTMLButtonElement).type = 'button'
     node.addEventListener('click', () => onNavigate(item))
   }

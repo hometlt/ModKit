@@ -315,4 +315,77 @@ describe('subject-card knowledge projection', () => {
       ],
     })
   })
+
+  it('orders generic sections from the subject-kind layout and preserves dead relations', async () => {
+    const source: SubjectFactsSource = {
+      async summary() {
+        return {
+          snapshotId: 'generic-card',
+          identity: {
+            subjectId: 'x3-subject:root',
+            kind: 'fixture/image',
+            label: 'Texture',
+            origins: [],
+          },
+          groupCount: 2,
+          relationCount: 1,
+          preview: {
+            source: { id: 'texture.dds', uri: 'memory://fixture/texture.dds' },
+            mediaType: 'image/vnd-ms.dds',
+          },
+          card: {
+            sections: ['identity', 'texture', 'relations', 'traits', 'preview'],
+            preview: 'raster',
+          },
+        }
+      },
+      async groups() {
+        return {
+          items: [
+            { id: 'traits', label: 'Traits', factCount: 1 },
+            { id: 'texture', label: 'Texture', factCount: 1 },
+          ],
+        }
+      },
+      async facts(groupId) {
+        return {
+          items: [
+            {
+              id: groupId,
+              label: groupId,
+              value: groupId,
+              provenance: [],
+            },
+          ],
+        }
+      },
+      async relations() {
+        return {
+          items: [
+            {
+              role: 'texture.weapon',
+              subjectId: 'x3-subject:missing',
+              label: 'Missing weapon',
+              kind: 'fixture/weapon',
+              dead: true,
+            },
+          ],
+        }
+      },
+    }
+
+    const sections = await loadSubjectCardSections(source)
+    expect(sections.map(section => (section.kind === 'header' ? 'identity' : section.id))).toEqual([
+      'identity',
+      'texture',
+      'related-subjects',
+      'traits',
+      'preview',
+    ])
+    expect(
+      sections.find(section => linkSection(section) && section.id === 'related-subjects'),
+    ).toMatchObject({
+      links: [{ href: 'x3-subject:missing', dead: true }],
+    })
+  })
 })
