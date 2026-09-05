@@ -104,6 +104,33 @@ async function acceptedFixture(t) {
   return state
 }
 
+test('publication identity survives an isolated repository snapshot path', async t => {
+  const workspace = await mkdtemp(path.join(os.tmpdir(), 'modkit-publication-workspace-'))
+  t.after(() => rm(workspace, { recursive: true, force: true }))
+  const snapshot = path.join(workspace, '.tmp', 'blizzard-snapshot')
+  await mkdir(snapshot, { recursive: true })
+  await writeFile(
+    path.join(snapshot, 'package.json'),
+    stable({ modkit: { contributionManifests: ['codec.json'] } }),
+  )
+  await writeFile(
+    path.join(snapshot, 'codec.json'),
+    stable({ contract: { id: 'modkit/codec-contribution' }, id: 'blizzard/sample' }),
+  )
+
+  const publications = await discoverPublications(
+    [
+      {
+        id: 'blizzard',
+        directory: snapshot,
+        workspaceRelativeRoot: 'modkit-extensions-blizzard',
+      },
+    ],
+    workspace,
+  )
+  assert.equal(publications[0].workspacePath, 'modkit-extensions-blizzard/codec.json')
+})
+
 test('pending ledger passes integrity but fails requested family closure', async t => {
   const state = await fixture(t)
   assert.deepEqual(await checkLedger(state), [])

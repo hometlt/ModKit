@@ -23,13 +23,21 @@ export async function portContext({ discoverRepositories = false } = {}) {
     )
   const repositories = []
   if (discoverRepositories) {
-    const { externalRepositoryRoot } = await import('./external-extension-roots.mjs')
+    const { externalRepositoryDescriptor, externalRepositoryRoot } =
+      await import('./external-extension-roots.mjs')
     repositories.push(
-      { id: 'core', directory: coreRoot },
-      ...['blizzard', 'warzone', 'ea', 'spring', 'other'].map(id => ({
-        id,
-        directory: externalRepositoryRoot(workspaceRoot, id),
-      })),
+      { id: 'core', directory: coreRoot, workspaceRelativeRoot: path.basename(coreRoot) },
+      ...['blizzard', 'warzone', 'ea', 'spring', 'other'].map(id => {
+        const descriptor = externalRepositoryDescriptor(id, workspaceRoot)
+        return {
+          id,
+          directory: externalRepositoryRoot(workspaceRoot, id),
+          workspaceRelativeRoot: path.relative(
+            workspaceRoot,
+            path.resolve(workspaceRoot, descriptor.uri),
+          ),
+        }
+      }),
     )
   }
   return {

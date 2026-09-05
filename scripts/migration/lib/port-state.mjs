@@ -129,18 +129,25 @@ export async function discoverContributions(repositories) {
 
 export async function discoverPublications(repositories, root) {
   const contributions = await discoverContributions(repositories)
-  return contributions.map(contribution => ({
-    ...contribution,
-    workspacePath: path
-      .relative(
-        root,
-        path.join(
-          repositories.find(repository => repository.id === contribution.repository).directory,
-          contribution.path,
-        ),
-      )
-      .replaceAll('\\', '/'),
-  }))
+  return contributions.map(contribution => {
+    const repository = repositories.find(item => item.id === contribution.repository)
+    const workspaceRelativeRoot = repository.workspaceRelativeRoot?.replaceAll('\\', '/')
+    if (
+      workspaceRelativeRoot !== undefined &&
+      (path.posix.isAbsolute(workspaceRelativeRoot) ||
+        workspaceRelativeRoot.split('/').some(part => part === '' || part === '..'))
+    )
+      throw new Error(`unsafe workspace-relative repository root: ${workspaceRelativeRoot}`)
+    return {
+      ...contribution,
+      workspacePath:
+        workspaceRelativeRoot === undefined
+          ? path
+              .relative(root, path.join(repository.directory, contribution.path))
+              .replaceAll('\\', '/')
+          : path.posix.join(workspaceRelativeRoot, contribution.path),
+    }
+  })
 }
 
 export function codecFamily(codec, audits) {
