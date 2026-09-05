@@ -62,6 +62,7 @@ import {
 import { createLanguageWorkspace, languageProviderRoutes } from '@modkit/host/language'
 import { discoverGameInstallations } from '@modkit/host/games'
 import { createNodeMapPreviewResourcePlanResolver, launchNodeGameResource } from '@modkit/host/node'
+import type { SubjectCandidateProviderSource, SubjectCandidateScope } from '@modkit/sdk'
 import type { ContainerRegistry } from './containers.js'
 import { CustomDocumentState } from './custom-document.js'
 import {
@@ -149,6 +150,10 @@ import {
 } from './workbench-workflows.js'
 import { runExplicitGameLaunch, VSCODE_GAME_LAUNCH_COMMAND } from './game-launch-workflow.js'
 import { planEditorAssociations, type AssociationPlan } from './editor-associations.js'
+import {
+  selectScopedSubjectCandidates,
+  type VsCodeSubjectCandidateScope,
+} from './subject-candidates.js'
 import {
   ARMOD_EXTERNAL_PROCESS_TREE_MEMORY_DELTA_CEILING_BYTES,
   ARMOD_EXTERNAL_PROCESS_TREE_MAX_OBSERVED_INTERVAL_MS,
@@ -569,6 +574,19 @@ function subjectPathOf(uri: vscode.Uri): string {
 /** The inverse: the URI a subject string names, for the editor surfaces that take one. */
 function subjectUriOf(path: string): vscode.Uri {
   return parseContainerUriText(path) === undefined ? vscode.Uri.file(path) : vscode.Uri.parse(path)
+}
+
+function subjectCandidateScopeOf(uri: vscode.Uri): VsCodeSubjectCandidateScope {
+  const container = parseContainerUriText(uri.toString())
+  const workspaceTarget = container === undefined ? uri : vscode.Uri.file(container.container)
+  const workspaceUri = vscode.workspace.getWorkspaceFolder(workspaceTarget)?.uri.toString()
+  return Object.freeze({
+    uri: uri.toString(),
+    ...(workspaceUri === undefined ? {} : { workspaceUri }),
+    ...(container === undefined
+      ? {}
+      : { containerUri: vscode.Uri.file(container.container).toString() }),
+  })
 }
 
 class ModkitCustomDocument implements vscode.CustomDocument {
@@ -4122,10 +4140,38 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   const languageDiagnostics = vscode.languages.createDiagnosticCollection('modkit-language')
   context.subscriptions.push(languageDiagnostics)
 
+  const live = new Set<VsCodeServed>()
+  const liveSubjects = new Map<VsCodeServed, string | undefined>()
+  const languageSubjectCandidates: SubjectCandidateProviderSource = Object.freeze({
+    async open(scope: SubjectCandidateScope, signal?: AbortSignal) {
+      let requested: VsCodeSubjectCandidateScope
+      try {
+        requested = subjectCandidateScopeOf(vscode.Uri.parse(scope.uri, true))
+      } catch {
+        return undefined
+      }
+      const selected = selectScopedSubjectCandidates(
+        requested,
+        [...liveSubjects].flatMap(([served, path]) => {
+          if (path === undefined) return []
+          return [
+            {
+              ...subjectCandidateScopeOf(subjectUriOf(path)),
+              available: served.hasSubjectCandidates(),
+              open: (openSignal?: AbortSignal) => served.openSubjectCandidates(openSignal),
+            },
+          ]
+        }),
+      )
+      return selected?.open(signal)
+    },
+  })
+
   const languageWorkspace = createLanguageWorkspace({
     services: host.services,
     grant: { id: 'modkit.app.vscode/language', classes: [] },
     budgets: LANGUAGE_ACTIVATION_BUDGET,
+    subjectCandidates: languageSubjectCandidates,
   })
 
   const rangeOf = (range: {
@@ -4636,9 +4682,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   }
 
   // ---------------------------------------------------------------- webviews
-  const live = new Set<VsCodeServed>()
-  const liveSubjects = new Map<VsCodeServed, string | undefined>()
-
   const attach = (
     webview: vscode.Webview,
     openPath?: string,

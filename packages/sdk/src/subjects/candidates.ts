@@ -1,5 +1,6 @@
 /** One bounded candidate path shared by schema-driven fields and language completion. */
 import type {
+  Lease,
   Page,
   SelectableSubject,
   SubjectSelectorSource,
@@ -28,6 +29,19 @@ export interface SubjectCandidateQuery {
 export interface SubjectCandidateProvider {
   summary(signal?: AbortSignal): Promise<SubjectSelectorSummary>
   candidates(query: SubjectCandidateQuery, signal?: AbortSignal): Promise<Page<SelectableSubject>>
+}
+
+/** URI scope the language host uses to select one unambiguous live workspace provider. */
+export interface SubjectCandidateScope {
+  readonly uri: string
+}
+
+/** Acquire a stable provider lease for one consumer request. */
+export interface SubjectCandidateProviderSource {
+  open(
+    scope: SubjectCandidateScope,
+    signal?: AbortSignal,
+  ): Promise<Lease<SubjectCandidateProvider> | undefined>
 }
 
 export interface SubjectCandidatePageSnapshot {

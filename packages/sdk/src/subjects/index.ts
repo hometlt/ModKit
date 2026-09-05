@@ -27,7 +27,9 @@ export {
   loadSubjectCandidatePage,
   type SubjectCandidatePageSnapshot,
   type SubjectCandidateProvider,
+  type SubjectCandidateProviderSource,
   type SubjectCandidateQuery,
+  type SubjectCandidateScope,
   type SubjectCandidateTarget,
 } from './candidates.js'
 export type {

@@ -25,9 +25,20 @@
 import { readFile, readdir, stat } from 'node:fs/promises'
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { basename, isAbsolute, join, relative, resolve } from 'node:path'
-import type { Diagnostic } from '@modkit/core'
+import { throwIfAborted, type Diagnostic } from '@modkit/core'
 import { sceneModule } from '@modkit/scene/module'
-import type { PermissionGrant, ResourceBudget, Writer } from '@modkit/sdk'
+import {
+  createSubjectCandidateProvider,
+  type AnyDescriptor,
+  type AssetSession,
+  type Lease,
+  type PermissionGrant,
+  type ResourceBudget,
+  type SubjectCandidateProvider,
+  type SubjectSelectorSource,
+  type Writer,
+} from '@modkit/sdk'
+import { advertisesSubjectCandidates, SUBJECT_SELECTOR_SOURCE } from './subject-candidates.js'
 import { uvModule } from '@modkit/uv/module'
 import type { MapPreviewResourcePlanResolver } from '@modkit/host/maps'
 import { selectSceneRenderer, type SceneRendererSelection } from '@modkit/host/renderer'
@@ -724,6 +735,10 @@ export interface VsCodeServed {
     destinationPath: string,
     sourceBytes: Uint8Array,
   ): Promise<VsCodeNativeSaveAsResult | undefined>
+  /** Whether the currently served subject advertises the admitted selector source. */
+  hasSubjectCandidates(): boolean
+  /** Acquire the currently served subject's selector as one request-owned provider lease. */
+  openSubjectCandidates(signal?: AbortSignal): Promise<Lease<SubjectCandidateProvider> | undefined>
   close(reason: string): Promise<void>
 }
 
@@ -821,6 +836,30 @@ function serveVsCode(
   const rawWriter = createRawWriter()
   const editingBySession = new Map<string, SubjectEditing>()
   const nativeSaveAsByPath = new Map<string, NativeMpqSaveAsEntry>()
+  let subjectGeneration = 0
+  let candidateSession: Readonly<{ generation: number; session: AssetSession }> | undefined
+
+  const beginsSubjectOpen = (): number => {
+    subjectGeneration += 1
+    candidateSession = undefined
+    return subjectGeneration
+  }
+  const retainCandidateSession = (
+    generation: number,
+    descriptor: AnyDescriptor | undefined,
+    session: AssetSession | undefined,
+  ): void => {
+    if (
+      generation !== subjectGeneration ||
+      descriptor === undefined ||
+      session?.state() !== 'live'
+    ) {
+      return
+    }
+    if (advertisesSubjectCandidates(descriptor)) {
+      candidateSession = Object.freeze({ generation, session })
+    }
+  }
 
   /**
    * Arms are kept until the window closes, because nothing on the wire says "this tab is gone":
@@ -861,6 +900,7 @@ function serveVsCode(
   }
 
   const openSubject: SubjectOpener = async (requested, signal) => {
+    const generation = beginsSubjectOpen()
     const mapSelection = parseVsCodeMapPreviewSelectionRequest(requested)
     const subjectRequested = mapSelection?.path ?? requested
     /*
@@ -879,6 +919,7 @@ function serveVsCode(
       const answer = await containers.open(subjectRequested, signal)
       publishSubjectDiagnostics(subjectRequested, answer.snapshot.diagnostics)
       if (answer.snapshot.state === 'opened') {
+        retainCandidateSession(generation, await answer.session?.descriptor(), answer.session)
         const presentation = await resolveCommonPresentationPlan(
           answer.snapshot.descriptor as never,
           {
@@ -972,6 +1013,9 @@ function serveVsCode(
             ...openedAnswer,
             snapshot: { ...openedAnswer.snapshot, presentation: presentation.plan },
           }
+    if (answer.snapshot.state === 'opened') {
+      retainCandidateSession(generation, opened?.descriptor, opened?.session)
+    }
 
     /*
      * Every finding about this subject, on whatever surface the adapter gives them — reported for
@@ -1556,7 +1600,54 @@ function serveVsCode(
         nativeWriterReceipt: change.semanticIntent.nativeExportReceipt,
       })
     },
+    hasSubjectCandidates() {
+      return (
+        candidateSession?.generation === subjectGeneration &&
+        candidateSession.session.state() === 'live'
+      )
+    },
+    async openSubjectCandidates(signal?: AbortSignal) {
+      throwIfAborted(signal)
+      const selected = candidateSession
+      if (
+        selected === undefined ||
+        selected.generation !== subjectGeneration ||
+        selected.session.state() !== 'live'
+      ) {
+        return undefined
+      }
+      let lease: Lease<SubjectSelectorSource>
+      try {
+        lease = await selected.session.dataSource(
+          SUBJECT_SELECTOR_SOURCE.contract,
+          SUBJECT_SELECTOR_SOURCE.major,
+        )
+      } catch (error) {
+        if (candidateSession !== selected || selected.session.state() !== 'live') return undefined
+        throw error
+      }
+      try {
+        throwIfAborted(signal)
+      } catch (error) {
+        await lease.release()
+        throw error
+      }
+      if (
+        candidateSession !== selected ||
+        selected.generation !== subjectGeneration ||
+        selected.session.state() !== 'live'
+      ) {
+        await lease.release()
+        return undefined
+      }
+      return Object.freeze({
+        value: createSubjectCandidateProvider(lease.value),
+        release: () => lease.release(),
+      })
+    },
     async close(reason: string) {
+      subjectGeneration += 1
+      candidateSession = undefined
       let bridgeDisposeError: unknown
       try {
         bridge.dispose()

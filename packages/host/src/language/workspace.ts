@@ -47,7 +47,7 @@ import type {
   JsonValue,
   PermissionGrant,
   ResourceBudget,
-  SubjectCandidateProvider,
+  SubjectCandidateProviderSource,
   SubjectFilter,
 } from '@modkit/sdk'
 import type { Inventory } from '../inventory.js'
@@ -202,8 +202,8 @@ export interface LanguageWorkspaceOptions {
   readonly services: LanguageHostServices
   readonly grant: PermissionGrant
   readonly budgets: ResourceBudget
-  /** Workspace selector shared with subject-ref field editors. */
-  readonly subjectCandidates?: SubjectCandidateProvider
+  /** URI-scoped selector source shared with subject-ref field editors. */
+  readonly subjectCandidates?: SubjectCandidateProviderSource
 }
 
 export interface LanguageWorkspaceDocumentRequest extends LanguageProviderRequestFacet {
@@ -1061,7 +1061,16 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       ) {
         throw new OperationCancelledError('stale language feature result')
       }
-      return await validate(candidate, providerRequest)
+      const validated = await validate(candidate, providerRequest)
+      throwIfAborted(controller.signal)
+      if (
+        generation !== workspaceGeneration ||
+        documents.get(entry.uri) !== entry ||
+        entry.version !== workspaceRequest.documentVersion
+      ) {
+        throw new OperationCancelledError('stale language feature result')
+      }
+      return validated
     } finally {
       unlink()
       featureControllers.delete(controller)
@@ -1297,13 +1306,21 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
           }),
         async (value, feature) => {
           const declared = validateProviderCompletionList(value, feature)
-          const expanded = await expandSubjectReferenceCompletions(
-            declared,
-            options.subjectCandidates,
-            feature.maxResults,
+          const candidateLease = await options.subjectCandidates?.open(
+            { uri: feature.document.uri },
             feature.signal,
           )
-          return validateCompletionList(expanded, feature)
+          try {
+            const expanded = await expandSubjectReferenceCompletions(
+              declared,
+              candidateLease?.value,
+              feature.maxResults,
+              feature.signal,
+            )
+            return validateCompletionList(expanded, feature)
+          } finally {
+            await candidateLease?.release()
+          }
         },
         { position: request.position },
       )
