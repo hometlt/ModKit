@@ -338,6 +338,7 @@ export const validateCodecContributionSemantics: SpecSemanticValidator = manifes
     const permissions = new Set(containerPack.requiredPermissions ?? [])
     if (
       containerPack.mutatesSource !== true ||
+      permissions.size !== 2 ||
       !permissions.has('read-source') ||
       !permissions.has('write-source') ||
       containerPack.outputKinds?.length !== 1 ||

@@ -102,7 +102,7 @@ export function subjectEditTargetsFromDescriptor(
       Object.freeze({
         targetId: origin.root.id,
         subjectUri: descriptor.subjectUri,
-        ownerSource: Object.freeze({ id: origin.root.id, uri: origin.root.uri }),
+        ownerSource: Object.freeze({ ...origin.root }),
         semanticPath: Object.freeze([]),
         expectedRevision: revision,
       }),
@@ -113,7 +113,7 @@ export function subjectEditTargetsFromDescriptor(
     Object.freeze({
       targetId: origin.binding.id,
       subjectUri: descriptor.subjectUri,
-      ownerSource: Object.freeze({ id: origin.binding.source.id, uri: origin.binding.source.uri }),
+      ownerSource: Object.freeze({ ...origin.binding.source }),
       semanticPath: Object.freeze([]),
       expectedRevision: revision,
     }),
@@ -134,16 +134,17 @@ export function editPlanFromOperationForDescriptor(
       message: `operation returned «${output.kind}», not an edit plan`,
     })
   }
-  const targets = subjectEditTargetsFromDescriptor(descriptor)
-  const targetIds = new Set(targets.map(target => target.targetId))
-  const sourceIds = new Set(targets.map(target => target.ownerSource.id))
-  const expected = canonicalJsonStringify(assetRevisionFromDescriptor(descriptor))
+  const expectedTargets = new Map(
+    subjectEditTargetsFromDescriptor(descriptor).map(target => [target.targetId, target]),
+  )
   const plan = output.plan
+  const declaredTargetIds = new Set<string>()
   for (const target of plan.targets) {
+    const expectedTarget = expectedTargets.get(target.targetId)
     if (
-      !targetIds.has(target.targetId) ||
-      !sourceIds.has(target.ownerSource.id) ||
-      canonicalJsonStringify(target.expectedRevision) !== expected
+      expectedTarget === undefined ||
+      declaredTargetIds.has(target.targetId) ||
+      canonicalJsonStringify(target) !== canonicalJsonStringify(expectedTarget)
     ) {
       throw new ModkitError({
         code: 'x3.host/edit-plan-subject-mismatch',
@@ -151,9 +152,15 @@ export function editPlanFromOperationForDescriptor(
         context: { targetId: target.targetId },
       })
     }
+    declaredTargetIds.add(target.targetId)
   }
   for (const edit of plan.edits) {
-    if (!targetIds.has(edit.targetId) || !sourceIds.has(edit.source.id)) {
+    const expectedTarget = expectedTargets.get(edit.targetId)
+    if (
+      expectedTarget === undefined ||
+      !declaredTargetIds.has(edit.targetId) ||
+      canonicalJsonStringify(edit.source) !== canonicalJsonStringify(expectedTarget.ownerSource)
+    ) {
       throw new ModkitError({
         code: 'x3.host/edit-plan-subject-mismatch',
         message: `edit «${edit.operation}» on «${edit.source.id}» is not this subject`,

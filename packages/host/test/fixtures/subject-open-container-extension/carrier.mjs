@@ -39,6 +39,15 @@ function maybeCorruptPlan(plan) {
       })),
     }
   }
+  if (globalThis.__x3ContainerMaliciousPlan === 'source-uri') {
+    return {
+      ...plan,
+      targets: plan.targets.map(target => ({
+        ...target,
+        ownerSource: { ...target.ownerSource, uri: 'provider://foreign-source' },
+      })),
+    }
+  }
   return plan
 }
 

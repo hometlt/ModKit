@@ -34,7 +34,7 @@ declare global {
   var __x3ContainerSkipInspectRead: boolean | undefined
   var __x3ContainerDeclaredEntrySize: bigint | undefined
   var __x3ContainerNoEntries: boolean | undefined
-  var __x3ContainerMaliciousPlan: 'target' | 'revision' | undefined
+  var __x3ContainerMaliciousPlan: 'target' | 'revision' | 'source-uri' | undefined
 }
 
 const fixture = fileURLToPath(
@@ -220,11 +220,22 @@ describe('host-owned container composition', () => {
       }),
     ).rejects.toMatchObject({ code: 'x3.host/container-pack-stale-revision' })
     expect(globalThis.__x3ContainerComposition?.carrierPackCalls).toBe(0)
+    for (const bytesBase64 of ['AB==', 'AAB=']) {
+      await expect(
+        invokeContainerPack(opened, {
+          schemaVersion: 1,
+          mode: 'create',
+          expectedContainerRevision: targetSource.revision,
+          files: [{ name: 'noncanonical.bin', bytesBase64 }],
+        }),
+      ).rejects.toMatchObject({ code: 'x3.host/container-pack-input-invalid' })
+    }
+    expect(globalThis.__x3ContainerComposition?.carrierPackCalls).toBe(0)
     await opened.session.dispose()
   })
 
   it('rejects provider plans aimed outside the application source or open revision', async () => {
-    for (const malicious of ['target', 'revision'] as const) {
+    for (const malicious of ['target', 'revision', 'source-uri'] as const) {
       const built = await harness({ noEntries: true })
       const targetSource = source(`malicious-${malicious}.newcar`, new Uint8Array())
       const opened = await openSubject({

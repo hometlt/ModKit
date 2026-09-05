@@ -886,6 +886,23 @@ describe('A-1 contribution spec schemas', () => {
     expect(invalidOperation.diagnostics.map(item => item.code)).toContain(
       'x3.sdk/container-pack-operation-invalid',
     )
+
+    const extraPermission = await validateContributionManifest(
+      manifest(CODEC_CONTRIBUTION_CONTRACT, 'org.example/container-pack-extra-permission', {
+        ...containerSpec,
+        operations: [
+          {
+            ...containerSpec.operations[0],
+            requiredPermissions: ['read-source', 'write-source', 'filesystem-read'],
+          },
+        ],
+      }),
+      registry,
+    )
+    expect(extraPermission.specState).toBe('invalid')
+    expect(extraPermission.diagnostics.map(item => item.code)).toContain(
+      'x3.sdk/container-pack-operation-invalid',
+    )
   })
 
   it('validates codec fidelity citations and their declared format/representation coordinates', async () => {

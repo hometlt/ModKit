@@ -35,11 +35,17 @@ function record(value: unknown): Readonly<Record<string, unknown>> | undefined {
 }
 
 function canonicalBase64(value: unknown): value is string {
-  return (
-    typeof value === 'string' &&
-    value.length % 4 === 0 &&
-    /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(value)
-  )
+  if (
+    typeof value !== 'string' ||
+    value.length % 4 !== 0 ||
+    !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u.test(value)
+  ) {
+    return false
+  }
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+  if (value.endsWith('==')) return (alphabet.indexOf(value.at(-3) ?? '') & 0x0f) === 0
+  if (value.endsWith('=')) return (alphabet.indexOf(value.at(-2) ?? '') & 0x03) === 0
+  return true
 }
 
 /** Validate only the standard wire shape; provider-specific path and budget policy stays in the codec. */
