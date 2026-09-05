@@ -231,6 +231,48 @@ function traitDefinitionOfferDiagnostics(
   return []
 }
 
+function normalizedNamespaceProbePath(value: string): string | undefined {
+  if (value.includes('\u0000') || value.includes('\\')) return undefined
+  const parts = value.split('/').filter(part => part !== '' && part !== '.')
+  if (parts.length === 0 || parts.some(part => part === '..')) return undefined
+  return parts.join('/')
+}
+
+function namespaceProbePathDiagnostics(
+  values: readonly string[],
+  field: 'markers' | 'prefixes',
+): Diagnostic[] {
+  const diagnostics: Diagnostic[] = []
+  const first = new Map<string, number>()
+  values.forEach((value, index) => {
+    const normalized = normalizedNamespaceProbePath(value)
+    if (normalized === undefined) {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/namespace-probe-path-invalid',
+          `namespace probe ${field.slice(0, -1)} «${value}» is not a confined POSIX path`,
+          ['spec', 'probe', field, index],
+        ),
+      )
+      return
+    }
+    const previous = first.get(normalized)
+    if (previous === undefined) first.set(normalized, index)
+    else {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/namespace-probe-path-duplicate',
+          `namespace probe ${field.slice(0, -1)} «${value}» duplicates index ${previous} after normalization`,
+          ['spec', 'probe', field, index],
+        ),
+      )
+    }
+  })
+  return diagnostics
+}
+
 /** Contract-owned cross-field checks that JSON Schema cannot express. */
 export const validateCodecContributionSemantics: SpecSemanticValidator = manifest => {
   const spec = manifest.spec as unknown as CodecContributionSpecV1Wire
@@ -317,6 +359,68 @@ export const validateCodecContributionSemantics: SpecSemanticValidator = manifes
         ['spec', 'probe', 'kind'],
       ),
     )
+  }
+  if (spec.probe.kind === 'namespace') {
+    diagnostics.push(
+      ...namespaceProbePathDiagnostics(spec.probe.markers, 'markers'),
+      ...namespaceProbePathDiagnostics(spec.probe.prefixes ?? [], 'prefixes'),
+    )
+  }
+  if (spec.container !== undefined) {
+    if (spec.sourceTopology !== 'namespace' || spec.probe.kind !== 'namespace') {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/container-alias-topology-invalid',
+          'a container topology alias requires namespace topology and a namespace probe',
+          ['spec', 'container'],
+        ),
+      )
+    }
+    if (spec.roles.includes('container')) {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/container-alias-role-invalid',
+          'a semantic container alias cannot also claim the container role',
+          ['spec', 'roles'],
+        ),
+      )
+    }
+    if ((spec.match.signatures?.length ?? 0) > 0) {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/container-alias-signature-forbidden',
+          'a semantic container alias must not copy the carrier container signature',
+          ['spec', 'match', 'signatures'],
+        ),
+      )
+    }
+    if (
+      (spec.match.extensions?.length ?? 0) === 0 &&
+      (spec.match.mediaTypes?.length ?? 0) === 0 &&
+      (spec.match.pathGlobs?.length ?? 0) === 0
+    ) {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/container-alias-selector-missing',
+          'a semantic container alias requires an extension, media type, or path selector',
+          ['spec', 'match'],
+        ),
+      )
+    }
+    if (formatIds.has(spec.container.formatId)) {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/container-alias-self-cycle',
+          `container alias ${spec.container.formatId} also appears in the semantic codec formatRefs`,
+          ['spec', 'container', 'formatId'],
+        ),
+      )
+    }
   }
   spec.requires?.forEach((requirement, index) => {
     diagnostics.push(...requirementRangeDiagnostics(requirement, ['spec', 'requires', index]))

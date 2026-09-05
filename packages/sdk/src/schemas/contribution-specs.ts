@@ -153,7 +153,12 @@ const probePlanSchema = {
           maxItems: 256,
           uniqueItems: true,
         },
-        prefixes: { type: 'array', items: nonEmptyString },
+        prefixes: {
+          type: 'array',
+          items: nonEmptyString,
+          maxItems: 256,
+          uniqueItems: true,
+        },
         maxEntries: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
         maxBytes: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
         maxDepth: { type: 'integer', minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
@@ -448,6 +453,12 @@ export const codecContributionSpecV1Schema = {
       properties: {
         ...codecContributionProperties,
         sourceTopology: { const: 'namespace' },
+        container: {
+          type: 'object',
+          additionalProperties: false,
+          required: ['formatId'],
+          properties: { formatId: nonEmptyString },
+        },
         probe: probePlanSchema.oneOf[1],
       },
     },

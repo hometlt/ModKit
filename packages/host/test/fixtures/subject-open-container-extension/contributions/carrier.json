@@ -1,0 +1,72 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "modkit/codec-contribution", "major": 1 },
+  "id": "org.example/test-carrier",
+  "displayName": "Test carrier",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./carrier.mjs",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source", "write-source"]
+    }
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "test-carrier", "label": "Test carrier" }],
+    "roles": ["container"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": {
+      "extensions": ["car"],
+      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "43415252" }]
+    },
+    "probe": {
+      "kind": "bytes",
+      "ranges": [{ "from": "start", "length": 4 }],
+      "maxBytes": 4
+    },
+    "representations": [
+      {
+        "id": "container",
+        "contract": "org.example/test-carrier",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [{ "contract": "common.view/namespace-entry-source", "major": 1 }],
+    "operations": [
+      {
+        "id": "container.extract",
+        "handlerId": "extract",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "container.pack",
+        "handlerId": "pack",
+        "mutatesSource": true,
+        "requiredPermissions": ["read-source", "write-source"],
+        "outputKinds": ["edit-plan"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1048576",
+      "maxDepth": 16,
+      "maxNodes": 64,
+      "maxScalarBytes": 65536,
+      "maxDiagnostics": 16
+    }
+  }
+}

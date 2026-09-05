@@ -1077,6 +1077,19 @@
           },
           "type": "array"
         },
+        "container": {
+          "additionalProperties": false,
+          "properties": {
+            "formatId": {
+              "minLength": 1,
+              "type": "string"
+            }
+          },
+          "required": [
+            "formatId"
+          ],
+          "type": "object"
+        },
         "fidelityEvidence": {
           "items": {
             "additionalProperties": false,
@@ -1463,7 +1476,9 @@
                 "minLength": 1,
                 "type": "string"
               },
-              "type": "array"
+              "maxItems": 256,
+              "type": "array",
+              "uniqueItems": true
             }
           },
           "required": [

@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "modkit/codec-contribution", "major": 1 },
+  "id": "org.example/test-semantic",
+  "displayName": "Test semantic container alias",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./semantic.mjs",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source", "write-source"]
+    }
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "test-semantic", "label": "Test semantic" }],
+    "roles": ["semantic"],
+    "sourceTopology": "namespace",
+    "container": { "formatId": "test-carrier" },
+    "artifactStages": ["authored"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": { "extensions": ["car"] },
+    "probe": {
+      "kind": "namespace",
+      "markers": ["Base.SC2Data", "Base.SC2Data/world.bin"],
+      "prefixes": ["Base.SC2Data"],
+      "maxEntries": 4,
+      "maxBytes": 64,
+      "maxDepth": 4,
+      "maxPathBytes": 128
+    },
+    "representations": [
+      {
+        "id": "semantic",
+        "contract": "org.example/test-semantic",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [],
+    "operations": [
+      {
+        "id": "edit.content",
+        "handlerId": "edit-world",
+        "mutatesSource": true,
+        "requiredPermissions": ["read-source", "write-source"],
+        "outputKinds": ["edit-plan"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "org.example/test-semantic.preview-edit",
+        "handlerId": "read-edit",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"]
+      }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1048576",
+      "maxDepth": 16,
+      "maxNodes": 64,
+      "maxScalarBytes": 65536,
+      "maxDiagnostics": 16
+    }
+  }
+}

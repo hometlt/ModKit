@@ -18,6 +18,7 @@ import {
   type ArtifactNamespaceSource,
   type ArtifactSource,
   type AssetNamespace,
+  type AssetNamespaceEntry,
   type AssetInput,
   type AssetInputPlan,
   type AssetSession,
@@ -51,7 +52,7 @@ import {
   buildCodecDetectionSelection,
   serializeCodecDetectionSelection,
 } from './detection-selection.js'
-import { buildLockEntry, serializePolicyLock } from './resolution/lock.js'
+import { buildLockEntry, parsePolicyLock, serializePolicyLock } from './resolution/lock.js'
 import {
   createContractResolverPort,
   type FacetAwareProviderRequest,
@@ -67,6 +68,7 @@ import {
 import { DEFAULT_EXECUTION_BACKENDS, type ExecutionBackendRegistry } from './execution/backend.js'
 import { matchesSignatures, signatureNeeds, type SignatureWindows } from './detection-index.js'
 import { assembleSubjectDescriptor } from './session.js'
+import { createContainerNamespaceComposition } from './container-composition.js'
 
 const DEFAULT_MINIMUM_CONFIDENCE = 0.5
 const DEFAULT_MAX_CANDIDATES = 64
@@ -159,6 +161,15 @@ interface RunnableCandidate {
   readonly viaSignature: boolean
 }
 
+interface SubjectOpenRoute {
+  /** Restrict a byte open to the exact carrier provider selected by a namespace alias. */
+  readonly containerProviderFormatId?: string
+  /** Admit only namespace aliases bound to this already-open carrier format. */
+  readonly containerAliasFormatId?: string
+  /** Container choice is a host policy dependency and is included in the composed lock. */
+  readonly includeSelectionLock?: boolean
+}
+
 interface DetectedCandidate extends RunnableCandidate {
   /** Mutable across the probe → open re-activation (R5): the open phase swaps these. */
   ticket: ActivationTicket
@@ -179,6 +190,7 @@ interface DetectedCandidate extends RunnableCandidate {
    * child grant and the winner must be re-activated under the caller grant before open.
    */
   readonly probeScoped: boolean
+  readonly selectionLock?: ProviderPolicyLockEntry
 }
 
 interface AsyncReleaseScope {
@@ -602,7 +614,16 @@ function boundedNamespaceProbeSource(
       message: 'namespace probe marker paths must be unique after normalization',
     })
   }
-  let openedEntries = 0
+  const prefixes = new Set(
+    (plan.prefixes ?? []).map(path => normalizeNamespaceProbePath(path, plan)),
+  )
+  if (prefixes.size !== (plan.prefixes?.length ?? 0)) {
+    throw new ModkitError({
+      code: 'x3.host/namespace-probe-prefix-duplicate',
+      message: 'namespace probe prefixes must be unique after normalization',
+    })
+  }
+  let consumedEntries = 0
   let consumedBytes = 0n
   const maximumBytes = BigInt(plan.maxBytes)
   const consume = (length: bigint): void => {
@@ -663,11 +684,42 @@ function boundedNamespaceProbeSource(
       const lease = await source.openNamespace(signal)
       const guarded: AssetNamespace = Object.freeze({
         revision: lease.value.revision,
-        async *list(): AsyncIterable<never> {
-          throw new ModkitError({
-            code: 'x3.host/namespace-probe-traversal-refused',
-            message: 'namespace-wide enumeration is forbidden during codec probing',
-          })
+        async *list(prefix: string, listSignal?: AbortSignal): AsyncIterable<AssetNamespaceEntry> {
+          throwIfAborted(listSignal)
+          if (prefixes.size === 0) {
+            throw new ModkitError({
+              code: 'x3.host/namespace-probe-traversal-refused',
+              message:
+                'namespace enumeration is forbidden unless the codec declares probe prefixes',
+            })
+          }
+          const normalized = normalizeNamespaceProbePath(prefix, plan)
+          if (!prefixes.has(normalized)) {
+            throw new ModkitError({
+              code: 'x3.host/namespace-probe-prefix-refused',
+              message: `codec attempted to enumerate undeclared namespace prefix «${normalized}»`,
+              context: { prefix: normalized, prefixes: [...prefixes] },
+            })
+          }
+          for await (const entry of lease.value.list(normalized, listSignal)) {
+            throwIfAborted(listSignal)
+            const entryPath = normalizeNamespaceProbePath(entry.path, plan)
+            if (entryPath !== normalized && !entryPath.startsWith(`${normalized}/`)) {
+              throw new ModkitError({
+                code: 'x3.host/namespace-probe-prefix-escape',
+                message: `namespace probe entry «${entryPath}» escaped prefix «${normalized}»`,
+                context: { prefix: normalized, path: entryPath },
+              })
+            }
+            consumedEntries += 1
+            if (consumedEntries > plan.maxEntries) {
+              throw new ModkitError({
+                code: 'x3.host/namespace-probe-entry-budget-exceeded',
+                message: `namespace probe exceeded its declared ${plan.maxEntries}-entry budget`,
+              })
+            }
+            yield Object.freeze({ ...entry, path: entryPath })
+          }
         },
         async open(path: string, openSignal?: AbortSignal): Promise<Lease<ArtifactSource>> {
           const normalized = normalizeNamespaceProbePath(path, plan)
@@ -678,8 +730,8 @@ function boundedNamespaceProbeSource(
               context: { path: normalized, markers: [...markers] },
             })
           }
-          openedEntries += 1
-          if (openedEntries > plan.maxEntries) {
+          consumedEntries += 1
+          if (consumedEntries > plan.maxEntries) {
             throw new ModkitError({
               code: 'x3.host/namespace-probe-entry-budget-exceeded',
               message: `namespace probe exceeded its declared ${plan.maxEntries}-entry budget`,
@@ -917,6 +969,7 @@ function runnableCandidates(
   offers: readonly ProviderOffer[],
   signatureWindows: SignatureWindows | undefined,
   suppressed: SuppressedCandidate[] = [],
+  route: SubjectOpenRoute = {},
 ): readonly RunnableCandidate[] {
   const candidates: RunnableCandidate[] = []
   const path = options.path ?? options.source.ref.uri
@@ -952,7 +1005,19 @@ function runnableCandidates(
       let viaSignature = false
       if (options.source.kind === 'namespace') {
         if (spec.sourceTopology !== 'namespace' || spec.probe.kind !== 'namespace') continue
+        if (route.containerAliasFormatId === undefined) {
+          if (spec.container !== undefined) continue
+        } else if (spec.container?.formatId !== route.containerAliasFormatId) continue
       } else {
+        if (route.containerAliasFormatId !== undefined) continue
+        if (
+          route.containerProviderFormatId !== undefined &&
+          (!spec.roles.includes('container') ||
+            !spec.formatRefs.some(item => item.formatId === route.containerProviderFormatId) ||
+            spec.container !== undefined)
+        ) {
+          continue
+        }
         if (
           (spec.sourceTopology !== 'single' && spec.sourceTopology !== 'bundle') ||
           spec.probe.kind !== 'bytes'
@@ -1100,7 +1165,10 @@ async function unresolvedFallback(
  * One public host route from an attested inventory plus a pinned artifact source to a session.
  * Unknown or ambiguous content returns a validated unresolved descriptor and explicit fallback.
  */
-export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubjectResult> {
+async function openSubjectDirect(
+  options: OpenSubjectOptions,
+  route: SubjectOpenRoute = {},
+): Promise<OpenSubjectResult> {
   throwIfAborted(options.signal)
   const minimumConfidence = options.minimumConfidence ?? DEFAULT_MINIMUM_CONFIDENCE
   const maxCandidates = options.maxCandidates ?? DEFAULT_MAX_CANDIDATES
@@ -1126,7 +1194,7 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
   // inventory (nothing is read when no codec declares signatures); no extension code runs here
   const signatureWindows = await readSignatureWindows(options)
   const suppressed: SuppressedCandidate[] = []
-  const candidates = runnableCandidates(options, offers, signatureWindows, suppressed)
+  const candidates = runnableCandidates(options, offers, signatureWindows, suppressed, route)
   for (const item of suppressed) {
     diagnostics.push(
       diagnostic(
@@ -1223,6 +1291,9 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
       const record = {
         resources,
         nestedLocks: [] as ProviderPolicyLockEntry[],
+        ...(route.includeSelectionLock
+          ? { selectionLock: buildLockEntry(request, resolved.result) }
+          : {}),
       }
       try {
         const activation = await activateContribution({
@@ -1331,6 +1402,7 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
             activationDiagnostics: Object.freeze(local) as readonly Diagnostic[],
             request,
             makeContext,
+            ...(record.selectionLock === undefined ? {} : { selectionLock: record.selectionLock }),
             probeScoped: variantRequestsBeyondProbe(
               candidate.contribution.manifest?.runtimeVariants?.find(
                 item => item.variantId === candidate.offer.runtimeVariant,
@@ -1525,7 +1597,10 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
         detection: best.detection,
       }),
     )
-    const lockText = serializePolicyLock(best.nestedLocks)
+    const lockText = serializePolicyLock([
+      ...best.nestedLocks,
+      ...(best.selectionLock === undefined ? [] : [best.selectionLock]),
+    ])
     const managedSession = sessionWithResources(session, best.resources, {
       spec: best.spec,
       grant: best.effectiveGrant,
@@ -1570,5 +1645,197 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
       candidates: Object.freeze(explanations),
       diagnostics: Object.freeze(diagnostics),
     })
+  }
+}
+
+interface MatchedContainerAlias {
+  readonly contributionId: string
+  readonly spec: CodecContributionSpecV1Wire
+}
+
+function matchingContainerAliases(options: OpenSubjectOptions): readonly MatchedContainerAlias[] {
+  if (options.source.kind !== 'bytes') return Object.freeze([])
+  const path = options.path ?? options.source.ref.uri
+  const aliases: MatchedContainerAlias[] = []
+  for (const extension of options.inventory.extensions) {
+    for (const contribution of extension.contributions) {
+      const manifest = contribution.manifest
+      if (
+        !contribution.activationEligible ||
+        manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT ||
+        manifest.contract.major !== 1
+      ) {
+        continue
+      }
+      const spec = manifest.spec as unknown as CodecContributionSpecV1Wire
+      if (
+        spec.sourceTopology === 'namespace' &&
+        spec.container !== undefined &&
+        spec.openIntents.includes(options.intent) &&
+        matchesSpec(spec, path, options.mediaType)
+      ) {
+        aliases.push(Object.freeze({ contributionId: manifest.id, spec }))
+      }
+    }
+  }
+  return Object.freeze(aliases)
+}
+
+async function disposeOpened(result: OpenSubjectResult): Promise<void> {
+  if (result.state === 'opened') await result.session.dispose()
+}
+
+/**
+ * Public subject route with additive host-owned container composition.
+ *
+ * A semantic alias sees only the adapter namespace and extracted entry sources. The retained
+ * carrier session never crosses into its contribution context or AssetInput. On semantic no-match
+ * the already-open generic container is returned; ambiguity and composition failures do not fall
+ * back to another interpretation.
+ */
+export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubjectResult> {
+  const compositionStartedAt = Date.now()
+  const aliases = matchingContainerAliases(options)
+  if (aliases.length === 0) return openSubjectDirect(options)
+  const formats = [
+    ...new Set(aliases.map(alias => alias.spec.container?.formatId).filter(Boolean)),
+  ] as string[]
+  if (formats.length !== 1) {
+    throw new ModkitError({
+      code: 'x3.host/container-alias-ambiguous',
+      message: `subject selectors name ${formats.length} different container formats`,
+      context: { formats: formats.sort(compareUtf8) },
+    })
+  }
+  if (options.budget.maxDepth < 1) {
+    throw new ModkitError({
+      code: 'x3.host/container-composition-depth-exceeded',
+      message: 'container composition requires one remaining subject depth',
+    })
+  }
+  const formatId = formats[0] as string
+  const parent = await openSubjectDirect(options, {
+    containerProviderFormatId: formatId,
+    includeSelectionLock: true,
+  })
+  if (parent.state !== 'opened') {
+    if (parent.reason === 'no-match') return openSubjectDirect(options)
+    return Object.freeze({
+      ...parent,
+      reason: 'input-unresolved' as const,
+      diagnostics: Object.freeze([
+        ...parent.diagnostics,
+        diagnostic(
+          'error',
+          'x3.host/container-provider-unavailable',
+          `no unique runnable container provider opened format ${formatId}`,
+          [formatId],
+        ),
+      ]),
+    })
+  }
+
+  let composition: Awaited<ReturnType<typeof createContainerNamespaceComposition>> | undefined
+  let semanticSession: AssetSession | undefined
+  try {
+    throwIfAborted(options.signal)
+    composition = await createContainerNamespaceComposition({
+      parent: parent.session,
+      root: options.source.ref,
+      revision: options.source.revision,
+      budget: options.budget,
+      ...(options.signal === undefined ? {} : { signal: options.signal }),
+    })
+    throwIfAborted(options.signal)
+    const elapsed = Date.now() - compositionStartedAt
+    const remainingDeadline =
+      options.budget.deadlineMs === undefined ? undefined : options.budget.deadlineMs - elapsed
+    if (remainingDeadline !== undefined && remainingDeadline <= 0) {
+      throw new ModkitError({
+        code: 'x3.host/container-composition-deadline-exceeded',
+        message:
+          'container composition exhausted the subject-open deadline before semantic probing',
+      })
+    }
+    const semanticBudget = Object.freeze({
+      ...options.budget,
+      maxDepth: options.budget.maxDepth - 1,
+      ...(remainingDeadline === undefined ? {} : { deadlineMs: remainingDeadline }),
+    })
+    const semantic = await openSubjectDirect(
+      { ...options, source: composition.source, budget: semanticBudget },
+      { containerAliasFormatId: formatId },
+    )
+    if (semantic.state !== 'opened') {
+      await composition.dispose()
+      composition = undefined
+      if (semantic.reason === 'no-candidate' || semantic.reason === 'no-match') return parent
+      await parent.session.dispose()
+      return semantic
+    }
+    semanticSession = semantic.session
+    const selectedAlias = aliases.find(
+      alias => alias.contributionId === semantic.selected.contributionId,
+    )
+    if (selectedAlias === undefined) {
+      throw new ModkitError({
+        code: 'x3.host/container-semantic-selection-invalid',
+        message: 'selected semantic codec is not one of the matched container aliases',
+      })
+    }
+    const selectedSpec = selectedAlias.spec
+    const needsPack = selectedSpec.operations.some(
+      operation => operation.mutatesSource && operation.outputKinds?.includes('edit-plan'),
+    )
+    if (needsPack && composition.packHandlerId === undefined) {
+      throw new ModkitError({
+        code: 'x3.host/container-pack-unavailable',
+        message: `container provider for ${formatId} must publish container.pack for mutating semantic aliases`,
+      })
+    }
+    if (
+      selectedSpec.operations.some(operation => operation.id === 'export.raw') &&
+      composition.exportRawHandlerId === undefined
+    ) {
+      throw new ModkitError({
+        code: 'x3.host/container-export-raw-unavailable',
+        message: `container provider for ${formatId} must publish export.raw for semantic raw export`,
+      })
+    }
+    const session = composition.wrapSession(semanticSession, selectedSpec, parent.session)
+    semanticSession = undefined
+    composition = undefined
+    const lockText = serializePolicyLock([
+      ...parsePolicyLock(parent.lockText).entries,
+      ...parsePolicyLock(semantic.lockText).entries,
+    ])
+    return Object.freeze({
+      ...semantic,
+      session,
+      lockText,
+      candidates: Object.freeze([...parent.candidates, ...semantic.candidates]),
+      diagnostics: Object.freeze([...parent.diagnostics, ...semantic.diagnostics]),
+    })
+  } catch (error) {
+    if (semanticSession !== undefined) {
+      try {
+        await semanticSession.dispose()
+      } catch {
+        // Preserve the triggering error while still releasing the retained carrier below.
+      }
+    }
+    if (composition !== undefined) {
+      try {
+        await composition.dispose()
+      } catch {
+        // Composition cleanup is best effort here; the triggering failure remains authoritative.
+      }
+    }
+    try {
+      await disposeOpened(parent)
+    } catch {
+      // Preserve the triggering composition error after every cleanup stage was attempted.
+    }
+    throw error
   }
 }

@@ -12,6 +12,7 @@
     "ts-strict:check": "node scripts/migration/check-ts-strict.mjs",
     "surfaces:check": "node scripts/migration/check-surfaces.mjs --scope m1-fixtures",
     "algorithms:check": "node scripts/migration/check-algorithms.mjs",
+    "containers:check": "node scripts/check-containers.mjs --root extensions",
     "mk2-copy:check": "node scripts/migration/check-mk2-copy.mjs --family sc2 --scope m1-libs",
     "m1:check": "pnpm typecheck && pnpm ts-strict:check && pnpm test:migration-infra && pnpm test:legacy-kit && pnpm surfaces:check && pnpm migration:check && pnpm mk2-copy:check && pnpm check:legacy && pnpm check:imports && pnpm algorithms:check",
     "test:legacy-kit": "node --test packages/codec-kit/test/*.test.mjs",

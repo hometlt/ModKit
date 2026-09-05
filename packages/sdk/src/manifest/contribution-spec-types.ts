@@ -123,6 +123,16 @@ export interface NamespaceProbePlan {
   readonly maxPathBytes: number
 }
 
+/**
+ * Host-owned composition alias for a semantic namespace codec carried by a container format.
+ *
+ * The alias is data only. It does not grant the semantic codec the container session, its byte
+ * source, or any container operation. The host selects and retains that provider independently.
+ */
+export interface ContainerTopologyAlias {
+  readonly formatId: string
+}
+
 export interface DerivedProbePlan {
   readonly kind: 'derived'
   readonly maxSubjects: number
@@ -131,9 +141,21 @@ export interface DerivedProbePlan {
 
 export type ProbePlan = ByteProbePlan | NamespaceProbePlan | DerivedProbePlan
 export type TopologyProbePlan =
-  | { readonly sourceTopology: 'single' | 'bundle'; readonly probe: ByteProbePlan }
-  | { readonly sourceTopology: 'namespace'; readonly probe: NamespaceProbePlan }
-  | { readonly sourceTopology: 'derived'; readonly probe: DerivedProbePlan }
+  | {
+      readonly sourceTopology: 'single' | 'bundle'
+      readonly container?: never
+      readonly probe: ByteProbePlan
+    }
+  | {
+      readonly sourceTopology: 'namespace'
+      readonly container?: ContainerTopologyAlias
+      readonly probe: NamespaceProbePlan
+    }
+  | {
+      readonly sourceTopology: 'derived'
+      readonly container?: never
+      readonly probe: DerivedProbePlan
+    }
 
 export type CompanionSearchScope =
   | 'sibling-directory'

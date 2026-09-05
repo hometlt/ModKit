@@ -350,6 +350,30 @@ export interface ContainerExtractInput {
   readonly entryId: string
 }
 
+/** One full-file replacement passed by the host to a container's `container.pack` operation. */
+export interface ContainerPackEntryReplacementV1 {
+  /** Opaque id returned by this container session's `NamespaceEntrySource.list`. */
+  readonly entryId: string
+  /** Provider-owned entry revision observed by the host before the semantic operation ran. */
+  readonly expectedRevision: RevisionId
+  /** Standard base64. The host encodes semantic entry bytes behind the execution boundary. */
+  readonly bytesBase64: string
+}
+
+/**
+ * Input contract of the shared `container.pack` operation.
+ *
+ * Only the host constructs this value. A semantic namespace codec returns entry-level edits; the
+ * composed host session validates them and invokes the retained container session with this inert
+ * request. The operation returns an ordinary `edit-plan` for the outer container source.
+ */
+export interface ContainerPackInputV1 {
+  readonly schemaVersion: 1
+  readonly expectedContainerRevision: RevisionId
+  readonly replacements: readonly ContainerPackEntryReplacementV1[]
+  readonly intent?: JsonValue
+}
+
 export interface NamespaceEntrySource {
   list(prefix: string, page: PageRequest, signal?: AbortSignal): Promise<Page<NamespaceEntry>>
   /** Optional indexed lookup; absence means the namespace only supports prefix listing. */

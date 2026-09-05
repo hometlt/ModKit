@@ -769,6 +769,72 @@ describe('A-1 contribution spec schemas', () => {
     ).toBe(true)
   })
 
+  it('admits only selector-bound semantic container aliases with confined probe paths', async () => {
+    const alias: CodecContributionSpecV1Wire = {
+      ...codecSpec,
+      sourceTopology: 'namespace',
+      container: { formatId: 'mpq' },
+      match: { extensions: ['sc2map'] },
+      probe: {
+        kind: 'namespace',
+        markers: ['DocumentInfo', 'Base.SC2Data'],
+        prefixes: ['Base.SC2Data'],
+        maxEntries: 16,
+        maxBytes: 4096,
+        maxDepth: 8,
+        maxPathBytes: 256,
+      },
+    }
+    const valid = await validateContributionManifest(
+      manifest(CODEC_CONTRIBUTION_CONTRACT, 'org.example/sc2-map', alias),
+      registry,
+    )
+    expect(valid.specState, JSON.stringify(valid.diagnostics)).toBe('validated')
+
+    const invalidCases = [
+      {
+        ...alias,
+        roles: ['semantic', 'container'],
+      },
+      {
+        ...alias,
+        match: {
+          extensions: ['sc2map'],
+          signatures: [{ from: 'start', offset: 0, bytesHex: '4d5051' }],
+        },
+      },
+      { ...alias, match: {} },
+      { ...alias, container: { formatId: 'json' } },
+      {
+        ...alias,
+        probe: { ...alias.probe, markers: ['Base.SC2Data', 'Base.SC2Data/'] },
+      },
+      {
+        ...alias,
+        probe: { ...alias.probe, prefixes: ['Base.SC2Data', 'Base.SC2Data/'] },
+      },
+      {
+        ...alias,
+        probe: { ...alias.probe, markers: ['../escaped'] },
+      },
+      {
+        ...codecSpec,
+        container: { formatId: 'mpq' },
+      },
+    ]
+    for (const [index, spec] of invalidCases.entries()) {
+      const result = await validateContributionManifest(
+        manifest(
+          CODEC_CONTRIBUTION_CONTRACT,
+          `org.example/invalid-container-alias-${index}`,
+          spec as CodecContributionSpecV1Wire,
+        ),
+        registry,
+      )
+      expect(result.specState, JSON.stringify(result.diagnostics)).toBe('invalid')
+    }
+  })
+
   it('validates codec fidelity citations and their declared format/representation coordinates', async () => {
     const proof = {
       formatId: 'json',
