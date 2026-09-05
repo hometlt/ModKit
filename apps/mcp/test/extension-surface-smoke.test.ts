@@ -234,17 +234,19 @@ describe('P7/P8 extension surface foundation', () => {
     const contribution = inventory.extensions[0]?.contributions.find(
       item => item.manifest?.id === 'org.example/surface-name-field-editor',
     )
-    if (contribution?.manifest === undefined)
-      throw new Error('custom field editor was not inventoried')
-    const entrypoint = contribution.manifest.runtimeVariants[0]?.entrypoint
-    if (entrypoint === undefined) throw new Error('custom field editor published no entrypoint')
+    const manifest = contribution?.manifest
+    if (manifest === undefined) throw new Error('custom field editor was not inventoried')
+    const entrypoint = manifest.runtimeVariants?.[0]?.entrypoint
+    if (typeof entrypoint !== 'string' || entrypoint.length === 0) {
+      throw new Error('custom field editor published no runtime variant entrypoint')
+    }
     const imported = (await import(pathToFileURL(join(fixtureRoot, entrypoint)).href)) as {
       readonly default: FieldEditorModuleV1
     }
     const registry = createFieldEditorRegistry(
       [
         {
-          spec: contribution.manifest.spec as never,
+          spec: manifest.spec as never,
           module: imported.default,
         },
       ],
