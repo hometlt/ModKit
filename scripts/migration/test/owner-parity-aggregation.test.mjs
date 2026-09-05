@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 import { resolve } from 'node:path'
+import { readFile } from 'node:fs/promises'
 
 import { ownerOfLegacyExtension, resolveLegacyExtension } from '../../parity/repositories.mjs'
 import { validateOwnerParityDocuments } from '../../parity/receipt.mjs'
@@ -69,4 +70,16 @@ test('owner parity documents require explicit result-to-repository bindings', ()
       }),
     /no repository binding/u,
   )
+})
+
+test('owner parity probes the exact Git-ODB oracle without executing its checkout', async () => {
+  const runner = await readFile(resolve(coreRoot, 'scripts/parity/check.mjs'), 'utf8')
+  const adapter = await readFile(resolve(coreRoot, 'scripts/parity/modkitx-probe.mjs'), 'utf8')
+  assert.match(runner, /loadMk2\(sample\.canonicalModule/u)
+  assert.match(runner, /commit: MK2_PIN/u)
+  assert.match(runner, /observeWorkingTree: false/u)
+  assert.doesNotMatch(runner, /['"]--dir['"]/u)
+  assert.doesNotMatch(runner, /cwd:\s*canonical/u)
+  assert.doesNotMatch(adapter, /request\.canonicalRoot/u)
+  assert.doesNotMatch(adapter, /pathToFileURL/u)
 })

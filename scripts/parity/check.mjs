@@ -1,9 +1,8 @@
-import { spawn } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readdirSync } from 'node:fs'
 import { mkdtemp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { dirname, extname, join, relative, resolve } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { tmpdir } from 'node:os'
 import {
   buildInventory,
@@ -23,7 +22,7 @@ import { createRapidVfsProvider } from '@modkit/vfs/providers/rapid'
 import { format as formatWithPrettier, resolveConfig as resolvePrettierConfig } from 'prettier'
 import { classifyFormatParity, comparableMetadataFeatures } from './classify.mjs'
 import { observeDataSource } from './observe.mjs'
-import { blockingParityResults, buildParityReport, gitSha } from './report.mjs'
+import { blockingParityResults, buildParityReport } from './report.mjs'
 import {
   currentRepositoryBindings,
   ownerOfLegacyExtension,
@@ -31,14 +30,14 @@ import {
   resolveLegacyExtension,
 } from './repositories.mjs'
 import { buildOwnerParityReceipt } from './receipt.mjs'
+import { createPinnedSource, loadMk2, MK2_PIN } from '../migration/lib/legacy-oracle.mjs'
+import { probeCanonical } from './modkitx-probe.mjs'
 
 const repoRoot = resolve(import.meta.dirname, '..', '..')
-const canonicalRoot = resolve(
+const canonicalRepositoryRoot = resolve(
   process.env.MODKIT_PARITY_CANON_ROOT ?? join(repoRoot, '..', 'references', 'modkitmk2'),
 )
-const mk2Root = resolve(
-  process.env.MODKITX_MK2_ROOT ?? join(repoRoot, '..', 'references', 'modkitmk2'),
-)
+const oracleCacheRoot = resolve(repoRoot, '..', 'artifacts', 'legacy-oracle-cache', 'parity')
 const corpusPath = resolve(
   process.env.MODKIT_PARITY_CORPUS ?? join(import.meta.dirname, 'corpus.json'),
 )
@@ -49,6 +48,7 @@ const receiptPath = resolve(
   process.env.MODKIT_PARITY_RECEIPT ??
     join(repoRoot, 'reports', 'parity', 'owner-aggregation.receipt.json'),
 )
+let canonicalSource
 /**
  * Corpus variables that were renamed, and the name they used to have.
  *
@@ -370,13 +370,25 @@ async function locateSample(sample, temporaryRoot) {
     return { state: 'ready', path, publishedPath: `generated from ${sample.generatedFrom}` }
   }
   if (typeof sample.mk2Relative === 'string') {
-    const path = resolve(mk2Root, sample.mk2Relative)
-    if (!(await stat(mk2Root).catch(() => undefined))?.isDirectory()) {
-      return skipped(`MODKITX_MK2_ROOT does not name a checkout`)
+    if (sample.mk2Relative.replaceAll('\\', '/').startsWith('../')) {
+      const path = resolve(canonicalRepositoryRoot, sample.mk2Relative)
+      return (await exists(path))
+        ? { state: 'ready', path, publishedPath: sample.mk2Relative }
+        : corpusFailure(`external reference corpus is missing: ${sample.mk2Relative}`)
     }
-    return (await exists(path))
-      ? { state: 'ready', path, publishedPath: sample.mk2Relative }
-      : corpusFailure(`MODKITX_MK2_ROOT does not contain ${sample.mk2Relative}`)
+    try {
+      const record = await canonicalSource.read(sample.mk2Relative)
+      const path = join(
+        temporaryRoot,
+        `oracle-${sample.id}-${sample.mk2Relative.split('/').at(-1)}`,
+      )
+      await writeFile(path, record.bytes)
+      return { state: 'ready', path, publishedPath: sample.mk2Relative }
+    } catch (error) {
+      return corpusFailure(
+        `pinned oracle ${MK2_PIN} does not contain ${sample.mk2Relative}: ${String(error)}`,
+      )
+    }
   }
   if (typeof sample.environment === 'string') {
     const value = readCorpusVariable(sample.environment)
@@ -460,55 +472,28 @@ async function resolveSample(sample, temporaryRoot) {
   }
 }
 
-function runCanonicalProbe(sample, file, publishedFile) {
-  const windowsPnpm =
-    process.platform === 'win32'
-      ? resolve(
-          process.env.MODKIT_PARITY_PNPM_CLI ??
-            join(process.env.APPDATA ?? '', 'npm', 'node_modules', 'pnpm', 'bin', 'pnpm.mjs'),
-        )
-      : undefined
-  const command = windowsPnpm === undefined ? 'pnpm' : process.execPath
-  const commandPrefix = windowsPnpm === undefined ? [] : [windowsPnpm]
-  const request = Buffer.from(
-    JSON.stringify({
-      ...sample,
-      file,
+async function runCanonicalProbe(sample, file, publishedFile) {
+  const inputBytes = await readFile(file)
+  const loaded = await loadMk2(sample.canonicalModule, {
+    repoRoot: canonicalRepositoryRoot,
+    commit: MK2_PIN,
+    cacheDir: oracleCacheRoot,
+    operation: 'parity.canonical-observe',
+    operationOptions: { sampleId: sample.id, adapter: sample.canonicalAdapter ?? 'model' },
+    corpusManifest: {
+      kind: sample.kind,
+      sampleId: sample.id,
       publishedFile,
-      canonicalRoot,
-    }),
-  ).toString('base64url')
-  return new Promise((resolvePromise, reject) => {
-    const child = spawn(
-      command,
-      [
-        ...commandPrefix,
-        '--dir',
-        canonicalRoot,
-        'exec',
-        'tsx',
-        join(import.meta.dirname, 'modkitx-probe.mjs'),
-        request,
-      ],
-      { cwd: canonicalRoot, windowsHide: true },
-    )
-    let stdout = ''
-    let stderr = ''
-    child.stdout.on('data', chunk => (stdout += chunk))
-    child.stderr.on('data', chunk => (stderr += chunk))
-    child.on('error', reject)
-    child.on('close', code => {
-      if (code !== 0) {
-        reject(new Error(`canonical probe exited ${String(code)}: ${stderr.trim()}`))
-        return
-      }
-      const marker = stdout.split(/\r?\n/u).find(line => line.startsWith('MODKIT_PARITY_RESULT '))
-      if (marker === undefined) {
-        reject(new Error(`canonical probe returned no result: ${stdout.trim()} ${stderr.trim()}`))
-        return
-      }
-      resolvePromise(JSON.parse(marker.slice('MODKIT_PARITY_RESULT '.length)))
-    })
+      byteLength: inputBytes.byteLength,
+      sha256: createHash('sha256').update(inputBytes).digest('hex'),
+    },
+    loaderFiles: [fileURLToPath(new URL('modkitx-probe.mjs', import.meta.url))],
+    observeWorkingTree: false,
+  })
+  return probeCanonical({
+    request: { ...sample, file, publishedFile },
+    imported: loaded.module,
+    inputBytes,
   })
 }
 
@@ -733,7 +718,12 @@ async function mapWithConcurrency(items, limit, worker) {
 const temporaryRoot = await mkdtemp(join(tmpdir(), 'modkit-parity-'))
 try {
   const corpus = JSON.parse(await readFile(corpusPath, 'utf8'))
-  const canonicalSha = gitSha(canonicalRoot)
+  const canonicalSha = MK2_PIN
+  canonicalSource = await createPinnedSource({
+    repoRoot: canonicalRepositoryRoot,
+    commit: MK2_PIN,
+    observeWorkingTree: false,
+  })
   const repositories = currentRepositoryBindings(repoRoot)
   const results = await mapWithConcurrency(corpus.samples, CONCURRENCY, sample =>
     evaluateSample(sample, temporaryRoot),

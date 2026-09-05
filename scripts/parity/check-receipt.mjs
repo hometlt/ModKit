@@ -47,7 +47,12 @@ try {
   if (receipt.report?.sha256 !== sha256File(reportPath)) {
     throw new Error('owner parity report digest contradicts the receipt')
   }
-  for (const input of [receipt.runner, receipt.corpus]) {
+  for (const input of [
+    receipt.runner,
+    receipt.oracleLoader,
+    receipt.canonicalAdapter,
+    receipt.corpus,
+  ]) {
     const path = resolve(repoRoot, input.path)
     if (!existsSync(path) || input.sha256 !== sha256File(path)) {
       throw new Error(`owner parity input ${input.path} contradicts its receipt digest`)

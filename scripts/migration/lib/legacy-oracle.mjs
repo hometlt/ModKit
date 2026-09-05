@@ -83,8 +83,7 @@ export async function createPinnedSource({
 }) {
   repoRoot = path.resolve(repoRoot)
   if (!/^[a-f0-9]{40}$/u.test(commit)) throw new Error('Oracle commit must be a full immutable SHA')
-  if (typeof observeWorkingTree !== 'boolean')
-    throw new Error('observeWorkingTree must be boolean')
+  if (typeof observeWorkingTree !== 'boolean') throw new Error('observeWorkingTree must be boolean')
   const git = (args, options = {}) =>
     execFileSync('git', ['-C', repoRoot, ...args], {
       maxBuffer: 128 * 1024 * 1024,
@@ -271,9 +270,10 @@ export async function loadMk2(entry, options = {}) {
     stubs = [],
     loaderFiles = [],
     workspaceScopes = ['@modkitx'],
+    observeWorkingTree = true,
   } = options
   if (!repoRoot || !cacheDir) throw new Error('repoRoot and cacheDir are required')
-  const source = await createPinnedSource({ repoRoot, commit })
+  const source = await createPinnedSource({ repoRoot, commit, observeWorkingTree })
   entry = relativePath(entry)
   const inputs = new Map()
   const pinnedSnapshotRoot = path.resolve(
@@ -392,7 +392,21 @@ export async function loadMk2(entry, options = {}) {
     const manifest = JSON.parse(await readFile(path.join(root, 'package.json'), 'utf8'))
     const subpath = specifier === name ? '.' : `.${specifier.slice(name.length)}`
     const target = targetFor(manifest, subpath)
-    const resolved = target ? path.resolve(root, target) : request.resolve(specifier)
+    let resolved
+    if (target) {
+      const exactTarget = path.resolve(root, target)
+      try {
+        await readFile(exactTarget)
+        resolved = exactTarget
+      } catch (error) {
+        if (error.code !== 'ENOENT') throw error
+        // Legacy CommonJS packages often publish an extensionless `main` (for example
+        // xml2js -> "./lib/xml2js") and rely on Node's normal .js/index.js resolution.
+        // Preserve the package's declared target as the first choice, then delegate only the
+        // missing-file case to the same importer-scoped resolver Node would use at runtime.
+        resolved = request.resolve(specifier)
+      }
+    } else resolved = request.resolve(specifier)
     await readFile(resolved) // Missing WASM/module data is an error, never an empty oracle result.
     const url = pathToFileURL(resolved).href
     externalResolutions.set(url, {
@@ -599,6 +613,7 @@ export async function loadMk2(entry, options = {}) {
     additionalFiles,
     runtimeDependencies,
     workspaceScopes,
+    ...(observeWorkingTree ? {} : { observeWorkingTree: false }),
     stubs: stubs.map(({ path, reason, kind, source }) => ({
       path,
       reason,

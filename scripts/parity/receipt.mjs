@@ -27,6 +27,14 @@ export function buildOwnerParityReceipt({
     verdict: blocking.length === 0 ? 'pass' : 'fail',
     command: 'pnpm parity',
     runner: fileEvidence(repoRoot, fileURLToPath(new URL('check.mjs', import.meta.url))),
+    oracleLoader: fileEvidence(
+      repoRoot,
+      fileURLToPath(new URL('../migration/lib/legacy-oracle.mjs', import.meta.url)),
+    ),
+    canonicalAdapter: fileEvidence(
+      repoRoot,
+      fileURLToPath(new URL('modkitx-probe.mjs', import.meta.url)),
+    ),
     corpus: fileEvidence(repoRoot, corpusPath),
     report: Object.freeze({
       ...fileEvidence(repoRoot, outputPath),

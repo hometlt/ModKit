@@ -42,6 +42,52 @@ test('pinned source can disable all working-tree observation', async t => {
   assert.equal(record.workingTreeMatchesPin, null)
 })
 
+test('external dependency resolution honors an extensionless package main', async t => {
+  const root = await mkdtemp(path.join(tmpdir(), 'mk2-extensionless-main-test-'))
+  t.after(async () => {
+    assert.equal(path.dirname(root), tmpdir())
+    assert.ok(path.basename(root).startsWith('mk2-extensionless-main-test-'))
+    await rm(root, { recursive: true, force: true })
+  })
+  const repoRoot = path.join(root, 'repo')
+  const cacheDir = path.join(root, 'cache')
+  await mkdir(repoRoot)
+  const git = (...args) =>
+    execFileSync('git', ['-C', repoRoot, ...args], { encoding: 'utf8', windowsHide: true }).trim()
+  git('init', '-q')
+  git('config', 'user.name', 'Extensionless Main Test')
+  git('config', 'user.email', 'extensionless-main@test.invalid')
+  await writeFile(path.join(repoRoot, 'package.json'), '{"type":"module"}')
+  await writeFile(
+    path.join(repoRoot, 'entry.ts'),
+    'import legacy from "legacy-main"; export const value = legacy.value\n',
+  )
+  git('add', 'package.json', 'entry.ts')
+  git('commit', '-qm', 'pinned fixture')
+  const commit = git('rev-parse', 'HEAD')
+  await mkdir(path.join(repoRoot, 'node_modules', 'legacy-main', 'lib'), { recursive: true })
+  await writeFile(
+    path.join(repoRoot, 'node_modules', 'legacy-main', 'package.json'),
+    '{"name":"legacy-main","version":"1.0.0","main":"./lib/legacy"}',
+  )
+  await writeFile(
+    path.join(repoRoot, 'node_modules', 'legacy-main', 'lib', 'legacy.js'),
+    'module.exports = { value: 42 }\n',
+  )
+
+  const loaded = await loadMk2('entry.ts', {
+    repoRoot,
+    commit,
+    cacheDir,
+    operation: 'test.extensionless-main',
+    corpusManifest: { kind: 'synthetic-extensionless-main' },
+  })
+  assert.equal(loaded.module.value, 42)
+  const dependency = loaded.evidence.dependencies.find(item => item.name === 'legacy-main')
+  assert.ok(dependency)
+  assert.ok(dependency.files.some(file => file.path === 'lib/legacy.js'))
+})
+
 test('pinned source, exports, data, dependencies and every cache identity dimension', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'mk2-oracle-test-'))
   const repoRoot = path.join(root, 'repo')
