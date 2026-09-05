@@ -16,8 +16,8 @@ The receipt records 77 nonempty exact oracle executions for 76 rows. `cnc3-map` 
 ## Immutable inputs
 
 - MK2 oracle: `1a14ba4eddd0ae88de273348ebd44cfb98a0581d`
-- `modkit-core`: `7aa5a28f409fb161e7009bf16decede2755e2e43`
-- `modkit-extensions-blizzard`: `ff7a703439894eebea9b1c206fe1069bc5dae6cd`
+- `modkit-core`: `c622fbc6e49e12bb4ecacc8d1c2fb94c4012713b`
+- `modkit-extensions-blizzard`: `516450da52eef6b2ffadd1742e9bb396b816c2fd`
 - `modkit-extensions-ea`: `7a135611166c45b99514ce94f75256fff91a6218`
 - `modkit-extensions-other`: `2c9e6ee816f02ca2acb2b8520ab276ee1065572a`
 - `modkit-extensions-spring`: `132602e5684ff0fcf75df045810ecea36ad2dda4`
@@ -25,9 +25,10 @@ The receipt records 77 nonempty exact oracle executions for 76 rows. `cnc3-map` 
 
 All external owners were read through detached committed worktrees. Their logical publication identities came from `modkit.workspace.json`, so the evidence is independent of snapshot directory names. The active owner worktrees and the MK2 checkout were not executed or observed.
 
-This refreshed Core binding includes the applied M5 evidence for `sc2-document-metadata` and
-`sc2-strings`; the external owner commits remain the same immutable inputs used by the debt-closing
-run.
+This refreshed binding includes the applied M5 evidence for `sc2-document-metadata`, `sc2-strings`
+and `galaxy`, plus the committed native Galaxy implementation and scoped surface gate. Blizzard was
+read from the detached `516450da` worktree while the next codec was being developed in the active
+worktree.
 
 ## Real corpus notes
 
