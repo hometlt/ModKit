@@ -1,10 +1,32 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
 
+import { externalRepositoryRoot } from '../lib/external-extension-roots.mjs'
+
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..', '..')
+
+test('SC2 document metadata support matches its partial contribution', () => {
+  const capabilities = readFileSync(resolve(repoRoot, 'migration/capabilities.yaml'), 'utf8')
+  const row = capabilities.match(
+    /capabilityId: 'format\/sc2-document-metadata\/open-inspect'(?<body>[\s\S]*?)(?=\n  - capabilityId:)/u,
+  )
+  assert.ok(row?.groups?.body, 'SC2 document metadata capability row is missing')
+  const supportState = row.groups.body.match(/\n    supportState: '([^']+)'/u)?.[1]
+
+  const blizzardRoot = externalRepositoryRoot(repoRoot, 'blizzard')
+  const contribution = JSON.parse(
+    readFileSync(
+      resolve(blizzardRoot, 'starcraft2/contributions/codec-sc2-document-metadata.json'),
+      'utf8',
+    ),
+  )
+  assert.equal(supportState, contribution.status)
+  assert.equal(supportState, 'partial')
+})
 
 test('registry cross-checks the preserved common coverage ledger', () => {
   const result = spawnSync(process.execPath, ['scripts/migration/check-registry.mjs'], {

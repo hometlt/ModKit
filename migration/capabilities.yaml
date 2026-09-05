@@ -10643,7 +10643,7 @@ capabilities:
       portFamily: 'blizzard/starcraft2'
       portVerdict: 'needs-new-contract'
     migrationState: 'implemented'
-    supportState: 'supported'
+    supportState: 'partial'
     runtimeAvailability: 'browser-and-node'
     evidenceLevel: 'E1'
     hostEvidence: 'node'
