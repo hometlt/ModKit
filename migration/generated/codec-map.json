@@ -1030,7 +1030,7 @@
       "codec": "galaxy",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 32,
+      "pending": 8,
       "requirements": 32,
       "source": "extensions/blizzard/starcraft-2/codecs/galaxy/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/galaxy",

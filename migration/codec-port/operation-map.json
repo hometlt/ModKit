@@ -862,60 +862,60 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-galaxy.json",
+      "handlerId": "validate",
       "id": "legacy/codec-manifest/modkit/galaxy/operation/asset.validate",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "asset.validate"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-galaxy.json",
+      "handlerId": "rename",
       "id": "legacy/codec-manifest/modkit/galaxy/operation/edit.structure",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "edit.structure"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-galaxy.json",
+      "handlerId": "export-convert",
       "id": "legacy/codec-manifest/modkit/galaxy/operation/export.convert",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "export.convert"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-galaxy.json",
+      "handlerId": "completion",
       "id": "legacy/codec-manifest/modkit/galaxy/operation/script.completion",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "script.completion"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-galaxy.json",
+      "handlerId": "format",
       "id": "legacy/codec-manifest/modkit/galaxy/operation/script.format",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "script.format"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-galaxy.json",
+      "handlerId": "references",
       "id": "legacy/codec-manifest/modkit/galaxy/operation/script.references",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "script.references"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-galaxy.json",
+      "handlerId": "symbols",
       "id": "legacy/codec-manifest/modkit/galaxy/operation/script.symbols",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "script.symbols"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-galaxy.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/galaxy/operation/view.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,

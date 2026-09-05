@@ -1036,14 +1036,24 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/07d548c77579f8ed",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/1383a83c2b585e7a",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -1051,9 +1061,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/1d0afa85c36188cf",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -1061,19 +1076,34 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/252e2cacb2830db7",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/29f65483b2fa01ab",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/429c80cac335d506",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -1091,29 +1121,54 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/4f9a12a69da3135b",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/59a4a5fd3d65ae64",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/8a8d967eb1bbc06e",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/9f0fb87bc2f25373",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/a2ffa463f1509b05",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -1121,29 +1176,54 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/b2dfd6a72d60cafb",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/b4c751d6594c32ce",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/c83412c572a2e7b2",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/d24505df1a08d94b",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/e082264235448ed8",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -1151,44 +1231,84 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/operation/asset.validate",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/operation/edit.structure",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/operation/export.convert",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/operation/script.completion",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/operation/script.format",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/operation/script.references",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/operation/script.symbols",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/galaxy/receipt.json",
+          "sha256": "4ae4d4fec1562e96f9744211b9a4c0be757de0ee29f311e9ddf151e3ef96de68"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/operation/view.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
