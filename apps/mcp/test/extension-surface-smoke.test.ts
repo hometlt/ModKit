@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto'
 import { copyFileSync, mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { Client, InMemoryTransport } from '@modelcontextprotocol/client'
 import {
   buildInventory,
@@ -33,6 +34,12 @@ import {
   type SurfaceSmokeExecution,
 } from '@modkit/testkit'
 import { loadSubjectCardSections } from '@modkit/ui/card'
+import {
+  createFieldEditorRegistry,
+  editOffer,
+  mountFieldEditor,
+  type FieldEditorModuleV1,
+} from '@modkit/ui/field-editor'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { surfaceClaimsForCodec } from '../../../scripts/migration/lib/surface-matrix.mjs'
 import { createModkitMcpServer, type McpEnvelope, type ModkitMcpHostPort } from '../src/index.js'
@@ -100,7 +107,9 @@ async function openFixture() {
     executionBackends,
     budget,
   })
-  if (result.state !== 'opened') throw new Error(`fixture did not open: ${result.reason}`)
+  if (result.state !== 'opened') {
+    throw new Error(`fixture did not open: ${result.reason}: ${JSON.stringify(result.diagnostics)}`)
+  }
   if (result.descriptor.interpretation !== 'codec')
     throw new Error('opened fixture has no codec interpretation')
   return result as typeof result & { readonly descriptor: ResolvedAssetDescriptor }
@@ -211,12 +220,97 @@ describe('P7/P8 extension surface foundation', () => {
       })),
     ).toEqual([
       { id: 'org.example/surface-sample-codec', inventoryEligible: true },
+      { id: 'org.example/surface-name-field-editor', inventoryEligible: true },
       { id: 'org.example/surface-sample-kind', inventoryEligible: true },
       { id: 'org.example/surface-sample-panel', inventoryEligible: true },
     ])
     const withoutFixture = await buildInventory([], createHostContributionContractRegistry())
     expect(withoutFixture.extensions).toEqual([])
     expect(withoutFixture.diagnostics).toEqual([])
+  })
+
+  it('discovers, renders and validates a contributed custom field editor', async () => {
+    const result = await openFixture()
+    const contribution = inventory.extensions[0]?.contributions.find(
+      item => item.manifest?.id === 'org.example/surface-name-field-editor',
+    )
+    if (contribution?.manifest === undefined)
+      throw new Error('custom field editor was not inventoried')
+    const entrypoint = contribution.manifest.runtimeVariants[0]?.entrypoint
+    if (entrypoint === undefined) throw new Error('custom field editor published no entrypoint')
+    const imported = (await import(pathToFileURL(join(fixtureRoot, entrypoint)).href)) as {
+      readonly default: FieldEditorModuleV1
+    }
+    const registry = createFieldEditorRegistry(
+      [
+        {
+          spec: contribution.manifest.spec as never,
+          module: imported.default,
+        },
+      ],
+      'test',
+    )
+    try {
+      const offer = editOffer(result.descriptor, { editable: true, fieldEditors: registry })
+      expect(offer.unsupported).toEqual([])
+      expect(offer.forms.map(form => form.id)).toEqual(['surface-sample-set-name'])
+      const form = offer.forms[0]
+      const field = form?.fields[0]
+      if (form === undefined || field === undefined)
+        throw new Error('custom field form was not resolved')
+
+      const target = {} as { rendered?: { kind: string; value: string } }
+      const controller = new AbortController()
+      const control = await mountFieldEditor(
+        target as unknown as HTMLElement,
+        field,
+        controller.signal,
+        registry,
+        'org.example/surface-name-editor',
+      )
+      expect(target.rendered).toEqual({ kind: 'surface-name', value: 'alpha' })
+      expect(control.read()).toBe('alpha')
+      expect(control.validate()).toBeUndefined()
+      if (target.rendered === undefined) throw new Error('custom editor did not render')
+      target.rendered.value = ''
+      expect(control.validate()).toBe('surface name is required')
+      target.rendered.value = 'beta'
+
+      const request = form.build(new Map([['value', control.read()]]))
+      expect(request).toEqual({ groupId: 'identity', key: 'name', value: 'beta' })
+      const invoked = await result.session.operations().invoke(form.handlerId, request)
+      expect(invoked.state).toBe('ok')
+      if (invoked.state !== 'ok') throw new Error('custom field edit was rejected')
+      const editing = createSubjectEditing({
+        opened: result,
+        grant,
+        backendFor: () => createFileEditingBackend({ roots: [scratch] }),
+        evidenceFor: () =>
+          fidelityEvidence(
+            inventory.extensions[0]?.contributions.find(
+              item => item.manifest?.id === 'org.example/surface-sample-codec',
+            )?.record?.artifactDigest ?? '',
+          ),
+      })
+      const plan = editing.planFromOperation(invoked.output)
+      const prepared = await editing.coordinator.prepare(plan, { grant: editing.grantSnapshot })
+      expect(prepared.state).toBe('ready')
+      if (prepared.state !== 'ready') throw new Error('custom field edit did not prepare')
+      expect(
+        await editing.coordinator.commit(prepared.prepared, { grant: editing.grantSnapshot }),
+      ).toMatchObject({ state: 'committed' })
+      const reopened = await openFixture()
+      try {
+        expect(reopened.descriptor.metadata[0]?.entries[0]?.value).toBe('beta')
+      } finally {
+        await reopened.session.dispose()
+      }
+      await control.unmount?.()
+      expect(target.rendered).toBeUndefined()
+    } finally {
+      await result.session.dispose()
+      copyFileSync(fixtureSource, subjectPath)
+    }
   })
 
   it('executes every applicable inventory anchor and commits a byte-identical no-op edit', async () => {
@@ -278,7 +372,11 @@ describe('P7/P8 extension surface foundation', () => {
         return passed('script:open().metadata() projection')
       },
       'no-op-edit': async () => {
-        const invoked = await result.session.operations().invoke('set-name', { name: 'alpha' })
+        const invoked = await result.session.operations().invoke('set-name', {
+          groupId: 'identity',
+          key: 'name',
+          value: 'alpha',
+        })
         ensure(
           invoked.state === 'ok' && invoked.output.kind === 'edit-plan',
           'edit operation returned no plan',

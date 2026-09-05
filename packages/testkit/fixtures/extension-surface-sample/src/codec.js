@@ -89,6 +89,30 @@ const operations = Object.freeze([
     handlerId: 'set-name',
     mutatesSource: true,
     requiredPermissions: ['read-source', 'write-source'],
+    inputSchema: {
+      $ref: 'modkit://surface-sample/edit-field.v1',
+      document: {
+        schemaVersion: 1,
+        forms: [
+          {
+            id: 'surface-sample-set-name',
+            label: 'Set surface sample name',
+            summary: 'Replaces the sample name while retaining the fixture format.',
+            binding: { groupId: 'identity', entryKey: 'name' },
+            fields: [
+              {
+                key: 'value',
+                label: 'Name',
+                type: { kind: 'custom', typeId: 'org.example/surface-name' },
+                inputPath: ['value'],
+                required: true,
+                source: 'entry-value',
+              },
+            ],
+          },
+        ],
+      },
+    },
     outputKinds: ['edit-plan'],
   },
 ])
@@ -120,7 +144,11 @@ const definition = Object.freeze({
             {
               key: 'name',
               value: parsed.name,
-              type: { kind: 'text' },
+              type: { kind: 'custom', typeId: 'org.example/surface-name' },
+              editable: {
+                write: { operation: 'edit.field' },
+                editor: 'org.example/surface-name-editor',
+              },
               knowledgeTarget: {
                 kind: 'subject',
                 ecosystem: 'org.example.surface-sample',
@@ -152,7 +180,7 @@ const definition = Object.freeze({
         'set-name': async value => {
           if (value === null || typeof value !== 'object' || Array.isArray(value))
             throw new TypeError('set-name expects an object')
-          const name = value.name
+          const name = value.groupId === 'identity' ? value.value : value.name
           if (typeof name !== 'string' || name.length === 0) throw new TypeError('name is required')
           const output = nextBytes(name)
           return {

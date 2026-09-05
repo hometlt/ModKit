@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "modkit/field-editor-contribution", "major": 1 },
+  "id": "org.example/surface-name-field-editor",
+  "displayName": "Surface sample name field editor",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/name-field-editor.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "fieldTypeId": "org.example/surface-name",
+    "editorId": "org.example/surface-name-editor",
+    "priority": 100,
+    "hosts": ["test"]
+  }
+}

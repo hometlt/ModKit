@@ -75,6 +75,30 @@
         "handlerId": "set-name",
         "mutatesSource": true,
         "requiredPermissions": ["read-source", "write-source"],
+        "inputSchema": {
+          "$ref": "modkit://surface-sample/edit-field.v1",
+          "document": {
+            "schemaVersion": 1,
+            "forms": [
+              {
+                "id": "surface-sample-set-name",
+                "label": "Set surface sample name",
+                "summary": "Replaces the sample name while retaining the fixture format.",
+                "binding": { "groupId": "identity", "entryKey": "name" },
+                "fields": [
+                  {
+                    "key": "value",
+                    "label": "Name",
+                    "type": { "kind": "custom", "typeId": "org.example/surface-name" },
+                    "inputPath": ["value"],
+                    "required": true,
+                    "source": "entry-value"
+                  }
+                ]
+              }
+            ]
+          }
+        },
         "outputKinds": ["edit-plan"]
       }
     ],
