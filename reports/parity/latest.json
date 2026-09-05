@@ -7,7 +7,7 @@
       {
         "id": "core",
         "repository": "modkit-core",
-        "commit": "8b62f36f27a9178a8807ce7c782033caf52d6963"
+        "commit": "7aa5a28f409fb161e7009bf16decede2755e2e43"
       },
       {
         "id": "blizzard",
@@ -1164,7 +1164,7 @@
           "loaderDigest": "7ae7a959e83e814871ffe3e46b6a94186f00abbccc6aa5491495b44c38400368",
           "dependenciesDigest": "baf6f35410ae70dc6d77563b7d439d1ccd0c284c819d249bde239f3c308700f9",
           "corpusDigest": "e10462d711cb53df7b0e2c58a0b17283a677b074143f78fb8d429ee45534869d",
-          "bundleSha256": "6ee0d3c72ddf6f05f9a85c872dc218d9a6eb64999428c06f9a451de4e84927a3",
+          "bundleSha256": "b14c30eacfb58f6c6d91811fe80ea656cb5f18e6d05da878f298e7c779d81de3",
           "observeWorkingTree": false,
           "sourceFiles": 10
         }
@@ -1417,7 +1417,7 @@
           "loaderDigest": "7ae7a959e83e814871ffe3e46b6a94186f00abbccc6aa5491495b44c38400368",
           "dependenciesDigest": "eb22efd477f7a73a9752399120202e045534fd70f15adc558f8aefe7bbaeb6e0",
           "corpusDigest": "a46c5e48ba03042e00cea9ab89221891f8c04704b29379df458a5f3f41897368",
-          "bundleSha256": "795879528621b933d734ac0ab44413c83768a0f56a243974e21f7c237fe1adc2",
+          "bundleSha256": "22b3bbc3160e7b82f092fe4e16bae98d927f26b99217a4cf8709693c2e5faed5",
           "observeWorkingTree": false,
           "sourceFiles": 15
         }
@@ -2111,7 +2111,7 @@
           "loaderDigest": "7ae7a959e83e814871ffe3e46b6a94186f00abbccc6aa5491495b44c38400368",
           "dependenciesDigest": "eb22efd477f7a73a9752399120202e045534fd70f15adc558f8aefe7bbaeb6e0",
           "corpusDigest": "853a7d8c97004fc2be94da960979924fd0b3dfc3abb2c58d4471a6320b570572",
-          "bundleSha256": "69c7ff4c38c3c7bc40127c06af2c51acb069248d20aa66af4533663160a1d8a7",
+          "bundleSha256": "f92a6c38110db0b04c45a5e0fc3b68f9332f080848fb34c6a2027264054fdb09",
           "observeWorkingTree": false,
           "sourceFiles": 14
         }
@@ -3390,7 +3390,7 @@
           "loaderDigest": "7ae7a959e83e814871ffe3e46b6a94186f00abbccc6aa5491495b44c38400368",
           "dependenciesDigest": "8384a7c463f474a0cf3c623a1bbcbb5e267ab2fe7ba38cf11c12d8e9a1db7486",
           "corpusDigest": "79083eb3bfa3dc02401bf33c3a16cc24259fe2796501334751d97dab8b3f5d65",
-          "bundleSha256": "7cf7c3170fe3bf4c32a949d704315dc8d61999398db12e0faf90c42619a93cd5",
+          "bundleSha256": "87ae5a5a1da5aa6a476c8c9293280eb71c5d58ef54081b99edd17a1d9435bec2",
           "observeWorkingTree": false,
           "sourceFiles": 6
         }
@@ -4550,7 +4550,7 @@
           "loaderDigest": "7ae7a959e83e814871ffe3e46b6a94186f00abbccc6aa5491495b44c38400368",
           "dependenciesDigest": "baf6f35410ae70dc6d77563b7d439d1ccd0c284c819d249bde239f3c308700f9",
           "corpusDigest": "b5480daa749bc810ac320c049eb1f56d69f804afeca57c175b193034c82ef5d5",
-          "bundleSha256": "fa9100177fad017413b46b4dc6b40d12e3735af2e919460c74b384391caaabf5",
+          "bundleSha256": "2feea102587b80f555b41de6cf319310b7901afe6b43ccddb9acbd2ba5620c15",
           "observeWorkingTree": false,
           "sourceFiles": 10
         }
@@ -4805,7 +4805,7 @@
           "loaderDigest": "7ae7a959e83e814871ffe3e46b6a94186f00abbccc6aa5491495b44c38400368",
           "dependenciesDigest": "0fd7c842e83b6c6154818446e0ed642db69aa5c9b41e55c44871e6dfc3b9279f",
           "corpusDigest": "87b6b4826f32ffdcd84caa8acbb2f883b7bc90634151291e78bb2bf0882fd104",
-          "bundleSha256": "42c68d47ddba52f29c645c803918a687ed4ca497d717d996919c7702addd3ba1",
+          "bundleSha256": "cea873cae78180464768bf415c1e5f3f2338b3bd8d2520121db6b3332ddad550",
           "observeWorkingTree": false,
           "sourceFiles": 37
         }
@@ -8102,7 +8102,7 @@
           "loaderDigest": "7ae7a959e83e814871ffe3e46b6a94186f00abbccc6aa5491495b44c38400368",
           "dependenciesDigest": "baf6f35410ae70dc6d77563b7d439d1ccd0c284c819d249bde239f3c308700f9",
           "corpusDigest": "674240ee92e4dd61230c3da3ff74330d5d887ebdbec6f5efa8bb0af09f763a5c",
-          "bundleSha256": "6ae825c41c1b1af341fcad05750dc7ee68cae7d7e4561d25645267afe83f4b63",
+          "bundleSha256": "d9779aeb7511f009e1265e2091b889801e91426b7c3212cf2d92c1b7c66f5d5e",
           "observeWorkingTree": false,
           "sourceFiles": 9
         }
@@ -8840,7 +8840,7 @@
           "loaderDigest": "7ae7a959e83e814871ffe3e46b6a94186f00abbccc6aa5491495b44c38400368",
           "dependenciesDigest": "a2629c38a410352a3706ca5f85eec79865e7a06f124bfcd7e97339d44c67628f",
           "corpusDigest": "f8c01110c78376be92c6756df64e5a11ff126066e47e1b389bdfc1739329750e",
-          "bundleSha256": "1c6b8abe7e0762e18a7418fbacf1c46d1248ecc956012325afe43efbf5adb2e1",
+          "bundleSha256": "da385bc96e3fa7ea4d279694e107f84d4fecf961913ef781b6d3379f09b440e8",
           "observeWorkingTree": false,
           "sourceFiles": 22
         }
@@ -9083,7 +9083,7 @@
           "loaderDigest": "7ae7a959e83e814871ffe3e46b6a94186f00abbccc6aa5491495b44c38400368",
           "dependenciesDigest": "a2629c38a410352a3706ca5f85eec79865e7a06f124bfcd7e97339d44c67628f",
           "corpusDigest": "b4a1fc968aafd676b72cab5fe4bfa95cf6d01b749f181959b3e00511abf60d7f",
-          "bundleSha256": "1c6b8abe7e0762e18a7418fbacf1c46d1248ecc956012325afe43efbf5adb2e1",
+          "bundleSha256": "da385bc96e3fa7ea4d279694e107f84d4fecf961913ef781b6d3379f09b440e8",
           "observeWorkingTree": false,
           "sourceFiles": 22
         }
@@ -9351,7 +9351,7 @@
           "loaderDigest": "7ae7a959e83e814871ffe3e46b6a94186f00abbccc6aa5491495b44c38400368",
           "dependenciesDigest": "27f2f29c2aa78dd4250c6b4ea1f5e2726b41a3388e4cc2cd0f18ab85faff7085",
           "corpusDigest": "5877585ecf9e232ac93d1c6d951f95f4fe799c248a4c09f7442bd48908ee8e14",
-          "bundleSha256": "5286f9cf51a3be2d16dc3235b591d6afb0766bd8f1ddff15ce17395044cd2648",
+          "bundleSha256": "4cf6da5217f2749cd826ed1ef9580ad0025e794ea79a866603da804ba13d4962",
           "observeWorkingTree": false,
           "sourceFiles": 69
         }
@@ -9711,7 +9711,7 @@
           "loaderDigest": "7ae7a959e83e814871ffe3e46b6a94186f00abbccc6aa5491495b44c38400368",
           "dependenciesDigest": "27f2f29c2aa78dd4250c6b4ea1f5e2726b41a3388e4cc2cd0f18ab85faff7085",
           "corpusDigest": "1d50bbd7dfee9d3e3a1252439930411446d8303c62c43090eecac4682df57443",
-          "bundleSha256": "5286f9cf51a3be2d16dc3235b591d6afb0766bd8f1ddff15ce17395044cd2648",
+          "bundleSha256": "4cf6da5217f2749cd826ed1ef9580ad0025e794ea79a866603da804ba13d4962",
           "observeWorkingTree": false,
           "sourceFiles": 69
         }
@@ -13465,7 +13465,7 @@
           "loaderDigest": "7ae7a959e83e814871ffe3e46b6a94186f00abbccc6aa5491495b44c38400368",
           "dependenciesDigest": "ba91e3f3d3531f4e67f40241a1304a93b386a18fe425f2eab0f792c4b198cfc3",
           "corpusDigest": "6bcd9870381b9407fd86927f9e131228c00909721024d1366bb81f63edc38347",
-          "bundleSha256": "9376c353f819a664e5b4cc070215ed709d7c99218ec039691822d8443aedbb93",
+          "bundleSha256": "4f8a44f3583e64c8a6c7975ce7c8bfa28d79bcb1a8c9992b582c20722f2be873",
           "observeWorkingTree": false,
           "sourceFiles": 11
         }
@@ -13733,7 +13733,7 @@
           "loaderDigest": "7ae7a959e83e814871ffe3e46b6a94186f00abbccc6aa5491495b44c38400368",
           "dependenciesDigest": "eb22efd477f7a73a9752399120202e045534fd70f15adc558f8aefe7bbaeb6e0",
           "corpusDigest": "967178514508a1c529a1fb52b792d0411e9c050ad1cc90dbcc0c3d5312d42160",
-          "bundleSha256": "2e324e590f7c3d9d06fb1959ea8bfb028b9eaf3f689d712a1034abbeaa011574",
+          "bundleSha256": "aaa7c4986d4099728a8f46a6150bca48149469bf606a132e6e08ac5690ae982f",
           "observeWorkingTree": false,
           "sourceFiles": 15
         }
@@ -14246,7 +14246,7 @@
           "loaderDigest": "7ae7a959e83e814871ffe3e46b6a94186f00abbccc6aa5491495b44c38400368",
           "dependenciesDigest": "baf6f35410ae70dc6d77563b7d439d1ccd0c284c819d249bde239f3c308700f9",
           "corpusDigest": "93f788f6755f423ff1da8fdbeb2da52184aa1caf34dbc7158a718957a1fea1c3",
-          "bundleSha256": "b6b85aec7a7c925ddcddba40b9d10ec8a0739ef4f7b2423e886e7cfb558d4879",
+          "bundleSha256": "6e51de5c0767b798e71c7cb30377962cd6f2a8918b4326d8333c58f65a1e141b",
           "observeWorkingTree": false,
           "sourceFiles": 9
         }
@@ -14757,7 +14757,7 @@
           "loaderDigest": "7ae7a959e83e814871ffe3e46b6a94186f00abbccc6aa5491495b44c38400368",
           "dependenciesDigest": "baf6f35410ae70dc6d77563b7d439d1ccd0c284c819d249bde239f3c308700f9",
           "corpusDigest": "da171cf0c87864df57e7c8c3b6e7aaa3886efebd9ce4cfe59f70db8afe119022",
-          "bundleSha256": "7a261bc0fbf289b3105dd4626126cd5b09e83da5af45313bf44349b8ebd7077c",
+          "bundleSha256": "b8a7f8942f859ae6ec3be37218cffbf9599b8cfaab8567b45b87769f3aed1f61",
           "observeWorkingTree": false,
           "sourceFiles": 21
         }
@@ -15800,7 +15800,7 @@
           "loaderDigest": "7ae7a959e83e814871ffe3e46b6a94186f00abbccc6aa5491495b44c38400368",
           "dependenciesDigest": "8384a7c463f474a0cf3c623a1bbcbb5e267ab2fe7ba38cf11c12d8e9a1db7486",
           "corpusDigest": "b5bd0e25b75b76085617d9885c2eaf40720a0d557f63937ba7eef3e9e2675c8c",
-          "bundleSha256": "3b065217681858e3d200f2c833aa285dfcfd1613fe0c7d1127be2e5856ea8623",
+          "bundleSha256": "84c94a4e78566376d8fa79c8545d750379761fc408dd46476b0d0efd2b34046e",
           "observeWorkingTree": false,
           "sourceFiles": 38
         }
@@ -16090,7 +16090,7 @@
           "loaderDigest": "7ae7a959e83e814871ffe3e46b6a94186f00abbccc6aa5491495b44c38400368",
           "dependenciesDigest": "8384a7c463f474a0cf3c623a1bbcbb5e267ab2fe7ba38cf11c12d8e9a1db7486",
           "corpusDigest": "4e62475e7f06f62b704bc0943c947bde61145c1343cfad9c8f8ee9324af4cba1",
-          "bundleSha256": "3b065217681858e3d200f2c833aa285dfcfd1613fe0c7d1127be2e5856ea8623",
+          "bundleSha256": "84c94a4e78566376d8fa79c8545d750379761fc408dd46476b0d0efd2b34046e",
           "observeWorkingTree": false,
           "sourceFiles": 38
         }
@@ -16853,7 +16853,7 @@
           "loaderDigest": "7ae7a959e83e814871ffe3e46b6a94186f00abbccc6aa5491495b44c38400368",
           "dependenciesDigest": "baf6f35410ae70dc6d77563b7d439d1ccd0c284c819d249bde239f3c308700f9",
           "corpusDigest": "24c15d92a4d94d4c3b6cf30926012bb0f4caab9c385448d043225ae56ccad450",
-          "bundleSha256": "0fe62494a3f2e2d0a8dc3535107ea57fd40cc1be3b31dc719cff090487808c1c",
+          "bundleSha256": "0fed3be3d25b4e59423b2d425fd8f40d5d1065667fdc111ed74591939f26239b",
           "observeWorkingTree": false,
           "sourceFiles": 6
         }
@@ -17619,7 +17619,7 @@
           "loaderDigest": "7ae7a959e83e814871ffe3e46b6a94186f00abbccc6aa5491495b44c38400368",
           "dependenciesDigest": "76ef14206584df04b6393c0e4ffc82cfd5da38cd8f6997a2ece740057b317c70",
           "corpusDigest": "8878ee56ef3cf49ef17ca00898c5dcc79465b794329d327e5fb46f04912f63ff",
-          "bundleSha256": "7bd8e48af97eb4a584ec4d09d6f41b924f436dc632eedf40c3f723c0fc04d1e2",
+          "bundleSha256": "8763ff26b997f07495c11fb8f820df6a1ce6da2f712c2e62d2f2464fb42add65",
           "observeWorkingTree": false,
           "sourceFiles": 7
         }
@@ -20885,7 +20885,7 @@
           "loaderDigest": "7ae7a959e83e814871ffe3e46b6a94186f00abbccc6aa5491495b44c38400368",
           "dependenciesDigest": "baf6f35410ae70dc6d77563b7d439d1ccd0c284c819d249bde239f3c308700f9",
           "corpusDigest": "ccab64eee8887f6312d8c4101026dfa3b2a92baa332b107bbf0764317b267fe2",
-          "bundleSha256": "bc38c2d48e2cf7384970623db707c36b1c84d3951ba1b7508bb866e8fe056584",
+          "bundleSha256": "a9bb8abf69774c617d52560063df8fb0e272e777ebbfc72669f8f76567413e08",
           "observeWorkingTree": false,
           "sourceFiles": 8
         }

@@ -16,7 +16,7 @@ The receipt records 77 nonempty exact oracle executions for 76 rows. `cnc3-map` 
 ## Immutable inputs
 
 - MK2 oracle: `1a14ba4eddd0ae88de273348ebd44cfb98a0581d`
-- `modkit-core`: `8b62f36f27a9178a8807ce7c782033caf52d6963`
+- `modkit-core`: `7aa5a28f409fb161e7009bf16decede2755e2e43`
 - `modkit-extensions-blizzard`: `ff7a703439894eebea9b1c206fe1069bc5dae6cd`
 - `modkit-extensions-ea`: `7a135611166c45b99514ce94f75256fff91a6218`
 - `modkit-extensions-other`: `2c9e6ee816f02ca2acb2b8520ab276ee1065572a`
@@ -24,6 +24,10 @@ The receipt records 77 nonempty exact oracle executions for 76 rows. `cnc3-map` 
 - `modkit-extensions-warzone`: `701157037422c50c5377c3865336753a7d5d6358`
 
 All external owners were read through detached committed worktrees. Their logical publication identities came from `modkit.workspace.json`, so the evidence is independent of snapshot directory names. The active owner worktrees and the MK2 checkout were not executed or observed.
+
+This refreshed Core binding includes the applied M5 evidence for `sc2-document-metadata` and
+`sc2-strings`; the external owner commits remain the same immutable inputs used by the debt-closing
+run.
 
 ## Real corpus notes
 

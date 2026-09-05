@@ -20,7 +20,7 @@
   },
   "report": {
     "path": "reports/parity/latest.json",
-    "sha256": "5d77263f21b6f963f9653532636dad46eb28bcc1e1238ed370b54521581dbd4e",
+    "sha256": "c13e28d4770ed98866b03f22555d5533044adbc6bc93c62f03935e70be698ec6",
     "schemaVersion": 4,
     "counts": {
       "total": 76,
@@ -41,7 +41,7 @@
     {
       "id": "core",
       "repository": "modkit-core",
-      "commit": "8b62f36f27a9178a8807ce7c782033caf52d6963"
+      "commit": "7aa5a28f409fb161e7009bf16decede2755e2e43"
     },
     {
       "id": "blizzard",
