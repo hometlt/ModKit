@@ -43,7 +43,10 @@ function relative(value) {
 function identity(evidence) {
   if (identityKeys.some(key => evidence[key] === undefined))
     throw new Error('Incomplete prepared oracle cache identity')
-  return Object.fromEntries(identityKeys.map(key => [key, evidence[key]]))
+  const value = Object.fromEntries(identityKeys.map(key => [key, evidence[key]]))
+  if (Object.hasOwn(evidence, 'observeWorkingTree'))
+    value.observeWorkingTree = evidence.observeWorkingTree
+  return value
 }
 
 async function verifiedBytes(file, expected, label) {
@@ -80,7 +83,11 @@ export async function verifyPreparedOracle(evidence, { corpus, adapterPath, oper
     throw new Error('Prepared oracle requires nonempty module evidence')
   const adapter = await realpath(adapterPath)
   const adapterSha256 = sha256(await readFile(adapter))
-  const source = await createPinnedSource({ repoRoot, commit: MK2_PIN })
+  const source = await createPinnedSource({
+    repoRoot,
+    commit: MK2_PIN,
+    observeWorkingTree: false,
+  })
   const results = []
   const keys = new Set()
   for (const module of modules) {

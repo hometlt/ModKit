@@ -37,8 +37,8 @@ test('actual pinned SHA1 preparation binds artifacts, full identity and wrapper'
     adapterPath,
     `import { loadMk2 } from ${JSON.stringify(engineUrl)}
 import { fileURLToPath } from 'node:url'
-export async function prepareOracle({ operation, corpus, variant = 'first' }) {
-  return loadMk2(${JSON.stringify(entry)}, { repoRoot: ${JSON.stringify(repoRoot)}, cacheDir: ${JSON.stringify(cacheDir)}, operation, operationOptions: { variant }, corpusManifest: corpus, loaderFiles: [fileURLToPath(import.meta.url)] })
+export async function prepareOracle({ operation, corpus, variant = 'first', observeWorkingTree = true }) {
+  return loadMk2(${JSON.stringify(entry)}, { repoRoot: ${JSON.stringify(repoRoot)}, cacheDir: ${JSON.stringify(cacheDir)}, operation, operationOptions: { variant }, corpusManifest: corpus, loaderFiles: [fileURLToPath(import.meta.url)], observeWorkingTree })
 }
 `,
   )
@@ -73,6 +73,17 @@ export async function prepareOracle({ operation, corpus, variant = 'first' }) {
       assert.equal(result.modules.length, 2)
     },
   )
+
+  await t.test('ODB-only cache identity is preserved and verified', async () => {
+    const pinnedOnly = await adapter.prepareOracle({
+      operation,
+      corpus,
+      variant: 'pinned-only',
+      observeWorkingTree: false,
+    })
+    assert.equal(pinnedOnly.evidence.observeWorkingTree, false)
+    assert.equal((await verify(pinnedOnly.evidence)).verified, true)
+  })
 
   await t.test('self-consistent metadata without actual cache files is rejected', async () => {
     const fabricated = {
