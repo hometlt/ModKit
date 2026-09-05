@@ -150,8 +150,12 @@ export type ScopedContractRequirementDriftGate = Expect<
   >
 >
 
+/** `FromSchema` omits absent branch keys; runtime `additionalProperties: false` makes them exclusive. */
 export type CodecContributionSpecDriftGate = Expect<
-  Equal<DeepMutable<CodecContributionSpecV1Wire>, FromSchema<typeof codecContributionSpecV1Schema>>
+  Equal<
+    DeepMutable<CodecContributionSpecV1Wire>,
+    ExclusiveUnion<FromSchema<typeof codecContributionSpecV1Schema>>
+  >
 >
 export type ServiceProviderContributionSpecDriftGate = Expect<
   Equal<

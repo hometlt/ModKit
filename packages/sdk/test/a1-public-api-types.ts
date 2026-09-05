@@ -111,11 +111,31 @@ export const codecWireRefs: readonly DataSourceRefWire[] = codecSpec.publishesDa
 export const typedRasterCodec = {
   ...({} as Omit<
     CodecContributionSpecV1<'org.example/raster-source'>,
-    'publishesDataSources' | 'sourceTopology' | 'probe'
+    'publishesDataSources' | 'sourceTopology' | 'container' | 'probe'
   >),
   sourceTopology: 'single',
   probe: { kind: 'bytes', ranges: [], maxBytes: 0 },
   publishesDataSources: [{ contract: 'org.example/raster-source', major: 2, opaque: true }],
+} satisfies CodecContributionSpecV1<'org.example/raster-source'>
+
+export const typedRasterContainerAlias = {
+  ...typedRasterCodec,
+  sourceTopology: 'namespace',
+  container: { formatId: 'mpq' },
+  probe: {
+    kind: 'namespace',
+    markers: ['DocumentInfo'],
+    maxEntries: 1,
+    maxBytes: 0,
+    maxDepth: 1,
+    maxPathBytes: 64,
+  },
+} satisfies CodecContributionSpecV1<'org.example/raster-source'>
+
+export const invalidSingleTopologyContainerAlias = {
+  ...typedRasterCodec,
+  container: { formatId: 'mpq' },
+  // @ts-expect-error Container aliases are legal only on namespace-topology codecs.
 } satisfies CodecContributionSpecV1<'org.example/raster-source'>
 
 export const typedRasterViewer = {
@@ -127,7 +147,7 @@ export const typedRasterViewer = {
 export const rasterCodecWrongMajor = {
   ...({} as Omit<
     CodecContributionSpecV1<'org.example/raster-source'>,
-    'publishesDataSources' | 'sourceTopology' | 'probe'
+    'publishesDataSources' | 'sourceTopology' | 'container' | 'probe'
   >),
   sourceTopology: 'single',
   probe: { kind: 'bytes', ranges: [], maxBytes: 0 },
