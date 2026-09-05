@@ -420,3 +420,4 @@ export {
   type LanguageWorkspaceRenameRequest,
   type LanguageWorkspaceSymbolsRequest,
 } from './workspace.js'
+export { expandSubjectReferenceCompletions } from './subject-completion.js'

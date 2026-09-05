@@ -10,6 +10,12 @@ export interface FieldMember {
   readonly label?: string
 }
 
+/** Portable constraints for selecting a root asset as a field value. */
+export interface AssetReferenceFilter {
+  readonly formatIds?: readonly string[]
+  readonly traits?: readonly string[]
+}
+
 export type FieldType =
   | {
       readonly kind: 'text'
@@ -34,10 +40,7 @@ export type FieldType =
   | { readonly kind: 'subject-ref'; readonly subjectKind: string; readonly filter?: SubjectFilter }
   | {
       readonly kind: 'asset-ref'
-      readonly accepts: {
-        readonly formatIds?: readonly string[]
-        readonly traits?: readonly string[]
-      }
+      readonly accepts: AssetReferenceFilter
     }
   | { readonly kind: 'script'; readonly language: string }
   | { readonly kind: 'struct'; readonly fields: readonly FieldSchema[] }

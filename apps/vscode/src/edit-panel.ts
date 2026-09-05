@@ -21,6 +21,7 @@ import {
   type FieldEditorControlV1,
   type FieldEditorRegistry,
 } from '@modkit/ui/field-editor'
+import { subjectCandidateProviderLease } from '@modkit/ui/selector'
 import type { JsonValue } from '@modkit/sdk'
 
 import {
@@ -79,6 +80,8 @@ export function createVsCodeEditPanel(options: EditPanelOptions): ViewerModule {
     abiVersion: 1,
     async mount(args) {
       const scope = new ViewerMountScope(args.signal)
+      const candidateLease = await subjectCandidateProviderLease(args.sources, args.slot)
+      if (candidateLease !== undefined) scope.lease(candidateLease)
       const localizer = options.localizer
       const root = createSurface(args.container, localizer.text('vscode.edit.title'))
       const descriptor = asRecord(args.descriptor)
@@ -162,6 +165,7 @@ export function createVsCodeEditPanel(options: EditPanelOptions): ViewerModule {
               scope.signal,
               options.fieldEditors,
               item.editorId,
+              candidateLease?.value,
             ),
           )
           if (item.hint !== undefined) {

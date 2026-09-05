@@ -49,6 +49,7 @@ export {
 } from './schemas/contribution-specs.js'
 export * from './editing.js'
 export * from './fields/index.js'
+export * from './subjects/candidates.js'
 export {
   fieldTypeV1Schema,
   fieldSchemaV1Schema,

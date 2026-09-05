@@ -38,6 +38,7 @@ import {
   type FieldEditorControlV1,
   type FieldEditorRegistry,
 } from '@modkit/ui/field-editor'
+import { subjectCandidateProviderLease } from '@modkit/ui/selector'
 import type {
   AnyDescriptor,
   AssetEditPlan,
@@ -103,6 +104,8 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
     async mount(args) {
       const scope = new ViewerMountScope(args.signal)
       const root = createSurface(args.container, text('web.inspector.edit'))
+      const candidateLease = await subjectCandidateProviderLease(args.sources, args.slot)
+      if (candidateLease !== undefined) scope.lease(candidateLease)
       const descriptor = args.descriptor
       const ports = options.portsFor(descriptor)
       const offer = editOffer(descriptor, {
@@ -182,6 +185,7 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
               scope.signal,
               options.fieldEditors,
               item.editorId,
+              candidateLease?.value,
             ),
           )
           if (item.hint !== undefined) {

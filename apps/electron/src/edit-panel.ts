@@ -35,6 +35,7 @@ import {
   type FieldEditorControlV1,
   type FieldEditorRegistry,
 } from '@modkit/ui/field-editor'
+import { subjectCandidateProviderLease } from '@modkit/ui/selector'
 import type { AnyDescriptor, AssetEditPlan, JsonValue, ViewerModule } from '@modkit/sdk'
 
 import {
@@ -134,6 +135,8 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
     abiVersion: 1,
     async mount(args) {
       const scope = new ViewerMountScope(args.signal)
+      const candidateLease = await subjectCandidateProviderLease(args.sources, args.slot)
+      if (candidateLease !== undefined) scope.lease(candidateLease)
       const root = createSurface(args.container, text('electron.panel.edit'))
       const descriptor = asRecord(args.descriptor)
       const ports = options.portsFor(descriptor)
@@ -214,6 +217,7 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
               scope.signal,
               options.fieldEditors,
               field.editorId,
+              candidateLease?.value,
             ),
           )
           if (field.hint !== undefined) {

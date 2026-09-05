@@ -298,6 +298,10 @@ describe('NXT-103 — standard data-source surfaces', () => {
     expect(ADMITTED_DATA_SOURCE_CONTRACTS).not.toContain('common.view/world-scene-source')
     expect(dataSourceMaturity('common.view/subject-calculations-source')).toBe('admitted')
     expect(ADMITTED_DATA_SOURCE_CONTRACTS).toContain('common.view/subject-calculations-source')
+    // P2 receipt: the generic schema-driven picker and language completion independently consume
+    // one bounded provider, and their conformance test proves identical filtered candidates.
+    expect(dataSourceMaturity('common.view/subject-selector-source')).toBe('admitted')
+    expect(ADMITTED_DATA_SOURCE_CONTRACTS).toContain('common.view/subject-selector-source')
     /*
      * ODP-only slides, M3-only sockets and the not-yet-frozen common world surface remain
      * candidates. Skeleton was promoted only after a second model family supplied an independent publisher
@@ -310,10 +314,9 @@ describe('NXT-103 — standard data-source surfaces', () => {
     ).toEqual([
       'common.view/world-scene-source',
       'common.view/model-socket-source',
-      'common.view/subject-selector-source',
       'common.view/slide-deck-source',
     ])
-    expect(ADMITTED_DATA_SOURCE_CONTRACTS.length).toBe(STANDARD_DATA_SOURCE_CONTRACTS.length - 4)
+    expect(ADMITTED_DATA_SOURCE_CONTRACTS.length).toBe(STANDARD_DATA_SOURCE_CONTRACTS.length - 3)
     // the base model contract is untouched: a facet beside a contract is not a change to it
     expect(dataSourceMaturity('common.view/model-scene-source')).toBe('admitted')
     for (const contract of ADMITTED_DATA_SOURCE_CONTRACTS) {

@@ -142,6 +142,10 @@
       "types": "./dist/field-editor/index.d.ts",
       "default": "./dist/field-editor/index.js"
     },
+    "./selector": {
+      "types": "./dist/selector/index.d.ts",
+      "default": "./dist/selector/index.js"
+    },
     "./media": {
       "types": "./dist/media/encoded.d.ts",
       "default": "./dist/media/encoded.js"

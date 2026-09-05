@@ -7,6 +7,7 @@
  */
 
 import type { ServiceProviderModule } from '../runtime-abi.js'
+import type { SubjectFilter } from '../fields/index.js'
 
 /** Standard service coordinate for syntax-aware document analysis. */
 export const LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT = 'common.language/document-analysis' as const
@@ -119,6 +120,24 @@ export interface LanguageCompletionItem {
   readonly insertText?: string
   readonly insertTextFormat?: 'plain-text' | 'snippet'
   readonly sortText?: string
+}
+
+/**
+ * Declarative request for workspace candidates. A language provider states the semantic target;
+ * the host obtains identities from the same selector used by schema-driven field editors.
+ */
+export interface LanguageSubjectReferenceCompletion {
+  readonly kind: 'subject-ref'
+  readonly subjectKind: string
+  readonly filter?: SubjectFilter
+}
+
+export type LanguageProviderCompletionItem =
+  LanguageCompletionItem | LanguageSubjectReferenceCompletion
+
+export interface LanguageProviderCompletionList {
+  readonly items: readonly LanguageProviderCompletionItem[]
+  readonly isIncomplete: boolean
 }
 
 export interface LanguageCompletionList {
@@ -263,7 +282,7 @@ export interface LanguageProvider {
    */
   readonly workspaceLanguageIds?: readonly string[]
   analyze(request: LanguageAnalysisRequest): Promise<LanguageAnalysis>
-  completion?(request: LanguagePositionRequest): Promise<LanguageCompletionList>
+  completion?(request: LanguagePositionRequest): Promise<LanguageProviderCompletionList>
   hover?(request: LanguagePositionRequest): Promise<LanguageHover | undefined>
   signatureHelp?(request: LanguagePositionRequest): Promise<LanguageSignatureHelp | undefined>
   definition?(request: LanguagePositionRequest): Promise<LanguageLocationList>

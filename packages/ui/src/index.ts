@@ -116,6 +116,15 @@ export {
 } from './editor/index.js'
 export { hexEditor, createHexEditor, type HexEditorOptions } from './hex-editor/index.js'
 export {
+  SubjectSelectorModel,
+  candidateTargetForField,
+  mountSubjectSelector,
+  subjectCandidateProviderLease,
+  type SubjectSelectorControl,
+  type SubjectSelectorOptions,
+  type SubjectSelectorSnapshot,
+} from './selector/index.js'
+export {
   compileSearch,
   matches,
   matchRanges,

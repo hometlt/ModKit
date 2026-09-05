@@ -11,9 +11,11 @@ import type {
   JsonValue,
   MetadataEntry,
   OperationResult,
+  SubjectCandidateProvider,
 } from '@modkit/sdk'
 import { compareUtf8 } from '@modkit/core'
 import { isKnowledgeTarget } from '@modkit/sdk'
+import { candidateTargetForField, mountSubjectSelector } from '../selector/index.js'
 
 export interface FieldEditorControlV1 {
   read(): JsonValue
@@ -260,6 +262,7 @@ export async function mountFieldEditor(
   signal: AbortSignal,
   registry?: FieldEditorRegistry,
   editorId?: string,
+  candidates?: SubjectCandidateProvider,
 ): Promise<FieldEditorControlV1> {
   if (field.type.kind === 'custom') {
     const module = registry?.resolve(field.type.typeId, editorId)
@@ -284,6 +287,36 @@ export async function mountFieldEditor(
       throw new TypeError(`custom field editor for «${field.type.typeId}» returned no control`)
     }
     return control
+  }
+  if (field.type.kind === 'subject-ref' || field.type.kind === 'asset-ref') {
+    if (candidates !== undefined) {
+      const target = candidateTargetForField(field.type)
+      if (target === undefined) throw new TypeError('reference field has no selector target')
+      const selector = await mountSubjectSelector(container, {
+        candidates,
+        target,
+        initial: field.initialText,
+        signal,
+      })
+      return Object.freeze({
+        read: () => fieldValue(field, selector.read()),
+        validate: () => selector.validate(),
+        unmount: () => selector.destroy(),
+      })
+    }
+    const unavailable = container.ownerDocument.createElement('input')
+    unavailable.type = 'text'
+    unavailable.value = field.initialText
+    unavailable.disabled = true
+    unavailable.setAttribute('name', field.key)
+    unavailable.setAttribute('aria-label', field.label)
+    unavailable.setAttribute('part', 'form.input')
+    container.append(unavailable)
+    return Object.freeze({
+      read: () => fieldValue(field, unavailable.value),
+      validate: () => 'subject candidate source is unavailable',
+      unmount: () => unavailable.remove(),
+    })
   }
   const document = container.ownerDocument
   const input =

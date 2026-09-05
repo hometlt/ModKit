@@ -594,6 +594,13 @@ export interface SelectableSubject {
   readonly label: string
   readonly kind: string
   readonly type?: string
+  /** Provider-published semantic tags used by structured subject filters. */
+  readonly tags?: readonly string[]
+  /** Present only when this candidate is a root asset selectable by an `asset-ref` field. */
+  readonly asset?: {
+    readonly formatId: string
+    readonly traits: readonly string[]
+  }
 }
 
 export interface SubjectSelectorSummary {
@@ -606,6 +613,8 @@ export interface SubjectSelectorSummary {
 /** Optional publisher-applied filters for large nested-subject catalogs. */
 export interface SubjectSelectorQuery extends PageRequest {
   readonly filter?: import('../fields/index.js').SubjectFilter
+  /** Root-asset constraints; omission selects semantic subjects rather than root assets. */
+  readonly asset?: import('../fields/index.js').AssetReferenceFilter
   /** Exact semantic kind, for example a publisher-defined data namespace. */
   readonly kind?: string
   /** Exact publisher type within the kind. */

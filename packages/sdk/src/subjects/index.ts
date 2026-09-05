@@ -22,6 +22,14 @@ export {
   type InterpretationRef,
   type RootSubjectState,
 } from './unknown-root.js'
+export {
+  createSubjectCandidateProvider,
+  loadSubjectCandidatePage,
+  type SubjectCandidatePageSnapshot,
+  type SubjectCandidateProvider,
+  type SubjectCandidateQuery,
+  type SubjectCandidateTarget,
+} from './candidates.js'
 export type {
   AnyDescriptor,
   AssetConstraints,

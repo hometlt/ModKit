@@ -11,6 +11,7 @@ import {
   type DataCatalogOfferFacet,
   type DataCatalogRequestFacet,
   type DataEntityRef,
+  type DataResolvedEntity,
   type DataSubjectFactsOpenRequest,
   type DataSubjectCalculationsOpenRequest,
   type DataLocalizationDocument,
@@ -22,6 +23,7 @@ import {
 import type {
   DefinitionInventoryResult,
   Lease,
+  JsonValue,
   ModWorkspaceLock,
   Page,
   PermissionGrant,
@@ -530,6 +532,27 @@ export interface ResolvedDataSubjectSelectorLimits {
   readonly maxEntities: number
   readonly maxRelations: number
   readonly maxCalculations: number
+  /** Optional provider-owned candidate metadata; the host never derives tags from field names. */
+  readonly candidateMetadata?: (entity: DataResolvedEntity) =>
+    | Readonly<{
+        tags?: readonly string[]
+        asset?: Readonly<{ formatId: string; traits: readonly string[] }>
+      }>
+    | undefined
+  /** Named predicates declared by the subject-kind contribution and implemented by its provider. */
+  readonly predicates?: Readonly<
+    Record<
+      string,
+      (
+        context: Readonly<{
+          subject: SelectableSubject
+          entity: DataResolvedEntity
+          sameTypeAs?: SelectableSubject
+          params?: JsonValue
+        }>,
+      ) => boolean
+    >
+  >
 }
 
 /**
@@ -553,6 +576,9 @@ export function createResolvedDataSubjectSelectorLease(
   })
   const snapshot = analyzed.snapshot
   const localized = new Map(snapshot.localizedStrings.map(item => [item.key, item.value]))
+  const entitiesById = new Map(
+    snapshot.definitions.map(entity => [`${entity.namespace}/${entity.entityId}`, entity]),
+  )
   const subjects = Object.freeze(
     snapshot.definitions
       .map(entity => {
@@ -561,11 +587,41 @@ export function createResolvedDataSubjectSelectorLease(
           typeof authoredName === 'string'
             ? (localized.get(authoredName) ?? entity.entityId)
             : entity.entityId
+        const metadata = inputLimits.candidateMetadata?.(entity)
+        if (
+          metadata?.tags !== undefined &&
+          (!Array.isArray(metadata.tags) ||
+            metadata.tags.some(tag => typeof tag !== 'string' || tag.length === 0) ||
+            new Set(metadata.tags).size !== metadata.tags.length)
+        ) {
+          throw new TypeError('subject selector metadata contains invalid tags')
+        }
+        if (
+          metadata?.asset !== undefined &&
+          (typeof metadata.asset !== 'object' ||
+            metadata.asset === null ||
+            typeof metadata.asset.formatId !== 'string' ||
+            metadata.asset.formatId.length === 0 ||
+            !Array.isArray(metadata.asset.traits) ||
+            metadata.asset.traits.some(trait => typeof trait !== 'string' || trait.length === 0) ||
+            new Set(metadata.asset.traits).size !== metadata.asset.traits.length)
+        ) {
+          throw new TypeError('subject selector metadata contains an invalid asset description')
+        }
         return Object.freeze({
           subjectId: `${entity.namespace}/${entity.entityId}`,
           label,
           kind: entity.namespace,
           type: entity.typeId,
+          ...(metadata?.tags === undefined ? {} : { tags: Object.freeze([...metadata.tags]) }),
+          ...(metadata?.asset === undefined
+            ? {}
+            : {
+                asset: Object.freeze({
+                  formatId: metadata.asset.formatId,
+                  traits: Object.freeze([...metadata.asset.traits]),
+                }),
+              }),
         }) satisfies SelectableSubject
       })
       .sort((left, right) => left.subjectId.localeCompare(right.subjectId)),
@@ -586,15 +642,62 @@ export function createResolvedDataSubjectSelectorLease(
       throw new RangeError(`subject selector limit must be between 1 and ${limits.maxPageSize}`)
     }
     const text = request.text?.trim().toLocaleLowerCase('en-US')
-    const filtered = subjects.filter(
-      subject =>
+    const filterText = request.filter?.text?.trim().toLocaleLowerCase('en-US')
+    const sameTypeAs =
+      request.filter?.sameTypeAs === undefined ? undefined : byId.get(request.filter.sameTypeAs)
+    if (request.filter?.sameTypeAs !== undefined && sameTypeAs === undefined) {
+      throw new RangeError(
+        `subject selector sameTypeAs anchor not found: ${request.filter.sameTypeAs}`,
+      )
+    }
+    const predicateId = request.filter?.predicate?.id
+    const predicate = predicateId === undefined ? undefined : inputLimits.predicates?.[predicateId]
+    if (predicateId !== undefined && predicate === undefined) {
+      throw new RangeError(`subject selector predicate is unavailable: ${predicateId}`)
+    }
+    const matchesText = (subject: SelectableSubject, needle: string | undefined): boolean =>
+      needle === undefined ||
+      needle.length === 0 ||
+      subject.subjectId.toLocaleLowerCase('en-US').includes(needle) ||
+      subject.label.toLocaleLowerCase('en-US').includes(needle)
+    const acceptsAsset = (subject: SelectableSubject): boolean => {
+      if (request.asset === undefined) return subject.asset === undefined
+      const asset = subject.asset
+      if (asset === undefined) return false
+      return (
+        (request.asset.formatIds === undefined ||
+          request.asset.formatIds.includes(asset.formatId)) &&
+        (request.asset.traits === undefined ||
+          request.asset.traits.every(trait => asset.traits.includes(trait)))
+      )
+    }
+    const filtered = subjects.filter(subject => {
+      const tags = subject.tags ?? []
+      const entity = entitiesById.get(subject.subjectId)
+      return (
+        acceptsAsset(subject) &&
         (request.kind === undefined || subject.kind === request.kind) &&
         (request.type === undefined || subject.type === request.type) &&
-        (text === undefined ||
-          text.length === 0 ||
-          subject.subjectId.toLocaleLowerCase('en-US').includes(text) ||
-          subject.label.toLocaleLowerCase('en-US').includes(text)),
-    )
+        (request.filter?.type === undefined || subject.type === request.filter.type) &&
+        (sameTypeAs === undefined || subject.type === sameTypeAs.type) &&
+        matchesText(subject, text) &&
+        matchesText(subject, filterText) &&
+        (request.filter?.requireTags === undefined ||
+          request.filter.requireTags.every(tag => tags.includes(tag))) &&
+        (request.filter?.excludeTags === undefined ||
+          request.filter.excludeTags.every(tag => !tags.includes(tag))) &&
+        (predicate === undefined ||
+          (entity !== undefined &&
+            predicate({
+              subject,
+              entity,
+              ...(sameTypeAs === undefined ? {} : { sameTypeAs }),
+              ...(request.filter?.predicate?.params === undefined
+                ? {}
+                : { params: request.filter.predicate.params }),
+            }) === true))
+      )
+    })
     const offset =
       request.cursor === undefined ? 0 : Number(request.cursor.replace(/^subject:/u, ''))
     if (

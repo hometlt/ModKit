@@ -20,6 +20,7 @@ import {
   type LanguageAnalysis,
   type LanguageAnalysisRequest,
   type LanguageCompletionList,
+  type LanguageProviderCompletionList,
   type LanguageDiagnosticList,
   type LanguageDocument,
   type LanguageDocumentSymbolList,
@@ -42,7 +43,13 @@ import {
   type LanguageWorkspaceEdit,
   type LanguageWorkspaceSymbolList,
 } from '@modkit/sdk/language'
-import type { PermissionGrant, ResourceBudget } from '@modkit/sdk'
+import type {
+  JsonValue,
+  PermissionGrant,
+  ResourceBudget,
+  SubjectCandidateProvider,
+  SubjectFilter,
+} from '@modkit/sdk'
 import type { Inventory } from '../inventory.js'
 import { offersFromInventory } from '../offers.js'
 import {
@@ -50,6 +57,7 @@ import {
   type LanguageHostServices,
   type LanguageProviderResolution,
 } from './index.js'
+import { expandSubjectReferenceCompletions } from './subject-completion.js'
 
 export const LANGUAGE_WORKSPACE_NOT_INITIALIZED = 'x3.host/language-workspace-not-initialized'
 export const LANGUAGE_WORKSPACE_SHUT_DOWN = 'x3.host/language-workspace-shut-down'
@@ -194,6 +202,8 @@ export interface LanguageWorkspaceOptions {
   readonly services: LanguageHostServices
   readonly grant: PermissionGrant
   readonly budgets: ResourceBudget
+  /** Workspace selector shared with subject-ref field editors. */
+  readonly subjectCandidates?: SubjectCandidateProvider
 }
 
 export interface LanguageWorkspaceDocumentRequest extends LanguageProviderRequestFacet {
@@ -464,6 +474,110 @@ function invalidFeature(message: string, uri: string): never {
   throw workspaceError(LANGUAGE_FEATURE_INVALID, message, { uri })
 }
 
+function validJsonValue(value: unknown, seen: ReadonlySet<object> = new Set()): value is JsonValue {
+  if (
+    value === null ||
+    typeof value === 'string' ||
+    typeof value === 'boolean' ||
+    (typeof value === 'number' && Number.isFinite(value))
+  ) {
+    return true
+  }
+  if (typeof value !== 'object' || seen.has(value)) return false
+  const next = new Set(seen).add(value)
+  if (Array.isArray(value)) return value.every(item => validJsonValue(item, next))
+  if (Object.getPrototypeOf(value) !== Object.prototype && Object.getPrototypeOf(value) !== null) {
+    return false
+  }
+  return Object.entries(value).every(
+    ([key, item]) =>
+      key !== '__proto__' &&
+      key !== 'prototype' &&
+      key !== 'constructor' &&
+      validJsonValue(item, next),
+  )
+}
+
+const validFilterStrings = (value: unknown): value is readonly string[] =>
+  Array.isArray(value) &&
+  value.every(item => typeof item === 'string' && item.length > 0) &&
+  new Set(value).size === value.length
+
+function validSubjectFilter(value: unknown): value is SubjectFilter {
+  const filter = recordOf(value)
+  if (
+    filter === undefined ||
+    Object.keys(filter).some(
+      key =>
+        !['type', 'sameTypeAs', 'text', 'requireTags', 'excludeTags', 'predicate'].includes(key),
+    ) ||
+    (filter['type'] !== undefined &&
+      (typeof filter['type'] !== 'string' || filter['type'].length === 0)) ||
+    (filter['sameTypeAs'] !== undefined &&
+      (typeof filter['sameTypeAs'] !== 'string' || filter['sameTypeAs'].length === 0)) ||
+    (filter['text'] !== undefined && typeof filter['text'] !== 'string') ||
+    (filter['requireTags'] !== undefined && !validFilterStrings(filter['requireTags'])) ||
+    (filter['excludeTags'] !== undefined && !validFilterStrings(filter['excludeTags']))
+  ) {
+    return false
+  }
+  if (filter['predicate'] === undefined) return true
+  const predicate = recordOf(filter['predicate'])
+  return (
+    predicate !== undefined &&
+    Object.keys(predicate).every(key => key === 'id' || key === 'params') &&
+    typeof predicate['id'] === 'string' &&
+    predicate['id'].length > 0 &&
+    (predicate['params'] === undefined || validJsonValue(predicate['params']))
+  )
+}
+
+const validCompletionItem = (item: Readonly<Record<string, unknown>>): boolean =>
+  typeof item['label'] === 'string' &&
+  item['label'].length > 0 &&
+  typeof item['kind'] === 'string' &&
+  COMPLETION_KINDS.has(item['kind']) &&
+  (item['detail'] === undefined || typeof item['detail'] === 'string') &&
+  (item['documentation'] === undefined || typeof item['documentation'] === 'string') &&
+  (item['insertText'] === undefined || typeof item['insertText'] === 'string') &&
+  (item['insertTextFormat'] === undefined ||
+    item['insertTextFormat'] === 'plain-text' ||
+    item['insertTextFormat'] === 'snippet') &&
+  (item['sortText'] === undefined || typeof item['sortText'] === 'string')
+
+function validateProviderCompletionList(
+  value: unknown,
+  request: LanguageFeatureRequest,
+): LanguageProviderCompletionList {
+  const list = recordOf(value)
+  const items = list?.['items']
+  if (
+    list === undefined ||
+    !Array.isArray(items) ||
+    items.length > request.maxResults ||
+    typeof list['isIncomplete'] !== 'boolean' ||
+    !items.every(item => {
+      const record = recordOf(item)
+      if (record === undefined) return false
+      if (record['kind'] !== 'subject-ref') return validCompletionItem(record)
+      return (
+        Object.keys(record).every(
+          key => key === 'kind' || key === 'subjectKind' || key === 'filter',
+        ) &&
+        typeof record['subjectKind'] === 'string' &&
+        record['subjectKind'].length > 0 &&
+        (record['filter'] === undefined || validSubjectFilter(record['filter']))
+      )
+    })
+  ) {
+    invalidFeature(
+      'language provider returned an invalid or unbounded completion list',
+      request.document.uri,
+    )
+  }
+  return value as LanguageProviderCompletionList
+}
+
 function validateCompletionList(
   value: unknown,
   request: LanguageFeatureRequest,
@@ -475,21 +589,10 @@ function validateCompletionList(
     !Array.isArray(list.items) ||
     list.items.length > request.maxResults ||
     typeof list.isIncomplete !== 'boolean' ||
-    !list.items.every(
-      item =>
-        typeof item === 'object' &&
-        item !== null &&
-        typeof item.label === 'string' &&
-        item.label.length > 0 &&
-        COMPLETION_KINDS.has(item.kind) &&
-        (item.detail === undefined || typeof item.detail === 'string') &&
-        (item.documentation === undefined || typeof item.documentation === 'string') &&
-        (item.insertText === undefined || typeof item.insertText === 'string') &&
-        (item.insertTextFormat === undefined ||
-          item.insertTextFormat === 'plain-text' ||
-          item.insertTextFormat === 'snippet') &&
-        (item.sortText === undefined || typeof item.sortText === 'string'),
-    )
+    !list.items.every(item => {
+      const record = recordOf(item)
+      return record !== undefined && validCompletionItem(record)
+    })
   ) {
     invalidFeature(
       'language provider returned an invalid or unbounded completion list',
@@ -882,7 +985,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       provider: LanguageProvider,
       request: LanguageFeatureRequest,
     ) => Promise<unknown> | undefined,
-    validate: (value: unknown, request: LanguageFeatureRequest) => Value,
+    validate: (value: unknown, request: LanguageFeatureRequest) => Value | Promise<Value>,
     additions: Readonly<Record<string, unknown>> = {},
   ): Promise<Value | undefined> => {
     const entry = requireFeatureEntry(workspaceRequest, positioned)
@@ -958,7 +1061,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       ) {
         throw new OperationCancelledError('stale language feature result')
       }
-      return validate(candidate, providerRequest)
+      return await validate(candidate, providerRequest)
     } finally {
       unlink()
       featureControllers.delete(controller)
@@ -1192,7 +1295,16 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
             ...feature,
             position: request.position,
           }),
-        validateCompletionList,
+        async (value, feature) => {
+          const declared = validateProviderCompletionList(value, feature)
+          const expanded = await expandSubjectReferenceCompletions(
+            declared,
+            options.subjectCandidates,
+            feature.maxResults,
+            feature.signal,
+          )
+          return validateCompletionList(expanded, feature)
+        },
         { position: request.position },
       )
     },

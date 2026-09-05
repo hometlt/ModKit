@@ -62,9 +62,9 @@ export type DataSourceMaturity = 'admitted' | 'publisher-candidate'
  * `common.view/subject-calculations-source` is admitted after two independent publishers exposed
  * the same bounded formula/input/result boundary and the common UI and MCP consumed it.
  *
- * `common.view/subject-selector-source` is a publisher candidate used by container-like subjects
- * to lend the standard facts/calculations sources for one explicitly selected nested subject. It
- * remains a candidate until another independent publisher proves the same selection boundary.
+ * `common.view/subject-selector-source` is admitted by P2 after the schema-driven field selector
+ * and language completion became two independent generic consumers of the same bounded candidate
+ * seam. Their conformance receipt covers filtering, paging, completeness and candidate parity.
  *
  * `common.view/model-skeleton-source` was admitted after an independent model family began
  * publishing corpus-backed bone bindings. A second family has a different parser and vendor lineage.
@@ -108,7 +108,7 @@ export const DATA_SOURCE_MATURITY: Readonly<Record<StandardDataSourceId, DataSou
     'common.view/model-material-source': 'admitted',
     'common.view/model-socket-source': 'publisher-candidate',
     'common.view/relation-graph-source': 'admitted',
-    'common.view/subject-selector-source': 'publisher-candidate',
+    'common.view/subject-selector-source': 'admitted',
     'common.view/subject-facts-source': 'admitted',
     'common.view/subject-calculations-source': 'admitted',
     'common.view/slide-deck-source': 'publisher-candidate',

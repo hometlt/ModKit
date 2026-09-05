@@ -94,7 +94,7 @@ describe('descriptor-v2 wire facts', () => {
       // Block 15D: standard wire contract, publisher-candidate until a second native publisher exists.
       'common.view/model-socket-source',
       'common.view/relation-graph-source',
-      // Container subjects lend facts/calculations for one explicit nested-subject selection.
+      // P2: admitted after the field picker and language completion shared one conformance seam.
       'common.view/subject-selector-source',
       'common.view/subject-facts-source',
       // Admitted after two independent publishers plus common consumers.

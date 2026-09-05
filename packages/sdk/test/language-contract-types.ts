@@ -1,6 +1,7 @@
 import type { ServiceProviderContributionSpecV1 } from '@modkit/sdk/formats'
 import type {
   LanguageProvider,
+  LanguageProviderCompletionList,
   LanguageProviderModule,
   LanguageProviderRequestFacet,
 } from '@modkit/sdk/language'
@@ -39,3 +40,18 @@ export declare const providerModule: LanguageProviderModule
 export const analysis = provider.analyze({
   document: { uri: 'file:///x.galaxy', languageId: 'galaxy', version: 1, text: '' },
 })
+
+export const subjectReferenceCompletion = {
+  items: [
+    {
+      kind: 'subject-ref',
+      subjectKind: 'unit',
+      filter: {
+        type: 'structure',
+        excludeTags: ['default'],
+        predicate: { id: 'minimum-rank', params: { rank: 2 } },
+      },
+    },
+  ],
+  isIncomplete: true,
+} satisfies LanguageProviderCompletionList
