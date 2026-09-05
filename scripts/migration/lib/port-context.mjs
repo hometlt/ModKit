@@ -9,10 +9,18 @@ export async function portContext({ discoverRepositories = false } = {}) {
   const inventory = await readJson(path.join(coreRoot, 'migration/generated/source-inventory.json'))
   const audit = await readJson(path.join(stateRoot, 'sc2-audit.json'))
   const authored = await readJson(path.join(stateRoot, 'authored.json'))
-  const requirements = requirementsFor(inventory, audit.rows, authored.entries)
+  const archiveRows = audit.archiveRows ?? {}
+  const audits = { ...audit.rows, ...archiveRows }
+  const requirements = requirementsFor(inventory, audits, authored.entries)
   const units = inventory.units.filter(unit => unit.kind === 'codec-manifest')
-  if (units.length !== 206 || Object.keys(audit.rows).length !== 12)
-    throw new Error('frozen inventory must contain 206 legacy codecs and 12 SC2 audits')
+  if (
+    units.length !== 206 ||
+    Object.keys(audit.rows).length !== 12 ||
+    Object.keys(archiveRows).sort().join(',') !== 'casc,mpq'
+  )
+    throw new Error(
+      'frozen inventory must contain 206 legacy codecs, 12 SC2 audits and MPQ/CASC shared audits',
+    )
   const repositories = []
   if (discoverRepositories) {
     const { externalRepositoryRoot } = await import('./external-extension-roots.mjs')
@@ -26,7 +34,7 @@ export async function portContext({ discoverRepositories = false } = {}) {
   }
   return {
     inventory,
-    audits: audit.rows,
+    audits,
     authored: authored.entries,
     requirements,
     units,

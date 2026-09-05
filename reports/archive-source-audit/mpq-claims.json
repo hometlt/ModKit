@@ -1,0 +1,11 @@
+{
+  "codec": "mpq",
+  "requirementIds": [
+    "legacy/codec-manifest/modkit/mpq/feature/0832423851151f7b",
+    "legacy/codec-manifest/modkit/mpq/feature/2b6023cf39126dc9",
+    "legacy/codec-manifest/modkit/mpq/feature/3f2c5d014ac5e6ee",
+    "legacy/codec-manifest/modkit/mpq/feature/a58432f21fee1271",
+    "legacy/codec-manifest/modkit/mpq/feature/d0c69466a6911345"
+  ],
+  "schemaVersion": 1
+}

@@ -1,0 +1,214 @@
+{
+  "cases": [
+    {
+      "id": "source-audit:mpq:3f2c5d014ac5e6ee",
+      "resultDigest": "056202fe76e3d151c8ee155dab21a4820fb37dff28a9ef05a52dcfc7728806c3",
+      "verdict": "identical"
+    },
+    {
+      "id": "source-audit:mpq:0832423851151f7b",
+      "resultDigest": "2353d4b21a93bf1858b30446993dada69719540077d936fd28af38c88fd8f9f1",
+      "verdict": "identical"
+    },
+    {
+      "id": "source-audit:mpq:a58432f21fee1271",
+      "resultDigest": "b92a2be285ed677664c53931df0e3ff7d898dd5531128003a233347d0c7d1167",
+      "verdict": "identical"
+    },
+    {
+      "id": "source-audit:mpq:d0c69466a6911345",
+      "resultDigest": "292807de17f893c5882f68dc1f6a589a9703542cfd2d48a312b85d264d8d6997",
+      "verdict": "identical"
+    },
+    {
+      "id": "source-audit:mpq:2b6023cf39126dc9",
+      "resultDigest": "d0b40cfd2cc4209e812666525a1e601901cb9a29a2cd280095a722aeb8ae3fe4",
+      "verdict": "identical"
+    }
+  ],
+  "codec": "mpq",
+  "corpusKind": "mixed",
+  "counts": {
+    "bothRefused": 0,
+    "differing": 0,
+    "identical": 5,
+    "total": 5
+  },
+  "inputs": {
+    "operation": "source.audit",
+    "rawReceipt": "modkit-core/reports/archive-source-audit/raw-receipt.json",
+    "rawReceiptSha256": "6d6169ee6d1af350c85077677ff78c462b7e11cd1b48fc75aab71a98af6bad80",
+    "workspaceCommit": "c679c3a06a044dd261faf0b40995bbf42b52950e"
+  },
+  "oracleVerification": {
+    "modules": [
+      {
+        "corpusDigest": "f3fb81ffdabdfd93470e8be4f4b382b059168d239ef6dde5107d570e4cbc3759",
+        "dependencies": [
+          {
+            "commit": "c679c3a06a044dd261faf0b40995bbf42b52950e",
+            "repository": "modkit-extensions-blizzard",
+            "scopedDirtyPaths": []
+          }
+        ],
+        "dependenciesDigest": "7570871ddfc7d9980a5b31640fc30585005a699cab7703bd905317460f735a0b",
+        "id": "mpq-mk2-odb-source-closure",
+        "loader": [
+          {
+            "path": "modkit-extensions-blizzard/scripts/run-archive-source-audit.mjs",
+            "sha256": "74682e9555f9b946260cf9c9d89fc3bccd3c400f82672e01897ac4c432bd1dcc"
+          }
+        ],
+        "loaderDigest": "4e01ba504c62cd00920b3b790733cf4f1b8e2d7627c20d661bb2c9d88a9340b5",
+        "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "source": [
+          {
+            "bytes": 6150,
+            "gitBlob": "232cfb0061156722672f423dd0b6ac6281adb41e",
+            "path": "extensions/blizzard/archives/codecs/mpq/src/codec.ts",
+            "sha256": "149cf5cb489067127a06d0404d2d081cdc4bbd395788d29e038a537826faa702"
+          },
+          {
+            "bytes": 1628,
+            "gitBlob": "244ee97b42ccc9c80fe60c967f3875e88e696dd5",
+            "path": "extensions/blizzard/archives/codecs/mpq/src/index.ts",
+            "sha256": "055d394d386754d555904c625c34cbf970c1c3b872adc46ce77cdeee33908d4e"
+          },
+          {
+            "bytes": 13055,
+            "gitBlob": "cd03a8902afda496d46988df13c0ec6306321a77",
+            "path": "extensions/blizzard/archives/codecs/mpq/src/mpq-impl.ts",
+            "sha256": "c7ab130cd4f44741ea96c62ee09f74349282aa20c4b31dfffdcbb576b3b418dc"
+          },
+          {
+            "bytes": 6276,
+            "gitBlob": "3016139daecf321d0a649f152a491cb94e9e986a",
+            "path": "extensions/blizzard/archives/codecs/mpq/src/obfuscate.ts",
+            "sha256": "4e5d6c7a278292206e3e383afaf7acc1a14c80092d9858e6096998f941aec228"
+          },
+          {
+            "bytes": 6894,
+            "gitBlob": "64802b5a6a2d9efc621cb293e27af115fb6e5922",
+            "path": "extensions/blizzard/archives/codecs/mpq/src/reader.ts",
+            "sha256": "1852f03f0d8cfaf955be3cc0c484cd76ab89a5267adb03c8863737f4da037c6f"
+          },
+          {
+            "bytes": 8200,
+            "gitBlob": "54d72f5a17478568f05410328ec0c1426ccc7b46",
+            "path": "extensions/blizzard/archives/codecs/mpq/src/recovery.ts",
+            "sha256": "b77dab4db04076fa8cc4b81d97a76c90d84f7cda9c2fb3eca0a621dd2b705891"
+          },
+          {
+            "bytes": 123,
+            "gitBlob": "7d04dc305b86eb99bc6c4c6f6630fe9a381db5d8",
+            "path": "extensions/blizzard/archives/codecs/mpq/src/seek-bzip.d.ts",
+            "sha256": "105c83241967aae62f4b31aeb1218f92caa71d7e66b611c687a6360540bd48a2"
+          },
+          {
+            "bytes": 21222,
+            "gitBlob": "b8502a1623029eb00990340cffb8e825fd0be00a",
+            "path": "extensions/blizzard/archives/codecs/mpq/src/source-reader.ts",
+            "sha256": "0b4ad53a77b1243609595004dbf7d09cd3e817a8cdc899e5e7dc25159deca25a"
+          },
+          {
+            "bytes": 7471,
+            "gitBlob": "10186ded905a2413920517e0f4a0cad6c6f7eef4",
+            "path": "extensions/blizzard/archives/codecs/mpq/src/writer.ts",
+            "sha256": "bd5c57d45f3406e96043debc9773d42dc87bb99713e351d0e8a8b22556928b5f"
+          }
+        ],
+        "sourceClosureDigest": "62fb05e59b31ecc38d95a9c832b36785af61a3f778f839a5d613a7de40f92f45"
+      }
+    ],
+    "operation": "source.audit",
+    "verified": true
+  },
+  "proofs": [
+    {
+      "adapterOperation": "source.audit",
+      "caseIds": [
+        "source-audit:mpq:3f2c5d014ac5e6ee"
+      ],
+      "kind": "feature",
+      "requirement": "legacy/codec-manifest/modkit/mpq/feature/3f2c5d014ac5e6ee"
+    },
+    {
+      "adapterOperation": "source.audit",
+      "caseIds": [
+        "source-audit:mpq:0832423851151f7b"
+      ],
+      "kind": "feature",
+      "requirement": "legacy/codec-manifest/modkit/mpq/feature/0832423851151f7b"
+    },
+    {
+      "adapterOperation": "source.audit",
+      "caseIds": [
+        "source-audit:mpq:a58432f21fee1271"
+      ],
+      "kind": "feature",
+      "requirement": "legacy/codec-manifest/modkit/mpq/feature/a58432f21fee1271"
+    },
+    {
+      "adapterOperation": "source.audit",
+      "caseIds": [
+        "source-audit:mpq:d0c69466a6911345"
+      ],
+      "kind": "feature",
+      "requirement": "legacy/codec-manifest/modkit/mpq/feature/d0c69466a6911345"
+    },
+    {
+      "adapterOperation": "source.audit",
+      "caseIds": [
+        "source-audit:mpq:2b6023cf39126dc9"
+      ],
+      "kind": "feature",
+      "requirement": "legacy/codec-manifest/modkit/mpq/feature/2b6023cf39126dc9"
+    }
+  ],
+  "rawEvidence": {
+    "featureGroups": 5,
+    "oracleInventory": {
+      "sources": 9,
+      "tests": 5,
+      "total": 16
+    },
+    "validation": {
+      "commands": [
+        {
+          "command": "node ./node_modules/vitest/vitest.mjs run --config ./test/vitest.config.mjs casc/test",
+          "exitCode": 0,
+          "finishedAt": "2026-09-05T06:50:39.757Z",
+          "label": "casc",
+          "startedAt": "2026-09-05T06:50:36.623Z",
+          "testFiles": 19,
+          "tests": 76
+        },
+        {
+          "command": "node ./node_modules/vitest/vitest.mjs run --config ./test/vitest.config.mjs mpq/test",
+          "exitCode": 0,
+          "finishedAt": "2026-09-05T06:50:44.918Z",
+          "label": "mpq",
+          "startedAt": "2026-09-05T06:50:39.757Z",
+          "testFiles": 8,
+          "tests": 39
+        }
+      ],
+      "totals": {
+        "testFiles": 27,
+        "tests": 115
+      }
+    },
+    "workspace": {
+      "commit": "c679c3a06a044dd261faf0b40995bbf42b52950e",
+      "repository": "modkit-extensions-blizzard",
+      "scopedDirtyPaths": []
+    }
+  },
+  "schemaVersion": 1,
+  "tests": {
+    "failed": 0,
+    "passed": 5,
+    "skipped": 0
+  },
+  "verdict": "pass"
+}

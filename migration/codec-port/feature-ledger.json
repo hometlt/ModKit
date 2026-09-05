@@ -381,9 +381,84 @@
       "status": "pending"
     },
     {
-      "evidence": [],
-      "id": "legacy/codec-manifest/modkit/casc/audit",
-      "status": "pending"
+      "evidence": [
+        {
+          "path": "modkit-core/reports/archive-source-audit/casc-receipt.json",
+          "sha256": "0408c53377c457d5f2da2143ab3f7ec8317c725cd2bb7e7e2d8ca097d0557d7c"
+        }
+      ],
+      "id": "legacy/codec-manifest/modkit/casc/feature/2fa2dc769be45ecd",
+      "status": "adapted"
+    },
+    {
+      "evidence": [
+        {
+          "path": "modkit-core/reports/archive-source-audit/casc-receipt.json",
+          "sha256": "0408c53377c457d5f2da2143ab3f7ec8317c725cd2bb7e7e2d8ca097d0557d7c"
+        }
+      ],
+      "id": "legacy/codec-manifest/modkit/casc/feature/6df73aca4361a95b",
+      "status": "adapted"
+    },
+    {
+      "evidence": [
+        {
+          "path": "modkit-core/reports/archive-source-audit/casc-receipt.json",
+          "sha256": "0408c53377c457d5f2da2143ab3f7ec8317c725cd2bb7e7e2d8ca097d0557d7c"
+        }
+      ],
+      "id": "legacy/codec-manifest/modkit/casc/feature/79c2dce21843188a",
+      "status": "adapted"
+    },
+    {
+      "evidence": [
+        {
+          "path": "modkit-core/reports/archive-source-audit/casc-receipt.json",
+          "sha256": "0408c53377c457d5f2da2143ab3f7ec8317c725cd2bb7e7e2d8ca097d0557d7c"
+        }
+      ],
+      "id": "legacy/codec-manifest/modkit/casc/feature/8f020ae7b5a75a50",
+      "status": "adapted"
+    },
+    {
+      "evidence": [
+        {
+          "path": "modkit-core/reports/archive-source-audit/casc-receipt.json",
+          "sha256": "0408c53377c457d5f2da2143ab3f7ec8317c725cd2bb7e7e2d8ca097d0557d7c"
+        }
+      ],
+      "id": "legacy/codec-manifest/modkit/casc/feature/9f6f6dd9f39817aa",
+      "status": "adapted"
+    },
+    {
+      "evidence": [
+        {
+          "path": "modkit-core/reports/archive-source-audit/casc-receipt.json",
+          "sha256": "0408c53377c457d5f2da2143ab3f7ec8317c725cd2bb7e7e2d8ca097d0557d7c"
+        }
+      ],
+      "id": "legacy/codec-manifest/modkit/casc/feature/ceaa2520251ec85e",
+      "status": "adapted"
+    },
+    {
+      "evidence": [
+        {
+          "path": "modkit-core/reports/archive-source-audit/casc-receipt.json",
+          "sha256": "0408c53377c457d5f2da2143ab3f7ec8317c725cd2bb7e7e2d8ca097d0557d7c"
+        }
+      ],
+      "id": "legacy/codec-manifest/modkit/casc/feature/df456c9b9806e634",
+      "status": "adapted"
+    },
+    {
+      "evidence": [
+        {
+          "path": "modkit-core/reports/archive-source-audit/casc-receipt.json",
+          "sha256": "0408c53377c457d5f2da2143ab3f7ec8317c725cd2bb7e7e2d8ca097d0557d7c"
+        }
+      ],
+      "id": "legacy/codec-manifest/modkit/casc/feature/ed5649c4f3c0b1f8",
+      "status": "adapted"
     },
     {
       "evidence": [
@@ -1651,9 +1726,54 @@
       "status": "pending"
     },
     {
-      "evidence": [],
-      "id": "legacy/codec-manifest/modkit/mpq/audit",
-      "status": "pending"
+      "evidence": [
+        {
+          "path": "modkit-core/reports/archive-source-audit/mpq-receipt.json",
+          "sha256": "3b4d44e22ec34017ba7813b1d53e9dec28732f3a75f60f8e0d2bdf8504f9d05f"
+        }
+      ],
+      "id": "legacy/codec-manifest/modkit/mpq/feature/0832423851151f7b",
+      "status": "adapted"
+    },
+    {
+      "evidence": [
+        {
+          "path": "modkit-core/reports/archive-source-audit/mpq-receipt.json",
+          "sha256": "3b4d44e22ec34017ba7813b1d53e9dec28732f3a75f60f8e0d2bdf8504f9d05f"
+        }
+      ],
+      "id": "legacy/codec-manifest/modkit/mpq/feature/2b6023cf39126dc9",
+      "status": "adapted"
+    },
+    {
+      "evidence": [
+        {
+          "path": "modkit-core/reports/archive-source-audit/mpq-receipt.json",
+          "sha256": "3b4d44e22ec34017ba7813b1d53e9dec28732f3a75f60f8e0d2bdf8504f9d05f"
+        }
+      ],
+      "id": "legacy/codec-manifest/modkit/mpq/feature/3f2c5d014ac5e6ee",
+      "status": "adapted"
+    },
+    {
+      "evidence": [
+        {
+          "path": "modkit-core/reports/archive-source-audit/mpq-receipt.json",
+          "sha256": "3b4d44e22ec34017ba7813b1d53e9dec28732f3a75f60f8e0d2bdf8504f9d05f"
+        }
+      ],
+      "id": "legacy/codec-manifest/modkit/mpq/feature/a58432f21fee1271",
+      "status": "adapted"
+    },
+    {
+      "evidence": [
+        {
+          "path": "modkit-core/reports/archive-source-audit/mpq-receipt.json",
+          "sha256": "3b4d44e22ec34017ba7813b1d53e9dec28732f3a75f60f8e0d2bdf8504f9d05f"
+        }
+      ],
+      "id": "legacy/codec-manifest/modkit/mpq/feature/d0c69466a6911345",
+      "status": "adapted"
     },
     {
       "evidence": [

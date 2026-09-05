@@ -611,9 +611,108 @@
     {
       "codec": "casc",
       "family": "sc2",
-      "id": "legacy/codec-manifest/modkit/casc/audit",
-      "kind": "audit",
-      "label": "Full source feature audit remains required before family acceptance",
+      "id": "legacy/codec-manifest/modkit/casc/feature/2fa2dc769be45ecd",
+      "kind": "feature",
+      "label": "Installation discovery split into a host provider with SC2 product identity checks",
+      "sourceRefs": [
+        "src/install-discovery.ts"
+      ],
+      "sourceUnitId": "legacy/codec-manifest/modkit/casc"
+    },
+    {
+      "codec": "casc",
+      "family": "sc2",
+      "id": "legacy/codec-manifest/modkit/casc/feature/6df73aca4361a95b",
+      "kind": "feature",
+      "label": "Host-injected CDN fallback for encoding keys absent from local CASC storage",
+      "sourceRefs": [
+        "src/cdn.ts",
+        "src/storage.ts"
+      ],
+      "sourceUnitId": "legacy/codec-manifest/modkit/casc"
+    },
+    {
+      "codec": "casc",
+      "family": "sc2",
+      "id": "legacy/codec-manifest/modkit/casc/feature/79c2dce21843188a",
+      "kind": "feature",
+      "label": "Portable CASC patch-bundle writer and overlay kept separate from installed-storage mutation",
+      "sourceRefs": [
+        "src/writer.ts"
+      ],
+      "sourceUnitId": "legacy/codec-manifest/modkit/casc"
+    },
+    {
+      "codec": "casc",
+      "family": "sc2",
+      "id": "legacy/codec-manifest/modkit/casc/feature/8f020ae7b5a75a50",
+      "kind": "feature",
+      "label": "Archive namespace adapter, path aliases and install-reader lifecycle",
+      "sourceRefs": [
+        "src/codec.ts",
+        "src/index.ts",
+        "src/install-reader.ts",
+        "src/path-map.ts"
+      ],
+      "sourceUnitId": "legacy/codec-manifest/modkit/casc"
+    },
+    {
+      "codec": "casc",
+      "family": "sc2",
+      "id": "legacy/codec-manifest/modkit/casc/feature/9f6f6dd9f39817aa",
+      "kind": "feature",
+      "label": "Local index selection, encoding-table lookup, install-manifest parsing and container storage reads",
+      "sourceRefs": [
+        "src/config.ts",
+        "src/encoding.ts",
+        "src/install.ts",
+        "src/storage.ts"
+      ],
+      "sourceUnitId": "legacy/codec-manifest/modkit/casc"
+    },
+    {
+      "codec": "casc",
+      "family": "sc2",
+      "id": "legacy/codec-manifest/modkit/casc/feature/ceaa2520251ec85e",
+      "kind": "feature",
+      "label": "Binary/config parsing and bounded BLTE decoding",
+      "sourceRefs": [
+        "src/binary.ts",
+        "src/blte.ts",
+        "src/types.ts"
+      ],
+      "sourceUnitId": "legacy/codec-manifest/modkit/casc"
+    },
+    {
+      "codec": "casc",
+      "family": "sc2",
+      "id": "legacy/codec-manifest/modkit/casc/feature/df456c9b9806e634",
+      "kind": "feature",
+      "label": "Selective pull-through file cache, parsed-root cache and extraction size estimate",
+      "sourceRefs": [
+        "src/cache-key.ts",
+        "src/cache-policy.ts",
+        "src/cached-reader.ts",
+        "src/estimate.ts",
+        "src/root-cache-node.ts"
+      ],
+      "sourceUnitId": "legacy/codec-manifest/modkit/casc"
+    },
+    {
+      "codec": "casc",
+      "family": "sc2",
+      "id": "legacy/codec-manifest/modkit/casc/feature/ed5649c4f3c0b1f8",
+      "kind": "feature",
+      "label": "MNDX, TVFS, Diablo III and StarCraft: Remastered root formats with path and content-key lookup",
+      "sourceRefs": [
+        "src/diablo3-root.ts",
+        "src/diablo3-sno.ts",
+        "src/mndx.ts",
+        "src/reader.ts",
+        "src/root-index.ts",
+        "src/starcraft1-root.ts",
+        "src/tvfs.ts"
+      ],
       "sourceUnitId": "legacy/codec-manifest/modkit/casc"
     },
     {
@@ -2742,9 +2841,64 @@
     {
       "codec": "mpq",
       "family": "sc2",
-      "id": "legacy/codec-manifest/modkit/mpq/audit",
-      "kind": "audit",
-      "label": "Full source feature audit remains required before family acceptance",
+      "id": "legacy/codec-manifest/modkit/mpq/feature/0832423851151f7b",
+      "kind": "feature",
+      "label": "Stored, zlib/raw-deflate and bzip2 single-unit or multi-sector decode plus bounded damaged-table recovery",
+      "sourceRefs": [
+        "src/reader.ts",
+        "src/recovery.ts",
+        "src/source-reader.ts"
+      ],
+      "sourceUnitId": "legacy/codec-manifest/modkit/mpq"
+    },
+    {
+      "codec": "mpq",
+      "family": "sc2",
+      "id": "legacy/codec-manifest/modkit/mpq/feature/2b6023cf39126dc9",
+      "kind": "feature",
+      "label": "Explicit encrypted, implode, patch, high-offset and signing refusal or invalidation policy",
+      "sourceRefs": [
+        "src/source-reader.ts",
+        "src/writer.ts"
+      ],
+      "sourceUnitId": "legacy/codec-manifest/modkit/mpq"
+    },
+    {
+      "codec": "mpq",
+      "family": "sc2",
+      "id": "legacy/codec-manifest/modkit/mpq/feature/3f2c5d014ac5e6ee",
+      "kind": "feature",
+      "label": "Classic MPQ v0-v3 header, hash/block table, named listfile and bounded source-read semantics",
+      "sourceRefs": [
+        "src/codec.ts",
+        "src/index.ts",
+        "src/mpq-impl.ts",
+        "src/reader.ts",
+        "src/seek-bzip.d.ts",
+        "src/source-reader.ts"
+      ],
+      "sourceUnitId": "legacy/codec-manifest/modkit/mpq"
+    },
+    {
+      "codec": "mpq",
+      "family": "sc2",
+      "id": "legacy/codec-manifest/modkit/mpq/feature/a58432f21fee1271",
+      "kind": "feature",
+      "label": "Map and replay obfuscation helpers",
+      "sourceRefs": [
+        "src/obfuscate.ts"
+      ],
+      "sourceUnitId": "legacy/codec-manifest/modkit/mpq"
+    },
+    {
+      "codec": "mpq",
+      "family": "sc2",
+      "id": "legacy/codec-manifest/modkit/mpq/feature/d0c69466a6911345",
+      "kind": "feature",
+      "label": "Fresh deterministic and native-preserving archive write with opaque signature preservation",
+      "sourceRefs": [
+        "src/writer.ts"
+      ],
       "sourceUnitId": "legacy/codec-manifest/modkit/mpq"
     },
     {

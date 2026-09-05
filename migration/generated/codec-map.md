@@ -1,6 +1,6 @@
 # Codec port map
 
-206 frozen legacy rows; 12 SC2 source audits. Identifier matches below are candidates, not parity claims.
+206 frozen legacy rows; 12 SC2 codec source audits plus 2 shared MPQ/CASC source audits. Identifier matches below are candidates, not parity claims.
 Pending requires source copy, behavioral evidence and the declared acceptance surfaces. Existing manifest status does not close a row.
 
 | Legacy codec | Family | MK3 contribution candidates | Source audit | Pending / required | Status |
@@ -27,7 +27,7 @@ Pending requires source copy, behavioral evidence and the declared acceptance su
 | bti | other | other:modkit/bti | pending | 3 / 3 | pending |
 | bzip2 | other | core:modkit/bzip2 | pending | 4 / 4 | pending |
 | cab | other | core:modkit/cab | pending | 3 / 3 | pending |
-| casc | sc2 | blizzard:blizzard/casc | pending | 1 / 2 | pending |
+| casc | sc2 | blizzard:blizzard/casc | available | 0 / 9 | evidence-ready |
 | cdr | other | other:modkit/cdr | pending | 5 / 5 | pending |
 | cnc3-data | other | ea:ea/cnc3-data | pending | 2 / 2 | pending |
 | cnc3-localization | other | ea:ea/cnc3-localization | pending | 2 / 2 | pending |
@@ -92,7 +92,7 @@ Pending requires source copy, behavioral evidence and the declared acceptance su
 | mp3 | other | core:modkit/audio-mp3 | pending | 3 / 3 | pending |
 | mp4 | other | core:modkit/video-mp4 | pending | 3 / 3 | pending |
 | mpeg | other | core:modkit/mpeg | pending | 3 / 3 | pending |
-| mpq | sc2 | blizzard:blizzard/mpq | pending | 1 / 4 | pending |
+| mpq | sc2 | blizzard:blizzard/mpq | available | 0 / 8 | evidence-ready |
 | mtrl | other | other:modkit/mtrl | pending | 3 / 3 | pending |
 | obj | other | core:modkit/model-obj | pending | 5 / 5 | pending |
 | odp | other | core:modkit/odp | pending | 5 / 5 | pending |

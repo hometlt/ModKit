@@ -408,12 +408,12 @@
       ],
       "codec": "casc",
       "family": "sc2",
-      "featureAudit": "pending",
-      "pending": 1,
-      "requirements": 2,
+      "featureAudit": "available",
+      "pending": 0,
+      "requirements": 9,
       "source": "extensions/blizzard/archives/codecs/casc/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/casc",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -1453,12 +1453,12 @@
       ],
       "codec": "mpq",
       "family": "sc2",
-      "featureAudit": "pending",
-      "pending": 1,
-      "requirements": 4,
+      "featureAudit": "available",
+      "pending": 0,
+      "requirements": 8,
       "source": "extensions/blizzard/archives/codecs/mpq/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/mpq",
-      "status": "pending"
+      "status": "evidence-ready"
     },
     {
       "candidates": [
@@ -3377,6 +3377,6 @@
       "status": "pending"
     }
   ],
-  "sc2AuditCount": 12,
+  "sc2AuditCount": 14,
   "schemaVersion": 1
 }

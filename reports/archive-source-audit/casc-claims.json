@@ -1,0 +1,14 @@
+{
+  "codec": "casc",
+  "requirementIds": [
+    "legacy/codec-manifest/modkit/casc/feature/2fa2dc769be45ecd",
+    "legacy/codec-manifest/modkit/casc/feature/6df73aca4361a95b",
+    "legacy/codec-manifest/modkit/casc/feature/79c2dce21843188a",
+    "legacy/codec-manifest/modkit/casc/feature/8f020ae7b5a75a50",
+    "legacy/codec-manifest/modkit/casc/feature/9f6f6dd9f39817aa",
+    "legacy/codec-manifest/modkit/casc/feature/ceaa2520251ec85e",
+    "legacy/codec-manifest/modkit/casc/feature/df456c9b9806e634",
+    "legacy/codec-manifest/modkit/casc/feature/ed5649c4f3c0b1f8"
+  ],
+  "schemaVersion": 1
+}

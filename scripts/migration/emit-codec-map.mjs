@@ -42,7 +42,7 @@ const escape = value => String(value).replaceAll('|', '\\|').replaceAll('\n', ' 
 const markdown = [
   '# Codec port map',
   '',
-  '206 frozen legacy rows; 12 SC2 source audits. Identifier matches below are candidates, not parity claims.',
+  '206 frozen legacy rows; 12 SC2 codec source audits plus 2 shared MPQ/CASC source audits. Identifier matches below are candidates, not parity claims.',
   'Pending requires source copy, behavioral evidence and the declared acceptance surfaces. Existing manifest status does not close a row.',
   '',
   '| Legacy codec | Family | MK3 contribution candidates | Source audit | Pending / required | Status |',

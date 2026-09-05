@@ -1,0 +1,355 @@
+{
+  "cases": [
+    {
+      "id": "source-audit:casc:ceaa2520251ec85e",
+      "resultDigest": "77693482cf65122b84f80b9fab65ce3f56b9078f9b30cc84998429407d9b6dcd",
+      "verdict": "identical"
+    },
+    {
+      "id": "source-audit:casc:9f6f6dd9f39817aa",
+      "resultDigest": "4764bb1c3f61c6f82a9579738921532afae1f4706d1a5949daacf66553521067",
+      "verdict": "identical"
+    },
+    {
+      "id": "source-audit:casc:ed5649c4f3c0b1f8",
+      "resultDigest": "d370a91c4c54a7412a8d884d277373e934fe337c5da46a628a61d71068dbe426",
+      "verdict": "identical"
+    },
+    {
+      "id": "source-audit:casc:6df73aca4361a95b",
+      "resultDigest": "2ccda8bfc8a7006bb25e429eaebc9d4ad2da79e700ebed859823e4982f377ca2",
+      "verdict": "identical"
+    },
+    {
+      "id": "source-audit:casc:8f020ae7b5a75a50",
+      "resultDigest": "52988d301767b8768410171108214d5fc6f6838a4af67c8f88df89800a2afd84",
+      "verdict": "identical"
+    },
+    {
+      "id": "source-audit:casc:df456c9b9806e634",
+      "resultDigest": "3cff5525484372373c79cbeb8fe620e8f9832aa8af08b7c9f7706b6e15da0f46",
+      "verdict": "identical"
+    },
+    {
+      "id": "source-audit:casc:79c2dce21843188a",
+      "resultDigest": "4235c0992d7b050831610c57db1f3e5558a893853f9b4b5b5ec7390e1ffbff77",
+      "verdict": "identical"
+    },
+    {
+      "id": "source-audit:casc:2fa2dc769be45ecd",
+      "resultDigest": "1c91e71eb7daa81112e0dd70f2947b5685b523b4d2f49cd355bdc5be08b79c71",
+      "verdict": "identical"
+    }
+  ],
+  "codec": "casc",
+  "corpusKind": "mixed",
+  "counts": {
+    "bothRefused": 0,
+    "differing": 0,
+    "identical": 8,
+    "total": 8
+  },
+  "inputs": {
+    "operation": "source.audit",
+    "rawReceipt": "modkit-core/reports/archive-source-audit/raw-receipt.json",
+    "rawReceiptSha256": "6d6169ee6d1af350c85077677ff78c462b7e11cd1b48fc75aab71a98af6bad80",
+    "workspaceCommit": "c679c3a06a044dd261faf0b40995bbf42b52950e"
+  },
+  "oracleVerification": {
+    "modules": [
+      {
+        "corpusDigest": "3b5e6a8f6186c8aceffec5b26bdf17afdc7057929d041da0e2f922ab59aa9cd2",
+        "dependencies": [
+          {
+            "commit": "c679c3a06a044dd261faf0b40995bbf42b52950e",
+            "repository": "modkit-extensions-blizzard",
+            "scopedDirtyPaths": []
+          }
+        ],
+        "dependenciesDigest": "7570871ddfc7d9980a5b31640fc30585005a699cab7703bd905317460f735a0b",
+        "id": "casc-mk2-odb-source-closure",
+        "loader": [
+          {
+            "path": "modkit-extensions-blizzard/scripts/run-archive-source-audit.mjs",
+            "sha256": "74682e9555f9b946260cf9c9d89fc3bccd3c400f82672e01897ac4c432bd1dcc"
+          }
+        ],
+        "loaderDigest": "4e01ba504c62cd00920b3b790733cf4f1b8e2d7627c20d661bb2c9d88a9340b5",
+        "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "source": [
+          {
+            "bytes": 2268,
+            "gitBlob": "b2d1fa25a3b0e7afc33cb96ccdd58f7fd811a928",
+            "path": "extensions/blizzard/archives/codecs/casc/src/binary.ts",
+            "sha256": "c0f3524ce5eb5bd947a0870bd3ae550a9c4bba53fc16c6d0d33360ff08e11f9c"
+          },
+          {
+            "bytes": 2787,
+            "gitBlob": "22c414302e4f9aca4c054c47e0fab8e2f005f505",
+            "path": "extensions/blizzard/archives/codecs/casc/src/blte.ts",
+            "sha256": "4b0c81e2d67a88d3fa3b7ad0c823dfeb02f8c5def83fe49e6da8c4480a04f0d8"
+          },
+          {
+            "bytes": 516,
+            "gitBlob": "673ee5a1c7e74e9b3c3a0fd082f284508a69e05b",
+            "path": "extensions/blizzard/archives/codecs/casc/src/cache-key.ts",
+            "sha256": "2a8c469909504965ce249690a0c5b0575c257a149c2bf76c6db9374aa82bdf84"
+          },
+          {
+            "bytes": 3364,
+            "gitBlob": "5c18fe77eaeadcb0f18673bcf18dffc64fb3e0e1",
+            "path": "extensions/blizzard/archives/codecs/casc/src/cache-policy.ts",
+            "sha256": "323eda8cd7c2c4bb3731aad3fb9aac553d24ddbc4ca232c9279f1cd0a2e33004"
+          },
+          {
+            "bytes": 4395,
+            "gitBlob": "a00ffd48ca9144144a4161a7773854e8d4787135",
+            "path": "extensions/blizzard/archives/codecs/casc/src/cached-reader.ts",
+            "sha256": "1b702e4f07a04b035f4e0882786d811ccb01436dfa3089b8d65a41d5e965a3a4"
+          },
+          {
+            "bytes": 1196,
+            "gitBlob": "7a4b34388a2eb6e26e729741fd9cd737d8295e9a",
+            "path": "extensions/blizzard/archives/codecs/casc/src/cdn.ts",
+            "sha256": "82e5455226f251d43082acb1b0d8de6c3181a9a1221a896e516585c919d9dc71"
+          },
+          {
+            "bytes": 1128,
+            "gitBlob": "0a67071420bacc422ecf9f012a815e876be48478",
+            "path": "extensions/blizzard/archives/codecs/casc/src/codec.ts",
+            "sha256": "128875cf0571e955451068fbf19732d638166fd1ebade5eee0367b7936d10686"
+          },
+          {
+            "bytes": 4952,
+            "gitBlob": "31506e34ed1b952fd5215fdcde8045be93b9b28a",
+            "path": "extensions/blizzard/archives/codecs/casc/src/config.ts",
+            "sha256": "1401d4608e8b292f008c73b84f6fbbc51ae2e1c179566fc9cdf96c8e9d20a2d4"
+          },
+          {
+            "bytes": 15095,
+            "gitBlob": "a3a52748542a7584bfa9984d4159ed1c61736224",
+            "path": "extensions/blizzard/archives/codecs/casc/src/diablo3-root.ts",
+            "sha256": "de29b8a61dae3c362232d89b17840c347a6b65f63754a6e9ced15736a5b981d1"
+          },
+          {
+            "bytes": 6146,
+            "gitBlob": "f14bee10552b54a62ea7765082208d37b4ef785e",
+            "path": "extensions/blizzard/archives/codecs/casc/src/diablo3-sno.ts",
+            "sha256": "dd745d6d398250e527f9d3ada08509dc792fb4d8b270006d8aaffbc27938e206"
+          },
+          {
+            "bytes": 6249,
+            "gitBlob": "b4d788dfabb7719533570d3e81f402a1b62b8166",
+            "path": "extensions/blizzard/archives/codecs/casc/src/encoding.ts",
+            "sha256": "4eb746a16519523a7a8c30f3755e5ec45e3f5be9513560e84bd18056c1a35989"
+          },
+          {
+            "bytes": 1469,
+            "gitBlob": "5ed28d4ae8e4d7dc6adb1ea802852f66cb4d3a84",
+            "path": "extensions/blizzard/archives/codecs/casc/src/estimate.ts",
+            "sha256": "37b0407d416495fa9e6b335afd1bd18db06aa000719fd7f0f812580f7dedff5c"
+          },
+          {
+            "bytes": 2262,
+            "gitBlob": "551af34e9444bbcbaad8a50a770d74b5d84d073e",
+            "path": "extensions/blizzard/archives/codecs/casc/src/index.ts",
+            "sha256": "0133e856f6674ad14c85b015ac906566d3cc1c2b3b89a4fb5d333bbf10b33848"
+          },
+          {
+            "bytes": 19537,
+            "gitBlob": "663c68639207625c743ba104181b03a5e544e22b",
+            "path": "extensions/blizzard/archives/codecs/casc/src/install-discovery.ts",
+            "sha256": "92282aeeadf25cf9dc270b17062d14bcc43987cf80b5dd510909555cc02ae0df"
+          },
+          {
+            "bytes": 2746,
+            "gitBlob": "ec2ecfd4aabe1c497bf833be6296ab92782cf25d",
+            "path": "extensions/blizzard/archives/codecs/casc/src/install-reader.ts",
+            "sha256": "0ab6678ca174b04b3dd6b55896764847edd2f199f875138e1da19d7cf6fdca1d"
+          },
+          {
+            "bytes": 3418,
+            "gitBlob": "98d618bc0a6657e5cc514b804f376651e1ab1433",
+            "path": "extensions/blizzard/archives/codecs/casc/src/install.ts",
+            "sha256": "bf0dbbf2307cae8d425dd8f5a23894ff851da8215f3d889bbf2cb3c113758a7f"
+          },
+          {
+            "bytes": 42142,
+            "gitBlob": "7792fcd2fa60641830dee17f8ffcf3cd7ec06d93",
+            "path": "extensions/blizzard/archives/codecs/casc/src/mndx.ts",
+            "sha256": "91304acb7adda2f2702eb90878b0d488d54d5a7e282e8539789af483b0e129c4"
+          },
+          {
+            "bytes": 2625,
+            "gitBlob": "6d57ac8d712877661c641aa95250db0d9d29beff",
+            "path": "extensions/blizzard/archives/codecs/casc/src/path-map.ts",
+            "sha256": "28170bab67e827f34c5e0b94c8509b5a5247b184941805d9abd138b93b08725a"
+          },
+          {
+            "bytes": 11485,
+            "gitBlob": "dfcf3bfdb756f00334af619f829698ce81eec756",
+            "path": "extensions/blizzard/archives/codecs/casc/src/reader.ts",
+            "sha256": "df29c3bf88f08336d0779b9eec7846c5e8e1465eab325e2e0922fdda71f70c41"
+          },
+          {
+            "bytes": 3153,
+            "gitBlob": "ac64889cc39436d7aa5391dfcf4e859f1cbb34ce",
+            "path": "extensions/blizzard/archives/codecs/casc/src/root-cache-node.ts",
+            "sha256": "556ffd939bc4f64954e43f6e1ba2950ca45b4180abbf33abd2cf8a2dbbc42836"
+          },
+          {
+            "bytes": 652,
+            "gitBlob": "d7925c28c4f4eabdcb135d3be17869eef8fa3202",
+            "path": "extensions/blizzard/archives/codecs/casc/src/root-index.ts",
+            "sha256": "7d21357ec7842cf5ab6d61951e25ab5245088a16a9de0147e129e681ef5ca764"
+          },
+          {
+            "bytes": 3610,
+            "gitBlob": "c4482dd3351d7fcdf90781611badfc7b89296868",
+            "path": "extensions/blizzard/archives/codecs/casc/src/starcraft1-root.ts",
+            "sha256": "12e372ca4dcd7dea23bf6049d917f49241e88a70afb1b6e53d80875b480125c4"
+          },
+          {
+            "bytes": 9885,
+            "gitBlob": "2e47227367949813a6ec21981bb1fe0545882aa5",
+            "path": "extensions/blizzard/archives/codecs/casc/src/storage.ts",
+            "sha256": "979073f0d047bd9fee7c2743ddd5579d1a6b3370c3f7a1b01c58898dbf371063"
+          },
+          {
+            "bytes": 10843,
+            "gitBlob": "d0b694364766a1fe384079db5da4e460d088e852",
+            "path": "extensions/blizzard/archives/codecs/casc/src/tvfs.ts",
+            "sha256": "cf42bf82fd1f7015db4fe75d697af7b8c5aa12d8844663266648534406220702"
+          },
+          {
+            "bytes": 3908,
+            "gitBlob": "2cbbe95f93ee306c7e1b492cf9b3c483ecb984f6",
+            "path": "extensions/blizzard/archives/codecs/casc/src/types.ts",
+            "sha256": "c262dd5bf3161847c12762b3103352cb57b42b093065b42b8ea18ca1836006b0"
+          },
+          {
+            "bytes": 10402,
+            "gitBlob": "62762bee83eb517d3d68f00a0e493fdd9e5d5214",
+            "path": "extensions/blizzard/archives/codecs/casc/src/writer.ts",
+            "sha256": "9b11383aa886c43b25e44f867fa5e79aef87955297fd5faf21e8249f2c240acc"
+          }
+        ],
+        "sourceClosureDigest": "0e0a477d1d56c785b2d9f77a8c7b8e17a37aabb4cb160fb415af7305b41a5ff1"
+      }
+    ],
+    "operation": "source.audit",
+    "verified": true
+  },
+  "proofs": [
+    {
+      "adapterOperation": "source.audit",
+      "caseIds": [
+        "source-audit:casc:ceaa2520251ec85e"
+      ],
+      "kind": "feature",
+      "requirement": "legacy/codec-manifest/modkit/casc/feature/ceaa2520251ec85e"
+    },
+    {
+      "adapterOperation": "source.audit",
+      "caseIds": [
+        "source-audit:casc:9f6f6dd9f39817aa"
+      ],
+      "kind": "feature",
+      "requirement": "legacy/codec-manifest/modkit/casc/feature/9f6f6dd9f39817aa"
+    },
+    {
+      "adapterOperation": "source.audit",
+      "caseIds": [
+        "source-audit:casc:ed5649c4f3c0b1f8"
+      ],
+      "kind": "feature",
+      "requirement": "legacy/codec-manifest/modkit/casc/feature/ed5649c4f3c0b1f8"
+    },
+    {
+      "adapterOperation": "source.audit",
+      "caseIds": [
+        "source-audit:casc:6df73aca4361a95b"
+      ],
+      "kind": "feature",
+      "requirement": "legacy/codec-manifest/modkit/casc/feature/6df73aca4361a95b"
+    },
+    {
+      "adapterOperation": "source.audit",
+      "caseIds": [
+        "source-audit:casc:8f020ae7b5a75a50"
+      ],
+      "kind": "feature",
+      "requirement": "legacy/codec-manifest/modkit/casc/feature/8f020ae7b5a75a50"
+    },
+    {
+      "adapterOperation": "source.audit",
+      "caseIds": [
+        "source-audit:casc:df456c9b9806e634"
+      ],
+      "kind": "feature",
+      "requirement": "legacy/codec-manifest/modkit/casc/feature/df456c9b9806e634"
+    },
+    {
+      "adapterOperation": "source.audit",
+      "caseIds": [
+        "source-audit:casc:79c2dce21843188a"
+      ],
+      "kind": "feature",
+      "requirement": "legacy/codec-manifest/modkit/casc/feature/79c2dce21843188a"
+    },
+    {
+      "adapterOperation": "source.audit",
+      "caseIds": [
+        "source-audit:casc:2fa2dc769be45ecd"
+      ],
+      "kind": "feature",
+      "requirement": "legacy/codec-manifest/modkit/casc/feature/2fa2dc769be45ecd"
+    }
+  ],
+  "rawEvidence": {
+    "featureGroups": 8,
+    "oracleInventory": {
+      "sources": 26,
+      "tests": 19,
+      "total": 47
+    },
+    "validation": {
+      "commands": [
+        {
+          "command": "node ./node_modules/vitest/vitest.mjs run --config ./test/vitest.config.mjs casc/test",
+          "exitCode": 0,
+          "finishedAt": "2026-09-05T06:50:39.757Z",
+          "label": "casc",
+          "startedAt": "2026-09-05T06:50:36.623Z",
+          "testFiles": 19,
+          "tests": 76
+        },
+        {
+          "command": "node ./node_modules/vitest/vitest.mjs run --config ./test/vitest.config.mjs mpq/test",
+          "exitCode": 0,
+          "finishedAt": "2026-09-05T06:50:44.918Z",
+          "label": "mpq",
+          "startedAt": "2026-09-05T06:50:39.757Z",
+          "testFiles": 8,
+          "tests": 39
+        }
+      ],
+      "totals": {
+        "testFiles": 27,
+        "tests": 115
+      }
+    },
+    "workspace": {
+      "commit": "c679c3a06a044dd261faf0b40995bbf42b52950e",
+      "repository": "modkit-extensions-blizzard",
+      "scopedDirtyPaths": []
+    }
+  },
+  "schemaVersion": 1,
+  "tests": {
+    "failed": 0,
+    "passed": 8,
+    "skipped": 0
+  },
+  "verdict": "pass"
+}
