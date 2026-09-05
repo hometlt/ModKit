@@ -128,6 +128,15 @@ describe('host-owned container composition', () => {
 
     const beforeDispose = releases.length
     await result.session.operations().dispose()
+    expect(result.session.state()).toBe('live')
+    await expect(result.session.descriptor()).resolves.toMatchObject({
+      identity: { formatId: 'test-semantic' },
+    })
+    await expect(result.session.operations().invoke('edit-world', null)).resolves.toMatchObject({
+      state: 'rejected',
+      reason: 'cancelled',
+    })
+    expect(releases).toHaveLength(beforeDispose)
     await result.session.dispose()
     expect(releases.slice(beforeDispose)).toEqual(['semantic.mjs', 'carrier.mjs'])
   })

@@ -272,17 +272,30 @@ function composedOperations(options: {
   readonly budget: ResourceBudget
   readonly packHandlerId?: string
   readonly exportRawHandlerId?: string
-  readonly dispose: () => Promise<void>
 }): OperationSession {
   const operationByHandler = new Map(
     options.semanticSpec.operations.map(operation => [operation.handlerId, operation]),
   )
+  let disposed = false
   return Object.freeze({
     async invoke(
       handlerId: string,
       input: JsonValue,
       invokeOptions?: Parameters<OperationSession['invoke']>[2],
     ): Promise<OperationResult> {
+      if (disposed) {
+        return Object.freeze({
+          state: 'rejected' as const,
+          reason: 'cancelled' as const,
+          diagnostics: Object.freeze([
+            Object.freeze({
+              code: 'x3.host/container-operation-session-disposed',
+              severity: 'error' as const,
+              message: 'the composed container operation session has been disposed',
+            }),
+          ]),
+        })
+      }
       throwIfAborted(invokeOptions?.signal)
       const declaration = operationByHandler.get(handlerId)
       if (declaration?.id === EXPORT_RAW) {
@@ -342,7 +355,9 @@ function composedOperations(options: {
       }
       return packed
     },
-    dispose: options.dispose,
+    async dispose(): Promise<void> {
+      disposed = true
+    },
   })
 }
 
@@ -729,7 +744,6 @@ export async function createContainerNamespaceComposition(
         parentRevision: parent.revision,
         bindings,
         budget: options.budget,
-        dispose,
         ...(packHandlerId === undefined ? {} : { packHandlerId }),
         ...(exportRawHandlerId === undefined ? {} : { exportRawHandlerId }),
       })
