@@ -76,6 +76,13 @@ export function ownerOfLegacyExtension(legacyPath) {
   )
 }
 
+/** Translate the sealed MK2 publisher namespace into the installed X3 contribution namespace. */
+export function currentContributionId(legacyContributionId) {
+  const match = /^org\.modkitx(?:\.([^/]+))?\/(.+)$/u.exec(legacyContributionId)
+  if (match === null) throw new TypeError(`invalid legacy contribution id ${legacyContributionId}`)
+  return `${match[1] ?? 'modkit'}/${match[2]}`
+}
+
 export function currentRepositoryBindings(coreRoot, options = {}) {
   const roots = repositoryRoots(coreRoot, options.environment)
   return OWNER_REPOSITORIES.map(owner => {

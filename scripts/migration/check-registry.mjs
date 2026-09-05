@@ -821,7 +821,9 @@ function deriveParityFacts() {
   }
   const byShortId = new Map()
   for (const row of readJson(parityReportPath).results) {
-    const short = `modkit/${row.contributionId.slice(row.contributionId.lastIndexOf('/') + 1)}`
+    const short =
+      row.x3ContributionId ??
+      `modkit/${row.contributionId.slice(row.contributionId.lastIndexOf('/') + 1)}`
     if (!byShortId.has(short)) byShortId.set(short, [])
     byShortId.get(short).push(row)
   }

@@ -3,7 +3,11 @@ import test from 'node:test'
 import { resolve } from 'node:path'
 import { readFile } from 'node:fs/promises'
 
-import { ownerOfLegacyExtension, resolveLegacyExtension } from '../../parity/repositories.mjs'
+import {
+  currentContributionId,
+  ownerOfLegacyExtension,
+  resolveLegacyExtension,
+} from '../../parity/repositories.mjs'
 import { validateOwnerParityDocuments } from '../../parity/receipt.mjs'
 
 const coreRoot = process.cwd()
@@ -39,6 +43,13 @@ test('legacy extension paths resolve to their current repository owner', () => {
     resolveLegacyExtension(coreRoot, 'extensions/ea/big', sameRootEnvironment),
     resolve(coreRoot, 'big'),
   )
+})
+
+test('legacy publishers map to exact current contribution namespaces', () => {
+  assert.equal(currentContributionId('org.modkitx/image-png'), 'modkit/image-png')
+  assert.equal(currentContributionId('org.modkitx.ea/big'), 'ea/big')
+  assert.equal(currentContributionId('org.modkitx.blizzard/m3'), 'blizzard/m3')
+  assert.throws(() => currentContributionId('big'), /invalid legacy contribution id/u)
 })
 
 test('owner parity documents require explicit result-to-repository bindings', () => {
@@ -79,6 +90,7 @@ test('owner parity documents require explicit result-to-repository bindings', ()
       {
         id: 'fixture',
         state: 'compared',
+        x3ContributionId: 'modkit/fixture',
         repositories: ['core'],
         oracleExecutions: [oracleExecution],
       },

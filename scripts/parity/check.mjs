@@ -24,6 +24,7 @@ import { classifyFormatParity, comparableMetadataFeatures } from './classify.mjs
 import { observeDataSource } from './observe.mjs'
 import { blockingParityResults, buildParityReport } from './report.mjs'
 import {
+  currentContributionId,
   currentRepositoryBindings,
   ownerOfLegacyExtension,
   repositoryRoots,
@@ -669,6 +670,7 @@ function identity(sample) {
     format: sample.format,
     kind: sample.kind,
     contributionId: sample.contributionId,
+    x3ContributionId: currentContributionId(sample.contributionId),
     repositories: [...owners].sort(),
   }
 }

@@ -97,6 +97,9 @@ export function validateOwnerParityDocuments({ receipt, report }) {
     if (!Array.isArray(result.repositories) || result.repositories.length === 0) {
       throw new Error(`owner parity result ${result.id} has no repository binding`)
     }
+    if (!/^[a-z0-9-]+\/[a-z0-9-]+$/u.test(result.x3ContributionId)) {
+      throw new Error(`owner parity result ${result.id} has no current X3 contribution identity`)
+    }
     for (const id of result.repositories) {
       if (!ownerIds.has(id)) {
         throw new Error(`owner parity result ${result.id} names unknown repository ${id}`)
