@@ -1945,7 +1945,7 @@
           "package": "@modkit/blizzard-starcraft2",
           "manifest": "modkit-extensions-blizzard/node_modules/@modkit/blizzard-starcraft2/package.json",
           "version": "1.0.0",
-          "reason": "M2 pinned bank source/test dependency through the actual installed/public package; Blizzard commit e8dda199 added language-port dependencies while preserving the ./bank/codec export.",
+          "reason": "M2 pinned bank source/test dependency through the actual installed/public package.",
           "manifestSha256": "23e9247276a4f7060cf0f0204028fd58463668def2f37d73723938b0e4496a67"
         },
         {
