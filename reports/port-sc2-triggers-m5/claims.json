@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "codec": "sc2-triggers",
+  "requirementIds": [
+    "legacy/codec-manifest/modkit/sc2-triggers/feature/0276b08d70557635",
+    "legacy/codec-manifest/modkit/sc2-triggers/feature/2a1c5bdb373d16cf",
+    "legacy/codec-manifest/modkit/sc2-triggers/feature/3e3dc4d96f558126",
+    "legacy/codec-manifest/modkit/sc2-triggers/feature/3fcc9a2f9056345e",
+    "legacy/codec-manifest/modkit/sc2-triggers/feature/4387bc663cbbb3d0",
+    "legacy/codec-manifest/modkit/sc2-triggers/feature/4766443d7a132046",
+    "legacy/codec-manifest/modkit/sc2-triggers/feature/50b387f15dffcdfb",
+    "legacy/codec-manifest/modkit/sc2-triggers/feature/553ddd3db81b6b58",
+    "legacy/codec-manifest/modkit/sc2-triggers/feature/55ee02c47c739487",
+    "legacy/codec-manifest/modkit/sc2-triggers/feature/6ea9bf1e1829e502",
+    "legacy/codec-manifest/modkit/sc2-triggers/feature/831e47adea12d689",
+    "legacy/codec-manifest/modkit/sc2-triggers/feature/8c342f3fbc782916",
+    "legacy/codec-manifest/modkit/sc2-triggers/feature/b21bd8948762e076",
+    "legacy/codec-manifest/modkit/sc2-triggers/feature/bb4cc9de14f37b6d",
+    "legacy/codec-manifest/modkit/sc2-triggers/feature/bfa2ca79d2c2c031",
+    "legacy/codec-manifest/modkit/sc2-triggers/feature/d45424b8d63068d9",
+    "legacy/codec-manifest/modkit/sc2-triggers/feature/d8436467fd226bfa",
+    "legacy/codec-manifest/modkit/sc2-triggers/feature/ec52bbcdd73a885a",
+    "legacy/codec-manifest/modkit/sc2-triggers/operation/asset.search",
+    "legacy/codec-manifest/modkit/sc2-triggers/operation/asset.validate",
+    "legacy/codec-manifest/modkit/sc2-triggers/operation/export.convert",
+    "legacy/codec-manifest/modkit/sc2-triggers/operation/script.references",
+    "legacy/codec-manifest/modkit/sc2-triggers/operation/script.symbols",
+    "legacy/codec-manifest/modkit/sc2-triggers/operation/view.inspect"
+  ]
+}

@@ -2409,46 +2409,46 @@
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-triggers.json",
+      "handlerId": "search",
       "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/asset.search",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "asset.search"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-triggers.json",
+      "handlerId": "validate",
       "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/asset.validate",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "asset.validate"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-triggers.json",
+      "handlerId": "export-convert",
       "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/export.convert",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "export.convert"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-triggers.json",
+      "handlerId": "references",
       "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/script.references",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "script.references"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-triggers.json",
+      "handlerId": "symbols",
       "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/script.symbols",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "script.symbols"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-triggers.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/view.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,
