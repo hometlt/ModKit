@@ -679,6 +679,10 @@ export {
   type ResolvedPresentationPlan,
   type ViewerModule,
   type ViewerMount,
+  type ViewerSubjectNavigation,
+  type ViewerSubjectNavigationRequest,
+  type ViewerSubjectNavigationResult,
+  type ViewerSubjectNavigationScope,
   type ViewerSources,
 } from './asset-capabilities/presentation.js'
 export {

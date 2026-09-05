@@ -257,6 +257,248 @@ describe('13C real-browser viewer host', () => {
     })
   })
 
+  it('routes projected fallback-card relations through their exact host session', async () => {
+    const result = await page.evaluate(async () => {
+      const { ui, host } = (
+        globalThis as unknown as {
+          modkit: { ui: Record<string, unknown>; host: Record<string, unknown> }
+        }
+      ).modkit
+      interface Navigation {
+        readonly port: {
+          readonly scope: { readonly sessionId: string; readonly subject: string }
+          open(request: unknown, signal?: AbortSignal): Promise<unknown>
+        }
+        dispose(reason?: string): void
+      }
+      interface PreviewHandle {
+        unmount(): Promise<void> | void
+      }
+      interface Mounted {
+        readonly container: HTMLElement
+        readonly handle: PreviewHandle
+      }
+      const createNavigation = host['createScopedViewerSubjectNavigation'] as (options: {
+        readonly scope: { readonly sessionId: string; readonly subject: string }
+        open(
+          subject: { readonly identity: { readonly key: string } },
+          signal: AbortSignal,
+        ): Promise<void>
+      }) => Navigation
+      const createGraph = host['createFieldRelationGraphSource'] as (
+        options: Record<string, unknown>,
+      ) => Promise<unknown>
+      const createFallbackFacts = host['createDescriptorFallbackSubjectFactsSource'] as (
+        options: Record<string, unknown>,
+      ) => unknown
+      const createPreview = ui['createCodecPreview'] as (options: Record<string, unknown>) => {
+        open(
+          container: HTMLElement,
+          entry: { readonly id: string; readonly name: string; readonly directory: boolean },
+          bytes: Uint8Array,
+        ): Promise<PreviewHandle | undefined>
+      }
+      const root = document.querySelector('#app') as HTMLElement
+      const owner = {
+        source: { id: 'memory://fixture/catalog.xml' },
+        identity: { kind: '', key: '' },
+      }
+      const target = (key: string) => ({
+        source: owner.source,
+        identity: { kind: 'fixture/weapon', key },
+      })
+      const graph = await createGraph({
+        owner,
+        ownerLabel: 'Fixture catalog',
+        ownerKind: 'format:catalog',
+        fields: [
+          {
+            path: 'catalog.weapons',
+            type: { kind: 'array', item: { kind: 'subject-ref', subjectKind: 'fixture/weapon' } },
+            value: ['GaussRifle', 'MissingWeapon'],
+          },
+        ],
+        resolver: {
+          async resolve(request: { readonly value: string }) {
+            return request.value === 'MissingWeapon'
+              ? undefined
+              : {
+                  subject: target(request.value),
+                  label: 'Gauss Rifle',
+                  kind: 'fixture/weapon',
+                }
+          },
+          createUnresolved(request: { readonly value: string }) {
+            return {
+              subject: target(request.value),
+              label: 'Missing Weapon',
+              kind: 'fixture/weapon',
+            }
+          },
+        },
+      })
+      const descriptor = {
+        schemaVersion: 2,
+        subjectUri: 'memory://fixture/catalog.xml',
+        origin: {
+          kind: 'single',
+          binding: {
+            id: 'content',
+            role: 'content',
+            source: { id: 'catalog.xml', uri: 'memory://fixture/catalog.xml' },
+            required: true,
+            ownership: 'owned',
+            revision: 'content-hash.sha256:generic-card',
+            mediaType: 'application/xml',
+          },
+        },
+        interpretation: 'codec',
+        identity: {
+          codecId: 'fixture.codec/catalog',
+          codecVersion: '1.0.0',
+          formatId: 'catalog',
+          formatLabel: 'Fixture catalog',
+          mediaType: 'application/xml',
+          confidence: 1,
+          detection: [{ kind: 'structure', weight: 1 }],
+        },
+        traits: [],
+        operations: [],
+        constraints: { readOnly: true, seekable: true, randomAccess: true, trusted: false },
+        dataSources: [{ contract: 'common.view/subject-facts-source', major: 1 }],
+        diagnostics: [],
+        revision: 'content-hash.sha256:generic-card',
+        metadata: [],
+      }
+      const facts = createFallbackFacts({ descriptor, relations: graph })
+      const opened: { readonly session: string; readonly key: string }[] = []
+      const navigation = (sessionId: string): Navigation =>
+        createNavigation({
+          scope: { sessionId, subject: descriptor.subjectUri },
+          async open(subject) {
+            opened.push({ session: sessionId, key: subject.identity.key })
+          },
+        })
+      const mount = async (sessionId: string, managed?: Navigation): Promise<Mounted> => {
+        const container = document.createElement('section')
+        container.dataset['session'] = sessionId
+        root.append(container)
+        const preview = createPreview({
+          stages: [
+            {
+              id: 'subject-card',
+              label: 'Card',
+              contract: 'common.view/subject-facts-source',
+              module: ui['subjectCardViewer'],
+            },
+          ],
+          async openSession() {
+            return {
+              async descriptor() {
+                return descriptor
+              },
+              async dataSource() {
+                return { value: facts }
+              },
+              ...(managed === undefined ? {} : { subjectNavigation: managed.port }),
+              async dispose() {
+                managed?.dispose(`${sessionId}-disposed`)
+              },
+            }
+          },
+        })
+        const handle = await preview.open(
+          container,
+          { id: sessionId, name: `${sessionId}.xml`, directory: false },
+          new Uint8Array(),
+        )
+        if (handle === undefined) throw new Error(`subject card did not mount for ${sessionId}`)
+        return { container, handle }
+      }
+      const relation = (container: HTMLElement, label: string): HTMLElement => {
+        const heading = [...container.querySelectorAll('button')].find(button =>
+          button.textContent?.includes('Related subjects'),
+        )
+        if (heading === undefined) throw new Error('related subjects section is unavailable')
+        if (heading.getAttribute('aria-expanded') !== 'true') heading.click()
+        const found = [...container.querySelectorAll('[data-mk-part="card.ref"]')].find(
+          item => item.textContent === label,
+        )
+        if (found === undefined) throw new Error(`relation is unavailable: ${label}`)
+        return found as HTMLElement
+      }
+      const settle = () => new Promise<void>(resolve => setTimeout(resolve, 0))
+
+      const firstNavigation = navigation('session-a')
+      const first = await mount('session-a', firstNavigation)
+      relation(first.container, 'Gauss Rifle').click()
+      relation(first.container, 'Missing Weapon').click()
+      await settle()
+
+      const secondNavigation = navigation('session-b')
+      const second = await mount('session-b', secondNavigation)
+      relation(second.container, 'Gauss Rifle').click()
+      await settle()
+      const crossSession = await firstNavigation.port.open({
+        scope: secondNavigation.port.scope,
+        target: 'memory://fixture/catalog.xml#fixture%2Fweapon/GaussRifle',
+      })
+
+      const withoutPort = await mount('session-without-port')
+      const closedTarget = relation(withoutPort.container, 'Gauss Rifle')
+      closedTarget.click()
+      await settle()
+
+      let finishLate: () => void = () => undefined
+      const waitForLate = new Promise<void>(resolve => {
+        finishLate = resolve
+      })
+      let lateSignal: AbortSignal | undefined
+      let lateOpened = false
+      const lateNavigation = createNavigation({
+        scope: { sessionId: 'session-late', subject: descriptor.subjectUri },
+        async open(_subject, signal) {
+          lateSignal = signal
+          await waitForLate
+          if (!signal.aborted) lateOpened = true
+        },
+      })
+      const late = await mount('session-late', lateNavigation)
+      relation(late.container, 'Gauss Rifle').click()
+      await settle()
+      await late.handle.unmount()
+      finishLate()
+      await settle()
+
+      const snapshot = {
+        opened,
+        deadTag: relation(first.container, 'Missing Weapon').tagName,
+        deadDisabled: relation(first.container, 'Missing Weapon').getAttribute('aria-disabled'),
+        missingPortTag: closedTarget.tagName,
+        crossSession,
+        lateAborted: lateSignal?.aborted,
+        lateOpened,
+      }
+      await first.handle.unmount()
+      await second.handle.unmount()
+      await withoutPort.handle.unmount()
+      return snapshot
+    })
+
+    expect(result).toEqual({
+      opened: [
+        { session: 'session-a', key: 'GaussRifle' },
+        { session: 'session-b', key: 'GaussRifle' },
+      ],
+      deadTag: 'SPAN',
+      deadDisabled: 'true',
+      missingPortTag: 'SPAN',
+      crossSession: { state: 'rejected', reason: 'scope-mismatch' },
+      lateAborted: true,
+      lateOpened: false,
+    })
+  })
+
   it('renders bounded and virtual text, searches, and pages a 100 MiB logical line', async () => {
     await page.evaluate(async () => {
       const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit

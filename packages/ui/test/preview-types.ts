@@ -1,4 +1,4 @@
-import type { CodecPreviewOptions } from '../src/explorer/preview.js'
+import type { CodecPreviewOptions, PreviewSession } from '../src/explorer/preview.js'
 
 type AssertFalse<Value extends false> = Value
 
@@ -19,3 +19,19 @@ export const hostOwnedPreviewOptions = {
     return undefined
   },
 } satisfies CodecPreviewOptions
+
+export const sessionScopedSubjectNavigation = {
+  descriptor: async () => ({}),
+  dataSource: async () => ({ value: {} }),
+  subjectNavigation: {
+    scope: {
+      sessionId: 'fixture-session',
+      subject: 'x3-subject:fixture',
+      workspace: 'fixture-workspace',
+    },
+    async open() {
+      return { state: 'opened' as const }
+    },
+  },
+  dispose: async () => undefined,
+} satisfies PreviewSession

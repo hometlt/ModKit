@@ -12,6 +12,7 @@ import {
   subjectDescriptorV2Schema,
   type BindingRef,
   type ViewerModule,
+  type ViewerSubjectNavigation,
   type UnresolvedSourceDescriptor,
 } from '@modkit/sdk/ui-contracts'
 import type {
@@ -124,6 +125,17 @@ export const typedCardSummary = {
   relationCount: 0,
   card: { sections: ['identity', 'relations'], preview: 'raster' },
 } as const satisfies SubjectFactsSummary
+
+export const typedViewerSubjectNavigation = {
+  scope: {
+    sessionId: 'fixture-session',
+    subject: 'x3-subject:fixture',
+    workspace: 'fixture-workspace',
+  },
+  async open() {
+    return { state: 'opened' as const }
+  },
+} satisfies ViewerSubjectNavigation
 
 export const rasterWireRef = {
   contract: 'org.example/raster-source',

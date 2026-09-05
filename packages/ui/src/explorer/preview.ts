@@ -14,6 +14,7 @@ import type {
   OperationSession,
   PresentationPlan,
   ViewerModule,
+  ViewerSubjectNavigation,
 } from '@modkit/sdk'
 
 import type { ExplorerEntry, PreviewHandle, PreviewResolver } from './index.js'
@@ -135,6 +136,8 @@ export interface PreviewSession {
    * with no operations at all and a host had to smuggle a session in beside the previewer.
    */
   operations?(): Promise<OperationSession>
+  /** Host-minted navigation capability for this exact subject session. */
+  readonly subjectNavigation?: ViewerSubjectNavigation
   dispose(): Promise<void>
 }
 
@@ -311,6 +314,9 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
           } as never,
           operations: operations as never,
           ...(options.knowledge === undefined ? {} : { knowledge: options.knowledge }),
+          ...(session.subjectNavigation === undefined
+            ? {}
+            : { subjectNavigation: session.subjectNavigation }),
           ...(signal === undefined ? {} : { signal }),
         } as never)
         active = mounted

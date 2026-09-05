@@ -174,6 +174,35 @@ export interface ViewerSources {
   getUnknown(binding: OpaqueBindingRef): Promise<Lease<unknown> | undefined>
 }
 
+/** Immutable identity of the subject session that minted a navigation port. */
+export interface ViewerSubjectNavigationScope {
+  readonly sessionId: string
+  readonly subject: string
+  readonly workspace?: string
+}
+
+export interface ViewerSubjectNavigationRequest {
+  readonly scope: ViewerSubjectNavigationScope
+  readonly target: string
+}
+
+export type ViewerSubjectNavigationResult =
+  | { readonly state: 'opened' }
+  | {
+      readonly state: 'rejected'
+      readonly reason:
+        'invalid-subject' | 'scope-mismatch' | 'workspace-mismatch' | 'disposed' | 'cancelled'
+    }
+
+/** Host-owned, per-session route for opening a serialized SubjectRef from a viewer. */
+export interface ViewerSubjectNavigation {
+  readonly scope: ViewerSubjectNavigationScope
+  open(
+    request: ViewerSubjectNavigationRequest,
+    signal?: AbortSignal,
+  ): Promise<ViewerSubjectNavigationResult>
+}
+
 export interface ViewerMount {
   update(args: {
     readonly descriptor: AnyDescriptor
@@ -192,6 +221,8 @@ export interface ViewerModule {
     readonly operations: OperationSession
     /** Optional host-owned, read-only help catalog; viewers never construct or register one. */
     readonly knowledge?: KnowledgeCatalog
+    /** Optional host-owned route scoped to this exact mounted subject session. */
+    readonly subjectNavigation?: ViewerSubjectNavigation
     readonly signal?: AbortSignal
   }): Promise<ViewerMount>
 }

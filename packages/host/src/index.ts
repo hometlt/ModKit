@@ -308,6 +308,11 @@ export {
   type SubjectRelationProjectionBudget,
   type SubjectRelationTarget,
 } from './subject-projection.js'
+export {
+  createScopedViewerSubjectNavigation,
+  type ManagedViewerSubjectNavigation,
+  type ScopedViewerSubjectNavigationOptions,
+} from './subject-navigation.js'
 export { createV1DescriptorProjectionPort } from './v1-projection.js'
 export {
   createByteRangeSource,

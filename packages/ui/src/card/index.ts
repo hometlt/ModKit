@@ -1045,11 +1045,22 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
           localizer,
           signal: scope.signal,
         })
+        const subjectNavigation = args.subjectNavigation
+        const navigate =
+          subjectNavigation === undefined
+            ? undefined
+            : (reference: CardRef): void => {
+                if (reference.href === undefined) return
+                void subjectNavigation
+                  .open({ scope: subjectNavigation.scope, target: reference.href }, scope.signal)
+                  .catch(() => undefined)
+              }
         const card = createSubjectCard(root.ownerDocument, {
           label: localizer.text('card.subject'),
           localizer,
           sections,
           ...(args.knowledge === undefined ? {} : { knowledge: args.knowledge }),
+          ...(navigate === undefined ? {} : { onNavigate: navigate }),
         })
         root.append(card.root)
         scope.cleanup(() => card.destroy())
