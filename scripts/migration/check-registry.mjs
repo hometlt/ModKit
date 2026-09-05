@@ -29,6 +29,7 @@
 //                                                  [--baseline <path>] [--quiet]
 
 import { execFileSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import process from 'node:process'
@@ -764,7 +765,10 @@ function deriveX3Facts() {
   return byId
 }
 
-const commonCoveragePath = path.join(repoRoot, 'scripts/parity/common-coverage.json')
+const commonCoverageRepositoryPath =
+  'migration/history/externalization/former-core-tests/scripts/parity-suite/common-coverage.json'
+const commonCoveragePath = path.join(repoRoot, commonCoverageRepositoryPath)
+const commonCoverageSha256 = 'eae2a7cb4e70f22e520fd4606de1ac1241d543f73615c8b9d359437af8da5987'
 
 /*
  * scripts/parity/common-coverage.json cross-check deadline (GA recovery wave 2C rider).
@@ -789,13 +793,32 @@ const COMMON_COVERAGE_RESTORE_BY_WAVE = '6'
 const COMMON_COVERAGE_WAVE_REACHED = false
 
 function deriveParityFacts() {
-  // scripts/parity/common-coverage.json left the repo with the 2026-08-30 externalization
-  // (commit 3fe0232d) and has not been relocated. That is a real gap, not a reason to abort the
-  // whole gate: `coverage` is `null` when the file is absent, and every consumer below must treat
-  // null as "cannot verify" and say so via flagUnavailable — never as "nothing to report".
-  const coverage = existsSync(commonCoveragePath)
-    ? new Map(readJson(commonCoveragePath).coverage.map(row => [row.contributionId, row.status]))
-    : null
+  // The 2026-08-30 externalization preserved the last canonical common-coverage ledger under
+  // migration/history. Keep the compatibility cross-check bound to that immutable evidence until
+  // its external owner publishes a newer receipt. If it disappears, `coverage` is `null` and every
+  // consumer below must report the unavailable verification.
+  let coverage = null
+  if (existsSync(commonCoveragePath)) {
+    const bytes = readFileSync(commonCoveragePath)
+    const actualSha256 = createHash('sha256').update(bytes).digest('hex')
+    if (actualSha256 !== commonCoverageSha256) {
+      fail(
+        `common coverage evidence digest ${actualSha256} contradicts pinned ${commonCoverageSha256}`,
+      )
+    }
+    const historical = JSON.parse(bytes.toString('utf8'))
+    if (historical.schemaVersion !== 1 || !Array.isArray(historical.coverage)) {
+      fail('common coverage evidence must be schemaVersion 1 with a coverage array')
+    }
+    coverage = new Map()
+    for (const row of historical.coverage) {
+      const normalizedId = row.contributionId.replace(/^org\.modkitx\//u, 'modkit/')
+      if (coverage.has(normalizedId)) {
+        fail(`common coverage evidence maps more than one row to ${normalizedId}`)
+      }
+      coverage.set(normalizedId, row.status)
+    }
+  }
   const byShortId = new Map()
   for (const row of readJson(parityReportPath).results) {
     const short = `modkit/${row.contributionId.slice(row.contributionId.lastIndexOf('/') + 1)}`
@@ -918,7 +941,7 @@ if (isDefaultRegistry) {
       const actualCoverage = declared === null ? undefined : coverage.get(declared)
       if (declaredCoverage !== (actualCoverage ?? null)) {
         fail(
-          `${label}: parityEvidence.coverageStatus ${JSON.stringify(declaredCoverage)} contradicts common-coverage.json ${JSON.stringify(actualCoverage ?? null)}`,
+          `${label}: parityEvidence.coverageStatus ${JSON.stringify(declaredCoverage)} contradicts ${commonCoverageRepositoryPath} ${JSON.stringify(actualCoverage ?? null)}`,
         )
       }
     }
@@ -947,7 +970,7 @@ if (isDefaultRegistry) {
   }
   if (coverage === null && COMMON_COVERAGE_WAVE_REACHED) {
     fail(
-      `parityEvidence.coverageStatus cross-check: scripts/parity/common-coverage.json still not found ` +
+      `parityEvidence.coverageStatus cross-check: ${commonCoverageRepositoryPath} still not found ` +
         `(ENOENT) past its wave ${COMMON_COVERAGE_RESTORE_BY_WAVE} restoration deadline — ` +
         `${coverageChecksSkipped} format row(s) NOT verified against recorded coverage. This file left ` +
         `the repo in the 2026-08-30 externalization (commit 3fe0232d); COMMON_COVERAGE_WAVE_REACHED ` +
@@ -956,7 +979,7 @@ if (isDefaultRegistry) {
     )
   } else if (coverage === null) {
     flagUnavailable(
-      `parityEvidence.coverageStatus cross-check: scripts/parity/common-coverage.json not found (ENOENT) — ` +
+      `parityEvidence.coverageStatus cross-check: ${commonCoverageRepositoryPath} not found (ENOENT) — ` +
         `${coverageChecksSkipped} format row(s) NOT verified against recorded coverage. This file left ` +
         `the repo in the 2026-08-30 externalization (commit 3fe0232d) and has not been relocated to ` +
         `where the parity suite now lives. Every other registry rule still ran; this one specific ` +
