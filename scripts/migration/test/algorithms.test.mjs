@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises'
+import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import {
@@ -8,6 +8,7 @@ import {
   scanAlgorithms,
   checkAlgorithmDebt,
   checkBaselineRatchet,
+  checkMpqHashCanonicalization,
   ratchetAlgorithmSnapshot,
   sc2RuntimeSurfaceRoots,
   SC2_ALGORITHM_PRODUCTION_TSCONFIG,
@@ -52,6 +53,101 @@ test('AST finds named implementation bodies and ignores calls, comments and impo
   assert.deepEqual(
     rows.map(row => row.name),
     ['crc32', 'inflateRaw', 'parseXmlDocument', 'decodeBc1', 'adler32'],
+  )
+})
+
+async function mpqHashFixture(t) {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'mpq-hash-gate-test-'))
+  t.after(async () => {
+    assert.equal(path.dirname(root), os.tmpdir())
+    assert.ok(path.basename(root).startsWith('mpq-hash-gate-test-'))
+    await rm(root, { recursive: true, force: true })
+  })
+  const canonicalPath = 'modkit-core/packages/codec-kit/src/crypto/mpq.ts'
+  const canonicalSource = await readFile(
+    new URL('../../../packages/codec-kit/src/crypto/mpq.ts', import.meta.url),
+    'utf8',
+  )
+  await mkdir(path.dirname(path.join(root, canonicalPath)), { recursive: true })
+  await writeFile(path.join(root, canonicalPath), canonicalSource)
+  const consumers = [
+    'modkit-extensions-blizzard/mpq/src/mpq/codec.js',
+    'modkit-extensions-blizzard/mpq/src/mpq/fresh-writer.js',
+    'modkit-extensions-blizzard/mpq/src/mpq/native-preserving.js',
+  ]
+  for (const consumer of consumers) {
+    await mkdir(path.dirname(path.join(root, consumer)), { recursive: true })
+    await writeFile(
+      path.join(root, consumer),
+      "import { mpqHash } from '@modkit/codec-kit/crypto'\nexport const value = mpqHash('x', 1)\n",
+    )
+  }
+  await mkdir(path.join(root, 'modkit-extensions-blizzard/starcraft2/src'), {
+    recursive: true,
+  })
+  await writeFile(
+    path.join(root, 'modkit-extensions-blizzard/starcraft2/src/index.ts'),
+    'export const active = true\n',
+  )
+  const options = {
+    workspaceRoot: root,
+    repositories: ['modkit-core', 'modkit-extensions-blizzard'],
+    canonicalFiles: [
+      {
+        mk2Path: 'packages/archives-processing/src/lib/crypto/index.ts',
+        destination: canonicalPath,
+        sha256Mk3: sha256(canonicalSource),
+      },
+    ],
+  }
+  return { root, consumers, options }
+}
+
+test('M4 mpqHash gate proves one canonical definition, three bindings and behavior vectors', async t => {
+  const fixture = await mpqHashFixture(t)
+  const current = await scanAlgorithms(fixture.options)
+  assert.deepEqual(await checkMpqHashCanonicalization({ current, workspaceRoot: fixture.root }), {
+    definitions: 1,
+    blizzardDefinitions: 0,
+    bindings: 3,
+    vectors: 5,
+  })
+})
+
+test('M4 mpqHash gate rejects a Blizzard definition hidden behind otherwise valid imports', async t => {
+  const fixture = await mpqHashFixture(t)
+  const peer = 'modkit-extensions-blizzard/mpq/src/mpq/peer.js'
+  await writeFile(path.join(fixture.root, peer), 'export function mpqHash() { return 0 }\n')
+  const current = await scanAlgorithms(fixture.options)
+  await assert.rejects(
+    () => checkMpqHashCanonicalization({ current, workspaceRoot: fixture.root }),
+    /expected zero Blizzard mpqHash definitions/u,
+  )
+})
+
+test('M4 mpqHash gate rejects an alias import with different behavior', async t => {
+  const fixture = await mpqHashFixture(t)
+  await writeFile(
+    path.join(fixture.root, 'modkit-extensions-blizzard/starcraft2/src/alternate.ts'),
+    "import { otherHash as mpqHash } from './different.js'\nexport const value = mpqHash('x', 1)\n",
+  )
+  const current = await scanAlgorithms(fixture.options)
+  await assert.rejects(
+    () => checkMpqHashCanonicalization({ current, workspaceRoot: fixture.root }),
+    /non-canonical mpqHash binding/u,
+  )
+})
+
+test('M4 mpqHash gate rejects a local alias that shadows the canonical import', async t => {
+  const fixture = await mpqHashFixture(t)
+  await writeFile(
+    path.join(fixture.root, fixture.consumers[0]),
+    "import { mpqHash } from '@modkit/codec-kit/crypto'\nexport const value = (mpqHash) => mpqHash('x', 1)\n",
+  )
+  const current = await scanAlgorithms(fixture.options)
+  await assert.rejects(
+    () => checkMpqHashCanonicalization({ current, workspaceRoot: fixture.root }),
+    /local mpqHash binding or reassignment/u,
   )
 })
 

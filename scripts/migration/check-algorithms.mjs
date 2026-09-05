@@ -7,6 +7,7 @@ import {
   scanAlgorithms,
   checkAlgorithmDebt,
   checkBaselineRatchet,
+  checkMpqHashCanonicalization,
   ratchetAlgorithmSnapshot,
   sc2RuntimeSurfaceRoots,
   SC2_ALGORITHM_PRODUCTION_TSCONFIG,
@@ -64,6 +65,7 @@ try {
     productionTsconfig: SC2_ALGORITHM_PRODUCTION_TSCONFIG,
     runtimeSurfaceRoots,
   })
+  const mpqHash = await checkMpqHashCanonicalization({ current, workspaceRoot })
   if (args.includes('--write-baseline')) {
     await writeFile(
       baselinePath,
@@ -75,6 +77,7 @@ try {
         baselineCreated: true,
         repositories: current.scanned.length,
         implementations: current.implementations.length,
+        mpqHash,
       }),
     )
   } else {
@@ -110,7 +113,7 @@ try {
         baselinePath,
         `${JSON.stringify(ratchetAlgorithmSnapshot(current), null, 2)}\n`,
       )
-    console.log(JSON.stringify({ repositories: current.scanned.length, ...result }))
+    console.log(JSON.stringify({ repositories: current.scanned.length, mpqHash, ...result }))
   }
 } catch (error) {
   console.error(error.message)

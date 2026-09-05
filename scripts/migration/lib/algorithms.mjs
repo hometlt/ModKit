@@ -34,6 +34,21 @@ const ignoredDirectories = new Set([
   '.turbo',
 ])
 
+export const MPQ_HASH_CANONICAL_PATH = 'modkit-core/packages/codec-kit/src/crypto/mpq.ts'
+export const MPQ_HASH_CANONICAL_MODULE = '@modkit/codec-kit/crypto'
+export const MPQ_HASH_BINDING_PATHS = Object.freeze([
+  'modkit-extensions-blizzard/mpq/src/mpq/codec.js',
+  'modkit-extensions-blizzard/mpq/src/mpq/fresh-writer.js',
+  'modkit-extensions-blizzard/mpq/src/mpq/native-preserving.js',
+])
+export const MPQ_HASH_VECTORS = Object.freeze([
+  Object.freeze({ input: 'replay.details', type: 1, expected: 0xd383c29c }),
+  Object.freeze({ input: 'REPLAY.DETAILS', type: 1, expected: 0xd383c29c }),
+  Object.freeze({ input: 'Base.SC2Data/GameData', type: 1, expected: 0xd621e5a7 }),
+  Object.freeze({ input: 'Base.SC2Data\\GameData', type: 1, expected: 0xd39a597a }),
+  Object.freeze({ input: 'Café/Ünit', type: 1, expected: 0x3974cb8c }),
+])
+
 /** Definitions only: calls, comments, strings and imported declarations are not implementations. */
 export function algorithmDefinitions(text, filename) {
   const file = ts.createSourceFile(filename, text, ts.ScriptTarget.Latest, true)
@@ -93,6 +108,200 @@ export function algorithmDefinitions(text, filename) {
   }
   visit(file, [])
   return definitions
+}
+
+function importedMpqHashBindings(text, filename) {
+  const file = ts.createSourceFile(filename, text, ts.ScriptTarget.Latest, true)
+  if (file.parseDiagnostics.length) throw new Error(`Cannot parse MPQ hash consumer: ${filename}`)
+  const imports = []
+  const namespaceImports = new Map()
+  for (const statement of file.statements) {
+    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteral(statement.moduleSpecifier))
+      continue
+    const module = statement.moduleSpecifier.text
+    const bindings = statement.importClause?.namedBindings
+    if (bindings && ts.isNamedImports(bindings))
+      for (const element of bindings.elements) {
+        const imported = element.propertyName?.text ?? element.name.text
+        const local = element.name.text
+        if (imported === 'mpqHash' || local === 'mpqHash') imports.push({ module, imported, local })
+      }
+    else if (bindings && ts.isNamespaceImport(bindings))
+      namespaceImports.set(bindings.name.text, module)
+  }
+  const namespaceUses = []
+  const shadowing = []
+  let directCalls = 0
+  function visit(node) {
+    if (
+      (ts.isVariableDeclaration(node) ||
+        ts.isParameter(node) ||
+        ts.isFunctionDeclaration(node) ||
+        ts.isFunctionExpression(node) ||
+        ts.isClassDeclaration(node) ||
+        ts.isClassExpression(node) ||
+        ts.isImportEqualsDeclaration(node) ||
+        ts.isBindingElement(node)) &&
+      node.name &&
+      ts.isIdentifier(node.name) &&
+      node.name.text === 'mpqHash'
+    )
+      shadowing.push(file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1)
+    else if (
+      ts.isBinaryExpression(node) &&
+      node.operatorToken.kind === ts.SyntaxKind.EqualsToken &&
+      ts.isIdentifier(node.left) &&
+      node.left.text === 'mpqHash'
+    )
+      shadowing.push(file.getLineAndCharacterOfPosition(node.getStart(file)).line + 1)
+    if (ts.isCallExpression(node)) {
+      if (ts.isIdentifier(node.expression) && node.expression.text === 'mpqHash') directCalls++
+      else if (
+        ts.isPropertyAccessExpression(node.expression) &&
+        node.expression.name.text === 'mpqHash' &&
+        ts.isIdentifier(node.expression.expression) &&
+        namespaceImports.has(node.expression.expression.text)
+      )
+        namespaceUses.push({
+          module: namespaceImports.get(node.expression.expression.text),
+          imported: 'mpqHash',
+          local: `${node.expression.expression.text}.mpqHash`,
+        })
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(file)
+  return { imports: [...imports, ...namespaceUses], directCalls, shadowing }
+}
+
+/**
+ * Prove the M4 mpqHash 4 -> 1 decision with AST definitions, exact active bindings and
+ * behavior vectors executed from the canonical TypeScript source.
+ */
+export async function checkMpqHashCanonicalization({ current, workspaceRoot }) {
+  const failures = []
+  const definitions = current?.implementations?.filter(row => row.name === 'mpqHash') ?? []
+  const canonical = definitions.filter(
+    row =>
+      row.repository === 'modkit-core' &&
+      row.path === MPQ_HASH_CANONICAL_PATH &&
+      row.symbol === 'mpqHash#0' &&
+      row.disposition === 'canonical-copy',
+  )
+  const blizzardDefinitions = definitions.filter(
+    row => row.repository === 'modkit-extensions-blizzard',
+  )
+  if (definitions.length !== 1)
+    failures.push(
+      `expected exactly one mpqHash definition across the algorithm scan, found ${definitions.length}: ${definitions.map(row => row.id).join(', ') || '<none>'}`,
+    )
+  if (canonical.length !== 1)
+    failures.push(
+      `expected canonical mpqHash definition ${MPQ_HASH_CANONICAL_PATH}:mpqHash#0, found ${canonical.length}`,
+    )
+  if (blizzardDefinitions.length)
+    failures.push(
+      `expected zero Blizzard mpqHash definitions, found: ${blizzardDefinitions.map(row => row.id).join(', ')}`,
+    )
+
+  const bindingRoots = [
+    'modkit-extensions-blizzard/mpq/src',
+    'modkit-extensions-blizzard/starcraft2/src',
+  ]
+  const bindings = []
+  async function visitBindings(relative) {
+    const entries = await readdir(
+      trustedWorkspacePath(workspaceRoot, relative, 'MPQ binding root'),
+      {
+        withFileTypes: true,
+      },
+    )
+    entries.sort((a, b) => a.name.localeCompare(b.name))
+    for (const entry of entries) {
+      if (entry.isSymbolicLink()) continue
+      const child = `${relative}/${entry.name}`
+      if (entry.isDirectory()) {
+        if (!ignoredDirectories.has(entry.name) && !entry.name.startsWith('.'))
+          await visitBindings(child)
+      } else if (
+        /\.[cm]?[jt]sx?$/u.test(entry.name) &&
+        !/\.d\.[cm]?ts$/u.test(entry.name) &&
+        !/\.(?:test|spec)\.[cm]?[jt]sx?$/u.test(entry.name)
+      ) {
+        const source = await readFile(trustedWorkspacePath(workspaceRoot, child, 'MPQ consumer'))
+        const result = importedMpqHashBindings(source.toString('utf8'), child)
+        for (const binding of result.imports) bindings.push({ path: child, ...binding })
+        if (result.shadowing.length)
+          failures.push(
+            `local mpqHash binding or reassignment in ${child}:${result.shadowing.join(',')}`,
+          )
+        if (MPQ_HASH_BINDING_PATHS.includes(child)) {
+          const exact = result.imports.filter(
+            binding =>
+              binding.module === MPQ_HASH_CANONICAL_MODULE &&
+              binding.imported === 'mpqHash' &&
+              binding.local === 'mpqHash',
+          )
+          if (exact.length !== 1 || result.directCalls === 0)
+            failures.push(
+              `expected ${child} to directly import and call mpqHash from ${MPQ_HASH_CANONICAL_MODULE}`,
+            )
+        }
+      }
+    }
+  }
+  for (const root of bindingRoots) await visitBindings(root)
+  for (const expected of MPQ_HASH_BINDING_PATHS)
+    if (!bindings.some(binding => binding.path === expected))
+      failures.push(`missing planned canonical mpqHash binding: ${expected}`)
+  for (const binding of bindings)
+    if (
+      binding.module !== MPQ_HASH_CANONICAL_MODULE ||
+      binding.imported !== 'mpqHash' ||
+      binding.local !== 'mpqHash'
+    )
+      failures.push(
+        `non-canonical mpqHash binding: ${binding.path} imports ${binding.imported} as ${binding.local} from ${binding.module}`,
+      )
+
+  const canonicalSource = await readFile(
+    trustedWorkspacePath(workspaceRoot, MPQ_HASH_CANONICAL_PATH, 'canonical MPQ hash source'),
+    'utf8',
+  )
+  const transpiled = ts.transpileModule(canonicalSource, {
+    fileName: MPQ_HASH_CANONICAL_PATH,
+    reportDiagnostics: true,
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext },
+  })
+  const transpileErrors = (transpiled.diagnostics ?? []).filter(
+    diagnostic => diagnostic.category === ts.DiagnosticCategory.Error,
+  )
+  if (transpileErrors.length)
+    failures.push(
+      `cannot execute canonical mpqHash vectors: ${transpileErrors.map(error => ts.flattenDiagnosticMessageText(error.messageText, '\n')).join('; ')}`,
+    )
+  else {
+    const moduleUrl = `data:text/javascript;base64,${Buffer.from(transpiled.outputText).toString('base64')}#${sha256(canonicalSource)}`
+    const loaded = await import(moduleUrl)
+    if (typeof loaded.mpqHash !== 'function')
+      failures.push('canonical source does not export mpqHash')
+    else
+      for (const vector of MPQ_HASH_VECTORS) {
+        const actual = loaded.mpqHash(vector.input, vector.type)
+        if (actual !== vector.expected)
+          failures.push(
+            `mpqHash vector failed for ${JSON.stringify(vector.input)}: expected 0x${vector.expected.toString(16)}, got 0x${Number(actual).toString(16)}`,
+          )
+      }
+  }
+
+  if (failures.length) throw new Error(`MPQ hash canonicalization failed:\n${failures.join('\n')}`)
+  return Object.freeze({
+    definitions: definitions.length,
+    blizzardDefinitions: blizzardDefinitions.length,
+    bindings: bindings.length,
+    vectors: MPQ_HASH_VECTORS.length,
+  })
 }
 
 function trustedWorkspacePath(workspaceRoot, relative, label) {
