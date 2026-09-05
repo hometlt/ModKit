@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { mkdtemp, mkdir, readFile, writeFile, rm } from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
+import { execFileSync } from 'node:child_process'
 import {
   algorithmDefinitions,
   scanAlgorithms,
@@ -12,6 +13,8 @@ import {
   ratchetAlgorithmSnapshot,
   sc2RuntimeSurfaceRoots,
   SC2_ALGORITHM_PRODUCTION_TSCONFIG,
+  loadArchiveM4AlgorithmAllowances,
+  validateCanonicalOwnerIds,
   validateCopiedUnwiredAllowanceIds,
 } from '../lib/algorithms.mjs'
 import { sha256 } from '../lib/legacy-oracle.mjs'
@@ -235,6 +238,135 @@ test('actual repository scan excludes build/tests/vendor and validates canonical
   await assert.rejects(() => scanAlgorithms(options), /hash mismatch/u)
 })
 
+test('authored canonical owners are exact, hash-bound and extend algorithm discovery by name', async t => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'algorithm-owner-test-'))
+  t.after(async () => {
+    assert.equal(path.dirname(root), os.tmpdir())
+    assert.ok(path.basename(root).startsWith('algorithm-owner-test-'))
+    await rm(root, { recursive: true, force: true })
+  })
+  const ownerPath = 'repo/src/bounded.ts'
+  const source = 'export function decompressBounded() { return 42 }\n'
+  await mkdir(path.dirname(path.join(root, ownerPath)), { recursive: true })
+  await writeFile(path.join(root, ownerPath), source)
+  const owner = {
+    id: `${ownerPath}:decompressBounded#0`,
+    repository: 'repo',
+    path: ownerPath,
+    symbol: 'decompressBounded#0',
+    name: 'decompressBounded',
+    sourceSha256: sha256(source),
+    reason: 'Fixture canonical owner.',
+  }
+  assert.deepEqual(validateCanonicalOwnerIds([owner], [owner.id]), [owner])
+  const scan = await scanAlgorithms({
+    workspaceRoot: root,
+    repositories: ['repo'],
+    canonicalOwnedAlgorithms: [owner],
+  })
+  assert.equal(scan.implementations.length, 1)
+  assert.equal(scan.implementations[0].disposition, 'canonical-owned')
+  assert.equal(checkAlgorithmDebt(scan, scan).canonicalOwned, 1)
+  await writeFile(path.join(root, ownerPath), `${source}// tamper\n`)
+  await assert.rejects(
+    () =>
+      scanAlgorithms({
+        workspaceRoot: root,
+        repositories: ['repo'],
+        canonicalOwnedAlgorithms: [owner],
+      }),
+    /Canonical algorithm owner hash mismatch/u,
+  )
+  assert.throws(
+    () => validateCanonicalOwnerIds([owner], [...[owner.id], 'repo/src/peer.ts:peer#0']),
+    /Unexpected canonical algorithm owner/u,
+  )
+})
+
+test('M4 archive algorithm allowances are root-, blob-, implementation- and destination-bound', async t => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'algorithm-m4-archive-test-'))
+  t.after(async () => {
+    assert.equal(path.dirname(root), os.tmpdir())
+    assert.ok(path.basename(root).startsWith('algorithm-m4-archive-test-'))
+    await rm(root, { recursive: true, force: true })
+  })
+  const oracle = path.join(root, 'references/modkitmk2')
+  const sourcePath = 'archive/hash.ts'
+  const source = 'export function crc32() { return 42 }\n'
+  await mkdir(path.join(oracle, 'archive'), { recursive: true })
+  await writeFile(path.join(oracle, sourcePath), source)
+  execFileSync('git', ['init'], { cwd: oracle, windowsHide: true })
+  execFileSync('git', ['config', 'user.email', 'fixture@example.invalid'], {
+    cwd: oracle,
+    windowsHide: true,
+  })
+  execFileSync('git', ['config', 'user.name', 'fixture'], { cwd: oracle, windowsHide: true })
+  execFileSync('git', ['add', '--', sourcePath], { cwd: oracle, windowsHide: true })
+  execFileSync('git', ['commit', '-m', 'fixture'], { cwd: oracle, windowsHide: true })
+  const commit = execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: oracle,
+    encoding: 'utf8',
+    windowsHide: true,
+  }).trim()
+  const rootObject = execFileSync('git', ['rev-parse', `${commit}:archive`], {
+    cwd: oracle,
+    encoding: 'utf8',
+    windowsHide: true,
+  }).trim()
+  const sourceBlob = execFileSync('git', ['rev-parse', `${commit}:${sourcePath}`], {
+    cwd: oracle,
+    encoding: 'utf8',
+    windowsHide: true,
+  }).trim()
+  const destinationRelative = 'starcraft2/src/lib/mk2/archive/hash.ts'
+  const destination = `modkit-extensions-blizzard/${destinationRelative}`
+  await mkdir(path.dirname(path.join(root, destination)), { recursive: true })
+  await writeFile(path.join(root, destination), source)
+  const implementationSha256 = algorithmDefinitions(source, sourcePath)[0].implementationSha256
+  const provenancePath =
+    'modkit-extensions-blizzard/starcraft2/src/lib/mk2/compat/archive-m4-provenance.json'
+  await mkdir(path.dirname(path.join(root, provenancePath)), { recursive: true })
+  const manifest = {
+    schemaVersion: 1,
+    milestone: 'M4/P11',
+    disposition: 'copied-unwired-test-compatibility',
+    oracle: {
+      repository: 'references/modkitmk2',
+      commit,
+      sourceMode: 'git-object-database',
+    },
+    copiedRoots: [
+      { source: 'archive', gitObject: rootObject, destination: 'starcraft2/src/lib/mk2/archive' },
+    ],
+    algorithmAllowances: [
+      {
+        source: sourcePath,
+        sourceBlob,
+        sourceSha256: sha256(source),
+        destination: destinationRelative,
+        destinationSha256: sha256(source),
+        symbol: 'crc32#0',
+        sourceImplementationSha256: implementationSha256,
+        destinationImplementationSha256: implementationSha256,
+        divergence: null,
+        reason: 'Fixture copied-unwired implementation.',
+        exit: 'Canonicalize before any production activation.',
+      },
+    ],
+  }
+  await writeFile(path.join(root, provenancePath), JSON.stringify(manifest))
+  const id = `${destination}:crc32#0`
+  const options = { workspaceRoot: root, expectedIds: [id], expectedOracleCommit: commit }
+  const records = await loadArchiveM4AlgorithmAllowances(options)
+  assert.equal(records.length, 1)
+  assert.equal(`${records[0].destination}:${records[0].algorithmDisposition.symbol}`, id)
+  await writeFile(path.join(root, destination), `${source}// tamper\n`)
+  await assert.rejects(
+    () => loadArchiveM4AlgorithmAllowances(options),
+    /destination hash mismatch/u,
+  )
+})
+
 async function copiedUnwiredFixture(
   t,
   {
@@ -434,10 +566,7 @@ test('an unexpected third copied-unwired allowance fails closed', () => {
   assert.throws(
     () =>
       validateCopiedUnwiredAllowanceIds(
-        [
-          ...records,
-          { destination: 'repo/c.ts', algorithmDisposition: { symbol: 'sha1#0' } },
-        ],
+        [...records, { destination: 'repo/c.ts', algorithmDisposition: { symbol: 'sha1#0' } }],
         expected,
       ),
     /Unexpected copied-unwired algorithm allowance/u,

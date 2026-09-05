@@ -11,9 +11,31 @@ import {
   ratchetAlgorithmSnapshot,
   sc2RuntimeSurfaceRoots,
   SC2_ALGORITHM_PRODUCTION_TSCONFIG,
+  loadArchiveM4AlgorithmAllowances,
+  validateCanonicalOwnerIds,
   validateCopiedUnwiredAllowanceIds,
 } from './lib/algorithms.mjs'
 import { prepareCopy, checkCopies } from './lib/mk2-copy.mjs'
+
+const FAMILY_COPIED_UNWIRED_IDS = Object.freeze([
+  'modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-map/src/image/png.ts:crc32#0',
+  'modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/scripts-processing/src/trigger-store/store.ts:XMLReader.parseXML#0',
+])
+const ARCHIVE_M4_COPIED_UNWIRED_IDS = Object.freeze([
+  'modkit-extensions-blizzard/starcraft2/src/lib/mk2/extensions/common/archives/codecs/zip/src/writer.ts:crc32#0',
+  'modkit-extensions-blizzard/starcraft2/src/lib/mk2/extensions/epic-games/unreal-engine/codecs/unreal-pak/src/index.ts:sha1Matches#0',
+  'modkit-extensions-blizzard/starcraft2/src/lib/mk2/extensions/microsoft/halo-wars/codecs/halo-era/src/index.ts:inflateCompressedStream#0',
+  'modkit-extensions-blizzard/starcraft2/src/lib/mk2/extensions/opensource/spring/codecs/spring-rapid/src/crc32.ts:crc32#0',
+  'modkit-extensions-blizzard/starcraft2/src/lib/mk2/extensions/realitypump/earth2160/codecs/wd/src/index.ts:inflateWdPayload#0',
+  'modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/archives-processing/src/lib/compression/index.ts:inflate#0',
+  'modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/archives-processing/src/lib/crypto/index.ts:md5#0',
+])
+const CANONICAL_OWNER_IDS = Object.freeze([
+  'modkit-core/packages/codec-kit/src/compression/bounded.ts:decompressBounded#0',
+  'modkit-core/packages/codec-kit/src/compression/adler32.ts:createAdler32#0',
+  'modkit-core/packages/codec-kit/src/compression/adler32.ts:adler32#0',
+  'modkit-extensions-blizzard/starcraft2/src/support/structured-inspection.js:parseXmlElements#0',
+])
 
 try {
   const args = process.argv.slice(2)
@@ -50,17 +72,32 @@ try {
   await checkCopies(family)
   if (!canonical.provenance.files?.length || !family.provenance.files?.length)
     throw new Error('Canonical copy provenance is required before algorithms scan')
-  const copiedUnwiredFiles = validateCopiedUnwiredAllowanceIds(
+  const familyCopiedUnwired = validateCopiedUnwiredAllowanceIds(
     family.provenance.files.filter(row => row.algorithmDisposition),
-    [
-      'modkit-extensions-blizzard/starcraft2/src/lib/mk2/codecs/sc2-map/src/image/png.ts:crc32#0',
-      'modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/scripts-processing/src/trigger-store/store.ts:XMLReader.parseXML#0',
-    ],
+    FAMILY_COPIED_UNWIRED_IDS,
+  )
+  const archiveCopiedUnwired = await loadArchiveM4AlgorithmAllowances({
+    workspaceRoot,
+    expectedIds: ARCHIVE_M4_COPIED_UNWIRED_IDS,
+  })
+  const copiedUnwiredFiles = validateCopiedUnwiredAllowanceIds(
+    [...familyCopiedUnwired, ...archiveCopiedUnwired],
+    [...FAMILY_COPIED_UNWIRED_IDS, ...ARCHIVE_M4_COPIED_UNWIRED_IDS],
+  )
+  const ownerManifest = JSON.parse(
+    await readFile(path.join(workspaceRoot, 'modkit-core/migration/algorithm-owners.json'), 'utf8'),
+  )
+  if (ownerManifest.schemaVersion !== 1 || !Array.isArray(ownerManifest.owners))
+    throw new Error('Invalid canonical algorithm owner manifest')
+  const canonicalOwnedAlgorithms = validateCanonicalOwnerIds(
+    ownerManifest.owners,
+    CANONICAL_OWNER_IDS,
   )
   const runtimeSurfaceRoots = await sc2RuntimeSurfaceRoots({ workspaceRoot })
   const current = await scanAlgorithms({
     workspaceRoot,
     canonicalFiles: canonical.provenance.files,
+    canonicalOwnedAlgorithms,
     copiedUnwiredFiles,
     productionTsconfig: SC2_ALGORITHM_PRODUCTION_TSCONFIG,
     runtimeSurfaceRoots,

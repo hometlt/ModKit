@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "owners": [
+    {
+      "id": "modkit-core/packages/codec-kit/src/compression/bounded.ts:decompressBounded#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/packages/codec-kit/src/compression/bounded.ts",
+      "symbol": "decompressBounded#0",
+      "name": "decompressBounded",
+      "sourceSha256": "18f27ca704bd946d175957c90eea9e52ef14b7f8926561d7c3a356bf84798e01",
+      "reason": "Canonical browser-portable bounded stream decompression owner shared by archive consumers."
+    },
+    {
+      "id": "modkit-core/packages/codec-kit/src/compression/adler32.ts:createAdler32#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/packages/codec-kit/src/compression/adler32.ts",
+      "symbol": "createAdler32#0",
+      "name": "createAdler32",
+      "sourceSha256": "773caa4621f7aa42c5ecf5eadfe61c323bb21929660970a09263eab2937d5471",
+      "reason": "Canonical incremental Adler-32 owner used when callers need cancellation checkpoints."
+    },
+    {
+      "id": "modkit-core/packages/codec-kit/src/compression/adler32.ts:adler32#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/packages/codec-kit/src/compression/adler32.ts",
+      "symbol": "adler32#0",
+      "name": "adler32",
+      "sourceSha256": "773caa4621f7aa42c5ecf5eadfe61c323bb21929660970a09263eab2937d5471",
+      "reason": "Canonical one-shot Adler-32 facade over the incremental owner."
+    },
+    {
+      "id": "modkit-extensions-blizzard/starcraft2/src/support/structured-inspection.js:parseXmlElements#0",
+      "repository": "modkit-extensions-blizzard",
+      "path": "modkit-extensions-blizzard/starcraft2/src/support/structured-inspection.js",
+      "symbol": "parseXmlElements#0",
+      "name": "parseXmlElements",
+      "sourceSha256": "f8e4996ea6d3e07c5a51b79761bc1b661b0acfd07c72ae9d75a1654f0cc64e12",
+      "reason": "Canonical current SC2 structured-inspection parser shared by the family codecs."
+    }
+  ]
+}

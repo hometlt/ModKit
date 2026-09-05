@@ -3,11 +3,11 @@
   "scanned": [
     {
       "repository": "modkit-core",
-      "sourceFiles": 770
+      "sourceFiles": 812
     },
     {
       "repository": "modkit-extensions-blizzard",
-      "sourceFiles": 138
+      "sourceFiles": 1076
     },
     {
       "repository": "modkit-extensions-ea",
@@ -198,6 +198,39 @@
       "disposition": "existing-debt"
     },
     {
+      "id": "modkit-core/packages/codec-kit/src/compression/adler32.ts:adler32#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/packages/codec-kit/src/compression/adler32.ts",
+      "symbol": "adler32#0",
+      "name": "adler32",
+      "line": 24,
+      "implementationSha256": "4a77370e3ef3b3bf72f79ccae9b33be229e10d9ba184e5e3de44abdd23a15454",
+      "disposition": "canonical-owned",
+      "reason": "Canonical one-shot Adler-32 facade over the incremental owner."
+    },
+    {
+      "id": "modkit-core/packages/codec-kit/src/compression/adler32.ts:createAdler32#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/packages/codec-kit/src/compression/adler32.ts",
+      "symbol": "createAdler32#0",
+      "name": "createAdler32",
+      "line": 7,
+      "implementationSha256": "bbc5156c82d1a28e034326c72312ea6208dcf623e680d53bae2042020f208dd5",
+      "disposition": "canonical-owned",
+      "reason": "Canonical incremental Adler-32 owner used when callers need cancellation checkpoints."
+    },
+    {
+      "id": "modkit-core/packages/codec-kit/src/compression/bounded.ts:decompressBounded#0",
+      "repository": "modkit-core",
+      "path": "modkit-core/packages/codec-kit/src/compression/bounded.ts",
+      "symbol": "decompressBounded#0",
+      "name": "decompressBounded",
+      "line": 19,
+      "implementationSha256": "36e266343890bd2e009e8977dae402c49e8463144d3520a1e4baa6ffef554b21",
+      "disposition": "canonical-owned",
+      "reason": "Canonical browser-portable bounded stream decompression owner shared by archive consumers."
+    },
+    {
       "id": "modkit-core/packages/codec-kit/src/compression/legacy-original.ts:inflate#0",
       "repository": "modkit-core",
       "path": "modkit-core/packages/codec-kit/src/compression/legacy-original.ts",
@@ -303,63 +336,13 @@
       "disposition": "existing-debt"
     },
     {
-      "id": "modkit-extensions-blizzard/mpq/src/mpq/codec.js:inflate#0",
-      "repository": "modkit-extensions-blizzard",
-      "path": "modkit-extensions-blizzard/mpq/src/mpq/codec.js",
-      "symbol": "inflate#0",
-      "name": "inflate",
-      "line": 209,
-      "implementationSha256": "a2fe7b7319a952e263cce9538a044d1dac4f9bbc6caa96183af58f17b19a0c0f",
-      "disposition": "existing-debt"
-    },
-    {
-      "id": "modkit-extensions-blizzard/mpq/src/mpq/codec.js:mpqHash#0",
-      "repository": "modkit-extensions-blizzard",
-      "path": "modkit-extensions-blizzard/mpq/src/mpq/codec.js",
-      "symbol": "mpqHash#0",
-      "name": "mpqHash",
-      "line": 46,
-      "implementationSha256": "9817a417b5a603b1bc89f231e5dc1cdd734e16af16f74c12672f1a6830c4239e",
-      "disposition": "existing-debt"
-    },
-    {
-      "id": "modkit-extensions-blizzard/mpq/src/mpq/fresh-writer.js:mpqHash#0",
-      "repository": "modkit-extensions-blizzard",
-      "path": "modkit-extensions-blizzard/mpq/src/mpq/fresh-writer.js",
-      "symbol": "mpqHash#0",
-      "name": "mpqHash",
-      "line": 87,
-      "implementationSha256": "82990c3fd22a4c4c8210d9cf4f1e035cce764fa6d74002f52b5b6f33bc082e35",
-      "disposition": "existing-debt"
-    },
-    {
       "id": "modkit-extensions-blizzard/mpq/src/mpq/native-preserving.js:inflate#0",
       "repository": "modkit-extensions-blizzard",
       "path": "modkit-extensions-blizzard/mpq/src/mpq/native-preserving.js",
       "symbol": "inflate#0",
       "name": "inflate",
-      "line": 375,
+      "line": 364,
       "implementationSha256": "c819c447297be3ffe20a99fd1bb17098f833a26869e5ffdbdea5613b30e7a980",
-      "disposition": "existing-debt"
-    },
-    {
-      "id": "modkit-extensions-blizzard/mpq/src/mpq/native-preserving.js:mpqHash#0",
-      "repository": "modkit-extensions-blizzard",
-      "path": "modkit-extensions-blizzard/mpq/src/mpq/native-preserving.js",
-      "symbol": "mpqHash#0",
-      "name": "mpqHash",
-      "line": 138,
-      "implementationSha256": "8e441f25b59fa8c3d36a77dbf7ae8c8de4d2d27a586f49501428b4563790fb51",
-      "disposition": "existing-debt"
-    },
-    {
-      "id": "modkit-extensions-blizzard/starcraft2/src/galaxy/codec.js:parseXmlElements#0",
-      "repository": "modkit-extensions-blizzard",
-      "path": "modkit-extensions-blizzard/starcraft2/src/galaxy/codec.js",
-      "symbol": "parseXmlElements#0",
-      "name": "parseXmlElements",
-      "line": 93,
-      "implementationSha256": "eac48d894c45c57320a31b051b3640e5a24678bc6abdd934f5496852b241eee2",
       "disposition": "existing-debt"
     },
     {
@@ -373,34 +356,15 @@
       "disposition": "existing-debt"
     },
     {
-      "id": "modkit-extensions-blizzard/starcraft2/src/sc2-map/mpq.js:mpqHash#0",
+      "id": "modkit-extensions-blizzard/starcraft2/src/support/structured-inspection.js:parseXmlElements#0",
       "repository": "modkit-extensions-blizzard",
-      "path": "modkit-extensions-blizzard/starcraft2/src/sc2-map/mpq.js",
-      "symbol": "mpqHash#0",
-      "name": "mpqHash",
-      "line": 56,
-      "implementationSha256": "10514b083a143158e9f17859fc145e33f030191687294fe9e0f2bafac3e0f8cb",
-      "disposition": "existing-debt"
-    },
-    {
-      "id": "modkit-extensions-blizzard/starcraft2/src/sc2-map/preview.js:adler32#0",
-      "repository": "modkit-extensions-blizzard",
-      "path": "modkit-extensions-blizzard/starcraft2/src/sc2-map/preview.js",
-      "symbol": "adler32#0",
-      "name": "adler32",
-      "line": 60,
-      "implementationSha256": "d6ef2d84d72442f835cd49a9cce2a38c718b65450ef7c53251e194e2050969f7",
-      "disposition": "existing-debt"
-    },
-    {
-      "id": "modkit-extensions-blizzard/starcraft2/src/sc2-map/preview.js:crc32#0",
-      "repository": "modkit-extensions-blizzard",
-      "path": "modkit-extensions-blizzard/starcraft2/src/sc2-map/preview.js",
-      "symbol": "crc32#0",
-      "name": "crc32",
-      "line": 54,
-      "implementationSha256": "5dcf81410277a79f6c7ee9510218879d8254ad4bd21674133195930e20f05a8d",
-      "disposition": "existing-debt"
+      "path": "modkit-extensions-blizzard/starcraft2/src/support/structured-inspection.js",
+      "symbol": "parseXmlElements#0",
+      "name": "parseXmlElements",
+      "line": 86,
+      "implementationSha256": "eac48d894c45c57320a31b051b3640e5a24678bc6abdd934f5496852b241eee2",
+      "disposition": "canonical-owned",
+      "reason": "Canonical current SC2 structured-inspection parser shared by the family codecs."
     },
     {
       "id": "modkit-extensions-ea/emperor/src/emperor-rfh-rfd/codec.js:inflate#0",

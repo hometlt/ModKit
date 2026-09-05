@@ -1,5 +1,6 @@
 import path from 'node:path'
 import { readdir, readFile } from 'node:fs/promises'
+import { execFileSync } from 'node:child_process'
 import ts from 'typescript'
 import { sha256 } from './legacy-oracle.mjs'
 
@@ -15,6 +16,8 @@ export const algorithmRepositories = [
 ]
 export const SC2_ALGORITHM_PRODUCTION_TSCONFIG =
   'modkit-extensions-blizzard/starcraft2/tsconfig.json'
+export const SC2_ARCHIVE_M4_PROVENANCE =
+  'modkit-extensions-blizzard/starcraft2/src/lib/mk2/compat/archive-m4-provenance.json'
 const ignoredDirectories = new Set([
   '.git',
   'node_modules',
@@ -50,7 +53,7 @@ export const MPQ_HASH_VECTORS = Object.freeze([
 ])
 
 /** Definitions only: calls, comments, strings and imported declarations are not implementations. */
-export function algorithmDefinitions(text, filename) {
+export function algorithmDefinitions(text, filename, additionalNames = []) {
   const file = ts.createSourceFile(filename, text, ts.ScriptTarget.Latest, true)
   if (file.parseDiagnostics.length) throw new Error(`Cannot parse algorithm source: ${filename}`)
   const printer = ts.createPrinter({ removeComments: true, newLine: ts.NewLineKind.LineFeed })
@@ -86,7 +89,7 @@ export function algorithmDefinitions(text, filename) {
           : node.left.getText(file)
       body = node.right.body
     }
-    if (name && body && algorithmPattern.test(name)) {
+    if (name && body && (algorithmPattern.test(name) || additionalNames.includes(name))) {
       const symbol = [...parents, name].join('.')
       const ordinal = counts.get(symbol) ?? 0
       counts.set(symbol, ordinal + 1)
@@ -322,8 +325,7 @@ function trustedWorkspacePath(workspaceRoot, relative, label) {
 
 function runtimeStrings(value, results = []) {
   if (typeof value === 'string') results.push(value)
-  else if (Array.isArray(value))
-    for (const child of value) runtimeStrings(child, results)
+  else if (Array.isArray(value)) for (const child of value) runtimeStrings(child, results)
   else if (value && typeof value === 'object' && !Array.isArray(value))
     for (const child of Object.values(value)) runtimeStrings(child, results)
   return results
@@ -343,16 +345,15 @@ export async function sc2RuntimeSurfaceRoots({
     throw new Error('Unexpected SC2 contribution manifest inventory pattern')
   const entries = runtimeStrings(manifest.exports)
   if (typeof manifest.bin === 'string') entries.push(manifest.bin)
-  else if (manifest.bin && typeof manifest.bin === 'object') entries.push(...Object.values(manifest.bin))
+  else if (manifest.bin && typeof manifest.bin === 'object')
+    entries.push(...Object.values(manifest.bin))
   const contributionsPath = path.join(packagePath, 'contributions')
   const contributionFiles = (await readdir(contributionsPath, { withFileTypes: true }))
     .filter(entry => entry.isFile() && entry.name.endsWith('.json'))
     .sort((a, b) => a.name.localeCompare(b.name))
   if (!contributionFiles.length) throw new Error('Empty SC2 contribution runtime inventory')
   for (const file of contributionFiles) {
-    const contribution = JSON.parse(
-      await readFile(path.join(contributionsPath, file.name), 'utf8'),
-    )
+    const contribution = JSON.parse(await readFile(path.join(contributionsPath, file.name), 'utf8'))
     for (const variant of contribution.runtimeVariants ?? []) {
       if (typeof variant.entrypoint !== 'string')
         throw new Error(`Invalid SC2 contribution runtime entrypoint: ${file.name}`)
@@ -393,8 +394,7 @@ export async function sc2RuntimeSurfaceRoots({
         `${sourceStem}.mts`,
         `${sourceStem}.cts`,
       ])
-    }
-    else throw new Error(`Unsupported SC2 runtime surface entrypoint: ${entry}`)
+    } else throw new Error(`Unsupported SC2 runtime surface entrypoint: ${entry}`)
     if (!absolute) throw new Error(`Missing SC2 runtime surface source: ${entry}`)
     roots.add(path.relative(workspaceRoot, absolute).split(path.sep).join('/'))
   }
@@ -418,10 +418,179 @@ export function validateCopiedUnwiredAllowanceIds(records, expectedIds) {
   return records
 }
 
+export function validateCanonicalOwnerIds(records, expectedIds) {
+  const actual = records.map(record => record.id)
+  const actualSet = new Set(actual)
+  const expectedSet = new Set(expectedIds)
+  if (
+    actualSet.size !== actual.length ||
+    expectedSet.size !== expectedIds.length ||
+    actualSet.size !== expectedSet.size ||
+    [...actualSet].some(id => !expectedSet.has(id))
+  )
+    throw new Error(`Unexpected canonical algorithm owner: ${actual.join(', ')}`)
+  return records
+}
+
+function gitObject(repository, args, encoding) {
+  try {
+    return execFileSync('git', args, {
+      cwd: repository,
+      ...(encoding === undefined ? {} : { encoding }),
+      windowsHide: true,
+      maxBuffer: 128 * 1024 * 1024,
+    })
+  } catch (error) {
+    throw new Error(`Cannot verify M4 archive provenance: git ${args.join(' ')}`, {
+      cause: error,
+    })
+  }
+}
+
+/** Bind the seven temporary archive algorithms to the pinned MK2 ODB and exact M4 copy bytes. */
+export async function loadArchiveM4AlgorithmAllowances({
+  workspaceRoot,
+  expectedIds,
+  provenancePath = SC2_ARCHIVE_M4_PROVENANCE,
+  oracleRoot = 'references/modkitmk2',
+  expectedOracleCommit = '1a14ba4eddd0ae88de273348ebd44cfb98a0581d',
+}) {
+  const manifest = JSON.parse(
+    await readFile(
+      trustedWorkspacePath(workspaceRoot, provenancePath, 'M4 archive provenance'),
+      'utf8',
+    ),
+  )
+  if (
+    manifest.schemaVersion !== 1 ||
+    manifest.milestone !== 'M4/P11' ||
+    manifest.disposition !== 'copied-unwired-test-compatibility' ||
+    manifest.oracle?.repository !== oracleRoot ||
+    manifest.oracle?.commit !== expectedOracleCommit ||
+    manifest.oracle?.sourceMode !== 'git-object-database' ||
+    !Array.isArray(manifest.copiedRoots) ||
+    !manifest.copiedRoots.length ||
+    !Array.isArray(manifest.algorithmAllowances)
+  )
+    throw new Error('Invalid M4 archive algorithm provenance')
+
+  const repository = trustedWorkspacePath(workspaceRoot, oracleRoot, 'MK2 ODB repository')
+  const roots = []
+  const rootKeys = new Set()
+  for (const root of manifest.copiedRoots) {
+    if (
+      Object.keys(root).sort().join(',') !== 'destination,gitObject,source' ||
+      !/^[a-f0-9]{40}$/u.test(root.gitObject ?? '') ||
+      !root.destination?.startsWith('starcraft2/src/lib/mk2/')
+    )
+      throw new Error('Invalid M4 archive copied root')
+    trustedWorkspacePath(
+      workspaceRoot,
+      `modkit-extensions-blizzard/${root.destination}`,
+      'M4 archive destination root',
+    )
+    trustedWorkspacePath(repository, root.source, 'M4 archive source root')
+    const key = `${root.source}\0${root.destination}`
+    if (rootKeys.has(key)) throw new Error(`Duplicate M4 archive copied root: ${root.source}`)
+    rootKeys.add(key)
+    const actual = gitObject(
+      repository,
+      ['rev-parse', '--verify', `${expectedOracleCommit}:${root.source}`],
+      'utf8',
+    ).trim()
+    if (actual !== root.gitObject)
+      throw new Error(`M4 archive copied root object mismatch: ${root.source}`)
+    roots.push(root)
+  }
+
+  const records = []
+  for (const allowance of manifest.algorithmAllowances) {
+    if (
+      Object.keys(allowance).sort().join(',') !==
+        'destination,destinationImplementationSha256,destinationSha256,divergence,exit,reason,source,sourceBlob,sourceImplementationSha256,sourceSha256,symbol' ||
+      !/^[a-f0-9]{40}$/u.test(allowance.sourceBlob ?? '') ||
+      ![
+        allowance.sourceSha256,
+        allowance.destinationSha256,
+        allowance.sourceImplementationSha256,
+        allowance.destinationImplementationSha256,
+      ].every(value => /^[a-f0-9]{64}$/u.test(value ?? '')) ||
+      typeof allowance.symbol !== 'string' ||
+      !allowance.symbol ||
+      typeof allowance.reason !== 'string' ||
+      !allowance.reason ||
+      allowance.exit !== 'Canonicalize before any production activation.' ||
+      (allowance.divergence !== null && allowance.divergence !== 'registered-compatibility-barrel')
+    )
+      throw new Error(
+        `Invalid M4 archive algorithm allowance: ${allowance.destination ?? '<unset>'}`,
+      )
+    const matchingRoots = roots.filter(root => {
+      const sourceSuffix = allowance.source.slice(root.source.length)
+      return (
+        (allowance.source === root.source || allowance.source.startsWith(`${root.source}/`)) &&
+        allowance.destination === `${root.destination}${sourceSuffix}`
+      )
+    })
+    if (matchingRoots.length !== 1)
+      throw new Error(`M4 archive algorithm is outside one copied root: ${allowance.source}`)
+    trustedWorkspacePath(repository, allowance.source, 'M4 archive algorithm source')
+
+    const sourceBlob = gitObject(
+      repository,
+      ['rev-parse', '--verify', `${expectedOracleCommit}:${allowance.source}`],
+      'utf8',
+    ).trim()
+    if (sourceBlob !== allowance.sourceBlob)
+      throw new Error(`M4 archive algorithm source blob mismatch: ${allowance.source}`)
+    const sourceBytes = gitObject(repository, ['cat-file', 'blob', sourceBlob])
+    if (sha256(sourceBytes) !== allowance.sourceSha256)
+      throw new Error(`M4 archive algorithm source hash mismatch: ${allowance.source}`)
+    const destination = `modkit-extensions-blizzard/${allowance.destination}`
+    const destinationBytes = await readFile(
+      trustedWorkspacePath(workspaceRoot, destination, 'M4 archive algorithm destination'),
+    )
+    if (sha256(destinationBytes) !== allowance.destinationSha256)
+      throw new Error(`M4 archive algorithm destination hash mismatch: ${destination}`)
+    const sourceDefinition = algorithmDefinitions(
+      sourceBytes.toString('utf8'),
+      allowance.source,
+    ).filter(row => row.symbol === allowance.symbol)
+    const destinationDefinition = algorithmDefinitions(
+      destinationBytes.toString('utf8'),
+      destination,
+    ).filter(row => row.symbol === allowance.symbol)
+    if (
+      sourceDefinition.length !== 1 ||
+      destinationDefinition.length !== 1 ||
+      sourceDefinition[0].implementationSha256 !== allowance.sourceImplementationSha256 ||
+      destinationDefinition[0].implementationSha256 !== allowance.destinationImplementationSha256 ||
+      (allowance.divergence === null &&
+        sourceDefinition[0].implementationSha256 !== destinationDefinition[0].implementationSha256)
+    )
+      throw new Error(
+        `M4 archive algorithm implementation mismatch: ${destination}:${allowance.symbol}`,
+      )
+    records.push({
+      mk2Path: allowance.source,
+      destination,
+      sha256Mk3: allowance.destinationSha256,
+      algorithmDisposition: {
+        symbol: allowance.symbol,
+        kind: 'copied-unwired-copy',
+        reason: allowance.reason,
+        exit: allowance.exit,
+      },
+    })
+  }
+  return validateCopiedUnwiredAllowanceIds(records, expectedIds)
+}
+
 export async function scanAlgorithms({
   workspaceRoot,
   repositories = algorithmRepositories,
   canonicalFiles = [],
+  canonicalOwnedAlgorithms = [],
   copiedUnwiredFiles = [],
   productionTsconfig,
   runtimeSurfaceRoots = [],
@@ -452,7 +621,9 @@ export async function scanAlgorithms({
     )
       throw new Error(`Invalid copied-unwired algorithm record: ${record.destination ?? '<unset>'}`)
     if (canonical.has(record.destination))
-      throw new Error(`Algorithm destination cannot be canonical and copied-unwired: ${record.destination}`)
+      throw new Error(
+        `Algorithm destination cannot be canonical and copied-unwired: ${record.destination}`,
+      )
     const id = `${record.destination}:${disposition.symbol}`
     if (copiedUnwired.has(id))
       throw new Error(`Duplicate copied-unwired algorithm disposition: ${id}`)
@@ -460,6 +631,36 @@ export async function scanAlgorithms({
     const peers = copiedUnwiredByDestination.get(record.destination) ?? []
     peers.push({ record, disposition })
     copiedUnwiredByDestination.set(record.destination, peers)
+  }
+  const canonicalOwned = new Map()
+  const canonicalOwnedByPath = new Map()
+  const additionalNames = []
+  for (const record of canonicalOwnedAlgorithms) {
+    if (
+      Object.keys(record).sort().join(',') !==
+        'id,name,path,reason,repository,sourceSha256,symbol' ||
+      record.id !== `${record.path}:${record.symbol}` ||
+      record.symbol !== `${record.name}#0` ||
+      !repositories.includes(record.repository) ||
+      !record.path.startsWith(`${record.repository}/`) ||
+      !/^[a-f0-9]{64}$/u.test(record.sourceSha256 ?? '') ||
+      typeof record.reason !== 'string' ||
+      !record.reason
+    )
+      throw new Error(`Invalid canonical algorithm owner: ${record.id ?? '<unset>'}`)
+    if (canonicalOwned.has(record.id))
+      throw new Error(`Duplicate canonical algorithm owner: ${record.id}`)
+    if (canonical.has(record.path))
+      throw new Error(
+        `Algorithm path cannot be a copied and authored canonical owner: ${record.path}`,
+      )
+    canonicalOwned.set(record.id, { record, hits: 0 })
+    const peers = canonicalOwnedByPath.get(record.path) ?? []
+    if (peers.length && peers[0].sourceSha256 !== record.sourceSha256)
+      throw new Error(`Canonical algorithm owner file hashes disagree: ${record.path}`)
+    peers.push(record)
+    canonicalOwnedByPath.set(record.path, peers)
+    additionalNames.push(record.name)
   }
   if (copiedUnwired.size) {
     if (productionTsconfig !== SC2_ALGORITHM_PRODUCTION_TSCONFIG)
@@ -485,7 +686,8 @@ export async function scanAlgorithms({
       throw new Error(
         `Cannot parse copied-unwired production tsconfig: ${productionTsconfig}: ${parsed.errors.map(error => ts.flattenDiagnosticMessageText(error.messageText, '\n')).join('; ')}`,
       )
-    if (!runtimeSurfaceRoots.length) throw new Error('Trusted SC2 runtime surface roots are required')
+    if (!runtimeSurfaceRoots.length)
+      throw new Error('Trusted SC2 runtime surface roots are required')
     const surfaceRoots = runtimeSurfaceRoots.map(relative =>
       trustedWorkspacePath(workspaceRoot, relative, 'SC2 runtime surface root'),
     )
@@ -527,14 +729,23 @@ export async function scanAlgorithms({
           sourceFiles++
           const bytes = await readFile(path.join(workspaceRoot, file))
           const known = canonical.get(file)
+          const ownedInFile = canonicalOwnedByPath.get(file) ?? []
           if (known && sha256(bytes) !== known.sha256Mk3)
             throw new Error(`Canonical algorithm copy hash mismatch: ${file}`)
+          if (ownedInFile.length && sha256(bytes) !== ownedInFile[0].sourceSha256)
+            throw new Error(`Canonical algorithm owner hash mismatch: ${file}`)
           const staged = copiedUnwiredByDestination.get(file) ?? []
           if (staged.length && staged.some(item => sha256(bytes) !== item.record.sha256Mk3))
             throw new Error(`Copied-unwired algorithm copy hash mismatch: ${file}`)
-          for (const definition of algorithmDefinitions(bytes.toString('utf8'), file)) {
+          for (const definition of algorithmDefinitions(
+            bytes.toString('utf8'),
+            file,
+            additionalNames,
+          )) {
             const temporary = copiedUnwired.get(`${file}:${definition.symbol}`)
+            const owned = canonicalOwned.get(`${file}:${definition.symbol}`)
             if (temporary) temporary.hits++
+            if (owned) owned.hits++
             implementations.push({
               id: `${file}:${definition.symbol}`,
               repository,
@@ -542,18 +753,22 @@ export async function scanAlgorithms({
               ...definition,
               disposition: known
                 ? 'canonical-copy'
-                : temporary
-                  ? 'copied-unwired-copy'
-                  : 'existing-debt',
+                : owned
+                  ? 'canonical-owned'
+                  : temporary
+                    ? 'copied-unwired-copy'
+                    : 'existing-debt',
               ...(known
                 ? { mk2Path: known.mk2Path }
-                : temporary
-                  ? {
-                      mk2Path: temporary.record.mk2Path,
-                      reason: temporary.disposition.reason,
-                      exit: temporary.disposition.exit,
-                    }
-                  : {}),
+                : owned
+                  ? { reason: owned.record.reason }
+                  : temporary
+                    ? {
+                        mk2Path: temporary.record.mk2Path,
+                        reason: temporary.disposition.reason,
+                        exit: temporary.disposition.exit,
+                      }
+                    : {}),
             })
           }
         }
@@ -565,9 +780,10 @@ export async function scanAlgorithms({
   }
   for (const [id, temporary] of copiedUnwired)
     if (temporary.hits !== 1)
-      throw new Error(
-        `Stale copied-unwired algorithm disposition: ${id} (found ${temporary.hits})`,
-      )
+      throw new Error(`Stale copied-unwired algorithm disposition: ${id} (found ${temporary.hits})`)
+  for (const [id, owned] of canonicalOwned)
+    if (owned.hits !== 1)
+      throw new Error(`Stale canonical algorithm owner: ${id} (found ${owned.hits})`)
   implementations.sort((a, b) => a.id.localeCompare(b.id))
   return { schemaVersion: 1, scanned, implementations }
 }
@@ -591,7 +807,12 @@ export function checkAlgorithmDebt(current, baseline) {
   }
   const failures = []
   for (const row of current.implementations) {
-    if (row.disposition === 'canonical-copy' || row.disposition === 'copied-unwired-copy') continue
+    if (
+      row.disposition === 'canonical-copy' ||
+      row.disposition === 'canonical-owned' ||
+      row.disposition === 'copied-unwired-copy'
+    )
+      continue
     const old = previous.get(row.id)
     if (!old || old.disposition !== 'existing-debt')
       failures.push(`New undeclared algorithm implementation: ${row.id}`)
@@ -601,10 +822,14 @@ export function checkAlgorithmDebt(current, baseline) {
   return {
     failures,
     debt: current.implementations.filter(row => row.disposition === 'existing-debt').length,
-    canonical: current.implementations.filter(row => row.disposition === 'canonical-copy').length,
-    copiedUnwired: current.implementations.filter(
-      row => row.disposition === 'copied-unwired-copy',
-    ).length,
+    canonical: current.implementations.filter(row => row.disposition.startsWith('canonical-'))
+      .length,
+    canonicalCopy: current.implementations.filter(row => row.disposition === 'canonical-copy')
+      .length,
+    canonicalOwned: current.implementations.filter(row => row.disposition === 'canonical-owned')
+      .length,
+    copiedUnwired: current.implementations.filter(row => row.disposition === 'copied-unwired-copy')
+      .length,
     new: failures.filter(failure => failure.startsWith('New undeclared algorithm implementation:'))
       .length,
     retired: baseline.implementations
