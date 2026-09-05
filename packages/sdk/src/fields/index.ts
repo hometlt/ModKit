@@ -86,6 +86,48 @@ export interface FieldWriteRequest {
   readonly value: JsonValue
 }
 
+/** One control in an operation-owned, schema-driven edit form. */
+export interface FieldEditFormField extends FieldSchema {
+  /** Path in the operation input. Numeric segments create array positions. */
+  readonly inputPath: readonly (string | number)[]
+  readonly required?: boolean
+  readonly initial?: JsonValue
+  /** Read an initial value from the metadata entry selected by the form binding. */
+  readonly source?: 'entry-key' | 'entry-value'
+  /** Presentation input is UTF-8 text; the operation receives a base64 string. */
+  readonly encoding?: 'utf8-base64'
+}
+
+/** A form published by one operation input schema. */
+export interface FieldEditFormSpecV1 {
+  readonly id: string
+  readonly label: string
+  readonly summary: string
+  /** Required for field edits; selects a descriptor field carrying `editable.write`. */
+  readonly binding?: {
+    readonly groupId: string
+    readonly entryKey?: string
+  }
+  readonly fields: readonly FieldEditFormField[]
+}
+
+/**
+ * Closed schema document consumed by every app's generic field-edit surface.
+ * The containing operation descriptor supplies the operation and handler identities.
+ */
+export interface FieldEditInputSchemaV1 {
+  readonly schemaVersion: 1
+  readonly forms: readonly FieldEditFormSpecV1[]
+}
+
+/** Executable contribution selecting a renderer for one custom field type. */
+export interface FieldEditorContributionSpecV1Wire {
+  readonly fieldTypeId: string
+  readonly editorId: string
+  readonly priority: number
+  readonly hosts?: readonly string[]
+}
+
 /** Data-only declaration. Icon paths are confined to the declaring extension's VFS. */
 export interface SubjectKindDefinitionSpecV1 {
   readonly kindId: string

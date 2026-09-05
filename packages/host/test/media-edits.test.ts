@@ -521,8 +521,8 @@ describe('A5 Path A — MP3 ID3v2 text frames on the 13D seam', () => {
     if (id3Group === undefined) throw new Error('no id3 metadata group')
     expect(id3Group.entries).toEqual(
       expect.arrayContaining([
-        { key: 'TIT2', value: 'A5 title' },
-        { key: 'TPE1', value: 'Original artist' },
+        expect.objectContaining({ key: 'TIT2', value: 'A5 title' }),
+        expect.objectContaining({ key: 'TPE1', value: 'Original artist' }),
       ]),
     )
     await reopened.result.session.dispose()

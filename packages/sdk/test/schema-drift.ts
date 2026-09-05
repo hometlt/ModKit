@@ -90,7 +90,8 @@ type DeepMutableDescriptor<T> = T extends FieldType
     ? DeepMutableDescriptor<U>[]
     : T extends object
       ? {
-          -readonly [K in keyof T]: K extends 'parameters' | 'data' | 'value' | 'params'
+          -readonly [K in keyof T]: K extends
+            'parameters' | 'data' | 'value' | 'params' | 'document'
             ? JsonValue
             : DeepMutableDescriptor<T[K]>
         }
@@ -154,7 +155,12 @@ export type ScopedContractRequirementDriftGate = Expect<
 export type CodecContributionSpecDriftGate = Expect<
   Equal<
     DeepMutable<CodecContributionSpecV1Wire>,
-    ExclusiveUnion<FromSchema<typeof codecContributionSpecV1Schema>>
+    ExclusiveUnion<
+      FromSchema<
+        typeof codecContributionSpecV1Schema,
+        { deserialize: [{ pattern: { title: 'JsonValue' }; output: DeepMutable<JsonValue> }] }
+      >
+    >
   >
 >
 export type ServiceProviderContributionSpecDriftGate = Expect<
@@ -196,7 +202,10 @@ export type LocalizationContributionSpecDriftGate = Expect<
 export type DataSourceContributionSpecDriftGate = Expect<
   Equal<
     DeepMutable<DataSourceContributionSpecV1>,
-    FromSchema<typeof dataSourceContributionSpecV1Schema>
+    FromSchema<
+      typeof dataSourceContributionSpecV1Schema,
+      { deserialize: [{ pattern: { title: 'JsonValue' }; output: DeepMutable<JsonValue> }] }
+    >
   >
 >
 /**
@@ -214,7 +223,13 @@ export type DataSourceSurfaceDriftGate = Expect<
   Equal<DeepMutable<DataSourceSurfaceV1Wire>, FromSchema<typeof dataSourceSurfaceV1Schema>>
 >
 export type TraitDefinitionSpecDriftGate = Expect<
-  Equal<DeepMutable<TraitDefinitionSpecV1Wire>, FromSchema<typeof traitDefinitionSpecV1Schema>>
+  Equal<
+    DeepMutable<TraitDefinitionSpecV1Wire>,
+    FromSchema<
+      typeof traitDefinitionSpecV1Schema,
+      { deserialize: [{ pattern: { title: 'JsonValue' }; output: DeepMutable<JsonValue> }] }
+    >
+  >
 >
 export type ContractDefinitionSpecDriftGate = Expect<
   Equal<

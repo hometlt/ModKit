@@ -1,0 +1,35 @@
+{
+  "$id": "https://schemas.modkit.org/x3/field-editor-contribution-spec.v1.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "editorId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "fieldTypeId": {
+      "minLength": 1,
+      "type": "string"
+    },
+    "hosts": {
+      "items": {
+        "minLength": 1,
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array",
+      "uniqueItems": true
+    },
+    "priority": {
+      "maximum": 1000000,
+      "minimum": -1000000,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "fieldTypeId",
+    "editorId",
+    "priority"
+  ],
+  "type": "object"
+}

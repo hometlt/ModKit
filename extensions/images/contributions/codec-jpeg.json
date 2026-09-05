@@ -68,6 +68,30 @@
         "handlerId": "set-comment",
         "mutatesSource": true,
         "requiredPermissions": ["read-source", "write-source"],
+        "inputSchema": {
+          "$ref": "modkit://image-jpeg/edit-field.v1",
+          "document": {
+            "schemaVersion": 1,
+            "forms": [
+              {
+                "id": "jpeg-set-comment",
+                "label": "Set the JPEG comment",
+                "summary": "Writes the COM segment after the APP block, replacing it when it exists.",
+                "binding": { "groupId": "jpeg-comment", "entryKey": "comment" },
+                "fields": [
+                  {
+                    "key": "value",
+                    "label": "Comment",
+                    "type": { "kind": "text" },
+                    "inputPath": ["value"],
+                    "initial": "set from the Modkit inspector",
+                    "source": "entry-value"
+                  }
+                ]
+              }
+            ]
+          }
+        },
         "outputKinds": ["edit-plan"]
       },
       {
@@ -75,6 +99,30 @@
         "handlerId": "remove-segment",
         "mutatesSource": true,
         "requiredPermissions": ["read-source", "write-source"],
+        "inputSchema": {
+          "$ref": "modkit://image-jpeg/edit-structure.v1",
+          "document": {
+            "schemaVersion": 1,
+            "forms": [
+              {
+                "id": "jpeg-remove-segment",
+                "label": "Remove a JPEG metadata segment",
+                "summary": "Drops one metadata segment; image-bearing markers are refused by the codec.",
+                "fields": [
+                  {
+                    "key": "marker",
+                    "label": "Marker",
+                    "type": { "kind": "text" },
+                    "inputPath": ["marker"],
+                    "required": true,
+                    "initial": "APP0",
+                    "description": "A metadata marker name, e.g. APP0, APP1 or COM"
+                  }
+                ]
+              }
+            ]
+          }
+        },
         "outputKinds": ["edit-plan"]
       }
     ],

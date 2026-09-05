@@ -267,7 +267,7 @@ describe('ADR-HOST-002 Path A — codec operation → edit plan → host commit'
       group => (group as { id?: string }).id === 'png-text',
     )
     expect(textGroup?.entries).toEqual(
-      expect.arrayContaining([{ key: 'Comment', value: 'edited by S8' }]),
+      expect.arrayContaining([expect.objectContaining({ key: 'Comment', value: 'edited by S8' })]),
     )
 
     // replace path: the same keyword again replaces the chunk in place (no second tEXt)

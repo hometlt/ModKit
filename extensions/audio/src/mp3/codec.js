@@ -107,6 +107,41 @@ const EDIT_FIELD_OPERATION = Object.freeze({
   handlerId: 'set-text-frame',
   mutatesSource: true,
   requiredPermissions: Object.freeze(['read-source', 'write-source']),
+  inputSchema: Object.freeze({
+    $ref: 'modkit://audio-mp3/edit-field.v1',
+    document: Object.freeze({
+      schemaVersion: 1,
+      forms: Object.freeze([
+        Object.freeze({
+          id: 'mp3-set-text-frame',
+          label: 'Set an ID3v2 text frame',
+          summary:
+            'Sets or replaces one ID3v2 text frame, creating the tag when absent; audio bytes stay in place.',
+          binding: Object.freeze({ groupId: 'id3' }),
+          fields: Object.freeze([
+            Object.freeze({
+              key: 'key',
+              label: 'Frame',
+              type: Object.freeze({ kind: 'text', pattern: '^T[A-Z0-9]{3}$', maxLength: 4 }),
+              inputPath: Object.freeze(['key']),
+              required: true,
+              initial: 'TIT2',
+              source: 'entry-key',
+              description: 'A four-character ID3v2 text frame id',
+            }),
+            Object.freeze({
+              key: 'value',
+              label: 'Text',
+              type: Object.freeze({ kind: 'text' }),
+              inputPath: Object.freeze(['value']),
+              initial: 'set from the Modkit inspector',
+              source: 'entry-value',
+            }),
+          ]),
+        }),
+      ]),
+    }),
+  }),
   outputKinds: Object.freeze(['edit-plan']),
 })
 
@@ -323,43 +358,35 @@ function newTagBytes(frameId, text) {
 
 function setTextFrameHandler(bytes, input) {
   return async value => {
+    const keyword = value?.groupId === 'id3' ? value.key : value?.keyword
+    const text = value?.groupId === 'id3' ? value.value : value?.text
     if (
       typeof value !== 'object' ||
       value === null ||
-      typeof value.keyword !== 'string' ||
-      typeof value.text !== 'string'
+      typeof keyword !== 'string' ||
+      typeof text !== 'string'
     ) {
-      throw new TypeError('edit.field expects { keyword, text }')
+      throw new TypeError('edit.field expects an id3 FieldWriteRequest')
     }
-    if (!TEXT_FRAME_ID.test(value.keyword) || value.keyword === 'TXXX') {
+    if (!TEXT_FRAME_ID.test(keyword) || keyword === 'TXXX') {
       throw new TypeError(
-        `«${value.keyword}» is not an ID3v2 text frame id (TIT2, TPE1, TALB, …; TXXX has another shape)`,
+        `«${keyword}» is not an ID3v2 text frame id (TIT2, TPE1, TALB, …; TXXX has another shape)`,
       )
     }
     const tag = id3TagForEditing(bytes)
     const edit =
       tag === undefined
-        ? replaceBytes(
-            0,
-            0,
-            newTagBytes(value.keyword, value.text),
-            `create an ID3v2.4 tag with ${value.keyword}`,
-          )
+        ? replaceBytes(0, 0, newTagBytes(keyword, text), `create an ID3v2.4 tag with ${keyword}`)
         : replaceBytes(
             0,
             tag.end,
-            rebuiltTagBytes(
-              bytes,
-              tag,
-              value.keyword,
-              textFrameBytes(value.keyword, value.text, tag.major),
-            ),
-            `set ${value.keyword}`,
+            rebuiltTagBytes(bytes, tag, keyword, textFrameBytes(keyword, text, tag.major)),
+            `set ${keyword}`,
           )
     return {
       kind: 'edit-plan',
       plan: editPlanFromInput(input, {
-        planId: `mp3-set-text-frame:${value.keyword}`,
+        planId: `mp3-set-text-frame:${keyword}`,
         edits: [edit],
         fidelity: { roundTrip: 'byte-identical', preservesUnknownData: true },
       }),
@@ -450,21 +477,26 @@ const definition = Object.freeze({
             { key: 'durationMs', value: durationMs },
           ],
         },
-        ...(id3 === undefined
-          ? []
-          : [
-              {
-                id: 'id3',
-                label: 'ID3',
-                entries: [
+        {
+          id: 'id3',
+          label: 'ID3',
+          entries: [
+            ...(id3 === undefined
+              ? []
+              : [
                   { key: 'version', value: id3.version },
                   { key: 'bytes', value: id3.bytes },
-                  // the values edit.field writes, not only the tag's size — a host can set a
-                  // frame; it must also be able to show what the file currently says
-                  ...decodeTextFrames(bytes).map(frame => ({ key: frame.id, value: frame.text })),
-                ],
-              },
-            ]),
+                ]),
+            ...(decodeTextFrames(bytes).length === 0
+              ? [{ key: 'TIT2', value: null }]
+              : decodeTextFrames(bytes).map(frame => ({ key: frame.id, value: frame.text }))
+            ).map(frame => ({
+              ...frame,
+              type: { kind: 'text' },
+              editable: { write: { operation: 'edit.field' } },
+            })),
+          ],
+        },
       ],
       traits: [
         {

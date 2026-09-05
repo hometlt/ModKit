@@ -137,6 +137,13 @@ export type AssetDiagnosticWire = AssetDiagnosticFor<SourceSpanWire>
 
 export interface JsonSchemaRef {
   readonly $ref: string
+  /**
+   * Immutable, portable schema document published by the operation owner.
+   *
+   * A reference without a document is still valid for non-UI consumers. A schema-driven host
+   * must fail closed when it cannot resolve the document rather than guessing an input shape.
+   */
+  readonly document?: JsonValue
 }
 
 /** Host-restorable source identity; never a live source handle. */

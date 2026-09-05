@@ -24,7 +24,7 @@ export const jsonSchemaRefSchema = {
   type: 'object',
   additionalProperties: false,
   required: ['$ref'],
-  properties: { $ref: nonEmptyString },
+  properties: { $ref: nonEmptyString, document: { title: 'JsonValue' } },
 } as const
 
 export const resourceBudgetWireSchema = {

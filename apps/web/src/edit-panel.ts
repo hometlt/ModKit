@@ -33,7 +33,18 @@ import {
   ViewerMountScope,
 } from '@modkit/ui/viewer'
 import { DEFAULT_UI_LOCALIZER, type UiLocalizer } from '@modkit/ui/localization'
-import type { AnyDescriptor, AssetEditPlan, OperationOutput, ViewerModule } from '@modkit/sdk'
+import {
+  mountFieldEditor,
+  type FieldEditorControlV1,
+  type FieldEditorRegistry,
+} from '@modkit/ui/field-editor'
+import type {
+  AnyDescriptor,
+  AssetEditPlan,
+  JsonValue,
+  OperationOutput,
+  ViewerModule,
+} from '@modkit/sdk'
 
 import {
   declaredMutatingOperations,
@@ -55,6 +66,7 @@ export interface EditPanelPorts {
 
 export interface EditPanelOptions {
   readonly localizer?: UiLocalizer
+  readonly fieldEditors?: FieldEditorRegistry
   /**
    * The editing surface this tab holds, or `undefined` when this page will not write the subject.
    * In a browser that is a property of the file, not of the build — see `./editing.ts`.
@@ -72,31 +84,6 @@ export interface EditPanelOptions {
   /** Reports to the shell's status line, like every other editing surface in this app. */
   onStatus?(status: EditApplyStatus): void
 }
-
-const EDIT_FORM_KEYS: Readonly<Record<string, string>> = Object.freeze({
-  'png-set-text': 'pngText',
-  'mp3-set-text-frame': 'id3Text',
-  'jpeg-set-comment': 'jpegComment',
-  'jpeg-remove-segment': 'jpegRemove',
-  'zip-add-entry': 'archiveAdd',
-  'zip-remove-entry': 'archiveRemove',
-  'zip-rename-entry': 'archiveRename',
-  'zip-replace-entry': 'archiveReplace',
-})
-
-const EDIT_FIELD_KEYS: Readonly<Record<string, string>> = Object.freeze({
-  keyword: 'keyword',
-  key: 'key',
-  value: 'value',
-  text: 'text',
-  frameId: 'frameId',
-  marker: 'marker',
-  segmentIndex: 'segmentIndex',
-  path: 'entryPath',
-  contents: 'contents',
-  from: 'from',
-  to: 'to',
-})
 
 /**
  * What the panel says about the view behind it once a change has been committed.
@@ -118,7 +105,10 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
       const root = createSurface(args.container, text('web.inspector.edit'))
       const descriptor = args.descriptor
       const ports = options.portsFor(descriptor)
-      const offer = editOffer(descriptor, { editable: ports !== undefined })
+      const offer = editOffer(descriptor, {
+        editable: ports !== undefined,
+        ...(options.fieldEditors === undefined ? {} : { fieldEditors: options.fieldEditors }),
+      })
 
       const form = element(root, 'div', { part: 'form' })
       const chooser = element(form, 'div', { part: 'form.row' })
@@ -163,11 +153,12 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
       }
 
       /** The controls of the selected form; rebuilt on every change of the picker. */
-      const inputs = new Map<string, HTMLInputElement>()
+      const inputs = new Map<string, FieldEditorControlV1>()
       const selectedForm = (): EditOperationForm | undefined =>
         offer.forms.find(item => item.id === picker.value) ?? offer.forms[0]
 
-      const drawFields = (): void => {
+      const drawFields = async (): Promise<void> => {
+        await Promise.all([...inputs.values()].map(input => input.unmount?.()))
         inputs.clear()
         pane.replaceChildren()
         const chosen = selectedForm()
@@ -177,22 +168,22 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
           return
         }
         apply.removeAttribute('disabled')
-        const formKey = EDIT_FORM_KEYS[chosen.id]
-        const formSummary = formKey === undefined ? chosen.summary : text(`edit.summary.${formKey}`)
-        setViewerText(summary, `${formSummary} (${chosen.operationId} → ${chosen.handlerId})`)
+        setViewerText(summary, `${chosen.summary} (${chosen.operationId} → ${chosen.handlerId})`)
         for (const item of chosen.fields) {
           const row = element(pane, 'div', { part: 'form.row' })
-          const fieldKey = EDIT_FIELD_KEYS[item.name]
-          const fieldLabel = fieldKey === undefined ? item.label : text(`edit.field.${fieldKey}`)
+          const fieldLabel = item.label
           element(row, 'label', { part: 'form.label', text: fieldLabel })
-          const input = element(row, 'input', { part: 'form.input' })
-          if (!(input instanceof HTMLInputElement)) continue
-          input.type = 'text'
-          input.name = item.name
-          input.value = item.initial
-          input.setAttribute('aria-label', fieldLabel)
-          if (item.hint !== undefined) input.title = item.hint
-          inputs.set(item.name, input)
+          const control = element(row, 'div', { part: 'form.control' })
+          inputs.set(
+            item.name,
+            await mountFieldEditor(
+              control,
+              item,
+              scope.signal,
+              options.fieldEditors,
+              item.editorId,
+            ),
+          )
           if (item.hint !== undefined) {
             element(row, 'span', { part: 'form.description', text: item.hint })
           }
@@ -205,8 +196,12 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
           say(text('edit.sessionUnavailable'), true)
           return
         }
-        const values = new Map<string, string>()
-        for (const [name, input] of inputs) values.set(name, input.value)
+        const values = new Map<string, JsonValue>()
+        for (const [name, input] of inputs) {
+          const problem = input.validate()
+          if (problem !== undefined) throw new TypeError(problem)
+          values.set(name, input.read())
+        }
 
         let input
         try {
@@ -221,8 +216,7 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
           return
         }
 
-        const formKey = EDIT_FORM_KEYS[chosen.id]
-        const formLabel = formKey === undefined ? chosen.label : text(`edit.operation.${formKey}`)
+        const formLabel = chosen.label
         say(text('web.edit.invoking', { operation: formLabel, handler: chosen.handlerId }), false)
         let result
         try {
@@ -296,14 +290,13 @@ export function createEditPanel(options: EditPanelOptions): ViewerModule {
       })
 
       for (const item of offer.forms) {
-        const formKey = EDIT_FORM_KEYS[item.id]
         const option = element(picker, 'option', {
-          text: formKey === undefined ? item.label : text(`edit.operation.${formKey}`),
+          text: item.label,
         })
         option.setAttribute('value', item.id)
       }
-      picker.addEventListener('change', drawFields)
-      drawFields()
+      picker.addEventListener('change', () => void drawFields())
+      await drawFields()
       drawNotes()
       const declared = declaredMutatingOperations(descriptor).length
       if (offer.forms.length === 0) {

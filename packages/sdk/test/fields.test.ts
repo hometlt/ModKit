@@ -9,6 +9,8 @@ import {
   fieldTypeV1Schema,
   fieldSchemaV1Schema,
   fieldWriteRequestV1Schema,
+  fieldEditInputSchemaV1Schema,
+  fieldEditorContributionSpecV1Schema,
   subjectKindDefinitionSpecV1Schema,
 } from '../src/schemas/fields.js'
 import { validateWithSchema } from '../src/manifest/validate.js'
@@ -147,6 +149,44 @@ describe('field contracts', () => {
     expect(
       await validateWithSchema(fieldWriteRequestV1Schema, { groupId: 'properties', key: 'value' }),
     ).not.toEqual([])
+  })
+
+  it('validates the closed field-edit form and custom editor contribution contracts', async () => {
+    const form = {
+      schemaVersion: 1,
+      forms: [
+        {
+          id: 'set-title',
+          label: 'Set title',
+          summary: 'Sets the title.',
+          binding: { groupId: 'metadata', entryKey: 'title' },
+          fields: [
+            {
+              key: 'value',
+              label: 'Title',
+              type: { kind: 'text' },
+              inputPath: ['value'],
+              source: 'entry-value',
+            },
+          ],
+        },
+      ],
+    }
+    expect(await validateWithSchema(fieldEditInputSchemaV1Schema, form)).toEqual([])
+    expect(
+      await validateWithSchema(fieldEditInputSchemaV1Schema, {
+        ...form,
+        forms: [{ ...form.forms[0], handlerId: 'hard-coded' }],
+      }),
+    ).not.toEqual([])
+    expect(
+      await validateWithSchema(fieldEditorContributionSpecV1Schema, {
+        fieldTypeId: 'org.example/title',
+        editorId: 'org.example/title-editor',
+        priority: 10,
+        hosts: ['web'],
+      }),
+    ).toEqual([])
   })
 
   it('accepts typed metadata, brands writes and preserves provenance', async () => {

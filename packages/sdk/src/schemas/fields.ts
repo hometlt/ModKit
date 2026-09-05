@@ -296,7 +296,76 @@ export const subjectKindDefinitionSpecV1Schema = {
   },
 } as const
 
+const inputPathSegment = {
+  oneOf: [id, count],
+} as const
+
+const fieldEditFormFieldSchema = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['key', 'label', 'type', 'inputPath'],
+  properties: {
+    ...fieldSchemaValueSchema.properties,
+    inputPath: { type: 'array', items: inputPathSegment, minItems: 1 },
+    required: boolean,
+    initial: json,
+    source: { enum: ['entry-key', 'entry-value'] },
+    encoding: { const: 'utf8-base64' },
+  },
+} as const
+
+/** Published authority for the schema document embedded by editable operations. */
+export const fieldEditInputSchemaV1Schema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  $id: 'https://schemas.modkit.org/x3/field-edit-input-schema.v1.schema.json',
+  $defs: fieldSchemaDefinitions,
+  type: 'object',
+  additionalProperties: false,
+  required: ['schemaVersion', 'forms'],
+  properties: {
+    schemaVersion: { const: 1 },
+    forms: {
+      type: 'array',
+      minItems: 1,
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['id', 'label', 'summary', 'fields'],
+        properties: {
+          id,
+          label: text,
+          summary: text,
+          binding: {
+            type: 'object',
+            additionalProperties: false,
+            required: ['groupId'],
+            properties: { groupId: id, entryKey: id },
+          },
+          fields: { type: 'array', minItems: 1, items: fieldEditFormFieldSchema },
+        },
+      },
+    },
+  },
+} as const
+
+/** Executable custom field-editor contribution payload. */
+export const fieldEditorContributionSpecV1Schema = {
+  $schema: 'https://json-schema.org/draft/2020-12/schema',
+  $id: 'https://schemas.modkit.org/x3/field-editor-contribution-spec.v1.schema.json',
+  type: 'object',
+  additionalProperties: false,
+  required: ['fieldTypeId', 'editorId', 'priority'],
+  properties: {
+    fieldTypeId: id,
+    editorId: id,
+    priority: { type: 'integer', minimum: -1000000, maximum: 1000000 },
+    hosts: { type: 'array', minItems: 1, uniqueItems: true, items: id },
+  },
+} as const
+
 deepFreeze(fieldTypeV1Schema)
 deepFreeze(fieldSchemaV1Schema)
 deepFreeze(fieldWriteRequestV1Schema)
 deepFreeze(subjectKindDefinitionSpecV1Schema)
+deepFreeze(fieldEditInputSchemaV1Schema)
+deepFreeze(fieldEditorContributionSpecV1Schema)

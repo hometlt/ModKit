@@ -1081,6 +1081,7 @@ function inspectionOperations(
         id: operation.id,
         handlerId: operation.handlerId,
         mutatesSource: operation.mutatesSource,
+        ...(operation.inputSchema === undefined ? {} : { inputSchema: operation.inputSchema }),
       }
       return Object.freeze(
         override === undefined || override.state === 'available'

@@ -107,6 +107,9 @@
                   "$ref": {
                     "minLength": 1,
                     "type": "string"
+                  },
+                  "document": {
+                    "title": "JsonValue"
                   }
                 },
                 "required": [

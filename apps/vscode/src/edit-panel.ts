@@ -16,6 +16,12 @@ import {
 import type { AnyDescriptor, AssetEditPlan, SceneRendererPort, ViewerModule } from '@modkit/sdk'
 import type { ImageExportFile, ImageExportOutcome } from '@modkit/ui/image'
 import type { UiLocalizer } from '@modkit/ui/localization'
+import {
+  mountFieldEditor,
+  type FieldEditorControlV1,
+  type FieldEditorRegistry,
+} from '@modkit/ui/field-editor'
+import type { JsonValue } from '@modkit/sdk'
 
 import {
   editOffer,
@@ -30,6 +36,7 @@ import { createVscodeLocalizer } from './localization.js'
 
 export interface EditPanelOptions {
   readonly localizer: UiLocalizer
+  readonly fieldEditors?: FieldEditorRegistry
   portsFor(descriptor: Record<string, unknown>): WebviewEditorPorts | undefined
   reopen(descriptor: Record<string, unknown>): Promise<boolean>
   lastOutcome(descriptor: Record<string, unknown>): string | undefined
@@ -76,7 +83,11 @@ export function createVsCodeEditPanel(options: EditPanelOptions): ViewerModule {
       const root = createSurface(args.container, localizer.text('vscode.edit.title'))
       const descriptor = asRecord(args.descriptor)
       const ports = options.portsFor(descriptor)
-      const offer = editOffer(descriptor, { editable: ports !== undefined, localizer })
+      const offer = editOffer(descriptor, {
+        editable: ports !== undefined,
+        localizer,
+        ...(options.fieldEditors === undefined ? {} : { fieldEditors: options.fieldEditors }),
+      })
 
       const chooser = element(root, 'div', { part: 'form.row' })
       element(chooser, 'label', {
@@ -123,11 +134,12 @@ export function createVsCodeEditPanel(options: EditPanelOptions): ViewerModule {
         }
       }
 
-      const inputs = new Map<string, HTMLInputElement>()
+      const inputs = new Map<string, FieldEditorControlV1>()
       const selectedForm = (): EditOperationForm | undefined =>
         offer.forms.find(item => item.id === picker.value) ?? offer.forms[0]
 
-      const drawFields = (): void => {
+      const drawFields = async (): Promise<void> => {
+        await Promise.all([...inputs.values()].map(input => input.unmount?.()))
         inputs.clear()
         pane.replaceChildren()
         const chosen = selectedForm()
@@ -141,14 +153,17 @@ export function createVsCodeEditPanel(options: EditPanelOptions): ViewerModule {
         for (const item of chosen.fields) {
           const row = element(pane, 'div', { part: 'form.row' })
           element(row, 'label', { part: 'form.label', text: item.label })
-          const input = element(row, 'input', { part: 'form.input' })
-          if (!(input instanceof HTMLInputElement)) continue
-          input.type = 'text'
-          input.name = item.name
-          input.value = item.initial
-          input.setAttribute('aria-label', item.label)
-          if (item.hint !== undefined) input.title = item.hint
-          inputs.set(item.name, input)
+          const control = element(row, 'div', { part: 'form.control' })
+          inputs.set(
+            item.name,
+            await mountFieldEditor(
+              control,
+              item,
+              scope.signal,
+              options.fieldEditors,
+              item.editorId,
+            ),
+          )
           if (item.hint !== undefined) {
             element(row, 'span', { part: 'form.description', text: item.hint })
           }
@@ -161,8 +176,12 @@ export function createVsCodeEditPanel(options: EditPanelOptions): ViewerModule {
           say(localizer.text('vscode.edit.noArm'), true)
           return
         }
-        const values = new Map<string, string>()
-        for (const [name, input] of inputs) values.set(name, input.value)
+        const values = new Map<string, JsonValue>()
+        for (const [name, input] of inputs) {
+          const problem = input.validate()
+          if (problem !== undefined) throw new TypeError(problem)
+          values.set(name, input.read())
+        }
 
         let input
         try {
@@ -244,8 +263,8 @@ export function createVsCodeEditPanel(options: EditPanelOptions): ViewerModule {
         const option = element(picker, 'option', { text: item.label })
         option.setAttribute('value', item.id)
       }
-      picker.addEventListener('change', drawFields)
-      drawFields()
+      picker.addEventListener('change', () => void drawFields())
+      await drawFields()
       drawNotes()
       const declared = descriptorOperations(descriptor).filter(item => item.mutatesSource).length
       if (offer.forms.length === 0) {

@@ -5,6 +5,8 @@ import type {
   FieldType,
   FieldSchema,
   FieldWriteRequest,
+  FieldEditInputSchemaV1,
+  FieldEditorContributionSpecV1Wire,
   SubjectFilter,
   SubjectKindDefinitionSpecV1,
 } from '../src/fields/index.js'
@@ -12,6 +14,8 @@ import {
   fieldTypeValueSchema,
   fieldSchemaValueSchema,
   fieldWriteRequestV1Schema,
+  fieldEditInputSchemaV1Schema,
+  fieldEditorContributionSpecV1Schema,
   subjectFilterSchema,
   subjectKindDefinitionSpecV1Schema,
 } from '../src/schemas/fields.js'
@@ -23,6 +27,7 @@ const definitions = {
 export const field = { ...fieldTypeValueSchema, $defs: definitions } as const
 export const schema = { ...fieldSchemaValueSchema, $defs: definitions } as const
 export const request = { ...fieldWriteRequestV1Schema, $defs: definitions } as const
+export const editInput = { ...fieldEditInputSchemaV1Schema, $defs: definitions } as const
 export const filter = { ...subjectFilterSchema, $defs: definitions } as const
 interface Options {
   deserialize: [
@@ -47,12 +52,21 @@ export type FieldSchemaDrift = Expect<
 export type FieldWriteDrift = Expect<
   Same<FieldWriteRequest, ReadonlyWire<FromSchema<typeof request, Options>>>
 >
+export type FieldEditInputDrift = Expect<
+  Same<FieldEditInputSchemaV1, ReadonlyWire<FromSchema<typeof editInput, Options>>>
+>
+export type FieldEditorContributionDrift = Expect<
+  Same<
+    FieldEditorContributionSpecV1Wire,
+    ReadonlyWire<FromSchema<typeof fieldEditorContributionSpecV1Schema>>
+  >
+>
 export type SubjectFilterDrift = Expect<
   Same<SubjectFilter, ReadonlyWire<FromSchema<typeof filter, Options>>>
 >
 export type SubjectKindDrift = Expect<
   Same<
     SubjectKindDefinitionSpecV1,
-    ReadonlyWire<FromSchema<typeof subjectKindDefinitionSpecV1Schema>>
+    ReadonlyWire<FromSchema<typeof subjectKindDefinitionSpecV1Schema, Options>>
   >
 >

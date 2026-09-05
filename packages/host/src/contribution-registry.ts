@@ -7,6 +7,8 @@ import {
   CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT,
   EDITOR_CONTRIBUTION_CONTRACT,
   EDITOR_CONTRIBUTION_FACT,
+  FIELD_EDITOR_CONTRIBUTION_CONTRACT,
+  FIELD_EDITOR_CONTRIBUTION_FACT,
   KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT,
   LOCALIZATION_CONTRIBUTION_CONTRACT,
   SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
@@ -156,6 +158,7 @@ function builtins(): readonly ContributionContractRegistration[] {
   const service = entry(SERVICE_PROVIDER_CONTRIBUTION_CONTRACT)
   const viewer = entry(VIEWER_CONTRIBUTION_CONTRACT)
   const editor = entry(EDITOR_CONTRIBUTION_CONTRACT)
+  const fieldEditor = entry(FIELD_EDITOR_CONTRIBUTION_CONTRACT)
   const trait = entry(TRAIT_DEFINITION_CONTRIBUTION_CONTRACT)
   const subjectKind = entry(SUBJECT_KIND_DEFINITION_CONTRIBUTION_CONTRACT)
   const definition = entry(CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT)
@@ -210,6 +213,17 @@ function builtins(): readonly ContributionContractRegistration[] {
       validateSemantics: editor.validateSemantics,
       moduleAbi: { export: 'default', abiVersion: 1 },
       conformanceProfile: 'modkit/editor-contribution-v1',
+    },
+    {
+      contract: { id: fieldEditor.contract, major: fieldEditor.major },
+      schema: fieldEditor.schema,
+      mode: 'executable',
+      project: (manifest, context) => [
+        fact(FIELD_EDITOR_CONTRIBUTION_FACT, manifest.spec as JsonValue, context),
+      ],
+      validateSemantics: fieldEditor.validateSemantics,
+      moduleAbi: { export: 'default', abiVersion: 1 },
+      conformanceProfile: 'modkit/field-editor-contribution-v1',
     },
     {
       contract: { id: subjectKind.contract, major: subjectKind.major },

@@ -57,7 +57,11 @@ import { knowledgeTargetKey, type KnowledgePackSpecV1Wire } from '../knowledge/i
 import type { ContractRequirementWire } from '../resolution/types.js'
 import { snapshotJsonWireObject } from './validate.js'
 import { subjectKindDefinitionSpecV1Schema } from '../schemas/fields.js'
-import type { SubjectKindDefinitionSpecV1 } from '../fields/index.js'
+import { fieldEditorContributionSpecV1Schema } from '../schemas/fields.js'
+import type {
+  FieldEditorContributionSpecV1Wire,
+  SubjectKindDefinitionSpecV1,
+} from '../fields/index.js'
 
 export const SUBJECT_KIND_DEFINITION_CONTRIBUTION_CONTRACT: ContractId = contractId(
   'modkit/subject-kind-definition',
@@ -72,6 +76,9 @@ export const SERVICE_PROVIDER_CONTRIBUTION_CONTRACT: ContractId = contractId(
 )
 export const VIEWER_CONTRIBUTION_CONTRACT: ContractId = contractId('modkit/viewer-contribution')
 export const EDITOR_CONTRIBUTION_CONTRACT: ContractId = contractId('modkit/editor-contribution')
+export const FIELD_EDITOR_CONTRIBUTION_CONTRACT: ContractId = contractId(
+  'modkit/field-editor-contribution',
+)
 export const TRAIT_DEFINITION_CONTRIBUTION_CONTRACT: ContractId =
   contractId('modkit/trait-definition')
 export const CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT: ContractId = contractId(
@@ -88,6 +95,9 @@ export const CONTRACT_DEFINITION_FACT: ContractId = contractId(
 )
 export const EDITOR_CONTRIBUTION_FACT: ContractId = contractId(
   'modkit.inventory/editor-contribution',
+)
+export const FIELD_EDITOR_CONTRIBUTION_FACT: ContractId = contractId(
+  'modkit.inventory/field-editor-contribution',
 )
 export const KNOWLEDGE_PACK_FACT: ContractId = contractId('modkit.inventory/knowledge-pack')
 export const LOCALIZATION_CONTRIBUTION_FACT: ContractId = contractId(
@@ -1047,6 +1057,12 @@ export const validateLocalizationContributionSemantics: SpecSemanticValidator = 
   return diagnostics
 }
 
+/** Cross-field checks for portable custom field-editor selection. */
+export const validateFieldEditorContributionSemantics: SpecSemanticValidator = manifest => {
+  const spec = manifest.spec as unknown as FieldEditorContributionSpecV1Wire
+  return duplicateFieldDiagnostics(spec.hosts ?? [], ['spec', 'hosts'], 'field editor host')
+}
+
 function key(contract: ContractId, major: number): string {
   return `${contract}@${major}`
 }
@@ -1326,6 +1342,12 @@ export const A1_SPEC_SCHEMA_ENTRIES: readonly SpecSchemaEntry[] = [
     major: 1,
     schema: editorContributionSpecV1Schema,
     validateSemantics: validateEditorContributionSemantics,
+  },
+  {
+    contract: FIELD_EDITOR_CONTRIBUTION_CONTRACT,
+    major: 1,
+    schema: fieldEditorContributionSpecV1Schema,
+    validateSemantics: validateFieldEditorContributionSemantics,
   },
   {
     contract: TRAIT_DEFINITION_CONTRIBUTION_CONTRACT,

@@ -29,6 +29,14 @@ const artifacts = new Map([
     sdk.fieldWriteRequestV1Schema,
   ],
   [
+    join(root, 'packages', 'sdk', 'schemas', 'field-edit-input-schema.v1.schema.json'),
+    sdk.fieldEditInputSchemaV1Schema,
+  ],
+  [
+    join(root, 'packages', 'sdk', 'schemas', 'field-editor-contribution-spec.v1.schema.json'),
+    sdk.fieldEditorContributionSpecV1Schema,
+  ],
+  [
     join(root, 'packages', 'sdk', 'schemas', 'subject-kind-definition-spec.v1.schema.json'),
     sdk.subjectKindDefinitionSpecV1Schema,
   ],

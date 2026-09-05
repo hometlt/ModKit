@@ -138,6 +138,10 @@
       "types": "./dist/hex-editor/index.d.ts",
       "default": "./dist/hex-editor/index.js"
     },
+    "./field-editor": {
+      "types": "./dist/field-editor/index.d.ts",
+      "default": "./dist/field-editor/index.js"
+    },
     "./media": {
       "types": "./dist/media/encoded.d.ts",
       "default": "./dist/media/encoded.js"

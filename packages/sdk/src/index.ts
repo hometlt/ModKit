@@ -53,6 +53,8 @@ export {
   fieldTypeV1Schema,
   fieldSchemaV1Schema,
   fieldWriteRequestV1Schema,
+  fieldEditInputSchemaV1Schema,
+  fieldEditorContributionSpecV1Schema,
   subjectKindDefinitionSpecV1Schema,
 } from './schemas/fields.js'
 export {
@@ -102,6 +104,8 @@ export {
   CONTRACT_DEFINITION_FACT,
   EDITOR_CONTRIBUTION_CONTRACT,
   EDITOR_CONTRIBUTION_FACT,
+  FIELD_EDITOR_CONTRIBUTION_CONTRACT,
+  FIELD_EDITOR_CONTRIBUTION_FACT,
   SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
   TRAIT_DEFINITION_CONTRIBUTION_CONTRACT,
   TRAIT_DEFINITION_FACT,
@@ -111,6 +115,7 @@ export {
   LOCALIZATION_CONTRIBUTION_CONTRACT,
   LOCALIZATION_CONTRIBUTION_FACT,
   validateEditorContributionSemantics,
+  validateFieldEditorContributionSemantics,
   validateKnowledgePackSemantics,
   validateLocalizationContributionSemantics,
   createContributionContractRegistry,

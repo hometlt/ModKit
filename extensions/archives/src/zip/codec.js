@@ -680,6 +680,75 @@ const EDIT_STRUCTURE_OPERATION = Object.freeze({
   handlerId: 'edit-structure',
   mutatesSource: true,
   requiredPermissions: Object.freeze(['read-source', 'write-source']),
+  inputSchema: Object.freeze({
+    $ref: 'modkit://archive-zip/edit-structure.v1',
+    document: Object.freeze({
+      schemaVersion: 1,
+      forms: Object.freeze([
+        Object.freeze({
+          id: 'zip-add-entry',
+          label: 'Add an entry to the archive',
+          summary: 'Adds one stored entry and repacks; kept entries retain their bytes.',
+          fields: Object.freeze([
+            Object.freeze({
+              key: 'path',
+              label: 'Entry path',
+              type: Object.freeze({ kind: 'path' }),
+              inputPath: Object.freeze(['add', 0, 'path']),
+              required: true,
+              initial: 'added/hello.txt',
+            }),
+            Object.freeze({
+              key: 'content',
+              label: 'Contents',
+              type: Object.freeze({ kind: 'text' }),
+              inputPath: Object.freeze(['add', 0, 'bytes']),
+              initial: 'added from the Modkit inspector',
+              encoding: 'utf8-base64',
+            }),
+          ]),
+        }),
+        Object.freeze({
+          id: 'zip-remove-entry',
+          label: 'Remove an entry from the archive',
+          summary: 'Removes one entry and repacks; other entries retain their bytes.',
+          fields: Object.freeze([
+            Object.freeze({
+              key: 'path',
+              label: 'Entry path',
+              type: Object.freeze({ kind: 'path' }),
+              inputPath: Object.freeze(['remove', 0]),
+              required: true,
+              initial: 'readme.txt',
+            }),
+          ]),
+        }),
+        Object.freeze({
+          id: 'zip-rename-entry',
+          label: 'Rename an entry in the archive',
+          summary: 'Renames one entry without touching its payload or compression.',
+          fields: Object.freeze([
+            Object.freeze({
+              key: 'from',
+              label: 'From',
+              type: Object.freeze({ kind: 'path' }),
+              inputPath: Object.freeze(['rename', 0, 'from']),
+              required: true,
+              initial: 'readme.txt',
+            }),
+            Object.freeze({
+              key: 'to',
+              label: 'To',
+              type: Object.freeze({ kind: 'path' }),
+              inputPath: Object.freeze(['rename', 0, 'to']),
+              required: true,
+              initial: 'docs/readme.txt',
+            }),
+          ]),
+        }),
+      ]),
+    }),
+  }),
   outputKinds: Object.freeze(['edit-plan']),
 })
 
@@ -688,6 +757,37 @@ const EDIT_CONTENT_OPERATION = Object.freeze({
   handlerId: 'edit-content',
   mutatesSource: true,
   requiredPermissions: Object.freeze(['read-source', 'write-source']),
+  inputSchema: Object.freeze({
+    $ref: 'modkit://archive-zip/edit-content.v1',
+    document: Object.freeze({
+      schemaVersion: 1,
+      forms: Object.freeze([
+        Object.freeze({
+          id: 'zip-replace-entry',
+          label: "Replace an entry's contents",
+          summary: "Replaces one file entry's payload; nothing else moves.",
+          fields: Object.freeze([
+            Object.freeze({
+              key: 'path',
+              label: 'Entry path',
+              type: Object.freeze({ kind: 'path' }),
+              inputPath: Object.freeze(['path']),
+              required: true,
+              initial: 'readme.txt',
+            }),
+            Object.freeze({
+              key: 'content',
+              label: 'Contents',
+              type: Object.freeze({ kind: 'text' }),
+              inputPath: Object.freeze(['bytes']),
+              initial: 'replaced from the Modkit inspector',
+              encoding: 'utf8-base64',
+            }),
+          ]),
+        }),
+      ]),
+    }),
+  }),
   outputKinds: Object.freeze(['edit-plan']),
 })
 

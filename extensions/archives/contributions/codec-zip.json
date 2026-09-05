@@ -121,6 +121,75 @@
         "handlerId": "edit-structure",
         "mutatesSource": true,
         "requiredPermissions": ["read-source", "write-source"],
+        "inputSchema": {
+          "$ref": "modkit://archive-zip/edit-structure.v1",
+          "document": {
+            "schemaVersion": 1,
+            "forms": [
+              {
+                "id": "zip-add-entry",
+                "label": "Add an entry to the archive",
+                "summary": "Adds one stored entry and repacks; kept entries retain their bytes.",
+                "fields": [
+                  {
+                    "key": "path",
+                    "label": "Entry path",
+                    "type": { "kind": "path" },
+                    "inputPath": ["add", 0, "path"],
+                    "required": true,
+                    "initial": "added/hello.txt"
+                  },
+                  {
+                    "key": "content",
+                    "label": "Contents",
+                    "type": { "kind": "text" },
+                    "inputPath": ["add", 0, "bytes"],
+                    "initial": "added from the Modkit inspector",
+                    "encoding": "utf8-base64"
+                  }
+                ]
+              },
+              {
+                "id": "zip-remove-entry",
+                "label": "Remove an entry from the archive",
+                "summary": "Removes one entry and repacks; other entries retain their bytes.",
+                "fields": [
+                  {
+                    "key": "path",
+                    "label": "Entry path",
+                    "type": { "kind": "path" },
+                    "inputPath": ["remove", 0],
+                    "required": true,
+                    "initial": "readme.txt"
+                  }
+                ]
+              },
+              {
+                "id": "zip-rename-entry",
+                "label": "Rename an entry in the archive",
+                "summary": "Renames one entry without touching its payload or compression.",
+                "fields": [
+                  {
+                    "key": "from",
+                    "label": "From",
+                    "type": { "kind": "path" },
+                    "inputPath": ["rename", 0, "from"],
+                    "required": true,
+                    "initial": "readme.txt"
+                  },
+                  {
+                    "key": "to",
+                    "label": "To",
+                    "type": { "kind": "path" },
+                    "inputPath": ["rename", 0, "to"],
+                    "required": true,
+                    "initial": "docs/readme.txt"
+                  }
+                ]
+              }
+            ]
+          }
+        },
         "outputKinds": ["edit-plan"]
       },
       {
@@ -128,6 +197,37 @@
         "handlerId": "edit-content",
         "mutatesSource": true,
         "requiredPermissions": ["read-source", "write-source"],
+        "inputSchema": {
+          "$ref": "modkit://archive-zip/edit-content.v1",
+          "document": {
+            "schemaVersion": 1,
+            "forms": [
+              {
+                "id": "zip-replace-entry",
+                "label": "Replace an entry's contents",
+                "summary": "Replaces one file entry's payload; nothing else moves.",
+                "fields": [
+                  {
+                    "key": "path",
+                    "label": "Entry path",
+                    "type": { "kind": "path" },
+                    "inputPath": ["path"],
+                    "required": true,
+                    "initial": "readme.txt"
+                  },
+                  {
+                    "key": "content",
+                    "label": "Contents",
+                    "type": { "kind": "text" },
+                    "inputPath": ["bytes"],
+                    "initial": "replaced from the Modkit inspector",
+                    "encoding": "utf8-base64"
+                  }
+                ]
+              }
+            ]
+          }
+        },
         "outputKinds": ["edit-plan"]
       }
     ],

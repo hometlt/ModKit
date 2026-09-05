@@ -615,6 +615,9 @@
                 "$ref": {
                   "minLength": 1,
                   "type": "string"
+                },
+                "document": {
+                  "title": "JsonValue"
                 }
               },
               "required": [
@@ -1357,6 +1360,9 @@
                       "$ref": {
                         "minLength": 1,
                         "type": "string"
+                      },
+                      "document": {
+                        "$ref": "#/$defs/jsonValue"
                       }
                     },
                     "required": [
@@ -1396,6 +1402,9 @@
                       "$ref": {
                         "minLength": 1,
                         "type": "string"
+                      },
+                      "document": {
+                        "$ref": "#/$defs/jsonValue"
                       }
                     },
                     "required": [
@@ -3145,6 +3154,9 @@
                       "$ref": {
                         "minLength": 1,
                         "type": "string"
+                      },
+                      "document": {
+                        "$ref": "#/$defs/jsonValue"
                       }
                     },
                     "required": [
@@ -3184,6 +3196,9 @@
                       "$ref": {
                         "minLength": 1,
                         "type": "string"
+                      },
+                      "document": {
+                        "$ref": "#/$defs/jsonValue"
                       }
                     },
                     "required": [

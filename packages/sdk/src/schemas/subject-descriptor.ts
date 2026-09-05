@@ -222,7 +222,7 @@ const jsonSchemaRefSchema = {
   type: 'object',
   additionalProperties: false,
   required: ['$ref'],
-  properties: { $ref: nonEmptyString },
+  properties: { $ref: nonEmptyString, document: jsonValueRef },
 } as const
 
 const operationProperties = {

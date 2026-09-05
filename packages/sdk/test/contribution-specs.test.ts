@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   CODEC_CONTRIBUTION_CONTRACT,
+  FIELD_EDITOR_CONTRIBUTION_CONTRACT,
   KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT,
   LOCALIZATION_CONTRIBUTION_CONTRACT,
   LOCALIZATION_CONTRIBUTION_FACT,
@@ -164,9 +165,12 @@ describe('A-1 contribution spec schemas', () => {
 
   it('validates data-source inventory records outside the executable contribution registry', async () => {
     expect(await validateWithSchema(dataSourceContributionSpecV1Schema, dataSourceSpec)).toEqual([])
-    expect(A1_SPEC_SCHEMA_ENTRIES).toHaveLength(9)
+    expect(A1_SPEC_SCHEMA_ENTRIES).toHaveLength(10)
     expect(A1_SPEC_SCHEMA_ENTRIES.map(entry => entry.contract)).toContain(
       'modkit/subject-kind-definition',
+    )
+    expect(A1_SPEC_SCHEMA_ENTRIES.map(entry => entry.contract)).toContain(
+      FIELD_EDITOR_CONTRIBUTION_CONTRACT,
     )
   })
 
