@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// M1 infrastructure proof only. Full family surfaces are an explicit later acceptance scope.
+// M1 infrastructure proof plus the independent M7 generic-surface foundation. Codec-family
+// receipts remain owner-specific and are not replaced by the fixture smoke.
 import { spawnSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
@@ -8,19 +9,50 @@ import { coreRoot } from './lib/port-context.mjs'
 import { hash, stable } from './lib/port-state.mjs'
 
 const args = process.argv.slice(2)
-if (args.length !== 2 || args[0] !== '--scope' || args[1] !== 'm1-fixtures')
-  throw new Error(
-    'M1 implements only --scope m1-fixtures; family surfaces remain pending until P1-P8',
-  )
-const tests = [
-  'packages/sdk/test/fields.test.ts',
-  'packages/testkit/test/minimal-host.test.ts',
-  'packages/testkit/test/reference-codecs.test.ts',
-  'packages/host/test/subject-editing.test.ts',
-]
+if (args.length !== 2 || args[0] !== '--scope')
+  throw new Error('usage: check-surfaces.mjs --scope <m1-fixtures|m7-foundation>')
+const scope = args[1]
+const scopes = {
+  'm1-fixtures': {
+    milestone: 'M1',
+    tests: [
+      'packages/sdk/test/fields.test.ts',
+      'packages/testkit/test/minimal-host.test.ts',
+      'packages/testkit/test/reference-codecs.test.ts',
+      'packages/host/test/subject-editing.test.ts',
+    ],
+    receipt: 'surfaces-receipt.json',
+    coverage: [
+      'typed metadata and schema refusal',
+      'load/inventory/resolve/activate and permission refusal',
+      'descriptor and lazy data sources',
+      'operation/edit-plan/commit/reopen',
+      'writer no-op/commit/reopen and incompatible facet refusal',
+    ],
+  },
+  'm7-foundation': {
+    milestone: 'M7',
+    tests: ['apps/mcp/test/extension-surface-smoke.test.ts'],
+    receipt: 'surfaces-m7-foundation-receipt.json',
+    coverage: [
+      'fixture codec, subject-kind and viewer-panel inventory discovery/removal',
+      'inventory/runtime applicability agreement',
+      'metadata, tree, hex, card, MCP inspect and script metadata projection',
+      'no-op edit plan/prepare/commit/reopen byte identity',
+      'fail-closed missing claim, zero execution and skipped execution',
+    ],
+  },
+}
+const selected = scopes[scope]
+if (selected === undefined)
+  throw new Error(`unsupported surface scope ${scope}; expected m1-fixtures or m7-foundation`)
+const tests = selected.tests
 const output = path.join(coreRoot, 'reports/port-infra')
 await mkdir(output, { recursive: true })
-const runnerReport = path.join(output, 'surfaces-tests.json')
+const runnerReport = path.join(
+  output,
+  scope === 'm1-fixtures' ? 'surfaces-tests.json' : `surfaces-${scope}-tests.json`,
+)
 const runner = createRequire(import.meta.url).resolve('vitest/vitest.mjs')
 const executed = spawnSync(
   process.execPath,
@@ -54,11 +86,11 @@ const sources = []
 for (const test of tests)
   sources.push({ path: test, sha256: hash(await readFile(path.join(coreRoot, test))) })
 await writeFile(
-  path.join(output, 'surfaces-receipt.json'),
+  path.join(output, selected.receipt),
   stable({
     schemaVersion: 1,
-    milestone: 'M1',
-    scope: 'm1-fixtures',
+    milestone: selected.milestone,
+    scope,
     stage: 'infrastructure',
     verdict: passed ? 'pass' : 'fail',
     corpusKind: 'synthetic',
@@ -70,20 +102,14 @@ await writeFile(
     missing,
     sources,
     runnerReport: {
-      path: 'modkit-core/reports/port-infra/surfaces-tests.json',
+      path: `modkit-core/reports/port-infra/${path.basename(runnerReport)}`,
       sha256: hash(reportBytes),
     },
-    coverage: [
-      'typed metadata and schema refusal',
-      'load/inventory/resolve/activate and permission refusal',
-      'descriptor and lazy data sources',
-      'operation/edit-plan/commit/reopen',
-      'writer no-op/commit/reopen and incompatible facet refusal',
-    ],
+    coverage: selected.coverage,
     fullFamilyAcceptance: false,
   }),
 )
 console.log(
-  `surfaces M1 fixtures: ${passed ? 'pass' : 'fail'}, ${report.numPassedTests} passed, ${report.numFailedTests} failed; full family acceptance pending`,
+  `surfaces ${scope}: ${passed ? 'pass' : 'fail'}, ${report.numPassedTests} passed, ${report.numFailedTests} failed; full family acceptance pending`,
 )
 if (!passed) process.exitCode = 1

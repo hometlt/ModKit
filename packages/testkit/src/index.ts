@@ -31,6 +31,17 @@ export {
   type CandidateWorldUvwRefusalReport,
 } from './uvw-materialization.js'
 export { runMinimalHost, type MinimalHostOptions, type MinimalHostRun } from './minimal-host.js'
+export {
+  GENERIC_SURFACE_ANCHORS,
+  discoverApplicableSurfaceAnchors,
+  runGenericSurfaceSmoke,
+  type GenericSurfaceAnchor,
+  type SurfaceSmokeAnchorResult,
+  type SurfaceSmokeClaim,
+  type SurfaceSmokeExecution,
+  type SurfaceSmokeExecutor,
+  type SurfaceSmokeReport,
+} from './surface-smoke.js'
 export { offersFromInventory } from '@modkit/host'
 export {
   assertGoldenPathMetrics,

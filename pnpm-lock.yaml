@@ -464,6 +464,9 @@ importers:
 
   packages/testkit:
     dependencies:
+      '@modkit/codec-kit':
+        specifier: workspace:*
+        version: link:../codec-kit
       '@modkit/core':
         specifier: workspace:*
         version: link:../core

@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "modkit/subject-kind-definition", "major": 1 },
+  "id": "org.example/surface-sample-kind",
+  "displayName": "Surface sample subject kind",
+  "spec": {
+    "kindId": "org.example/surface-sample",
+    "label": "Surface sample",
+    "parentKinds": ["modkit/file"],
+    "card": { "sections": ["identity", "contents"], "preview": "none" },
+    "selector": {
+      "facets": ["name"],
+      "predicates": [{ "id": "name-contains", "label": "Name contains" }]
+    },
+    "diff": { "profile": "generic" },
+    "knowledgeEcosystem": "org.example.surface-sample"
+  }
+}

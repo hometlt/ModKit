@@ -18,7 +18,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "fixtures/extension-surface-sample"
   ],
   "scripts": {
     "build": "tsc -b",
@@ -26,6 +27,7 @@
     "clean": "tsc -b --clean"
   },
   "dependencies": {
+    "@modkit/codec-kit": "workspace:*",
     "@modkit/core": "workspace:*",
     "@modkit/host": "workspace:*",
     "@modkit/sdk": "workspace:*",

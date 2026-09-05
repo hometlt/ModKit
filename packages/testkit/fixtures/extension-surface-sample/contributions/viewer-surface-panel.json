@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "modkit/viewer-contribution", "major": 1 },
+  "id": "org.example/surface-sample-panel",
+  "displayName": "Surface sample panel",
+  "runtimeVariants": [
+    {
+      "variantId": "browser",
+      "entrypoint": "./src/panel.js",
+      "target": { "environments": ["browser-main"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "kind": "panel",
+    "requiresTraits": [{ "id": "structure.hierarchy", "states": ["available"] }],
+    "consumesDataSources": [{ "contract": "common.view/tree-data-source", "major": 1 }],
+    "priority": 125,
+    "singletonGroup": "org.example.surface-sample-panel"
+  }
+}

@@ -20,6 +20,9 @@
       "path": "../host"
     },
     {
+      "path": "../codec-kit"
+    },
+    {
       "path": "../ui"
     }
   ]

@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "modkit/codec-contribution", "major": 1 },
+  "id": "org.example/surface-sample-codec",
+  "displayName": "Surface sample codec",
+  "status": "supported",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/codec.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source", "write-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/codec.js",
+      "target": { "environments": ["node-worker", "browser-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source", "write-source"]
+    }
+  ],
+  "spec": {
+    "formatRefs": [
+      {
+        "formatId": "surface-sample",
+        "label": "Surface sample",
+        "mediaType": "application/x-modkit-surface-sample"
+      }
+    ],
+    "roles": ["semantic"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": {
+      "extensions": ["surface"],
+      "mediaTypes": ["application/x-modkit-surface-sample"],
+      "signatures": [
+        { "from": "start", "offset": 0, "bytesHex": "4d4f444b495420535552464143452053414d504c450a" }
+      ]
+    },
+    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "representations": [
+      {
+        "id": "source",
+        "contract": "org.example/surface-sample-document",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      { "contract": "common.view/tree-data-source", "major": 1 },
+      { "contract": "common.view/text-data-source", "major": 1 },
+      { "contract": "common.view/byte-range-source", "major": 1 },
+      { "contract": "common.view/subject-facts-source", "major": 1 }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "script.symbols",
+        "handlerId": "script-symbols",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "edit.field",
+        "handlerId": "set-name",
+        "mutatesSource": true,
+        "requiredPermissions": ["read-source", "write-source"],
+        "outputKinds": ["edit-plan"]
+      }
+    ],
+    "traitDeclarations": [
+      { "id": "structure.hierarchy", "representation": "source", "presence": "will-expose" },
+      { "id": "content.text", "representation": "source", "presence": "will-expose" }
+    ],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1048576",
+      "maxDepth": 32,
+      "maxNodes": 1024,
+      "maxScalarBytes": 1048576,
+      "maxDiagnostics": 100
+    }
+  }
+}
