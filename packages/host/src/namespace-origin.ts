@@ -55,7 +55,7 @@ export const NESTED_ENTRY_NOT_FOUND = 'x3.host/nested-entry-not-found'
 export function containerEntryRevision(
   containerRevision: RevisionId,
   entryId: string,
-  byteLength: number,
+  byteLength: number | bigint,
 ): RevisionId {
   // through the ref builder, not by string concatenation: a revision id is a kind-tagged token
   // whose value is percent-encoded, and the container's own revision is itself one of those

@@ -17,6 +17,7 @@ const state = () =>
     carrierRawCalls: 0,
     semanticRawCalls: 0,
     entryRefReleases: 0,
+    carrierExtractCalls: 0,
   })
 
 function namespaceSource(source) {
@@ -30,7 +31,7 @@ function namespaceSource(source) {
           items.slice(start, start + page.limit).map(item =>
             Object.freeze({
               ...item,
-              size: BigInt(entryBytes.byteLength),
+              size: globalThis.__x3ContainerDeclaredEntrySize ?? BigInt(entryBytes.byteLength),
               revision: source.revision,
             }),
           ),
@@ -92,7 +93,7 @@ const definition = Object.freeze({
   },
   async inspect(bytes, context) {
     return {
-      summary: { kind: 'carrier' },
+      summary: { kind: 'carrier', format: 'carrier', entries: 1, carrierVersion: 7 },
       metadata: [],
       traits: [{ id: 'container.entries', parameters: { count: 1 } }],
       ...(globalThis.__x3ContainerDisablePack
@@ -110,8 +111,16 @@ const definition = Object.freeze({
         'common.view/namespace-entry-source': namespaceSource(context.source),
       },
       handlers: {
-        extract: async input => {
+        extract: async (input, options) => {
+          state().carrierExtractCalls += 1
           if (input?.entryId !== entry.id) throw new TypeError('entry was not found')
+          if (globalThis.__x3ContainerAbortDuringExtract) {
+            globalThis.__x3ContainerAbortController?.abort()
+            if (options?.signal?.aborted) throw new DOMException('cancelled', 'AbortError')
+          }
+          if (globalThis.__x3ContainerFailExtract) {
+            throw new TypeError('fixture extraction refused')
+          }
           return { kind: 'bytes', value: entryBytes.slice() }
         },
         pack: async input => {

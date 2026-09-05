@@ -9,7 +9,8 @@
     "id": "subject-open-container",
     "contributionManifests": [
       "./contributions/carrier.json",
-      "./contributions/semantic.json"
+      "./contributions/semantic.json",
+      "./contributions/semantic-other.json"
     ]
   }
 }

@@ -23,10 +23,15 @@ declare global {
         carrierRawCalls: number
         semanticRawCalls: number
         entryRefReleases: number
+        carrierExtractCalls: number
       }
     | undefined
   var __x3ContainerAbortController: AbortController | undefined
   var __x3ContainerDisablePack: boolean | undefined
+  var __x3ContainerAbortDuringExtract: boolean | undefined
+  var __x3ContainerFailExtract: boolean | undefined
+  var __x3ContainerSkipInspectRead: boolean | undefined
+  var __x3ContainerDeclaredEntrySize: bigint | undefined
 }
 
 const fixture = fileURLToPath(
@@ -61,14 +66,27 @@ function source(name = 'map.car'): ArtifactByteSource {
   })
 }
 
-async function harness(options: { readonly disablePack?: boolean } = {}) {
+async function harness(
+  options: {
+    readonly abortDuringExtract?: boolean
+    readonly declaredEntrySize?: bigint
+    readonly disablePack?: boolean
+    readonly failExtract?: boolean
+    readonly skipInspectRead?: boolean
+  } = {},
+) {
   globalThis.__x3ContainerComposition = {
     carrierPackCalls: 0,
     carrierRawCalls: 0,
     semanticRawCalls: 0,
     entryRefReleases: 0,
+    carrierExtractCalls: 0,
   }
   globalThis.__x3ContainerDisablePack = options.disablePack ?? false
+  globalThis.__x3ContainerAbortDuringExtract = options.abortDuringExtract ?? false
+  globalThis.__x3ContainerFailExtract = options.failExtract ?? false
+  globalThis.__x3ContainerSkipInspectRead = options.skipInspectRead ?? false
+  globalThis.__x3ContainerDeclaredEntrySize = options.declaredEntrySize
   const input = await loadExtensionDirectory(fixture)
   const inventory = await buildInventory(
     [{ ...input, execution: { origin: 'bundled', allowTrustedInProcess: true } }],
@@ -125,6 +143,8 @@ describe('host-owned container composition', () => {
       }),
     ])
     expect(globalThis.__x3ContainerComposition?.entryRefReleases).toBe(2)
+    expect(globalThis.__x3ContainerComposition?.carrierExtractCalls).toBe(1)
+    expect(result.candidates.some(item => item.contributionId.endsWith('-other'))).toBe(false)
 
     const beforeDispose = releases.length
     await result.session.operations().dispose()
@@ -139,6 +159,110 @@ describe('host-owned container composition', () => {
     expect(releases).toHaveLength(beforeDispose)
     await result.session.dispose()
     expect(releases.slice(beforeDispose)).toEqual(['semantic.mjs', 'carrier.mjs'])
+  })
+
+  it('keeps carrier entry extraction lazy and memoized behind byte access', async () => {
+    const built = await harness({ skipInspectRead: true, failExtract: true })
+    const opened = await openSubject({
+      inventory: built.inventory,
+      source: source(),
+      path: 'map.car',
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'container-composition', classes: ['read-source', 'write-source'] },
+      executionBackends: built.executionBackends,
+      budget,
+    })
+    expect(opened.state).toBe('opened')
+    if (opened.state !== 'opened') throw new Error(`composition did not open: ${opened.reason}`)
+    expect(globalThis.__x3ContainerComposition?.carrierExtractCalls).toBe(0)
+
+    globalThis.__x3ContainerFailExtract = false
+    const read = await opened.session.operations().invoke('read-lazy', null)
+    expect(read).toMatchObject({
+      state: 'ok',
+      output: { kind: 'json', value: { first: 9, second: 9, streamed: 9 } },
+    })
+    expect(globalThis.__x3ContainerComposition?.carrierExtractCalls).toBe(1)
+    await opened.session.dispose()
+  })
+
+  it('enforces an entry scalar budget before lazy carrier extraction', async () => {
+    const built = await harness({ skipInspectRead: true })
+    const opened = await openSubject({
+      inventory: built.inventory,
+      source: source(),
+      path: 'map.car',
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'container-composition', classes: ['read-source', 'write-source'] },
+      executionBackends: built.executionBackends,
+      budget: { ...budget, maxScalarBytes: 8 },
+    })
+    if (opened.state !== 'opened') throw new Error('scalar-budget fixture did not open')
+    await expect(opened.session.operations().invoke('read-lazy', null)).rejects.toMatchObject({
+      code: 'x3.host/container-entry-scalar-budget-exceeded',
+    })
+    expect(globalThis.__x3ContainerComposition?.carrierExtractCalls).toBe(0)
+    await opened.session.dispose()
+  })
+
+  it('propagates cancellation and rejects a carrier entry size mismatch on first read', async () => {
+    const cancelled = await harness({ skipInspectRead: true, abortDuringExtract: true })
+    const cancelledOpen = await openSubject({
+      inventory: cancelled.inventory,
+      source: source(),
+      path: 'map.car',
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'container-composition', classes: ['read-source', 'write-source'] },
+      executionBackends: cancelled.executionBackends,
+      budget,
+    })
+    if (cancelledOpen.state !== 'opened') throw new Error('cancel fixture did not open')
+    const controller = new AbortController()
+    globalThis.__x3ContainerAbortController = controller
+    await expect(
+      cancelledOpen.session.operations().invoke('read-lazy', null, { signal: controller.signal }),
+    ).rejects.toBeInstanceOf(OperationCancelledError)
+    expect(globalThis.__x3ContainerComposition?.carrierExtractCalls).toBe(1)
+    globalThis.__x3ContainerAbortController = undefined
+    await cancelledOpen.session.dispose()
+
+    const mismatched = await harness({ skipInspectRead: true, declaredEntrySize: 10n })
+    const mismatchedOpen = await openSubject({
+      inventory: mismatched.inventory,
+      source: source(),
+      path: 'map.car',
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'container-composition', classes: ['read-source', 'write-source'] },
+      executionBackends: mismatched.executionBackends,
+      budget,
+    })
+    if (mismatchedOpen.state !== 'opened') throw new Error('size fixture did not open')
+    await expect(
+      mismatchedOpen.session.operations().invoke('read-lazy', null),
+    ).rejects.toMatchObject({ code: 'x3.host/container-entry-size-mismatch' })
+    await mismatchedOpen.session.dispose()
+  })
+
+  it('adds carrier-only inspect facts without overriding semantic summary fields', async () => {
+    const { result } = await openedComposition()
+    const inspected = await result.session.operations().invoke('inspect', null)
+    expect(inspected).toMatchObject({
+      state: 'ok',
+      output: {
+        kind: 'json',
+        value: {
+          carrierVersion: 7,
+          format: 'semantic',
+          entries: 2,
+          world: 'old-world',
+        },
+      },
+    })
+    await result.session.dispose()
   })
 
   it('turns a semantic entry replacement into a carrier-owned outer edit plan', async () => {

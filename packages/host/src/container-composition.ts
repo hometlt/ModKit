@@ -4,6 +4,7 @@ import { ModkitError, throwIfAborted } from '@modkit/core'
 import {
   revisionIdFromRef,
   type AnyDescriptor,
+  type ArtifactByteSource,
   type ArtifactNamespaceSource,
   type ArtifactSource,
   type AssetEditPlan,
@@ -30,6 +31,7 @@ const NAMESPACE_ENTRY_SOURCE = 'common.view/namespace-entry-source'
 const CONTAINER_EXTRACT = 'container.extract'
 const CONTAINER_PACK = 'container.pack'
 const EXPORT_RAW = 'export.raw'
+const VIEW_INSPECT = 'view.inspect'
 const ENTRY_NOT_FOUND = 'x3.host/namespace-entry-not-found'
 const PAGE_LIMIT = 256
 const BASE64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
@@ -49,6 +51,7 @@ export interface ContainerNamespaceComposition {
   readonly exportRawHandlerId?: string
   wrapSession(
     semantic: AssetSession,
+    semanticDescriptor: AnyDescriptor,
     semanticSpec: CodecContributionSpecV1Wire,
     parent: AssetSession,
   ): AssetSession
@@ -127,6 +130,32 @@ function sameRef(left: AssetSourceRef, right: AssetSourceRef): boolean {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function mergeInspectionResults(
+  carrier: OperationResult,
+  semantic: OperationResult,
+): OperationResult {
+  if (
+    carrier.state !== 'ok' ||
+    carrier.output.kind !== 'json' ||
+    semantic.state !== 'ok' ||
+    semantic.output.kind !== 'json' ||
+    !isRecord(carrier.output.value) ||
+    !isRecord(semantic.output.value)
+  ) {
+    return semantic
+  }
+  return Object.freeze({
+    ...semantic,
+    output: Object.freeze({
+      kind: 'json' as const,
+      // Carrier facts fill fields the semantic summary does not own. The semantic interpretation
+      // remains authoritative on collisions, and the semantic realm never receives carrier data.
+      value: Object.freeze({ ...carrier.output.value, ...semantic.output.value }),
+    }),
+    diagnostics: Object.freeze([...carrier.diagnostics, ...semantic.diagnostics]),
+  })
 }
 
 function isNonBlank(value: unknown): value is string {
@@ -272,6 +301,8 @@ function composedOperations(options: {
   readonly budget: ResourceBudget
   readonly packHandlerId?: string
   readonly exportRawHandlerId?: string
+  readonly parentInspectHandlerId?: string
+  readonly semanticInspectHandlerId?: string
 }): OperationSession {
   const operationByHandler = new Map(
     options.semanticSpec.operations.map(operation => [operation.handlerId, operation]),
@@ -309,6 +340,20 @@ function composedOperations(options: {
       }
       const result = await options.semantic.invoke(handlerId, input, invokeOptions)
       throwIfAborted(invokeOptions?.signal)
+      if (
+        handlerId === options.semanticInspectHandlerId &&
+        options.parentInspectHandlerId !== undefined &&
+        result.state === 'ok'
+      ) {
+        const carrier = await options.parent.invoke(
+          options.parentInspectHandlerId,
+          input,
+          invokeOptions,
+        )
+        throwIfAborted(invokeOptions?.signal)
+        if (carrier.state !== 'ok') return carrier
+        return mergeInspectionResults(carrier, result)
+      }
       if (result.state !== 'ok' || result.output.kind !== 'edit-plan') return result
       if (
         declaration === undefined ||
@@ -420,6 +465,11 @@ export async function createContainerNamespaceComposition(
       typeof entry.id !== 'string' ||
       entry.id === '' ||
       typeof entry.path !== 'string' ||
+      typeof entry.name !== 'string' ||
+      entry.name === '' ||
+      typeof entry.revision !== 'string' ||
+      entry.revision === '' ||
+      (entry.size !== undefined && (typeof entry.size !== 'bigint' || entry.size < 0n)) ||
       (entry.kind !== 'file' && entry.kind !== 'directory')
     ) {
       throw new ModkitError({
@@ -635,42 +685,18 @@ export async function createContainerNamespaceComposition(
                   })
                 }
               }
-              const invoked = await parentOperations.invoke(
-                extractHandlerId,
-                { entryId: found.entry.id },
-                openSignal === undefined ? {} : { signal: openSignal },
-              )
-              ensureLive(openSignal)
-              if (invoked.state !== 'ok' || invoked.output.kind !== 'bytes') {
-                throw new ModkitError({
-                  code: 'x3.host/container-entry-unreadable',
-                  message: `container refused to extract entry «${absolutePath}»`,
-                })
-              }
-              const bytes = invoked.output.value
-              if (bytes.byteLength > options.budget.maxScalarBytes) {
-                throw new ModkitError({
-                  code: 'x3.host/container-entry-scalar-budget-exceeded',
-                  message: `container entry «${absolutePath}» exceeds maxScalarBytes`,
-                })
-              }
-              extractedBytes += BigInt(bytes.byteLength)
-              if (extractedBytes > options.budget.maxInputBytes) {
-                throw new ModkitError({
-                  code: 'x3.host/container-entry-byte-budget-exceeded',
-                  message: 'container composition exceeded maxInputBytes while extracting entries',
-                })
-              }
               const sourceRevision = containerEntryRevision(
                 options.revision,
                 found.entry.id,
-                bytes.byteLength,
+                found.entry.size ?? 0n,
               )
               const ref = refLease.value
               const prior = bindings.get(ref.id)
               if (
                 prior !== undefined &&
-                (prior.entryId !== found.entry.id || prior.sourceRevision !== sourceRevision)
+                (prior.entryId !== found.entry.id ||
+                  prior.providerRevision !== found.entry.revision ||
+                  prior.sourceRevision !== sourceRevision)
               ) {
                 throw new ModkitError({
                   code: 'x3.host/container-entry-ref-collision',
@@ -687,8 +713,102 @@ export async function createContainerNamespaceComposition(
                   sourceRevision,
                 }),
               )
+              let extracted: Uint8Array | undefined
+              let extraction: Promise<Uint8Array> | undefined
+              const ensureEntryLive = (signal?: AbortSignal): void => {
+                ensureLive(signal)
+                if (released) {
+                  throw new ModkitError({
+                    code: 'x3.host/container-entry-source-released',
+                    message: `container entry source «${absolutePath}» has been released`,
+                  })
+                }
+              }
+              const loadBytes = async (signal?: AbortSignal): Promise<Uint8Array> => {
+                ensureEntryLive(signal)
+                if (extracted !== undefined) return extracted
+                if (
+                  found.entry.size !== undefined &&
+                  found.entry.size > BigInt(options.budget.maxScalarBytes)
+                ) {
+                  throw new ModkitError({
+                    code: 'x3.host/container-entry-scalar-budget-exceeded',
+                    message: `container entry «${absolutePath}» exceeds maxScalarBytes`,
+                  })
+                }
+                extraction ??= (async () => {
+                  const invoked = await parentOperations.invoke(
+                    extractHandlerId,
+                    { entryId: found.entry.id },
+                    signal === undefined ? {} : { signal },
+                  )
+                  if (invoked.state !== 'ok' || invoked.output.kind !== 'bytes') {
+                    throwIfAborted(signal)
+                    throw new ModkitError({
+                      code: 'x3.host/container-entry-unreadable',
+                      message: `container refused to extract entry «${absolutePath}»`,
+                    })
+                  }
+                  const bytes = invoked.output.value
+                  if (bytes.byteLength > options.budget.maxScalarBytes) {
+                    throw new ModkitError({
+                      code: 'x3.host/container-entry-scalar-budget-exceeded',
+                      message: `container entry «${absolutePath}» exceeds maxScalarBytes`,
+                    })
+                  }
+                  if (
+                    found.entry.size !== undefined &&
+                    found.entry.size !== BigInt(bytes.byteLength)
+                  ) {
+                    throw new ModkitError({
+                      code: 'x3.host/container-entry-size-mismatch',
+                      message: `container extracted ${bytes.byteLength} bytes for entry «${absolutePath}», expected ${found.entry.size}`,
+                    })
+                  }
+                  const total = extractedBytes + BigInt(bytes.byteLength)
+                  if (total > options.budget.maxInputBytes) {
+                    throw new ModkitError({
+                      code: 'x3.host/container-entry-byte-budget-exceeded',
+                      message:
+                        'container composition exceeded maxInputBytes while extracting entries',
+                    })
+                  }
+                  extractedBytes = total
+                  extracted = bytes.slice()
+                  return extracted
+                })()
+                try {
+                  const bytes = await extraction
+                  ensureEntryLive(signal)
+                  return bytes
+                } catch (error) {
+                  if (extracted === undefined) extraction = undefined
+                  throw error
+                }
+              }
+              const byteSource: ArtifactByteSource = Object.freeze({
+                kind: 'bytes' as const,
+                ref,
+                revision: sourceRevision,
+                ...(found.entry.size === undefined ? {} : { size: found.entry.size }),
+                async read(offset: bigint, length: number, signal?: AbortSignal) {
+                  const bytes = await loadBytes(signal)
+                  return containerEntrySource(ref, sourceRevision, bytes).read(
+                    offset,
+                    length,
+                    signal,
+                  )
+                },
+                async *stream(
+                  range?: { readonly offset: bigint; readonly length?: bigint },
+                  signal?: AbortSignal,
+                ) {
+                  const bytes = await loadBytes(signal)
+                  yield* containerEntrySource(ref, sourceRevision, bytes).stream(range, signal)
+                },
+              })
               return Object.freeze({
-                value: containerEntrySource(ref, sourceRevision, bytes),
+                value: byteSource,
                 release,
               })
             } catch (error) {
@@ -712,6 +832,7 @@ export async function createContainerNamespaceComposition(
     ...(exportRawHandlerId === undefined ? {} : { exportRawHandlerId }),
     wrapSession(
       semantic: AssetSession,
+      semanticDescriptor: AnyDescriptor,
       semanticSpec: CodecContributionSpecV1Wire,
       parent: AssetSession,
     ): AssetSession {
@@ -737,6 +858,8 @@ export async function createContainerNamespaceComposition(
         }
         if (firstError !== undefined) throw firstError
       }
+      const parentInspectHandlerId = operationHandler(descriptor, VIEW_INSPECT)
+      const semanticInspectHandlerId = operationHandler(semanticDescriptor, VIEW_INSPECT)
       const operations = composedOperations({
         semantic: semantic.operations(),
         semanticSpec,
@@ -746,6 +869,8 @@ export async function createContainerNamespaceComposition(
         budget: options.budget,
         ...(packHandlerId === undefined ? {} : { packHandlerId }),
         ...(exportRawHandlerId === undefined ? {} : { exportRawHandlerId }),
+        ...(parentInspectHandlerId === undefined ? {} : { parentInspectHandlerId }),
+        ...(semanticInspectHandlerId === undefined ? {} : { semanticInspectHandlerId }),
       })
       return Object.freeze({
         revision: semantic.revision,

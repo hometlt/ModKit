@@ -59,6 +59,13 @@
         "handlerId": "read-edit",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"]
+      },
+      {
+        "id": "org.example/test-semantic.read-lazy",
+        "handlerId": "read-lazy",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
       }
     ],
     "implementationTier": { "claimed": 1 },

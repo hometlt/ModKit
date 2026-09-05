@@ -166,6 +166,8 @@ interface SubjectOpenRoute {
   readonly containerProviderFormatId?: string
   /** Admit only namespace aliases bound to this already-open carrier format. */
   readonly containerAliasFormatId?: string
+  /** Preserve the exact path/media selector match that initiated container composition. */
+  readonly containerAliasContributionIds?: ReadonlySet<string>
   /** Container choice is a host policy dependency and is included in the composed lock. */
   readonly includeSelectionLock?: boolean
 }
@@ -1007,7 +1009,12 @@ function runnableCandidates(
         if (spec.sourceTopology !== 'namespace' || spec.probe.kind !== 'namespace') continue
         if (route.containerAliasFormatId === undefined) {
           if (spec.container !== undefined) continue
-        } else if (spec.container?.formatId !== route.containerAliasFormatId) continue
+        } else if (
+          spec.container?.formatId !== route.containerAliasFormatId ||
+          !route.containerAliasContributionIds?.has(manifest.id)
+        ) {
+          continue
+        }
       } else {
         if (route.containerAliasFormatId !== undefined) continue
         if (
@@ -1764,7 +1771,10 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
     })
     const semantic = await openSubjectDirect(
       { ...options, source: composition.source, budget: semanticBudget },
-      { containerAliasFormatId: formatId },
+      {
+        containerAliasFormatId: formatId,
+        containerAliasContributionIds: new Set(aliases.map(alias => alias.contributionId)),
+      },
     )
     if (semantic.state !== 'opened') {
       await composition.dispose()
@@ -1802,7 +1812,12 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
         message: `container provider for ${formatId} must publish export.raw for semantic raw export`,
       })
     }
-    const session = composition.wrapSession(semanticSession, selectedSpec, parent.session)
+    const session = composition.wrapSession(
+      semanticSession,
+      semantic.descriptor,
+      selectedSpec,
+      parent.session,
+    )
     semanticSession = undefined
     composition = undefined
     const lockText = serializePolicyLock([

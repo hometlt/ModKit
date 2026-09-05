@@ -6,6 +6,7 @@ const state = () =>
     carrierRawCalls: 0,
     semanticRawCalls: 0,
     entryRefReleases: 0,
+    carrierExtractCalls: 0,
   })
 
 const definition = Object.freeze({
@@ -32,6 +33,13 @@ const definition = Object.freeze({
       mutatesSource: false,
       requiredPermissions: Object.freeze(['read-source']),
     }),
+    Object.freeze({
+      id: 'org.example/test-semantic.read-lazy',
+      handlerId: 'read-lazy',
+      mutatesSource: false,
+      requiredPermissions: Object.freeze(['read-source']),
+      outputKinds: Object.freeze(['json']),
+    }),
   ]),
   namespace: {
     async detect(markers) {
@@ -47,7 +55,9 @@ const definition = Object.freeze({
       const opened = await namespace.open('Base.SC2Data/world.bin', context.signal)
       try {
         if (opened.value.kind !== 'bytes') throw new TypeError('world entry is not bytes')
-        const bytes = await opened.value.read(0n, Number(opened.value.size ?? 0n), context.signal)
+        const bytes = globalThis.__x3ContainerSkipInspectRead
+          ? new Uint8Array()
+          : await opened.value.read(0n, Number(opened.value.size ?? 0n), context.signal)
         const entryRef = opened.value.ref
         const entryRevision = opened.value.revision
         const entryPlan = input => {
@@ -92,12 +102,44 @@ const definition = Object.freeze({
         }
         return {
           detection: { confidence: 0.99, kind: 'structure', note: 'world marker' },
-          summary: { world: new TextDecoder().decode(bytes) },
+          summary: {
+            format: 'semantic',
+            entries: 2,
+            world: globalThis.__x3ContainerSkipInspectRead
+              ? 'not-read'
+              : new TextDecoder().decode(bytes),
+          },
           metadata: [],
           traits: [{ id: 'structure.hierarchy' }],
           handlers: {
             'edit-world': async input => entryPlan(input),
             'read-edit': async input => entryPlan(input),
+            'read-lazy': async (_input, options) => {
+              const lazy = await namespace.open('Base.SC2Data/world.bin', options?.signal)
+              try {
+                if (lazy.value.kind !== 'bytes') throw new TypeError('world entry is not bytes')
+                const length = Number(lazy.value.size ?? 0n)
+                const first = await lazy.value.read(0n, length, options?.signal)
+                const second = await lazy.value.read(0n, length, options?.signal)
+                const streamed = []
+                for await (const chunk of lazy.value.stream(
+                  { offset: 0n, length: BigInt(length) },
+                  options?.signal,
+                )) {
+                  streamed.push(...chunk)
+                }
+                return {
+                  kind: 'json',
+                  value: {
+                    first: first.byteLength,
+                    second: second.byteLength,
+                    streamed: streamed.length,
+                  },
+                }
+              } finally {
+                await lazy.release()
+              }
+            },
             'export-raw': async () => {
               state().semanticRawCalls += 1
               return { kind: 'bytes', value: new TextEncoder().encode('LEAKED') }
