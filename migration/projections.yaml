@@ -325,7 +325,7 @@ planes:
     plannedBlock: 12
     knownLoss:
       - 'container.extract остаётся отдельной операцией; container.pack и repack не выводятся из browse'
-      - 'запись в архив не заявлена ни одним кодеком (X3 v1 read-only)'
+      - 'запись в архив заявлена только blizzard/mpq через container.pack; остальные codec остаются без writer claim'
     resourceDependencies:
       - 'вложенные контейнеры монтируются host-ом через VfsMount; кодек не строит URI'
     corpusEvidence:

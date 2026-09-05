@@ -337,11 +337,11 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/casc/contributions/codec-casc.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/casc/operation/archive.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
       "contribution": null,
@@ -1317,25 +1317,25 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/mpq/contributions/codec-mpq.json",
+      "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/mpq/operation/archive.extract",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.extract"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/mpq/contributions/codec-mpq.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/mpq/operation/archive.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/mpq/contributions/codec-mpq.json",
+      "handlerId": "pack-container",
       "id": "legacy/codec-manifest/modkit/mpq/operation/archive.write",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "container.pack"
     },
     {
       "contribution": null,

@@ -386,9 +386,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/port-sc2-composition-m4/receipts/casc-archive.extract.json",
+          "sha256": "ad4aceffd2544c6f4e4c9f20d803aca44a60d333de8f39f790f32cccb5537253"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/casc/operation/archive.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -1611,19 +1616,34 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/port-sc2-composition-m4/receipts/mpq-archive.extract.json",
+          "sha256": "dd8d482aa1f38fddee7bed60fc4e26f651041be444f59e302fa5334a83730768"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/mpq/operation/archive.extract",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/port-sc2-composition-m4/receipts/mpq-archive.inspect.json",
+          "sha256": "5ceaf356a796e340d920b6dc2e1d801585fbc2229a9a1d725f852985261086e2"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/mpq/operation/archive.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/port-sc2-composition-m4/receipts/mpq-archive.write.json",
+          "sha256": "c428074011e7a6fd70be679b4ca775dd451452a0e33fa291ffe9495836eaf556"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/mpq/operation/archive.write",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
