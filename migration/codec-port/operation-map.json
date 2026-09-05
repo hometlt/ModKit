@@ -2129,39 +2129,39 @@
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-layout.json",
+      "handlerId": "export-html",
       "id": "legacy/codec-manifest/modkit/sc2-layout/operation/export.convert",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "export.convert"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-layout.json",
+      "handlerId": "export-raw",
       "id": "legacy/codec-manifest/modkit/sc2-layout/operation/export.raw",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "export.raw"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-layout.json",
+      "handlerId": "parse",
       "id": "legacy/codec-manifest/modkit/sc2-layout/operation/sc2-layout.parse",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "blizzard/sc2-layout.parse"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-layout.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/sc2-layout/operation/view.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-layout.json",
+      "handlerId": "render-structural",
       "id": "legacy/codec-manifest/modkit/sc2-layout/operation/view.render",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.render"
     },
     {
       "contribution": null,
