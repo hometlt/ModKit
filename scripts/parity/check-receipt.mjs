@@ -12,6 +12,8 @@ const repoRoot = resolve(fileURLToPath(new URL('../..', import.meta.url)))
 const reportPath = resolve(repoRoot, 'reports/parity/latest.json')
 const receiptPath = resolve(repoRoot, 'reports/parity/owner-aggregation.receipt.json')
 const allowedCoreChanges = new Set([
+  'migration/registry-debt-baseline.json',
+  'reports/PARITY_OWNER_AGGREGATION_2026-09-05.md',
   'reports/parity/latest.json',
   'reports/parity/owner-aggregation.receipt.json',
 ])
@@ -84,7 +86,7 @@ try {
     }
   }
   console.log(
-    `parity:owner:check: ${summary.rows} result(s), ${summary.repositories} repository binding(s), report and inputs verified`,
+    `parity:owner:check: ${summary.rows} result(s), ${summary.oracleExecutions} exact oracle execution(s), ${summary.repositories} repository binding(s), report and inputs verified`,
   )
 } catch (error) {
   fail(error instanceof Error ? error.message : String(error))

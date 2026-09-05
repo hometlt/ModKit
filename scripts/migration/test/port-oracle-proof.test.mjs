@@ -145,7 +145,9 @@ export async function prepareOracle({ operation, corpus, variant = 'first', obse
         snapshot: path.join(fake.directory, 'loader', `${index}-${path.basename(row.path)}`),
       }))
       await cp(evidence.directory, fake.directory, { recursive: true })
-      await writeFile(path.join(fake.directory, 'manifest.json'), JSON.stringify(fake))
+      const fakeManifest = path.join(fake.directory, 'manifest.json')
+      await chmod(fakeManifest, 0o644)
+      await writeFile(fakeManifest, JSON.stringify(fake))
       await assert.rejects(() => verify(fake), /differs from pinned Git blob/u)
     },
   )

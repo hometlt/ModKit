@@ -88,6 +88,57 @@ test('external dependency resolution honors an extensionless package main', asyn
   assert.ok(dependency.files.some(file => file.path === 'lib/legacy.js'))
 })
 
+test('workspace dist exports resolve to an owner package source tree and cache concurrently', async t => {
+  const root = await mkdtemp(path.join(tmpdir(), 'mk2-workspace-source-test-'))
+  t.after(async () => {
+    assert.equal(path.dirname(root), tmpdir())
+    assert.ok(path.basename(root).startsWith('mk2-workspace-source-test-'))
+    await rm(root, { recursive: true, force: true })
+  })
+  const repoRoot = path.join(root, 'repo')
+  const cacheDir = path.join(root, 'cache')
+  await mkdir(path.join(repoRoot, 'packages', 'archives', 'codecs', 'iso', 'src'), {
+    recursive: true,
+  })
+  const git = (...args) =>
+    execFileSync('git', ['-C', repoRoot, ...args], { encoding: 'utf8', windowsHide: true }).trim()
+  git('init', '-q')
+  git('config', 'user.name', 'Workspace Source Test')
+  git('config', 'user.email', 'workspace-source@test.invalid')
+  await writeFile(path.join(repoRoot, 'package.json'), '{"type":"module"}')
+  await writeFile(
+    path.join(repoRoot, 'entry.ts'),
+    'export { value } from "@modkitx/archives/iso"\n',
+  )
+  await writeFile(
+    path.join(repoRoot, 'packages', 'archives', 'package.json'),
+    JSON.stringify({
+      name: '@modkitx/archives',
+      exports: { './iso': { import: './dist/codecs/iso/src/index.js' } },
+    }),
+  )
+  await writeFile(
+    path.join(repoRoot, 'packages', 'archives', 'codecs', 'iso', 'src', 'index.ts'),
+    'export const value = 42\n',
+  )
+  git('add', '.')
+  git('commit', '-qm', 'pinned workspace source fixture')
+  const options = {
+    repoRoot,
+    cacheDir,
+    commit: git('rev-parse', 'HEAD'),
+    operation: 'test.workspace-source',
+    corpusManifest: { kind: 'synthetic-workspace-source' },
+  }
+  const [first, second] = await Promise.all([
+    loadMk2('entry.ts', options),
+    loadMk2('entry.ts', options),
+  ])
+  assert.equal(first.module.value, 42)
+  assert.equal(second.module.value, 42)
+  assert.equal(first.evidence.cacheKey, second.evidence.cacheKey)
+})
+
 test('pinned source, exports, data, dependencies and every cache identity dimension', async () => {
   const root = await mkdtemp(path.join(tmpdir(), 'mk2-oracle-test-'))
   const repoRoot = path.join(root, 'repo')

@@ -22,8 +22,9 @@ export function buildOwnerParityReceipt({
   for (const result of report.results) {
     for (const owner of result.repositories ?? []) ownerCounts[owner] += 1
   }
+  const oracleExecutions = report.results.flatMap(result => result.oracleExecutions ?? [])
   return Object.freeze({
-    schemaVersion: 'owner-parity-aggregation-1',
+    schemaVersion: 'owner-parity-aggregation-2',
     verdict: blocking.length === 0 ? 'pass' : 'fail',
     command: 'pnpm parity',
     runner: fileEvidence(repoRoot, fileURLToPath(new URL('check.mjs', import.meta.url))),
@@ -43,6 +44,12 @@ export function buildOwnerParityReceipt({
     }),
     repositories,
     ownerResultCounts: ownerCounts,
+    oracle: Object.freeze({
+      repository: report.canonical.repository,
+      commit: report.canonical.commit,
+      rows: report.results.filter(result => (result.oracleExecutions?.length ?? 0) > 0).length,
+      executions: oracleExecutions.length,
+    }),
     blockingResultIds: blocking.map(result => result.id).sort(),
   })
 }
@@ -54,7 +61,7 @@ export function sha256File(path) {
 const same = (left, right) => JSON.stringify(left) === JSON.stringify(right)
 
 export function validateOwnerParityDocuments({ receipt, report }) {
-  if (receipt.schemaVersion !== 'owner-parity-aggregation-1') {
+  if (receipt.schemaVersion !== 'owner-parity-aggregation-2') {
     throw new Error(`unsupported owner parity receipt schema ${String(receipt.schemaVersion)}`)
   }
   if (receipt.verdict !== 'pass' || receipt.blockingResultIds?.length !== 0) {
@@ -69,9 +76,21 @@ export function validateOwnerParityDocuments({ receipt, report }) {
   if (!same(receipt.report.counts, report.counts)) {
     throw new Error('owner parity receipt counts contradict the report')
   }
+  if (
+    report.counts?.total <= 0 ||
+    report.counts.compared !== report.counts.total ||
+    report.counts.skipped !== 0 ||
+    report.counts.failed !== 0 ||
+    report.counts.real <= 0
+  ) {
+    throw new Error(
+      'owner parity report must contain only compared rows and a nonempty real corpus',
+    )
+  }
   const ids = new Set()
   const ownerIds = new Set(receipt.repositories.map(repository => repository.id))
   const ownerCounts = Object.fromEntries([...ownerIds].map(id => [id, 0]))
+  let oracleExecutions = 0
   for (const result of report.results ?? []) {
     if (ids.has(result.id)) throw new Error(`duplicate owner parity result id ${result.id}`)
     ids.add(result.id)
@@ -84,6 +103,26 @@ export function validateOwnerParityDocuments({ receipt, report }) {
       }
       ownerCounts[id] += 1
     }
+    if (!Array.isArray(result.oracleExecutions) || result.oracleExecutions.length === 0) {
+      throw new Error(`owner parity result ${result.id} has no exact oracle execution`)
+    }
+    for (const execution of result.oracleExecutions) {
+      if (
+        execution.oracleCommit !== report.canonical?.commit ||
+        execution.observeWorkingTree !== false ||
+        !/^[0-9a-f]{64}$/u.test(execution.cacheKey) ||
+        !/^[0-9a-f]{64}$/u.test(execution.sourceClosureDigest) ||
+        !/^[0-9a-f]{64}$/u.test(execution.loaderDigest) ||
+        !/^[0-9a-f]{64}$/u.test(execution.dependenciesDigest) ||
+        !/^[0-9a-f]{64}$/u.test(execution.corpusDigest) ||
+        !/^[0-9a-f]{64}$/u.test(execution.bundleSha256) ||
+        !Number.isSafeInteger(execution.sourceFiles) ||
+        execution.sourceFiles <= 0
+      ) {
+        throw new Error(`owner parity result ${result.id} has invalid exact oracle evidence`)
+      }
+      oracleExecutions += 1
+    }
   }
   if (ids.size !== report.counts?.total) {
     throw new Error(`owner parity result count ${ids.size} contradicts counts.total`)
@@ -91,5 +130,15 @@ export function validateOwnerParityDocuments({ receipt, report }) {
   if (!same(ownerCounts, receipt.ownerResultCounts)) {
     throw new Error('owner parity receipt ownerResultCounts contradict the report')
   }
-  return Object.freeze({ rows: ids.size, repositories: ownerIds.size })
+  if (
+    !same(receipt.oracle, {
+      repository: report.canonical.repository,
+      commit: report.canonical.commit,
+      rows: ids.size,
+      executions: oracleExecutions,
+    })
+  ) {
+    throw new Error('owner parity receipt oracle summary contradicts the report')
+  }
+  return Object.freeze({ rows: ids.size, repositories: ownerIds.size, oracleExecutions })
 }

@@ -31,6 +31,7 @@
       "path": "packages/testkit/test/fixtures/models/triangle.m3",
       "x3Extension": "extensions/blizzard/models",
       "canonicalModule": "extensions/blizzard/starcraft-2/codecs/m3/src/index.ts",
+      "canonicalAdditionalFiles": ["extensions/blizzard/starcraft-2/codecs/m3/src/structures.xml"],
       "canonicalExport": "createM3ModelCodec",
       "canonicalFactory": true,
       "baseline": "X3 богаче"
@@ -48,6 +49,7 @@
       },
       "x3Extension": "extensions/blizzard/models",
       "canonicalModule": "extensions/blizzard/starcraft-2/codecs/m3/src/index.ts",
+      "canonicalAdditionalFiles": ["extensions/blizzard/starcraft-2/codecs/m3/src/structures.xml"],
       "canonicalExport": "createM3ModelCodec",
       "canonicalFactory": true,
       "baseline": "X3 богаче"
@@ -168,6 +170,7 @@
       "path": "packages/testkit/test/fixtures/mk2-synthetic/minimal.cnc3.map",
       "x3Extension": "extensions/ea/sage",
       "canonicalModule": "extensions/ea/sage/codecs/cnc3-map/src/index.ts",
+      "canonicalModules": ["extensions/ea/sage/codecs/big/src/refpack.ts"],
       "canonicalAdapter": "cnc3-map",
       "allowPoorerReason": "Block 8 M5: the staging map namespace cannot extract chunk bytes yet.",
       "baseline": "паритет"

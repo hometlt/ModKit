@@ -233,6 +233,42 @@ export async function probeCanonical({ request, imported, inputBytes }) {
     ])
   }
 
+  function cnc3MapResult() {
+    if (
+      typeof imported.parseSageMap !== 'function' ||
+      typeof imported.decodeRefPack !== 'function'
+    ) {
+      throw new TypeError('canonical CkMp parser or RefPack decoder export is missing')
+    }
+    const map = imported.parseSageMap(bytes, imported.decodeRefPack)
+    const extractedBytes = map.chunks[0]?.byteLength ?? 0
+    const heightMaps = map.chunks.filter(
+      chunk => chunk.name === 'HeightMapData' && chunk.byteLength >= 12,
+    ).length
+    const rawChunks = map.chunks.length - heightMaps
+    return result('cnc3-map', [
+      source(
+        'common.view/namespace-entry-source',
+        ['list', 'open-entry', 'extract-bytes', 'product-reopen'],
+        {
+          entries: map.chunks.length,
+          files: map.chunks.length,
+          directories: 0,
+          complete: true,
+          extractedBytes,
+          extractedNonEmpty: extractedBytes > 0,
+          productReopenCompleted: true,
+        },
+      ),
+      treeSource({
+        nodes: 3 + map.names.length + map.chunks.length + heightMaps * 3,
+        maxDepth: heightMaps > 0 ? 3 : map.names.length + map.chunks.length > 0 ? 2 : 1,
+        kinds:
+          2 + Number(map.names.length > 0) + Number(heightMaps > 0) * 2 + Number(rawChunks > 0),
+      }),
+    ])
+  }
+
   function skuDefResult() {
     const text = new TextDecoder().decode(bytes)
     const directives = imported.parseSkuDef(text)
@@ -625,6 +661,7 @@ export async function probeCanonical({ request, imported, inputBytes }) {
     big: bigResult,
     'cnc3-data': cnc3DataResult,
     'cnc3-localization': localizationResult,
+    'cnc3-map': cnc3MapResult,
     'sage-skudef': skuDefResult,
     'manifest-metadata-only': manifestMetadataOnlyResult,
     'sc2-runtime-bounded': sc2RuntimeBoundedResult,

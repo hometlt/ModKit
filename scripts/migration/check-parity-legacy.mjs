@@ -105,10 +105,16 @@ if (!existsSync(baselinePath)) {
 
 const scratch = mkdtempSync(path.join(tmpdir(), 'x3-parity-legacy-'))
 const reportPath = path.join(scratch, 'latest.json')
+const receiptPath = path.join(scratch, 'owner-aggregation.receipt.json')
 const run = spawnSync(process.execPath, [path.join(repoRoot, 'scripts/parity/check.mjs')], {
   cwd: repoRoot,
   encoding: 'utf8',
-  env: { ...process.env, MODKIT_PARITY_REPORT: reportPath, MODKIT_PARITY_CANON_ROOT: legacyRoot },
+  env: {
+    ...process.env,
+    MODKIT_PARITY_REPORT: reportPath,
+    MODKIT_PARITY_RECEIPT: receiptPath,
+    MODKIT_PARITY_CANON_ROOT: legacyRoot,
+  },
   maxBuffer: 1 << 28,
 })
 
@@ -127,7 +133,21 @@ const baseline = JSON.parse(readFileSync(baselinePath, 'utf8'))
 /** Normalise the two documented sources of run-to-run noise, and nothing else. */
 const normalise = report => {
   const clone = structuredClone(report)
-  if (clone.x3 !== undefined) clone.x3 = { ...clone.x3, sha: '<provenance>', root: '<root>' }
+  if (clone.x3 !== undefined) {
+    clone.x3 = {
+      ...clone.x3,
+      sha: '<provenance>',
+      root: '<root>',
+      ...(Array.isArray(clone.x3.repositories)
+        ? {
+            repositories: clone.x3.repositories.map(repository => ({
+              ...repository,
+              commit: '<provenance>',
+            })),
+          }
+        : {}),
+    }
+  }
   if (clone.canonical !== undefined) clone.canonical = { ...clone.canonical, root: '<root>' }
   if (typeof clone.corpus === 'string') clone.corpus = '<corpus>'
   else if (clone.corpus !== undefined) clone.corpus = { ...clone.corpus, root: '<root>' }

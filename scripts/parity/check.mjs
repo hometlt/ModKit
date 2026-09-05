@@ -37,7 +37,10 @@ const repoRoot = resolve(import.meta.dirname, '..', '..')
 const canonicalRepositoryRoot = resolve(
   process.env.MODKIT_PARITY_CANON_ROOT ?? join(repoRoot, '..', 'references', 'modkitmk2'),
 )
-const oracleCacheRoot = resolve(repoRoot, '..', 'artifacts', 'legacy-oracle-cache', 'parity')
+const oracleCacheRoot = resolve(
+  process.env.MODKIT_PARITY_ORACLE_CACHE ??
+    join(repoRoot, '..', 'artifacts', 'legacy-oracle-cache', 'parity'),
+)
 const corpusPath = resolve(
   process.env.MODKIT_PARITY_CORPUS ?? join(import.meta.dirname, 'corpus.json'),
 )
@@ -371,7 +374,7 @@ async function locateSample(sample, temporaryRoot) {
   }
   if (typeof sample.mk2Relative === 'string') {
     if (sample.mk2Relative.replaceAll('\\', '/').startsWith('../')) {
-      const path = resolve(canonicalRepositoryRoot, sample.mk2Relative)
+      const path = resolve(repoRoot, sample.mk2Relative)
       return (await exists(path))
         ? { state: 'ready', path, publishedPath: sample.mk2Relative }
         : corpusFailure(`external reference corpus is missing: ${sample.mk2Relative}`)
@@ -462,7 +465,9 @@ async function resolveSample(sample, temporaryRoot) {
             : typeof sample.environment === 'string'
               ? 'environment'
               : typeof sample.mk2Relative === 'string'
-                ? 'legacy-checkout'
+                ? sample.mk2Relative.replaceAll('\\', '/').startsWith('../')
+                  ? 'external-reference'
+                  : 'pinned-oracle'
                 : 'repository',
       ...(sample.environment === undefined ? {} : { environment: sample.environment }),
       relativePath: located.publishedPath,
@@ -474,27 +479,51 @@ async function resolveSample(sample, temporaryRoot) {
 
 async function runCanonicalProbe(sample, file, publishedFile) {
   const inputBytes = await readFile(file)
-  const loaded = await loadMk2(sample.canonicalModule, {
-    repoRoot: canonicalRepositoryRoot,
-    commit: MK2_PIN,
-    cacheDir: oracleCacheRoot,
-    operation: 'parity.canonical-observe',
-    operationOptions: { sampleId: sample.id, adapter: sample.canonicalAdapter ?? 'model' },
-    corpusManifest: {
-      kind: sample.kind,
-      sampleId: sample.id,
-      publishedFile,
-      byteLength: inputBytes.byteLength,
-      sha256: createHash('sha256').update(inputBytes).digest('hex'),
-    },
-    loaderFiles: [fileURLToPath(new URL('modkitx-probe.mjs', import.meta.url))],
-    observeWorkingTree: false,
-  })
-  return probeCanonical({
+  const modules = [sample.canonicalModule, ...(sample.canonicalModules ?? [])]
+  const loaded = await Promise.all(
+    modules.map((entry, index) =>
+      loadMk2(entry, {
+        repoRoot: canonicalRepositoryRoot,
+        commit: MK2_PIN,
+        cacheDir: oracleCacheRoot,
+        operation: 'parity.canonical-observe',
+        operationOptions: {
+          sampleId: sample.id,
+          adapter: sample.canonicalAdapter ?? 'model',
+          moduleIndex: index,
+        },
+        corpusManifest: {
+          kind: sample.kind,
+          sampleId: sample.id,
+          publishedFile,
+          byteLength: inputBytes.byteLength,
+          sha256: createHash('sha256').update(inputBytes).digest('hex'),
+        },
+        additionalFiles: index === 0 ? (sample.canonicalAdditionalFiles ?? []) : [],
+        loaderFiles: [fileURLToPath(new URL('modkitx-probe.mjs', import.meta.url))],
+        observeWorkingTree: false,
+      }),
+    ),
+  )
+  const imported = Object.assign({}, ...loaded.map(item => item.module))
+  const observation = await probeCanonical({
     request: { ...sample, file, publishedFile },
-    imported: loaded.module,
+    imported,
     inputBytes,
   })
+  const oracleExecutions = loaded.map(({ evidence }) => ({
+    oracleCommit: evidence.oracleCommit,
+    entry: evidence.entry,
+    cacheKey: evidence.cacheKey,
+    sourceClosureDigest: evidence.sourceClosureDigest,
+    loaderDigest: evidence.loaderDigest,
+    dependenciesDigest: evidence.dependenciesDigest,
+    corpusDigest: evidence.corpusDigest,
+    bundleSha256: evidence.bundleSha256,
+    observeWorkingTree: evidence.observeWorkingTree ?? true,
+    sourceFiles: evidence.source.length,
+  }))
+  return { observation, oracleExecutions }
 }
 
 async function smokeDataSource(session, contract, major, options) {
@@ -658,10 +687,11 @@ async function evaluateSample(sample, temporaryRoot) {
     return { ...identity(sample), state: 'failed', detail: resolved.detail }
   }
   try {
-    const [canonical, x3] = await Promise.all([
+    const [canonicalRun, x3] = await Promise.all([
       runCanonicalProbe(sample, resolved.path, resolved.provenance.relativePath),
       probeX3(sample, resolved.path, temporaryRoot),
     ])
+    const canonical = canonicalRun.observation
     if (
       sample.expectFormatId !== undefined &&
       x3.available &&
@@ -689,6 +719,7 @@ async function evaluateSample(sample, temporaryRoot) {
         ? {}
         : { allowPoorerReason: sample.allowPoorerReason }),
       canonical,
+      oracleExecutions: canonicalRun.oracleExecutions,
       x3,
     }
   } catch (error) {
@@ -740,7 +771,14 @@ try {
     outputPath,
     await formatWithPrettier(JSON.stringify(report), { ...prettierConfig, parser: 'json' }),
   )
-  const blocking = blockingParityResults(report.results)
+  const blocking = [
+    ...new Map(
+      report.results
+        .filter(result => result.state !== 'compared')
+        .concat(blockingParityResults(report.results))
+        .map(result => [result.id, result]),
+    ).values(),
+  ]
   await writeFile(
     receiptPath,
     await formatWithPrettier(

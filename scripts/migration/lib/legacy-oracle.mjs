@@ -1,7 +1,17 @@
 /** Pinned MK2 source access and a reproducible, host-isolated Node oracle. */
 import { execFileSync } from 'node:child_process'
-import { createHash } from 'node:crypto'
-import { readFile, writeFile, mkdir, readdir, realpath, chmod, symlink } from 'node:fs/promises'
+import { createHash, randomUUID } from 'node:crypto'
+import {
+  readFile,
+  writeFile,
+  mkdir,
+  readdir,
+  realpath,
+  chmod,
+  symlink,
+  rename,
+  rm,
+} from 'node:fs/promises'
 import path from 'node:path'
 import { builtinModules, createRequire } from 'node:module'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -223,7 +233,12 @@ function targetFor(manifest, subpath) {
 }
 
 function sourceCandidates(file) {
-  const values = [file.replace(/\/dist\/src\//u, '/src/'), file.replace(/\/dist\//u, '/src/'), file]
+  const values = [
+    file.replace(/\/dist\/src\//u, '/src/'),
+    file.replace(/\/dist\//u, '/src/'),
+    file.replace(/\/dist\//u, '/'),
+    file,
+  ]
   return [
     ...new Set(
       values.flatMap(value => [
@@ -257,6 +272,43 @@ async function packageFiles(root) {
   return records
 }
 
+/**
+ * Publish immutable cache bytes atomically. `writeFile(..., { flag: 'wx' })` exposes the destination
+ * before the write is complete, so two concurrent oracle rows can observe a partial esbuild binary
+ * or pinned data file. A complete temporary file plus one rename keeps the shared cache readable at
+ * every instant; the winner and loser both verify the final digest.
+ */
+async function ensureImmutableFile(destination, bytes, expectedSha256, label) {
+  try {
+    if (sha256(await readFile(destination)) !== expectedSha256) {
+      throw new Error(`Corrupt ${label}: ${destination}`)
+    }
+    return
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error
+  }
+  await mkdir(path.dirname(destination), { recursive: true })
+  const temporary = `${destination}.${process.pid}.${randomUUID()}.tmp`
+  try {
+    await writeFile(temporary, bytes, { flag: 'wx' })
+    if (sha256(await readFile(temporary)) !== expectedSha256) {
+      throw new Error(`Corrupt temporary ${label}: ${temporary}`)
+    }
+    await chmod(temporary, 0o444)
+    try {
+      await rename(temporary, destination)
+    } catch (error) {
+      if (error.code !== 'EEXIST' && error.code !== 'EPERM') throw error
+    }
+  } finally {
+    await rm(temporary, { force: true })
+  }
+  if (sha256(await readFile(destination)) !== expectedSha256) {
+    throw new Error(`Corrupt ${label}: ${destination}`)
+  }
+  await chmod(destination, 0o444)
+}
+
 export async function loadMk2(entry, options = {}) {
   const {
     repoRoot,
@@ -286,21 +338,7 @@ export async function loadMk2(entry, options = {}) {
     const record = await source.read(file)
     inputs.set(file, record)
     const destination = path.join(pinnedSnapshotRoot, file)
-    try {
-      if (sha256(await readFile(destination)) !== record.sha256)
-        throw new Error(`Corrupt pinned snapshot: ${file}`)
-    } catch (error) {
-      if (error.code !== 'ENOENT') throw error
-      await mkdir(path.dirname(destination), { recursive: true })
-      try {
-        await writeFile(destination, record.bytes, { flag: 'wx' })
-      } catch (writeError) {
-        if (writeError.code !== 'EEXIST') throw writeError
-      }
-      if (sha256(await readFile(destination)) !== record.sha256)
-        throw new Error(`Corrupt pinned snapshot: ${file}`)
-      await chmod(destination, 0o444)
-    }
+    await ensureImmutableFile(destination, record.bytes, record.sha256, 'pinned snapshot')
     return record.bytes.toString('utf8')
   }
   const rootRequire = createRequire(path.join(source.repoRoot, 'package.json'))
@@ -563,21 +601,7 @@ export async function loadMk2(entry, options = {}) {
       const bytes = await readFile(path.join(record.root, item.path))
       if (sha256(bytes) !== item.sha256)
         throw new Error(`Dependency changed during load: ${record.name}/${item.path}`)
-      try {
-        if (sha256(await readFile(destination)) !== item.sha256)
-          throw new Error(`Corrupt dependency snapshot: ${destination}`)
-      } catch (error) {
-        if (error.code !== 'ENOENT') throw error
-        await mkdir(path.dirname(destination), { recursive: true })
-        try {
-          await writeFile(destination, bytes, { flag: 'wx' })
-        } catch (writeError) {
-          if (writeError.code !== 'EEXIST') throw writeError
-        }
-        if (sha256(await readFile(destination)) !== item.sha256)
-          throw new Error(`Corrupt dependency snapshot: ${destination}`)
-        await chmod(destination, 0o444)
-      }
+      await ensureImmutableFile(destination, bytes, item.sha256, 'dependency snapshot')
     }
   }
   for (const record of dependencies)
@@ -682,21 +706,20 @@ export async function loadMk2(entry, options = {}) {
     directory,
   }
   if (!cacheHit) {
-    await writeFile(bundlePath, output)
-    await writeFile(path.join(directory, 'manifest.json'), `${JSON.stringify(evidence, null, 2)}\n`)
+    await ensureImmutableFile(bundlePath, output, bundleSha256, 'oracle bundle')
+    const manifestPath = path.join(directory, 'manifest.json')
+    const manifestBytes = Buffer.from(`${JSON.stringify(evidence, null, 2)}\n`)
+    await ensureImmutableFile(manifestPath, manifestBytes, sha256(manifestBytes), 'oracle manifest')
     await mkdir(path.join(directory, 'loader'), { recursive: true })
     for (const item of loaderSnapshots) {
       const bytes = await readFile(item.path)
       if (sha256(bytes) !== item.sha256) throw new Error(`Loader changed during load: ${item.path}`)
-      await writeFile(item.snapshot, bytes)
-      await chmod(item.snapshot, 0o444)
+      await ensureImmutableFile(item.snapshot, bytes, item.sha256, 'loader snapshot')
     }
     // Snapshot every observed source/config/data file, including dirty mismatches, as pinned bytes.
     for (const record of inputs.values()) {
       const file = path.join(directory, 'source', record.path)
-      await mkdir(path.dirname(file), { recursive: true })
-      await writeFile(file, record.bytes)
-      await chmod(file, 0o444)
+      await ensureImmutableFile(file, record.bytes, record.sha256, 'oracle source snapshot')
     }
   }
   for (const item of loaderSnapshots)
