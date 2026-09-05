@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "codec": "sc2-data",
+  "requirementIds": [
+    "legacy/codec-manifest/modkit/sc2-data/feature/13517f4d7b0880dc",
+    "legacy/codec-manifest/modkit/sc2-data/feature/35c0b55bf61c4bba",
+    "legacy/codec-manifest/modkit/sc2-data/feature/54c4c73b52124350",
+    "legacy/codec-manifest/modkit/sc2-data/feature/9dae17bf068b309f",
+    "legacy/codec-manifest/modkit/sc2-data/feature/b51c6b20ac8cd4d0",
+    "legacy/codec-manifest/modkit/sc2-data/feature/cdd8e9bfb9e97b2f",
+    "legacy/codec-manifest/modkit/sc2-data/feature/d65bac1b13594400",
+    "legacy/codec-manifest/modkit/sc2-data/feature/da559d406e79b116",
+    "legacy/codec-manifest/modkit/sc2-data/feature/dca3c258ce6db08c",
+    "legacy/codec-manifest/modkit/sc2-data/feature/f8ceabab58c03adb",
+    "legacy/codec-manifest/modkit/sc2-data/operation/asset.search",
+    "legacy/codec-manifest/modkit/sc2-data/operation/asset.validate",
+    "legacy/codec-manifest/modkit/sc2-data/operation/edit.content",
+    "legacy/codec-manifest/modkit/sc2-data/operation/export.convert",
+    "legacy/codec-manifest/modkit/sc2-data/operation/sc2-data.references",
+    "legacy/codec-manifest/modkit/sc2-data/operation/sc2-data.resolve-inheritance",
+    "legacy/codec-manifest/modkit/sc2-data/operation/view.inspect"
+  ]
+}

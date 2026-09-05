@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "codec": "m3",
+  "requirementIds": [
+    "legacy/codec-manifest/modkit/m3/feature/1f235e68cd31c2fa",
+    "legacy/codec-manifest/modkit/m3/feature/3664f80d62a5dfcd",
+    "legacy/codec-manifest/modkit/m3/feature/b2a1b78ef3e1041d",
+    "legacy/codec-manifest/modkit/m3/feature/b5d28d944cda398d",
+    "legacy/codec-manifest/modkit/m3/feature/dfad1b27ebd848e8",
+    "legacy/codec-manifest/modkit/m3/operation/model.export",
+    "legacy/codec-manifest/modkit/m3/operation/model.read",
+    "legacy/codec-manifest/modkit/m3/operation/model.write"
+  ]
+}
