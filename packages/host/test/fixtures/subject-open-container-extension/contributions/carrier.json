@@ -19,7 +19,7 @@
     "artifactStages": ["authored"],
     "openIntents": ["probe", "inspect", "full", "export"],
     "match": {
-      "extensions": ["car"],
+      "extensions": ["car", "newcar"],
       "signatures": [{ "from": "start", "offset": 0, "bytesHex": "43415252" }]
     },
     "probe": {

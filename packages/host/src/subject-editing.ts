@@ -120,6 +120,50 @@ export function subjectEditTargetsFromDescriptor(
   ])
 }
 
+/**
+ * Accept an operation edit plan only when every target and edit belongs to the application-owned
+ * source bindings at the revision captured by `openSubject`.
+ */
+export function editPlanFromOperationForDescriptor(
+  descriptor: AnyDescriptor,
+  output: OperationOutput,
+): AssetEditPlan {
+  if (output.kind !== 'edit-plan') {
+    throw new ModkitError({
+      code: 'x3.host/edit-plan-expected',
+      message: `operation returned «${output.kind}», not an edit plan`,
+    })
+  }
+  const targets = subjectEditTargetsFromDescriptor(descriptor)
+  const targetIds = new Set(targets.map(target => target.targetId))
+  const sourceIds = new Set(targets.map(target => target.ownerSource.id))
+  const expected = canonicalJsonStringify(assetRevisionFromDescriptor(descriptor))
+  const plan = output.plan
+  for (const target of plan.targets) {
+    if (
+      !targetIds.has(target.targetId) ||
+      !sourceIds.has(target.ownerSource.id) ||
+      canonicalJsonStringify(target.expectedRevision) !== expected
+    ) {
+      throw new ModkitError({
+        code: 'x3.host/edit-plan-subject-mismatch',
+        message: `edit plan target «${target.targetId}» is not this subject at its open revision`,
+        context: { targetId: target.targetId },
+      })
+    }
+  }
+  for (const edit of plan.edits) {
+    if (!targetIds.has(edit.targetId) || !sourceIds.has(edit.source.id)) {
+      throw new ModkitError({
+        code: 'x3.host/edit-plan-subject-mismatch',
+        message: `edit «${edit.operation}» on «${edit.source.id}» is not this subject`,
+        context: { targetId: edit.targetId, sourceId: edit.source.id },
+      })
+    }
+  }
+  return plan
+}
+
 /** A payload store for hosts that stage nothing: every staged ref is refused honestly. */
 export const NO_STAGED_PAYLOADS: PayloadStore = Object.freeze({
   async open(ref: StagedPayloadRef) {
@@ -266,10 +310,6 @@ export function createSubjectEditing(options: SubjectEditingOptions): SubjectEdi
           payloads: options.payloads ?? NO_STAGED_PAYLOADS,
           authorization,
         })
-  const targetIds = new Set(targets.map(target => target.targetId))
-  const sourceIds = new Set(targets.map(target => target.ownerSource.id))
-  const expected = canonicalJsonStringify(revision)
-
   const editing: SubjectEditing = {
     revision,
     targets,
@@ -278,36 +318,7 @@ export function createSubjectEditing(options: SubjectEditingOptions): SubjectEdi
     ...(session === undefined ? {} : { session }),
     ...(editorPorts === undefined ? {} : { editorPorts }),
     planFromOperation(output) {
-      if (output.kind !== 'edit-plan') {
-        throw new ModkitError({
-          code: 'x3.host/edit-plan-expected',
-          message: `operation returned «${output.kind}», not an edit plan`,
-        })
-      }
-      const plan = output.plan
-      for (const target of plan.targets) {
-        if (
-          !targetIds.has(target.targetId) ||
-          !sourceIds.has(target.ownerSource.id) ||
-          canonicalJsonStringify(target.expectedRevision) !== expected
-        ) {
-          throw new ModkitError({
-            code: 'x3.host/edit-plan-subject-mismatch',
-            message: `edit plan target «${target.targetId}» is not this subject at its open revision`,
-            context: { targetId: target.targetId },
-          })
-        }
-      }
-      for (const edit of plan.edits) {
-        if (!targetIds.has(edit.targetId) || !sourceIds.has(edit.source.id)) {
-          throw new ModkitError({
-            code: 'x3.host/edit-plan-subject-mismatch',
-            message: `edit «${edit.operation}» on «${edit.source.id}» is not this subject`,
-            context: { targetId: edit.targetId, sourceId: edit.source.id },
-          })
-        }
-      }
-      return plan
+      return editPlanFromOperationForDescriptor(descriptor, output)
     },
   }
   return Object.freeze(editing)

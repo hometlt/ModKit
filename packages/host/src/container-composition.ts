@@ -14,6 +14,7 @@ import {
   type AssetSourceRef,
   type CodecContributionSpecV1Wire,
   type ContainerPackInputV1,
+  type ContainerPackReplaceInputV1,
   type JsonValue,
   type Lease,
   type NamespaceEntry,
@@ -210,7 +211,7 @@ function replacementsFromPlan(
   plan: AssetEditPlan,
   bindings: ReadonlyMap<string, EntryBinding>,
   budget: ResourceBudget,
-): ContainerPackInputV1['replacements'] {
+): ContainerPackReplaceInputV1['replacements'] {
   if (
     !isRecord(plan) ||
     !Array.isArray(plan.targets) ||

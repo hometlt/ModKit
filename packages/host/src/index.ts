@@ -110,6 +110,11 @@ export {
   type SubjectOpenCandidateState,
   type UnresolvedSubject,
 } from './subject-open.js'
+export {
+  invokeContainerPack,
+  type ContainerPackResult,
+  type InvokeContainerPackOptions,
+} from './container-pack.js'
 /*
  * Opening one entry of an already-open container as a subject in its own right.
  *

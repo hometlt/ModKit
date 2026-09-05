@@ -6,11 +6,15 @@
 
 import { contractId } from '@modkit/core'
 import type {
+  ContainerPackCreateInputV1,
+  ContainerPackInputV1,
+  ContainerPackReplaceInputV1,
   DataSourceMethodSurfaceV1Wire,
   RasterImageSource,
   SurfaceOf,
   TextDataSource,
 } from '@modkit/sdk'
+import { revisionId } from '@modkit/sdk'
 
 const sig = { signal: 'last' } as const
 const encoded = { contract: contractId('common.view/encoded-media'), major: 1 } as const
@@ -71,3 +75,30 @@ export const iterableWithWrapper: DataSourceMethodSurfaceV1Wire = {
   // @ts-expect-error — `iterable` must not carry `wrapper`
   wrapper: 'bare',
 }
+
+const containerRevision = revisionId('content-hash.sha256:container-pack-types')
+export const containerPackCreate = {
+  schemaVersion: 1,
+  mode: 'create',
+  expectedContainerRevision: containerRevision,
+  files: [{ name: 'Folder/Data.bin', bytesBase64: 'AAE=' }],
+} as const satisfies ContainerPackCreateInputV1 satisfies ContainerPackInputV1
+
+export const containerPackReplace = {
+  schemaVersion: 1,
+  expectedContainerRevision: containerRevision,
+  replacements: [
+    { entryId: 'entry-1', expectedRevision: containerRevision, bytesBase64: 'AAE=' },
+  ],
+} as const satisfies ContainerPackReplaceInputV1 satisfies ContainerPackInputV1
+
+const containerPackCreateAndReplace = {
+  schemaVersion: 1,
+  mode: 'create',
+  expectedContainerRevision: containerRevision,
+  files: [],
+  replacements: [],
+} as const
+
+// @ts-expect-error — the creation and replacement branches cannot be mixed
+export const containerPackCreateCannotReplace: ContainerPackInputV1 = containerPackCreateAndReplace

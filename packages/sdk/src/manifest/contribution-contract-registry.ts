@@ -319,6 +319,40 @@ export const validateCodecContributionSemantics: SpecSemanticValidator = manifes
     ),
   ]
   const formatIds = new Set(spec.formatRefs.map(format => format.formatId))
+  const containerPack = spec.operations.find(operation => operation.id === 'container.pack')
+  if (containerPack !== undefined) {
+    if (
+      !spec.roles.includes('container') ||
+      spec.sourceTopology !== 'single' ||
+      spec.probe.kind !== 'bytes'
+    ) {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/container-pack-topology-invalid',
+          'container.pack requires a container-role codec with single byte topology',
+          ['spec', 'operations', spec.operations.indexOf(containerPack)],
+        ),
+      )
+    }
+    const permissions = new Set(containerPack.requiredPermissions ?? [])
+    if (
+      containerPack.mutatesSource !== true ||
+      !permissions.has('read-source') ||
+      !permissions.has('write-source') ||
+      containerPack.outputKinds?.length !== 1 ||
+      containerPack.outputKinds[0] !== 'edit-plan'
+    ) {
+      diagnostics.push(
+        diagnostic(
+          'error',
+          'x3.sdk/container-pack-operation-invalid',
+          'container.pack must mutate the source, require read-source and write-source, and return only edit-plan',
+          ['spec', 'operations', spec.operations.indexOf(containerPack)],
+        ),
+      )
+    }
+  }
   const representationIds = new Set(
     spec.representations.map(representation => representation.id as string),
   )

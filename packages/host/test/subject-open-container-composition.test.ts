@@ -5,6 +5,7 @@ import {
   buildInventory,
   createExecutionBackendRegistry,
   createHostContributionContractRegistry,
+  invokeContainerPack,
   openSubject,
   parsePolicyLock,
 } from '@modkit/host'
@@ -33,6 +34,7 @@ declare global {
   var __x3ContainerSkipInspectRead: boolean | undefined
   var __x3ContainerDeclaredEntrySize: bigint | undefined
   var __x3ContainerNoEntries: boolean | undefined
+  var __x3ContainerMaliciousPlan: 'target' | 'revision' | undefined
 }
 
 const fixture = fileURLToPath(
@@ -47,8 +49,10 @@ const budget: ResourceBudget = {
   deadlineMs: 10_000,
 }
 
-function source(name = 'map.car'): ArtifactByteSource {
-  const bytes = new TextEncoder().encode('CARR-outer-secret')
+function source(
+  name = 'map.car',
+  bytes: Uint8Array = new TextEncoder().encode('CARR-outer-secret'),
+): ArtifactByteSource {
   const uri = `memory://container-composition/${name}`
   return Object.freeze({
     kind: 'bytes' as const,
@@ -90,6 +94,7 @@ async function harness(
   globalThis.__x3ContainerSkipInspectRead = options.skipInspectRead ?? false
   globalThis.__x3ContainerDeclaredEntrySize = options.declaredEntrySize
   globalThis.__x3ContainerNoEntries = options.noEntries ?? false
+  globalThis.__x3ContainerMaliciousPlan = undefined
   const input = await loadExtensionDirectory(fixture)
   const inventory = await buildInventory(
     [{ ...input, execution: { origin: 'bundled', allowTrustedInProcess: true } }],
@@ -132,6 +137,122 @@ async function openedComposition() {
 }
 
 describe('host-owned container composition', () => {
+  it('invokes typed creation through inventory on the application-owned empty target and reopens', async () => {
+    const built = await harness({ noEntries: true })
+    const targetSource = source('created.newcar', new Uint8Array())
+    const opened = await openSubject({
+      inventory: built.inventory,
+      source: targetSource,
+      path: 'created.newcar',
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'container-create', classes: ['read-source', 'write-source'] },
+      executionBackends: built.executionBackends,
+      budget,
+    })
+    expect(opened.state).toBe('opened')
+    if (opened.state !== 'opened') throw new Error(`empty target did not open: ${opened.reason}`)
+    expect(opened.selected.contributionId).toBe('org.example/test-carrier')
+    const packed = await invokeContainerPack(opened, {
+      schemaVersion: 1,
+      mode: 'create',
+      expectedContainerRevision: targetSource.revision,
+      files: [{ name: 'hello.txt', bytesBase64: 'aGVsbG8=' }],
+    })
+    expect(packed.state).toBe('ok')
+    if (packed.state !== 'ok') throw new Error('container create was rejected')
+    const edit = packed.output.plan.edits[0]
+    if (edit?.operation !== 'replace' || edit.payload.kind !== 'inline') {
+      throw new Error('container create did not return an inline replacement')
+    }
+    expect(edit.source).toEqual(targetSource.ref)
+    expect(edit.range).toEqual({ kind: 'bytes', offset: 0n, length: 0n })
+    await opened.session.dispose()
+
+    const reopened = await openSubject({
+      inventory: built.inventory,
+      source: source('created.newcar', edit.payload.bytes),
+      path: 'created.newcar',
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'container-reopen', classes: ['read-source'] },
+      executionBackends: built.executionBackends,
+      budget,
+    })
+    expect(reopened.state).toBe('opened')
+    if (reopened.state === 'opened') await reopened.session.dispose()
+  })
+
+  it('refuses mixed create/replace input before dispatching the provider handler', async () => {
+    const built = await harness({ noEntries: true })
+    const targetSource = source('invalid-create.newcar', new Uint8Array())
+    const opened = await openSubject({
+      inventory: built.inventory,
+      source: targetSource,
+      path: 'invalid-create.newcar',
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'container-create-invalid', classes: ['read-source', 'write-source'] },
+      executionBackends: built.executionBackends,
+      budget,
+    })
+    if (opened.state !== 'opened') throw new Error('empty target did not open')
+    await expect(
+      invokeContainerPack(
+        opened,
+        {
+          schemaVersion: 1,
+          mode: 'create',
+          expectedContainerRevision: targetSource.revision,
+          files: [],
+          replacements: [],
+        } as never,
+      ),
+    ).rejects.toMatchObject({ code: 'x3.host/container-pack-input-invalid' })
+    expect(globalThis.__x3ContainerComposition?.carrierPackCalls).toBe(0)
+
+    await expect(
+      invokeContainerPack(opened, {
+        schemaVersion: 1,
+        mode: 'create',
+        expectedContainerRevision: revisionId('content-hash.sha256:stale-container'),
+        files: [],
+      }),
+    ).rejects.toMatchObject({ code: 'x3.host/container-pack-stale-revision' })
+    expect(globalThis.__x3ContainerComposition?.carrierPackCalls).toBe(0)
+    await opened.session.dispose()
+  })
+
+  it('rejects provider plans aimed outside the application source or open revision', async () => {
+    for (const malicious of ['target', 'revision'] as const) {
+      const built = await harness({ noEntries: true })
+      const targetSource = source(`malicious-${malicious}.newcar`, new Uint8Array())
+      const opened = await openSubject({
+        inventory: built.inventory,
+        source: targetSource,
+        path: `malicious-${malicious}.newcar`,
+        intent: 'full',
+        target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+        grant: { id: 'container-create-malicious', classes: ['read-source', 'write-source'] },
+        executionBackends: built.executionBackends,
+        budget,
+      })
+      if (opened.state !== 'opened') throw new Error('empty target did not open')
+      globalThis.__x3ContainerMaliciousPlan = malicious
+      await expect(
+        invokeContainerPack(opened, {
+          schemaVersion: 1,
+          mode: 'create',
+          expectedContainerRevision: targetSource.revision,
+          files: [],
+        }),
+      ).rejects.toMatchObject({ code: 'x3.host/edit-plan-subject-mismatch' })
+      expect(globalThis.__x3ContainerComposition?.carrierPackCalls).toBe(1)
+      globalThis.__x3ContainerMaliciousPlan = undefined
+      await opened.session.dispose()
+    }
+  })
+
   it('selects the semantic alias through a declared prefix and synthesized directory', async () => {
     const { result, releases } = await openedComposition()
     expect(result.selected.contributionId).toBe('org.example/test-semantic')

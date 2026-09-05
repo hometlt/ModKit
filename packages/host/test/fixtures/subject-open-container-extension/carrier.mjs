@@ -20,6 +20,28 @@ const state = () =>
     carrierExtractCalls: 0,
   })
 
+function maybeCorruptPlan(plan) {
+  if (globalThis.__x3ContainerMaliciousPlan === 'target') {
+    return {
+      ...plan,
+      targets: plan.targets.map(target => ({ ...target, targetId: 'provider://foreign-target' })),
+    }
+  }
+  if (globalThis.__x3ContainerMaliciousPlan === 'revision') {
+    return {
+      ...plan,
+      targets: plan.targets.map(target => ({
+        ...target,
+        expectedRevision: {
+          ...target.expectedRevision,
+          compositionFingerprint: 'provider-forged-revision',
+        },
+      })),
+    }
+  }
+  return plan
+}
+
 function namespaceSource(source) {
   return Object.freeze({
     async list(prefix, page, signal) {
@@ -91,16 +113,43 @@ const definition = Object.freeze({
   ]),
   async detect(bytes) {
     return {
-      confidence: new TextDecoder().decode(bytes.subarray(0, 4)) === 'CARR' ? 0.95 : 0,
-      kind: 'magic',
-      note: 'test carrier signature',
+      confidence:
+        bytes.byteLength === 0
+          ? 0.9
+          : new TextDecoder().decode(bytes.subarray(0, 4)) === 'CARR'
+            ? 0.95
+            : 0,
+      kind: bytes.byteLength === 0 ? 'extension' : 'magic',
+      note: bytes.byteLength === 0 ? 'empty carrier creation target' : 'test carrier signature',
     }
   },
   async inspect(bytes, context) {
+    const creationTarget = bytes.byteLength === 0
     return {
-      summary: { kind: 'carrier', format: 'carrier', entries: 1, carrierVersion: 7 },
+      summary: {
+        kind: 'carrier',
+        format: 'carrier',
+        entries: creationTarget ? 0 : 1,
+        carrierVersion: 7,
+      },
       metadata: [],
-      traits: [{ id: 'container.entries', parameters: { count: 1 } }],
+      traits: [{ id: 'container.entries', parameters: { count: creationTarget ? 0 : 1 } }],
+      ...(creationTarget
+        ? {
+            operationStates: [
+              {
+                id: 'container.extract',
+                state: 'disabled',
+                reason: 'an empty carrier creation target has no entries',
+              },
+              {
+                id: 'export.raw',
+                state: 'disabled',
+                reason: 'an empty carrier creation target has no container bytes',
+              },
+            ],
+          }
+        : {}),
       ...(globalThis.__x3ContainerDisablePack
         ? {
             operationStates: [
@@ -130,6 +179,34 @@ const definition = Object.freeze({
         },
         pack: async input => {
           state().carrierPackCalls += 1
+          if (
+            creationTarget &&
+            input?.schemaVersion === 1 &&
+            input.mode === 'create' &&
+            input.expectedContainerRevision === context.input.revisions.revision &&
+            Array.isArray(input.files)
+          ) {
+            const body = input.files
+              .map(file => `${file.name}:${file.bytesBase64}`)
+              .sort()
+              .join('|')
+            const assembled = encoder.encode(`CARR:${body}`)
+            const plan = editPlanFromInput(context.input, {
+              planId: 'carrier-create',
+              edits: [
+                {
+                  operation: 'replace',
+                  range: { kind: 'bytes', offset: 0n, length: 0n },
+                  payload: { kind: 'inline', bytes: assembled },
+                },
+              ],
+              fidelity: { roundTrip: 'semantic', preservesUnknownData: false },
+            })
+            return {
+              kind: 'edit-plan',
+              plan: maybeCorruptPlan(plan),
+            }
+          }
           if (
             input?.schemaVersion !== 1 ||
             input.expectedContainerRevision !== context.input.revisions.revision ||

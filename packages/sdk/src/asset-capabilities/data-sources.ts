@@ -360,19 +360,48 @@ export interface ContainerPackEntryReplacementV1 {
   readonly bytesBase64: string
 }
 
+/** One complete named file supplied when creating a new container. */
+export interface ContainerPackCreateFileV1 {
+  /** Provider-portable relative path. The container codec owns path and case-policy validation. */
+  readonly name: string
+  /** Canonical standard base64. */
+  readonly bytesBase64: string
+}
+
 /**
  * Input contract of the shared `container.pack` operation.
  *
- * Only the host constructs this value. A semantic namespace codec returns entry-level edits; the
- * composed host session validates them and invokes the retained container session with this inert
- * request. The operation returns an ordinary `edit-plan` for the outer container source.
+ * The replacement form is constructed by the semantic-container composition host. It preserves
+ * the existing source and replaces only revision-pinned entries. `mode` is optional for v1 wire
+ * compatibility with the original host request.
  */
-export interface ContainerPackInputV1 {
+export interface ContainerPackReplaceInputV1 {
   readonly schemaVersion: 1
+  readonly mode?: 'replace'
   readonly expectedContainerRevision: RevisionId
   readonly replacements: readonly ContainerPackEntryReplacementV1[]
   readonly intent?: JsonValue
+  readonly files?: never
 }
+
+/**
+ * Public creation form of `container.pack`.
+ *
+ * An application opens a provider-recognised empty creation target through normal inventory,
+ * grant and activation, then invokes the published operation through its descriptor. The returned
+ * outer `edit-plan` replaces that target. This is an operation input, not a P11 service contract.
+ */
+export interface ContainerPackCreateInputV1 {
+  readonly schemaVersion: 1
+  readonly mode: 'create'
+  readonly expectedContainerRevision: RevisionId
+  readonly files: readonly ContainerPackCreateFileV1[]
+  readonly replacements?: never
+  readonly intent?: never
+}
+
+/** Version-one replacement or fresh-creation request for the standard `container.pack` operation. */
+export type ContainerPackInputV1 = ContainerPackReplaceInputV1 | ContainerPackCreateInputV1
 
 export interface NamespaceEntrySource {
   list(prefix: string, page: PageRequest, signal?: AbortSignal): Promise<Page<NamespaceEntry>>

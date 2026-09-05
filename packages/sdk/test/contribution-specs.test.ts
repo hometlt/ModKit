@@ -835,6 +835,59 @@ describe('A-1 contribution spec schemas', () => {
     }
   })
 
+  it('requires standard container.pack to use the mutating byte-container contract', async () => {
+    const containerSpec: CodecContributionSpecV1Wire = {
+      ...codecSpec,
+      roles: ['container'],
+      operations: [
+        {
+          id: 'container.pack',
+          handlerId: 'pack-container',
+          mutatesSource: true,
+          requiredPermissions: ['read-source', 'write-source'],
+          outputKinds: ['edit-plan'],
+        },
+      ],
+    }
+    const valid = await validateContributionManifest(
+      manifest(CODEC_CONTRIBUTION_CONTRACT, 'org.example/container-pack', containerSpec),
+      registry,
+    )
+    expect(valid.specState, JSON.stringify(valid.diagnostics)).toBe('validated')
+
+    const invalidTopology = await validateContributionManifest(
+      manifest(CODEC_CONTRIBUTION_CONTRACT, 'org.example/container-pack-invalid-topology', {
+        ...containerSpec,
+        roles: ['semantic'],
+      }),
+      registry,
+    )
+    expect(invalidTopology.specState).toBe('invalid')
+    expect(invalidTopology.diagnostics.map(item => item.code)).toContain(
+      'x3.sdk/container-pack-topology-invalid',
+    )
+
+    const invalidOperation = await validateContributionManifest(
+      manifest(CODEC_CONTRIBUTION_CONTRACT, 'org.example/container-pack-invalid-operation', {
+        ...containerSpec,
+        operations: [
+          {
+            id: 'container.pack',
+            handlerId: 'pack-container',
+            mutatesSource: false,
+            requiredPermissions: ['read-source'],
+            outputKinds: ['bytes'],
+          },
+        ],
+      }),
+      registry,
+    )
+    expect(invalidOperation.specState).toBe('invalid')
+    expect(invalidOperation.diagnostics.map(item => item.code)).toContain(
+      'x3.sdk/container-pack-operation-invalid',
+    )
+  })
+
   it('validates codec fidelity citations and their declared format/representation coordinates', async () => {
     const proof = {
       formatId: 'json',
