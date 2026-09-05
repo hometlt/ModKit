@@ -352,7 +352,10 @@ function declarationComments(text) {
       token === ts.SyntaxKind.SingleLineCommentTrivia ||
       token === ts.SyntaxKind.MultiLineCommentTrivia
     )
-      comments.push(scanner.getTokenText())
+      comments.push({
+        start: scanner.getTokenPos(),
+        end: scanner.getTextPos(),
+      })
   return comments
 }
 
@@ -547,6 +550,32 @@ const declarationIdentity = (declaration, binding) =>
     typeOnly: binding.typeOnly,
   })
 
+function declarationCommentBindings(text, parsed, filename) {
+  const comments = declarationComments(text)
+  const claimed = new Set()
+  const bindings = []
+  parsed.nodes.forEach((node, index) => {
+    const start = node.getStart()
+    const leadingStart = index ? parsed.nodes[index - 1].end : 0
+    const leading = comments.filter((comment, commentIndex) => {
+      if (comment.start < leadingStart || comment.end > start) return false
+      claimed.add(commentIndex)
+      return true
+    })
+    if (leading.length)
+      bindings.push({
+        atBlockStart: index === 0,
+        declaration: parsed.manifest[index].bindings.map(binding =>
+          declarationIdentity(parsed.manifest[index], binding),
+        ),
+        trivia: text.slice(leadingStart, start),
+      })
+  })
+  if (claimed.size !== comments.length)
+    throw new Error(`Declaration rewrite has unbound comment trivia: ${filename}`)
+  return bindings
+}
+
 function indexedDeclarationBindings(declarations, label) {
   const bindings = new Map()
   declarations.forEach((declaration, declarationIndex) => {
@@ -693,10 +722,10 @@ export async function applyImportDeclarationRewrites(original, rewrites, filenam
     if (JSON.stringify(destination.manifest) !== JSON.stringify(rewrite.to.declarations))
       throw new Error(`Destination declaration manifest mismatch: ${filename}`)
     if (
-      JSON.stringify(declarationComments(rewrite.from.text)) !==
-      JSON.stringify(declarationComments(rewrite.to.text))
+      JSON.stringify(declarationCommentBindings(rewrite.from.text, source, filename)) !==
+      JSON.stringify(declarationCommentBindings(rewrite.to.text, destination, filename))
     )
-      throw new Error(`Declaration rewrite changed comment trivia: ${filename}`)
+      throw new Error(`Declaration rewrite changed comment binding: ${filename}`)
     const blockStart = text.indexOf(rewrite.from.text)
     if (blockStart < 0 || text.split(rewrite.from.text).length - 1 !== 1)
       throw new Error(`Declaration rewrite occurrence mismatch: ${filename}`)

@@ -274,6 +274,32 @@ test('declaration-bound negative 2: statements and unbound imports fail', () => 
     )
 })
 
+test('declaration-bound rewrite cannot relocate a pragma comment', async t => {
+  const f = await topologyFixture(t)
+  const fromText = "// @ts-ignore\nimport { alpha } from './barrel.js'"
+  const preservedToText = "// @ts-ignore\nimport { alpha } from './a.js'"
+  const preservedOriginal = `${fromText}\nexport const value = alpha\n`
+  const preserved = buildDeclarationRewrite({
+    original: preservedOriginal,
+    fromText,
+    toText: preservedToText,
+    proof: f.proof,
+  })
+  assert.equal(
+    (await applyImportDeclarationRewrites(preservedOriginal, [preserved], 'fixture.ts', f.root))
+      .text,
+    preservedOriginal.replace(fromText, preservedToText),
+  )
+
+  const toText = "import { alpha } from './barrel.js'\n// @ts-ignore"
+  const original = preservedOriginal
+  const record = buildDeclarationRewrite({ original, fromText, toText, proof: f.proof })
+  await assert.rejects(
+    () => applyImportDeclarationRewrites(original, [record], 'fixture.ts', f.root),
+    /comment (binding|trivia)/u,
+  )
+})
+
 test('declaration-bound negative 3: binding additions, removals and identity changes fail', async t => {
   const f = await topologyFixture(t)
   const replacements = [
