@@ -1946,7 +1946,7 @@
           "manifest": "modkit-extensions-blizzard/node_modules/@modkit/blizzard-starcraft2/package.json",
           "version": "1.0.0",
           "reason": "M2 pinned bank source/test dependency through the actual installed/public package.",
-          "manifestSha256": "572d3fe560e2fbcbf215d2f628a11f51a059059245c80a8f73283fe3b900d2bc"
+          "manifestSha256": "9c1b862393a6be995a4a3830db66e9b43f58840bcc9e8cc1d7be20d0c73e965b"
         },
         {
           "specifier": "@modkit/codec-kit/crypto/sha1",
@@ -1981,7 +1981,7 @@
           "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
           "version": "1.0.0",
           "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
-          "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
+          "manifestSha256": "ee5f91494f574269bab6fc2c0f2e4e0fea62a43b2cdc026fcdc7a3eafd826086"
         },
         {
           "specifier": "@modkit/codec-kit/legacy/games",
@@ -1989,7 +1989,7 @@
           "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
           "version": "1.0.0",
           "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
-          "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
+          "manifestSha256": "ee5f91494f574269bab6fc2c0f2e4e0fea62a43b2cdc026fcdc7a3eafd826086"
         },
         {
           "specifier": "@modkit/codec-kit/legacy/language-contracts",
@@ -1997,7 +1997,7 @@
           "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
           "version": "1.0.0",
           "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
-          "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
+          "manifestSha256": "ee5f91494f574269bab6fc2c0f2e4e0fea62a43b2cdc026fcdc7a3eafd826086"
         },
         {
           "specifier": "@modkit/codec-kit/legacy/runtime",
@@ -2005,7 +2005,7 @@
           "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
           "version": "1.0.0",
           "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
-          "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
+          "manifestSha256": "ee5f91494f574269bab6fc2c0f2e4e0fea62a43b2cdc026fcdc7a3eafd826086"
         },
         {
           "specifier": "@modkit/codec-kit/legacy/sc2-support",
@@ -2013,7 +2013,7 @@
           "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
           "version": "1.0.0",
           "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
-          "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
+          "manifestSha256": "ee5f91494f574269bab6fc2c0f2e4e0fea62a43b2cdc026fcdc7a3eafd826086"
         },
         {
           "specifier": "@modkit/codec-kit/legacy/semantic",
@@ -2029,7 +2029,7 @@
           "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
           "version": "1.0.0",
           "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
-          "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
+          "manifestSha256": "ee5f91494f574269bab6fc2c0f2e4e0fea62a43b2cdc026fcdc7a3eafd826086"
         },
         {
           "specifier": "@modkit/codec-kit/legacy/semantic/layouts",
@@ -2037,7 +2037,7 @@
           "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
           "version": "1.0.0",
           "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
-          "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
+          "manifestSha256": "ee5f91494f574269bab6fc2c0f2e4e0fea62a43b2cdc026fcdc7a3eafd826086"
         },
         {
           "specifier": "@modkit/codec-kit/legacy/semantic/localization",
@@ -2045,7 +2045,7 @@
           "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
           "version": "1.0.0",
           "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
-          "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
+          "manifestSha256": "ee5f91494f574269bab6fc2c0f2e4e0fea62a43b2cdc026fcdc7a3eafd826086"
         },
         {
           "specifier": "@modkit/codec-kit/legacy/semantic/maps",
@@ -2053,7 +2053,7 @@
           "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
           "version": "1.0.0",
           "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
-          "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
+          "manifestSha256": "ee5f91494f574269bab6fc2c0f2e4e0fea62a43b2cdc026fcdc7a3eafd826086"
         },
         {
           "specifier": "@modkit/codec-kit/legacy/semantic/mods",
@@ -2061,7 +2061,7 @@
           "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
           "version": "1.0.0",
           "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
-          "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
+          "manifestSha256": "ee5f91494f574269bab6fc2c0f2e4e0fea62a43b2cdc026fcdc7a3eafd826086"
         },
         {
           "specifier": "@modkit/codec-kit/legacy/semantic/replays",
@@ -2069,7 +2069,7 @@
           "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
           "version": "1.0.0",
           "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
-          "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
+          "manifestSha256": "ee5f91494f574269bab6fc2c0f2e4e0fea62a43b2cdc026fcdc7a3eafd826086"
         },
         {
           "specifier": "@modkit/codec-kit/legacy/semantic/scripts",
@@ -2077,7 +2077,7 @@
           "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
           "version": "1.0.0",
           "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
-          "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
+          "manifestSha256": "ee5f91494f574269bab6fc2c0f2e4e0fea62a43b2cdc026fcdc7a3eafd826086"
         },
         {
           "specifier": "@modkit/codec-kit/legacy/vfs",
@@ -2085,7 +2085,7 @@
           "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
           "version": "1.0.0",
           "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
-          "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
+          "manifestSha256": "ee5f91494f574269bab6fc2c0f2e4e0fea62a43b2cdc026fcdc7a3eafd826086"
         },
         {
           "specifier": "@modkit/codec-kit/legacy/world",
@@ -2093,7 +2093,7 @@
           "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
           "version": "1.0.0",
           "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
-          "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
+          "manifestSha256": "ee5f91494f574269bab6fc2c0f2e4e0fea62a43b2cdc026fcdc7a3eafd826086"
         },
         {
           "specifier": "@modkit/codec-kit/legacy/xml",
@@ -2101,7 +2101,7 @@
           "manifest": "modkit-extensions-blizzard/node_modules/@modkit/codec-kit/package.json",
           "version": "1.0.0",
           "reason": "Installed dependency imported by the pinned M3 family compatibility copy.",
-          "manifestSha256": "a003444c4778ff59bb4ceb02ac6ab2ac08e5aeafd3a23a4e0b1f3556c837ae23"
+          "manifestSha256": "ee5f91494f574269bab6fc2c0f2e4e0fea62a43b2cdc026fcdc7a3eafd826086"
         },
         {
           "specifier": "@modkit/core",
@@ -2117,7 +2117,7 @@
           "manifest": "modkit-extensions-blizzard/node_modules/@modkit/host/package.json",
           "version": "0.1.0",
           "reason": "M2 pinned bank source/test dependency through the actual installed/public package.",
-          "manifestSha256": "f2609829e85fe8988d422bde2166cbf0ca5f9961d9754efb25af368fca6b2a36"
+          "manifestSha256": "087b5a5077bb403dfc9dfef8b5611d868b9c44aeff591b75b66b8d5427b95465"
         },
         {
           "specifier": "@modkit/host/node",
@@ -2125,7 +2125,7 @@
           "manifest": "modkit-extensions-blizzard/node_modules/@modkit/host/package.json",
           "version": "0.1.0",
           "reason": "M2 pinned bank source/test dependency through the actual installed/public package.",
-          "manifestSha256": "f2609829e85fe8988d422bde2166cbf0ca5f9961d9754efb25af368fca6b2a36"
+          "manifestSha256": "087b5a5077bb403dfc9dfef8b5611d868b9c44aeff591b75b66b8d5427b95465"
         },
         {
           "specifier": "crypto",
@@ -6099,10 +6099,31 @@
         },
         {
           "source": "packages/archives-processing/src/archive-session-manager.ts",
+          "specifier": "@modkitx/assets",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Registered M3 divergence preserves this original edge only in the isolated copied-unwired family tree."
+        },
+        {
+          "source": "packages/archives-processing/src/archive-session-manager.ts",
           "specifier": "@modkitx/core/errors",
           "kind": "copied-unwired",
           "count": 1,
           "reason": "Legacy package edge remains copied-unwired until its owner-specific C1 adapter is admitted."
+        },
+        {
+          "source": "packages/archives-processing/src/archive-session-manager.ts",
+          "specifier": "@modkitx/vfs",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Registered M3 divergence preserves this original edge only in the isolated copied-unwired family tree."
+        },
+        {
+          "source": "packages/archives-processing/src/core/asset-source.ts",
+          "specifier": "@modkitx/assets",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Registered M3 divergence preserves this original edge only in the isolated copied-unwired family tree."
         },
         {
           "source": "packages/archives-processing/src/core/asset-source.ts",
@@ -6126,6 +6147,13 @@
           "reason": "Legacy package edge remains copied-unwired until its owner-specific C1 adapter is admitted."
         },
         {
+          "source": "packages/archives-processing/src/core/registry.ts",
+          "specifier": "@modkitx/assets",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Registered M3 divergence preserves this original edge only in the isolated copied-unwired family tree."
+        },
+        {
           "source": "packages/archives-processing/src/index.ts",
           "specifier": "./registry.js",
           "kind": "copied-unwired",
@@ -6133,11 +6161,39 @@
           "reason": "Relative dependency belongs to a later owner milestone; this source remains copied-unwired."
         },
         {
+          "source": "packages/archives-processing/src/lib/index.ts",
+          "specifier": "./compression/index.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Registered M3 divergence preserves this original edge only in the isolated copied-unwired family tree."
+        },
+        {
+          "source": "packages/archives-processing/src/lib/index.ts",
+          "specifier": "./crypto/index.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Registered M3 divergence preserves this original edge only in the isolated copied-unwired family tree."
+        },
+        {
+          "source": "packages/archives-processing/src/vfs-mount.ts",
+          "specifier": "@modkitx/assets",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Registered M3 divergence preserves this original edge only in the isolated copied-unwired family tree."
+        },
+        {
           "source": "packages/archives-processing/src/vfs-mount.ts",
           "specifier": "@modkitx/core/errors",
           "kind": "copied-unwired",
           "count": 1,
           "reason": "Legacy package edge remains copied-unwired until its owner-specific C1 adapter is admitted."
+        },
+        {
+          "source": "packages/archives-processing/src/vfs-mount.ts",
+          "specifier": "@modkitx/vfs",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Registered M3 divergence preserves this original edge only in the isolated copied-unwired family tree."
         },
         {
           "source": "packages/archives-processing/test/vfs-browser-boundary.spec.ts",
@@ -19178,7 +19234,7 @@
       "source": "packages/archives-processing/src/archive-session-manager.ts",
       "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/archives-processing/src/archive-session-manager.ts",
       "sha256Mk2": "72734c0dc851209a91f1ceb116f5c17130f00d236fdf262527bcb056b6aac061",
-      "sha256Mk3": "b7fabb7dd9bb62cb742320395590e796825da4478635c588cdd34b6ca7014101",
+      "sha256Mk3": "72734c0dc851209a91f1ceb116f5c17130f00d236fdf262527bcb056b6aac061",
       "rewrites": [
         {
           "from": "'@modkitx/assets'",
@@ -19203,7 +19259,7 @@
       "source": "packages/archives-processing/src/core/asset-source.ts",
       "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/archives-processing/src/core/asset-source.ts",
       "sha256Mk2": "efddd7a658ea3adbc1d3793a3e61629c47d09abdf9be8184c78de3756bef2425",
-      "sha256Mk3": "82512429a14e63ea3374adb63f34dc451b68db71faf7adb5f32e3ac892449cf1",
+      "sha256Mk3": "efddd7a658ea3adbc1d3793a3e61629c47d09abdf9be8184c78de3756bef2425",
       "rewrites": [
         {
           "from": "'@modkitx/assets'",
@@ -19237,7 +19293,7 @@
       "source": "packages/archives-processing/src/core/registry.ts",
       "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/archives-processing/src/core/registry.ts",
       "sha256Mk2": "31891b0d6f71f126f766662d985f32f03c399f1f08be0d6cab9ef46d59232f71",
-      "sha256Mk3": "44c5b11135bb42c5991dcf423f40d832d75442f1c479aad6542b68aae0655a42",
+      "sha256Mk3": "31891b0d6f71f126f766662d985f32f03c399f1f08be0d6cab9ef46d59232f71",
       "rewrites": [
         {
           "from": "'@modkitx/assets'",
@@ -19299,7 +19355,7 @@
       "source": "packages/archives-processing/src/lib/index.ts",
       "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/archives-processing/src/lib/index.ts",
       "sha256Mk2": "b9a3abb9f045c637fc39115cbe272f40e41670cfb322661b83b8d30a5ecea1e6",
-      "sha256Mk3": "85a64c6471effc03a267cde56e331969db947f077c6bc21758da783b71211854",
+      "sha256Mk3": "b9a3abb9f045c637fc39115cbe272f40e41670cfb322661b83b8d30a5ecea1e6",
       "rewrites": [
         {
           "from": "'./compression/index.js'",
@@ -19338,7 +19394,7 @@
       "source": "packages/archives-processing/src/vfs-mount.ts",
       "destination": "modkit-extensions-blizzard/starcraft2/src/lib/mk2/packages/archives-processing/src/vfs-mount.ts",
       "sha256Mk2": "c6d5c2c16ab2b9b6f168160603f678d176cad2b0c3d134d9e689775cd136b4c4",
-      "sha256Mk3": "c13e0c3436f74908e240366356b68053bcf4feb9f2a6dbceded2ebae86a941ed",
+      "sha256Mk3": "c6d5c2c16ab2b9b6f168160603f678d176cad2b0c3d134d9e689775cd136b4c4",
       "rewrites": [
         {
           "from": "'@modkitx/assets'",

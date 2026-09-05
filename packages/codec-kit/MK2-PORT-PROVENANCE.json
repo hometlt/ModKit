@@ -4,7 +4,7 @@
   "scope": "m1-libs",
   "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
   "declarationDigest": "31029f8d7333d3d676ad2e8b58be5e80e9f28f64658c640eeea84519d3fa6875",
-  "divergenceDigest": "703187d943cfe979c33e7b595f9ca4317387cf7760adf7c4dcbab99a2e0d5b57",
+  "divergenceDigest": "f79bad3f8c844bbdc65e02ed1aa018e806c950aeefb9d4f3cc77ff38e3da49bf",
   "copiedAt": "2026-09-04",
   "adapters": [
     {
