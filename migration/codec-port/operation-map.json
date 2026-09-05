@@ -2367,32 +2367,32 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-strings.json",
+      "handlerId": "validate",
       "id": "legacy/codec-manifest/modkit/sc2-strings/operation/asset.validate",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "asset.validate"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-strings.json",
+      "handlerId": "edit-strings",
       "id": "legacy/codec-manifest/modkit/sc2-strings/operation/edit.content",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "edit.content"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-strings.json",
+      "handlerId": "export-convert",
       "id": "legacy/codec-manifest/modkit/sc2-strings/operation/export.convert",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "export.convert"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-strings.json",
+      "handlerId": "references",
       "id": "legacy/codec-manifest/modkit/sc2-strings/operation/sc2-strings.references",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "blizzard/sc2-strings.references"
     },
     {
       "contribution": null,
@@ -2402,11 +2402,11 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-strings.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/sc2-strings/operation/view.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
       "contribution": null,

@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "codec": "sc2-strings",
+  "requirementIds": [
+    "legacy/codec-manifest/modkit/sc2-strings/feature/7bb7815d3cd1be7d",
+    "legacy/codec-manifest/modkit/sc2-strings/feature/98b3da8119c0b801",
+    "legacy/codec-manifest/modkit/sc2-strings/feature/c10fd53344cca6e8",
+    "legacy/codec-manifest/modkit/sc2-strings/feature/d16933fb127f448a",
+    "legacy/codec-manifest/modkit/sc2-strings/operation/view.inspect",
+    "legacy/codec-manifest/modkit/sc2-strings/operation/asset.validate",
+    "legacy/codec-manifest/modkit/sc2-strings/operation/sc2-strings.references",
+    "legacy/codec-manifest/modkit/sc2-strings/operation/export.convert",
+    "legacy/codec-manifest/modkit/sc2-strings/operation/edit.content"
+  ]
+}
