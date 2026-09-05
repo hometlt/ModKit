@@ -264,12 +264,9 @@ describe('13C real-browser viewer host', () => {
           modkit: { ui: Record<string, unknown>; host: Record<string, unknown> }
         }
       ).modkit
-      interface Navigation {
-        readonly port: {
-          readonly scope: { readonly sessionId: string; readonly subject: string }
-          open(request: unknown, signal?: AbortSignal): Promise<unknown>
-        }
-        dispose(reason?: string): void
+      interface NavigationPort {
+        readonly scope: { readonly sessionId: string; readonly subject: string }
+        open(request: unknown, signal?: AbortSignal): Promise<unknown>
       }
       interface PreviewHandle {
         unmount(): Promise<void> | void
@@ -278,13 +275,19 @@ describe('13C real-browser viewer host', () => {
         readonly container: HTMLElement
         readonly handle: PreviewHandle
       }
-      const createNavigation = host['createScopedViewerSubjectNavigation'] as (options: {
-        readonly scope: { readonly sessionId: string; readonly subject: string }
-        open(
-          subject: { readonly identity: { readonly key: string } },
-          signal: AbortSignal,
-        ): Promise<void>
-      }) => Navigation
+      const exposeSubjectRpc = host['exposeSubjectRpc'] as (options: Record<string, unknown>) => {
+        close(reason: string): Promise<void>
+      }
+      const connectSubjectRpc = host['connectSubjectRpc'] as (
+        options: Record<string, unknown>,
+      ) => Promise<{
+        open(path: string): Promise<{
+          state: string
+          snapshot: { sessionId: string }
+          session: { subjectNavigation?: NavigationPort; dispose(): Promise<void> }
+        }>
+        close(reason: string): Promise<void>
+      }>
       const createGraph = host['createFieldRelationGraphSource'] as (
         options: Record<string, unknown>,
       ) => Promise<unknown>
@@ -372,14 +375,91 @@ describe('13C real-browser viewer host', () => {
       }
       const facts = createFallbackFacts({ descriptor, relations: graph })
       const opened: { readonly session: string; readonly key: string }[] = []
-      const navigation = (sessionId: string): Navigation =>
-        createNavigation({
-          scope: { sessionId, subject: descriptor.subjectUri },
-          async open(subject) {
-            opened.push({ session: sessionId, key: subject.identity.key })
-          },
-        })
-      const mount = async (sessionId: string, managed?: Navigation): Promise<Mounted> => {
+      let finishLate: () => void = () => undefined
+      const waitForLate = new Promise<void>(resolve => {
+        finishLate = resolve
+      })
+      let lateSignal: AbortSignal | undefined
+      let lateOpened = false
+      const rpcChannel = new MessageChannel()
+      const rpcSession = 'chromium-subject-navigation'
+      const assetSession = (subjectUri: string) => ({
+        revision: 'content-hash.sha256:browser-rpc',
+        state: () => 'live',
+        descriptor: async () => ({ subjectUri }),
+        dataSource: async () => {
+          throw new Error('unused fixture data source')
+        },
+        operations: () => ({
+          invoke: async () => ({ state: 'rejected', reason: 'unused', diagnostics: [] }),
+          dispose: async () => undefined,
+        }),
+        events: async function* () {
+          yield* []
+        },
+        dispose: async () => undefined,
+      })
+      const exposure = exposeSubjectRpc({
+        port: rpcChannel.port1,
+        session: rpcSession,
+        async open(path: string) {
+          return {
+            snapshot: {
+              state: 'opened',
+              sessionId: path,
+              descriptor,
+              selected: { contributionId: 'fixture/catalog', variantId: 'main', confidence: 1 },
+              candidates: [],
+              diagnostics: [],
+            },
+            session: assetSession(descriptor.subjectUri),
+          }
+        },
+        async navigate(
+          request: { sourceSessionId: string; target: { identity: { key: string } } },
+          signal: AbortSignal,
+        ) {
+          if (request.sourceSessionId === 'session-late') {
+            lateSignal = signal
+            await waitForLate
+            if (!signal.aborted) lateOpened = true
+          }
+          const subjectUri = `memory://fixture/catalog.xml#fixture%2Fweapon/${request.target.identity.key}`
+          return {
+            snapshot: {
+              state: 'opened',
+              sessionId: `${request.sourceSessionId}:${request.target.identity.key}`,
+              descriptor: { ...descriptor, subjectUri },
+              selected: { contributionId: 'fixture/weapon', variantId: 'main', confidence: 1 },
+              candidates: [],
+              diagnostics: [],
+            },
+            session: assetSession(subjectUri),
+          }
+        },
+      })
+      const client = await connectSubjectRpc({
+        port: rpcChannel.port2,
+        session: rpcSession,
+        async onNavigate(event: {
+          sourceSessionId: string
+          target: string
+          result: { session: { dispose(): Promise<void> } }
+        }) {
+          const key = decodeURIComponent(event.target.slice(event.target.lastIndexOf('/') + 1))
+          opened.push({ session: event.sourceSessionId, key })
+          await event.result.session.dispose()
+        },
+      })
+      const rpcOpen = async (sessionId: string) => {
+        const result = await client.open(sessionId)
+        if (result.state !== 'opened') throw new Error(`RPC subject did not open: ${sessionId}`)
+        return result.session
+      }
+      const mount = async (
+        sessionId: string,
+        rpc?: { subjectNavigation?: NavigationPort; dispose(): Promise<void> },
+      ): Promise<Mounted> => {
         const container = document.createElement('section')
         container.dataset['session'] = sessionId
         root.append(container)
@@ -400,9 +480,11 @@ describe('13C real-browser viewer host', () => {
               async dataSource() {
                 return { value: facts }
               },
-              ...(managed === undefined ? {} : { subjectNavigation: managed.port }),
+              ...(rpc?.subjectNavigation === undefined
+                ? {}
+                : { subjectNavigation: rpc.subjectNavigation }),
               async dispose() {
-                managed?.dispose(`${sessionId}-disposed`)
+                await rpc?.dispose()
               },
             }
           },
@@ -429,18 +511,18 @@ describe('13C real-browser viewer host', () => {
       }
       const settle = () => new Promise<void>(resolve => setTimeout(resolve, 0))
 
-      const firstNavigation = navigation('session-a')
-      const first = await mount('session-a', firstNavigation)
+      const firstRpc = await rpcOpen('session-a')
+      const first = await mount('session-a', firstRpc)
       relation(first.container, 'Gauss Rifle').click()
       relation(first.container, 'Missing Weapon').click()
       await settle()
 
-      const secondNavigation = navigation('session-b')
-      const second = await mount('session-b', secondNavigation)
+      const secondRpc = await rpcOpen('session-b')
+      const second = await mount('session-b', secondRpc)
       relation(second.container, 'Gauss Rifle').click()
       await settle()
-      const crossSession = await firstNavigation.port.open({
-        scope: secondNavigation.port.scope,
+      const crossSession = await firstRpc.subjectNavigation?.open({
+        scope: secondRpc.subjectNavigation?.scope,
         target: 'memory://fixture/catalog.xml#fixture%2Fweapon/GaussRifle',
       })
 
@@ -449,21 +531,8 @@ describe('13C real-browser viewer host', () => {
       closedTarget.click()
       await settle()
 
-      let finishLate: () => void = () => undefined
-      const waitForLate = new Promise<void>(resolve => {
-        finishLate = resolve
-      })
-      let lateSignal: AbortSignal | undefined
-      let lateOpened = false
-      const lateNavigation = createNavigation({
-        scope: { sessionId: 'session-late', subject: descriptor.subjectUri },
-        async open(_subject, signal) {
-          lateSignal = signal
-          await waitForLate
-          if (!signal.aborted) lateOpened = true
-        },
-      })
-      const late = await mount('session-late', lateNavigation)
+      const lateRpc = await rpcOpen('session-late')
+      const late = await mount('session-late', lateRpc)
       relation(late.container, 'Gauss Rifle').click()
       await settle()
       await late.handle.unmount()
@@ -482,6 +551,8 @@ describe('13C real-browser viewer host', () => {
       await first.handle.unmount()
       await second.handle.unmount()
       await withoutPort.handle.unmount()
+      await client.close('browser test complete')
+      await exposure.close('browser test complete')
       return snapshot
     })
 

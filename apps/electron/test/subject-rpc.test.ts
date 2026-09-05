@@ -7,8 +7,12 @@
  * No Electron binary is involved; the adapters, surfaces and endpoints are the production ones.
  */
 import { MessageChannel, type MessagePort as NodeMessagePort } from 'node:worker_threads'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { revisionId, type ArtifactByteSource } from '@modkit/sdk'
+import { revisionId, type ArtifactByteSource, type NamespaceEntrySource } from '@modkit/sdk'
+import { rootSubject, serializeSubjectRef } from '@modkit/sdk/subjects'
+import { subjectOpenSnapshot } from '@modkit/host'
 import {
   createEndpoint,
   createStandardSurfaceRegistry,
@@ -20,6 +24,7 @@ import { ABI_ASSET_SESSION } from '@modkit/host/execution'
 import { ELECTRON_SUBJECT_SERVICES, ELECTRON_SUBJECT_SERVICES_URL } from '../src/index.js'
 import {
   connectElectronSubjectRpc,
+  createElectronNestedSubjectNavigator,
   createElectronSubjectServices,
   exposeElectronSubjectRpc,
   resolveElectronPresentationPlan,
@@ -27,9 +32,13 @@ import {
   type SubjectRpcClient,
   type SubjectRpcExposure,
 } from '../src/index.js'
+import {
+  openElectronNavigatedSubject,
+  type ElectronSubjectOpenResult,
+} from '../src/subject-client.js'
 
-function memorySource(name: string, text: string): ArtifactByteSource {
-  const bytes = new TextEncoder().encode(text)
+function memorySource(name: string, value: string | Uint8Array): ArtifactByteSource {
+  const bytes = typeof value === 'string' ? new TextEncoder().encode(value) : value
   return {
     kind: 'bytes',
     ref: { id: `memory://electron/${name}`, uri: `memory://electron/${name}` },
@@ -72,7 +81,13 @@ afterEach(async () => {
   for (const close of closers.splice(0)) await close().catch(() => undefined)
 })
 
-async function rpcPair(open: ElectronSubjectOpener): Promise<{
+async function rpcPair(
+  open: ElectronSubjectOpener,
+  options: {
+    readonly navigate?: Parameters<typeof exposeElectronSubjectRpc>[0]['navigate']
+    readonly onNavigate?: Parameters<typeof connectElectronSubjectRpc>[0]['onNavigate']
+  } = {},
+): Promise<{
   client: SubjectRpcClient
   exposure: SubjectRpcExposure
 }> {
@@ -83,11 +98,13 @@ async function rpcPair(open: ElectronSubjectOpener): Promise<{
     listener: 'emitter-event',
     session,
     open,
+    ...(options.navigate === undefined ? {} : { navigate: options.navigate }),
   })
   const client = await connectElectronSubjectRpc({
     // a Node MessagePort is an EventTarget: the same `event-target` style the DOM port uses
     port: channel.port2 as unknown as MessagePortLike,
     session,
+    ...(options.onNavigate === undefined ? {} : { onNavigate: options.onNavigate }),
   })
   closers.push(
     () => client.close('test finished'),
@@ -201,6 +218,92 @@ describe('Electron subject RPC — the production pair without the binary', () =
     // structurally by the endpoint, not by a lingering session table
     await expect(opened.session.dataSource('common.view/tree-data-source', 1)).rejects.toThrow()
   }, 30_000)
+
+  it('opens an authoritative container-entry ref through the main policy and renderer route', async () => {
+    const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
+    const services = await createElectronSubjectServices([
+      join(repositoryRoot, 'extensions', 'archives'),
+    ])
+    const bytes = new Uint8Array(
+      readFileSync(join(repositoryRoot, 'apps', 'web', 'public', 'samples', 'sample.zip')),
+    )
+    const grant = { id: 'electron-rpc-nested', classes: ['read-source'] } as const
+    const budget = {
+      maxInputBytes: 10_000_000n,
+      maxDepth: 128,
+      maxNodes: 100_000,
+      maxScalarBytes: 1_000_000,
+      maxDiagnostics: 100,
+    }
+    let sequence = 0
+    const snapshot = async (
+      result: Awaited<ReturnType<typeof services.open>>,
+      diagnostics = result.diagnostics,
+    ) => {
+      const opened = subjectOpenSnapshot({
+        result,
+        sessionId: () => `electron-nested-${++sequence}`,
+        diagnostics,
+      })
+      return result.state === 'opened'
+        ? { snapshot: opened, session: result.session }
+        : { snapshot: opened }
+    }
+    const opener: ElectronSubjectOpener = async path => {
+      const result = await services.open({
+        source: memorySource(path, bytes),
+        path,
+        intent: 'full',
+        grant,
+        budget,
+      })
+      return snapshot(result)
+    }
+    const navigate = createElectronNestedSubjectNavigator({
+      services,
+      grant: () => grant,
+      budget,
+      async answer(_parent, nested, diagnostics) {
+        return snapshot(nested.result, [...nested.result.diagnostics, ...diagnostics])
+      },
+    })
+    const staged = new Map<string, ElectronSubjectOpenResult>()
+    let child: ElectronSubjectOpenResult | undefined
+    const { client } = await rpcPair(opener, {
+      navigate,
+      onNavigate: event =>
+        openElectronNavigatedSubject(event, {
+          ownsSource: sessionId => sessionId === 'electron-nested-1',
+          hasTarget: target => staged.has(target),
+          stage: (target, result) => void staged.set(target, result),
+          async open(target) {
+            child = staged.get(target)
+          },
+          discard: target => void staged.delete(target),
+        }),
+    })
+
+    const parent = await client.open('sample.zip')
+    expect(parent.state).toBe('opened')
+    if (parent.state !== 'opened') throw new Error('the archive did not open')
+    const listing = await parent.session.dataSource('common.view/namespace-entry-source', 1)
+    const page = await (listing.value as NamespaceEntrySource).list('', { limit: 64 })
+    const entry = page.items.find(item => item.kind === 'file' && item.path.endsWith('.csv'))
+    if (entry === undefined) throw new Error('the archive lists no CSV entry')
+    const entryRef = await (listing.value as NamespaceEntrySource).openEntry(entry.id)
+    const target = serializeSubjectRef(rootSubject({ id: entryRef.value.uri }))
+    await entryRef.release()
+    await listing.release()
+
+    const navigation = parent.session.subjectNavigation
+    if (navigation === undefined) throw new Error('the attached session has no navigation port')
+    await expect(navigation.open(target)).resolves.toEqual({ state: 'opened' })
+    if (child?.state !== 'opened') throw new Error('the renderer route received no opened child')
+    expect((await child.session.descriptor())['subjectUri']).toBe(target)
+    await child.session.dispose()
+    await parent.session.dispose()
+    await services.dispose()
+  }, 60_000)
 
   it('unresolved subjects cross as inert snapshots; never-attached sessions are disposed on close', async () => {
     let disposed = 0

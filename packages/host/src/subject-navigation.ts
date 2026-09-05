@@ -9,7 +9,7 @@ import { parseSubjectRef, serializeSubjectRef, type SubjectRef } from '@modkit/s
 export interface ScopedViewerSubjectNavigationOptions {
   readonly scope: ViewerSubjectNavigationScope
   readonly signal?: AbortSignal
-  open(subject: SubjectRef, signal: AbortSignal): Promise<void>
+  open(subject: SubjectRef, signal: AbortSignal): Promise<ViewerSubjectNavigationResult | void>
 }
 
 export interface ManagedViewerSubjectNavigation {
@@ -109,8 +109,8 @@ export function createScopedViewerSubjectNavigation(
       const linked = linkedSignal([lifecycle.signal, options.signal, signal])
       try {
         if (linked.signal.aborted) return rejected('cancelled')
-        await options.open(target, linked.signal)
-        return linked.signal.aborted ? rejected('cancelled') : OPENED
+        const result = await options.open(target, linked.signal)
+        return linked.signal.aborted ? rejected('cancelled') : (result ?? OPENED)
       } catch (error) {
         if (linked.signal.aborted) return rejected('cancelled')
         throw error

@@ -27,10 +27,42 @@ export type ElectronSubjectOpenResult = SubjectClientOpenResult
 /** `open`, `edit` (the S14 editing arm) and `close`. */
 export type ElectronSubjectClient = SubjectRpcClient
 
+export type ElectronSubjectNavigationEvent = Parameters<
+  NonNullable<import('@modkit/host').ConnectSubjectRpcOptions['onNavigate']>
+>[0]
+
+export interface ElectronSubjectNavigationRoute {
+  readonly ownsSource: (sessionId: string) => boolean
+  readonly hasTarget: (target: string) => boolean
+  readonly stage: (target: string, result: ElectronSubjectOpenResult) => void
+  readonly open: (target: string) => Promise<void>
+  readonly discard: (target: string) => void
+}
+
+/** Renderer-owned handoff from an exact attached RPC child into the existing editor route. */
+export async function openElectronNavigatedSubject(
+  event: ElectronSubjectNavigationEvent,
+  route: ElectronSubjectNavigationRoute,
+): Promise<void> {
+  if (!route.ownsSource(event.sourceSessionId) || route.hasTarget(event.target)) {
+    await event.result.session.dispose()
+    throw new Error('subject navigation source or target is unavailable in this window')
+  }
+  route.stage(event.target, event.result)
+  try {
+    await route.open(event.target)
+  } catch (error) {
+    route.discard(event.target)
+    await event.result.session.dispose().catch(() => undefined)
+    throw error
+  }
+}
+
 export interface ConnectElectronSubjectClientOptions {
   readonly port: MessagePortLike | MessagePort
   readonly session: string
   readonly onDiagnostic?: (diagnostic: { code: string; message: string }) => void
+  readonly onNavigate?: NonNullable<import('@modkit/host').ConnectSubjectRpcOptions['onNavigate']>
 }
 
 export async function connectElectronSubjectClient(
@@ -42,5 +74,6 @@ export async function connectElectronSubjectClient(
     moduleUrl: ELECTRON_SUBJECT_SERVICES_URL,
     contributionId: 'modkit.app.electron/subject-services',
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
+    ...(options.onNavigate === undefined ? {} : { onNavigate: options.onNavigate }),
   })
 }

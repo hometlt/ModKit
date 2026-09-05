@@ -191,7 +191,14 @@ export type ViewerSubjectNavigationResult =
   | {
       readonly state: 'rejected'
       readonly reason:
-        'invalid-subject' | 'scope-mismatch' | 'workspace-mismatch' | 'disposed' | 'cancelled'
+        | 'invalid-subject'
+        | 'scope-mismatch'
+        | 'workspace-mismatch'
+        | 'session-unavailable'
+        | 'target-unavailable'
+        | 'collision'
+        | 'disposed'
+        | 'cancelled'
     }
 
 /** Host-owned, per-session route for opening a serialized SubjectRef from a viewer. */

@@ -31,7 +31,11 @@ import {
   type CardRef,
   type SubjectCard,
 } from '@modkit/ui/card'
-import { connectSubjectRpc, type SubjectPreviewSession } from '@modkit/host'
+import {
+  connectSubjectRpc,
+  type SubjectClientOpenResult,
+  type SubjectPreviewSession,
+} from '@modkit/host'
 import {
   subjectFactsSourceFromWire,
   type ExtensionSubjectCardWireDocument,
@@ -225,12 +229,26 @@ async function mount(
     return
   }
 
+  type NavigationEvent = {
+    readonly sourceSessionId: string
+    readonly target: string
+    readonly result: Extract<SubjectClientOpenResult, { readonly state: 'opened' }>
+  }
+  const preopenedSubjects = new Map<string, NavigationEvent['result']>()
+  let openNavigatedSubject: ((event: NavigationEvent) => Promise<void>) | undefined
   const client = await connectSubjectRpc({
     framePort: bridge.framePort,
     // This port is emitter-shaped (`on`), and its payload is the frame itself.
     session: snapshot.session,
     moduleUrl: snapshot.moduleUrl,
     contributionId: snapshot.contributionId,
+    async onNavigate(event) {
+      if (openNavigatedSubject === undefined) {
+        await event.result.session.dispose()
+        throw new Error('subject navigation shell is unavailable')
+      }
+      await openNavigatedSubject(event)
+    },
     /*
      * Said on the page, where it used to be silent. `say` also mirrors into the output channel,
      * so this one call covers both of the page's own channels.
@@ -265,6 +283,7 @@ async function mount(
       }))
     },
     async read(entryId, maxBytes) {
+      if (preopenedSubjects.has(entryId)) return new Uint8Array()
       const answer = await bridge.request({ op: 'read', path: entryId, maxBytes })
       if (!(answer instanceof Uint8Array)) {
         throw new Error(localizer.text('vscode.webview.noBytes'))
@@ -378,7 +397,13 @@ async function mount(
     fallback: createVsCodePreviewFallback(localizer),
 
     async openSession(entry) {
-      let result = await client.open(entry.id)
+      const preopened = preopenedSubjects.get(entry.id)
+      let result: SubjectClientOpenResult
+      if (preopened === undefined) result = await client.open(entry.id)
+      else {
+        preopenedSubjects.delete(entry.id)
+        result = preopened
+      }
       if (result.state === 'opened') {
         const candidates = mapPreviewCandidates(result.snapshot.candidates)
         if (candidates.length > 0) {
@@ -449,6 +474,9 @@ async function mount(
         }),
       )
       return {
+        ...(result.session.subjectNavigation === undefined
+          ? {}
+          : { subjectNavigation: result.session.subjectNavigation }),
         descriptor: async () => opened.descriptor,
         dataSource: (contract, major) => result.session.dataSource(contract, major),
         operations: () => result.session.operations(),
@@ -549,6 +577,29 @@ async function mount(
       focused = status.path
     },
   })
+  openNavigatedSubject = async event => {
+    const ownsSource = [...subjects.values()].some(
+      record => record.sessionId === event.sourceSessionId,
+    )
+    if (!ownsSource || preopenedSubjects.has(event.target)) {
+      await event.result.session.dispose()
+      throw new Error('subject navigation source or target is unavailable in this webview')
+    }
+    if (subjects.has(event.target)) {
+      await event.result.session.dispose()
+      await editors.open({ id: event.target, name: baseName(event.target), directory: false })
+      return
+    }
+    preopenedSubjects.set(event.target, event.result)
+    try {
+      await editors.open({ id: event.target, name: baseName(event.target), directory: false })
+    } catch (error) {
+      if (preopenedSubjects.delete(event.target)) {
+        await event.result.session.dispose().catch(() => undefined)
+      }
+      throw error
+    }
+  }
   /*
    * The hex editor reports unsaved work through `edit.propose` on every changed byte, so the arm
    * marks its tab. The text editor proposes only when Save is pressed, and a textarea that has

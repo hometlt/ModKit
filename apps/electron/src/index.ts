@@ -22,6 +22,7 @@ import {
   linkedExtensionInputs,
   nestedSubjectServices,
   openNestedSubject,
+  openNestedSubjectRef,
   registerServiceDefinitionsOrThrow,
   resolveCommonPresentationPlan,
   serviceDefinitionSurfaces,
@@ -54,10 +55,12 @@ const ELECTRON_BUILTIN_MODULES = /* @__PURE__ */ linkedExtensionInputs([
 
 export {
   connectElectronSubjectRpc,
+  createElectronNestedSubjectNavigator,
   exposeElectronSubjectRpc,
   ELECTRON_SUBJECT_SERVICES,
   ELECTRON_SUBJECT_SERVICES_URL,
   type ElectronSubjectOpener,
+  type ElectronNestedSubjectNavigatorOptions,
   type SubjectClientOpenResult,
   type SubjectOpenSnapshot,
   type SubjectOpenedSnapshot,
@@ -760,7 +763,7 @@ export { createFileEditingBackend } from '@modkit/host/node'
 // Installed-game map resources are resolved in main, beside the ordinary subject services that
 // open their archives. The renderer receives only the resulting world session over capability RPC.
 export { createNodeMapPreviewResourcePlanResolver } from '@modkit/host/node'
-export { nestedSubjectServices, openNestedSubject }
+export { nestedSubjectServices, openNestedSubject, openNestedSubjectRef }
 // S14: the renderer's editor ports over the subject RPC (it holds no grant of its own)
 export {
   createRendererEditorPorts,

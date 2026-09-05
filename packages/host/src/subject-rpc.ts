@@ -26,8 +26,17 @@ import type {
   SourceConflict,
   SubjectEditTarget,
   ValidationResult,
+  ViewerSubjectNavigation,
+  ViewerSubjectNavigationResult,
 } from '@modkit/sdk'
+import {
+  parseSubjectRef,
+  serializeSubjectRef,
+  subjectRefEquals,
+  type SubjectRef,
+} from '@modkit/sdk/subjects'
 import type { SubjectEditing } from './subject-editing.js'
+import { createScopedViewerSubjectNavigation } from './subject-navigation.js'
 import { ABI_ASSET_SESSION } from './execution/abi-surfaces.js'
 import { createEndpoint, type Endpoint, type FramePort } from './execution/endpoint.js'
 import {
@@ -55,6 +64,8 @@ const subjectServicesSurface: CapabilitySurface = {
     open: { kind: 'value', signal: 'last' },
     /** `attach(sessionId)` → the live session under `x3.abi/asset-session@1`. */
     attach: { kind: 'lease', result: ABI_ASSET_SESSION, wrapper: 'bare' },
+    /** `navigate(sessionId, target)` resolves a target from that exact live parent session. */
+    navigate: { kind: 'value', signal: 'last', arity: 2 },
     /** `edit(sessionId)` → the editing arm, when this host can write this subject. */
     edit: { kind: 'lease', result: SUBJECT_EDITING, wrapper: 'bare' },
   },
@@ -294,6 +305,31 @@ export type SubjectOpener = (
   signal?: AbortSignal,
 ) => Promise<{ readonly snapshot: SubjectOpenSnapshot; readonly session?: AssetSession }>
 
+export interface SubjectNavigationOpenRequest {
+  readonly sourceSessionId: string
+  readonly parent: AssetSession
+  readonly current: SubjectRef
+  readonly target: SubjectRef
+}
+
+/** Serving-side policy for reference classes the composition can authoritatively invert. */
+export type SubjectNavigator = (
+  request: SubjectNavigationOpenRequest,
+  signal?: AbortSignal,
+) => Promise<
+  { readonly snapshot: SubjectOpenSnapshot; readonly session?: AssetSession } | undefined
+>
+
+export type SubjectNavigationSnapshot =
+  | { readonly state: 'opened'; readonly snapshot: SubjectOpenedSnapshot }
+  | {
+      readonly state: 'rejected'
+      readonly reason: Extract<
+        ViewerSubjectNavigationResult,
+        { readonly state: 'rejected' }
+      >['reason']
+    }
+
 // ---------------------------------------------------------------------------------------------
 // serving side (worker role: it serves capabilities)
 
@@ -315,6 +351,8 @@ export interface ExposeSubjectRpcOptions {
   readonly session: string
   readonly generation?: number
   readonly open: SubjectOpener
+  /** Exact inverse/open policy; absence leaves relation links fail-closed. */
+  readonly navigate?: SubjectNavigator
   /**
    * Host policy: the editing wiring for an opened session, or `undefined` when this host cannot
    * write this subject (no backend, no writer, no `write-source` in the grant). The consumer sees
@@ -336,6 +374,31 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
   const moduleUrl = options.moduleUrl ?? SUBJECT_SERVICES_URL
   /** Opened sessions the consumer has not attached yet, keyed by the snapshot's sessionId. */
   const pending = new Map<string, AssetSession>()
+  /** Attached sessions remain addressable only until their exact RPC lease is released. */
+  const live = new Map<string, AssetSession>()
+  const maximumLiveSessions = 1_024
+
+  const canonicalSubject = (value: unknown): SubjectRef | undefined => {
+    if (typeof value !== 'string' || value.length === 0 || value.length > 16_384) return undefined
+    try {
+      const parsed = parseSubjectRef(value)
+      return serializeSubjectRef(parsed) === value ? parsed : undefined
+    } catch {
+      return undefined
+    }
+  }
+
+  const registerPending = async (
+    snapshot: SubjectOpenedSnapshot,
+    session: AssetSession,
+  ): Promise<boolean> => {
+    if (pending.has(snapshot.sessionId) || live.has(snapshot.sessionId)) {
+      await session.dispose()
+      return false
+    }
+    pending.set(snapshot.sessionId, session)
+    return true
+  }
   const services = {
     open: async (path: unknown, signal?: AbortSignal): Promise<SubjectOpenSnapshot> => {
       if (typeof path !== 'string' || path.length === 0 || path.length > 4096) {
@@ -346,7 +409,9 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
         if (result.session === undefined) {
           throw new TypeError('an opened snapshot must carry its session')
         }
-        pending.set(result.snapshot.sessionId, result.session)
+        if (!(await registerPending(result.snapshot, result.session))) {
+          throw new TypeError('subject session id collides with an existing session')
+        }
       }
       return result.snapshot
     },
@@ -355,7 +420,11 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
       if (session === undefined) {
         throw new TypeError('subject session is unavailable (already attached or never opened)')
       }
+      if (live.size >= maximumLiveSessions) {
+        throw new TypeError('subject live-session registry is full')
+      }
       pending.delete(sessionId as string)
+      live.set(sessionId as string, session)
       // the handle owns the session from here: releaseVia dispose (or cascade) releases the lease
       let disposed = false
       return {
@@ -363,9 +432,47 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
         release: async () => {
           if (disposed) return
           disposed = true
+          if (live.get(sessionId as string) === session) live.delete(sessionId as string)
           await session.dispose()
         },
       }
+    },
+    navigate: async (
+      sourceSessionId: unknown,
+      targetValue: unknown,
+      signal?: AbortSignal,
+    ): Promise<SubjectNavigationSnapshot> => {
+      if (typeof sourceSessionId !== 'string' || sourceSessionId.length === 0) {
+        return { state: 'rejected', reason: 'session-unavailable' }
+      }
+      const parent = live.get(sourceSessionId)
+      if (parent === undefined) return { state: 'rejected', reason: 'session-unavailable' }
+      const target = canonicalSubject(targetValue)
+      if (target === undefined) return { state: 'rejected', reason: 'invalid-subject' }
+      const descriptor = await parent.descriptor()
+      const current = canonicalSubject(descriptor.subjectUri)
+      if (current === undefined) return { state: 'rejected', reason: 'session-unavailable' }
+      if (current.workspace !== target.workspace) {
+        return { state: 'rejected', reason: 'workspace-mismatch' }
+      }
+      const opened = await options.navigate?.({ sourceSessionId, parent, current, target }, signal)
+      if (opened?.snapshot.state !== 'opened' || opened.session === undefined) {
+        await opened?.session?.dispose()
+        return { state: 'rejected', reason: 'target-unavailable' }
+      }
+      const openedSubject = canonicalSubject(opened.snapshot.descriptor['subjectUri'])
+      if (openedSubject === undefined || !subjectRefEquals(openedSubject, target)) {
+        await opened.session.dispose()
+        throw new TypeError(
+          `subject navigation policy opened a different target (${String(
+            opened.snapshot.descriptor['subjectUri'],
+          )} != ${serializeSubjectRef(target)})`,
+        )
+      }
+      if (!(await registerPending(opened.snapshot, opened.session))) {
+        return { state: 'rejected', reason: 'collision' }
+      }
+      return { state: 'opened', snapshot: opened.snapshot }
     },
     edit: async (sessionId: unknown) => {
       const editing = typeof sessionId === 'string' ? options.editing?.(sessionId) : undefined
@@ -492,7 +599,9 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
       await endpoint.close(reason)
       const orphans = [...pending.values()]
       pending.clear()
-      await Promise.allSettled(orphans.map(session => session.dispose()))
+      const attached = [...live.values()]
+      live.clear()
+      await Promise.allSettled([...orphans, ...attached].map(session => session.dispose()))
     },
   }
 }
@@ -516,6 +625,8 @@ export interface SubjectPreviewSession {
    * grant, so a mutating operation is refused there, not here.
    */
   operations(): Promise<OperationSession>
+  /** Minted from this exact attached RPC session when the app owns an open-target handler. */
+  readonly subjectNavigation?: ViewerSubjectNavigation
   dispose(): Promise<void>
 }
 
@@ -568,12 +679,23 @@ export interface ConnectSubjectRpcOptions {
   readonly moduleUrl?: string
   /** Identity recorded for the loaded root (defaults name the generic services composition). */
   readonly contributionId?: string
+  /** App-local tab/history owner for a target already opened and attached by the RPC client. */
+  readonly onNavigate?: (event: {
+    readonly sourceSessionId: string
+    readonly target: string
+    readonly result: Extract<SubjectClientOpenResult, { readonly state: 'opened' }>
+  }) => Promise<void> | void
   readonly onDiagnostic?: (diagnostic: { code: string; message: string }) => void
 }
 
 interface ServicesProxy {
   open(path: string): Promise<SubjectOpenSnapshot>
   attach(sessionId: string): Promise<Record<string, unknown>>
+  navigate(
+    sourceSessionId: string,
+    target: string,
+    signal?: AbortSignal,
+  ): Promise<SubjectNavigationSnapshot>
   edit(sessionId: string): Promise<SubjectEditingArm>
 }
 
@@ -607,26 +729,81 @@ export async function connectSubjectRpc(
     artifactDigest: 'sha256:app-composition',
   })
   const services = endpoint.materialize(loaded.root) as unknown as ServicesProxy
+  const attachOpened = async (
+    snapshot: SubjectOpenedSnapshot,
+  ): Promise<SubjectClientOpenResult> => {
+    const proxy = (await services.attach(snapshot.sessionId)) as {
+      operations(): Promise<OperationSession>
+      descriptor(): Promise<Record<string, unknown>>
+      dataSource(contract: string, major: number): Promise<{ value: unknown }>
+      dispose(): Promise<void>
+    }
+    let navigation: ReturnType<typeof createScopedViewerSubjectNavigation> | undefined
+    const subject = snapshot.descriptor['subjectUri']
+    if (options.onNavigate !== undefined && typeof subject === 'string') {
+      let parsed: SubjectRef | undefined
+      try {
+        const candidate = parseSubjectRef(subject)
+        if (serializeSubjectRef(candidate) === subject) parsed = candidate
+      } catch {
+        parsed = undefined
+      }
+      if (parsed !== undefined) {
+        const workspace = parsed.workspace
+        navigation = createScopedViewerSubjectNavigation({
+          scope: {
+            sessionId: snapshot.sessionId,
+            subject,
+            ...(workspace === undefined ? {} : { workspace }),
+          },
+          async open(target, signal) {
+            const targetValue = serializeSubjectRef(target)
+            const navigationSnapshot = await services.navigate(
+              snapshot.sessionId,
+              targetValue,
+              signal,
+            )
+            if (navigationSnapshot.state === 'rejected') return navigationSnapshot
+            const child = (await attachOpened(navigationSnapshot.snapshot)) as Extract<
+              SubjectClientOpenResult,
+              { readonly state: 'opened' }
+            >
+            try {
+              await options.onNavigate?.({
+                sourceSessionId: snapshot.sessionId,
+                target: targetValue,
+                result: child,
+              })
+              return { state: 'opened' }
+            } catch (error) {
+              await child.session.dispose().catch(() => undefined)
+              throw error
+            }
+          },
+        })
+      }
+    }
+    let disposed = false
+    const session: SubjectPreviewSession = {
+      ...(snapshot.presentation === undefined ? {} : { presentation: snapshot.presentation }),
+      ...(navigation === undefined ? {} : { subjectNavigation: navigation.port }),
+      descriptor: async () => snapshot.descriptor,
+      dataSource: (contract, major) => proxy.dataSource(contract, major),
+      operations: () => proxy.operations(),
+      async dispose() {
+        if (disposed) return
+        disposed = true
+        navigation?.dispose()
+        await proxy.dispose()
+      },
+    }
+    return { state: 'opened', snapshot, session }
+  }
   return {
     async open(path: string): Promise<SubjectClientOpenResult> {
       const snapshot = await services.open(path)
       if (snapshot.state !== 'opened') return { state: 'unresolved', snapshot }
-      // the bare lease: a materialized `x3.abi/asset-session@1` proxy; dispose releases the handle
-      const proxy = (await services.attach(snapshot.sessionId)) as {
-        operations(): Promise<OperationSession>
-        descriptor(): Promise<Record<string, unknown>>
-        dataSource(contract: string, major: number): Promise<{ value: unknown }>
-        dispose(): Promise<void>
-      }
-      const session: SubjectPreviewSession = {
-        ...(snapshot.presentation === undefined ? {} : { presentation: snapshot.presentation }),
-        // the descriptor already crossed inside the snapshot; asking again would re-run the codec
-        descriptor: async () => snapshot.descriptor,
-        dataSource: (contract, major) => proxy.dataSource(contract, major),
-        operations: () => proxy.operations(),
-        dispose: () => proxy.dispose(),
-      }
-      return { state: 'opened', snapshot, session }
+      return attachOpened(snapshot)
     },
     edit: (sessionId: string) => services.edit(sessionId),
     close: (reason: string) => endpoint.close(reason),

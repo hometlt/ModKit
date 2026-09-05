@@ -14,18 +14,20 @@
  * typed against the same signature; that a button exists is a weaker claim than this one and is
  * named as such rather than asserted here.
  */
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
-import { nestedSubjectServices, openNestedSubject } from '@modkit/host'
 import { proves } from '@modkit/testkit'
 import type { NamespaceEntrySource } from '@modkit/sdk'
+import { rootSubject, serializeSubjectRef } from '@modkit/sdk/subjects'
 import { WEB_EXTENSION_CATALOG } from '../generated/extension-catalog.js'
+import { openEmbedSession, type EmbedHost, type EmbedPreviewSession } from '../src/embed.js'
+import { createWebLocalizer } from '../src/localization.js'
 import { createWebSubjectServices } from '../src/subjects.js'
+import { createWebPreviewFallback, createWebPreviewStages } from '../src/views.js'
 import {
-  budget,
   diskOrigin,
   domGlobals,
-  fileSource,
   identity,
   nodeModuleMap,
   ORIGIN,
@@ -34,7 +36,6 @@ import {
   spawned,
 } from './browser-harness.js'
 
-const grant = { id: 'pwa-nested', classes: ['read-source'] } as const
 const sampleZip = join(repositoryRoot, 'apps', 'web', 'public', 'samples', 'sample.zip')
 
 afterEach(() => {
@@ -53,23 +54,39 @@ describe('the browser opens a container member as a subject', () => {
       moduleMap: nodeModuleMap,
     })
 
-    const archive = await services.open({
-      source: fileSource(sampleZip, 'sample.zip'),
-      path: 'sample.zip',
-      intent: 'full',
-      grant,
-      budget,
-    })
-    if (archive.state !== 'opened') throw new Error(`sample.zip did not open: ${archive.reason}`)
+    const localizer = createWebLocalizer(['en'])
+    const host: EmbedHost = {
+      assetBase: ORIGIN,
+      services,
+      stages: createWebPreviewStages({ localizer, operationsFor: () => undefined }),
+      fallback: createWebPreviewFallback(localizer),
+      localizer,
+      styles: { text: '' },
+      operations: new Map(),
+    }
+    let child: EmbedPreviewSession | undefined
+    const bytes = new Uint8Array(readFileSync(sampleZip))
+    const archive = await openEmbedSession(
+      host,
+      { id: 'sample.zip', name: 'sample.zip', directory: false, size: bytes.byteLength },
+      bytes,
+      {
+        token: 'content-hash.sha256:sample.zip',
+        writable: false,
+        async onNavigate(_target, opened) {
+          child = opened
+        },
+      },
+    )
+    if (archive === undefined) throw new Error('sample.zip did not open through the embed host')
 
     /*
      * The entry id is the container's own and opaque by contract — the ZIP codec numbers them — so
      * it is read back from the listing rather than constructed. This is the same pair of calls the
      * shell's `openNestedEntry` makes.
      */
-    const listing = await archive.session.dataSource('common.view/namespace-entry-source', 1)
+    const listing = await archive.dataSource('common.view/namespace-entry-source', 1)
     const page = await (listing.value as NamespaceEntrySource).list('', { limit: 64 })
-    await listing.release()
     /*
      * The CSV rather than the first entry: the browser catalog is a subset of the lab's codecs, and
      * the point of this test is that a *claimed* member becomes a subject. Picking whichever entry
@@ -78,28 +95,25 @@ describe('the browser opens a container member as a subject', () => {
     const entry = page.items.find(item => item.kind === 'file' && item.path.endsWith('.csv'))
     if (entry === undefined) throw new Error('the sample archive lists no CSV entry')
 
-    const nested = await openNestedSubject({
-      parent: archive.session,
-      entryId: entry.id,
-      ...nestedSubjectServices(services),
-      grant,
-      budget,
-    })
-    expect(nested.entry.path).toBe(entry.path)
-    if (nested.result.state !== 'opened') {
-      throw new Error(`the member did not open: ${JSON.stringify(nested.result.diagnostics)}`)
-    }
-    // A subject of its own: it has its own selection and its own descriptor, not the archive's.
-    expect(nested.result.selected.contributionId).not.toBe(archive.selected.contributionId)
-    const descriptor = await nested.result.session.descriptor()
+    const entryRef = await (listing.value as NamespaceEntrySource).openEntry(entry.id)
+    const target = serializeSubjectRef(rootSubject({ id: entryRef.value.uri }))
+    await entryRef.release()
+    await listing.release()
+    const navigation = archive.subjectNavigation
+    if (navigation === undefined) throw new Error('the embed session published no navigation port')
+    await expect(navigation.open(target)).resolves.toEqual({ state: 'opened' })
+    if (child === undefined) throw new Error('the embed navigation owner received no child session')
+    // A subject of its own: it has its own selection and its own exact serialized reference.
+    const descriptor = child.opened.descriptor
+    expect(descriptor.subjectUri).toBe(target)
     expect(descriptor.dataSources.length).toBeGreaterThan(0)
 
     // The child goes first and the container survives it — still listable, still the same archive.
-    await nested.result.session.dispose()
-    const again = await archive.session.dataSource('common.view/namespace-entry-source', 1)
+    await child.dispose()
+    const again = await archive.dataSource('common.view/namespace-entry-source', 1)
     await expect((again.value as NamespaceEntrySource).list('', { limit: 4 })).resolves.toBeTruthy()
     await again.release()
-    await archive.session.dispose()
+    await archive.dispose()
 
     proves({
       capabilityId: 'block9/archive-entry-as-subject',

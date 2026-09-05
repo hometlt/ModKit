@@ -88,7 +88,15 @@ import {
   type PermissionGrant,
   type ResourceBudget,
 } from '@modkit/sdk'
-import { resolveFormatWriter, type OpenedSubject, type SubjectEditorPorts } from '@modkit/host'
+import {
+  createScopedViewerSubjectNavigation,
+  nestedSubjectServices,
+  openNestedSubjectRef,
+  resolveFormatWriter,
+  type OpenedSubject,
+  type SubjectEditorPorts,
+} from '@modkit/host'
+import { parseSubjectRef, serializeSubjectRef } from '@modkit/sdk/subjects'
 import type {
   BrowserBlobConstructorLike,
   BrowserMessageChannelConstructorLike,
@@ -704,13 +712,97 @@ let openCount = 0
  * means no codec claimed the file, and `createCodecPreview` then shows its text/hex fallback rather
  * than an empty box.
  */
-interface EmbedPreviewSession extends PreviewSession {
+export interface EmbedPreviewSession extends PreviewSession {
   readonly opened: OpenedSubject
   readonly grant: PermissionGrant
   readonly budget: ResourceBudget
 }
 
-async function openEmbedSession(
+export type EmbedSubjectNavigationOwner = (
+  target: string,
+  session: EmbedPreviewSession,
+) => Promise<void>
+
+function embedPreviewSession(
+  host: EmbedHost,
+  opened: OpenedSubject,
+  grant: PermissionGrant,
+  budget: ResourceBudget,
+  sessionId: string,
+  onNavigate?: EmbedSubjectNavigationOwner,
+): EmbedPreviewSession {
+  const session = opened.session as unknown as {
+    descriptor(): Promise<Record<string, unknown>>
+    dataSource(contract: string, major: number): Promise<{ value: unknown }>
+    operations(): OperationSession
+    dispose(): Promise<void>
+  }
+  const key = descriptorKey(opened.descriptor)
+  const operations = session.operations()
+  host.operations.set(key, operations)
+  const currentSubject = parseSubjectRef(opened.descriptor.subjectUri)
+  const managed =
+    onNavigate === undefined
+      ? undefined
+      : createScopedViewerSubjectNavigation({
+          scope: {
+            sessionId,
+            subject: opened.descriptor.subjectUri,
+            ...(currentSubject.workspace === undefined
+              ? {}
+              : { workspace: currentSubject.workspace }),
+          },
+          async open(target, signal) {
+            const nested = await openNestedSubjectRef({
+              parent: opened.session,
+              targetSubject: target,
+              ...nestedSubjectServices(host.services),
+              grant,
+              budget,
+              signal,
+            })
+            if (nested?.result.state !== 'opened')
+              return { state: 'rejected', reason: 'target-unavailable' }
+            openCount += 1
+            const child = embedPreviewSession(
+              host,
+              nested.result,
+              grant,
+              budget,
+              `modkit-embed-${openCount}`,
+              onNavigate,
+            )
+            try {
+              await onNavigate(serializeSubjectRef(target), child)
+              return { state: 'opened' }
+            } catch (error) {
+              await child.dispose().catch(() => undefined)
+              throw error
+            }
+          },
+        })
+  let disposed = false
+  return {
+    opened,
+    grant,
+    budget,
+    ...(managed === undefined ? {} : { subjectNavigation: managed.port }),
+    descriptor: () => session.descriptor(),
+    dataSource: (contract: string, major: number) => session.dataSource(contract, major),
+    async operations() {
+      return operations
+    },
+    async dispose() {
+      if (disposed) return
+      disposed = true
+      managed?.dispose()
+      host.operations.delete(key)
+      await session.dispose()
+    },
+  }
+}
+
+export async function openEmbedSession(
   host: EmbedHost,
   entry: ExplorerEntry,
   bytes: Uint8Array,
@@ -718,6 +810,7 @@ async function openEmbedSession(
     readonly token: string
     readonly sourceUri?: string
     readonly writable: boolean
+    readonly onNavigate?: EmbedSubjectNavigationOwner
   },
   signal?: AbortSignal,
 ): Promise<EmbedPreviewSession | undefined> {
@@ -748,29 +841,14 @@ async function openEmbedSession(
    * generic over the known contracts while the previewer calls it with plain strings. One narrow
    * structural view keeps that in a single place — the same one the workbench takes.
    */
-  const session = result.session as unknown as {
-    descriptor(): Promise<Record<string, unknown>>
-    dataSource(contract: string, major: number): Promise<{ value: unknown }>
-    operations(): OperationSession
-    dispose(): Promise<void>
-  }
-  const key = descriptorKey(result.descriptor)
-  const operations = session.operations()
-  host.operations.set(key, operations)
-  return {
-    opened: result,
+  return embedPreviewSession(
+    host,
+    result,
     grant,
     budget,
-    descriptor: () => session.descriptor(),
-    dataSource: (contract: string, major: number) => session.dataSource(contract, major),
-    async operations() {
-      return operations
-    },
-    async dispose() {
-      host.operations.delete(key)
-      await session.dispose()
-    },
-  }
+    `modkit-embed-${openCount}`,
+    options.onNavigate,
+  )
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -826,6 +904,7 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
     readonly #stage: HTMLElement
     readonly #status: HTMLElement
     #handle: PreviewHandle | undefined
+    #retainedHandles: PreviewHandle[] = []
     #abort: AbortController | undefined
     #blob: EmbedBlobLike | undefined
     #fileHandle: WebFileHandleLike | undefined
@@ -984,6 +1063,7 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
 
     async #unmount(): Promise<void> {
       const handle = this.#handle
+      const retained = this.#retainedHandles.splice(0)
       const editing = this.#editing
       this.#handle = undefined
       this.#editing = undefined
@@ -995,6 +1075,13 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
           await handle.unmount()
         } catch (error) {
           console.warn('[modkit-viewer] unmount failed', error)
+        }
+      }
+      for (const previous of retained) {
+        try {
+          await previous.unmount()
+        } catch (error) {
+          console.warn('[modkit-viewer] retained subject unmount failed', error)
         }
       }
       await editing?.dispose()
@@ -1203,19 +1290,54 @@ export function defineModkitElements(options: DefineModkitElementsOptions = {}):
          * `editorPorts` appears only after the subject opened under the writable handle's pinned
          * revision. A `src`, Blob or plain File therefore cannot accidentally gain an editor.
          */
-        const previewer = createCodecPreview({
+        let preopened:
+          { readonly target: string; readonly session: EmbedPreviewSession } | undefined
+        let previewer: ReturnType<typeof createCodecPreview>
+        const openNavigatedSubject: EmbedSubjectNavigationOwner = async (target, session) => {
+          if (!current() || preopened !== undefined) {
+            await session.dispose()
+            throw new Error('subject navigation target is unavailable in this viewer')
+          }
+          preopened = { target, session }
+          const previous = this.#handle
+          try {
+            const handle = await previewer.open(
+              this.#stage,
+              { id: target, name: target, directory: false },
+              new Uint8Array(),
+              controller.signal,
+            )
+            if (handle === undefined) throw new Error('subject navigation target has no viewer')
+            if (previous !== undefined) this.#retainedHandles.push(previous)
+            this.#handle = handle
+            setViewerText(this.#title, target, 300)
+            this.#drawPicker(handle)
+          } finally {
+            if (preopened?.session === session) preopened = undefined
+          }
+        }
+        previewer = createCodecPreview({
           supported: host.services.supportedExtensions,
           stages: preferStage(host.stages, this.getAttribute('view') ?? undefined),
           fallback: host.fallback,
           editorPorts: () => editorPorts,
           openSession: async (openedEntry, openedBytes, signal) => {
-            const session = await openEmbedSession(
-              host,
-              openedEntry,
-              openedBytes,
-              { token, writable, ...(sourceUri === undefined ? {} : { sourceUri }) },
-              signal,
-            )
+            const navigated = preopened?.target === openedEntry.id ? preopened.session : undefined
+            if (navigated !== undefined) preopened = undefined
+            const session =
+              navigated ??
+              (await openEmbedSession(
+                host,
+                openedEntry,
+                openedBytes,
+                {
+                  token,
+                  writable,
+                  onNavigate: openNavigatedSubject,
+                  ...(sourceUri === undefined ? {} : { sourceUri }),
+                },
+                signal,
+              ))
             if (session !== undefined && writable) {
               const writerResolution = await resolveFormatWriter({
                 services: host.services.main,

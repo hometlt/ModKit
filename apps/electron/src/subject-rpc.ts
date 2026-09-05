@@ -10,13 +10,19 @@
 import {
   connectSubjectRpc,
   exposeSubjectRpc,
+  nestedSubjectServices,
+  openNestedSubjectRef,
   SUBJECT_SERVICES,
   type ConnectSubjectRpcOptions,
   type ExposeSubjectRpcOptions,
+  type NestedSubjectResult,
   type SubjectOpener,
+  type SubjectNavigator,
   type SubjectRpcClient,
   type SubjectRpcExposure,
 } from '@modkit/host'
+import type { Diagnostic } from '@modkit/core'
+import type { AssetSession, PermissionGrant, ResourceBudget } from '@modkit/sdk'
 import type { MessagePortLike } from '@modkit/host/execution'
 
 export type {
@@ -36,6 +42,38 @@ export const ELECTRON_SUBJECT_SERVICES_URL = 'x3-app://electron/subject-services
 
 /** Main-side opener: everything the old `modkit.subject` open branch did, minus the transport. */
 export type ElectronSubjectOpener = SubjectOpener
+
+type ElectronNavigationAnswer = Exclude<Awaited<ReturnType<SubjectNavigator>>, undefined>
+
+export interface ElectronNestedSubjectNavigatorOptions {
+  readonly services: Parameters<typeof nestedSubjectServices>[0]
+  readonly grant: () => PermissionGrant
+  readonly budget: ResourceBudget
+  readonly answer: (
+    parent: AssetSession,
+    nested: NestedSubjectResult,
+    diagnostics: readonly Diagnostic[],
+  ) => Promise<ElectronNavigationAnswer>
+}
+
+/** Main-process policy for the reference class whose inverse is published by a live container. */
+export function createElectronNestedSubjectNavigator(
+  options: ElectronNestedSubjectNavigatorOptions,
+): SubjectNavigator {
+  return async ({ parent, target }, signal) => {
+    const diagnostics: Diagnostic[] = []
+    const nested = await openNestedSubjectRef({
+      parent,
+      targetSubject: target,
+      ...nestedSubjectServices(options.services),
+      grant: options.grant(),
+      budget: options.budget,
+      onDiagnostic: diagnostic => diagnostics.push(diagnostic),
+      ...(signal === undefined ? {} : { signal }),
+    })
+    return nested === undefined ? undefined : options.answer(parent, nested, diagnostics)
+  }
+}
 
 /** `MessagePortMain`, a DOM `MessagePort` or anything port-shaped; adapted structurally. */
 type ElectronPort = MessagePortLike | MessagePort

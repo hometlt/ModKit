@@ -25,13 +25,19 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, describe, expect, it, vi } from 'vitest'
 import { CONTAINER_EXTRACT_OPERATION_ID, isModkitError } from '@modkit/core'
-import { connectSubjectRpc, openSubject, type SubjectServices } from '@modkit/host'
+import {
+  connectSubjectRpc,
+  openSubject,
+  type SubjectClientOpenResult,
+  type SubjectServices,
+} from '@modkit/host'
 import {
   revisionId,
   type AssetSession,
   type NamespaceEntrySource,
   type ResourceBudget,
 } from '@modkit/sdk'
+import { rootSubject, serializeSubjectRef } from '@modkit/sdk/subjects'
 import { proves } from '@modkit/testkit'
 import { createBridge, type WebviewChannel } from '../src/bridge.js'
 import {
@@ -601,11 +607,15 @@ describe('a member is a subject in its own right', () => {
         opened.push({ path: item.path, contributionId: item.contributionId }),
     })
     const page = createBridge({ channel: channels.page, idPrefix: 'page' })
+    let navigated: Extract<SubjectClientOpenResult, { readonly state: 'opened' }> | undefined
     const client = await connectSubjectRpc({
       framePort: page.framePort,
       session: 'vscode-containers',
       moduleUrl: VSCODE_SUBJECT_SERVICES_URL,
       contributionId: VSCODE_SUBJECT_CONTRIBUTION_ID,
+      onNavigate: event => {
+        navigated = event.result
+      },
     })
     cleanup.push(async () => {
       await client.close('test finished').catch(() => undefined)
@@ -660,5 +670,35 @@ describe('a member is a subject in its own right', () => {
       container: archive,
       entry: 'hello.txt',
     })
+
+    const parent = await client.open(archive)
+    if (parent.state !== 'opened') throw new Error('the parent archive did not open over RPC')
+    const namespace = await parent.session.dataSource('common.view/namespace-entry-source', 1)
+    let target: string
+    try {
+      const entries = await (namespace.value as NamespaceEntrySource).list('', { limit: 16 })
+      const hello = entries.items.find(item => item.path === 'hello.txt')
+      if (hello === undefined) throw new Error('the parent archive has no hello.txt entry')
+      const ref = await (namespace.value as NamespaceEntrySource).openEntry(hello.id)
+      try {
+        target = serializeSubjectRef(rootSubject({ id: ref.value.uri }))
+      } finally {
+        await ref.release()
+      }
+    } finally {
+      await namespace.release()
+    }
+    const navigation = parent.session.subjectNavigation
+    if (navigation === undefined) throw new Error('the live RPC session has no navigation port')
+    const navigationResult = await navigation
+      .open({ scope: navigation.scope, target })
+      .catch(error => {
+        throw new Error(error instanceof Error ? error.message : JSON.stringify(error))
+      })
+    expect(navigationResult).toEqual({ state: 'opened' })
+    expect(navigated?.snapshot.selected.contributionId).toBe('modkit/txt')
+    await navigated?.session.dispose()
+    await parent.session.dispose()
+    await answer.session.dispose()
   }, 180_000)
 })

@@ -16,6 +16,8 @@
  */
 import {
   connectElectronSubjectClient,
+  openElectronNavigatedSubject,
+  type ElectronSubjectNavigationEvent,
   type ElectronSubjectOpenResult,
   type ElectronSubjectSession,
 } from './subject-client.js'
@@ -39,7 +41,7 @@ import {
 } from '@modkit/ui'
 import { applyDensity, applyTheme } from '@modkit/ui/tokens'
 import type { UiCatalogDocument, UiLocalizer } from '@modkit/ui/localization'
-import type { OperationSession } from '@modkit/sdk'
+import type { OperationSession, ViewerSubjectNavigation } from '@modkit/sdk'
 
 import { createPreviewFallback } from '../generated/viewer-catalog.js'
 import {
@@ -354,11 +356,19 @@ async function boot(): Promise<void> {
   const extensions = extensionsBridge
   const appThemes = readAppThemeChoices(document)
   const { port: subjectPort, session: subjectSession } = await acquireSubjectPort(subjects)
+  let openNavigatedSubject: ((event: ElectronSubjectNavigationEvent) => Promise<void>) | undefined
   const subjectClient = await connectElectronSubjectClient({
     port: subjectPort,
     session: subjectSession,
     onDiagnostic: diagnostic =>
       console.warn(`[subject-rpc] ${diagnostic.code}: ${diagnostic.message}`),
+    async onNavigate(event) {
+      if (openNavigatedSubject === undefined) {
+        await event.result.session.dispose()
+        throw new Error('subject navigation shell is unavailable')
+      }
+      await openNavigatedSubject(event)
+    },
   })
   const profile = await host.profile()
   const localizer = createElectronLocalizer(
@@ -458,6 +468,7 @@ async function boot(): Promise<void> {
     dispose(): Promise<void>
   }
   interface PreviewSessionLike {
+    readonly subjectNavigation?: ViewerSubjectNavigation
     descriptor(): Promise<Record<string, unknown>>
     dataSource(contract: string, major: number): Promise<{ value: unknown }>
     dispose(): Promise<void>
@@ -667,6 +678,9 @@ async function boot(): Promise<void> {
      */
     return {
       session: {
+        ...(result.session.subjectNavigation === undefined
+          ? {}
+          : { subjectNavigation: result.session.subjectNavigation }),
         descriptor: async () => snapshot.descriptor,
         dataSource: (contract, major) => result.session.dataSource(contract, major),
         dispose: release,
@@ -869,6 +883,21 @@ async function boot(): Promise<void> {
       if (status.severity !== 'busy') showInspector(status.path)
     },
   })
+  openNavigatedSubject = event =>
+    openElectronNavigatedSubject(event, {
+      ownsSource: sessionId =>
+        [...subjectsByPath.values()].some(record => record.sessionId === sessionId),
+      hasTarget: target => preopenedSubjects.has(target),
+      stage(target, result) {
+        preopenedSubjects.set(target, result)
+        virtualBytes.set(target, new Uint8Array())
+      },
+      open: target => editors.open({ id: target, name: target, directory: false }),
+      discard(target) {
+        preopenedSubjects.delete(target)
+        virtualBytes.delete(target)
+      },
+    })
 
   // ---------------------------------------------------------------- explorer
   const explorer = createExplorer(document, {

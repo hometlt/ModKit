@@ -54,6 +54,9 @@ import {
   createSubjectEditing,
   exposeSubjectRpc,
   linkedExtensionInputs,
+  nestedSubjectServices,
+  openNestedSubjectRef,
+  subjectOpenSnapshot,
   type ExtensionInput,
   type HostComposition,
   type OpenedSubject,
@@ -837,6 +840,7 @@ function serveVsCode(
   const editingBySession = new Map<string, SubjectEditing>()
   const nativeSaveAsByPath = new Map<string, NativeMpqSaveAsEntry>()
   let subjectGeneration = 0
+  let navigationSequence = 0
   let candidateSession: Readonly<{ generation: number; session: AssetSession }> | undefined
 
   const beginsSubjectOpen = (): number => {
@@ -1176,6 +1180,59 @@ function serveVsCode(
     framePort: bridge.framePort,
     session: options.session,
     open: openSubject,
+    navigate: async ({ parent, target }, signal) => {
+      const diagnostics: Diagnostic[] = []
+      const nested = await openNestedSubjectRef({
+        parent,
+        targetSubject: target,
+        ...nestedSubjectServices(services),
+        grant: options.grant ?? DEFAULT_OPEN_GRANT,
+        budget: options.budget ?? DEFAULT_OPEN_BUDGET,
+        onDiagnostic: item => {
+          diagnostics.push(item)
+          options.onDiagnostic?.(item)
+        },
+        ...(signal === undefined ? {} : { signal }),
+      })
+      if (nested === undefined) return undefined
+      const carried = [...nested.result.diagnostics, ...diagnostics].map(item => ({
+        code: item.code,
+        message: item.message,
+        severity: item.severity,
+      }))
+      if (nested.result.state === 'unresolved') {
+        return {
+          snapshot: subjectOpenSnapshot({
+            result: nested.result,
+            sessionId: () => '',
+            diagnostics: carried,
+          }),
+        }
+      }
+      navigationSequence += 1
+      const sessionId = `navigate:${options.session}:${navigationSequence}`
+      const baseSnapshot = subjectOpenSnapshot({
+        result: nested.result,
+        sessionId: () => sessionId,
+        diagnostics: carried,
+      })
+      const presentation = await resolveCommonPresentationPlan(
+        nested.result.descriptor,
+        {
+          sessionId,
+          providerId: nested.result.selected.contributionId,
+          variantId: nested.result.selected.variantId,
+        },
+        { availableStageIds: STAGE_ORDER },
+      )
+      return {
+        snapshot:
+          presentation === undefined
+            ? baseSnapshot
+            : { ...baseSnapshot, presentation: presentation.plan },
+        session: nested.result.session,
+      }
+    },
     editing: sessionId => editingBySession.get(sessionId),
     moduleUrl: VSCODE_SUBJECT_SERVICES_URL,
     ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),

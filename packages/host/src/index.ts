@@ -126,9 +126,12 @@ export {
 export {
   nestedSubjectServices,
   openNestedSubject,
+  openNestedSubjectRef,
   NESTED_ENTRY_UNREADABLE,
+  NESTED_SUBJECT_REF_UNAVAILABLE,
   NESTED_SUBJECT_UNSUPPORTED,
   type NestedSubjectOptions,
+  type NestedSubjectRefOptions,
   type NestedSubjectResult,
 } from './nested-subject.js'
 /*
@@ -182,6 +185,9 @@ export {
   type SubjectEditingPrepareResult,
   type SubjectEditingState,
   type SubjectOpenedSnapshot,
+  type SubjectNavigationOpenRequest,
+  type SubjectNavigationSnapshot,
+  type SubjectNavigator,
   type SubjectOpener,
   type SubjectOpenSnapshot,
   type SubjectOpenSnapshotOptions,

@@ -36,6 +36,7 @@ import {
   type RuntimeTarget,
   type ServiceContractDefinitionRegistry,
 } from '@modkit/sdk'
+import { rootSubject, subjectRefEquals, type SubjectRef } from '@modkit/sdk/subjects'
 import type { ExecutionBackendRegistry } from './execution/backend.js'
 import type { Inventory } from './inventory.js'
 import {
@@ -120,6 +121,14 @@ export interface NestedSubjectResult {
   readonly entry: NamespaceEntry
 }
 
+/** Exact root-subject target resolved from a container's own published entry references. */
+export interface NestedSubjectRefOptions extends Omit<NestedSubjectOptions, 'entryId'> {
+  readonly targetSubject: SubjectRef
+}
+
+/** The target is not a root asset, or no unique namespace entry publishes its source identity. */
+export const NESTED_SUBJECT_REF_UNAVAILABLE = 'x3.host/nested-subject-ref-unavailable'
+
 function extractHandlerOf(descriptor: AnyDescriptor): string {
   const operation = descriptor.operations.find(item => item.id === CONTAINER_EXTRACT)
   if (operation === undefined || operation.state !== 'available') {
@@ -158,6 +167,71 @@ async function findEntry(
     message: `the parent container has no entry ${entryId}`,
     context: { entryId },
   })
+}
+
+/**
+ * Resolve a root asset target through the namespace provider's authoritative `openEntry` refs.
+ *
+ * This deliberately does not parse `source.id` or infer an entry path. Providers own both opaque
+ * entry ids and source identities; the host walks a bounded listing, asks for each published ref,
+ * and accepts exactly one full `SourceRef` match. The actual open remains `openNestedSubject`, so
+ * extraction, companion resolution and parent/child lease ownership have one implementation.
+ */
+export async function openNestedSubjectRef(
+  options: NestedSubjectRefOptions,
+): Promise<NestedSubjectResult | undefined> {
+  throwIfAborted(options.signal)
+  if (options.targetSubject.identity.kind !== '' || options.targetSubject.identity.key !== '') {
+    return undefined
+  }
+  const pageLimit = options.pageLimit ?? 256
+  const descriptor = await options.parent.descriptor()
+  if (
+    !descriptor.dataSources.some(
+      item => item.contract === NAMESPACE_ENTRY_SOURCE && item.major === 1,
+    )
+  ) {
+    return undefined
+  }
+  const namespaceLease = await options.parent.dataSource(NAMESPACE_ENTRY_SOURCE, 1)
+  try {
+    const namespace = namespaceLease.value
+    const seenCursors = new Set<string>()
+    let cursor: string | undefined
+    let visited = 0
+    let matchedEntryId: string | undefined
+    do {
+      throwIfAborted(options.signal)
+      if (cursor !== undefined && !seenCursors.add(cursor)) return undefined
+      const page = await namespace.list(
+        '',
+        cursor === undefined ? { limit: pageLimit } : { cursor, limit: pageLimit },
+        options.signal,
+      )
+      for (const entry of page.items) {
+        visited += 1
+        if (visited > options.budget.maxNodes) return undefined
+        const refLease = await namespace.openEntry(entry.id, options.signal)
+        let matches = false
+        try {
+          matches = subjectRefEquals(
+            rootSubject({ id: refLease.value.uri }, options.targetSubject.workspace),
+            options.targetSubject,
+          )
+        } finally {
+          await refLease.release()
+        }
+        if (!matches) continue
+        if (matchedEntryId !== undefined && matchedEntryId !== entry.id) return undefined
+        matchedEntryId = entry.id
+      }
+      cursor = page.nextCursor
+    } while (cursor !== undefined)
+    if (matchedEntryId === undefined) return undefined
+    return openNestedSubject({ ...options, entryId: matchedEntryId })
+  } finally {
+    await namespaceLease.release()
+  }
 }
 
 /**

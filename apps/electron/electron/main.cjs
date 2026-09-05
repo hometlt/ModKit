@@ -177,6 +177,7 @@ async function createWindow() {
     resolveElectronPresentationPlan,
     createGrantedRoots,
     exposeElectronSubjectRpc,
+    createElectronNestedSubjectNavigator,
     openPathArtifactSource,
     createFilesystemInputResolver,
     createNodeMapPreviewResourcePlanResolver,
@@ -590,6 +591,48 @@ async function createWindow() {
     return tracked
   }
 
+  const nestedAnswerForRpc = async (parent, nested, diagnostics) => {
+    if (nested.result.state === 'unresolved') {
+      return {
+        snapshot: {
+          state: nested.result.state,
+          reason: nested.result.reason,
+          candidates: nested.result.candidates,
+          diagnostics: [...nested.result.diagnostics, ...diagnostics],
+        },
+      }
+    }
+    const sessionId = randomUUID()
+    const childRoute = selectedRouteStep(nested.result.descriptor, nested.result.selected)
+    const selectedRoute = Object.freeze([...(parent.selectedRoute ?? []), childRoute])
+    const sourceBytes =
+      typeof nested.entry.size === 'number' && Number.isFinite(nested.entry.size)
+        ? nested.entry.size
+        : 0
+    const presentation = await resolveElectronPresentationPlan(
+      nested.result.descriptor,
+      {
+        sessionId,
+        contributionId: nested.result.selected.contributionId,
+        variantId: nested.result.selected.variantId,
+      },
+      { sourceBytes },
+    )
+    return {
+      snapshot: {
+        state: nested.result.state,
+        sessionId,
+        descriptor: nested.result.descriptor,
+        presentation,
+        selected: nested.result.selected,
+        selectedRoute,
+        candidates: nested.result.candidates,
+        diagnostics: [...nested.result.diagnostics, ...diagnostics],
+      },
+      session: trackSession(sessionId, nested.result.session, selectedRoute),
+    }
+  }
+
   /**
    * R6: open a subject the way the old IPC branch did, but return the session as an object for
    * the RPC endpoint to lease — no session table, no method dispatch, no allowlists here.
@@ -636,48 +679,13 @@ async function createWindow() {
           `[main] nested subject ${nested.entry.path} unresolved (${nested.result.reason}): ` +
             nested.result.diagnostics.map(item => item.code).join(', '),
         )
-        return {
-          snapshot: {
-            state: nested.result.state,
-            reason: nested.result.reason,
-            candidates: nested.result.candidates,
-            diagnostics: [...nested.result.diagnostics, ...diagnostics],
-          },
-        }
+      } else {
+        console.log(
+          `[main] nested subject ${nested.entry.path} -> ${nested.result.selected.contributionId}/` +
+            `${nested.result.selected.variantId} (${Math.round(nested.result.selected.confidence * 100)}%)`,
+        )
       }
-      const sessionId = randomUUID()
-      const childRoute = selectedRouteStep(nested.result.descriptor, nested.result.selected)
-      const selectedRoute = Object.freeze([...(parent.selectedRoute ?? []), childRoute])
-      const sourceBytes =
-        typeof nested.entry.size === 'number' && Number.isFinite(nested.entry.size)
-          ? nested.entry.size
-          : 0
-      const presentation = await resolveElectronPresentationPlan(
-        nested.result.descriptor,
-        {
-          sessionId,
-          contributionId: nested.result.selected.contributionId,
-          variantId: nested.result.selected.variantId,
-        },
-        { sourceBytes },
-      )
-      console.log(
-        `[main] nested subject ${nested.entry.path} -> ${nested.result.selected.contributionId}/` +
-          `${nested.result.selected.variantId} (${Math.round(nested.result.selected.confidence * 100)}%)`,
-      )
-      return {
-        snapshot: {
-          state: nested.result.state,
-          sessionId,
-          descriptor: nested.result.descriptor,
-          presentation,
-          selected: nested.result.selected,
-          selectedRoute,
-          candidates: nested.result.candidates,
-          diagnostics: [...nested.result.diagnostics, ...diagnostics],
-        },
-        session: trackSession(sessionId, nested.result.session, selectedRoute),
-      }
+      return nestedAnswerForRpc(parent, nested, diagnostics)
     }
     const mapSelection = parseElectronMapPreviewSelectionRequest(requestedPath)
     const file = roots.require(mapSelection?.path ?? requestedPath)
@@ -1060,6 +1068,19 @@ async function createWindow() {
 
   /** One capability-RPC endpoint per handed-out port; closed with the window. */
   const subjectEndpoints = new Set()
+  const navigateSubjectForRpc = createElectronNestedSubjectNavigator({
+    services: subjectServices,
+    grant: () => ({ id: `electron:${randomUUID()}`, classes: ['read-source'] }),
+    budget: {
+      maxInputBytes: BigInt(MAXIMUM_SUBJECT_BYTES),
+      maxDepth: 256,
+      maxNodes: 1_000_000,
+      maxScalarBytes: MAXIMUM_SUBJECT_BYTES,
+      maxDiagnostics: 10_000,
+      deadlineMs: 30_000,
+    },
+    answer: nestedAnswerForRpc,
+  })
   ipcMain.handle('modkit.subject.port', event => {
     const channel = new MessageChannelMain()
     const session = randomUUID()
@@ -1068,6 +1089,7 @@ async function createWindow() {
       listener: 'emitter-event',
       session,
       open: openSubjectForRpc,
+      navigate: navigateSubjectForRpc,
       /*
        * One arm per opened session, handed out once. The consumer leases it when the tab opens and
        * releases it when the tab closes; keeping the entry afterwards would leave a map that only

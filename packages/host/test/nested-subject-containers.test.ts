@@ -19,7 +19,8 @@ import {
   type PageRequest,
   type ResourceBudget,
 } from '@modkit/sdk'
-import { openNestedSubject } from '../src/nested-subject.js'
+import { rootSubject } from '@modkit/sdk/subjects'
+import { openNestedSubject, openNestedSubjectRef } from '../src/nested-subject.js'
 import { createNamespaceCompanionOrigin } from '../src/namespace-origin.js'
 import { COMPANION_BUDGET_EXCEEDED, createCompanionInputResolver } from '../src/input-resolution.js'
 
@@ -217,6 +218,58 @@ function resolutionContext(pattern: string) {
 }
 
 describe('a container inside another container uses the same nested route twice', () => {
+  it("opens a root asset by the namespace provider's exact published SubjectRef", async () => {
+    const archive = await openZip(
+      [
+        { path: 'assets/models/cube.mesh', bytes: MODEL_BYTES },
+        { path: 'assets/textures/cube.texture', bytes: TEXTURE_BYTES },
+      ],
+      'subject-ref.zip',
+    )
+    try {
+      const entryId = await entryIdOf(archive, 'assets/models/cube.mesh')
+      const namespace = await archive.dataSource('common.view/namespace-entry-source', 1)
+      let targetSubject
+      try {
+        const ref = await (namespace.value as NamespaceEntrySource).openEntry(entryId)
+        try {
+          targetSubject = rootSubject({ id: ref.value.uri })
+        } finally {
+          await ref.release()
+        }
+      } finally {
+        await namespace.release()
+      }
+      const nested = await openNestedSubjectRef({
+        parent: archive,
+        targetSubject,
+        inventory: await inventory(),
+        executionBackends,
+        target,
+        grant,
+        budget,
+      })
+      expect(nested?.entry.id).toBe(entryId)
+      if (nested?.result.state !== 'opened') throw new Error('exact target did not open')
+      expect(nested.result.selected.contributionId).toBe('org.example/nested-required')
+      await nested.result.session.dispose()
+
+      await expect(
+        openNestedSubjectRef({
+          parent: archive,
+          targetSubject: rootSubject({ id: 'memory://missing' }),
+          inventory: await inventory(),
+          executionBackends,
+          target,
+          grant,
+          budget,
+        }),
+      ).resolves.toBeUndefined()
+    } finally {
+      await archive.dispose()
+    }
+  })
+
   it('opens ZIP → ZIP → mesh and resolves the companion from the inner namespace', async () => {
     const inner = buildZip([
       { path: 'assets/models/cube.mesh', bytes: MODEL_BYTES },
