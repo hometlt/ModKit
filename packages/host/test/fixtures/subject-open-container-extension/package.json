@@ -10,7 +10,8 @@
     "contributionManifests": [
       "./contributions/carrier.json",
       "./contributions/semantic.json",
-      "./contributions/semantic-other.json"
+      "./contributions/semantic-other.json",
+      "./contributions/semantic-other-tie.json"
     ]
   }
 }

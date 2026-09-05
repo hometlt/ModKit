@@ -24,7 +24,12 @@ function namespaceSource(source) {
   return Object.freeze({
     async list(prefix, page, signal) {
       if (signal?.aborted) throw new DOMException('cancelled', 'AbortError')
-      const items = entry.path.startsWith(prefix) ? [entry] : []
+      const items =
+        globalThis.__x3ContainerNoEntries === true
+          ? []
+          : entry.path.startsWith(prefix)
+            ? [entry]
+            : []
       const start = page.cursor === undefined ? 0 : Number(page.cursor)
       return Object.freeze({
         items: Object.freeze(

@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "modkit/codec-contribution", "major": 1 },
+  "id": "org.example/test-semantic-other-tie",
+  "displayName": "Equal-confidence semantic alias",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./semantic-other-tie.mjs",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source"]
+    }
+  ],
+  "spec": {
+    "formatRefs": [{ "formatId": "test-semantic-other-tie", "label": "Other semantic tie" }],
+    "roles": ["semantic"],
+    "sourceTopology": "namespace",
+    "container": { "formatId": "test-carrier" },
+    "artifactStages": ["authored"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": { "extensions": ["other"] },
+    "probe": {
+      "kind": "namespace",
+      "markers": ["Base.SC2Data/world.bin"],
+      "maxEntries": 2,
+      "maxBytes": 0,
+      "maxDepth": 2,
+      "maxPathBytes": 128
+    },
+    "representations": [
+      {
+        "id": "semantic",
+        "contract": "org.example/test-semantic-other-tie",
+        "major": 1,
+        "stage": "authored",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [],
+    "operations": [],
+    "implementationTier": { "claimed": 1 },
+    "budgets": {
+      "maxInputBytes": "1048576",
+      "maxDepth": 16,
+      "maxNodes": 64,
+      "maxScalarBytes": 65536,
+      "maxDiagnostics": 16
+    }
+  }
+}

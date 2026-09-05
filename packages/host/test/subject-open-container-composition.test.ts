@@ -32,6 +32,7 @@ declare global {
   var __x3ContainerFailExtract: boolean | undefined
   var __x3ContainerSkipInspectRead: boolean | undefined
   var __x3ContainerDeclaredEntrySize: bigint | undefined
+  var __x3ContainerNoEntries: boolean | undefined
 }
 
 const fixture = fileURLToPath(
@@ -73,6 +74,7 @@ async function harness(
     readonly disablePack?: boolean
     readonly failExtract?: boolean
     readonly skipInspectRead?: boolean
+    readonly noEntries?: boolean
   } = {},
 ) {
   globalThis.__x3ContainerComposition = {
@@ -87,6 +89,7 @@ async function harness(
   globalThis.__x3ContainerFailExtract = options.failExtract ?? false
   globalThis.__x3ContainerSkipInspectRead = options.skipInspectRead ?? false
   globalThis.__x3ContainerDeclaredEntrySize = options.declaredEntrySize
+  globalThis.__x3ContainerNoEntries = options.noEntries ?? false
   const input = await loadExtensionDirectory(fixture)
   const inventory = await buildInventory(
     [{ ...input, execution: { origin: 'bundled', allowTrustedInProcess: true } }],
@@ -396,5 +399,52 @@ describe('host-owned container composition', () => {
     })
     expect(result.state).toBe('unresolved')
     if (result.state === 'unresolved') expect(result.reason).toBe('no-candidate')
+  })
+
+  it('keeps the generic carrier open when every semantic alias is a no-match', async () => {
+    const { inventory, executionBackends, releases } = await harness({ noEntries: true })
+    const result = await openSubject({
+      inventory,
+      source: source(),
+      path: 'map.car',
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'container-composition', classes: ['read-source', 'write-source'] },
+      executionBackends,
+      budget,
+    })
+    expect(result.state).toBe('opened')
+    if (result.state !== 'opened') {
+      throw new Error(`generic carrier did not remain open: ${result.reason}`)
+    }
+    expect(result.selected.contributionId).toBe('org.example/test-carrier')
+    expect(result.descriptor).toMatchObject({ identity: { formatId: 'test-carrier' } })
+    expect(releases).toContain('semantic.mjs')
+    const carrierReleasesBeforeDispose = releases.filter(name => name === 'carrier.mjs').length
+    expect(carrierReleasesBeforeDispose).toBe(1)
+    await result.session.dispose()
+    expect(releases.at(-1)).toBe('carrier.mjs')
+    expect(releases.filter(name => name === 'carrier.mjs')).toHaveLength(
+      carrierReleasesBeforeDispose + 1,
+    )
+  })
+
+  it('fails closed when semantic aliases tie instead of returning the generic carrier', async () => {
+    const { inventory, executionBackends, releases } = await harness()
+    const result = await openSubject({
+      inventory,
+      source: source('map.other'),
+      path: 'map.other',
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'container-composition', classes: ['read-source', 'write-source'] },
+      executionBackends,
+      budget,
+    })
+    expect(result).toMatchObject({ state: 'unresolved', reason: 'ambiguous' })
+    expect(releases.filter(name => name === 'carrier.mjs')).toHaveLength(2)
+    expect(releases).toEqual(
+      expect.arrayContaining(['semantic-other.mjs', 'semantic-other-tie.mjs', 'carrier.mjs']),
+    )
   })
 })
