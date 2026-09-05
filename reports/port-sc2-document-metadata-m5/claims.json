@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "codec": "sc2-document-metadata",
+  "requirementIds": [
+    "legacy/codec-manifest/modkit/sc2-document-metadata/feature/3a78aac39b5556a4",
+    "legacy/codec-manifest/modkit/sc2-document-metadata/feature/437917b026066633",
+    "legacy/codec-manifest/modkit/sc2-document-metadata/feature/47ee2ef6aef62092",
+    "legacy/codec-manifest/modkit/sc2-document-metadata/feature/547c7eb73ef1a273",
+    "legacy/codec-manifest/modkit/sc2-document-metadata/feature/5d6da44ca2681acf",
+    "legacy/codec-manifest/modkit/sc2-document-metadata/feature/638009c37a18785e",
+    "legacy/codec-manifest/modkit/sc2-document-metadata/feature/9081602bc75c7f95",
+    "legacy/codec-manifest/modkit/sc2-document-metadata/feature/9506fc40b327f3fc",
+    "legacy/codec-manifest/modkit/sc2-document-metadata/feature/dd51cb920062a655",
+    "legacy/codec-manifest/modkit/sc2-document-metadata/operation/view.inspect",
+    "legacy/codec-manifest/modkit/sc2-document-metadata/operation/asset.validate",
+    "legacy/codec-manifest/modkit/sc2-document-metadata/operation/export.raw",
+    "legacy/codec-manifest/modkit/sc2-document-metadata/operation/export.convert",
+    "legacy/codec-manifest/modkit/sc2-document-metadata/operation/edit.content"
+  ]
+}

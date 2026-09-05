@@ -2871,29 +2871,54 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/sc2-document-metadata/evidence-receipt.json",
+          "sha256": "e2c83fc7a5cfc3c391c650168cf14df6bb23c7d0cf255108aca440831bdf74df"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/3a78aac39b5556a4",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/sc2-document-metadata/evidence-receipt.json",
+          "sha256": "e2c83fc7a5cfc3c391c650168cf14df6bb23c7d0cf255108aca440831bdf74df"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/437917b026066633",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/sc2-document-metadata/evidence-receipt.json",
+          "sha256": "e2c83fc7a5cfc3c391c650168cf14df6bb23c7d0cf255108aca440831bdf74df"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/47ee2ef6aef62092",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/sc2-document-metadata/evidence-receipt.json",
+          "sha256": "e2c83fc7a5cfc3c391c650168cf14df6bb23c7d0cf255108aca440831bdf74df"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/547c7eb73ef1a273",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/sc2-document-metadata/evidence-receipt.json",
+          "sha256": "e2c83fc7a5cfc3c391c650168cf14df6bb23c7d0cf255108aca440831bdf74df"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/5d6da44ca2681acf",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -2901,19 +2926,34 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/sc2-document-metadata/evidence-receipt.json",
+          "sha256": "e2c83fc7a5cfc3c391c650168cf14df6bb23c7d0cf255108aca440831bdf74df"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/638009c37a18785e",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/sc2-document-metadata/evidence-receipt.json",
+          "sha256": "e2c83fc7a5cfc3c391c650168cf14df6bb23c7d0cf255108aca440831bdf74df"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/9081602bc75c7f95",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/sc2-document-metadata/evidence-receipt.json",
+          "sha256": "e2c83fc7a5cfc3c391c650168cf14df6bb23c7d0cf255108aca440831bdf74df"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/9506fc40b327f3fc",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -2921,34 +2961,64 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/sc2-document-metadata/evidence-receipt.json",
+          "sha256": "e2c83fc7a5cfc3c391c650168cf14df6bb23c7d0cf255108aca440831bdf74df"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/feature/dd51cb920062a655",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/sc2-document-metadata/evidence-receipt.json",
+          "sha256": "e2c83fc7a5cfc3c391c650168cf14df6bb23c7d0cf255108aca440831bdf74df"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/asset.validate",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/sc2-document-metadata/evidence-receipt.json",
+          "sha256": "e2c83fc7a5cfc3c391c650168cf14df6bb23c7d0cf255108aca440831bdf74df"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/edit.content",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/sc2-document-metadata/evidence-receipt.json",
+          "sha256": "e2c83fc7a5cfc3c391c650168cf14df6bb23c7d0cf255108aca440831bdf74df"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/export.convert",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/sc2-document-metadata/evidence-receipt.json",
+          "sha256": "e2c83fc7a5cfc3c391c650168cf14df6bb23c7d0cf255108aca440831bdf74df"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/export.raw",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/sc2-document-metadata/evidence-receipt.json",
+          "sha256": "e2c83fc7a5cfc3c391c650168cf14df6bb23c7d0cf255108aca440831bdf74df"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/view.inspect",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
