@@ -15,6 +15,7 @@ import {
   type AssetSessionEvent,
   type DataSourceMajor,
   type DataSourceOf,
+  type DataSourceOffer,
   type JsonValue,
   type KnownDataSourceId,
   type Lease,
@@ -26,7 +27,20 @@ import {
   type Progress,
   type RevisionId,
   type SessionState,
+  type SubjectKindDefinitionSpecV1,
 } from '@modkit/sdk'
+import type {
+  SubjectFieldReferenceResolver,
+  SubjectRelationProjectionBudget,
+} from './subject-projection.js'
+import {
+  createCompositeRelationGraphSource,
+  createCompositeSubjectFactsSource,
+  createDescriptorFallbackSubjectFactsSource,
+  createFieldRelationGraphSource,
+  descriptorSubjectRef,
+  metadataFieldProjections,
+} from './subject-projection.js'
 
 export interface HostOperationContext {
   readonly signal?: AbortSignal
@@ -51,6 +65,12 @@ export interface AssetSessionOptions {
     contract: Contract,
     major: Major,
   ) => Promise<Lease<DataSourceOf<Contract, Major>>>
+  /** Optional host resolver for schema-typed subject, asset and localization references. */
+  readonly subjectProjection?: {
+    readonly references: SubjectFieldReferenceResolver
+    readonly budget?: SubjectRelationProjectionBudget
+    readonly kindDefinition?: SubjectKindDefinitionSpecV1
+  }
   /** Host-owned resources released exactly once with the session. */
   readonly release?: readonly (() => void | Promise<void>)[]
 }
@@ -179,7 +199,26 @@ export async function assembleSubjectDescriptor(value: AnyDescriptorWire): Promi
 
 /** Host-owned session reference implementation for the A-3 lifecycle contract. */
 export function createAssetSession(options: AssetSessionOptions): ManagedAssetSession {
-  const descriptor = options.descriptor
+  const originalDescriptor = options.descriptor
+  const originalOffers = new Set(
+    originalDescriptor.dataSources.map(item => `${item.contract}@${item.major}`),
+  )
+  const metadataFields =
+    originalDescriptor.interpretation === 'codec'
+      ? metadataFieldProjections(originalDescriptor.metadata)
+      : Object.freeze([])
+  const projectsRelations = options.subjectProjection !== undefined && metadataFields.length > 0
+  const dataSources: DataSourceOffer[] = [...originalDescriptor.dataSources]
+  if (!originalOffers.has('common.view/subject-facts-source@1')) {
+    dataSources.push({ contract: 'common.view/subject-facts-source', major: 1 })
+  }
+  if (projectsRelations && !originalOffers.has('common.view/relation-graph-source@1')) {
+    dataSources.push({ contract: 'common.view/relation-graph-source', major: 1 })
+  }
+  const descriptor = Object.freeze({
+    ...originalDescriptor,
+    dataSources: Object.freeze(dataSources),
+  }) as AnyDescriptor
   const operationByHandler = new Map(descriptor.operations.map(item => [item.handlerId, item]))
   const declarationByHandler = new Map(
     options.operationDeclarations.map(item => [item.handlerId, item]),
@@ -189,6 +228,108 @@ export function createAssetSession(options: AssetSessionOptions): ManagedAssetSe
   const subscribers = new Set<EventSubscriber>()
   let state: SessionState = 'live'
   let disposal: Promise<void> | undefined
+
+  let genericGraph: Promise<DataSourceOf<'common.view/relation-graph-source', 1>> | undefined
+  const projectedGraph = (): Promise<DataSourceOf<'common.view/relation-graph-source', 1>> => {
+    if (options.subjectProjection === undefined) {
+      throw new TypeError('subject relation projection is unavailable')
+    }
+    genericGraph ??= createFieldRelationGraphSource({
+      owner: descriptorSubjectRef(originalDescriptor),
+      ownerLabel:
+        originalDescriptor.interpretation === 'codec'
+          ? originalDescriptor.identity.formatLabel
+          : originalDescriptor.subjectUri,
+      ownerKind:
+        originalDescriptor.interpretation === 'codec'
+          ? `format:${originalDescriptor.identity.formatId}`
+          : 'format:unknown',
+      fields: metadataFields,
+      resolver: options.subjectProjection.references,
+      ...(options.subjectProjection.budget === undefined
+        ? {}
+        : { budget: options.subjectProjection.budget }),
+    })
+    return genericGraph
+  }
+
+  const releaseTogether = <Value>(
+    value: Value,
+    callbacks: readonly (() => Promise<void>)[],
+  ): Lease<Value> => {
+    let released = false
+    return Object.freeze({
+      value,
+      async release() {
+        if (released) return
+        released = true
+        const results = await Promise.allSettled(
+          [...callbacks].reverse().map(callback => callback()),
+        )
+        const failure = results.find(result => result.status === 'rejected')
+        if (failure?.status === 'rejected') throw failure.reason
+      },
+    })
+  }
+
+  const openGraph = async (): Promise<
+    Lease<DataSourceOf<'common.view/relation-graph-source', 1>>
+  > => {
+    const authoritative = originalOffers.has('common.view/relation-graph-source@1')
+      ? await options.openDataSource('common.view/relation-graph-source', 1)
+      : undefined
+    try {
+      const generic = projectsRelations ? await projectedGraph() : undefined
+      if (authoritative !== undefined && generic !== undefined) {
+        return releaseTogether(createCompositeRelationGraphSource([authoritative.value, generic]), [
+          authoritative.release,
+        ])
+      }
+      if (authoritative !== undefined) return authoritative
+      if (generic !== undefined) return releaseTogether(generic, [])
+      throw new TypeError('relation graph source is unavailable')
+    } catch (error) {
+      await authoritative?.release()
+      throw error
+    }
+  }
+
+  const openFacts = async (): Promise<
+    Lease<DataSourceOf<'common.view/subject-facts-source', 1>>
+  > => {
+    const graph =
+      originalOffers.has('common.view/relation-graph-source@1') || projectsRelations
+        ? await openGraph()
+        : undefined
+    let authoritative: Lease<DataSourceOf<'common.view/subject-facts-source', 1>> | undefined
+    try {
+      authoritative = originalOffers.has('common.view/subject-facts-source@1')
+        ? await options.openDataSource('common.view/subject-facts-source', 1)
+        : undefined
+      const fallback = createDescriptorFallbackSubjectFactsSource({
+        descriptor: originalDescriptor,
+        ...(graph === undefined ? {} : { relations: graph.value }),
+        ...(options.subjectProjection?.kindDefinition === undefined
+          ? {}
+          : { kindDefinition: options.subjectProjection.kindDefinition }),
+      })
+      return releaseTogether(
+        authoritative === undefined
+          ? fallback
+          : createCompositeSubjectFactsSource([authoritative.value, fallback]),
+        [
+          ...(authoritative === undefined ? [] : [authoritative.release]),
+          ...(graph === undefined ? [] : [graph.release]),
+        ],
+      )
+    } catch (error) {
+      await Promise.allSettled([
+        ...(authoritative === undefined ? [] : [authoritative.release()]),
+        ...(graph === undefined ? [] : [graph.release()]),
+      ])
+      throw error
+    }
+  }
 
   const publish = (event: AssetSessionEvent) => {
     for (const subscriber of subscribers) {
@@ -322,6 +463,12 @@ export function createAssetSession(options: AssetSessionOptions): ManagedAssetSe
               ? 'the source changed; reopen the asset before accessing data sources'
               : 'the asset session has been disposed',
         })
+      }
+      if (contract === 'common.view/relation-graph-source' && major === 1) {
+        return openGraph() as Promise<Lease<DataSourceOf<Contract, Major>>>
+      }
+      if (contract === 'common.view/subject-facts-source' && major === 1) {
+        return openFacts() as Promise<Lease<DataSourceOf<Contract, Major>>>
       }
       return options.openDataSource(contract, major)
     },

@@ -27,6 +27,9 @@ import type {
   DerivedAssetInput,
   DerivedArtifactSource,
   DetectionResult,
+  DataTypeSchema,
+  RelatedSubjectFact,
+  RelationGraphNode,
   ResolvedAssetInputBinding,
   ResolvedCandidateInputBinding,
   ResolvedRequirementInputBinding,
@@ -35,6 +38,7 @@ import type {
   SingleOrBundleAssetInput,
   NamespaceAssetInput,
   StandardTraitInstance,
+  SubjectFactsSummary,
 } from '@modkit/sdk'
 import type {
   DataSourceOf,
@@ -85,6 +89,41 @@ export const typedRasterRef = {
   contract: 'org.example/raster-source',
   major: 2,
 } as const satisfies DataSourceRef
+
+export const typedDataSchema = {
+  typeId: 'Unit',
+  fields: [
+    {
+      fieldId: 'Weapon',
+      cardinality: 'scalar',
+      type: { kind: 'subject-ref', subjectKind: 'fixture/weapon' },
+    },
+  ],
+} as const satisfies DataTypeSchema
+
+export const typedRelationNode = {
+  id: 'x3-subject:weapon',
+  label: 'Gauss Rifle',
+  type: 'fixture/weapon',
+  subject: 'x3-subject:weapon',
+  kind: 'fixture/weapon',
+} as const satisfies RelationGraphNode
+
+export const typedDeadRelation = {
+  role: 'catalog.weapon',
+  subjectId: 'x3-subject:missing',
+  label: 'Missing weapon',
+  kind: 'fixture/weapon',
+  dead: true,
+} as const satisfies RelatedSubjectFact
+
+export const typedCardSummary = {
+  snapshotId: 'fixture',
+  identity: { subjectId: 'fixture', kind: 'fixture/unit', label: 'Marine', origins: [] },
+  groupCount: 0,
+  relationCount: 0,
+  card: { sections: ['identity', 'relations'], preview: 'raster' },
+} as const satisfies SubjectFactsSummary
 
 export const rasterWireRef = {
   contract: 'org.example/raster-source',

@@ -141,7 +141,8 @@ describe('A-3 asset and operation sessions', () => {
   })
 
   it('publishes descriptor/state events and releases resources once on double dispose', async () => {
-    const { managed, descriptor, release } = await fixture()
+    const { managed, release } = await fixture()
+    const descriptor = await managed.session.descriptor()
     const events = managed.session.events()[Symbol.asyncIterator]()
     expect(await events.next()).toEqual({
       value: { kind: 'descriptor', descriptor },

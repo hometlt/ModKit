@@ -291,6 +291,23 @@ export {
   type HostOperationHandler,
   type ManagedAssetSession,
 } from './session.js'
+export {
+  createCompositeRelationGraphSource,
+  createCompositeSubjectFactsSource,
+  createDescriptorFallbackSubjectFactsSource,
+  createFieldRelationGraphSource,
+  descriptorSubjectRef,
+  metadataFieldProjections,
+  DEFAULT_SUBJECT_RELATION_PROJECTION_BUDGET,
+  type FieldRelationGraphProjectionOptions,
+  type RelationGraphMergeOptions,
+  type SubjectFactsMergeOptions,
+  type SubjectFieldProjection,
+  type SubjectFieldReferenceRequest,
+  type SubjectFieldReferenceResolver,
+  type SubjectRelationProjectionBudget,
+  type SubjectRelationTarget,
+} from './subject-projection.js'
 export { createV1DescriptorProjectionPort } from './v1-projection.js'
 export {
   createByteRangeSource,

@@ -419,6 +419,10 @@ export interface RelationGraphNode {
   readonly id: string
   readonly label: string
   readonly type: string
+  /** Canonical serialized `SubjectRef`; present when this node can be opened as a subject. */
+  readonly subject?: string
+  /** Subject-kind identity, kept separate from the graph's presentation-oriented type bucket. */
+  readonly kind?: string
 }
 
 export interface RelationGraphEdge {
@@ -498,6 +502,8 @@ export interface RelatedSubjectFact {
   readonly subjectId: string
   readonly label: string
   readonly kind: string
+  /** True when the reference has a stable placeholder identity but no resolvable target. */
+  readonly dead?: boolean
   readonly provenance?: readonly SubjectFactProvenance[]
 }
 
@@ -513,6 +519,11 @@ export interface SubjectFactsSummary {
   readonly groupCount: number
   readonly relationCount: number
   readonly preview?: SubjectPreviewResource
+  /** Optional data-only card layout selected from the subject-kind definition. */
+  readonly card?: {
+    readonly sections: readonly string[]
+    readonly preview?: 'raster' | 'model' | 'none'
+  }
 }
 
 /** Facts only. Hosts own the mapping to cards and extensions may provide another projection. */

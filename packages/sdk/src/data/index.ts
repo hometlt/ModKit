@@ -9,6 +9,7 @@ import type {
   TreeDataSource,
 } from '../asset-capabilities/data-sources.js'
 import type { JsonValue, RevisionId } from '../asset-capabilities/types.js'
+import type { FieldType } from '../fields/index.js'
 import type { ProjectionPlan, ProjectionReceipt } from '../asset-capabilities/uv-projection.js'
 import type { ModWorkspaceLock } from '../mods/index.js'
 import type { ServiceProviderModule } from '../runtime-abi.js'
@@ -30,6 +31,8 @@ export type DataFieldCardinality = 'scalar' | 'append' | 'indexed'
 export interface DataSchemaField {
   readonly fieldId: string
   readonly cardinality: DataFieldCardinality
+  /** Portable semantic type used by generic editors, selectors and relation projection. */
+  readonly type?: FieldType
   readonly indexKey?: string
   readonly linkNamespace?: string
   readonly fields?: readonly DataSchemaField[]
@@ -281,6 +284,9 @@ function immutableSchema(value: DataTypeSchema): DataTypeSchema {
   const immutableField = (field: DataSchemaField): DataSchemaField =>
     Object.freeze({
       ...field,
+      ...(field.type === undefined
+        ? {}
+        : { type: immutableJson(field.type as unknown as JsonValue) as FieldType }),
       ...(field.fields === undefined
         ? {}
         : { fields: Object.freeze(field.fields.map(immutableField)) }),

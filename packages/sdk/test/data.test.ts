@@ -125,9 +125,15 @@ describe('game-neutral data catalog resolution', () => {
           {
             fieldId: 'Weapon',
             cardinality: 'scalar',
+            type: { kind: 'subject-ref', subjectKind: 'fixture/weapon' },
             linkNamespace: 'Weapon',
           },
-          { fieldId: 'Name', cardinality: 'scalar', linkNamespace: '' },
+          {
+            fieldId: 'Name',
+            cardinality: 'scalar',
+            type: { kind: 'text-key', catalog: 'GameStrings' },
+            linkNamespace: '',
+          },
         ],
       },
     ]
@@ -207,6 +213,11 @@ describe('game-neutral data catalog resolution', () => {
       }),
     ])
     expect(snapshot.snapshotId).toBe('revision:actual-content')
+    expect(snapshot.schemas?.[1]?.fields.map(field => field.type)).toEqual([
+      { kind: 'subject-ref', subjectKind: 'fixture/weapon' },
+      { kind: 'text-key', catalog: 'GameStrings' },
+    ])
+    expect(Object.isFrozen(snapshot.schemas?.[1]?.fields[0]?.type)).toBe(true)
     expect(snapshot.diagnostics).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ code: 'common.data/relation-target-unavailable' }),
