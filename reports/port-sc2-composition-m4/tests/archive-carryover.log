@@ -1,0 +1,59 @@
+
+ RUN  v2.1.9 C:/FILES/SC2Files/coding/modkit-extensions-blizzard
+
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/cache.spec.ts > ByteBudgetLru > uses the default byte budget and exposes cache accounting
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/cache.spec.ts > ByteBudgetLru > evicts the least recently read entry deterministically
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/cache.spec.ts > ByteBudgetLru > accounts for replacement and promotes the replacement
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/cache.spec.ts > ByteBudgetLru > rejects oversized values without evicting unrelated entries
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/cache.spec.ts > ByteBudgetLru > evicts immediately when the configured budget shrinks
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/cache.spec.ts > ByteBudgetLru > validates configured budgets
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/cache.spec.ts > ByteBudgetLru > supports delete and clear with exact accounting
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/cache.spec.ts > ByteBudgetLru > reuses one decoded solid block across entry reads
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/vfs-browser-boundary.spec.ts > archive VFS browser boundary > keeps the session bridge and native ZIP range path free of Node imports
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/vfs-browser-boundary.spec.ts > archive VFS browser boundary > browser-bundles the portable VFS entry without Node shims or built-in codec chunks 304ms
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/optional-extension-loaders.spec.ts > optional extension loaders > preserves the package-level Oodle DLL path provider across lazy loading
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/source.spec.ts > random-access archive sources > counts exact physical reads and can be reset
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/source.spec.ts > random-access archive sources > resolves tail-signature formats without reading the full source
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > registers every codec the catalog describes, all of them lazily
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > opens a ZIP with the built-in codec
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > opens Warzone 2100 .wz archives through the codec that owns the extension
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/vfs-mount.spec.ts > archive-session VFS mounts > opens the same ZIP and BIG fixtures from memory, file, and HTTP providers
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/vfs-mount.spec.ts > archive-session VFS mounts > restores nested archives and entries from serialized descriptor chains
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/vfs-mount.spec.ts > archive-session VFS mounts > opens browser blobs, Git blobs, and explicit installation readers through one bridge
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/vfs-mount.spec.ts > archive-session VFS mounts > classifies installation I/O failures and rejects case-colliding indexes with cleanup
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/vfs-mount.spec.ts > archive-session VFS mounts > reuses matching identity/freshness and invalidates an old session after a change
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/vfs-mount.spec.ts > archive-session VFS mounts > isolates mount policies and delimiter-bearing identities while honoring case policy
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/vfs-mount.spec.ts > archive-session VFS mounts > reports traversal, malformed data, limits, and unavailable codecs structurally
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/vfs-mount.spec.ts > archive-session VFS mounts > keeps source cleanup and lease release idempotent
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/vfs-mount.spec.ts > archive-session VFS mounts > disposes sources rejected before a session or acquisition is established
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > lazy-loads the MPQ plugin and opens a container
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > opens Warcraft III package map.w3m through the MPQ codec
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > opens Warcraft III package map.w3x through the MPQ codec
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > opens Warcraft III package campaign.w3n through the MPQ codec
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > resolves by magic bytes when the extension is unknown
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > produces container metadata for ZIP
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > repacks through a codec that supports writing
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > reports a diagnostic for unresolved bytes instead of throwing
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > rejects writing through a read-only codec
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > opens and describes an EA SAGE BIG archive
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > extracts RefPack-compressed BIG entries
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > opens and describes a TAR archive
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > repacks and reopens a TAR archive
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > opens and describes a GZip payload as one virtual file
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > repacks and reopens a GZip payload
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > opens and describes a Brotli payload as one virtual file
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > repacks and reopens a Brotli payload
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > keeps SGA v9 extraction gated on an authentic fixture
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > opens and describes a Wwise AKPK PCK package
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > resolves Wwise PCK by AKPK magic bytes
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > lists and caches Wwise PCK entries through bounded source reads 801ms
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > opens Heroes VI ORC zip-compatible packages and reports unsupported wrappers
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > resolves and describes synthetic DMG metadata
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > reports encrypted DMG images explicitly before bridge extraction
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > resolves and describes synthetic CAB metadata
+ ✓ |archives-processing| modkit-extensions-blizzard/starcraft2/test/mk2/packages/archives-processing/test/index.spec.ts > createArchiveCodecRegistry > resolves and describes synthetic MSI metadata
+
+ Test Files  6 passed (6)
+      Tests  51 passed (51)
+   Start at  08:47:38
+   Duration  2.84s (transform 1.45s, setup 0ms, collect 3.68s, tests 1.85s, environment 1ms, prepare 1.26s)

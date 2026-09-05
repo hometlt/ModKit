@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "mk2": {
+    "revision": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+    "entry": "extensions/blizzard/archives/codecs/casc/src/install-reader.ts",
+    "entryGitBlob": "ec2ecfd4aabe1c497bf833be6296ab92782cf25d",
+    "entrySha256": "0ab6678ca174b04b3dd6b55896764847edd2f199f875138e1da19d7cf6fdca1d"
+  },
+  "installation": {
+    "environmentVariable": "MODKITX_SC2_ROOT",
+    "defaultRoot": "C:/Apps/StarCraft II",
+    "buildInfo": {
+      "bytes": 678,
+      "sha256": "1bcb07648367bb492c46c965962baaa3eb8eb5c7327fa92dce3cdc740f18adfa"
+    },
+    "entry": {
+      "path": "campaigns/liberty.sc2campaign/base.sc2data/gamedata/unitdata.xml",
+      "bytes": 787142,
+      "sha256": "52026354da439891b67b4767f3caa7adb21088382aa61f167ac30f692574b963"
+    },
+    "missingPath": "campaigns/liberty.sc2campaign/base.sc2data/gamedata/__modkit_m4_missing__.xml"
+  },
+  "operation": {
+    "id": "archive.extract",
+    "mk2": "openCascInstallReader.asLocalOnly.get",
+    "mk3": "container.extract",
+    "expectedMk3HandlerId": "extract-entry"
+  },
+  "bounds": {
+    "listPrefix": "campaigns/liberty.sc2campaign/base.sc2data/gamedata/",
+    "listLimit": 1,
+    "rejectedListLimit": 257,
+    "rejectedListCode": "x3.casc/page-limit-exceeded"
+  },
+  "expected": {
+    "mk2CacheKey": "ead889c2de70bbca42c2d8fd0c4da8c84d6def815c2583eb8944dfd1a0cc8aeb",
+    "positiveDigest": "acbf803532a1e16285ddbdea5746aecc4034a429e10f878bc804c6dbaaef8903",
+    "counts": {
+      "total": 1,
+      "identical": 1,
+      "differing": 0,
+      "mk2Only": 0,
+      "mk3Only": 0,
+      "bothRefused": 0
+    },
+    "resultDigest": "3df77b3d313eef94c88b26d9022eafa797eb403a19a471cf20a2c883a0f5b4b5"
+  }
+}

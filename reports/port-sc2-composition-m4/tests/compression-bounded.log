@@ -1,0 +1,11 @@
+✔ Adler-32 one-shot and incremental forms share the standard checksum (0.6509ms)
+✔ bounded decompression supports wrapped and raw DEFLATE and reports decoded work (23.0686ms)
+✔ bounded decompression cancels its stream on the exact output ceiling (3.0442ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 150.063

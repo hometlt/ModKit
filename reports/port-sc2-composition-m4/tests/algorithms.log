@@ -1,0 +1,32 @@
+✔ baseline editing cannot grant new debt or modify an existing allowance (1.2737ms)
+✔ AST finds named implementation bodies and ignores calls, comments and import declarations (18.9573ms)
+✔ M4 mpqHash gate proves one canonical definition, three bindings and behavior vectors (157.9539ms)
+✔ M4 mpqHash gate rejects a Blizzard definition hidden behind otherwise valid imports (61.7026ms)
+✔ M4 mpqHash gate rejects an alias import with different behavior (64.0615ms)
+✔ M4 mpqHash gate rejects a local alias that shadows the canonical import (93.5414ms)
+✔ ratchet accepts debt deletion and canonical copies, rejects new peers and changed algorithms (1.2259ms)
+✔ actual repository scan excludes build/tests/vendor and validates canonical uniqueness and hashes (31.957ms)
+✔ authored canonical owners are exact, hash-bound and extend algorithm discovery by name (13.8715ms)
+warning: in the working copy of 'archive/hash.ts', LF will be replaced by CRLF the next time Git touches it
+✔ M4 archive algorithm allowances are root-, blob-, implementation- and destination-bound (1815.6126ms)
+✔ copied-unwired classification is exact and hash-bound (344.1404ms)
+✔ an undeclared same-name peer remains new algorithm debt (379.3438ms)
+✔ a copied-unwired destination hash tamper fails closed (166.0978ms)
+✔ a direct import of excluded copied-unwired code from production fails closed (196.7789ms)
+✔ a re-export of excluded copied-unwired code from production fails closed (204.8288ms)
+✔ a direct SC2 package runtime surface to copied-unwired code fails closed (285.8829ms)
+✔ an authored JavaScript runtime surface importing copied-unwired code fails closed (375.5371ms)
+✔ a nested conditional export array reaching copied-unwired code fails closed (446.5114ms)
+✔ a changed contribution manifest pattern fails closed despite a populated old directory (47.9214ms)
+✔ an orphaned dist JavaScript runtime surface cannot replace authored source (58.2577ms)
+✔ an arbitrary alternate production tsconfig cannot be supplied (57.2151ms)
+✔ an unexpected third copied-unwired allowance fails closed (0.9074ms)
+✔ a stale copied-unwired symbol fails closed (446.3639ms)
+ℹ tests 23
+ℹ suites 0
+ℹ pass 23
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5730.1005

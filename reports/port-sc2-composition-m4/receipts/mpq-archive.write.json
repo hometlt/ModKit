@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "codec": "mpq",
+  "corpusKind": "real",
+  "verdict": "pass",
+  "tests": { "passed": 2, "failed": 0, "skipped": 0 },
+  "inputs": {
+    "operation": "container.pack",
+    "rawOracle": "modkit-core/reports/port-sc2-composition-m4/oracles/packed-raw.json",
+    "vector": "mpq-writer-cross-direction",
+    "vectorResultDigest": "7350cf9dfdbc6bb01eb2b01a144a43126f22117fc441b0de59d89c6761a61f27"
+  },
+  "oracleVerification": {
+    "verified": true,
+    "operation": "container.pack",
+    "modules": [
+      {
+        "id": "m4-packed-mk2-odb-writer-oracle",
+        "mk2Revision": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "writerSource": "extensions/blizzard/archives/codecs/mpq/src/writer.ts",
+        "writerSourceSha256": "bd5c57d45f3406e96043debc9773d42dc87bb99713e351d0e8a8b22556928b5f",
+        "sourceMode": "pinned-mk2-odb-plus-provenance-bound-copy",
+        "loader": "starcraft2/test/mk2/m4-packed-oracle-execution.test.ts"
+      }
+    ]
+  },
+  "rawEvidence": {
+    "writerVectorDigest": "7350cf9dfdbc6bb01eb2b01a144a43126f22117fc441b0de59d89c6761a61f27",
+    "obfuscationVectorDigest": "2fbe78300d431c2735187954875037575642166a344c416fe8fe41e201ac73df",
+    "policy": "complete named payload sets; generated (listfile) excluded from user-entry equality",
+    "publicRoute": {
+      "receipt": "modkit-core/reports/port-sc2-composition-m4/oracles/mpq-public-pack-raw.json",
+      "fileSha256": "8a845f3fdcf353bd7411955cd14dc5803b2e404db5523e0e27cf31171e478fd0",
+      "resultDigest": "afd94445e1f7bb16fe85edcabe77e46e1202439370c5301d704a2f43054f7ce8",
+      "operation": "container.pack",
+      "handlerId": "pack-container"
+    }
+  },
+  "cases": [
+    { "id": "real:mpq-writer-cross-direction:nonempty:container.pack", "verdict": "identical", "resultDigest": "bd57614dfbbb7f8ef472760dbef4280cb0900ee5049321e878e8ad9d993de1d4", "mk2ToMk3Digest": "a267c5ab910ff32b0f55235810a47ca49910e4e9c430413467e1f73542c19420", "mk3ToMk2Digest": "a267c5ab910ff32b0f55235810a47ca49910e4e9c430413467e1f73542c19420" },
+    { "id": "real:mpq-writer-cross-direction:empty:container.pack", "verdict": "identical", "resultDigest": "e86e8739c0f3d5bc86d6e127becb5102fe553b85a76c2c3face7d7871d9ce2c3", "mk2ToMk3Digest": "de63fd47f8a56c405a4e4aa1cc1b6dd11d34506e11d653848cbb1241089885b0", "mk3ToMk2Digest": "de63fd47f8a56c405a4e4aa1cc1b6dd11d653848cbb1241089885b0" }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/mpq/operation/archive.write",
+      "kind": "operation",
+      "legacyOperation": "archive.write",
+      "adapterOperation": "container.pack",
+      "targetOperation": "container.pack",
+      "handlerId": "pack-container",
+      "contribution": "modkit-extensions-blizzard/mpq/contributions/codec-mpq.json",
+      "executed": true,
+      "caseIds": ["real:mpq-writer-cross-direction:nonempty:container.pack", "real:mpq-writer-cross-direction:empty:container.pack"]
+    }
+  ]
+}

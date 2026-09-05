@@ -1,0 +1,87 @@
+{
+  "caseIds": [
+    "real:mpq-writer-cross-direction:nonempty:container.pack",
+    "real:mpq-writer-cross-direction:empty:container.pack"
+  ],
+  "cases": [
+    {
+      "id": "real:mpq-writer-cross-direction:nonempty:container.pack",
+      "materializedArchive": {
+        "bytes": 543,
+        "sha256": "bceeadd4f289d0870f64f2f41decf676ea984b857e1d3c14ed6783c54c003a5e"
+      },
+      "oracleBinding": {
+        "comparison": "matched",
+        "vectorCase": "nonempty",
+        "vectorCaseResultDigest": "bd57614dfbbb7f8ef472760dbef4280cb0900ee5049321e878e8ad9d993de1d4",
+        "vectorId": "mpq-writer-cross-direction"
+      },
+      "publicOperation": {
+        "handlerId": "pack-container",
+        "id": "container.pack",
+        "state": "available"
+      },
+      "reopenedUserPayload": {
+        "digest": "a267c5ab910ff32b0f55235810a47ca49910e4e9c430413467e1f73542c19420",
+        "projection": {
+          "internalEntryPolicy": "exclude-(listfile)",
+          "namedPayloads": [
+            {
+              "path": "Alpha.txt",
+              "sha256": "8ed3f6ad685b959ead7022518e1af76cd816f8e8ec7ccdda1ed4018e8f2223f8",
+              "size": 5
+            },
+            {
+              "path": "Data/Repeated.bin",
+              "sha256": "f9022b3ce7ac270e13d80e21a67608a0937b748b6552b9431c57d9fcf2ee7e96",
+              "size": 300
+            }
+          ],
+          "opened": true
+        }
+      },
+      "requestClass": "ContainerPackCreateInputV1",
+      "verdict": "pass"
+    },
+    {
+      "id": "real:mpq-writer-cross-direction:empty:container.pack",
+      "materializedArchive": {
+        "bytes": 114,
+        "sha256": "6091ae8a6da2e3b20bb915b6a6e609f6e4e8c4879405a063ab992fcb2d7e58a2"
+      },
+      "oracleBinding": {
+        "comparison": "matched",
+        "vectorCase": "empty",
+        "vectorCaseResultDigest": "e86e8739c0f3d5bc86d6e127becb5102fe553b85a76c2c3face7d7871d9ce2c3",
+        "vectorId": "mpq-writer-cross-direction"
+      },
+      "publicOperation": {
+        "handlerId": "pack-container",
+        "id": "container.pack",
+        "state": "available"
+      },
+      "reopenedUserPayload": {
+        "digest": "de63fd47f8a56c405a4e4aa1cc1b6dd11d34506e11d653848cbb1241089885b0",
+        "projection": {
+          "internalEntryPolicy": "exclude-(listfile)",
+          "namedPayloads": [],
+          "opened": true
+        }
+      },
+      "requestClass": "ContainerPackCreateInputV1",
+      "verdict": "pass"
+    }
+  ],
+  "evidenceKind": "m4-public-container-pack",
+  "oracleComparison": "matched",
+  "publicOperation": {
+    "handlerId": "pack-container",
+    "id": "container.pack",
+    "state": "available"
+  },
+  "requestClass": "ContainerPackCreateInputV1",
+  "resultDigest": "afd94445e1f7bb16fe85edcabe77e46e1202439370c5301d704a2f43054f7ce8",
+  "route": "public",
+  "schemaVersion": 1,
+  "verdict": "pass"
+}

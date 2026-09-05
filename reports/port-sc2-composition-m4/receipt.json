@@ -1,0 +1,293 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M4",
+  "stage": "composition-ready",
+  "scope": "SC2 container composition, required P11 contracts, MPQ operation evidence, and bounded installed-CASC extraction",
+  "verdict": "pass",
+  "ownerAcceptance": "pending",
+  "nextMilestone": "M5 requires separate owner acceptance of M4",
+  "generatedAt": "2026-09-05T05:04:16.814Z",
+  "oracle": {
+    "repository": "references/modkitmk2",
+    "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+    "sourceMode": "git-object-database",
+    "workingTreeObserved": false,
+    "workingTreeModified": false
+  },
+  "prerequisite": {
+    "milestone": "M3",
+    "ownerAcceptedOn": "2026-09-05",
+    "instruction": "proceed with the rest sc2 codecs",
+    "coreEvidenceCommit": "8476bdfcffafba0e4edd51827e5b6cf543c83f5f",
+    "blizzardImplementationCommit": "1751abd0d8b54cc03869d996dd2de5550729279d",
+    "acceptedEvidenceUnchanged": true
+  },
+  "repositories": {
+    "core": {
+      "directory": "modkit-core",
+      "branch": "sol/port-libs",
+      "acceptedBase": "8476bdfcffafba0e4edd51827e5b6cf543c83f5f",
+      "implementationCommit": "f00179fe93e1d699450f59e6f1bf294c3c0ab75b",
+      "implementationCommits": 13,
+      "implementationPaths": 56,
+      "evidenceCommit": "self",
+      "expectedFinalStatus": "clean"
+    },
+    "blizzard": {
+      "directory": "modkit-extensions-blizzard",
+      "branch": "sol/port-sc2",
+      "acceptedBase": "1751abd0d8b54cc03869d996dd2de5550729279d",
+      "implementationCommit": "31ced1205ad8eabe6ce08defe1a3218ede6de1c3",
+      "implementationCommits": 21,
+      "implementationPaths": 336,
+      "status": "clean"
+    },
+    "docs": {
+      "directory": "references/modkit-docs",
+      "branch": "sol/port-plan-review",
+      "head": "ce756f870331313f8e5653fb46acf809d35de36c",
+      "unrelatedUntrackedFilesUntouched": 5
+    }
+  },
+  "composition": {
+    "containerAlias": "container:{formatId}",
+    "containerFormatId": "mpq",
+    "semanticSourceTopology": "namespace",
+    "semanticCodecs": [
+      "sc2-map",
+      "sc2-mod",
+      "sc2-campaign",
+      "sc2-replay"
+    ],
+    "exactContainerSelection": true,
+    "genericFallback": "semantic-no-match-only",
+    "ambiguousTie": "fail-closed",
+    "hostNamespaceAdapter": "bounded",
+    "hostContainerPackWrapper": true,
+    "sc2MapMpqDuplicateRemoved": true,
+    "campaignAuthoredFunctionalityClaimed": false
+  },
+  "sourceClosure": {
+    "family": {
+      "files": 1460,
+      "imports": 4840,
+      "exitCode": 0
+    },
+    "m1Libraries": {
+      "files": 50,
+      "imports": 97,
+      "exitCode": 0
+    },
+    "sc2Bank": {
+      "files": 87,
+      "imports": 217,
+      "exitCode": 0
+    },
+    "archiveCompatibility": {
+      "copiedRoots": 51,
+      "algorithmAllowances": 7,
+      "productionReachable": false
+    }
+  },
+  "archiveCarryover": {
+    "files": 6,
+    "itDeclarations": 49,
+    "vitestLeaves": 51,
+    "passed": 51,
+    "failed": 0,
+    "skipped": 0,
+    "testsUnchanged": true
+  },
+  "oracles": {
+    "packed": {
+      "verdict": "pass",
+      "cacheKey": "857b7347583ead9459975eabdb5e949d24ea0c55c65c7a85219a9204c29f6823",
+      "resultDigest": "161a55eeceaf7009334737ff00ba6af5b8504c447d0599cbf0a59a4893b0f597",
+      "counts": {
+        "total": 8,
+        "identical": 8,
+        "differing": 0,
+        "mk2Only": 0,
+        "mk3Only": 0,
+        "bothRefused": 0
+      },
+      "corpusFiles": 2,
+      "operationsPerFile": 4,
+      "writerVectorDigest": "7350cf9dfdbc6bb01eb2b01a144a43126f22117fc441b0de59d89c6761a61f27",
+      "obfuscationVectorDigest": "2fbe78300d431c2735187954875037575642166a344c416fe8fe41e201ac73df"
+    },
+    "mpqPublicPack": {
+      "verdict": "pass",
+      "cases": 2,
+      "operation": "container.pack",
+      "handlerId": "pack-container",
+      "resultDigest": "afd94445e1f7bb16fe85edcabe77e46e1202439370c5301d704a2f43054f7ce8"
+    },
+    "nativeSaveAs": {
+      "verdict": "pass",
+      "corpus": "WTE70_Madlibrarian.SC2Map",
+      "untouchedEntries": 31,
+      "sourceUnchanged": true,
+      "reopenedSemantic": true,
+      "reopenedMpq": true,
+      "undoRemovedDestination": true
+    },
+    "cascInstalled": {
+      "verdict": "pass",
+      "counts": {
+        "total": 1,
+        "identical": 1,
+        "differing": 0,
+        "mk2Only": 0,
+        "mk3Only": 0,
+        "bothRefused": 0
+      },
+      "path": "campaigns/liberty.sc2campaign/base.sc2data/gamedata/unitdata.xml",
+      "bytes": 787142,
+      "sha256": "52026354da439891b67b4767f3caa7adb21088382aa61f167ac30f692574b963",
+      "resultDigest": "3df77b3d313eef94c88b26d9022eafa797eb403a19a471cf20a2c883a0f5b4b5"
+    }
+  },
+  "operationEvidence": {
+    "receipts": 4,
+    "validated": 4,
+    "adaptedRequirements": [
+      "legacy/codec-manifest/modkit/casc/operation/archive.extract",
+      "legacy/codec-manifest/modkit/mpq/operation/archive.extract",
+      "legacy/codec-manifest/modkit/mpq/operation/archive.inspect",
+      "legacy/codec-manifest/modkit/mpq/operation/archive.write"
+    ]
+  },
+  "algorithms": {
+    "repositories": 6,
+    "failures": [],
+    "debt": 43,
+    "canonical": 9,
+    "canonicalCopy": 5,
+    "canonicalOwned": 4,
+    "copiedUnwired": 9,
+    "new": 0,
+    "mpqHash": {
+      "definitions": 1,
+      "blizzardDefinitions": 0,
+      "bindings": 8,
+      "vectors": 5
+    }
+  },
+  "tests": {
+    "coreP11": {
+      "files": 4,
+      "passed": 28,
+      "failed": 0
+    },
+    "archiveCarryover": {
+      "files": 6,
+      "passed": 51,
+      "failed": 0,
+      "skipped": 0
+    },
+    "realOracleWrappers": {
+      "files": 2,
+      "passed": 2,
+      "failed": 0
+    },
+    "mpqPublicWorkflow": {
+      "files": 1,
+      "passed": 4,
+      "failed": 0
+    },
+    "algorithmInfrastructure": {
+      "passed": 23,
+      "failed": 0
+    },
+    "boundedCompression": {
+      "passed": 3,
+      "failed": 0
+    },
+    "migrationInfrastructure": {
+      "passed": 128,
+      "failed": 0
+    },
+    "coreQuick": {
+      "passed": 450,
+      "failed": 0
+    },
+    "blizzardQuick": {
+      "passed": 219,
+      "failed": 0,
+      "conditionalSkipped": 3
+    },
+    "typechecks": {
+      "core": 0,
+      "blizzard": 0,
+      "isolatedLibraries": 0,
+      "coreStrictProblems": 0
+    },
+    "blizzardPack": {
+      "files": 2061,
+      "exitCode": 0
+    }
+  },
+  "migration": {
+    "exitCode": 0,
+    "integrity": "pass",
+    "registryLine": "migration:check registry: known debt 38 (must be empty by wave 6), new problems 0, stale baseline entries 0, unavailable checks 1 (must be restored by wave 6)",
+    "knownDebt": 38,
+    "newProblems": 0,
+    "staleBaselineEntries": 0,
+    "unavailableChecks": 1,
+    "featureRequirements": 891,
+    "featurePending": 881,
+    "featureProblems": 0,
+    "mpq": {
+      "adapted": 3,
+      "pendingAudit": 1
+    },
+    "casc": {
+      "adapted": 1,
+      "pendingAudit": 1
+    },
+    "familyClosureClaimed": false
+  },
+  "remaining": [
+    {
+      "milestone": "M5",
+      "scope": "data and language codecs"
+    },
+    {
+      "milestone": "M6",
+      "scope": "map primitives, mod/workspace, replay/M3/runtime, and authored sc2-campaign CMP1-CMP6"
+    },
+    {
+      "milestone": "M7",
+      "scope": "complete user surfaces and remaining codec requirements"
+    },
+    {
+      "milestone": "M8",
+      "scope": "full SC2 family closure and installed VS Code acceptance"
+    },
+    {
+      "milestone": "M9",
+      "scope": "general P11 contracts and non-SC2 container consumers"
+    },
+    {
+      "milestone": "wave 6",
+      "scope": "retire 38 known debt rows and restore one unavailable coverage check"
+    }
+  ],
+  "evidenceManifest": {
+    "path": "reports/port-sc2-composition-m4/manifest.json",
+    "fileCount": 40,
+    "totalBytes": 503450,
+    "sha256": "50227fe79b6e0c695e9b06463fe90f08bcb3e9737039a3a4d98b533ed1ac6d39"
+  },
+  "report": {
+    "path": "reports/PORT_SC2_COMPOSITION_M4_2026-09-05.md",
+    "bytes": 6684,
+    "sha256": "20216e3254ac37f8f9e2ae0429eb71d5e162a295f616587bf5357d582122829b"
+  },
+  "verification": {
+    "command": "node reports/port-sc2-composition-m4/verify.mjs",
+    "rerunsAcceptanceCriticalGates": true
+  }
+}

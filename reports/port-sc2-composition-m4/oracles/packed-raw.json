@@ -1,0 +1,1935 @@
+{
+  "schemaVersion": 3,
+  "evidenceKind": "m4-packed-differential",
+  "cache": {
+    "key": "857b7347583ead9459975eabdb5e949d24ea0c55c65c7a85219a9204c29f6823",
+    "descriptor": {
+      "schemaVersion": 3,
+      "pin": {
+        "mk2Revision": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sourceAdapters": [
+          {
+            "sourcePath": "extensions/blizzard/archives/codecs/mpq/src/reader.ts",
+            "sourceGitBlob": "64802b5a6a2d9efc621cb293e27af115fb6e5922",
+            "sourceSha256": "1852f03f0d8cfaf955be3cc0c484cd76ab89a5267adb03c8863737f4da037c6f",
+            "destinationPath": "starcraft2/src/lib/mk2/extensions/blizzard/archives/codecs/mpq/src/reader.ts",
+            "destinationGitBlob": "fab9dd60a43dce66daa991eef0d7ea036476a102",
+            "destinationSha256": "bda83f11e25020f8e66d09d8ff7daf86087fc8b242cb868542219ddda11b4fde"
+          },
+          {
+            "sourcePath": "extensions/blizzard/archives/codecs/mpq/src/mpq-impl.ts",
+            "sourceGitBlob": "cd03a8902afda496d46988df13c0ec6306321a77",
+            "sourceSha256": "c7ab130cd4f44741ea96c62ee09f74349282aa20c4b31dfffdcbb576b3b418dc",
+            "destinationPath": "starcraft2/src/lib/mk2/extensions/blizzard/archives/codecs/mpq/src/mpq-impl.ts",
+            "destinationGitBlob": "edf4d615788b6362543719a4ce0b9d639546aeef",
+            "destinationSha256": "91105b9ccc5a9321eb395a9201a8e81872a3cf7195a0737246dcc27de62acafa"
+          },
+          {
+            "sourcePath": "extensions/blizzard/archives/codecs/mpq/src/writer.ts",
+            "sourceGitBlob": "10186ded905a2413920517e0f4a0cad6c6f7eef4",
+            "sourceSha256": "bd5c57d45f3406e96043debc9773d42dc87bb99713e351d0e8a8b22556928b5f",
+            "destinationPath": "starcraft2/src/lib/mk2/extensions/blizzard/archives/codecs/mpq/src/writer.ts",
+            "destinationGitBlob": "ee88af41aff8a4d5a9a4959c66d97b925c31bb0c",
+            "destinationSha256": "160032fc91b1804923c35e5fa15235a46b7bef1ea73e947c8e52cdcce05f521d"
+          },
+          {
+            "sourcePath": "extensions/blizzard/archives/codecs/mpq/src/obfuscate.ts",
+            "sourceGitBlob": "3016139daecf321d0a649f152a491cb94e9e986a",
+            "sourceSha256": "4e5d6c7a278292206e3e383afaf7acc1a14c80092d9858e6096998f941aec228",
+            "destinationPath": "starcraft2/src/lib/mk2/extensions/blizzard/archives/codecs/mpq/src/obfuscate.ts",
+            "destinationGitBlob": "3016139daecf321d0a649f152a491cb94e9e986a",
+            "destinationSha256": "4e5d6c7a278292206e3e383afaf7acc1a14c80092d9858e6096998f941aec228"
+          },
+          {
+            "sourcePath": "extensions/blizzard/starcraft-2/codecs/sc2-map/src/codec.ts",
+            "sourceGitBlob": "27d4224c14020f3542fbdfc666d918b414a53b40",
+            "sourceSha256": "8974a719a879e59d84953819be91498442dd266d261fd5fc34d2e773db55931d",
+            "destinationPath": "starcraft2/src/lib/mk2/codecs/sc2-map/src/codec.ts",
+            "destinationGitBlob": "96d8392ec66673516e056625c6f0c9f0ef743541",
+            "destinationSha256": "be89decd697a0486725acb5cc845c692d54955c4a5ea902a5f8457616b1415fc"
+          },
+          {
+            "sourcePath": "extensions/blizzard/starcraft-2/codecs/sc2-replay/src/codec.ts",
+            "sourceGitBlob": "32af9f29fb18b5557c20dd70927d02ffcc38104c",
+            "sourceSha256": "b7548ae703c585d628edf4f799df90db03da6cc77a1d69d889becea2508517d9",
+            "destinationPath": "starcraft2/src/lib/mk2/codecs/sc2-replay/src/codec.ts",
+            "destinationGitBlob": "19d69012afabf112d4e05ff939936559ef6047b5",
+            "destinationSha256": "24207c87bd6eb113b0d26553399e1c637f963e67df9275c78fd5d30c6e25b60f"
+          }
+        ]
+      },
+      "loader": [
+        {
+          "path": "starcraft2/test/mk2/m4-packed-oracle-execution.test.ts",
+          "gitBlob": "654f39ed262789c6a3ab21cceb30646a234d47ef",
+          "sha256": "c8b9af1514faa668289219e99656996db359bf67a51006713fd455b41c37152c"
+        },
+        {
+          "path": "starcraft2/test/sc2-packed-corpus.test.ts",
+          "gitBlob": "126fde4b03de2f00d9e530893bcf4224d9c4c61d",
+          "sha256": "b5a52b6fa2f1fdefd5b84821b6c69e992c7bac521319e637bb6e6e71c14a249b"
+        },
+        {
+          "path": "starcraft2/test/vitest.m3-family-libraries.workspace.mjs",
+          "gitBlob": "ed85ccad0ab7c284b302bef4a227f521e53caa0f",
+          "sha256": "e0fa6d00e2a364ac2e3a3dd625fc1a43c07c176f593da354c0833ea4e0172b91"
+        }
+      ],
+      "dependencies": {
+        "trees": [
+          {
+            "repository": "blizzard",
+            "path": "starcraft2/src/lib/mk2",
+            "files": 956,
+            "digest": "29748209e5f54ee2c1e9580d2ab70f976d8293c32b65613edd51ddd837e9fc07"
+          },
+          {
+            "repository": "blizzard",
+            "path": "mpq/src",
+            "files": 5,
+            "digest": "6ef27ee9b99d3bfb2e2285a4ec6a6da5803c4f2e60500b70bd5c18e9b35e36e5"
+          },
+          {
+            "repository": "blizzard",
+            "path": "mpq/contributions",
+            "files": 2,
+            "digest": "5a750eb49960c263b7945b826eca2c3a9bc080dd02d3c74d73114ccfde24aa65"
+          },
+          {
+            "repository": "blizzard",
+            "path": "starcraft2/src/sc2-map",
+            "files": 3,
+            "digest": "907ba7b4aff915b1c7618a7363c36f4ec87bebab982eb021f65b7931890d2fc5"
+          },
+          {
+            "repository": "blizzard",
+            "path": "starcraft2/src/sc2-replay",
+            "files": 1,
+            "digest": "3703ae71f3b2bebfb73c98be53128d34106c81eb08dbd09ca9db75bbd171b980"
+          },
+          {
+            "repository": "blizzard",
+            "path": "starcraft2/contributions",
+            "files": 32,
+            "digest": "ef5a723232761a00dff12f71b603834dbd9acc02a7a8e5d2ff1fc015ac053269"
+          },
+          {
+            "repository": "core",
+            "path": "packages/codec-kit/src",
+            "files": 111,
+            "digest": "074fee0667a35ba90aaf6fce8971b9a02f0aea0ff409dfa92ddc2967cbd4013b"
+          }
+        ],
+        "files": [
+          {
+            "repository": "blizzard",
+            "path": "pnpm-lock.yaml",
+            "gitBlob": "2ab6d36c41aa805749a13963194601dbf4b421fd",
+            "sha256": "95302a8e310c6dde1a3cf209a533ab26a7eff939a29c7bbff56a666926e5c1a0"
+          },
+          {
+            "repository": "blizzard",
+            "path": "mpq/package.json",
+            "gitBlob": "5ea1cf62876387c6a48de72bb0e7972732bfa22b",
+            "sha256": "5d61cc44100d14daf1e889765b24874b6e9a13432e34077f711d0193117ae04f"
+          },
+          {
+            "repository": "blizzard",
+            "path": "starcraft2/package.json",
+            "gitBlob": "474695d94973d0b15deda1e4116ae5014b76b16b",
+            "sha256": "9c1b862393a6be995a4a3830db66e9b43f58840bcc9e8cc1d7be20d0c73e965b"
+          },
+          {
+            "repository": "blizzard",
+            "path": "starcraft2/MK2-FAMILY-PROVENANCE.json",
+            "gitBlob": "1433a5a21f07504d0dea0afe31bd8d0e65f8816e",
+            "sha256": "812a2d67c634253604990fea089697fcddcdeff553cbd3ef22ea5d37cd99dbf1"
+          },
+          {
+            "repository": "core",
+            "path": "pnpm-lock.yaml",
+            "gitBlob": "370836a7ebcd027ed6290476da7218ecb63b95a4",
+            "sha256": "1c39e4b69dc12228d4bc2a5c48de99157c6bdbeba69aadb9e856437b466ca105"
+          },
+          {
+            "repository": "core",
+            "path": "packages/host/package.json",
+            "gitBlob": "d7bf8c1aba0777cb14682c3fcc3d4541f56adef1",
+            "sha256": "f153f8425798d5d3b6c93cf4d5abef745a958e9702d243124c556bbf3fe208bf"
+          },
+          {
+            "repository": "core",
+            "path": "packages/sdk/package.json",
+            "gitBlob": "a77a505784454ac4e270b697ef3d2b85568929a7",
+            "sha256": "fc5049d2b8f0dd313403d2221c74ea157e5724c9353ace0d2cef302d7ef3dc22"
+          },
+          {
+            "repository": "core",
+            "path": "packages/codec-kit/package.json",
+            "gitBlob": "ac0bbfb1e93dd1ef4015d35b0d0ec1d3ea040278",
+            "sha256": "d02e758c9448ace8fa43565eedd3b4d24770d55b04431361434fc0a5581049ee"
+          },
+          {
+            "repository": "core",
+            "path": "packages/codec-kit/MK2-PORT-PROVENANCE.json",
+            "gitBlob": "03db71a9fcd4379d717d00a29371fb4f5c767888",
+            "sha256": "ad273df84bb1e61f0c6d722eb3d23848bc4fc3e499713af58065c5c50a8fe84f"
+          }
+        ],
+        "runtimeTrees": [
+          {
+            "path": "node_modules/@modkit/host/dist",
+            "files": 396,
+            "digest": "2d16e96ecb1c84ea5469c735dca694254a68a954c5b6ba03686da58c7d54b891"
+          },
+          {
+            "path": "node_modules/@modkit/sdk/dist",
+            "files": 332,
+            "digest": "0bb1a825a5935a80b988d7c4425549f60474f80d03fae729f020460b8b9bf267"
+          },
+          {
+            "path": "node_modules/@modkit/codec-kit/dist",
+            "files": 436,
+            "digest": "cf1a02efc1185e523298800eac85993f9a2bc737811b324de2a7f34903cfde92"
+          }
+        ]
+      },
+      "operation": [
+        {
+          "id": "namespace",
+          "mk2": "mpq.list",
+          "mk3": "common.view/namespace-entry-source.list"
+        },
+        {
+          "id": "inspect",
+          "mk2": "view.inspect",
+          "mk3": "view.inspect"
+        },
+        {
+          "id": "extract",
+          "mk2": "container.extract",
+          "mk3": "container.extract"
+        },
+        {
+          "id": "raw",
+          "mk2": "export.raw/source.read",
+          "mk3": "export.raw"
+        }
+      ],
+      "vectors": [
+        {
+          "id": "mpq-writer-cross-direction",
+          "mk2": "packMpq/read",
+          "mk3": "encodeFreshMpq/extract-entry"
+        },
+        {
+          "id": "mpq-obfuscation-bidirectional",
+          "mk2": "copied obfuscate/deobfuscate",
+          "mk3": "production obfuscate/deobfuscate"
+        }
+      ],
+      "options": {
+        "normalization": "m4-packed-canonical-v1",
+        "requiredOperations": [
+          "namespace",
+          "inspect",
+          "extract",
+          "raw"
+        ],
+        "namespaceLimit": 1000,
+        "deadlineMs": 180000
+      },
+      "corpus": [
+        {
+          "logicalId": "WTE70_Madlibrarian.SC2Map",
+          "kind": "map",
+          "bytes": 22703,
+          "sha256": "f654e212dcff3ffe3e1090e383b7b25fac4def2a723b4eda408c1b5cdfb2a305"
+        },
+        {
+          "logicalId": "Persephone.SC2Replay",
+          "kind": "replay",
+          "bytes": 59767,
+          "sha256": "e3522504afdf4d4f00d216e560baf9c89536135c927f5808831155682fc515d6"
+        }
+      ]
+    }
+  },
+  "vectors": [
+    {
+      "id": "mpq-writer-cross-direction",
+      "cases": [
+        {
+          "caseName": "nonempty",
+          "input": {
+            "opened": true,
+            "internalEntryPolicy": "exclude-(listfile)",
+            "namedPayloads": [
+              {
+                "path": "Alpha.txt",
+                "size": 5,
+                "sha256": "8ed3f6ad685b959ead7022518e1af76cd816f8e8ec7ccdda1ed4018e8f2223f8"
+              },
+              {
+                "path": "Data/Repeated.bin",
+                "size": 300,
+                "sha256": "f9022b3ce7ac270e13d80e21a67608a0937b748b6552b9431c57d9fcf2ee7e96"
+              }
+            ]
+          },
+          "mk2ToMk3": {
+            "state": "ok",
+            "adapterOperation": "MK2 packMpq -> MK3 extract-entry",
+            "projection": {
+              "internalEntryPolicy": "exclude-(listfile)",
+              "namedPayloads": [
+                {
+                  "path": "Alpha.txt",
+                  "sha256": "8ed3f6ad685b959ead7022518e1af76cd816f8e8ec7ccdda1ed4018e8f2223f8",
+                  "size": 5
+                },
+                {
+                  "path": "Data/Repeated.bin",
+                  "sha256": "f9022b3ce7ac270e13d80e21a67608a0937b748b6552b9431c57d9fcf2ee7e96",
+                  "size": 300
+                }
+              ],
+              "opened": true
+            },
+            "digest": "a267c5ab910ff32b0f55235810a47ca49910e4e9c430413467e1f73542c19420"
+          },
+          "mk3ToMk2": {
+            "state": "ok",
+            "adapterOperation": "MK3 encodeFreshMpq -> MK2 MpqReader.read",
+            "projection": {
+              "internalEntryPolicy": "exclude-(listfile)",
+              "namedPayloads": [
+                {
+                  "path": "Alpha.txt",
+                  "sha256": "8ed3f6ad685b959ead7022518e1af76cd816f8e8ec7ccdda1ed4018e8f2223f8",
+                  "size": 5
+                },
+                {
+                  "path": "Data/Repeated.bin",
+                  "sha256": "f9022b3ce7ac270e13d80e21a67608a0937b748b6552b9431c57d9fcf2ee7e96",
+                  "size": 300
+                }
+              ],
+              "opened": true
+            },
+            "digest": "a267c5ab910ff32b0f55235810a47ca49910e4e9c430413467e1f73542c19420"
+          },
+          "writerOutputs": {
+            "mk2": {
+              "bytes": 380,
+              "sha256": "6352323df397b2706c2ac808f06ed3cb779b232d89ac1918fd42475e3e1b4164"
+            },
+            "mk3": {
+              "bytes": 543,
+              "sha256": "bceeadd4f289d0870f64f2f41decf676ea984b857e1d3c14ed6783c54c003a5e"
+            }
+          },
+          "verdict": "pass",
+          "resultDigest": "bd57614dfbbb7f8ef472760dbef4280cb0900ee5049321e878e8ad9d993de1d4"
+        },
+        {
+          "caseName": "empty",
+          "input": {
+            "opened": true,
+            "internalEntryPolicy": "exclude-(listfile)",
+            "namedPayloads": []
+          },
+          "mk2ToMk3": {
+            "state": "ok",
+            "adapterOperation": "MK2 packMpq -> MK3 extract-entry",
+            "projection": {
+              "internalEntryPolicy": "exclude-(listfile)",
+              "namedPayloads": [],
+              "opened": true
+            },
+            "digest": "de63fd47f8a56c405a4e4aa1cc1b6dd11d34506e11d653848cbb1241089885b0"
+          },
+          "mk3ToMk2": {
+            "state": "ok",
+            "adapterOperation": "MK3 encodeFreshMpq -> MK2 MpqReader.read",
+            "projection": {
+              "internalEntryPolicy": "exclude-(listfile)",
+              "namedPayloads": [],
+              "opened": true
+            },
+            "digest": "de63fd47f8a56c405a4e4aa1cc1b6dd11d34506e11d653848cbb1241089885b0"
+          },
+          "writerOutputs": {
+            "mk2": {
+              "bytes": 306,
+              "sha256": "615ef8d7a8605dece57c9af34a99bd1886d940f486f1c21317105a6517e36487"
+            },
+            "mk3": {
+              "bytes": 114,
+              "sha256": "6091ae8a6da2e3b20bb915b6a6e609f6e4e8c4879405a063ab992fcb2d7e58a2"
+            }
+          },
+          "verdict": "pass",
+          "resultDigest": "e86e8739c0f3d5bc86d6e127becb5102fe553b85a76c2c3face7d7871d9ce2c3"
+        }
+      ],
+      "verdict": "pass",
+      "resultDigest": "7350cf9dfdbc6bb01eb2b01a144a43126f22117fc441b0de59d89c6761a61f27"
+    },
+    {
+      "id": "mpq-obfuscation-bidirectional",
+      "input": {
+        "bytes": {
+          "bytes": 9,
+          "sha256": "2174b95e15a06a29e2ec5526d0ae1831a39c2b33afd4c883d405864cb5a2d427"
+        },
+        "key": "S2-🔒",
+        "keys": [
+          "alpha",
+          "βeta",
+          "third"
+        ],
+        "rotation": 37
+      },
+      "mk2": {
+        "state": "ok",
+        "adapterOperation": "copied MK2 obfuscation helpers",
+        "projection": {
+          "combined": {
+            "bytes": 9,
+            "sha256": "e2f76299e7482a5ea1bda163faf8c46831cc5c250be61e1a5c289ad649f392c9"
+          },
+          "combinedDecoded": {
+            "bytes": 9,
+            "sha256": "2174b95e15a06a29e2ec5526d0ae1831a39c2b33afd4c883d405864cb5a2d427"
+          },
+          "headed": {
+            "bytes": 17,
+            "sha256": "c949f405269d8fc49c680d6032bc9bf651e82ed596942e8231b4177695198ccf"
+          },
+          "headerDecoded": {
+            "bytes": 9,
+            "sha256": "2174b95e15a06a29e2ec5526d0ae1831a39c2b33afd4c883d405864cb5a2d427"
+          },
+          "headerDetected": true,
+          "multi": {
+            "bytes": 9,
+            "sha256": "091cb3b9bd1b10f88da045eed95c7326f4e7ce618456422439436ce6fef165d4"
+          },
+          "multiDecoded": {
+            "bytes": 9,
+            "sha256": "2174b95e15a06a29e2ec5526d0ae1831a39c2b33afd4c883d405864cb5a2d427"
+          },
+          "rotated": {
+            "bytes": 9,
+            "sha256": "07fc986447c7d22c49e51a55a91c52e12fd005d334b182793282c6ca5afb25e6"
+          },
+          "rotationDecoded": {
+            "bytes": 9,
+            "sha256": "2174b95e15a06a29e2ec5526d0ae1831a39c2b33afd4c883d405864cb5a2d427"
+          },
+          "single": {
+            "bytes": 9,
+            "sha256": "332e00ce0b6246984cd7d4903ac33b0f8d18d41f52b0bf4cd820ce56c262d985"
+          },
+          "singleDecoded": {
+            "bytes": 9,
+            "sha256": "2174b95e15a06a29e2ec5526d0ae1831a39c2b33afd4c883d405864cb5a2d427"
+          }
+        },
+        "digest": "1380cecd46253ae41c6a57ba74c78b884eeb49abdaf2fd3816cedce7c4ef216a"
+      },
+      "mk3": {
+        "state": "ok",
+        "adapterOperation": "MK3 obfuscation helpers",
+        "projection": {
+          "combined": {
+            "bytes": 9,
+            "sha256": "e2f76299e7482a5ea1bda163faf8c46831cc5c250be61e1a5c289ad649f392c9"
+          },
+          "combinedDecoded": {
+            "bytes": 9,
+            "sha256": "2174b95e15a06a29e2ec5526d0ae1831a39c2b33afd4c883d405864cb5a2d427"
+          },
+          "headed": {
+            "bytes": 17,
+            "sha256": "c949f405269d8fc49c680d6032bc9bf651e82ed596942e8231b4177695198ccf"
+          },
+          "headerDecoded": {
+            "bytes": 9,
+            "sha256": "2174b95e15a06a29e2ec5526d0ae1831a39c2b33afd4c883d405864cb5a2d427"
+          },
+          "headerDetected": true,
+          "multi": {
+            "bytes": 9,
+            "sha256": "091cb3b9bd1b10f88da045eed95c7326f4e7ce618456422439436ce6fef165d4"
+          },
+          "multiDecoded": {
+            "bytes": 9,
+            "sha256": "2174b95e15a06a29e2ec5526d0ae1831a39c2b33afd4c883d405864cb5a2d427"
+          },
+          "rotated": {
+            "bytes": 9,
+            "sha256": "07fc986447c7d22c49e51a55a91c52e12fd005d334b182793282c6ca5afb25e6"
+          },
+          "rotationDecoded": {
+            "bytes": 9,
+            "sha256": "2174b95e15a06a29e2ec5526d0ae1831a39c2b33afd4c883d405864cb5a2d427"
+          },
+          "single": {
+            "bytes": 9,
+            "sha256": "332e00ce0b6246984cd7d4903ac33b0f8d18d41f52b0bf4cd820ce56c262d985"
+          },
+          "singleDecoded": {
+            "bytes": 9,
+            "sha256": "2174b95e15a06a29e2ec5526d0ae1831a39c2b33afd4c883d405864cb5a2d427"
+          }
+        },
+        "digest": "1380cecd46253ae41c6a57ba74c78b884eeb49abdaf2fd3816cedce7c4ef216a"
+      },
+      "mk2ToMk3": {
+        "state": "ok",
+        "adapterOperation": "MK2 encode -> MK3 decode",
+        "projection": {
+          "combined": {
+            "bytes": 9,
+            "sha256": "2174b95e15a06a29e2ec5526d0ae1831a39c2b33afd4c883d405864cb5a2d427"
+          },
+          "header": {
+            "bytes": 9,
+            "sha256": "2174b95e15a06a29e2ec5526d0ae1831a39c2b33afd4c883d405864cb5a2d427"
+          },
+          "multi": {
+            "bytes": 9,
+            "sha256": "2174b95e15a06a29e2ec5526d0ae1831a39c2b33afd4c883d405864cb5a2d427"
+          },
+          "rotation": {
+            "bytes": 9,
+            "sha256": "2174b95e15a06a29e2ec5526d0ae1831a39c2b33afd4c883d405864cb5a2d427"
+          },
+          "single": {
+            "bytes": 9,
+            "sha256": "2174b95e15a06a29e2ec5526d0ae1831a39c2b33afd4c883d405864cb5a2d427"
+          }
+        },
+        "digest": "330fab71a847d63215aa889feb2baa824ee624435fb14fd649316fff65bbef9e"
+      },
+      "mk3ToMk2": {
+        "state": "ok",
+        "adapterOperation": "MK3 encode -> MK2 decode",
+        "projection": {
+          "combined": {
+            "bytes": 9,
+            "sha256": "2174b95e15a06a29e2ec5526d0ae1831a39c2b33afd4c883d405864cb5a2d427"
+          },
+          "header": {
+            "bytes": 9,
+            "sha256": "2174b95e15a06a29e2ec5526d0ae1831a39c2b33afd4c883d405864cb5a2d427"
+          },
+          "multi": {
+            "bytes": 9,
+            "sha256": "2174b95e15a06a29e2ec5526d0ae1831a39c2b33afd4c883d405864cb5a2d427"
+          },
+          "rotation": {
+            "bytes": 9,
+            "sha256": "2174b95e15a06a29e2ec5526d0ae1831a39c2b33afd4c883d405864cb5a2d427"
+          },
+          "single": {
+            "bytes": 9,
+            "sha256": "2174b95e15a06a29e2ec5526d0ae1831a39c2b33afd4c883d405864cb5a2d427"
+          }
+        },
+        "digest": "330fab71a847d63215aa889feb2baa824ee624435fb14fd649316fff65bbef9e"
+      },
+      "verdict": "pass",
+      "resultDigest": "2fbe78300d431c2735187954875037575642166a344c416fe8fe41e201ac73df"
+    }
+  ],
+  "corpus": [
+    {
+      "logicalId": "WTE70_Madlibrarian.SC2Map",
+      "kind": "map",
+      "receiptClass": "real-installed-map",
+      "input": {
+        "bytes": 22703,
+        "sha256": "f654e212dcff3ffe3e1090e383b7b25fac4def2a723b4eda408c1b5cdfb2a305"
+      },
+      "operations": {
+        "namespace": {
+          "mk2": {
+            "state": "ok",
+            "adapterOperation": "mpq.list",
+            "projection": [
+              {
+                "path": "(attributes)",
+                "size": 904
+              },
+              {
+                "path": "(listfile)",
+                "size": 547
+              },
+              {
+                "path": "Base.SC2Data/GameData/UnitData.xml",
+                "size": 282
+              },
+              {
+                "path": "ComponentList.SC2Components",
+                "size": 490
+              },
+              {
+                "path": "DocumentHeader",
+                "size": 614
+              },
+              {
+                "path": "DocumentInfo",
+                "size": 460
+              },
+              {
+                "path": "DocumentInfo.version",
+                "size": 40
+              },
+              {
+                "path": "GameData.version",
+                "size": 40
+              },
+              {
+                "path": "GameText.version",
+                "size": 40
+              },
+              {
+                "path": "MapInfo",
+                "size": 216
+              },
+              {
+                "path": "MapInfo.version",
+                "size": 40
+              },
+              {
+                "path": "MapScript.galaxy",
+                "size": 2244
+              },
+              {
+                "path": "Minimap.tga",
+                "size": 3116
+              },
+              {
+                "path": "Objects",
+                "size": 31914
+              },
+              {
+                "path": "Objects.version",
+                "size": 40
+              },
+              {
+                "path": "PaintedPathingLayer",
+                "size": 524304
+              },
+              {
+                "path": "Preload.xml",
+                "size": 1692
+              },
+              {
+                "path": "Triggers",
+                "size": 1149
+              },
+              {
+                "path": "Triggers.version",
+                "size": 40
+              },
+              {
+                "path": "enGB.SC2Data/LocalizedData/GameStrings.txt",
+                "size": 267
+              },
+              {
+                "path": "enGB.SC2Data/LocalizedData/TriggerStrings.txt",
+                "size": 44
+              },
+              {
+                "path": "t3CellFlags",
+                "size": 1056
+              },
+              {
+                "path": "t3FluffDoodad",
+                "size": 28
+              },
+              {
+                "path": "t3HardTile",
+                "size": 166
+              },
+              {
+                "path": "t3HeightMap",
+                "size": 6566
+              },
+              {
+                "path": "t3SyncCliffLevel",
+                "size": 2080
+              },
+              {
+                "path": "t3SyncHeightMap",
+                "size": 4420
+              },
+              {
+                "path": "t3Terrain.version",
+                "size": 40
+              },
+              {
+                "path": "t3Terrain.xml",
+                "size": 884
+              },
+              {
+                "path": "t3TextureMasks",
+                "size": 262208
+              },
+              {
+                "path": "t3VertCol",
+                "size": 3936
+              },
+              {
+                "path": "t3Water",
+                "size": 32
+              }
+            ],
+            "digest": "d64e00b1facb8a0a1f6156fc292c1266b887c1b8d397cdd46fa5f8cfee6fe02b"
+          },
+          "mk3": {
+            "state": "ok",
+            "adapterOperation": "common.view/namespace-entry-source.list",
+            "projection": [
+              {
+                "path": "(attributes)",
+                "size": 904
+              },
+              {
+                "path": "(listfile)",
+                "size": 547
+              },
+              {
+                "path": "Base.SC2Data/GameData/UnitData.xml",
+                "size": 282
+              },
+              {
+                "path": "ComponentList.SC2Components",
+                "size": 490
+              },
+              {
+                "path": "DocumentHeader",
+                "size": 614
+              },
+              {
+                "path": "DocumentInfo",
+                "size": 460
+              },
+              {
+                "path": "DocumentInfo.version",
+                "size": 40
+              },
+              {
+                "path": "GameData.version",
+                "size": 40
+              },
+              {
+                "path": "GameText.version",
+                "size": 40
+              },
+              {
+                "path": "MapInfo",
+                "size": 216
+              },
+              {
+                "path": "MapInfo.version",
+                "size": 40
+              },
+              {
+                "path": "MapScript.galaxy",
+                "size": 2244
+              },
+              {
+                "path": "Minimap.tga",
+                "size": 3116
+              },
+              {
+                "path": "Objects",
+                "size": 31914
+              },
+              {
+                "path": "Objects.version",
+                "size": 40
+              },
+              {
+                "path": "PaintedPathingLayer",
+                "size": 524304
+              },
+              {
+                "path": "Preload.xml",
+                "size": 1692
+              },
+              {
+                "path": "Triggers",
+                "size": 1149
+              },
+              {
+                "path": "Triggers.version",
+                "size": 40
+              },
+              {
+                "path": "enGB.SC2Data/LocalizedData/GameStrings.txt",
+                "size": 267
+              },
+              {
+                "path": "enGB.SC2Data/LocalizedData/TriggerStrings.txt",
+                "size": 44
+              },
+              {
+                "path": "t3CellFlags",
+                "size": 1056
+              },
+              {
+                "path": "t3FluffDoodad",
+                "size": 28
+              },
+              {
+                "path": "t3HardTile",
+                "size": 166
+              },
+              {
+                "path": "t3HeightMap",
+                "size": 6566
+              },
+              {
+                "path": "t3SyncCliffLevel",
+                "size": 2080
+              },
+              {
+                "path": "t3SyncHeightMap",
+                "size": 4420
+              },
+              {
+                "path": "t3Terrain.version",
+                "size": 40
+              },
+              {
+                "path": "t3Terrain.xml",
+                "size": 884
+              },
+              {
+                "path": "t3TextureMasks",
+                "size": 262208
+              },
+              {
+                "path": "t3VertCol",
+                "size": 3936
+              },
+              {
+                "path": "t3Water",
+                "size": 32
+              }
+            ],
+            "digest": "d64e00b1facb8a0a1f6156fc292c1266b887c1b8d397cdd46fa5f8cfee6fe02b"
+          },
+          "verdict": "identical"
+        },
+        "inspect": {
+          "mk2": {
+            "state": "ok",
+            "adapterOperation": "view.inspect",
+            "projection": {
+              "archiveEntries": 32,
+              "format": "sc2-map"
+            },
+            "digest": "2f4aafe47e57821e388ea9c51301d2cfbc5c95f5637b97cb5a7ed220b6444fd3"
+          },
+          "mk3": {
+            "state": "ok",
+            "adapterOperation": "view.inspect",
+            "projection": {
+              "archiveEntries": 32,
+              "format": "sc2-map"
+            },
+            "digest": "2f4aafe47e57821e388ea9c51301d2cfbc5c95f5637b97cb5a7ed220b6444fd3"
+          },
+          "verdict": "identical"
+        },
+        "extract": {
+          "mk2": {
+            "state": "ok",
+            "adapterOperation": "container.extract",
+            "projection": [
+              {
+                "path": "(attributes)",
+                "sha256": "d3c8ea06ce594bad1e01991d6ada5dfb35d5d9f092b69737a8414fb4ea5f9d29",
+                "size": 904
+              },
+              {
+                "path": "(listfile)",
+                "sha256": "bfb6c3e55de694342969cc3fef52971d37d4d7f0f6624953e3b0bad9a5923683",
+                "size": 547
+              },
+              {
+                "path": "Base.SC2Data/GameData/UnitData.xml",
+                "sha256": "13f3b3ba49cfc683c0ffef027d1d9883b1e550fbd98e61050f4ffb7406f1d4f1",
+                "size": 282
+              },
+              {
+                "path": "ComponentList.SC2Components",
+                "sha256": "c711cfae1dd0be144ed17cd9a57c6febfa3c8756bcbebf769378e34fdcfadd40",
+                "size": 490
+              },
+              {
+                "path": "DocumentHeader",
+                "sha256": "23a6ae7b382fbb4231cfc1e56861e7b214bb792c054692a4dca4ee538164cdf1",
+                "size": 614
+              },
+              {
+                "path": "DocumentInfo",
+                "sha256": "662268770926ec420c50a141d67507a43e10d53b78981a8f70613e8f53e3aeed",
+                "size": 460
+              },
+              {
+                "path": "DocumentInfo.version",
+                "sha256": "daef7ad8d441a8541ba48080fd6f13ddcfeb94e6e3f66cfd2540659858cece5d",
+                "size": 40
+              },
+              {
+                "path": "GameData.version",
+                "sha256": "d868dd50db960a0546276103d221663cd93adf401d187d5f3606e7f1db73db35",
+                "size": 40
+              },
+              {
+                "path": "GameText.version",
+                "sha256": "b678fab235f0300ef2910ee3364c0253eddc4cfbd10812d1e3d0d17d2b985cf2",
+                "size": 40
+              },
+              {
+                "path": "MapInfo",
+                "sha256": "a52d55f65dd1f12e14bf2e66266bf1fa91c607d03777c609c781b88052123e0f",
+                "size": 216
+              },
+              {
+                "path": "MapInfo.version",
+                "sha256": "9b7470937d791a7360ed244eb1b0dc88e6e2295069ed1379b2b95160f5e43491",
+                "size": 40
+              },
+              {
+                "path": "MapScript.galaxy",
+                "sha256": "b4065602660c9ab439d765278b4878a42ffd524435c7ef9ebc3ba78a2f7d0ee8",
+                "size": 2244
+              },
+              {
+                "path": "Minimap.tga",
+                "sha256": "fedc7c93aa9844bfdb3caf08785bc4b2940f2bece3dadb9178514e94e517a6c4",
+                "size": 3116
+              },
+              {
+                "path": "Objects",
+                "sha256": "992a9d44343ecd76f42cb7a48f8b6091ddca76e55b53668671fc4c6203bdbb3a",
+                "size": 31914
+              },
+              {
+                "path": "Objects.version",
+                "sha256": "cc4b61e465f0f6cdf24cf58146b94898832160297daf06b1003c7d7399835009",
+                "size": 40
+              },
+              {
+                "path": "PaintedPathingLayer",
+                "sha256": "3f92a0f4d9f8e1529807e477814bb89e57544b06a9886db4e1a51b7e4cf37118",
+                "size": 524304
+              },
+              {
+                "path": "Preload.xml",
+                "sha256": "e8c23ee61a8cc7c047642e1a89c73205c820e00dc28bba89c9628f6977490c06",
+                "size": 1692
+              },
+              {
+                "path": "Triggers",
+                "sha256": "71db33335ba763ff1015f0815d06b721c8c78bd36a55e42b47b0d47f6362bf93",
+                "size": 1149
+              },
+              {
+                "path": "Triggers.version",
+                "sha256": "982c3887a2f99c104835773cfe3b0dda97add1d3f4e2ef129f2b200465cf6332",
+                "size": 40
+              },
+              {
+                "path": "enGB.SC2Data/LocalizedData/GameStrings.txt",
+                "sha256": "f2f0ae38ab404a78ff394d963832eab02608fbb8898509f64297fe64b5c857b2",
+                "size": 267
+              },
+              {
+                "path": "enGB.SC2Data/LocalizedData/TriggerStrings.txt",
+                "sha256": "df7992ea5b67e2625f9f3fd53811ef088c921bce1b14b9f1d2f761f4bd77eaa1",
+                "size": 44
+              },
+              {
+                "path": "t3CellFlags",
+                "sha256": "04c7531c4d1cdd877e4099a188c4d67cb9b42b9d7dbb88e2f610304c167b550c",
+                "size": 1056
+              },
+              {
+                "path": "t3FluffDoodad",
+                "sha256": "3f3f15b8480e7cf37d97bc9c4affe5af1348b352bbc1213a71da32195a88e937",
+                "size": 28
+              },
+              {
+                "path": "t3HardTile",
+                "sha256": "becff32a6cde8b2769eb1d775f2dbeea4242dff48fcbaef9bc60ee284a157c3a",
+                "size": 166
+              },
+              {
+                "path": "t3HeightMap",
+                "sha256": "6875f13b2eb53b4f123dfa26cf3ce2bac3c5906347a2ecfd3348632d9865df73",
+                "size": 6566
+              },
+              {
+                "path": "t3SyncCliffLevel",
+                "sha256": "ee6f88f90add90966dc89670499c3120e26d33968a12c26f0ba99d4da7504fd7",
+                "size": 2080
+              },
+              {
+                "path": "t3SyncHeightMap",
+                "sha256": "886c6758d8cc4ab9603e6614e9ae6074db4873d08316c94e912ad9d00aa24377",
+                "size": 4420
+              },
+              {
+                "path": "t3Terrain.version",
+                "sha256": "4745ea732dcdbb17014f27cef3a7c836eaec5016c6063bbada8b727dd385eb68",
+                "size": 40
+              },
+              {
+                "path": "t3Terrain.xml",
+                "sha256": "a02f849674f042dc79ed7b9d359cbef6df701f06d23f37be847ecf9a9d4a0313",
+                "size": 884
+              },
+              {
+                "path": "t3TextureMasks",
+                "sha256": "c4e00159eee0df40fc244f02438ec32e65b4f9f54c07d1f042fa754496811edc",
+                "size": 262208
+              },
+              {
+                "path": "t3VertCol",
+                "sha256": "07e468603720a21465401f31702bea01e69bea5a8aa9606fc672015bcd692a18",
+                "size": 3936
+              },
+              {
+                "path": "t3Water",
+                "sha256": "c15e6e4da91564e9349a449302114f4248dfe1f2cebee1a29526cb5f41db5af5",
+                "size": 32
+              }
+            ],
+            "digest": "b0d766b02204cf76e755abeded805433854e49bd1c4de73ce19449c4a4aeae88"
+          },
+          "mk3": {
+            "state": "ok",
+            "adapterOperation": "container.extract",
+            "projection": [
+              {
+                "path": "(attributes)",
+                "sha256": "d3c8ea06ce594bad1e01991d6ada5dfb35d5d9f092b69737a8414fb4ea5f9d29",
+                "size": 904
+              },
+              {
+                "path": "(listfile)",
+                "sha256": "bfb6c3e55de694342969cc3fef52971d37d4d7f0f6624953e3b0bad9a5923683",
+                "size": 547
+              },
+              {
+                "path": "Base.SC2Data/GameData/UnitData.xml",
+                "sha256": "13f3b3ba49cfc683c0ffef027d1d9883b1e550fbd98e61050f4ffb7406f1d4f1",
+                "size": 282
+              },
+              {
+                "path": "ComponentList.SC2Components",
+                "sha256": "c711cfae1dd0be144ed17cd9a57c6febfa3c8756bcbebf769378e34fdcfadd40",
+                "size": 490
+              },
+              {
+                "path": "DocumentHeader",
+                "sha256": "23a6ae7b382fbb4231cfc1e56861e7b214bb792c054692a4dca4ee538164cdf1",
+                "size": 614
+              },
+              {
+                "path": "DocumentInfo",
+                "sha256": "662268770926ec420c50a141d67507a43e10d53b78981a8f70613e8f53e3aeed",
+                "size": 460
+              },
+              {
+                "path": "DocumentInfo.version",
+                "sha256": "daef7ad8d441a8541ba48080fd6f13ddcfeb94e6e3f66cfd2540659858cece5d",
+                "size": 40
+              },
+              {
+                "path": "GameData.version",
+                "sha256": "d868dd50db960a0546276103d221663cd93adf401d187d5f3606e7f1db73db35",
+                "size": 40
+              },
+              {
+                "path": "GameText.version",
+                "sha256": "b678fab235f0300ef2910ee3364c0253eddc4cfbd10812d1e3d0d17d2b985cf2",
+                "size": 40
+              },
+              {
+                "path": "MapInfo",
+                "sha256": "a52d55f65dd1f12e14bf2e66266bf1fa91c607d03777c609c781b88052123e0f",
+                "size": 216
+              },
+              {
+                "path": "MapInfo.version",
+                "sha256": "9b7470937d791a7360ed244eb1b0dc88e6e2295069ed1379b2b95160f5e43491",
+                "size": 40
+              },
+              {
+                "path": "MapScript.galaxy",
+                "sha256": "b4065602660c9ab439d765278b4878a42ffd524435c7ef9ebc3ba78a2f7d0ee8",
+                "size": 2244
+              },
+              {
+                "path": "Minimap.tga",
+                "sha256": "fedc7c93aa9844bfdb3caf08785bc4b2940f2bece3dadb9178514e94e517a6c4",
+                "size": 3116
+              },
+              {
+                "path": "Objects",
+                "sha256": "992a9d44343ecd76f42cb7a48f8b6091ddca76e55b53668671fc4c6203bdbb3a",
+                "size": 31914
+              },
+              {
+                "path": "Objects.version",
+                "sha256": "cc4b61e465f0f6cdf24cf58146b94898832160297daf06b1003c7d7399835009",
+                "size": 40
+              },
+              {
+                "path": "PaintedPathingLayer",
+                "sha256": "3f92a0f4d9f8e1529807e477814bb89e57544b06a9886db4e1a51b7e4cf37118",
+                "size": 524304
+              },
+              {
+                "path": "Preload.xml",
+                "sha256": "e8c23ee61a8cc7c047642e1a89c73205c820e00dc28bba89c9628f6977490c06",
+                "size": 1692
+              },
+              {
+                "path": "Triggers",
+                "sha256": "71db33335ba763ff1015f0815d06b721c8c78bd36a55e42b47b0d47f6362bf93",
+                "size": 1149
+              },
+              {
+                "path": "Triggers.version",
+                "sha256": "982c3887a2f99c104835773cfe3b0dda97add1d3f4e2ef129f2b200465cf6332",
+                "size": 40
+              },
+              {
+                "path": "enGB.SC2Data/LocalizedData/GameStrings.txt",
+                "sha256": "f2f0ae38ab404a78ff394d963832eab02608fbb8898509f64297fe64b5c857b2",
+                "size": 267
+              },
+              {
+                "path": "enGB.SC2Data/LocalizedData/TriggerStrings.txt",
+                "sha256": "df7992ea5b67e2625f9f3fd53811ef088c921bce1b14b9f1d2f761f4bd77eaa1",
+                "size": 44
+              },
+              {
+                "path": "t3CellFlags",
+                "sha256": "04c7531c4d1cdd877e4099a188c4d67cb9b42b9d7dbb88e2f610304c167b550c",
+                "size": 1056
+              },
+              {
+                "path": "t3FluffDoodad",
+                "sha256": "3f3f15b8480e7cf37d97bc9c4affe5af1348b352bbc1213a71da32195a88e937",
+                "size": 28
+              },
+              {
+                "path": "t3HardTile",
+                "sha256": "becff32a6cde8b2769eb1d775f2dbeea4242dff48fcbaef9bc60ee284a157c3a",
+                "size": 166
+              },
+              {
+                "path": "t3HeightMap",
+                "sha256": "6875f13b2eb53b4f123dfa26cf3ce2bac3c5906347a2ecfd3348632d9865df73",
+                "size": 6566
+              },
+              {
+                "path": "t3SyncCliffLevel",
+                "sha256": "ee6f88f90add90966dc89670499c3120e26d33968a12c26f0ba99d4da7504fd7",
+                "size": 2080
+              },
+              {
+                "path": "t3SyncHeightMap",
+                "sha256": "886c6758d8cc4ab9603e6614e9ae6074db4873d08316c94e912ad9d00aa24377",
+                "size": 4420
+              },
+              {
+                "path": "t3Terrain.version",
+                "sha256": "4745ea732dcdbb17014f27cef3a7c836eaec5016c6063bbada8b727dd385eb68",
+                "size": 40
+              },
+              {
+                "path": "t3Terrain.xml",
+                "sha256": "a02f849674f042dc79ed7b9d359cbef6df701f06d23f37be847ecf9a9d4a0313",
+                "size": 884
+              },
+              {
+                "path": "t3TextureMasks",
+                "sha256": "c4e00159eee0df40fc244f02438ec32e65b4f9f54c07d1f042fa754496811edc",
+                "size": 262208
+              },
+              {
+                "path": "t3VertCol",
+                "sha256": "07e468603720a21465401f31702bea01e69bea5a8aa9606fc672015bcd692a18",
+                "size": 3936
+              },
+              {
+                "path": "t3Water",
+                "sha256": "c15e6e4da91564e9349a449302114f4248dfe1f2cebee1a29526cb5f41db5af5",
+                "size": 32
+              }
+            ],
+            "digest": "b0d766b02204cf76e755abeded805433854e49bd1c4de73ce19449c4a4aeae88"
+          },
+          "verdict": "identical"
+        },
+        "raw": {
+          "mk2": {
+            "state": "ok",
+            "adapterOperation": "source.read",
+            "projection": {
+              "bytes": 22703,
+              "sha256": "f654e212dcff3ffe3e1090e383b7b25fac4def2a723b4eda408c1b5cdfb2a305"
+            },
+            "digest": "fc14aaea38075da5a759809f4911c4e543ba113db0826237fdf8875d5d67e8f3"
+          },
+          "mk3": {
+            "state": "ok",
+            "adapterOperation": "export.raw",
+            "projection": {
+              "bytes": 22703,
+              "sha256": "f654e212dcff3ffe3e1090e383b7b25fac4def2a723b4eda408c1b5cdfb2a305"
+            },
+            "digest": "fc14aaea38075da5a759809f4911c4e543ba113db0826237fdf8875d5d67e8f3"
+          },
+          "verdict": "identical"
+        }
+      },
+      "operationDigests": {
+        "namespace": "d64e00b1facb8a0a1f6156fc292c1266b887c1b8d397cdd46fa5f8cfee6fe02b",
+        "inspect": "2f4aafe47e57821e388ea9c51301d2cfbc5c95f5637b97cb5a7ed220b6444fd3",
+        "extract": "b0d766b02204cf76e755abeded805433854e49bd1c4de73ce19449c4a4aeae88",
+        "raw": "fc14aaea38075da5a759809f4911c4e543ba113db0826237fdf8875d5d67e8f3"
+      },
+      "observations": {
+        "mk2": {
+          "inspect": {
+            "projection": [
+              {
+                "entries": [
+                  {
+                    "id": "name",
+                    "kind": "text",
+                    "label": "Name",
+                    "value": "WTE70_Madlibrarian.SC2Map"
+                  },
+                  {
+                    "id": "path",
+                    "kind": "path",
+                    "label": "Path",
+                    "value": "WTE70_Madlibrarian.SC2Map"
+                  },
+                  {
+                    "id": "codec",
+                    "kind": "id",
+                    "label": "Codec",
+                    "value": "sc2-map"
+                  },
+                  {
+                    "id": "dimensions",
+                    "kind": "dimensions",
+                    "label": "Dimensions",
+                    "value": "32 × 32"
+                  }
+                ],
+                "id": "identity",
+                "label": "Map",
+                "order": 10
+              },
+              {
+                "entries": [
+                  {
+                    "id": "entries",
+                    "kind": "number",
+                    "label": "Entries",
+                    "value": 32
+                  },
+                  {
+                    "id": "recognized",
+                    "kind": "number",
+                    "label": "Recognized entries",
+                    "value": 13
+                  },
+                  {
+                    "id": "parsed",
+                    "kind": "number",
+                    "label": "Parsed components",
+                    "value": 13
+                  },
+                  {
+                    "id": "parseFailures",
+                    "kind": "number",
+                    "label": "Parse failures",
+                    "value": 0
+                  }
+                ],
+                "id": "content",
+                "label": "Mounted content",
+                "order": 20
+              },
+              {
+                "entries": [
+                  {
+                    "id": "height",
+                    "kind": "boolean",
+                    "label": "Height layer",
+                    "value": true
+                  },
+                  {
+                    "id": "pathing",
+                    "kind": "boolean",
+                    "label": "Pathing layer",
+                    "value": false
+                  },
+                  {
+                    "id": "textures",
+                    "kind": "boolean",
+                    "label": "Texture masks",
+                    "value": true
+                  },
+                  {
+                    "id": "objects",
+                    "kind": "boolean",
+                    "label": "Placed objects",
+                    "value": true
+                  },
+                  {
+                    "id": "regions",
+                    "kind": "boolean",
+                    "label": "Regions",
+                    "value": false
+                  }
+                ],
+                "id": "terrain",
+                "label": "Terrain and scene",
+                "order": 30
+              },
+              {
+                "entries": [
+                  {
+                    "id": "mounts",
+                    "kind": "list",
+                    "label": "Contributing mounts",
+                    "value": []
+                  },
+                  {
+                    "id": "contentResolver",
+                    "kind": "boolean",
+                    "label": "Content resolver attached",
+                    "value": false
+                  }
+                ],
+                "id": "resolution",
+                "label": "Resolution",
+                "order": 40
+              }
+            ],
+            "digest": "a4b232a0779a81dc521c72c90e6675d3793c5e9659f8a8841a6253115b35e937"
+          },
+          "zeroByteAdapter": {
+            "projection": [],
+            "digest": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945"
+          }
+        },
+        "mk3": {
+          "inspect": {
+            "projection": {
+              "bankFiles": 0,
+              "bankKeys": 0,
+              "bankLists": 0,
+              "bankNames": [],
+              "bankSections": 0,
+              "blocks": 32,
+              "declaredBanks": 0,
+              "dependencies": [
+                "bnet:Liberty (Mod)/0.0/999,file:Mods/Liberty.SC2Mod",
+                "bnet:Liberty Multi (Mod)/0.0/999,file:Mods/LibertyMulti.SC2Mod",
+                "bnet:Liberty (Campaign)/0.0/999,file:Campaigns/Liberty.SC2Campaign",
+                "bnet:Liberty Story (Campaign)/0.0/999,file:Campaigns/LibertyStory.SC2Campaign"
+              ],
+              "directories": 4,
+              "dynamicGalaxyBankLoads": 0,
+              "entries": 36,
+              "files": 32,
+              "format": "sc2-map",
+              "galaxyBankLoads": 0,
+              "gameDataEntries": 1,
+              "hashSlots": 64,
+              "layouts": 0,
+              "localizedData": 2,
+              "mapDocuments": [
+                "mapinfo",
+                "objects",
+                "t3heightmap",
+                "t3terrain.xml"
+              ],
+              "models": 0,
+              "mpqEntries": 32,
+              "mpqVersion": 1,
+              "packageKind": "map",
+              "parsedBankFiles": 0,
+              "scripts": 2,
+              "selectedContributionId": "blizzard/sc2-map",
+              "semanticBytesRead": 2244,
+              "semanticFilesRead": 1,
+              "textures": 1,
+              "topology": "mpq-namespace",
+              "userDataBytes": 2252,
+              "version": 1
+            },
+            "digest": "20b1fc9074d2b8c74d1cc67a62fd73198b817f76ba31b5cd4b43ab28b9d7e082"
+          }
+        }
+      },
+      "resultDigest": "ce1a961de77a1a21e22504fd297ddbd23a7396b18f4c97659c250d70e62ad4d7"
+    },
+    {
+      "logicalId": "Persephone.SC2Replay",
+      "kind": "replay",
+      "receiptClass": "real-reference-replay",
+      "input": {
+        "bytes": 59767,
+        "sha256": "e3522504afdf4d4f00d216e560baf9c89536135c927f5808831155682fc515d6"
+      },
+      "operations": {
+        "namespace": {
+          "mk2": {
+            "state": "ok",
+            "adapterOperation": "mpq.list",
+            "projection": [
+              {
+                "path": "(attributes)",
+                "size": 348
+              },
+              {
+                "path": "(listfile)",
+                "size": 333
+              },
+              {
+                "path": "replay.attributes.events",
+                "size": 2180
+              },
+              {
+                "path": "replay.details",
+                "size": 1106
+              },
+              {
+                "path": "replay.details.backup",
+                "size": 1088
+              },
+              {
+                "path": "replay.game.events",
+                "size": 31876
+              },
+              {
+                "path": "replay.gamemetadata.json",
+                "size": 607
+              },
+              {
+                "path": "replay.initData",
+                "size": 5309
+              },
+              {
+                "path": "replay.initData.backup",
+                "size": 5237
+              },
+              {
+                "path": "replay.load.info",
+                "size": 52
+              },
+              {
+                "path": "replay.message.events",
+                "size": 95
+              },
+              {
+                "path": "replay.resumable.events",
+                "size": 12
+              },
+              {
+                "path": "replay.server.battlelobby",
+                "size": 39660
+              },
+              {
+                "path": "replay.smartcam.events",
+                "size": 1948
+              },
+              {
+                "path": "replay.sync.events",
+                "size": 675
+              },
+              {
+                "path": "replay.sync.history",
+                "size": 0
+              },
+              {
+                "path": "replay.tracker.events",
+                "size": 52358
+              }
+            ],
+            "digest": "c7a543593863841026be915f84ff0bdebe3ee29268e03e2d5f25c1eca852ea66"
+          },
+          "mk3": {
+            "state": "ok",
+            "adapterOperation": "common.view/namespace-entry-source.list",
+            "projection": [
+              {
+                "path": "(attributes)",
+                "size": 348
+              },
+              {
+                "path": "(listfile)",
+                "size": 333
+              },
+              {
+                "path": "replay.attributes.events",
+                "size": 2180
+              },
+              {
+                "path": "replay.details",
+                "size": 1106
+              },
+              {
+                "path": "replay.details.backup",
+                "size": 1088
+              },
+              {
+                "path": "replay.game.events",
+                "size": 31876
+              },
+              {
+                "path": "replay.gamemetadata.json",
+                "size": 607
+              },
+              {
+                "path": "replay.initData",
+                "size": 5309
+              },
+              {
+                "path": "replay.initData.backup",
+                "size": 5237
+              },
+              {
+                "path": "replay.load.info",
+                "size": 52
+              },
+              {
+                "path": "replay.message.events",
+                "size": 95
+              },
+              {
+                "path": "replay.resumable.events",
+                "size": 12
+              },
+              {
+                "path": "replay.server.battlelobby",
+                "size": 39660
+              },
+              {
+                "path": "replay.smartcam.events",
+                "size": 1948
+              },
+              {
+                "path": "replay.sync.events",
+                "size": 675
+              },
+              {
+                "path": "replay.sync.history",
+                "size": 0
+              },
+              {
+                "path": "replay.tracker.events",
+                "size": 52358
+              }
+            ],
+            "digest": "c7a543593863841026be915f84ff0bdebe3ee29268e03e2d5f25c1eca852ea66"
+          },
+          "verdict": "identical"
+        },
+        "inspect": {
+          "mk2": {
+            "state": "ok",
+            "adapterOperation": "view.inspect",
+            "projection": {
+              "archiveEntries": 17,
+              "format": "sc2-replay",
+              "signature": "StarCraft II replay"
+            },
+            "digest": "d48536f7dc9ebf6a9b2c9c301d0aa483d322dd0cf7b7e94521be27ed4a5b774a"
+          },
+          "mk3": {
+            "state": "ok",
+            "adapterOperation": "view.inspect",
+            "projection": {
+              "archiveEntries": 17,
+              "format": "sc2-replay",
+              "signature": "StarCraft II replay"
+            },
+            "digest": "d48536f7dc9ebf6a9b2c9c301d0aa483d322dd0cf7b7e94521be27ed4a5b774a"
+          },
+          "verdict": "identical"
+        },
+        "extract": {
+          "mk2": {
+            "state": "ok",
+            "adapterOperation": "archive.extract",
+            "projection": [
+              {
+                "path": "(attributes)",
+                "sha256": "0d0a663139e4b5997d76f01bf6afad579159d9f149011ef7c1a4ac3cd328d7ae",
+                "size": 348
+              },
+              {
+                "path": "(listfile)",
+                "sha256": "f53049d73342d943dd5f4207128b545cca1299f04e8f3d931405f1454bbb8558",
+                "size": 333
+              },
+              {
+                "path": "replay.attributes.events",
+                "sha256": "4ba7eef5cae074959a9d76d20d553225a807f3dc44475727e8c3e82e2310b4bc",
+                "size": 2180
+              },
+              {
+                "path": "replay.details",
+                "sha256": "e909d7d19d5c1bc70a433a522946ffb3764a3814fe8813de317b044616eeb8b5",
+                "size": 1106
+              },
+              {
+                "path": "replay.details.backup",
+                "sha256": "c02b7e58b994de7031819d07084bb207ea451c67d3f139ca316bbacadd7a6c99",
+                "size": 1088
+              },
+              {
+                "path": "replay.game.events",
+                "sha256": "cebd4a81f045729806e8a0bc3bdd291813645406002a31abb77f292ac187519b",
+                "size": 31876
+              },
+              {
+                "path": "replay.gamemetadata.json",
+                "sha256": "e4692d5ccc9a5231e73e3f8aad1e2edf313d9404cac3b387e3d3e35b1f298d66",
+                "size": 607
+              },
+              {
+                "path": "replay.initData",
+                "sha256": "116c8173458326e0d7cb457dadbb090704ccae4caa25b23ea2a6d564ee40e93d",
+                "size": 5309
+              },
+              {
+                "path": "replay.initData.backup",
+                "sha256": "ac1dde941d3dc53b5731e8d098efd8469274d721719c3c9713ca1a13780ee3dc",
+                "size": 5237
+              },
+              {
+                "path": "replay.load.info",
+                "sha256": "7955cb2de90dd9efc6df9fdbf5f5d10c114f4135a9a6b52db1003be749e32f7a",
+                "size": 52
+              },
+              {
+                "path": "replay.message.events",
+                "sha256": "2854d58629931ed80a92de0cb80d529743b7caf64085b5fb6879151241eb11e8",
+                "size": 95
+              },
+              {
+                "path": "replay.resumable.events",
+                "sha256": "841c354dbc5eac0847e6e67b388b76b5a18cd360f1343a5438deb89e05e3d60f",
+                "size": 12
+              },
+              {
+                "path": "replay.server.battlelobby",
+                "sha256": "dc88aa879092b7969a847a9aaaa56d00a5bb4e70c7dc7d893818911ead5bb6a0",
+                "size": 39660
+              },
+              {
+                "path": "replay.smartcam.events",
+                "sha256": "2cb323f43c18d7afc0c8d00dc413c14729099031d072c1bc40a33462146a2e2b",
+                "size": 1948
+              },
+              {
+                "path": "replay.sync.events",
+                "sha256": "75aa916c490457b6a392d5758dfc2aacb85379cdac41a4d66370d51b85c7d0af",
+                "size": 675
+              },
+              {
+                "path": "replay.sync.history",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "size": 0
+              },
+              {
+                "path": "replay.tracker.events",
+                "sha256": "4e863d7325bc63a801ccc239e5afeafe600c04413a4a6ecfa910fb97cae23874",
+                "size": 52358
+              }
+            ],
+            "digest": "d96ceb6654ce5e4d1afa9ac43d809607fb5f855bcc1da9823c3d04aea95ee4c0"
+          },
+          "mk3": {
+            "state": "ok",
+            "adapterOperation": "container.extract",
+            "projection": [
+              {
+                "path": "(attributes)",
+                "sha256": "0d0a663139e4b5997d76f01bf6afad579159d9f149011ef7c1a4ac3cd328d7ae",
+                "size": 348
+              },
+              {
+                "path": "(listfile)",
+                "sha256": "f53049d73342d943dd5f4207128b545cca1299f04e8f3d931405f1454bbb8558",
+                "size": 333
+              },
+              {
+                "path": "replay.attributes.events",
+                "sha256": "4ba7eef5cae074959a9d76d20d553225a807f3dc44475727e8c3e82e2310b4bc",
+                "size": 2180
+              },
+              {
+                "path": "replay.details",
+                "sha256": "e909d7d19d5c1bc70a433a522946ffb3764a3814fe8813de317b044616eeb8b5",
+                "size": 1106
+              },
+              {
+                "path": "replay.details.backup",
+                "sha256": "c02b7e58b994de7031819d07084bb207ea451c67d3f139ca316bbacadd7a6c99",
+                "size": 1088
+              },
+              {
+                "path": "replay.game.events",
+                "sha256": "cebd4a81f045729806e8a0bc3bdd291813645406002a31abb77f292ac187519b",
+                "size": 31876
+              },
+              {
+                "path": "replay.gamemetadata.json",
+                "sha256": "e4692d5ccc9a5231e73e3f8aad1e2edf313d9404cac3b387e3d3e35b1f298d66",
+                "size": 607
+              },
+              {
+                "path": "replay.initData",
+                "sha256": "116c8173458326e0d7cb457dadbb090704ccae4caa25b23ea2a6d564ee40e93d",
+                "size": 5309
+              },
+              {
+                "path": "replay.initData.backup",
+                "sha256": "ac1dde941d3dc53b5731e8d098efd8469274d721719c3c9713ca1a13780ee3dc",
+                "size": 5237
+              },
+              {
+                "path": "replay.load.info",
+                "sha256": "7955cb2de90dd9efc6df9fdbf5f5d10c114f4135a9a6b52db1003be749e32f7a",
+                "size": 52
+              },
+              {
+                "path": "replay.message.events",
+                "sha256": "2854d58629931ed80a92de0cb80d529743b7caf64085b5fb6879151241eb11e8",
+                "size": 95
+              },
+              {
+                "path": "replay.resumable.events",
+                "sha256": "841c354dbc5eac0847e6e67b388b76b5a18cd360f1343a5438deb89e05e3d60f",
+                "size": 12
+              },
+              {
+                "path": "replay.server.battlelobby",
+                "sha256": "dc88aa879092b7969a847a9aaaa56d00a5bb4e70c7dc7d893818911ead5bb6a0",
+                "size": 39660
+              },
+              {
+                "path": "replay.smartcam.events",
+                "sha256": "2cb323f43c18d7afc0c8d00dc413c14729099031d072c1bc40a33462146a2e2b",
+                "size": 1948
+              },
+              {
+                "path": "replay.sync.events",
+                "sha256": "75aa916c490457b6a392d5758dfc2aacb85379cdac41a4d66370d51b85c7d0af",
+                "size": 675
+              },
+              {
+                "path": "replay.sync.history",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "size": 0
+              },
+              {
+                "path": "replay.tracker.events",
+                "sha256": "4e863d7325bc63a801ccc239e5afeafe600c04413a4a6ecfa910fb97cae23874",
+                "size": 52358
+              }
+            ],
+            "digest": "d96ceb6654ce5e4d1afa9ac43d809607fb5f855bcc1da9823c3d04aea95ee4c0"
+          },
+          "verdict": "identical"
+        },
+        "raw": {
+          "mk2": {
+            "state": "ok",
+            "adapterOperation": "export.raw",
+            "projection": {
+              "bytes": 59767,
+              "sha256": "e3522504afdf4d4f00d216e560baf9c89536135c927f5808831155682fc515d6"
+            },
+            "digest": "11777e441b052b53659590b493423a886a8b280be97a2b0aa24aaf4f1b7ad050"
+          },
+          "mk3": {
+            "state": "ok",
+            "adapterOperation": "export.raw",
+            "projection": {
+              "bytes": 59767,
+              "sha256": "e3522504afdf4d4f00d216e560baf9c89536135c927f5808831155682fc515d6"
+            },
+            "digest": "11777e441b052b53659590b493423a886a8b280be97a2b0aa24aaf4f1b7ad050"
+          },
+          "verdict": "identical"
+        }
+      },
+      "operationDigests": {
+        "namespace": "c7a543593863841026be915f84ff0bdebe3ee29268e03e2d5f25c1eca852ea66",
+        "inspect": "d48536f7dc9ebf6a9b2c9c301d0aa483d322dd0cf7b7e94521be27ed4a5b774a",
+        "extract": "d96ceb6654ce5e4d1afa9ac43d809607fb5f855bcc1da9823c3d04aea95ee4c0",
+        "raw": "11777e441b052b53659590b493423a886a8b280be97a2b0aa24aaf4f1b7ad050"
+      },
+      "observations": {
+        "mk2": {
+          "inspect": {
+            "projection": {
+              "content": {
+                "dependencies": [],
+                "mounts": [],
+                "resolverAttached": false
+              },
+              "details": {
+                "isBlizzardMap": true,
+                "mapFile": "Minimap.tga",
+                "players": [
+                  {
+                    "color": {
+                      "a": 255,
+                      "b": 228,
+                      "g": 196,
+                      "r": 255
+                    },
+                    "control": 2,
+                    "handicap": 100,
+                    "name": "TestBot",
+                    "observe": 0,
+                    "race": "UED",
+                    "result": 1,
+                    "teamId": 0,
+                    "workingSetSlotId": 0
+                  },
+                  {
+                    "color": {
+                      "a": 255,
+                      "b": 204,
+                      "g": 72,
+                      "r": 11
+                    },
+                    "control": 2,
+                    "handicap": 100,
+                    "name": "defer",
+                    "observe": 0,
+                    "race": "Keiron",
+                    "result": 2,
+                    "teamId": 1,
+                    "workingSetSlotId": 1
+                  }
+                ],
+                "timeLocalOffset": "108000000000",
+                "timeUTC": "133962057654690222",
+                "title": "Persephone LE"
+              },
+              "header": {
+                "dataBuildNum": 94137,
+                "elapsedGameLoops": 8675,
+                "signature": "StarCraft II replay\u001b11",
+                "type": 2,
+                "useScaledTime": true,
+                "version": {
+                  "baseBuild": 94137,
+                  "build": 94137,
+                  "flags": 1,
+                  "major": 5,
+                  "minor": 0,
+                  "revision": 14
+                }
+              },
+              "streams": {
+                "game": false,
+                "initData": false,
+                "loadInfo": false,
+                "messages": false,
+                "tracker": true
+              },
+              "tracker": {
+                "eventCount": 920,
+                "monotonic": true,
+                "present": true
+              }
+            },
+            "digest": "4a90130aec7e1751a85c5ec5a3814fa7a5d4d9d6962a5c6adfbda9cb954c0c13"
+          },
+          "zeroByteAdapter": {
+            "projection": [
+              {
+                "blockSize": 0,
+                "blockTableIndex": 10,
+                "path": "replay.sync.history"
+              }
+            ],
+            "digest": "8ebc8952936a413b7a925e04468c65112aa4f71cf72ad8373ab3612a255c2e1f"
+          }
+        },
+        "mk3": {
+          "inspect": {
+            "projection": {
+              "blocks": 17,
+              "entries": 17,
+              "format": "sc2-replay",
+              "hashSlots": 32,
+              "knownStreams": 6,
+              "mpqEntries": 17,
+              "mpqVersion": 3,
+              "selectedContributionId": "blizzard/sc2-replay",
+              "signature": "StarCraft II replay",
+              "signatureOffset": 21,
+              "streamBytes": "92924",
+              "streamNames": [
+                "replay.attributes.events",
+                "replay.details",
+                "replay.game.events",
+                "replay.initData",
+                "replay.message.events",
+                "replay.tracker.events"
+              ],
+              "topology": "mpq-namespace",
+              "userDataBytes": 512,
+              "version": 3
+            },
+            "digest": "f4c446a5897bc17b975794aa7a85a4077b3ae8e79ce9f9fc5802c3ee3040c132"
+          }
+        }
+      },
+      "resultDigest": "40d9d983c9d33e07b09aa999400cdae76f23e36e677fa72573f5d2e506513680"
+    }
+  ],
+  "counts": {
+    "total": 8,
+    "identical": 8,
+    "differing": 0,
+    "mk2Only": 0,
+    "mk3Only": 0,
+    "bothRefused": 0
+  },
+  "differing": [],
+  "bothRefused": [],
+  "verdict": "pass",
+  "resultDigest": "161a55eeceaf7009334737ff00ba6af5b8504c447d0599cbf0a59a4893b0f597"
+}

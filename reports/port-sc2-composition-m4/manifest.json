@@ -1,0 +1,206 @@
+{
+  "schemaVersion": 1,
+  "algorithm": "sha256",
+  "files": [
+    {
+      "path": "commands.json",
+      "bytes": 5916,
+      "sha256": "02162c66d82b26f74a499885f8c1a07dace2040566838228d23f99d54a564639"
+    },
+    {
+      "path": "copy/family.log",
+      "bytes": 47,
+      "sha256": "5d2bed313587a94ff25dfe7386ee92a940b31bb49ed700b6f65739b8d868fd4f"
+    },
+    {
+      "path": "copy/m1-libs.log",
+      "bytes": 44,
+      "sha256": "529094114e7ca5d9612e9076316150c9cfa06bb68a413fa31c09ed49a170765a"
+    },
+    {
+      "path": "copy/refreeze.log",
+      "bytes": 145,
+      "sha256": "feceb5a410e5755745cef629ce5f42729050ab57b84ca5668ca6b52a6004fcb2"
+    },
+    {
+      "path": "copy/sc2-bank.log",
+      "bytes": 46,
+      "sha256": "a2a29b04381554c5b5e23ff7b234acdb29e58a6830d4211e7e37c7dda472abb9"
+    },
+    {
+      "path": "inputs/algorithm-owners.json",
+      "bytes": 1959,
+      "sha256": "94704b0b337108e6fa2f67bff834c82eb1c09a9c4486b35a11e9e64cda0f8f10"
+    },
+    {
+      "path": "inputs/algorithms-baseline.json",
+      "bytes": 23592,
+      "sha256": "65d537994d33ab0091696d823edb1fcfced10fef4f9880f24cbeac606dd3d7e4"
+    },
+    {
+      "path": "inputs/archive-m4-provenance.json",
+      "bytes": 21705,
+      "sha256": "00eddc8178c2cc4c481a325cac50bd03fc7e089a764bd69943518cc387d60e59"
+    },
+    {
+      "path": "inputs/feature-ledger.json",
+      "bytes": 121156,
+      "sha256": "398f48e4551e2724d9d5043262e91990a2943337d113fa275ac8a053b447329d"
+    },
+    {
+      "path": "inputs/m4-casc-installation-oracle.json",
+      "bytes": 1692,
+      "sha256": "056f9246c35672c046bbe565234fa78da30e6415b61b34c6097692c671985e9f"
+    },
+    {
+      "path": "inputs/m4-packed-baseline-oracle.json",
+      "bytes": 8168,
+      "sha256": "584f926b95a8b1db6ae53d9230a5313688a02d75988702f5f58bd9546048d476"
+    },
+    {
+      "path": "inputs/operation-map.json",
+      "bytes": 94121,
+      "sha256": "647608a2fbb82d96e8fdf4b161582bf99d8ab74fba0d1e833b02d5f79cabb55f"
+    },
+    {
+      "path": "migration/algorithms.log",
+      "bytes": 210,
+      "sha256": "5b2a868d17dd36437bdebcc2c973c002a188d1bb352efaffed3f0920ab3e4efe"
+    },
+    {
+      "path": "migration/migration-check.log",
+      "bytes": 6886,
+      "sha256": "4789be64bd66dd99a8d55432fbe5dabe18ef0160e247dc493ad5c51bfd6a935c"
+    },
+    {
+      "path": "migration/receipt-validation.log",
+      "bytes": 320,
+      "sha256": "eadc7e67c7a04ddc529de2c47545b11fb80b9c855e452eaac7fab6b8ee9f74b2"
+    },
+    {
+      "path": "oracles/casc-installed-raw.json",
+      "bytes": 3970,
+      "sha256": "a5b83ed5bcdd060d2ee2dd250e41c9cd0629117f9a1efbb61abb90e86aaacd82"
+    },
+    {
+      "path": "oracles/mpq-public-pack-raw.json",
+      "bytes": 2861,
+      "sha256": "8a845f3fdcf353bd7411955cd14dc5803b2e404db5523e0e27cf31171e478fd0"
+    },
+    {
+      "path": "oracles/packed-raw.json",
+      "bytes": 67918,
+      "sha256": "3e138a86c0d4e2f9238c780d6508d9df22993120d5c5c27a43a24b2f11c35021"
+    },
+    {
+      "path": "oracles/wte70-save-as-raw.json",
+      "bytes": 8973,
+      "sha256": "5fd81c1fe090bd3901b8165140723f781f965bdd60a9b94e2ce117aed1e3eb78"
+    },
+    {
+      "path": "receipts/casc-archive.extract.json",
+      "bytes": 2630,
+      "sha256": "ad4aceffd2544c6f4e4c9f20d803aca44a60d333de8f39f790f32cccb5537253"
+    },
+    {
+      "path": "receipts/mpq-archive.extract.json",
+      "bytes": 2441,
+      "sha256": "dd8d482aa1f38fddee7bed60fc4e26f651041be444f59e302fa5334a83730768"
+    },
+    {
+      "path": "receipts/mpq-archive.inspect.json",
+      "bytes": 2355,
+      "sha256": "5ceaf356a796e340d920b6dc2e1d801585fbc2229a9a1d725f852985261086e2"
+    },
+    {
+      "path": "receipts/mpq-archive.write.json",
+      "bytes": 2937,
+      "sha256": "c428074011e7a6fd70be679b4ca775dd451452a0e33fa291ffe9495836eaf556"
+    },
+    {
+      "path": "repositories/implementation.json",
+      "bytes": 35687,
+      "sha256": "72d852b3a5d77116b5997fb1e4eb505698e37968b02ebffaaa5b7032cdb58843"
+    },
+    {
+      "path": "tests/algorithms.log",
+      "bytes": 2301,
+      "sha256": "4fddecfea9575b8bd09edcc2d4b76ea8b3b1548c1fa8220580f476a05720f8d6"
+    },
+    {
+      "path": "tests/archive-carryover.log",
+      "bytes": 10943,
+      "sha256": "057ae0a1cd6b16e735e2cf5ec191329d9e5e49c056906d75b08e0c449d2cb229"
+    },
+    {
+      "path": "tests/blizzard-pack.log",
+      "bytes": 181,
+      "sha256": "1d49fa51441b381ee804f0b34a47b1e99ee21f407e40b09070ed885a9a0c9cc0"
+    },
+    {
+      "path": "tests/blizzard-quick.log",
+      "bytes": 12440,
+      "sha256": "0dab09c90172b564a99b8ebc709f2fe86bed50b3a1d9a9bd12ab9de9832e0922"
+    },
+    {
+      "path": "tests/casc-installed-acceptance.log",
+      "bytes": 3027,
+      "sha256": "34ff85a12076d1e12663dc710b7c335dec44e95a46cd3afd828b77a6e85b5513"
+    },
+    {
+      "path": "tests/compression-bounded.log",
+      "bytes": 375,
+      "sha256": "10c71920e561372b8e13625c51efe219e534e8cddfcffefbe7eed507bcf52e82"
+    },
+    {
+      "path": "tests/core-container-composition.log",
+      "bytes": 5367,
+      "sha256": "eccd5751f965cf172f23970ba1f74d2ee7a9d1178c9c5d5b6229c7fbcc7f5d83"
+    },
+    {
+      "path": "tests/core-quick.log",
+      "bytes": 12131,
+      "sha256": "d444cdbe96d6837b5bb43f7d5b00f850c72dbcd2afa331a89b0b66d9bb650fb0"
+    },
+    {
+      "path": "tests/migration-infrastructure.log",
+      "bytes": 10986,
+      "sha256": "cf15d8dc83352011ff8d55584ced6789a6f75933ce59cdc286c19257c73fd2c1"
+    },
+    {
+      "path": "tests/mpq-public-workflow.log",
+      "bytes": 1740,
+      "sha256": "d72449cf746007942366097f72c4b37205ec0083be0eb5e520175290ca13b65c"
+    },
+    {
+      "path": "tests/packed-oracle.log",
+      "bytes": 412,
+      "sha256": "6b8b73485ad1fbe93c790324c4847850a7c1b3f849c4c63ada204f82db51d58e"
+    },
+    {
+      "path": "tests/real-oracles.log",
+      "bytes": 1160,
+      "sha256": "4c4295938f588ef45f70a7486861bcda576fa3bddf8ba76ab6ec0e87c5ffd1d2"
+    },
+    {
+      "path": "typecheck/blizzard.log",
+      "bytes": 352,
+      "sha256": "97083a7a1d4c2601d470209a8481b0d83f776bccc4f73edfb1fea20d868024df"
+    },
+    {
+      "path": "typecheck/core-strict.log",
+      "bytes": 777,
+      "sha256": "4054980dcebd15dec78276077e5dee63034d1d7756ec6a6f2ceb0be22e13cc1e"
+    },
+    {
+      "path": "typecheck/core.log",
+      "bytes": 41,
+      "sha256": "f77e091086f4d3bea3dd8d046c052767d15a8cbe829358974112a4885d70182c"
+    },
+    {
+      "path": "verify.mjs",
+      "bytes": 25438,
+      "sha256": "dfbe72aa9b18f534c60298a15e4eb97f016c92f527f4d4ee9efe6dbf686f10d0"
+    }
+  ]
+}

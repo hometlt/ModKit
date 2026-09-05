@@ -1,0 +1,203 @@
+{
+  "schemaVersion": 1,
+  "implementationCommits": {
+    "core": "f00179fe93e1d699450f59e6f1bf294c3c0ab75b",
+    "blizzard": "31ced1205ad8eabe6ce08defe1a3218ede6de1c3"
+  },
+  "normative": [
+    {
+      "id": "core-typecheck",
+      "cwd": "modkit-core",
+      "command": "pnpm typecheck",
+      "exitCode": 0,
+      "log": "typecheck/core.log"
+    },
+    {
+      "id": "blizzard-typecheck",
+      "cwd": "modkit-extensions-blizzard",
+      "command": "pnpm typecheck",
+      "exitCode": 0,
+      "log": "typecheck/blizzard.log"
+    },
+    {
+      "id": "blizzard-mk2-libraries-typecheck",
+      "cwd": "modkit-extensions-blizzard",
+      "command": "pnpm --dir starcraft2 typecheck:mk2-libraries",
+      "exitCode": 0,
+      "log": "typecheck/blizzard.log"
+    },
+    {
+      "id": "archive-carryover",
+      "cwd": "modkit-extensions-blizzard",
+      "command": "pnpm exec vitest run --workspace starcraft2/test/vitest.m3-family-libraries.workspace.mjs --project archives-processing",
+      "exitCode": 0,
+      "files": 6,
+      "passed": 51,
+      "failed": 0,
+      "skipped": 0,
+      "log": "tests/archive-carryover.log"
+    },
+    {
+      "id": "packed-and-casc-real-oracles",
+      "cwd": "modkit-extensions-blizzard",
+      "command": "pnpm exec vitest run starcraft2/test/sc2-packed-corpus.test.ts starcraft2/test/casc-installation-corpus.test.ts",
+      "exitCode": 0,
+      "files": 2,
+      "passed": 2,
+      "failed": 0,
+      "log": "tests/real-oracles.log"
+    },
+    {
+      "id": "mpq-public-workflow",
+      "cwd": "modkit-extensions-blizzard",
+      "command": "pnpm exec vitest run mpq/test/native-preserving-workflow.test.ts",
+      "exitCode": 0,
+      "files": 1,
+      "passed": 4,
+      "failed": 0,
+      "log": "tests/mpq-public-workflow.log"
+    },
+    {
+      "id": "compression-bounded",
+      "cwd": "modkit-core",
+      "command": "node --test packages/codec-kit/test/compression-bounded.test.mjs",
+      "exitCode": 0,
+      "passed": 3,
+      "failed": 0,
+      "log": "tests/compression-bounded.log"
+    },
+    {
+      "id": "core-container-composition",
+      "cwd": "modkit-core",
+      "command": "pnpm exec vitest run packages/host/test/subject-open-container-composition.test.ts packages/host/test/nested-subject-containers.test.ts packages/host/test/namespace-write-seam.test.ts packages/host/test/namespace-candidate-discovery.test.ts",
+      "exitCode": 0,
+      "files": 4,
+      "passed": 28,
+      "failed": 0,
+      "log": "tests/core-container-composition.log"
+    },
+    {
+      "id": "algorithm-infrastructure",
+      "cwd": "modkit-core",
+      "command": "node --test scripts/migration/test/algorithms.test.mjs",
+      "exitCode": 0,
+      "passed": 23,
+      "failed": 0,
+      "log": "tests/algorithms.log"
+    },
+    {
+      "id": "algorithms-gate",
+      "cwd": "modkit-core",
+      "command": "node scripts/migration/check-algorithms.mjs",
+      "exitCode": 0,
+      "log": "migration/algorithms.log"
+    },
+    {
+      "id": "family-copy",
+      "cwd": "modkit-core",
+      "command": "node scripts/migration/check-mk2-copy.mjs --family sc2 --scope family",
+      "exitCode": 0,
+      "files": 1460,
+      "imports": 4840,
+      "log": "copy/family.log"
+    },
+    {
+      "id": "m1-copy",
+      "cwd": "modkit-core",
+      "command": "node scripts/migration/check-mk2-copy.mjs --family sc2 --scope m1-libs",
+      "exitCode": 0,
+      "files": 50,
+      "imports": 97,
+      "log": "copy/m1-libs.log"
+    },
+    {
+      "id": "bank-copy",
+      "cwd": "modkit-core",
+      "command": "node scripts/migration/check-mk2-copy.mjs --family sc2 --scope sc2-bank",
+      "exitCode": 0,
+      "files": 87,
+      "imports": 217,
+      "log": "copy/sc2-bank.log"
+    },
+    {
+      "id": "receipt-validation",
+      "cwd": "modkit-core",
+      "command": "node scripts/migration/apply-port-evidence.mjs --receipt modkit-core/reports/port-sc2-composition-m4/receipts/<receipt>.json --check",
+      "receipts": 4,
+      "exitCode": 0,
+      "log": "migration/receipt-validation.log"
+    },
+    {
+      "id": "migration-infrastructure",
+      "cwd": "modkit-core",
+      "command": "node --test scripts/migration/test/*.test.mjs",
+      "exitCode": 0,
+      "passed": 128,
+      "failed": 0,
+      "log": "tests/migration-infrastructure.log"
+    },
+    {
+      "id": "core-strict",
+      "cwd": "modkit-core",
+      "command": "pnpm ts-strict:check",
+      "exitCode": 0,
+      "packages": 8,
+      "problems": 0,
+      "log": "typecheck/core-strict.log"
+    },
+    {
+      "id": "migration-check",
+      "cwd": "modkit-core",
+      "command": "pnpm migration:check",
+      "exitCode": 0,
+      "log": "migration/migration-check.log"
+    },
+    {
+      "id": "core-quick",
+      "cwd": "modkit-core",
+      "command": "pnpm test:quick",
+      "exitCode": 0,
+      "passed": 450,
+      "failed": 0,
+      "log": "tests/core-quick.log"
+    },
+    {
+      "id": "blizzard-quick",
+      "cwd": "modkit-extensions-blizzard",
+      "command": "pnpm test:quick",
+      "exitCode": 0,
+      "passed": 219,
+      "failed": 0,
+      "conditionalSkipped": 3,
+      "log": "tests/blizzard-quick.log"
+    },
+    {
+      "id": "blizzard-pack",
+      "cwd": "modkit-extensions-blizzard",
+      "command": "pnpm check:pack",
+      "exitCode": 0,
+      "files": 2061,
+      "log": "tests/blizzard-pack.log"
+    }
+  ],
+  "supporting": [
+    {
+      "id": "packed-oracle-separate-refreeze",
+      "cwd": "modkit-extensions-blizzard",
+      "command": "pnpm exec vitest run starcraft2/test/sc2-packed-corpus.test.ts",
+      "exitCode": 0,
+      "passed": 1,
+      "log": "tests/packed-oracle.log"
+    },
+    {
+      "id": "casc-installed-provider-acceptance",
+      "cwd": "modkit-extensions-blizzard",
+      "result": "tests/casc-installed-acceptance.log"
+    },
+    {
+      "id": "family-refreeze-admission",
+      "cwd": "modkit-core",
+      "result": "copy/refreeze.log"
+    }
+  ]
+}

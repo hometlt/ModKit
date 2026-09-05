@@ -1,0 +1,13 @@
+
+ RUN  v2.1.9 C:/FILES/SC2Files/coding/modkit-extensions-blizzard
+
+stdout | starcraft2/test/casc-installation-corpus.test.ts > CASC installed archive.extract differential > executes pinned MK2 and public MK3 extraction on one exact installed path
+M4_CASC_ORACLE_RECEIPT {"verdict":"pass","counts":{"total":1,"identical":1,"differing":0,"mk2Only":0,"mk3Only":0,"bothRefused":0},"mk2CacheKey":"ead889c2de70bbca42c2d8fd0c4da8c84d6def815c2583eb8944dfd1a0cc8aeb","positiveDigest":"acbf803532a1e16285ddbdea5746aecc4034a429e10f878bc804c6dbaaef8903","resultDigest":"3df77b3d313eef94c88b26d9022eafa797eb403a19a471cf20a2c883a0f5b4b5"}
+
+ ✓ starcraft2/test/casc-installation-corpus.test.ts > CASC installed archive.extract differential > executes pinned MK2 and public MK3 extraction on one exact installed path 17870ms
+ ✓ starcraft2/test/sc2-packed-corpus.test.ts > pinned packed SC2 corpus oracle > runs the isolated copied MK2 and MK3 differential as a required real gate 22779ms
+
+ Test Files  2 passed (2)
+      Tests  2 passed (2)
+   Start at  08:48:47
+   Duration  23.56s (transform 216ms, setup 0ms, collect 593ms, tests 40.65s, environment 0ms, prepare 429ms)

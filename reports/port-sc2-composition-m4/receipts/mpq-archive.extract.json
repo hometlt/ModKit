@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "codec": "mpq",
+  "corpusKind": "real",
+  "verdict": "pass",
+  "tests": { "passed": 2, "failed": 0, "skipped": 0 },
+  "inputs": {
+    "operation": "container.extract",
+    "rawOracle": "modkit-core/reports/port-sc2-composition-m4/oracles/packed-raw.json",
+    "normalization": "m4-packed-canonical-v1"
+  },
+  "oracleVerification": {
+    "verified": true,
+    "operation": "container.extract",
+    "modules": [
+      {
+        "id": "m4-packed-mk2-odb-oracle",
+        "mk2Revision": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sourceAdapterCount": 6,
+        "sourceMode": "pinned-mk2-odb-plus-provenance-bound-copy",
+        "loader": "starcraft2/test/mk2/m4-packed-oracle-execution.test.ts"
+      }
+    ]
+  },
+  "rawEvidence": {
+    "corpus": [
+      { "logicalId": "WTE70_Madlibrarian.SC2Map", "bytes": 22703, "sha256": "f654e212dcff3ffe3e1090e383b7b25fac4def2a723b4eda408c1b5cdfb2a305" },
+      { "logicalId": "Persephone.SC2Replay", "bytes": 59767, "sha256": "e3522504afdf4d4f00d216e560baf9c89536135c927f5808831155682fc515d6" }
+    ],
+    "counts": { "total": 8, "identical": 8, "differing": 0, "bothRefused": 0 },
+    "operationDigests": {
+      "WTE70_Madlibrarian.SC2Map": "b0d766b02204cf76e755abeded805433854e49bd1c4de73ce19449c4a4aeae88",
+      "Persephone.SC2Replay": "d96ceb6654ce5e4d1afa9ac43d809607fb5f855bcc1da9823c3d04aea95ee4c0"
+    }
+  },
+  "cases": [
+    { "id": "real:WTE70_Madlibrarian.SC2Map:container.extract", "verdict": "identical", "resultDigest": "b0d766b02204cf76e755abeded805433854e49bd1c4de73ce19449c4a4aeae88", "mk2Operation": "container.extract", "mk3Operation": "container.extract" },
+    { "id": "real:Persephone.SC2Replay:container.extract", "verdict": "identical", "resultDigest": "d96ceb6654ce5e4d1afa9ac43d809607fb5f855bcc1da9823c3d04aea95ee4c0", "mk2Operation": "container.extract", "mk3Operation": "container.extract" }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/mpq/operation/archive.extract",
+      "kind": "operation",
+      "legacyOperation": "archive.extract",
+      "adapterOperation": "container.extract",
+      "targetOperation": "container.extract",
+      "handlerId": "extract-entry",
+      "contribution": "modkit-extensions-blizzard/mpq/contributions/codec-mpq.json",
+      "executed": true,
+      "caseIds": ["real:WTE70_Madlibrarian.SC2Map:container.extract", "real:Persephone.SC2Replay:container.extract"]
+    }
+  ]
+}

@@ -1,0 +1,156 @@
+{
+  "schemaVersion": 3,
+  "oracle": {
+    "mk2": {
+      "repositoryRelativePath": "../references/modkitmk2",
+      "revision": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d"
+    },
+    "copyBindings": [
+      {
+        "sourcePath": "extensions/blizzard/archives/codecs/mpq/src/reader.ts",
+        "sourceGitBlob": "64802b5a6a2d9efc621cb293e27af115fb6e5922",
+        "sourceSha256": "1852f03f0d8cfaf955be3cc0c484cd76ab89a5267adb03c8863737f4da037c6f",
+        "destinationPath": "starcraft2/src/lib/mk2/extensions/blizzard/archives/codecs/mpq/src/reader.ts",
+        "destinationGitBlob": "fab9dd60a43dce66daa991eef0d7ea036476a102",
+        "destinationSha256": "bda83f11e25020f8e66d09d8ff7daf86087fc8b242cb868542219ddda11b4fde"
+      },
+      {
+        "sourcePath": "extensions/blizzard/archives/codecs/mpq/src/mpq-impl.ts",
+        "sourceGitBlob": "cd03a8902afda496d46988df13c0ec6306321a77",
+        "sourceSha256": "c7ab130cd4f44741ea96c62ee09f74349282aa20c4b31dfffdcbb576b3b418dc",
+        "destinationPath": "starcraft2/src/lib/mk2/extensions/blizzard/archives/codecs/mpq/src/mpq-impl.ts",
+        "destinationGitBlob": "edf4d615788b6362543719a4ce0b9d639546aeef",
+        "destinationSha256": "91105b9ccc5a9321eb395a9201a8e81872a3cf7195a0737246dcc27de62acafa"
+      },
+      {
+        "sourcePath": "extensions/blizzard/archives/codecs/mpq/src/writer.ts",
+        "sourceGitBlob": "10186ded905a2413920517e0f4a0cad6c6f7eef4",
+        "sourceSha256": "bd5c57d45f3406e96043debc9773d42dc87bb99713e351d0e8a8b22556928b5f",
+        "destinationPath": "starcraft2/src/lib/mk2/extensions/blizzard/archives/codecs/mpq/src/writer.ts",
+        "destinationGitBlob": "ee88af41aff8a4d5a9a4959c66d97b925c31bb0c",
+        "destinationSha256": "160032fc91b1804923c35e5fa15235a46b7bef1ea73e947c8e52cdcce05f521d"
+      },
+      {
+        "sourcePath": "extensions/blizzard/archives/codecs/mpq/src/obfuscate.ts",
+        "sourceGitBlob": "3016139daecf321d0a649f152a491cb94e9e986a",
+        "sourceSha256": "4e5d6c7a278292206e3e383afaf7acc1a14c80092d9858e6096998f941aec228",
+        "destinationPath": "starcraft2/src/lib/mk2/extensions/blizzard/archives/codecs/mpq/src/obfuscate.ts",
+        "destinationGitBlob": "3016139daecf321d0a649f152a491cb94e9e986a",
+        "destinationSha256": "4e5d6c7a278292206e3e383afaf7acc1a14c80092d9858e6096998f941aec228"
+      },
+      {
+        "sourcePath": "extensions/blizzard/starcraft-2/codecs/sc2-map/src/codec.ts",
+        "sourceGitBlob": "27d4224c14020f3542fbdfc666d918b414a53b40",
+        "sourceSha256": "8974a719a879e59d84953819be91498442dd266d261fd5fc34d2e773db55931d",
+        "destinationPath": "starcraft2/src/lib/mk2/codecs/sc2-map/src/codec.ts",
+        "destinationGitBlob": "96d8392ec66673516e056625c6f0c9f0ef743541",
+        "destinationSha256": "be89decd697a0486725acb5cc845c692d54955c4a5ea902a5f8457616b1415fc"
+      },
+      {
+        "sourcePath": "extensions/blizzard/starcraft-2/codecs/sc2-replay/src/codec.ts",
+        "sourceGitBlob": "32af9f29fb18b5557c20dd70927d02ffcc38104c",
+        "sourceSha256": "b7548ae703c585d628edf4f799df90db03da6cc77a1d69d889becea2508517d9",
+        "destinationPath": "starcraft2/src/lib/mk2/codecs/sc2-replay/src/codec.ts",
+        "destinationGitBlob": "19d69012afabf112d4e05ff939936559ef6047b5",
+        "destinationSha256": "24207c87bd6eb113b0d26553399e1c637f963e67df9275c78fd5d30c6e25b60f"
+      }
+    ],
+    "loaderFiles": [
+      "starcraft2/test/mk2/m4-packed-oracle-execution.test.ts",
+      "starcraft2/test/sc2-packed-corpus.test.ts",
+      "starcraft2/test/vitest.m3-family-libraries.workspace.mjs"
+    ],
+    "dependencyTrees": [
+      { "repository": "blizzard", "path": "starcraft2/src/lib/mk2" },
+      { "repository": "blizzard", "path": "mpq/src" },
+      { "repository": "blizzard", "path": "mpq/contributions" },
+      { "repository": "blizzard", "path": "starcraft2/src/sc2-map" },
+      { "repository": "blizzard", "path": "starcraft2/src/sc2-replay" },
+      { "repository": "blizzard", "path": "starcraft2/contributions" },
+      { "repository": "core", "path": "packages/codec-kit/src" }
+    ],
+    "dependencyFiles": [
+      { "repository": "blizzard", "path": "pnpm-lock.yaml" },
+      { "repository": "blizzard", "path": "mpq/package.json" },
+      { "repository": "blizzard", "path": "starcraft2/package.json" },
+      { "repository": "blizzard", "path": "starcraft2/MK2-FAMILY-PROVENANCE.json" },
+      { "repository": "core", "path": "pnpm-lock.yaml" },
+      { "repository": "core", "path": "packages/host/package.json" },
+      { "repository": "core", "path": "packages/sdk/package.json" },
+      { "repository": "core", "path": "packages/codec-kit/package.json" },
+      { "repository": "core", "path": "packages/codec-kit/MK2-PORT-PROVENANCE.json" }
+    ],
+    "runtimeTrees": [
+      { "path": "node_modules/@modkit/host/dist" },
+      { "path": "node_modules/@modkit/sdk/dist" },
+      { "path": "node_modules/@modkit/codec-kit/dist" }
+    ],
+    "operations": [
+      { "id": "namespace", "mk2": "mpq.list", "mk3": "common.view/namespace-entry-source.list" },
+      { "id": "inspect", "mk2": "view.inspect", "mk3": "view.inspect" },
+      { "id": "extract", "mk2": "container.extract", "mk3": "container.extract" },
+      { "id": "raw", "mk2": "export.raw/source.read", "mk3": "export.raw" }
+    ],
+    "vectors": [
+      { "id": "mpq-writer-cross-direction", "mk2": "packMpq/read", "mk3": "encodeFreshMpq/extract-entry" },
+      { "id": "mpq-obfuscation-bidirectional", "mk2": "copied obfuscate/deobfuscate", "mk3": "production obfuscate/deobfuscate" }
+    ],
+    "options": {
+      "normalization": "m4-packed-canonical-v1",
+      "requiredOperations": ["namespace", "inspect", "extract", "raw"],
+      "namespaceLimit": 1000,
+      "deadlineMs": 180000
+    }
+  },
+  "corpus": [
+    {
+      "logicalId": "WTE70_Madlibrarian.SC2Map",
+      "kind": "map",
+      "receiptClass": "real-installed-map",
+      "input": {
+        "environmentVariable": "MODKITX_WTE70_MAP",
+        "defaultPath": "C:\\Apps\\StarCraft II\\Maps\\ex\\WTE70_Madlibrarian.SC2Map",
+        "bytes": 22703,
+        "sha256": "f654e212dcff3ffe3e1090e383b7b25fac4def2a723b4eda408c1b5cdfb2a305"
+      },
+      "expected": {
+        "operationDigests": {
+          "namespace": "d64e00b1facb8a0a1f6156fc292c1266b887c1b8d397cdd46fa5f8cfee6fe02b",
+          "inspect": "2f4aafe47e57821e388ea9c51301d2cfbc5c95f5637b97cb5a7ed220b6444fd3",
+          "extract": "b0d766b02204cf76e755abeded805433854e49bd1c4de73ce19449c4a4aeae88",
+          "raw": "fc14aaea38075da5a759809f4911c4e543ba113db0826237fdf8875d5d67e8f3"
+        },
+        "resultDigest": "ce1a961de77a1a21e22504fd297ddbd23a7396b18f4c97659c250d70e62ad4d7"
+      }
+    },
+    {
+      "logicalId": "Persephone.SC2Replay",
+      "kind": "replay",
+      "receiptClass": "real-reference-replay",
+      "input": {
+        "environmentVariable": "MODKITX_PERSEPHONE_REPLAY",
+        "defaultPath": "../references/old-modkit-ts/-temp/Persephone.SC2Replay",
+        "bytes": 59767,
+        "sha256": "e3522504afdf4d4f00d216e560baf9c89536135c927f5808831155682fc515d6"
+      },
+      "expected": {
+        "operationDigests": {
+          "namespace": "c7a543593863841026be915f84ff0bdebe3ee29268e03e2d5f25c1eca852ea66",
+          "inspect": "d48536f7dc9ebf6a9b2c9c301d0aa483d322dd0cf7b7e94521be27ed4a5b774a",
+          "extract": "d96ceb6654ce5e4d1afa9ac43d809607fb5f855bcc1da9823c3d04aea95ee4c0",
+          "raw": "11777e441b052b53659590b493423a886a8b280be97a2b0aa24aaf4f1b7ad050"
+        },
+        "resultDigest": "40d9d983c9d33e07b09aa999400cdae76f23e36e677fa72573f5d2e506513680"
+      }
+    }
+  ],
+  "expected": {
+    "cacheKey": "857b7347583ead9459975eabdb5e949d24ea0c55c65c7a85219a9204c29f6823",
+    "counts": { "total": 8, "identical": 8, "differing": 0, "mk2Only": 0, "mk3Only": 0, "bothRefused": 0 },
+    "vectorDigests": {
+      "mpq-writer-cross-direction": "7350cf9dfdbc6bb01eb2b01a144a43126f22117fc441b0de59d89c6761a61f27",
+      "mpq-obfuscation-bidirectional": "2fbe78300d431c2735187954875037575642166a344c416fe8fe41e201ac73df"
+    },
+    "resultDigest": "161a55eeceaf7009334737ff00ba6af5b8504c447d0599cbf0a59a4893b0f597"
+  }
+}

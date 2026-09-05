@@ -1,0 +1,364 @@
+{
+  "schemaVersion": 1,
+  "kind": "wte70-native-save-as-profile-v1",
+  "corpus": {
+    "id": "installed-starcraft-2:Maps/ex/WTE70_Madlibrarian.SC2Map",
+    "relativePath": "Maps/ex/WTE70_Madlibrarian.SC2Map",
+    "expectedSha256": "sha256:f654e212dcff3ffe3e1090e383b7b25fac4def2a723b4eda408c1b5cdfb2a305",
+    "size": 22703,
+    "sha256": "sha256:f654e212dcff3ffe3e1090e383b7b25fac4def2a723b4eda408c1b5cdfb2a305"
+  },
+  "phases": [
+    {
+      "name": "read-installed-corpus",
+      "durationMs": 0.317,
+      "verdict": "pass"
+    },
+    {
+      "name": "create-semantic-services",
+      "durationMs": 5325.23,
+      "verdict": "pass"
+    },
+    {
+      "name": "semantic-open-installed-sc2map",
+      "durationMs": 2323.656,
+      "verdict": "pass"
+    },
+    {
+      "name": "semantic-inspect-installed-sc2map",
+      "durationMs": 2.403,
+      "verdict": "pass"
+    },
+    {
+      "name": "semantic-export-installed-raw",
+      "durationMs": 0.43,
+      "verdict": "pass"
+    },
+    {
+      "name": "create-mpq-services",
+      "durationMs": 0.036,
+      "verdict": "pass"
+    },
+    {
+      "name": "mpq-open-installed-sc2map",
+      "durationMs": 468.622,
+      "verdict": "pass"
+    },
+    {
+      "name": "mpq-extract-installed-mapinfo",
+      "durationMs": 2.678,
+      "verdict": "pass"
+    },
+    {
+      "name": "create-save-as-destination",
+      "durationMs": 0.455,
+      "verdict": "pass"
+    },
+    {
+      "name": "open-destination-vfs-mount",
+      "durationMs": 0.677,
+      "verdict": "pass"
+    },
+    {
+      "name": "open-destination-namespace-target",
+      "durationMs": 2449.726,
+      "verdict": "pass"
+    },
+    {
+      "name": "resolve-native-mpq-writer",
+      "durationMs": 182.301,
+      "verdict": "pass"
+    },
+    {
+      "name": "snapshot-native-preserving-mpq",
+      "durationMs": 19.254,
+      "verdict": "pass"
+    },
+    {
+      "name": "editing-propose",
+      "durationMs": 114.91,
+      "verdict": "pass"
+    },
+    {
+      "name": "editing-plan",
+      "durationMs": 106.412,
+      "verdict": "pass"
+    },
+    {
+      "name": "editing-prepare",
+      "durationMs": 7.653,
+      "verdict": "pass"
+    },
+    {
+      "name": "editing-commit",
+      "durationMs": 2.368,
+      "verdict": "pass"
+    },
+    {
+      "name": "read-save-as-destination",
+      "durationMs": 1.509,
+      "verdict": "pass"
+    },
+    {
+      "name": "semantic-reopen-saved-sc2map",
+      "durationMs": 1890.711,
+      "verdict": "pass"
+    },
+    {
+      "name": "semantic-inspect-saved-sc2map",
+      "durationMs": 3.065,
+      "verdict": "pass"
+    },
+    {
+      "name": "mpq-reopen-saved-sc2map",
+      "durationMs": 694.249,
+      "verdict": "pass"
+    },
+    {
+      "name": "mpq-extract-saved-MapScript.galaxy",
+      "durationMs": 3.838,
+      "verdict": "pass"
+    },
+    {
+      "name": "mpq-extract-saved-MapInfo",
+      "durationMs": 1.451,
+      "verdict": "pass"
+    },
+    {
+      "name": "read-installed-corpus-after-save-as",
+      "durationMs": 0.401,
+      "verdict": "pass"
+    },
+    {
+      "name": "editing-undo-save-as",
+      "durationMs": 2.594,
+      "verdict": "pass"
+    }
+  ],
+  "artifactSourceReads": {
+    "installed-semantic-open": {
+      "calls": 3,
+      "bytes": 26811,
+      "operations": [
+        {
+          "kind": "read",
+          "bytes": 12
+        },
+        {
+          "kind": "read",
+          "bytes": 4096
+        },
+        {
+          "kind": "read",
+          "bytes": 22703
+        }
+      ]
+    },
+    "installed-mpq-open": {
+      "calls": 3,
+      "bytes": 26803,
+      "operations": [
+        {
+          "kind": "read",
+          "bytes": 4
+        },
+        {
+          "kind": "read",
+          "bytes": 4096
+        },
+        {
+          "kind": "read",
+          "bytes": 22703
+        }
+      ]
+    },
+    "saved-semantic-reopen": {
+      "calls": 3,
+      "bytes": 26811,
+      "operations": [
+        {
+          "kind": "read",
+          "bytes": 12
+        },
+        {
+          "kind": "read",
+          "bytes": 4096
+        },
+        {
+          "kind": "read",
+          "bytes": 22703
+        }
+      ]
+    },
+    "saved-mpq-reopen": {
+      "calls": 3,
+      "bytes": 26803,
+      "operations": [
+        {
+          "kind": "read",
+          "bytes": 4
+        },
+        {
+          "kind": "read",
+          "bytes": 4096
+        },
+        {
+          "kind": "read",
+          "bytes": 22703
+        }
+      ]
+    }
+  },
+  "nativeExport": {
+    "schemaVersion": 1,
+    "kind": "mpq-native-export-receipt-v1",
+    "strategy": "whole-archive-save-as-fixed-slots",
+    "sourceArchiveDigest": "sha256:f654e212dcff3ffe3e1090e383b7b25fac4def2a723b4eda408c1b5cdfb2a305",
+    "outputArchiveDigest": "sha256:695b36139334fca493bd89a7cad49524ef28e96a13f30334307106ed5149a312",
+    "archiveByteIdentity": "changed",
+    "source": {
+      "version": 1,
+      "headerBytes": 44,
+      "archiveBytes": 20143,
+      "userDataBytes": 2252,
+      "prefixBytes": 2560,
+      "suffixBytes": 0,
+      "hashSlots": 64,
+      "blockSlots": 32
+    },
+    "unchanged": {
+      "entries": 31,
+      "guarantee": "raw-payload-flags-and-method-byte-identical",
+      "methods": [
+        "sector-compressed-opaque",
+        "stored-with-compress-flag",
+        "zlib"
+      ]
+    },
+    "changed": [
+      {
+        "path": "MapScript.galaxy",
+        "blockIndex": 10,
+        "flags": "0x81000200",
+        "method": "zlib",
+        "sourceBytes": 2244,
+        "outputBytes": 1235,
+        "sourceArchivedBytes": 393,
+        "outputArchivedBytes": 80,
+        "zeroFilledSlackBytes": 313
+      }
+    ],
+    "tables": {
+      "hash": "byte-identical",
+      "block": "deterministic-semantic-rebuild-in-original-slot",
+      "blockOrder": "preserved",
+      "blockOffsets": "preserved",
+      "sectorTables": "untouched-byte-identical"
+    },
+    "opaque": {
+      "prefix": "byte-identical",
+      "suffix": "byte-identical",
+      "extendedHeader": "byte-identical",
+      "interstitialBytes": "byte-identical",
+      "changedEntrySlack": "zero-filled-no-source-payload-retained",
+      "sourceArchive": "not-mutated",
+      "unnamedBlocks": 0,
+      "unnamedBlocksPolicy": "byte-identical",
+      "patchBlocks": 0,
+      "patchBlocksPolicy": "byte-identical-when-untouched",
+      "attributes": {
+        "present": true,
+        "bytes": "preserved-opaque",
+        "status": "invalidated-by-modification"
+      }
+    },
+    "signature": {
+      "present": false,
+      "kind": "none",
+      "kinds": [],
+      "externalStrongBytes": 0,
+      "bytes": "absent",
+      "status": "not-present"
+    },
+    "launchData": "outside-writer-scope"
+  },
+  "destination": {
+    "archiveName": "WTE70_Madlibrarian.NativeProof.SC2Map",
+    "bytes": 22703,
+    "sha256": "sha256:695b36139334fca493bd89a7cad49524ef28e96a13f30334307106ed5149a312"
+  },
+  "reopened": {
+    "semantic": {
+      "contributionId": "blizzard/sc2-map",
+      "summaryMatchesSource": true,
+      "summary": {
+        "blocks": 32,
+        "entries": 36,
+        "format": "sc2-map",
+        "hashSlots": 64,
+        "mpqEntries": 32,
+        "mpqVersion": 1,
+        "userDataBytes": 2252,
+        "version": 1,
+        "bankFiles": 0,
+        "bankKeys": 0,
+        "bankLists": 0,
+        "bankNames": [],
+        "bankSections": 0,
+        "declaredBanks": 0,
+        "dependencies": [
+          "bnet:Liberty (Mod)/0.0/999,file:Mods/Liberty.SC2Mod",
+          "bnet:Liberty Multi (Mod)/0.0/999,file:Mods/LibertyMulti.SC2Mod",
+          "bnet:Liberty (Campaign)/0.0/999,file:Campaigns/Liberty.SC2Campaign",
+          "bnet:Liberty Story (Campaign)/0.0/999,file:Campaigns/LibertyStory.SC2Campaign"
+        ],
+        "directories": 4,
+        "dynamicGalaxyBankLoads": 0,
+        "files": 32,
+        "galaxyBankLoads": 0,
+        "gameDataEntries": 1,
+        "layouts": 0,
+        "localizedData": 2,
+        "mapDocuments": [
+          "mapinfo",
+          "objects",
+          "t3heightmap",
+          "t3terrain.xml"
+        ],
+        "models": 0,
+        "packageKind": "map",
+        "parsedBankFiles": 0,
+        "scripts": 2,
+        "semanticBytesRead": 1235,
+        "semanticFilesRead": 1,
+        "textures": 1,
+        "topology": "mpq-namespace"
+      }
+    },
+    "codec": {
+      "contributionId": "blizzard/mpq",
+      "extractedEntries": {
+        "MapScript.galaxy": {
+          "bytes": 1235,
+          "sha256": "sha256:90a57e302e8f7d70ae547bc1d31e284ba3c95b7661cd0b1c08e6d7d6289ee40e",
+          "matchesExpected": true
+        },
+        "MapInfo": {
+          "bytes": 216,
+          "sha256": "sha256:a52d55f65dd1f12e14bf2e66266bf1fa91c607d03777c609c781b88052123e0f",
+          "matchesExpected": true
+        }
+      }
+    }
+  },
+  "sourceUnchanged": {
+    "size": 22703,
+    "sha256": "sha256:f654e212dcff3ffe3e1090e383b7b25fac4def2a723b4eda408c1b5cdfb2a305",
+    "matchesOriginal": true
+  },
+  "undo": {
+    "removedDestination": true
+  },
+  "totalDurationMs": 13662.558,
+  "verdict": "pass"
+}

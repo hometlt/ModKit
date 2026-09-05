@@ -1,0 +1,18 @@
+
+ RUN  v2.1.9 C:/FILES/SC2Files/coding/modkit-extensions-blizzard
+
+stdout | mpq/test/native-preserving-workflow.test.ts > Block 15 native MPQ durable workflow > creates and reopens MPQs through inventory, the published operation, and the ordinary materializer
+[mpq-public-pack] {"verdict":"pass","caseIds":["real:mpq-writer-cross-direction:nonempty:container.pack","real:mpq-writer-cross-direction:empty:container.pack"],"resultDigest":"afd94445e1f7bb16fe85edcabe77e46e1202439370c5301d704a2f43054f7ce8"}
+
+ ✓ mpq/test/native-preserving-workflow.test.ts > Block 15 native MPQ durable workflow > creates and reopens MPQs through inventory, the published operation, and the ordinary materializer 10548ms
+ ✓ mpq/test/native-preserving-workflow.test.ts > Block 15 native MPQ durable workflow > resolves fresh-writer evidence and commits an empty loose namespace Save As 1688ms
+ ✓ mpq/test/native-preserving-workflow.test.ts > Block 15 native MPQ durable workflow > resolves, validates, confines, atomically writes, reopens, compares and undoes 1820ms
+stdout | mpq/test/native-preserving-workflow.test.ts > Block 15 native MPQ durable workflow > runs the ordinary semantic Save As workflow on the installed WTE70 SC2Map
+[wte70-save-as-profile] receipt=C:\FILES\SC2Files\coding\modkit-core\reports\port-sc2-composition-m4\oracles\wte70-save-as-raw.json verdict=pass totalMs=13662.558
+
+ ✓ mpq/test/native-preserving-workflow.test.ts > Block 15 native MPQ durable workflow > runs the ordinary semantic Save As workflow on the installed WTE70 SC2Map 13666ms
+
+ Test Files  1 passed (1)
+      Tests  4 passed (4)
+   Start at  08:48:48
+   Duration  31.41s (transform 1.41s, setup 0ms, collect 2.94s, tests 27.73s, environment 0ms, prepare 239ms)

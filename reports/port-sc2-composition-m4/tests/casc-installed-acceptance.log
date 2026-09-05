@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "kind": "blizzard-casc-m4-installation-acceptance-v1",
+  "installationRoot": "C:\\Apps\\StarCraft II",
+  "markers": [
+    {
+      "path": ".build.info",
+      "kind": "file"
+    },
+    {
+      "path": "SC2Data/config",
+      "kind": "directory"
+    },
+    {
+      "path": "SC2Data/data",
+      "kind": "directory"
+    },
+    {
+      "path": "SC2Data/indices",
+      "kind": "directory"
+    }
+  ],
+  "activeBuild": {
+    "branch": "eu",
+    "product": "",
+    "version": "5.0.16.97563",
+    "buildKey": "5bc8dcc1fade3a320c12936586b7c0ed"
+  },
+  "buildInfo": {
+    "path": ".build.info",
+    "digest": "sha256:1bcb07648367bb492c46c965962baaa3eb8eb5c7327fa92dce3cdc740f18adfa"
+  },
+  "buildConfig": {
+    "path": "SC2Data/config/5b/c8/5bc8dcc1fade3a320c12936586b7c0ed",
+    "digest": "sha256:dbb47a7077292443fc4e1f43de1780b7d6057bdf214001f398a59712ae13b20e"
+  },
+  "root": {
+    "contentKey": "f364d7c8bb1a0444abc9bee547b3fbb3",
+    "encodingKey": "c61c93fc71312a72d57668d9cf8050e5",
+    "decodedDigest": "sha256:14c6edd6e63c09062abc69721b168db808d8db2f251bedd8c274f01816cc674a",
+    "entries": 666588,
+    "format": "mndx"
+  },
+  "remoteEncodingKeyRefusal": "x3.casc/encoding-key-not-local",
+  "host": {
+    "contributionId": "blizzard/casc",
+    "descriptorFormatId": "casc",
+    "inspect": {
+      "entries": 666588,
+      "rootContentKey": "f364d7c8bb1a0444abc9bee547b3fbb3",
+      "rootFormat": "mndx"
+    },
+    "list": {
+      "prefix": "mods/",
+      "limit": 5,
+      "items": [
+        {
+          "path": "mods/alliedcommanders.sc2mod/componentlist.sc2components",
+          "size": "1040"
+        },
+        {
+          "path": "mods/alliedcommanders.sc2mod/dede.sc2data/localizeddata/gamestrings.txt",
+          "size": "87"
+        },
+        {
+          "path": "mods/alliedcommanders.sc2mod/documentheader",
+          "size": "845"
+        },
+        {
+          "path": "mods/alliedcommanders.sc2mod/documentinfo",
+          "size": "255"
+        },
+        {
+          "path": "mods/alliedcommanders.sc2mod/documentinfo.version",
+          "size": "44"
+        }
+      ],
+      "hasNextCursor": true
+    },
+    "search": {
+      "kind": "basename-any",
+      "basenames": [
+        "unitdata.xml",
+        "mapinfo"
+      ],
+      "limit": 2,
+      "items": [
+        {
+          "path": "campaigns/liberty.sc2campaign/base.sc2data/gamedata/unitdata.xml",
+          "size": "787142"
+        },
+        {
+          "path": "campaigns/liberty.sc2campaign/base.sc2maps/maps/campaign/tarcade.sc2map/mapinfo",
+          "size": "390"
+        }
+      ],
+      "hasNextCursor": true
+    },
+    "extract": {
+      "entryId": "campaigns/liberty.sc2campaign/base.sc2data/gamedata/unitdata.xml",
+      "path": "campaigns/liberty.sc2campaign/base.sc2data/gamedata/unitdata.xml",
+      "bytes": 787142,
+      "digest": "sha256:52026354da439891b67b4767f3caa7adb21088382aa61f167ac30f692574b963"
+    },
+    "lifecycle": {
+      "namespaceLeaseReleased": true,
+      "sessionDisposed": true
+    }
+  }
+}

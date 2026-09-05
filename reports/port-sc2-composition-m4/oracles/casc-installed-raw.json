@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "evidenceKind": "m4-casc-installed-differential",
+  "input": {
+    "rootDescriptor": {
+      "environmentVariable": "MODKITX_SC2_ROOT",
+      "buildInfo": {
+        "bytes": 678,
+        "sha256": "1bcb07648367bb492c46c965962baaa3eb8eb5c7327fa92dce3cdc740f18adfa"
+      },
+      "entry": {
+        "path": "campaigns/liberty.sc2campaign/base.sc2data/gamedata/unitdata.xml",
+        "bytes": 787142,
+        "sha256": "52026354da439891b67b4767f3caa7adb21088382aa61f167ac30f692574b963"
+      }
+    }
+  },
+  "mk2Oracle": {
+    "revision": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+    "entry": "extensions/blizzard/archives/codecs/casc/src/install-reader.ts",
+    "cacheKey": "ead889c2de70bbca42c2d8fd0c4da8c84d6def815c2583eb8944dfd1a0cc8aeb",
+    "sourceClosureDigest": "f68ce8ba4ec76191d5dd875e44fe3951822cbd095ac3f267a384521146948382",
+    "loaderDigest": "49e79ef37fad25884152d187b9b4914f27eec6fc4487d0e05d9c5e94edfdd2b5",
+    "dependenciesDigest": "baf6f35410ae70dc6d77563b7d439d1ccd0c284c819d249bde239f3c308700f9",
+    "bundleSha256": "db7fbf2e5b1aa58110f115b505bbb8f090bdf6f2914231f53f4dbb75709902a4",
+    "sourceFiles": 17,
+    "sourceMode": "git-odb-only",
+    "workingTreeSourcesObserved": false,
+    "entrySource": {
+      "path": "extensions/blizzard/archives/codecs/casc/src/install-reader.ts",
+      "gitBlob": "ec2ecfd4aabe1c497bf833be6296ab92782cf25d",
+      "sha256": "0ab6678ca174b04b3dd6b55896764847edd2f199f875138e1da19d7cf6fdca1d"
+    }
+  },
+  "positive": {
+    "operation": {
+      "id": "archive.extract",
+      "mk2": "openCascInstallReader.asLocalOnly.get",
+      "mk3": "container.extract",
+      "expectedMk3HandlerId": "extract-entry"
+    },
+    "mk3Binding": {
+      "publicId": "container.extract",
+      "handlerId": "extract-entry",
+      "state": "available"
+    },
+    "path": "campaigns/liberty.sc2campaign/base.sc2data/gamedata/unitdata.xml",
+    "mk2": {
+      "path": "campaigns/liberty.sc2campaign/base.sc2data/gamedata/unitdata.xml",
+      "bytes": 787142,
+      "sha256": "52026354da439891b67b4767f3caa7adb21088382aa61f167ac30f692574b963"
+    },
+    "mk3": {
+      "path": "campaigns/liberty.sc2campaign/base.sc2data/gamedata/unitdata.xml",
+      "bytes": 787142,
+      "sha256": "52026354da439891b67b4767f3caa7adb21088382aa61f167ac30f692574b963"
+    },
+    "verdict": "identical"
+  },
+  "positiveDigest": "acbf803532a1e16285ddbdea5746aecc4034a429e10f878bc804c6dbaaef8903",
+  "counts": {
+    "total": 1,
+    "identical": 1,
+    "differing": 0,
+    "mk2Only": 0,
+    "mk3Only": 0,
+    "bothRefused": 0
+  },
+  "supplemental": {
+    "missingPath": {
+      "path": "campaigns/liberty.sc2campaign/base.sc2data/gamedata/__modkit_m4_missing__.xml",
+      "creditedAsPositiveParity": false,
+      "mk2": {
+        "state": "refused",
+        "bucket": "Error",
+        "message": "CASC path is not available locally: campaigns/liberty.sc2campaign/base.sc2data/gamedata/__modkit_m4_missing__.xml"
+      },
+      "mk3": {
+        "state": "refused",
+        "bucket": "x3.host/operation-handler-failed",
+        "message": "operation handler extract-entry failed: CASC entry does not exist"
+      },
+      "verdict": "both-refused-supplemental"
+    }
+  },
+  "bounds": {
+    "listPrefix": "campaigns/liberty.sc2campaign/base.sc2data/gamedata/",
+    "listLimit": 1,
+    "returned": 1,
+    "items": [
+      {
+        "path": "campaigns/liberty.sc2campaign/base.sc2data/gamedata/abildata.xml",
+        "size": "172804"
+      }
+    ],
+    "overLimit": {
+      "state": "refused",
+      "bucket": "x3.casc/page-limit-exceeded",
+      "message": "CASC namespace page exceeds its budget"
+    }
+  },
+  "lifecycle": {
+    "mk2": {
+      "readerClosed": true,
+      "physicalSourceCloseCalls": 1
+    },
+    "mk3": {
+      "namespaceReleased": true,
+      "sessionDisposed": true,
+      "vfsDisposed": true
+    }
+  },
+  "verdict": "pass",
+  "resultDigest": "3df77b3d313eef94c88b26d9022eafa797eb403a19a471cf20a2c883a0f5b4b5"
+}

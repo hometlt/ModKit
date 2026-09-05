@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "codec": "casc",
+  "corpusKind": "real",
+  "verdict": "pass",
+  "tests": { "passed": 1, "failed": 0, "skipped": 0 },
+  "inputs": {
+    "operation": "container.extract",
+    "rawOracle": "modkit-core/reports/port-sc2-composition-m4/oracles/casc-installed-raw.json",
+    "rawOracleResultDigest": "3df77b3d313eef94c88b26d9022eafa797eb403a19a471cf20a2c883a0f5b4b5",
+    "installedEntry": {
+      "path": "campaigns/liberty.sc2campaign/base.sc2data/gamedata/unitdata.xml",
+      "bytes": 787142,
+      "sha256": "52026354da439891b67b4767f3caa7adb21088382aa61f167ac30f692574b963"
+    }
+  },
+  "oracleVerification": {
+    "verified": true,
+    "operation": "container.extract",
+    "modules": [
+      {
+        "id": "m4-casc-installed-mk2-odb-oracle",
+        "mk2Revision": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "entry": "extensions/blizzard/archives/codecs/casc/src/install-reader.ts",
+        "entryGitBlob": "ec2ecfd4aabe1c497bf833be6296ab92782cf25d",
+        "entrySha256": "0ab6678ca174b04b3dd6b55896764847edd2f199f875138e1da19d7cf6fdca1d",
+        "cacheKey": "ead889c2de70bbca42c2d8fd0c4da8c84d6def815c2583eb8944dfd1a0cc8aeb",
+        "bundleSha256": "db7fbf2e5b1aa58110f115b505bbb8f090bdf6f2914231f53f4dbb75709902a4",
+        "sourceMode": "git-odb-only"
+      }
+    ]
+  },
+  "rawEvidence": {
+    "positiveDigest": "acbf803532a1e16285ddbdea5746aecc4034a429e10f878bc804c6dbaaef8903",
+    "boundedList": { "limit": 1, "returned": 1, "overLimitRefused": true },
+    "lifecycle": { "mk2ReaderClosed": true, "mk3NamespaceReleased": true, "mk3SessionDisposed": true }
+  },
+  "cases": [
+    {
+      "id": "real:installed-sc2:unitdata.xml:container.extract",
+      "verdict": "identical",
+      "resultDigest": "acbf803532a1e16285ddbdea5746aecc4034a429e10f878bc804c6dbaaef8903",
+      "mk2": { "operation": "openCascInstallReader.asLocalOnly.get", "sha256": "52026354da439891b67b4767f3caa7adb21088382aa61f167ac30f692574b963" },
+      "mk3": { "operation": "container.extract", "handlerId": "extract-entry", "sha256": "52026354da439891b67b4767f3caa7adb21088382aa61f167ac30f692574b963" }
+    }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/casc/operation/archive.extract",
+      "kind": "operation",
+      "legacyOperation": "archive.extract",
+      "adapterOperation": "container.extract",
+      "targetOperation": "container.extract",
+      "handlerId": "extract-entry",
+      "contribution": "modkit-extensions-blizzard/casc/contributions/codec-casc.json",
+      "executed": true,
+      "caseIds": ["real:installed-sc2:unitdata.xml:container.extract"]
+    }
+  ]
+}

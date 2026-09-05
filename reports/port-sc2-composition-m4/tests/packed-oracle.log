@@ -1,0 +1,9 @@
+
+ RUN  v2.1.9 C:/FILES/SC2Files/coding/modkit-extensions-blizzard
+
+ ✓ starcraft2/test/sc2-packed-corpus.test.ts > pinned packed SC2 corpus oracle > runs the isolated copied MK2 and MK3 differential as a required real gate 8679ms
+
+ Test Files  1 passed (1)
+      Tests  1 passed (1)
+   Start at  08:46:03
+   Duration  9.31s (transform 84ms, setup 0ms, collect 81ms, tests 8.68s, environment 0ms, prepare 240ms)

@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "codec": "mpq",
+  "corpusKind": "real",
+  "verdict": "pass",
+  "tests": { "passed": 2, "failed": 0, "skipped": 0 },
+  "inputs": {
+    "operation": "view.inspect",
+    "rawOracle": "modkit-core/reports/port-sc2-composition-m4/oracles/packed-raw.json",
+    "normalization": "m4-packed-canonical-v1"
+  },
+  "oracleVerification": {
+    "verified": true,
+    "operation": "view.inspect",
+    "modules": [
+      {
+        "id": "m4-packed-mk2-odb-oracle",
+        "mk2Revision": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "sourceAdapterCount": 6,
+        "sourceMode": "pinned-mk2-odb-plus-provenance-bound-copy",
+        "loader": "starcraft2/test/mk2/m4-packed-oracle-execution.test.ts"
+      }
+    ]
+  },
+  "rawEvidence": {
+    "corpus": [
+      { "logicalId": "WTE70_Madlibrarian.SC2Map", "resultDigest": "ce1a961de77a1a21e22504fd297ddbd23a7396b18f4c97659c250d70e62ad4d7" },
+      { "logicalId": "Persephone.SC2Replay", "resultDigest": "40d9d983c9d33e07b09aa999400cdae76f23e36e677fa72573f5d2e506513680" }
+    ],
+    "counts": { "total": 8, "identical": 8, "differing": 0, "bothRefused": 0 },
+    "operationDigests": {
+      "WTE70_Madlibrarian.SC2Map": "2f4aafe47e57821e388ea9c51301d2cfbc5c95f5637b97cb5a7ed220b6444fd3",
+      "Persephone.SC2Replay": "d48536f7dc9ebf6a9b2c9c301d0aa483d322dd0cf7b7e94521be27ed4a5b774a"
+    }
+  },
+  "cases": [
+    { "id": "real:WTE70_Madlibrarian.SC2Map:view.inspect", "verdict": "identical", "resultDigest": "2f4aafe47e57821e388ea9c51301d2cfbc5c95f5637b97cb5a7ed220b6444fd3", "mk2Operation": "view.inspect", "mk3Operation": "view.inspect" },
+    { "id": "real:Persephone.SC2Replay:view.inspect", "verdict": "identical", "resultDigest": "d48536f7dc9ebf6a9b2c9c301d0aa483d322dd0cf7b7e94521be27ed4a5b774a", "mk2Operation": "view.inspect", "mk3Operation": "view.inspect" }
+  ],
+  "proofs": [
+    {
+      "requirement": "legacy/codec-manifest/modkit/mpq/operation/archive.inspect",
+      "kind": "operation",
+      "legacyOperation": "archive.inspect",
+      "adapterOperation": "view.inspect",
+      "targetOperation": "view.inspect",
+      "handlerId": "inspect",
+      "contribution": "modkit-extensions-blizzard/mpq/contributions/codec-mpq.json",
+      "executed": true,
+      "caseIds": ["real:WTE70_Madlibrarian.SC2Map:view.inspect", "real:Persephone.SC2Replay:view.inspect"]
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+
+ RUN  v2.1.9 C:/FILES/SC2Files/coding/modkit-core
+
+ ✓ packages/host/test/subject-open-container-composition.test.ts > host-owned container composition > invokes typed creation through inventory on the application-owned empty target and reopens 1466ms
+ ✓ packages/host/test/subject-open-container-composition.test.ts > host-owned container composition > refuses mixed create/replace input before dispatching the provider handler
+ ✓ packages/host/test/subject-open-container-composition.test.ts > host-owned container composition > rejects provider plans aimed outside the application source or open revision
+ ✓ packages/host/test/nested-subject-containers.test.ts > a container inside another container uses the same nested route twice > opens ZIP → ZIP → mesh and resolves the companion from the inner namespace 962ms
+ ✓ packages/host/test/nested-subject-containers.test.ts > large namespace companion resolution remains bounded > uses a path-qualified pattern to list only the exact companion
+ ✓ packages/host/test/nested-subject-containers.test.ts > large namespace companion resolution remains bounded > refuses a name-only requirement before an unbounded scan can complete
+ ✓ packages/host/test/subject-open-container-composition.test.ts > host-owned container composition > selects the semantic alias through a declared prefix and synthesized directory
+ ✓ packages/host/test/subject-open-container-composition.test.ts > host-owned container composition > keeps carrier entry extraction lazy and memoized behind byte access
+ ✓ packages/host/test/subject-open-container-composition.test.ts > host-owned container composition > enforces an entry scalar budget before lazy carrier extraction
+ ✓ packages/host/test/subject-open-container-composition.test.ts > host-owned container composition > propagates cancellation and rejects a carrier entry size mismatch on first read
+ ✓ packages/host/test/subject-open-container-composition.test.ts > host-owned container composition > adds carrier-only inspect facts without overriding semantic summary fields
+ ✓ packages/host/test/subject-open-container-composition.test.ts > host-owned container composition > turns a semantic entry replacement into a carrier-owned outer edit plan
+ ✓ packages/host/test/subject-open-container-composition.test.ts > host-owned container composition > delegates export.raw to the carrier without invoking semantic raw code
+ ✓ packages/host/test/subject-open-container-composition.test.ts > host-owned container composition > rejects stale entry refs and cancellation before parent pack
+ ✓ packages/host/test/subject-open-container-composition.test.ts > host-owned container composition > rejects duplicate, unreferenced, malformed, and read-only entry edit plans
+ ✓ packages/host/test/subject-open-container-composition.test.ts > host-owned container composition > disposes the opened semantic session before carrier resources on pre-wrap failure
+ ✓ packages/host/test/subject-open-container-composition.test.ts > host-owned container composition > does not run a container alias for a direct directory namespace
+ ✓ packages/host/test/subject-open-container-composition.test.ts > host-owned container composition > keeps the generic carrier open when every semantic alias is a no-match
+ ✓ packages/host/test/subject-open-container-composition.test.ts > host-owned container composition > fails closed when semantic aliases tie instead of returning the generic carrier
+ ✓ packages/host/test/namespace-write-seam.test.ts > 12-3 a writer can create a new artifact through the commit coordinator > pins the namespace revision on the edit target a directory subject yields
+ ✓ packages/host/test/namespace-write-seam.test.ts > 12-3 a writer can create a new artifact through the commit coordinator > commits two creates and puts both inside the directory the plan pinned
+ ✓ packages/host/test/namespace-write-seam.test.ts > 12-3 a writer can create a new artifact through the commit coordinator > detects a concurrent create instead of overwriting it: the check reads the directory
+ ✓ packages/host/test/namespace-candidate-discovery.test.ts > workspace namespace candidate discovery > orders exact-extension candidates by explicit root precedence and pins entry revisions
+ ✓ packages/host/test/namespace-candidate-discovery.test.ts > workspace namespace candidate discovery > publishes no partial candidates when entry, candidate or byte budgets are exhausted
+ ✓ packages/host/test/namespace-candidate-discovery.test.ts > workspace namespace candidate discovery > fails closed when a candidate has no bounded size and completes an empty search honestly
+ ✓ packages/host/test/namespace-candidate-discovery.test.ts > workspace namespace candidate discovery > propagates cancellation before namespace paging
+ ✓ packages/host/test/namespace-candidate-discovery.test.ts > workspace namespace candidate discovery > propagates cancellation immediately after an awaited page
+ ✓ packages/host/test/namespace-candidate-discovery.test.ts > workspace namespace candidate discovery > refuses malformed and overproduced pages without publishing partial candidates
+
+ Test Files  4 passed (4)
+      Tests  28 passed (28)
+   Start at  08:56:58
+   Duration  5.45s (transform 2.66s, setup 0ms, collect 4.69s, tests 3.83s, environment 1ms, prepare 382ms)

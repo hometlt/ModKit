@@ -1,0 +1,434 @@
+{
+  "schemaVersion": 1,
+  "milestone": "M4/P11",
+  "disposition": "copied-unwired-test-compatibility",
+  "oracle": {
+    "repository": "references/modkitmk2",
+    "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+    "sourceMode": "git-object-database"
+  },
+  "copiedRoots": [
+    {
+      "source": "packages/archives-processing/src",
+      "gitObject": "caa0047c47651f83952e3101e341cabf74bd2037",
+      "destination": "starcraft2/src/lib/mk2/packages/archives-processing/src"
+    },
+    {
+      "source": "packages/vfs/src",
+      "gitObject": "2170c84f8a85cbdaed8f1270fe9fbc37cd87e47a",
+      "destination": "starcraft2/src/lib/mk2/packages/vfs/src"
+    },
+    {
+      "source": "packages/assets/src",
+      "gitObject": "f23c1f95c4cddf265d51ce9dfb0eb8d8d03e99b9",
+      "destination": "starcraft2/src/lib/mk2/packages/assets/src"
+    },
+    {
+      "source": "packages/games/src",
+      "gitObject": "b6b6ec4b7501d9aa28c4551e2c5237ed5082b118",
+      "destination": "starcraft2/src/lib/mk2/packages/games/src"
+    },
+    {
+      "source": "packages/models-processing/src/core",
+      "gitObject": "fa0f56305077658fe47d46da8725747002e726b1",
+      "destination": "starcraft2/src/lib/mk2/packages/models-processing/src/core"
+    },
+    {
+      "source": "extensions/audiokinetic/wwise/codecs/wwise-pck/src",
+      "gitObject": "79d0eef4eceb596925ba183324c62b07fa12537a",
+      "destination": "starcraft2/src/lib/mk2/extensions/audiokinetic/wwise/codecs/wwise-pck/src"
+    },
+    {
+      "source": "extensions/blizzard/archives/codecs/casc/src",
+      "gitObject": "7fb6877ec35ad54c6c4dd3181803e7e297c5bdde",
+      "destination": "starcraft2/src/lib/mk2/extensions/blizzard/archives/codecs/casc/src"
+    },
+    {
+      "source": "extensions/blizzard/archives/codecs/mpq/src",
+      "gitObject": "0dd64d3c1505c551e6a5d3788c22acec0ba46dca",
+      "destination": "starcraft2/src/lib/mk2/extensions/blizzard/archives/codecs/mpq/src"
+    },
+    {
+      "source": "extensions/cavedog/total-annihilation/codecs/ta-hpi/src",
+      "gitObject": "40ebd6915967aa95c966e676bf36dda87c97f6f1",
+      "destination": "starcraft2/src/lib/mk2/extensions/cavedog/total-annihilation/codecs/ta-hpi/src"
+    },
+    {
+      "source": "extensions/common/archives/src",
+      "gitObject": "dad21014728fd71ea40e53f8d762bd72988dcd96",
+      "destination": "starcraft2/src/lib/mk2/extensions/common/archives/src"
+    },
+    {
+      "source": "extensions/common/archives/codecs/7z/src",
+      "gitObject": "a16c6aa67a275aa6ae6515305b11192d19e4f8c8",
+      "destination": "starcraft2/src/lib/mk2/extensions/common/archives/codecs/7z/src"
+    },
+    {
+      "source": "extensions/common/archives/codecs/brotli/src",
+      "gitObject": "aabf0c13037f60569d2d207aaf2b1df932752d7f",
+      "destination": "starcraft2/src/lib/mk2/extensions/common/archives/codecs/brotli/src"
+    },
+    {
+      "source": "extensions/common/archives/codecs/bzip2/src",
+      "gitObject": "6d3e60d8a6ca3ade7938ed535c87ce906b83476c",
+      "destination": "starcraft2/src/lib/mk2/extensions/common/archives/codecs/bzip2/src"
+    },
+    {
+      "source": "extensions/common/archives/codecs/cab/src",
+      "gitObject": "4e72454d8442c317959ed8809a2fd53d0971fa59",
+      "destination": "starcraft2/src/lib/mk2/extensions/common/archives/codecs/cab/src"
+    },
+    {
+      "source": "extensions/common/archives/codecs/dmg/src",
+      "gitObject": "bc0fdb86d63eb7c9bc8250e7857b8fc7e3049508",
+      "destination": "starcraft2/src/lib/mk2/extensions/common/archives/codecs/dmg/src"
+    },
+    {
+      "source": "extensions/common/archives/codecs/gzip/src",
+      "gitObject": "72aa11e5d4e97a8eddc2de7bc5ca7e165e8de915",
+      "destination": "starcraft2/src/lib/mk2/extensions/common/archives/codecs/gzip/src"
+    },
+    {
+      "source": "extensions/common/archives/codecs/iso/src",
+      "gitObject": "9c7a9c3867d72e73df618c00dae0576cb90c9f0e",
+      "destination": "starcraft2/src/lib/mk2/extensions/common/archives/codecs/iso/src"
+    },
+    {
+      "source": "extensions/common/archives/codecs/lzma/src",
+      "gitObject": "bb86798ab9c58536bf24d5d5489dc2dc2afefa1e",
+      "destination": "starcraft2/src/lib/mk2/extensions/common/archives/codecs/lzma/src"
+    },
+    {
+      "source": "extensions/common/archives/codecs/pe/src",
+      "gitObject": "8985d46f1a416876d5d056b7bd0a1e48677d8428",
+      "destination": "starcraft2/src/lib/mk2/extensions/common/archives/codecs/pe/src"
+    },
+    {
+      "source": "extensions/common/archives/codecs/ps1-xa/src",
+      "gitObject": "ad72b398297a2ab7642a161a170f7adf72c53aaa",
+      "destination": "starcraft2/src/lib/mk2/extensions/common/archives/codecs/ps1-xa/src"
+    },
+    {
+      "source": "extensions/common/archives/codecs/rar/src",
+      "gitObject": "fae7bc77c59f98f330d94f8703ca9454f8e7ff4a",
+      "destination": "starcraft2/src/lib/mk2/extensions/common/archives/codecs/rar/src"
+    },
+    {
+      "source": "extensions/common/archives/codecs/tar/src",
+      "gitObject": "410fcb1e75b2f18fc562f7b226f0fffb3dea5177",
+      "destination": "starcraft2/src/lib/mk2/extensions/common/archives/codecs/tar/src"
+    },
+    {
+      "source": "extensions/common/archives/codecs/xz/src",
+      "gitObject": "85edc4c5eef292c04befd6871fe2d3ddf8da2808",
+      "destination": "starcraft2/src/lib/mk2/extensions/common/archives/codecs/xz/src"
+    },
+    {
+      "source": "extensions/common/archives/codecs/zip/src",
+      "gitObject": "ccefd265c0e8b623802eb50cfebd3a3694314986",
+      "destination": "starcraft2/src/lib/mk2/extensions/common/archives/codecs/zip/src"
+    },
+    {
+      "source": "extensions/common/archives/codecs/zstd/src",
+      "gitObject": "7ccf0d0e89059f1735e8bf3a2ce0ab74b68182f3",
+      "destination": "starcraft2/src/lib/mk2/extensions/common/archives/codecs/zstd/src"
+    },
+    {
+      "source": "extensions/common/containers/codecs/ps1-cue-bin/src",
+      "gitObject": "d72b216469af09fc33266611ac69beee95be3268",
+      "destination": "starcraft2/src/lib/mk2/extensions/common/containers/codecs/ps1-cue-bin/src"
+    },
+    {
+      "source": "extensions/ea/archives/codecs/mix/src",
+      "gitObject": "ff971f170ec1fd3e65e90210aaae1d8493a8058d",
+      "destination": "starcraft2/src/lib/mk2/extensions/ea/archives/codecs/mix/src"
+    },
+    {
+      "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/src",
+      "gitObject": "ff8ab8e318ff465e56d9580b55aab5847ef56e1b",
+      "destination": "starcraft2/src/lib/mk2/extensions/ea/emperor/codecs/emperor-rfh-rfd/src"
+    },
+    {
+      "source": "extensions/ea/sage/codecs/big/src",
+      "gitObject": "158146fa13e666b404cef87cc38928d90a7d2eac",
+      "destination": "starcraft2/src/lib/mk2/extensions/ea/sage/codecs/big/src"
+    },
+    {
+      "source": "extensions/epic-games/unreal-engine/codecs/unreal-iostore/src",
+      "gitObject": "0c9c702a71e4493deaaff0c6e21ccdf67aaaa09c",
+      "destination": "starcraft2/src/lib/mk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/src"
+    },
+    {
+      "source": "extensions/epic-games/unreal-engine/codecs/unreal-pak/src",
+      "gitObject": "921379dd6dec6210ec185ce7ffafd5c814f13e64",
+      "destination": "starcraft2/src/lib/mk2/extensions/epic-games/unreal-engine/codecs/unreal-pak/src"
+    },
+    {
+      "source": "extensions/microsoft/age-series/codecs/age-bar/src",
+      "gitObject": "ec791f75387984ff2cb26df5b60ea5000e53a746",
+      "destination": "starcraft2/src/lib/mk2/extensions/microsoft/age-series/codecs/age-bar/src"
+    },
+    {
+      "source": "extensions/microsoft/age-series/codecs/age-drs/src",
+      "gitObject": "0658aa07251a07955ff29baf79f030ec33c39ef1",
+      "destination": "starcraft2/src/lib/mk2/extensions/microsoft/age-series/codecs/age-drs/src"
+    },
+    {
+      "source": "extensions/microsoft/halo-wars/codecs/halo-era/src",
+      "gitObject": "6e3dc0a1c03b112b987e6b563781579f17bd23ff",
+      "destination": "starcraft2/src/lib/mk2/extensions/microsoft/halo-wars/codecs/halo-era/src"
+    },
+    {
+      "source": "extensions/new-world-computing/heroes-3/codecs/heroes3-lod/src",
+      "gitObject": "ed21bbc16ce3077e5d3f54c70d23255fd5bb07ec",
+      "destination": "starcraft2/src/lib/mk2/extensions/new-world-computing/heroes-3/codecs/heroes3-lod/src"
+    },
+    {
+      "source": "extensions/new-world-computing/heroes-4/codecs/heroes4-resource/src",
+      "gitObject": "dd4c7069ff1e252c3da4b501a40f669e5338d837",
+      "destination": "starcraft2/src/lib/mk2/extensions/new-world-computing/heroes-4/codecs/heroes4-resource/src"
+    },
+    {
+      "source": "extensions/opensource/spring/codecs/spring-rapid/src",
+      "gitObject": "e79b7c0cf3e479e2f639f0302431a4cd25e8cc0f",
+      "destination": "starcraft2/src/lib/mk2/extensions/opensource/spring/codecs/spring-rapid/src"
+    },
+    {
+      "source": "extensions/opensource/warzone-2100/codecs/warzone-wz/src",
+      "gitObject": "e0ae7c1f897004b5f5255049794b6fef3524856a",
+      "destination": "starcraft2/src/lib/mk2/extensions/opensource/warzone-2100/codecs/warzone-wz/src"
+    },
+    {
+      "source": "extensions/petroglyph/glyphx/codecs/petroglyph-meg/src",
+      "gitObject": "3230c6c2f076d881b44536e607738c7ead053193",
+      "destination": "starcraft2/src/lib/mk2/extensions/petroglyph/glyphx/codecs/petroglyph-meg/src"
+    },
+    {
+      "source": "extensions/realitypump/earth-2150/codecs/earth-par/src",
+      "gitObject": "181f20e06b0afa8233e4b902184c883dccecfe40",
+      "destination": "starcraft2/src/lib/mk2/extensions/realitypump/earth-2150/codecs/earth-par/src"
+    },
+    {
+      "source": "extensions/realitypump/earth-2150/codecs/earth-res/src",
+      "gitObject": "9802109663166c0c59608778e346b95692796246",
+      "destination": "starcraft2/src/lib/mk2/extensions/realitypump/earth-2150/codecs/earth-res/src"
+    },
+    {
+      "source": "extensions/realitypump/earth2160/codecs/wd/src",
+      "gitObject": "38179d3e66b0cdf7f9fbf2504e58dc44095b1897",
+      "destination": "starcraft2/src/lib/mk2/extensions/realitypump/earth2160/codecs/wd/src"
+    },
+    {
+      "source": "extensions/relic/essence/codecs/relic/src",
+      "gitObject": "3345f198296c09ea3c4ca4d2da6a31829de6953a",
+      "destination": "starcraft2/src/lib/mk2/extensions/relic/essence/codecs/relic/src"
+    },
+    {
+      "source": "extensions/relic/essence/codecs/relic-sga/src",
+      "gitObject": "415f24138843a91328969e7f1f3dd786e4c7db9b",
+      "destination": "starcraft2/src/lib/mk2/extensions/relic/essence/codecs/relic-sga/src"
+    },
+    {
+      "source": "extensions/stainless-steel-studios/empire-earth/codecs/empire-earth-ssa/src",
+      "gitObject": "3912bd062f1e53346ef479d882cc31d798ba7fcc",
+      "destination": "starcraft2/src/lib/mk2/extensions/stainless-steel-studios/empire-earth/codecs/empire-earth-ssa/src"
+    },
+    {
+      "source": "extensions/ubisoft/heroes-6/codecs/heroes6-orc/src",
+      "gitObject": "e1dae356c3107f0f32a5028d6fdd16aa1eb6a6bb",
+      "destination": "starcraft2/src/lib/mk2/extensions/ubisoft/heroes-6/codecs/heroes6-orc/src"
+    },
+    {
+      "source": "extensions/unity/engine/src",
+      "gitObject": "caefba8e0368b7d3644f5129f036eb995fa3cf5d",
+      "destination": "starcraft2/src/lib/mk2/extensions/unity/engine/src"
+    },
+    {
+      "source": "extensions/unity/engine/codecs/unity-assets/src",
+      "gitObject": "9aa30c8920aa4b1483815b6da075ff7180c10499",
+      "destination": "starcraft2/src/lib/mk2/extensions/unity/engine/codecs/unity-assets/src"
+    },
+    {
+      "source": "extensions/unity/engine/codecs/unity-mesh/src",
+      "gitObject": "8556c79328a91a77c8a7de2e862bb9c8c6616ec1",
+      "destination": "starcraft2/src/lib/mk2/extensions/unity/engine/codecs/unity-mesh/src"
+    },
+    {
+      "source": "extensions/unity/engine/codecs/unity-ress/src",
+      "gitObject": "96028834d41d5db4bf6e5a373aa81887fdea5dfd",
+      "destination": "starcraft2/src/lib/mk2/extensions/unity/engine/codecs/unity-ress/src"
+    },
+    {
+      "source": "extensions/unity/engine/codecs/unityfs/src",
+      "gitObject": "9ffabc5b6ce753062242910ee57d7145e411a1f4",
+      "destination": "starcraft2/src/lib/mk2/extensions/unity/engine/codecs/unityfs/src"
+    }
+  ],
+  "testLayoutMirror": {
+    "source": "packages/archives-processing/src",
+    "destination": "starcraft2/test/mk2/packages/archives-processing/src",
+    "reason": "unchanged vfs-browser-boundary.spec.ts resolves sibling src directly"
+  },
+  "registeredRewrites": [
+    {
+      "source": "extensions/frost-giant/stormgate/games/stormgate/src/codec.ts",
+      "sourceBlob": "e39188a84fe2d6b6999769385317b3460e8b5129",
+      "destination": "starcraft2/src/lib/mk2/compat/stormgate-archive.ts",
+      "kept": [
+        "default stormgateCodec",
+        "openStormgateInstall"
+      ],
+      "excluded": [
+        "openGameInstall",
+        "game discovery/routing API"
+      ],
+      "reason": "archive registry needs a real directory codec but must remain outside production game routing"
+    },
+    {
+      "source": "packages/archives-processing/src/registry.ts",
+      "destination": "starcraft2/src/lib/mk2/packages/archives-processing/src/registry.ts",
+      "changes": [
+        "local catalog-adapter import",
+        "Stormgate compat loader import"
+      ],
+      "reason": "legacy @modkitx/assets catalog API is unavailable in MK3"
+    },
+    {
+      "source": "packages/models-processing/src/index.ts",
+      "destination": "starcraft2/src/lib/mk2/packages/models-processing/src/index.ts",
+      "changes": [
+        "type-only Unity closure exports",
+        "removed model registry/catalog exports"
+      ],
+      "reason": "Unity archive loader needs neutral model contracts; model codec routing is outside M4 archive scope"
+    }
+  ],
+  "catalog": {
+    "path": "packages/archives-processing/src/generated/codec-catalog/registries/archive/node.ts",
+    "codecIds": 44,
+    "stormgateRegisteredSeparately": true
+  },
+  "deferredM3Tests": {
+    "expectedSha256": {
+      "index.spec.ts": "6fdbe3320f90dea517089f71b55c5b7e3be8d305df10b50624849af154fd3738",
+      "optional-extension-loaders.spec.ts": "f9120f50f03797e57bd88274079e239a4e42fd8d910add68bc9614632e5f595c",
+      "source.spec.ts": "bb13057170f1ff3efb77c7f57cc69b9ce9608bae0084c97ee861ad6a03e7e98a",
+      "vfs-browser-boundary.spec.ts": "01872670e0dbdd80591ea6280cfefc9f5e1d17e27e67706f2d2cf50a2f0407b4",
+      "vfs-mount.spec.ts": "b61f415fa2dfb026b4ea611774c86990d3836b20ffb1951bd1bbd95fc4abd68c"
+    },
+    "actualSha256AtM4": {
+      "index.spec.ts": "6fdbe3320f90dea517089f71b55c5b7e3be8d305df10b50624849af154fd3738",
+      "optional-extension-loaders.spec.ts": "f9120f50f03797e57bd88274079e239a4e42fd8d910add68bc9614632e5f595c",
+      "source.spec.ts": "bb13057170f1ff3efb77c7f57cc69b9ce9608bae0084c97ee861ad6a03e7e98a",
+      "vfs-browser-boundary.spec.ts": "01872670e0dbdd80591ea6280cfefc9f5e1d17e27e67706f2d2cf50a2f0407b4",
+      "vfs-mount.spec.ts": "b61f415fa2dfb026b4ea611774c86990d3836b20ffb1951bd1bbd95fc4abd68c"
+    },
+    "unchanged": true
+  },
+  "negativeProductionReachability": {
+    "compatRoots": [
+      "starcraft2/src/lib/mk2/**",
+      "starcraft2/test/mk2/packages/archives-processing/src/**"
+    ],
+    "mustNotReferenceCompat": [
+      "starcraft2/contributions/**",
+      "starcraft2/package.json exports",
+      "starcraft2/src/game/**",
+      "starcraft2/src/formats/**"
+    ],
+    "command": "rg -n 'src/lib/mk2|test/mk2/packages/archives-processing/src' starcraft2/contributions starcraft2/src/game starcraft2/src/formats"
+  },
+  "algorithmAllowances": [
+    {
+      "source": "extensions/common/archives/codecs/zip/src/writer.ts",
+      "sourceBlob": "821589485fe7ca34de36a70985ba3de5ea8f4af1",
+      "sourceSha256": "1a01fa98d782299adb724ebb71f8dadbe121e59d7b339c97afcf464b32f19cf5",
+      "destination": "starcraft2/src/lib/mk2/extensions/common/archives/codecs/zip/src/writer.ts",
+      "destinationSha256": "ca94507c0c0e4e3954f3fcf8d85d464b9f8df4df442b3ac8ed445a98d9a2f99a",
+      "symbol": "crc32#0",
+      "sourceImplementationSha256": "d7bc6d498e6b2085a769d2a5eaf964be7deb6773b9cbdb63ad9b402c60561fc6",
+      "destinationImplementationSha256": "d7bc6d498e6b2085a769d2a5eaf964be7deb6773b9cbdb63ad9b402c60561fc6",
+      "divergence": null,
+      "reason": "Pinned M4 archive carryover implementation retained only for the unchanged legacy suite.",
+      "exit": "Canonicalize before any production activation."
+    },
+    {
+      "source": "extensions/epic-games/unreal-engine/codecs/unreal-pak/src/index.ts",
+      "sourceBlob": "b9a5e26be76aa28902b6558f048bd7d24075a431",
+      "sourceSha256": "1be669baa3177603e5b2ff66a15e480008d8498754ab217bfb84170528216724",
+      "destination": "starcraft2/src/lib/mk2/extensions/epic-games/unreal-engine/codecs/unreal-pak/src/index.ts",
+      "destinationSha256": "95f7179b75d6b1033a45f90655641cb05c0903730bec6eb11246aba06d03caec",
+      "symbol": "sha1Matches#0",
+      "sourceImplementationSha256": "ff9d70b5c47b6a66967b070b860bff65b1ba0795d77a45e55527dec1d4384d09",
+      "destinationImplementationSha256": "ff9d70b5c47b6a66967b070b860bff65b1ba0795d77a45e55527dec1d4384d09",
+      "divergence": null,
+      "reason": "Pinned M4 archive carryover implementation retained only for the unchanged legacy suite.",
+      "exit": "Canonicalize before any production activation."
+    },
+    {
+      "source": "extensions/microsoft/halo-wars/codecs/halo-era/src/index.ts",
+      "sourceBlob": "4fb4ea25f0b662d6b13e2f375f9b686b4102a08c",
+      "sourceSha256": "a57da5c5a459aa96653b0ef7b012d11af2352577f29257128b4d7fe1f9a5c828",
+      "destination": "starcraft2/src/lib/mk2/extensions/microsoft/halo-wars/codecs/halo-era/src/index.ts",
+      "destinationSha256": "22654f444bd2cd28302fc61cf170cbc85353555ddd1b277fbd2924268a76ff2c",
+      "symbol": "inflateCompressedStream#0",
+      "sourceImplementationSha256": "6cbf86ee8bc1040fb5257a2e83aa2944363dc99bdf4d74257f55e23dc1c96429",
+      "destinationImplementationSha256": "6cbf86ee8bc1040fb5257a2e83aa2944363dc99bdf4d74257f55e23dc1c96429",
+      "divergence": null,
+      "reason": "Pinned M4 archive carryover implementation retained only for the unchanged legacy suite.",
+      "exit": "Canonicalize before any production activation."
+    },
+    {
+      "source": "extensions/opensource/spring/codecs/spring-rapid/src/crc32.ts",
+      "sourceBlob": "8727e23e145815328123b824bdc456134de00e51",
+      "sourceSha256": "aab8398b1675b036d16cea062b1c9c7c8a8785b454f93e044909c8a1568c9b65",
+      "destination": "starcraft2/src/lib/mk2/extensions/opensource/spring/codecs/spring-rapid/src/crc32.ts",
+      "destinationSha256": "e110b3a39c19ffc2115cc56d853259290d099ac31f287c2120b7f3f9327ab2a9",
+      "symbol": "crc32#0",
+      "sourceImplementationSha256": "72f1c2a2aa06b2eb91c0c599fb01560fb1419e99b8dd2d04cb0d991b04f032b4",
+      "destinationImplementationSha256": "72f1c2a2aa06b2eb91c0c599fb01560fb1419e99b8dd2d04cb0d991b04f032b4",
+      "divergence": null,
+      "reason": "Pinned M4 archive carryover implementation retained only for the unchanged legacy suite.",
+      "exit": "Canonicalize before any production activation."
+    },
+    {
+      "source": "extensions/realitypump/earth2160/codecs/wd/src/index.ts",
+      "sourceBlob": "9d1bf2f19306981e7944e608aff448ca9b5a9794",
+      "sourceSha256": "e98c94b166ee0f47dc92616427b5e630282c6e8ca463e2446353f546412f1796",
+      "destination": "starcraft2/src/lib/mk2/extensions/realitypump/earth2160/codecs/wd/src/index.ts",
+      "destinationSha256": "a57ad4184f6d6e67ac287daec2e1c6f769af08d36acd60a23f2bf42fe8d38e3b",
+      "symbol": "inflateWdPayload#0",
+      "sourceImplementationSha256": "faa4be6d26987c914ede181a170ab68bbfea3c8c3af12099d51f8aa3c3d95b28",
+      "destinationImplementationSha256": "faa4be6d26987c914ede181a170ab68bbfea3c8c3af12099d51f8aa3c3d95b28",
+      "divergence": null,
+      "reason": "Pinned M4 archive carryover implementation retained only for the unchanged legacy suite.",
+      "exit": "Canonicalize before any production activation."
+    },
+    {
+      "source": "packages/archives-processing/src/lib/compression/index.ts",
+      "sourceBlob": "3688f597099c97ba4a97c3719403532a6a8e4fb0",
+      "sourceSha256": "935ca7040412c316276f56a3f75247ac4020955c6f6be5be601be2a421ff0eba",
+      "destination": "starcraft2/src/lib/mk2/packages/archives-processing/src/lib/compression/index.ts",
+      "destinationSha256": "e471ea8c3ff8ec47b8cf370691da1070459da5e9733e38b833622fdb4284fa20",
+      "symbol": "inflate#0",
+      "sourceImplementationSha256": "afd16de3bbb25bb4b5c191ca74307876a9791f5401cd2ad84b853876d977f5b1",
+      "destinationImplementationSha256": "afd16de3bbb25bb4b5c191ca74307876a9791f5401cd2ad84b853876d977f5b1",
+      "divergence": null,
+      "reason": "Pinned M4 archive carryover implementation retained only for the unchanged legacy suite.",
+      "exit": "Canonicalize before any production activation."
+    },
+    {
+      "source": "packages/archives-processing/src/lib/crypto/index.ts",
+      "sourceBlob": "027c39d88dcf9fa3479d8b6fb557b54d36ed0b66",
+      "sourceSha256": "596dfa5f7f152d494bd5bf0cb59b76f5d5159ff4680197340247689a212b104e",
+      "destination": "starcraft2/src/lib/mk2/packages/archives-processing/src/lib/crypto/index.ts",
+      "destinationSha256": "90b68391d5c50d19bfdefb4de1edb2c70346a9599f27f39aaf1b0f377053c1eb",
+      "symbol": "md5#0",
+      "sourceImplementationSha256": "6a56c2b9b934e83c7f25f83ef509ee8ff8a7a378bcb3c023bf0be7c3a1d7e086",
+      "destinationImplementationSha256": "e4665015e88c7d9a7951ee1eabcd041468ec9cdb912dfaa6182ec5fae2480acf",
+      "divergence": "registered-compatibility-barrel",
+      "reason": "Pinned M4 archive carryover implementation retained only for the unchanged legacy suite.",
+      "exit": "Canonicalize before any production activation."
+    }
+  ]
+}
