@@ -313,6 +313,494 @@ export function rewriteSource(original, rewrites, filename) {
   return { text, evidence }
 }
 
+const declarationRewriteKeys = [
+  'from',
+  'mode',
+  'proof',
+  'reason',
+  'targetExceptions',
+  'to',
+  'typeElisions',
+]
+const declarationBindingKeys = ['form', 'imported', 'local', 'typeOnly']
+const declarationTargetKeys = [
+  'destinationSpecifier',
+  'form',
+  'imported',
+  'kind',
+  'local',
+  'sourceSpecifier',
+  'typeOnly',
+]
+const declarationElisionKeys = declarationTargetKeys.filter(key => key !== 'destinationSpecifier')
+
+function exactObject(value, keys, label) {
+  if (
+    !value ||
+    typeof value !== 'object' ||
+    Array.isArray(value) ||
+    Object.keys(value).sort().join(',') !== [...keys].sort().join(',')
+  )
+    throw new Error(`Invalid ${label}`)
+}
+
+function declarationComments(text) {
+  const scanner = ts.createScanner(ts.ScriptTarget.Latest, false, ts.LanguageVariant.Standard, text)
+  const comments = []
+  for (let token = scanner.scan(); token !== ts.SyntaxKind.EndOfFileToken; token = scanner.scan())
+    if (
+      token === ts.SyntaxKind.SingleLineCommentTrivia ||
+      token === ts.SyntaxKind.MultiLineCommentTrivia
+    )
+      comments.push(scanner.getTokenText())
+  return comments
+}
+
+function declarationBinding(form, imported, local, typeOnly) {
+  return { form, imported, local, typeOnly }
+}
+
+function importDeclarationBindings(node) {
+  const clause = node.importClause
+  if (!clause) throw new Error('Side-effect import is not declaration-bound')
+  const bindings = []
+  if (clause.name)
+    bindings.push(declarationBinding('default', 'default', clause.name.text, clause.isTypeOnly))
+  if (clause.namedBindings && ts.isNamespaceImport(clause.namedBindings))
+    bindings.push(
+      declarationBinding('namespace', '*', clause.namedBindings.name.text, clause.isTypeOnly),
+    )
+  else if (clause.namedBindings && ts.isNamedImports(clause.namedBindings))
+    for (const item of clause.namedBindings.elements)
+      bindings.push(
+        declarationBinding(
+          'named',
+          item.propertyName?.text ?? item.name.text,
+          item.name.text,
+          clause.isTypeOnly || item.isTypeOnly,
+        ),
+      )
+  if (!bindings.length) throw new Error('Import declaration has no explicit bindings')
+  return bindings
+}
+
+function exportDeclarationBindings(node) {
+  if (!node.exportClause || !ts.isNamedExports(node.exportClause))
+    throw new Error('Only named re-export declarations are declaration-bound')
+  const bindings = node.exportClause.elements.map(item =>
+    declarationBinding(
+      'named',
+      item.propertyName?.text ?? item.name.text,
+      item.name.text,
+      Boolean(node.isTypeOnly || item.isTypeOnly),
+    ),
+  )
+  if (!bindings.length) throw new Error('Re-export declaration has no explicit bindings')
+  return bindings
+}
+
+function parsedDeclarationBlock(text, filename, allowEmpty = false) {
+  if (!text.length) {
+    if (allowEmpty) return { manifest: [], nodes: [] }
+    throw new Error(`Empty declaration block: ${filename}`)
+  }
+  const ast = ts.createSourceFile(filename, text, ts.ScriptTarget.Latest, true)
+  if (ast.parseDiagnostics.length) throw new Error(`Cannot parse declaration block: ${filename}`)
+  if (!ast.statements.length) {
+    if (allowEmpty && !text.trim()) return { manifest: [], nodes: [] }
+    throw new Error(`Empty declaration block: ${filename}`)
+  }
+  const manifest = []
+  for (const node of ast.statements) {
+    if (
+      (!ts.isImportDeclaration(node) && !ts.isExportDeclaration(node)) ||
+      !node.moduleSpecifier ||
+      !ts.isStringLiteralLike(node.moduleSpecifier) ||
+      node.attributes ||
+      node.assertClause
+    )
+      throw new Error(`Declaration block contains non-static import/export: ${filename}`)
+    manifest.push({
+      kind: ts.isImportDeclaration(node) ? 'import' : 'reexport',
+      moduleSpecifier: node.moduleSpecifier.text,
+      bindings: ts.isImportDeclaration(node)
+        ? importDeclarationBindings(node)
+        : exportDeclarationBindings(node),
+    })
+  }
+  return { manifest, nodes: [...ast.statements] }
+}
+
+export function importDeclarationManifest(text, filename = 'source.ts', allowEmpty = false) {
+  return parsedDeclarationBlock(text, filename, allowEmpty).manifest
+}
+
+function validateDeclarationBinding(value, label) {
+  exactObject(value, declarationBindingKeys, label)
+  if (!['default', 'named', 'namespace'].includes(value.form)) throw new Error(`Invalid ${label}`)
+  if (
+    typeof value.imported !== 'string' ||
+    !value.imported ||
+    typeof value.local !== 'string' ||
+    !value.local ||
+    typeof value.typeOnly !== 'boolean'
+  )
+    throw new Error(`Invalid ${label}`)
+}
+
+function validateDeclaration(value, label) {
+  exactObject(value, ['bindings', 'kind', 'moduleSpecifier'], label)
+  if (
+    !['import', 'reexport'].includes(value.kind) ||
+    typeof value.moduleSpecifier !== 'string' ||
+    !value.moduleSpecifier ||
+    value.moduleSpecifier.includes('*') ||
+    !Array.isArray(value.bindings) ||
+    !value.bindings.length
+  )
+    throw new Error(`Invalid ${label}`)
+  value.bindings.forEach((binding, index) =>
+    validateDeclarationBinding(binding, `${label} binding ${index}`),
+  )
+}
+
+function validateDeclarationTarget(value, label, elision = false) {
+  exactObject(value, elision ? declarationElisionKeys : declarationTargetKeys, label)
+  if (
+    (value.kind !== 'import' && value.kind !== 'reexport') ||
+    (elision && value.kind !== 'import') ||
+    !['default', 'named', 'namespace'].includes(value.form) ||
+    typeof value.sourceSpecifier !== 'string' ||
+    !value.sourceSpecifier ||
+    value.sourceSpecifier.includes('*') ||
+    (!elision &&
+      (typeof value.destinationSpecifier !== 'string' ||
+        !value.destinationSpecifier ||
+        value.destinationSpecifier.includes('*'))) ||
+    typeof value.imported !== 'string' ||
+    !value.imported ||
+    typeof value.local !== 'string' ||
+    !value.local ||
+    typeof value.typeOnly !== 'boolean' ||
+    (elision && !value.typeOnly)
+  )
+    throw new Error(`Invalid ${label}`)
+}
+
+function validateDeclarationRewriteShape(rewrite, filename) {
+  exactObject(rewrite, declarationRewriteKeys, `declaration rewrite: ${filename}`)
+  if (
+    !['binding-preserving', 'type-only-elision'].includes(rewrite.mode) ||
+    typeof rewrite.reason !== 'string' ||
+    !rewrite.reason.trim() ||
+    !Array.isArray(rewrite.proof) ||
+    !rewrite.proof.length
+  )
+    throw new Error(`Invalid declaration rewrite: ${filename}`)
+  for (const proof of rewrite.proof) {
+    exactObject(proof, ['path', 'sha256'], `declaration rewrite proof: ${filename}`)
+    safeRelative(proof.path)
+    if (!/^[a-f0-9]{64}$/u.test(proof.sha256 ?? ''))
+      throw new Error(`Invalid declaration rewrite proof: ${filename}`)
+  }
+  exactObject(rewrite.from, ['count', 'declarations', 'sha256Before', 'text'], 'declaration from')
+  exactObject(rewrite.to, ['declarations', 'sha256After', 'text'], 'declaration to')
+  if (
+    typeof rewrite.from.text !== 'string' ||
+    !rewrite.from.text ||
+    rewrite.from.count !== 1 ||
+    !/^[a-f0-9]{64}$/u.test(rewrite.from.sha256Before ?? '') ||
+    !Array.isArray(rewrite.from.declarations) ||
+    !rewrite.from.declarations.length ||
+    typeof rewrite.to.text !== 'string' ||
+    !/^[a-f0-9]{64}$/u.test(rewrite.to.sha256After ?? '') ||
+    !Array.isArray(rewrite.to.declarations) ||
+    !Array.isArray(rewrite.targetExceptions) ||
+    !Array.isArray(rewrite.typeElisions)
+  )
+    throw new Error(`Invalid declaration rewrite: ${filename}`)
+  rewrite.from.declarations.forEach((item, index) =>
+    validateDeclaration(item, `source declaration ${index}`),
+  )
+  rewrite.to.declarations.forEach((item, index) =>
+    validateDeclaration(item, `destination declaration ${index}`),
+  )
+  rewrite.targetExceptions.forEach((item, index) =>
+    validateDeclarationTarget(item, `target exception ${index}`),
+  )
+  rewrite.typeElisions.forEach((item, index) =>
+    validateDeclarationTarget(item, `type elision ${index}`, true),
+  )
+  if (
+    (rewrite.mode === 'binding-preserving' && rewrite.typeElisions.length) ||
+    (rewrite.mode === 'type-only-elision' && !rewrite.typeElisions.length)
+  )
+    throw new Error(`Invalid declaration rewrite mode: ${filename}`)
+}
+
+const declarationIdentity = (declaration, binding) =>
+  JSON.stringify({
+    kind: declaration.kind,
+    form: binding.form,
+    imported: binding.imported,
+    local: binding.local,
+    typeOnly: binding.typeOnly,
+  })
+
+function indexedDeclarationBindings(declarations, label) {
+  const bindings = new Map()
+  declarations.forEach((declaration, declarationIndex) => {
+    for (const binding of declaration.bindings) {
+      const key = declarationIdentity(declaration, binding)
+      if (bindings.has(key)) throw new Error(`Duplicate declaration binding in ${label}`)
+      bindings.set(key, { ...binding, ...declaration, declarationIndex, bindings: undefined })
+      delete bindings.get(key).bindings
+    }
+  })
+  return bindings
+}
+
+function canonicalDeclarationList(rows) {
+  return [...rows].sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))
+}
+
+function exactDeclarationList(actual, expected, label) {
+  const keys = actual.map(item => JSON.stringify(item))
+  if (new Set(keys).size !== keys.length) throw new Error(`Duplicate declaration rewrite ${label}`)
+  if (
+    JSON.stringify(canonicalDeclarationList(actual)) !==
+    JSON.stringify(canonicalDeclarationList(expected))
+  )
+    throw new Error(`Declaration rewrite ${label} mismatch`)
+}
+
+function declarationException(source, destination) {
+  return {
+    kind: source.kind,
+    form: source.form,
+    sourceSpecifier: source.moduleSpecifier,
+    destinationSpecifier: destination.moduleSpecifier,
+    imported: source.imported,
+    local: source.local,
+    typeOnly: source.typeOnly,
+  }
+}
+
+function declarationElision(source) {
+  return {
+    kind: source.kind,
+    form: source.form,
+    sourceSpecifier: source.moduleSpecifier,
+    imported: source.imported,
+    local: source.local,
+    typeOnly: source.typeOnly,
+  }
+}
+
+function declarationEmit(text) {
+  return ts.transpileModule(text, {
+    compilerOptions: {
+      target: ts.ScriptTarget.ES2022,
+      module: ts.ModuleKind.ESNext,
+      removeComments: true,
+      verbatimModuleSyntax: false,
+    },
+  }).outputText
+}
+
+function validateElisionEmit(text, rewrite, parsed, sourceBindings, filename) {
+  const elided = new Set(
+    rewrite.typeElisions.map(item => declarationIdentity({ kind: item.kind }, item)),
+  )
+  for (const declaration of parsed.manifest) {
+    const keys = declaration.bindings.map(binding => declarationIdentity(declaration, binding))
+    const removed = keys.filter(key => elided.has(key))
+    if (removed.length && removed.length !== keys.length)
+      throw new Error(`Partial declaration binding removal: ${filename}`)
+  }
+  let block = rewrite.from.text
+  for (let index = parsed.nodes.length - 1; index >= 0; index--) {
+    const declaration = parsed.manifest[index]
+    if (
+      declaration.bindings.every(binding => elided.has(declarationIdentity(declaration, binding)))
+    ) {
+      const node = parsed.nodes[index]
+      block = `${block.slice(0, node.getStart())}${block.slice(node.end)}`
+    }
+  }
+  const start = text.indexOf(rewrite.from.text)
+  const withoutElision = `${text.slice(0, start)}${block}${text.slice(start + rewrite.from.text.length)}`
+  if (declarationEmit(text) !== declarationEmit(withoutElision))
+    throw new Error(`Type-only elision changes emitted runtime: ${filename}`)
+  return [...sourceBindings.entries()]
+    .filter(([key]) => elided.has(key))
+    .map(([, binding]) => declarationElision(binding))
+}
+
+function validateFinalTypeElisions(elisions, text, filename) {
+  if (!elisions.length) return
+  const ast = ts.createSourceFile(filename, text, ts.ScriptTarget.Latest, true)
+  if (ast.parseDiagnostics.length) throw new Error(`Cannot parse type elision result: ${filename}`)
+  const names = new Set(elisions.map(item => item.local))
+  const localTypes = new Set(
+    ast.statements
+      .filter(node => ts.isInterfaceDeclaration(node) || ts.isTypeAliasDeclaration(node))
+      .map(node => node.name.text),
+  )
+  for (const name of names)
+    if (!localTypes.has(name))
+      throw new Error(`Elided type lacks same-name local declaration: ${filename}: ${name}`)
+  const visit = node => {
+    if (ts.isIdentifier(node) && names.has(node.text)) {
+      const declarationName =
+        (ts.isInterfaceDeclaration(node.parent) || ts.isTypeAliasDeclaration(node.parent)) &&
+        node.parent.name === node
+      let typePosition = declarationName
+      for (let parent = node.parent; parent && !typePosition; parent = parent.parent) {
+        if (ts.isTypeQueryNode(parent)) break
+        if (ts.isTypeNode(parent)) typePosition = true
+      }
+      if (!typePosition)
+        throw new Error(`Elided type has value-position reference: ${filename}: ${node.text}`)
+    }
+    ts.forEachChild(node, visit)
+  }
+  visit(ast)
+}
+
+/** Exact declaration-only topology changes. Proof, hashes and binding targets are mandatory. */
+export async function applyImportDeclarationRewrites(original, rewrites, filename, root) {
+  if (!Array.isArray(rewrites)) throw new Error(`Invalid declaration rewrites: ${filename}`)
+  let text = original
+  let closureGroups = importsOf(original, filename).map((_, sourceImportIndex) => ({
+    mappings: [{ sourceImportIndex, binding: null, targetException: null }],
+  }))
+  const evidence = []
+  const typeElisions = []
+  for (const rewrite of rewrites) {
+    validateDeclarationRewriteShape(rewrite, filename)
+    if (sha256(text) !== rewrite.from.sha256Before)
+      throw new Error(`Declaration rewrite before hash mismatch: ${filename}`)
+    for (const proof of rewrite.proof) {
+      const bytes = await readFile(await safeTarget(root, proof.path))
+      if (!bytes.length || sha256(bytes) !== proof.sha256)
+        throw new Error(`Declaration rewrite proof hash mismatch: ${proof.path}`)
+    }
+    const source = parsedDeclarationBlock(rewrite.from.text, filename)
+    const destination = parsedDeclarationBlock(rewrite.to.text, filename, true)
+    if (JSON.stringify(source.manifest) !== JSON.stringify(rewrite.from.declarations))
+      throw new Error(`Source declaration manifest mismatch: ${filename}`)
+    if (JSON.stringify(destination.manifest) !== JSON.stringify(rewrite.to.declarations))
+      throw new Error(`Destination declaration manifest mismatch: ${filename}`)
+    if (
+      JSON.stringify(declarationComments(rewrite.from.text)) !==
+      JSON.stringify(declarationComments(rewrite.to.text))
+    )
+      throw new Error(`Declaration rewrite changed comment trivia: ${filename}`)
+    const blockStart = text.indexOf(rewrite.from.text)
+    if (blockStart < 0 || text.split(rewrite.from.text).length - 1 !== 1)
+      throw new Error(`Declaration rewrite occurrence mismatch: ${filename}`)
+    const beforeImports = importsOf(text, filename)
+    if (beforeImports.length !== closureGroups.length)
+      throw new Error(`Declaration rewrite closure state mismatch: ${filename}`)
+    const blockEnd = blockStart + rewrite.from.text.length
+    const sourceIndexes = beforeImports
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) => item.start >= blockStart && item.end <= blockEnd)
+      .map(({ index }) => index)
+    if (
+      sourceIndexes.length !== source.manifest.length ||
+      sourceIndexes.some((value, index) => value !== sourceIndexes[0] + index)
+    )
+      throw new Error(`Declaration rewrite import range mismatch: ${filename}`)
+    const sourceBindings = indexedDeclarationBindings(source.manifest, 'source')
+    const destinationBindings = indexedDeclarationBindings(destination.manifest, 'destination')
+    const added = [...destinationBindings.keys()].filter(key => !sourceBindings.has(key))
+    if (added.length) throw new Error(`Declaration rewrite added or changed a binding: ${filename}`)
+    const missing = [...sourceBindings.keys()].filter(key => !destinationBindings.has(key))
+    if (missing.some(key => !sourceBindings.get(key).typeOnly))
+      throw new Error(`Runtime import removal rejected: ${filename}`)
+    const expectedExceptions = []
+    for (const [key, sourceBinding] of sourceBindings) {
+      const destinationBinding = destinationBindings.get(key)
+      if (
+        destinationBinding &&
+        sourceBinding.moduleSpecifier !== destinationBinding.moduleSpecifier
+      )
+        expectedExceptions.push(declarationException(sourceBinding, destinationBinding))
+    }
+    const expectedElisions = missing.map(key => declarationElision(sourceBindings.get(key)))
+    exactDeclarationList(rewrite.targetExceptions, expectedExceptions, 'target exceptions')
+    exactDeclarationList(rewrite.typeElisions, expectedElisions, 'type elisions')
+    if (
+      (rewrite.mode === 'binding-preserving' && missing.length) ||
+      (rewrite.mode === 'type-only-elision' && !missing.length)
+    )
+      throw new Error(`Declaration rewrite mode mismatch: ${filename}`)
+
+    const sourceByBinding = new Map()
+    for (const [key, binding] of sourceBindings) {
+      const group = closureGroups[sourceIndexes[binding.declarationIndex]]
+      if (!group || group.mappings.length !== 1 || group.mappings[0].binding !== null)
+        throw new Error(`Overlapping declaration rewrite: ${filename}`)
+      sourceByBinding.set(key, { binding, sourceImportIndex: group.mappings[0].sourceImportIndex })
+    }
+    const exceptionMap = new Map(
+      rewrite.targetExceptions.map(item => [declarationIdentity({ kind: item.kind }, item), item]),
+    )
+    const destinationGroups = destination.manifest.map(declaration => ({
+      mappings: declaration.bindings.map(binding => {
+        const key = declarationIdentity(declaration, binding)
+        const sourceEntry = sourceByBinding.get(key)
+        if (!sourceEntry) throw new Error(`Unmapped destination binding: ${filename}`)
+        return {
+          sourceImportIndex: sourceEntry.sourceImportIndex,
+          binding: { ...binding, kind: declaration.kind },
+          sourceSpecifier: sourceEntry.binding.moduleSpecifier,
+          destinationSpecifier: declaration.moduleSpecifier,
+          targetException: exceptionMap.get(key) ?? null,
+        }
+      }),
+    }))
+    const pendingElisions = validateElisionEmit(
+      text,
+      rewrite,
+      source,
+      sourceBindings,
+      filename,
+    ).map(item => {
+      const key = declarationIdentity({ kind: item.kind }, item)
+      return {
+        ...item,
+        sourceImportIndex: sourceByBinding.get(key).sourceImportIndex,
+      }
+    })
+    typeElisions.push(...pendingElisions)
+    text = `${text.slice(0, blockStart)}${rewrite.to.text}${text.slice(blockEnd)}`
+    if (sha256(text) !== rewrite.to.sha256After)
+      throw new Error(`Declaration rewrite result hash mismatch: ${filename}`)
+    closureGroups = [
+      ...closureGroups.slice(0, sourceIndexes[0]),
+      ...destinationGroups,
+      ...closureGroups.slice(sourceIndexes.at(-1) + 1),
+    ]
+    if (closureGroups.length !== importsOf(text, filename).length)
+      throw new Error(`Declaration rewrite destination range mismatch: ${filename}`)
+    evidence.push({ ...rewrite, proof: rewrite.proof.map(proof => ({ ...proof })) })
+  }
+  return { text, evidence, closureGroups, typeElisions }
+}
+
+export function validateImportDeclarationRewriteFinal(rewritten, finalText, filename) {
+  if (
+    rewritten.evidence.length &&
+    JSON.stringify(importsOf(rewritten.text, filename).map(item => item.specifier)) !==
+      JSON.stringify(importsOf(finalText, filename).map(item => item.specifier))
+  )
+    throw new Error(`Divergence changed declaration-rewrite import topology: ${filename}`)
+  validateFinalTypeElisions(rewritten.typeElisions, finalText, filename)
+}
+
 function unique(rows, key, label) {
   const seen = new Set()
   for (const row of rows) {
@@ -569,9 +1057,24 @@ export async function prepareCopy({
     if (row.sha256Mk2 !== pinned.sha256)
       throw new Error(`Pinned source hash mismatch: ${row.source}`)
     const rewritten = rewriteSource(pinned.bytes.toString('utf8'), row.rewrites ?? [], row.source)
+    if (
+      importsOf(pinned.bytes.toString('utf8'), row.source).length !==
+      importsOf(rewritten.text, row.source).length
+    )
+      throw new Error(`Ordinary rewrite changed import topology: ${row.source}`)
+    const declarationRewritten = await applyImportDeclarationRewrites(
+      rewritten.text,
+      row.importDeclarationRewrites ?? [],
+      row.source,
+      workspaceRoot,
+    )
     const divergence = divergences.entries.find(entry => entry.file === row.destination)
-    const adapted = await applyDivergence(rewritten.text, divergence, workspaceRoot)
-    const bytes = !row.rewrites?.length && !divergence ? pinned.bytes : Buffer.from(adapted.text)
+    const adapted = await applyDivergence(declarationRewritten.text, divergence, workspaceRoot)
+    validateImportDeclarationRewriteFinal(declarationRewritten, adapted.text, row.destination)
+    const bytes =
+      !row.rewrites?.length && !row.importDeclarationRewrites?.length && !divergence
+        ? pinned.bytes
+        : Buffer.from(adapted.text)
     if (row.sha256Mk3 !== sha256(bytes))
       throw new Error(`Declared destination hash mismatch: ${row.destination}`)
     let algorithmDisposition
@@ -601,10 +1104,13 @@ export async function prepareCopy({
       sha256Mk3: sha256(bytes),
       gitBlob: pinned.gitBlob,
       rewrites: rewritten.evidence,
+      importDeclarationRewrites: declarationRewritten.evidence,
       divergence: adapted.evidence,
       text: adapted.text,
       bytes,
       original: pinned.bytes.toString('utf8'),
+      closureGroups: declarationRewritten.closureGroups,
+      typeElisions: declarationRewritten.typeElisions,
       ...(algorithmDisposition ? { algorithmDisposition } : {}),
     })
   }
@@ -692,19 +1198,33 @@ export async function prepareCopy({
   for (const row of records) {
     const before = importsOf(row.original, row.mk2Path)
     const after = importsOf(row.text, row.destination)
-    if (before.length !== after.length)
-      throw new Error(
-        `Divergence changed import topology without a declared adapter: ${row.destination}`,
-      )
-    for (let index = 0; index < before.length; index++) {
+    if (row.closureGroups.length !== after.length)
+      throw new Error(`Unmapped declaration rewrite import: ${row.destination}`)
+    const accountedSourceImports = new Set()
+    const countedDispositions = new Set()
+    const validateEdge = async (sourceImportIndex, destinationImport, mapping, typeElision) => {
+      const originalImport = before[sourceImportIndex]
+      if (!originalImport)
+        throw new Error(`Invalid declaration rewrite source import: ${row.destination}`)
+      accountedSourceImports.add(sourceImportIndex)
       const oldDispositionTarget =
-        before[index].specifier ?? `expression:${before[index].expression}`
-      const oldImport = resolveDynamic(before[index], row)
-      const newImport = resolveDynamic(after[index], row)
+        originalImport.specifier ?? `expression:${originalImport.expression}`
+      const oldImport = resolveDynamic(originalImport, row)
+      const newImport = destinationImport ? resolveDynamic(destinationImport, row) : null
+      if (mapping?.destinationSpecifier !== undefined && mapping.destinationSpecifier !== newImport)
+        throw new Error(`Declaration rewrite destination binding mismatch: ${row.destination}`)
       const dispositionKey = `${row.mk2Path}\0${oldDispositionTarget}`
       const disposition = dispositionMap.get(dispositionKey) ?? null
-      if (disposition) dispositionUses.set(dispositionKey, dispositionUses.get(dispositionKey) + 1)
-      if (disposition && newImport !== (disposition.destinationSpecifier ?? oldImport))
+      const dispositionUse = `${dispositionKey}\0${sourceImportIndex}`
+      if (disposition && !countedDispositions.has(dispositionUse)) {
+        countedDispositions.add(dispositionUse)
+        dispositionUses.set(dispositionKey, dispositionUses.get(dispositionKey) + 1)
+      }
+      const declaredDispositionTarget =
+        mapping?.targetException?.destinationSpecifier ??
+        disposition?.destinationSpecifier ??
+        oldImport
+      if (disposition && newImport !== null && newImport !== declaredDispositionTarget)
         throw new Error(`Import disposition destination mismatch: ${row.mk2Path} -> ${newImport}`)
       let sourceTarget = null
       if (oldImport.startsWith('.')) {
@@ -715,14 +1235,20 @@ export async function prepareCopy({
           sourceTarget &&
           !required.has(sourceTarget) &&
           !disposition &&
-          (newImport === oldImport || !adapterSourceDestinations.has(sourceTarget))
+          (newImport === null ||
+            newImport === oldImport ||
+            !adapterSourceDestinations.has(sourceTarget))
         )
           throw new Error(
             `Incomplete type/runtime import closure: ${row.mk2Path} -> ${sourceTarget}`,
           )
       }
-      let destinationTarget
-      if (newImport.startsWith('.')) {
+      let destinationTarget = null
+      if (newImport === null) {
+        if (!typeElision)
+          throw new Error(`Missing declaration rewrite destination: ${row.destination}`)
+        destinationTarget = `local-type:${typeElision.local}`
+      } else if (newImport.startsWith('.')) {
         destinationTarget = candidates(row.destination, newImport).find(
           file => destinations.has(file) || adapterMap.has(file),
         )
@@ -733,6 +1259,7 @@ export async function prepareCopy({
           sourceTarget &&
           required.has(sourceTarget) &&
           bySource.get(sourceTarget)?.destination !== destinationTarget &&
+          !mapping?.targetException &&
           !(disposition && row.divergence)
         )
           throw new Error(`Noncanonical import relocation: ${row.destination} -> ${newImport}`)
@@ -744,7 +1271,7 @@ export async function prepareCopy({
         } else {
           destinationTarget = `dependency:${newImport}`
           if (sourceTarget && disposition) destinationTarget = `copied-unwired:${newImport}`
-          else if (sourceTarget)
+          else if (sourceTarget && !mapping?.targetException)
             destinationTarget = await canonicalPackageExport(
               dependencyMap.get(newImport),
               sourceTarget,
@@ -766,9 +1293,26 @@ export async function prepareCopy({
         destinationSpecifier: newImport,
         sourceTarget,
         destinationTarget,
+        ...(mapping?.binding ? { binding: mapping.binding } : {}),
+        ...(mapping?.targetException ? { targetException: mapping.targetException } : {}),
+        ...(typeElision ? { typeElision } : {}),
         ...(disposition ? { disposition } : {}),
       })
     }
+    for (let index = 0; index < row.closureGroups.length; index++) {
+      const group = row.closureGroups[index]
+      if (!group.mappings.length)
+        throw new Error(`Empty declaration rewrite destination group: ${row.destination}`)
+      for (const mapping of group.mappings)
+        await validateEdge(mapping.sourceImportIndex, after[index], mapping, null)
+    }
+    for (const typeElision of row.typeElisions)
+      await validateEdge(typeElision.sourceImportIndex, null, null, typeElision)
+    if (
+      accountedSourceImports.size !== before.length ||
+      before.some((_, index) => !accountedSourceImports.has(index))
+    )
+      throw new Error(`Unmapped pinned import after declaration rewrite: ${row.destination}`)
   }
   for (const [key, disposition] of dispositionMap) {
     if (!records.some(record => record.mk2Path === disposition.source))
@@ -828,6 +1372,9 @@ export async function prepareCopy({
       sha256Mk3: record.sha256Mk3,
       gitBlob: record.gitBlob,
       rewrites: record.rewrites,
+      ...(record.importDeclarationRewrites.length
+        ? { importDeclarationRewrites: record.importDeclarationRewrites }
+        : {}),
       divergence: record.divergence,
       ...(record.algorithmDisposition ? { algorithmDisposition: record.algorithmDisposition } : {}),
     })),

@@ -10,6 +10,9 @@ import {
   checkCopies,
   importsOf,
   rewriteSource,
+  importDeclarationManifest,
+  applyImportDeclarationRewrites,
+  validateImportDeclarationRewriteFinal,
   scopeDeclarationDigest,
   copyCli,
   safeRelative,
@@ -75,6 +78,344 @@ async function fixture(t) {
     prepare: () => prepareCopy(options),
   }
 }
+
+const topologyFromBlock =
+  "import type { LocalContract } from './types.js'\n" + "import { alpha, beta } from './barrel.js'"
+const topologyToBlock = "import { alpha } from './a.js'\nimport { beta } from './b.js'"
+const topologyOriginal = `${topologyFromBlock}\nexport const result = alpha + beta\nexport type Result = LocalContract\n`
+const topologyFinal = `${topologyToBlock}\ninterface LocalContract { value: number }\nexport const result = alpha + beta\nexport type Result = LocalContract\n`
+
+function bindingIdentity(declaration, binding) {
+  return JSON.stringify({
+    kind: declaration.kind,
+    form: binding.form,
+    imported: binding.imported,
+    local: binding.local,
+    typeOnly: binding.typeOnly,
+  })
+}
+
+function sortedRecords(records) {
+  return records.toSorted((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))
+}
+
+function buildDeclarationRewrite({
+  original = topologyOriginal,
+  fromText = topologyFromBlock,
+  toText = topologyToBlock,
+  proof,
+  reason = 'Exact binding-preserving topology fixture.',
+}) {
+  const fromDeclarations = importDeclarationManifest(fromText, 'fixture.ts')
+  const toDeclarations = importDeclarationManifest(toText, 'fixture.ts', true)
+  const sourceBindings = new Map()
+  const destinationBindings = new Map()
+  for (const declaration of fromDeclarations)
+    for (const binding of declaration.bindings)
+      sourceBindings.set(bindingIdentity(declaration, binding), {
+        ...binding,
+        kind: declaration.kind,
+        moduleSpecifier: declaration.moduleSpecifier,
+      })
+  for (const declaration of toDeclarations)
+    for (const binding of declaration.bindings)
+      destinationBindings.set(bindingIdentity(declaration, binding), {
+        ...binding,
+        kind: declaration.kind,
+        moduleSpecifier: declaration.moduleSpecifier,
+      })
+  const targetExceptions = []
+  const typeElisions = []
+  for (const [key, source] of sourceBindings) {
+    const destination = destinationBindings.get(key)
+    if (destination && source.moduleSpecifier !== destination.moduleSpecifier)
+      targetExceptions.push({
+        kind: source.kind,
+        form: source.form,
+        sourceSpecifier: source.moduleSpecifier,
+        destinationSpecifier: destination.moduleSpecifier,
+        imported: source.imported,
+        local: source.local,
+        typeOnly: source.typeOnly,
+      })
+    else if (!destination && source.typeOnly)
+      typeElisions.push({
+        kind: source.kind,
+        form: source.form,
+        sourceSpecifier: source.moduleSpecifier,
+        imported: source.imported,
+        local: source.local,
+        typeOnly: source.typeOnly,
+      })
+  }
+  return {
+    mode: typeElisions.length ? 'type-only-elision' : 'binding-preserving',
+    reason,
+    proof: structuredClone(proof),
+    from: {
+      text: fromText,
+      count: 1,
+      sha256Before: sha256(original),
+      declarations: fromDeclarations,
+    },
+    to: {
+      text: toText,
+      sha256After: sha256(original.replace(fromText, toText)),
+      declarations: toDeclarations,
+    },
+    targetExceptions: sortedRecords(targetExceptions),
+    typeElisions: sortedRecords(typeElisions),
+  }
+}
+
+async function topologyFixture(t, { toBlock = topologyToBlock } = {}) {
+  const f = await fixture(t)
+  const files = new Map([
+    ['src/main.ts', topologyOriginal],
+    ['src/barrel.ts', 'export const alpha = 1\nexport const beta = 2\n'],
+    ['src/types.ts', 'export interface LocalContract { value: number }\n'],
+    ['src/a.ts', 'export const alpha = 1\n'],
+    ['src/b.ts', 'export const beta = 2\n'],
+  ])
+  f.files.clear()
+  for (const [file, text] of files) f.files.set(file, text)
+  f.declaration.scopes['m1-libs'].requiredSources = [...files.keys()]
+  f.declaration.copies = [...files].map(([file, text]) => ({
+    source: file,
+    destination: file.replace('src/', 'target/'),
+    sha256Mk2: sha256(text),
+    sha256Mk3: sha256(text),
+    rewrites: [],
+  }))
+  const proofPath = 'proof/topology.md'
+  const proofText = 'reviewed exact import topology fixture\n'
+  await mkdir(path.join(f.root, 'proof'), { recursive: true })
+  await writeFile(path.join(f.root, proofPath), proofText)
+  const proof = [{ path: proofPath, sha256: sha256(proofText) }]
+  const rewrite = buildDeclarationRewrite({ toText: toBlock, proof })
+  const transformed = topologyOriginal.replace(topologyFromBlock, toBlock)
+  const finalText = `${toBlock}\ninterface LocalContract { value: number }\nexport const result = alpha + beta\nexport type Result = LocalContract\n`
+  const edit = {
+    from: 'export const result = alpha + beta',
+    to: 'interface LocalContract { value: number }\nexport const result = alpha + beta',
+    count: 1,
+    sha256Before: sha256(transformed),
+    sha256After: sha256(finalText),
+  }
+  const main = f.declaration.copies[0]
+  main.importDeclarationRewrites = [rewrite]
+  main.sha256Mk3 = sha256(finalText)
+  f.divergences.entries = [
+    {
+      file: main.destination,
+      semantic: false,
+      reason: 'The erased source contract is declared locally after the import topology split.',
+      mk3Contract: 'Preserve the same compile-time LocalContract name and runtime behavior.',
+      proof,
+      edits: [edit],
+    },
+  ]
+  return { ...f, proof, rewrite, transformed, finalText }
+}
+
+async function applyTopology(f, record, { original = topologyOriginal, finalText } = {}) {
+  const rewritten = await applyImportDeclarationRewrites(original, [record], 'fixture.ts', f.root)
+  validateImportDeclarationRewriteFinal(rewritten, finalText ?? f.finalText, 'fixture.ts')
+  return rewritten
+}
+
+test('declaration-bound rewrite deterministically splits imports and preserves closure', async t => {
+  const f = await topologyFixture(t)
+  const prepared = await f.prepare()
+  assert.equal(prepared.records[0].text, topologyFinal)
+  assert.equal(prepared.records[0].importDeclarationRewrites.length, 1)
+  assert.equal(prepared.provenance.files[0].importDeclarationRewrites.length, 1)
+  assert.deepEqual(
+    prepared.provenance.closure.map(edge => [edge.sourceTarget, edge.destinationTarget]),
+    [
+      ['src/barrel.ts', 'target/a.ts'],
+      ['src/barrel.ts', 'target/b.ts'],
+      ['src/types.ts', 'local-type:LocalContract'],
+    ],
+  )
+  assert.equal(prepared.provenance.closure[0].binding.local, 'alpha')
+  assert.equal(prepared.provenance.closure[0].targetException.destinationSpecifier, './a.js')
+  assert.equal(prepared.provenance.closure[2].typeElision.local, 'LocalContract')
+  await writeCopies(prepared)
+  assert.equal((await checkCopies(await f.prepare())).files, 5)
+})
+
+test('declaration-bound negative 1: partial matches and counts other than one fail', async t => {
+  const f = await topologyFixture(t)
+  const wrongCount = structuredClone(f.rewrite)
+  wrongCount.from.count = 2
+  await assert.rejects(() => applyTopology(f, wrongCount), /Invalid declaration rewrite/u)
+
+  const duplicatedText = `${topologyOriginal}${topologyFromBlock}\n`
+  const duplicated = structuredClone(f.rewrite)
+  duplicated.from.sha256Before = sha256(duplicatedText)
+  await assert.rejects(
+    () => applyTopology(f, duplicated, { original: duplicatedText }),
+    /occurrence mismatch/u,
+  )
+})
+
+test('declaration-bound negative 2: statements and unbound imports fail', () => {
+  for (const invalid of [
+    "import { alpha } from './a.js'; evil()",
+    "const load = import('./a.js')",
+    "const load = require('./a.js')",
+    "import './a.js'",
+    "export * from './a.js'",
+  ])
+    assert.throws(
+      () => importDeclarationManifest(invalid, 'fixture.ts'),
+      /non-static import\/export|Side-effect import|named re-export/u,
+    )
+})
+
+test('declaration-bound negative 3: binding additions, removals and identity changes fail', async t => {
+  const f = await topologyFixture(t)
+  const replacements = [
+    "import { alpha, gamma } from './a.js'\nimport { beta } from './b.js'",
+    "import { alpha } from './a.js'",
+    "import { alpha as renamed } from './a.js'\nimport { beta } from './b.js'",
+    "import { alpha } from './a.js'\nimport { alpha, beta } from './b.js'",
+    "import type { alpha } from './a.js'\nimport { beta } from './b.js'",
+  ]
+  for (const replacement of replacements) {
+    const record = buildDeclarationRewrite({ toText: replacement, proof: f.proof })
+    await assert.rejects(
+      () => applyTopology(f, record),
+      /added or changed a binding|Runtime import removal|Duplicate declaration binding/u,
+    )
+  }
+})
+
+test('declaration-bound negative 4: target exceptions must be exact and unique', async t => {
+  const f = await topologyFixture(t)
+  const missing = structuredClone(f.rewrite)
+  missing.targetExceptions.pop()
+  await assert.rejects(() => applyTopology(f, missing), /target exceptions mismatch/u)
+
+  const wildcard = structuredClone(f.rewrite)
+  wildcard.targetExceptions[0].destinationSpecifier = '*'
+  await assert.rejects(() => applyTopology(f, wildcard), /Invalid target exception/u)
+
+  const duplicate = structuredClone(f.rewrite)
+  duplicate.targetExceptions.push(structuredClone(duplicate.targetExceptions[0]))
+  await assert.rejects(
+    () => applyTopology(f, duplicate),
+    /Duplicate declaration rewrite target exceptions/u,
+  )
+
+  const unused = structuredClone(f.rewrite)
+  unused.targetExceptions.push({ ...unused.targetExceptions[0], local: 'unused' })
+  await assert.rejects(() => applyTopology(f, unused), /target exceptions mismatch/u)
+})
+
+test('declaration-bound negative 5: unresolved and outside-closure targets fail', async t => {
+  const missingBlock = "import { alpha } from './missing.js'\nimport { beta } from './b.js'"
+  const missing = await topologyFixture(t, { toBlock: missingBlock })
+  await assert.rejects(missing.prepare, /Unresolved copied relative import/u)
+
+  const outside = await topologyFixture(t)
+  outside.declaration.scopes['m1-libs'].requiredSources = outside.declaration.scopes[
+    'm1-libs'
+  ].requiredSources.filter(file => file !== 'src/a.ts')
+  await assert.rejects(outside.prepare, /Unresolved copied relative import/u)
+})
+
+test('declaration-bound negative 6: runtime import removal fails', async t => {
+  const f = await topologyFixture(t)
+  const original = "import { alpha } from './barrel.js'\nexport const value = alpha\n"
+  const record = buildDeclarationRewrite({
+    original,
+    fromText: "import { alpha } from './barrel.js'",
+    toText: '',
+    proof: f.proof,
+  })
+  await assert.rejects(
+    () => applyTopology(f, record, { original, finalText: 'export const value = alpha\n' }),
+    /Runtime import removal/u,
+  )
+})
+
+test('declaration-bound negative 7: unsafe type elision fails', async t => {
+  const f = await topologyFixture(t)
+  const rewritten = await applyImportDeclarationRewrites(
+    topologyOriginal,
+    [f.rewrite],
+    'fixture.ts',
+    f.root,
+  )
+  assert.throws(
+    () =>
+      validateImportDeclarationRewriteFinal(
+        rewritten,
+        `${topologyFinal}console.log(LocalContract)\n`,
+        'fixture.ts',
+      ),
+    /value-position reference/u,
+  )
+  assert.throws(
+    () =>
+      validateImportDeclarationRewriteFinal(
+        rewritten,
+        topologyFinal.replace('interface LocalContract', 'interface Other'),
+        'fixture.ts',
+      ),
+    /lacks same-name local declaration/u,
+  )
+
+  const forged = structuredClone(f.rewrite)
+  forged.from.declarations[0].bindings[0].typeOnly = false
+  await assert.rejects(() => applyTopology(f, forged), /Source declaration manifest mismatch/u)
+
+  const markerOriginal = "import type { LocalContract } from './types.js'\nconst value = 1\n"
+  const markerRecord = buildDeclarationRewrite({
+    original: markerOriginal,
+    fromText: "import type { LocalContract } from './types.js'",
+    toText: '',
+    proof: f.proof,
+  })
+  await assert.rejects(
+    () =>
+      applyTopology(f, markerRecord, {
+        original: markerOriginal,
+        finalText: 'interface LocalContract { value: number }\nconst value = 1\n',
+      }),
+    /changes emitted runtime/u,
+  )
+})
+
+test('declaration-bound negative 8: phase, proof and final hashes fail independently', async t => {
+  const f = await topologyFixture(t)
+  const before = structuredClone(f.rewrite)
+  before.from.sha256Before = '0'.repeat(64)
+  await assert.rejects(() => applyTopology(f, before), /before hash mismatch/u)
+
+  const after = structuredClone(f.rewrite)
+  after.to.sha256After = '0'.repeat(64)
+  await assert.rejects(() => applyTopology(f, after), /result hash mismatch/u)
+
+  const proof = structuredClone(f.rewrite)
+  proof.proof[0].sha256 = '0'.repeat(64)
+  await assert.rejects(() => applyTopology(f, proof), /proof hash mismatch/u)
+
+  f.declaration.copies[0].sha256Mk3 = '0'.repeat(64)
+  await assert.rejects(f.prepare, /Declared destination hash mismatch/u)
+})
+
+test('declaration-bound negative 9: target exceptions cannot bypass closure', async t => {
+  const f = await topologyFixture(t)
+  assert.equal(
+    f.rewrite.targetExceptions.some(item => item.destinationSpecifier === './a.js'),
+    true,
+  )
+  f.declaration.copies.find(row => row.source === 'src/a.ts').destination = 'target/elsewhere.ts'
+  await assert.rejects(f.prepare, /Unresolved copied relative import/u)
+})
 
 test('nonempty pinned closure copies type-only imports and reconstructs provenance', async t => {
   const f = await fixture(t)
