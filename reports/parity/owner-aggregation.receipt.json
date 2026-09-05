@@ -1,0 +1,87 @@
+{
+  "schemaVersion": "owner-parity-aggregation-2",
+  "verdict": "pass",
+  "command": "pnpm parity",
+  "runner": {
+    "path": "scripts/parity/check.mjs",
+    "sha256": "dcc5d87597332cc25d7ad6c44f8a1b076cafeab104e3f2afdd33c151f7f97830"
+  },
+  "oracleLoader": {
+    "path": "scripts/migration/lib/legacy-oracle.mjs",
+    "sha256": "cb291dc109548e642912a71d726dff0de17cef75178cd47ac06f00a28f6fb6d6"
+  },
+  "canonicalAdapter": {
+    "path": "scripts/parity/modkitx-probe.mjs",
+    "sha256": "47879f0473a9d8af82fb513e16bada88e329299a3d045a6d3bba297a2800ebc9"
+  },
+  "corpus": {
+    "path": "scripts/parity/corpus.json",
+    "sha256": "38d807f07e1b1a31140b173c6163fd5f6a3569557e1cf5b96399f40de57c99fb"
+  },
+  "report": {
+    "path": "reports/parity/latest.json",
+    "sha256": "5d77263f21b6f963f9653532636dad46eb28bcc1e1238ed370b54521581dbd4e",
+    "schemaVersion": 4,
+    "counts": {
+      "total": 76,
+      "real": 16,
+      "synthetic": 60,
+      "compared": 76,
+      "skipped": 0,
+      "failed": 0,
+      "comparedReal": 16,
+      "comparedSynthetic": 60,
+      "richer": 48,
+      "equal": 16,
+      "poorer": 11,
+      "incomparable": 1
+    }
+  },
+  "repositories": [
+    {
+      "id": "core",
+      "repository": "modkit-core",
+      "commit": "8b62f36f27a9178a8807ce7c782033caf52d6963"
+    },
+    {
+      "id": "blizzard",
+      "repository": "modkit-extensions-blizzard",
+      "commit": "ff7a703439894eebea9b1c206fe1069bc5dae6cd"
+    },
+    {
+      "id": "ea",
+      "repository": "modkit-extensions-ea",
+      "commit": "7a135611166c45b99514ce94f75256fff91a6218"
+    },
+    {
+      "id": "other",
+      "repository": "modkit-extensions-other",
+      "commit": "2c9e6ee816f02ca2acb2b8520ab276ee1065572a"
+    },
+    {
+      "id": "spring",
+      "repository": "modkit-extensions-spring",
+      "commit": "132602e5684ff0fcf75df045810ecea36ad2dda4"
+    },
+    {
+      "id": "warzone",
+      "repository": "modkit-extensions-warzone",
+      "commit": "701157037422c50c5377c3865336753a7d5d6358"
+    }
+  ],
+  "ownerResultCounts": {
+    "core": 58,
+    "blizzard": 2,
+    "ea": 14,
+    "other": 1,
+    "spring": 1,
+    "warzone": 1
+  },
+  "oracle": {
+    "repository": "modkitmk2",
+    "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+    "rows": 76,
+    "executions": 77
+  },
+  "blockingResultIds": []
+}
