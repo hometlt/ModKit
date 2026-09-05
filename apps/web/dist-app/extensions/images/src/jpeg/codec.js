@@ -100,6 +100,30 @@ const EDIT_FIELD_OPERATION = Object.freeze({
   handlerId: 'set-comment',
   mutatesSource: true,
   requiredPermissions: Object.freeze(['read-source', 'write-source']),
+  inputSchema: Object.freeze({
+    $ref: 'modkit://image-jpeg/edit-field.v1',
+    document: Object.freeze({
+      schemaVersion: 1,
+      forms: Object.freeze([
+        Object.freeze({
+          id: 'jpeg-set-comment',
+          label: 'Set the JPEG comment',
+          summary: 'Writes the COM segment after the APP block, replacing it when it exists.',
+          binding: Object.freeze({ groupId: 'jpeg-comment', entryKey: 'comment' }),
+          fields: Object.freeze([
+            Object.freeze({
+              key: 'value',
+              label: 'Comment',
+              type: Object.freeze({ kind: 'text' }),
+              inputPath: Object.freeze(['value']),
+              initial: 'set from the Modkit inspector',
+              source: 'entry-value',
+            }),
+          ]),
+        }),
+      ]),
+    }),
+  }),
   outputKinds: Object.freeze(['edit-plan']),
 })
 
@@ -108,6 +132,30 @@ const EDIT_STRUCTURE_OPERATION = Object.freeze({
   handlerId: 'remove-segment',
   mutatesSource: true,
   requiredPermissions: Object.freeze(['read-source', 'write-source']),
+  inputSchema: Object.freeze({
+    $ref: 'modkit://image-jpeg/edit-structure.v1',
+    document: Object.freeze({
+      schemaVersion: 1,
+      forms: Object.freeze([
+        Object.freeze({
+          id: 'jpeg-remove-segment',
+          label: 'Remove a JPEG metadata segment',
+          summary: 'Drops one metadata segment; image-bearing markers are refused by the codec.',
+          fields: Object.freeze([
+            Object.freeze({
+              key: 'marker',
+              label: 'Marker',
+              type: Object.freeze({ kind: 'text' }),
+              inputPath: Object.freeze(['marker']),
+              required: true,
+              initial: 'APP0',
+              description: 'A metadata marker name, e.g. APP0, APP1 or COM',
+            }),
+          ]),
+        }),
+      ]),
+    }),
+  }),
   outputKinds: Object.freeze(['edit-plan']),
 })
 
@@ -166,13 +214,15 @@ function editPlanOutput(input, planId, edit, diagnostics) {
 /** `set-comment`: set or replace the COM segment; nothing else in the file moves. */
 function setCommentHandler(jpeg, input) {
   return async value => {
-    if (typeof value !== 'object' || value === null || typeof value.text !== 'string') {
-      throw new TypeError('edit.field expects { text } (with an optional keyword «comment»)')
+    const text = value?.groupId === 'jpeg-comment' ? value.value : value?.text
+    const keyword = value?.groupId === 'jpeg-comment' ? value.key : value?.keyword
+    if (typeof value !== 'object' || value === null || typeof text !== 'string') {
+      throw new TypeError('edit.field expects a jpeg-comment FieldWriteRequest')
     }
-    if (value.keyword !== undefined && value.keyword !== 'comment') {
+    if (keyword !== undefined && keyword !== 'comment') {
       throw new TypeError('this codec edits one JPEG field: «comment» (the COM segment)')
     }
-    const replacement = commentSegmentBytes(value.text)
+    const replacement = commentSegmentBytes(text)
     const existing = jpeg.segments.filter(segment => segment.marker === COM)
     const [first] = existing
     const edit =
@@ -298,6 +348,18 @@ const definition = Object.freeze({
         exif: jpeg.hasExif,
       },
       metadata: [
+        {
+          id: 'jpeg-comment',
+          label: 'JPEG comment',
+          entries: [
+            {
+              key: 'comment',
+              value: null,
+              type: { kind: 'text' },
+              editable: { write: { operation: 'edit.field' } },
+            },
+          ],
+        },
         {
           id: 'jpeg-frame',
           label: 'JPEG frame',

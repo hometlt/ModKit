@@ -2,6 +2,7 @@ import {
   EXPLORER_MAXIMUM_BYTES,
   WEB_EXTENSION_CATALOG,
   createCodecPreview,
+  createScopedViewerSubjectNavigation,
   createSingleFileAccess,
   createWebEditingArm,
   createWebLocalizer,
@@ -11,16 +12,20 @@ import {
   describeEditability,
   element,
   isWritableHandle,
+  nestedSubjectServices,
+  openNestedSubjectRef,
+  parseSubjectRef,
   requestWriteAccess,
   resolveFormatWriter,
   revisionId,
+  serializeSubjectRef,
   setPart,
   setState,
   setViewerText,
   sourceRevisionToken,
   sourceUriFor,
   stageIdOf
-} from "./chunks/chunk-P4VXS6DE.js";
+} from "./chunks/chunk-EMVH2BTX.js";
 import {
   define_MODKIT_EMBED_EXTENSION_ORIGINS_default,
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
@@ -289,6 +294,7 @@ async function composeEmbedHost(assetBase, extensionCatalogUrl) {
   const operations = /* @__PURE__ */ new Map();
   const stages = createWebPreviewStages({
     localizer,
+    renderer: services.renderer,
     operationsFor: (descriptor) => operations.get(descriptorKey(descriptor))
   });
   const styles = await loadStyles(assetBase, localizer);
@@ -340,6 +346,66 @@ function bytesSource(name, bytes, token, sourceUri) {
   };
 }
 var openCount = 0;
+function embedPreviewSession(host, opened, grant, budget, sessionId, onNavigate) {
+  const session = opened.session;
+  const key = descriptorKey(opened.descriptor);
+  const operations = session.operations();
+  host.operations.set(key, operations);
+  const currentSubject = parseSubjectRef(opened.descriptor.subjectUri);
+  const managed = onNavigate === void 0 ? void 0 : createScopedViewerSubjectNavigation({
+    scope: {
+      sessionId,
+      subject: opened.descriptor.subjectUri,
+      ...currentSubject.workspace === void 0 ? {} : { workspace: currentSubject.workspace }
+    },
+    async open(target, signal) {
+      const nested = await openNestedSubjectRef({
+        parent: opened.session,
+        targetSubject: target,
+        ...nestedSubjectServices(host.services),
+        grant,
+        budget,
+        signal
+      });
+      if (nested?.result.state !== "opened") return { state: "rejected", reason: "target-unavailable" };
+      openCount += 1;
+      const child = embedPreviewSession(
+        host,
+        nested.result,
+        grant,
+        budget,
+        `modkit-embed-${openCount}`,
+        onNavigate
+      );
+      try {
+        await onNavigate(serializeSubjectRef(target), child);
+        return { state: "opened" };
+      } catch (error) {
+        await child.dispose().catch(() => void 0);
+        throw error;
+      }
+    }
+  });
+  let disposed = false;
+  return {
+    opened,
+    grant,
+    budget,
+    ...managed === void 0 ? {} : { subjectNavigation: managed.port },
+    descriptor: () => session.descriptor(),
+    dataSource: (contract, major) => session.dataSource(contract, major),
+    async operations() {
+      return operations;
+    },
+    async dispose() {
+      if (disposed) return;
+      disposed = true;
+      managed?.dispose();
+      host.operations.delete(key);
+      await session.dispose();
+    }
+  };
+}
 async function openEmbedSession(host, entry, bytes, options, signal) {
   openCount += 1;
   const grant = {
@@ -363,24 +429,7 @@ async function openEmbedSession(host, entry, bytes, options, signal) {
     ...signal === void 0 ? {} : { signal }
   });
   if (result.state === "unresolved") return void 0;
-  const session = result.session;
-  const key = descriptorKey(result.descriptor);
-  const operations = session.operations();
-  host.operations.set(key, operations);
-  return {
-    opened: result,
-    grant,
-    budget,
-    descriptor: () => session.descriptor(),
-    dataSource: (contract, major) => session.dataSource(contract, major),
-    async operations() {
-      return operations;
-    },
-    async dispose() {
-      host.operations.delete(key);
-      await session.dispose();
-    }
-  };
+  return embedPreviewSession(host, result, grant, budget, `modkit-embed-${openCount}`, options.onNavigate);
 }
 var RELOADING_ATTRIBUTES = Object.freeze(["src", "name", "asset-base", "extension-catalog"]);
 var OBSERVED_ATTRIBUTES = Object.freeze([
@@ -412,6 +461,7 @@ function defineModkitElements(options = {}) {
     #stage;
     #status;
     #handle;
+    #retainedHandles = [];
     #abort;
     #blob;
     #fileHandle;
@@ -550,6 +600,7 @@ function defineModkitElements(options = {}) {
     }
     async #unmount() {
       const handle = this.#handle;
+      const retained = this.#retainedHandles.splice(0);
       const editing = this.#editing;
       this.#handle = void 0;
       this.#editing = void 0;
@@ -561,6 +612,13 @@ function defineModkitElements(options = {}) {
           await handle.unmount();
         } catch (error) {
           console.warn("[modkit-viewer] unmount failed", error);
+        }
+      }
+      for (const previous of retained) {
+        try {
+          await previous.unmount();
+        } catch (error) {
+          console.warn("[modkit-viewer] retained subject unmount failed", error);
         }
       }
       await editing?.dispose();
@@ -730,17 +788,49 @@ function defineModkitElements(options = {}) {
           });
           this.#editing = editing;
         }
-        const previewer = createCodecPreview({
+        let preopened;
+        let previewer;
+        const openNavigatedSubject = async (target, session) => {
+          if (!current() || preopened !== void 0) {
+            await session.dispose();
+            throw new Error("subject navigation target is unavailable in this viewer");
+          }
+          preopened = { target, session };
+          const previous = this.#handle;
+          try {
+            const handle2 = await previewer.open(
+              this.#stage,
+              { id: target, name: target, directory: false },
+              new Uint8Array(),
+              controller.signal
+            );
+            if (handle2 === void 0) throw new Error("subject navigation target has no viewer");
+            if (previous !== void 0) this.#retainedHandles.push(previous);
+            this.#handle = handle2;
+            setViewerText(this.#title, target, 300);
+            this.#drawPicker(handle2);
+          } finally {
+            if (preopened?.session === session) preopened = void 0;
+          }
+        };
+        previewer = createCodecPreview({
           supported: host.services.supportedExtensions,
           stages: preferStage(host.stages, this.getAttribute("view") ?? void 0),
           fallback: host.fallback,
           editorPorts: () => editorPorts,
           openSession: async (openedEntry, openedBytes, signal) => {
-            const session = await openEmbedSession(
+            const navigated = preopened?.target === openedEntry.id ? preopened.session : void 0;
+            if (navigated !== void 0) preopened = void 0;
+            const session = navigated ?? await openEmbedSession(
               host,
               openedEntry,
               openedBytes,
-              { token, writable, ...sourceUri === void 0 ? {} : { sourceUri } },
+              {
+                token,
+                writable,
+                onNavigate: openNavigatedSubject,
+                ...sourceUri === void 0 ? {} : { sourceUri }
+              },
               signal
             );
             if (session !== void 0 && writable) {

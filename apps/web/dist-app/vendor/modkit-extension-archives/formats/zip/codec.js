@@ -1,15 +1,622 @@
 import {
-  createInspectionCodec,
-  createTreeDataSource,
-  editPlanFromInput,
-  simpleLease
-} from "../../../../chunks/chunk-X4YOEQ7O.js";
-import "../../../../chunks/chunk-EFBPRTFA.js";
-import "../../../../chunks/chunk-NYQ4TTPH.js";
-import "../../../../chunks/chunk-F4XKVL72.js";
-import "../../../../chunks/chunk-X2ENULEB.js";
+  assembleSubjectDescriptor,
+  createAssetSession,
+  createUtf8TextDataSource
+} from "../../../../chunks/chunk-VCFHQMDA.js";
+import "../../../../chunks/chunk-GUANBBUV.js";
+import {
+  revisionId,
+  toPortableProjectionReceipt
+} from "../../../../chunks/chunk-YFALMPQO.js";
+import {
+  canonicalJsonStringify
+} from "../../../../chunks/chunk-S5ITZJYV.js";
 import "../../../../chunks/chunk-YRQVWMJF.js";
 import "../../../../chunks/chunk-CQ52GEHY.js";
+
+// packages/codec-kit/dist/index.js
+var INSPECTION_OPERATIONS = Object.freeze([
+  Object.freeze({
+    id: "view.inspect",
+    handlerId: "inspect",
+    mutatesSource: false,
+    requiredPermissions: Object.freeze(["read-source"]),
+    outputKinds: Object.freeze(["json"])
+  }),
+  Object.freeze({
+    id: "asset.validate",
+    handlerId: "validate",
+    mutatesSource: false,
+    requiredPermissions: Object.freeze(["read-source"]),
+    outputKinds: Object.freeze(["none"])
+  }),
+  Object.freeze({
+    id: "export.raw",
+    handlerId: "export-raw",
+    mutatesSource: false,
+    requiredPermissions: Object.freeze(["read-source"]),
+    outputKinds: Object.freeze(["bytes"])
+  })
+]);
+function simpleLease(value) {
+  let released = false;
+  return Object.freeze({
+    value,
+    async release() {
+      released = true;
+    },
+    isReleased: () => released
+  });
+}
+function pageStart(cursor) {
+  if (cursor === void 0)
+    return 0;
+  if (!/^(?:0|[1-9][0-9]*)$/u.test(cursor))
+    throw new TypeError("invalid page cursor");
+  const value = Number(cursor);
+  if (!Number.isSafeInteger(value))
+    throw new TypeError("page cursor exceeds safe integer range");
+  return value;
+}
+function createTreeDataSource(rootNode) {
+  const nodes = /* @__PURE__ */ new Map();
+  const register = (node, id) => {
+    const children = Array.isArray(node.children) ? node.children : [];
+    nodes.set(id, { node, childIds: children.map((_, index) => `${id}/${index}`) });
+    children.forEach((child, index) => register(child, `${id}/${index}`));
+  };
+  register(rootNode, "root");
+  const ref = (id) => {
+    const item = nodes.get(id);
+    return Object.freeze({ id, hasChildren: (item?.childIds.length ?? 0) > 0 });
+  };
+  return Object.freeze({
+    async root() {
+      return ref("root");
+    },
+    async children(node, page, signal) {
+      if (signal?.aborted)
+        throw new DOMException("operation cancelled", "AbortError");
+      if (!Number.isSafeInteger(page.limit) || page.limit <= 0) {
+        throw new TypeError("tree page limit must be a positive safe integer");
+      }
+      const start = pageStart(page.cursor);
+      const childIds = nodes.get(node.id)?.childIds ?? [];
+      const items = childIds.slice(start, start + page.limit).map(ref);
+      return Object.freeze({
+        items: Object.freeze(items),
+        ...start + items.length < childIds.length ? { nextCursor: String(start + items.length) } : {}
+      });
+    },
+    async facts(node) {
+      const value = nodes.get(node.id)?.node;
+      if (value === void 0)
+        throw new TypeError(`unknown tree node ${node.id}`);
+      return Object.freeze({
+        kind: value.kind,
+        label: value.label,
+        ...value.preview === void 0 ? {} : { preview: value.preview },
+        ...value.semanticPath === void 0 ? {} : { semanticPath: Object.freeze([...value.semanticPath]) }
+      });
+    },
+    async *search(query, signal) {
+      const needle = query.pattern.toLocaleLowerCase();
+      for (const [id, item] of nodes) {
+        if (signal?.aborted)
+          throw new DOMException("operation cancelled", "AbortError");
+        const haystack = `${item.node.label}
+${item.node.preview ?? ""}`.toLocaleLowerCase();
+        if (haystack.includes(needle))
+          yield ref(id);
+      }
+    }
+  });
+}
+var TRANSPORT_OPERATIONS = Object.freeze([
+  Object.freeze({
+    id: "media.play-pause",
+    handlerId: "transport-play-pause",
+    mutatesSource: false,
+    requiredPermissions: Object.freeze(["read-source"]),
+    outputKinds: Object.freeze(["none"])
+  }),
+  Object.freeze({
+    id: "media.seek",
+    handlerId: "transport-seek",
+    mutatesSource: false,
+    requiredPermissions: Object.freeze(["read-source"]),
+    outputKinds: Object.freeze(["none"])
+  }),
+  Object.freeze({
+    id: "media.set-rate",
+    handlerId: "transport-set-rate",
+    mutatesSource: false,
+    requiredPermissions: Object.freeze(["read-source"]),
+    outputKinds: Object.freeze(["none"])
+  }),
+  Object.freeze({
+    id: "media.select-track",
+    handlerId: "transport-select-track",
+    mutatesSource: false,
+    requiredPermissions: Object.freeze(["read-source"]),
+    outputKinds: Object.freeze(["none"])
+  })
+]);
+var PROJECTION_RECEIPT_METADATA_ID = "uv-projection-receipt";
+function jsonSafe(value) {
+  if (typeof value === "bigint")
+    return value.toString();
+  if (Array.isArray(value))
+    return value.map(jsonSafe);
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, jsonSafe(item)]));
+  }
+  return value;
+}
+function projectionReceiptMetadataGroup(receipt, identity) {
+  const portable = toPortableProjectionReceipt(receipt, identity);
+  return Object.freeze({
+    id: PROJECTION_RECEIPT_METADATA_ID,
+    label: "UV projection receipt",
+    entries: Object.freeze([Object.freeze({ key: "receipt", value: jsonSafe(portable) })])
+  });
+}
+var CODEC_SOURCE_IDENTITY = Object.freeze({
+  kind: "redacted",
+  reason: "a codec projects a subject the host already opened; its portable identity is the subject revision this receipt carries, and an ambient URI would leak the producing machine into every copy"
+});
+function descriptorMetadata(inspection) {
+  const groups = inspection.metadata ?? [];
+  if (inspection.projectionReceipt === void 0)
+    return groups;
+  return [
+    ...groups,
+    projectionReceiptMetadataGroup(inspection.projectionReceipt, CODEC_SOURCE_IDENTITY)
+  ];
+}
+function inspectionOperations(declarations, states = []) {
+  const declaredIds = new Set(declarations.map((operation) => operation.id));
+  const byId = /* @__PURE__ */ new Map();
+  for (const operation of states) {
+    const id = operation.id;
+    if (!declaredIds.has(operation.id)) {
+      throw new TypeError(`operation state references undeclared operation ${operation.id}`);
+    }
+    if (byId.has(operation.id)) {
+      throw new TypeError(`duplicate operation state for ${operation.id}`);
+    }
+    if (operation.state === "available") {
+      if (operation.reason !== void 0) {
+        throw new TypeError(`available operation ${id} cannot have a reason`);
+      }
+    } else if (operation.state !== "disabled" && operation.state !== "dependency-required" || typeof operation.reason !== "string" || operation.reason.length === 0) {
+      throw new TypeError(`invalid operation state or reason for ${operation.id}`);
+    }
+    byId.set(operation.id, operation);
+  }
+  return Object.freeze(declarations.map((operation) => {
+    const override = byId.get(operation.id);
+    const identity = {
+      id: operation.id,
+      handlerId: operation.handlerId,
+      mutatesSource: operation.mutatesSource,
+      ...operation.inputSchema === void 0 ? {} : { inputSchema: operation.inputSchema }
+    };
+    return Object.freeze(override === void 0 || override.state === "available" ? { ...identity, state: "available" } : { ...identity, state: override.state, reason: override.reason });
+  }));
+}
+async function readAll(source, budget, signal) {
+  if (source.kind !== "bytes" || source.size === void 0) {
+    throw new TypeError("inspection codecs require a sized byte source");
+  }
+  if (source.size > budget.maxInputBytes || source.size > BigInt(Number.MAX_SAFE_INTEGER)) {
+    throw new RangeError("source exceeds the inspection budget");
+  }
+  const total = Number(source.size);
+  const result = new Uint8Array(total);
+  let offset = 0;
+  while (offset < total) {
+    if (signal?.aborted)
+      throw new DOMException("operation cancelled", "AbortError");
+    const chunk = await source.read(BigInt(offset), Math.min(64 * 1024, total - offset), signal);
+    if (chunk.byteLength === 0)
+      throw new RangeError("source ended before its declared size");
+    result.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return result;
+}
+function originFrom(input, primary, companions = []) {
+  const requiredCompanionBindings = new Set(companions.flatMap((companion) => companion.required === true && companion.state === "resolved" ? companion.bindingIds : []));
+  const toBinding = (binding) => ({
+    id: binding.bindingId,
+    role: binding.role,
+    source: binding.source,
+    required: binding.sourceKind === "candidate" || requiredCompanionBindings.has(binding.bindingId),
+    ownership: binding.ownership,
+    revision: binding.revision
+  });
+  if (input.originKind === "single")
+    return { kind: "single", binding: toBinding(primary) };
+  if (input.originKind === "bundle") {
+    return {
+      kind: "bundle",
+      bindings: input.bindings.map(toBinding),
+      primary: input.primaryBindingId
+    };
+  }
+  if (input.originKind === "namespace") {
+    return { kind: "namespace", root: input.root, revision: input.revisions.namespaceRevision };
+  }
+  throw new TypeError("inspection codec requires a physical byte input");
+}
+function probeLength(plan, size) {
+  const first = plan.ranges[0];
+  const declared = Math.min(plan.maxBytes, first?.length ?? plan.maxBytes);
+  const available = size === void 0 ? declared : Number(size);
+  return Math.max(0, Math.min(declared, available));
+}
+function createInspectionCodec(definition2, contributionContext) {
+  const namespaceDefinition = definition2.namespace;
+  const customOperations = Object.freeze([...definition2.operations ?? []]);
+  const sharedOperations = namespaceDefinition === void 0 ? INSPECTION_OPERATIONS : INSPECTION_OPERATIONS.filter((operation) => operation.handlerId !== "export-raw");
+  const customIds = /* @__PURE__ */ new Set();
+  for (const operation of customOperations) {
+    if (customIds.has(operation.id))
+      throw new TypeError(`Duplicate custom operation: ${operation.id}`);
+    customIds.add(operation.id);
+  }
+  const operationDeclarations = Object.freeze([
+    ...sharedOperations.filter((operation) => !customIds.has(operation.id)),
+    ...customOperations
+  ]);
+  const handlerIds = /* @__PURE__ */ new Set();
+  for (const operation of operationDeclarations) {
+    if (handlerIds.has(operation.handlerId))
+      throw new TypeError(`Duplicate operation handler: ${operation.handlerId}`);
+    handlerIds.add(operation.handlerId);
+  }
+  return Object.freeze({
+    async probe(request, signal) {
+      if (namespaceDefinition !== void 0) {
+        if (request.source.kind !== "namespace" || request.plan.kind !== "namespace") {
+          throw new TypeError(`${definition2.id} requires a namespace probe`);
+        }
+        const namespaceLease = await request.source.openNamespace(signal);
+        try {
+          const markers = [];
+          for (const path of request.plan.markers) {
+            let entryLease;
+            try {
+              entryLease = await namespaceLease.value.open(path, signal);
+            } catch (error) {
+              const code = error?.code;
+              if (code === "x3.host/namespace-entry-not-found")
+                continue;
+              throw error;
+            }
+            try {
+              markers.push(Object.freeze({
+                path,
+                kind: entryLease.value.kind === "namespace" ? "directory" : "file",
+                ...entryLease.value.kind === "bytes" && entryLease.value.size !== void 0 ? { size: entryLease.value.size } : {}
+              }));
+            } finally {
+              await entryLease.release();
+            }
+          }
+          const detected2 = await namespaceDefinition.detect(Object.freeze(markers), request.source.ref.uri);
+          return Object.freeze({
+            codecId: definition2.id,
+            confidence: detected2.confidence,
+            evidence: Object.freeze([
+              Object.freeze({
+                kind: detected2.kind ?? "structure",
+                weight: detected2.confidence,
+                note: detected2.note
+              })
+            ]),
+            requiredRanges: Object.freeze([])
+          });
+        } finally {
+          await namespaceLease.release();
+        }
+      }
+      if (request.source.kind !== "bytes" || request.plan.kind !== "bytes") {
+        throw new TypeError(`${definition2.id} requires a byte probe`);
+      }
+      const bytes = await request.source.read(0n, probeLength(request.plan, request.source.size), signal);
+      const detected = await definition2.detect(bytes, request.source.ref.uri);
+      return Object.freeze({
+        codecId: definition2.id,
+        confidence: detected.confidence,
+        evidence: Object.freeze([
+          Object.freeze({
+            kind: detected.kind ?? "magic",
+            weight: detected.confidence,
+            note: detected.note
+          })
+        ]),
+        requiredRanges: Object.freeze([
+          Object.freeze({ byteOffset: "0", byteLength: String(bytes.byteLength) })
+        ])
+      });
+    },
+    async planInput(source, evidence, signal) {
+      if (definition2.planInput !== void 0) {
+        return definition2.planInput(source, evidence, signal, contributionContext);
+      }
+      if (namespaceDefinition !== void 0) {
+        if (source.kind !== "namespace") {
+          throw new TypeError(`${definition2.id} requires a namespace input`);
+        }
+        return Object.freeze({ originKind: "namespace", requirements: Object.freeze([]) });
+      }
+      return Object.freeze({
+        originKind: "single",
+        candidate: Object.freeze({ bindingId: "content", role: "content", ownership: "owned" }),
+        requirements: Object.freeze([])
+      });
+    },
+    async open(input, intent, budget, signal) {
+      if (namespaceDefinition !== void 0) {
+        if (input.originKind !== "namespace") {
+          throw new TypeError(`${definition2.id} requires a namespace input`);
+        }
+        const namespaceLease = await input.openNamespace(signal);
+        try {
+          const inspection = await namespaceDefinition.inspect(namespaceLease.value, {
+            budget,
+            signal,
+            intent,
+            namespace: namespaceLease.value,
+            input
+          });
+          const dataSources = new Map(Object.entries(inspection.dataSources ?? {}));
+          const descriptor = await assembleSubjectDescriptor({
+            schemaVersion: 2,
+            subjectUri: input.root.uri,
+            origin: originFrom(input),
+            interpretation: "codec",
+            identity: {
+              codecId: definition2.id,
+              codecVersion: definition2.version ?? "1.0.0",
+              formatId: definition2.format.id,
+              formatLabel: definition2.format.label,
+              ...definition2.format.mediaType === void 0 ? {} : { mediaType: definition2.format.mediaType },
+              confidence: inspection.detection.confidence,
+              detection: [
+                {
+                  kind: inspection.detection.kind ?? "structure",
+                  weight: inspection.detection.confidence,
+                  ...inspection.detection.note === void 0 ? {} : { note: inspection.detection.note }
+                }
+              ]
+            },
+            traits: inspection.traits.map((trait) => ({
+              id: trait.id,
+              descriptorVersion: 1,
+              state: "available",
+              ...trait.parameters === void 0 ? {} : { parameters: trait.parameters }
+            })),
+            operations: inspectionOperations(operationDeclarations, inspection.operationStates),
+            constraints: {
+              readOnly: !operationDeclarations.some((operation) => operation.mutatesSource === true),
+              seekable: false,
+              randomAccess: false,
+              trusted: false,
+              ...inspection.maxDecodedBytes === void 0 ? {} : { maxDecodedBytes: String(inspection.maxDecodedBytes) },
+              ...inspection.unsupportedFeatures === void 0 ? {} : { unsupportedFeatures: inspection.unsupportedFeatures }
+            },
+            dataSources: [...dataSources.keys()].map((contract) => ({ contract, major: 1 })),
+            diagnostics: inspection.diagnostics ?? [],
+            metadata: descriptorMetadata(inspection),
+            revision: input.revisions.revision
+          });
+          const handlers = new Map([
+            ["inspect", async () => ({ kind: "json", value: inspection.summary })],
+            ["validate", async () => ({ kind: "none" })],
+            ...Object.entries(inspection.handlers ?? {})
+          ]);
+          return createAssetSession({
+            revision: revisionId(input.revisions.revision),
+            descriptor,
+            operationDeclarations,
+            permissionGrant: {
+              id: `${definition2.format.id}-inspection-session`,
+              classes: declaredPermissionClasses(operationDeclarations)
+            },
+            handlers,
+            async openDataSource(contract) {
+              const value = dataSources.get(contract);
+              if (value === void 0)
+                throw new TypeError(`${definition2.id} does not publish ${contract}`);
+              return simpleLease(value);
+            },
+            release: [() => namespaceLease.release()]
+          }).session;
+        } catch (error) {
+          await namespaceLease.release();
+          throw error;
+        }
+      }
+      if (input.originKind !== "single" && input.originKind !== "bundle") {
+        throw new TypeError(`${definition2.id} requires a single or bundle byte input`);
+      }
+      const primaryId = input.primaryBindingId;
+      const primary = input.bindings.find((binding) => binding.bindingId === primaryId);
+      if (primary === void 0)
+        throw new TypeError("primary binding is missing");
+      const sourceLease = await input.openBinding(primary.bindingId, signal);
+      const source = sourceLease.value;
+      try {
+        const bytes = await readAll(source, budget, signal);
+        const detected = await definition2.detect(bytes, primary.source.uri);
+        const byteSource = Object.freeze({
+          size: async () => BigInt(bytes.byteLength),
+          async read(offset, length, readSignal) {
+            if (readSignal?.aborted)
+              throw new DOMException("operation cancelled", "AbortError");
+            if (offset < 0n || offset > BigInt(bytes.byteLength) || length < 0) {
+              throw new RangeError("byte range is outside the source");
+            }
+            return bytes.slice(Number(offset), Math.min(bytes.byteLength, Number(offset) + length));
+          }
+        });
+        const inspection = await definition2.inspect(bytes, {
+          budget,
+          signal,
+          intent,
+          source,
+          primary,
+          byteSource,
+          input
+        });
+        const dataSources = new Map([
+          ["common.view/byte-range-source", byteSource],
+          ...Object.entries(inspection.dataSources ?? {})
+        ]);
+        if (inspection.text === true) {
+          dataSources.set("common.view/text-data-source", createUtf8TextDataSource(byteSource));
+        } else if (typeof inspection.text === "string") {
+          const textBytes = new TextEncoder().encode(inspection.text);
+          const textByteSource = Object.freeze({
+            async size() {
+              return BigInt(textBytes.byteLength);
+            },
+            async read(offset, length, readSignal) {
+              if (readSignal?.aborted)
+                throw new DOMException("operation cancelled", "AbortError");
+              if (offset < 0n || offset > BigInt(textBytes.byteLength) || length < 0)
+                throw new RangeError("text byte range is outside the source");
+              return textBytes.slice(Number(offset), Math.min(textBytes.byteLength, Number(offset) + length));
+            }
+          });
+          dataSources.set("common.view/text-data-source", createUtf8TextDataSource(textByteSource));
+        }
+        const descriptor = await assembleSubjectDescriptor({
+          schemaVersion: 2,
+          subjectUri: primary.source.uri,
+          origin: originFrom(input, primary, inspection.companions),
+          interpretation: "codec",
+          identity: {
+            codecId: definition2.id,
+            codecVersion: definition2.version ?? "1.0.0",
+            formatId: definition2.format.id,
+            formatLabel: definition2.format.label,
+            ...definition2.format.mediaType === void 0 ? {} : { mediaType: definition2.format.mediaType },
+            confidence: detected.confidence,
+            detection: [
+              {
+                kind: detected.kind ?? "magic",
+                weight: detected.confidence,
+                ...detected.note === void 0 ? {} : { note: detected.note }
+              }
+            ]
+          },
+          traits: inspection.traits.map((trait) => ({
+            id: trait.id,
+            descriptorVersion: 1,
+            state: "available",
+            ...trait.parameters === void 0 ? {} : { parameters: trait.parameters }
+          })),
+          operations: inspectionOperations(operationDeclarations, inspection.operationStates),
+          constraints: {
+            // a codec with a mutating operation is not read-only (ADR-HOST-002 Path A)
+            readOnly: !operationDeclarations.some((operation) => operation.mutatesSource === true),
+            seekable: true,
+            randomAccess: true,
+            trusted: false,
+            maxDecodedBytes: String(inspection.maxDecodedBytes ?? bytes.byteLength),
+            ...inspection.unsupportedFeatures === void 0 ? {} : { unsupportedFeatures: inspection.unsupportedFeatures }
+          },
+          dataSources: [...dataSources.keys()].map((contract) => ({ contract, major: 1 })),
+          diagnostics: inspection.diagnostics ?? [],
+          metadata: descriptorMetadata(inspection),
+          ...inspection.companions === void 0 ? {} : { companions: inspection.companions },
+          revision: input.revisions.revision
+        });
+        const handlers = new Map([
+          ["inspect", async () => ({ kind: "json", value: inspection.summary })],
+          ["validate", async () => ({ kind: "none" })],
+          ["export-raw", async () => ({ kind: "bytes", value: bytes })],
+          ...Object.entries(inspection.handlers ?? {})
+        ]);
+        return createAssetSession({
+          revision: revisionId(input.revisions.revision),
+          descriptor,
+          operationDeclarations,
+          permissionGrant: {
+            id: `${definition2.format.id}-inspection-session`,
+            classes: declaredPermissionClasses(operationDeclarations)
+          },
+          handlers,
+          async openDataSource(contract) {
+            const value = dataSources.get(contract);
+            if (value === void 0)
+              throw new TypeError(`${definition2.id} does not publish ${contract}`);
+            return simpleLease(value);
+          },
+          release: [() => sourceLease.release()]
+        }).session;
+      } catch (error) {
+        await sourceLease.release();
+        throw error;
+      }
+    }
+  });
+}
+function declaredPermissionClasses(operations) {
+  const classes = /* @__PURE__ */ new Set(["read-source"]);
+  for (const operation of operations) {
+    for (const item of operation.requiredPermissions ?? [])
+      classes.add(item);
+    if (operation.mutatesSource === true)
+      classes.add("write-source");
+  }
+  return Object.freeze([...classes].sort());
+}
+function assetRevisionFromInput(input) {
+  if (input.originKind !== "single" || input.revisions.topology !== "single") {
+    throw new TypeError("assetRevisionFromInput: single-source subjects only");
+  }
+  const [binding] = input.bindings;
+  if (binding === void 0)
+    throw new TypeError("assetRevisionFromInput: no binding");
+  const revision = binding.revision;
+  return Object.freeze({
+    bindings: Object.freeze({ [binding.bindingId]: revision }),
+    compositionFingerprint: canonicalJsonStringify({
+      topology: "single",
+      bindingId: binding.bindingId,
+      source: { id: binding.source.id, uri: binding.source.uri },
+      revision
+    })
+  });
+}
+function editPlanFromInput(input, { planId, edits, fidelity, guarantee = "atomic", diagnostics = [] }) {
+  const revision = assetRevisionFromInput(input);
+  const [binding] = input.bindings;
+  const target = Object.freeze({
+    targetId: binding.bindingId,
+    subjectUri: binding.source.uri,
+    ownerSource: Object.freeze({ id: binding.source.id, uri: binding.source.uri }),
+    semanticPath: Object.freeze([]),
+    expectedRevision: revision
+  });
+  return Object.freeze({
+    planId,
+    targets: Object.freeze([target]),
+    edits: Object.freeze(edits.map((edit) => Object.freeze({
+      ...edit,
+      targetId: edit.targetId ?? binding.bindingId,
+      source: edit.source ?? target.ownerSource
+    }))),
+    semantics: Object.freeze({ mutationMode: "mutate", minimumGuarantee: guarantee }),
+    fidelity,
+    diagnostics: Object.freeze([...diagnostics])
+  });
+}
 
 // extensions/archives/src/zip/codec.js
 var ZIP_LOCAL = 67324752;
@@ -578,6 +1185,75 @@ var EDIT_STRUCTURE_OPERATION = Object.freeze({
   handlerId: "edit-structure",
   mutatesSource: true,
   requiredPermissions: Object.freeze(["read-source", "write-source"]),
+  inputSchema: Object.freeze({
+    $ref: "modkit://archive-zip/edit-structure.v1",
+    document: Object.freeze({
+      schemaVersion: 1,
+      forms: Object.freeze([
+        Object.freeze({
+          id: "zip-add-entry",
+          label: "Add an entry to the archive",
+          summary: "Adds one stored entry and repacks; kept entries retain their bytes.",
+          fields: Object.freeze([
+            Object.freeze({
+              key: "path",
+              label: "Entry path",
+              type: Object.freeze({ kind: "path" }),
+              inputPath: Object.freeze(["add", 0, "path"]),
+              required: true,
+              initial: "added/hello.txt"
+            }),
+            Object.freeze({
+              key: "content",
+              label: "Contents",
+              type: Object.freeze({ kind: "text" }),
+              inputPath: Object.freeze(["add", 0, "bytes"]),
+              initial: "added from the Modkit inspector",
+              encoding: "utf8-base64"
+            })
+          ])
+        }),
+        Object.freeze({
+          id: "zip-remove-entry",
+          label: "Remove an entry from the archive",
+          summary: "Removes one entry and repacks; other entries retain their bytes.",
+          fields: Object.freeze([
+            Object.freeze({
+              key: "path",
+              label: "Entry path",
+              type: Object.freeze({ kind: "path" }),
+              inputPath: Object.freeze(["remove", 0]),
+              required: true,
+              initial: "readme.txt"
+            })
+          ])
+        }),
+        Object.freeze({
+          id: "zip-rename-entry",
+          label: "Rename an entry in the archive",
+          summary: "Renames one entry without touching its payload or compression.",
+          fields: Object.freeze([
+            Object.freeze({
+              key: "from",
+              label: "From",
+              type: Object.freeze({ kind: "path" }),
+              inputPath: Object.freeze(["rename", 0, "from"]),
+              required: true,
+              initial: "readme.txt"
+            }),
+            Object.freeze({
+              key: "to",
+              label: "To",
+              type: Object.freeze({ kind: "path" }),
+              inputPath: Object.freeze(["rename", 0, "to"]),
+              required: true,
+              initial: "docs/readme.txt"
+            })
+          ])
+        })
+      ])
+    })
+  }),
   outputKinds: Object.freeze(["edit-plan"])
 });
 var EDIT_CONTENT_OPERATION = Object.freeze({
@@ -585,6 +1261,37 @@ var EDIT_CONTENT_OPERATION = Object.freeze({
   handlerId: "edit-content",
   mutatesSource: true,
   requiredPermissions: Object.freeze(["read-source", "write-source"]),
+  inputSchema: Object.freeze({
+    $ref: "modkit://archive-zip/edit-content.v1",
+    document: Object.freeze({
+      schemaVersion: 1,
+      forms: Object.freeze([
+        Object.freeze({
+          id: "zip-replace-entry",
+          label: "Replace an entry's contents",
+          summary: "Replaces one file entry's payload; nothing else moves.",
+          fields: Object.freeze([
+            Object.freeze({
+              key: "path",
+              label: "Entry path",
+              type: Object.freeze({ kind: "path" }),
+              inputPath: Object.freeze(["path"]),
+              required: true,
+              initial: "readme.txt"
+            }),
+            Object.freeze({
+              key: "content",
+              label: "Contents",
+              type: Object.freeze({ kind: "text" }),
+              inputPath: Object.freeze(["bytes"]),
+              initial: "replaced from the Modkit inspector",
+              encoding: "utf8-base64"
+            })
+          ])
+        })
+      ])
+    })
+  }),
   outputKinds: Object.freeze(["edit-plan"])
 });
 function editPlanOutput(input, assembled, model, planId, label) {

@@ -20,6 +20,8 @@ const DDSD_DEPTH = 0x80_0000
 const DDPF_FOURCC = 0x4
 const DDPF_RGB = 0x40
 const DDPF_ALPHAPIXELS = 0x1
+const DDPF_LUMINANCE = 0x2_0000
+const DDPF_ALPHA = 0x2
 const DDSCAPS2_CUBEMAP = 0x200
 const DDSCAPS2_CUBEMAP_ALL_FACES = 0xfc00
 const DDSCAPS2_VOLUME = 0x20_0000
@@ -34,6 +36,12 @@ interface DdsShape {
   readonly volume?: boolean
   readonly dxgiFormat?: number
   readonly uncompressed?: boolean
+  /** Legacy FourCC to stamp into the pixel format, when it is not DXT1. */
+  readonly fourCc?: string
+  /** Build a DDPF_LUMINANCE pixel format with the given bit count instead of a FourCC. */
+  readonly luminanceBits?: number
+  /** Build a DDPF_ALPHA (alpha-only) pixel format with the given bit count. */
+  readonly alphaBits?: number
 }
 
 /** RGB565 constants whose expanded RGBA values are unambiguous. */
@@ -110,9 +118,19 @@ function buildDds(shape: DdsShape, surfaces: readonly Uint8Array[]): Uint8Array 
     view.setUint32(96, 0x0000_ff00, true)
     view.setUint32(100, 0x0000_00ff, true)
     view.setUint32(104, 0xff00_0000, true)
+  } else if (shape.alphaBits !== undefined) {
+    view.setUint32(80, DDPF_ALPHA, true)
+    view.setUint32(88, shape.alphaBits, true)
+    view.setUint32(104, 0x0000_00ff, true)
+  } else if (shape.luminanceBits !== undefined) {
+    /* L8 or L8A8, exactly as SC2's UI gradients are stored. */
+    view.setUint32(80, DDPF_LUMINANCE | (shape.luminanceBits === 16 ? DDPF_ALPHAPIXELS : 0), true)
+    view.setUint32(88, shape.luminanceBits, true)
+    view.setUint32(92, 0x0000_00ff, true)
+    view.setUint32(104, shape.luminanceBits === 16 ? 0x0000_ff00 : 0, true)
   } else {
     view.setUint32(80, DDPF_FOURCC, true)
-    const tag = shape.dxgiFormat === undefined ? 'DXT1' : 'DX10'
+    const tag = shape.dxgiFormat === undefined ? (shape.fourCc ?? 'DXT1') : 'DX10'
     for (let index = 0; index < 4; index += 1) view.setUint8(84 + index, tag.charCodeAt(index))
   }
   view.setUint32(108, 0x1000, true)
@@ -294,15 +312,144 @@ describe('DDS subresource selection', () => {
 
 describe('DDS formats the decoder does not decode', () => {
   it.each([
+    [79, 'BC4_TYPELESS'],
+    [82, 'BC5_TYPELESS'],
     [95, 'BC6H_UF16'],
     [96, 'BC6H_SF16'],
     [98, 'BC7_UNORM'],
     [99, 'BC7_UNORM_SRGB'],
-    [83, 'BC5_UNORM'],
   ])('refuses DXGI %i by its name %s rather than claiming support', async (dxgi, name) => {
     const bytes = buildDds({ width: 4, height: 4, dxgiFormat: dxgi }, [new Uint8Array(16)])
     await expect(openImageCodec('dds/codec.js', bytes)).rejects.toThrow(
       new RegExp(`${name}\\) is recognised but this decoder produces no pixels`, 'u'),
     )
+  })
+
+  it('names an unknown FourCC instead of mis-sizing its payload', async () => {
+    const bytes = buildDds({ width: 4, height: 4, fourCc: 'ZZZZ' }, [new Uint8Array(16)])
+    await expect(openImageCodec('dds/codec.js', bytes)).rejects.toThrow(
+      /DDS FourCC ZZZZ is not supported/u,
+    )
+  })
+})
+
+/**
+ * Formats carried over from the legacy MK2 decoder
+ * (`references/modkitmk2/extensions/common/images/codecs/dds/src/dds.ts`).
+ *
+ * Each of these appears in the real StarCraft II corpus and used to be refused: the BC5 case failed
+ * as "pixel payload is truncated" because the unknown FourCC fell through to a byte count computed
+ * from an undefined `dwRGBBitCount`, and the luminance case never opened at all. The expected values
+ * below are what the legacy decoder produces for the same bytes.
+ */
+describe('DDS formats ported from the legacy decoder', () => {
+  /** One BC4 block holding a single value: equal endpoints, every index 0. */
+  function bc4Block(value: number): Uint8Array {
+    const block = new Uint8Array(8)
+    block[0] = value
+    block[1] = value
+    return block
+  }
+
+  function bc4Surface(width: number, height: number, value: number): Uint8Array {
+    const blocks = Math.ceil(width / 4) * Math.ceil(height / 4)
+    const surface = new Uint8Array(blocks * 8)
+    for (let index = 0; index < blocks; index += 1) surface.set(bc4Block(value), index * 8)
+    return surface
+  }
+
+  /** BC5 stores two BC4 channel blocks back to back: red then green. */
+  function bc5Surface(width: number, height: number, red: number, green: number): Uint8Array {
+    const blocks = Math.ceil(width / 4) * Math.ceil(height / 4)
+    const surface = new Uint8Array(blocks * 16)
+    for (let index = 0; index < blocks; index += 1) {
+      surface.set(bc4Block(red), index * 16)
+      surface.set(bc4Block(green), index * 16 + 8)
+    }
+    return surface
+  }
+
+  it.each([
+    ['ATI1', 8],
+    ['BC4U', 8],
+  ])('decodes %s as one channel replicated across RGB', async (fourCc, blockBytes) => {
+    const bytes = buildDds({ width: 4, height: 4, fourCc }, [bc4Surface(4, 4, 0x40)])
+    expect(bytes.byteLength).toBe(128 + blockBytes)
+    const raster = await rasterOf(bytes)
+    expect(await pixelAt(raster, { width: 4, height: 4 })).toEqual([0x40, 0x40, 0x40, 255])
+    expect((await raster.info()).channels).toBe(1)
+    expect((await raster.info()).alphaMode).toBe('none')
+  })
+
+  it.each(['ATI2', 'BC5U'])('decodes %s as two channels, blue left at zero', async fourCc => {
+    const bytes = buildDds({ width: 4, height: 4, fourCc }, [bc5Surface(4, 4, 0x30, 0x90)])
+    const raster = await rasterOf(bytes)
+    expect(await pixelAt(raster, { width: 4, height: 4 })).toEqual([0x30, 0x90, 0, 255])
+    expect((await raster.info()).channels).toBe(2)
+  })
+
+  it('walks a BC5 mip chain, which mis-sized payloads could not reach', async () => {
+    const bytes = buildDds({ width: 8, height: 8, mipLevels: 3, fourCc: 'ATI2' }, [
+      bc5Surface(8, 8, 0x10, 0x20),
+      bc5Surface(4, 4, 0x30, 0x40),
+      bc5Surface(2, 2, 0x50, 0x60),
+    ])
+    const raster = await rasterOf(bytes)
+    expect(await pixelAt(raster, { width: 8, height: 8, mipLevel: 0 })).toEqual([
+      0x10, 0x20, 0, 255,
+    ])
+    expect(await pixelAt(raster, { width: 4, height: 4, mipLevel: 1 })).toEqual([
+      0x30, 0x40, 0, 255,
+    ])
+    expect(await pixelAt(raster, { width: 2, height: 2, mipLevel: 2 })).toEqual([
+      0x50, 0x60, 0, 255,
+    ])
+  })
+
+  it('decodes an L8A8 luminance surface, replicating luminance across RGB', async () => {
+    const surface = new Uint8Array(4 * 4 * 2)
+    for (let index = 0; index < 16; index += 1) {
+      surface[index * 2] = 0x7f
+      surface[index * 2 + 1] = 0xc0
+    }
+    const bytes = buildDds({ width: 4, height: 4, luminanceBits: 16 }, [surface])
+    const raster = await rasterOf(bytes)
+    expect(await pixelAt(raster, { width: 4, height: 4 })).toEqual([0x7f, 0x7f, 0x7f, 0xc0])
+    const info = await raster.info()
+    expect(info.channels).toBe(2)
+    expect(info.alphaMode).toBe('straight')
+  })
+
+  it('decodes an L8 luminance surface as opaque grey', async () => {
+    const bytes = buildDds({ width: 4, height: 4, luminanceBits: 8 }, [
+      new Uint8Array(16).fill(0x22),
+    ])
+    const raster = await rasterOf(bytes)
+    expect(await pixelAt(raster, { width: 4, height: 4 })).toEqual([0x22, 0x22, 0x22, 255])
+    expect((await raster.info()).channels).toBe(1)
+  })
+
+  it('decodes an alpha-only surface as transparent black carrying the alpha', async () => {
+    const bytes = buildDds({ width: 4, height: 4, alphaBits: 8 }, [new Uint8Array(16).fill(0x55)])
+    const raster = await rasterOf(bytes)
+    expect(await pixelAt(raster, { width: 4, height: 4 })).toEqual([0, 0, 0, 0x55])
+    const info = await raster.info()
+    expect(info.channels).toBe(1)
+    expect(info.alphaMode).toBe('straight')
+  })
+
+  it('expands 565 endpoints by bit replication, the way the GPU does', async () => {
+    /* r5 = 3 replicates to 24; rational rounding would give 25 and drift from legacy and hardware. */
+    const packed = 3 << 11
+    const bytes = buildDds({ width: 4, height: 4 }, [
+      (() => {
+        const block = new Uint8Array(8)
+        new DataView(block.buffer).setUint16(0, packed, true)
+        new DataView(block.buffer).setUint16(2, packed, true)
+        return block
+      })(),
+    ])
+    const raster = await rasterOf(bytes)
+    expect(await pixelAt(raster, { width: 4, height: 4 })).toEqual([24, 0, 0, 255])
   })
 })

@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url'
 import {
   extensionCatalogSigningBytes,
   parseExtensionCatalog,
-} from '../../../packages/extension-manager/src/catalog.js'
+} from '../../../packages/extension-manager/dist/catalog.js'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const repoRoot = resolve(here, '..', '..', '..')

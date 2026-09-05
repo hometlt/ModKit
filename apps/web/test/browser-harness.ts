@@ -119,10 +119,10 @@ export class FakeWorker implements BrowserWorkerLike {
 /** Node module map: bare specifiers → file: URLs of the real sources / built packages. */
 export const nodeModuleMap: Readonly<Record<string, string>> = Object.freeze({
   '@modkit/codec-kit': pathToFileURL(
-    join(repositoryRoot, 'packages', 'codec-kit', 'src', 'index.js'),
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'index.js'),
   ).href,
   '@modkit/codec-kit/text': pathToFileURL(
-    join(repositoryRoot, 'packages', 'codec-kit', 'src', 'text', 'index.js'),
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'text', 'index.js'),
   ).href,
   '@modkit/core': pathToFileURL(join(repositoryRoot, 'packages', 'core', 'dist', 'index.js')).href,
   '@modkit/sdk': pathToFileURL(join(repositoryRoot, 'packages', 'sdk', 'dist', 'index.js')).href,

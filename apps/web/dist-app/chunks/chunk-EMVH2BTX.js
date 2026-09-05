@@ -82,6 +82,8 @@ var SHARED_OPERATION_IDS = Object.freeze([
   "asset.search",
   "asset.validate",
   "asset.compare",
+  "subject.compare",
+  "subject.select",
   "content.resolve-dependencies",
   "content.mount"
 ]);
@@ -613,9 +615,6 @@ function isCancellation(value2) {
 // packages/core/dist/lifecycle.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
-// packages/sdk/dist/asset-capabilities/types.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
 // packages/sdk/dist/subjects/refs.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var REVISION_KINDS = Object.freeze([
@@ -647,9 +646,9 @@ function parseRevisionRef(value2) {
     return void 0;
   const colon = value2.indexOf(":");
   const coordinate3 = value2.slice(0, colon);
-  const dot = coordinate3.indexOf(".");
-  const kind = dot === -1 ? coordinate3 : coordinate3.slice(0, dot);
-  const algorithm = dot === -1 ? void 0 : coordinate3.slice(dot + 1);
+  const dot2 = coordinate3.indexOf(".");
+  const kind = dot2 === -1 ? coordinate3 : coordinate3.slice(0, dot2);
+  const algorithm = dot2 === -1 ? void 0 : coordinate3.slice(dot2 + 1);
   const encoded = value2.slice(colon + 1);
   try {
     const decoded = decodeURIComponent(encoded);
@@ -697,6 +696,14 @@ function nestedSubject(owner, kind, key3) {
   assertSubjectIdentity({ kind, key: key3 });
   return { ...owner, identity: { kind, key: key3 } };
 }
+function sourceChainEquals(a2, b2) {
+  if (a2 === void 0 || b2 === void 0)
+    return a2 === b2;
+  return a2.id === b2.id && sourceChainEquals(a2.parent, b2.parent);
+}
+function subjectRefEquals(a2, b2) {
+  return a2.workspace === b2.workspace && sourceChainEquals(a2.source, b2.source) && a2.identity.kind === b2.identity.kind && a2.identity.key === b2.identity.key;
+}
 var EXTENDED_SUBJECT_PREFIX = "x3-subject:";
 function sourceIdChain(source2) {
   const chain = [];
@@ -709,11 +716,11 @@ function sourceFromIdChain(chain) {
   if (chain.length === 0)
     throw new TypeError("subject source chain must be non-empty");
   let source2;
-  for (const id of chain) {
-    if (typeof id !== "string" || id.length === 0) {
+  for (const id2 of chain) {
+    if (typeof id2 !== "string" || id2.length === 0) {
       throw new TypeError("subject source id must be non-empty");
     }
-    source2 = { id, ...source2 === void 0 ? {} : { parent: source2 } };
+    source2 = { id: id2, ...source2 === void 0 ? {} : { parent: source2 } };
   }
   return source2;
 }
@@ -776,6 +783,7 @@ function parseSubjectRef(uri, workspace) {
 }
 
 // packages/sdk/dist/asset-capabilities/types.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function contributionId(value2) {
   if (!isQualifiedId(value2))
     throw new TypeError(`invalid contribution id: ${value2}`);
@@ -1157,7 +1165,7 @@ var DATA_SOURCE_MATURITY = Object.freeze({
   "common.view/model-material-source": "admitted",
   "common.view/model-socket-source": "publisher-candidate",
   "common.view/relation-graph-source": "admitted",
-  "common.view/subject-selector-source": "publisher-candidate",
+  "common.view/subject-selector-source": "admitted",
   "common.view/subject-facts-source": "admitted",
   "common.view/subject-calculations-source": "admitted",
   "common.view/slide-deck-source": "publisher-candidate"
@@ -1217,7 +1225,7 @@ var jsonSchemaRefSchema = {
   type: "object",
   additionalProperties: false,
   required: ["$ref"],
-  properties: { $ref: nonEmptyString }
+  properties: { $ref: nonEmptyString, document: { title: "JsonValue" } }
 };
 var resourceBudgetWireSchema = {
   type: "object",
@@ -1332,7 +1340,12 @@ var probePlanSchema = {
           maxItems: 256,
           uniqueItems: true
         },
-        prefixes: { type: "array", items: nonEmptyString },
+        prefixes: {
+          type: "array",
+          items: nonEmptyString,
+          maxItems: 256,
+          uniqueItems: true
+        },
         maxEntries: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
         maxBytes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
         maxDepth: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
@@ -1614,6 +1627,12 @@ var codecContributionSpecV1Schema = {
       properties: {
         ...codecContributionProperties,
         sourceTopology: { const: "namespace" },
+        container: {
+          type: "object",
+          additionalProperties: false,
+          required: ["formatId"],
+          properties: { formatId: nonEmptyString }
+        },
         probe: probePlanSchema.oneOf[1]
       }
     },
@@ -1706,6 +1725,17 @@ var viewerContributionSpecV1Schema = {
      * model facets instead of splitting into a contribution per facet combination.
      */
     optionalDataSources: { type: "array", items: dataSourceRefWireSchema },
+    /*
+     * Service contracts this viewer asks the host for when the host can offer one.
+     *
+     * Same vocabulary a codec's `requires` uses, and deliberately a separate key from the data
+     * sources above: a renderer is not published by the subject's codec and can never appear in a
+     * descriptor's `dataSources`, so declaring it there would be a dependency the resolver is
+     * structurally unable to bind. Optional because the answer is realm-dependent — the same
+     * viewer runs in a page with a GPU and in a bridge realm without one — and a stage that
+     * disappeared where no provider was offered would be worse than one that degrades and says so.
+     */
+    optionalServices: { type: "array", items: contractRequirementSchema },
     applicability: viewerApplicabilitySchema,
     hosts: { type: "array", items: nonEmptyString },
     priority: { type: "number" },
@@ -2272,6 +2302,419 @@ function writerSelectionKey(request) {
   return `writer:${request.formatId}:${request.representationId}:${request.mutationMode}:${request.minimumRoundTrip}`;
 }
 
+// packages/sdk/dist/fields/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/sdk/dist/subjects/candidates.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var nonEmptyStrings = (value2) => value2 === void 0 || value2.every((item) => typeof item === "string" && item.length > 0) && new Set(value2).size === value2.length;
+function validCandidate(candidate) {
+  return typeof candidate === "object" && candidate !== null && typeof candidate.subjectId === "string" && candidate.subjectId.length > 0 && typeof candidate.label === "string" && candidate.label.length > 0 && typeof candidate.kind === "string" && candidate.kind.length > 0 && (candidate.type === void 0 || typeof candidate.type === "string" && candidate.type.length > 0) && nonEmptyStrings(candidate.tags) && (candidate.asset === void 0 || typeof candidate.asset === "object" && candidate.asset !== null && typeof candidate.asset.formatId === "string" && candidate.asset.formatId.length > 0 && nonEmptyStrings(candidate.asset.traits));
+}
+function validSummary(summary) {
+  return typeof summary === "object" && summary !== null && typeof summary.snapshotId === "string" && summary.snapshotId.length > 0 && Number.isSafeInteger(summary.totalSubjects) && summary.totalSubjects >= 0 && (summary.completeness === "complete" || summary.completeness === "partial" || summary.completeness === "capped") && (summary.reason === void 0 || typeof summary.reason === "string");
+}
+function validateQuery(query) {
+  if (!Number.isSafeInteger(query.limit) || query.limit < 1) {
+    throw new RangeError("subject candidate limit must be a positive safe integer");
+  }
+  if (query.text !== void 0 && typeof query.text !== "string") {
+    throw new TypeError("subject candidate text must be a string");
+  }
+  if (query.cursor !== void 0 && (typeof query.cursor !== "string" || query.cursor.length === 0)) {
+    throw new TypeError("subject candidate cursor must be a non-empty string");
+  }
+  if (query.target.kind === "subject-ref" && (typeof query.target.subjectKind !== "string" || query.target.subjectKind.length === 0)) {
+    throw new TypeError("subject candidate kind must be a non-empty string");
+  }
+  if (query.target.kind === "asset-ref" && (!nonEmptyStrings(query.target.accepts.formatIds) || !nonEmptyStrings(query.target.accepts.traits))) {
+    throw new TypeError("asset candidate constraints must contain unique non-empty strings");
+  }
+}
+async function loadSubjectCandidatePage(provider, query, signal) {
+  signal?.throwIfAborted();
+  validateQuery(query);
+  const [summary, page2] = await Promise.all([
+    provider.summary(signal),
+    provider.candidates(query, signal)
+  ]);
+  signal?.throwIfAborted();
+  if (!validSummary(summary))
+    throw new TypeError("subject candidate summary is malformed");
+  if (typeof page2 !== "object" || page2 === null || !Array.isArray(page2.items) || page2.items.length > query.limit || !page2.items.every(validCandidate) || new Set(page2.items.map((item) => item.subjectId)).size !== page2.items.length || page2.nextCursor !== void 0 && (typeof page2.nextCursor !== "string" || page2.nextCursor.length === 0)) {
+    throw new TypeError("subject candidate page is malformed or exceeds its requested limit");
+  }
+  return Object.freeze({ summary, page: page2 });
+}
+function createSubjectCandidateProvider(source2) {
+  return Object.freeze({
+    summary: (signal) => source2.summary(signal),
+    candidates(query, signal) {
+      const page2 = {
+        ...query.cursor === void 0 ? {} : { cursor: query.cursor },
+        limit: query.limit,
+        ...query.text === void 0 ? {} : { text: query.text },
+        ...query.target.kind === "subject-ref" ? {
+          kind: query.target.subjectKind,
+          ...query.target.filter === void 0 ? {} : { filter: query.target.filter }
+        } : { asset: query.target.accepts }
+      };
+      return source2.subjects(page2, signal);
+    }
+  });
+}
+
+// packages/sdk/dist/schemas/fields.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var text = { type: "string" };
+var id = { type: "string", minLength: 1 };
+var strings = { type: "array", items: id };
+var boolean = { type: "boolean" };
+var count = { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER };
+var json = { $ref: "#/$defs/jsonValue" };
+var field = { $ref: "#/$defs/fieldType" };
+var member = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id"],
+  properties: { id, label: text }
+};
+var members = { type: "array", items: member };
+var subjectFilterSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    type: id,
+    sameTypeAs: id,
+    text,
+    requireTags: strings,
+    excludeTags: strings,
+    predicate: {
+      type: "object",
+      additionalProperties: false,
+      required: ["id"],
+      properties: { id, params: json }
+    }
+  }
+};
+var fieldSchemaValueSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["key", "label", "type"],
+  properties: {
+    key: id,
+    label: text,
+    type: field,
+    cardinality: { enum: ["scalar", "append", "indexed"] },
+    description: text,
+    knowledgeTarget: knowledgeTargetSchema
+  }
+};
+var fieldTypeValueSchema = {
+  title: "FieldType",
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind"],
+      properties: { kind: { const: "text" }, multiline: boolean, pattern: text, maxLength: count }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind"],
+      properties: {
+        kind: { const: "number" },
+        min: { type: "number" },
+        max: { type: "number" },
+        integer: boolean,
+        unit: text
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind"],
+      properties: { kind: { const: "boolean" } }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "members"],
+      properties: { kind: { const: "enum" }, members, unknown: text }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "members"],
+      properties: { kind: { const: "flags" }, members }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "model"],
+      properties: { kind: { const: "color" }, model: { enum: ["rgb", "rgba", "argb"] } }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "size"],
+      properties: { kind: { const: "vector" }, size: { enum: [2, 3, 4] }, unit: text }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind"],
+      properties: { kind: { enum: ["duration", "date", "bytes", "id", "path"] } }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind"],
+      properties: { kind: { const: "text-key" }, catalog: id }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "subjectKind"],
+      properties: { kind: { const: "subject-ref" }, subjectKind: id, filter: subjectFilterSchema }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "accepts"],
+      properties: {
+        kind: { const: "asset-ref" },
+        accepts: {
+          type: "object",
+          additionalProperties: false,
+          properties: { formatIds: strings, traits: strings }
+        }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "language"],
+      properties: { kind: { const: "script" }, language: id }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "fields"],
+      properties: {
+        kind: { const: "struct" },
+        fields: { type: "array", items: fieldSchemaValueSchema }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "item"],
+      properties: { kind: { const: "array" }, item: field, max: count }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "key", "value"],
+      properties: { kind: { const: "record" }, key: field, value: field }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "keywords", "delimiter"],
+      properties: {
+        kind: { const: "instructions" },
+        keywords: { type: "object", additionalProperties: { type: "array", items: field } },
+        delimiter: text,
+        listDelimiter: text
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind"],
+      properties: { kind: { const: "json" }, schema: jsonSchemaRefSchema }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "typeId"],
+      properties: { kind: { const: "custom" }, typeId: id, params: json }
+    }
+  ]
+};
+var fieldSchemaDefinitions = {
+  jsonValue: {
+    title: "JsonValue",
+    oneOf: [
+      { type: "null" },
+      boolean,
+      { type: "number" },
+      text,
+      { type: "array", items: json },
+      { type: "object", additionalProperties: json }
+    ]
+  },
+  fieldType: fieldTypeValueSchema
+};
+var fieldEditableValueSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["write"],
+  properties: {
+    editor: id,
+    readonlyReason: text,
+    write: {
+      oneOf: [
+        {
+          type: "object",
+          additionalProperties: false,
+          required: ["operation"],
+          properties: { operation: { type: "string", pattern: OPERATION_PATTERN } }
+        },
+        {
+          type: "object",
+          additionalProperties: false,
+          required: ["writer"],
+          properties: { writer: writerRequirementSchema }
+        }
+      ]
+    }
+  }
+};
+var fieldTypeV1Schema = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/field-type.v1.schema.json",
+  $defs: fieldSchemaDefinitions,
+  ...field
+};
+var fieldSchemaV1Schema = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/field-schema.v1.schema.json",
+  $defs: fieldSchemaDefinitions,
+  ...fieldSchemaValueSchema
+};
+var fieldWriteRequestV1Schema = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/field-write-request.v1.schema.json",
+  $defs: fieldSchemaDefinitions,
+  type: "object",
+  additionalProperties: false,
+  required: ["groupId", "key", "value"],
+  properties: { groupId: id, key: id, path: { type: "array", items: text }, value: json }
+};
+var subjectKindDefinitionSpecV1Schema = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/subject-kind-definition-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["kindId", "label"],
+  properties: {
+    kindId: id,
+    label: text,
+    icon: extensionAssetReferenceSchema,
+    parentKinds: strings,
+    card: {
+      type: "object",
+      additionalProperties: false,
+      required: ["sections"],
+      properties: { sections: strings, preview: { enum: ["raster", "model", "none"] } }
+    },
+    selector: {
+      type: "object",
+      additionalProperties: false,
+      required: ["facets", "predicates"],
+      properties: {
+        facets: strings,
+        predicates: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["id", "label"],
+            properties: { id, label: text, params: jsonSchemaRefSchema }
+          }
+        }
+      }
+    },
+    diff: {
+      type: "object",
+      additionalProperties: false,
+      required: ["profile"],
+      properties: { profile: { enum: ["generic", "provider"] } }
+    },
+    knowledgeEcosystem: id
+  }
+};
+var inputPathSegment = {
+  oneOf: [id, count]
+};
+var fieldEditFormFieldSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["key", "label", "type", "inputPath"],
+  properties: {
+    ...fieldSchemaValueSchema.properties,
+    inputPath: { type: "array", items: inputPathSegment, minItems: 1 },
+    required: boolean,
+    initial: json,
+    source: { enum: ["entry-key", "entry-value"] },
+    encoding: { const: "utf8-base64" }
+  }
+};
+var fieldEditInputSchemaV1Schema = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/field-edit-input-schema.v1.schema.json",
+  $defs: fieldSchemaDefinitions,
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "forms"],
+  properties: {
+    schemaVersion: { const: 1 },
+    forms: {
+      type: "array",
+      minItems: 1,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["id", "label", "summary", "fields"],
+        properties: {
+          id,
+          label: text,
+          summary: text,
+          binding: {
+            type: "object",
+            additionalProperties: false,
+            required: ["groupId"],
+            properties: { groupId: id, entryKey: id }
+          },
+          fields: { type: "array", minItems: 1, items: fieldEditFormFieldSchema }
+        }
+      }
+    }
+  }
+};
+var fieldEditorContributionSpecV1Schema = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/field-editor-contribution-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["fieldTypeId", "editorId", "priority"],
+  properties: {
+    fieldTypeId: id,
+    editorId: id,
+    priority: { type: "integer", minimum: -1e6, maximum: 1e6 },
+    hosts: { type: "array", minItems: 1, uniqueItems: true, items: id }
+  }
+};
+deepFreeze(fieldTypeV1Schema);
+deepFreeze(fieldSchemaV1Schema);
+deepFreeze(fieldWriteRequestV1Schema);
+deepFreeze(subjectKindDefinitionSpecV1Schema);
+deepFreeze(fieldEditInputSchemaV1Schema);
+deepFreeze(fieldEditorContributionSpecV1Schema);
+
 // packages/sdk/dist/manifest/operation-permissions.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function operationScopedPermissionClasses(operations) {
@@ -2488,7 +2931,7 @@ var jsonSchemaRefSchema2 = {
   type: "object",
   additionalProperties: false,
   required: ["$ref"],
-  properties: { $ref: nonEmptyString2 }
+  properties: { $ref: nonEmptyString2, document: jsonValueRef }
 };
 var operationProperties = {
   id: operationId3,
@@ -2535,7 +2978,26 @@ var metadataEntrySchema = {
   required: ["key", "value"],
   properties: {
     key: nonEmptyString2,
-    value: jsonValueRef
+    value: jsonValueRef,
+    type: { $ref: "#/$defs/fieldType" },
+    unit: { type: "string" },
+    diagnosticIds: stringArray,
+    provenance: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["label"],
+        properties: {
+          label: { type: "string" },
+          source: assetSourceRefSchema,
+          range: sourceSpanValueSchema,
+          semanticPath: stringArray
+        }
+      }
+    },
+    knowledgeTarget: knowledgeTargetSchema,
+    editable: fieldEditableValueSchema
   }
 };
 var metadataGroupSchema = {
@@ -2545,7 +3007,8 @@ var metadataGroupSchema = {
   properties: {
     id: nonEmptyString2,
     label: { type: "string" },
-    entries: { type: "array", items: metadataEntrySchema }
+    entries: { type: "array", items: metadataEntrySchema },
+    order: { type: "number" }
   }
 };
 var companionBaseProperties = {
@@ -2772,14 +3235,15 @@ var resolvedAssetDescriptorSchema = {
 var subjectDescriptorV2Schema = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
   $id: "https://schemas.modkit.org/x3/subject-descriptor.v2.schema.json",
-  $defs: { jsonValue: jsonValueSchema },
+  $defs: { ...fieldSchemaDefinitions, jsonValue: jsonValueSchema },
   oneOf: [unresolvedSourceDescriptorSchema, resolvedAssetDescriptorSchema]
 };
 var subjectDescriptorV2InferenceSchema = {
   ...subjectDescriptorV2Schema,
   $defs: {
     ...subjectDescriptorV2Schema.$defs,
-    jsonValue: { title: "JsonValue" }
+    jsonValue: { title: "JsonValue" },
+    fieldType: { title: "FieldType" }
   }
 };
 deepFreeze(subjectDescriptorV2Schema);
@@ -2792,7 +3256,7 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var platformValidatorsPromise;
 function platformValidators() {
-  platformValidatorsPromise ??= import("./validators.generated-AUKURWXB.js").then((module) => module.PRECOMPILED_SCHEMA_VALIDATORS);
+  platformValidatorsPromise ??= import("./validators.generated-MNP7KH2G.js").then((module) => module.PRECOMPILED_SCHEMA_VALIDATORS);
   return platformValidatorsPromise;
 }
 function toPath(error5) {
@@ -3096,25 +3560,25 @@ function invalidProfile(message, context) {
     ...context === void 0 ? {} : { context }
   });
 }
-function exactKeys(value2, allowed2, field) {
+function exactKeys(value2, allowed2, field2) {
   const extra = Object.keys(value2).filter((key3) => !allowed2.includes(key3));
   if (extra.length > 0)
-    invalidProfile(`${field} contains unsupported fields`, { field, extra });
+    invalidProfile(`${field2} contains unsupported fields`, { field: field2, extra });
 }
-function nonEmpty(value2, field) {
+function nonEmpty(value2, field2) {
   if (value2.trim().length === 0)
-    return invalidProfile(`${field} must not be empty`, { field });
+    return invalidProfile(`${field2} must not be empty`, { field: field2 });
   return value2;
 }
-function count(value2, field) {
+function count2(value2, field2) {
   if (!Number.isSafeInteger(value2) || value2 < 0) {
-    return invalidProfile(`${field} must be a non-negative safe integer`, { field, value: value2 });
+    return invalidProfile(`${field2} must be a non-negative safe integer`, { field: field2, value: value2 });
   }
   return value2;
 }
-function bytes(value2, field) {
+function bytes(value2, field2) {
   if (!isUInt64String(value2))
-    return invalidProfile(`${field} must be an unsigned 64-bit string`, { field });
+    return invalidProfile(`${field2} must be an unsigned 64-bit string`, { field: field2 });
   return value2;
 }
 function normalizeStrings(values) {
@@ -3168,11 +3632,11 @@ function createHostRealmProfile(profile3) {
     ...rawTarget.externalTools === void 0 ? {} : { externalTools: normalizeStrings(rawTarget.externalTools) }
   });
   const budgets = Object.freeze({
-    maxConcurrentTasks: count(snapshot3.budgets.maxConcurrentTasks, "budgets.maxConcurrentTasks"),
-    maxWorkerCount: count(snapshot3.budgets.maxWorkerCount, "budgets.maxWorkerCount"),
+    maxConcurrentTasks: count2(snapshot3.budgets.maxConcurrentTasks, "budgets.maxConcurrentTasks"),
+    maxWorkerCount: count2(snapshot3.budgets.maxWorkerCount, "budgets.maxWorkerCount"),
     maxResidentBytes: bytes(snapshot3.budgets.maxResidentBytes, "budgets.maxResidentBytes"),
     maxTransferBytes: bytes(snapshot3.budgets.maxTransferBytes, "budgets.maxTransferBytes"),
-    defaultDeadlineMs: count(snapshot3.budgets.defaultDeadlineMs, "budgets.defaultDeadlineMs")
+    defaultDeadlineMs: count2(snapshot3.budgets.defaultDeadlineMs, "budgets.defaultDeadlineMs")
   });
   const policy = Object.freeze({
     id: nonEmpty(snapshot3.policy.id, "policy.id"),
@@ -3427,10 +3891,10 @@ async function runSemanticValidator(validator, manifest) {
   }
 }
 function normalizeContributionManifest(wire) {
-  const { contract, dependsOn, id, ...rest } = wire;
+  const { contract, dependsOn, id: id2, ...rest } = wire;
   return Object.freeze({
     ...rest,
-    id: contributionId(normalizeModkitIdentifier(id)),
+    id: contributionId(normalizeModkitIdentifier(id2)),
     contract: Object.freeze({
       ...contract,
       id: contractId(normalizeModkitIdentifier(contract.id))
@@ -3658,10 +4122,13 @@ function isStandardTraitId(value2) {
 }
 
 // packages/sdk/dist/manifest/contribution-contract-registry.js
+var SUBJECT_KIND_DEFINITION_CONTRIBUTION_CONTRACT = contractId("modkit/subject-kind-definition");
+var SUBJECT_KIND_DEFINITION_FACT = contractId("modkit.inventory/subject-kind-definition");
 var CODEC_CONTRIBUTION_CONTRACT = contractId("modkit/codec-contribution");
 var SERVICE_PROVIDER_CONTRIBUTION_CONTRACT = contractId("modkit/service-provider-contribution");
 var VIEWER_CONTRIBUTION_CONTRACT = contractId("modkit/viewer-contribution");
 var EDITOR_CONTRIBUTION_CONTRACT = contractId("modkit/editor-contribution");
+var FIELD_EDITOR_CONTRIBUTION_CONTRACT = contractId("modkit/field-editor-contribution");
 var TRAIT_DEFINITION_CONTRIBUTION_CONTRACT = contractId("modkit/trait-definition");
 var CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT = contractId("modkit/contract-definition");
 var KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT = contractId("modkit/knowledge-pack");
@@ -3669,6 +4136,7 @@ var LOCALIZATION_CONTRIBUTION_CONTRACT = contractId("modkit/localization-contrib
 var TRAIT_DEFINITION_FACT = contractId("modkit.inventory/trait-definition");
 var CONTRACT_DEFINITION_FACT = contractId("modkit.inventory/contract-definition");
 var EDITOR_CONTRIBUTION_FACT = contractId("modkit.inventory/editor-contribution");
+var FIELD_EDITOR_CONTRIBUTION_FACT = contractId("modkit.inventory/field-editor-contribution");
 var KNOWLEDGE_PACK_FACT = contractId("modkit.inventory/knowledge-pack");
 var LOCALIZATION_CONTRIBUTION_FACT = contractId("modkit.inventory/localization-contribution");
 function duplicateFieldDiagnostics(values, path, label) {
@@ -3690,31 +4158,57 @@ function requirementRangeDiagnostics(requirement, path) {
     diagnostic("error", "x3.sdk/invalid-contract-range", `contract range ${requirement.range} cannot be evaluated safely`, [...path, "range"])
   ] : [];
 }
-function traitDefinitionRangeDiagnostics(id, range, path) {
-  if (isStandardTraitId(id)) {
+function traitDefinitionRangeDiagnostics(id2, range, path) {
+  if (isStandardTraitId(id2)) {
     return range === void 0 ? [] : [
-      diagnostic("error", "x3.sdk/standard-trait-versioned", `standard trait ${id} does not use an extension definition range`, [...path, "definitionRange"])
+      diagnostic("error", "x3.sdk/standard-trait-versioned", `standard trait ${id2} does not use an extension definition range`, [...path, "definitionRange"])
     ];
   }
   if (range === void 0 || parseVersionRange(range) === void 0) {
     return [
-      diagnostic("error", "x3.sdk/custom-trait-definition-unbound", `custom trait ${id} must declare a safe definition range`, [...path, "definitionRange"])
+      diagnostic("error", "x3.sdk/custom-trait-definition-unbound", `custom trait ${id2} must declare a safe definition range`, [...path, "definitionRange"])
     ];
   }
   return [];
 }
-function traitDefinitionOfferDiagnostics(id, version, path) {
-  if (isStandardTraitId(id)) {
+function traitDefinitionOfferDiagnostics(id2, version, path) {
+  if (isStandardTraitId(id2)) {
     return version === void 0 ? [] : [
-      diagnostic("error", "x3.sdk/standard-trait-versioned", `standard trait ${id} does not use an extension definition version`, [...path, "definitionVersion"])
+      diagnostic("error", "x3.sdk/standard-trait-versioned", `standard trait ${id2} does not use an extension definition version`, [...path, "definitionVersion"])
     ];
   }
   if (version === void 0 || parseSemver(version) === void 0) {
     return [
-      diagnostic("error", "x3.sdk/custom-trait-definition-unbound", `custom trait ${id} must declare one exact safe definition version`, [...path, "definitionVersion"])
+      diagnostic("error", "x3.sdk/custom-trait-definition-unbound", `custom trait ${id2} must declare one exact safe definition version`, [...path, "definitionVersion"])
     ];
   }
   return [];
+}
+function normalizedNamespaceProbePath(value2) {
+  if (value2.includes("\0") || value2.includes("\\"))
+    return void 0;
+  const parts = value2.split("/").filter((part) => part !== "" && part !== ".");
+  if (parts.length === 0 || parts.some((part) => part === ".."))
+    return void 0;
+  return parts.join("/");
+}
+function namespaceProbePathDiagnostics(values, field2) {
+  const diagnostics = [];
+  const first = /* @__PURE__ */ new Map();
+  values.forEach((value2, index) => {
+    const normalized = normalizedNamespaceProbePath(value2);
+    if (normalized === void 0) {
+      diagnostics.push(diagnostic("error", "x3.sdk/namespace-probe-path-invalid", `namespace probe ${field2.slice(0, -1)} \xAB${value2}\xBB is not a confined POSIX path`, ["spec", "probe", field2, index]));
+      return;
+    }
+    const previous = first.get(normalized);
+    if (previous === void 0)
+      first.set(normalized, index);
+    else {
+      diagnostics.push(diagnostic("error", "x3.sdk/namespace-probe-path-duplicate", `namespace probe ${field2.slice(0, -1)} \xAB${value2}\xBB duplicates index ${previous} after normalization`, ["spec", "probe", field2, index]));
+    }
+  });
+  return diagnostics;
 }
 var validateCodecContributionSemantics = (manifest) => {
   const spec = manifest.spec;
@@ -3729,6 +4223,16 @@ var validateCodecContributionSemantics = (manifest) => {
     ...duplicateFieldDiagnostics(spec.fidelityEvidence?.map((item) => item.evidenceId) ?? [], ["spec", "fidelityEvidence"], "fidelity evidence ID")
   ];
   const formatIds = new Set(spec.formatRefs.map((format2) => format2.formatId));
+  const containerPack = spec.operations.find((operation) => operation.id === "container.pack");
+  if (containerPack !== void 0) {
+    if (!spec.roles.includes("container") || spec.sourceTopology !== "single" || spec.probe.kind !== "bytes") {
+      diagnostics.push(diagnostic("error", "x3.sdk/container-pack-topology-invalid", "container.pack requires a container-role codec with single byte topology", ["spec", "operations", spec.operations.indexOf(containerPack)]));
+    }
+    const permissions = new Set(containerPack.requiredPermissions ?? []);
+    if (containerPack.mutatesSource !== true || permissions.size !== 2 || !permissions.has("read-source") || !permissions.has("write-source") || containerPack.outputKinds?.length !== 1 || containerPack.outputKinds[0] !== "edit-plan") {
+      diagnostics.push(diagnostic("error", "x3.sdk/container-pack-operation-invalid", "container.pack must mutate the source, require read-source and write-source, and return only edit-plan", ["spec", "operations", spec.operations.indexOf(containerPack)]));
+    }
+  }
   const representationIds = new Set(spec.representations.map((representation) => representation.id));
   spec.fidelityEvidence?.forEach((item, index) => {
     if (!formatIds.has(item.formatId)) {
@@ -3741,6 +4245,26 @@ var validateCodecContributionSemantics = (manifest) => {
   const expectedProbeKind = spec.sourceTopology === "namespace" ? "namespace" : spec.sourceTopology === "derived" ? "derived" : "bytes";
   if (spec.probe.kind !== expectedProbeKind) {
     diagnostics.push(diagnostic("error", "x3.sdk/probe-topology-mismatch", `topology ${spec.sourceTopology} requires a ${expectedProbeKind} probe policy`, ["spec", "probe", "kind"]));
+  }
+  if (spec.probe.kind === "namespace") {
+    diagnostics.push(...namespaceProbePathDiagnostics(spec.probe.markers, "markers"), ...namespaceProbePathDiagnostics(spec.probe.prefixes ?? [], "prefixes"));
+  }
+  if (spec.container !== void 0) {
+    if (spec.sourceTopology !== "namespace" || spec.probe.kind !== "namespace") {
+      diagnostics.push(diagnostic("error", "x3.sdk/container-alias-topology-invalid", "a container topology alias requires namespace topology and a namespace probe", ["spec", "container"]));
+    }
+    if (spec.roles.includes("container")) {
+      diagnostics.push(diagnostic("error", "x3.sdk/container-alias-role-invalid", "a semantic container alias cannot also claim the container role", ["spec", "roles"]));
+    }
+    if ((spec.match.signatures?.length ?? 0) > 0) {
+      diagnostics.push(diagnostic("error", "x3.sdk/container-alias-signature-forbidden", "a semantic container alias must not copy the carrier container signature", ["spec", "match", "signatures"]));
+    }
+    if ((spec.match.extensions?.length ?? 0) === 0 && (spec.match.mediaTypes?.length ?? 0) === 0 && (spec.match.pathGlobs?.length ?? 0) === 0) {
+      diagnostics.push(diagnostic("error", "x3.sdk/container-alias-selector-missing", "a semantic container alias requires an extension, media type, or path selector", ["spec", "match"]));
+    }
+    if (formatIds.has(spec.container.formatId)) {
+      diagnostics.push(diagnostic("error", "x3.sdk/container-alias-self-cycle", `container alias ${spec.container.formatId} also appears in the semantic codec formatRefs`, ["spec", "container", "formatId"]));
+    }
   }
   spec.requires?.forEach((requirement, index) => {
     diagnostics.push(...requirementRangeDiagnostics(requirement, ["spec", "requires", index]));
@@ -3811,17 +4335,17 @@ var validateCodecContributionSemantics = (manifest) => {
   });
   return diagnostics;
 };
-function isPortableOperationReference(id) {
-  if (SHARED_OPERATION_IDS.includes(id))
+function isPortableOperationReference(id2) {
+  if (SHARED_OPERATION_IDS.includes(id2))
     return true;
   if (OPERATION_DOMAINS.some((domain) => {
     const prefix = `${domain}.`;
-    return id.startsWith(prefix) && isSegment(id.slice(prefix.length));
+    return id2.startsWith(prefix) && isSegment(id2.slice(prefix.length));
   })) {
     return true;
   }
-  const separator = id.lastIndexOf(".");
-  return separator > 0 && isQualifiedId(id.slice(0, separator)) && isSegment(id.slice(separator + 1));
+  const separator = id2.lastIndexOf(".");
+  return separator > 0 && isQualifiedId(id2.slice(0, separator)) && isSegment(id2.slice(separator + 1));
 }
 var validateViewerContributionSemantics = (manifest) => {
   const spec = manifest.spec;
@@ -3829,9 +4353,9 @@ var validateViewerContributionSemantics = (manifest) => {
     ...duplicateFieldDiagnostics(spec.requiresTraits?.map((requirement) => requirement.id) ?? [], ["spec", "requiresTraits"], "trait requirement"),
     ...duplicateFieldDiagnostics(spec.requiresOperations ?? [], ["spec", "requiresOperations"], "operation requirement")
   ];
-  spec.requiresOperations?.forEach((id, index) => {
-    if (!isPortableOperationReference(id)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-operation-namespace", `viewer operation requirement ${id} is not shared, canonical-domain, or qualified-local`, ["spec", "requiresOperations", index]));
+  spec.requiresOperations?.forEach((id2, index) => {
+    if (!isPortableOperationReference(id2)) {
+      diagnostics.push(diagnostic("error", "x3.sdk/invalid-operation-namespace", `viewer operation requirement ${id2} is not shared, canonical-domain, or qualified-local`, ["spec", "requiresOperations", index]));
     }
   });
   spec.requiresTraits?.forEach((requirement, index) => {
@@ -3857,15 +4381,15 @@ var validateEditorContributionSemantics = (manifest) => {
     ...duplicateFieldDiagnostics(spec.requiresOperations, ["spec", "requiresOperations"], "operation"),
     ...duplicateFieldDiagnostics(spec.consumesDataSources.map((source2) => `${source2.contract}@${source2.major}`), ["spec", "consumesDataSources"], "data-source requirement")
   ];
-  spec.requiresOperations.forEach((id, index) => {
-    if (!EDITING_OPERATION_IDS.includes(id)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-editor-operation", `editor operation ${id} is not one of the shared editing operations`, ["spec", "requiresOperations", index]));
+  spec.requiresOperations.forEach((id2, index) => {
+    if (!EDITING_OPERATION_IDS.includes(id2)) {
+      diagnostics.push(diagnostic("error", "x3.sdk/invalid-editor-operation", `editor operation ${id2} is not one of the shared editing operations`, ["spec", "requiresOperations", index]));
     }
   });
-  if (!spec.requiresOperations.some((id) => id.startsWith("edit."))) {
+  if (!spec.requiresOperations.some((id2) => id2.startsWith("edit."))) {
     diagnostics.push(diagnostic("error", "x3.sdk/editor-edit-operation-missing", "an editor contribution requires an explicit edit operation", ["spec", "requiresOperations"]));
   }
-  if (spec.requiresTransactions && !spec.requiresOperations.some((id) => id === "source.save" || id === "source.save-as")) {
+  if (spec.requiresTransactions && !spec.requiresOperations.some((id2) => id2 === "source.save" || id2 === "source.save-as")) {
     diagnostics.push(diagnostic("error", "x3.sdk/editor-save-operation-missing", "a transactional editor requires source.save or source.save-as", ["spec", "requiresOperations"]));
   }
   if (spec.requiresTransactions && spec.writer.mutationMode !== "mutate") {
@@ -3918,9 +4442,9 @@ function dataSourceSurfaceDiagnostics(surface, path) {
       diagnostics.push(diagnostic("error", "x3.sdk/surface-release-via-kind", `releaseVia \xAB${surface.releaseVia}\xBB must name a value method, found ${target.kind}`, [...path, "releaseVia"]));
     }
   }
-  for (const field of surface.fields ?? []) {
-    if (Object.hasOwn(surface.methods, field)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/surface-field-is-method", `\xAB${field}\xBB cannot be both a field and a method`, [...path, "fields"]));
+  for (const field2 of surface.fields ?? []) {
+    if (Object.hasOwn(surface.methods, field2)) {
+      diagnostics.push(diagnostic("error", "x3.sdk/surface-field-is-method", `\xAB${field2}\xBB cannot be both a field and a method`, [...path, "fields"]));
     }
   }
   return diagnostics;
@@ -4046,6 +4570,10 @@ var validateLocalizationContributionSemantics = (manifest) => {
   });
   return diagnostics;
 };
+var validateFieldEditorContributionSemantics = (manifest) => {
+  const spec = manifest.spec;
+  return duplicateFieldDiagnostics(spec.hosts ?? [], ["spec", "hosts"], "field editor host");
+};
 function key(contract, major) {
   return `${contract}@${major}`;
 }
@@ -4068,17 +4596,17 @@ function validatedRegistrationCoordinate(value2) {
     return invalidOpenRegistration("contribution contract coordinate must be an object", {});
   }
   const candidate = value2;
-  const id = candidate.id;
+  const id2 = candidate.id;
   const major = candidate.major;
-  if (typeof id !== "string" || !isQualifiedId(id)) {
+  if (typeof id2 !== "string" || !isQualifiedId(id2)) {
     return invalidOpenRegistration("contribution contract id must be a qualified id", {
-      contract: typeof id === "string" ? id : typeof id
+      contract: typeof id2 === "string" ? id2 : typeof id2
     });
   }
   if (!Number.isSafeInteger(major) || major < 0) {
-    return invalidOpenRegistration("contribution contract major must be a safe non-negative integer", { contract: id, major: safeRegistrationContextValue(major) });
+    return invalidOpenRegistration("contribution contract major must be a safe non-negative integer", { contract: id2, major: safeRegistrationContextValue(major) });
   }
-  return Object.freeze({ id: contractId(id), major });
+  return Object.freeze({ id: contractId(id2), major });
 }
 function validatedRegistrationProfile(value2, contract, major) {
   if (typeof value2 !== "string" || value2.trim().length === 0) {
@@ -4212,6 +4740,28 @@ function dataOnlyProjector(factContract) {
 }
 var A1_SPEC_SCHEMA_ENTRIES = [
   {
+    contract: SUBJECT_KIND_DEFINITION_CONTRIBUTION_CONTRACT,
+    major: 1,
+    schema: subjectKindDefinitionSpecV1Schema,
+    validateSemantics: (manifest) => {
+      const spec = manifest.spec;
+      const diagnostics = [
+        ...duplicateFieldDiagnostics(spec.parentKinds ?? [], ["spec", "parentKinds"], "parent kind"),
+        ...duplicateFieldDiagnostics(spec.card?.sections ?? [], ["spec", "card", "sections"], "card section"),
+        ...duplicateFieldDiagnostics(spec.selector?.facets ?? [], ["spec", "selector", "facets"], "selector facet"),
+        ...duplicateFieldDiagnostics(spec.selector?.predicates.map((item) => item.id) ?? [], ["spec", "selector", "predicates"], "selector predicate")
+      ];
+      if (spec.parentKinds?.includes(spec.kindId))
+        diagnostics.push(diagnostic("error", "x3.sdk/subject-kind-self-parent", "a subject kind cannot inherit itself", ["spec", "parentKinds"]));
+      return diagnostics;
+    },
+    registration: {
+      mode: "data-only",
+      project: dataOnlyProjector(SUBJECT_KIND_DEFINITION_FACT),
+      conformanceProfile: "modkit/subject-kind-definition-v1"
+    }
+  },
+  {
     contract: CODEC_CONTRIBUTION_CONTRACT,
     major: 1,
     schema: codecContributionSpecV1Schema,
@@ -4234,6 +4784,12 @@ var A1_SPEC_SCHEMA_ENTRIES = [
     major: 1,
     schema: editorContributionSpecV1Schema,
     validateSemantics: validateEditorContributionSemantics
+  },
+  {
+    contract: FIELD_EDITOR_CONTRIBUTION_CONTRACT,
+    major: 1,
+    schema: fieldEditorContributionSpecV1Schema,
+    validateSemantics: validateFieldEditorContributionSemantics
   },
   {
     contract: TRAIT_DEFINITION_CONTRIBUTION_CONTRACT,
@@ -4579,8 +5135,8 @@ function splitExtensionCoordinate(coordinate3) {
     id: coordinate3.slice(separator + 1)
   };
 }
-function normalizeExtensionIdentityParts(publisher, id) {
-  return splitExtensionCoordinate(normalizeModkitIdentifier(`${publisher}/${id}`));
+function normalizeExtensionIdentityParts(publisher, id2) {
+  return splitExtensionCoordinate(normalizeModkitIdentifier(`${publisher}/${id2}`));
 }
 function normalizeExtensionManifestIdentities(manifest) {
   const identity = normalizeExtensionIdentityParts(manifest.publisher, manifest.id);
@@ -4666,9 +5222,9 @@ async function normalizeExtensionManifest(input) {
   }
   const diagnostics = [];
   const blockRecord = block;
-  for (const field of ["version", "license"]) {
-    if (field in blockRecord) {
-      diagnostics.push(diagnostic("error", "x3.sdk/npm-field-duplicated-in-block", `\xAB${field}\xBB belongs to the top-level package.json only (Q76 packaging error)`, ["modkit", field]));
+  for (const field2 of ["version", "license"]) {
+    if (field2 in blockRecord) {
+      diagnostics.push(diagnostic("error", "x3.sdk/npm-field-duplicated-in-block", `\xAB${field2}\xBB belongs to the top-level package.json only (Q76 packaging error)`, ["modkit", field2]));
     }
   }
   diagnostics.push(...await validateWithSchema(modkitBlockSchema, blockRecord));
@@ -5224,13 +5780,13 @@ async function validateSubjectDescriptorV2(value2) {
     }
     if (trait.state !== "available") {
       const diagnosticIds = /* @__PURE__ */ new Set();
-      for (const id of trait.diagnosticIds) {
-        if (diagnosticIds.has(id)) {
-          semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-trait-diagnostic", `trait diagnostic ${id} is referenced more than once`, ["traits", index, "diagnosticIds"]));
+      for (const id2 of trait.diagnosticIds) {
+        if (diagnosticIds.has(id2)) {
+          semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-trait-diagnostic", `trait diagnostic ${id2} is referenced more than once`, ["traits", index, "diagnosticIds"]));
         }
-        diagnosticIds.add(id);
-        if (!knownDiagnostics.has(id)) {
-          semanticDiagnostics.push(diagnostic("error", "x3.sdk/unknown-trait-diagnostic", `trait diagnostic ${id} is not present in descriptor diagnostics`, ["traits", index, "diagnosticIds"]));
+        diagnosticIds.add(id2);
+        if (!knownDiagnostics.has(id2)) {
+          semanticDiagnostics.push(diagnostic("error", "x3.sdk/unknown-trait-diagnostic", `trait diagnostic ${id2} is not present in descriptor diagnostics`, ["traits", index, "diagnosticIds"]));
         }
       }
     }
@@ -5253,6 +5809,21 @@ async function validateSubjectDescriptorV2(value2) {
       semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-descriptor-operation", `operation ${operation.id} is not owned by ${operationOwner}`, ["operations", index, "id"]));
     }
   });
+  if (wire.interpretation !== "none") {
+    wire.metadata.forEach((group2, groupIndex) => group2.entries.forEach((entry2, entryIndex) => {
+      const write = entry2.editable?.write;
+      if (write !== void 0 && "operation" in write) {
+        try {
+          operationId(write.operation, { contributionId: operationOwner });
+          if (!wire.operations.some((operation) => operation.id === write.operation && operation.mutatesSource)) {
+            throw new TypeError("field write must name a published mutating operation");
+          }
+        } catch {
+          semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-field-write-operation", `field write ${write.operation} is not a declared owned mutation`, ["metadata", groupIndex, "entries", entryIndex, "editable", "write", "operation"]));
+        }
+      }
+    }));
+  }
   if (wire.origin.kind === "bundle") {
     const bindingIds = /* @__PURE__ */ new Set();
     wire.origin.bindings.forEach((binding, index) => {
@@ -5286,9 +5857,9 @@ async function validateSubjectDescriptorV2(value2) {
           companionBindingIds.add(bindingId2);
         });
       } else {
-        for (const id of companion.diagnosticIds ?? []) {
-          if (!knownDiagnostics.has(id)) {
-            semanticDiagnostics.push(diagnostic("error", "x3.sdk/unknown-companion-diagnostic", `companion diagnostic ${id} is not present in descriptor diagnostics`, ["companions", index, "diagnosticIds"]));
+        for (const id2 of companion.diagnosticIds ?? []) {
+          if (!knownDiagnostics.has(id2)) {
+            semanticDiagnostics.push(diagnostic("error", "x3.sdk/unknown-companion-diagnostic", `companion diagnostic ${id2} is not present in descriptor diagnostics`, ["companions", index, "diagnosticIds"]));
           }
         }
         if (companion.state === "ambiguous") {
@@ -5354,6 +5925,28 @@ async function validateSubjectDescriptorV2(value2) {
   };
   const descriptor = Object.freeze(wire.interpretation === "none" ? { ...base, candidates: Object.freeze(wire.candidates.map(normalizeDetection)) } : {
     ...base,
+    metadata: Object.freeze(wire.metadata.map((group2) => Object.freeze({
+      ...group2,
+      entries: Object.freeze(group2.entries.map((entry2) => Object.freeze({
+        ...entry2,
+        ...entry2.provenance === void 0 ? {} : {
+          provenance: Object.freeze(entry2.provenance.map((origin) => Object.freeze({
+            ...origin,
+            ...origin.range === void 0 ? {} : { range: normalizeSourceSpan(origin.range) }
+          })))
+        },
+        ...entry2.editable === void 0 ? {} : {
+          editable: Object.freeze({
+            ...entry2.editable,
+            write: "operation" in entry2.editable.write ? Object.freeze({
+              operation: operationId(entry2.editable.write.operation, {
+                contributionId: operationOwner
+              })
+            }) : entry2.editable.write
+          })
+        }
+      })))
+    }))),
     ...wire.companions === void 0 ? {} : { companions: Object.freeze(wire.companions.map(normalizeCompanion)) }
   });
   return { descriptor, diagnostics: [...schemaDiagnostics2, ...semanticDiagnostics] };
@@ -5411,6 +6004,12 @@ function isGameTemplatePreviewResult(value2) {
   const fidelity = result["fidelity"];
   return result["schemaVersion"] === GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION && result["operationId"] === GAME_TEMPLATE_PREVIEW_OPERATION_ID && nonEmpty2(result["templateKind"]) && nonEmpty2(result["entryUri"]) && (result["rootPath"] === void 0 || typeof result["rootPath"] === "string") && typeof result["resolvedTree"] === "object" && result["resolvedTree"] !== null && Array.isArray(result["displayItems"]) && Array.isArray(result["diagnostics"]) && ["complete", "partial", "capped", "invalid"].includes(String(result["completeness"])) && typeof fidelity === "object" && fidelity !== null && !Array.isArray(fidelity) && fidelity["comparison"] === "semantic" && Array.isArray(fidelity["unsupported"]) && result["provenance"] !== void 0 && result["digest"] !== void 0;
 }
+
+// packages/sdk/dist/subjects/index.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/sdk/dist/subjects/unknown-root.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // packages/host/dist/nested-subject.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
@@ -5647,15 +6246,15 @@ async function buildInventory(inputs, registry, options = {}) {
   const seenContributions = /* @__PURE__ */ new Map();
   for (const extension of extensions) {
     for (const contribution of extension.contributions) {
-      const id = contribution.manifest?.id;
-      if (id === void 0)
+      const id2 = contribution.manifest?.id;
+      if (id2 === void 0)
         continue;
       const where = `${coordinate(extension.manifest)}:${contribution.path}`;
-      const prior = seenContributions.get(id);
+      const prior = seenContributions.get(id2);
       if (prior !== void 0) {
-        diagnostics.push(diagnostic("error", "x3.host/duplicate-contribution-id", `contribution id \xAB${id}\xBB declared by both \xAB${prior}\xBB and \xAB${where}\xBB`, [id]));
+        diagnostics.push(diagnostic("error", "x3.host/duplicate-contribution-id", `contribution id \xAB${id2}\xBB declared by both \xAB${prior}\xBB and \xAB${where}\xBB`, [id2]));
       } else {
-        seenContributions.set(id, where);
+        seenContributions.set(id2, where);
       }
     }
   }
@@ -5750,10 +6349,10 @@ function serviceProjector(manifest, context) {
     };
   }, spec.applicableVariants);
 }
-function entry(id) {
-  const found = A1_SPEC_SCHEMA_ENTRIES.find((item) => item.contract === id && item.major === 1);
+function entry(id2) {
+  const found = A1_SPEC_SCHEMA_ENTRIES.find((item) => item.contract === id2 && item.major === 1);
   if (found === void 0 || found.validateSemantics === void 0) {
-    throw new TypeError(`missing A-1 schema/semantic authority for ${id}@1`);
+    throw new TypeError(`missing A-1 schema/semantic authority for ${id2}@1`);
   }
   return found;
 }
@@ -5762,11 +6361,13 @@ function builtins() {
   const service = entry(SERVICE_PROVIDER_CONTRIBUTION_CONTRACT);
   const viewer = entry(VIEWER_CONTRIBUTION_CONTRACT);
   const editor = entry(EDITOR_CONTRIBUTION_CONTRACT);
+  const fieldEditor = entry(FIELD_EDITOR_CONTRIBUTION_CONTRACT);
   const trait = entry(TRAIT_DEFINITION_CONTRIBUTION_CONTRACT);
+  const subjectKind = entry(SUBJECT_KIND_DEFINITION_CONTRIBUTION_CONTRACT);
   const definition = entry(CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT);
   const knowledge = entry(KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT);
   const localization = entry(LOCALIZATION_CONTRIBUTION_CONTRACT);
-  if (trait.registration === void 0 || definition.registration === void 0 || knowledge.registration === void 0 || localization.registration === void 0) {
+  if (trait.registration === void 0 || subjectKind.registration === void 0 || definition.registration === void 0 || knowledge.registration === void 0 || localization.registration === void 0) {
     throw new TypeError("A-1 definition registrations are missing");
   }
   return [
@@ -5809,6 +6410,25 @@ function builtins() {
       validateSemantics: editor.validateSemantics,
       moduleAbi: { export: "default", abiVersion: 1 },
       conformanceProfile: "modkit/editor-contribution-v1"
+    },
+    {
+      contract: { id: fieldEditor.contract, major: fieldEditor.major },
+      schema: fieldEditor.schema,
+      mode: "executable",
+      project: (manifest, context) => [
+        fact(FIELD_EDITOR_CONTRIBUTION_FACT, manifest.spec, context)
+      ],
+      validateSemantics: fieldEditor.validateSemantics,
+      moduleAbi: { export: "default", abiVersion: 1 },
+      conformanceProfile: "modkit/field-editor-contribution-v1"
+    },
+    {
+      contract: { id: subjectKind.contract, major: subjectKind.major },
+      schema: subjectKind.schema,
+      mode: "data-only",
+      project: subjectKind.registration.project,
+      validateSemantics: subjectKind.validateSemantics,
+      conformanceProfile: subjectKind.registration.conformanceProfile
     },
     {
       contract: { id: trait.contract, major: trait.major },
@@ -5874,25 +6494,25 @@ function safeMajor(value2, label) {
 function parseRequirement(value2, label) {
   const item = object(value2, label);
   return Object.freeze({
-    contract: contractId(string(item.contract, `${label}.contract`)),
-    major: safeMajor(item.major, `${label}.major`),
-    ...item.range === void 0 ? {} : { range: string(item.range, `${label}.range`) }
+    contract: contractId(string(item["contract"], `${label}.contract`)),
+    major: safeMajor(item["major"], `${label}.major`),
+    ...item["range"] === void 0 ? {} : { range: string(item["range"], `${label}.range`) }
   });
 }
 function parseContractOffer(value2, label) {
   const item = object(value2, label);
-  const version = string(item.version, `${label}.version`);
-  const major = safeMajor(item.major, `${label}.major`);
+  const version = string(item["version"], `${label}.version`);
+  const major = safeMajor(item["major"], `${label}.major`);
   const parsed = parseSemver(version);
   if (parsed === void 0 || parsed.major !== major) {
     throw new TypeError(`${label}.version must be exact SemVer in declared major`);
   }
   return Object.freeze({
-    offerId: string(item.offerId, `${label}.offerId`),
-    contract: contractId(string(item.contract, `${label}.contract`)),
+    offerId: string(item["offerId"], `${label}.offerId`),
+    contract: contractId(string(item["contract"], `${label}.contract`)),
     major,
     version,
-    ...item.facet === void 0 ? {} : { facet: item.facet }
+    ...item["facet"] === void 0 ? {} : { facet: item["facet"] }
   });
 }
 function parseOutputs(value2) {
@@ -5902,13 +6522,13 @@ function parseOutputs(value2) {
     throw new TypeError("outputs must be an array");
   return Object.freeze(value2.map((raw, index) => {
     const item = object(raw, `outputs[${index}]`);
-    const id = string(item.id, `outputs[${index}].id`);
-    if (!isTraitId(id))
+    const id2 = string(item["id"], `outputs[${index}].id`);
+    if (!isTraitId(id2))
       throw new TypeError(`outputs[${index}].id is not a trait id`);
     return Object.freeze({
-      id,
-      ...item.definitionVersion === void 0 ? {} : {
-        definitionVersion: string(item.definitionVersion, `outputs[${index}].definitionVersion`)
+      id: id2,
+      ...item["definitionVersion"] === void 0 ? {} : {
+        definitionVersion: string(item["definitionVersion"], `outputs[${index}].definitionVersion`)
       }
     });
   }));
@@ -5919,15 +6539,15 @@ function parseTarget(value2) {
 }
 function parseProviderOffer(value2) {
   const item = object(value2, "provider offer fact");
-  const provides11 = item.provides;
+  const provides11 = item["provides"];
   if (!Array.isArray(provides11) || provides11.length === 0) {
     throw new TypeError("provider offer fact needs at least one logical offer");
   }
-  const kind = item.kind;
+  const kind = item["kind"];
   if (!["primary", "replacement", "augmentation", "projection", "operation"].includes(String(kind))) {
     throw new TypeError("provider offer kind is invalid");
   }
-  const providerId = string(item.providerId, "providerId");
+  const providerId = string(item["providerId"], "providerId");
   if (!isQualifiedId(providerId))
     throw new TypeError("providerId must be qualified");
   const parseRequirementArray = (raw, label) => {
@@ -5937,23 +6557,23 @@ function parseProviderOffer(value2) {
       throw new TypeError(`${label} must be an array`);
     return Object.freeze(raw.map((entry2, index) => parseRequirement(entry2, `${label}[${index}]`)));
   };
-  const operations = item.operations;
+  const operations = item["operations"];
   if (operations !== void 0 && !Array.isArray(operations)) {
     throw new TypeError("operations must be an array");
   }
-  const requires = parseRequirementArray(item.requires, "requires");
-  const outputs = parseOutputs(item.outputs);
-  const requiredPermissions = item.requiredPermissions;
+  const requires = parseRequirementArray(item["requires"], "requires");
+  const outputs = parseOutputs(item["outputs"]);
+  const requiredPermissions = item["requiredPermissions"];
   if (requiredPermissions !== void 0 && !Array.isArray(requiredPermissions)) {
     throw new TypeError("requiredPermissions must be an array");
   }
   return Object.freeze({
     kind,
-    extensionId: string(item.extensionId, "extensionId"),
-    extensionVersion: string(item.extensionVersion, "extensionVersion"),
+    extensionId: string(item["extensionId"], "extensionId"),
+    extensionVersion: string(item["extensionVersion"], "extensionVersion"),
     providerId,
-    runtimeVariant: string(item.runtimeVariant, "runtimeVariant"),
-    target: parseTarget(item.target),
+    runtimeVariant: string(item["runtimeVariant"], "runtimeVariant"),
+    target: parseTarget(item["target"]),
     ...requiredPermissions === void 0 ? {} : {
       requiredPermissions
     },
@@ -5963,7 +6583,7 @@ function parseProviderOffer(value2) {
     ...operations === void 0 ? {} : {
       operations: Object.freeze(operations.map((entry2, index) => string(entry2, `operations[${index}]`)))
     },
-    ...item.replaces === void 0 ? {} : { replaces: parseRequirement(item.replaces, "replaces") }
+    ...item["replaces"] === void 0 ? {} : { replaces: parseRequirement(item["replaces"], "replaces") }
   });
 }
 function offersFromInventory(inventory) {
@@ -6065,8 +6685,8 @@ function resolveProvider(request, offers, preparation) {
   }
   const requiredOutputs = uniqueTraitRequirements(request.requiredOutputs);
   const preferredOutputs = uniqueTraitRequirements(request.preferredOutputs);
-  const rejected2 = [];
-  const reject = (offer, reason, detail, offerId) => rejected2.push({
+  const rejected3 = [];
+  const reject = (offer, reason, detail, offerId) => rejected3.push({
     providerId: offer.providerId,
     runtimeVariant: offer.runtimeVariant,
     ...offerId === void 0 ? {} : { offerId },
@@ -6100,7 +6720,7 @@ function resolveProvider(request, offers, preparation) {
     }
   }
   if (candidates.length === 0) {
-    return remember({ state: "unresolved", reason: "no-offer", rejected: sortRejected(rejected2) }, request);
+    return remember({ state: "unresolved", reason: "no-offer", rejected: sortRejected(rejected3) }, request);
   }
   const range = parseVersionRange(request.contract.range ?? "*");
   const versionOk = candidates.filter((candidate) => {
@@ -6115,7 +6735,7 @@ function resolveProvider(request, offers, preparation) {
     return remember({
       state: "unresolved",
       reason: "version-incompatible",
-      rejected: sortRejected(rejected2)
+      rejected: sortRejected(rejected3)
     }, request);
   }
   const target = request.target;
@@ -6141,11 +6761,11 @@ function resolveProvider(request, offers, preparation) {
     return true;
   });
   if (targetOk.length === 0) {
-    const onlyToolRejects = sawToolReject && !rejected2.some((r2) => r2.reason === "target-incompatible");
+    const onlyToolRejects = sawToolReject && !rejected3.some((r2) => r2.reason === "target-incompatible");
     return remember({
       state: "unresolved",
       reason: onlyToolRejects ? "external-tool-required" : "target-incompatible",
-      rejected: sortRejected(rejected2)
+      rejected: sortRejected(rejected3)
     }, request);
   }
   let sawPermissionReject = false;
@@ -6165,7 +6785,7 @@ function resolveProvider(request, offers, preparation) {
     return remember({
       state: "unresolved",
       reason: sawPermissionReject ? "permission-required" : "output-missing",
-      rejected: sortRejected(rejected2)
+      rejected: sortRejected(rejected3)
     }, request);
   }
   let pool = permitted;
@@ -6182,7 +6802,7 @@ function resolveProvider(request, offers, preparation) {
       return remember({
         state: "unresolved",
         reason: "pin-unsatisfied",
-        rejected: sortRejected(rejected2)
+        rejected: sortRejected(rejected3)
       }, request);
     }
   }
@@ -6204,7 +6824,7 @@ function resolveProvider(request, offers, preparation) {
     for (const candidate of tied) {
       reject(candidate.offer, "ambiguous", "preference tuple tie", candidate.contractOffer.offerId);
     }
-    return remember({ state: "unresolved", reason: "ambiguous", rejected: sortRejected(rejected2) }, request);
+    return remember({ state: "unresolved", reason: "ambiguous", rejected: sortRejected(rejected3) }, request);
   }
   const toResolved = (candidate) => ({
     offer: candidate.offer,
@@ -6215,11 +6835,11 @@ function resolveProvider(request, offers, preparation) {
     state: "resolved",
     selected: toResolved(best),
     alternatives: ranked.slice(1).map(toResolved),
-    rejected: sortRejected(rejected2)
+    rejected: sortRejected(rejected3)
   }, request);
 }
-function sortRejected(rejected2) {
-  return [...rejected2].sort((a2, b2) => compareUtf8(canonicalJsonStringify(a2), canonicalJsonStringify(b2)));
+function sortRejected(rejected3) {
+  return [...rejected3].sort((a2, b2) => compareUtf8(canonicalJsonStringify(a2), canonicalJsonStringify(b2)));
 }
 
 // packages/host/dist/resolution/lock.js
@@ -6318,6 +6938,149 @@ function serializePolicyLock(entries) {
     return byKey !== 0 ? byKey : compareUtf8(canonicalJsonStringify(a2), canonicalJsonStringify(b2));
   });
   return canonicalJsonStringify({ schemaVersion: 1, entries: sorted });
+}
+function failLock(message, context) {
+  throw new ModkitError({
+    code: "x3.host/invalid-policy-lock",
+    message,
+    ...context === void 0 ? {} : { context }
+  });
+}
+function exactKeys2(value2, required, optional, label) {
+  if (typeof value2 !== "object" || value2 === null || Array.isArray(value2)) {
+    return failLock(`${label} must be an object`);
+  }
+  const record4 = value2;
+  const allowed2 = /* @__PURE__ */ new Set([...required, ...optional]);
+  if (required.some((key3) => !(key3 in record4)) || Object.keys(record4).some((key3) => !allowed2.has(key3))) {
+    return failLock(`${label} has missing or unknown fields`);
+  }
+  return record4;
+}
+function lockString(value2, label) {
+  if (typeof value2 !== "string" || value2.trim().length === 0) {
+    return failLock(`${label} must be a non-blank string`);
+  }
+  return value2;
+}
+function lockMajor(value2, label) {
+  if (!Number.isSafeInteger(value2) || value2 < 0) {
+    return failLock(`${label} must be a safe non-negative integer`);
+  }
+  return value2;
+}
+function parseLockedTrait(value2, label) {
+  const record4 = exactKeys2(value2, ["id"], ["definitionRange"], label);
+  const idText = lockString(record4["id"], `${label}.id`);
+  if (!isTraitId(idText))
+    return failLock(`${label}.id must be a trait id`);
+  if (isStandardTraitId(idText)) {
+    if (record4["definitionRange"] !== void 0) {
+      return failLock(`${label}: a standard trait cannot carry definitionRange`);
+    }
+    return Object.freeze({ id: idText });
+  }
+  const rangeText = lockString(record4["definitionRange"], `${label}.definitionRange`);
+  const range = parseVersionRange(rangeText);
+  if (range === void 0 || range.normalized !== rangeText) {
+    return failLock(`${label}.definitionRange is not canonical`);
+  }
+  return Object.freeze({ id: idText, definitionRange: rangeText });
+}
+function parseLockedTraits(value2, label) {
+  if (!Array.isArray(value2))
+    return failLock(`${label} must be an array`);
+  const parsed = value2.map((item, index) => parseLockedTrait(item, `${label}[${index}]`));
+  const normalized = normalizeTraitRequirements(parsed);
+  if (canonicalJsonStringify(parsed) !== canonicalJsonStringify(normalized)) {
+    return failLock(`${label} must be unique and canonically sorted`);
+  }
+  return normalized;
+}
+function parseLockKey(value2, label) {
+  const record4 = exactKeys2(value2, ["contract", "major", "normalizedRange", "requiredOutputs", "preferredOutputs"], ["contractSelectionKey", "operation", "workload"], label);
+  const contractText = lockString(record4["contract"], `${label}.contract`);
+  if (!isQualifiedId(contractText))
+    return failLock(`${label}.contract must be qualified`);
+  const rangeText = lockString(record4["normalizedRange"], `${label}.normalizedRange`);
+  const range = parseVersionRange(rangeText);
+  if (range === void 0 || range.normalized !== rangeText) {
+    return failLock(`${label}.normalizedRange is not canonical`);
+  }
+  const workload = record4["workload"];
+  if (workload !== void 0 && !["thumbnail", "interactive", "batch", "lossless-edit", "simulation", "archival"].includes(String(workload))) {
+    return failLock(`${label}.workload is invalid`);
+  }
+  return Object.freeze({
+    contract: contractId(contractText),
+    major: lockMajor(record4["major"], `${label}.major`),
+    normalizedRange: rangeText,
+    ...record4["contractSelectionKey"] === void 0 ? {} : {
+      contractSelectionKey: lockString(record4["contractSelectionKey"], `${label}.contractSelectionKey`)
+    },
+    ...record4["operation"] === void 0 ? {} : {
+      operation: lockString(record4["operation"], `${label}.operation`)
+    },
+    requiredOutputs: parseLockedTraits(record4["requiredOutputs"], `${label}.requiredOutputs`),
+    preferredOutputs: parseLockedTraits(record4["preferredOutputs"], `${label}.preferredOutputs`),
+    ...workload === void 0 ? {} : { workload }
+  });
+}
+function parseSelection(value2, label) {
+  const record4 = exactKeys2(value2, ["extension", "contributionId", "contractMajor", "offerId"], ["releaseRange"], label);
+  const extension = lockString(record4["extension"], `${label}.extension`);
+  const contributionId2 = lockString(record4["contributionId"], `${label}.contributionId`);
+  if (!isQualifiedId(extension) || !isQualifiedId(contributionId2)) {
+    return failLock(`${label} coordinates must be qualified`);
+  }
+  let releaseRange;
+  if (record4["releaseRange"] !== void 0) {
+    releaseRange = lockString(record4["releaseRange"], `${label}.releaseRange`);
+    const parsed = parseVersionRange(releaseRange);
+    if (parsed === void 0 || parsed.normalized !== releaseRange) {
+      return failLock(`${label}.releaseRange is not canonical`);
+    }
+  }
+  return Object.freeze({
+    extension,
+    ...releaseRange === void 0 ? {} : { releaseRange },
+    contributionId: contributionId2,
+    contractMajor: lockMajor(record4["contractMajor"], `${label}.contractMajor`),
+    offerId: lockString(record4["offerId"], `${label}.offerId`)
+  });
+}
+function parsePolicyLock(text4) {
+  let value2;
+  try {
+    value2 = JSON.parse(text4);
+  } catch {
+    return failLock("policy lock is not valid JSON");
+  }
+  const root = exactKeys2(value2, ["schemaVersion", "entries"], [], "policy lock");
+  if (root["schemaVersion"] !== 1 || !Array.isArray(root["entries"])) {
+    return failLock("policy lock schemaVersion/entries are invalid");
+  }
+  const entries = root["entries"].map((raw, index) => {
+    const item = exactKeys2(raw, ["key", "primary", "resolverVersion"], ["allowedFallbacks"], `entries[${index}]`);
+    if (item["resolverVersion"] !== RESOLVER_VERSION) {
+      return failLock(`entries[${index}].resolverVersion is unsupported`);
+    }
+    if (item["allowedFallbacks"] !== void 0 && !Array.isArray(item["allowedFallbacks"])) {
+      return failLock(`entries[${index}].allowedFallbacks must be an array`);
+    }
+    return Object.freeze({
+      key: parseLockKey(item["key"], `entries[${index}].key`),
+      primary: parseSelection(item["primary"], `entries[${index}].primary`),
+      ...item["allowedFallbacks"] === void 0 ? {} : {
+        allowedFallbacks: Object.freeze(item["allowedFallbacks"].map((entry2, fallbackIndex) => parseSelection(entry2, `entries[${index}].allowedFallbacks[${fallbackIndex}]`)))
+      },
+      resolverVersion: RESOLVER_VERSION
+    });
+  });
+  const canonical = serializePolicyLock(entries);
+  if (canonical !== text4)
+    return failLock("policy lock bytes are not canonical");
+  return Object.freeze({ schemaVersion: 1, entries: Object.freeze(entries) });
 }
 
 // packages/host/dist/resolution/service-resolver.js
@@ -6688,9 +7451,9 @@ function targetSatisfies(variant, target) {
   if (!has(c3.architectures, target.architecture, true)) {
     problems.push(`architecture ${target.architecture}`);
   }
-  for (const cap of c3.requiredHostCapabilities ?? []) {
-    if (!(target.hostCapabilities ?? []).includes(cap))
-      problems.push(`hostCapability ${cap}`);
+  for (const cap2 of c3.requiredHostCapabilities ?? []) {
+    if (!(target.hostCapabilities ?? []).includes(cap2))
+      problems.push(`hostCapability ${cap2}`);
   }
   for (const api of c3.requiredWebApis ?? []) {
     if (!(target.webApis ?? []).includes(api))
@@ -6980,29 +7743,29 @@ function evidence(value2, label) {
   }
   return Object.freeze(value2.map((raw, index) => {
     const item = exactObject(raw, ["kind", "weight"], ["note"], `${label}[${index}]`);
-    if (!EVIDENCE_KINDS.includes(item.kind)) {
+    if (!EVIDENCE_KINDS.includes(item["kind"])) {
       return fail("x3.host/invalid-detection-selection", `${label}[${index}].kind is invalid`);
     }
-    if (typeof item.weight !== "number" || !Number.isFinite(item.weight)) {
+    if (typeof item["weight"] !== "number" || !Number.isFinite(item["weight"])) {
       return fail("x3.host/invalid-detection-selection", `${label}[${index}].weight must be finite`);
     }
-    if (item.note !== void 0 && typeof item.note !== "string") {
+    if (item["note"] !== void 0 && typeof item["note"] !== "string") {
       return fail("x3.host/invalid-detection-selection", `${label}[${index}].note must be a string`);
     }
     return Object.freeze({
-      kind: item.kind,
-      weight: item.weight,
-      ...item.note === void 0 ? {} : { note: item.note }
+      kind: item["kind"],
+      weight: item["weight"],
+      ...item["note"] === void 0 ? {} : { note: item["note"] }
     });
   }));
 }
 function normalize2(value2) {
   const root = exactObject(value2, ["schemaVersion", "sourceRevision", "selected"], [], "selection");
-  if (root.schemaVersion !== 1) {
+  if (root["schemaVersion"] !== 1) {
     return fail("x3.host/invalid-detection-selection", "selection schemaVersion is unsupported");
   }
-  const sourceRevision = revisionId(nonBlank(root.sourceRevision, "selection.sourceRevision"));
-  const selected = exactObject(root.selected, [
+  const sourceRevision = revisionId(nonBlank(root["sourceRevision"], "selection.sourceRevision"));
+  const selected = exactObject(root["selected"], [
     "extensionId",
     "contributionId",
     "variantId",
@@ -7013,16 +7776,16 @@ function normalize2(value2) {
     "confidence",
     "evidence"
   ], [], "selection.selected");
-  const extensionId = nonBlank(selected.extensionId, "selection.selected.extensionId");
-  const contributionText = nonBlank(selected.contributionId, "selection.selected.contributionId");
+  const extensionId = nonBlank(selected["extensionId"], "selection.selected.extensionId");
+  const contributionText = nonBlank(selected["contributionId"], "selection.selected.contributionId");
   if (!isQualifiedId(extensionId) || !isQualifiedId(contributionText)) {
     return fail("x3.host/invalid-detection-selection", "selection extension and contribution coordinates must be qualified");
   }
-  const topology2 = selected.sourceTopology;
+  const topology2 = selected["sourceTopology"];
   if (!["single", "bundle", "namespace", "derived"].includes(String(topology2))) {
     return fail("x3.host/invalid-detection-selection", "selection sourceTopology is invalid");
   }
-  const confidence = selected.confidence;
+  const confidence = selected["confidence"];
   if (typeof confidence !== "number" || !Number.isFinite(confidence) || confidence < 0 || confidence > 1) {
     return fail("x3.host/invalid-detection-selection", "selection confidence is invalid");
   }
@@ -7032,13 +7795,13 @@ function normalize2(value2) {
     selected: Object.freeze({
       extensionId,
       contributionId: contributionId(contributionText),
-      variantId: nonBlank(selected.variantId, "selection.selected.variantId"),
-      offerId: nonBlank(selected.offerId, "selection.selected.offerId"),
-      artifactDigest: nonBlank(selected.artifactDigest, "selection.selected.artifactDigest"),
-      manifestDigest: nonBlank(selected.manifestDigest, "selection.selected.manifestDigest"),
+      variantId: nonBlank(selected["variantId"], "selection.selected.variantId"),
+      offerId: nonBlank(selected["offerId"], "selection.selected.offerId"),
+      artifactDigest: nonBlank(selected["artifactDigest"], "selection.selected.artifactDigest"),
+      manifestDigest: nonBlank(selected["manifestDigest"], "selection.selected.manifestDigest"),
       sourceTopology: topology2,
       confidence,
-      evidence: evidence(selected.evidence, "selection.selected.evidence")
+      evidence: evidence(selected["evidence"], "selection.selected.evidence")
     })
   });
 }
@@ -7068,6 +7831,655 @@ function serializeCodecDetectionSelection(selection) {
 
 // packages/host/dist/session.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/subject-projection.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var DEFAULT_SUBJECT_RELATION_PROJECTION_BUDGET = Object.freeze({
+  maxDepth: 32,
+  maxValues: 16384,
+  maxEdges: 4096,
+  maxScalarBytes: 1048576,
+  pageSize: 256
+});
+var DEFAULT_GRAPH_MERGE = Object.freeze({
+  maxNodes: 16384,
+  maxEdges: 65536,
+  pageSize: 256
+});
+var DEFAULT_FACTS_MERGE = Object.freeze({
+  maxGroups: 256,
+  maxFactsPerGroup: 4096,
+  maxRelations: 16384,
+  pageSize: 256
+});
+function positive(value2, label) {
+  if (!Number.isSafeInteger(value2) || value2 < 1)
+    throw new RangeError(`${label} must be positive`);
+  return value2;
+}
+function pageOf(items, request) {
+  const limit = positive(request.limit, "page limit");
+  const offset = request.cursor === void 0 ? 0 : Number(request.cursor);
+  if (!Number.isSafeInteger(offset) || offset < 0 || request.cursor !== void 0 && String(offset) !== request.cursor) {
+    throw new RangeError(`invalid projection page cursor: ${String(request.cursor)}`);
+  }
+  const next = Math.min(offset + limit, items.length);
+  return Object.freeze({
+    items: Object.freeze(items.slice(offset, next)),
+    ...next < items.length ? { nextCursor: String(next) } : {}
+  });
+}
+function referencePath(path, segment) {
+  return path === "" ? segment : `${path}.${segment}`;
+}
+function recordOf(value2) {
+  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
+}
+function relationKey(edge2) {
+  return `${edge2.from}\0${edge2.to}\0${edge2.role ?? ""}`;
+}
+function relationFactKey(relation2) {
+  return `${relation2.subjectId}\0${relation2.role}\0${relation2.kind}`;
+}
+function scalarBytes(value2) {
+  return new TextEncoder().encode(value2).byteLength;
+}
+function cap(state, reason) {
+  state.capped = true;
+  state.reason ??= reason;
+}
+function enterValue(state, value2, depth) {
+  state.options.signal?.throwIfAborted();
+  if (depth > state.budget.maxDepth) {
+    cap(state, `field traversal exceeded maxDepth ${state.budget.maxDepth}`);
+    return false;
+  }
+  state.values += 1;
+  if (state.values > state.budget.maxValues) {
+    cap(state, `field traversal exceeded maxValues ${state.budget.maxValues}`);
+    return false;
+  }
+  if (typeof value2 === "object" && value2 !== null) {
+    if (state.valueStack.has(value2)) {
+      cap(state, "field traversal stopped at a cyclic value");
+      return false;
+    }
+    state.valueStack.add(value2);
+  }
+  return true;
+}
+function leaveValue(state, value2) {
+  if (typeof value2 === "object" && value2 !== null)
+    state.valueStack.delete(value2);
+}
+async function addReference(state, type, value2, role) {
+  if (state.edges.size >= state.budget.maxEdges) {
+    cap(state, `relation projection exceeded maxEdges ${state.budget.maxEdges}`);
+    return;
+  }
+  state.bytes += scalarBytes(value2);
+  if (state.bytes > state.budget.maxScalarBytes) {
+    cap(state, `relation projection exceeded maxScalarBytes ${state.budget.maxScalarBytes}`);
+    return;
+  }
+  const request = Object.freeze({ owner: state.options.owner, role, type, value: value2 });
+  const resolved2 = await state.options.resolver.resolve(request, state.options.signal);
+  const target = resolved2 ?? state.options.resolver.createUnresolved(request);
+  const subject = type.kind === "asset-ref" ? rootSubject(target.subject.source, target.subject.workspace) : target.subject;
+  const id2 = serializeSubjectRef(subject);
+  state.nodes.set(id2, {
+    id: id2,
+    label: target.label,
+    type: target.kind,
+    subject: id2,
+    kind: target.kind
+  });
+  const edge2 = {
+    from: serializeSubjectRef(state.options.owner),
+    to: id2,
+    role,
+    ...resolved2 === void 0 ? { dead: true } : {}
+  };
+  const key3 = relationKey(edge2);
+  const previous = state.edges.get(key3);
+  if (previous === void 0 || previous.dead === true && edge2.dead !== true)
+    state.edges.set(key3, edge2);
+}
+async function visitLeaf(state, type, value2, path, depth) {
+  if (Array.isArray(value2)) {
+    for (const [index, item] of value2.entries()) {
+      if (state.capped)
+        return;
+      await visitField(state, type, item, `${path}[${index}]`, depth + 1);
+    }
+    return;
+  }
+  if (typeof value2 === "string" && value2.length > 0)
+    await addReference(state, type, value2, path);
+}
+async function visitInstructions(state, type, value2, path, depth) {
+  if (typeof value2 !== "string")
+    return;
+  const instructions = type.listDelimiter === void 0 ? [value2] : value2.split(type.listDelimiter);
+  for (const [instructionIndex, instruction] of instructions.entries()) {
+    if (state.capped)
+      return;
+    const parts = instruction.split(type.delimiter);
+    const keyword = parts.shift()?.trim();
+    if (keyword === void 0 || keyword === "")
+      continue;
+    const parameters = type.keywords[keyword];
+    if (parameters === void 0)
+      continue;
+    for (const [parameterIndex, parameter] of parameters.entries()) {
+      const scalar2 = parts[parameterIndex];
+      if (scalar2 === void 0)
+        break;
+      await visitField(state, parameter, scalar2.trim(), `${path}[${instructionIndex}].${keyword}[${parameterIndex}]`, depth + 1);
+    }
+  }
+}
+async function visitField(state, type, value2, path, depth) {
+  if (!enterValue(state, value2, depth))
+    return;
+  const typeObject = type;
+  if (state.typeStack.has(typeObject)) {
+    cap(state, "field traversal stopped at a cyclic field type");
+    leaveValue(state, value2);
+    return;
+  }
+  state.typeStack.add(typeObject);
+  try {
+    switch (type.kind) {
+      case "subject-ref":
+      case "asset-ref":
+      case "text-key":
+        await visitLeaf(state, type, value2, path, depth);
+        return;
+      case "array":
+        if (!Array.isArray(value2))
+          return;
+        for (const [index, item] of value2.entries()) {
+          if (state.capped)
+            return;
+          await visitField(state, type.item, item, `${path}[${index}]`, depth + 1);
+        }
+        return;
+      case "struct": {
+        const record4 = recordOf(value2);
+        if (record4 === void 0)
+          return;
+        for (const field2 of type.fields) {
+          if (state.capped)
+            return;
+          const child = record4[field2.key];
+          if (child !== void 0)
+            await visitField(state, field2.type, child, referencePath(path, field2.key), depth + 1);
+        }
+        return;
+      }
+      case "record": {
+        const record4 = recordOf(value2);
+        if (record4 === void 0)
+          return;
+        for (const key3 of Object.keys(record4).sort(compareUtf8)) {
+          if (state.capped)
+            return;
+          const itemPath = `${path}[${JSON.stringify(key3)}]`;
+          await visitField(state, type.key, key3, `${itemPath}.$key`, depth + 1);
+          await visitField(state, type.value, record4[key3], itemPath, depth + 1);
+        }
+        return;
+      }
+      case "instructions":
+        await visitInstructions(state, type, value2, path, depth);
+        return;
+      default:
+        return;
+    }
+  } finally {
+    state.typeStack.delete(typeObject);
+    leaveValue(state, value2);
+  }
+}
+function graphTypeBuckets(nodes) {
+  const counts = /* @__PURE__ */ new Map();
+  for (const node of nodes)
+    counts.set(node.type, (counts.get(node.type) ?? 0) + 1);
+  return Object.freeze([...counts.entries()].sort(([left], [right]) => compareUtf8(left, right)).map(([id2, count3], index) => Object.freeze({ id: id2, label: id2, count: count3, tone: index })));
+}
+function materializedGraphSource(summary, nodes, edges) {
+  return Object.freeze({
+    async summary(signal) {
+      signal?.throwIfAborted();
+      return summary;
+    },
+    async nodes(page2, signal) {
+      signal?.throwIfAborted();
+      return pageOf(nodes, page2);
+    },
+    async edges(page2, signal) {
+      signal?.throwIfAborted();
+      return pageOf(edges, page2);
+    }
+  });
+}
+async function createFieldRelationGraphSource(options) {
+  const budget = options.budget ?? DEFAULT_SUBJECT_RELATION_PROJECTION_BUDGET;
+  positive(budget.maxDepth, "maxDepth");
+  positive(budget.maxValues, "maxValues");
+  positive(budget.maxEdges, "maxEdges");
+  positive(budget.maxScalarBytes, "maxScalarBytes");
+  positive(budget.pageSize, "pageSize");
+  const ownerId = serializeSubjectRef(options.owner);
+  const state = {
+    options,
+    budget,
+    nodes: /* @__PURE__ */ new Map([
+      [
+        ownerId,
+        {
+          id: ownerId,
+          label: options.ownerLabel,
+          type: options.ownerKind,
+          subject: ownerId,
+          kind: options.ownerKind
+        }
+      ]
+    ]),
+    edges: /* @__PURE__ */ new Map(),
+    typeStack: /* @__PURE__ */ new WeakSet(),
+    valueStack: /* @__PURE__ */ new WeakSet(),
+    values: 0,
+    bytes: 0,
+    capped: false,
+    reason: void 0
+  };
+  for (const field2 of options.fields) {
+    if (state.capped)
+      break;
+    await visitField(state, field2.type, field2.value, field2.path, 0);
+  }
+  const nodes = Object.freeze([...state.nodes.values()].sort((a2, b2) => compareUtf8(a2.id, b2.id)));
+  const edges = Object.freeze([...state.edges.values()].sort((a2, b2) => compareUtf8(relationKey(a2), relationKey(b2))));
+  const completeness = state.capped ? "capped" : "complete";
+  const summary = Object.freeze({
+    snapshotId: `field-projection:${ownerId}`,
+    totalNodes: nodes.length,
+    totalEdges: edges.length,
+    types: graphTypeBuckets(nodes),
+    completeness,
+    ...state.reason === void 0 ? {} : { reason: state.reason }
+  });
+  return materializedGraphSource(summary, nodes, edges);
+}
+async function readAll(read, maximum, pageSize, signal) {
+  const items = [];
+  let cursor4;
+  const seen = /* @__PURE__ */ new Set();
+  while (items.length < maximum) {
+    signal?.throwIfAborted();
+    const page2 = await read({
+      ...cursor4 === void 0 ? {} : { cursor: cursor4 },
+      limit: Math.min(pageSize, maximum - items.length)
+    }, signal);
+    items.push(...page2.items.slice(0, maximum - items.length));
+    if (page2.nextCursor === void 0)
+      return { items: Object.freeze(items), capped: false };
+    if (page2.items.length === 0 || seen.has(page2.nextCursor)) {
+      throw new Error("data source returned an invalid continuation cursor");
+    }
+    seen.add(page2.nextCursor);
+    cursor4 = page2.nextCursor;
+  }
+  return { items: Object.freeze(items), capped: cursor4 !== void 0 };
+}
+async function materializeGraph(source2, options) {
+  const summary = await source2.summary(options.signal);
+  const [nodes, edges] = await Promise.all([
+    readAll(source2.nodes.bind(source2), options.maxNodes, options.pageSize, options.signal),
+    readAll(source2.edges.bind(source2), options.maxEdges, options.pageSize, options.signal)
+  ]);
+  return Object.freeze({
+    summary,
+    nodes: nodes.items,
+    edges: edges.items,
+    capped: nodes.capped || edges.capped || nodes.items.length < summary.totalNodes || edges.items.length < summary.totalEdges
+  });
+}
+function createCompositeRelationGraphSource(sources, input = {}) {
+  if (sources.length === 0)
+    throw new TypeError("relation graph composition requires a source");
+  const options = {
+    maxNodes: positive(input.maxNodes ?? DEFAULT_GRAPH_MERGE.maxNodes, "maxNodes"),
+    maxEdges: positive(input.maxEdges ?? DEFAULT_GRAPH_MERGE.maxEdges, "maxEdges"),
+    pageSize: positive(input.pageSize ?? DEFAULT_GRAPH_MERGE.pageSize, "pageSize"),
+    ...input.signal === void 0 ? {} : { signal: input.signal }
+  };
+  const snapshot3 = (async () => {
+    const loaded = [];
+    for (const source2 of sources)
+      loaded.push(await materializeGraph(source2, options));
+    const nodeMap = /* @__PURE__ */ new Map();
+    const edgeMap = /* @__PURE__ */ new Map();
+    const typeInfo = /* @__PURE__ */ new Map();
+    for (const graph of loaded) {
+      for (const type of graph.summary.types) {
+        if (!typeInfo.has(type.id))
+          typeInfo.set(type.id, { label: type.label, tone: type.tone });
+      }
+      for (const node of graph.nodes) {
+        const previous = nodeMap.get(node.id);
+        nodeMap.set(node.id, previous === void 0 ? node : Object.freeze({
+          ...node,
+          ...previous,
+          ...previous.subject === void 0 && node.subject !== void 0 ? { subject: node.subject } : {},
+          ...previous.kind === void 0 && node.kind !== void 0 ? { kind: node.kind } : {}
+        }));
+      }
+      for (const edge2 of graph.edges) {
+        const key3 = relationKey(edge2);
+        const previous = edgeMap.get(key3);
+        if (previous === void 0 || previous.dead === true && edge2.dead !== true)
+          edgeMap.set(key3, edge2);
+      }
+    }
+    const nodes = Object.freeze([...nodeMap.values()].sort((a2, b2) => compareUtf8(a2.id, b2.id)));
+    const edges = Object.freeze([...edgeMap.values()].sort((a2, b2) => compareUtf8(relationKey(a2), relationKey(b2))));
+    const counts = /* @__PURE__ */ new Map();
+    for (const node of nodes)
+      counts.set(node.type, (counts.get(node.type) ?? 0) + 1);
+    const types = Object.freeze([...counts.entries()].sort(([a2], [b2]) => compareUtf8(a2, b2)).map(([id2, count3], index) => {
+      const known = typeInfo.get(id2);
+      return Object.freeze({
+        id: id2,
+        label: known?.label ?? id2,
+        count: count3,
+        tone: known?.tone ?? index
+      });
+    }));
+    const capped = loaded.some((item) => item.capped);
+    const partial = loaded.some((item) => item.summary.completeness !== "complete");
+    const completeness = capped ? "capped" : partial ? "partial" : "complete";
+    const reasons = loaded.map((item) => item.summary.reason).filter((item) => item !== void 0);
+    const summary = Object.freeze({
+      snapshotId: `composite:${loaded.map((item) => item.summary.snapshotId).join("|")}`,
+      totalNodes: nodes.length,
+      totalEdges: edges.length,
+      types,
+      completeness,
+      ...reasons.length === 0 ? {} : { reason: reasons.join(" \xB7 ") }
+    });
+    return { summary, nodes, edges };
+  })();
+  return Object.freeze({
+    async summary(signal) {
+      signal?.throwIfAborted();
+      return (await snapshot3).summary;
+    },
+    async nodes(page2, signal) {
+      signal?.throwIfAborted();
+      return pageOf((await snapshot3).nodes, page2);
+    },
+    async edges(page2, signal) {
+      signal?.throwIfAborted();
+      return pageOf((await snapshot3).edges, page2);
+    }
+  });
+}
+function metadataFieldProjections(groups) {
+  return Object.freeze(groups.flatMap((group2) => group2.entries.flatMap((entry2) => entry2.type === void 0 ? [] : [{ path: referencePath(group2.id, entry2.key), type: entry2.type, value: entry2.value }])));
+}
+function descriptorSources(descriptor) {
+  switch (descriptor.origin.kind) {
+    case "single":
+      return [descriptor.origin.binding.source];
+    case "bundle":
+      return descriptor.origin.bindings.map((item) => item.source);
+    case "namespace":
+      return [descriptor.origin.root];
+    case "derived":
+      return descriptor.origin.materialization === void 0 ? [] : [descriptor.origin.materialization.source];
+  }
+}
+function descriptorPreview(descriptor, definition) {
+  if (definition?.card?.preview === "none")
+    return void 0;
+  const contracts = new Set(descriptor.dataSources.map((item) => item.contract));
+  const wanted = definition?.card?.preview;
+  const hasRaster = contracts.has("common.view/raster-image-source");
+  const hasModel = contracts.has("common.view/model-scene-source");
+  if (wanted === "raster" && !hasRaster || wanted === "model" && !hasModel)
+    return void 0;
+  if (wanted === void 0 && !hasRaster && !hasModel)
+    return void 0;
+  const source2 = descriptorSources(descriptor)[0];
+  if (source2 === void 0)
+    return void 0;
+  return Object.freeze({
+    source: source2,
+    ...descriptor.interpretation === "codec" && descriptor.identity.mediaType !== void 0 ? { mediaType: descriptor.identity.mediaType } : {},
+    label: wanted === "model" || !hasRaster && hasModel ? "model preview" : "raster preview"
+  });
+}
+function descriptorIdentity(descriptor) {
+  const resolved2 = descriptor.interpretation === "codec";
+  const label = resolved2 ? descriptor.identity.formatLabel : descriptor.subjectUri;
+  const kind = resolved2 ? `format:${descriptor.identity.formatId}` : "format:unknown";
+  return Object.freeze({
+    subjectId: serializeSubjectRef(descriptorSubjectRef(descriptor)),
+    label,
+    kind,
+    ...resolved2 && descriptor.identity.mediaType !== void 0 ? { type: descriptor.identity.mediaType } : {},
+    origins: Object.freeze(descriptorSources(descriptor).map((source2) => Object.freeze({ label: source2.id, source: source2 })))
+  });
+}
+function descriptorFactGroups(descriptor) {
+  const identityFacts = descriptor.interpretation === "codec" ? [
+    { id: "format", label: "Format", value: descriptor.identity.formatId, provenance: [] },
+    { id: "codec", label: "Codec", value: descriptor.identity.codecId, provenance: [] },
+    {
+      id: "version",
+      label: "Codec version",
+      value: descriptor.identity.codecVersion,
+      provenance: []
+    },
+    {
+      id: "confidence",
+      label: "Confidence",
+      value: descriptor.identity.confidence,
+      provenance: []
+    }
+  ] : [{ id: "interpretation", label: "Interpretation", value: "none", provenance: [] }];
+  const groups = [
+    {
+      group: { id: "identity", label: "Identity", factCount: identityFacts.length },
+      facts: Object.freeze(identityFacts.map((item) => Object.freeze(item)))
+    }
+  ];
+  if (descriptor.traits.length > 0) {
+    const facts = Object.freeze(descriptor.traits.map((trait) => Object.freeze({
+      id: trait.id,
+      label: trait.id,
+      value: trait.state,
+      provenance: Object.freeze([])
+    })));
+    groups.push({ group: { id: "traits", label: "Traits", factCount: facts.length }, facts });
+  }
+  if (descriptor.interpretation === "codec") {
+    for (const group2 of [...descriptor.metadata].sort((left, right) => (left.order ?? 0) - (right.order ?? 0) || compareUtf8(left.id, right.id))) {
+      const facts = Object.freeze(group2.entries.map((entry2) => Object.freeze({
+        id: entry2.key,
+        label: entry2.key,
+        value: entry2.value,
+        provenance: Object.freeze([...entry2.provenance ?? []]),
+        ...entry2.knowledgeTarget === void 0 ? {} : { knowledgeTarget: entry2.knowledgeTarget }
+      })));
+      groups.push({
+        group: { id: group2.id, label: group2.label, factCount: facts.length },
+        facts
+      });
+    }
+  }
+  return Object.freeze(groups.map((item) => Object.freeze({ group: Object.freeze(item.group), facts: item.facts })));
+}
+async function graphRelations(descriptor, source2) {
+  if (source2 === void 0)
+    return Object.freeze([]);
+  const graph = await materializeGraph(source2, DEFAULT_GRAPH_MERGE);
+  const descriptorSubject = serializeSubjectRef(descriptorSubjectRef(descriptor));
+  const ownerIds = new Set(graph.nodes.filter((node) => node.id === descriptorSubject || node.subject === descriptorSubject || node.id === descriptor.subjectUri || node.subject === descriptor.subjectUri).map((node) => node.id));
+  ownerIds.add(descriptorSubject);
+  ownerIds.add(descriptor.subjectUri);
+  const nodes = new Map(graph.nodes.map((node) => [node.id, node]));
+  const relations = /* @__PURE__ */ new Map();
+  for (const edge2 of graph.edges) {
+    const outbound = ownerIds.has(edge2.from);
+    const inbound = ownerIds.has(edge2.to);
+    if (!outbound && !inbound)
+      continue;
+    const target = nodes.get(outbound ? edge2.to : edge2.from);
+    if (target?.subject === void 0)
+      continue;
+    const relation2 = Object.freeze({
+      role: edge2.role ?? (outbound ? "outbound" : "inbound"),
+      subjectId: target.subject,
+      label: target.label,
+      kind: target.kind ?? target.type,
+      ...edge2.dead === true ? { dead: true } : {}
+    });
+    const key3 = relationFactKey(relation2);
+    const previous = relations.get(key3);
+    if (previous === void 0 || previous.dead === true && relation2.dead !== true) {
+      relations.set(key3, relation2);
+    }
+  }
+  return Object.freeze([...relations.values()].sort((a2, b2) => compareUtf8(relationFactKey(a2), relationFactKey(b2))));
+}
+function createDescriptorFallbackSubjectFactsSource(options) {
+  const groups = descriptorFactGroups(options.descriptor);
+  const factsByGroup = new Map(groups.map((item) => [item.group.id, item.facts]));
+  const relations = graphRelations(options.descriptor, options.relations);
+  const summary = async () => {
+    const related = await relations;
+    const preview2 = descriptorPreview(options.descriptor, options.kindDefinition);
+    return Object.freeze({
+      snapshotId: `fallback-card:${options.descriptor.subjectUri}@${options.descriptor.revision}`,
+      identity: descriptorIdentity(options.descriptor),
+      groupCount: groups.length,
+      relationCount: related.length,
+      ...preview2 === void 0 ? {} : { preview: preview2 },
+      ...options.kindDefinition?.card === void 0 ? {} : { card: Object.freeze({ ...options.kindDefinition.card }) }
+    });
+  };
+  return Object.freeze({
+    async summary(signal) {
+      signal?.throwIfAborted();
+      return summary();
+    },
+    async groups(page2, signal) {
+      signal?.throwIfAborted();
+      return pageOf(groups.map((item) => item.group), page2);
+    },
+    async facts(groupId, page2, signal) {
+      signal?.throwIfAborted();
+      return pageOf(factsByGroup.get(groupId) ?? [], page2);
+    },
+    async relations(page2, signal) {
+      signal?.throwIfAborted();
+      return pageOf(await relations, page2);
+    }
+  });
+}
+async function materializeFacts(source2, options) {
+  const summary = await source2.summary(options.signal);
+  const groups = await readAll(source2.groups.bind(source2), options.maxGroups, options.pageSize, options.signal);
+  const facts = /* @__PURE__ */ new Map();
+  for (const group2 of groups.items) {
+    const page2 = await readAll((request, signal) => source2.facts(group2.id, request, signal), options.maxFactsPerGroup, options.pageSize, options.signal);
+    facts.set(group2.id, page2.items);
+  }
+  const relations = await readAll(source2.relations.bind(source2), options.maxRelations, options.pageSize, options.signal);
+  return Object.freeze({ summary, groups: groups.items, facts, relations: relations.items });
+}
+function createCompositeSubjectFactsSource(sources, input = {}) {
+  if (sources.length === 0)
+    throw new TypeError("subject facts composition requires a source");
+  const options = {
+    maxGroups: positive(input.maxGroups ?? DEFAULT_FACTS_MERGE.maxGroups, "maxGroups"),
+    maxFactsPerGroup: positive(input.maxFactsPerGroup ?? DEFAULT_FACTS_MERGE.maxFactsPerGroup, "maxFactsPerGroup"),
+    maxRelations: positive(input.maxRelations ?? DEFAULT_FACTS_MERGE.maxRelations, "maxRelations"),
+    pageSize: positive(input.pageSize ?? DEFAULT_FACTS_MERGE.pageSize, "pageSize"),
+    ...input.signal === void 0 ? {} : { signal: input.signal }
+  };
+  const snapshot3 = (async () => {
+    const loaded = [];
+    for (const source2 of sources)
+      loaded.push(await materializeFacts(source2, options));
+    const groupMap = /* @__PURE__ */ new Map();
+    const factMaps = /* @__PURE__ */ new Map();
+    const relationMap = /* @__PURE__ */ new Map();
+    for (const item of loaded) {
+      for (const group2 of item.groups) {
+        if (!groupMap.has(group2.id))
+          groupMap.set(group2.id, group2);
+        const facts2 = factMaps.get(group2.id) ?? /* @__PURE__ */ new Map();
+        for (const fact3 of item.facts.get(group2.id) ?? [])
+          if (!facts2.has(fact3.id))
+            facts2.set(fact3.id, fact3);
+        factMaps.set(group2.id, facts2);
+      }
+      for (const relation2 of item.relations) {
+        const key3 = relationFactKey(relation2);
+        const previous = relationMap.get(key3);
+        if (previous === void 0 || previous.dead === true && relation2.dead !== true) {
+          relationMap.set(key3, relation2);
+        }
+      }
+    }
+    const groups = Object.freeze([...groupMap.values()].map((group2) => Object.freeze({ ...group2, factCount: factMaps.get(group2.id)?.size ?? 0 })));
+    const facts = new Map([...factMaps.entries()].map(([groupId, values]) => [
+      groupId,
+      Object.freeze([...values.values()])
+    ]));
+    const relations = Object.freeze([...relationMap.values()].sort((a2, b2) => compareUtf8(relationFactKey(a2), relationFactKey(b2))));
+    const primary = loaded[0];
+    const preview2 = loaded.find((item) => item.summary.preview !== void 0)?.summary.preview;
+    const card = loaded.find((item) => item.summary.card !== void 0)?.summary.card;
+    const summary = Object.freeze({
+      snapshotId: `composite:${loaded.map((item) => item.summary.snapshotId).join("|")}`,
+      identity: primary.summary.identity,
+      groupCount: groups.length,
+      relationCount: relations.length,
+      ...preview2 === void 0 ? {} : { preview: preview2 },
+      ...card === void 0 ? {} : { card }
+    });
+    return { summary, groups, facts, relations };
+  })();
+  return Object.freeze({
+    async summary(signal) {
+      signal?.throwIfAborted();
+      return (await snapshot3).summary;
+    },
+    async groups(page2, signal) {
+      signal?.throwIfAborted();
+      return pageOf((await snapshot3).groups, page2);
+    },
+    async facts(groupId, page2, signal) {
+      signal?.throwIfAborted();
+      return pageOf((await snapshot3).facts.get(groupId) ?? [], page2);
+    },
+    async relations(page2, signal) {
+      signal?.throwIfAborted();
+      return pageOf((await snapshot3).relations, page2);
+    }
+  });
+}
+function descriptorSubjectRef(descriptor) {
+  return parseSubjectRef(descriptor.subjectUri);
+}
+
+// packages/host/dist/session.js
 function rejected(reason, message) {
   return {
     state: "rejected",
@@ -7156,7 +8568,21 @@ async function assembleSubjectDescriptor(value2) {
   });
 }
 function createAssetSession(options) {
-  const descriptor = options.descriptor;
+  const originalDescriptor = options.descriptor;
+  const originalOffers = new Set(originalDescriptor.dataSources.map((item) => `${item.contract}@${item.major}`));
+  const metadataFields = originalDescriptor.interpretation === "codec" ? metadataFieldProjections(originalDescriptor.metadata) : Object.freeze([]);
+  const projectsRelations = options.subjectProjection !== void 0 && metadataFields.length > 0;
+  const dataSources = [...originalDescriptor.dataSources];
+  if (!originalOffers.has("common.view/subject-facts-source@1")) {
+    dataSources.push({ contract: "common.view/subject-facts-source", major: 1 });
+  }
+  if (projectsRelations && !originalOffers.has("common.view/relation-graph-source@1")) {
+    dataSources.push({ contract: "common.view/relation-graph-source", major: 1 });
+  }
+  const descriptor = Object.freeze({
+    ...originalDescriptor,
+    dataSources: Object.freeze(dataSources)
+  });
   const operationByHandler = new Map(descriptor.operations.map((item) => [item.handlerId, item]));
   const declarationByHandler = new Map(options.operationDeclarations.map((item) => [item.handlerId, item]));
   const handlers = new Map(options.handlers);
@@ -7164,6 +8590,77 @@ function createAssetSession(options) {
   const subscribers = /* @__PURE__ */ new Set();
   let state = "live";
   let disposal;
+  let genericGraph;
+  const projectedGraph = () => {
+    if (options.subjectProjection === void 0) {
+      throw new TypeError("subject relation projection is unavailable");
+    }
+    genericGraph ??= createFieldRelationGraphSource({
+      owner: descriptorSubjectRef(originalDescriptor),
+      ownerLabel: originalDescriptor.interpretation === "codec" ? originalDescriptor.identity.formatLabel : originalDescriptor.subjectUri,
+      ownerKind: originalDescriptor.interpretation === "codec" ? `format:${originalDescriptor.identity.formatId}` : "format:unknown",
+      fields: metadataFields,
+      resolver: options.subjectProjection.references,
+      ...options.subjectProjection.budget === void 0 ? {} : { budget: options.subjectProjection.budget }
+    });
+    return genericGraph;
+  };
+  const releaseTogether = (value2, callbacks) => {
+    let released = false;
+    return Object.freeze({
+      value: value2,
+      async release() {
+        if (released)
+          return;
+        released = true;
+        const results = await Promise.allSettled([...callbacks].reverse().map((callback) => callback()));
+        const failure3 = results.find((result) => result.status === "rejected");
+        if (failure3?.status === "rejected")
+          throw failure3.reason;
+      }
+    });
+  };
+  const openGraph = async () => {
+    const authoritative = originalOffers.has("common.view/relation-graph-source@1") ? await options.openDataSource("common.view/relation-graph-source", 1) : void 0;
+    try {
+      const generic = projectsRelations ? await projectedGraph() : void 0;
+      if (authoritative !== void 0 && generic !== void 0) {
+        return releaseTogether(createCompositeRelationGraphSource([authoritative.value, generic]), [
+          authoritative.release
+        ]);
+      }
+      if (authoritative !== void 0)
+        return authoritative;
+      if (generic !== void 0)
+        return releaseTogether(generic, []);
+      throw new TypeError("relation graph source is unavailable");
+    } catch (error5) {
+      await authoritative?.release();
+      throw error5;
+    }
+  };
+  const openFacts = async () => {
+    const graph = originalOffers.has("common.view/relation-graph-source@1") || projectsRelations ? await openGraph() : void 0;
+    let authoritative;
+    try {
+      authoritative = originalOffers.has("common.view/subject-facts-source@1") ? await options.openDataSource("common.view/subject-facts-source", 1) : void 0;
+      const fallback = createDescriptorFallbackSubjectFactsSource({
+        descriptor: originalDescriptor,
+        ...graph === void 0 ? {} : { relations: graph.value },
+        ...options.subjectProjection?.kindDefinition === void 0 ? {} : { kindDefinition: options.subjectProjection.kindDefinition }
+      });
+      return releaseTogether(authoritative === void 0 ? fallback : createCompositeSubjectFactsSource([authoritative.value, fallback]), [
+        ...authoritative === void 0 ? [] : [authoritative.release],
+        ...graph === void 0 ? [] : [graph.release]
+      ]);
+    } catch (error5) {
+      await Promise.allSettled([
+        ...authoritative === void 0 ? [] : [authoritative.release()],
+        ...graph === void 0 ? [] : [graph.release()]
+      ]);
+      throw error5;
+    }
+  };
   const publish = (event) => {
     for (const subscriber of subscribers) {
       subscriber.queue.push(event);
@@ -7278,6 +8775,12 @@ function createAssetSession(options) {
           message: state === "stale-revision" ? "the source changed; reopen the asset before accessing data sources" : "the asset session has been disposed"
         });
       }
+      if (contract === "common.view/relation-graph-source" && major === 1) {
+        return openGraph();
+      }
+      if (contract === "common.view/subject-facts-source" && major === 1) {
+        return openFacts();
+      }
       return options.openDataSource(contract, major);
     },
     operations: () => operations,
@@ -7326,6 +8829,901 @@ function createAssetSession(options) {
       publish({ kind: "state", state });
     }
   });
+}
+
+// packages/host/dist/container-composition.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/namespace-origin.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var NAMESPACE_SCOPES = Object.freeze([
+  "current-mount",
+  "enclosing-container"
+]);
+var NESTED_ENTRY_NOT_FOUND = "x3.host/nested-entry-not-found";
+function containerEntryRevision(containerRevision, entryId, byteLength) {
+  return revisionIdFromRef({
+    kind: "provider-token",
+    value: `${String(containerRevision)}!${entryId}:${byteLength}`
+  });
+}
+function createNamespaceCompanionOrigin(options) {
+  const pageLimit = options.pageLimit ?? 256;
+  const caseSensitivity = options.caseSensitivity ?? "insensitive";
+  const fold2 = (value2) => caseSensitivity === "insensitive" ? value2.toLowerCase() : value2;
+  const index = /* @__PURE__ */ new Map();
+  const listing = async (prefix, signal) => {
+    const cached = index.get(prefix);
+    if (cached !== void 0)
+      return cached;
+    const built = /* @__PURE__ */ new Map();
+    const spellings = [...new Set(prefix === "" ? [""] : [prefix, fold2(prefix)])];
+    for (const spelling of spellings) {
+      let cursor4;
+      do {
+        throwIfAborted(signal);
+        const page2 = await options.namespace.list(spelling, cursor4 === void 0 ? { limit: pageLimit } : { cursor: cursor4, limit: pageLimit }, signal);
+        for (const entry2 of page2.items) {
+          if (entry2.kind !== "file")
+            continue;
+          const key3 = fold2(entry2.path);
+          if (!built.has(key3)) {
+            built.set(key3, {
+              entryId: entry2.id,
+              path: entry2.path,
+              ...entry2.size === void 0 ? {} : { size: entry2.size },
+              revision: entry2.revision
+            });
+          }
+        }
+        cursor4 = page2.nextCursor;
+      } while (cursor4 !== void 0);
+    }
+    index.set(prefix, built);
+    return built;
+  };
+  return Object.freeze({
+    primaryLogicalId: options.primaryLogicalId,
+    caseSensitivity,
+    scopes: NAMESPACE_SCOPES,
+    async *enumerate(scope, enumeration, signal) {
+      throwIfAborted(signal);
+      if (scope !== "current-mount" && scope !== "enclosing-container")
+        return;
+      for (const entry2 of (await listing(enumeration.prefix, signal)).values()) {
+        throwIfAborted(signal);
+        yield Object.freeze({
+          logicalId: entry2.path,
+          ...entry2.size === void 0 ? {} : { size: entry2.size }
+        });
+      }
+    },
+    async open(logicalId, signal) {
+      throwIfAborted(signal);
+      const entry2 = (await listing(logicalId, signal)).get(fold2(logicalId));
+      if (entry2 === void 0) {
+        throw new ModkitError({
+          code: NESTED_ENTRY_NOT_FOUND,
+          message: `container has no entry \xAB${logicalId}\xBB`,
+          context: { logicalId }
+        });
+      }
+      const refLease = await options.namespace.openEntry(entry2.entryId, signal);
+      let bytes2;
+      try {
+        bytes2 = await options.extract(entry2.entryId, signal);
+      } catch (error5) {
+        await refLease.release();
+        throw error5;
+      }
+      const source2 = containerEntrySource(refLease.value, containerEntryRevision(options.containerRevision, entry2.entryId, bytes2.byteLength), bytes2);
+      return Object.freeze({ value: source2, release: () => refLease.release() });
+    }
+  });
+}
+function createWorkspaceNamespaceCompanionOrigin(options) {
+  return createCompositeWorkspaceNamespaceCompanionOrigin({
+    primaryLogicalId: options.primaryLogicalId,
+    roots: options.logicalRoots.map((root) => ({
+      ...root,
+      namespace: options.namespace,
+      containerRevision: options.containerRevision,
+      extract: options.extract
+    })),
+    ...options.caseSensitivity === void 0 ? {} : { caseSensitivity: options.caseSensitivity },
+    ...options.pageLimit === void 0 ? {} : { pageLimit: options.pageLimit },
+    ...options.maxPages === void 0 ? {} : { maxPages: options.maxPages }
+  });
+}
+function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
+  const pageLimit = options.pageLimit ?? 256;
+  const maxPages = options.maxPages ?? 4096;
+  const caseSensitivity = options.caseSensitivity ?? "insensitive";
+  const fold2 = (value2) => caseSensitivity === "insensitive" ? value2.toLowerCase() : value2;
+  const roots = options.roots.map((root) => {
+    const pathPrefix = root.pathPrefix === "" ? "" : normalizeCompanionLogicalId(root.pathPrefix).replace(/\/$/u, "");
+    const logicalPrefix = root.logicalPrefix === void 0 || root.logicalPrefix === "" ? "" : normalizeCompanionLogicalId(root.logicalPrefix).replace(/\/$/u, "");
+    return Object.freeze({
+      rootId: root.rootId,
+      pathPrefix,
+      logicalPrefix,
+      namespace: root.namespace,
+      containerRevision: root.containerRevision,
+      extract: root.extract
+    });
+  });
+  if (roots.length === 0)
+    throw new TypeError("workspace namespace origin requires a logical root");
+  if (new Set(roots.map((root) => root.rootId)).size !== roots.length) {
+    throw new TypeError("workspace namespace origin root ids must differ");
+  }
+  const byLogicalId = /* @__PURE__ */ new Map();
+  const pages = async function* (root, prefix, signal) {
+    const spellings = [...new Set(prefix === "" ? [""] : [prefix, fold2(prefix)])];
+    for (const spelling of spellings) {
+      let cursor4;
+      let pageCount = 0;
+      const seenCursors = /* @__PURE__ */ new Set();
+      do {
+        throwIfAborted(signal);
+        if (pageCount >= maxPages) {
+          throw new RangeError(`workspace namespace prefix exceeds ${maxPages} pages`);
+        }
+        if (cursor4 !== void 0) {
+          if (seenCursors.has(cursor4)) {
+            throw new RangeError("workspace namespace paging cursor repeated");
+          }
+          seenCursors.add(cursor4);
+        }
+        const page2 = await root.namespace.list(spelling, cursor4 === void 0 ? { limit: pageLimit } : { cursor: cursor4, limit: pageLimit }, signal);
+        yield* page2.items;
+        pageCount += 1;
+        cursor4 = page2.nextCursor;
+      } while (cursor4 !== void 0);
+    }
+  };
+  const joinPrefix = (prefix, suffix) => prefix === "" ? suffix : suffix === "" ? prefix : `${prefix}/${suffix}`;
+  const relativeRequest = (root, logicalId) => {
+    if (logicalId === "")
+      return "";
+    if (root.logicalPrefix === "")
+      return logicalId;
+    if (fold2(logicalId) === fold2(root.logicalPrefix))
+      return "";
+    const prefix = `${root.logicalPrefix}/`;
+    return fold2(logicalId).startsWith(fold2(prefix)) ? logicalId.slice(prefix.length) : void 0;
+  };
+  const remember2 = (root, entry2) => {
+    if (entry2.kind !== "file")
+      return void 0;
+    const prefix = root.pathPrefix === "" ? "" : `${root.pathPrefix}/`;
+    if (prefix !== "" && !fold2(entry2.path).startsWith(fold2(prefix)))
+      return void 0;
+    const relative = prefix === "" ? entry2.path : entry2.path.slice(prefix.length);
+    if (relative === "")
+      return void 0;
+    const logicalId = joinPrefix(root.logicalPrefix, relative);
+    const key3 = fold2(logicalId);
+    if (!byLogicalId.has(key3)) {
+      byLogicalId.set(key3, {
+        entryId: entry2.id,
+        path: entry2.path,
+        ...entry2.size === void 0 ? {} : { size: entry2.size },
+        revision: entry2.revision,
+        namespace: root.namespace,
+        containerRevision: root.containerRevision,
+        extract: root.extract
+      });
+    }
+    return logicalId;
+  };
+  const find = async (logicalId, signal) => {
+    const key3 = fold2(logicalId);
+    const cached = byLogicalId.get(key3);
+    if (cached !== void 0)
+      return cached;
+    for (const root of roots) {
+      const relative = relativeRequest(root, logicalId);
+      if (relative === void 0)
+        continue;
+      for await (const entry2 of pages(root, joinPrefix(root.pathPrefix, relative), signal)) {
+        const remembered = remember2(root, entry2);
+        if (remembered !== void 0 && fold2(remembered) === key3)
+          return byLogicalId.get(key3);
+      }
+    }
+    return void 0;
+  };
+  return Object.freeze({
+    primaryLogicalId: options.primaryLogicalId,
+    caseSensitivity,
+    scopes: Object.freeze(["workspace-dependency-layer"]),
+    async *enumerate(scope, enumeration, signal) {
+      if (scope !== "workspace-dependency-layer")
+        return;
+      const yielded = /* @__PURE__ */ new Set();
+      for (const root of roots) {
+        const relative = relativeRequest(root, enumeration.prefix);
+        if (relative === void 0)
+          continue;
+        for await (const entry2 of pages(root, joinPrefix(root.pathPrefix, relative), signal)) {
+          throwIfAborted(signal);
+          const logicalId = remember2(root, entry2);
+          if (logicalId === void 0 || yielded.has(fold2(logicalId)))
+            continue;
+          yielded.add(fold2(logicalId));
+          yield Object.freeze({
+            logicalId,
+            ...entry2.size === void 0 ? {} : { size: entry2.size }
+          });
+        }
+      }
+    },
+    async open(logicalId, signal) {
+      throwIfAborted(signal);
+      const entry2 = await find(logicalId, signal);
+      if (entry2 === void 0) {
+        throw new ModkitError({
+          code: NESTED_ENTRY_NOT_FOUND,
+          message: `workspace namespace has no entry \xAB${logicalId}\xBB`,
+          context: { logicalId }
+        });
+      }
+      const refLease = await entry2.namespace.openEntry(entry2.entryId, signal);
+      let bytes2;
+      try {
+        bytes2 = await entry2.extract(entry2.entryId, signal);
+      } catch (error5) {
+        await refLease.release();
+        throw error5;
+      }
+      return Object.freeze({
+        value: containerEntrySource(refLease.value, containerEntryRevision(entry2.containerRevision, entry2.entryId, bytes2.byteLength), bytes2),
+        release: () => refLease.release()
+      });
+    }
+  });
+}
+function containerEntrySource(ref2, revision, bytes2) {
+  return Object.freeze({
+    kind: "bytes",
+    ref: ref2,
+    revision,
+    size: BigInt(bytes2.byteLength),
+    async read(offset, length, signal) {
+      throwIfAborted(signal);
+      if (offset < 0n || !Number.isSafeInteger(length) || length < 0) {
+        throw new ModkitError({
+          code: "x3.host/invalid-source-range",
+          message: `container entry read of \xAB${ref2.uri}\xBB must use a non-negative exact range`,
+          context: { uri: ref2.uri, offset: String(offset), length }
+        });
+      }
+      if (offset > BigInt(bytes2.byteLength)) {
+        throw new ModkitError({
+          code: "x3.host/invalid-source-range",
+          message: `container entry read of \xAB${ref2.uri}\xBB starts beyond the entry size`,
+          context: { uri: ref2.uri, offset: String(offset), size: bytes2.byteLength }
+        });
+      }
+      const start = Number(offset);
+      return bytes2.slice(start, Math.min(bytes2.byteLength, start + length));
+    },
+    async *stream(range, signal) {
+      throwIfAborted(signal);
+      const start = Number(range?.offset ?? 0n);
+      const end = range?.length === void 0 ? bytes2.byteLength : start + Number(range.length);
+      yield bytes2.slice(start, Math.min(bytes2.byteLength, end));
+    }
+  });
+}
+
+// packages/host/dist/container-composition.js
+var NAMESPACE_ENTRY_SOURCE = "common.view/namespace-entry-source";
+var CONTAINER_EXTRACT = "container.extract";
+var CONTAINER_PACK = "container.pack";
+var EXPORT_RAW = "export.raw";
+var VIEW_INSPECT = "view.inspect";
+var ENTRY_NOT_FOUND = "x3.host/namespace-entry-not-found";
+var PAGE_LIMIT = 256;
+var BASE64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+function operationHandler(descriptor, id2) {
+  const operation = descriptor.operations.find((item) => item.id === id2 && item.state === "available");
+  return operation?.handlerId;
+}
+function normalizePath(path, allowEmpty) {
+  if (path.includes("\0") || path.includes("\\") || path.startsWith("/")) {
+    throw new ModkitError({
+      code: "x3.host/namespace-path-refused",
+      message: `container namespace path \xAB${path}\xBB is not a confined POSIX path`,
+      context: { path }
+    });
+  }
+  const parts = path.split("/").filter((part) => part !== "" && part !== ".");
+  if (parts.some((part) => part === "..") || !allowEmpty && parts.length === 0) {
+    throw new ModkitError({
+      code: "x3.host/namespace-path-refused",
+      message: `container namespace path \xAB${path}\xBB escapes or does not name an entry`,
+      context: { path }
+    });
+  }
+  return parts.join("/");
+}
+function childRef(root, path) {
+  const parentIds = Object.freeze([...root.parentIds ?? [], root.id]);
+  return Object.freeze({
+    id: `${root.id}!/${path}`,
+    uri: `container-entry:${encodeURIComponent(root.uri)}!/${path.split("/").map(encodeURIComponent).join("/")}`,
+    parentIds
+  });
+}
+function encodeBase64(bytes2) {
+  let encoded = "";
+  for (let index = 0; index < bytes2.byteLength; index += 3) {
+    const first = bytes2[index] ?? 0;
+    const second = bytes2[index + 1] ?? 0;
+    const third = bytes2[index + 2] ?? 0;
+    const value2 = first << 16 | second << 8 | third;
+    encoded += BASE64[value2 >>> 18 & 63];
+    encoded += BASE64[value2 >>> 12 & 63];
+    encoded += index + 1 < bytes2.byteLength ? BASE64[value2 >>> 6 & 63] : "=";
+    encoded += index + 2 < bytes2.byteLength ? BASE64[value2 & 63] : "=";
+  }
+  return encoded;
+}
+function sameRef(left, right) {
+  return left.id === right.id && left.uri === right.uri && JSON.stringify(left.parentIds ?? []) === JSON.stringify(right.parentIds ?? []);
+}
+function isRecord3(value2) {
+  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
+}
+function mergeInspectionResults(carrier, semantic) {
+  if (carrier.state !== "ok" || carrier.output.kind !== "json" || semantic.state !== "ok" || semantic.output.kind !== "json" || !isRecord3(carrier.output.value) || !isRecord3(semantic.output.value)) {
+    return semantic;
+  }
+  return Object.freeze({
+    ...semantic,
+    output: Object.freeze({
+      kind: "json",
+      // Carrier facts fill fields the semantic summary does not own. The semantic interpretation
+      // remains authoritative on collisions, and the semantic realm never receives carrier data.
+      value: Object.freeze({ ...carrier.output.value, ...semantic.output.value })
+    }),
+    diagnostics: Object.freeze([...carrier.diagnostics, ...semantic.diagnostics])
+  });
+}
+function isNonBlank(value2) {
+  return typeof value2 === "string" && value2.trim() !== "";
+}
+function isSourceRef(value2) {
+  return isRecord3(value2) && isNonBlank(value2["id"]) && isNonBlank(value2["uri"]) && (value2["parentIds"] === void 0 || Array.isArray(value2["parentIds"]) && value2["parentIds"].every(isNonBlank));
+}
+function isEntryTarget(value2) {
+  if (!isRecord3(value2) || !isSourceRef(value2["ownerSource"]))
+    return false;
+  const revision = value2["expectedRevision"];
+  return isNonBlank(value2["targetId"]) && isNonBlank(value2["subjectUri"]) && value2["subjectUri"] === value2["ownerSource"].uri && Array.isArray(value2["semanticPath"]) && value2["semanticPath"].every(isNonBlank) && isRecord3(revision) && isNonBlank(revision["compositionFingerprint"]) && isRecord3(revision["bindings"]) && Object.keys(revision["bindings"]).length > 0 && Object.entries(revision["bindings"]).every(([bindingId2, bindingRevision]) => isNonBlank(bindingId2) && isNonBlank(bindingRevision)) && (revision["namespaceRevision"] === void 0 || isNonBlank(revision["namespaceRevision"]));
+}
+function revisionMatches(target, binding) {
+  return Object.values(target.expectedRevision.bindings).some((revision) => revision === binding.sourceRevision);
+}
+function invalidEntryPlan(message, context) {
+  throw new ModkitError({
+    code: "x3.host/container-entry-edit-plan-invalid",
+    message,
+    ...context === void 0 ? {} : { context }
+  });
+}
+function replacementsFromPlan(plan, bindings, budget) {
+  if (!isRecord3(plan) || !Array.isArray(plan.targets) || plan.targets.length === 0 || plan.targets.length > budget.maxNodes || !Array.isArray(plan.edits) || plan.edits.length === 0 || plan.edits.length > budget.maxNodes) {
+    return invalidEntryPlan("a composed container edit plan must contain a bounded non-empty edit set");
+  }
+  const targets = /* @__PURE__ */ new Map();
+  for (const target of plan.targets) {
+    if (!isEntryTarget(target) || targets.has(target.targetId)) {
+      return invalidEntryPlan("container entry edit plan contains a malformed or duplicate target");
+    }
+    targets.set(target.targetId, target);
+  }
+  const usedEntries = /* @__PURE__ */ new Set();
+  const usedTargets = /* @__PURE__ */ new Set();
+  let total = 0n;
+  const replacements = Object.freeze(plan.edits.map((edit) => {
+    if (!isRecord3(edit) || edit.operation !== "replace" || edit.range !== void 0 || !isSourceRef(edit.source) || !isRecord3(edit.payload) || edit.payload.kind !== "inline" || !(edit.payload.bytes instanceof Uint8Array)) {
+      return invalidEntryPlan("M4 container composition accepts only full-file inline replacements of issued entries");
+    }
+    const target = targets.get(edit.targetId);
+    const binding = bindings.get(edit.source.id);
+    if (target === void 0 || binding === void 0 || !sameRef(edit.source, binding.ref) || !sameRef(target.ownerSource, binding.ref) || !revisionMatches(target, binding)) {
+      return invalidEntryPlan("container entry edit does not match an adapter-issued ref/revision", {
+        targetId: edit.targetId,
+        sourceId: edit.source.id
+      });
+    }
+    usedTargets.add(edit.targetId);
+    if (usedEntries.has(binding.entryId)) {
+      return invalidEntryPlan(`container entry ${binding.entryId} is replaced more than once`);
+    }
+    usedEntries.add(binding.entryId);
+    const length = BigInt(edit.payload.bytes.byteLength);
+    if (edit.payload.bytes.byteLength > budget.maxScalarBytes) {
+      return invalidEntryPlan("a container entry replacement exceeds maxScalarBytes");
+    }
+    total += length;
+    if (total > budget.maxInputBytes) {
+      return invalidEntryPlan("container entry replacements exceed maxInputBytes");
+    }
+    return Object.freeze({
+      entryId: binding.entryId,
+      expectedRevision: binding.providerRevision,
+      bytesBase64: encodeBase64(edit.payload.bytes)
+    });
+  }));
+  if (usedTargets.size !== targets.size) {
+    return invalidEntryPlan("container entry edit plan contains an unreferenced target");
+  }
+  return replacements;
+}
+function composedOperations(options) {
+  const operationByHandler = new Map(options.semanticSpec.operations.map((operation) => [operation.handlerId, operation]));
+  let disposed = false;
+  return Object.freeze({
+    async invoke(handlerId, input, invokeOptions) {
+      if (disposed) {
+        return Object.freeze({
+          state: "rejected",
+          reason: "cancelled",
+          diagnostics: Object.freeze([
+            Object.freeze({
+              code: "x3.host/container-operation-session-disposed",
+              severity: "error",
+              message: "the composed container operation session has been disposed"
+            })
+          ])
+        });
+      }
+      throwIfAborted(invokeOptions?.signal);
+      const declaration = operationByHandler.get(handlerId);
+      if (declaration?.id === EXPORT_RAW) {
+        if (options.exportRawHandlerId === void 0) {
+          throw new ModkitError({
+            code: "x3.host/container-export-raw-unavailable",
+            message: "the retained container session publishes no available export.raw operation"
+          });
+        }
+        return options.parent.invoke(options.exportRawHandlerId, input, invokeOptions);
+      }
+      const result = await options.semantic.invoke(handlerId, input, invokeOptions);
+      throwIfAborted(invokeOptions?.signal);
+      if (handlerId === options.semanticInspectHandlerId && options.parentInspectHandlerId !== void 0 && result.state === "ok") {
+        const carrier = await options.parent.invoke(options.parentInspectHandlerId, input, invokeOptions);
+        throwIfAborted(invokeOptions?.signal);
+        if (carrier.state !== "ok")
+          return carrier;
+        return mergeInspectionResults(carrier, result);
+      }
+      if (result.state !== "ok" || result.output.kind !== "edit-plan")
+        return result;
+      if (declaration === void 0 || !declaration.mutatesSource || !declaration.outputKinds?.includes("edit-plan")) {
+        return invalidEntryPlan(`handler ${handlerId} returned an edit plan without a declared mutating edit-plan operation`);
+      }
+      if (options.packHandlerId === void 0) {
+        throw new ModkitError({
+          code: "x3.host/container-pack-unavailable",
+          message: "the retained container session publishes no available container.pack operation"
+        });
+      }
+      const replacements = replacementsFromPlan(result.output.plan, options.bindings, options.budget);
+      const request = Object.freeze({
+        schemaVersion: 1,
+        expectedContainerRevision: options.parentRevision,
+        replacements,
+        intent: Object.freeze({
+          operation: declaration?.id ?? handlerId,
+          input,
+          semanticPlanId: result.output.plan.planId
+        })
+      });
+      throwIfAborted(invokeOptions?.signal);
+      const packed = await options.parent.invoke(options.packHandlerId, request, invokeOptions);
+      throwIfAborted(invokeOptions?.signal);
+      if (packed.state === "ok" && packed.output.kind !== "edit-plan") {
+        throw new ModkitError({
+          code: "x3.host/container-pack-result-invalid",
+          message: "container.pack must return the outer container as an edit-plan"
+        });
+      }
+      return packed;
+    },
+    async dispose() {
+      disposed = true;
+    }
+  });
+}
+async function createContainerNamespaceComposition(options) {
+  throwIfAborted(options.signal);
+  const descriptor = await options.parent.descriptor();
+  throwIfAborted(options.signal);
+  const extractHandlerId = operationHandler(descriptor, CONTAINER_EXTRACT);
+  if (extractHandlerId === void 0) {
+    throw new ModkitError({
+      code: "x3.host/container-extract-unavailable",
+      message: "a composed container must publish an available container.extract operation"
+    });
+  }
+  if (!descriptor.dataSources.some((item) => item.contract === NAMESPACE_ENTRY_SOURCE && item.major === 1)) {
+    throw new ModkitError({
+      code: "x3.host/container-namespace-unavailable",
+      message: `a composed container must publish ${NAMESPACE_ENTRY_SOURCE}@1`
+    });
+  }
+  const namespaceLease = await options.parent.dataSource(NAMESPACE_ENTRY_SOURCE, 1);
+  try {
+    throwIfAborted(options.signal);
+  } catch (error5) {
+    await namespaceLease.release();
+    throw error5;
+  }
+  const namespace = namespaceLease.value;
+  const parentOperations = options.parent.operations();
+  const bindings = /* @__PURE__ */ new Map();
+  const outstanding = /* @__PURE__ */ new Set();
+  let disposed = false;
+  let exposedEntries = 0;
+  let extractedBytes = 0n;
+  const ensureLive = (signal) => {
+    throwIfAborted(signal);
+    if (disposed) {
+      throw new ModkitError({
+        code: "x3.host/container-composition-disposed",
+        message: "container namespace composition is disposed"
+      });
+    }
+  };
+  const validateEntry = (entry2, requestedPrefix) => {
+    if (entry2 === null || typeof entry2 !== "object" || typeof entry2.id !== "string" || entry2.id === "" || typeof entry2.path !== "string" || typeof entry2.name !== "string" || entry2.name === "" || typeof entry2.revision !== "string" || entry2.revision === "" || entry2.size !== void 0 && (typeof entry2.size !== "bigint" || entry2.size < 0n) || entry2.kind !== "file" && entry2.kind !== "directory") {
+      throw new ModkitError({
+        code: "x3.host/container-namespace-invalid",
+        message: "container namespace returned a malformed entry"
+      });
+    }
+    const normalized = normalizePath(entry2.path, false);
+    if (requestedPrefix !== "" && normalized !== requestedPrefix && !normalized.startsWith(`${requestedPrefix}/`)) {
+      throw new ModkitError({
+        code: "x3.host/container-namespace-invalid",
+        message: `container namespace entry \xAB${normalized}\xBB escaped requested prefix \xAB${requestedPrefix}\xBB`
+      });
+    }
+    exposedEntries += 1;
+    if (exposedEntries > options.budget.maxNodes) {
+      throw new ModkitError({
+        code: "x3.host/container-namespace-entry-budget-exceeded",
+        message: `container namespace exceeded its ${options.budget.maxNodes}-entry budget`
+      });
+    }
+    return normalized === entry2.path ? entry2 : Object.freeze({ ...entry2, path: normalized });
+  };
+  const pages = async function* (prefix, signal) {
+    let cursor4;
+    const seenCursors = /* @__PURE__ */ new Set();
+    do {
+      ensureLive(signal);
+      if (cursor4 !== void 0) {
+        if (seenCursors.has(cursor4)) {
+          throw new ModkitError({
+            code: "x3.host/container-namespace-cursor-repeated",
+            message: "container namespace repeated a paging cursor"
+          });
+        }
+        seenCursors.add(cursor4);
+      }
+      const page2 = await namespace.list(prefix, cursor4 === void 0 ? { limit: PAGE_LIMIT } : { cursor: cursor4, limit: PAGE_LIMIT }, signal);
+      ensureLive(signal);
+      if (page2 === null || typeof page2 !== "object" || !Array.isArray(page2.items) || page2.items.length > PAGE_LIMIT || page2.nextCursor !== void 0 && (typeof page2.nextCursor !== "string" || page2.nextCursor === "")) {
+        throw new ModkitError({
+          code: "x3.host/container-namespace-page-invalid",
+          message: "container namespace returned a malformed or over-limit page"
+        });
+      }
+      for (const entry2 of page2.items) {
+        ensureLive(signal);
+        yield validateEntry(entry2, prefix);
+      }
+      cursor4 = page2.nextCursor;
+    } while (cursor4 !== void 0);
+  };
+  const lookup = async (path, signal) => {
+    ensureLive(signal);
+    const page2 = await namespace.list(path, { limit: 1 }, signal);
+    ensureLive(signal);
+    if (page2 === null || typeof page2 !== "object" || !Array.isArray(page2.items) || page2.items.length > 1) {
+      throw new ModkitError({
+        code: "x3.host/container-namespace-page-invalid",
+        message: "container namespace returned a malformed exact-lookup page"
+      });
+    }
+    const raw = page2.items[0];
+    if (raw === void 0) {
+      throw new ModkitError({
+        code: ENTRY_NOT_FOUND,
+        message: `namespace entry \xAB${path}\xBB does not exist`,
+        context: { path }
+      });
+    }
+    const entry2 = validateEntry(raw, path);
+    if (entry2.path === path) {
+      return entry2.kind === "file" ? { kind: "file", entry: entry2 } : { kind: "directory" };
+    }
+    if (entry2.path.startsWith(`${path}/`))
+      return { kind: "directory" };
+    throw new ModkitError({
+      code: ENTRY_NOT_FOUND,
+      message: `namespace entry \xAB${path}\xBB does not exist`,
+      context: { path }
+    });
+  };
+  const sourceAt = (prefix, ref2, revision) => Object.freeze({
+    kind: "namespace",
+    ref: ref2,
+    revision,
+    async openNamespace(signal) {
+      ensureLive(signal);
+      const assetNamespace = Object.freeze({
+        revision,
+        async *list(requestedPrefix, listSignal) {
+          ensureLive(listSignal);
+          const relativePrefix = normalizePath(requestedPrefix, true);
+          const absolutePrefix = prefix === "" ? relativePrefix : relativePrefix === "" ? prefix : `${prefix}/${relativePrefix}`;
+          const children = /* @__PURE__ */ new Map();
+          for await (const entry2 of pages(absolutePrefix, listSignal)) {
+            const suffix = absolutePrefix === "" ? entry2.path : entry2.path === absolutePrefix ? "" : entry2.path.slice(absolutePrefix.length + 1);
+            if (suffix === "")
+              continue;
+            const [name] = suffix.split("/");
+            if (name === void 0 || name === "")
+              continue;
+            const childPath = relativePrefix === "" ? name : `${relativePrefix}/${name}`;
+            const nested = suffix.includes("/");
+            const value2 = Object.freeze({
+              path: childPath,
+              kind: nested ? "directory" : entry2.kind,
+              ...!nested && entry2.kind === "file" && entry2.size !== void 0 ? { size: entry2.size } : {}
+            });
+            const prior = children.get(childPath);
+            if (prior !== void 0 && prior.kind !== value2.kind) {
+              throw new ModkitError({
+                code: "x3.host/container-namespace-invalid",
+                message: `container namespace path \xAB${childPath}\xBB is both a file and a directory`
+              });
+            }
+            children.set(childPath, value2);
+          }
+          for (const child of [...children.values()].sort((left, right) => left.path < right.path ? -1 : left.path > right.path ? 1 : 0)) {
+            ensureLive(listSignal);
+            yield child;
+          }
+        },
+        async open(requestedPath, openSignal) {
+          ensureLive(openSignal);
+          const relativePath = normalizePath(requestedPath, false);
+          const absolutePath = prefix === "" ? relativePath : `${prefix}/${relativePath}`;
+          const found = await lookup(absolutePath, openSignal);
+          const refForEntry = childRef(options.root, absolutePath);
+          if (found.kind === "directory") {
+            return Object.freeze({
+              value: sourceAt(absolutePath, refForEntry, revisionIdFromRef({
+                kind: "provider-token",
+                value: `${String(options.revision)}!directory:${absolutePath}`
+              })),
+              release: async () => void 0
+            });
+          }
+          const refLease = await namespace.openEntry(found.entry.id, openSignal);
+          let released = false;
+          const release = async () => {
+            if (released)
+              return;
+            released = true;
+            outstanding.delete(release);
+            await refLease.release();
+          };
+          outstanding.add(release);
+          try {
+            ensureLive(openSignal);
+            if (!sameRef(refLease.value, refForEntry)) {
+              if (refLease.value.parentIds === void 0 || !refLease.value.parentIds.includes(options.root.id)) {
+                throw new ModkitError({
+                  code: "x3.host/container-entry-ref-invalid",
+                  message: `container entry \xAB${absolutePath}\xBB is not parented by the outer source`
+                });
+              }
+            }
+            const sourceRevision = containerEntryRevision(options.revision, found.entry.id, found.entry.size ?? 0n);
+            const ref3 = refLease.value;
+            const prior = bindings.get(ref3.id);
+            if (prior !== void 0 && (prior.entryId !== found.entry.id || prior.providerRevision !== found.entry.revision || prior.sourceRevision !== sourceRevision)) {
+              throw new ModkitError({
+                code: "x3.host/container-entry-ref-collision",
+                message: `container reused entry ref ${ref3.id} for different content`
+              });
+            }
+            bindings.set(ref3.id, Object.freeze({
+              entryId: found.entry.id,
+              path: absolutePath,
+              ref: ref3,
+              providerRevision: found.entry.revision,
+              sourceRevision
+            }));
+            let extracted;
+            let extraction;
+            const ensureEntryLive = (signal2) => {
+              ensureLive(signal2);
+              if (released) {
+                throw new ModkitError({
+                  code: "x3.host/container-entry-source-released",
+                  message: `container entry source \xAB${absolutePath}\xBB has been released`
+                });
+              }
+            };
+            const loadBytes = async (signal2) => {
+              ensureEntryLive(signal2);
+              if (extracted !== void 0)
+                return extracted;
+              if (found.entry.size !== void 0 && found.entry.size > BigInt(options.budget.maxScalarBytes)) {
+                throw new ModkitError({
+                  code: "x3.host/container-entry-scalar-budget-exceeded",
+                  message: `container entry \xAB${absolutePath}\xBB exceeds maxScalarBytes`
+                });
+              }
+              extraction ??= (async () => {
+                const invoked = await parentOperations.invoke(extractHandlerId, { entryId: found.entry.id }, signal2 === void 0 ? {} : { signal: signal2 });
+                if (invoked.state !== "ok" || invoked.output.kind !== "bytes") {
+                  throwIfAborted(signal2);
+                  throw new ModkitError({
+                    code: "x3.host/container-entry-unreadable",
+                    message: `container refused to extract entry \xAB${absolutePath}\xBB`
+                  });
+                }
+                const bytes2 = invoked.output.value;
+                if (bytes2.byteLength > options.budget.maxScalarBytes) {
+                  throw new ModkitError({
+                    code: "x3.host/container-entry-scalar-budget-exceeded",
+                    message: `container entry \xAB${absolutePath}\xBB exceeds maxScalarBytes`
+                  });
+                }
+                if (found.entry.size !== void 0 && found.entry.size !== BigInt(bytes2.byteLength)) {
+                  throw new ModkitError({
+                    code: "x3.host/container-entry-size-mismatch",
+                    message: `container extracted ${bytes2.byteLength} bytes for entry \xAB${absolutePath}\xBB, expected ${found.entry.size}`
+                  });
+                }
+                const total = extractedBytes + BigInt(bytes2.byteLength);
+                if (total > options.budget.maxInputBytes) {
+                  throw new ModkitError({
+                    code: "x3.host/container-entry-byte-budget-exceeded",
+                    message: "container composition exceeded maxInputBytes while extracting entries"
+                  });
+                }
+                extractedBytes = total;
+                extracted = bytes2.slice();
+                return extracted;
+              })();
+              try {
+                const bytes2 = await extraction;
+                ensureEntryLive(signal2);
+                return bytes2;
+              } catch (error5) {
+                if (extracted === void 0)
+                  extraction = void 0;
+                throw error5;
+              }
+            };
+            const byteSource = Object.freeze({
+              kind: "bytes",
+              ref: ref3,
+              revision: sourceRevision,
+              ...found.entry.size === void 0 ? {} : { size: found.entry.size },
+              async read(offset, length, signal2) {
+                const bytes2 = await loadBytes(signal2);
+                return containerEntrySource(ref3, sourceRevision, bytes2).read(offset, length, signal2);
+              },
+              async *stream(range, signal2) {
+                const bytes2 = await loadBytes(signal2);
+                yield* containerEntrySource(ref3, sourceRevision, bytes2).stream(range, signal2);
+              }
+            });
+            return Object.freeze({
+              value: byteSource,
+              release
+            });
+          } catch (error5) {
+            await release();
+            throw error5;
+          }
+        }
+      });
+      return Object.freeze({ value: assetNamespace, release: async () => void 0 });
+    }
+  });
+  const source2 = sourceAt("", options.root, options.revision);
+  const packHandlerId = operationHandler(descriptor, CONTAINER_PACK);
+  const exportRawHandlerId = operationHandler(descriptor, EXPORT_RAW);
+  const composition = Object.freeze({
+    source: source2,
+    descriptor,
+    ...packHandlerId === void 0 ? {} : { packHandlerId },
+    ...exportRawHandlerId === void 0 ? {} : { exportRawHandlerId },
+    wrapSession(semantic, semanticDescriptor, semanticSpec, parent) {
+      let sessionDisposed = false;
+      const dispose = async () => {
+        if (sessionDisposed)
+          return;
+        sessionDisposed = true;
+        let firstError;
+        try {
+          await semantic.dispose();
+        } catch (error5) {
+          firstError = error5;
+        }
+        try {
+          await composition.dispose();
+        } catch (error5) {
+          firstError ??= error5;
+        }
+        try {
+          await parent.dispose();
+        } catch (error5) {
+          firstError ??= error5;
+        }
+        if (firstError !== void 0)
+          throw firstError;
+      };
+      const parentInspectHandlerId = operationHandler(descriptor, VIEW_INSPECT);
+      const semanticInspectHandlerId = operationHandler(semanticDescriptor, VIEW_INSPECT);
+      const operations = composedOperations({
+        semantic: semantic.operations(),
+        semanticSpec,
+        parent: parent.operations(),
+        parentRevision: parent.revision,
+        bindings,
+        budget: options.budget,
+        ...packHandlerId === void 0 ? {} : { packHandlerId },
+        ...exportRawHandlerId === void 0 ? {} : { exportRawHandlerId },
+        ...parentInspectHandlerId === void 0 ? {} : { parentInspectHandlerId },
+        ...semanticInspectHandlerId === void 0 ? {} : { semanticInspectHandlerId }
+      });
+      return Object.freeze({
+        revision: semantic.revision,
+        state: () => semantic.state(),
+        descriptor: () => semantic.descriptor(),
+        dataSource: semantic.dataSource.bind(semantic),
+        operations: () => operations,
+        events: (signal) => semantic.events(signal),
+        dispose
+      });
+    },
+    async dispose() {
+      if (disposed)
+        return;
+      disposed = true;
+      let firstError;
+      for (const release of [...outstanding].reverse()) {
+        try {
+          await release();
+        } catch (error5) {
+          firstError ??= error5;
+        }
+      }
+      try {
+        await namespaceLease.release();
+      } catch (error5) {
+        firstError ??= error5;
+      }
+      if (firstError !== void 0)
+        throw firstError;
+    }
+  });
+  return composition;
 }
 
 // packages/host/dist/subject-open.js
@@ -7647,7 +10045,14 @@ function boundedNamespaceProbeSource(source2, plan) {
       message: "namespace probe marker paths must be unique after normalization"
     });
   }
-  let openedEntries = 0;
+  const prefixes = new Set((plan.prefixes ?? []).map((path) => normalizeNamespaceProbePath(path, plan)));
+  if (prefixes.size !== (plan.prefixes?.length ?? 0)) {
+    throw new ModkitError({
+      code: "x3.host/namespace-probe-prefix-duplicate",
+      message: "namespace probe prefixes must be unique after normalization"
+    });
+  }
+  let consumedEntries = 0;
   let consumedBytes = 0n;
   const maximumBytes = BigInt(plan.maxBytes);
   const consume = (length) => {
@@ -7705,11 +10110,41 @@ function boundedNamespaceProbeSource(source2, plan) {
       const lease2 = await source2.openNamespace(signal);
       const guarded = Object.freeze({
         revision: lease2.value.revision,
-        async *list() {
-          throw new ModkitError({
-            code: "x3.host/namespace-probe-traversal-refused",
-            message: "namespace-wide enumeration is forbidden during codec probing"
-          });
+        async *list(prefix, listSignal) {
+          throwIfAborted(listSignal);
+          if (prefixes.size === 0) {
+            throw new ModkitError({
+              code: "x3.host/namespace-probe-traversal-refused",
+              message: "namespace enumeration is forbidden unless the codec declares probe prefixes"
+            });
+          }
+          const normalized = normalizeNamespaceProbePath(prefix, plan);
+          if (!prefixes.has(normalized)) {
+            throw new ModkitError({
+              code: "x3.host/namespace-probe-prefix-refused",
+              message: `codec attempted to enumerate undeclared namespace prefix \xAB${normalized}\xBB`,
+              context: { prefix: normalized, prefixes: [...prefixes] }
+            });
+          }
+          for await (const entry2 of lease2.value.list(normalized, listSignal)) {
+            throwIfAborted(listSignal);
+            const entryPath = normalizeNamespaceProbePath(entry2.path, plan);
+            if (entryPath !== normalized && !entryPath.startsWith(`${normalized}/`)) {
+              throw new ModkitError({
+                code: "x3.host/namespace-probe-prefix-escape",
+                message: `namespace probe entry \xAB${entryPath}\xBB escaped prefix \xAB${normalized}\xBB`,
+                context: { prefix: normalized, path: entryPath }
+              });
+            }
+            consumedEntries += 1;
+            if (consumedEntries > plan.maxEntries) {
+              throw new ModkitError({
+                code: "x3.host/namespace-probe-entry-budget-exceeded",
+                message: `namespace probe exceeded its declared ${plan.maxEntries}-entry budget`
+              });
+            }
+            yield Object.freeze({ ...entry2, path: entryPath });
+          }
         },
         async open(path, openSignal) {
           const normalized = normalizeNamespaceProbePath(path, plan);
@@ -7720,8 +10155,8 @@ function boundedNamespaceProbeSource(source2, plan) {
               context: { path: normalized, markers: [...markers] }
             });
           }
-          openedEntries += 1;
-          if (openedEntries > plan.maxEntries) {
+          consumedEntries += 1;
+          if (consumedEntries > plan.maxEntries) {
             throw new ModkitError({
               code: "x3.host/namespace-probe-entry-budget-exceeded",
               message: `namespace probe exceeded its declared ${plan.maxEntries}-entry budget`
@@ -7895,7 +10330,7 @@ function noServiceResolver() {
     }
   };
 }
-function runnableCandidates(options, offers, signatureWindows, suppressed = []) {
+function runnableCandidates(options, offers, signatureWindows, suppressed = [], route = {}) {
   const candidates = [];
   const path = options.path ?? options.source.ref.uri;
   for (const extension of options.inventory.extensions) {
@@ -7923,7 +10358,18 @@ function runnableCandidates(options, offers, signatureWindows, suppressed = []) 
       if (options.source.kind === "namespace") {
         if (spec.sourceTopology !== "namespace" || spec.probe.kind !== "namespace")
           continue;
+        if (route.containerAliasFormatId === void 0) {
+          if (spec.container !== void 0)
+            continue;
+        } else if (spec.container?.formatId !== route.containerAliasFormatId || !route.containerAliasContributionIds?.has(manifest.id)) {
+          continue;
+        }
       } else {
+        if (route.containerAliasFormatId !== void 0)
+          continue;
+        if (route.containerProviderFormatId !== void 0 && (!spec.roles.includes("container") || !spec.formatRefs.some((item) => item.formatId === route.containerProviderFormatId) || spec.container !== void 0)) {
+          continue;
+        }
         if (spec.sourceTopology !== "single" && spec.sourceTopology !== "bundle" || spec.probe.kind !== "bytes") {
           continue;
         }
@@ -8033,13 +10479,13 @@ async function unresolvedFallback(source2, signal) {
   if (source2.kind === "namespace") {
     return Object.freeze({ preferred: "none", available: Object.freeze([]) });
   }
-  const text3 = await textFallbackAvailable(source2, signal);
+  const text4 = await textFallbackAvailable(source2, signal);
   return Object.freeze({
-    preferred: text3 ? "text" : "hex",
-    available: Object.freeze(text3 ? ["text", "hex"] : ["hex"])
+    preferred: text4 ? "text" : "hex",
+    available: Object.freeze(text4 ? ["text", "hex"] : ["hex"])
   });
 }
-async function openSubject(options) {
+async function openSubjectDirect(options, route = {}) {
   throwIfAborted(options.signal);
   const minimumConfidence = options.minimumConfidence ?? DEFAULT_MINIMUM_CONFIDENCE;
   const maxCandidates = options.maxCandidates ?? DEFAULT_MAX_CANDIDATES;
@@ -8056,7 +10502,7 @@ async function openSubject(options) {
   const executionBackends = options.executionBackends ?? DEFAULT_EXECUTION_BACKENDS;
   const signatureWindows = await readSignatureWindows(options);
   const suppressed = [];
-  const candidates = runnableCandidates(options, offers, signatureWindows, suppressed);
+  const candidates = runnableCandidates(options, offers, signatureWindows, suppressed, route);
   for (const item of suppressed) {
     diagnostics.push(diagnostic("information", "x3.host/candidate-suppressed", `\xAB${item.contributionId}\xBB matches this file but cannot run${item.reasons.length === 0 ? "" : `: ${item.reasons.join(", ")}`}`, [item.extensionId, item.contributionId]));
   }
@@ -8118,7 +10564,8 @@ async function openSubject(options) {
       }
       const record4 = {
         resources,
-        nestedLocks: []
+        nestedLocks: [],
+        ...route.includeSelectionLock ? { selectionLock: buildLockEntry(request, resolved2.result) } : {}
       };
       try {
         const activation = await activateContribution({
@@ -8196,6 +10643,7 @@ async function openSubject(options) {
           activationDiagnostics: Object.freeze(local),
           request,
           makeContext,
+          ...record4.selectionLock === void 0 ? {} : { selectionLock: record4.selectionLock },
           probeScoped: variantRequestsBeyondProbe(candidate.contribution.manifest?.runtimeVariants?.find((item) => item.variantId === candidate.offer.runtimeVariant)?.requestedPermissionClasses ?? [], options.grant)
         }));
         explanations.push({
@@ -8335,7 +10783,10 @@ async function openSubject(options) {
       sourceTopology: best.spec.sourceTopology,
       detection: best.detection
     }));
-    const lockText = serializePolicyLock(best.nestedLocks);
+    const lockText = serializePolicyLock([
+      ...best.nestedLocks,
+      ...best.selectionLock === void 0 ? [] : [best.selectionLock]
+    ]);
     const managedSession = sessionWithResources(session, best.resources, {
       spec: best.spec,
       grant: best.effectiveGrant
@@ -8377,6 +10828,160 @@ async function openSubject(options) {
       candidates: Object.freeze(explanations),
       diagnostics: Object.freeze(diagnostics)
     });
+  }
+}
+function matchingContainerAliases(options) {
+  if (options.source.kind !== "bytes")
+    return Object.freeze([]);
+  const path = options.path ?? options.source.ref.uri;
+  const aliases = [];
+  for (const extension of options.inventory.extensions) {
+    for (const contribution of extension.contributions) {
+      const manifest = contribution.manifest;
+      if (!contribution.activationEligible || manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT || manifest.contract.major !== 1) {
+        continue;
+      }
+      const spec = manifest.spec;
+      if (spec.sourceTopology === "namespace" && spec.container !== void 0 && spec.openIntents.includes(options.intent) && matchesSpec(spec, path, options.mediaType)) {
+        aliases.push(Object.freeze({ contributionId: manifest.id, spec }));
+      }
+    }
+  }
+  return Object.freeze(aliases);
+}
+async function disposeOpened(result) {
+  if (result.state === "opened")
+    await result.session.dispose();
+}
+async function openSubject(options) {
+  const compositionStartedAt = Date.now();
+  const aliases = matchingContainerAliases(options);
+  if (aliases.length === 0)
+    return openSubjectDirect(options);
+  const formats = [
+    ...new Set(aliases.map((alias) => alias.spec.container?.formatId).filter(Boolean))
+  ];
+  if (formats.length !== 1) {
+    throw new ModkitError({
+      code: "x3.host/container-alias-ambiguous",
+      message: `subject selectors name ${formats.length} different container formats`,
+      context: { formats: formats.sort(compareUtf8) }
+    });
+  }
+  if (options.budget.maxDepth < 1) {
+    throw new ModkitError({
+      code: "x3.host/container-composition-depth-exceeded",
+      message: "container composition requires one remaining subject depth"
+    });
+  }
+  const formatId = formats[0];
+  const parent = await openSubjectDirect(options, {
+    containerProviderFormatId: formatId,
+    includeSelectionLock: true
+  });
+  if (parent.state !== "opened") {
+    if (parent.reason === "no-match")
+      return openSubjectDirect(options);
+    return Object.freeze({
+      ...parent,
+      reason: "input-unresolved",
+      diagnostics: Object.freeze([
+        ...parent.diagnostics,
+        diagnostic("error", "x3.host/container-provider-unavailable", `no unique runnable container provider opened format ${formatId}`, [formatId])
+      ])
+    });
+  }
+  let composition;
+  let semanticSession;
+  try {
+    throwIfAborted(options.signal);
+    composition = await createContainerNamespaceComposition({
+      parent: parent.session,
+      root: options.source.ref,
+      revision: options.source.revision,
+      budget: options.budget,
+      ...options.signal === void 0 ? {} : { signal: options.signal }
+    });
+    throwIfAborted(options.signal);
+    const elapsed = Date.now() - compositionStartedAt;
+    const remainingDeadline = options.budget.deadlineMs === void 0 ? void 0 : options.budget.deadlineMs - elapsed;
+    if (remainingDeadline !== void 0 && remainingDeadline <= 0) {
+      throw new ModkitError({
+        code: "x3.host/container-composition-deadline-exceeded",
+        message: "container composition exhausted the subject-open deadline before semantic probing"
+      });
+    }
+    const semanticBudget = Object.freeze({
+      ...options.budget,
+      maxDepth: options.budget.maxDepth - 1,
+      ...remainingDeadline === void 0 ? {} : { deadlineMs: remainingDeadline }
+    });
+    const semantic = await openSubjectDirect({ ...options, source: composition.source, budget: semanticBudget }, {
+      containerAliasFormatId: formatId,
+      containerAliasContributionIds: new Set(aliases.map((alias) => alias.contributionId))
+    });
+    if (semantic.state !== "opened") {
+      await composition.dispose();
+      composition = void 0;
+      if (semantic.reason === "no-candidate" || semantic.reason === "no-match")
+        return parent;
+      await parent.session.dispose();
+      return semantic;
+    }
+    semanticSession = semantic.session;
+    const selectedAlias = aliases.find((alias) => alias.contributionId === semantic.selected.contributionId);
+    if (selectedAlias === void 0) {
+      throw new ModkitError({
+        code: "x3.host/container-semantic-selection-invalid",
+        message: "selected semantic codec is not one of the matched container aliases"
+      });
+    }
+    const selectedSpec = selectedAlias.spec;
+    const needsPack = selectedSpec.operations.some((operation) => operation.mutatesSource && operation.outputKinds?.includes("edit-plan"));
+    if (needsPack && composition.packHandlerId === void 0) {
+      throw new ModkitError({
+        code: "x3.host/container-pack-unavailable",
+        message: `container provider for ${formatId} must publish container.pack for mutating semantic aliases`
+      });
+    }
+    if (selectedSpec.operations.some((operation) => operation.id === "export.raw") && composition.exportRawHandlerId === void 0) {
+      throw new ModkitError({
+        code: "x3.host/container-export-raw-unavailable",
+        message: `container provider for ${formatId} must publish export.raw for semantic raw export`
+      });
+    }
+    const session = composition.wrapSession(semanticSession, semantic.descriptor, selectedSpec, parent.session);
+    semanticSession = void 0;
+    composition = void 0;
+    const lockText = serializePolicyLock([
+      ...parsePolicyLock(parent.lockText).entries,
+      ...parsePolicyLock(semantic.lockText).entries
+    ]);
+    return Object.freeze({
+      ...semantic,
+      session,
+      lockText,
+      candidates: Object.freeze([...parent.candidates, ...semantic.candidates]),
+      diagnostics: Object.freeze([...parent.diagnostics, ...semantic.diagnostics])
+    });
+  } catch (error5) {
+    if (semanticSession !== void 0) {
+      try {
+        await semanticSession.dispose();
+      } catch {
+      }
+    }
+    if (composition !== void 0) {
+      try {
+        await composition.dispose();
+      } catch {
+      }
+    }
+    try {
+      await disposeOpened(parent);
+    } catch {
+    }
+    throw error5;
   }
 }
 
@@ -8667,7 +11272,7 @@ function createCompanionInputResolver(origin, options = {}) {
         unique.push(logicalId);
       }
       const accepted = [];
-      const rejected2 = [];
+      const rejected3 = [];
       for (const logicalId of unique) {
         checkpoint(`validate:${requirement.id}`);
         if (requirement.expected === void 0) {
@@ -8708,7 +11313,7 @@ function createCompanionInputResolver(origin, options = {}) {
           await lease2.release();
         }
         ;
-        (ok2 ? accepted : rejected2).push(logicalId);
+        (ok2 ? accepted : rejected3).push(logicalId);
       }
       const detail = {
         requirementId: requirement.id,
@@ -8717,7 +11322,7 @@ function createCompanionInputResolver(origin, options = {}) {
         checkedScopes: usable,
         requestedScopes: requested,
         matched: unique.length,
-        rejectedByExpectedTraits: rejected2
+        rejectedByExpectedTraits: rejected3
       };
       const singular = requirement.cardinality === "one" || requirement.cardinality === "zero-or-one";
       if (singular && accepted.length > 1) {
@@ -8729,7 +11334,7 @@ function createCompanionInputResolver(origin, options = {}) {
       if (accepted.length === 0) {
         report2?.(diagnostic("information", COMPANION_UNAVAILABLE, `optional companion \xAB${requirement.role}\xBB is absent; the dependent capability stays unavailable`, [requirement.id], {
           ...detail,
-          reason: rejected2.length > 0 ? "expected-traits-rejected" : "no-candidate-matched"
+          reason: rejected3.length > 0 ? "expected-traits-rejected" : "no-candidate-matched"
         }));
         continue;
       }
@@ -8903,295 +11508,11 @@ function buildAssetInput(context, plan, origin, selected, signal) {
   });
 }
 
-// packages/host/dist/namespace-origin.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var NAMESPACE_SCOPES = Object.freeze([
-  "current-mount",
-  "enclosing-container"
-]);
-var NESTED_ENTRY_NOT_FOUND = "x3.host/nested-entry-not-found";
-function containerEntryRevision(containerRevision, entryId, byteLength) {
-  return revisionIdFromRef({
-    kind: "provider-token",
-    value: `${String(containerRevision)}!${entryId}:${byteLength}`
-  });
-}
-function createNamespaceCompanionOrigin(options) {
-  const pageLimit = options.pageLimit ?? 256;
-  const caseSensitivity = options.caseSensitivity ?? "insensitive";
-  const fold2 = (value2) => caseSensitivity === "insensitive" ? value2.toLowerCase() : value2;
-  const index = /* @__PURE__ */ new Map();
-  const listing = async (prefix, signal) => {
-    const cached = index.get(prefix);
-    if (cached !== void 0)
-      return cached;
-    const built = /* @__PURE__ */ new Map();
-    const spellings = [...new Set(prefix === "" ? [""] : [prefix, fold2(prefix)])];
-    for (const spelling of spellings) {
-      let cursor4;
-      do {
-        throwIfAborted(signal);
-        const page2 = await options.namespace.list(spelling, cursor4 === void 0 ? { limit: pageLimit } : { cursor: cursor4, limit: pageLimit }, signal);
-        for (const entry2 of page2.items) {
-          if (entry2.kind !== "file")
-            continue;
-          const key3 = fold2(entry2.path);
-          if (!built.has(key3)) {
-            built.set(key3, {
-              entryId: entry2.id,
-              path: entry2.path,
-              ...entry2.size === void 0 ? {} : { size: entry2.size },
-              revision: entry2.revision
-            });
-          }
-        }
-        cursor4 = page2.nextCursor;
-      } while (cursor4 !== void 0);
-    }
-    index.set(prefix, built);
-    return built;
-  };
-  return Object.freeze({
-    primaryLogicalId: options.primaryLogicalId,
-    caseSensitivity,
-    scopes: NAMESPACE_SCOPES,
-    async *enumerate(scope, enumeration, signal) {
-      throwIfAborted(signal);
-      if (scope !== "current-mount" && scope !== "enclosing-container")
-        return;
-      for (const entry2 of (await listing(enumeration.prefix, signal)).values()) {
-        throwIfAborted(signal);
-        yield Object.freeze({
-          logicalId: entry2.path,
-          ...entry2.size === void 0 ? {} : { size: entry2.size }
-        });
-      }
-    },
-    async open(logicalId, signal) {
-      throwIfAborted(signal);
-      const entry2 = (await listing(logicalId, signal)).get(fold2(logicalId));
-      if (entry2 === void 0) {
-        throw new ModkitError({
-          code: NESTED_ENTRY_NOT_FOUND,
-          message: `container has no entry \xAB${logicalId}\xBB`,
-          context: { logicalId }
-        });
-      }
-      const refLease = await options.namespace.openEntry(entry2.entryId, signal);
-      let bytes2;
-      try {
-        bytes2 = await options.extract(entry2.entryId, signal);
-      } catch (error5) {
-        await refLease.release();
-        throw error5;
-      }
-      const source2 = containerEntrySource(refLease.value, containerEntryRevision(options.containerRevision, entry2.entryId, bytes2.byteLength), bytes2);
-      return Object.freeze({ value: source2, release: () => refLease.release() });
-    }
-  });
-}
-function createWorkspaceNamespaceCompanionOrigin(options) {
-  return createCompositeWorkspaceNamespaceCompanionOrigin({
-    primaryLogicalId: options.primaryLogicalId,
-    roots: options.logicalRoots.map((root) => ({
-      ...root,
-      namespace: options.namespace,
-      containerRevision: options.containerRevision,
-      extract: options.extract
-    })),
-    ...options.caseSensitivity === void 0 ? {} : { caseSensitivity: options.caseSensitivity },
-    ...options.pageLimit === void 0 ? {} : { pageLimit: options.pageLimit },
-    ...options.maxPages === void 0 ? {} : { maxPages: options.maxPages }
-  });
-}
-function createCompositeWorkspaceNamespaceCompanionOrigin(options) {
-  const pageLimit = options.pageLimit ?? 256;
-  const maxPages = options.maxPages ?? 4096;
-  const caseSensitivity = options.caseSensitivity ?? "insensitive";
-  const fold2 = (value2) => caseSensitivity === "insensitive" ? value2.toLowerCase() : value2;
-  const roots = options.roots.map((root) => {
-    const pathPrefix = root.pathPrefix === "" ? "" : normalizeCompanionLogicalId(root.pathPrefix).replace(/\/$/u, "");
-    const logicalPrefix = root.logicalPrefix === void 0 || root.logicalPrefix === "" ? "" : normalizeCompanionLogicalId(root.logicalPrefix).replace(/\/$/u, "");
-    return Object.freeze({
-      rootId: root.rootId,
-      pathPrefix,
-      logicalPrefix,
-      namespace: root.namespace,
-      containerRevision: root.containerRevision,
-      extract: root.extract
-    });
-  });
-  if (roots.length === 0)
-    throw new TypeError("workspace namespace origin requires a logical root");
-  if (new Set(roots.map((root) => root.rootId)).size !== roots.length) {
-    throw new TypeError("workspace namespace origin root ids must differ");
-  }
-  const byLogicalId = /* @__PURE__ */ new Map();
-  const pages = async function* (root, prefix, signal) {
-    const spellings = [...new Set(prefix === "" ? [""] : [prefix, fold2(prefix)])];
-    for (const spelling of spellings) {
-      let cursor4;
-      let pageCount = 0;
-      const seenCursors = /* @__PURE__ */ new Set();
-      do {
-        throwIfAborted(signal);
-        if (pageCount >= maxPages) {
-          throw new RangeError(`workspace namespace prefix exceeds ${maxPages} pages`);
-        }
-        if (cursor4 !== void 0) {
-          if (seenCursors.has(cursor4)) {
-            throw new RangeError("workspace namespace paging cursor repeated");
-          }
-          seenCursors.add(cursor4);
-        }
-        const page2 = await root.namespace.list(spelling, cursor4 === void 0 ? { limit: pageLimit } : { cursor: cursor4, limit: pageLimit }, signal);
-        yield* page2.items;
-        pageCount += 1;
-        cursor4 = page2.nextCursor;
-      } while (cursor4 !== void 0);
-    }
-  };
-  const joinPrefix = (prefix, suffix) => prefix === "" ? suffix : suffix === "" ? prefix : `${prefix}/${suffix}`;
-  const relativeRequest = (root, logicalId) => {
-    if (logicalId === "")
-      return "";
-    if (root.logicalPrefix === "")
-      return logicalId;
-    if (fold2(logicalId) === fold2(root.logicalPrefix))
-      return "";
-    const prefix = `${root.logicalPrefix}/`;
-    return fold2(logicalId).startsWith(fold2(prefix)) ? logicalId.slice(prefix.length) : void 0;
-  };
-  const remember2 = (root, entry2) => {
-    if (entry2.kind !== "file")
-      return void 0;
-    const prefix = root.pathPrefix === "" ? "" : `${root.pathPrefix}/`;
-    if (prefix !== "" && !fold2(entry2.path).startsWith(fold2(prefix)))
-      return void 0;
-    const relative = prefix === "" ? entry2.path : entry2.path.slice(prefix.length);
-    if (relative === "")
-      return void 0;
-    const logicalId = joinPrefix(root.logicalPrefix, relative);
-    const key3 = fold2(logicalId);
-    if (!byLogicalId.has(key3)) {
-      byLogicalId.set(key3, {
-        entryId: entry2.id,
-        path: entry2.path,
-        ...entry2.size === void 0 ? {} : { size: entry2.size },
-        revision: entry2.revision,
-        namespace: root.namespace,
-        containerRevision: root.containerRevision,
-        extract: root.extract
-      });
-    }
-    return logicalId;
-  };
-  const find = async (logicalId, signal) => {
-    const key3 = fold2(logicalId);
-    const cached = byLogicalId.get(key3);
-    if (cached !== void 0)
-      return cached;
-    for (const root of roots) {
-      const relative = relativeRequest(root, logicalId);
-      if (relative === void 0)
-        continue;
-      for await (const entry2 of pages(root, joinPrefix(root.pathPrefix, relative), signal)) {
-        const remembered = remember2(root, entry2);
-        if (remembered !== void 0 && fold2(remembered) === key3)
-          return byLogicalId.get(key3);
-      }
-    }
-    return void 0;
-  };
-  return Object.freeze({
-    primaryLogicalId: options.primaryLogicalId,
-    caseSensitivity,
-    scopes: Object.freeze(["workspace-dependency-layer"]),
-    async *enumerate(scope, enumeration, signal) {
-      if (scope !== "workspace-dependency-layer")
-        return;
-      const yielded = /* @__PURE__ */ new Set();
-      for (const root of roots) {
-        const relative = relativeRequest(root, enumeration.prefix);
-        if (relative === void 0)
-          continue;
-        for await (const entry2 of pages(root, joinPrefix(root.pathPrefix, relative), signal)) {
-          throwIfAborted(signal);
-          const logicalId = remember2(root, entry2);
-          if (logicalId === void 0 || yielded.has(fold2(logicalId)))
-            continue;
-          yielded.add(fold2(logicalId));
-          yield Object.freeze({
-            logicalId,
-            ...entry2.size === void 0 ? {} : { size: entry2.size }
-          });
-        }
-      }
-    },
-    async open(logicalId, signal) {
-      throwIfAborted(signal);
-      const entry2 = await find(logicalId, signal);
-      if (entry2 === void 0) {
-        throw new ModkitError({
-          code: NESTED_ENTRY_NOT_FOUND,
-          message: `workspace namespace has no entry \xAB${logicalId}\xBB`,
-          context: { logicalId }
-        });
-      }
-      const refLease = await entry2.namespace.openEntry(entry2.entryId, signal);
-      let bytes2;
-      try {
-        bytes2 = await entry2.extract(entry2.entryId, signal);
-      } catch (error5) {
-        await refLease.release();
-        throw error5;
-      }
-      return Object.freeze({
-        value: containerEntrySource(refLease.value, containerEntryRevision(entry2.containerRevision, entry2.entryId, bytes2.byteLength), bytes2),
-        release: () => refLease.release()
-      });
-    }
-  });
-}
-function containerEntrySource(ref2, revision, bytes2) {
-  return Object.freeze({
-    kind: "bytes",
-    ref: ref2,
-    revision,
-    size: BigInt(bytes2.byteLength),
-    async read(offset, length, signal) {
-      throwIfAborted(signal);
-      if (offset < 0n || !Number.isSafeInteger(length) || length < 0) {
-        throw new ModkitError({
-          code: "x3.host/invalid-source-range",
-          message: `container entry read of \xAB${ref2.uri}\xBB must use a non-negative exact range`,
-          context: { uri: ref2.uri, offset: String(offset), length }
-        });
-      }
-      if (offset > BigInt(bytes2.byteLength)) {
-        throw new ModkitError({
-          code: "x3.host/invalid-source-range",
-          message: `container entry read of \xAB${ref2.uri}\xBB starts beyond the entry size`,
-          context: { uri: ref2.uri, offset: String(offset), size: bytes2.byteLength }
-        });
-      }
-      const start = Number(offset);
-      return bytes2.slice(start, Math.min(bytes2.byteLength, start + length));
-    },
-    async *stream(range, signal) {
-      throwIfAborted(signal);
-      const start = Number(range?.offset ?? 0n);
-      const end = range?.length === void 0 ? bytes2.byteLength : start + Number(range.length);
-      yield bytes2.slice(start, Math.min(bytes2.byteLength, end));
-    }
-  });
-}
-
 // packages/host/dist/nested-subject.js
 var NESTED_SUBJECT_UNSUPPORTED = "x3.host/nested-subject-unsupported";
 var NESTED_ENTRY_UNREADABLE = "x3.host/nested-entry-unreadable";
-var CONTAINER_EXTRACT = "container.extract";
-var NAMESPACE_ENTRY_SOURCE = "common.view/namespace-entry-source";
+var CONTAINER_EXTRACT2 = "container.extract";
+var NAMESPACE_ENTRY_SOURCE2 = "common.view/namespace-entry-source";
 function nestedSubjectServices(services) {
   return {
     inventory: services.inventory,
@@ -9201,11 +11522,11 @@ function nestedSubjectServices(services) {
   };
 }
 function extractHandlerOf(descriptor) {
-  const operation = descriptor.operations.find((item) => item.id === CONTAINER_EXTRACT);
+  const operation = descriptor.operations.find((item) => item.id === CONTAINER_EXTRACT2);
   if (operation === void 0 || operation.state !== "available") {
     throw new ModkitError({
       code: NESTED_SUBJECT_UNSUPPORTED,
-      message: `the parent subject publishes no available ${CONTAINER_EXTRACT} operation`,
+      message: `the parent subject publishes no available ${CONTAINER_EXTRACT2} operation`,
       context: {
         operations: descriptor.operations.map((item) => item.id),
         ...operation === void 0 ? {} : { state: operation.state, reason: operation.reason }
@@ -9230,19 +11551,67 @@ async function findEntry(namespace, entryId, pageLimit, signal) {
     context: { entryId }
   });
 }
+async function openNestedSubjectRef(options) {
+  throwIfAborted(options.signal);
+  if (options.targetSubject.identity.kind !== "" || options.targetSubject.identity.key !== "") {
+    return void 0;
+  }
+  const pageLimit = options.pageLimit ?? 256;
+  const descriptor = await options.parent.descriptor();
+  if (!descriptor.dataSources.some((item) => item.contract === NAMESPACE_ENTRY_SOURCE2 && item.major === 1)) {
+    return void 0;
+  }
+  const namespaceLease = await options.parent.dataSource(NAMESPACE_ENTRY_SOURCE2, 1);
+  try {
+    const namespace = namespaceLease.value;
+    const seenCursors = /* @__PURE__ */ new Set();
+    let cursor4;
+    let visited = 0;
+    let matchedEntryId;
+    do {
+      throwIfAborted(options.signal);
+      if (cursor4 !== void 0 && !seenCursors.add(cursor4))
+        return void 0;
+      const page2 = await namespace.list("", cursor4 === void 0 ? { limit: pageLimit } : { cursor: cursor4, limit: pageLimit }, options.signal);
+      for (const entry2 of page2.items) {
+        visited += 1;
+        if (visited > options.budget.maxNodes)
+          return void 0;
+        const refLease = await namespace.openEntry(entry2.id, options.signal);
+        let matches3 = false;
+        try {
+          matches3 = subjectRefEquals(rootSubject({ id: refLease.value.uri }, options.targetSubject.workspace), options.targetSubject);
+        } finally {
+          await refLease.release();
+        }
+        if (!matches3)
+          continue;
+        if (matchedEntryId !== void 0 && matchedEntryId !== entry2.id)
+          return void 0;
+        matchedEntryId = entry2.id;
+      }
+      cursor4 = page2.nextCursor;
+    } while (cursor4 !== void 0);
+    if (matchedEntryId === void 0)
+      return void 0;
+    return openNestedSubject({ ...options, entryId: matchedEntryId });
+  } finally {
+    await namespaceLease.release();
+  }
+}
 async function openNestedSubject(options) {
   throwIfAborted(options.signal);
   const pageLimit = options.pageLimit ?? 256;
   const descriptor = await options.parent.descriptor();
   const handlerId = extractHandlerOf(descriptor);
-  if (!descriptor.dataSources.some((item) => item.contract === NAMESPACE_ENTRY_SOURCE && item.major === 1)) {
+  if (!descriptor.dataSources.some((item) => item.contract === NAMESPACE_ENTRY_SOURCE2 && item.major === 1)) {
     throw new ModkitError({
       code: NESTED_SUBJECT_UNSUPPORTED,
-      message: `the parent subject publishes no ${NAMESPACE_ENTRY_SOURCE}@1`,
+      message: `the parent subject publishes no ${NAMESPACE_ENTRY_SOURCE2}@1`,
       context: { dataSources: descriptor.dataSources.map((item) => item.contract) }
     });
   }
-  const namespaceLease = await options.parent.dataSource(NAMESPACE_ENTRY_SOURCE, 1);
+  const namespaceLease = await options.parent.dataSource(NAMESPACE_ENTRY_SOURCE2, 1);
   let released = false;
   const release = async () => {
     if (released)
@@ -9358,6 +11727,102 @@ function sessionHoldingContainer(session, release) {
       }
       if (firstError !== void 0)
         throw firstError;
+    }
+  });
+}
+
+// packages/host/dist/subject-navigation.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var OPENED = Object.freeze({ state: "opened" });
+function rejected2(reason) {
+  return Object.freeze({ state: "rejected", reason });
+}
+function canonicalSubject(value2) {
+  if (value2.length === 0)
+    return void 0;
+  try {
+    const subject = parseSubjectRef(value2);
+    return serializeSubjectRef(subject) === value2 ? subject : void 0;
+  } catch {
+    return void 0;
+  }
+}
+function sameScope(expected, actual) {
+  return expected.sessionId === actual.sessionId && expected.subject === actual.subject && expected.workspace === actual.workspace;
+}
+function linkedSignal(signals) {
+  const controller = new AbortController();
+  const active = signals.filter((signal) => signal !== void 0);
+  const listeners = /* @__PURE__ */ new Map();
+  for (const signal of active) {
+    if (signal.aborted) {
+      controller.abort(signal.reason);
+      break;
+    }
+    const listener = () => controller.abort(signal.reason);
+    listeners.set(signal, listener);
+    signal.addEventListener("abort", listener, { once: true });
+  }
+  return {
+    signal: controller.signal,
+    dispose() {
+      for (const [signal, listener] of listeners)
+        signal.removeEventListener("abort", listener);
+      listeners.clear();
+    }
+  };
+}
+function createScopedViewerSubjectNavigation(options) {
+  if (options.scope.sessionId.length === 0) {
+    throw new TypeError("subject navigation sessionId must be non-empty");
+  }
+  const current = canonicalSubject(options.scope.subject);
+  if (current === void 0)
+    throw new TypeError("subject navigation scope is not canonical");
+  if (current.workspace !== options.scope.workspace) {
+    throw new TypeError("subject navigation scope workspace does not match its subject");
+  }
+  const scope = Object.freeze({
+    sessionId: options.scope.sessionId,
+    subject: options.scope.subject,
+    ...options.scope.workspace === void 0 ? {} : { workspace: options.scope.workspace }
+  });
+  const lifecycle = new AbortController();
+  let disposed = false;
+  const port = Object.freeze({
+    scope,
+    async open(request, signal) {
+      if (disposed || lifecycle.signal.aborted)
+        return rejected2("disposed");
+      if (!sameScope(scope, request.scope))
+        return rejected2("scope-mismatch");
+      const target = canonicalSubject(request.target);
+      if (target === void 0)
+        return rejected2("invalid-subject");
+      if (target.workspace !== current.workspace)
+        return rejected2("workspace-mismatch");
+      const linked = linkedSignal([lifecycle.signal, options.signal, signal]);
+      try {
+        if (linked.signal.aborted)
+          return rejected2("cancelled");
+        const result = await options.open(target, linked.signal);
+        return linked.signal.aborted ? rejected2("cancelled") : result ?? OPENED;
+      } catch (error5) {
+        if (linked.signal.aborted)
+          return rejected2("cancelled");
+        throw error5;
+      } finally {
+        linked.dispose();
+      }
+    }
+  });
+  return Object.freeze({
+    port,
+    dispose(reason = "subject-navigation-disposed") {
+      if (disposed)
+        return;
+      disposed = true;
+      lifecycle.abort(reason);
     }
   });
 }
@@ -9529,6 +11994,11 @@ var COMMON_PRESENTATION_CATALOG = Object.freeze([
         bindingId: "model-optional-5",
         contract: "common.view/model-material-source",
         major: 1
+      }),
+      Object.freeze({
+        bindingId: "model-optional-6",
+        contract: "common.view/model-socket-source",
+        major: 1
       })
     ]),
     spec: Object.freeze({
@@ -9540,8 +12010,10 @@ var COMMON_PRESENTATION_CATALOG = Object.freeze([
         { contract: "common.view/model-skeleton-source", major: 1 },
         { contract: "common.view/model-animation-source", major: 1 },
         { contract: "common.view/model-collision-source", major: 1 },
-        { contract: "common.view/model-material-source", major: 1 }
+        { contract: "common.view/model-material-source", major: 1 },
+        { contract: "common.view/model-socket-source", major: 1 }
       ],
+      optionalServices: [{ contract: "common.render/scene-3d", major: 1 }],
       priority: 350,
       singletonGroup: "center-stage"
     })
@@ -9859,7 +12331,13 @@ function evaluateViewerContribution(spec, descriptor, facts) {
   const optionalBound = Object.freeze([
     ...new Set((spec.optionalDataSources ?? []).filter((optional) => descriptor.dataSources.some((item) => item.contract === optional.contract && item.major === optional.major)).map((optional) => optional.contract))
   ].sort(compareUtf8));
-  return Object.freeze({ eligible: ordered.length === 0, missing: ordered, optionalBound });
+  const optionalServices = Object.freeze([...new Set((spec.optionalServices ?? []).map((service) => service.contract))].sort(compareUtf8));
+  return Object.freeze({
+    eligible: ordered.length === 0,
+    missing: ordered,
+    optionalBound,
+    optionalServices
+  });
 }
 async function resolveCommonPresentationPlan(descriptor, selection, options = {}) {
   const available = options.availableStageIds === void 0 ? void 0 : new Set(options.availableStageIds);
@@ -10138,23 +12616,23 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // packages/vfs/dist/source.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-function rangeError(id, offset, length, size) {
+function rangeError(id2, offset, length, size) {
   return new ModkitError({
     code: "x3.vfs/read-out-of-range",
-    message: `read [${offset}, ${offset + length}) exceeds source \xAB${id}\xBB of size ${size}`,
-    context: { id, offset, length, size }
+    message: `read [${offset}, ${offset + length}) exceeds source \xAB${id2}\xBB of size ${size}`,
+    context: { id: id2, offset, length, size }
   });
 }
 var CHUNK = 64 * 1024;
-function createMemorySource(id, bytes2) {
+function createMemorySource(id2, bytes2) {
   let disposed = false;
   const ensureLive = () => {
     if (disposed) {
-      throw new ModkitError({ code: "x3.vfs/source-disposed", message: `source \xAB${id}\xBB disposed` });
+      throw new ModkitError({ code: "x3.vfs/source-disposed", message: `source \xAB${id2}\xBB disposed` });
     }
   };
   return {
-    id,
+    id: id2,
     // async so cancellation/disposal surface as rejections, never sync throws
     async size(signal) {
       throwIfAborted(signal);
@@ -10165,7 +12643,7 @@ function createMemorySource(id, bytes2) {
       throwIfAborted(signal);
       ensureLive();
       if (offset < 0 || length < 0 || offset + length > bytes2.length) {
-        throw rangeError(id, offset, length, bytes2.length);
+        throw rangeError(id2, offset, length, bytes2.length);
       }
       return bytes2.slice(offset, offset + length);
     },
@@ -10672,25 +13150,25 @@ function createCommandRuntime(descriptors) {
   const sorted = Object.freeze([...descriptors].sort((a2, b2) => a2.id < b2.id ? -1 : 1));
   return Object.freeze({
     descriptors: sorted,
-    get: (id) => byId.get(id),
-    async run(id, input, context) {
-      const descriptor = byId.get(id);
+    get: (id2) => byId.get(id2),
+    async run(id2, input, context) {
+      const descriptor = byId.get(id2);
       if (descriptor === void 0) {
-        return failed(id, COMMAND_UNKNOWN, `no command is registered as \xAB${id}\xBB`);
+        return failed(id2, COMMAND_UNKNOWN, `no command is registered as \xAB${id2}\xBB`);
       }
       if (descriptor.needsSubject && (input.subject ?? "") === "") {
-        return failed(id, COMMAND_INPUT_INVALID, `\xAB${id}\xBB needs a subject, and the input names none`);
+        return failed(id2, COMMAND_INPUT_INVALID, `\xAB${id2}\xBB needs a subject, and the input names none`);
       }
       try {
         if (context.signal?.aborted === true) {
-          return failed(id, COMMAND_CANCELLED, "the run was cancelled before it started");
+          return failed(id2, COMMAND_CANCELLED, "the run was cancelled before it started");
         }
         return await descriptor.run(context, input);
       } catch (error5) {
         if (context.signal?.aborted === true || isAbort(error5)) {
-          return failed(id, COMMAND_CANCELLED, "the run was cancelled");
+          return failed(id2, COMMAND_CANCELLED, "the run was cancelled");
         }
-        return failed(id, "x3.command/failed", error5 instanceof Error ? error5.message : String(error5));
+        return failed(id2, "x3.command/failed", error5 instanceof Error ? error5.message : String(error5));
       }
     }
   });
@@ -10856,15 +13334,15 @@ var VALIDATE_COMMAND = SUBJECT_COMMAND_TARGETS.validate.commandId;
 var VALIDATE = SUBJECT_COMMAND_TARGETS.validate.operationIds[0];
 var EXTRACT_COMMAND = SUBJECT_COMMAND_TARGETS.extract.commandId;
 var CONTAINER_EXTRACT_OPERATION_ID2 = SUBJECT_COMMAND_TARGETS.extract.operationIds[0];
-var NAMESPACE_ENTRY_SOURCE2 = SUBJECT_COMMAND_TARGETS.extract.dataSourceContracts[0];
+var NAMESPACE_ENTRY_SOURCE3 = SUBJECT_COMMAND_TARGETS.extract.dataSourceContracts[0];
 var CONVERT_COMMAND = SUBJECT_COMMAND_TARGETS.convert.commandId;
 var CONVERT = SUBJECT_COMMAND_TARGETS.convert.operationIds[0];
 var RAW_EXPORT = SUBJECT_COMMAND_TARGETS.convert.operationIds[1];
 var PREVIEW_COMMAND = SUBJECT_COMMAND_TARGETS.preview.commandId;
 var THUMBNAIL = SUBJECT_COMMAND_TARGETS.preview.operationIds[0];
 var RENDER = SUBJECT_COMMAND_TARGETS.preview.operationIds[1];
-function availableOperation(descriptor, id) {
-  const found = (descriptor.operations ?? []).find((item) => item.id === id && item.state === "available" && item.mutatesSource !== true);
+function availableOperation(descriptor, id2) {
+  const found = (descriptor.operations ?? []).find((item) => item.id === id2 && item.state === "available" && item.mutatesSource !== true);
   return found === void 0 ? void 0 : { handlerId: found.handlerId };
 }
 var publishedOperations = (descriptor) => (descriptor.operations ?? []).length === 0 ? "it publishes no operations at all" : `it publishes ${(descriptor.operations ?? []).map((item) => item.id).join(", ")}`;
@@ -10980,7 +13458,7 @@ var validateCommand = {
   }
 };
 async function entryIdFor(session, wanted, signal) {
-  const lease2 = await session.dataSource(NAMESPACE_ENTRY_SOURCE2, 1);
+  const lease2 = await session.dataSource(NAMESPACE_ENTRY_SOURCE3, 1);
   try {
     const namespace = lease2.value;
     let cursor4;
@@ -11004,15 +13482,15 @@ var extractCommand = {
   mutatesSource: false,
   operationId: CONTAINER_EXTRACT_OPERATION_ID2,
   async run(context, input) {
-    const entry2 = typeof input.entry === "string" ? input.entry : "";
+    const entry2 = typeof input["entry"] === "string" ? input["entry"] : "";
     if (entry2 === "") {
       return failed(EXTRACT_COMMAND, "x3.command/input-invalid", "subject.extract needs an \xABentry\xBB");
     }
     return withSubject(EXTRACT_COMMAND, context, String(input.subject), async (subject, session, descriptor, diagnostics) => {
       const operation = availableOperation(descriptor, CONTAINER_EXTRACT_OPERATION_ID2);
-      const listing = (descriptor.dataSources ?? []).some((item) => item.contract === NAMESPACE_ENTRY_SOURCE2);
+      const listing = (descriptor.dataSources ?? []).some((item) => item.contract === NAMESPACE_ENTRY_SOURCE3);
       if (operation === void 0 || !listing) {
-        return unavailable(EXTRACT_COMMAND, `this subject is not a container this host can read into \u2014 ${publishedOperations(descriptor)}`, `run subject.inspect to see what it does publish; extraction needs both \xAB${CONTAINER_EXTRACT_OPERATION_ID2}\xBB and \xAB${NAMESPACE_ENTRY_SOURCE2}\xBB`, diagnostics);
+        return unavailable(EXTRACT_COMMAND, `this subject is not a container this host can read into \u2014 ${publishedOperations(descriptor)}`, `run subject.inspect to see what it does publish; extraction needs both \xAB${CONTAINER_EXTRACT_OPERATION_ID2}\xBB and \xAB${NAMESPACE_ENTRY_SOURCE3}\xBB`, diagnostics);
       }
       context.progress?.({ step: "locate", message: `locating ${entry2}` });
       const entryId = await entryIdFor(session, entry2, context.signal);
@@ -11052,12 +13530,12 @@ var convertCommand = {
         return unavailable(CONVERT_COMMAND, `this subject publishes neither \xAB${CONVERT}\xBB nor \xAB${RAW_EXPORT}\xBB \u2014 ${publishedOperations(descriptor)}`, "run subject.inspect to see which data sources it does publish; a universal projection is the route for formats with no native export", diagnostics);
       }
       context.progress?.({ step: "convert", message: "running the codec\u2019s export" });
-      const request = typeof input.target === "string" ? { target: input.target } : {};
+      const request = typeof input["target"] === "string" ? { target: input["target"] } : {};
       const answer = await invoke(CONVERT_COMMAND, context, session, operation.handlerId, request, diagnostics);
       if (answer.state === "failed")
         return answer.result;
       const bytes2 = answer.output.kind === "bytes" ? answer.output.value : void 0;
-      const wroteTo = bytes2 === void 0 || context.writeOutput === void 0 ? void 0 : await context.writeOutput(`${input.target ?? "export"}`, bytes2, context.signal);
+      const wroteTo = bytes2 === void 0 || context.writeOutput === void 0 ? void 0 : await context.writeOutput(`${input["target"] ?? "export"}`, bytes2, context.signal);
       return ok(CONVERT_COMMAND, {
         ref: subject.ref,
         outputKind: answer.output.kind,
@@ -11269,6 +13747,1073 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // packages/host/dist/vfs-source.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/container-pack.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/subject-editing.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/editing.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var GUARANTEE_STRENGTH = Object.freeze({
+  "best-effort": 0,
+  recoverable: 1,
+  transactional: 2,
+  atomic: 3
+});
+var issuedGrantSnapshots = /* @__PURE__ */ new WeakSet();
+function snapshot(value2, ancestors = /* @__PURE__ */ new WeakSet()) {
+  if (typeof value2 === "function" || typeof value2 === "symbol") {
+    throw new TypeError("editing inputs cannot contain executable or symbol values");
+  }
+  if (value2 instanceof Uint8Array)
+    return value2.slice();
+  if (Array.isArray(value2)) {
+    if (ancestors.has(value2))
+      throw new TypeError("editing inputs must be acyclic owned data");
+    ancestors.add(value2);
+    const copy = Object.freeze(value2.map((item) => snapshot(item, ancestors)));
+    ancestors.delete(value2);
+    return copy;
+  }
+  if (typeof value2 === "object" && value2 !== null) {
+    if (ancestors.has(value2))
+      throw new TypeError("editing inputs must be acyclic owned data");
+    const prototype = Object.getPrototypeOf(value2);
+    if (prototype !== Object.prototype && prototype !== null) {
+      throw new TypeError("editing inputs must contain only plain owned data");
+    }
+    ancestors.add(value2);
+    const copy = {};
+    for (const key3 of Reflect.ownKeys(value2)) {
+      copy[key3] = snapshot(value2[key3], ancestors);
+    }
+    ancestors.delete(value2);
+    return Object.freeze(copy);
+  }
+  return value2;
+}
+function snapshotGrant(grant) {
+  if (!issuedGrantSnapshots.has(grant))
+    throw new TypeError("grant snapshot is not host-issued");
+  return Object.freeze({
+    snapshotId: String(grant.snapshotId),
+    permissions: Object.freeze([...grant.permissions]),
+    sourceIds: Object.freeze([...grant.sourceIds])
+  });
+}
+function grantIsValid(options, grant) {
+  try {
+    return options.isGrantValid(grant) === true;
+  } catch {
+    return false;
+  }
+}
+function createGrantSnapshot(value2) {
+  if (!isNonBlank2(value2.snapshotId) || !Array.isArray(value2.permissions) || !value2.permissions.every((permission) => PERMISSION_CLASSES.includes(permission)) || !Array.isArray(value2.sourceIds) || !value2.sourceIds.every(isNonBlank2)) {
+    throw new TypeError("grant snapshot is malformed");
+  }
+  const snapshot3 = Object.freeze({
+    snapshotId: value2.snapshotId,
+    permissions: Object.freeze([...new Set(value2.permissions)].sort(compareUtf8)),
+    sourceIds: Object.freeze([...new Set(value2.sourceIds)].sort(compareUtf8))
+  });
+  issuedGrantSnapshots.add(snapshot3);
+  return snapshot3;
+}
+function revisionValue(revision) {
+  return {
+    bindings: Object.fromEntries(Object.entries(revision.bindings).sort(([left], [right]) => compareUtf8(left, right)).map(([key3, value2]) => [key3, String(value2)])),
+    ...revision.namespaceRevision === void 0 ? {} : { namespaceRevision: String(revision.namespaceRevision) },
+    compositionFingerprint: revision.compositionFingerprint
+  };
+}
+function sameRevision(left, right) {
+  return JSON.stringify(revisionValue(left)) === JSON.stringify(revisionValue(right));
+}
+function revisionFingerprint(targets, digest) {
+  return digest(targets.map((target) => ({
+    targetId: target.targetId,
+    revision: revisionValue(target.expectedRevision)
+  })).sort((left, right) => compareUtf8(left.targetId, right.targetId)));
+}
+function normalizedPath(value2) {
+  if (value2.trim() === "" || value2.includes("\\") || value2.startsWith("/"))
+    return void 0;
+  const parts = value2.split("/");
+  if (parts.some((part) => part === "" || part === "." || part === ".."))
+    return void 0;
+  return parts.join("/");
+}
+function modeOf(edit) {
+  if (edit.operation === "replace")
+    return "in-place";
+  return edit.operation;
+}
+function isRecord4(value2) {
+  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
+}
+function hasExactKeys(value2, allowed2) {
+  const keys = Object.keys(value2);
+  return keys.length === new Set(keys).size && keys.every((key3) => allowed2.includes(key3));
+}
+function isNonBlank2(value2) {
+  return typeof value2 === "string" && value2.trim() !== "";
+}
+function isAssetSource(value2) {
+  return isRecord4(value2) && hasExactKeys(value2, ["id", "uri", "parentIds"]) && isNonBlank2(value2["id"]) && isNonBlank2(value2["uri"]) && (value2["parentIds"] === void 0 || Array.isArray(value2["parentIds"]) && value2["parentIds"].every(isNonBlank2));
+}
+function isRevision(value2) {
+  if (!isRecord4(value2) || !hasExactKeys(value2, ["bindings", "namespaceRevision", "compositionFingerprint"]) || !isRecord4(value2["bindings"]) || Object.keys(value2["bindings"]).length === 0 || !Object.values(value2["bindings"]).every(isNonBlank2) || !isNonBlank2(value2["compositionFingerprint"])) {
+    return false;
+  }
+  return value2["namespaceRevision"] === void 0 || isNonBlank2(value2["namespaceRevision"]);
+}
+function isRecoveryRef(value2) {
+  return isRecord4(value2) && hasExactKeys(value2, ["kind", "ref", "digest"]) && (value2["kind"] === "journal" || value2["kind"] === "staging") && isNonBlank2(value2["ref"]) && isNonBlank2(value2["digest"]);
+}
+function isFidelityEvidence(value2) {
+  if (!isRecord4(value2) || !hasExactKeys(value2, [
+    "roundTrip",
+    "preservesUnknownData",
+    "notes",
+    "evidenceId",
+    "corpusId",
+    "corpusDigest",
+    "conformanceProfile",
+    "writer",
+    "optionsFingerprint",
+    "inputClass",
+    "provenAt"
+  ]) || !["byte-identical", "semantic", "lossy", "none"].includes(value2["roundTrip"]) || typeof value2["preservesUnknownData"] !== "boolean" || value2["notes"] !== void 0 && (!Array.isArray(value2["notes"]) || !value2["notes"].every(isNonBlank2)) || ![
+    value2["evidenceId"],
+    value2["corpusId"],
+    value2["corpusDigest"],
+    value2["conformanceProfile"],
+    value2["optionsFingerprint"],
+    value2["inputClass"],
+    value2["provenAt"]
+  ].every(isNonBlank2) || !isRecord4(value2["writer"]) || !hasExactKeys(value2["writer"], [
+    "providerId",
+    "providerVersion",
+    "artifactDigest",
+    "formatId",
+    "representationId"
+  ]) || !Object.values(value2["writer"]).every(isNonBlank2)) {
+    return false;
+  }
+  if (value2["roundTrip"] === "byte-identical")
+    return value2["preservesUnknownData"] === true;
+  if (value2["roundTrip"] === "lossy" || value2["roundTrip"] === "none") {
+    return value2["preservesUnknownData"] === false;
+  }
+  return true;
+}
+function isEditPayload(value2) {
+  if (!isRecord4(value2) || !isNonBlank2(value2["kind"]))
+    return false;
+  if (value2["kind"] === "text") {
+    return hasExactKeys(value2, ["kind", "text"]) && typeof value2["text"] === "string";
+  }
+  if (value2["kind"] === "inline") {
+    return hasExactKeys(value2, ["kind", "bytes"]) && value2["bytes"] instanceof Uint8Array;
+  }
+  if (value2["kind"] !== "staged" || !hasExactKeys(value2, ["kind", "ref"]))
+    return false;
+  const ref2 = value2["ref"];
+  return isRecord4(ref2) && hasExactKeys(ref2, ["storeId", "handleId", "digest", "bytes", "replayable", "expiresAt"]) && isNonBlank2(ref2["storeId"]) && isNonBlank2(ref2["handleId"]) && isNonBlank2(ref2["digest"]) && typeof ref2["bytes"] === "bigint" && ref2["bytes"] >= 0n && ref2["replayable"] === true && (ref2["expiresAt"] === void 0 || isNonBlank2(ref2["expiresAt"]));
+}
+function isEditRange(value2) {
+  if (!isRecord4(value2) || !hasExactKeys(value2, ["kind", "offset", "length"]))
+    return false;
+  if (value2["kind"] === "bytes") {
+    return typeof value2["offset"] === "bigint" && value2["offset"] >= 0n && typeof value2["length"] === "bigint" && value2["length"] >= 0n;
+  }
+  return value2["kind"] === "utf16" && Number.isSafeInteger(value2["offset"]) && Number.isSafeInteger(value2["length"]) && value2["offset"] >= 0 && value2["length"] >= 0;
+}
+function isSourceEdit(value2) {
+  if (!isRecord4(value2) || !isNonBlank2(value2["operation"]))
+    return false;
+  const common = isNonBlank2(value2["targetId"]) && isAssetSource(value2["source"]) && (value2["label"] === void 0 || typeof value2["label"] === "string");
+  if (!common)
+    return false;
+  if (value2["operation"] === "replace") {
+    return hasExactKeys(value2, ["operation", "targetId", "source", "range", "payload", "label"]) && (value2["range"] === void 0 || isEditRange(value2["range"])) && isEditPayload(value2["payload"]);
+  }
+  if (value2["operation"] === "create") {
+    return hasExactKeys(value2, ["operation", "targetId", "source", "newPath", "payload", "label"]) && isNonBlank2(value2["newPath"]) && isEditPayload(value2["payload"]);
+  }
+  if (value2["operation"] === "delete") {
+    return hasExactKeys(value2, ["operation", "targetId", "source", "label"]);
+  }
+  return value2["operation"] === "rename" && hasExactKeys(value2, ["operation", "targetId", "source", "newPath", "label"]) && isNonBlank2(value2["newPath"]);
+}
+function planDigestValue(plan) {
+  const payload = (edit) => {
+    if (!("payload" in edit))
+      return void 0;
+    if (edit.payload.kind === "inline") {
+      return { kind: "inline", bytes: [...edit.payload.bytes] };
+    }
+    if (edit.payload.kind === "staged") {
+      return {
+        kind: "staged",
+        ref: { ...edit.payload.ref, bytes: edit.payload.ref.bytes.toString(10) }
+      };
+    }
+    return edit.payload;
+  };
+  return {
+    planId: plan.planId,
+    targets: plan.targets.map((target) => ({
+      ...target,
+      expectedRevision: revisionValue(target.expectedRevision)
+    })),
+    edits: plan.edits.map((edit) => ({
+      ...edit,
+      ...edit.operation === "replace" && edit.range?.kind === "bytes" ? {
+        range: {
+          kind: "bytes",
+          offset: edit.range.offset.toString(10),
+          length: edit.range.length.toString(10)
+        }
+      } : {},
+      ...payload(edit) === void 0 ? {} : { payload: payload(edit) }
+    })),
+    semantics: plan.semantics,
+    fidelity: plan.fidelity,
+    diagnostics: plan.diagnostics
+  };
+}
+function fidelityMatches(plan, evidence2, expectedWriter, expectedContext) {
+  if (!isFidelityEvidence(evidence2) || evidence2.roundTrip !== plan.fidelity.roundTrip)
+    return false;
+  if (evidence2.preservesUnknownData !== plan.fidelity.preservesUnknownData)
+    return false;
+  if (expectedContext !== void 0 && (evidence2.optionsFingerprint !== expectedContext.optionsFingerprint || evidence2.inputClass !== expectedContext.inputClass)) {
+    return false;
+  }
+  if (expectedWriter === void 0)
+    return true;
+  return evidence2.writer.providerId === expectedWriter.providerId && evidence2.writer.providerVersion === expectedWriter.providerVersion && evidence2.writer.artifactDigest === expectedWriter.artifactDigest && evidence2.writer.formatId === expectedWriter.formatId && evidence2.writer.representationId === expectedWriter.representationId;
+}
+function strongestGuarantee(backends) {
+  const unique = new Set(backends);
+  const single = [...unique][0];
+  if (unique.size === 1 && single !== void 0 && single.profile.guarantees.includes("atomic") && single.applyBatch !== void 0) {
+    return "atomic";
+  }
+  if (backends.every((backend) => backend.profile.supportsPrepare && backend.profile.supportsRollback)) {
+    return "transactional";
+  }
+  if (backends.every((backend) => backend.profile.supportsJournal))
+    return "recoverable";
+  return "best-effort";
+}
+function derive(plan, targets, grant, options) {
+  const entries = [];
+  const backends = /* @__PURE__ */ new Map();
+  for (const edit of plan.edits) {
+    const target = targets.get(edit.targetId);
+    const backend = options.backendFor(edit.source.id);
+    if (target === void 0 || backend === void 0 || target.ownerSource.id !== edit.source.id) {
+      return { rejection: "plan-invalid" };
+    }
+    if (!backend.writable && plan.semantics.mutationMode === "mutate") {
+      return { rejection: "source-read-only" };
+    }
+    if (edit.operation === "rename" && !backend.profile.supportsRename) {
+      return { rejection: "plan-invalid" };
+    }
+    const path = edit.operation === "create" || edit.operation === "rename" ? normalizedPath(edit.newPath) : void 0;
+    if ((edit.operation === "create" || edit.operation === "rename") && path === void 0) {
+      return { rejection: "plan-invalid" };
+    }
+    entries.push(Object.freeze({
+      targetId: edit.targetId,
+      source: snapshot(edit.source),
+      backendId: backend.profile.backendId,
+      mode: modeOf(edit),
+      ...path === void 0 ? {} : { normalizedPath: path }
+    }));
+    backends.set(edit.targetId, backend);
+  }
+  entries.sort((left, right) => compareUtf8(left.targetId, right.targetId) || compareUtf8(left.source.id, right.source.id) || compareUtf8(left.mode, right.mode));
+  const requiredPermissions = plan.semantics.mutationMode === "mutate" ? ["write-source"] : [];
+  const missing = requiredPermissions.filter((permission) => !grant.permissions.includes(permission));
+  const scopeSatisfied = entries.every((entry2) => grant.sourceIds.includes(entry2.source.id));
+  const achievableGuarantee = strongestGuarantee([...backends.values()]);
+  const writeSet = Object.freeze({
+    entries: Object.freeze(entries),
+    digest: options.digest(entries.map((entry2) => ({
+      targetId: entry2.targetId,
+      sourceId: entry2.source.id,
+      backendId: entry2.backendId,
+      mode: entry2.mode,
+      ...entry2.normalizedPath === void 0 ? {} : { normalizedPath: entry2.normalizedPath }
+    })))
+  });
+  return {
+    writeSet,
+    backends,
+    authorization: Object.freeze({
+      requiredPermissions: Object.freeze(requiredPermissions),
+      granted: missing.length === 0 && scopeSatisfied,
+      achievableGuarantee,
+      missing: Object.freeze(missing),
+      scopeSatisfied
+    })
+  };
+}
+async function conflictsFor(targets, backends, signal) {
+  const conflicts = [];
+  for (const [targetId, target] of targets) {
+    const backend = backends.get(targetId);
+    if (backend === void 0)
+      continue;
+    const actual = snapshot(await backend.currentRevision(target, signal));
+    if (!sameRevision(target.expectedRevision, actual)) {
+      conflicts.push(Object.freeze({
+        targetId,
+        expected: snapshot(target.expectedRevision),
+        actual: snapshot(actual)
+      }));
+    }
+  }
+  return Object.freeze(conflicts.sort((left, right) => compareUtf8(left.targetId, right.targetId)));
+}
+async function payloadsAvailable(plan, options, signal) {
+  const maximum = options.maxInlinePayloadBytes ?? 1024 * 1024;
+  for (const edit of plan.edits) {
+    if (!("payload" in edit))
+      continue;
+    if (edit.payload.kind === "inline" && edit.payload.bytes.byteLength > maximum)
+      return false;
+    if (edit.payload.kind === "text" && new TextEncoder().encode(edit.payload.text).byteLength > maximum)
+      return false;
+    if (edit.payload.kind !== "staged")
+      continue;
+    if (!edit.payload.ref.replayable || edit.payload.ref.bytes < 0n)
+      return false;
+    if (edit.payload.ref.expiresAt !== void 0 && Date.parse(edit.payload.ref.expiresAt) <= Date.parse(options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString())) {
+      return false;
+    }
+    if (options.verifyStagedPayload === void 0)
+      return false;
+    try {
+      if (await options.verifyStagedPayload(edit.payload.ref, signal) !== true)
+        return false;
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}
+function invalidPlan(plan) {
+  if (!isRecord4(plan) || !hasExactKeys(plan, ["planId", "targets", "edits", "semantics", "fidelity", "diagnostics"]) || !isNonBlank2(plan.planId) || !Array.isArray(plan.targets) || plan.targets.length === 0 || !Array.isArray(plan.edits) || plan.edits.length === 0 || !Array.isArray(plan.diagnostics) || !isRecord4(plan.semantics) || !hasExactKeys(plan.semantics, ["mutationMode", "minimumGuarantee"]) || !["export-only", "mutate"].includes(plan.semantics.mutationMode) || !["atomic", "transactional", "recoverable", "best-effort"].includes(plan.semantics.minimumGuarantee) || !isRecord4(plan.fidelity) || !hasExactKeys(plan.fidelity, ["roundTrip", "preservesUnknownData", "notes"]) || !["byte-identical", "semantic", "lossy", "none"].includes(plan.fidelity.roundTrip) || typeof plan.fidelity.preservesUnknownData !== "boolean" || plan.fidelity.notes !== void 0 && (!Array.isArray(plan.fidelity.notes) || !plan.fidelity.notes.every(isNonBlank2)) || plan.fidelity.roundTrip === "byte-identical" && plan.fidelity.preservesUnknownData !== true || (plan.fidelity.roundTrip === "lossy" || plan.fidelity.roundTrip === "none") && plan.fidelity.preservesUnknownData !== false) {
+    return true;
+  }
+  const ids = /* @__PURE__ */ new Set();
+  for (const target of plan.targets) {
+    if (!isRecord4(target) || !hasExactKeys(target, [
+      "targetId",
+      "subjectUri",
+      "ownerSource",
+      "semanticPath",
+      "expectedRevision"
+    ]) || !isNonBlank2(target["targetId"]) || ids.has(target["targetId"]) || !isNonBlank2(target["subjectUri"]) || !isAssetSource(target["ownerSource"]) || !Array.isArray(target["semanticPath"]) || !target["semanticPath"].every(isNonBlank2) || !isRevision(target["expectedRevision"])) {
+      return true;
+    }
+    ids.add(target["targetId"]);
+  }
+  const editedIds = /* @__PURE__ */ new Set();
+  for (const edit of plan.edits) {
+    if (!isSourceEdit(edit) || !ids.has(edit.targetId))
+      return true;
+    editedIds.add(edit.targetId);
+    if ((edit.operation === "create" || edit.operation === "delete" || edit.operation === "rename") && plan.targets.find((target) => target.targetId === edit.targetId)?.expectedRevision.namespaceRevision === void 0) {
+      return true;
+    }
+  }
+  return editedIds.size !== ids.size || [...ids].some((id2) => !editedIds.has(id2));
+}
+function createCommitCoordinator(options) {
+  options = Object.freeze({
+    ...options,
+    payloads: Object.freeze({ open: options.payloads.open.bind(options.payloads) }),
+    ...options.expectedWriter === void 0 ? {} : { expectedWriter: snapshot(options.expectedWriter) },
+    ...options.expectedEvidenceContext === void 0 ? {} : { expectedEvidenceContext: snapshot(options.expectedEvidenceContext) }
+  });
+  let serial = 0;
+  const nextId = (kind) => options.nextId?.(kind) ?? `${kind}-${String(++serial).padStart(6, "0")}`;
+  const preparedInputs = /* @__PURE__ */ new WeakMap();
+  const history = /* @__PURE__ */ new Map();
+  const prepare = async (authoredPlan, prepareOptions) => {
+    if (prepareOptions.signal?.aborted) {
+      return { state: "rejected", reason: "cancelled", diagnostics: [] };
+    }
+    let grant;
+    let plan;
+    try {
+      grant = snapshotGrant(prepareOptions.grant);
+      plan = snapshot(authoredPlan);
+    } catch {
+      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
+    }
+    if (!grantIsValid(options, grant) || invalidPlan(plan)) {
+      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
+    }
+    const targetMap = new Map(plan.targets.map((target) => [target.targetId, target]));
+    let derived;
+    try {
+      derived = derive(plan, targetMap, grant, options);
+    } catch {
+      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
+    }
+    if ("rejection" in derived) {
+      return { state: "rejected", reason: derived.rejection, diagnostics: [] };
+    }
+    if (!derived.authorization.scopeSatisfied) {
+      return { state: "rejected", reason: "write-scope-mismatch", diagnostics: [] };
+    }
+    if (derived.authorization.missing.length > 0) {
+      return { state: "rejected", reason: "permission-missing", diagnostics: [] };
+    }
+    if (GUARANTEE_STRENGTH[derived.authorization.achievableGuarantee] < GUARANTEE_STRENGTH[plan.semantics.minimumGuarantee]) {
+      return { state: "rejected", reason: "guarantee-unachievable", diagnostics: [] };
+    }
+    const canPartiallyApply = plan.edits.length > 1 && derived.authorization.achievableGuarantee !== "atomic";
+    if (canPartiallyApply && options.createRecovery === void 0) {
+      return { state: "rejected", reason: "guarantee-unachievable", diagnostics: [] };
+    }
+    let fidelity;
+    try {
+      fidelity = options.evidenceFor(plan);
+    } catch {
+      fidelity = void 0;
+    }
+    let proven = false;
+    try {
+      proven = fidelityMatches(plan, fidelity, options.expectedWriter, options.expectedEvidenceContext);
+    } catch {
+      proven = false;
+    }
+    if (!proven) {
+      const pinned = options.expectedWriter !== void 0 && fidelity !== void 0 && fidelity.writer.providerId !== options.expectedWriter.providerId;
+      return {
+        state: "rejected",
+        reason: "fidelity-unproven",
+        diagnostics: [
+          {
+            severity: "error",
+            code: pinned ? "x3.host/fidelity-writer-pinned" : "x3.host/fidelity-evidence-missing",
+            message: pinned ? `this host pinned writes to \xAB${options.expectedWriter?.providerId}\xBB, and this plan came from \xAB${fidelity?.writer.providerId}\xBB` : `no fidelity evidence covers ${plan.fidelity.roundTrip}/preservesUnknownData=${String(plan.fidelity.preservesUnknownData)} for this plan`,
+            path: []
+          }
+        ]
+      };
+    }
+    if ((plan.fidelity.roundTrip === "lossy" || plan.fidelity.roundTrip === "none") && (prepareOptions.confirmationToken === void 0 || !(options.confirmationMatches?.(prepareOptions.confirmationToken, plan) ?? false))) {
+      return { state: "rejected", reason: "confirmation-required", diagnostics: [] };
+    }
+    if (!await payloadsAvailable(plan, options, prepareOptions.signal)) {
+      return { state: "rejected", reason: "payload-unavailable", diagnostics: [] };
+    }
+    let conflicts;
+    try {
+      conflicts = await conflictsFor(targetMap, derived.backends, prepareOptions.signal);
+    } catch {
+      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
+    }
+    if (conflicts.length > 0)
+      return { state: "conflict", conflicts };
+    let prepared;
+    try {
+      const planDigest = options.digest(planDigestValue(plan));
+      prepared = Object.freeze({
+        preparedId: nextId("prepared"),
+        plan: snapshot(plan),
+        planDigest,
+        writeSet: derived.writeSet,
+        authorization: derived.authorization,
+        preparedRevisionFingerprint: revisionFingerprint(plan.targets, options.digest),
+        fidelity: snapshot(fidelity)
+      });
+    } catch {
+      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
+    }
+    const internal = Object.freeze({
+      plan,
+      targets: targetMap,
+      backends: derived.backends,
+      prepared,
+      ...prepareOptions.confirmationToken === void 0 ? {} : { confirmationToken: prepareOptions.confirmationToken }
+    });
+    preparedInputs.set(prepared, internal);
+    return { state: "ready", prepared };
+  };
+  const commit = async (publicPrepared, commitOptions) => {
+    const internal = preparedInputs.get(publicPrepared);
+    if (internal === void 0) {
+      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
+    }
+    if (commitOptions.signal?.aborted) {
+      return { state: "not-applied", reason: "cancelled", diagnostics: [] };
+    }
+    let grant;
+    try {
+      grant = snapshotGrant(commitOptions.grant);
+    } catch {
+      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
+    }
+    if (!grantIsValid(options, grant)) {
+      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
+    }
+    let fresh;
+    try {
+      fresh = derive(internal.plan, internal.targets, grant, options);
+    } catch {
+      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
+    }
+    if ("rejection" in fresh) {
+      return { state: "not-applied", reason: fresh.rejection, diagnostics: [] };
+    }
+    if (!fresh.authorization.scopeSatisfied) {
+      return { state: "not-applied", reason: "write-scope-mismatch", diagnostics: [] };
+    }
+    if (fresh.authorization.missing.length > 0) {
+      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
+    }
+    if (fresh.writeSet.digest !== internal.prepared.writeSet.digest || GUARANTEE_STRENGTH[fresh.authorization.achievableGuarantee] < GUARANTEE_STRENGTH[internal.plan.semantics.minimumGuarantee]) {
+      return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
+    }
+    if (!await payloadsAvailable(internal.plan, options, commitOptions.signal)) {
+      return { state: "not-applied", reason: "payload-unavailable", diagnostics: [] };
+    }
+    let conflicts;
+    try {
+      conflicts = await conflictsFor(internal.targets, fresh.backends, commitOptions.signal);
+    } catch {
+      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
+    }
+    if (conflicts.length > 0) {
+      return {
+        state: "not-applied",
+        reason: "stale-revision",
+        conflicts,
+        diagnostics: []
+      };
+    }
+    const transactionId = nextId("transaction");
+    const before = internal.plan.targets.map((target) => snapshot(target.expectedRevision));
+    const writes = [];
+    const latestRevisions = new Map(internal.plan.targets.map((target) => [target.targetId, target.expectedRevision]));
+    const finalRevisions = () => internal.plan.targets.map((target) => snapshot(latestRevisions.get(target.targetId) ?? target.expectedRevision));
+    const applied = [];
+    if (fresh.authorization.achievableGuarantee === "atomic") {
+      const backend = [...new Set(fresh.backends.values())][0];
+      if (backend?.applyBatch === void 0) {
+        return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
+      }
+      preparedInputs.delete(publicPrepared);
+      try {
+        const results = await backend.applyBatch(internal.plan.edits.map((edit) => ({
+          edit,
+          expectedRevision: latestRevisions.get(edit.targetId) ?? internal.targets.get(edit.targetId).expectedRevision
+        })), {
+          transactionId,
+          payloads: options.payloads,
+          ...commitOptions.signal === void 0 ? {} : { signal: commitOptions.signal }
+        });
+        if (results.length !== internal.plan.edits.length || results.some((result, index) => result.targetId !== internal.plan.edits[index]?.targetId)) {
+          throw new TypeError("atomic backend returned a malformed write result");
+        }
+        results.forEach((result, index) => {
+          const edit = internal.plan.edits[index];
+          const stepBefore = latestRevisions.get(edit.targetId);
+          latestRevisions.set(edit.targetId, snapshot(result.after));
+          applied.push({ edit, backend, before: stepBefore });
+          writes.push(Object.freeze({
+            targetId: edit.targetId,
+            source: snapshot(edit.source),
+            state: "applied",
+            diagnosticIds: Object.freeze([...result.diagnosticIds ?? []])
+          }));
+          commitOptions.onProgress?.(index + 1);
+        });
+      } catch (error5) {
+        return {
+          state: "not-applied",
+          reason: commitOptions.signal?.aborted ? "cancelled" : "plan-invalid",
+          diagnostics: [
+            diagnostic("error", "x3.host/edit-write-failed", error5 instanceof Error ? error5.message : String(error5))
+          ]
+        };
+      }
+      const receipt2 = Object.freeze({
+        transactionId,
+        committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
+        mutationMode: internal.plan.semantics.mutationMode,
+        commitGuarantee: "atomic",
+        status: "committed",
+        undo: backend.profile.supportsRollback && backend.rollback !== void 0 ? "snapshot" : "none",
+        before: Object.freeze(before),
+        after: Object.freeze(finalRevisions()),
+        writes: Object.freeze(writes),
+        fidelity: internal.prepared.fidelity
+      });
+      history.set(transactionId, {
+        plan: internal.plan,
+        prepared: internal,
+        receipt: receipt2,
+        steps: Object.freeze([...applied])
+      });
+      return {
+        state: "committed",
+        receipt: receipt2
+      };
+    }
+    const needsRecovery = internal.plan.edits.length > 1;
+    let recovery;
+    try {
+      recovery = needsRecovery ? await options.createRecovery?.(internal.prepared.preparedId, internal.prepared.planDigest) : void 0;
+    } catch {
+      return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
+    }
+    if (needsRecovery && !isRecoveryRef(recovery)) {
+      return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
+    }
+    if (recovery !== void 0)
+      recovery = snapshot(recovery);
+    preparedInputs.delete(publicPrepared);
+    for (let index = 0; index < internal.plan.edits.length; index += 1) {
+      const edit = internal.plan.edits[index];
+      const backend = fresh.backends.get(edit.targetId);
+      const target = internal.targets.get(edit.targetId);
+      const expectedRevision = latestRevisions.get(edit.targetId) ?? target.expectedRevision;
+      try {
+        const result = await backend.apply(edit, {
+          transactionId,
+          payloads: options.payloads,
+          expectedRevision,
+          ...commitOptions.signal === void 0 ? {} : { signal: commitOptions.signal }
+        });
+        latestRevisions.set(edit.targetId, snapshot(result.after));
+        applied.push({ edit, backend, before: expectedRevision });
+        writes.push(Object.freeze({
+          targetId: edit.targetId,
+          source: snapshot(edit.source),
+          state: "applied",
+          diagnosticIds: Object.freeze([...result.diagnosticIds ?? []])
+        }));
+        commitOptions.onProgress?.(index + 1);
+      } catch (error5) {
+        writes.push(Object.freeze({
+          targetId: edit.targetId,
+          source: snapshot(edit.source),
+          state: "failed",
+          diagnosticIds: Object.freeze(["x3.host/edit-write-failed"])
+        }));
+        const diagnostics = [
+          diagnostic("error", "x3.host/edit-write-failed", error5 instanceof Error ? error5.message : String(error5))
+        ];
+        if (applied.length === 0) {
+          return {
+            state: "not-applied",
+            reason: commitOptions.signal?.aborted ? "cancelled" : "plan-invalid",
+            diagnostics
+          };
+        }
+        if (applied.every((item) => item.backend.profile.supportsRollback && item.backend.rollback !== void 0)) {
+          const rolledBackTargets = /* @__PURE__ */ new Set();
+          try {
+            for (const item of [...applied].reverse()) {
+              latestRevisions.set(item.edit.targetId, await item.backend.rollback(transactionId, item.edit, item.before, commitOptions.signal));
+              rolledBackTargets.add(item.edit.targetId);
+            }
+          } catch (rollbackError) {
+            if (recovery === void 0) {
+              return {
+                state: "not-applied",
+                reason: "guarantee-unachievable",
+                diagnostics: [
+                  ...diagnostics,
+                  diagnostic("error", "x3.host/edit-rollback-failed", rollbackError instanceof Error ? rollbackError.message : String(rollbackError))
+                ]
+              };
+            }
+            return {
+              state: "partially-applied",
+              receipt: Object.freeze({
+                transactionId,
+                committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
+                mutationMode: internal.plan.semantics.mutationMode,
+                commitGuarantee: fresh.authorization.achievableGuarantee,
+                status: "partially-applied",
+                undo: "none",
+                before: Object.freeze(before),
+                after: Object.freeze(finalRevisions()),
+                writes: Object.freeze(writes.map((write) => write.state === "applied" && rolledBackTargets.has(write.targetId) ? Object.freeze({ ...write, state: "rolled-back" }) : write)),
+                recovery,
+                fidelity: internal.prepared.fidelity
+              })
+            };
+          }
+          const rolledWrites = writes.map((write) => write.state === "applied" ? Object.freeze({ ...write, state: "rolled-back" }) : write);
+          return {
+            state: "rolled-back",
+            receipt: Object.freeze({
+              transactionId,
+              committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
+              mutationMode: internal.plan.semantics.mutationMode,
+              commitGuarantee: fresh.authorization.achievableGuarantee,
+              status: "rolled-back",
+              undo: "none",
+              before: Object.freeze(before),
+              after: Object.freeze(finalRevisions()),
+              writes: Object.freeze(rolledWrites),
+              fidelity: internal.prepared.fidelity
+            })
+          };
+        }
+        if (recovery === void 0) {
+          throw new TypeError("partial commit requires a durable recovery reference");
+        }
+        return {
+          state: "partially-applied",
+          receipt: Object.freeze({
+            transactionId,
+            committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
+            mutationMode: internal.plan.semantics.mutationMode,
+            commitGuarantee: fresh.authorization.achievableGuarantee,
+            status: "partially-applied",
+            undo: "none",
+            before: Object.freeze(before),
+            after: Object.freeze(finalRevisions()),
+            writes: Object.freeze(writes),
+            recovery,
+            fidelity: internal.prepared.fidelity
+          })
+        };
+      }
+    }
+    const receipt = Object.freeze({
+      transactionId,
+      committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
+      mutationMode: internal.plan.semantics.mutationMode,
+      commitGuarantee: fresh.authorization.achievableGuarantee,
+      status: "committed",
+      undo: applied.every((item) => item.backend.profile.supportsRollback && item.backend.rollback !== void 0) ? "snapshot" : "none",
+      before: Object.freeze(before),
+      after: Object.freeze(finalRevisions()),
+      writes: Object.freeze(writes),
+      ...recovery === void 0 ? {} : { recovery },
+      fidelity: internal.prepared.fidelity
+    });
+    history.set(transactionId, {
+      plan: internal.plan,
+      prepared: internal,
+      receipt,
+      steps: Object.freeze([...applied])
+    });
+    return {
+      state: "committed",
+      receipt
+    };
+  };
+  const undo = async (transactionId, undoOptions) => {
+    const item = history.get(transactionId);
+    if (item === void 0) {
+      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
+    }
+    let grant;
+    try {
+      grant = snapshotGrant(undoOptions.grant);
+    } catch {
+      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
+    }
+    if (!grantIsValid(options, grant)) {
+      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
+    }
+    let fresh;
+    try {
+      fresh = derive(item.plan, item.prepared.targets, grant, options);
+    } catch {
+      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
+    }
+    if ("rejection" in fresh || fresh.authorization.missing.length > 0) {
+      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
+    }
+    if (!fresh.authorization.scopeSatisfied) {
+      return { state: "not-applied", reason: "write-scope-mismatch", diagnostics: [] };
+    }
+    const currentTargets = new Map(item.plan.targets.map((target, index) => [
+      target.targetId,
+      Object.freeze({ ...target, expectedRevision: item.receipt.after[index] })
+    ]));
+    let conflicts;
+    try {
+      conflicts = await conflictsFor(currentTargets, fresh.backends, undoOptions.signal);
+    } catch {
+      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
+    }
+    if (conflicts.length > 0) {
+      return { state: "not-applied", reason: "stale-revision", conflicts, diagnostics: [] };
+    }
+    const latestRevisions = new Map(item.plan.targets.map((target, index) => [
+      target.targetId,
+      item.receipt.after[index]
+    ]));
+    for (const step of [...item.steps].reverse()) {
+      const backend = fresh.backends.get(step.edit.targetId);
+      if (backend?.rollback === void 0) {
+        return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
+      }
+      latestRevisions.set(step.edit.targetId, await backend.rollback(transactionId, step.edit, step.before, undoOptions.signal));
+    }
+    const after = item.plan.targets.map((target) => snapshot(latestRevisions.get(target.targetId) ?? target.expectedRevision));
+    const receipt = Object.freeze({
+      transactionId: nextId("transaction"),
+      committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
+      mutationMode: item.plan.semantics.mutationMode,
+      commitGuarantee: item.receipt.commitGuarantee,
+      status: "committed",
+      undo: "none",
+      before: item.receipt.after,
+      after: Object.freeze(after),
+      writes: Object.freeze(item.receipt.writes.map((write) => Object.freeze({ ...write, state: "rolled-back" }))),
+      fidelity: item.receipt.fidelity
+    });
+    return {
+      state: "committed",
+      receipt
+    };
+  };
+  const redo = async (transactionId, redoOptions) => {
+    const item = history.get(transactionId);
+    if (item === void 0) {
+      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
+    }
+    const prepared = await prepare(item.plan, {
+      grant: redoOptions.grant,
+      confirmationToken: item.prepared.confirmationToken ?? "explicit-redo",
+      ...redoOptions.signal === void 0 ? {} : { signal: redoOptions.signal }
+    });
+    if (prepared.state === "conflict") {
+      return {
+        state: "not-applied",
+        reason: "stale-revision",
+        conflicts: prepared.conflicts,
+        diagnostics: []
+      };
+    }
+    if (prepared.state === "rejected") {
+      return { state: "not-applied", reason: prepared.reason, diagnostics: prepared.diagnostics };
+    }
+    return commit(prepared.prepared, redoOptions);
+  };
+  return Object.freeze({ prepare, commit, undo, redo });
+}
+function createEditSession(options) {
+  let state = "live";
+  const targets = snapshot(options.targets);
+  const revision = snapshot(options.revision);
+  const validate = options.writer.validate.bind(options.writer);
+  const plan = options.writer.plan.bind(options.writer);
+  const ensureLive = () => {
+    if (state !== "live")
+      throw new TypeError(`edit session is ${state}`);
+  };
+  return Object.freeze({
+    revision,
+    targets,
+    state: () => state,
+    async propose(change) {
+      ensureLive();
+      const result = snapshot(await validate(snapshot(change)));
+      if (!isRecord4(result) || !hasExactKeys(result, ["valid", "diagnostics"]) || typeof result["valid"] !== "boolean" || !Array.isArray(result["diagnostics"])) {
+        return {
+          valid: false,
+          diagnostics: [
+            diagnostic("error", "x3.host/edit-validation-result-invalid", "writer returned a malformed validation result")
+          ]
+        };
+      }
+      return result;
+    },
+    async plan(change) {
+      ensureLive();
+      return snapshot(await plan(snapshot(change)));
+    },
+    markStale() {
+      if (state !== "disposed")
+        state = "stale-revision";
+    },
+    markCommitting(committing) {
+      if (state === "disposed")
+        return;
+      state = committing ? "committing" : "live";
+    },
+    async dispose() {
+      state = "disposed";
+    }
+  });
+}
+
+// packages/host/dist/subject-editing.js
+function unsupported(kind) {
+  return new ModkitError({
+    code: "x3.host/edit-topology-unsupported",
+    message: `editing a \xAB${kind}\xBB subject is not supported yet (single-source and namespace subjects only)`,
+    context: { kind }
+  });
+}
+function assetRevisionFromDescriptor(descriptor) {
+  const origin = descriptor.origin;
+  if (origin.kind === "namespace") {
+    return Object.freeze({
+      bindings: Object.freeze({ [origin.root.id]: origin.revision }),
+      namespaceRevision: origin.revision,
+      compositionFingerprint: canonicalJsonStringify({
+        topology: "namespace",
+        root: { id: origin.root.id, uri: origin.root.uri },
+        revision: origin.revision
+      })
+    });
+  }
+  if (origin.kind !== "single")
+    throw unsupported(origin.kind);
+  const binding = origin.binding;
+  return Object.freeze({
+    bindings: Object.freeze({ [binding.id]: binding.revision }),
+    compositionFingerprint: canonicalJsonStringify({
+      topology: "single",
+      bindingId: binding.id,
+      source: { id: binding.source.id, uri: binding.source.uri },
+      revision: binding.revision
+    })
+  });
+}
+function subjectEditTargetsFromDescriptor(descriptor) {
+  const origin = descriptor.origin;
+  const revision = assetRevisionFromDescriptor(descriptor);
+  if (origin.kind === "namespace") {
+    return Object.freeze([
+      Object.freeze({
+        targetId: origin.root.id,
+        subjectUri: descriptor.subjectUri,
+        ownerSource: Object.freeze({ ...origin.root }),
+        semanticPath: Object.freeze([]),
+        expectedRevision: revision
+      })
+    ]);
+  }
+  if (origin.kind !== "single")
+    throw unsupported(origin.kind);
+  return Object.freeze([
+    Object.freeze({
+      targetId: origin.binding.id,
+      subjectUri: descriptor.subjectUri,
+      ownerSource: Object.freeze({ ...origin.binding.source }),
+      semanticPath: Object.freeze([]),
+      expectedRevision: revision
+    })
+  ]);
+}
+function editPlanFromOperationForDescriptor(descriptor, output) {
+  if (output.kind !== "edit-plan") {
+    throw new ModkitError({
+      code: "x3.host/edit-plan-expected",
+      message: `operation returned \xAB${output.kind}\xBB, not an edit plan`
+    });
+  }
+  const expectedTargets = new Map(subjectEditTargetsFromDescriptor(descriptor).map((target) => [target.targetId, target]));
+  const plan = output.plan;
+  const declaredTargetIds = /* @__PURE__ */ new Set();
+  for (const target of plan.targets) {
+    const expectedTarget = expectedTargets.get(target.targetId);
+    if (expectedTarget === void 0 || declaredTargetIds.has(target.targetId) || canonicalJsonStringify(target) !== canonicalJsonStringify(expectedTarget)) {
+      throw new ModkitError({
+        code: "x3.host/edit-plan-subject-mismatch",
+        message: `edit plan target \xAB${target.targetId}\xBB is not this subject at its open revision`,
+        context: { targetId: target.targetId }
+      });
+    }
+    declaredTargetIds.add(target.targetId);
+  }
+  for (const edit of plan.edits) {
+    const expectedTarget = expectedTargets.get(edit.targetId);
+    if (expectedTarget === void 0 || !declaredTargetIds.has(edit.targetId) || canonicalJsonStringify(edit.source) !== canonicalJsonStringify(expectedTarget.ownerSource)) {
+      throw new ModkitError({
+        code: "x3.host/edit-plan-subject-mismatch",
+        message: `edit \xAB${edit.operation}\xBB on \xAB${edit.source.id}\xBB is not this subject`,
+        context: { targetId: edit.targetId, sourceId: edit.source.id }
+      });
+    }
+  }
+  return plan;
+}
+var NO_STAGED_PAYLOADS = Object.freeze({
+  async open(ref2) {
+    throw new ModkitError({
+      code: "x3.host/edit-payload-unavailable",
+      message: `no payload store can open staged payload \xAB${ref2.handleId}\xBB`
+    });
+  }
+});
+var DEFAULT_INLINE_PAYLOAD_BYTES = 16 * 1024 * 1024;
+var defaultDigest = (value2) => canonicalJsonStringify(JSON.parse(JSON.stringify(value2)));
+function createSubjectEditing(options) {
+  const descriptor = options.opened.descriptor;
+  const revision = assetRevisionFromDescriptor(descriptor);
+  const targets = subjectEditTargetsFromDescriptor(descriptor);
+  const grantSnapshot = createGrantSnapshot({
+    snapshotId: options.snapshotId ?? `${options.grant.id}#edit`,
+    permissions: options.grant.classes,
+    sourceIds: targets.map((target) => target.ownerSource.id)
+  });
+  const issued = /* @__PURE__ */ new Set([grantSnapshot.snapshotId]);
+  const coordinator = createCommitCoordinator({
+    payloads: options.payloads ?? NO_STAGED_PAYLOADS,
+    backendFor: options.backendFor,
+    evidenceFor: options.evidenceFor,
+    ...options.expectedWriter === void 0 ? {} : { expectedWriter: options.expectedWriter },
+    ...options.expectedEvidenceContext === void 0 ? {} : { expectedEvidenceContext: options.expectedEvidenceContext },
+    isGrantValid: options.isGrantValid ?? ((grant) => issued.has(grant.snapshotId)),
+    digest: options.digest ?? defaultDigest,
+    ...options.verifyStagedPayload === void 0 ? {} : { verifyStagedPayload: options.verifyStagedPayload },
+    ...options.createRecovery === void 0 ? {} : { createRecovery: options.createRecovery },
+    ...options.confirmationMatches === void 0 ? {} : { confirmationMatches: options.confirmationMatches },
+    ...options.now === void 0 ? {} : { now: options.now },
+    ...options.nextId === void 0 ? {} : { nextId: options.nextId },
+    maxInlinePayloadBytes: options.maxInlinePayloadBytes ?? DEFAULT_INLINE_PAYLOAD_BYTES
+  });
+  const session = options.writer === void 0 ? void 0 : createEditSession({ revision, targets, writer: options.writer });
+  const authorization = Object.freeze({
+    async request() {
+      return { grant: grantSnapshot };
+    }
+  });
+  const editorPorts = session === void 0 ? void 0 : Object.freeze({
+    edit: session,
+    commit: coordinator,
+    payloads: options.payloads ?? NO_STAGED_PAYLOADS,
+    authorization
+  });
+  const editing = {
+    revision,
+    targets,
+    grantSnapshot,
+    coordinator,
+    ...session === void 0 ? {} : { session },
+    ...editorPorts === void 0 ? {} : { editorPorts },
+    planFromOperation(output) {
+      return editPlanFromOperationForDescriptor(descriptor, output);
+    }
+  };
+  return Object.freeze(editing);
+}
 
 // packages/host/dist/subject-services.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
@@ -11595,6 +15140,11 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // packages/host/dist/language/workspace.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/language/subject-completion.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+
+// packages/host/dist/language/workspace.js
 var SYMBOL_KINDS = /* @__PURE__ */ new Set([
   "class",
   "constant",
@@ -11621,7 +15171,7 @@ var COMPLETION_KINDS = /* @__PURE__ */ new Set([
 var STANDARD_LANGUAGE_OWNER = "modkit/language";
 var OFFER_KEYS2 = /* @__PURE__ */ new Set(["languageIds", "documentKinds", "extensions"]);
 var REQUEST_KEYS = /* @__PURE__ */ new Set(["languageId", "documentKind", "extension"]);
-function recordOf(value2) {
+function recordOf2(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
 }
 function stringList(value2) {
@@ -11629,11 +15179,11 @@ function stringList(value2) {
     return void 0;
   if (!value2.every((item) => typeof item === "string" && item.trim().length > 0))
     return void 0;
-  const strings = value2;
-  return new Set(strings).size === strings.length ? strings : void 0;
+  const strings2 = value2;
+  return new Set(strings2).size === strings2.length ? strings2 : void 0;
 }
 function parseOffer(value2) {
-  const record4 = recordOf(value2);
+  const record4 = recordOf2(value2);
   if (record4 === void 0 || Object.keys(record4).some((key3) => !OFFER_KEYS2.has(key3)))
     return void 0;
   const languageIds = stringList(record4["languageIds"]);
@@ -11653,7 +15203,7 @@ function parseOffer(value2) {
   };
 }
 function parseRequest(value2) {
-  const record4 = recordOf(value2);
+  const record4 = recordOf2(value2);
   if (record4 === void 0 || Object.keys(record4).some((key3) => !REQUEST_KEYS.has(key3)))
     return void 0;
   const languageId = record4["languageId"];
@@ -11815,7 +15365,7 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var STANDARD_RUNTIME_OWNER = "modkit/runtime";
 var OFFER_KEYS3 = /* @__PURE__ */ new Set(["runtimeIds"]);
 var REQUEST_KEYS2 = /* @__PURE__ */ new Set(["runtimeId"]);
-function recordOf2(value2) {
+function recordOf3(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
 }
 function nonEmptyString3(value2) {
@@ -11824,18 +15374,18 @@ function nonEmptyString3(value2) {
 function stringList2(value2) {
   if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmptyString3))
     return void 0;
-  const strings = value2;
-  return new Set(strings).size === strings.length ? strings : void 0;
+  const strings2 = value2;
+  return new Set(strings2).size === strings2.length ? strings2 : void 0;
 }
 function parseOffer2(value2) {
-  const record4 = recordOf2(value2);
+  const record4 = recordOf3(value2);
   if (record4 === void 0 || Object.keys(record4).some((key3) => !OFFER_KEYS3.has(key3)))
     return void 0;
   const runtimeIds = stringList2(record4["runtimeIds"]);
   return runtimeIds === void 0 ? void 0 : { runtimeIds };
 }
 function parseRequest2(value2) {
-  const record4 = recordOf2(value2);
+  const record4 = recordOf3(value2);
   if (record4 === void 0 || Object.keys(record4).some((key3) => !REQUEST_KEYS2.has(key3)))
     return void 0;
   const runtimeId = record4["runtimeId"];
@@ -11932,7 +15482,7 @@ var STANDARD_RENDERER_OWNER = "modkit/renderer";
 var OFFER_KEYS4 = /* @__PURE__ */ new Set(["rendererIds", "outputKinds"]);
 var REQUEST_KEYS3 = /* @__PURE__ */ new Set(["rendererId", "outputKind"]);
 var OUTPUT_KINDS = /* @__PURE__ */ new Set(["rgba8"]);
-function recordOf3(value2) {
+function recordOf4(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
 }
 function nonEmptyString4(value2) {
@@ -11941,8 +15491,8 @@ function nonEmptyString4(value2) {
 function stringList3(value2) {
   if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmptyString4))
     return void 0;
-  const strings = value2;
-  return new Set(strings).size === strings.length ? strings : void 0;
+  const strings2 = value2;
+  return new Set(strings2).size === strings2.length ? strings2 : void 0;
 }
 function outputKind(value2) {
   return typeof value2 === "string" && OUTPUT_KINDS.has(value2) ? value2 : void 0;
@@ -11957,7 +15507,7 @@ function outputKindList(value2) {
   return outputKinds.length === value2.length && new Set(outputKinds).size === outputKinds.length ? outputKinds : void 0;
 }
 function parseOffer3(value2) {
-  const record4 = recordOf3(value2);
+  const record4 = recordOf4(value2);
   if (record4 === void 0 || Object.keys(record4).some((key3) => !OFFER_KEYS4.has(key3)))
     return void 0;
   const rendererIds = stringList3(record4["rendererIds"]);
@@ -11965,7 +15515,7 @@ function parseOffer3(value2) {
   return rendererIds === void 0 || outputKinds === void 0 ? void 0 : { rendererIds, outputKinds };
 }
 function parseRequest3(value2) {
-  const record4 = recordOf3(value2);
+  const record4 = recordOf4(value2);
   if (record4 === void 0 || Object.keys(record4).some((key3) => !REQUEST_KEYS3.has(key3)))
     return void 0;
   const rendererId = record4["rendererId"];
@@ -12050,13 +15600,110 @@ function registerStandardRendererDefinitions(definitions) {
     }
   ]);
 }
+function isSceneRenderer(value2) {
+  const record4 = recordOf4(value2);
+  return record4?.["contract"] === SCENE_RENDERER_CONTRACT && nonEmptyString4(record4["rendererId"]) && outputKindList(record4["outputKinds"]) !== void 0 && typeof record4["render"] === "function";
+}
+async function resolveSceneRenderer(request) {
+  const definitions = request.services.serviceDefinitions;
+  if (definitions === void 0) {
+    return {
+      state: "unresolved",
+      diagnostics: [
+        diagnostic("information", "x3.host/renderer-unavailable", "this host registered no service-contract definitions, so renderers cannot be resolved")
+      ]
+    };
+  }
+  const resolver = createHostServiceResolver({
+    inventory: request.services.inventory,
+    target: request.services.target,
+    executionBackends: request.services.executionBackends,
+    definitions,
+    grant: request.grant,
+    budgets: request.budgets,
+    ...request.signal === void 0 ? {} : { signal: request.signal }
+  });
+  const facet = {
+    outputKind: request.outputKind,
+    ...request.rendererId === void 0 ? {} : { rendererId: request.rendererId }
+  };
+  try {
+    const lease2 = await resolver.port.resolve({
+      contract: SCENE_RENDERER_CONTRACT,
+      major: 1,
+      facet,
+      ...request.signal === void 0 ? {} : { signal: request.signal }
+    });
+    if (!isSceneRenderer(lease2.value) || !lease2.value.outputKinds.includes(request.outputKind) || request.rendererId !== void 0 && lease2.value.rendererId !== request.rendererId) {
+      await resolver.release();
+      return {
+        state: "unresolved",
+        diagnostics: [
+          ...resolver.diagnostics,
+          diagnostic("error", "x3.host/renderer-invalid", `the selected provider does not implement ${SCENE_RENDERER_CONTRACT}@1 for ${request.outputKind}`)
+        ]
+      };
+    }
+    return Object.freeze({
+      state: "resolved",
+      renderer: lease2.value,
+      diagnostics: Object.freeze([
+        ...resolver.diagnostics,
+        diagnostic("information", "x3.host/renderer-selected", `selected ${lease2.value.rendererId} for ${request.outputKind}`)
+      ]),
+      release: () => resolver.release()
+    });
+  } catch (error5) {
+    await resolver.release();
+    return {
+      state: "unresolved",
+      diagnostics: [
+        ...resolver.diagnostics,
+        diagnostic("information", "x3.host/renderer-unresolved", `no scene renderer resolved for ${request.outputKind} (${error5 instanceof Error ? error5.message : String(error5)})`)
+      ]
+    };
+  }
+}
+function contractSeverity(severity) {
+  return severity === "hint" ? "information" : severity;
+}
+var contractDiagnostics = (diagnostics) => Object.freeze(diagnostics.map((item) => Object.freeze({
+  severity: contractSeverity(item.severity),
+  code: item.code,
+  message: item.message
+})));
+function createSceneRendererPort(options) {
+  return Object.freeze({
+    async acquire(request) {
+      const resolution = await resolveSceneRenderer({
+        services: options.services,
+        grant: options.grant,
+        budgets: options.budgets,
+        outputKind: request.outputKind,
+        ...request.rendererId === void 0 ? {} : { rendererId: request.rendererId },
+        ...request.signal === void 0 ? {} : { signal: request.signal }
+      });
+      const diagnostics = contractDiagnostics(resolution.diagnostics);
+      if (resolution.state !== "resolved")
+        return Object.freeze({ state: "unresolved", diagnostics });
+      return Object.freeze({
+        state: "resolved",
+        diagnostics,
+        lease: Object.freeze({
+          renderer: resolution.renderer,
+          release: () => resolution.release()
+        })
+      });
+    }
+  });
+}
 
 // packages/host/dist/games/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var STANDARD_GAMES_OWNER = "modkit/games";
 var OFFER_KEYS5 = /* @__PURE__ */ new Set(["gameIds"]);
 var REQUEST_KEYS4 = /* @__PURE__ */ new Set(["gameId"]);
-function recordOf4(value2) {
+function recordOf5(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
 }
 function nonEmptyString5(value2) {
@@ -12065,18 +15712,18 @@ function nonEmptyString5(value2) {
 function stringList4(value2) {
   if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmptyString5))
     return void 0;
-  const strings = value2;
-  return new Set(strings).size === strings.length ? strings : void 0;
+  const strings2 = value2;
+  return new Set(strings2).size === strings2.length ? strings2 : void 0;
 }
 function parseOffer4(value2) {
-  const record4 = recordOf4(value2);
+  const record4 = recordOf5(value2);
   if (record4 === void 0 || Object.keys(record4).some((key3) => !OFFER_KEYS5.has(key3)))
     return void 0;
   const gameIds = stringList4(record4["gameIds"]);
   return gameIds === void 0 ? void 0 : { gameIds };
 }
 function parseRequest4(value2) {
-  const record4 = recordOf4(value2);
+  const record4 = recordOf5(value2);
   if (record4 === void 0 || Object.keys(record4).some((key3) => !REQUEST_KEYS4.has(key3))) {
     return void 0;
   }
@@ -12178,7 +15825,7 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var STANDARD_MODS_OWNER = "modkit/mods";
 var OFFER_KEYS6 = /* @__PURE__ */ new Set(["gameIds"]);
 var REQUEST_KEYS5 = /* @__PURE__ */ new Set(["gameId"]);
-function recordOf5(value2) {
+function recordOf6(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
 }
 function nonEmptyString6(value2) {
@@ -12187,11 +15834,11 @@ function nonEmptyString6(value2) {
 function stringList5(value2) {
   if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmptyString6))
     return void 0;
-  const strings = value2;
-  return new Set(strings).size === strings.length ? strings : void 0;
+  const strings2 = value2;
+  return new Set(strings2).size === strings2.length ? strings2 : void 0;
 }
 function parseOffer5(value2) {
-  const record4 = recordOf5(value2);
+  const record4 = recordOf6(value2);
   if (record4 === void 0 || Object.keys(record4).some((key3) => !OFFER_KEYS6.has(key3))) {
     return void 0;
   }
@@ -12199,7 +15846,7 @@ function parseOffer5(value2) {
   return gameIds === void 0 ? void 0 : { gameIds };
 }
 function parseRequest5(value2) {
-  const record4 = recordOf5(value2);
+  const record4 = recordOf6(value2);
   if (record4 === void 0 || Object.keys(record4).some((key3) => !REQUEST_KEYS5.has(key3))) {
     return void 0;
   }
@@ -12276,7 +15923,7 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var STANDARD_DATA_OWNER = "modkit/data";
 var OFFER_KEYS7 = /* @__PURE__ */ new Set(["gameIds"]);
 var REQUEST_KEYS6 = /* @__PURE__ */ new Set(["gameId"]);
-function recordOf6(value2) {
+function recordOf7(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
 }
 function nonEmptyString7(value2) {
@@ -12285,11 +15932,11 @@ function nonEmptyString7(value2) {
 function stringList6(value2) {
   if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmptyString7))
     return void 0;
-  const strings = value2;
-  return new Set(strings).size === strings.length ? strings : void 0;
+  const strings2 = value2;
+  return new Set(strings2).size === strings2.length ? strings2 : void 0;
 }
 function parseOffer6(value2) {
-  const record4 = recordOf6(value2);
+  const record4 = recordOf7(value2);
   if (record4 === void 0 || Object.keys(record4).some((key3) => !OFFER_KEYS7.has(key3))) {
     return void 0;
   }
@@ -12297,7 +15944,7 @@ function parseOffer6(value2) {
   return gameIds === void 0 ? void 0 : { gameIds };
 }
 function parseRequest6(value2) {
-  const record4 = recordOf6(value2);
+  const record4 = recordOf7(value2);
   if (record4 === void 0 || Object.keys(record4).some((key3) => !REQUEST_KEYS6.has(key3))) {
     return void 0;
   }
@@ -12448,7 +16095,7 @@ function registerStandardDataDefinitions(definitions) {
   })));
 }
 function isResolvedDataWorkspace(value2) {
-  const record4 = recordOf6(value2);
+  const record4 = recordOf7(value2);
   return record4?.["contract"] === RESOLVED_DATA_WORKSPACE_CONTRACT && nonEmptyString7(record4["providerId"]) && stringList6(record4["gameIds"]) !== void 0 && typeof record4["plan"] === "function" && typeof record4["analyze"] === "function" && typeof record4["openSchemaTree"] === "function" && typeof record4["openDefinitionTable"] === "function" && typeof record4["openLocalizationTable"] === "function" && typeof record4["openRelations"] === "function";
 }
 async function resolveResolvedDataWorkspace(request) {
@@ -12521,14 +16168,29 @@ function createResolvedDataSubjectSelectorLease(analyzed, inputLimits) {
   });
   const snapshot3 = analyzed.snapshot;
   const localized = new Map(snapshot3.localizedStrings.map((item) => [item.key, item.value]));
+  const entitiesById = new Map(snapshot3.definitions.map((entity) => [`${entity.namespace}/${entity.entityId}`, entity]));
   const subjects = Object.freeze(snapshot3.definitions.map((entity) => {
     const authoredName = entity.fields["Name"];
     const label = typeof authoredName === "string" ? localized.get(authoredName) ?? entity.entityId : entity.entityId;
+    const metadata = inputLimits.candidateMetadata?.(entity);
+    if (metadata?.tags !== void 0 && (!Array.isArray(metadata.tags) || metadata.tags.some((tag) => typeof tag !== "string" || tag.length === 0) || new Set(metadata.tags).size !== metadata.tags.length)) {
+      throw new TypeError("subject selector metadata contains invalid tags");
+    }
+    if (metadata?.asset !== void 0 && (typeof metadata.asset !== "object" || metadata.asset === null || typeof metadata.asset.formatId !== "string" || metadata.asset.formatId.length === 0 || !Array.isArray(metadata.asset.traits) || metadata.asset.traits.some((trait) => typeof trait !== "string" || trait.length === 0) || new Set(metadata.asset.traits).size !== metadata.asset.traits.length)) {
+      throw new TypeError("subject selector metadata contains an invalid asset description");
+    }
     return Object.freeze({
       subjectId: `${entity.namespace}/${entity.entityId}`,
       label,
       kind: entity.namespace,
-      type: entity.typeId
+      type: entity.typeId,
+      ...metadata?.tags === void 0 ? {} : { tags: Object.freeze([...metadata.tags]) },
+      ...metadata?.asset === void 0 ? {} : {
+        asset: Object.freeze({
+          formatId: metadata.asset.formatId,
+          traits: Object.freeze([...metadata.asset.traits])
+        })
+      }
     });
   }).sort((left, right) => left.subjectId.localeCompare(right.subjectId)));
   const byId = new Map(subjects.map((item) => [item.subjectId, item]));
@@ -12543,8 +16205,36 @@ function createResolvedDataSubjectSelectorLease(analyzed, inputLimits) {
     if (!Number.isSafeInteger(request.limit) || request.limit < 1 || request.limit > limits.maxPageSize) {
       throw new RangeError(`subject selector limit must be between 1 and ${limits.maxPageSize}`);
     }
-    const text3 = request.text?.trim().toLocaleLowerCase("en-US");
-    const filtered = subjects.filter((subject) => (request.kind === void 0 || subject.kind === request.kind) && (request.type === void 0 || subject.type === request.type) && (text3 === void 0 || text3.length === 0 || subject.subjectId.toLocaleLowerCase("en-US").includes(text3) || subject.label.toLocaleLowerCase("en-US").includes(text3)));
+    const text4 = request.text?.trim().toLocaleLowerCase("en-US");
+    const filterText = request.filter?.text?.trim().toLocaleLowerCase("en-US");
+    const sameTypeAs = request.filter?.sameTypeAs === void 0 ? void 0 : byId.get(request.filter.sameTypeAs);
+    if (request.filter?.sameTypeAs !== void 0 && sameTypeAs === void 0) {
+      throw new RangeError(`subject selector sameTypeAs anchor not found: ${request.filter.sameTypeAs}`);
+    }
+    const predicateId = request.filter?.predicate?.id;
+    const predicate = predicateId === void 0 ? void 0 : inputLimits.predicates?.[predicateId];
+    if (predicateId !== void 0 && predicate === void 0) {
+      throw new RangeError(`subject selector predicate is unavailable: ${predicateId}`);
+    }
+    const matchesText = (subject, needle) => needle === void 0 || needle.length === 0 || subject.subjectId.toLocaleLowerCase("en-US").includes(needle) || subject.label.toLocaleLowerCase("en-US").includes(needle);
+    const acceptsAsset = (subject) => {
+      if (request.asset === void 0)
+        return subject.asset === void 0;
+      const asset = subject.asset;
+      if (asset === void 0)
+        return false;
+      return (request.asset.formatIds === void 0 || request.asset.formatIds.includes(asset.formatId)) && (request.asset.traits === void 0 || request.asset.traits.every((trait) => asset.traits.includes(trait)));
+    };
+    const filtered = subjects.filter((subject) => {
+      const tags = subject.tags ?? [];
+      const entity = entitiesById.get(subject.subjectId);
+      return acceptsAsset(subject) && (request.kind === void 0 || subject.kind === request.kind) && (request.type === void 0 || subject.type === request.type) && (request.filter?.type === void 0 || subject.type === request.filter.type) && (sameTypeAs === void 0 || subject.type === sameTypeAs.type) && matchesText(subject, text4) && matchesText(subject, filterText) && (request.filter?.requireTags === void 0 || request.filter.requireTags.every((tag) => tags.includes(tag))) && (request.filter?.excludeTags === void 0 || request.filter.excludeTags.every((tag) => !tags.includes(tag))) && (predicate === void 0 || entity !== void 0 && predicate({
+        subject,
+        entity,
+        ...sameTypeAs === void 0 ? {} : { sameTypeAs },
+        ...request.filter?.predicate?.params === void 0 ? {} : { params: request.filter.predicate.params }
+      }) === true);
+    });
     const offset = request.cursor === void 0 ? 0 : Number(request.cursor.replace(/^subject:/u, ""));
     if (!Number.isSafeInteger(offset) || offset < 0 || offset > filtered.length || request.cursor !== void 0 && request.cursor !== `subject:${offset}`) {
       throw new RangeError("subject selector cursor is invalid or stale");
@@ -13291,22 +16981,22 @@ function admittedTerrainTransform(snapshot3, terrain, exact) {
   const transform = snapshot3.terrainTransform;
   if (transform === void 0 || terrain === void 0 || !exact)
     return void 0;
-  const finite2 = (value2) => Number.isFinite(value2);
-  const positive = (value2) => finite2(value2) && value2 > 0;
+  const finite3 = (value2) => Number.isFinite(value2);
+  const positive2 = (value2) => finite3(value2) && value2 > 0;
   const verticalMappingValid = (value2) => {
     if ("vertData" in value2) {
-      return finite2(value2.vertData.quantizeBias) && positive(value2.vertData.quantizeScale) && finite2(value2.vertData.standardHeight) && value2.mapping.vertical === "dequantized-base-times-scale-plus-offset-plus-dequantized-adjustment";
+      return finite3(value2.vertData.quantizeBias) && positive2(value2.vertData.quantizeScale) && finite3(value2.vertData.standardHeight) && value2.mapping.vertical === "dequantized-base-times-scale-plus-offset-plus-dequantized-adjustment";
     }
     return value2.mapping.vertical === "direct-base-times-scale-plus-offset" && value2.source.format.length > 0 && value2.source.heightEncoding.length > 0 && terrain.samples.every((sample) => sample.heightAdjustment === 0);
   };
-  if (transform.schemaVersion !== 1 || !Number.isSafeInteger(transform.descriptorVersion) || transform.descriptorVersion <= 0 || transform.snapshotId !== snapshot3.snapshotId || transform.heightMap.dim.length !== 2 || transform.heightMap.dim[0] !== terrain.width || transform.heightMap.dim[1] !== terrain.height || !Object.values(transform.heightMap.offset).every(finite2) || !Object.values(transform.heightMap.scale).every(positive) || transform.mapping.horizontal !== "offset-plus-grid-index-times-scale" || !verticalMappingValid(transform) || transform.bounds.coordinateSpaceId !== "map-native") {
+  if (transform.schemaVersion !== 1 || !Number.isSafeInteger(transform.descriptorVersion) || transform.descriptorVersion <= 0 || transform.snapshotId !== snapshot3.snapshotId || transform.heightMap.dim.length !== 2 || transform.heightMap.dim[0] !== terrain.width || transform.heightMap.dim[1] !== terrain.height || !Object.values(transform.heightMap.offset).every(finite3) || !Object.values(transform.heightMap.scale).every(positive2) || transform.mapping.horizontal !== "offset-plus-grid-index-times-scale" || !verticalMappingValid(transform) || transform.bounds.coordinateSpaceId !== "map-native") {
     return void 0;
   }
   let minimum = { x: Infinity, y: Infinity, z: Infinity };
   let maximum = { x: -Infinity, y: -Infinity, z: -Infinity };
   for (const sample of terrain.samples) {
     const position = terrainMapNativePosition(sample, transform);
-    if (!Object.values(position).every(finite2))
+    if (!Object.values(position).every(finite3))
       return void 0;
     minimum = {
       x: Math.min(minimum.x, position.x),
@@ -13325,12 +17015,12 @@ function admittedWorldCanonicalTransform(snapshot3, terrainTransform) {
   const transform = snapshot3.uvwTransform;
   if (transform === void 0 || terrainTransform === void 0)
     return void 0;
-  const finite2 = (value2) => Number.isFinite(value2);
-  const positive = (value2) => finite2(value2) && value2 > 0;
+  const finite3 = (value2) => Number.isFinite(value2);
+  const positive2 = (value2) => finite3(value2) && value2 > 0;
   const basis = transform.basis;
   const axes = Object.values(transform.axes);
   const sourceAxes = axes.map((item) => item.sourceAxis);
-  if (transform.schemaVersion !== 1 || transform.snapshotId !== snapshot3.snapshotId || transform.sourceCoordinateSpaceId !== "map-native" || transform.targetCoordinateSpaceId !== "uvw-canonical" || basis.handedness !== "right" || basis.upAxis !== "y" || basis.forwardAxis !== "+z" || basis.unit !== "meter" && basis.unit !== "source-unit" || basis.unit === "source-unit" && (basis.sourceUnit === void 0 || basis.sourceUnit.length === 0 || basis.metersPerUnit !== void 0) || basis.unitsPerCell !== void 0 && !positive(basis.unitsPerCell) || axes.some((item) => !finite2(item.scale) || item.scale === 0 || !finite2(item.offset)) || new Set(sourceAxes).size !== 3 || !Number.isSafeInteger(transform.heightfield.columns) || !Number.isSafeInteger(transform.heightfield.rows) || transform.heightfield.columns !== terrainTransform.heightMap.dim[0] || transform.heightfield.rows !== terrainTransform.heightMap.dim[1] || !positive(transform.heightfield.cellSize) || basis.unitsPerCell !== void 0 && basis.unitsPerCell !== transform.heightfield.cellSize || transform.heightfield.origin.length !== 3 || !transform.heightfield.origin.every(finite2) || transform.heightfield.sourceRowOrder !== "reverse" || transform.bounds.coordinateSpaceId !== "uvw-canonical" || !Object.values(transform.bounds.minimum).every(finite2) || !Object.values(transform.bounds.maximum).every(finite2) || !["x", "y", "z"].every((axis) => transform.bounds.minimum[axis] <= transform.bounds.maximum[axis]) || !Number.isSafeInteger(transform.proof.tupleCount) || transform.proof.tupleCount <= 0 || transform.proof.kind !== "adapter-qualification" || transform.proof.oracle.length === 0 || transform.proof.corpus.length === 0 || Object.keys(transform.proof.sourceDigests).length === 0 || !Object.values(transform.proof.sourceDigests).every((value2) => /^sha256:[0-9a-f]{64}$/u.test(value2)) || !/^sha256:[0-9a-f]{64}$/u.test(transform.proof.nativeTupleDigest) || transform.proof.presentationTupleDigest !== void 0 && !/^sha256:[0-9a-f]{64}$/u.test(transform.proof.presentationTupleDigest) || !/^sha256:[0-9a-f]{64}$/u.test(transform.proof.canonicalTupleDigest) || transform.proof.comparison !== "ieee-754-binary64-exact") {
+  if (transform.schemaVersion !== 1 || transform.snapshotId !== snapshot3.snapshotId || transform.sourceCoordinateSpaceId !== "map-native" || transform.targetCoordinateSpaceId !== "uvw-canonical" || basis.handedness !== "right" || basis.upAxis !== "y" || basis.forwardAxis !== "+z" || basis.unit !== "meter" && basis.unit !== "source-unit" || basis.unit === "source-unit" && (basis.sourceUnit === void 0 || basis.sourceUnit.length === 0 || basis.metersPerUnit !== void 0) || basis.unitsPerCell !== void 0 && !positive2(basis.unitsPerCell) || axes.some((item) => !finite3(item.scale) || item.scale === 0 || !finite3(item.offset)) || new Set(sourceAxes).size !== 3 || !Number.isSafeInteger(transform.heightfield.columns) || !Number.isSafeInteger(transform.heightfield.rows) || transform.heightfield.columns !== terrainTransform.heightMap.dim[0] || transform.heightfield.rows !== terrainTransform.heightMap.dim[1] || !positive2(transform.heightfield.cellSize) || basis.unitsPerCell !== void 0 && basis.unitsPerCell !== transform.heightfield.cellSize || transform.heightfield.origin.length !== 3 || !transform.heightfield.origin.every(finite3) || transform.heightfield.sourceRowOrder !== "reverse" || transform.bounds.coordinateSpaceId !== "uvw-canonical" || !Object.values(transform.bounds.minimum).every(finite3) || !Object.values(transform.bounds.maximum).every(finite3) || !["x", "y", "z"].every((axis) => transform.bounds.minimum[axis] <= transform.bounds.maximum[axis]) || !Number.isSafeInteger(transform.proof.tupleCount) || transform.proof.tupleCount <= 0 || transform.proof.kind !== "adapter-qualification" || transform.proof.oracle.length === 0 || transform.proof.corpus.length === 0 || Object.keys(transform.proof.sourceDigests).length === 0 || !Object.values(transform.proof.sourceDigests).every((value2) => /^sha256:[0-9a-f]{64}$/u.test(value2)) || !/^sha256:[0-9a-f]{64}$/u.test(transform.proof.nativeTupleDigest) || transform.proof.presentationTupleDigest !== void 0 && !/^sha256:[0-9a-f]{64}$/u.test(transform.proof.presentationTupleDigest) || !/^sha256:[0-9a-f]{64}$/u.test(transform.proof.canonicalTupleDigest) || transform.proof.comparison !== "ieee-754-binary64-exact") {
     return void 0;
   }
   const nativeBounds = terrainTransform.bounds;
@@ -13396,11 +17086,11 @@ function createCandidateWorldSceneLease(snapshot3, provenance, maxPageSize) {
     });
   }));
   const objects = Object.freeze(semanticObjects.map((item) => {
-    const id = `${objectLayerId}:object:${String(item.objectId)}`;
+    const id2 = `${objectLayerId}:object:${String(item.objectId)}`;
     const ref2 = item.catalog?.ref;
     return Object.freeze({
       facet: "objects",
-      id,
+      id: id2,
       layerId: objectLayerId,
       coordinateSpaceId: "map-native",
       ...item,
@@ -13432,9 +17122,9 @@ function createCandidateWorldSceneLease(snapshot3, provenance, maxPageSize) {
     current.objectIds.push(item.id);
     resourceJoins.set(key3, current);
   }
-  const resources = Object.freeze([...resourceJoins.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([id, item]) => Object.freeze({
+  const resources = Object.freeze([...resourceJoins.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([id2, item]) => Object.freeze({
     facet: "resources",
-    id,
+    id: id2,
     layerId: resourceLayerId,
     namespace: item.namespace,
     entityId: item.entityId,
@@ -13729,7 +17419,7 @@ var OFFER_KEYS8 = /* @__PURE__ */ new Set(["gameIds"]);
 var REQUEST_KEYS7 = /* @__PURE__ */ new Set(["gameId"]);
 var PREVIEW_OFFER_KEYS = /* @__PURE__ */ new Set(["subjectFormatIds"]);
 var PREVIEW_REQUEST_KEYS = /* @__PURE__ */ new Set(["subjectFormatId"]);
-function recordOf7(value2) {
+function recordOf8(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
 }
 function nonEmptyString8(value2) {
@@ -13738,11 +17428,11 @@ function nonEmptyString8(value2) {
 function stringList7(value2) {
   if (!Array.isArray(value2) || value2.length === 0 || !value2.every(nonEmptyString8))
     return void 0;
-  const strings = value2;
-  return new Set(strings).size === strings.length ? strings : void 0;
+  const strings2 = value2;
+  return new Set(strings2).size === strings2.length ? strings2 : void 0;
 }
 function parseOffer7(value2) {
-  const record4 = recordOf7(value2);
+  const record4 = recordOf8(value2);
   if (record4 === void 0 || Object.keys(record4).some((key3) => !OFFER_KEYS8.has(key3))) {
     return void 0;
   }
@@ -13750,7 +17440,7 @@ function parseOffer7(value2) {
   return gameIds === void 0 ? void 0 : { gameIds };
 }
 function parseRequest7(value2) {
-  const record4 = recordOf7(value2);
+  const record4 = recordOf8(value2);
   if (record4 === void 0 || Object.keys(record4).some((key3) => !REQUEST_KEYS7.has(key3))) {
     return void 0;
   }
@@ -13775,7 +17465,7 @@ var MAP_SEMANTIC_MATCHER = Object.freeze({
   match: matchMapSemanticFacets
 });
 function parsePreviewOffer(value2) {
-  const record4 = recordOf7(value2);
+  const record4 = recordOf8(value2);
   if (record4 === void 0 || Object.keys(record4).some((key3) => !PREVIEW_OFFER_KEYS.has(key3))) {
     return void 0;
   }
@@ -13783,7 +17473,7 @@ function parsePreviewOffer(value2) {
   return subjectFormatIds === void 0 ? void 0 : { subjectFormatIds };
 }
 function parsePreviewRequest(value2) {
-  const record4 = recordOf7(value2);
+  const record4 = recordOf8(value2);
   if (record4 === void 0 || Object.keys(record4).some((key3) => !PREVIEW_REQUEST_KEYS.has(key3))) {
     return void 0;
   }
@@ -13925,7 +17615,7 @@ function registerStandardMapDefinitions(definitions) {
   })));
 }
 function isResolvedMapWorkspace(value2) {
-  const record4 = recordOf7(value2);
+  const record4 = recordOf8(value2);
   return record4?.["contract"] === RESOLVED_MAP_WORKSPACE_CONTRACT && nonEmptyString8(record4["analyzerId"]) && stringList7(record4["gameIds"]) !== void 0 && typeof record4["plan"] === "function" && typeof record4["analyze"] === "function";
 }
 async function resolveResolvedMapWorkspace(request) {
@@ -13985,7 +17675,7 @@ async function resolveResolvedMapWorkspace(request) {
   }
 }
 function isMapPreviewPreparation(value2) {
-  const record4 = recordOf7(value2);
+  const record4 = recordOf8(value2);
   return record4?.["contract"] === MAP_PREVIEW_PREPARATION_CONTRACT && nonEmptyString8(record4["preparationId"]) && stringList7(record4["subjectFormatIds"]) !== void 0 && typeof record4["prepare"] === "function";
 }
 async function resolveMapPreviewPreparation(request) {
@@ -14351,13 +18041,13 @@ function borrowDataSource(source2) {
   const target = /* @__PURE__ */ Object.create(null);
   const value2 = new Proxy(target, {
     get(_target, property) {
-      const member = Reflect.get(source2, property, source2);
-      if (typeof member !== "function")
-        return member;
+      const member2 = Reflect.get(source2, property, source2);
+      if (typeof member2 !== "function")
+        return member2;
       return (...args) => {
         if (!live)
           throw new TypeError("map preview data-source lease has been released");
-        return Reflect.apply(member, source2, args);
+        return Reflect.apply(member2, source2, args);
       };
     }
   });
@@ -14482,11 +18172,11 @@ function boundedCoordinatorLimit(value2, label, maximum) {
   return admitted;
 }
 function validPreparationDiagnostic(value2) {
-  const record4 = recordOf7(value2);
+  const record4 = recordOf8(value2);
   return record4 !== void 0 && Object.keys(record4).every((key3) => ["code", "severity", "message", "path", "data"].includes(key3)) && nonEmptyString8(record4["code"]) && PREVIEW_DIAGNOSTIC_SEVERITIES.has(String(record4["severity"])) && nonEmptyString8(record4["message"]) && (!Object.hasOwn(record4, "path") || Array.isArray(record4["path"]) && record4["path"].every((item) => typeof item === "string" || Number.isSafeInteger(item))) && (!Object.hasOwn(record4, "data") || jsonSafeValue(record4["data"]));
 }
 function validNamespaceSearchQuery(value2) {
-  const query = recordOf7(value2);
+  const query = recordOf8(value2);
   if (query === void 0 || !Object.keys(query).every((key3) => key3 === "kind" || key3 === "basenames" || key3 === "caseSensitive") || query["kind"] !== "basename-any" || !Array.isArray(query["basenames"]) || query["basenames"].length === 0 || query["basenames"].length > MAX_PREVIEW_NAMESPACE_SEARCH_BASENAMES || typeof query["caseSensitive"] !== "boolean") {
     return false;
   }
@@ -14499,9 +18189,9 @@ function validNamespaceSearchQuery(value2) {
 }
 function validateNamespaceSearchRequests(value2) {
   if (!Array.isArray(value2) || value2.length === 0 || value2.length > MAX_PREVIEW_NAMESPACE_SEARCHES || !value2.every((item) => {
-    const search = recordOf7(item);
+    const search = recordOf8(item);
     return search !== void 0 && Object.keys(search).every((key3) => key3 === "searchId" || key3 === "query") && nonEmptyString8(search["searchId"]) && search["searchId"].length <= MAX_PREVIEW_NAMESPACE_SEARCH_ID_CHARS && !search["searchId"].includes("\0") && validNamespaceSearchQuery(search["query"]);
-  }) || new Set(value2.map((item) => String(recordOf7(item)?.["searchId"] ?? ""))).size !== value2.length) {
+  }) || new Set(value2.map((item) => String(recordOf8(item)?.["searchId"] ?? ""))).size !== value2.length) {
     throw new TypeError("map preview preparation returned invalid namespace searches");
   }
   return value2;
@@ -14513,7 +18203,7 @@ function validateDocumentReadRequests(value2) {
   let totalBytes = 0;
   const identities = /* @__PURE__ */ new Set();
   for (const [index, item] of value2.entries()) {
-    const document2 = recordOf7(item);
+    const document2 = recordOf8(item);
     if (document2 === void 0 || !Object.keys(document2).every((key3) => key3 === "documentId" || key3 === "path" || key3 === "maxBytes") || !nonEmptyString8(document2["documentId"]) || document2["documentId"].length > 256 || document2["documentId"].includes("\0") || !nonEmptyString8(document2["path"]) || document2["path"].length > MAX_PREVIEW_NAMESPACE_PATH_CHARS || document2["path"].includes("\0") || document2["path"].startsWith("/") || /^[a-z]:/iu.test(document2["path"]) || document2["path"].replace(/\\/gu, "/").split("/").some((part) => part === "..") || !Number.isSafeInteger(document2["maxBytes"]) || Number(document2["maxBytes"]) <= 0 || Number(document2["maxBytes"]) > MAX_PREVIEW_DOCUMENT_READ_BYTES) {
       throw new TypeError(`map preview document read ${index} is malformed`);
     }
@@ -14537,25 +18227,25 @@ function jsonSafeValue(value2, depth = 0) {
     return Number.isFinite(value2);
   if (Array.isArray(value2))
     return value2.every((item) => jsonSafeValue(item, depth + 1));
-  const record4 = recordOf7(value2);
+  const record4 = recordOf8(value2);
   return record4 !== void 0 && Object.values(record4).every((item) => jsonSafeValue(item, depth + 1));
 }
 function validHostResourceRoot(value2) {
-  const record4 = recordOf7(value2);
+  const record4 = recordOf8(value2);
   return record4 !== void 0 && Object.keys(record4).every((key3) => key3 === "rootId" || key3 === "locator") && nonEmptyString8(record4["rootId"]) && Object.hasOwn(record4, "locator") && jsonSafeValue(record4["locator"]);
 }
 function validSubjectNamespaceRoot(value2) {
-  const record4 = recordOf7(value2);
+  const record4 = recordOf8(value2);
   return record4 !== void 0 && Object.keys(record4).every((key3) => key3 === "rootId" || key3 === "namespacePrefix") && nonEmptyString8(record4["rootId"]) && typeof record4["namespacePrefix"] === "string";
 }
 function validateResourcePlan(value2, maxRoots) {
-  const plan = recordOf7(value2);
+  const plan = recordOf8(value2);
   if (plan?.["schemaVersion"] !== 1) {
     throw new TypeError("map preview preparation returned no versioned resource plan");
   }
   if (plan["strategy"] === "subject-namespace") {
     const roots = plan["roots"];
-    if (!Object.keys(plan).every((key3) => key3 === "schemaVersion" || key3 === "strategy" || key3 === "roots") || !Array.isArray(roots) || roots.length === 0 || roots.length > maxRoots || !roots.every(validSubjectNamespaceRoot) || new Set(roots.map((item) => String(recordOf7(item)?.["rootId"] ?? ""))).size !== roots.length) {
+    if (!Object.keys(plan).every((key3) => key3 === "schemaVersion" || key3 === "strategy" || key3 === "roots") || !Array.isArray(roots) || roots.length === 0 || roots.length > maxRoots || !roots.every(validSubjectNamespaceRoot) || new Set(roots.map((item) => String(recordOf8(item)?.["rootId"] ?? ""))).size !== roots.length) {
       throw new TypeError("map preview preparation returned invalid subject namespace roots");
     }
     return value2;
@@ -14563,7 +18253,7 @@ function validateResourcePlan(value2, maxRoots) {
   if (plan["strategy"] === "host-resolved") {
     const roots = plan["roots"];
     const subjectRoots = plan["subjectNamespaceRoots"];
-    if (!Object.keys(plan).every((key3) => ["schemaVersion", "strategy", "resolverId", "subjectNamespaceRoots", "roots"].includes(key3)) || !nonEmptyString8(plan["resolverId"]) || !Array.isArray(subjectRoots) || !subjectRoots.every(validSubjectNamespaceRoot) || !Array.isArray(roots) || roots.length === 0 || roots.length + subjectRoots.length > maxRoots || !roots.every(validHostResourceRoot) || new Set([...subjectRoots, ...roots].map((item) => String(recordOf7(item)?.["rootId"] ?? ""))).size !== roots.length + subjectRoots.length) {
+    if (!Object.keys(plan).every((key3) => ["schemaVersion", "strategy", "resolverId", "subjectNamespaceRoots", "roots"].includes(key3)) || !nonEmptyString8(plan["resolverId"]) || !Array.isArray(subjectRoots) || !subjectRoots.every(validSubjectNamespaceRoot) || !Array.isArray(roots) || roots.length === 0 || roots.length + subjectRoots.length > maxRoots || !roots.every(validHostResourceRoot) || new Set([...subjectRoots, ...roots].map((item) => String(recordOf8(item)?.["rootId"] ?? ""))).size !== roots.length + subjectRoots.length) {
       throw new TypeError("map preview preparation returned invalid host resource roots");
     }
     return value2;
@@ -14571,7 +18261,7 @@ function validateResourcePlan(value2, maxRoots) {
   throw new TypeError("map preview preparation returned an unknown resource strategy");
 }
 function validatePreparationResult(value2, maxCandidates, maxRoots) {
-  const record4 = recordOf7(value2);
+  const record4 = recordOf8(value2);
   if (record4 === void 0 || !Array.isArray(record4["diagnostics"]) || !record4["diagnostics"].every(validPreparationDiagnostic)) {
     throw new TypeError("map preview preparation returned malformed diagnostics");
   }
@@ -14584,9 +18274,9 @@ function validatePreparationResult(value2, maxCandidates, maxRoots) {
   if (record4["state"] === "selection-required") {
     const candidates = record4["candidates"];
     if (!Object.keys(record4).every((key3) => key3 === "state" || key3 === "candidates" || key3 === "diagnostics") || !Array.isArray(candidates) || candidates.length === 0 || candidates.length > maxCandidates || !candidates.every((candidate) => {
-      const item = recordOf7(candidate);
+      const item = recordOf8(candidate);
       return item !== void 0 && Object.keys(item).every((key3) => key3 === "candidateId" || key3 === "displayName" || key3 === "sourcePath") && nonEmptyString8(item["candidateId"]) && nonEmptyString8(item["displayName"]) && (!Object.hasOwn(item, "sourcePath") || nonEmptyString8(item["sourcePath"]));
-    }) || new Set(candidates.map((candidate) => String(recordOf7(candidate)?.["candidateId"] ?? ""))).size !== candidates.length) {
+    }) || new Set(candidates.map((candidate) => String(recordOf8(candidate)?.["candidateId"] ?? ""))).size !== candidates.length) {
       throw new TypeError("map preview preparation returned invalid selection candidates");
     }
     return value2;
@@ -14606,8 +18296,8 @@ function validatePreparationResult(value2, maxCandidates, maxRoots) {
     return value2;
   }
   if (record4["state"] === "prepared") {
-    const plan = recordOf7(record4["plan"]);
-    if (!Object.keys(record4).every((key3) => key3 === "state" || key3 === "plan" || key3 === "diagnostics") || plan?.["schemaVersion"] !== 1 || recordOf7(plan["workspace"]) === void 0 || !jsonSafeValue(plan["workspace"]) || !Object.keys(plan).every((key3) => key3 === "schemaVersion" || key3 === "workspace" || key3 === "resources")) {
+    const plan = recordOf8(record4["plan"]);
+    if (!Object.keys(record4).every((key3) => key3 === "state" || key3 === "plan" || key3 === "diagnostics") || plan?.["schemaVersion"] !== 1 || recordOf8(plan["workspace"]) === void 0 || !jsonSafeValue(plan["workspace"]) || !Object.keys(plan).every((key3) => key3 === "schemaVersion" || key3 === "workspace" || key3 === "resources")) {
       throw new TypeError("map preview preparation returned an invalid prepared plan");
     }
     validateResourcePlan(plan["resources"], maxRoots);
@@ -15374,12 +19064,12 @@ async function registerServiceDefinitionsOrThrow(inventory, definitions) {
     maps,
     ...await registerServiceContractDefinitionsFromInventory(inventory, definitions)
   ];
-  const rejected2 = registrations.filter((result) => result.state === "rejected");
-  if (rejected2.length > 0) {
-    const diagnostics = rejected2.flatMap((result) => result.diagnostics);
+  const rejected3 = registrations.filter((result) => result.state === "rejected");
+  if (rejected3.length > 0) {
+    const diagnostics = rejected3.flatMap((result) => result.diagnostics);
     throw new ModkitError({
       code: "x3.host/service-definition-rejected",
-      message: `${rejected2.length} service contract definition owner(s) failed closed`,
+      message: `${rejected3.length} service contract definition owner(s) failed closed`,
       context: { diagnostics }
     });
   }
@@ -15658,9 +19348,9 @@ var HandleTable = class {
       }
     }
     this.sequence += 1;
-    const id = `${this.owner}${this.generation}-${this.sequence}`;
+    const id2 = `${this.owner}${this.generation}-${this.sequence}`;
     const record4 = {
-      id,
+      id: id2,
       kind: input.kind,
       ...input.contract === void 0 ? {} : { contract: input.contract },
       ...input.major === void 0 ? {} : { major: input.major },
@@ -15670,26 +19360,26 @@ var HandleTable = class {
       release: input.release,
       released: false
     };
-    this.records.set(id, record4);
+    this.records.set(id2, record4);
     if (input.parent !== void 0)
-      this.records.get(input.parent)?.children.add(id);
+      this.records.get(input.parent)?.children.add(id2);
     return record4;
   }
-  parseId(id) {
-    const match = /^([hw])(\d+)-(\d+)$/u.exec(id);
+  parseId(id2) {
+    const match = /^([hw])(\d+)-(\d+)$/u.exec(id2);
     if (match === null)
       return void 0;
     return { owner: match[1], generation: Number(match[2]), sequence: Number(match[3]) };
   }
   /** True when the id was allocated by this side (owner prefix), whatever its generation. */
-  owns(id) {
-    return this.parseId(id)?.owner === this.owner;
+  owns(id2) {
+    return this.parseId(id2)?.owner === this.owner;
   }
-  lookup(id) {
-    const live = this.records.get(id);
+  lookup(id2) {
+    const live = this.records.get(id2);
     if (live !== void 0)
       return { state: "live", record: live };
-    const parsed = this.parseId(id);
+    const parsed = this.parseId(id2);
     if (parsed === void 0 || parsed.owner !== this.owner || parsed.generation !== this.generation) {
       return { state: "foreign-generation" };
     }
@@ -15700,8 +19390,8 @@ var HandleTable = class {
    * order). Idempotent: an already released or unknown-but-plausible id reports `false`.
    * Release failures are collected, never swallowed.
    */
-  async release(id) {
-    const record4 = this.records.get(id);
+  async release(id2) {
+    const record4 = this.records.get(id2);
     if (record4 === void 0)
       return { released: false, failures: [] };
     const failures = [];
@@ -15734,11 +19424,11 @@ var HandleTable = class {
     const failures = [];
     const released = [];
     const ids = [...this.records.keys()].reverse();
-    for (const id of ids) {
-      const record4 = this.records.get(id);
+    for (const id2 of ids) {
+      const record4 = this.records.get(id2);
       if (record4 === void 0)
         continue;
-      released.push(id);
+      released.push(id2);
       await this.releaseRecord(record4, failures);
     }
     return { released, failures };
@@ -15777,35 +19467,35 @@ var PendingCalls = class {
       this.highestOpened = call.id;
     return entry2;
   }
-  peek(id) {
-    return this.calls.get(id);
+  peek(id2) {
+    return this.calls.get(id2);
   }
   /** Forgets a call that was never sent (send failure); the caller rejects it locally. */
-  drop(id) {
-    this.calls.delete(id);
+  drop(id2) {
+    this.calls.delete(id2);
   }
   /** Marks the call cancelled locally; the caller has already been rejected with cancellation. */
-  cancel(id) {
-    const entry2 = this.calls.get(id);
+  cancel(id2) {
+    const entry2 = this.calls.get(id2);
     if (entry2 === void 0 || entry2.settled)
       return void 0;
     entry2.cancelled = true;
     return entry2;
   }
-  progress(id, progress) {
-    const entry2 = this.calls.get(id);
+  progress(id2, progress) {
+    const entry2 = this.calls.get(id2);
     if (entry2 === void 0)
-      return id <= this.highestOpened ? "duplicate" : "unknown";
+      return id2 <= this.highestOpened ? "duplicate" : "unknown";
     if (entry2.cancelled)
       return "late-after-cancel";
     entry2.onProgress?.(progress);
     return "settled";
   }
-  settle(id, outcome) {
-    const entry2 = this.calls.get(id);
+  settle(id2, outcome) {
+    const entry2 = this.calls.get(id2);
     if (entry2 === void 0)
-      return id <= this.highestOpened ? "duplicate" : "unknown";
-    this.calls.delete(id);
+      return id2 <= this.highestOpened ? "duplicate" : "unknown";
+    this.calls.delete(id2);
     if (entry2.cancelled) {
       this.lateAfterCancel += 1;
       return "late-after-cancel";
@@ -15818,16 +19508,16 @@ var PendingCalls = class {
   }
   /** Rejects every non-cancelled pending call (endpoint failure / peer exit). */
   failAll(error5) {
-    let rejected2 = 0;
+    let rejected3 = 0;
     for (const entry2 of [...this.calls.values()]) {
       this.calls.delete(entry2.id);
       if (entry2.cancelled || entry2.settled)
         continue;
       entry2.settled = true;
       entry2.reject(error5);
-      rejected2 += 1;
+      rejected3 += 1;
     }
-    return rejected2;
+    return rejected3;
   }
 };
 var ActiveCalls = class {
@@ -15835,16 +19525,16 @@ var ActiveCalls = class {
   get size() {
     return this.calls.size;
   }
-  begin(id) {
-    const entry2 = { id, controller: new AbortController(), cancelled: false };
-    this.calls.set(id, entry2);
+  begin(id2) {
+    const entry2 = { id: id2, controller: new AbortController(), cancelled: false };
+    this.calls.set(id2, entry2);
     return entry2;
   }
-  end(id) {
-    this.calls.delete(id);
+  end(id2) {
+    this.calls.delete(id2);
   }
-  cancel(id) {
-    const entry2 = this.calls.get(id);
+  cancel(id2) {
+    const entry2 = this.calls.get(id2);
     if (entry2 === void 0)
       return false;
     entry2.cancelled = true;
@@ -15873,11 +19563,11 @@ var Subscriptions = class {
         live += 1;
     return live;
   }
-  register(id, handle) {
-    if (this.records.has(id)) {
+  register(id2, handle) {
+    if (this.records.has(id2)) {
       throw new ModkitError({
         code: "x3.host/rpc-duplicate-subscription",
-        message: `subscription ${id} is already registered`
+        message: `subscription ${id2} is already registered`
       });
     }
     if (this.size >= this.limits.maxSubscriptions) {
@@ -15889,25 +19579,25 @@ var Subscriptions = class {
       });
     }
     const record4 = {
-      id,
+      id: id2,
       handle,
       queue: [],
       wake: void 0,
       closed: false,
       error: void 0
     };
-    this.records.set(id, record4);
+    this.records.set(id2, record4);
     return record4;
   }
-  get(id) {
-    return this.records.get(id);
+  get(id2) {
+    return this.records.get(id2);
   }
   entries() {
     return [...this.records.entries()];
   }
   /** Enqueues an event; `overflow` when the consumer is too slow (bounded queue). */
-  push(id, value2) {
-    const record4 = this.records.get(id);
+  push(id2, value2) {
+    const record4 = this.records.get(id2);
     if (record4 === void 0 || record4.closed)
       return "unknown";
     if (record4.queue.length >= this.limits.maxQueuedEvents)
@@ -15917,8 +19607,8 @@ var Subscriptions = class {
     return "queued";
   }
   /** Marks the stream ended (optionally by failure) and wakes the consumer; keeps the queue. */
-  close(id, error5) {
-    const record4 = this.records.get(id);
+  close(id2, error5) {
+    const record4 = this.records.get(id2);
     if (record4 === void 0)
       return;
     record4.closed = true;
@@ -15927,12 +19617,12 @@ var Subscriptions = class {
     record4.wake?.();
   }
   /** The consumer is done with the record (drained or abandoned). */
-  drop(id) {
-    this.records.delete(id);
+  drop(id2) {
+    this.records.delete(id2);
   }
   closeAll(error5) {
-    for (const id of [...this.records.keys()])
-      this.close(id, error5);
+    for (const id2 of [...this.records.keys()])
+      this.close(id2, error5);
   }
 };
 
@@ -15995,10 +19685,10 @@ function wireTypedArrayCode(view) {
   return void 0;
 }
 var MAX_OPTIONAL_METHODS = 64;
-function handleRef(id, kind, contract, data, has) {
+function handleRef(id2, kind, contract, data, has) {
   return Object.freeze({
     [HANDLE_MARKER]: Object.freeze({
-      id,
+      id: id2,
       kind,
       ...contract === void 0 ? {} : { contract: contract.contract, major: contract.major },
       ...data === void 0 ? {} : { data },
@@ -16251,7 +19941,7 @@ function validateWireValue(value2, limits, handles = "forbid", path = []) {
 var RETRYABILITIES = ["never", "safe", "conditional"];
 var MAX_ERROR_MESSAGE = 8 * 1024;
 function toErrorDto(error5, limits) {
-  const clip = (text3) => text3.length > MAX_ERROR_MESSAGE ? `${text3.slice(0, MAX_ERROR_MESSAGE)}\u2026` : text3;
+  const clip = (text4) => text4.length > MAX_ERROR_MESSAGE ? `${text4.slice(0, MAX_ERROR_MESSAGE)}\u2026` : text4;
   if (error5 instanceof OperationCancelledError) {
     return Object.freeze({
       code: error5.code,
@@ -16721,18 +20411,18 @@ function assertSurface(surface) {
       });
     }
     const seen = /* @__PURE__ */ new Set();
-    for (const field of surface.fields) {
-      if (typeof field !== "string" || !isMethodName(field) || seen.has(field)) {
-        return invalidSurface(`field name \xAB${String(field)}\xBB is not lowerCamel or repeats`, {
+    for (const field2 of surface.fields) {
+      if (typeof field2 !== "string" || !isMethodName(field2) || seen.has(field2)) {
+        return invalidSurface(`field name \xAB${String(field2)}\xBB is not lowerCamel or repeats`, {
           surface: surfaceKey(surface.contract, surface.major)
         });
       }
-      if (Object.hasOwn(surface.methods, field)) {
-        return invalidSurface(`\xAB${field}\xBB cannot be both a field and a method`, {
+      if (Object.hasOwn(surface.methods, field2)) {
+        return invalidSurface(`\xAB${field2}\xBB cannot be both a field and a method`, {
           surface: surfaceKey(surface.contract, surface.major)
         });
       }
-      seen.add(field);
+      seen.add(field2);
     }
   }
 }
@@ -17016,10 +20706,10 @@ var EndpointImpl = class {
   materialize(remote) {
     const surface = this.requireSurface(remote.contract, remote.major);
     const object3 = {};
-    for (const field of surface.fields ?? []) {
-      if (Object.hasOwn(remote.data, field)) {
-        Object.defineProperty(object3, field, {
-          value: remote.data[field],
+    for (const field2 of surface.fields ?? []) {
+      if (Object.hasOwn(remote.data, field2)) {
+        Object.defineProperty(object3, field2, {
+          value: remote.data[field2],
           enumerable: true,
           writable: false
         });
@@ -17243,7 +20933,7 @@ var EndpointImpl = class {
       return Promise.reject(new OperationCancelledError(options.signal.reason));
     }
     return new Promise((resolve, reject) => {
-      const id = this.outboundId + 1;
+      const id2 = this.outboundId + 1;
       let timer;
       let abortListener;
       const cleanup = () => {
@@ -17253,7 +20943,7 @@ var EndpointImpl = class {
           options.signal?.removeEventListener("abort", abortListener);
       };
       const entry2 = this.pending.open({
-        id,
+        id: id2,
         kind,
         resolve: (outcome) => {
           cleanup();
@@ -17268,17 +20958,17 @@ var EndpointImpl = class {
       const cancelWith = (error5) => {
         if (entry2.settled || entry2.cancelled)
           return;
-        this.pending.cancel(id);
+        this.pending.cancel(id2);
         cleanup();
-        this.trySend({ t: "cancel", target: id });
+        this.trySend({ t: "cancel", target: id2 });
         reject(error5);
       };
       const deadline = options.deadlineMs ?? this.limits.defaultCallDeadlineMs;
       if (deadline > 0 && kind !== "subscribe") {
         timer = this.scheduler.setTimeout(() => cancelWith(new ModkitError({
           code: "x3.host/rpc-deadline-exceeded",
-          message: `${kind} #${id} exceeded its ${deadline} ms deadline`,
-          context: { id, deadlineMs: deadline },
+          message: `${kind} #${id2} exceeded its ${deadline} ms deadline`,
+          context: { id: id2, deadlineMs: deadline },
           retryability: "conditional"
         })), deadline);
       }
@@ -17288,25 +20978,25 @@ var EndpointImpl = class {
       }
       try {
         const frame = this.send(body);
-        if (frame.id !== id) {
+        if (frame.id !== id2) {
           throw new ModkitError({
             code: "x3.host/rpc-internal",
             message: "frame id allocation raced"
           });
         }
       } catch (error5) {
-        this.pending.drop(id);
+        this.pending.drop(id2);
         cleanup();
         reject(isModkitError(error5) ? error5 : new ModkitError({ code: "x3.host/rpc-send-failed", message: String(error5) }));
       }
     });
   }
   // ------------------------------------------------------------------ internal: remote side
-  remoteReleased(id) {
-    return this.remote.get(id)?.released ?? true;
+  remoteReleased(id2) {
+    return this.remote.get(id2)?.released ?? true;
   }
-  localReleased(id) {
-    return this.table.lookup(id).state !== "live";
+  localReleased(id2) {
+    return this.table.lookup(id2).state !== "live";
   }
   requireSurface(contract, major) {
     const surface = this.surfaces.surfaceFor(contract, major);
@@ -17483,30 +21173,30 @@ var EndpointImpl = class {
     this.remote.get(parent)?.children.add(inner.id);
     return inner.id;
   }
-  markRemoteReleased(id) {
-    const state = this.remote.get(id);
+  markRemoteReleased(id2) {
+    const state = this.remote.get(id2);
     if (state === void 0 || state.released)
       return;
     state.released = true;
     for (const child of [...state.children].reverse())
       this.markRemoteReleased(child);
     if (state.parent !== void 0)
-      this.remote.get(state.parent)?.children.delete(id);
+      this.remote.get(state.parent)?.children.delete(id2);
   }
-  async releaseRemote(id) {
-    const state = this.remote.get(id);
+  async releaseRemote(id2) {
+    const state = this.remote.get(id2);
     if (state === void 0 || state.released)
       return;
-    this.markRemoteReleased(id);
+    this.markRemoteReleased(id2);
     if (this.state !== "open")
       return;
-    const outcome = await this.request({ t: "release", handle: id }, "release", {
+    const outcome = await this.request({ t: "release", handle: id2 }, "release", {
       deadlineMs: this.limits.defaultCallDeadlineMs
     });
     if (outcome.kind === "throw")
       throw fromErrorDto(outcome.error);
   }
-  remoteIterable(id, decl) {
+  remoteIterable(id2, decl) {
     const batch = this.limits.iteratorBatchItems;
     return {
       [Symbol.asyncIterator]: () => {
@@ -17516,17 +21206,17 @@ var EndpointImpl = class {
           next: async () => {
             if (buffered.length > 0)
               return { done: false, value: buffered.shift() };
-            if (finished || this.remoteReleased(id))
+            if (finished || this.remoteReleased(id2))
               return { done: true, value: void 0 };
-            const outcome = await this.request(batch > 1 ? { t: "next", handle: id, max: batch } : { t: "next", handle: id }, "next", {});
+            const outcome = await this.request(batch > 1 ? { t: "next", handle: id2, max: batch } : { t: "next", handle: id2 }, "next", {});
             if (outcome.kind === "done") {
               finished = true;
-              this.markRemoteReleased(id);
+              this.markRemoteReleased(id2);
               return { done: true, value: void 0 };
             }
             if (outcome.kind === "throw") {
               finished = true;
-              this.markRemoteReleased(id);
+              this.markRemoteReleased(id2);
               throw fromErrorDto(outcome.error);
             }
             if (outcome.kind !== "return") {
@@ -17559,7 +21249,7 @@ var EndpointImpl = class {
           return: async () => {
             if (!finished) {
               finished = true;
-              await this.releaseRemote(id);
+              await this.releaseRemote(id2);
             }
             return { done: true, value: void 0 };
           }
@@ -17567,7 +21257,7 @@ var EndpointImpl = class {
       }
     };
   }
-  remoteEvents(id, decl) {
+  remoteEvents(id2, decl) {
     return {
       [Symbol.asyncIterator]: () => {
         let subscription;
@@ -17582,14 +21272,14 @@ var EndpointImpl = class {
             if (this.state === "open")
               this.trySend({ t: "unsubscribe", subscription });
           }
-          await this.releaseRemote(id);
+          await this.releaseRemote(id2);
         };
         return {
           next: async () => {
             if (finished)
               return { done: true, value: void 0 };
             if (subscription === void 0) {
-              const outcome = await this.request({ t: "subscribe", handle: id }, "subscribe", {});
+              const outcome = await this.request({ t: "subscribe", handle: id2 }, "subscribe", {});
               if (outcome.kind === "throw") {
                 finished = true;
                 throw fromErrorDto(outcome.error);
@@ -17601,7 +21291,7 @@ var EndpointImpl = class {
                 });
               }
               subscription = outcome.value;
-              this.subscriptions.register(subscription, id);
+              this.subscriptions.register(subscription, id2);
             }
             for (; ; ) {
               const record4 = this.subscriptions.get(subscription);
@@ -17637,14 +21327,14 @@ var EndpointImpl = class {
       }
     };
   }
-  closeSubscription(id, error5) {
-    this.subscriptions.close(id, error5);
+  closeSubscription(id2, error5) {
+    this.subscriptions.close(id2, error5);
   }
   // ------------------------------------------------------------------ internal: local side
-  async releaseLocal(id) {
-    const result = await this.table.release(id);
+  async releaseLocal(id2) {
+    const result = await this.table.release(id2);
     for (const failure3 of result.failures) {
-      this.report("x3.host/rpc-release-failed", `release of ${id} failed: ${failure3 instanceof Error ? failure3.message : String(failure3)}`);
+      this.report("x3.host/rpc-release-failed", `release of ${id2} failed: ${failure3 instanceof Error ? failure3.message : String(failure3)}`);
     }
   }
   decodeArgs(args) {
@@ -17797,11 +21487,11 @@ var EndpointImpl = class {
    * fire-and-forget frame would turn the peer's acknowledgement into an `unknown-reply-target`
    * violation (found by the transport conformance kit on real event-loop hops).
    */
-  discardHandle(id) {
+  discardHandle(id2) {
     if (this.state !== "open")
       return;
-    const failed2 = (reason) => this.report("x3.host/rpc-release-failed", `discard of late handle ${id} failed: ${reason}`);
-    void this.request({ t: "release", handle: id }, "release", {
+    const failed2 = (reason) => this.report("x3.host/rpc-release-failed", `discard of late handle ${id2} failed: ${reason}`);
+    void this.request({ t: "release", handle: id2 }, "release", {
       deadlineMs: this.limits.defaultCallDeadlineMs
     }).then((outcome) => {
       if (outcome.kind === "throw")
@@ -18328,9 +22018,9 @@ var EndpointImpl = class {
       return;
     }
     const error5 = frame.error === void 0 ? void 0 : fromErrorDto(frame.error);
-    for (const [id, record4] of this.subscriptions.entries()) {
+    for (const [id2, record4] of this.subscriptions.entries()) {
       if (record4.handle === frame.handle)
-        this.closeSubscription(id, error5);
+        this.closeSubscription(id2, error5);
     }
     this.markRemoteReleased(frame.handle);
   }
@@ -18370,18 +22060,18 @@ var EndpointImpl = class {
     if (typeof target !== "object" || target === null)
       return void 0;
     const data = {};
-    for (const field of fields) {
-      const value2 = target[field];
+    for (const field2 of fields) {
+      const value2 = target[field2];
       if (value2 === void 0)
         continue;
       const checked = validateWireValue(value2, this.limits, "forbid");
       if (!checked.ok) {
         throw new ModkitError({
           code: "x3.host/rpc-bad-return",
-          message: `field \xAB${field}\xBB of ${surface.contract}@${surface.major} is not a wire value: ${checked.violation.message}`
+          message: `field \xAB${field2}\xBB of ${surface.contract}@${surface.major} is not a wire value: ${checked.violation.message}`
         });
       }
-      data[field] = value2;
+      data[field2] = value2;
     }
     return Object.keys(data).length === 0 ? void 0 : Object.freeze(data);
   }
@@ -18578,6 +22268,8 @@ var subjectServicesSurface = {
     open: { kind: "value", signal: "last" },
     /** `attach(sessionId)` → the live session under `x3.abi/asset-session@1`. */
     attach: { kind: "lease", result: ABI_ASSET_SESSION, wrapper: "bare" },
+    /** `navigate(sessionId, target)` resolves a target from that exact live parent session. */
+    navigate: { kind: "value", signal: "last", arity: 2 },
     /** `edit(sessionId)` → the editing arm, when this host can write this subject. */
     edit: { kind: "lease", result: SUBJECT_EDITING, wrapper: "bare" }
   }
@@ -18784,7 +22476,7 @@ function serviceProviderFidelityEvidenceRecord(inventory, selection) {
           return false;
         }
         const facet = writerFacet(candidate.facet);
-        return facet?.providerId === identity.providerId && facet.fidelityEvidenceId === selectedOffer.fidelityEvidenceId && facet.formatId === identity.formatId && facet.representationId === identity.representationId && facet.mutationMode === selectedOffer.mutationMode && facet.minimumRoundTrip === selectedOffer.minimumRoundTrip;
+        return facet?.["providerId"] === identity.providerId && facet["fidelityEvidenceId"] === selectedOffer.fidelityEvidenceId && facet["formatId"] === identity.formatId && facet["representationId"] === identity.representationId && facet["mutationMode"] === selectedOffer.mutationMode && facet["minimumRoundTrip"] === selectedOffer.minimumRoundTrip;
       });
       if (offers.length !== 1)
         continue;
@@ -18851,1065 +22543,6 @@ function createEvidenceRegistry(records = [HOST_RAW_WRITER_EVIDENCE_RECORD]) {
     with: (record4) => createEvidenceRegistry([record4, ...own])
   };
   return Object.freeze(registry);
-}
-
-// packages/host/dist/subject-editing.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/host/dist/editing.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-var GUARANTEE_STRENGTH = Object.freeze({
-  "best-effort": 0,
-  recoverable: 1,
-  transactional: 2,
-  atomic: 3
-});
-var issuedGrantSnapshots = /* @__PURE__ */ new WeakSet();
-function snapshot(value2, ancestors = /* @__PURE__ */ new WeakSet()) {
-  if (typeof value2 === "function" || typeof value2 === "symbol") {
-    throw new TypeError("editing inputs cannot contain executable or symbol values");
-  }
-  if (value2 instanceof Uint8Array)
-    return value2.slice();
-  if (Array.isArray(value2)) {
-    if (ancestors.has(value2))
-      throw new TypeError("editing inputs must be acyclic owned data");
-    ancestors.add(value2);
-    const copy = Object.freeze(value2.map((item) => snapshot(item, ancestors)));
-    ancestors.delete(value2);
-    return copy;
-  }
-  if (typeof value2 === "object" && value2 !== null) {
-    if (ancestors.has(value2))
-      throw new TypeError("editing inputs must be acyclic owned data");
-    const prototype = Object.getPrototypeOf(value2);
-    if (prototype !== Object.prototype && prototype !== null) {
-      throw new TypeError("editing inputs must contain only plain owned data");
-    }
-    ancestors.add(value2);
-    const copy = {};
-    for (const key3 of Reflect.ownKeys(value2)) {
-      copy[key3] = snapshot(value2[key3], ancestors);
-    }
-    ancestors.delete(value2);
-    return Object.freeze(copy);
-  }
-  return value2;
-}
-function snapshotGrant(grant) {
-  if (!issuedGrantSnapshots.has(grant))
-    throw new TypeError("grant snapshot is not host-issued");
-  return Object.freeze({
-    snapshotId: String(grant.snapshotId),
-    permissions: Object.freeze([...grant.permissions]),
-    sourceIds: Object.freeze([...grant.sourceIds])
-  });
-}
-function grantIsValid(options, grant) {
-  try {
-    return options.isGrantValid(grant) === true;
-  } catch {
-    return false;
-  }
-}
-function createGrantSnapshot(value2) {
-  if (!isNonBlank(value2.snapshotId) || !Array.isArray(value2.permissions) || !value2.permissions.every((permission) => PERMISSION_CLASSES.includes(permission)) || !Array.isArray(value2.sourceIds) || !value2.sourceIds.every(isNonBlank)) {
-    throw new TypeError("grant snapshot is malformed");
-  }
-  const snapshot3 = Object.freeze({
-    snapshotId: value2.snapshotId,
-    permissions: Object.freeze([...new Set(value2.permissions)].sort(compareUtf8)),
-    sourceIds: Object.freeze([...new Set(value2.sourceIds)].sort(compareUtf8))
-  });
-  issuedGrantSnapshots.add(snapshot3);
-  return snapshot3;
-}
-function revisionValue(revision) {
-  return {
-    bindings: Object.fromEntries(Object.entries(revision.bindings).sort(([left], [right]) => compareUtf8(left, right)).map(([key3, value2]) => [key3, String(value2)])),
-    ...revision.namespaceRevision === void 0 ? {} : { namespaceRevision: String(revision.namespaceRevision) },
-    compositionFingerprint: revision.compositionFingerprint
-  };
-}
-function sameRevision(left, right) {
-  return JSON.stringify(revisionValue(left)) === JSON.stringify(revisionValue(right));
-}
-function revisionFingerprint(targets, digest) {
-  return digest(targets.map((target) => ({
-    targetId: target.targetId,
-    revision: revisionValue(target.expectedRevision)
-  })).sort((left, right) => compareUtf8(left.targetId, right.targetId)));
-}
-function normalizedPath(value2) {
-  if (value2.trim() === "" || value2.includes("\\") || value2.startsWith("/"))
-    return void 0;
-  const parts = value2.split("/");
-  if (parts.some((part) => part === "" || part === "." || part === ".."))
-    return void 0;
-  return parts.join("/");
-}
-function modeOf(edit) {
-  if (edit.operation === "replace")
-    return "in-place";
-  return edit.operation;
-}
-function isRecord3(value2) {
-  return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
-}
-function hasExactKeys(value2, allowed2) {
-  const keys = Object.keys(value2);
-  return keys.length === new Set(keys).size && keys.every((key3) => allowed2.includes(key3));
-}
-function isNonBlank(value2) {
-  return typeof value2 === "string" && value2.trim() !== "";
-}
-function isAssetSource(value2) {
-  return isRecord3(value2) && hasExactKeys(value2, ["id", "uri", "parentIds"]) && isNonBlank(value2["id"]) && isNonBlank(value2["uri"]) && (value2["parentIds"] === void 0 || Array.isArray(value2["parentIds"]) && value2["parentIds"].every(isNonBlank));
-}
-function isRevision(value2) {
-  if (!isRecord3(value2) || !hasExactKeys(value2, ["bindings", "namespaceRevision", "compositionFingerprint"]) || !isRecord3(value2["bindings"]) || Object.keys(value2["bindings"]).length === 0 || !Object.values(value2["bindings"]).every(isNonBlank) || !isNonBlank(value2["compositionFingerprint"])) {
-    return false;
-  }
-  return value2["namespaceRevision"] === void 0 || isNonBlank(value2["namespaceRevision"]);
-}
-function isRecoveryRef(value2) {
-  return isRecord3(value2) && hasExactKeys(value2, ["kind", "ref", "digest"]) && (value2["kind"] === "journal" || value2["kind"] === "staging") && isNonBlank(value2["ref"]) && isNonBlank(value2["digest"]);
-}
-function isFidelityEvidence(value2) {
-  if (!isRecord3(value2) || !hasExactKeys(value2, [
-    "roundTrip",
-    "preservesUnknownData",
-    "notes",
-    "evidenceId",
-    "corpusId",
-    "corpusDigest",
-    "conformanceProfile",
-    "writer",
-    "optionsFingerprint",
-    "inputClass",
-    "provenAt"
-  ]) || !["byte-identical", "semantic", "lossy", "none"].includes(value2["roundTrip"]) || typeof value2["preservesUnknownData"] !== "boolean" || value2["notes"] !== void 0 && (!Array.isArray(value2["notes"]) || !value2["notes"].every(isNonBlank)) || ![
-    value2["evidenceId"],
-    value2["corpusId"],
-    value2["corpusDigest"],
-    value2["conformanceProfile"],
-    value2["optionsFingerprint"],
-    value2["inputClass"],
-    value2["provenAt"]
-  ].every(isNonBlank) || !isRecord3(value2["writer"]) || !hasExactKeys(value2["writer"], [
-    "providerId",
-    "providerVersion",
-    "artifactDigest",
-    "formatId",
-    "representationId"
-  ]) || !Object.values(value2["writer"]).every(isNonBlank)) {
-    return false;
-  }
-  if (value2["roundTrip"] === "byte-identical")
-    return value2["preservesUnknownData"] === true;
-  if (value2["roundTrip"] === "lossy" || value2["roundTrip"] === "none") {
-    return value2["preservesUnknownData"] === false;
-  }
-  return true;
-}
-function isEditPayload(value2) {
-  if (!isRecord3(value2) || !isNonBlank(value2["kind"]))
-    return false;
-  if (value2["kind"] === "text") {
-    return hasExactKeys(value2, ["kind", "text"]) && typeof value2["text"] === "string";
-  }
-  if (value2["kind"] === "inline") {
-    return hasExactKeys(value2, ["kind", "bytes"]) && value2["bytes"] instanceof Uint8Array;
-  }
-  if (value2["kind"] !== "staged" || !hasExactKeys(value2, ["kind", "ref"]))
-    return false;
-  const ref2 = value2["ref"];
-  return isRecord3(ref2) && hasExactKeys(ref2, ["storeId", "handleId", "digest", "bytes", "replayable", "expiresAt"]) && isNonBlank(ref2["storeId"]) && isNonBlank(ref2["handleId"]) && isNonBlank(ref2["digest"]) && typeof ref2["bytes"] === "bigint" && ref2["bytes"] >= 0n && ref2["replayable"] === true && (ref2["expiresAt"] === void 0 || isNonBlank(ref2["expiresAt"]));
-}
-function isEditRange(value2) {
-  if (!isRecord3(value2) || !hasExactKeys(value2, ["kind", "offset", "length"]))
-    return false;
-  if (value2["kind"] === "bytes") {
-    return typeof value2["offset"] === "bigint" && value2["offset"] >= 0n && typeof value2["length"] === "bigint" && value2["length"] >= 0n;
-  }
-  return value2["kind"] === "utf16" && Number.isSafeInteger(value2["offset"]) && Number.isSafeInteger(value2["length"]) && value2["offset"] >= 0 && value2["length"] >= 0;
-}
-function isSourceEdit(value2) {
-  if (!isRecord3(value2) || !isNonBlank(value2["operation"]))
-    return false;
-  const common = isNonBlank(value2["targetId"]) && isAssetSource(value2["source"]) && (value2["label"] === void 0 || typeof value2["label"] === "string");
-  if (!common)
-    return false;
-  if (value2["operation"] === "replace") {
-    return hasExactKeys(value2, ["operation", "targetId", "source", "range", "payload", "label"]) && (value2["range"] === void 0 || isEditRange(value2["range"])) && isEditPayload(value2["payload"]);
-  }
-  if (value2["operation"] === "create") {
-    return hasExactKeys(value2, ["operation", "targetId", "source", "newPath", "payload", "label"]) && isNonBlank(value2["newPath"]) && isEditPayload(value2["payload"]);
-  }
-  if (value2["operation"] === "delete") {
-    return hasExactKeys(value2, ["operation", "targetId", "source", "label"]);
-  }
-  return value2["operation"] === "rename" && hasExactKeys(value2, ["operation", "targetId", "source", "newPath", "label"]) && isNonBlank(value2["newPath"]);
-}
-function planDigestValue(plan) {
-  const payload = (edit) => {
-    if (!("payload" in edit))
-      return void 0;
-    if (edit.payload.kind === "inline") {
-      return { kind: "inline", bytes: [...edit.payload.bytes] };
-    }
-    if (edit.payload.kind === "staged") {
-      return {
-        kind: "staged",
-        ref: { ...edit.payload.ref, bytes: edit.payload.ref.bytes.toString(10) }
-      };
-    }
-    return edit.payload;
-  };
-  return {
-    planId: plan.planId,
-    targets: plan.targets.map((target) => ({
-      ...target,
-      expectedRevision: revisionValue(target.expectedRevision)
-    })),
-    edits: plan.edits.map((edit) => ({
-      ...edit,
-      ...edit.operation === "replace" && edit.range?.kind === "bytes" ? {
-        range: {
-          kind: "bytes",
-          offset: edit.range.offset.toString(10),
-          length: edit.range.length.toString(10)
-        }
-      } : {},
-      ...payload(edit) === void 0 ? {} : { payload: payload(edit) }
-    })),
-    semantics: plan.semantics,
-    fidelity: plan.fidelity,
-    diagnostics: plan.diagnostics
-  };
-}
-function fidelityMatches(plan, evidence2, expectedWriter, expectedContext) {
-  if (!isFidelityEvidence(evidence2) || evidence2.roundTrip !== plan.fidelity.roundTrip)
-    return false;
-  if (evidence2.preservesUnknownData !== plan.fidelity.preservesUnknownData)
-    return false;
-  if (expectedContext !== void 0 && (evidence2.optionsFingerprint !== expectedContext.optionsFingerprint || evidence2.inputClass !== expectedContext.inputClass)) {
-    return false;
-  }
-  if (expectedWriter === void 0)
-    return true;
-  return evidence2.writer.providerId === expectedWriter.providerId && evidence2.writer.providerVersion === expectedWriter.providerVersion && evidence2.writer.artifactDigest === expectedWriter.artifactDigest && evidence2.writer.formatId === expectedWriter.formatId && evidence2.writer.representationId === expectedWriter.representationId;
-}
-function strongestGuarantee(backends) {
-  const unique = new Set(backends);
-  const single = [...unique][0];
-  if (unique.size === 1 && single !== void 0 && single.profile.guarantees.includes("atomic") && single.applyBatch !== void 0) {
-    return "atomic";
-  }
-  if (backends.every((backend) => backend.profile.supportsPrepare && backend.profile.supportsRollback)) {
-    return "transactional";
-  }
-  if (backends.every((backend) => backend.profile.supportsJournal))
-    return "recoverable";
-  return "best-effort";
-}
-function derive(plan, targets, grant, options) {
-  const entries = [];
-  const backends = /* @__PURE__ */ new Map();
-  for (const edit of plan.edits) {
-    const target = targets.get(edit.targetId);
-    const backend = options.backendFor(edit.source.id);
-    if (target === void 0 || backend === void 0 || target.ownerSource.id !== edit.source.id) {
-      return { rejection: "plan-invalid" };
-    }
-    if (!backend.writable && plan.semantics.mutationMode === "mutate") {
-      return { rejection: "source-read-only" };
-    }
-    if (edit.operation === "rename" && !backend.profile.supportsRename) {
-      return { rejection: "plan-invalid" };
-    }
-    const path = edit.operation === "create" || edit.operation === "rename" ? normalizedPath(edit.newPath) : void 0;
-    if ((edit.operation === "create" || edit.operation === "rename") && path === void 0) {
-      return { rejection: "plan-invalid" };
-    }
-    entries.push(Object.freeze({
-      targetId: edit.targetId,
-      source: snapshot(edit.source),
-      backendId: backend.profile.backendId,
-      mode: modeOf(edit),
-      ...path === void 0 ? {} : { normalizedPath: path }
-    }));
-    backends.set(edit.targetId, backend);
-  }
-  entries.sort((left, right) => compareUtf8(left.targetId, right.targetId) || compareUtf8(left.source.id, right.source.id) || compareUtf8(left.mode, right.mode));
-  const requiredPermissions = plan.semantics.mutationMode === "mutate" ? ["write-source"] : [];
-  const missing = requiredPermissions.filter((permission) => !grant.permissions.includes(permission));
-  const scopeSatisfied = entries.every((entry2) => grant.sourceIds.includes(entry2.source.id));
-  const achievableGuarantee = strongestGuarantee([...backends.values()]);
-  const writeSet = Object.freeze({
-    entries: Object.freeze(entries),
-    digest: options.digest(entries.map((entry2) => ({
-      targetId: entry2.targetId,
-      sourceId: entry2.source.id,
-      backendId: entry2.backendId,
-      mode: entry2.mode,
-      ...entry2.normalizedPath === void 0 ? {} : { normalizedPath: entry2.normalizedPath }
-    })))
-  });
-  return {
-    writeSet,
-    backends,
-    authorization: Object.freeze({
-      requiredPermissions: Object.freeze(requiredPermissions),
-      granted: missing.length === 0 && scopeSatisfied,
-      achievableGuarantee,
-      missing: Object.freeze(missing),
-      scopeSatisfied
-    })
-  };
-}
-async function conflictsFor(targets, backends, signal) {
-  const conflicts = [];
-  for (const [targetId, target] of targets) {
-    const backend = backends.get(targetId);
-    if (backend === void 0)
-      continue;
-    const actual = snapshot(await backend.currentRevision(target, signal));
-    if (!sameRevision(target.expectedRevision, actual)) {
-      conflicts.push(Object.freeze({
-        targetId,
-        expected: snapshot(target.expectedRevision),
-        actual: snapshot(actual)
-      }));
-    }
-  }
-  return Object.freeze(conflicts.sort((left, right) => compareUtf8(left.targetId, right.targetId)));
-}
-async function payloadsAvailable(plan, options, signal) {
-  const maximum = options.maxInlinePayloadBytes ?? 1024 * 1024;
-  for (const edit of plan.edits) {
-    if (!("payload" in edit))
-      continue;
-    if (edit.payload.kind === "inline" && edit.payload.bytes.byteLength > maximum)
-      return false;
-    if (edit.payload.kind === "text" && new TextEncoder().encode(edit.payload.text).byteLength > maximum)
-      return false;
-    if (edit.payload.kind !== "staged")
-      continue;
-    if (!edit.payload.ref.replayable || edit.payload.ref.bytes < 0n)
-      return false;
-    if (edit.payload.ref.expiresAt !== void 0 && Date.parse(edit.payload.ref.expiresAt) <= Date.parse(options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString())) {
-      return false;
-    }
-    if (options.verifyStagedPayload === void 0)
-      return false;
-    try {
-      if (await options.verifyStagedPayload(edit.payload.ref, signal) !== true)
-        return false;
-    } catch {
-      return false;
-    }
-  }
-  return true;
-}
-function invalidPlan(plan) {
-  if (!isRecord3(plan) || !hasExactKeys(plan, ["planId", "targets", "edits", "semantics", "fidelity", "diagnostics"]) || !isNonBlank(plan.planId) || !Array.isArray(plan.targets) || plan.targets.length === 0 || !Array.isArray(plan.edits) || plan.edits.length === 0 || !Array.isArray(plan.diagnostics) || !isRecord3(plan.semantics) || !hasExactKeys(plan.semantics, ["mutationMode", "minimumGuarantee"]) || !["export-only", "mutate"].includes(plan.semantics.mutationMode) || !["atomic", "transactional", "recoverable", "best-effort"].includes(plan.semantics.minimumGuarantee) || !isRecord3(plan.fidelity) || !hasExactKeys(plan.fidelity, ["roundTrip", "preservesUnknownData", "notes"]) || !["byte-identical", "semantic", "lossy", "none"].includes(plan.fidelity.roundTrip) || typeof plan.fidelity.preservesUnknownData !== "boolean" || plan.fidelity.notes !== void 0 && (!Array.isArray(plan.fidelity.notes) || !plan.fidelity.notes.every(isNonBlank)) || plan.fidelity.roundTrip === "byte-identical" && plan.fidelity.preservesUnknownData !== true || (plan.fidelity.roundTrip === "lossy" || plan.fidelity.roundTrip === "none") && plan.fidelity.preservesUnknownData !== false) {
-    return true;
-  }
-  const ids = /* @__PURE__ */ new Set();
-  for (const target of plan.targets) {
-    if (!isRecord3(target) || !hasExactKeys(target, [
-      "targetId",
-      "subjectUri",
-      "ownerSource",
-      "semanticPath",
-      "expectedRevision"
-    ]) || !isNonBlank(target.targetId) || ids.has(target.targetId) || !isNonBlank(target.subjectUri) || !isAssetSource(target.ownerSource) || !Array.isArray(target.semanticPath) || !target.semanticPath.every(isNonBlank) || !isRevision(target.expectedRevision)) {
-      return true;
-    }
-    ids.add(target.targetId);
-  }
-  const editedIds = /* @__PURE__ */ new Set();
-  for (const edit of plan.edits) {
-    if (!isSourceEdit(edit) || !ids.has(edit.targetId))
-      return true;
-    editedIds.add(edit.targetId);
-    if ((edit.operation === "create" || edit.operation === "delete" || edit.operation === "rename") && plan.targets.find((target) => target.targetId === edit.targetId)?.expectedRevision.namespaceRevision === void 0) {
-      return true;
-    }
-  }
-  return editedIds.size !== ids.size || [...ids].some((id) => !editedIds.has(id));
-}
-function createCommitCoordinator(options) {
-  options = Object.freeze({
-    ...options,
-    payloads: Object.freeze({ open: options.payloads.open.bind(options.payloads) }),
-    ...options.expectedWriter === void 0 ? {} : { expectedWriter: snapshot(options.expectedWriter) },
-    ...options.expectedEvidenceContext === void 0 ? {} : { expectedEvidenceContext: snapshot(options.expectedEvidenceContext) }
-  });
-  let serial = 0;
-  const nextId = (kind) => options.nextId?.(kind) ?? `${kind}-${String(++serial).padStart(6, "0")}`;
-  const preparedInputs = /* @__PURE__ */ new WeakMap();
-  const history = /* @__PURE__ */ new Map();
-  const prepare = async (authoredPlan, prepareOptions) => {
-    if (prepareOptions.signal?.aborted) {
-      return { state: "rejected", reason: "cancelled", diagnostics: [] };
-    }
-    let grant;
-    let plan;
-    try {
-      grant = snapshotGrant(prepareOptions.grant);
-      plan = snapshot(authoredPlan);
-    } catch {
-      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
-    }
-    if (!grantIsValid(options, grant) || invalidPlan(plan)) {
-      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
-    }
-    const targetMap = new Map(plan.targets.map((target) => [target.targetId, target]));
-    let derived;
-    try {
-      derived = derive(plan, targetMap, grant, options);
-    } catch {
-      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
-    }
-    if ("rejection" in derived) {
-      return { state: "rejected", reason: derived.rejection, diagnostics: [] };
-    }
-    if (!derived.authorization.scopeSatisfied) {
-      return { state: "rejected", reason: "write-scope-mismatch", diagnostics: [] };
-    }
-    if (derived.authorization.missing.length > 0) {
-      return { state: "rejected", reason: "permission-missing", diagnostics: [] };
-    }
-    if (GUARANTEE_STRENGTH[derived.authorization.achievableGuarantee] < GUARANTEE_STRENGTH[plan.semantics.minimumGuarantee]) {
-      return { state: "rejected", reason: "guarantee-unachievable", diagnostics: [] };
-    }
-    const canPartiallyApply = plan.edits.length > 1 && derived.authorization.achievableGuarantee !== "atomic";
-    if (canPartiallyApply && options.createRecovery === void 0) {
-      return { state: "rejected", reason: "guarantee-unachievable", diagnostics: [] };
-    }
-    let fidelity;
-    try {
-      fidelity = options.evidenceFor(plan);
-    } catch {
-      fidelity = void 0;
-    }
-    let proven = false;
-    try {
-      proven = fidelityMatches(plan, fidelity, options.expectedWriter, options.expectedEvidenceContext);
-    } catch {
-      proven = false;
-    }
-    if (!proven) {
-      const pinned = options.expectedWriter !== void 0 && fidelity !== void 0 && fidelity.writer.providerId !== options.expectedWriter.providerId;
-      return {
-        state: "rejected",
-        reason: "fidelity-unproven",
-        diagnostics: [
-          {
-            severity: "error",
-            code: pinned ? "x3.host/fidelity-writer-pinned" : "x3.host/fidelity-evidence-missing",
-            message: pinned ? `this host pinned writes to \xAB${options.expectedWriter?.providerId}\xBB, and this plan came from \xAB${fidelity?.writer.providerId}\xBB` : `no fidelity evidence covers ${plan.fidelity.roundTrip}/preservesUnknownData=${String(plan.fidelity.preservesUnknownData)} for this plan`,
-            path: []
-          }
-        ]
-      };
-    }
-    if ((plan.fidelity.roundTrip === "lossy" || plan.fidelity.roundTrip === "none") && (prepareOptions.confirmationToken === void 0 || !(options.confirmationMatches?.(prepareOptions.confirmationToken, plan) ?? false))) {
-      return { state: "rejected", reason: "confirmation-required", diagnostics: [] };
-    }
-    if (!await payloadsAvailable(plan, options, prepareOptions.signal)) {
-      return { state: "rejected", reason: "payload-unavailable", diagnostics: [] };
-    }
-    let conflicts;
-    try {
-      conflicts = await conflictsFor(targetMap, derived.backends, prepareOptions.signal);
-    } catch {
-      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
-    }
-    if (conflicts.length > 0)
-      return { state: "conflict", conflicts };
-    let prepared;
-    try {
-      const planDigest = options.digest(planDigestValue(plan));
-      prepared = Object.freeze({
-        preparedId: nextId("prepared"),
-        plan: snapshot(plan),
-        planDigest,
-        writeSet: derived.writeSet,
-        authorization: derived.authorization,
-        preparedRevisionFingerprint: revisionFingerprint(plan.targets, options.digest),
-        fidelity: snapshot(fidelity)
-      });
-    } catch {
-      return { state: "rejected", reason: "plan-invalid", diagnostics: [] };
-    }
-    const internal = Object.freeze({
-      plan,
-      targets: targetMap,
-      backends: derived.backends,
-      prepared,
-      ...prepareOptions.confirmationToken === void 0 ? {} : { confirmationToken: prepareOptions.confirmationToken }
-    });
-    preparedInputs.set(prepared, internal);
-    return { state: "ready", prepared };
-  };
-  const commit = async (publicPrepared, commitOptions) => {
-    const internal = preparedInputs.get(publicPrepared);
-    if (internal === void 0) {
-      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
-    }
-    if (commitOptions.signal?.aborted) {
-      return { state: "not-applied", reason: "cancelled", diagnostics: [] };
-    }
-    let grant;
-    try {
-      grant = snapshotGrant(commitOptions.grant);
-    } catch {
-      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
-    }
-    if (!grantIsValid(options, grant)) {
-      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
-    }
-    let fresh;
-    try {
-      fresh = derive(internal.plan, internal.targets, grant, options);
-    } catch {
-      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
-    }
-    if ("rejection" in fresh) {
-      return { state: "not-applied", reason: fresh.rejection, diagnostics: [] };
-    }
-    if (!fresh.authorization.scopeSatisfied) {
-      return { state: "not-applied", reason: "write-scope-mismatch", diagnostics: [] };
-    }
-    if (fresh.authorization.missing.length > 0) {
-      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
-    }
-    if (fresh.writeSet.digest !== internal.prepared.writeSet.digest || GUARANTEE_STRENGTH[fresh.authorization.achievableGuarantee] < GUARANTEE_STRENGTH[internal.plan.semantics.minimumGuarantee]) {
-      return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
-    }
-    if (!await payloadsAvailable(internal.plan, options, commitOptions.signal)) {
-      return { state: "not-applied", reason: "payload-unavailable", diagnostics: [] };
-    }
-    let conflicts;
-    try {
-      conflicts = await conflictsFor(internal.targets, fresh.backends, commitOptions.signal);
-    } catch {
-      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
-    }
-    if (conflicts.length > 0) {
-      return {
-        state: "not-applied",
-        reason: "stale-revision",
-        conflicts,
-        diagnostics: []
-      };
-    }
-    const transactionId = nextId("transaction");
-    const before = internal.plan.targets.map((target) => snapshot(target.expectedRevision));
-    const writes = [];
-    const latestRevisions = new Map(internal.plan.targets.map((target) => [target.targetId, target.expectedRevision]));
-    const finalRevisions = () => internal.plan.targets.map((target) => snapshot(latestRevisions.get(target.targetId) ?? target.expectedRevision));
-    const applied = [];
-    if (fresh.authorization.achievableGuarantee === "atomic") {
-      const backend = [...new Set(fresh.backends.values())][0];
-      if (backend?.applyBatch === void 0) {
-        return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
-      }
-      preparedInputs.delete(publicPrepared);
-      try {
-        const results = await backend.applyBatch(internal.plan.edits.map((edit) => ({
-          edit,
-          expectedRevision: latestRevisions.get(edit.targetId) ?? internal.targets.get(edit.targetId).expectedRevision
-        })), {
-          transactionId,
-          payloads: options.payloads,
-          ...commitOptions.signal === void 0 ? {} : { signal: commitOptions.signal }
-        });
-        if (results.length !== internal.plan.edits.length || results.some((result, index) => result.targetId !== internal.plan.edits[index]?.targetId)) {
-          throw new TypeError("atomic backend returned a malformed write result");
-        }
-        results.forEach((result, index) => {
-          const edit = internal.plan.edits[index];
-          const stepBefore = latestRevisions.get(edit.targetId);
-          latestRevisions.set(edit.targetId, snapshot(result.after));
-          applied.push({ edit, backend, before: stepBefore });
-          writes.push(Object.freeze({
-            targetId: edit.targetId,
-            source: snapshot(edit.source),
-            state: "applied",
-            diagnosticIds: Object.freeze([...result.diagnosticIds ?? []])
-          }));
-          commitOptions.onProgress?.(index + 1);
-        });
-      } catch (error5) {
-        return {
-          state: "not-applied",
-          reason: commitOptions.signal?.aborted ? "cancelled" : "plan-invalid",
-          diagnostics: [
-            diagnostic("error", "x3.host/edit-write-failed", error5 instanceof Error ? error5.message : String(error5))
-          ]
-        };
-      }
-      const receipt2 = Object.freeze({
-        transactionId,
-        committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
-        mutationMode: internal.plan.semantics.mutationMode,
-        commitGuarantee: "atomic",
-        status: "committed",
-        undo: backend.profile.supportsRollback && backend.rollback !== void 0 ? "snapshot" : "none",
-        before: Object.freeze(before),
-        after: Object.freeze(finalRevisions()),
-        writes: Object.freeze(writes),
-        fidelity: internal.prepared.fidelity
-      });
-      history.set(transactionId, {
-        plan: internal.plan,
-        prepared: internal,
-        receipt: receipt2,
-        steps: Object.freeze([...applied])
-      });
-      return {
-        state: "committed",
-        receipt: receipt2
-      };
-    }
-    const needsRecovery = internal.plan.edits.length > 1;
-    let recovery;
-    try {
-      recovery = needsRecovery ? await options.createRecovery?.(internal.prepared.preparedId, internal.prepared.planDigest) : void 0;
-    } catch {
-      return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
-    }
-    if (needsRecovery && !isRecoveryRef(recovery)) {
-      return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
-    }
-    if (recovery !== void 0)
-      recovery = snapshot(recovery);
-    preparedInputs.delete(publicPrepared);
-    for (let index = 0; index < internal.plan.edits.length; index += 1) {
-      const edit = internal.plan.edits[index];
-      const backend = fresh.backends.get(edit.targetId);
-      const target = internal.targets.get(edit.targetId);
-      const expectedRevision = latestRevisions.get(edit.targetId) ?? target.expectedRevision;
-      try {
-        const result = await backend.apply(edit, {
-          transactionId,
-          payloads: options.payloads,
-          expectedRevision,
-          ...commitOptions.signal === void 0 ? {} : { signal: commitOptions.signal }
-        });
-        latestRevisions.set(edit.targetId, snapshot(result.after));
-        applied.push({ edit, backend, before: expectedRevision });
-        writes.push(Object.freeze({
-          targetId: edit.targetId,
-          source: snapshot(edit.source),
-          state: "applied",
-          diagnosticIds: Object.freeze([...result.diagnosticIds ?? []])
-        }));
-        commitOptions.onProgress?.(index + 1);
-      } catch (error5) {
-        writes.push(Object.freeze({
-          targetId: edit.targetId,
-          source: snapshot(edit.source),
-          state: "failed",
-          diagnosticIds: Object.freeze(["x3.host/edit-write-failed"])
-        }));
-        const diagnostics = [
-          diagnostic("error", "x3.host/edit-write-failed", error5 instanceof Error ? error5.message : String(error5))
-        ];
-        if (applied.length === 0) {
-          return {
-            state: "not-applied",
-            reason: commitOptions.signal?.aborted ? "cancelled" : "plan-invalid",
-            diagnostics
-          };
-        }
-        if (applied.every((item) => item.backend.profile.supportsRollback && item.backend.rollback !== void 0)) {
-          const rolledBackTargets = /* @__PURE__ */ new Set();
-          try {
-            for (const item of [...applied].reverse()) {
-              latestRevisions.set(item.edit.targetId, await item.backend.rollback(transactionId, item.edit, item.before, commitOptions.signal));
-              rolledBackTargets.add(item.edit.targetId);
-            }
-          } catch (rollbackError) {
-            if (recovery === void 0) {
-              return {
-                state: "not-applied",
-                reason: "guarantee-unachievable",
-                diagnostics: [
-                  ...diagnostics,
-                  diagnostic("error", "x3.host/edit-rollback-failed", rollbackError instanceof Error ? rollbackError.message : String(rollbackError))
-                ]
-              };
-            }
-            return {
-              state: "partially-applied",
-              receipt: Object.freeze({
-                transactionId,
-                committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
-                mutationMode: internal.plan.semantics.mutationMode,
-                commitGuarantee: fresh.authorization.achievableGuarantee,
-                status: "partially-applied",
-                undo: "none",
-                before: Object.freeze(before),
-                after: Object.freeze(finalRevisions()),
-                writes: Object.freeze(writes.map((write) => write.state === "applied" && rolledBackTargets.has(write.targetId) ? Object.freeze({ ...write, state: "rolled-back" }) : write)),
-                recovery,
-                fidelity: internal.prepared.fidelity
-              })
-            };
-          }
-          const rolledWrites = writes.map((write) => write.state === "applied" ? Object.freeze({ ...write, state: "rolled-back" }) : write);
-          return {
-            state: "rolled-back",
-            receipt: Object.freeze({
-              transactionId,
-              committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
-              mutationMode: internal.plan.semantics.mutationMode,
-              commitGuarantee: fresh.authorization.achievableGuarantee,
-              status: "rolled-back",
-              undo: "none",
-              before: Object.freeze(before),
-              after: Object.freeze(finalRevisions()),
-              writes: Object.freeze(rolledWrites),
-              fidelity: internal.prepared.fidelity
-            })
-          };
-        }
-        if (recovery === void 0) {
-          throw new TypeError("partial commit requires a durable recovery reference");
-        }
-        return {
-          state: "partially-applied",
-          receipt: Object.freeze({
-            transactionId,
-            committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
-            mutationMode: internal.plan.semantics.mutationMode,
-            commitGuarantee: fresh.authorization.achievableGuarantee,
-            status: "partially-applied",
-            undo: "none",
-            before: Object.freeze(before),
-            after: Object.freeze(finalRevisions()),
-            writes: Object.freeze(writes),
-            recovery,
-            fidelity: internal.prepared.fidelity
-          })
-        };
-      }
-    }
-    const receipt = Object.freeze({
-      transactionId,
-      committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
-      mutationMode: internal.plan.semantics.mutationMode,
-      commitGuarantee: fresh.authorization.achievableGuarantee,
-      status: "committed",
-      undo: applied.every((item) => item.backend.profile.supportsRollback && item.backend.rollback !== void 0) ? "snapshot" : "none",
-      before: Object.freeze(before),
-      after: Object.freeze(finalRevisions()),
-      writes: Object.freeze(writes),
-      ...recovery === void 0 ? {} : { recovery },
-      fidelity: internal.prepared.fidelity
-    });
-    history.set(transactionId, {
-      plan: internal.plan,
-      prepared: internal,
-      receipt,
-      steps: Object.freeze([...applied])
-    });
-    return {
-      state: "committed",
-      receipt
-    };
-  };
-  const undo = async (transactionId, undoOptions) => {
-    const item = history.get(transactionId);
-    if (item === void 0) {
-      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
-    }
-    let grant;
-    try {
-      grant = snapshotGrant(undoOptions.grant);
-    } catch {
-      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
-    }
-    if (!grantIsValid(options, grant)) {
-      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
-    }
-    let fresh;
-    try {
-      fresh = derive(item.plan, item.prepared.targets, grant, options);
-    } catch {
-      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
-    }
-    if ("rejection" in fresh || fresh.authorization.missing.length > 0) {
-      return { state: "not-applied", reason: "permission-missing", diagnostics: [] };
-    }
-    if (!fresh.authorization.scopeSatisfied) {
-      return { state: "not-applied", reason: "write-scope-mismatch", diagnostics: [] };
-    }
-    const currentTargets = new Map(item.plan.targets.map((target, index) => [
-      target.targetId,
-      Object.freeze({ ...target, expectedRevision: item.receipt.after[index] })
-    ]));
-    let conflicts;
-    try {
-      conflicts = await conflictsFor(currentTargets, fresh.backends, undoOptions.signal);
-    } catch {
-      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
-    }
-    if (conflicts.length > 0) {
-      return { state: "not-applied", reason: "stale-revision", conflicts, diagnostics: [] };
-    }
-    const latestRevisions = new Map(item.plan.targets.map((target, index) => [
-      target.targetId,
-      item.receipt.after[index]
-    ]));
-    for (const step of [...item.steps].reverse()) {
-      const backend = fresh.backends.get(step.edit.targetId);
-      if (backend?.rollback === void 0) {
-        return { state: "not-applied", reason: "guarantee-unachievable", diagnostics: [] };
-      }
-      latestRevisions.set(step.edit.targetId, await backend.rollback(transactionId, step.edit, step.before, undoOptions.signal));
-    }
-    const after = item.plan.targets.map((target) => snapshot(latestRevisions.get(target.targetId) ?? target.expectedRevision));
-    const receipt = Object.freeze({
-      transactionId: nextId("transaction"),
-      committedAt: options.now?.() ?? (/* @__PURE__ */ new Date()).toISOString(),
-      mutationMode: item.plan.semantics.mutationMode,
-      commitGuarantee: item.receipt.commitGuarantee,
-      status: "committed",
-      undo: "none",
-      before: item.receipt.after,
-      after: Object.freeze(after),
-      writes: Object.freeze(item.receipt.writes.map((write) => Object.freeze({ ...write, state: "rolled-back" }))),
-      fidelity: item.receipt.fidelity
-    });
-    return {
-      state: "committed",
-      receipt
-    };
-  };
-  const redo = async (transactionId, redoOptions) => {
-    const item = history.get(transactionId);
-    if (item === void 0) {
-      return { state: "not-applied", reason: "plan-invalid", diagnostics: [] };
-    }
-    const prepared = await prepare(item.plan, {
-      grant: redoOptions.grant,
-      confirmationToken: item.prepared.confirmationToken ?? "explicit-redo",
-      ...redoOptions.signal === void 0 ? {} : { signal: redoOptions.signal }
-    });
-    if (prepared.state === "conflict") {
-      return {
-        state: "not-applied",
-        reason: "stale-revision",
-        conflicts: prepared.conflicts,
-        diagnostics: []
-      };
-    }
-    if (prepared.state === "rejected") {
-      return { state: "not-applied", reason: prepared.reason, diagnostics: prepared.diagnostics };
-    }
-    return commit(prepared.prepared, redoOptions);
-  };
-  return Object.freeze({ prepare, commit, undo, redo });
-}
-function createEditSession(options) {
-  let state = "live";
-  const targets = snapshot(options.targets);
-  const revision = snapshot(options.revision);
-  const validate = options.writer.validate.bind(options.writer);
-  const plan = options.writer.plan.bind(options.writer);
-  const ensureLive = () => {
-    if (state !== "live")
-      throw new TypeError(`edit session is ${state}`);
-  };
-  return Object.freeze({
-    revision,
-    targets,
-    state: () => state,
-    async propose(change) {
-      ensureLive();
-      const result = snapshot(await validate(snapshot(change)));
-      if (!isRecord3(result) || !hasExactKeys(result, ["valid", "diagnostics"]) || typeof result["valid"] !== "boolean" || !Array.isArray(result["diagnostics"])) {
-        return {
-          valid: false,
-          diagnostics: [
-            diagnostic("error", "x3.host/edit-validation-result-invalid", "writer returned a malformed validation result")
-          ]
-        };
-      }
-      return result;
-    },
-    async plan(change) {
-      ensureLive();
-      return snapshot(await plan(snapshot(change)));
-    },
-    markStale() {
-      if (state !== "disposed")
-        state = "stale-revision";
-    },
-    markCommitting(committing) {
-      if (state === "disposed")
-        return;
-      state = committing ? "committing" : "live";
-    },
-    async dispose() {
-      state = "disposed";
-    }
-  });
-}
-
-// packages/host/dist/subject-editing.js
-function unsupported(kind) {
-  return new ModkitError({
-    code: "x3.host/edit-topology-unsupported",
-    message: `editing a \xAB${kind}\xBB subject is not supported yet (single-source and namespace subjects only)`,
-    context: { kind }
-  });
-}
-function assetRevisionFromDescriptor(descriptor) {
-  const origin = descriptor.origin;
-  if (origin.kind === "namespace") {
-    return Object.freeze({
-      bindings: Object.freeze({ [origin.root.id]: origin.revision }),
-      namespaceRevision: origin.revision,
-      compositionFingerprint: canonicalJsonStringify({
-        topology: "namespace",
-        root: { id: origin.root.id, uri: origin.root.uri },
-        revision: origin.revision
-      })
-    });
-  }
-  if (origin.kind !== "single")
-    throw unsupported(origin.kind);
-  const binding = origin.binding;
-  return Object.freeze({
-    bindings: Object.freeze({ [binding.id]: binding.revision }),
-    compositionFingerprint: canonicalJsonStringify({
-      topology: "single",
-      bindingId: binding.id,
-      source: { id: binding.source.id, uri: binding.source.uri },
-      revision: binding.revision
-    })
-  });
-}
-function subjectEditTargetsFromDescriptor(descriptor) {
-  const origin = descriptor.origin;
-  const revision = assetRevisionFromDescriptor(descriptor);
-  if (origin.kind === "namespace") {
-    return Object.freeze([
-      Object.freeze({
-        targetId: origin.root.id,
-        subjectUri: descriptor.subjectUri,
-        ownerSource: Object.freeze({ id: origin.root.id, uri: origin.root.uri }),
-        semanticPath: Object.freeze([]),
-        expectedRevision: revision
-      })
-    ]);
-  }
-  if (origin.kind !== "single")
-    throw unsupported(origin.kind);
-  return Object.freeze([
-    Object.freeze({
-      targetId: origin.binding.id,
-      subjectUri: descriptor.subjectUri,
-      ownerSource: Object.freeze({ id: origin.binding.source.id, uri: origin.binding.source.uri }),
-      semanticPath: Object.freeze([]),
-      expectedRevision: revision
-    })
-  ]);
-}
-var NO_STAGED_PAYLOADS = Object.freeze({
-  async open(ref2) {
-    throw new ModkitError({
-      code: "x3.host/edit-payload-unavailable",
-      message: `no payload store can open staged payload \xAB${ref2.handleId}\xBB`
-    });
-  }
-});
-var DEFAULT_INLINE_PAYLOAD_BYTES = 16 * 1024 * 1024;
-var defaultDigest = (value2) => canonicalJsonStringify(JSON.parse(JSON.stringify(value2)));
-function createSubjectEditing(options) {
-  const descriptor = options.opened.descriptor;
-  const revision = assetRevisionFromDescriptor(descriptor);
-  const targets = subjectEditTargetsFromDescriptor(descriptor);
-  const grantSnapshot = createGrantSnapshot({
-    snapshotId: options.snapshotId ?? `${options.grant.id}#edit`,
-    permissions: options.grant.classes,
-    sourceIds: targets.map((target) => target.ownerSource.id)
-  });
-  const issued = /* @__PURE__ */ new Set([grantSnapshot.snapshotId]);
-  const coordinator = createCommitCoordinator({
-    payloads: options.payloads ?? NO_STAGED_PAYLOADS,
-    backendFor: options.backendFor,
-    evidenceFor: options.evidenceFor,
-    ...options.expectedWriter === void 0 ? {} : { expectedWriter: options.expectedWriter },
-    ...options.expectedEvidenceContext === void 0 ? {} : { expectedEvidenceContext: options.expectedEvidenceContext },
-    isGrantValid: options.isGrantValid ?? ((grant) => issued.has(grant.snapshotId)),
-    digest: options.digest ?? defaultDigest,
-    ...options.verifyStagedPayload === void 0 ? {} : { verifyStagedPayload: options.verifyStagedPayload },
-    ...options.createRecovery === void 0 ? {} : { createRecovery: options.createRecovery },
-    ...options.confirmationMatches === void 0 ? {} : { confirmationMatches: options.confirmationMatches },
-    ...options.now === void 0 ? {} : { now: options.now },
-    ...options.nextId === void 0 ? {} : { nextId: options.nextId },
-    maxInlinePayloadBytes: options.maxInlinePayloadBytes ?? DEFAULT_INLINE_PAYLOAD_BYTES
-  });
-  const session = options.writer === void 0 ? void 0 : createEditSession({ revision, targets, writer: options.writer });
-  const authorization = Object.freeze({
-    async request() {
-      return { grant: grantSnapshot };
-    }
-  });
-  const editorPorts = session === void 0 ? void 0 : Object.freeze({
-    edit: session,
-    commit: coordinator,
-    payloads: options.payloads ?? NO_STAGED_PAYLOADS,
-    authorization
-  });
-  const targetIds = new Set(targets.map((target) => target.targetId));
-  const sourceIds = new Set(targets.map((target) => target.ownerSource.id));
-  const expected = canonicalJsonStringify(revision);
-  const editing = {
-    revision,
-    targets,
-    grantSnapshot,
-    coordinator,
-    ...session === void 0 ? {} : { session },
-    ...editorPorts === void 0 ? {} : { editorPorts },
-    planFromOperation(output) {
-      if (output.kind !== "edit-plan") {
-        throw new ModkitError({
-          code: "x3.host/edit-plan-expected",
-          message: `operation returned \xAB${output.kind}\xBB, not an edit plan`
-        });
-      }
-      const plan = output.plan;
-      for (const target of plan.targets) {
-        if (!targetIds.has(target.targetId) || !sourceIds.has(target.ownerSource.id) || canonicalJsonStringify(target.expectedRevision) !== expected) {
-          throw new ModkitError({
-            code: "x3.host/edit-plan-subject-mismatch",
-            message: `edit plan target \xAB${target.targetId}\xBB is not this subject at its open revision`,
-            context: { targetId: target.targetId }
-          });
-        }
-      }
-      for (const edit of plan.edits) {
-        if (!targetIds.has(edit.targetId) || !sourceIds.has(edit.source.id)) {
-          throw new ModkitError({
-            code: "x3.host/edit-plan-subject-mismatch",
-            message: `edit \xAB${edit.operation}\xBB on \xAB${edit.source.id}\xBB is not this subject`,
-            context: { targetId: edit.targetId, sourceId: edit.source.id }
-          });
-        }
-      }
-      return plan;
-    }
-  };
-  return Object.freeze(editing);
 }
 
 // packages/host/dist/knowledge/index.js
@@ -20078,18 +22711,18 @@ function createUtf8TextDataSource(source2, options = {}) {
     const end = [facts.size, requestedEnd, pageEnd].reduce((left, right) => left < right ? left : right);
     const bytes2 = await readBounded(source2, start, end - start, chunkBytes, signal);
     throwIfAborted(signal);
-    const text3 = new TextDecoder("utf-8", { fatal: false }).decode(bytes2);
+    const text4 = new TextDecoder("utf-8", { fatal: false }).decode(bytes2);
     const actualEnd = start + BigInt(bytes2.byteLength);
     let nextLine = fromLine;
     while (nextLine + 1 < facts.lineStarts.length && facts.lineStarts[nextLine + 1] <= actualEnd) {
       nextLine += 1;
     }
     const complete = actualEnd >= facts.size;
-    return complete ? { complete: true, text: text3, fromLine, lineCount: nextLine - fromLine + (text3 === "" ? 0 : 1) } : {
+    return complete ? { complete: true, text: text4, fromLine, lineCount: nextLine - fromLine + (text4 === "" ? 0 : 1) } : {
       complete: false,
-      text: text3,
+      text: text4,
       fromLine,
-      lineCount: nextLine - fromLine + (text3 === "" ? 0 : 1),
+      lineCount: nextLine - fromLine + (text4 === "" ? 0 : 1),
       nextCursor: cursor2(actualEnd, nextLine)
     };
   };
@@ -20115,9 +22748,9 @@ function createUtf8TextDataSource(source2, options = {}) {
         const start = facts.lineStarts[line];
         const end = facts.lineStarts[line + 1] ?? facts.size;
         const bytes2 = await readBounded(source2, start, end - start, chunkBytes, signal);
-        const text3 = new TextDecoder().decode(bytes2);
-        for (const match of text3.matchAll(expression)) {
-          const prefixBytes = new TextEncoder().encode(text3.slice(0, match.index)).byteLength;
+        const text4 = new TextDecoder().decode(bytes2);
+        for (const match of text4.matchAll(expression)) {
+          const prefixBytes = new TextEncoder().encode(text4.slice(0, match.index)).byteLength;
           const matchBytes = new TextEncoder().encode(match[0]).byteLength;
           yield Object.freeze({
             byteOffset: uint64(start + BigInt(prefixBytes)),
@@ -20903,15 +23536,15 @@ function pageStart(cursor4) {
 }
 function createTreeDataSource(rootNode) {
   const nodes = /* @__PURE__ */ new Map();
-  const register = (node, id) => {
+  const register = (node, id2) => {
     const children = Array.isArray(node.children) ? node.children : [];
-    nodes.set(id, { node, childIds: children.map((_, index) => `${id}/${index}`) });
-    children.forEach((child, index) => register(child, `${id}/${index}`));
+    nodes.set(id2, { node, childIds: children.map((_, index) => `${id2}/${index}`) });
+    children.forEach((child, index) => register(child, `${id2}/${index}`));
   };
   register(rootNode, "root");
-  const ref2 = (id) => {
-    const item = nodes.get(id);
-    return Object.freeze({ id, hasChildren: (item?.childIds.length ?? 0) > 0 });
+  const ref2 = (id2) => {
+    const item = nodes.get(id2);
+    return Object.freeze({ id: id2, hasChildren: (item?.childIds.length ?? 0) > 0 });
   };
   return Object.freeze({
     async root() {
@@ -20940,20 +23573,20 @@ function createTreeDataSource(rootNode) {
       });
     },
     async *search(query) {
-      for (const [id, item] of nodes) {
+      for (const [id2, item] of nodes) {
         const label = item.node.label ?? "";
         const preview2 = item.node.preview ?? "";
-        if (label.includes(query.pattern) || preview2.includes(query.pattern)) yield ref2(id);
+        if (label.includes(query.pattern) || preview2.includes(query.pattern)) yield ref2(id2);
       }
     }
   });
 }
-function newlineOf(text3) {
-  const crlf = (text3.match(/\r\n/gu) ?? []).length;
-  const withoutCrLf = text3.replace(/\r\n/gu, "");
+function newlineOf(text4) {
+  const crlf = (text4.match(/\r\n/gu) ?? []).length;
+  const withoutCrLf = text4.replace(/\r\n/gu, "");
   const lf = (withoutCrLf.match(/\n/gu) ?? []).length;
   const cr = (withoutCrLf.match(/\r/gu) ?? []).length;
-  if ([crlf, lf, cr].filter((count2) => count2 > 0).length > 1) return "mixed";
+  if ([crlf, lf, cr].filter((count3) => count3 > 0).length > 1) return "mixed";
   if (crlf > 0) return "crlf";
   if (lf > 0) return "lf";
   if (cr > 0) return "cr";
@@ -21045,26 +23678,26 @@ function decodeInput(input) {
   }
   encoding ??= "utf-8";
   const content = bytes2.subarray(offset);
-  let text3;
+  let text4;
   if (encoding === "utf-16be") {
     const swapped = new Uint8Array(content.length);
     for (let index = 0; index + 1 < content.length; index += 2) {
       swapped[index] = content[index + 1];
       swapped[index + 1] = content[index];
     }
-    text3 = new TextDecoder("utf-16le", { fatal: true }).decode(swapped);
+    text4 = new TextDecoder("utf-16le", { fatal: true }).decode(swapped);
   } else {
-    text3 = new TextDecoder(encoding, { fatal: true }).decode(content);
+    text4 = new TextDecoder(encoding, { fatal: true }).decode(content);
   }
-  return { text: text3, bytes: bytes2, source: { encoding, bom, newline: newlineOf(text3) } };
+  return { text: text4, bytes: bytes2, source: { encoding, bom, newline: newlineOf(text4) } };
 }
-function span(text3, offset = 0, length = text3.length) {
-  const prefix = text3.slice(0, offset);
+function span(text4, offset = 0, length = text4.length) {
+  const prefix = text4.slice(0, offset);
   const lastLf = prefix.lastIndexOf("\n");
   return Object.freeze({
     byteOffset: uint64(BigInt(new TextEncoder().encode(prefix).byteLength)),
     byteLength: uint64(
-      BigInt(new TextEncoder().encode(text3.slice(offset, offset + length)).byteLength)
+      BigInt(new TextEncoder().encode(text4.slice(offset, offset + length)).byteLength)
     ),
     utf16Offset: offset,
     utf16Length: length,
@@ -21072,11 +23705,11 @@ function span(text3, offset = 0, length = text3.length) {
     column: offset - (lastLf === -1 ? 0 : lastLf + 1)
   });
 }
-function failure(code, message, text3 = "", offset = 0, length = 0) {
+function failure(code, message, text4 = "", offset = 0, length = 0) {
   return {
     state: "failed",
     diagnostics: [
-      diagnostic("error", code, message, void 0, void 0, span(text3, offset, length))
+      diagnostic("error", code, message, void 0, void 0, span(text4, offset, length))
     ]
   };
 }
@@ -21090,11 +23723,11 @@ function preflight(decoded, budget, signal) {
   }
   return void 0;
 }
-function encodeText(text3, source2, target = {}) {
+function encodeText(text4, source2, target = {}) {
   const facts = { ...source2, ...target };
   const newline = facts.newline === "none" ? source2.newline : facts.newline;
   const separator = newline === "crlf" ? "\r\n" : newline === "cr" ? "\r" : "\n";
-  const normalized = newline === "mixed" || newline === "none" ? text3 : text3.replace(/\r\n|\r|\n/gu, separator);
+  const normalized = newline === "mixed" || newline === "none" ? text4 : text4.replace(/\r\n|\r|\n/gu, separator);
   let bytes2;
   if (facts.encoding === "utf-8") bytes2 = new TextEncoder().encode(normalized);
   else {
@@ -21135,11 +23768,11 @@ function scalar(value2, raw = JSON.stringify(value2)) {
 }
 function treeDataSource(document2) {
   const nodes = /* @__PURE__ */ new Map([["root", { value: document2, children: [] }]]);
-  const entries = document2.root?.kind === "object" ? document2.root.members.map((member) => [member.key, member.value]) : Object.entries(document2);
+  const entries = document2.root?.kind === "object" ? document2.root.members.map((member2) => [member2.key, member2.value]) : Object.entries(document2);
   nodes.get("root").children = entries.map(([key3, value2], index) => {
-    const id = `root/${index}`;
-    nodes.set(id, { value: value2, label: String(key3), children: [] });
-    return { id, hasChildren: false };
+    const id2 = `root/${index}`;
+    nodes.set(id2, { value: value2, label: String(key3), children: [] });
+    return { id: id2, hasChildren: false };
   });
   return Object.freeze({
     async root() {
@@ -21159,8 +23792,8 @@ function treeDataSource(document2) {
       return { kind: item?.value?.kind ?? "value", label: item?.label ?? "root" };
     },
     async *search(query) {
-      for (const [id, item] of nodes) {
-        if ((item.label ?? "").includes(query.pattern)) yield { id, hasChildren: false };
+      for (const [id2, item] of nodes) {
+        if ((item.label ?? "").includes(query.pattern)) yield { id: id2, hasChildren: false };
       }
     }
   });
@@ -21179,8 +23812,8 @@ function createTextSyntaxProvider(definition) {
           cause instanceof Error ? cause.message : String(cause)
         );
       }
-      const rejected2 = preflight(decoded, request.budget, request.signal);
-      return rejected2 ?? definition.parse(decoded, request);
+      const rejected3 = preflight(decoded, request.budget, request.signal);
+      return rejected3 ?? definition.parse(decoded, request);
     },
     async serialize(request) {
       throwIfAborted(request.signal);
@@ -21272,9 +23905,9 @@ function createTextCodec(definition, context) {
         Math.max(0, Math.min(declared, available)),
         signal
       );
-      let text3 = "";
+      let text4 = "";
       try {
-        text3 = new TextDecoder("utf-8", { fatal: true }).decode(bytes2);
+        text4 = new TextDecoder("utf-8", { fatal: true }).decode(bytes2);
       } catch {
         return {
           codecId: `modkit/text-${definition.format}`,
@@ -21283,7 +23916,7 @@ function createTextCodec(definition, context) {
           requiredRanges: [{ byteOffset: "0", byteLength: String(bytes2.byteLength) }]
         };
       }
-      const result = definition.detect(text3, request.source.ref.uri);
+      const result = definition.detect(text4, request.source.ref.uri);
       return {
         codecId: `modkit/text-${definition.format}`,
         confidence: result.confidence,
@@ -21457,11 +24090,11 @@ function createTextCodec(definition, context) {
 
 // packages/host/native-text/json/families/json/detect.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-function markerOutsideString(text3, marker) {
+function markerOutsideString(text4, marker) {
   let quote = false;
   let escaped = false;
-  for (let index = 0; index <= text3.length - marker.length; index += 1) {
-    const character = text3[index];
+  for (let index = 0; index <= text4.length - marker.length; index += 1) {
+    const character = text4[index];
     if (quote) {
       if (escaped) escaped = false;
       else if (character === "\\") escaped = true;
@@ -21469,15 +24102,15 @@ function markerOutsideString(text3, marker) {
       continue;
     }
     if (character === '"') quote = true;
-    else if (text3.startsWith(marker, index)) return true;
+    else if (text4.startsWith(marker, index)) return true;
   }
   return false;
 }
-function detectJson(dialect, text3, uri) {
-  if (text3.includes("\0")) return { confidence: 0.01, note: "nul-byte" };
-  const trimmed = text3.trimStart();
+function detectJson(dialect, text4, uri) {
+  if (text4.includes("\0")) return { confidence: 0.01, note: "nul-byte" };
+  const trimmed = text4.trimStart();
   const structure = trimmed.startsWith("{") || trimmed.startsWith("[");
-  const comment = markerOutsideString(text3, "//") || markerOutsideString(text3, "/*");
+  const comment = markerOutsideString(text4, "//") || markerOutsideString(text4, "/*");
   if (!structure) return { confidence: 0.05, note: "no-json-root" };
   if (dialect === "jsonc" && comment) return { confidence: 0.98, note: "jsonc-marker" };
   if (dialect === "json" && comment) return { confidence: 0.1, note: "jsonc-marker" };
@@ -21493,7 +24126,7 @@ function createJsonCodec(profile3, context) {
   return createTextCodec(
     {
       ...profile3,
-      detect: (text3, uri) => detectJson(profile3.dialect, text3, uri)
+      detect: (text4, uri) => detectJson(profile3.dialect, text4, uri)
     },
     context
   );
@@ -21536,14 +24169,14 @@ init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/scanner.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-function createScanner(text3, ignoreTrivia = false) {
-  const len = text3.length;
+function createScanner(text4, ignoreTrivia = false) {
+  const len = text4.length;
   let pos = 0, value2 = "", tokenOffset = 0, token = 16, lineNumber = 0, lineStartOffset = 0, tokenLineStartOffset = 0, prevTokenLineStartOffset = 0, scanError = 0;
-  function scanHexDigits(count2, exact) {
+  function scanHexDigits(count3, exact) {
     let digits = 0;
     let value3 = 0;
-    while (digits < count2 || !exact) {
-      let ch = text3.charCodeAt(pos);
+    while (digits < count3 || !exact) {
+      let ch = text4.charCodeAt(pos);
       if (ch >= 48 && ch <= 57) {
         value3 = value3 * 16 + ch - 48;
       } else if (ch >= 65 && ch <= 70) {
@@ -21556,7 +24189,7 @@ function createScanner(text3, ignoreTrivia = false) {
       pos++;
       digits++;
     }
-    if (digits < count2) {
+    if (digits < count3) {
       value3 = -1;
     }
     return value3;
@@ -21570,35 +24203,35 @@ function createScanner(text3, ignoreTrivia = false) {
   }
   function scanNumber() {
     let start = pos;
-    if (text3.charCodeAt(pos) === 48) {
+    if (text4.charCodeAt(pos) === 48) {
       pos++;
     } else {
       pos++;
-      while (pos < text3.length && isDigit(text3.charCodeAt(pos))) {
+      while (pos < text4.length && isDigit(text4.charCodeAt(pos))) {
         pos++;
       }
     }
-    if (pos < text3.length && text3.charCodeAt(pos) === 46) {
+    if (pos < text4.length && text4.charCodeAt(pos) === 46) {
       pos++;
-      if (pos < text3.length && isDigit(text3.charCodeAt(pos))) {
+      if (pos < text4.length && isDigit(text4.charCodeAt(pos))) {
         pos++;
-        while (pos < text3.length && isDigit(text3.charCodeAt(pos))) {
+        while (pos < text4.length && isDigit(text4.charCodeAt(pos))) {
           pos++;
         }
       } else {
         scanError = 3;
-        return text3.substring(start, pos);
+        return text4.substring(start, pos);
       }
     }
     let end = pos;
-    if (pos < text3.length && (text3.charCodeAt(pos) === 69 || text3.charCodeAt(pos) === 101)) {
+    if (pos < text4.length && (text4.charCodeAt(pos) === 69 || text4.charCodeAt(pos) === 101)) {
       pos++;
-      if (pos < text3.length && text3.charCodeAt(pos) === 43 || text3.charCodeAt(pos) === 45) {
+      if (pos < text4.length && text4.charCodeAt(pos) === 43 || text4.charCodeAt(pos) === 45) {
         pos++;
       }
-      if (pos < text3.length && isDigit(text3.charCodeAt(pos))) {
+      if (pos < text4.length && isDigit(text4.charCodeAt(pos))) {
         pos++;
-        while (pos < text3.length && isDigit(text3.charCodeAt(pos))) {
+        while (pos < text4.length && isDigit(text4.charCodeAt(pos))) {
           pos++;
         }
         end = pos;
@@ -21606,30 +24239,30 @@ function createScanner(text3, ignoreTrivia = false) {
         scanError = 3;
       }
     }
-    return text3.substring(start, end);
+    return text4.substring(start, end);
   }
   function scanString() {
     let result = "", start = pos;
     while (true) {
       if (pos >= len) {
-        result += text3.substring(start, pos);
+        result += text4.substring(start, pos);
         scanError = 2;
         break;
       }
-      const ch = text3.charCodeAt(pos);
+      const ch = text4.charCodeAt(pos);
       if (ch === 34) {
-        result += text3.substring(start, pos);
+        result += text4.substring(start, pos);
         pos++;
         break;
       }
       if (ch === 92) {
-        result += text3.substring(start, pos);
+        result += text4.substring(start, pos);
         pos++;
         if (pos >= len) {
           scanError = 2;
           break;
         }
-        const ch2 = text3.charCodeAt(pos++);
+        const ch2 = text4.charCodeAt(pos++);
         switch (ch2) {
           case 34:
             result += '"';
@@ -21671,7 +24304,7 @@ function createScanner(text3, ignoreTrivia = false) {
       }
       if (ch >= 0 && ch <= 31) {
         if (isLineBreak(ch)) {
-          result += text3.substring(start, pos);
+          result += text4.substring(start, pos);
           scanError = 2;
           break;
         } else {
@@ -21692,19 +24325,19 @@ function createScanner(text3, ignoreTrivia = false) {
       tokenOffset = len;
       return token = 17;
     }
-    let code = text3.charCodeAt(pos);
+    let code = text4.charCodeAt(pos);
     if (isWhiteSpace(code)) {
       do {
         pos++;
         value2 += String.fromCharCode(code);
-        code = text3.charCodeAt(pos);
+        code = text4.charCodeAt(pos);
       } while (isWhiteSpace(code));
       return token = 15;
     }
     if (isLineBreak(code)) {
       pos++;
       value2 += String.fromCharCode(code);
-      if (code === 13 && text3.charCodeAt(pos) === 10) {
+      if (code === 13 && text4.charCodeAt(pos) === 10) {
         pos++;
         value2 += "\n";
       }
@@ -21740,31 +24373,31 @@ function createScanner(text3, ignoreTrivia = false) {
       // comments
       case 47:
         const start = pos - 1;
-        if (text3.charCodeAt(pos + 1) === 47) {
+        if (text4.charCodeAt(pos + 1) === 47) {
           pos += 2;
           while (pos < len) {
-            if (isLineBreak(text3.charCodeAt(pos))) {
+            if (isLineBreak(text4.charCodeAt(pos))) {
               break;
             }
             pos++;
           }
-          value2 = text3.substring(start, pos);
+          value2 = text4.substring(start, pos);
           return token = 12;
         }
-        if (text3.charCodeAt(pos + 1) === 42) {
+        if (text4.charCodeAt(pos + 1) === 42) {
           pos += 2;
           const safeLength2 = len - 1;
           let commentClosed = false;
           while (pos < safeLength2) {
-            const ch = text3.charCodeAt(pos);
-            if (ch === 42 && text3.charCodeAt(pos + 1) === 47) {
+            const ch = text4.charCodeAt(pos);
+            if (ch === 42 && text4.charCodeAt(pos + 1) === 47) {
               pos += 2;
               commentClosed = true;
               break;
             }
             pos++;
             if (isLineBreak(ch)) {
-              if (ch === 13 && text3.charCodeAt(pos) === 10) {
+              if (ch === 13 && text4.charCodeAt(pos) === 10) {
                 pos++;
               }
               lineNumber++;
@@ -21775,7 +24408,7 @@ function createScanner(text3, ignoreTrivia = false) {
             pos++;
             scanError = 1;
           }
-          value2 = text3.substring(start, pos);
+          value2 = text4.substring(start, pos);
           return token = 13;
         }
         value2 += String.fromCharCode(code);
@@ -21785,7 +24418,7 @@ function createScanner(text3, ignoreTrivia = false) {
       case 45:
         value2 += String.fromCharCode(code);
         pos++;
-        if (pos === len || !isDigit(text3.charCodeAt(pos))) {
+        if (pos === len || !isDigit(text4.charCodeAt(pos))) {
           return token = 16;
         }
       // found a minus, followed by a number so
@@ -21807,10 +24440,10 @@ function createScanner(text3, ignoreTrivia = false) {
       default:
         while (pos < len && isUnknownContentCharacter(code)) {
           pos++;
-          code = text3.charCodeAt(pos);
+          code = text4.charCodeAt(pos);
         }
         if (tokenOffset !== pos) {
-          value2 = text3.substring(tokenOffset, pos);
+          value2 = text4.substring(tokenOffset, pos);
           switch (value2) {
             case "true":
               return token = 8;
@@ -21998,7 +24631,7 @@ var ParseOptions;
     allowTrailingComma: false
   };
 })(ParseOptions || (ParseOptions = {}));
-function parseTree(text3, errors = [], options = ParseOptions.DEFAULT) {
+function parseTree(text4, errors = [], options = ParseOptions.DEFAULT) {
   let currentParent = { type: "array", offset: -1, length: -1, children: [], parent: void 0 };
   function ensurePropertyComplete(endOffset) {
     if (currentParent.type === "property") {
@@ -22049,15 +24682,15 @@ function parseTree(text3, errors = [], options = ParseOptions.DEFAULT) {
       errors.push({ error: error5, offset, length });
     }
   };
-  visit(text3, visitor, options);
+  visit(text4, visitor, options);
   const result = currentParent.children[0];
   if (result) {
     delete result.parent;
   }
   return result;
 }
-function visit(text3, visitor, options = ParseOptions.DEFAULT) {
-  const _scanner = createScanner(text3, false);
+function visit(text4, visitor, options = ParseOptions.DEFAULT) {
+  const _scanner = createScanner(text4, false);
   const _jsonPath = [];
   let suppressedCallbacks = 0;
   function toNoArgVisit(visitFunction) {
@@ -22472,21 +25105,21 @@ function printParseErrorCode(code) {
 }
 
 // packages/host/native-text/json/families/json/provider.js
-function jsonNode(node, text3, counters, depth = 0) {
+function jsonNode(node, text4, counters, depth = 0) {
   counters.nodes += 1;
   counters.depth = Math.max(counters.depth, depth);
-  const range = span(text3, node.offset, node.length);
+  const range = span(text4, node.offset, node.length);
   if (node.type === "object") {
     return {
       kind: "object",
       members: (node.children ?? []).map((property) => ({
         key: String(property.children?.[0]?.value ?? ""),
         keyRange: span(
-          text3,
+          text4,
           property.children?.[0]?.offset ?? property.offset,
           property.children?.[0]?.length ?? 0
         ),
-        value: jsonNode(property.children?.[1], text3, counters, depth + 1)
+        value: jsonNode(property.children?.[1], text4, counters, depth + 1)
       })),
       range
     };
@@ -22494,13 +25127,13 @@ function jsonNode(node, text3, counters, depth = 0) {
   if (node.type === "array") {
     return {
       kind: "array",
-      items: (node.children ?? []).map((item) => jsonNode(item, text3, counters, depth + 1)),
+      items: (node.children ?? []).map((item) => jsonNode(item, text4, counters, depth + 1)),
       range
     };
   }
   return {
     kind: "scalar",
-    value: scalar(node.value, text3.slice(node.offset, node.offset + node.length)),
+    value: scalar(node.value, text4.slice(node.offset, node.offset + node.length)),
     range
   };
 }
@@ -22545,7 +25178,7 @@ function valueFromJsonNode(node) {
   }
   if (node.kind === "array") return node.items.map(valueFromJsonNode);
   return Object.fromEntries(
-    node.members.map((member) => [member.key, valueFromJsonNode(member.value)])
+    node.members.map((member2) => [member2.key, valueFromJsonNode(member2.value)])
   );
 }
 function createJsonSyntaxProvider(definition) {
@@ -22553,9 +25186,9 @@ function createJsonSyntaxProvider(definition) {
     contract: definition.contract,
     parse: (decoded, request) => parseJson(decoded, definition.dialect, request.budget),
     serialize(request) {
-      const text3 = `${JSON.stringify(valueFromJsonNode(request.document.root), null, 2)}
+      const text4 = `${JSON.stringify(valueFromJsonNode(request.document.root), null, 2)}
 `;
-      return encodeText(text3, request.document.source, request.target);
+      return encodeText(text4, request.document.source, request.target);
     }
   });
 }
@@ -22773,8 +25406,8 @@ var OPERATION_DECLARATIONS = Object.freeze([
 function extensionOf(uri) {
   const clean = uri.split(/[?#]/u, 1)[0] ?? "";
   const name = clean.slice(clean.lastIndexOf("/") + 1);
-  const dot = name.lastIndexOf(".");
-  return dot === -1 ? "" : name.slice(dot + 1).toLowerCase();
+  const dot2 = name.lastIndexOf(".");
+  return dot2 === -1 ? "" : name.slice(dot2 + 1).toLowerCase();
 }
 function decodeSample(bytes2) {
   if (bytes2[0] === 239 && bytes2[1] === 187 && bytes2[2] === 191) {
@@ -22788,7 +25421,7 @@ function decodeWith(content, encoding, bom) {
   if (encoding === "utf-8" && content.includes(0)) {
     return { ok: false, encoding, bom, reason: "nul-byte" };
   }
-  let text3;
+  let text4;
   try {
     if (encoding === "utf-16be") {
       const swapped = new Uint8Array(content.length - content.length % 2);
@@ -22796,29 +25429,29 @@ function decodeWith(content, encoding, bom) {
         swapped[index] = content[index + 1];
         swapped[index + 1] = content[index];
       }
-      text3 = new TextDecoder("utf-16le", { fatal: true }).decode(swapped);
+      text4 = new TextDecoder("utf-16le", { fatal: true }).decode(swapped);
     } else if (encoding === "utf-16le") {
-      text3 = new TextDecoder("utf-16le", { fatal: true }).decode(
+      text4 = new TextDecoder("utf-16le", { fatal: true }).decode(
         content.subarray(0, content.length - content.length % 2)
       );
     } else {
-      text3 = new TextDecoder("utf-8", { fatal: true }).decode(content);
+      text4 = new TextDecoder("utf-8", { fatal: true }).decode(content);
     }
   } catch {
     return { ok: false, encoding, bom, reason: "undecodable" };
   }
-  if (text3.includes("\0")) return { ok: false, encoding, bom, reason: "nul-byte" };
+  if (text4.includes("\0")) return { ok: false, encoding, bom, reason: "nul-byte" };
   let controls = 0;
-  for (const character of text3) {
+  for (const character of text4) {
     const code = character.codePointAt(0);
     if (code < 32 && !TEXT_CONTROLS.has(code)) controls += 1;
   }
-  const ratio = text3.length === 0 ? 0 : controls / text3.length;
+  const ratio = text4.length === 0 ? 0 : controls / text4.length;
   if (ratio > CONTROL_RATIO_LIMIT) return { ok: false, encoding, bom, reason: "control-ratio" };
-  return { ok: true, encoding, bom, text: text3, reason: "bounded-text" };
+  return { ok: true, encoding, bom, text: text4, reason: "bounded-text" };
 }
-function outline(text3, maxNodes) {
-  const lines = text3.split(/\r\n|\n|\r/u);
+function outline(text4, maxNodes) {
+  const lines = text4.split(/\r\n|\n|\r/u);
   const paragraphs = [];
   let current = [];
   const flush = () => {
@@ -22832,11 +25465,11 @@ function outline(text3, maxNodes) {
     else current.push(line);
   }
   flush();
-  const trimmed = text3.trim();
+  const trimmed = text4.trim();
   return {
     lines: lines.length,
     words: trimmed === "" ? 0 : trimmed.split(/\s+/u).length,
-    characters: text3.length,
+    characters: text4.length,
     paragraphs
   };
 }
@@ -22933,7 +25566,7 @@ var createCodec3 = () => Object.freeze({
     });
     const tree = createTreeDataSource(treeFor(shape));
     const utf8 = decoded.encoding === "utf-8";
-    const text3 = utf8 ? createUtf8TextDataSource(bytes2) : void 0;
+    const text4 = utf8 ? createUtf8TextDataSource(bytes2) : void 0;
     const dataSources = [
       { contract: "common.view/tree-data-source", major: 1 },
       ...utf8 ? [{ contract: "common.view/text-data-source", major: 1 }] : [],
@@ -23058,8 +25691,8 @@ var createCodec3 = () => Object.freeze({
       async openDataSource(contract) {
         if (contract === "common.view/tree-data-source") return lease(tree);
         if (contract === "common.view/byte-range-source") return lease(bytes2);
-        if (contract === "common.view/text-data-source" && text3 !== void 0) {
-          return lease(text3);
+        if (contract === "common.view/text-data-source" && text4 !== void 0) {
+          return lease(text4);
         }
         throw new TypeError(`modkit/txt does not publish ${contract}`);
       },
@@ -23165,13 +25798,13 @@ var refuse2 = (message, context) => {
 function defineLinkedExtension(init) {
   const modkit = init.packageJson.modkit;
   const publisher = typeof modkit?.publisher === "string" ? modkit.publisher : void 0;
-  const id = typeof modkit?.id === "string" ? modkit.id : void 0;
-  if (publisher === void 0 || id === void 0) {
+  const id2 = typeof modkit?.id === "string" ? modkit.id : void 0;
+  if (publisher === void 0 || id2 === void 0) {
     refuse2("linked extension package.json carries no modkit publisher/id", {
       source: init.source
     });
   }
-  const coordinate3 = `${publisher}/${id}`;
+  const coordinate3 = `${publisher}/${id2}`;
   const automaticExcluded = [];
   const contributions = init.contributions.flatMap((contribution) => {
     const variants = variantsOf(contribution.manifest);
@@ -23195,7 +25828,7 @@ function defineLinkedExtension(init) {
     ...Object.keys(init.modules).map((path) => path.replace(/^\.\//u, ""))
   ]);
   const artifactDigest = init.artifactDigest ?? `linked:${coordinate3}`;
-  const artifactRoot = new URL(`modkit-linked://${publisher}.${id}/`.toLowerCase());
+  const artifactRoot = new URL(`modkit-linked://${publisher}.${id2}/`.toLowerCase());
   const moduleEntries = [];
   for (const contribution of contributions) {
     for (const variant of variantsOf(contribution.manifest)) {
@@ -23249,7 +25882,7 @@ function defineBuiltinModule(init) {
   if (parts.length !== 2 || parts.some((part) => part.length === 0)) {
     refuse2("built-in module coordinate must be publisher/id", { coordinate: init.coordinate });
   }
-  const [publisher = "", id = ""] = parts;
+  const [publisher = "", id2 = ""] = parts;
   const packageJson = init.packageJson ?? {};
   const existingModkit = packageJson.modkit;
   const modkit = typeof existingModkit === "object" && existingModkit !== null ? existingModkit : {};
@@ -23259,10 +25892,10 @@ function defineBuiltinModule(init) {
       ...packageJson,
       modkit: {
         ...modkit,
-        schemaVersion: modkit.schemaVersion ?? 1,
+        schemaVersion: modkit["schemaVersion"] ?? 1,
         publisher,
-        id,
-        contributionManifests: modkit.contributionManifests ?? init.contributions.map((item) => `./${item.path.replace(/^\.\//u, "")}`)
+        id: id2,
+        contributionManifests: modkit["contributionManifests"] ?? init.contributions.map((item) => `./${item.path.replace(/^\.\//u, "")}`)
       }
     },
     ...init.files === void 0 ? {} : { files: init.files },
@@ -23303,7 +25936,7 @@ function linkedExtensionInputs(linked) {
 var NATIVE_ENVIRONMENTS = Object.freeze(["node", "node-worker", "browser-main", "browser-worker"]);
 var nativeExecutable = (manifest, entrypoint) => {
   const document2 = manifest;
-  const variants = Array.isArray(document2.runtimeVariants) ? document2.runtimeVariants : [];
+  const variants = Array.isArray(document2["runtimeVariants"]) ? document2["runtimeVariants"] : [];
   if (variants.length === 0)
     return manifest;
   const selected = variants.find((variant) => typeof variant === "object" && variant !== null && variant.executionProfile === "trusted-in-process") ?? variants[0];
@@ -23801,8 +26434,8 @@ var VIEWER_CSP_TEXT = policyText(VIEWER_CSP);
 var VIEWER_CSP_TRUSTED_EDITOR_TEXT = policyText(VIEWER_CSP_TRUSTED_EDITOR);
 var HOSTILE_TEXT = /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/gu;
 function safeViewerText(value2, maximum = 1e6) {
-  const text3 = String(value2);
-  const bounded = text3.length > maximum ? `${text3.slice(0, maximum)}\u2026` : text3;
+  const text4 = String(value2);
+  const bounded = text4.length > maximum ? `${text4.slice(0, maximum)}\u2026` : text4;
   return bounded.replace(HOSTILE_TEXT, (character) => {
     const code = character.codePointAt(0)?.toString(16).toUpperCase().padStart(4, "0") ?? "0000";
     return `\\u{${code}}`;
@@ -23960,19 +26593,19 @@ function decodeUtf8(bytes2) {
 function looksTextual(bytes2) {
   return !bytes2.includes(0) && decodeUtf8(bytes2) !== void 0;
 }
-function indexText(text3) {
+function indexText(text4) {
   const lineStarts = [0];
   const kinds = /* @__PURE__ */ new Set();
-  for (const match of text3.matchAll(/\r\n|\r|\n/gu)) {
+  for (const match of text4.matchAll(/\r\n|\r|\n/gu)) {
     const value2 = match[0];
     kinds.add(value2 === "\r\n" ? "crlf" : value2 === "\r" ? "cr" : "lf");
     lineStarts.push((match.index ?? 0) + value2.length);
   }
   let longestLineBytes = 0;
   for (let line = 0; line < lineStarts.length; line += 1) {
-    const start = lineStarts[line] ?? text3.length;
-    const next = lineStarts[line + 1] ?? text3.length;
-    const withoutNewline = text3.slice(start, next).replace(/\r\n$|\r$|\n$/u, "");
+    const start = lineStarts[line] ?? text4.length;
+    const next = lineStarts[line + 1] ?? text4.length;
+    const withoutNewline = text4.slice(start, next).replace(/\r\n$|\r$|\n$/u, "");
     longestLineBytes = Math.max(longestLineBytes, encoder3.encode(withoutNewline).byteLength);
   }
   const values = [...kinds];
@@ -24038,11 +26671,11 @@ function linesInRange(index, fromLine, endCharacter) {
   return last - fromLine + 1;
 }
 function builtinTextSource(bytes2) {
-  const text3 = decodeUtf8(bytes2);
-  if (text3 === void 0 || bytes2.includes(0)) {
+  const text4 = decodeUtf8(bytes2);
+  if (text4 === void 0 || bytes2.includes(0)) {
     throw new TypeError("built-in text source requires complete NUL-free UTF-8 input");
   }
-  const index = indexText(text3);
+  const index = indexText(text4);
   const slice = async (request, signal) => {
     signal?.throwIfAborted();
     ensurePositivePage(request.maxBytes, "text page maxBytes");
@@ -24053,22 +26686,22 @@ function builtinTextSource(bytes2) {
       ensureLine(request.line);
       ensurePositivePage(request.lineCount, "text page lineCount");
       fromLine = request.line;
-      start = index.lineStarts[fromLine] ?? text3.length;
-      requestedEnd = index.lineStarts[fromLine + request.lineCount] ?? text3.length;
+      start = index.lineStarts[fromLine] ?? text4.length;
+      requestedEnd = index.lineStarts[fromLine + request.lineCount] ?? text4.length;
     } else {
       const parsed = parseCursor2(request.cursor);
-      if (parsed.character > text3.length || parsed.line >= index.lineStarts.length) {
+      if (parsed.character > text4.length || parsed.line >= index.lineStarts.length) {
         throw new RangeError("built-in text cursor points beyond the source");
       }
       fromLine = parsed.line;
       start = parsed.character;
-      requestedEnd = text3.length;
+      requestedEnd = text4.length;
     }
-    const page2 = truncateUtf8(text3.slice(start, requestedEnd), request.maxBytes);
+    const page2 = truncateUtf8(text4.slice(start, requestedEnd), request.maxBytes);
     const actualEnd = start + page2.length;
     const nextLine = cursorLine(index, actualEnd);
     const lineCount = page2 === "" ? 0 : linesInRange(index, fromLine, actualEnd);
-    if (actualEnd >= text3.length) {
+    if (actualEnd >= text4.length) {
       return { complete: true, text: page2, fromLine, lineCount };
     }
     return {
@@ -24096,10 +26729,10 @@ function builtinTextSource(bytes2) {
       const flags = query.caseSensitive === true ? "gu" : "giu";
       const pattern = query.regex === true ? query.pattern : query.pattern.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
       const expression = new RegExp(pattern, flags);
-      for (const match of text3.matchAll(expression)) {
+      for (const match of text4.matchAll(expression)) {
         signal?.throwIfAborted();
         const character = match.index ?? 0;
-        const byteOffset = encoder3.encode(text3.slice(0, character)).byteLength;
+        const byteOffset = encoder3.encode(text4.slice(0, character)).byteLength;
         const byteLength = encoder3.encode(match[0]).byteLength;
         yield Object.freeze({
           byteOffset: uint64(BigInt(byteOffset)),
@@ -24330,6 +26963,7 @@ var EN_MESSAGES = Object.freeze({
   "viewer.modelCollision": "collision",
   "viewer.modelMaterials": "materials",
   "viewer.modelSockets": "sockets",
+  "viewer.modelSkeletonOverlay": "Show the bone overlay",
   "viewer.modelParent": "parent {parent}",
   "viewer.modelUnnamed": "(unnamed)",
   "viewer.modelNoNamedFlags": "no named flags",
@@ -24415,6 +27049,9 @@ var EN_MESSAGES = Object.freeze({
   "viewer.resolvedSemanticTree": "Resolved semantic tree",
   "viewer.namedRemainder": "{count} named remainder",
   "card.relatedSubjects": "Related subjects",
+  "card.preview": "Preview",
+  "card.historyBack": "Previous subject",
+  "card.historyForward": "Next subject",
   "card.locale": "Locale",
   "card.descriptionUnavailable": "Description is not available yet.",
   "card.loadingDescription": "Loading description\u2026",
@@ -24929,6 +27566,7 @@ var RU_MESSAGES = Object.freeze({
   "viewer.modelCollision": "\u0441\u0442\u043E\u043B\u043A\u043D\u043E\u0432\u0435\u043D\u0438\u044F",
   "viewer.modelMaterials": "\u043C\u0430\u0442\u0435\u0440\u0438\u0430\u043B\u044B",
   "viewer.modelSockets": "\u0442\u043E\u0447\u043A\u0438 \u043A\u0440\u0435\u043F\u043B\u0435\u043D\u0438\u044F",
+  "viewer.modelSkeletonOverlay": "\u041F\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u0442\u044C \u043D\u0430\u043B\u043E\u0436\u0435\u043D\u0438\u0435 \u043A\u043E\u0441\u0442\u0435\u0439",
   "viewer.modelParent": "\u0440\u043E\u0434\u0438\u0442\u0435\u043B\u044C: {parent}",
   "viewer.modelUnnamed": "(\u0431\u0435\u0437 \u0438\u043C\u0435\u043D\u0438)",
   "viewer.modelNoNamedFlags": "\u043D\u0435\u0442 \u0438\u043C\u0435\u043D\u043E\u0432\u0430\u043D\u043D\u044B\u0445 \u0444\u043B\u0430\u0433\u043E\u0432",
@@ -25014,6 +27652,9 @@ var RU_MESSAGES = Object.freeze({
   "viewer.resolvedSemanticTree": "\u0418\u0442\u043E\u0433\u043E\u0432\u043E\u0435 \u0441\u043C\u044B\u0441\u043B\u043E\u0432\u043E\u0435 \u0434\u0435\u0440\u0435\u0432\u043E",
   "viewer.namedRemainder": "\u041D\u0435\u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0430\u043D\u043D\u044B\u0445 \u0447\u0430\u0441\u0442\u0435\u0439: {count}",
   "card.relatedSubjects": "\u0421\u0432\u044F\u0437\u0430\u043D\u043D\u044B\u0435 \u0441\u0443\u0431\u044A\u0435\u043A\u0442\u044B",
+  "card.preview": "\u041F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440",
+  "card.historyBack": "\u041F\u0440\u0435\u0434\u044B\u0434\u0443\u0449\u0438\u0439 \u0441\u0443\u0431\u044A\u0435\u043A\u0442",
+  "card.historyForward": "\u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u0441\u0443\u0431\u044A\u0435\u043A\u0442",
   "card.locale": "\u042F\u0437\u044B\u043A",
   "card.descriptionUnavailable": "\u041E\u043F\u0438\u0441\u0430\u043D\u0438\u0435 \u043F\u043E\u043A\u0430 \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u043D\u043E.",
   "card.loadingDescription": "\u0417\u0430\u0433\u0440\u0443\u0437\u043A\u0430 \u043E\u043F\u0438\u0441\u0430\u043D\u0438\u044F\u2026",
@@ -25623,6 +28264,7 @@ var CARD_FALLBACK_MESSAGES = {
   "card.loadingDescription": "Loading description\u2026",
   "card.locale": "Locale",
   "card.namedSubject": "{label} subject card",
+  "card.preview": "Preview",
   "card.relatedCapped": "Related subjects are capped.",
   "card.relatedSubjects": "Related subjects",
   "card.repository.fact.displayName": "Display name",
@@ -25841,6 +28483,7 @@ var MODEL_FALLBACK_MESSAGES = {
   "viewer.modelParent": "parent {parent}",
   "viewer.modelPrimitive": "Model primitive",
   "viewer.modelResources": "resources",
+  "viewer.modelSkeletonOverlay": "Show the bone overlay",
   "viewer.modelSockets": "sockets",
   "viewer.modelSummary": "{nodes} nodes \xB7 {meshes} meshes \xB7 {primitives} primitives \xB7 {materials} materials \xB7 {animations} animations{facets}",
   "viewer.modelUnnamed": "(unnamed)",
@@ -26027,10 +28670,10 @@ var publishedOperations2 = (descriptor) => {
   return operations.filter((item) => item.state === "available").map((item) => String(item.id ?? ""));
 };
 var stageId = (stage) => {
-  const id = stage.id ?? stage.contract ?? stage.operation;
-  if (id === void 0)
+  const id2 = stage.id ?? stage.contract ?? stage.operation;
+  if (id2 === void 0)
     throw new TypeError("preview stage must declare id, contract or operation");
-  return id;
+  return id2;
 };
 function createCodecPreview(options) {
   const localizer = withEnglishUiFallback(options.localizer, EXPLORER_PREVIEW_FALLBACK_MESSAGES);
@@ -26113,6 +28756,7 @@ function createCodecPreview(options) {
           },
           operations,
           ...options.knowledge === void 0 ? {} : { knowledge: options.knowledge },
+          ...session.subjectNavigation === void 0 ? {} : { subjectNavigation: session.subjectNavigation },
           ...signal === void 0 ? {} : { signal }
         });
         active = mounted;
@@ -26430,10 +29074,10 @@ async function requestEditorSave(host) {
 
 // packages/ui/dist/explorer/editors.js
 function fileKindOf(name) {
-  const dot = name.lastIndexOf(".");
-  if (dot <= 0 || dot === name.length - 1)
+  const dot2 = name.lastIndexOf(".");
+  if (dot2 <= 0 || dot2 === name.length - 1)
     return "file";
-  const kind = name.slice(dot + 1).toLowerCase();
+  const kind = name.slice(dot2 + 1).toLowerCase();
   return /^[a-z0-9_-]{1,16}$/u.test(kind) ? kind : "file";
 }
 var describe = (error5) => error5 instanceof Error ? error5.message : String(error5);
@@ -27068,14 +29712,14 @@ var WORD = /[A-Za-z0-9_]/u;
 function isWordChar(character) {
   return character.length > 0 && WORD.test(character);
 }
-function hasWordBoundary(text3, start, end) {
-  return !isWordChar(text3.charAt(start - 1)) && !isWordChar(text3.charAt(end));
+function hasWordBoundary(text4, start, end) {
+  return !isWordChar(text4.charAt(start - 1)) && !isWordChar(text4.charAt(end));
 }
 function wholeWordSource(source2) {
   return `(?<![A-Za-z0-9_])(?:${source2})(?![A-Za-z0-9_])`;
 }
-function escapeRegExp(text3) {
-  return text3.replace(/[\\^$+?.()|[\]{}*]/gu, "\\$&");
+function escapeRegExp(text4) {
+  return text4.replace(/[\\^$+?.()|[\]{}*]/gu, "\\$&");
 }
 function globSource(query) {
   return `^${query.split("*").map(escapeRegExp).join(".*")}$`;
@@ -27119,28 +29763,28 @@ function compileSearch(query, options = {}) {
 function describe2(error5) {
   return error5 instanceof Error ? error5.message : "Invalid regular expression";
 }
-function matches2(text3, compiled) {
+function matches2(text4, compiled) {
   switch (compiled.kind) {
     case "empty":
       return true;
     case "invalid":
       return false;
     case "regex":
-      return compiled.regex.test(text3);
+      return compiled.regex.test(text4);
     case "plain":
-      return matchRanges(text3, compiled, true).length > 0;
+      return matchRanges(text4, compiled, true).length > 0;
     default:
       return false;
   }
 }
-function matchRanges(text3, compiled, firstOnly = false) {
+function matchRanges(text4, compiled, firstOnly = false) {
   if (compiled.kind === "empty" || compiled.kind === "invalid")
     return [];
   if (compiled.kind === "regex") {
     const ranges2 = [];
     const scanner = new RegExp(compiled.regex.source, compiled.regex.flags.includes("g") ? compiled.regex.flags : `${compiled.regex.flags}g`);
     let guard = 0;
-    for (const match of text3.matchAll(scanner)) {
+    for (const match of text4.matchAll(scanner)) {
       if (match.index === void 0)
         continue;
       const end = match.index + match[0].length;
@@ -27158,12 +29802,12 @@ function matchRanges(text3, compiled, firstOnly = false) {
   const needle = compiled.needle;
   if (needle.length === 0)
     return [];
-  const haystack = compiled.caseSensitive ? text3 : text3.toLowerCase();
+  const haystack = compiled.caseSensitive ? text4 : text4.toLowerCase();
   const ranges = [];
   let at = haystack.indexOf(needle);
   while (at >= 0) {
     const end = at + needle.length;
-    if (!compiled.wholeWord || hasWordBoundary(text3, at, end)) {
+    if (!compiled.wholeWord || hasWordBoundary(text4, at, end)) {
       ranges.push({ start: at, end });
       if (firstOnly)
         break;
@@ -27253,10 +29897,10 @@ function createSearchField(document2, options) {
     buttons.get("word")?.setAttribute("aria-pressed", String(wholeWord));
     buttons.get("regex")?.setAttribute("aria-pressed", String(mode === "regex"));
     buttons.get("glob")?.setAttribute("aria-pressed", String(mode === "glob"));
-    for (const [id, button] of buttons) {
+    for (const [id2, button] of buttons) {
       const pressed = button.getAttribute("aria-pressed") === "true";
       setState(button, pressed ? ["active"] : []);
-      if (id === "word")
+      if (id2 === "word")
         button.disabled = mode === "glob";
     }
   };
@@ -27275,18 +29919,18 @@ function createSearchField(document2, options) {
     const compiled = current.compiled;
     const invalid2 = compiled.kind === "invalid";
     message.textContent = compiled.kind === "invalid" ? localizer.text("primitives.invalidRegex") : "";
-    const count2 = options.countMatches?.(current);
+    const count3 = options.countMatches?.(current);
     const states = [];
     if (invalid2)
       states.push("invalid");
-    if (!invalid2 && count2 === 0 && compiled.kind !== "empty")
+    if (!invalid2 && count3 === 0 && compiled.kind !== "empty")
       states.push("no-match");
     setState(root, states);
     input.setAttribute("aria-invalid", String(invalid2));
-    status.textContent = invalid2 ? localizer.text("primitives.invalid") : compiled.kind === "empty" || count2 === void 0 ? "" : count2 === 1 ? localizer.text("primitives.oneMatch") : localizer.text("primitives.matches", { count: count2 });
+    status.textContent = invalid2 ? localizer.text("primitives.invalid") : compiled.kind === "empty" || count3 === void 0 ? "" : count3 === 1 ? localizer.text("primitives.oneMatch") : localizer.text("primitives.matches", { count: count3 });
     if (nav !== void 0) {
       for (const button of nav.querySelectorAll("button")) {
-        button.disabled = invalid2 || count2 === void 0 || count2 === 0;
+        button.disabled = invalid2 || count3 === void 0 || count3 === 0;
       }
     }
   }
@@ -27358,8 +30002,8 @@ function createSearchField(document2, options) {
 // packages/ui/dist/explorer/index.js
 var EXPLORER_MAXIMUM_BYTES = 64 * 1024 * 1024;
 var extensionOf2 = (name) => {
-  const dot = name.lastIndexOf(".");
-  return dot <= 0 ? "" : name.slice(dot + 1).toLowerCase();
+  const dot2 = name.lastIndexOf(".");
+  return dot2 <= 0 ? "" : name.slice(dot2 + 1).toLowerCase();
 };
 var formatBytes2 = (bytes2) => {
   if (bytes2 < 1024)
@@ -27670,7 +30314,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
   extensions: [
     {
       artifact: {
-        artifactDigest: "sha256:0cb356a96ed9a541422f37e686793925900400b0471e547941146d01e3883c93",
+        artifactDigest: "sha256:064da7e525ab39cf1d29771644644b1ede7d0f501ccf3f49877e7bd217affb9e",
         fileDigests: {
           "MIGRATION-NOTES-common-archives.json": "sha256:4e1d77808583a26fb61d65d660ef09c3f4c222915c2e3581d793b202cbde4b44",
           "README.md": "sha256:915e1860d19a23f3ae677cd1edea4d5bc27c81f2c901b365c56da2558220dd11",
@@ -27686,7 +30330,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "contributions/codec-rar.json": "sha256:645a39c0f1e89a9e6ea6cae24325571f318fd61ff05255b064f996e2d5ca5bf2",
           "contributions/codec-tar.json": "sha256:1ff7a59af85ed33cb4d95f88c5b983af98774aa226f1c79fa9a3f921c1a16524",
           "contributions/codec-xz.json": "sha256:effe08ca5ab5605658d355535cc91e496855e2f9c0bbdac63bbd8bd6044a753b",
-          "contributions/codec-zip.json": "sha256:3a639f3c70c44cd9068c7123c0ef91ff002e15fce5c80ca267e19d053b43cd28",
+          "contributions/codec-zip.json": "sha256:d765dacf8928d2e723ed903b99b4d86a89e1d6d7dfcb25229cb8a5f9dd438c4b",
           "contributions/codec-zstd.json": "sha256:04f0c3c2fbad4b0f3f31f14ef33da92e4e2fa8957be84ddc0aa16ca4b007765f",
           "package.json": "sha256:0f450dab994733b1f04493efbe9a07bb0f7f702969fbf9350675f2d425600c04",
           "src/7z/codec.js": "sha256:60d5070f1cf8d9edc3c3ab822fd73dc4c352a7c55c96e78b433b503f2cf08964",
@@ -27703,10 +30347,10 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "src/rar/codec.js": "sha256:e13d94fec648378ce3cc274259906be54ffd847023fc15a48a90f3296bdf154d",
           "src/tar/codec.js": "sha256:1ee376c3a57b28fd539f4dcaf800844d327c4eb1e6852a18617d85199661b3ac",
           "src/xz/codec.js": "sha256:44e9ac364de3143616a034e357e2af0150f579a73ba9778c51a04897bb554799",
-          "src/zip/codec.js": "sha256:d1440a62734d6d4c2ae80c24158599cd9d0dee4c49a9fab4d71695b4e357d34d",
+          "src/zip/codec.js": "sha256:d79f278cf8be4906cdecde32def292c5b09456cb2cd64205afd33b3d2e9aeb09",
           "src/zstd/codec.js": "sha256:6266e084d92f68329bb8ea89d24977a809e59d6db68fb03c4af97f43660231ca"
         },
-        inventoryRecordId: "artifact:sha256:0cb356a96ed9a541422f37e686793925900400b0471e547941146d01e3883c93"
+        inventoryRecordId: "artifact:sha256:064da7e525ab39cf1d29771644644b1ede7d0f501ccf3f49877e7bd217affb9e"
       },
       artifactRoot: "extensions/archives/",
       containers: {
@@ -27806,7 +30450,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           "contributions/codec-zip.json",
-          "sha256:3a639f3c70c44cd9068c7123c0ef91ff002e15fce5c80ca267e19d053b43cd28"
+          "sha256:d765dacf8928d2e723ed903b99b4d86a89e1d6d7dfcb25229cb8a5f9dd438c4b"
         ],
         [
           "contributions/codec-zstd.json",
@@ -29519,6 +32163,85 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
                 {
                   handlerId: "edit-structure",
                   id: "edit.structure",
+                  inputSchema: {
+                    $ref: "modkit://archive-zip/edit-structure.v1",
+                    document: {
+                      forms: [
+                        {
+                          fields: [
+                            {
+                              initial: "added/hello.txt",
+                              inputPath: ["add", 0, "path"],
+                              key: "path",
+                              label: "Entry path",
+                              required: true,
+                              type: {
+                                kind: "path"
+                              }
+                            },
+                            {
+                              encoding: "utf8-base64",
+                              initial: "added from the Modkit inspector",
+                              inputPath: ["add", 0, "bytes"],
+                              key: "content",
+                              label: "Contents",
+                              type: {
+                                kind: "text"
+                              }
+                            }
+                          ],
+                          id: "zip-add-entry",
+                          label: "Add an entry to the archive",
+                          summary: "Adds one stored entry and repacks; kept entries retain their bytes."
+                        },
+                        {
+                          fields: [
+                            {
+                              initial: "readme.txt",
+                              inputPath: ["remove", 0],
+                              key: "path",
+                              label: "Entry path",
+                              required: true,
+                              type: {
+                                kind: "path"
+                              }
+                            }
+                          ],
+                          id: "zip-remove-entry",
+                          label: "Remove an entry from the archive",
+                          summary: "Removes one entry and repacks; other entries retain their bytes."
+                        },
+                        {
+                          fields: [
+                            {
+                              initial: "readme.txt",
+                              inputPath: ["rename", 0, "from"],
+                              key: "from",
+                              label: "From",
+                              required: true,
+                              type: {
+                                kind: "path"
+                              }
+                            },
+                            {
+                              initial: "docs/readme.txt",
+                              inputPath: ["rename", 0, "to"],
+                              key: "to",
+                              label: "To",
+                              required: true,
+                              type: {
+                                kind: "path"
+                              }
+                            }
+                          ],
+                          id: "zip-rename-entry",
+                          label: "Rename an entry in the archive",
+                          summary: "Renames one entry without touching its payload or compression."
+                        }
+                      ],
+                      schemaVersion: 1
+                    }
+                  },
                   mutatesSource: true,
                   outputKinds: ["edit-plan"],
                   requiredPermissions: ["read-source", "write-source"]
@@ -29526,6 +32249,41 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
                 {
                   handlerId: "edit-content",
                   id: "edit.content",
+                  inputSchema: {
+                    $ref: "modkit://archive-zip/edit-content.v1",
+                    document: {
+                      forms: [
+                        {
+                          fields: [
+                            {
+                              initial: "readme.txt",
+                              inputPath: ["path"],
+                              key: "path",
+                              label: "Entry path",
+                              required: true,
+                              type: {
+                                kind: "path"
+                              }
+                            },
+                            {
+                              encoding: "utf8-base64",
+                              initial: "replaced from the Modkit inspector",
+                              inputPath: ["bytes"],
+                              key: "content",
+                              label: "Contents",
+                              type: {
+                                kind: "text"
+                              }
+                            }
+                          ],
+                          id: "zip-replace-entry",
+                          label: "Replace an entry's contents",
+                          summary: "Replaces one file entry's payload; nothing else moves."
+                        }
+                      ],
+                      schemaVersion: 1
+                    }
+                  },
                   mutatesSource: true,
                   outputKinds: ["edit-plan"],
                   requiredPermissions: ["read-source", "write-source"]
@@ -29764,14 +32522,14 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: "sha256:635314a89da917111341771b7cb0b96ec32fbdfd13666a752647e1816247c9bc",
+        artifactDigest: "sha256:ee747f65044950b9d7c42a75d20908ac69b3ae9e87764fab76ac13bf72f7ee2c",
         fileDigests: {
           "MIGRATION-NOTES-common-audio.json": "sha256:9208bc42ef1da984ce9776d9bed7024eaf3f797a1cd56ca193919caf142ee636",
           "README.md": "sha256:9f5415950310cb89d1ab9de0eb7818546ee38fedcb55632e1454f3319d4f91a3",
           "contributions/codec-aac.json": "sha256:f373ebed7f3795f6c50040b55fb2bf21303b04ad954f06c969b66503e70e6541",
           "contributions/codec-flac.json": "sha256:c9446e6eef1dedd21c9d724f0b70c583df011a2c61c877d189f8cc57dc3d160f",
           "contributions/codec-m4a.json": "sha256:fa5b142c50b5a95dff81122bb06919d7e1410e6b9e42986ac8c93d9501408f2a",
-          "contributions/codec-mp3.json": "sha256:e61f2c053fdd4f3bdbf37b7b8a496f4ba8e85395806c41e065c6933528c2ad11",
+          "contributions/codec-mp3.json": "sha256:a1ad4c179df18d041d04254e4eb8cb3f9902e7001ef74f86a912c277821fa1ae",
           "contributions/codec-ogg.json": "sha256:eb7ddb19893b6958df00f28a4c9364205f9865e4318afe4fefca3efe9abd4fe5",
           "contributions/codec-wav.json": "sha256:b9a35b941c7b1442b60f35aa3beb1a91aaf12853f51baf67fe654855d38f3240",
           "package.json": "sha256:44743bfcbcf9f51ab7fb7b62e0c00343ecc962384f784b16c72d8ffc62b06d7c",
@@ -29780,13 +32538,13 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "src/index.js": "sha256:e86ec9194630bc30037a46f042fb7839fa96dfa70ae81ef77142ae436c9bf2fb",
           "src/linked.js": "sha256:922ff66619a03a24f1b419fa7520485d7dcd8a8b1efa9cdea02160300b45e76d",
           "src/m4a/codec.js": "sha256:6a30b4aa492b27d5b4ae8d94529ddee3f3f695fa39c3eb2ee10ac5c379fce097",
-          "src/mp3/codec.js": "sha256:791b750035bfac4bf61ba89fc3c234e24461d946fa0abcb91fa07a5fb61ddb3f",
+          "src/mp3/codec.js": "sha256:28719273aa436ed4f6867abba1101a01dff67096079c8fe03d6a5738f48e8d65",
           "src/ogg/codec.js": "sha256:4615fe83734068e90591d68c46614b158c40cd1d10466e5f320170cea719e515",
           "src/wav/codec.js": "sha256:4f00c2a91a81f4313d0547b761999e78b8e76b3458ebf30b48f7f71cd0e89201",
           "src/wav/pcm.js": "sha256:f67d79a5e25ebd640be028b510fa09b84a9ba06ca0e4cc441026cf30beb48f37",
           "test/wav-pcm-decode.test.ts": "sha256:69f5cada4c7a40bc0834dc4b52d03d2d9fcc47f71e406d8b399cc011b2de0c07"
         },
-        inventoryRecordId: "artifact:sha256:635314a89da917111341771b7cb0b96ec32fbdfd13666a752647e1816247c9bc"
+        inventoryRecordId: "artifact:sha256:ee747f65044950b9d7c42a75d20908ac69b3ae9e87764fab76ac13bf72f7ee2c"
       },
       artifactRoot: "extensions/audio/",
       containers: {
@@ -29851,7 +32609,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           "contributions/codec-mp3.json",
-          "sha256:e61f2c053fdd4f3bdbf37b7b8a496f4ba8e85395806c41e065c6933528c2ad11"
+          "sha256:a1ad4c179df18d041d04254e4eb8cb3f9902e7001ef74f86a912c277821fa1ae"
         ],
         [
           "contributions/codec-ogg.json",
@@ -30341,6 +33099,48 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
                 {
                   handlerId: "set-text-frame",
                   id: "edit.field",
+                  inputSchema: {
+                    $ref: "modkit://audio-mp3/edit-field.v1",
+                    document: {
+                      forms: [
+                        {
+                          binding: {
+                            groupId: "id3"
+                          },
+                          fields: [
+                            {
+                              description: "A four-character ID3v2 text frame id",
+                              initial: "TIT2",
+                              inputPath: ["key"],
+                              key: "key",
+                              label: "Frame",
+                              required: true,
+                              source: "entry-key",
+                              type: {
+                                kind: "text",
+                                maxLength: 4,
+                                pattern: "^T[A-Z0-9]{3}$"
+                              }
+                            },
+                            {
+                              initial: "set from the Modkit inspector",
+                              inputPath: ["value"],
+                              key: "value",
+                              label: "Text",
+                              source: "entry-value",
+                              type: {
+                                kind: "text"
+                              }
+                            }
+                          ],
+                          id: "mp3-set-text-frame",
+                          label: "Set an ID3v2 text frame",
+                          summary: "Sets or replaces one ID3v2 text frame, creating the tag when absent; audio bytes stay in place."
+                        }
+                      ],
+                      schemaVersion: 1
+                    }
+                  },
                   mutatesSource: true,
                   outputKinds: ["edit-plan"],
                   requiredPermissions: ["read-source", "write-source"]
@@ -33923,7 +36723,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: "sha256:6a8e4a21b05eed00bbeae3b9370652916b5bcfe67b61dae21648576a366404f7",
+        artifactDigest: "sha256:b06849f267e9a43bb145e7f5ceeaf839dacee3b54e698622a066566f075c27fc",
         fileDigests: {
           "MIGRATION-NOTES-common-images.json": "sha256:44c30ea45aaceceff66d53f72e5e0d0ec8efb1a7f2afbc2f9913849720632e93",
           "README.md": "sha256:4f8426d4cb4a5a43b6b37cfb8d3262b2ce94a8ec1436d6d339e7f64dc3adadeb",
@@ -33933,24 +36733,25 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "contributions/codec-basis.json": "sha256:184ba7dd544a576e53ced752789b435a8d45dbf01b87c248a2e4cfbc3b03547c",
           "contributions/codec-bmp.json": "sha256:51e2e65724d780a313dfeb1072929d9cb9fc3c5230b7597e0a3384dc77523326",
           "contributions/codec-cur.json": "sha256:ca83a2ee185f99c30030382692eb875a4a7301aeb0d072a4bbf109f787d17bdf",
-          "contributions/codec-dds.json": "sha256:303693201ab5d818e5c5e831a89895d433be7f0ac6c3c6b0a462295704c05749",
+          "contributions/codec-dds.json": "sha256:f500c919ceb5328c6dd24b82f0df025a42d6dff3a5df5975a3df769ada77f65e",
           "contributions/codec-exr.json": "sha256:377eb43959c01dff23c3117a6a1263a9797e91503b79e65a718d049336e6cca7",
           "contributions/codec-gif.json": "sha256:1e0055534bec3b25f02fb42204637d11c4d24447ff87474fbb8460c8703342f4",
           "contributions/codec-hdr.json": "sha256:f9a3809a8285db81095accabea92d22fec03a7aab43d17466f2ffd89a77581b8",
           "contributions/codec-ico.json": "sha256:8d7b323ab46e27bffa3aa2b71d99ba7ee3a66e6486bae4eb8f9123cf86212c70",
-          "contributions/codec-jpeg.json": "sha256:fcb1026e71eb76e3f873367a6a1936e9f44a708bf5e446ff2682135b6cca0df3",
+          "contributions/codec-jpeg.json": "sha256:946928d5d5905b0bf752292d0fd16a2ec80ed5687e1876d0da7e1026af46bcc2",
           "contributions/codec-ktx.json": "sha256:4ee4d58d454dd57f3968ffcc394b48b08d4be9cdbc023a8467f8a1bc66bc4806",
           "contributions/codec-ktx2.json": "sha256:b9fc5eba855941df66f0bc62d82c7bed8985b5e82a4b6a0925375486b0be178b",
           "contributions/codec-pal.json": "sha256:ea2a3925124bc67b6b887b70a85f03722c49a18b7f44176dfdd6365d6920188a",
           "contributions/codec-pcx.json": "sha256:5630f3d28021cd97416ff09684ca36e7168a6ee47f1d7f601d0e6a6e01e33bb8",
           "contributions/codec-pkm.json": "sha256:a59ca6a16fac9666bc9a22c5ec29584dce1fd6a58c1f76b66b069d77e8239929",
-          "contributions/codec-png.json": "sha256:b9081fcc28060974eb31feb891a1083edd2464c01010491f7e7780ae8ec8f69f",
+          "contributions/codec-png.json": "sha256:81fcb364ce343b12455cd2037e2028e557b6cf44e2bce8e3b2a07236e2169188",
           "contributions/codec-pvr.json": "sha256:e5eff0a04b8c20ee5806859a00d5e843a4c6a1cc089d768b0bed3c701fd1476b",
           "contributions/codec-tga.json": "sha256:4995903bf43aa8de9f19c3a6be8716dd14e4bb746625010d5c2f01f740eded45",
           "contributions/codec-tiff.json": "sha256:5ab60e9ca9f2b5adbafc4364d3d60f47be6966875a65f48e62a053f69c31c37f",
           "contributions/codec-webp.json": "sha256:0bba481e6804a0854bcfa8b4d44d2211df0bbdde6f34c1c19a181b19148512c5",
+          "contributions/writer-dds.json": "sha256:811f3e474aa56eb4317369fdb2e628be861ed9e26a4be5660fce16fe75f3b448",
           "contributions/writer-png.json": "sha256:49583a58d35f864423155eae81992ed56764d4efe6c82c6931491f1b3157ee13",
-          "package.json": "sha256:38a43b9396aaa7d2b309af11909487f474ec75567aeb295e9b45988b7381e1ef",
+          "package.json": "sha256:58b890127452522b69a3439c9452958590b14b490c67da491d3e5fd608a6cee1",
           "src/ani/codec.js": "sha256:18bf84dd6807f2caf4d7bf3d5bb497cfba746f92b0e6bb3e459a0b09563f3c00",
           "src/astc/codec.js": "sha256:e838232902d024f2e4c9d9538f6ee6e69259b23654b9bffb7e15110298af62b3",
           "src/astc/ldr.js": "sha256:c5bf2a524fb9ab25d51f8351192e30859463e6d14b0b0da94295aa4350d6f402",
@@ -33958,36 +36759,45 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           "src/basis/codec.js": "sha256:467f93b3b49ec4d0a3e7bdb23782949d6ec1126839cebdcde2cfbf25a11d7293",
           "src/bmp/codec.js": "sha256:5b53995e0429115ea6020430dc80c5bd70b208c6666392b7b0f57f9eef25917d",
           "src/cur/codec.js": "sha256:daf34dd18dd2ed3f13ea0d74668fc9c40bdda171899ee0667cd558c9f7fe24a9",
-          "src/dds/codec.js": "sha256:0d482ac028af92426cd4ab3947e04410f5f4bf540df46e71608aeba27c20b36b",
-          "src/dds/layout.js": "sha256:feb37c0f0157512697eaa3f80b4b8545ac33d937ac2a37e95f13ca24e8d92e26",
+          "src/dds/bptc.js": "sha256:f3a0636b0f5dde9b7f7ccc2e6874425bfef0f5e86f6a1801a8032885f61a39b4",
+          "src/dds/codec.js": "sha256:eb6e45ace449513b0b12d021baba82597808f9c746dcc85e9606f6e634d6f5f4",
+          "src/dds/compressed.js": "sha256:af63c9438834ec0618e5ce3a207d45195cc603dcf4376c7964dfd3e939f7823e",
+          "src/dds/encode.js": "sha256:5f28fb28df56882fd869bcb0ea24d3fa0e2f66ba3988ef4e0c3ffb6fd6c84254",
+          "src/dds/layout.js": "sha256:ad84d000700f52fb29f3fb4a6ea7cf421f9a9d1e9335fa5c247d1e70fc13b6b0",
           "src/exr/codec.js": "sha256:3c46fa55f1ca7aea4ff36011f91ff350832f174e6c82633c037d41cc09daf9a9",
           "src/gif/codec.js": "sha256:90b805088704746c1faf3e7e9166b9976bcf815944958dd8ebb3b51d9425250e",
           "src/hdr/codec.js": "sha256:ed851abdd3d36445a77e407e4b92c14bf7fa3490df00a65da3a69015c2292a94",
           "src/ico/codec.js": "sha256:0007c46e11724f2e2195b0260801d5c6290fd3c05ac6229d9790e0bd1e86dd97",
           "src/ico/container.js": "sha256:407cdb7ed7d152a32f1d78da0c9cd445d9a642c42c72230621fb7fbeab65e67c",
           "src/index.js": "sha256:bcbc40812fa5dcdb2937b0ff5b617c1483725570302b99f569249ac3c441ce41",
-          "src/jpeg/codec.js": "sha256:5b60aea8f7fae6df27a558b959d29ae1e49e67a814c850ca6d923f42ebdc6b21",
+          "src/jpeg/codec.js": "sha256:a88284f59e5072c44e8352f772dd3de9342c06418e035f92fb9bd26c0b13d44e",
           "src/ktx/codec.js": "sha256:9d24a991d8a64e241895849cc43305babfc20647d4226f5bea8fc6cb44e92903",
           "src/ktx2/codec.js": "sha256:4d6240d729468880b18a12e629d29972d0e70b25b6b909329786a24637c463f1",
           "src/linked.js": "sha256:bbe85af6cdf6da5544829b2bd7ad09a733ca00edc56e2229659247eba5cf8975",
+          "src/ops/raster-ops.js": "sha256:01cf3696184a2597c96233219ab3c1084c6250cc78800e64e93e5e220b4ff798",
           "src/pal/codec.js": "sha256:68718910cbdbc34fdca7a99817fc26d4a54b8521da4d38d4d13cbf633acbfc0b",
           "src/pcx/codec.js": "sha256:72e48b7fce70032f4349e799ed887579698d0c790cc5ccff09420bcd1e2ec3e7",
           "src/pkm/codec.js": "sha256:2e3a5a9c78b3aee0af85f195e3b8d362d7afa18175057cf38ac6381bca804549",
           "src/pkm/etc.js": "sha256:99c4f4ab06d944e71e0993f671e3af6904c37bb5eb2bc0a65fdf1e6de265db7f",
-          "src/png/codec.js": "sha256:1c659861f79e3aa36e8a7f2242d2cc2085fe848a3ac9776e8f48f4533a9d7eaa",
+          "src/png/codec.js": "sha256:5d35aa5d47999b7ce541fa6b12f4da4b0acee79ab8391c200e0189d281f71ab7",
           "src/pvr/codec.js": "sha256:3c02b42c1d6963dcb8e38a8bbfcc49ccf9b115118180835d59eb4ada15de7fea",
           "src/tga/codec.js": "sha256:ffe8fe95b50e1c3339ffb699e478b43db9680d57b194d4cad5b0d994367b4232",
           "src/tiff/codec.js": "sha256:2a875351ce1ac3fb1aa74354a9c09a46464662c8003aa95a7e5e86afc6026d4c",
           "src/webp/codec.js": "sha256:b131633cfb14f7fccbfe981c919a0c37a28dbcf4b6e1a6d41de0757085eb0389",
+          "src/writers/dds-encoder.js": "sha256:c4123ea5aa1089b6b53f6c8580e525cd7886c5be354ade13db3836ee53471cf1",
           "src/writers/png-encoder.js": "sha256:afe0012d7a40473d5e545ed61df93bf790a118402a56f447960cb933a063616f",
           "test/ani-raster-decode.test.ts": "sha256:7315f4f53f2c70259b308ba21190a890cf03b9fee61b2237ef981987b09dbc75",
           "test/astc-ordinary-ldr.test.ts": "sha256:d2fac9ba212cdebcb662337bad84d9ed32f5f94d578e7c727e11e0a17a593ae2",
           "test/astc-void-extent.test.ts": "sha256:ed0f8d41d2c64a3276ae4f53276ed49846354bf28cc03fd77adecab1931a3bd1",
           "test/codec-session.ts": "sha256:fa6bcdf1bc58315268af02ca9b02076ec655a28bee8a327cf6664f1f0ea163e6",
-          "test/dds-subresources.test.ts": "sha256:600156ad576f93af37451d373b93a488460f95642682c114feb6885f3ea9f8ff",
-          "test/eac-r11-decode.test.ts": "sha256:2a0d83d3152224ce7ea530605bb9441912aa9be68b3b4ec60d1e51cb0e5beed4"
+          "test/dds-subresources.test.ts": "sha256:5d6311bef32d04f6a4a241efe7af0b1d7effa58414eae9db5406a746f9a60e25",
+          "test/eac-r11-decode.test.ts": "sha256:2a0d83d3152224ce7ea530605bb9441912aa9be68b3b4ec60d1e51cb0e5beed4",
+          "vendor/texture2ddecoder/LICENSE": "sha256:49e3169a509b9a5311fe50957a334e9e1975164f27da6004358c22e91e10747c",
+          "vendor/texture2ddecoder/README.md": "sha256:62e287f319c051b451df4516dd94c0a14d1a3d95dc52690ee4f477e07921ab85",
+          "vendor/texture2ddecoder/texture2ddecoder.js": "sha256:0a2b33ff735566fd3184e0421ff38fb7578d1348b3cc44fc4646cce29d001110",
+          "vendor/texture2ddecoder/texture2ddecoder.wasm": "sha256:8b819b0622cce57f809b369081bdd6eca09d1c1793da7f82192db39229356c1d"
         },
-        inventoryRecordId: "artifact:sha256:6a8e4a21b05eed00bbeae3b9370652916b5bcfe67b61dae21648576a366404f7"
+        inventoryRecordId: "artifact:sha256:b06849f267e9a43bb145e7f5ceeaf839dacee3b54e698622a066566f075c27fc"
       },
       artifactRoot: "extensions/images/",
       containers: {
@@ -33999,13 +36809,17 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           exports: {
             ".": "./src/index.js",
             "./formats/*/codec": "./src/*/codec.js",
+            "./formats/dds/compressed": "./src/dds/compressed.js",
+            "./formats/dds/encode": "./src/dds/encode.js",
             "./formats/jpeg/codec": "./src/jpeg/codec.js",
             "./formats/png/codec": "./src/png/codec.js",
             "./linked": "./src/linked.js",
+            "./ops/raster": "./src/ops/raster-ops.js",
             "./package.json": "./package.json",
+            "./writers/dds-encoder": "./src/writers/dds-encoder.js",
             "./writers/png-encoder": "./src/writers/png-encoder.js"
           },
-          files: ["contributions", "src", "README.md"],
+          files: ["contributions", "src", "vendor", "README.md"],
           license: "MIT",
           modkit: {
             contributionManifests: ["./contributions/*.json"],
@@ -34065,7 +36879,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           "contributions/codec-dds.json",
-          "sha256:303693201ab5d818e5c5e831a89895d433be7f0ac6c3c6b0a462295704c05749"
+          "sha256:f500c919ceb5328c6dd24b82f0df025a42d6dff3a5df5975a3df769ada77f65e"
         ],
         [
           "contributions/codec-exr.json",
@@ -34085,7 +36899,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           "contributions/codec-jpeg.json",
-          "sha256:fcb1026e71eb76e3f873367a6a1936e9f44a708bf5e446ff2682135b6cca0df3"
+          "sha256:946928d5d5905b0bf752292d0fd16a2ec80ed5687e1876d0da7e1026af46bcc2"
         ],
         [
           "contributions/codec-ktx.json",
@@ -34109,7 +36923,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           "contributions/codec-png.json",
-          "sha256:b9081fcc28060974eb31feb891a1083edd2464c01010491f7e7780ae8ec8f69f"
+          "sha256:81fcb364ce343b12455cd2037e2028e557b6cf44e2bce8e3b2a07236e2169188"
         ],
         [
           "contributions/codec-pvr.json",
@@ -34126,6 +36940,10 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         [
           "contributions/codec-webp.json",
           "sha256:0bba481e6804a0854bcfa8b4d44d2211df0bbdde6f34c1c19a181b19148512c5"
+        ],
+        [
+          "contributions/writer-dds.json",
+          "sha256:811f3e474aa56eb4317369fdb2e628be861ed9e26a4be5660fce16fe75f3b448"
         ],
         [
           "contributions/writer-png.json",
@@ -34907,10 +37725,13 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
             displayName: "DirectDraw Surface",
             id: "modkit/dds",
             limitations: [
-              "Decoded to pixels: BC1/BC2/BC3 (FourCC DXT1/DXT3/DXT5 and the equivalent DXGI numbers 70-78) and uncompressed RGB/RGBA masks at 24 or 32 bits.",
-              "NOT decoded: BC4, BC5, BC6H and BC7. The header parser recognises those DXGI numbers and refuses them by name; this package ships no decoder and no WASM for them, and the manifest no longer claims one.",
-              "Decode is pure JavaScript inside the codec runtime. There is no optional WASM asset, no URL-based ESM boundary and nothing for a host to deploy separately.",
+              "Decoded to pixels: BC1/BC2/BC3 (FourCC DXT1-DXT5 and DXGI 70-78), BC4 and BC5 including the signed spellings (ATI1/ATI2/BC4U/BC5U/BC4S/BC5S and DXGI 79-84 minus the two typeless numbers), BC6H and BC7 (DXGI 94-99), and uncompressed RGB, luminance and alpha-only masks at 8, 16, 24 or 32 bits.",
+              "NOT decoded: DXGI 79 (BC4_TYPELESS) and 82 (BC5_TYPELESS), refused by name. The legacy MK2 codec refused them too.",
+              "BC6H and BC7 blocks are decoded by the vendored third-party texture2ddecoder runtime under vendor/texture2ddecoder/ (MIT), which is the implementation the legacy MK2 codec called. Every other format is pure JavaScript inside the codec runtime. The runtime resolves its .wasm next to its own module; nothing is deployed separately by a host.",
+              "BC6H_UF16 and BC6H_SF16 decode through the same entry point, so the unsigned and signed profiles produce the same pixels. That is what the vendored runtime does and what legacy therefore did; the compressed-texture descriptor still reports the two profiles apart.",
               "Mip, array-layer, cubemap-face and volume-slice selection is implemented: readRegion resolves any subresource the header declares and refuses out-of-range coordinates by name.",
+              "Writing is a separate contribution: modkit/dds-encoder-writer (common.edit/writer@1) encodes RGBA8 pixels as rgba8, dxt1, dxt3 or dxt5.",
+              "The compressed-texture view of a DDS (GPU blocks handed over undecoded, with block geometry, colour space, alpha mode and per-subresource byte ranges) is implemented in src/dds/compressed.js but is not published: MK3 has no common.view contract for compressed textures yet.",
               "Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global signature sniffing."
             ],
             runtimeVariants: [
@@ -35618,6 +38439,35 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
                 {
                   handlerId: "set-comment",
                   id: "edit.field",
+                  inputSchema: {
+                    $ref: "modkit://image-jpeg/edit-field.v1",
+                    document: {
+                      forms: [
+                        {
+                          binding: {
+                            entryKey: "comment",
+                            groupId: "jpeg-comment"
+                          },
+                          fields: [
+                            {
+                              initial: "set from the Modkit inspector",
+                              inputPath: ["value"],
+                              key: "value",
+                              label: "Comment",
+                              source: "entry-value",
+                              type: {
+                                kind: "text"
+                              }
+                            }
+                          ],
+                          id: "jpeg-set-comment",
+                          label: "Set the JPEG comment",
+                          summary: "Writes the COM segment after the APP block, replacing it when it exists."
+                        }
+                      ],
+                      schemaVersion: 1
+                    }
+                  },
                   mutatesSource: true,
                   outputKinds: ["edit-plan"],
                   requiredPermissions: ["read-source", "write-source"]
@@ -35625,6 +38475,32 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
                 {
                   handlerId: "remove-segment",
                   id: "edit.structure",
+                  inputSchema: {
+                    $ref: "modkit://image-jpeg/edit-structure.v1",
+                    document: {
+                      forms: [
+                        {
+                          fields: [
+                            {
+                              description: "A metadata marker name, e.g. APP0, APP1 or COM",
+                              initial: "APP0",
+                              inputPath: ["marker"],
+                              key: "marker",
+                              label: "Marker",
+                              required: true,
+                              type: {
+                                kind: "text"
+                              }
+                            }
+                          ],
+                          id: "jpeg-remove-segment",
+                          label: "Remove a JPEG metadata segment",
+                          summary: "Drops one metadata segment; image-bearing markers are refused by the codec."
+                        }
+                      ],
+                      schemaVersion: 1
+                    }
+                  },
                   mutatesSource: true,
                   outputKinds: ["edit-plan"],
                   requiredPermissions: ["read-source", "write-source"]
@@ -36446,6 +39322,48 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
                 {
                   handlerId: "set-text",
                   id: "edit.field",
+                  inputSchema: {
+                    $ref: "modkit://image-png/edit-field.v1",
+                    document: {
+                      forms: [
+                        {
+                          binding: {
+                            groupId: "png-text"
+                          },
+                          fields: [
+                            {
+                              description: "1\u201379 Latin-1 characters, no NUL",
+                              initial: "Description",
+                              inputPath: ["key"],
+                              key: "key",
+                              label: "Keyword",
+                              required: true,
+                              source: "entry-key",
+                              type: {
+                                kind: "text",
+                                pattern: "^[^\\u0000]{1,79}$"
+                              }
+                            },
+                            {
+                              description: "Latin-1, no NUL",
+                              initial: "set from the Modkit inspector",
+                              inputPath: ["value"],
+                              key: "value",
+                              label: "Text",
+                              source: "entry-value",
+                              type: {
+                                kind: "text"
+                              }
+                            }
+                          ],
+                          id: "png-set-text",
+                          label: "Set a PNG text field",
+                          summary: "Sets or replaces one tEXt chunk; every other byte of the file is kept."
+                        }
+                      ],
+                      schemaVersion: 1
+                    }
+                  },
                   mutatesSource: true,
                   outputKinds: ["edit-plan"],
                   requiredPermissions: ["read-source", "write-source"]
@@ -37030,6 +39948,48 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
           }
         ],
         [
+          "contributions/writer-dds.json",
+          {
+            contract: {
+              id: "modkit/service-provider-contribution",
+              major: 1
+            },
+            displayName: "DDS encoder (writer)",
+            id: "modkit/dds-encoder-writer",
+            runtimeVariants: [
+              {
+                entrypoint: "./src/writers/dds-encoder.js",
+                executionProfile: "worker-brokered",
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ["node-worker", "browser-worker"]
+                },
+                variantId: "portable"
+              }
+            ],
+            schemaVersion: 1,
+            spec: {
+              lifecycleScope: "session",
+              provides: [
+                {
+                  contract: "common.edit/writer",
+                  facet: {
+                    fidelityEvidenceId: "dds-encoder-v1",
+                    formatId: "dds",
+                    minimumRoundTrip: "lossy",
+                    mutationMode: "mutate",
+                    providerId: "modkit/dds-encoder-writer",
+                    representationId: "rgba8"
+                  },
+                  major: 1,
+                  offerId: "dds-rgba8-encoder",
+                  version: "1.0.0"
+                }
+              ]
+            }
+          }
+        ],
+        [
           "contributions/writer-png.json",
           {
             contract: {
@@ -37097,6 +40057,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         "contributions/codec-tga.json",
         "contributions/codec-tiff.json",
         "contributions/codec-webp.json",
+        "contributions/writer-dds.json",
         "contributions/writer-png.json",
         "package.json",
         "src/ani/codec.js",
@@ -37106,7 +40067,10 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         "src/basis/codec.js",
         "src/bmp/codec.js",
         "src/cur/codec.js",
+        "src/dds/bptc.js",
         "src/dds/codec.js",
+        "src/dds/compressed.js",
+        "src/dds/encode.js",
         "src/dds/layout.js",
         "src/exr/codec.js",
         "src/gif/codec.js",
@@ -37118,6 +40082,7 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         "src/ktx/codec.js",
         "src/ktx2/codec.js",
         "src/linked.js",
+        "src/ops/raster-ops.js",
         "src/pal/codec.js",
         "src/pcx/codec.js",
         "src/pkm/codec.js",
@@ -37127,13 +40092,18 @@ var WEB_EXTENSION_CATALOG = Object.freeze({
         "src/tga/codec.js",
         "src/tiff/codec.js",
         "src/webp/codec.js",
+        "src/writers/dds-encoder.js",
         "src/writers/png-encoder.js",
         "test/ani-raster-decode.test.ts",
         "test/astc-ordinary-ldr.test.ts",
         "test/astc-void-extent.test.ts",
         "test/codec-session.ts",
         "test/dds-subresources.test.ts",
-        "test/eac-r11-decode.test.ts"
+        "test/eac-r11-decode.test.ts",
+        "vendor/texture2ddecoder/LICENSE",
+        "vendor/texture2ddecoder/README.md",
+        "vendor/texture2ddecoder/texture2ddecoder.js",
+        "vendor/texture2ddecoder/texture2ddecoder.wasm"
       ],
       name: "images",
       source: "extensions/images"
@@ -39732,10 +42702,10 @@ function createSingleFileAccess(file, handle) {
 // apps/web/src/localization.ts
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
-// packages/extension-manager/src/browser.js
+// packages/extension-manager/dist/browser.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
-// packages/extension-manager/src/providers-browser.js
+// packages/extension-manager/dist/providers-browser.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // packages/vfs/dist/providers/browser-file/index.js
@@ -39901,18 +42871,18 @@ function sourceStream(source2, size, start = 0, end = size, signal) {
     }
   });
 }
-function createSnapshotSource(id, file) {
+function createSnapshotSource(id2, file) {
   let disposed = false;
   const assertLive = () => {
     if (!disposed)
       return;
     throw new ModkitError({
       code: "x3.vfs/source-disposed",
-      message: `source \xAB${id}\xBB disposed`
+      message: `source \xAB${id2}\xBB disposed`
     });
   };
   const source2 = {
-    id,
+    id: id2,
     async size(signal) {
       throwIfAborted(signal);
       assertLive();
@@ -39922,13 +42892,13 @@ function createSnapshotSource(id, file) {
       throwIfAborted(signal);
       assertLive();
       if (!Number.isSafeInteger(offset) || !Number.isSafeInteger(length) || offset < 0 || length < 0 || offset + length > file.size) {
-        throw rangeError(id, offset, length, file.size);
+        throw rangeError(id2, offset, length, file.size);
       }
       const bytes2 = new Uint8Array(await file.slice(offset, offset + length).arrayBuffer());
       if (bytes2.byteLength !== length) {
         throw new ModkitError({
           code: "x3.vfs/browser-file-short-read",
-          message: `browser file \xAB${id}\xBB returned ${bytes2.byteLength} bytes for a ${length}-byte range`,
+          message: `browser file \xAB${id2}\xBB returned ${bytes2.byteLength} bytes for a ${length}-byte range`,
           context: { offset, length, actual: bytes2.byteLength }
         });
       }
@@ -40663,10 +43633,10 @@ function createMemoryVfsProvider(options = {}) {
   return new MemoryVfsProvider(options);
 }
 
-// packages/extension-manager/src/vfs.js
+// packages/extension-manager/dist/vfs.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
-// packages/extension-manager/src/schema.js
+// packages/extension-manager/dist/schema.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var EXTENSION_ID = /^[a-z0-9][a-z0-9._-]*\/[a-z0-9][a-z0-9._-]*$/i;
 var REPOSITORY_JSON_PATH = /^(?:\.\/)?(?![A-Za-z]:)(?!\\)(?!.*\\)(?!.*\u0000)(?!\.{1,2}(?:\/|$))(?!.*\/\.{1,2}(?:\/|$))[^/]+(?:\/[^/]+)*\.json$/u;
@@ -40687,14 +43657,14 @@ function object2(value2, label) {
   }
   return value2;
 }
-function text(value2, label) {
+function text2(value2, label) {
   if (typeof value2 !== "string" || value2.trim() === "") {
     fail2("extension-manager/schema-invalid", `${label} must be a non-empty string`);
   }
   return value2.trim();
 }
 function optionalText(value2, label) {
-  return value2 === void 0 ? void 0 : text(value2, label);
+  return value2 === void 0 ? void 0 : text2(value2, label);
 }
 function base64Text(value2, label) {
   if (typeof value2 !== "string") {
@@ -40703,32 +43673,29 @@ function base64Text(value2, label) {
   return value2;
 }
 function stringList8(value2, label) {
-  if (!Array.isArray(value2)) fail2("extension-manager/schema-invalid", `${label} must be a list`);
-  return Object.freeze(value2.map((item, index) => text(item, `${label}[${index}]`)));
+  if (!Array.isArray(value2))
+    fail2("extension-manager/schema-invalid", `${label} must be a list`);
+  return Object.freeze(value2.map((item, index) => text2(item, `${label}[${index}]`)));
 }
 function repositorySubjectPaths(value2, label) {
-  if (value2 === void 0) return Object.freeze([]);
+  if (value2 === void 0)
+    return Object.freeze([]);
   const paths = stringList8(value2, label);
   if (paths.length > 64) {
     fail2("extension-manager/schema-invalid", `${label} must not contain more than 64 paths`);
   }
   const seen = /* @__PURE__ */ new Set();
-  return Object.freeze(
-    paths.map((path, index) => {
-      if (path.length > 512 || !REPOSITORY_JSON_PATH.test(path)) {
-        fail2(
-          "extension-manager/schema-invalid",
-          `${label}[${index}] must be a confined repository-relative JSON path`
-        );
-      }
-      const normalized = path.startsWith("./") ? path.slice(2) : path;
-      if (seen.has(normalized)) {
-        fail2("extension-manager/schema-invalid", `${label} contains duplicate \xAB${normalized}\xBB`);
-      }
-      seen.add(normalized);
-      return normalized;
-    })
-  );
+  return Object.freeze(paths.map((path, index) => {
+    if (path.length > 512 || !REPOSITORY_JSON_PATH.test(path)) {
+      fail2("extension-manager/schema-invalid", `${label}[${index}] must be a confined repository-relative JSON path`);
+    }
+    const normalized = path.startsWith("./") ? path.slice(2) : path;
+    if (seen.has(normalized)) {
+      fail2("extension-manager/schema-invalid", `${label} contains duplicate \xAB${normalized}\xBB`);
+    }
+    seen.add(normalized);
+    return normalized;
+  }));
 }
 function normalizeRepositoryManifest(value2) {
   const input = object2(value2, "repository manifest");
@@ -40742,35 +43709,29 @@ function normalizeRepositoryManifest(value2) {
   const extensions = input.extensions.map((raw, index) => {
     const entry2 = object2(raw, `extensions[${index}]`);
     const rawId = optionalText(entry2.id, `extensions[${index}].id`);
-    const id = rawId === void 0 ? void 0 : normalizeModkitIdentifier(rawId);
-    if (id !== void 0 && !EXTENSION_ID.test(id)) {
-      fail2("extension-manager/extension-id-invalid", `invalid extension id \xAB${id}\xBB`);
+    const id2 = rawId === void 0 ? void 0 : normalizeModkitIdentifier(rawId);
+    if (id2 !== void 0 && !EXTENSION_ID.test(id2)) {
+      fail2("extension-manager/extension-id-invalid", `invalid extension id \xAB${id2}\xBB`);
     }
-    if (id !== void 0 && ids.has(id)) {
-      fail2("extension-manager/extension-duplicate", `extension \xAB${id}\xBB is duplicated`);
+    if (id2 !== void 0 && ids.has(id2)) {
+      fail2("extension-manager/extension-duplicate", `extension \xAB${id2}\xBB is duplicated`);
     }
-    if (id !== void 0) ids.add(id);
+    if (id2 !== void 0)
+      ids.add(id2);
     const path = optionalText(entry2.path, `extensions[${index}].path`);
     let files;
     if (entry2.files !== void 0) {
       const rawFiles = object2(entry2.files, `extensions[${index}].files`);
-      files = Object.freeze(
-        Object.fromEntries(
-          Object.entries(rawFiles).map(([name, encoded]) => [
-            text(name, `extensions[${index}].files key`),
-            base64Text(encoded, `extensions[${index}].files.${name}`)
-          ])
-        )
-      );
+      files = Object.freeze(Object.fromEntries(Object.entries(rawFiles).map(([name, encoded]) => [
+        text2(name, `extensions[${index}].files key`),
+        base64Text(encoded, `extensions[${index}].files.${name}`)
+      ])));
     }
     if (path === void 0 && files === void 0) {
-      fail2(
-        "extension-manager/schema-invalid",
-        `extensions[${index}] must declare path or embedded files`
-      );
+      fail2("extension-manager/schema-invalid", `extensions[${index}] must declare path or embedded files`);
     }
     return Object.freeze({
-      ...id === void 0 ? {} : { id },
+      ...id2 === void 0 ? {} : { id: id2 },
       ...path === void 0 ? {} : { path },
       ...files === void 0 ? {} : { files },
       enabled: entry2.enabled !== false
@@ -40779,8 +43740,8 @@ function normalizeRepositoryManifest(value2) {
   let subjects;
   if (input.subjects !== void 0) {
     const rawSubjects = object2(input.subjects, "repository subjects");
-    const vendors = repositorySubjectPaths(rawSubjects.vendors, "subjects.vendors");
-    const games = repositorySubjectPaths(rawSubjects.games, "subjects.games");
+    const vendors = repositorySubjectPaths(rawSubjects["vendors"], "subjects.vendors");
+    const games = repositorySubjectPaths(rawSubjects["games"], "subjects.games");
     subjects = Object.freeze({ vendors, games });
   }
   return Object.freeze({
@@ -40790,7 +43751,7 @@ function normalizeRepositoryManifest(value2) {
   });
 }
 
-// packages/extension-manager/src/vfs.js
+// packages/extension-manager/dist/vfs.js
 var decoder2 = new TextDecoder("utf-8", { fatal: true });
 var MAXIMUM_SUBJECT_PROFILE_BYTES = 256 * 1024;
 var MAXIMUM_SUBJECT_PROFILES_BYTES = 4 * 1024 * 1024;
@@ -40812,13 +43773,14 @@ async function readMountBytes(mount, path = "", signal) {
   }
 }
 
-// packages/extension-manager/src/providers-browser.js
+// packages/extension-manager/dist/providers-browser.js
 function createBrowserExtensionVfs(options = {}) {
   const browser = createBrowserFileVfsProvider({
     ...options.resolve === void 0 ? {} : { resolve: options.resolve },
     ...options.limits === void 0 ? {} : { limits: options.limits }
   });
-  for (const [uri, input] of Object.entries(options.files ?? {})) browser.register(uri, input);
+  for (const [uri, input] of Object.entries(options.files ?? {}))
+    browser.register(uri, input);
   return createExtensionVfs([
     createMemoryVfsProvider({
       ...options.memoryEntries === void 0 ? {} : { entries: options.memoryEntries },
@@ -40840,17 +43802,17 @@ function createBrowserExtensionVfs(options = {}) {
   ]);
 }
 
-// packages/extension-manager/src/index.js
+// packages/extension-manager/dist/index.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
-// packages/extension-manager/src/catalog.js
+// packages/extension-manager/dist/catalog.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var COORDINATE = /^[a-z0-9]+(?:[.-][a-z0-9]+)*\/[a-z0-9]+(?:[.-][a-z0-9]+)*$/u;
 var DOTTED_ID = /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/u;
 var WINDOWS_DRIVE2 = /^[a-z]:[\\/]/iu;
 var SEMVER2 = /^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z.-]+))?$/u;
 var INTEGRITY = /^sha256:[0-9a-f]{64}$/u;
-var BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u;
+var BASE642 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/u;
 var DATE_TIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/u;
 var CHANNELS = /* @__PURE__ */ new Set(["stable", "preview", "development"]);
 var SOURCE_KINDS = /* @__PURE__ */ new Set(["repository", "bundle"]);
@@ -40861,28 +43823,33 @@ function record(value2) {
   return typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
 }
 function deepFreeze4(value2) {
-  if (!record(value2) && !Array.isArray(value2)) return value2;
-  for (const child of Object.values(value2)) deepFreeze4(child);
+  if (!record(value2) && !Array.isArray(value2))
+    return value2;
+  for (const child of Object.values(value2))
+    deepFreeze4(child);
   return Object.freeze(value2);
 }
 function jsonClone(value2) {
-  if (Array.isArray(value2)) return value2.map(jsonClone);
-  if (!record(value2)) return value2;
+  if (Array.isArray(value2))
+    return value2.map(jsonClone);
+  if (!record(value2))
+    return value2;
   return Object.fromEntries(Object.entries(value2).map(([key3, child]) => [key3, jsonClone(child)]));
 }
 function sortedJson(value2) {
-  if (Array.isArray(value2)) return value2.map(sortedJson);
-  if (!record(value2)) return value2;
-  return Object.fromEntries(
-    Object.keys(value2).sort().map((key3) => [key3, sortedJson(value2[key3])])
-  );
+  if (Array.isArray(value2))
+    return value2.map(sortedJson);
+  if (!record(value2))
+    return value2;
+  return Object.fromEntries(Object.keys(value2).sort().map((key3) => [key3, sortedJson(value2[key3])]));
 }
 function issue(issues, path, message) {
   issues.push(Object.freeze({ path, message }));
 }
 function checkKeys(value2, allowed2, path, issues) {
   for (const key3 of Object.keys(value2)) {
-    if (!allowed2.has(key3)) issue(issues, path === "" ? key3 : `${path}.${key3}`, "is not allowed");
+    if (!allowed2.has(key3))
+      issue(issues, path === "" ? key3 : `${path}.${key3}`, "is not allowed");
   }
 }
 function nonEmptyText(value2, path, issues) {
@@ -40898,14 +43865,16 @@ function signature(value2, path, issues) {
     return;
   }
   checkKeys(value2, /* @__PURE__ */ new Set(["algorithm", "keyId", "value"]), path, issues);
-  if (value2.algorithm !== "Ed25519") issue(issues, `${path}.algorithm`, "must be Ed25519");
+  if (value2.algorithm !== "Ed25519")
+    issue(issues, `${path}.algorithm`, "must be Ed25519");
   nonEmptyText(value2.keyId, `${path}.keyId`, issues);
-  if (!nonEmptyText(value2.value, `${path}.value`, issues) || !BASE64.test(value2.value)) {
+  if (!nonEmptyText(value2.value, `${path}.value`, issues) || !BASE642.test(value2.value)) {
     issue(issues, `${path}.value`, "must be canonical base64");
   }
 }
 function confinedVfsPath(value2, path, issues) {
-  if (!nonEmptyText(value2, path, issues)) return;
+  if (!nonEmptyText(value2, path, issues))
+    return;
   if (value2.includes("\0") || value2.includes("\\") || value2.startsWith("/") || WINDOWS_DRIVE2.test(value2)) {
     issue(issues, path, "must be a confined VFS-relative path");
     return;
@@ -40925,24 +43894,22 @@ function presentationAsset(value2, path, issues) {
   if (value2.displayName !== void 0) {
     nonEmptyText(value2.displayName, `${path}.displayName`, issues);
   }
-  if (value2.mediaType !== void 0) nonEmptyText(value2.mediaType, `${path}.mediaType`, issues);
+  if (value2.mediaType !== void 0)
+    nonEmptyText(value2.mediaType, `${path}.mediaType`, issues);
 }
 function presentation(value2, path, issues) {
   if (!record(value2)) {
     issue(issues, path, "must be an object");
     return;
   }
-  checkKeys(
-    value2,
-    /* @__PURE__ */ new Set(["displayName", "description", "vendor", "games", "icon", "source", "licenseFiles"]),
-    path,
-    issues
-  );
-  for (const field of ["displayName", "description"]) {
-    if (value2[field] !== void 0) nonEmptyText(value2[field], `${path}.${field}`, issues);
+  checkKeys(value2, /* @__PURE__ */ new Set(["displayName", "description", "vendor", "games", "icon", "source", "licenseFiles"]), path, issues);
+  for (const field2 of ["displayName", "description"]) {
+    if (value2[field2] !== void 0)
+      nonEmptyText(value2[field2], `${path}.${field2}`, issues);
   }
   if (value2.vendor !== void 0) {
-    if (!record(value2.vendor)) issue(issues, `${path}.vendor`, "must be an object");
+    if (!record(value2.vendor))
+      issue(issues, `${path}.vendor`, "must be an object");
     else {
       checkKeys(value2.vendor, /* @__PURE__ */ new Set(["id", "displayName"]), `${path}.vendor`, issues);
       if (typeof value2.vendor.id !== "string" || !DOTTED_ID.test(value2.vendor.id)) {
@@ -40952,7 +43919,8 @@ function presentation(value2, path, issues) {
     }
   }
   if (value2.games !== void 0) {
-    if (!Array.isArray(value2.games)) issue(issues, `${path}.games`, "must be an array");
+    if (!Array.isArray(value2.games))
+      issue(issues, `${path}.games`, "must be an array");
     else {
       const ids = /* @__PURE__ */ new Set();
       value2.games.forEach((game, index) => {
@@ -40964,15 +43932,19 @@ function presentation(value2, path, issues) {
         checkKeys(game, /* @__PURE__ */ new Set(["id", "displayName"]), gamePath, issues);
         if (typeof game.id !== "string" || !COORDINATE.test(game.id)) {
           issue(issues, `${gamePath}.id`, "must be a publisher/id coordinate");
-        } else if (ids.has(game.id)) issue(issues, `${gamePath}.id`, "is duplicated");
-        else ids.add(game.id);
+        } else if (ids.has(game.id))
+          issue(issues, `${gamePath}.id`, "is duplicated");
+        else
+          ids.add(game.id);
         nonEmptyText(game.displayName, `${gamePath}.displayName`, issues);
       });
     }
   }
-  if (value2.icon !== void 0) presentationAsset(value2.icon, `${path}.icon`, issues);
+  if (value2.icon !== void 0)
+    presentationAsset(value2.icon, `${path}.icon`, issues);
   if (value2.source !== void 0) {
-    if (!record(value2.source)) issue(issues, `${path}.source`, "must be an object");
+    if (!record(value2.source))
+      issue(issues, `${path}.source`, "must be an object");
     else if (value2.source.kind === "root") {
       checkKeys(value2.source, /* @__PURE__ */ new Set(["kind", "root"]), `${path}.source`, issues);
       confinedVfsPath(value2.source.root, `${path}.source.root`, issues);
@@ -40981,20 +43953,20 @@ function presentation(value2, path, issues) {
       if (nonEmptyText(value2.source.url, `${path}.source.url`, issues)) {
         try {
           const parsed = new URL(value2.source.url);
-          if (parsed.protocol !== "http:" && parsed.protocol !== "https:") throw new Error();
+          if (parsed.protocol !== "http:" && parsed.protocol !== "https:")
+            throw new Error();
         } catch {
           issue(issues, `${path}.source.url`, "must be an absolute HTTP(S) URL");
         }
       }
-    } else issue(issues, `${path}.source.kind`, "must be root or url");
+    } else
+      issue(issues, `${path}.source.kind`, "must be root or url");
   }
   if (value2.licenseFiles !== void 0) {
     if (!Array.isArray(value2.licenseFiles)) {
       issue(issues, `${path}.licenseFiles`, "must be an array");
     } else {
-      value2.licenseFiles.forEach(
-        (asset, index) => presentationAsset(asset, `${path}.licenseFiles[${index}]`, issues)
-      );
+      value2.licenseFiles.forEach((asset, index) => presentationAsset(asset, `${path}.licenseFiles[${index}]`, issues));
     }
   }
 }
@@ -41002,17 +43974,15 @@ function snapshotExtensionPresentation(value2, label = "presentation") {
   const issues = [];
   presentation(value2, label, issues);
   if (issues.length > 0) {
-    throw new ExtensionManagerError(
-      "extension-manager/presentation-invalid",
-      `extension presentation is invalid (${issues[0].path}: ${issues[0].message})`,
-      { issues: Object.freeze(issues) }
-    );
+    throw new ExtensionManagerError("extension-manager/presentation-invalid", `extension presentation is invalid (${issues[0].path}: ${issues[0].message})`, { issues: Object.freeze(issues) });
   }
   return deepFreeze4(jsonClone(value2));
 }
 function isRemoteCatalogUri(uri) {
-  if (typeof uri !== "string") return false;
-  if (uri.startsWith("//") || uri.startsWith("\\\\")) return true;
+  if (typeof uri !== "string")
+    return false;
+  if (uri.startsWith("//") || uri.startsWith("\\\\"))
+    return true;
   try {
     const parsed = new URL(uri);
     const protocol = parsed.protocol;
@@ -41030,32 +44000,32 @@ function source(value2, path, issues) {
     return false;
   }
   checkKeys(value2, /* @__PURE__ */ new Set(["kind", "uri", "integrity", "bytes", "trust"]), path, issues);
-  if (!SOURCE_KINDS.has(value2.kind)) {
+  if (!SOURCE_KINDS.has(value2["kind"])) {
     issue(issues, `${path}.kind`, "must be repository or bundle");
   }
-  nonEmptyText(value2.uri, `${path}.uri`, issues);
-  if (value2.integrity !== void 0 && !INTEGRITY.test(value2.integrity)) {
+  nonEmptyText(value2["uri"], `${path}.uri`, issues);
+  if (value2["integrity"] !== void 0 && !INTEGRITY.test(value2["integrity"])) {
     issue(issues, `${path}.integrity`, "must be sha256:<64 lowercase hex characters>");
   }
-  if (value2.bytes !== void 0 && (!Number.isSafeInteger(value2.bytes) || value2.bytes < 0)) {
+  if (value2["bytes"] !== void 0 && (!Number.isSafeInteger(value2["bytes"]) || value2["bytes"] < 0)) {
     issue(issues, `${path}.bytes`, "must be a non-negative safe integer");
   }
-  if (!record(value2.trust)) {
+  if (!record(value2["trust"])) {
     issue(issues, `${path}.trust`, "must be an object");
   } else {
-    checkKeys(value2.trust, /* @__PURE__ */ new Set(["mode", "signature"]), `${path}.trust`, issues);
-    if (!TRUST_MODES.has(value2.trust.mode)) {
+    checkKeys(value2["trust"], /* @__PURE__ */ new Set(["mode", "signature"]), `${path}.trust`, issues);
+    if (!TRUST_MODES.has(value2["trust"]["mode"])) {
       issue(issues, `${path}.trust.mode`, "must be local-user or signed");
     }
-    if (value2.trust.signature !== void 0) {
-      signature(value2.trust.signature, `${path}.trust.signature`, issues);
+    if (value2["trust"]["signature"] !== void 0) {
+      signature(value2["trust"]["signature"], `${path}.trust.signature`, issues);
     }
   }
-  const remote = isRemoteCatalogUri(value2.uri);
-  if (remote && value2.trust?.mode !== "signed") {
+  const remote = isRemoteCatalogUri(value2["uri"]);
+  if (remote && value2["trust"]?.["mode"] !== "signed") {
     issue(issues, `${path}.trust.mode`, "remote sources must use signed trust");
   }
-  if (remote && !INTEGRITY.test(value2.integrity ?? "")) {
+  if (remote && !INTEGRITY.test(value2["integrity"] ?? "")) {
     issue(issues, `${path}.integrity`, "remote sources require sha256 integrity");
   }
   return remote;
@@ -41065,16 +44035,11 @@ function catalogVersion(value2, path, issues) {
     issue(issues, path, "must be an object");
     return false;
   }
-  checkKeys(
-    value2,
-    /* @__PURE__ */ new Set(["version", "channel", "source", "extensions", "hostApi", "platforms"]),
-    path,
-    issues
-  );
+  checkKeys(value2, /* @__PURE__ */ new Set(["version", "channel", "source", "extensions", "hostApi", "platforms"]), path, issues);
   if (typeof value2.version !== "string" || !SEMVER2.test(value2.version)) {
     issue(issues, `${path}.version`, "must be a semantic version");
   }
-  if (!CHANNELS.has(value2.channel)) {
+  if (!CHANNELS.has(value2["channel"])) {
     issue(issues, `${path}.channel`, "must be stable, preview or development");
   }
   const remote = source(value2.source, `${path}.source`, issues);
@@ -41082,21 +44047,23 @@ function catalogVersion(value2, path, issues) {
     issue(issues, `${path}.extensions`, "must contain at least one extension coordinate");
   } else {
     const ids = /* @__PURE__ */ new Set();
-    value2.extensions.forEach((id, index) => {
+    value2.extensions.forEach((id2, index) => {
       const idPath = `${path}.extensions[${index}]`;
-      if (typeof id !== "string" || !COORDINATE.test(id)) {
+      if (typeof id2 !== "string" || !COORDINATE.test(id2)) {
         issue(issues, idPath, "must be a publisher/id coordinate");
-      } else if (ids.has(id)) issue(issues, idPath, "is duplicated");
-      else ids.add(id);
+      } else if (ids.has(id2))
+        issue(issues, idPath, "is duplicated");
+      else
+        ids.add(id2);
     });
   }
-  if (value2.hostApi !== void 0) nonEmptyText(value2.hostApi, `${path}.hostApi`, issues);
+  if (value2.hostApi !== void 0)
+    nonEmptyText(value2.hostApi, `${path}.hostApi`, issues);
   if (value2.platforms !== void 0) {
-    if (!Array.isArray(value2.platforms)) issue(issues, `${path}.platforms`, "must be an array");
+    if (!Array.isArray(value2.platforms))
+      issue(issues, `${path}.platforms`, "must be an array");
     else
-      value2.platforms.forEach(
-        (platform, index) => nonEmptyText(platform, `${path}.platforms[${index}]`, issues)
-      );
+      value2.platforms.forEach((platform, index) => nonEmptyText(platform, `${path}.platforms[${index}]`, issues));
   }
   return remote;
 }
@@ -41105,35 +44072,32 @@ function catalogPackage(value2, path, issues) {
     issue(issues, path, "must be an object");
     return false;
   }
-  checkKeys(
-    value2,
-    /* @__PURE__ */ new Set([
-      "id",
-      "publisher",
-      "displayName",
-      "summary",
-      "license",
-      "homepage",
-      "presentation",
-      "versions"
-    ]),
-    path,
-    issues
-  );
+  checkKeys(value2, /* @__PURE__ */ new Set([
+    "id",
+    "publisher",
+    "displayName",
+    "summary",
+    "license",
+    "homepage",
+    "presentation",
+    "versions"
+  ]), path, issues);
   if (typeof value2.id !== "string" || !COORDINATE.test(value2.id)) {
     issue(issues, `${path}.id`, "must be a publisher/id coordinate");
   }
-  for (const field of ["publisher", "displayName", "summary"]) {
-    nonEmptyText(value2[field], `${path}.${field}`, issues);
+  for (const field2 of ["publisher", "displayName", "summary"]) {
+    nonEmptyText(value2[field2], `${path}.${field2}`, issues);
   }
-  if (value2.license !== void 0) nonEmptyText(value2.license, `${path}.license`, issues);
+  if (value2.license !== void 0)
+    nonEmptyText(value2.license, `${path}.license`, issues);
   if (value2.presentation !== void 0)
     presentation(value2.presentation, `${path}.presentation`, issues);
   if (value2.homepage !== void 0) {
     if (nonEmptyText(value2.homepage, `${path}.homepage`, issues)) {
       try {
         const parsed = new URL(value2.homepage);
-        if (parsed.protocol === "") throw new Error("URI has no protocol");
+        if (parsed.protocol === "")
+          throw new Error("URI has no protocol");
       } catch {
         issue(issues, `${path}.homepage`, "must be an absolute URI");
       }
@@ -41150,8 +44114,10 @@ function catalogPackage(value2, path, issues) {
     const versionRemote = catalogVersion(version, versionPath, issues);
     remote = versionRemote || remote;
     if (record(version) && typeof version.version === "string") {
-      if (versions.has(version.version)) issue(issues, `${versionPath}.version`, "is duplicated");
-      else versions.add(version.version);
+      if (versions.has(version.version))
+        issue(issues, `${versionPath}.version`, "is duplicated");
+      else
+        versions.add(version.version);
     }
   });
   return remote;
@@ -41162,21 +44128,19 @@ function validateExtensionCatalog(value2) {
     issue(issues, "catalog", "must be an object");
     return Object.freeze(issues);
   }
-  checkKeys(
-    value2,
-    /* @__PURE__ */ new Set(["$schema", "schemaVersion", "registryId", "generatedAt", "packages", "signature"]),
-    "",
-    issues
-  );
-  if (value2.$schema !== void 0) nonEmptyText(value2.$schema, "$schema", issues);
-  if (value2.schemaVersion !== 1) issue(issues, "schemaVersion", "must be 1");
+  checkKeys(value2, /* @__PURE__ */ new Set(["$schema", "schemaVersion", "registryId", "generatedAt", "packages", "signature"]), "", issues);
+  if (value2.$schema !== void 0)
+    nonEmptyText(value2.$schema, "$schema", issues);
+  if (value2.schemaVersion !== 1)
+    issue(issues, "schemaVersion", "must be 1");
   if (typeof value2.registryId !== "string" || !COORDINATE.test(value2.registryId)) {
     issue(issues, "registryId", "must be a publisher/id coordinate");
   }
   if (typeof value2.generatedAt !== "string" || value2.generatedAt.length === 0 || !DATE_TIME.test(value2.generatedAt) || Number.isNaN(Date.parse(value2.generatedAt))) {
     issue(issues, "generatedAt", "must be an ISO date-time");
   }
-  if (value2.signature !== void 0) signature(value2.signature, "signature", issues);
+  if (value2.signature !== void 0)
+    signature(value2.signature, "signature", issues);
   if (!Array.isArray(value2.packages)) {
     issue(issues, "packages", "must be an array");
     return Object.freeze(issues);
@@ -41188,8 +44152,10 @@ function validateExtensionCatalog(value2) {
     const packageRemote = catalogPackage(item, path, issues);
     remote = packageRemote || remote;
     if (record(item) && typeof item.id === "string") {
-      if (ids.has(item.id)) issue(issues, `${path}.id`, "is duplicated");
-      else ids.add(item.id);
+      if (ids.has(item.id))
+        issue(issues, `${path}.id`, "is duplicated");
+      else
+        ids.add(item.id);
     }
   });
   if (remote && !record(value2.signature)) {
@@ -41200,36 +44166,25 @@ function validateExtensionCatalog(value2) {
 function parseExtensionCatalog(value2) {
   const issues = validateExtensionCatalog(value2);
   if (issues.length > 0) {
-    throw new ExtensionManagerError(
-      "extension-manager/catalog-invalid",
-      `extension catalog is invalid (${issues[0].path}: ${issues[0].message})`,
-      { issues }
-    );
+    throw new ExtensionManagerError("extension-manager/catalog-invalid", `extension catalog is invalid (${issues[0].path}: ${issues[0].message})`, { issues });
   }
   return deepFreeze4(jsonClone(value2));
 }
 function extensionCatalogSigningBytes(value2) {
   const issues = validateExtensionCatalog(value2);
-  const signingIssues = issues.filter(
-    (item) => item.path !== "signature" || item.message !== "catalogs with remote sources must be signed"
-  );
+  const signingIssues = issues.filter((item) => item.path !== "signature" || item.message !== "catalogs with remote sources must be signed");
   if (signingIssues.length > 0) {
-    throw new ExtensionManagerError(
-      "extension-manager/catalog-invalid",
-      `extension catalog is invalid (${signingIssues[0].path}: ${signingIssues[0].message})`,
-      { issues: signingIssues }
-    );
+    throw new ExtensionManagerError("extension-manager/catalog-invalid", `extension catalog is invalid (${signingIssues[0].path}: ${signingIssues[0].message})`, { issues: signingIssues });
   }
   const catalog = deepFreeze4(jsonClone(value2));
-  const unsigned = Object.fromEntries(
-    Object.entries(catalog).filter(([key3]) => key3 !== "signature")
-  );
+  const unsigned = Object.fromEntries(Object.entries(catalog).filter(([key3]) => key3 !== "signature"));
   return textEncoder.encode(`${JSON.stringify(sortedJson(unsigned))}
 `);
 }
 function semverParts(value2) {
   const match = SEMVER2.exec(value2);
-  if (match === null) return void 0;
+  if (match === null)
+    return void 0;
   return {
     numbers: [Number(match[1]), Number(match[2]), Number(match[3])],
     prerelease: match[4]?.split(".")
@@ -41239,39 +44194,42 @@ function compareCatalogVersions(left, right) {
   const leftParts = semverParts(left);
   const rightParts = semverParts(right);
   if (leftParts === void 0 || rightParts === void 0) {
-    throw new ExtensionManagerError(
-      "extension-manager/version-invalid",
-      "catalog version comparison requires semantic versions",
-      { left, right }
-    );
+    throw new ExtensionManagerError("extension-manager/version-invalid", "catalog version comparison requires semantic versions", { left, right });
   }
   for (let index = 0; index < 3; index += 1) {
     if (leftParts.numbers[index] !== rightParts.numbers[index]) {
       return leftParts.numbers[index] < rightParts.numbers[index] ? -1 : 1;
     }
   }
-  if (leftParts.prerelease === void 0) return rightParts.prerelease === void 0 ? 0 : 1;
-  if (rightParts.prerelease === void 0) return -1;
+  if (leftParts.prerelease === void 0)
+    return rightParts.prerelease === void 0 ? 0 : 1;
+  if (rightParts.prerelease === void 0)
+    return -1;
   const length = Math.max(leftParts.prerelease.length, rightParts.prerelease.length);
   for (let index = 0; index < length; index += 1) {
     const leftId = leftParts.prerelease[index];
     const rightId = rightParts.prerelease[index];
-    if (leftId === void 0) return -1;
-    if (rightId === void 0) return 1;
-    if (leftId === rightId) continue;
+    if (leftId === void 0)
+      return -1;
+    if (rightId === void 0)
+      return 1;
+    if (leftId === rightId)
+      continue;
     const leftNumeric = /^[0-9]+$/u.test(leftId);
     const rightNumeric = /^[0-9]+$/u.test(rightId);
-    if (leftNumeric && rightNumeric) return Number(leftId) < Number(rightId) ? -1 : 1;
-    if (leftNumeric !== rightNumeric) return leftNumeric ? -1 : 1;
+    if (leftNumeric && rightNumeric)
+      return Number(leftId) < Number(rightId) ? -1 : 1;
+    if (leftNumeric !== rightNumeric)
+      return leftNumeric ? -1 : 1;
     return leftId < rightId ? -1 : 1;
   }
   return 0;
 }
 
-// packages/extension-manager/src/client.js
+// packages/extension-manager/dist/client.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
-// packages/extension-manager/src/game-support.js
+// packages/extension-manager/dist/game-support.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var COORDINATE2 = /^[a-z0-9]+(?:[.-][a-z0-9]+)*\/[a-z0-9]+(?:[.-][a-z0-9]+)*$/u;
 var ACTION_ORDER = Object.freeze({ install: 0, enable: 1, update: 2 });
@@ -41282,8 +44240,10 @@ function fail3(code, message, context = {}) {
   throw new ExtensionManagerError(code, message, context);
 }
 function deepFreeze5(value2) {
-  if (!record2(value2) && !Array.isArray(value2)) return value2;
-  for (const child of Object.values(value2)) deepFreeze5(child);
+  if (!record2(value2) && !Array.isArray(value2))
+    return value2;
+  for (const child of Object.values(value2))
+    deepFreeze5(child);
   return Object.freeze(value2);
 }
 function gamesOf(entry2) {
@@ -41293,7 +44253,7 @@ function actionCompare(left, right) {
   return ACTION_ORDER[left.kind] - ACTION_ORDER[right.kind] || left.packageId.localeCompare(right.packageId);
 }
 function createGameSupportPlan(snapshot3, gameId) {
-  if (!record2(snapshot3) || !Array.isArray(snapshot3.entries)) {
+  if (!record2(snapshot3) || !Array.isArray(snapshot3["entries"])) {
     fail3("extension-manager/snapshot-invalid", "snapshot must contain an entries array");
   }
   if (typeof gameId !== "string" || !COORDINATE2.test(gameId)) {
@@ -41301,63 +44261,51 @@ function createGameSupportPlan(snapshot3, gameId) {
       gameId
     });
   }
-  const matches3 = snapshot3.entries.filter((entry2) => gamesOf(entry2).some((game) => game.id === gameId)).sort((left, right) => left.id.localeCompare(right.id));
+  const matches3 = snapshot3["entries"].filter((entry2) => gamesOf(entry2).some((game) => game.id === gameId)).sort((left, right) => left.id.localeCompare(right.id));
   if (matches3.length === 0) {
-    fail3(
-      "extension-manager/game-support-missing",
-      `no catalog package declares support for game \xAB${gameId}\xBB`,
-      { gameId }
-    );
+    fail3("extension-manager/game-support-missing", `no catalog package declares support for game \xAB${gameId}\xBB`, { gameId });
   }
   const displayNames = matches3.flatMap((entry2) => gamesOf(entry2).filter((game) => game.id === gameId)).map((game) => game.displayName).sort((left, right) => left.localeCompare(right));
-  const targets = matches3.map(
-    (entry2) => Object.freeze({
-      packageId: entry2.id,
-      displayName: entry2.displayName,
-      availableVersion: entry2.availableVersion,
-      ...entry2.installedVersion === void 0 ? {} : { installedVersion: entry2.installedVersion },
-      enabled: entry2.enabled,
-      updateAvailable: entry2.updateAvailable,
-      trusted: entry2.trusted,
-      desiredEnabled: true
-    })
-  );
+  const targets = matches3.map((entry2) => Object.freeze({
+    packageId: entry2.id,
+    displayName: entry2.displayName,
+    availableVersion: entry2.availableVersion,
+    ...entry2.installedVersion === void 0 ? {} : { installedVersion: entry2.installedVersion },
+    enabled: entry2.enabled,
+    updateAvailable: entry2.updateAvailable,
+    trusted: entry2.trusted,
+    desiredEnabled: true
+  }));
   const actions = [];
   for (const entry2 of matches3) {
     if (entry2.installedVersion === void 0) {
-      actions.push(
-        Object.freeze({
-          kind: "install",
-          packageId: entry2.id,
-          version: entry2.availableVersion,
-          reversible: true
-        })
-      );
+      actions.push(Object.freeze({
+        kind: "install",
+        packageId: entry2.id,
+        version: entry2.availableVersion,
+        reversible: true
+      }));
       continue;
     }
     if (!entry2.enabled) {
       actions.push(Object.freeze({ kind: "enable", packageId: entry2.id, reversible: true }));
     }
     if (entry2.updateAvailable) {
-      actions.push(
-        Object.freeze({
-          kind: "update",
-          packageId: entry2.id,
-          fromVersion: entry2.installedVersion,
-          toVersion: entry2.availableVersion,
-          reversible: false
-        })
-      );
+      actions.push(Object.freeze({
+        kind: "update",
+        packageId: entry2.id,
+        fromVersion: entry2.installedVersion,
+        toVersion: entry2.availableVersion,
+        reversible: false
+      }));
     }
   }
   actions.sort(actionCompare);
-  const blocked = actions.filter((action) => action.kind !== "enable").filter((action) => matches3.find((entry2) => entry2.id === action.packageId)?.trusted !== true).map(
-    (action) => Object.freeze({
-      packageId: action.packageId,
-      code: "extension-manager/artifact-untrusted",
-      message: "The package artifact is not trusted for installation or update."
-    })
-  );
+  const blocked = actions.filter((action) => action.kind !== "enable").filter((action) => matches3.find((entry2) => entry2.id === action.packageId)?.trusted !== true).map((action) => Object.freeze({
+    packageId: action.packageId,
+    code: "extension-manager/artifact-untrusted",
+    message: "The package artifact is not trusted for installation or update."
+  }));
   return deepFreeze5({
     schemaVersion: 1,
     game: { id: gameId, displayName: displayNames[0] ?? gameId },
@@ -41375,7 +44323,7 @@ function gameSupportPlansEqual(left, right) {
   }
 }
 
-// packages/extension-manager/src/client.js
+// packages/extension-manager/dist/client.js
 var ALL_CHANNELS = Object.freeze(["stable", "preview", "development"]);
 var SHA256_INTEGRITY = /^sha256:[0-9a-f]{64}$/u;
 function record3(value2) {
@@ -41385,7 +44333,8 @@ function fail4(code, message, context = {}) {
   throw new ExtensionManagerError(code, message, context);
 }
 function requirePort(port, name, methods) {
-  if (!record3(port)) fail4("extension-manager/port-invalid", `${name} must be an object`, { name });
+  if (!record3(port))
+    fail4("extension-manager/port-invalid", `${name} must be an object`, { name });
   for (const method of methods) {
     if (typeof port[method] !== "function") {
       fail4("extension-manager/port-invalid", `${name}.${method} must be a function`, {
@@ -41397,7 +44346,8 @@ function requirePort(port, name, methods) {
   return port;
 }
 function catalogEnvelope(value2, label) {
-  if (value2 === void 0) return void 0;
+  if (value2 === void 0)
+    return void 0;
   if (record3(value2) && Object.hasOwn(value2, "catalog")) {
     if (value2.signatureVerified !== void 0 && typeof value2.signatureVerified !== "boolean") {
       fail4("extension-manager/catalog-source-invalid", `${label}.signatureVerified must be boolean`);
@@ -41414,9 +44364,9 @@ function catalogEnvelope(value2, label) {
     signatureVerified: false
   });
 }
-function publisherFrom(id) {
-  const slash = id.indexOf("/");
-  return slash < 1 ? "unknown" : id.slice(0, slash);
+function publisherFrom(id2) {
+  const slash = id2.indexOf("/");
+  return slash < 1 ? "unknown" : id2.slice(0, slash);
 }
 function selectedVersion(item, channels, requested) {
   if (requested !== void 0) {
@@ -41445,7 +44395,8 @@ function isHttpTransport(uri) {
 }
 function candidateOf(state, item, channels, requested) {
   const version = selectedVersion(item, channels, requested);
-  if (version === void 0) return void 0;
+  if (version === void 0)
+    return void 0;
   const source2 = sourceWithCatalogBase(version.source, state.source);
   const remote = isRemoteCatalogUri(source2.uri);
   const catalogRemote = isRemoteCatalogUri(state.source);
@@ -41471,78 +44422,51 @@ function candidateOf(state, item, channels, requested) {
   });
 }
 function candidatesOf(state, channels) {
-  if (state === void 0) return Object.freeze([]);
-  return Object.freeze(
-    state.catalog.packages.map((item) => candidateOf(state, item, channels)).filter((candidate) => candidate !== void 0)
-  );
+  if (state === void 0)
+    return Object.freeze([]);
+  return Object.freeze(state.catalog.packages.map((item) => candidateOf(state, item, channels)).filter((candidate) => candidate !== void 0));
 }
 function installedRecords(value2) {
   if (!Array.isArray(value2)) {
     fail4("extension-manager/artifact-store-invalid", "ArtifactStore.list() must return an array");
   }
   const ids = /* @__PURE__ */ new Set();
-  return Object.freeze(
-    value2.map((entry2, index) => {
-      if (!record3(entry2) || typeof entry2.id !== "string" || typeof entry2.version !== "string" || !Array.isArray(entry2.roots) || entry2.roots.length === 0) {
-        fail4(
-          "extension-manager/artifact-store-invalid",
-          `ArtifactStore.list()[${index}] must contain id, version and roots`
-        );
+  return Object.freeze(value2.map((entry2, index) => {
+    if (!record3(entry2) || typeof entry2.id !== "string" || typeof entry2.version !== "string" || !Array.isArray(entry2.roots) || entry2.roots.length === 0) {
+      fail4("extension-manager/artifact-store-invalid", `ArtifactStore.list()[${index}] must contain id, version and roots`);
+    }
+    const rootIds = /* @__PURE__ */ new Set();
+    entry2.roots.forEach((root, rootIndex) => {
+      if (!record3(root) || !Object.hasOwn(root, "root") || typeof root["expectedId"] !== "string") {
+        fail4("extension-manager/artifact-store-invalid", `ArtifactStore.list()[${index}].roots[${rootIndex}] must contain root and expectedId`);
       }
-      const rootIds = /* @__PURE__ */ new Set();
-      entry2.roots.forEach((root, rootIndex) => {
-        if (!record3(root) || !Object.hasOwn(root, "root") || typeof root.expectedId !== "string") {
-          fail4(
-            "extension-manager/artifact-store-invalid",
-            `ArtifactStore.list()[${index}].roots[${rootIndex}] must contain root and expectedId`
-          );
-        }
-        if (rootIds.has(root.expectedId)) {
-          fail4(
-            "extension-manager/artifact-store-invalid",
-            `ArtifactStore.list()[${index}] contains duplicate root \xAB${root.expectedId}\xBB`
-          );
-        }
-        rootIds.add(root.expectedId);
-      });
-      if (ids.has(entry2.id)) {
-        fail4(
-          "extension-manager/artifact-store-invalid",
-          `ArtifactStore.list() contains duplicate id \xAB${entry2.id}\xBB`
-        );
+      if (rootIds.has(root["expectedId"])) {
+        fail4("extension-manager/artifact-store-invalid", `ArtifactStore.list()[${index}] contains duplicate root \xAB${root["expectedId"]}\xBB`);
       }
-      ids.add(entry2.id);
-      const presentation2 = entry2.presentation === void 0 ? void 0 : snapshotExtensionPresentation(
-        entry2.presentation,
-        `ArtifactStore.list()[${index}].presentation`
-      );
-      return Object.freeze({
-        ...entry2,
-        ...presentation2 === void 0 ? {} : { presentation: presentation2 }
-      });
-    })
-  );
+      rootIds.add(root["expectedId"]);
+    });
+    if (ids.has(entry2.id)) {
+      fail4("extension-manager/artifact-store-invalid", `ArtifactStore.list() contains duplicate id \xAB${entry2.id}\xBB`);
+    }
+    ids.add(entry2.id);
+    const presentation2 = entry2.presentation === void 0 ? void 0 : snapshotExtensionPresentation(entry2.presentation, `ArtifactStore.list()[${index}].presentation`);
+    return Object.freeze({
+      ...entry2,
+      ...presentation2 === void 0 ? {} : { presentation: presentation2 }
+    });
+  }));
 }
 function enablementRecords(value2) {
   if (!Array.isArray(value2)) {
-    fail4(
-      "extension-manager/enablement-store-invalid",
-      "EnablementStore.list() must return an array"
-    );
+    fail4("extension-manager/enablement-store-invalid", "EnablementStore.list() must return an array");
   }
   const enabled = /* @__PURE__ */ new Map();
   value2.forEach((entry2, index) => {
     if (!record3(entry2) || typeof entry2.id !== "string" || typeof entry2.enabled !== "boolean") {
-      fail4(
-        "extension-manager/enablement-store-invalid",
-        `EnablementStore.list()[${index}] must contain id and enabled`
-      );
+      fail4("extension-manager/enablement-store-invalid", `EnablementStore.list()[${index}] must contain id and enabled`);
     }
     if (enabled.has(entry2.id)) {
-      fail4(
-        "extension-manager/enablement-store-invalid",
-        `EnablementStore.list() contains duplicate id \xAB${entry2.id}\xBB`
-      );
+      fail4("extension-manager/enablement-store-invalid", `EnablementStore.list() contains duplicate id \xAB${entry2.id}\xBB`);
     }
     enabled.set(entry2.id, entry2.enabled);
   });
@@ -41550,61 +44474,37 @@ function enablementRecords(value2) {
 }
 function assertInstallable(candidate) {
   if (!candidate.trusted) {
-    fail4(
-      "extension-manager/artifact-untrusted",
-      `extension \xAB${candidate.id}\xBB is not signed by a trusted catalog`,
-      { id: candidate.id, source: candidate.source.uri }
-    );
+    fail4("extension-manager/artifact-untrusted", `extension \xAB${candidate.id}\xBB is not signed by a trusted catalog`, { id: candidate.id, source: candidate.source.uri });
   }
   if (candidate.remote) {
     if (candidate.source.trust.mode !== "signed" || typeof candidate.source.integrity !== "string" || !candidate.signatureVerified || candidate.catalogSignature === void 0) {
-      fail4(
-        "extension-manager/remote-artifact-refused",
-        `remote extension \xAB${candidate.id}\xBB requires a verified signature and sha256 integrity`,
-        { id: candidate.id, source: candidate.source.uri }
-      );
+      fail4("extension-manager/remote-artifact-refused", `remote extension \xAB${candidate.id}\xBB requires a verified signature and sha256 integrity`, { id: candidate.id, source: candidate.source.uri });
     }
   }
 }
 function validateAcquired(candidate, acquired) {
   if (!record3(acquired) || !Object.hasOwn(acquired, "artifact")) {
-    fail4(
-      "extension-manager/acquirer-invalid",
-      "ArtifactAcquirer.acquire() must return an artifact record",
-      { id: candidate.id }
-    );
+    fail4("extension-manager/acquirer-invalid", "ArtifactAcquirer.acquire() must return an artifact record", { id: candidate.id });
   }
   const expected = candidate.source.integrity;
   if (expected !== void 0 && acquired.integrity !== expected) {
-    fail4(
-      "extension-manager/integrity-mismatch",
-      `artifact for \xAB${candidate.id}\xBB does not match ${expected}`,
-      { id: candidate.id, expected, actual: acquired.integrity }
-    );
+    fail4("extension-manager/integrity-mismatch", `artifact for \xAB${candidate.id}\xBB does not match ${expected}`, { id: candidate.id, expected, actual: acquired.integrity });
   }
   return acquired;
 }
 function validateInstalled(candidate, installed) {
   const [validated] = installedRecords([installed]);
   if (validated.id !== candidate.id || validated.version !== candidate.version) {
-    fail4(
-      "extension-manager/artifact-store-invalid",
-      "ArtifactStore.install() returned a different extension identity",
-      {
-        expectedId: candidate.id,
-        expectedVersion: candidate.version,
-        actual: installed
-      }
-    );
+    fail4("extension-manager/artifact-store-invalid", "ArtifactStore.install() returned a different extension identity", {
+      expectedId: candidate.id,
+      expectedVersion: candidate.version,
+      actual: installed
+    });
   }
   const expectedRoots = [...candidate.extensions].sort();
   const actualRoots = validated.roots.map((root) => root.expectedId).sort();
-  if (actualRoots.length !== expectedRoots.length || actualRoots.some((id, index) => id !== expectedRoots[index])) {
-    fail4(
-      "extension-manager/artifact-store-invalid",
-      "ArtifactStore.install() did not return every extension root in the catalog package",
-      { id: candidate.id, expectedRoots, actualRoots }
-    );
+  if (actualRoots.length !== expectedRoots.length || actualRoots.some((id2, index) => id2 !== expectedRoots[index])) {
+    fail4("extension-manager/artifact-store-invalid", "ArtifactStore.install() did not return every extension root in the catalog package", { id: candidate.id, expectedRoots, actualRoots });
   }
 }
 function errorRecord(error5) {
@@ -41618,20 +44518,20 @@ function errorRecord(error5) {
   return Object.freeze({ name: "Error", message: String(error5) });
 }
 function createExtensionManagerClient(options) {
-  if (!record3(options)) fail4("extension-manager/options-invalid", "options must be an object");
-  const catalogSource = requirePort(options.catalogSource, "CatalogSource", ["cached", "refresh"]);
-  const artifactAcquirer = requirePort(options.artifactAcquirer, "ArtifactAcquirer", ["acquire"]);
-  const artifactStore = requirePort(options.artifactStore, "ArtifactStore", [
+  if (!record3(options))
+    fail4("extension-manager/options-invalid", "options must be an object");
+  const catalogSource = requirePort(options["catalogSource"], "CatalogSource", [
+    "cached",
+    "refresh"
+  ]);
+  const artifactAcquirer = requirePort(options["artifactAcquirer"], "ArtifactAcquirer", ["acquire"]);
+  const artifactStore = requirePort(options["artifactStore"], "ArtifactStore", [
     "list",
     "install",
     "remove"
   ]);
-  const enablementStore = requirePort(options.enablementStore, "EnablementStore", [
-    "list",
-    "setEnabled",
-    "remove"
-  ]);
-  const channels = new Set(options.channels ?? ALL_CHANNELS);
+  const enablementStore = requirePort(options["enablementStore"], "EnablementStore", ["list", "setEnabled", "remove"]);
+  const channels = new Set(options["channels"] ?? ALL_CHANNELS);
   for (const channel of channels) {
     if (!ALL_CHANNELS.includes(channel)) {
       fail4("extension-manager/channel-invalid", `unsupported catalog channel \xAB${channel}\xBB`);
@@ -41640,47 +44540,36 @@ function createExtensionManagerClient(options) {
   let mutationTail = Promise.resolve();
   const mutate = (operation) => {
     const result = mutationTail.then(operation, operation);
-    mutationTail = result.then(
-      () => void 0,
-      () => void 0
-    );
+    mutationTail = result.then(() => void 0, () => void 0);
     return result;
   };
   let cachedStatePromise;
   const cachedState = () => {
-    cachedStatePromise ??= Promise.resolve(catalogSource.cached()).then(
-      (value2) => catalogEnvelope(value2, "cached catalog")
-    );
+    cachedStatePromise ??= Promise.resolve(catalogSource.cached()).then((value2) => catalogEnvelope(value2, "cached catalog"));
     return cachedStatePromise;
   };
-  const catalogCandidate = async (id, requestedVersion) => {
+  const catalogCandidate = async (id2, requestedVersion) => {
     const state = await cachedState();
-    const item = state?.catalog.packages.find((candidate2) => candidate2.id === id);
+    const item = state?.catalog.packages.find((candidate2) => candidate2.id === id2);
     if (item === void 0) {
-      fail4("extension-manager/catalog-entry-missing", `extension \xAB${id}\xBB is not in the catalog`, {
-        id
+      fail4("extension-manager/catalog-entry-missing", `extension \xAB${id2}\xBB is not in the catalog`, {
+        id: id2
       });
     }
     const candidate = candidateOf(state, item, channels, requestedVersion);
     if (candidate === void 0) {
-      fail4(
-        "extension-manager/catalog-version-missing",
-        requestedVersion === void 0 ? `extension \xAB${id}\xBB has no version in the selected channels` : `extension \xAB${id}\xBB has no version \xAB${requestedVersion}\xBB`,
-        { id, requestedVersion }
-      );
+      fail4("extension-manager/catalog-version-missing", requestedVersion === void 0 ? `extension \xAB${id2}\xBB has no version in the selected channels` : `extension \xAB${id2}\xBB has no version \xAB${requestedVersion}\xBB`, { id: id2, requestedVersion });
     }
     return candidate;
   };
   const acquireAndInstall = async (candidate) => {
     assertInstallable(candidate);
     const acquired = validateAcquired(candidate, await artifactAcquirer.acquire(candidate));
-    const installed = await artifactStore.install(
-      Object.freeze({
-        entry: candidate,
-        artifact: acquired.artifact,
-        ...acquired.integrity === void 0 ? {} : { integrity: acquired.integrity }
-      })
-    );
+    const installed = await artifactStore.install(Object.freeze({
+      entry: candidate,
+      artifact: acquired.artifact,
+      ...acquired.integrity === void 0 ? {} : { integrity: acquired.integrity }
+    }));
     validateInstalled(candidate, installed);
     return installed;
   };
@@ -41697,94 +44586,87 @@ function createExtensionManagerClient(options) {
     const installedById = new Map(installed.map((entry2) => [entry2.id, entry2]));
     const ids = [.../* @__PURE__ */ new Set([...availableById.keys(), ...installedById.keys()])].sort();
     return Object.freeze({
-      entries: Object.freeze(
-        ids.map((id) => {
-          const offered = availableById.get(id);
-          const present = installedById.get(id);
-          const availableVersion = offered?.version ?? present?.version ?? "unknown";
-          return Object.freeze({
-            id,
-            displayName: offered?.displayName ?? present?.displayName ?? id,
-            publisher: offered?.publisher ?? present?.publisher ?? publisherFrom(id),
-            availableVersion,
-            ...present === void 0 ? {} : { installedVersion: present.version },
-            enabled: present !== void 0 && (enablement.get(id) ?? (typeof present.enabled === "boolean" && present.enabled)),
-            updateAvailable: present !== void 0 && offered !== void 0 && compareCatalogVersions(offered.version, present.version) > 0,
-            source: offered?.source.uri ?? present?.source ?? "local",
-            trusted: offered?.trusted ?? present?.trusted ?? false,
-            ...offered?.presentation === void 0 && present?.presentation === void 0 ? {} : { presentation: offered?.presentation ?? present?.presentation }
-          });
-        })
-      )
+      entries: Object.freeze(ids.map((id2) => {
+        const offered = availableById.get(id2);
+        const present = installedById.get(id2);
+        const availableVersion = offered?.version ?? present?.version ?? "unknown";
+        return Object.freeze({
+          id: id2,
+          displayName: offered?.displayName ?? present?.displayName ?? id2,
+          publisher: offered?.publisher ?? present?.publisher ?? publisherFrom(id2),
+          availableVersion,
+          ...present === void 0 ? {} : { installedVersion: present.version },
+          enabled: present !== void 0 && (enablement.get(id2) ?? (typeof present.enabled === "boolean" && present.enabled)),
+          updateAvailable: present !== void 0 && offered !== void 0 && compareCatalogVersions(offered.version, present.version) > 0,
+          source: offered?.source.uri ?? present?.source ?? "local",
+          trusted: offered?.trusted ?? present?.trusted ?? false,
+          ...offered?.presentation === void 0 && present?.presentation === void 0 ? {} : { presentation: offered?.presentation ?? present?.presentation }
+        });
+      }))
     });
   };
-  const installOperation = async (id, version) => {
-    const installed = installedRecords(await artifactStore.list()).find((entry2) => entry2.id === id);
+  const installOperation = async (id2, version) => {
+    const installed = installedRecords(await artifactStore.list()).find((entry2) => entry2.id === id2);
     if (installed !== void 0) {
-      fail4(
-        "extension-manager/artifact-already-installed",
-        `extension \xAB${id}\xBB is already installed`,
-        { id, version: installed.version }
-      );
+      fail4("extension-manager/artifact-already-installed", `extension \xAB${id2}\xBB is already installed`, { id: id2, version: installed.version });
     }
-    const candidate = await catalogCandidate(id, version);
-    await enablementStore.setEnabled(id, false);
+    const candidate = await catalogCandidate(id2, version);
+    await enablementStore.setEnabled(id2, false);
     try {
       await acquireAndInstall(candidate);
-      await enablementStore.setEnabled(id, true);
+      await enablementStore.setEnabled(id2, true);
     } catch (error5) {
       let artifactError;
       let enablementError;
       try {
-        await artifactStore.remove(id);
+        await artifactStore.remove(id2);
       } catch (cause) {
         artifactError = cause;
       }
       try {
-        await enablementStore.setEnabled(id, false);
-        if (artifactError === void 0) await enablementStore.remove(id);
+        await enablementStore.setEnabled(id2, false);
+        if (artifactError === void 0)
+          await enablementStore.remove(id2);
       } catch (cause) {
         enablementError = cause;
       }
       if (artifactError !== void 0 || enablementError !== void 0) {
-        fail4(
-          "extension-manager/install-compensation-failed",
-          `extension \xAB${id}\xBB failed installation and could not be removed`,
-          { id, error: error5, artifactError, enablementError }
-        );
+        fail4("extension-manager/install-compensation-failed", `extension \xAB${id2}\xBB failed installation and could not be removed`, { id: id2, error: error5, artifactError, enablementError });
       }
       throw error5;
     }
   };
-  const updateOperation = async (id) => {
-    const installed = installedRecords(await artifactStore.list()).find((entry2) => entry2.id === id);
+  const updateOperation = async (id2) => {
+    const installed = installedRecords(await artifactStore.list()).find((entry2) => entry2.id === id2);
     if (installed === void 0) {
-      fail4("extension-manager/artifact-not-installed", `extension \xAB${id}\xBB is not installed`, {
-        id
+      fail4("extension-manager/artifact-not-installed", `extension \xAB${id2}\xBB is not installed`, {
+        id: id2
       });
     }
-    const candidate = await catalogCandidate(id);
-    if (compareCatalogVersions(candidate.version, installed.version) <= 0) return;
-    const wasEnabled = enablementRecords(await enablementStore.list()).get(id) === true;
-    await enablementStore.setEnabled(id, false);
+    const candidate = await catalogCandidate(id2);
+    if (compareCatalogVersions(candidate.version, installed.version) <= 0)
+      return;
+    const wasEnabled = enablementRecords(await enablementStore.list()).get(id2) === true;
+    await enablementStore.setEnabled(id2, false);
     await acquireAndInstall(candidate);
-    if (wasEnabled) await enablementStore.setEnabled(id, true);
+    if (wasEnabled)
+      await enablementStore.setEnabled(id2, true);
   };
-  const removeOperation = async (id) => {
-    await artifactStore.remove(id);
-    await enablementStore.remove(id);
+  const removeOperation = async (id2) => {
+    await artifactStore.remove(id2);
+    await enablementStore.remove(id2);
   };
-  const setEnabledOperation = async (id, enabled) => {
+  const setEnabledOperation = async (id2, enabled) => {
     if (typeof enabled !== "boolean") {
-      fail4("extension-manager/enablement-invalid", "enabled must be boolean", { id, enabled });
+      fail4("extension-manager/enablement-invalid", "enabled must be boolean", { id: id2, enabled });
     }
-    const installed = installedRecords(await artifactStore.list()).some((entry2) => entry2.id === id);
+    const installed = installedRecords(await artifactStore.list()).some((entry2) => entry2.id === id2);
     if (!installed) {
-      fail4("extension-manager/artifact-not-installed", `extension \xAB${id}\xBB is not installed`, {
-        id
+      fail4("extension-manager/artifact-not-installed", `extension \xAB${id2}\xBB is not installed`, {
+        id: id2
       });
     }
-    await enablementStore.setEnabled(id, enabled);
+    await enablementStore.setEnabled(id2, enabled);
   };
   return Object.freeze({
     snapshot: snapshotOperation,
@@ -41795,43 +44677,32 @@ function createExtensionManagerClient(options) {
       return mutate(async () => {
         const refreshed = catalogEnvelope(await catalogSource.refresh(), "refreshed catalog");
         if (refreshed === void 0) {
-          fail4(
-            "extension-manager/catalog-refresh-empty",
-            "CatalogSource.refresh() returned no catalog"
-          );
+          fail4("extension-manager/catalog-refresh-empty", "CatalogSource.refresh() returned no catalog");
         }
         cachedStatePromise = Promise.resolve(refreshed);
       });
     },
-    install(id, version) {
-      return mutate(() => installOperation(id, version));
+    install(id2, version) {
+      return mutate(() => installOperation(id2, version));
     },
-    update(id) {
-      return mutate(() => updateOperation(id));
+    update(id2) {
+      return mutate(() => updateOperation(id2));
     },
-    remove(id) {
-      return mutate(() => removeOperation(id));
+    remove(id2) {
+      return mutate(() => removeOperation(id2));
     },
-    setEnabled(id, enabled) {
-      return mutate(() => setEnabledOperation(id, enabled));
+    setEnabled(id2, enabled) {
+      return mutate(() => setEnabledOperation(id2, enabled));
     },
     applyGameSupport(plan) {
       return mutate(async () => {
         const gameId = record3(plan) && record3(plan.game) ? plan.game.id : void 0;
         const current = createGameSupportPlan(await snapshotOperation(), gameId);
         if (!gameSupportPlansEqual(plan, current)) {
-          fail4(
-            "extension-manager/game-support-plan-stale",
-            "game support plan no longer matches the cached catalog and installed state",
-            { gameId }
-          );
+          fail4("extension-manager/game-support-plan-stale", "game support plan no longer matches the cached catalog and installed state", { gameId });
         }
         if (!current.ready) {
-          fail4(
-            "extension-manager/game-support-plan-blocked",
-            "game support plan contains untrusted package actions",
-            { gameId, blocked: current.blocked }
-          );
+          fail4("extension-manager/game-support-plan-blocked", "game support plan contains untrusted package actions", { gameId, blocked: current.blocked });
         }
         const beforeEnablement = enablementRecords(await enablementStore.list());
         const completed = [];
@@ -41857,46 +44728,38 @@ function createExtensionManagerClient(options) {
           const rollback = [];
           let partial = completed.some((action) => action.reversible === false);
           const failedAction = current.actions[completed.length];
-          if (failedAction?.reversible === false) partial = true;
+          if (failedAction?.reversible === false)
+            partial = true;
           for (const action of completed.toReversed()) {
             if (!action.reversible) {
-              rollback.push(
-                Object.freeze({
-                  packageId: action.packageId,
-                  kind: action.kind,
-                  status: "not-reversible"
-                })
-              );
+              rollback.push(Object.freeze({
+                packageId: action.packageId,
+                kind: action.kind,
+                status: "not-reversible"
+              }));
               continue;
             }
             try {
               if (action.kind === "install") {
                 await removeOperation(action.packageId);
               } else if (beforeEnablement.has(action.packageId)) {
-                await enablementStore.setEnabled(
-                  action.packageId,
-                  beforeEnablement.get(action.packageId)
-                );
+                await enablementStore.setEnabled(action.packageId, beforeEnablement.get(action.packageId));
               } else {
                 await enablementStore.remove(action.packageId);
               }
-              rollback.push(
-                Object.freeze({
-                  packageId: action.packageId,
-                  kind: action.kind,
-                  status: "rolled-back"
-                })
-              );
+              rollback.push(Object.freeze({
+                packageId: action.packageId,
+                kind: action.kind,
+                status: "rolled-back"
+              }));
             } catch (rollbackError) {
               partial = true;
-              rollback.push(
-                Object.freeze({
-                  packageId: action.packageId,
-                  kind: action.kind,
-                  status: "rollback-failed",
-                  error: errorRecord(rollbackError)
-                })
-              );
+              rollback.push(Object.freeze({
+                packageId: action.packageId,
+                kind: action.kind,
+                status: "rollback-failed",
+                error: errorRecord(rollbackError)
+              }));
             }
           }
           return Object.freeze({
@@ -41913,16 +44776,8 @@ function createExtensionManagerClient(options) {
   });
 }
 
-// packages/extension-manager/src/subjects.js
+// packages/extension-manager/dist/subjects.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/sdk/dist/subjects/index.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/sdk/dist/subjects/unknown-root.js
-init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
-
-// packages/extension-manager/src/subjects.js
 var EXTENSION_SUBJECT_KIND = "modkit/extension";
 var CONTRIBUTION_SUBJECT_KIND = "modkit/contribution";
 function fail5(message, context = {}) {
@@ -41938,19 +44793,21 @@ function optionalText2(value2, label) {
   return value2 === void 0 ? void 0 : requiredText(value2, label);
 }
 function snapshotJson(value2, label, seen = /* @__PURE__ */ new Set()) {
-  if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean") return value2;
+  if (value2 === null || typeof value2 === "string" || typeof value2 === "boolean")
+    return value2;
   if (typeof value2 === "number") {
-    if (!Number.isFinite(value2)) fail5(`${label} must contain only finite JSON numbers`);
+    if (!Number.isFinite(value2))
+      fail5(`${label} must contain only finite JSON numbers`);
     return value2;
   }
-  if (typeof value2 !== "object") fail5(`${label} must contain only JSON values`);
-  if (seen.has(value2)) fail5(`${label} must not contain cycles`);
+  if (typeof value2 !== "object")
+    fail5(`${label} must contain only JSON values`);
+  if (seen.has(value2))
+    fail5(`${label} must not contain cycles`);
   seen.add(value2);
   try {
     if (Array.isArray(value2)) {
-      return Object.freeze(
-        value2.map((item, index) => snapshotJson(item, `${label}[${index}]`, seen))
-      );
+      return Object.freeze(value2.map((item, index) => snapshotJson(item, `${label}[${index}]`, seen)));
     }
     const prototype = Object.getPrototypeOf(value2);
     if (prototype !== Object.prototype && prototype !== null) {
@@ -41975,11 +44832,11 @@ function contractCoordinate(contract, label) {
   if (contract === null || typeof contract !== "object" || Array.isArray(contract)) {
     fail5(`${label}.contract must be an object`);
   }
-  const id = requiredText(contract.id, `${label}.contract.id`);
+  const id2 = requiredText(contract.id, `${label}.contract.id`);
   if (!Number.isSafeInteger(contract.major) || contract.major < 0) {
     fail5(`${label}.contract.major must be a non-negative safe integer`);
   }
-  return Object.freeze({ id, major: contract.major });
+  return Object.freeze({ id: id2, major: contract.major });
 }
 function contractKey(contract) {
   return `${contract.id}@${contract.major}`;
@@ -42000,9 +44857,11 @@ function page(items, request, signal) {
   }
   let offset = 0;
   if (request.cursor !== void 0) {
-    if (!/^(?:0|[1-9]\d*)$/u.test(request.cursor)) fail5("page cursor is invalid");
+    if (!/^(?:0|[1-9]\d*)$/u.test(request.cursor))
+      fail5("page cursor is invalid");
     offset = Number(request.cursor);
-    if (!Number.isSafeInteger(offset)) fail5("page cursor is outside the safe integer range");
+    if (!Number.isSafeInteger(offset))
+      fail5("page cursor is outside the safe integer range");
   }
   const selected = items.slice(offset, offset + request.limit);
   const nextOffset = offset + selected.length;
@@ -42011,20 +44870,10 @@ function page(items, request, signal) {
     ...nextOffset < items.length ? { nextCursor: String(nextOffset) } : {}
   });
 }
-function fact2(id, label, value2, provenance) {
-  return Object.freeze({ id, label, value: value2, provenance });
+function fact2(id2, label, value2, provenance) {
+  return Object.freeze({ id: id2, label, value: value2, provenance });
 }
-function factsSource({
-  snapshotId,
-  subjectId,
-  label,
-  kind,
-  type,
-  groups,
-  facts,
-  relations,
-  origin
-}) {
+function factsSource({ snapshotId, subjectId, label, kind, type, groups, facts, relations, origin }) {
   const summary = Object.freeze({
     snapshotId,
     identity: Object.freeze({
@@ -42048,7 +44897,8 @@ function factsSource({
     },
     async facts(groupId, request, signal) {
       const items = factsByGroup.get(groupId);
-      if (items === void 0) fail5(`unknown subject fact group \xAB${groupId}\xBB`, { groupId });
+      if (items === void 0)
+        fail5(`unknown subject fact group \xAB${groupId}\xBB`, { groupId });
       return page(items, request, signal);
     },
     async relations(request, signal) {
@@ -42056,8 +44906,8 @@ function factsSource({
     }
   });
 }
-function group(id, label, items) {
-  return Object.freeze({ id, label, factCount: items.length });
+function group(id2, label, items) {
+  return Object.freeze({ id: id2, label, factCount: items.length });
 }
 function relation(role, record4) {
   return Object.freeze({
@@ -42085,15 +44935,13 @@ async function collectPages(openPage, signal) {
   let cursor4;
   do {
     throwIfAborted2(signal);
-    const result = await openPage(
-      { ...cursor4 === void 0 ? {} : { cursor: cursor4 }, limit: 256 },
-      signal
-    );
+    const result = await openPage({ ...cursor4 === void 0 ? {} : { cursor: cursor4 }, limit: 256 }, signal);
     if (result === null || typeof result !== "object" || !Array.isArray(result.items)) {
       fail5("subject facts source returned an invalid page");
     }
     items.push(...result.items);
-    if (items.length > 1e5) fail5("subject card exceeds the 100000 item wire limit");
+    if (items.length > 1e5)
+      fail5("subject card exceeds the 100000 item wire limit");
     cursor4 = result.nextCursor;
     if (cursor4 !== void 0) {
       if (typeof cursor4 !== "string" || cursors.has(cursor4)) {
@@ -42109,22 +44957,13 @@ async function subjectRecordToWire(record4, signal) {
     fail5("subject record must provide facts");
   }
   const summary = await record4.facts.summary(signal);
-  const groups = await collectPages(
-    (request, pageSignal) => record4.facts.groups(request, pageSignal),
-    signal
-  );
+  const groups = await collectPages((request, pageSignal) => record4.facts.groups(request, pageSignal), signal);
   const wireGroups = [];
   for (const groupDescriptor of groups) {
-    const groupFacts = await collectPages(
-      (request, pageSignal) => record4.facts.facts(groupDescriptor.id, request, pageSignal),
-      signal
-    );
+    const groupFacts = await collectPages((request, pageSignal) => record4.facts.facts(groupDescriptor.id, request, pageSignal), signal);
     wireGroups.push(Object.freeze({ ...groupDescriptor, facts: Object.freeze(groupFacts) }));
   }
-  const relations = await collectPages(
-    (request, pageSignal) => record4.facts.relations(request, pageSignal),
-    signal
-  );
+  const relations = await collectPages((request, pageSignal) => record4.facts.relations(request, pageSignal), signal);
   const subject = {
     kind: record4.kind,
     subjectId: record4.subjectId,
@@ -42140,16 +44979,13 @@ async function subjectRecordToWire(record4, signal) {
     ..."profile" in record4 ? { profile: record4.profile } : {},
     ..."resources" in record4 ? { resources: record4.resources } : {}
   };
-  return snapshotJson(
-    {
-      schemaVersion: 1,
-      subject,
-      summary,
-      groups: wireGroups,
-      relations
-    },
-    "extension subject card wire document"
-  );
+  return snapshotJson({
+    schemaVersion: 1,
+    subject,
+    summary,
+    groups: wireGroups,
+    relations
+  }, "extension subject card wire document");
 }
 async function extensionSubjectRecordToWire(record4, signal) {
   return subjectRecordToWire(record4, signal);
@@ -42175,16 +45011,18 @@ function subjectFactsSourceFromWire(value2) {
     if (wireGroup === null || typeof wireGroup !== "object" || Array.isArray(wireGroup)) {
       fail5(`extension subject card wire groups[${index}] must be an object`);
     }
-    const id = requiredText(wireGroup.id, `groups[${index}].id`);
-    if (ids.has(id)) fail5(`subject fact group \xAB${id}\xBB is duplicated`, { groupId: id });
-    ids.add(id);
+    const id2 = requiredText(wireGroup.id, `groups[${index}].id`);
+    if (ids.has(id2))
+      fail5(`subject fact group \xAB${id2}\xBB is duplicated`, { groupId: id2 });
+    ids.add(id2);
     const label = requiredText(wireGroup.label, `groups[${index}].label`);
-    if (!Array.isArray(wireGroup.facts)) fail5(`groups[${index}].facts must be a list`);
+    if (!Array.isArray(wireGroup.facts))
+      fail5(`groups[${index}].facts must be a list`);
     if (wireGroup.factCount !== wireGroup.facts.length) {
       fail5(`groups[${index}].factCount does not match its facts list`);
     }
-    groups.push(Object.freeze({ id, label, factCount: wireGroup.factCount }));
-    entries.push(Object.freeze({ groupId: id, items: wireGroup.facts }));
+    groups.push(Object.freeze({ id: id2, label, factCount: wireGroup.factCount }));
+    entries.push(Object.freeze({ groupId: id2, items: wireGroup.facts }));
   }
   if (document2.summary.groupCount !== groups.length) {
     fail5("extension subject card wire summary.groupCount does not match its groups");
@@ -42229,9 +45067,7 @@ function contributionFacts(manifest, ownerId, enabled, effectiveEnabled, provena
     declaration.push(fact2("limitations", "Limitations", manifest.limitations, provenance));
   }
   if (manifest.runtimeVariants !== void 0) {
-    declaration.push(
-      fact2("runtime-variants", "Runtime variants", manifest.runtimeVariants, provenance)
-    );
+    declaration.push(fact2("runtime-variants", "Runtime variants", manifest.runtimeVariants, provenance));
   }
   const specification = [];
   if (manifest.spec !== null && typeof manifest.spec === "object" && !Array.isArray(manifest.spec)) {
@@ -42298,32 +45134,34 @@ function projectExtensionSubjects(input) {
   const extensionSubjectId = serializeSubjectRef(extensionRef);
   const extensionOrigin = Object.freeze([Object.freeze({ label: "extension manifest" })]);
   const contributionOrigin = Object.freeze([Object.freeze({ label: "contribution manifest" })]);
-  if (!Array.isArray(normalizedInput.contributions)) fail5("contributions must be a list");
+  if (!Array.isArray(normalizedInput.contributions))
+    fail5("contributions must be a list");
   const seen = /* @__PURE__ */ new Set();
   const contributions = normalizedInput.contributions.map((manifest, index) => {
-    const id = requiredText(manifest.id, `contributions[${index}].id`);
-    if (seen.has(id)) fail5(`contribution \xAB${id}\xBB is duplicated`, { contributionId: id });
-    seen.add(id);
+    const id2 = requiredText(manifest.id, `contributions[${index}].id`);
+    if (seen.has(id2))
+      fail5(`contribution \xAB${id2}\xBB is duplicated`, { contributionId: id2 });
+    seen.add(id2);
     const contract = contractCoordinate(manifest.contract, `contributions[${index}]`);
     const normalized = Object.freeze({
       ...manifest,
-      id,
+      id: id2,
       displayName: requiredText(manifest.displayName, `contributions[${index}].displayName`),
       contract
     });
-    const configured = contributionEnablement[id];
+    const configured = contributionEnablement[id2];
     if (configured !== void 0 && typeof configured !== "boolean") {
-      fail5(`contributionEnablement.${id} must be a boolean`);
+      fail5(`contributionEnablement.${id2} must be a boolean`);
     }
     const enabled = configured !== false;
     const effectiveEnabled = extensionEnabled && enabled;
-    const ref2 = nestedSubject(owner, CONTRIBUTION_SUBJECT_KIND, id);
+    const ref2 = nestedSubject(owner, CONTRIBUTION_SUBJECT_KIND, id2);
     const subjectId = serializeSubjectRef(ref2);
     return {
       kind: CONTRIBUTION_SUBJECT_KIND,
       ref: ref2,
       subjectId,
-      id,
+      id: id2,
       displayName: normalized.displayName,
       extensionId,
       contract,
@@ -42347,22 +45185,14 @@ function projectExtensionSubjects(input) {
     ...Object.keys(presentation2).length === 0 ? {} : { presentation: presentation2 }
   };
   for (const contribution of contributions) {
-    const sections = contributionFacts(
-      contribution.manifest,
-      extensionId,
-      contribution.enabled,
-      contribution.effectiveEnabled,
-      contributionOrigin
-    );
+    const sections = contributionFacts(contribution.manifest, extensionId, contribution.enabled, contribution.effectiveEnabled, contributionOrigin);
     contribution.facts = factsSource({
       snapshotId: `${extensionId}@${version}#${contribution.id}`,
       subjectId: contribution.subjectId,
       label: contribution.displayName,
       kind: CONTRIBUTION_SUBJECT_KIND,
       type: contribution.contractKey,
-      groups: Object.freeze(
-        sections.map((section) => group(section.id, section.label, section.items))
-      ),
+      groups: Object.freeze(sections.map((section) => group(section.id, section.label, section.items))),
       facts: sections.map((section) => Object.freeze({ groupId: section.id, items: section.items })),
       relations: Object.freeze([relation("belongs-to", extensionRecord)]),
       origin: contributionOrigin
@@ -42375,25 +45205,19 @@ function projectExtensionSubjects(input) {
     entries.push(contribution);
     grouped.set(contribution.contractKey, entries);
   }
-  const contractGroups = [...grouped.entries()].sort(([left], [right]) => compareText(left, right)).map(
-    ([key3, entries]) => Object.freeze({
-      key: key3,
-      contract: entries[0].contract,
-      contributions: Object.freeze([...entries])
-    })
-  );
-  const contributionLinks = Object.freeze(
-    contributions.map(
-      (contribution) => Object.freeze({
-        ...relation("owns", contribution),
-        id: contribution.id,
-        contract: contribution.contract,
-        contractKey: contribution.contractKey,
-        enabled: contribution.enabled,
-        effectiveEnabled: contribution.effectiveEnabled
-      })
-    )
-  );
+  const contractGroups = [...grouped.entries()].sort(([left], [right]) => compareText(left, right)).map(([key3, entries]) => Object.freeze({
+    key: key3,
+    contract: entries[0].contract,
+    contributions: Object.freeze([...entries])
+  }));
+  const contributionLinks = Object.freeze(contributions.map((contribution) => Object.freeze({
+    ...relation("owns", contribution),
+    id: contribution.id,
+    contract: contribution.contract,
+    contractKey: contribution.contractKey,
+    enabled: contribution.enabled,
+    effectiveEnabled: contribution.effectiveEnabled
+  })));
   extensionRecord.contributions = contributionLinks;
   const overview = [
     fact2("id", "Extension ID", extensionId, extensionOrigin),
@@ -42411,9 +45235,7 @@ function projectExtensionSubjects(input) {
     fact2("enabled", "Extension enabled", extensionEnabled, extensionOrigin),
     fact2("contribution-count", "Contributions", contributions.length, extensionOrigin)
   ];
-  const contributionItems = contributionLinks.map(
-    (link) => fact2(`contribution.${link.id}`, link.label, link, extensionOrigin)
-  );
+  const contributionItems = contributionLinks.map((link) => fact2(`contribution.${link.id}`, link.label, link, extensionOrigin));
   const extensionSections = [
     Object.freeze({ id: "overview", label: "Overview", items: Object.freeze(overview) }),
     Object.freeze({ id: "state", label: "State", items: Object.freeze(state) }),
@@ -42428,12 +45250,8 @@ function projectExtensionSubjects(input) {
     subjectId: extensionSubjectId,
     label: displayName,
     kind: EXTENSION_SUBJECT_KIND,
-    groups: Object.freeze(
-      extensionSections.map((section) => group(section.id, section.label, section.items))
-    ),
-    facts: extensionSections.map(
-      (section) => Object.freeze({ groupId: section.id, items: section.items })
-    ),
+    groups: Object.freeze(extensionSections.map((section) => group(section.id, section.label, section.items))),
+    facts: extensionSections.map((section) => Object.freeze({ groupId: section.id, items: section.items })),
     relations: contributionLinks,
     origin: extensionOrigin
   });
@@ -42552,14 +45370,14 @@ async function walkGrantedFolder(root, label, maxFiles, maxTotalBytes, signal) {
   await visit2(root, "");
   return walked;
 }
-async function readAll(handle) {
+async function readAll2(handle) {
   const file = await handle.getFile();
   return new Uint8Array(await file.slice(0, file.size).arrayBuffer());
 }
 function parseJson2(bytes2, path) {
-  const text3 = new TextDecoder().decode(bytes2);
+  const text4 = new TextDecoder().decode(bytes2);
   try {
-    return JSON.parse(text3);
+    return JSON.parse(text4);
   } catch (error5) {
     throw refuse3(
       EXTENSION_ROOT_FAILURE_CODES.unreadable,
@@ -42658,7 +45476,7 @@ async function readGrantedRoot(request, options) {
   const artifactStream = [];
   for (const entry2 of walked) {
     options.signal?.throwIfAborted();
-    const bytes2 = await readAll(entry2.handle);
+    const bytes2 = await readAll2(entry2.handle);
     handles.set(entry2.path, entry2.handle);
     fileDigests[entry2.path] = await sha2562(options.subtle, bytes2);
     bytesByPath.set(entry2.path, bytes2);
@@ -43446,7 +46264,7 @@ function createWebLocalizer(requested, catalogs = []) {
 // apps/web/src/subjects.ts
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
-// packages/code/src/module.js
+// packages/code/dist/module.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // packages/code/contributions/editor-monaco-code.json
@@ -43458,7 +46276,7 @@ var editor_monaco_code_default = {
   runtimeVariants: [
     {
       variantId: "browser",
-      entrypoint: "./src/index.js",
+      entrypoint: "./dist/index.js",
       target: {
         environments: ["browser-main"],
         requiredHostCapabilities: ["editor.monaco"]
@@ -43485,34 +46303,46 @@ var package_default = {
   type: "module",
   description: "Built-in MK3 code workspace and Monaco editor implementation.",
   exports: {
-    ".": "./src/index.js",
-    "./editor": "./src/editor.js",
+    ".": {
+      types: "./dist/index.d.ts",
+      default: "./dist/index.js"
+    },
+    "./editor": {
+      types: "./dist/editor.d.ts",
+      default: "./dist/editor.js"
+    },
     "./module": {
-      types: "./src/module.d.ts",
-      default: "./src/module.js"
+      types: "./dist/module.d.ts",
+      default: "./dist/module.js"
     },
     "./linked": {
-      types: "./src/module.d.ts",
-      default: "./src/module.js"
+      types: "./dist/module.d.ts",
+      default: "./dist/module.js"
     },
     "./package.json": "./package.json"
   },
   files: [
     "contributions",
-    "src"
+    "dist"
   ],
   dependencies: {
     "@modkit/host": "workspace:*",
-    "monaco-editor": "^0.56.0"
+    "monaco-editor": "^0.56.0",
+    "@modkit/sdk": "workspace:*"
+  },
+  scripts: {
+    build: "tsc -b",
+    typecheck: "tsc -p tsconfig.json --noEmit",
+    clean: "tsc -b --clean"
   }
 };
 
-// packages/code/src/module.js
+// packages/code/dist/module.js
 var lazyEditor = Object.freeze({
   abiVersion: 1,
   default: Object.freeze({
     async mount(args) {
-      const { monacoEditor } = await import("./editor-CYMPIDGZ.js");
+      const { monacoEditor } = await import("./editor-APJCQYLM.js");
       return monacoEditor.mount(args);
     }
   })
@@ -43521,10 +46351,10 @@ var codeModule = defineBuiltinModule({
   coordinate: "modkit/code",
   packageJson: package_default,
   contributions: [{ path: "contributions/editor-monaco-code.json", manifest: editor_monaco_code_default }],
-  modules: { "./src/index.js": lazyEditor }
+  modules: { "./dist/index.js": lazyEditor }
 });
 
-// packages/scene/src/module.js
+// packages/scene/dist/module.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // packages/scene/contributions/provider-browser.json
@@ -43539,7 +46369,7 @@ var provider_browser_default = {
   runtimeVariants: [
     {
       variantId: "trusted-browser-main",
-      entrypoint: "./src/render/browser.js",
+      entrypoint: "./dist/render/browser.js",
       target: {
         environments: ["browser-main"],
         requiredHostCapabilities: ["gpu.webgl2"]
@@ -43549,7 +46379,7 @@ var provider_browser_default = {
     },
     {
       variantId: "browser-worker",
-      entrypoint: "./src/render/browser.js",
+      entrypoint: "./dist/render/browser.js",
       target: {
         environments: ["browser-worker"]
       },
@@ -43586,7 +46416,7 @@ var provider_headless_default = {
   runtimeVariants: [
     {
       variantId: "trusted-node",
-      entrypoint: "./src/render/headless.js",
+      entrypoint: "./dist/render/headless.js",
       target: {
         environments: ["node"]
       },
@@ -43595,7 +46425,7 @@ var provider_headless_default = {
     },
     {
       variantId: "portable-worker",
-      entrypoint: "./src/render/headless.js",
+      entrypoint: "./dist/render/headless.js",
       target: {
         environments: ["browser-worker", "node-worker"]
       },
@@ -43631,35 +46461,57 @@ var package_default2 = {
     node: ">=22"
   },
   exports: {
-    ".": "./src/index.js",
-    "./module": {
-      types: "./src/module.d.ts",
-      default: "./src/module.js"
+    ".": {
+      types: "./dist/index.d.ts",
+      default: "./dist/index.js"
     },
-    "./render/browser": "./src/render/browser.js",
-    "./render/headless": "./src/render/headless.js",
-    "./output/png": "./src/output/png.js",
-    "./relations": "./src/relations/index.js",
-    "./relations/three": "./src/relations/three-graph-renderer.js",
+    "./module": {
+      types: "./dist/module.d.ts",
+      default: "./dist/module.js"
+    },
+    "./render/browser": {
+      types: "./dist/render/browser.d.ts",
+      default: "./dist/render/browser.js"
+    },
+    "./render/headless": {
+      types: "./dist/render/headless.d.ts",
+      default: "./dist/render/headless.js"
+    },
+    "./output/png": {
+      types: "./dist/output/png.d.ts",
+      default: "./dist/output/png.js"
+    },
+    "./relations": {
+      types: "./dist/relations/index.d.ts",
+      default: "./dist/relations/index.js"
+    },
+    "./relations/three": {
+      types: "./dist/relations/three-graph-renderer.d.ts",
+      default: "./dist/relations/three-graph-renderer.js"
+    },
     "./package.json": "./package.json"
   },
   files: [
     "contributions",
-    "src",
+    "dist",
     "README.md"
   ],
   scripts: {
-    test: "node --test test/*.test.js"
+    test: "node --import ./scripts/test-typescript.mjs --test test/*.test.js",
+    build: "tsc -b",
+    typecheck: "tsc -p tsconfig.json --noEmit",
+    clean: "tsc -b --clean"
   },
   dependencies: {
     "@modkit/host": "workspace:*",
     "@modkit/sdk": "workspace:*",
-    three: "^0.180.0"
+    three: "^0.180.0",
+    "@modkit/ui": "workspace:*"
   },
   sideEffects: false
 };
 
-// packages/scene/src/render/browser.js
+// packages/scene/dist/render/browser.js
 var browser_exports = {};
 __export(browser_exports, {
   abiVersion: () => abiVersion8,
@@ -43672,7 +46524,8 @@ var RENDERER_ID = "modkit.browser-webgl";
 var MAX_DIMENSION = 4096;
 function compile(gl, type, source2) {
   const shader = gl.createShader(type);
-  if (shader === null) throw new TypeError("WebGL could not allocate a shader");
+  if (shader === null)
+    throw new TypeError("WebGL could not allocate a shader");
   gl.shaderSource(shader, source2);
   gl.compileShader(shader);
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
@@ -43682,19 +46535,60 @@ function compile(gl, type, source2) {
   }
   return shader;
 }
+var VERTEX_SHADER = `#version 300 es
+in vec3 position;
+in vec3 normal;
+in vec2 uv;
+uniform mat4 transform;
+uniform mat4 model;
+out vec3 worldNormal;
+out vec3 worldPosition;
+out vec2 texCoord;
+void main() {
+  worldNormal = mat3(model) * normal;
+  worldPosition = (model * vec4(position, 1.0)).xyz;
+  texCoord = uv;
+  gl_Position = transform * vec4(position, 1.0);
+}`;
+var FRAGMENT_SHADER = `#version 300 es
+precision highp float;
+in vec3 worldNormal;
+in vec3 worldPosition;
+in vec2 texCoord;
+uniform vec4 color;
+uniform vec4 lightColor;
+uniform vec3 lightDirection;
+uniform float ambient;
+uniform float shaded;
+uniform float textured;
+uniform float hasNormals;
+uniform sampler2D baseColorMap;
+out vec4 outColor;
+void main() {
+  vec4 base = color;
+  if (textured > 0.5) base *= texture(baseColorMap, texCoord);
+  if (shaded > 0.5) {
+    /*
+     * Derivatives of the world position stand in for a normal the geometry did not publish, which
+     * is the same geometric face normal the CPU provider computes from the triangle's own corners
+     * \u2014 so a mesh without normals is shaded rather than flat-filled, and both providers shade it
+     * the same way. Two-sided, for the same reason the CPU provider is: real game meshes have
+     * triangles wound both ways.
+     */
+    vec3 surface = hasNormals > 0.5
+      ? normalize(worldNormal)
+      : normalize(cross(dFdx(worldPosition), dFdy(worldPosition)));
+    float lambert = min(1.0, ambient + (1.0 - ambient) * abs(dot(surface, lightDirection)));
+    base.rgb *= lambert * lightColor.rgb;
+  }
+  outColor = base;
+}`;
 function programFor(gl) {
-  const vertex = compile(
-    gl,
-    gl.VERTEX_SHADER,
-    "#version 300 es\nin vec3 position; uniform mat4 transform; void main(){gl_Position=transform*vec4(position,1.0);}"
-  );
-  const fragment = compile(
-    gl,
-    gl.FRAGMENT_SHADER,
-    "#version 300 es\nprecision highp float; uniform vec4 color; out vec4 outColor; void main(){outColor=color;}"
-  );
+  const vertex = compile(gl, gl.VERTEX_SHADER, VERTEX_SHADER);
+  const fragment = compile(gl, gl.FRAGMENT_SHADER, FRAGMENT_SHADER);
   const program = gl.createProgram();
-  if (program === null) throw new TypeError("WebGL could not allocate a program");
+  if (program === null)
+    throw new TypeError("WebGL could not allocate a program");
   gl.attachShader(program, vertex);
   gl.attachShader(program, fragment);
   gl.linkProgram(program);
@@ -43721,10 +46615,70 @@ function multiply(left, right) {
   return out;
 }
 function topology(gl, value2) {
-  if (value2 === "triangles") return gl.TRIANGLES;
-  if (value2 === "triangle-strip") return gl.TRIANGLE_STRIP;
-  if (value2 === "triangle-fan") return gl.TRIANGLE_FAN;
+  if (value2 === "triangles")
+    return gl.TRIANGLES;
+  if (value2 === "triangle-strip")
+    return gl.TRIANGLE_STRIP;
+  if (value2 === "triangle-fan")
+    return gl.TRIANGLE_FAN;
   return void 0;
+}
+var IDENTITY = /* @__PURE__ */ new Float32Array([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]);
+function attributeBuffer(gl, location, data, components) {
+  const buffer = gl.createBuffer();
+  if (buffer === null)
+    throw new TypeError("WebGL could not allocate an attribute buffer");
+  gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+  gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(location);
+  gl.vertexAttribPointer(location, components, gl.FLOAT, false, 0, 0);
+  return buffer;
+}
+function uploadTextures(gl, textures, diagnostics) {
+  const uploaded = /* @__PURE__ */ new Map();
+  for (const texture of textures ?? []) {
+    if (typeof texture?.id !== "string" || texture.id.length === 0 || !Number.isSafeInteger(texture.width) || !Number.isSafeInteger(texture.height) || texture.width <= 0 || texture.height <= 0 || texture.width > MAX_DIMENSION || texture.height > MAX_DIMENSION || !(texture.rgba instanceof Uint8Array) || texture.rgba.length !== texture.width * texture.height * 4) {
+      diagnostics.push({
+        severity: "warning",
+        code: "modkit.browser-webgl/texture-invalid",
+        message: `browser renderer skipped a malformed texture (${String(texture?.id)})`
+      });
+      continue;
+    }
+    const handle = gl.createTexture();
+    if (handle === null)
+      throw new TypeError("WebGL could not allocate a texture");
+    gl.bindTexture(gl.TEXTURE_2D, handle);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texture.width, texture.height, 0, gl.RGBA, gl.UNSIGNED_BYTE, texture.rgba);
+    const wrap = (mode) => mode === "clamp" ? gl.CLAMP_TO_EDGE : gl.REPEAT;
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrap(texture.wrapU));
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrap(texture.wrapV));
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    uploaded.set(texture.id, handle);
+  }
+  return uploaded;
+}
+function normalizedLight(light) {
+  if (light === void 0 || light === null)
+    return void 0;
+  const direction = light.direction;
+  if (!Array.isArray(direction) || direction.length !== 3) {
+    throw new TypeError("scene light direction must be an xyz vector");
+  }
+  const length = Math.hypot(direction[0], direction[1], direction[2]);
+  if (!Number.isFinite(length) || length < 1e-9) {
+    throw new TypeError("scene light direction must be finite and non-zero");
+  }
+  return Object.freeze({
+    direction: new Float32Array([
+      direction[0] / length,
+      direction[1] / length,
+      direction[2] / length
+    ]),
+    color: new Float32Array(light.color ?? [1, 1, 1, 1]),
+    ambient: typeof light.ambient === "number" ? light.ambient : 0.25
+  });
 }
 function flipRows(bytes2, width, height) {
   const stride = width * 4;
@@ -43751,18 +46705,47 @@ async function renderBrowser(request) {
     depth: true,
     preserveDrawingBuffer: true
   });
-  if (gl === null) throw new TypeError("WebGL2 is unavailable in this browser worker");
+  if (gl === null)
+    throw new TypeError("WebGL2 is unavailable in this browser worker");
   const program = programFor(gl);
   const position = gl.getAttribLocation(program, "position");
+  const normal = gl.getAttribLocation(program, "normal");
+  const uv = gl.getAttribLocation(program, "uv");
   const transform = gl.getUniformLocation(program, "transform");
   const color2 = gl.getUniformLocation(program, "color");
-  if (position < 0 || transform === null || color2 === null) {
+  const uniform = (name) => gl.getUniformLocation(program, name);
+  const modelUniform = uniform("model");
+  const lightColor = uniform("lightColor");
+  const lightDirection = uniform("lightDirection");
+  const ambient = uniform("ambient");
+  const shadedUniform = uniform("shaded");
+  const texturedUniform = uniform("textured");
+  const hasNormalsUniform = uniform("hasNormals");
+  const baseColorMap = uniform("baseColorMap");
+  if (position < 0 || transform === null || color2 === null || modelUniform === null) {
     gl.deleteProgram(program);
     throw new TypeError("WebGL renderer uniforms are unavailable");
   }
-  const materials = new Map(
-    (request.scene.materials ?? []).map((material) => [material.id, material.baseColor])
-  );
+  const diagnostics = [];
+  const textures = uploadTextures(gl, request.scene.textures, diagnostics);
+  const materials = new Map((request.scene.materials ?? []).map((material) => [
+    material.id,
+    Object.freeze({
+      baseColor: material.baseColor,
+      shading: material.shading ?? "unlit",
+      texture: material.baseColorTexture === void 0 ? void 0 : textures.get(material.baseColorTexture)
+    })
+  ]));
+  for (const material of request.scene.materials ?? []) {
+    if (material.baseColorTexture !== void 0 && !textures.has(material.baseColorTexture)) {
+      diagnostics.push({
+        severity: "warning",
+        code: "modkit.browser-webgl/texture-missing",
+        message: `material ${material.id} names texture ${material.baseColorTexture}, which the scene did not carry`
+      });
+    }
+  }
+  const light = normalizedLight(request.scene.light);
   const clear = request.clearColor ?? [0, 0, 0, 0];
   gl.viewport(0, 0, width, height);
   gl.clearColor(clear[0], clear[1], clear[2], clear[3]);
@@ -43771,8 +46754,17 @@ async function renderBrowser(request) {
   gl.depthFunc(gl.LEQUAL);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   gl.useProgram(program);
+  if (light !== void 0) {
+    if (lightColor !== null)
+      gl.uniform4fv(lightColor, light.color);
+    if (lightDirection !== null)
+      gl.uniform3fv(lightDirection, light.direction);
+    if (ambient !== null)
+      gl.uniform1f(ambient, light.ambient);
+  }
+  if (baseColorMap !== null)
+    gl.uniform1i(baseColorMap, 0);
   let triangles = 0;
-  const diagnostics = [];
   for (const primitive of request.scene.primitives) {
     request.signal?.throwIfAborted();
     const mode = topology(gl, primitive.topology);
@@ -43785,37 +46777,66 @@ async function renderBrowser(request) {
       });
       continue;
     }
+    const vertexCount = primitive.positions.length / 3;
     const vertexBuffer = gl.createBuffer();
-    if (vertexBuffer === null) throw new TypeError("WebGL could not allocate a vertex buffer");
+    if (vertexBuffer === null)
+      throw new TypeError("WebGL could not allocate a vertex buffer");
     gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
     gl.bufferData(gl.ARRAY_BUFFER, primitive.positions, gl.STATIC_DRAW);
     gl.enableVertexAttribArray(position);
     gl.vertexAttribPointer(position, 3, gl.FLOAT, false, 0, 0);
+    const surface = materials.get(primitive.materialId);
+    const shaded = light !== void 0 && surface?.shading === "lambert";
+    const normalBuffer = normal < 0 || !shaded || !(primitive.normals instanceof Float32Array) || primitive.normals.length < primitive.positions.length ? void 0 : attributeBuffer(gl, normal, primitive.normals, 3);
+    const textured = surface?.texture !== void 0;
+    const uvBuffer = uv < 0 || !textured || !(primitive.textureCoordinates instanceof Float32Array) || primitive.textureCoordinates.length < vertexCount * 2 ? void 0 : attributeBuffer(gl, uv, primitive.textureCoordinates, 2);
+    if (normalBuffer === void 0 && normal >= 0) {
+      gl.disableVertexAttribArray(normal);
+      gl.vertexAttrib3f(normal, 0, 0, 1);
+    }
+    if (uvBuffer === void 0 && uv >= 0) {
+      gl.disableVertexAttribArray(uv);
+      gl.vertexAttrib2f(uv, 0, 0);
+    }
     const model = primitive.transform;
-    gl.uniformMatrix4fv(
-      transform,
-      false,
-      model === void 0 ? request.camera.viewProjection : multiply(request.camera.viewProjection, model)
-    );
-    gl.uniform4fv(color2, materials.get(primitive.materialId) ?? [0.78, 0.8, 0.84, 1]);
-    let count2 = primitive.positions.length / 3;
+    gl.uniformMatrix4fv(transform, false, model === void 0 ? request.camera.viewProjection : multiply(request.camera.viewProjection, model));
+    gl.uniformMatrix4fv(modelUniform, false, model ?? IDENTITY);
+    gl.uniform4fv(color2, surface?.baseColor ?? [0.78, 0.8, 0.84, 1]);
+    if (shadedUniform !== null)
+      gl.uniform1f(shadedUniform, shaded ? 1 : 0);
+    if (hasNormalsUniform !== null) {
+      gl.uniform1f(hasNormalsUniform, normalBuffer === void 0 ? 0 : 1);
+    }
+    const sampling = textured && uvBuffer !== void 0;
+    if (texturedUniform !== null)
+      gl.uniform1f(texturedUniform, sampling ? 1 : 0);
+    if (sampling) {
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, surface.texture);
+    }
+    let count3 = vertexCount;
     let indexBuffer;
     if (primitive.indices !== void 0) {
       indexBuffer = gl.createBuffer();
-      if (indexBuffer === null) throw new TypeError("WebGL could not allocate an index buffer");
+      if (indexBuffer === null)
+        throw new TypeError("WebGL could not allocate an index buffer");
       gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
       gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, primitive.indices, gl.STATIC_DRAW);
-      count2 = primitive.indices.length;
-      gl.drawElements(mode, count2, gl.UNSIGNED_INT, 0);
+      count3 = primitive.indices.length;
+      gl.drawElements(mode, count3, gl.UNSIGNED_INT, 0);
     } else {
-      gl.drawArrays(mode, 0, count2);
+      gl.drawArrays(mode, 0, count3);
     }
-    triangles += primitive.topology === "triangles" ? Math.floor(count2 / 3) : Math.max(0, count2 - 2);
+    triangles += primitive.topology === "triangles" ? Math.floor(count3 / 3) : Math.max(0, count3 - 2);
     gl.deleteBuffer(indexBuffer);
+    gl.deleteBuffer(normalBuffer);
+    gl.deleteBuffer(uvBuffer);
     gl.deleteBuffer(vertexBuffer);
   }
   const bottomUp = new Uint8Array(width * height * 4);
   gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, bottomUp);
+  for (const texture of textures.values())
+    gl.deleteTexture(texture);
   gl.deleteProgram(program);
   const rgba = flipRows(bottomUp, width, height);
   let fragments = 0;
@@ -43854,7 +46875,7 @@ function createProvider5(selection) {
   });
 }
 
-// packages/scene/src/render/headless.js
+// packages/scene/dist/render/headless.js
 var headless_exports = {};
 __export(headless_exports, {
   abiVersion: () => abiVersion9,
@@ -43868,7 +46889,7 @@ var DEFAULT_COLOR = Object.freeze([0.78, 0.8, 0.84, 1]);
 var DEFAULT_CLEAR_COLOR = Object.freeze([0, 0, 0, 0]);
 var MAX_DIMENSION2 = 4096;
 var MAX_PIXELS = 16777216;
-var recordOf8 = (value2) => typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
+var recordOf9 = (value2) => typeof value2 === "object" && value2 !== null && !Array.isArray(value2) ? value2 : void 0;
 var nonEmptyString9 = (value2) => typeof value2 === "string" && value2.trim().length > 0;
 function dimension(value2, label) {
   if (!Number.isSafeInteger(value2) || value2 <= 0 || value2 > MAX_DIMENSION2) {
@@ -43883,9 +46904,7 @@ function matrix(value2, label) {
   return value2;
 }
 function color(value2, label) {
-  if (!Array.isArray(value2) || value2.length !== 4 || !value2.every(
-    (component) => typeof component === "number" && Number.isFinite(component) ? component >= 0 && component <= 1 : false
-  )) {
+  if (!Array.isArray(value2) || value2.length !== 4 || !value2.every((component) => typeof component === "number" && Number.isFinite(component) ? component >= 0 && component <= 1 : false)) {
     throw new TypeError(`${label} must contain four finite components in the range 0..1`);
   }
   return value2;
@@ -43916,7 +46935,8 @@ function screenVertex(positions, index, model, viewProjection, width, height) {
   const x = positions[offset];
   const y = positions[offset + 1];
   const z = positions[offset + 2];
-  if (x === void 0 || y === void 0 || z === void 0) return void 0;
+  if (x === void 0 || y === void 0 || z === void 0)
+    return void 0;
   const world = model === void 0 ? [x, y, z, 1] : multiplyPoint(model, x, y, z, 1);
   const clip = multiplyPoint(viewProjection, world[0], world[1], world[2], world[3]);
   const clipW = clip[3];
@@ -43932,22 +46952,73 @@ function screenVertex(positions, index, model, viewProjection, width, height) {
   return {
     x: (ndcX * 0.5 + 0.5) * (width - 1),
     y: (1 - (ndcY * 0.5 + 0.5)) * (height - 1),
-    z: ndcZ
+    z: ndcZ,
+    /* Reciprocal clip w, kept per vertex so attributes interpolate perspective-correctly. */
+    invW: 1 / clipW,
+    world: [world[0], world[1], world[2]]
   };
 }
 var edge = (a2, b2, x, y) => (x - a2.x) * (b2.y - a2.y) - (y - a2.y) * (b2.x - a2.x);
-function rasterizeTriangle(context, vertices, materialColor) {
+function transformDirection(model, x, y, z) {
+  if (model === void 0)
+    return [x, y, z];
+  return [
+    model[0] * x + model[4] * y + model[8] * z,
+    model[1] * x + model[5] * y + model[9] * z,
+    model[2] * x + model[6] * y + model[10] * z
+  ];
+}
+function normalize4(vector) {
+  const length = Math.hypot(vector[0], vector[1], vector[2]);
+  return length < 1e-9 ? void 0 : [vector[0] / length, vector[1] / length, vector[2] / length];
+}
+function faceNormal(first, second, third) {
+  const ax = second.world[0] - first.world[0];
+  const ay = second.world[1] - first.world[1];
+  const az = second.world[2] - first.world[2];
+  const bx = third.world[0] - first.world[0];
+  const by = third.world[1] - first.world[1];
+  const bz = third.world[2] - first.world[2];
+  return normalize4([ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx]);
+}
+function lambert(normal, light) {
+  const cosine = Math.abs(normal[0] * light.direction[0] + normal[1] * light.direction[1] + normal[2] * light.direction[2]);
+  return Math.min(1, light.ambient + (1 - light.ambient) * cosine);
+}
+function sampleTexture(texture, u2, v) {
+  const wrap = (value2, extent, mode) => {
+    if (!Number.isFinite(value2))
+      return 0;
+    if (mode === "clamp")
+      return Math.min(extent - 1, Math.max(0, Math.floor(value2 * extent)));
+    const index = Math.floor(value2 * extent) % extent;
+    return index < 0 ? index + extent : index;
+  };
+  const x = wrap(u2, texture.width, texture.wrapU ?? "repeat");
+  const y = wrap(v, texture.height, texture.wrapV ?? "repeat");
+  const offset = (y * texture.width + x) * 4;
+  return [
+    (texture.rgba[offset] ?? 255) / 255,
+    (texture.rgba[offset + 1] ?? 255) / 255,
+    (texture.rgba[offset + 2] ?? 255) / 255,
+    (texture.rgba[offset + 3] ?? 255) / 255
+  ];
+}
+function rasterizeTriangle(context, vertices, surface, uvs, normals) {
   const [first, second, third] = vertices;
   const area = edge(first, second, third.x, third.y);
-  if (!Number.isFinite(area) || Math.abs(area) < 1e-6) return 0;
+  if (!Number.isFinite(area) || Math.abs(area) < 1e-6)
+    return 0;
   const minimumX = Math.max(0, Math.floor(Math.min(first.x, second.x, third.x)));
   const maximumX = Math.min(context.width - 1, Math.ceil(Math.max(first.x, second.x, third.x)));
   const minimumY = Math.max(0, Math.floor(Math.min(first.y, second.y, third.y)));
   const maximumY = Math.min(context.height - 1, Math.ceil(Math.max(first.y, second.y, third.y)));
-  const red = byte(materialColor[0]);
-  const green = byte(materialColor[1]);
-  const blue = byte(materialColor[2]);
-  const alpha = byte(materialColor[3]);
+  const base = surface.baseColor;
+  const light = context.light;
+  const shaded = light !== void 0 && surface.shading === "lambert";
+  const flatNormal = shaded && normals === void 0 ? faceNormal(first, second, third) : void 0;
+  const flatShade = flatNormal === void 0 ? 1 : lambert(flatNormal, light);
+  const alpha = byte(base[3]);
   let fragments = 0;
   for (let y = minimumY; y <= maximumY; y += 1) {
     for (let x = minimumX; x <= maximumX; x += 1) {
@@ -43956,30 +47027,115 @@ function rasterizeTriangle(context, vertices, materialColor) {
       const firstWeight = edge(second, third, sampleX, sampleY) / area;
       const secondWeight = edge(third, first, sampleX, sampleY) / area;
       const thirdWeight = edge(first, second, sampleX, sampleY) / area;
-      if (firstWeight < 0 || secondWeight < 0 || thirdWeight < 0) continue;
+      if (firstWeight < 0 || secondWeight < 0 || thirdWeight < 0)
+        continue;
       const sampleDepth = firstWeight * first.z + secondWeight * second.z + thirdWeight * third.z;
       const pixel = y * context.width + x;
-      if (sampleDepth >= context.depth[pixel]) continue;
+      if (sampleDepth >= context.depth[pixel])
+        continue;
       context.depth[pixel] = sampleDepth;
+      let red = base[0];
+      let green = base[1];
+      let blue = base[2];
+      if (surface.texture !== void 0 && uvs !== void 0) {
+        const invW = firstWeight * first.invW + secondWeight * second.invW + thirdWeight * third.invW;
+        if (invW > 1e-9) {
+          const u2 = (firstWeight * uvs[0][0] * first.invW + secondWeight * uvs[1][0] * second.invW + thirdWeight * uvs[2][0] * third.invW) / invW;
+          const v = (firstWeight * uvs[0][1] * first.invW + secondWeight * uvs[1][1] * second.invW + thirdWeight * uvs[2][1] * third.invW) / invW;
+          const texel = sampleTexture(surface.texture, u2, v);
+          red *= texel[0];
+          green *= texel[1];
+          blue *= texel[2];
+        }
+      }
+      let shade = flatShade;
+      if (shaded && normals !== void 0) {
+        const smooth = normalize4([
+          firstWeight * normals[0][0] + secondWeight * normals[1][0] + thirdWeight * normals[2][0],
+          firstWeight * normals[0][1] + secondWeight * normals[1][1] + thirdWeight * normals[2][1],
+          firstWeight * normals[0][2] + secondWeight * normals[1][2] + thirdWeight * normals[2][2]
+        ]);
+        shade = smooth === void 0 ? 1 : lambert(smooth, light);
+      }
+      if (shaded) {
+        red *= shade * light.color[0];
+        green *= shade * light.color[1];
+        blue *= shade * light.color[2];
+      }
       const offset = pixel * 4;
-      context.frame[offset] = red;
-      context.frame[offset + 1] = green;
-      context.frame[offset + 2] = blue;
+      context.frame[offset] = byte(Math.min(1, Math.max(0, red)));
+      context.frame[offset + 1] = byte(Math.min(1, Math.max(0, green)));
+      context.frame[offset + 2] = byte(Math.min(1, Math.max(0, blue)));
       context.frame[offset + 3] = alpha;
       fragments += 1;
     }
   }
   return fragments;
 }
-function materialColors(materials) {
-  const colors = /* @__PURE__ */ new Map();
+function textureTable(textures) {
+  const table = /* @__PURE__ */ new Map();
+  for (const texture of textures ?? []) {
+    if (!nonEmptyString9(texture.id) || table.has(texture.id)) {
+      throw new TypeError("renderer textures must have unique non-empty ids");
+    }
+    const width = dimension(texture.width, `texture ${texture.id} width`);
+    const height = dimension(texture.height, `texture ${texture.id} height`);
+    if (!(texture.rgba instanceof Uint8Array) || texture.rgba.length !== width * height * 4) {
+      throw new TypeError(`texture ${texture.id} must carry width * height * 4 RGBA8 bytes`);
+    }
+    table.set(texture.id, texture);
+  }
+  return table;
+}
+function materialSurfaces(materials, textures, diagnostics) {
+  const surfaces = /* @__PURE__ */ new Map();
   for (const material of materials ?? []) {
-    if (!nonEmptyString9(material.id) || colors.has(material.id)) {
+    if (!nonEmptyString9(material.id) || surfaces.has(material.id)) {
       throw new TypeError("renderer materials must have unique non-empty ids");
     }
-    colors.set(material.id, color(material.baseColor, `material ${material.id} baseColor`));
+    const shading = material.shading ?? "unlit";
+    if (shading !== "unlit" && shading !== "lambert") {
+      throw new TypeError(`material ${material.id} declares an unknown shading model`);
+    }
+    let texture;
+    if (material.baseColorTexture !== void 0) {
+      texture = textures.get(material.baseColorTexture);
+      if (texture === void 0) {
+        diagnostics.push(Object.freeze({
+          severity: "warning",
+          code: "modkit.headless/texture-missing",
+          message: `material ${material.id} names texture ${material.baseColorTexture}, which the scene did not carry`
+        }));
+      }
+    }
+    surfaces.set(material.id, Object.freeze({
+      baseColor: color(material.baseColor, `material ${material.id} baseColor`),
+      shading,
+      ...texture === void 0 ? {} : { texture }
+    }));
   }
-  return colors;
+  return surfaces;
+}
+var DEFAULT_SURFACE = Object.freeze({ baseColor: DEFAULT_COLOR, shading: "unlit" });
+function sceneLight(value2) {
+  if (value2 === void 0)
+    return void 0;
+  const record4 = recordOf9(value2);
+  if (record4 === void 0)
+    throw new TypeError("scene light must be an object");
+  const direction = normalize4(Array.isArray(record4.direction) ? record4.direction : [Number.NaN, Number.NaN, Number.NaN]);
+  if (direction === void 0) {
+    throw new TypeError("scene light direction must be a finite non-zero xyz vector");
+  }
+  const ambient = record4.ambient ?? 0.25;
+  if (typeof ambient !== "number" || !Number.isFinite(ambient) || ambient < 0 || ambient > 1) {
+    throw new TypeError("scene light ambient must be a number in the range 0..1");
+  }
+  return Object.freeze({
+    direction,
+    ambient,
+    color: color(record4.color ?? [1, 1, 1, 1], "scene light color")
+  });
 }
 function triangleElements(topology2, elementCount) {
   if (topology2 === "triangles") {
@@ -43989,10 +47145,7 @@ function triangleElements(topology2, elementCount) {
     });
   }
   if (topology2 === "triangle-strip") {
-    return Array.from(
-      { length: Math.max(0, elementCount - 2) },
-      (_, index) => index % 2 === 0 ? [index, index + 1, index + 2] : [index + 1, index, index + 2]
-    );
+    return Array.from({ length: Math.max(0, elementCount - 2) }, (_, index) => index % 2 === 0 ? [index, index + 1, index + 2] : [index + 1, index, index + 2]);
   }
   if (topology2 === "triangle-fan") {
     return Array.from({ length: Math.max(0, elementCount - 2) }, (_, index) => [
@@ -44004,7 +47157,8 @@ function triangleElements(topology2, elementCount) {
   return void 0;
 }
 function renderPrimitive(context, primitive) {
-  if (!nonEmptyString9(primitive.id)) throw new TypeError("renderer primitive id must be non-empty");
+  if (!nonEmptyString9(primitive.id))
+    throw new TypeError("renderer primitive id must be non-empty");
   if (!(primitive.positions instanceof Float32Array) || primitive.positions.length % 3 !== 0) {
     throw new TypeError(`primitive ${primitive.id} positions must be an xyz Float32Array`);
   }
@@ -44017,36 +47171,30 @@ function renderPrimitive(context, primitive) {
   const elementCount = order?.length ?? vertexCount;
   const elements = triangleElements(primitive.topology, elementCount);
   if (elements === void 0) {
-    context.diagnostics.push(
-      Object.freeze({
-        severity: "warning",
-        code: "modkit.headless/unsupported-topology",
-        message: `headless renderer skipped ${primitive.topology}`,
-        primitiveId: primitive.id
-      })
-    );
+    context.diagnostics.push(Object.freeze({
+      severity: "warning",
+      code: "modkit.headless/unsupported-topology",
+      message: `headless renderer skipped ${primitive.topology}`,
+      primitiveId: primitive.id
+    }));
     return;
   }
-  const materialColor = primitive.materialId === void 0 ? DEFAULT_COLOR : context.materials.get(primitive.materialId) ?? DEFAULT_COLOR;
+  const surface = primitive.materialId === void 0 ? DEFAULT_SURFACE : context.materials.get(primitive.materialId) ?? DEFAULT_SURFACE;
+  const uvBuffer = surface.texture === void 0 || !(primitive.textureCoordinates instanceof Float32Array) ? void 0 : primitive.textureCoordinates;
+  const normalBuffer = context.light === void 0 || surface.shading !== "lambert" || !(primitive.normals instanceof Float32Array) || primitive.normals.length < primitive.positions.length ? void 0 : primitive.normals;
   for (const element2 of elements) {
     context.signal?.throwIfAborted();
     const indices = element2.map((index) => order?.[index] ?? index);
     if (indices.some((index) => index >= vertexCount)) {
       throw new TypeError(`primitive ${primitive.id} contains an out-of-range index`);
     }
-    const vertices = indices.map(
-      (index) => screenVertex(
-        primitive.positions,
-        index,
-        model,
-        context.viewProjection,
-        context.width,
-        context.height
-      )
-    );
-    if (vertices.some((vertex) => vertex === void 0)) continue;
+    const vertices = indices.map((index) => screenVertex(primitive.positions, index, model, context.viewProjection, context.width, context.height));
+    if (vertices.some((vertex) => vertex === void 0))
+      continue;
+    const uvs = uvBuffer === void 0 ? void 0 : indices.map((index) => [uvBuffer[index * 2] ?? 0, uvBuffer[index * 2 + 1] ?? 0]);
+    const normals = normalBuffer === void 0 ? void 0 : indices.map((index) => transformDirection(model, normalBuffer[index * 3] ?? 0, normalBuffer[index * 3 + 1] ?? 0, normalBuffer[index * 3 + 2] ?? 0));
     context.triangles += 1;
-    context.fragments += rasterizeTriangle(context, vertices, materialColor);
+    context.fragments += rasterizeTriangle(context, vertices, surface, uvs, normals);
   }
 }
 async function renderHeadless(request) {
@@ -44054,9 +47202,9 @@ async function renderHeadless(request) {
   if (request.outputKind !== "rgba8") {
     throw new TypeError(`headless renderer cannot produce ${request.outputKind}`);
   }
-  const scene = recordOf8(request.scene);
-  const camera = recordOf8(request.camera);
-  const viewport = recordOf8(request.viewport);
+  const scene = recordOf9(request.scene);
+  const camera = recordOf9(request.camera);
+  const viewport = recordOf9(request.viewport);
   if (scene === void 0 || !Array.isArray(scene.primitives)) {
     throw new TypeError("headless renderer requires a scene primitive array");
   }
@@ -44072,19 +47220,22 @@ async function renderHeadless(request) {
   const depth = new Float32Array(width * height);
   depth.fill(Number.POSITIVE_INFINITY);
   clearFrame(frame, color(request.clearColor ?? DEFAULT_CLEAR_COLOR, "clearColor"));
+  const diagnostics = [];
   const context = {
     width,
     height,
     frame,
     depth,
     viewProjection: matrix(camera.viewProjection, "camera viewProjection"),
-    materials: materialColors(scene.materials),
-    diagnostics: [],
+    materials: materialSurfaces(scene.materials, textureTable(scene.textures), diagnostics),
+    light: sceneLight(scene.light),
+    diagnostics,
     triangles: 0,
     fragments: 0,
     signal: request.signal
   };
-  for (const primitive of scene.primitives) renderPrimitive(context, primitive);
+  for (const primitive of scene.primitives)
+    renderPrimitive(context, primitive);
   return Object.freeze({
     outputKind: "rgba8",
     width,
@@ -44115,7 +47266,7 @@ function createProvider6(selection) {
   });
 }
 
-// packages/scene/src/module.js
+// packages/scene/dist/module.js
 var sceneModule = defineBuiltinModule({
   coordinate: "modkit/scene",
   packageJson: package_default2,
@@ -44124,12 +47275,12 @@ var sceneModule = defineBuiltinModule({
     { path: "contributions/provider-headless.json", manifest: provider_headless_default }
   ],
   modules: {
-    "./src/render/browser.js": browser_exports,
-    "./src/render/headless.js": headless_exports
+    "./dist/render/browser.js": browser_exports,
+    "./dist/render/headless.js": headless_exports
   }
 });
 
-// packages/uv/src/module.js
+// packages/uv/dist/module.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // packages/uv/contributions/contract-model-materializer.json
@@ -44224,14 +47375,14 @@ var materializer_uvm_default = {
   runtimeVariants: [
     {
       variantId: "trusted-node",
-      entrypoint: "./src/model/provider.js",
+      entrypoint: "./dist/model/provider.js",
       target: { environments: ["node"] },
       executionProfile: "trusted-in-process",
       requestedPermissionClasses: []
     },
     {
       variantId: "portable",
-      entrypoint: "./src/model/provider.js",
+      entrypoint: "./dist/model/provider.js",
       target: {
         environments: ["browser-worker", "node-worker"]
       },
@@ -44265,14 +47416,14 @@ var materializer_uvt_default = {
   runtimeVariants: [
     {
       variantId: "trusted-node",
-      entrypoint: "./src/texture/provider.js",
+      entrypoint: "./dist/texture/provider.js",
       target: { environments: ["node"] },
       executionProfile: "trusted-in-process",
       requestedPermissionClasses: []
     },
     {
       variantId: "portable",
-      entrypoint: "./src/texture/provider.js",
+      entrypoint: "./dist/texture/provider.js",
       target: {
         environments: ["browser-worker", "node-worker"]
       },
@@ -44306,14 +47457,14 @@ var writer_uvm_default = {
   runtimeVariants: [
     {
       variantId: "trusted-node",
-      entrypoint: "./src/model/writer.js",
+      entrypoint: "./dist/model/writer.js",
       target: { environments: ["node"] },
       executionProfile: "trusted-in-process",
       requestedPermissionClasses: []
     },
     {
       variantId: "portable",
-      entrypoint: "./src/model/writer.js",
+      entrypoint: "./dist/model/writer.js",
       target: {
         environments: ["browser-worker", "node-worker"]
       },
@@ -44354,14 +47505,14 @@ var writer_uvt_default = {
   runtimeVariants: [
     {
       variantId: "trusted-node",
-      entrypoint: "./src/texture/writer.js",
+      entrypoint: "./dist/texture/writer.js",
       target: { environments: ["node"] },
       executionProfile: "trusted-in-process",
       requestedPermissionClasses: []
     },
     {
       variantId: "portable",
-      entrypoint: "./src/texture/writer.js",
+      entrypoint: "./dist/texture/writer.js",
       target: {
         environments: ["browser-worker", "node-worker"]
       },
@@ -44398,31 +47549,61 @@ var package_default3 = {
   type: "module",
   description: "Built-in universal visual materialization for UVM and UVT.",
   exports: {
-    ".": "./src/index.js",
-    "./module": {
-      types: "./src/module.d.ts",
-      default: "./src/module.js"
+    ".": {
+      types: "./dist/index.d.ts",
+      default: "./dist/index.js"
     },
-    "./model/materializer": "./src/model/materializer.js",
-    "./model/provider": "./src/model/provider.js",
-    "./model/writer": "./src/model/writer.js",
-    "./texture/materializer": "./src/texture/materializer.js",
-    "./texture/provider": "./src/texture/provider.js",
-    "./texture/writer": "./src/texture/writer.js",
-    "./world": "./src/world/index.js",
+    "./module": {
+      types: "./dist/module.d.ts",
+      default: "./dist/module.js"
+    },
+    "./model/materializer": {
+      types: "./dist/model/materializer.d.ts",
+      default: "./dist/model/materializer.js"
+    },
+    "./model/provider": {
+      types: "./dist/model/provider.d.ts",
+      default: "./dist/model/provider.js"
+    },
+    "./model/writer": {
+      types: "./dist/model/writer.d.ts",
+      default: "./dist/model/writer.js"
+    },
+    "./texture/materializer": {
+      types: "./dist/texture/materializer.d.ts",
+      default: "./dist/texture/materializer.js"
+    },
+    "./texture/provider": {
+      types: "./dist/texture/provider.d.ts",
+      default: "./dist/texture/provider.js"
+    },
+    "./texture/writer": {
+      types: "./dist/texture/writer.d.ts",
+      default: "./dist/texture/writer.js"
+    },
+    "./world": {
+      types: "./dist/world/index.d.ts",
+      default: "./dist/world/index.js"
+    },
     "./package.json": "./package.json"
   },
   files: [
     "contributions",
-    "src",
+    "dist",
     "README.md"
   ],
   dependencies: {
-    "@modkit/host": "workspace:*"
+    "@modkit/host": "workspace:*",
+    "@modkit/sdk": "workspace:*"
+  },
+  scripts: {
+    build: "tsc -b",
+    typecheck: "tsc -p tsconfig.json --noEmit",
+    clean: "tsc -b --clean"
   }
 };
 
-// packages/uv/src/model/provider.js
+// packages/uv/dist/model/provider.js
 var provider_exports = {};
 __export(provider_exports, {
   abiVersion: () => abiVersion10,
@@ -44431,7 +47612,7 @@ __export(provider_exports, {
 });
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
-// packages/uv/src/support.js
+// packages/uv/dist/support.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 function simpleLease(value2) {
   let released = false;
@@ -44443,21 +47624,7 @@ function simpleLease(value2) {
     isReleased: () => released
   });
 }
-function defineWriter2({
-  providerId,
-  providerVersion = "1.0.0",
-  artifactDigest,
-  offerId,
-  formatId,
-  representationId,
-  mutationMode = "mutate",
-  minimumRoundTrip,
-  fidelityEvidenceId,
-  fidelity,
-  validate,
-  planEdits,
-  plan
-}) {
+function defineWriter2({ providerId, providerVersion = "1.0.0", artifactDigest, offerId, formatId, representationId, mutationMode = "mutate", minimumRoundTrip, fidelityEvidenceId, fidelity, validate, planEdits, plan }) {
   const identity = Object.freeze({
     providerId,
     providerVersion,
@@ -44477,11 +47644,13 @@ function defineWriter2({
     identity,
     offer,
     async validate(change, signal) {
-      if (validate !== void 0) return validate(change, signal);
+      if (validate !== void 0)
+        return validate(change, signal);
       return { valid: change.targets.length > 0 && change.edits.length > 0, diagnostics: [] };
     },
     async plan(change, signal) {
-      if (plan !== void 0) return plan(change, signal);
+      if (plan !== void 0)
+        return plan(change, signal);
       const edits = await planEdits(change, signal);
       return Object.freeze({
         planId: `${providerId}:${change.targets.map((target) => target.targetId).join("+")}`,
@@ -44505,7 +47674,7 @@ function defineWriter2({
   });
 }
 
-// packages/uv/src/model/materializer.js
+// packages/uv/dist/model/materializer.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var MATERIALIZER_ID = "modkit/uvm-materializer";
 var MATERIALIZER_VERSION = "1.0.0";
@@ -44521,7 +47690,8 @@ function fail6(message) {
 }
 function finite(values, label) {
   for (const value2 of values) {
-    if (!Number.isFinite(value2)) fail6(`${label} contains a non-finite number`);
+    if (!Number.isFinite(value2))
+      fail6(`${label} contains a non-finite number`);
   }
   return values;
 }
@@ -44530,19 +47700,23 @@ var byUtf8 = (left, right) => {
   const b2 = encoder5.encode(right);
   const length = Math.min(a2.length, b2.length);
   for (let index = 0; index < length; index += 1) {
-    if (a2[index] !== b2[index]) return a2[index] - b2[index];
+    if (a2[index] !== b2[index])
+      return a2[index] - b2[index];
   }
   return a2.length - b2.length;
 };
 function positionalOrder(ids, pattern) {
   const slots = new Array(ids.length).fill(void 0);
-  for (const id of ids) {
-    const match = pattern.exec(id);
-    if (match === null) return null;
+  for (const id2 of ids) {
+    const match = pattern.exec(id2);
+    if (match === null)
+      return null;
     const index = Number(match[1]);
-    if (!Number.isSafeInteger(index) || index < 0 || index >= ids.length) return null;
-    if (slots[index] !== void 0) return null;
-    slots[index] = id;
+    if (!Number.isSafeInteger(index) || index < 0 || index >= ids.length)
+      return null;
+    if (slots[index] !== void 0)
+      return null;
+    slots[index] = id2;
   }
   return slots.every((slot) => slot !== void 0) ? slots : null;
 }
@@ -44582,8 +47756,10 @@ function boundsOf(positions) {
   for (let offset = 0; offset < positions.length; offset += 3) {
     for (let axis = 0; axis < 3; axis += 1) {
       const value2 = positions[offset + axis];
-      if (value2 < min[axis]) min[axis] = value2;
-      if (value2 > max[axis]) max[axis] = value2;
+      if (value2 < min[axis])
+        min[axis] = value2;
+      if (value2 > max[axis])
+        max[axis] = value2;
     }
   }
   return { min, max };
@@ -44610,16 +47786,16 @@ function concat(parts) {
   return result;
 }
 function packUvmGlb(document2, binary) {
-  const json = pad4(encoder5.encode(JSON.stringify(document2)), 32);
+  const json2 = pad4(encoder5.encode(JSON.stringify(document2)), 32);
   const bin = pad4(binary, 0);
-  const length = 12 + 8 + json.byteLength + 8 + bin.byteLength;
+  const length = 12 + 8 + json2.byteLength + 8 + bin.byteLength;
   return concat([
     le32(GLB_MAGIC),
     le32(2),
     le32(length),
-    le32(json.byteLength),
+    le32(json2.byteLength),
     le32(JSON_CHUNK),
-    json,
+    json2,
     le32(bin.byteLength),
     le32(BIN_CHUNK),
     bin
@@ -44627,19 +47803,17 @@ function packUvmGlb(document2, binary) {
 }
 function materializeUvmCore(projection, request, { digest } = {}) {
   const info = projection?.info;
-  if (info === void 0) fail6("the projection carries no info");
-  if (request?.scope === void 0) fail6("a materialization request must name its semantic scope");
+  if (info === void 0)
+    fail6("the projection carries no info");
+  if (request?.scope === void 0)
+    fail6("a materialization request must name its semantic scope");
   const assetId = request.options?.assetId;
   if (typeof assetId !== "string" || assetId.trim() === "") {
-    fail6(
-      "the request must carry options.assetId: the profile requires an identity, and inventing one would be a lie about provenance"
-    );
+    fail6("the request must carry options.assetId: the profile requires an identity, and inventing one would be a lie about provenance");
   }
   const sourceFormat = request.options?.sourceFormat;
   if (typeof sourceFormat !== "string" || sourceFormat.trim() === "") {
-    fail6(
-      "the request must carry options.sourceFormat: UV_provenance records where the artifact came from"
-    );
+    fail6("the request must carry options.sourceFormat: UV_provenance records where the artifact came from");
   }
   const diff = [];
   const lostFacetIds = [];
@@ -44657,48 +47831,20 @@ function materializeUvmCore(projection, request, { digest } = {}) {
   if (info.geometryAccess === "metadata-only" && primitives !== void 0) {
     fail6("geometryAccess is metadata-only but the projection carries primitives");
   }
-  const nodeOrder = positionalOrder(
-    liveNodes.map((node) => node.id),
-    /^node-(\d+)$/u
-  );
-  const meshOrder = positionalOrder(
-    liveMeshes.map((mesh) => mesh.id),
-    /^mesh-(\d+)$/u
-  );
+  const nodeOrder = positionalOrder(liveNodes.map((node) => node.id), /^node-(\d+)$/u);
+  const meshOrder = positionalOrder(liveMeshes.map((mesh) => mesh.id), /^mesh-(\d+)$/u);
   const identityPreserved = nodeOrder !== null && meshOrder !== null;
-  const orderedNodes = identityPreserved ? nodeOrder.map((id) => liveNodes.find((node) => node.id === id)) : [...liveNodes].sort((left, right) => byUtf8(left.id, right.id));
-  const orderedMeshes = identityPreserved ? meshOrder.map((id) => liveMeshes.find((mesh) => mesh.id === id)) : [...liveMeshes].sort((left, right) => byUtf8(left.id, right.id));
-  const primitiveIdentityPreserved = identityPreserved && orderedMeshes.every(
-    (mesh, meshIndex) => (mesh.primitiveIds ?? []).every((id, index) => id === `mesh-${meshIndex}-primitive-${index}`)
-  );
+  const orderedNodes = identityPreserved ? nodeOrder.map((id2) => liveNodes.find((node) => node.id === id2)) : [...liveNodes].sort((left, right) => byUtf8(left.id, right.id));
+  const orderedMeshes = identityPreserved ? meshOrder.map((id2) => liveMeshes.find((mesh) => mesh.id === id2)) : [...liveMeshes].sort((left, right) => byUtf8(left.id, right.id));
+  const primitiveIdentityPreserved = identityPreserved && orderedMeshes.every((mesh, meshIndex) => (mesh.primitiveIds ?? []).every((id2, index) => id2 === `mesh-${meshIndex}-primitive-${index}`));
   if (!identityPreserved) {
-    note(
-      "uv.model/hierarchy@1",
-      "value-differs",
-      "/nodes/*/id",
-      "the source names its nodes outside the positional convention of the artifact binding, so reopening renumbers them"
-    );
-    note(
-      "uv.model/mesh-index@1",
-      "value-differs",
-      "/meshes/*/id",
-      "the source names its meshes outside the positional convention of the artifact binding, so reopening renumbers them"
-    );
+    note("uv.model/hierarchy@1", "value-differs", "/nodes/*/id", "the source names its nodes outside the positional convention of the artifact binding, so reopening renumbers them");
+    note("uv.model/mesh-index@1", "value-differs", "/meshes/*/id", "the source names its meshes outside the positional convention of the artifact binding, so reopening renumbers them");
     losses.push("node and mesh identity renumbered to the positional artifact convention");
   }
   if (!primitiveIdentityPreserved && primitives !== void 0) {
-    note(
-      "uv.model/geometry@1",
-      "value-differs",
-      "/primitives/*/id",
-      "a primitive is named after the mesh that owns it and its place in that mesh, so reopening renames it whenever the source did not already use that form"
-    );
-    note(
-      "uv.model/mesh-index@1",
-      "value-differs",
-      "/meshes/*/primitiveIds",
-      "the primitive ids a mesh lists are renamed with the primitives themselves"
-    );
+    note("uv.model/geometry@1", "value-differs", "/primitives/*/id", "a primitive is named after the mesh that owns it and its place in that mesh, so reopening renames it whenever the source did not already use that form");
+    note("uv.model/mesh-index@1", "value-differs", "/meshes/*/primitiveIds", "the primitive ids a mesh lists are renamed with the primitives themselves");
     losses.push("primitive identity renumbered to the positional artifact convention");
   }
   const nodeIndexById = new Map(orderedNodes.map((node, index) => [node.id, index]));
@@ -44714,27 +47860,17 @@ function materializeUvmCore(projection, request, { digest } = {}) {
     for (const primitiveId of mesh.primitiveIds ?? []) {
       const primitive = primitiveById.get(primitiveId);
       if (primitive === void 0) {
-        if (primitives === void 0) continue;
-        fail6(
-          `mesh \xAB${mesh.id}\xBB names primitive \xAB${primitiveId}\xBB, which the projection does not publish`
-        );
+        if (primitives === void 0)
+          continue;
+        fail6(`mesh \xAB${mesh.id}\xBB names primitive \xAB${primitiveId}\xBB, which the projection does not publish`);
       }
-      const positions = Float32Array.from(
-        finite(primitive.positions, `primitive ${primitive.id} positions`)
-      );
+      const positions = Float32Array.from(finite(primitive.positions, `primitive ${primitive.id} positions`));
       if (positions.length === 0 || positions.length % 3 !== 0) {
         fail6(`primitive \xAB${primitive.id}\xBB does not carry VEC3 positions`);
       }
       if (primitive.topology !== "triangles") {
-        losses.push(
-          `primitive ${primitive.id} is ${primitive.topology}, which UVM/core does not carry`
-        );
-        note(
-          "uv.model/geometry@1",
-          "absent-in-artifact",
-          `/primitives/${primitive.id}`,
-          `UVM/core carries triangles only; \xAB${primitive.topology}\xBB was not written`
-        );
+        losses.push(`primitive ${primitive.id} is ${primitive.topology}, which UVM/core does not carry`);
+        note("uv.model/geometry@1", "absent-in-artifact", `/primitives/${primitive.id}`, `UVM/core carries triangles only; \xAB${primitive.topology}\xBB was not written`);
         continue;
       }
       const vertexCount = positions.length / 3;
@@ -44750,9 +47886,7 @@ function materializeUvmCore(projection, request, { digest } = {}) {
         max: positionBounds.max
       });
       if (primitive.normals !== void 0 && primitive.normals !== null) {
-        const normals = Float32Array.from(
-          finite(primitive.normals, `primitive ${primitive.id} normals`)
-        );
+        const normals = Float32Array.from(finite(primitive.normals, `primitive ${primitive.id} normals`));
         attributes.NORMAL = accessors.length;
         accessors.push({
           bufferView: buffers.push(normals),
@@ -44762,9 +47896,7 @@ function materializeUvmCore(projection, request, { digest } = {}) {
         });
       }
       if (primitive.textureCoordinates !== void 0 && primitive.textureCoordinates !== null) {
-        const uv = Float32Array.from(
-          finite(primitive.textureCoordinates, `primitive ${primitive.id} texture coordinates`)
-        );
+        const uv = Float32Array.from(finite(primitive.textureCoordinates, `primitive ${primitive.id} texture coordinates`));
         attributes.TEXCOORD_0 = accessors.length;
         accessors.push({
           bufferView: buffers.push(uv),
@@ -44794,26 +47926,24 @@ function materializeUvmCore(projection, request, { digest } = {}) {
   const referenced = [...materialIds];
   const materialIndexById = /* @__PURE__ */ new Map();
   const materialCount = Math.max(Number(info.materials ?? 0), referenced.length);
-  const positionalMaterials = referenced.every((id) => {
-    const match = /^material-(\d+)$/u.exec(id);
-    if (match === null) return false;
+  const positionalMaterials = referenced.every((id2) => {
+    const match = /^material-(\d+)$/u.exec(id2);
+    if (match === null)
+      return false;
     const index = Number(match[1]);
-    if (!Number.isSafeInteger(index) || index < 0 || index >= materialCount) return false;
-    if ([...materialIndexById.values()].includes(index)) return false;
-    materialIndexById.set(id, index);
+    if (!Number.isSafeInteger(index) || index < 0 || index >= materialCount)
+      return false;
+    if ([...materialIndexById.values()].includes(index))
+      return false;
+    materialIndexById.set(id2, index);
     return true;
   });
   if (!positionalMaterials) {
     materialIndexById.clear();
-    for (const [index, id] of [...referenced].sort(byUtf8).entries())
-      materialIndexById.set(id, index);
+    for (const [index, id2] of [...referenced].sort(byUtf8).entries())
+      materialIndexById.set(id2, index);
     if (referenced.length > 0) {
-      note(
-        "uv.model/geometry@1",
-        "value-differs",
-        "/primitives/*/materialId",
-        "the source names its materials outside the positional convention, so reopening renumbers them"
-      );
+      note("uv.model/geometry@1", "value-differs", "/primitives/*/materialId", "the source names its materials outside the positional convention, so reopening renumbers them");
     }
   }
   const materials = Array.from({ length: materialCount }, () => ({
@@ -44826,7 +47956,8 @@ function materializeUvmCore(projection, request, { digest } = {}) {
       fail6("resourceClosure.mode must be logical or content-qualified");
     }
     for (const entry2 of closure.entries ?? []) {
-      if (entry2?.role !== "image") continue;
+      if (entry2?.role !== "image")
+        continue;
       if (typeof entry2.logicalId !== "string" || entry2.logicalId === "") {
         fail6("every image resource-closure entry needs a non-empty logicalId");
       }
@@ -44838,103 +47969,49 @@ function materializeUvmCore(projection, request, { digest } = {}) {
     const uncarried = (closure.entries ?? []).filter((entry2) => entry2?.role !== "image");
     if (uncarried.length > 0) {
       lostFacetIds.push("uv.model/resource-closure@1");
-      note(
-        "uv.model/resource-closure@1",
-        "value-differs",
-        void 0,
-        `${uncarried.length} non-image resource closure entry or entries have no UVM/core artifact binding`
-      );
+      note("uv.model/resource-closure@1", "value-differs", void 0, `${uncarried.length} non-image resource closure entry or entries have no UVM/core artifact binding`);
     }
     if ((closure.unavailable ?? []).length > 0) {
       lostFacetIds.push("uv.model/resource-closure@1");
       const ids = closure.unavailable.map((entry2) => entry2.logicalId).join(", ");
       losses.push(`${closure.unavailable.length} resource reference(s) were unavailable: ${ids}`);
-      note(
-        "uv.model/resource-closure@1",
-        "value-differs",
-        void 0,
-        `${closure.unavailable.length} resource reference(s) did not resolve through ResourceSessionPort: ${ids}`
-      );
+      note("uv.model/resource-closure@1", "value-differs", void 0, `${closure.unavailable.length} resource reference(s) did not resolve through ResourceSessionPort: ${ids}`);
     }
   }
   if (Number(info.textures ?? 0) > 0 && closure === void 0) {
     losses.push(`${info.textures} texture reference(s) were not carried`);
-    note(
-      "uv.model/structure@1",
-      "value-differs",
-      "/textures",
-      "the base model contract publishes a texture count but no texture identity; writing empty texture objects to make the count match would be inventing data"
-    );
+    note("uv.model/structure@1", "value-differs", "/textures", "the base model contract publishes a texture count but no texture identity; writing empty texture objects to make the count match would be inventing data");
   }
   if (closure !== void 0 && resourceImages.length !== Number(info.textures ?? 0)) {
-    note(
-      "uv.model/structure@1",
-      "value-differs",
-      "/textures",
-      `the resource closure carries ${resourceImages.length} image identity or identities, while the base model contract counts ${Number(info.textures ?? 0)} texture(s)`
-    );
+    note("uv.model/structure@1", "value-differs", "/textures", `the resource closure carries ${resourceImages.length} image identity or identities, while the base model contract counts ${Number(info.textures ?? 0)} texture(s)`);
   }
   if (Number(info.animations ?? 0) > 0) {
     losses.push(`${info.animations} animation(s) were not carried`);
-    note(
-      "uv.model/structure@1",
-      "value-differs",
-      "/animations",
-      "the base model contract publishes an animation count but no clips or channels; the optional animation facet is what will carry them"
-    );
+    note("uv.model/structure@1", "value-differs", "/animations", "the base model contract publishes an animation count but no clips or channels; the optional animation facet is what will carry them");
   }
   if (Number(info.scenes ?? 1) !== 1) {
-    note(
-      "uv.model/structure@1",
-      "value-differs",
-      "/scenes",
-      "UVM/core describes a single game object, so exactly one scene is written"
-    );
+    note("uv.model/structure@1", "value-differs", "/scenes", "UVM/core describes a single game object, so exactly one scene is written");
   }
   if (primitives === void 0) {
     excludedFacetIds.push("uv.model/geometry@1");
-    note(
-      "uv.model/geometry@1",
-      "absent-in-live",
-      void 0,
-      "the source is metadata-only, so there was no geometry to carry"
-    );
-    note(
-      "uv.model/structure@1",
-      "value-differs",
-      "/geometryAccess",
-      "a metadata-only projection materialises into a document the artifact binding reopens as \xABdecoded\xBB; the flag describes the reader, and no byte written here could carry the source\u2019s answer"
-    );
+    note("uv.model/geometry@1", "absent-in-live", void 0, "the source is metadata-only, so there was no geometry to carry");
+    note("uv.model/structure@1", "value-differs", "/geometryAccess", "a metadata-only projection materialises into a document the artifact binding reopens as \xABdecoded\xBB; the flag describes the reader, and no byte written here could carry the source\u2019s answer");
   }
   const liveBounds = info.bounds !== void 0 && info.bounds !== null;
   const artifactBounds = emittedPrimitives > 0;
   if (liveBounds && !artifactBounds) {
-    note(
-      "uv.model/bounds@1",
-      "absent-in-artifact",
-      void 0,
-      "the artifact binding derives bounds from decoded geometry, and this materialization wrote none"
-    );
+    note("uv.model/bounds@1", "absent-in-artifact", void 0, "the artifact binding derives bounds from decoded geometry, and this materialization wrote none");
   }
   if (!liveBounds && artifactBounds) {
-    note(
-      "uv.model/bounds@1",
-      "absent-in-live",
-      void 0,
-      "the artifact binding derives bounds from decoded geometry, so reopening publishes bounds this source did not"
-    );
+    note("uv.model/bounds@1", "absent-in-live", void 0, "the artifact binding derives bounds from decoded geometry, so reopening publishes bounds this source did not");
   }
   if (primitives === void 0 && Number(info.primitives ?? 0) > 0) {
-    note(
-      "uv.model/structure@1",
-      "value-differs",
-      "/primitives",
-      "a metadata-only source counts primitives it does not publish; the artifact carries only what was written"
-    );
+    note("uv.model/structure@1", "value-differs", "/primitives", "a metadata-only source counts primitives it does not publish; the artifact carries only what was written");
   }
   const childless = new Set(orderedNodes.map((node) => node.id));
   for (const node of orderedNodes) {
-    for (const child of node.childIds ?? []) childless.delete(child);
+    for (const child of node.childIds ?? [])
+      childless.delete(child);
   }
   const rootIndices = orderedNodes.filter((node) => childless.has(node.id)).map((node) => nodeIndexById.get(node.id));
   const socketByNodeId = /* @__PURE__ */ new Map();
@@ -44964,34 +48041,36 @@ function materializeUvmCore(projection, request, { digest } = {}) {
   }
   const documentNodes = orderedNodes.map((node) => {
     const entry2 = {};
-    if (typeof node.name === "string") entry2.name = node.name;
+    if (typeof node.name === "string")
+      entry2.name = node.name;
     const children = (node.childIds ?? []).map((child) => nodeIndexById.get(child)).filter((index) => index !== void 0);
-    if (children.length > 0) entry2.children = children;
+    if (children.length > 0)
+      entry2.children = children;
     const meshId = (node.meshIds ?? [])[0];
-    if (meshId !== void 0 && meshIndexById.has(meshId)) entry2.mesh = meshIndexById.get(meshId);
+    if (meshId !== void 0 && meshIndexById.has(meshId))
+      entry2.mesh = meshIndexById.get(meshId);
     if ((node.meshIds ?? []).length > 1) {
-      note(
-        "uv.model/hierarchy@1",
-        "value-differs",
-        `/nodes/${node.id}/meshIds`,
-        "a glTF node carries at most one mesh; only the first was written"
-      );
+      note("uv.model/hierarchy@1", "value-differs", `/nodes/${node.id}/meshIds`, "a glTF node carries at most one mesh; only the first was written");
     }
     const transform = finite([...node.transform ?? []], `node ${node.id} transform`);
-    if (transform.length !== 16) fail6(`node \xAB${node.id}\xBB transform must carry 16 numbers`);
+    if (transform.length !== 16)
+      fail6(`node \xAB${node.id}\xBB transform must carry 16 numbers`);
     if (transform.some((value2, index) => value2 !== (index % 5 === 0 ? 1 : 0))) {
       entry2.matrix = transform;
     }
     const socket = socketByNodeId.get(node.id);
-    if (socket !== void 0) entry2.extensions = { UV_game_socket: socket };
+    if (socket !== void 0)
+      entry2.extensions = { UV_game_socket: socket };
     return entry2;
   });
   const documentMeshes = emittedMeshes.map(({ mesh, primitives: entries }) => {
     const value2 = {};
-    if (typeof mesh.name === "string") value2.name = mesh.name;
+    if (typeof mesh.name === "string")
+      value2.name = mesh.name;
     value2.primitives = entries.map((entry2) => {
       const primitive = { attributes: entry2.attributes, indices: entry2.indices };
-      if (entry2.material !== void 0) primitive.material = materialIndexById.get(entry2.material);
+      if (entry2.material !== void 0)
+        primitive.material = materialIndexById.get(entry2.material);
       return primitive;
     });
     return value2;
@@ -45057,7 +48136,7 @@ var MATERIALIZER_COORDINATE = Object.freeze({
   profile: PROFILE
 });
 
-// packages/uv/src/model/provider.js
+// packages/uv/dist/model/provider.js
 var OFFER_ID = "uvm-core-materializer-v1";
 var materializer = Object.freeze({
   coordinate: MATERIALIZER_COORDINATE,
@@ -45074,7 +48153,7 @@ function createProvider7(selection) {
   return Promise.resolve(simpleLease(materializer));
 }
 
-// packages/uv/src/model/writer.js
+// packages/uv/dist/model/writer.js
 var writer_exports = {};
 __export(writer_exports, {
   abiVersion: () => abiVersion11,
@@ -45091,45 +48170,23 @@ var error3 = (code, message) => Object.freeze({ severity: "error", code, message
 function validateExport(change) {
   const diagnostics = [];
   if (change.targets.length === 0 || change.edits.length === 0) {
-    diagnostics.push(
-      error3(
-        "modkit/uvm-writer-change-empty",
-        "a change set must carry at least one target and one edit"
-      )
-    );
+    diagnostics.push(error3("modkit/uvm-writer-change-empty", "a change set must carry at least one target and one edit"));
   }
   const targetIds = new Set(change.targets.map((target) => target.targetId));
   for (const edit of change.edits) {
     if (edit.operation !== "create") {
-      diagnostics.push(
-        error3(
-          "modkit/uvm-writer-operation-unsupported",
-          `a UVM export creates a new artifact: \xAB${edit.operation}\xBB is not an export-only edit`
-        )
-      );
+      diagnostics.push(error3("modkit/uvm-writer-operation-unsupported", `a UVM export creates a new artifact: \xAB${edit.operation}\xBB is not an export-only edit`));
       continue;
     }
     if (!targetIds.has(edit.targetId)) {
-      diagnostics.push(
-        error3(
-          "modkit/uvm-writer-target-foreign",
-          `edit target \xAB${edit.targetId}\xBB is not a target of this change set`
-        )
-      );
+      diagnostics.push(error3("modkit/uvm-writer-target-foreign", `edit target \xAB${edit.targetId}\xBB is not a target of this change set`));
       continue;
     }
     if (typeof edit.newPath !== "string" || edit.newPath.trim() === "") {
-      diagnostics.push(
-        error3("modkit/uvm-writer-path-missing", "a create edit must name the path it writes")
-      );
+      diagnostics.push(error3("modkit/uvm-writer-path-missing", "a create edit must name the path it writes"));
     }
     if (!PAYLOAD_KINDS3.includes(edit.payload?.kind)) {
-      diagnostics.push(
-        error3(
-          "modkit/uvm-writer-payload-unsupported",
-          `UVM bytes arrive inline or staged, not as \xAB${String(edit.payload?.kind)}\xBB`
-        )
-      );
+      diagnostics.push(error3("modkit/uvm-writer-payload-unsupported", `UVM bytes arrive inline or staged, not as \xAB${String(edit.payload?.kind)}\xBB`));
     }
   }
   return Object.freeze({ valid: diagnostics.length === 0, diagnostics: Object.freeze(diagnostics) });
@@ -45161,7 +48218,7 @@ var writerModule = defineWriter2({
 });
 var { abiVersion: abiVersion11, provides: provides8, createProvider: createProvider8 } = writerModule;
 
-// packages/uv/src/texture/provider.js
+// packages/uv/dist/texture/provider.js
 var provider_exports2 = {};
 __export(provider_exports2, {
   abiVersion: () => abiVersion12,
@@ -45170,7 +48227,7 @@ __export(provider_exports2, {
 });
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
-// packages/uv/src/texture/materializer.js
+// packages/uv/dist/texture/materializer.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 var MATERIALIZER_ID2 = "modkit/uvt-materializer";
 var MATERIALIZER_VERSION2 = "1.0.0";
@@ -45213,11 +48270,7 @@ function dataFormatDescriptor({ transferFunction, primaries, premultipliedAlpha 
   view.setUint32(0, 92, true);
   view.setUint32(4, 0, true);
   view.setUint32(8, 2 | 88 << 16, true);
-  view.setUint32(
-    12,
-    KHR_DF_MODEL_RGBSDA | primaries << 8 | transferFunction << 16 | (premultipliedAlpha ? KHR_DF_FLAG_ALPHA_PREMULTIPLIED : 0) << 24,
-    true
-  );
+  view.setUint32(12, KHR_DF_MODEL_RGBSDA | primaries << 8 | transferFunction << 16 | (premultipliedAlpha ? KHR_DF_FLAG_ALPHA_PREMULTIPLIED : 0) << 24, true);
   view.setUint32(16, 0, true);
   view.setUint32(20, 4, true);
   view.setUint32(24, 0, true);
@@ -45295,7 +48348,10 @@ var ALPHA_BY_SOURCE = Object.freeze({
   straight: "straight",
   premultiplied: "premultiplied"
 });
-var ORIENTATION_BY_SOURCE = Object.freeze({ "top-left": "rd", "bottom-left": "ru" });
+var ORIENTATION_BY_SOURCE = Object.freeze({
+  "top-left": "rd",
+  "bottom-left": "ru"
+});
 var DEFAULT_SAMPLER = Object.freeze({
   minFilter: "linear",
   magFilter: "linear",
@@ -45308,13 +48364,14 @@ var DEFAULT_SAMPLER = Object.freeze({
 function materializeUvtCore(source2, request, { digest } = {}) {
   const info = source2?.info;
   const region = source2?.region;
-  if (info === void 0) fail7("the projection carries no raster info");
-  if (region === void 0) fail7("the projection carries no decoded region");
-  if (request?.scope === void 0) fail7("a materialization request must name its semantic scope");
+  if (info === void 0)
+    fail7("the projection carries no raster info");
+  if (region === void 0)
+    fail7("the projection carries no decoded region");
+  if (request?.scope === void 0)
+    fail7("a materialization request must name its semantic scope");
   if (region.pixelFormat !== "rgba8") {
-    fail7(
-      `this materializer writes an 8-bit RGBA container and was handed a \xAB${String(region.pixelFormat)}\xBB region; ask readRegion for rgba8 rather than reinterpreting the bytes here`
-    );
+    fail7(`this materializer writes an 8-bit RGBA container and was handed a \xAB${String(region.pixelFormat)}\xBB region; ask readRegion for rgba8 rather than reinterpreting the bytes here`);
   }
   const width = info.width;
   const height = info.height;
@@ -45322,9 +48379,7 @@ function materializeUvtCore(source2, request, { digest } = {}) {
     fail7("the image must have a positive integral width and height");
   }
   if (region.width !== width || region.height !== height) {
-    fail7(
-      `the region covers ${region.width}x${region.height} of a ${width}x${height} image; a UVT projection describes the whole base level, and a crop would be a different texture`
-    );
+    fail7(`the region covers ${region.width}x${region.height} of a ${width}x${height} image; a UVT projection describes the whole base level, and a crop would be a different texture`);
   }
   const rowStride = region.rowStride;
   if (!Number.isSafeInteger(rowStride) || rowStride < width * 4) {
@@ -45335,21 +48390,15 @@ function materializeUvtCore(source2, request, { digest } = {}) {
   }
   const color2 = TRANSFER_BY_COLOR_SPACE[info.colorSpace];
   if (color2 === void 0) {
-    fail7(
-      `the source declares colorSpace \xAB${String(info.colorSpace)}\xBB; UVT/core admits linear and srgb only, and guessing a transfer function changes every pixel\u2019s meaning`
-    );
+    fail7(`the source declares colorSpace \xAB${String(info.colorSpace)}\xBB; UVT/core admits linear and srgb only, and guessing a transfer function changes every pixel\u2019s meaning`);
   }
   const alphaMode = ALPHA_BY_SOURCE[info.alphaMode];
   if (alphaMode === void 0) {
-    fail7(
-      `the source declares alphaMode \xAB${String(info.alphaMode)}\xBB; UVT/core admits opaque, straight and premultiplied, and a guessed alpha mode changes every blended pixel`
-    );
+    fail7(`the source declares alphaMode \xAB${String(info.alphaMode)}\xBB; UVT/core admits opaque, straight and premultiplied, and a guessed alpha mode changes every blended pixel`);
   }
   const orientation = ORIENTATION_BY_SOURCE[info.orientation];
   if (orientation === void 0) {
-    fail7(
-      `the source declares orientation \xAB${String(info.orientation)}\xBB; a runtime cannot recover row order from the pixels, so the profile requires the projection to state rd or ru`
-    );
+    fail7(`the source declares orientation \xAB${String(info.orientation)}\xBB; a runtime cannot recover row order from the pixels, so the profile requires the projection to state rd or ru`);
   }
   const diff = [];
   const losses = [];
@@ -45360,58 +48409,29 @@ function materializeUvtCore(source2, request, { digest } = {}) {
   };
   if (Number(info.mipLevels ?? 1) > 1) {
     losses.push(`${Number(info.mipLevels) - 1} mip level(s) were not carried`);
-    note(
-      "uv.texture/container@1",
-      "value-differs",
-      "/levelCount",
-      "the projection was built from one decoded base-level region; the source\u2019s remaining mip levels were neither copied nor regenerated, and regenerating them would be inventing pixels"
-    );
+    note("uv.texture/container@1", "value-differs", "/levelCount", "the projection was built from one decoded base-level region; the source\u2019s remaining mip levels were neither copied nor regenerated, and regenerating them would be inventing pixels");
   }
   if (Number(info.layers ?? 1) > 1) {
     losses.push(`${Number(info.layers) - 1} array layer(s) were not carried`);
-    note(
-      "uv.texture/container@1",
-      "value-differs",
-      "/layerCount",
-      "a decoded region names one layer; the remaining layers of the source array were not written"
-    );
+    note("uv.texture/container@1", "value-differs", "/layerCount", "a decoded region names one layer; the remaining layers of the source array were not written");
   }
   if (Number(info.faces ?? 1) > 1) {
     losses.push(`${Number(info.faces) - 1} cube face(s) were not carried`);
-    note(
-      "uv.texture/container@1",
-      "value-differs",
-      "/faceCount",
-      "a decoded region names one face; a cubemap projection needs six and this materialization wrote one"
-    );
+    note("uv.texture/container@1", "value-differs", "/faceCount", "a decoded region names one face; a cubemap projection needs six and this materialization wrote one");
   }
   if (Number(info.frames ?? 1) > 1) {
     losses.push(`${Number(info.frames) - 1} additional frame(s) were not carried`);
-    note(
-      "uv.texture/container@1",
-      "absent-in-artifact",
-      "/frames",
-      "UVT/core carries no frame sequence: animated frame timelines are named in the profile\u2019s open questions, and a container cannot hold what the profile does not define"
-    );
+    note("uv.texture/container@1", "absent-in-artifact", "/frames", "UVT/core carries no frame sequence: animated frame timelines are named in the profile\u2019s open questions, and a container cannot hold what the profile does not define");
   }
   if (Number(info.bitDepth ?? 8) !== 8) {
     losses.push(`source channel depth ${info.bitDepth} was requantised to 8 bits per channel`);
-    note(
-      "uv.texture/container@1",
-      "value-differs",
-      "/vkFormat",
-      "the decoded region contract delivers 8-bit RGBA, so a deeper source arrives already requantised; the loss belongs to the decode, and this records that it happened"
-    );
+    note("uv.texture/container@1", "value-differs", "/vkFormat", "the decoded region contract delivers 8-bit RGBA, so a deeper source arrives already requantised; the loss belongs to the decode, and this records that it happened");
   }
   if (source2.sampler === void 0) {
-    note(
-      "uv.texture/sampler@1",
-      "absent-in-live",
-      void 0,
-      "no live raster contract publishes sampler state, so the profile\u2019s required sampler is supplied by this materializer at its documented defaults rather than read from the source"
-    );
+    note("uv.texture/sampler@1", "absent-in-live", void 0, "no live raster contract publishes sampler state, so the profile\u2019s required sampler is supplied by this materializer at its documented defaults rather than read from the source");
   }
-  if (source2.atlas === void 0) excludedFacetIds.push("uv.texture/atlas@1");
+  if (source2.atlas === void 0)
+    excludedFacetIds.push("uv.texture/atlas@1");
   const srgb = color2.transferFunction === "srgb";
   const premultipliedAlpha = alphaMode === "premultiplied";
   const header = {
@@ -45483,7 +48503,7 @@ var TEXTURE_MATERIALIZER_COORDINATE = Object.freeze({
   profile: PROFILE2
 });
 
-// packages/uv/src/texture/provider.js
+// packages/uv/dist/texture/provider.js
 var OFFER_ID2 = "uvt-core-materializer-v1";
 var materializer2 = Object.freeze({
   coordinate: TEXTURE_MATERIALIZER_COORDINATE,
@@ -45500,7 +48520,7 @@ function createProvider9(selection) {
   return Promise.resolve(simpleLease(materializer2));
 }
 
-// packages/uv/src/texture/writer.js
+// packages/uv/dist/texture/writer.js
 var writer_exports2 = {};
 __export(writer_exports2, {
   abiVersion: () => abiVersion13,
@@ -45517,54 +48537,27 @@ var error4 = (code, message) => Object.freeze({ severity: "error", code, message
 function validateExport2(change) {
   const diagnostics = [];
   if (change.targets.length === 0 || change.edits.length === 0) {
-    diagnostics.push(
-      error4(
-        "modkit/uvt-writer-change-empty",
-        "a change set must carry at least one target and one edit"
-      )
-    );
+    diagnostics.push(error4("modkit/uvt-writer-change-empty", "a change set must carry at least one target and one edit"));
   }
   const targetIds = new Set(change.targets.map((target) => target.targetId));
   for (const edit of change.edits) {
     if (edit.operation !== "create") {
-      diagnostics.push(
-        error4(
-          "modkit/uvt-writer-operation-unsupported",
-          `a UVT export creates new artifacts: \xAB${edit.operation}\xBB is not an export-only edit`
-        )
-      );
+      diagnostics.push(error4("modkit/uvt-writer-operation-unsupported", `a UVT export creates new artifacts: \xAB${edit.operation}\xBB is not an export-only edit`));
       continue;
     }
     if (!targetIds.has(edit.targetId)) {
-      diagnostics.push(
-        error4(
-          "modkit/uvt-writer-target-foreign",
-          `edit target \xAB${edit.targetId}\xBB is not a target of this change set`
-        )
-      );
+      diagnostics.push(error4("modkit/uvt-writer-target-foreign", `edit target \xAB${edit.targetId}\xBB is not a target of this change set`));
       continue;
     }
     if (typeof edit.newPath !== "string" || edit.newPath.trim() === "") {
-      diagnostics.push(
-        error4("modkit/uvt-writer-path-missing", "a create edit must name the path it writes")
-      );
+      diagnostics.push(error4("modkit/uvt-writer-path-missing", "a create edit must name the path it writes"));
       continue;
     }
     if (!edit.newPath.endsWith(".uvt.ktx2") && !edit.newPath.endsWith(".uvt.json")) {
-      diagnostics.push(
-        error4(
-          "modkit/uvt-writer-path-unexpected",
-          `a UVT export writes \xAB<name>.uvt.ktx2\xBB and \xAB<name>.uvt.json\xBB; \xAB${edit.newPath}\xBB is neither`
-        )
-      );
+      diagnostics.push(error4("modkit/uvt-writer-path-unexpected", `a UVT export writes \xAB<name>.uvt.ktx2\xBB and \xAB<name>.uvt.json\xBB; \xAB${edit.newPath}\xBB is neither`));
     }
     if (!PAYLOAD_KINDS4.includes(edit.payload?.kind)) {
-      diagnostics.push(
-        error4(
-          "modkit/uvt-writer-payload-unsupported",
-          `UVT bytes arrive inline or staged, not as \xAB${String(edit.payload?.kind)}\xBB`
-        )
-      );
+      diagnostics.push(error4("modkit/uvt-writer-payload-unsupported", `UVT bytes arrive inline or staged, not as \xAB${String(edit.payload?.kind)}\xBB`));
     }
   }
   return Object.freeze({ valid: diagnostics.length === 0, diagnostics: Object.freeze(diagnostics) });
@@ -45597,7 +48590,7 @@ var writerModule2 = defineWriter2({
 });
 var { abiVersion: abiVersion13, provides: provides10, createProvider: createProvider10 } = writerModule2;
 
-// packages/uv/src/module.js
+// packages/uv/dist/module.js
 var uvModule = defineBuiltinModule({
   coordinate: "modkit/uv",
   packageJson: package_default3,
@@ -45613,10 +48606,10 @@ var uvModule = defineBuiltinModule({
     { path: "contributions/writer-uvt.json", manifest: writer_uvt_default }
   ],
   modules: {
-    "./src/model/provider.js": provider_exports,
-    "./src/model/writer.js": writer_exports,
-    "./src/texture/provider.js": provider_exports2,
-    "./src/texture/writer.js": writer_exports2
+    "./dist/model/provider.js": provider_exports,
+    "./dist/model/writer.js": writer_exports,
+    "./dist/texture/provider.js": provider_exports2,
+    "./dist/texture/writer.js": writer_exports2
   }
 });
 
@@ -48253,12 +51246,12 @@ function spliceBytes(original, range, replacement) {
   out.set(original.subarray(start + length), start + replacement.byteLength);
   return out;
 }
-function spliceUtf16(original, offset, length, text3) {
+function spliceUtf16(original, offset, length, text4) {
   const decoded = new TextDecoder("utf-8", { fatal: true }).decode(original);
   if (offset < 0 || length < 0 || offset + length > decoded.length) {
     throw editingError("x3.host/edit-range-invalid", "UTF-16 range lies outside the source");
   }
-  return new TextEncoder().encode(decoded.slice(0, offset) + text3 + decoded.slice(offset + length));
+  return new TextEncoder().encode(decoded.slice(0, offset) + text4 + decoded.slice(offset + length));
 }
 async function replacedBytes(edit, original, payloads, maxPayloadBytes, signal) {
   const replacement = await payloadBytes(edit.payload, payloads, maxPayloadBytes, signal);
@@ -48313,7 +51306,7 @@ function revisionFor(bindingId2, source2, token, namespaceRevision) {
     })
   });
 }
-async function readAll2(snapshot3) {
+async function readAll3(snapshot3) {
   return new Uint8Array(await snapshot3.slice(0, snapshot3.size).arrayBuffer());
 }
 function createBrowserEditingBackend(options) {
@@ -48351,7 +51344,7 @@ function createBrowserEditingBackend(options) {
       if (canonicalJsonStringify(live) !== canonicalJsonStringify(applyOptions.expectedRevision)) {
         throw editingError("x3.host/edit-conditional-write-lost", `\xAB${edit.source.uri}\xBB is not at the revision the plan expects`, { expected: applyOptions.expectedRevision, actual: live });
       }
-      const original = await readAll2(await file.getFile());
+      const original = await readAll3(await file.getFile());
       const next = await replacedBytes(edit, original, applyOptions.payloads, maxPayloadBytes, signal);
       const images = preImages.get(applyOptions.transactionId) ?? /* @__PURE__ */ new Map();
       preImages.set(applyOptions.transactionId, images);
@@ -48719,9 +51712,9 @@ function createIndexedDbExtensionStore(factory, databaseName = USER_EXTENSION_DA
     async add(record4) {
       await withStore("readwrite", (store) => settle(store.put(record4)));
     },
-    async remove(id) {
+    async remove(id2) {
       if (!await exists()) return;
-      await withStore("readwrite", (store) => settle(store.delete(id)));
+      await withStore("readwrite", (store) => settle(store.delete(id2)));
     }
   };
 }
@@ -48856,8 +51849,8 @@ function embeddedHandle(name, encodedFiles) {
   return memoryDirectoryHandle(name, files);
 }
 function inspectPortableExtensionBundle(bytes2) {
-  const text3 = new TextDecoder("utf-8", { fatal: true }).decode(bytes2);
-  const normalized = normalizeRepositoryManifest(JSON.parse(text3));
+  const text4 = new TextDecoder("utf-8", { fatal: true }).decode(bytes2);
+  const normalized = normalizeRepositoryManifest(JSON.parse(text4));
   if (!isNormalizedRepositoryManifest(normalized)) {
     throw new Error("repository normalizer returned an unsupported document");
   }
@@ -48901,8 +51894,8 @@ async function loadManagedExtensionRoots(storage, options) {
     let document2;
     try {
       const bytes2 = await response2.arrayBuffer();
-      const text3 = new TextDecoder("utf-8", { fatal: true }).decode(bytes2);
-      document2 = JSON.parse(text3);
+      const text4 = new TextDecoder("utf-8", { fatal: true }).decode(bytes2);
+      document2 = JSON.parse(text4);
     } catch (error5) {
       failures.push(
         failure2(
@@ -49244,8 +52237,8 @@ function createIndexedDbManagedExtensionMetadataStore(factory, databaseName = MA
     async put(record4) {
       await withStore("readwrite", (store) => settle2(store.put(record4)));
     },
-    async remove(id) {
-      await withStore("readwrite", (store) => settle2(store.delete(id)));
+    async remove(id2) {
+      await withStore("readwrite", (store) => settle2(store.delete(id2)));
     }
   };
 }
@@ -49284,9 +52277,9 @@ function validateInstallRequest(request) {
   return { ...request, digest };
 }
 function cacheKey(request) {
-  const id = encodeURIComponent(request.id);
+  const id2 = encodeURIComponent(request.id);
   const version = encodeURIComponent(request.version);
-  return `https://extension-cache.modkit.invalid/${id}/${version}/${request.digest}`;
+  return `https://extension-cache.modkit.invalid/${id2}/${version}/${request.digest}`;
 }
 async function defaultSha256(bytes2) {
   if (globalThis.crypto?.subtle === void 0) {
@@ -49299,8 +52292,8 @@ async function responseMatches(response2, expected, sha2564) {
   const actual = (await sha2564(await response2.clone().arrayBuffer())).toLowerCase();
   return actual === expected;
 }
-function findById(records, id) {
-  return records.find((record4) => record4.id === id);
+function findById(records, id2) {
+  return records.find((record4) => record4.id === id2);
 }
 function createBrowserExtensionStorage(options) {
   const sha2564 = options.sha256 ?? defaultSha256;
@@ -49414,35 +52407,35 @@ function createBrowserExtensionStorage(options) {
       }
       return pinned;
     },
-    async remove(id) {
-      const record4 = findById(await options.metadata.list(), id);
+    async remove(id2) {
+      const record4 = findById(await options.metadata.list(), id2);
       if (record4 === void 0) return;
-      await options.metadata.remove(id);
+      await options.metadata.remove(id2);
       await options.responses.remove(record4.cacheKey);
     },
-    async enable(id, enabled) {
-      const record4 = findById(await options.metadata.list(), id);
-      if (record4 === void 0) throw new Error(`extension ${id} is not installed`);
+    async enable(id2, enabled) {
+      const record4 = findById(await options.metadata.list(), id2);
+      if (record4 === void 0) throw new Error(`extension ${id2} is not installed`);
       const updated = Object.freeze({ ...record4, enabled });
       await options.metadata.put(updated);
       return updated;
     },
-    async updateSettings(id, settings) {
-      const record4 = findById(await options.metadata.list(), id);
-      if (record4 === void 0) throw new Error(`extension ${id} is not installed`);
+    async updateSettings(id2, settings) {
+      const record4 = findById(await options.metadata.list(), id2);
+      if (record4 === void 0) throw new Error(`extension ${id2} is not installed`);
       const normalized = normalizeSettings(settings);
       if (normalized === void 0) throw new Error("extension settings must be a JSON object");
       const updated = Object.freeze({ ...record4, settings: normalized });
       await options.metadata.put(updated);
       return updated;
     },
-    async open(id) {
-      const record4 = findById(await options.metadata.list(), id);
+    async open(id2) {
+      const record4 = findById(await options.metadata.list(), id2);
       if (record4 === void 0 || !record4.enabled) return void 0;
       return verifiedCachedResponse(record4);
     },
-    async openInstalled(id) {
-      const record4 = findById(await options.metadata.list(), id);
+    async openInstalled(id2) {
+      const record4 = findById(await options.metadata.list(), id2);
       if (record4 === void 0) return void 0;
       return verifiedCachedResponse(record4);
     }
@@ -49722,7 +52715,7 @@ function createBrowserExtensionManager(options) {
       });
       return commonRecord(stored);
     },
-    remove: (id) => storage.remove(id)
+    remove: (id2) => storage.remove(id2)
   };
   const pendingEnablement = /* @__PURE__ */ new Map();
   const enablementStore = {
@@ -49731,21 +52724,21 @@ function createBrowserExtensionManager(options) {
       const installedIds = new Set(installed.map((record4) => record4.id));
       return Object.freeze([
         ...installed.map((record4) => Object.freeze({ id: record4.id, enabled: record4.enabled })),
-        ...[...pendingEnablement].filter(([id]) => !installedIds.has(id)).map(([id, enabled]) => Object.freeze({ id, enabled }))
+        ...[...pendingEnablement].filter(([id2]) => !installedIds.has(id2)).map(([id2, enabled]) => Object.freeze({ id: id2, enabled }))
       ]);
     },
-    async setEnabled(id, enabled) {
-      const installed = (await storage.list()).some((record4) => record4.id === id);
+    async setEnabled(id2, enabled) {
+      const installed = (await storage.list()).some((record4) => record4.id === id2);
       if (!installed) {
-        pendingEnablement.set(id, enabled);
+        pendingEnablement.set(id2, enabled);
         return;
       }
-      await storage.enable(id, enabled);
-      pendingEnablement.delete(id);
+      await storage.enable(id2, enabled);
+      pendingEnablement.delete(id2);
     },
     // The common client removes the artifact first; enablement shares that same IndexedDB record.
-    remove: (id) => {
-      pendingEnablement.delete(id);
+    remove: (id2) => {
+      pendingEnablement.delete(id2);
       return Promise.resolve();
     }
   };
@@ -49767,10 +52760,10 @@ function createBrowserExtensionManager(options) {
   const client = Object.freeze({
     snapshot: () => localClient.snapshot(),
     refresh: () => mutateAcrossTabs(() => localClient.refresh()),
-    install: (id, version) => mutateAcrossTabs(() => localClient.install(id, version)),
-    update: (id) => mutateAcrossTabs(() => localClient.update(id)),
-    remove: (id) => mutateAcrossTabs(() => localClient.remove(id)),
-    setEnabled: (id, enabled) => mutateAcrossTabs(() => localClient.setEnabled(id, enabled))
+    install: (id2, version) => mutateAcrossTabs(() => localClient.install(id2, version)),
+    update: (id2) => mutateAcrossTabs(() => localClient.update(id2)),
+    remove: (id2) => mutateAcrossTabs(() => localClient.remove(id2)),
+    setEnabled: (id2, enabled) => mutateAcrossTabs(() => localClient.setEnabled(id2, enabled))
   });
   return Object.freeze({
     client,
@@ -49824,20 +52817,20 @@ function createManagedExtensionsController(options) {
       catalogLoaded = true;
       return readSnapshot();
     },
-    async install(id) {
-      await options.client.install(id);
+    async install(id2) {
+      await options.client.install(id2);
       return readSnapshot();
     },
-    async update(id) {
-      await options.client.update(id);
+    async update(id2) {
+      await options.client.update(id2);
       return readSnapshot();
     },
-    async remove(id) {
-      await options.client.remove(id);
+    async remove(id2) {
+      await options.client.remove(id2);
       return readSnapshot();
     },
-    async enable(id, enabled) {
-      await options.client.setEnabled(id, enabled);
+    async enable(id2, enabled) {
+      await options.client.setEnabled(id2, enabled);
       return readSnapshot();
     }
   };
@@ -49850,8 +52843,8 @@ function createWebExtensionSubjectCatalog(inventory, options = {}) {
   const disabledExtensions = new Set(options.disabledExtensions ?? []);
   const disabledContributions = new Set(options.disabledContributions ?? []);
   const entries = inventory.extensions.map((extension) => {
-    const id = coordinate2(extension);
-    const packageId = options.managedPackageByExtension?.[id];
+    const id2 = coordinate2(extension);
+    const packageId = options.managedPackageByExtension?.[id2];
     const contributionEnablement = Object.fromEntries(
       extension.contributions.flatMap(
         (contribution) => contribution.manifest === void 0 ? [] : [
@@ -49862,7 +52855,7 @@ function createWebExtensionSubjectCatalog(inventory, options = {}) {
         ]
       )
     );
-    const configuredEnabled = !disabledExtensions.has(id);
+    const configuredEnabled = !disabledExtensions.has(id2);
     const enabled = configuredEnabled && (packageId === void 0 ? true : options.managedPackageEnablement?.[packageId] ?? true);
     const projection = projectExtensionSubjects({
       extension: extension.manifest,
@@ -49870,7 +52863,7 @@ function createWebExtensionSubjectCatalog(inventory, options = {}) {
         (contribution) => contribution.manifest === void 0 ? [] : [contribution.manifest]
       ),
       metadata: {
-        displayName: id,
+        displayName: id2,
         source: extension.source,
         trusted: extension.origin === "bundled"
       },
@@ -49878,7 +52871,7 @@ function createWebExtensionSubjectCatalog(inventory, options = {}) {
       contributionEnablement: Object.freeze(contributionEnablement)
     });
     return Object.freeze({
-      id,
+      id: id2,
       source: extension.source,
       origin: extension.origin,
       ...packageId === void 0 ? {} : { managedPackageId: packageId },
@@ -49895,7 +52888,7 @@ function createWebExtensionSubjectCatalog(inventory, options = {}) {
   );
   return Object.freeze({
     entries: frozenEntries,
-    extension: (id) => byExtension.get(id),
+    extension: (id2) => byExtension.get(id2),
     subject: (subjectId) => bySubject.get(subjectId)
   });
 }
@@ -50227,9 +53220,26 @@ async function createWebSubjectServices(options) {
     ...definitions === void 0 ? {} : { serviceDefinitions: definitions }
   });
   const commands = createWebCommandProtocol(services);
+  const renderer = createSceneRendererPort({
+    services: {
+      inventory: main.inventory,
+      target: main.target,
+      executionBackends,
+      ...definitions === void 0 ? {} : { serviceDefinitions: definitions }
+    },
+    grant: { id: "pwa-scene-renderer", classes: [] },
+    budgets: {
+      maxInputBytes: 67108864n,
+      maxDepth: 16,
+      maxNodes: 1e6,
+      maxScalarBytes: 67108864,
+      maxDiagnostics: 100
+    }
+  });
   return Object.freeze({
     ...services,
     commands,
+    renderer,
     sourceOpen: createWebSourceOpenAdapter(main.profile),
     dispose: () => commands.dispose(),
     main,
@@ -50319,15 +53329,15 @@ async function requestWriteAccess(access, localizer = createWebLocalizer("en")) 
     };
   }
 }
-var isRecord4 = (value2) => typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
+var isRecord5 = (value2) => typeof value2 === "object" && value2 !== null && !Array.isArray(value2);
 function byteRuns(value2) {
   if (!Array.isArray(value2) || value2.length === 0) return void 0;
   const runs = [];
   for (const item of value2) {
-    if (!isRecord4(item)) return void 0;
+    if (!isRecord5(item)) return void 0;
     const range = item["range"];
     const payload = item["payload"];
-    if (!isRecord4(range) || !isRecord4(payload)) return void 0;
+    if (!isRecord5(range) || !isRecord5(payload)) return void 0;
     if (range["kind"] !== "bytes" || typeof range["offset"] !== "bigint") return void 0;
     if (payload["kind"] !== "inline" || !(payload["bytes"] instanceof Uint8Array)) return void 0;
     const offset = Number(range["offset"]);
@@ -50350,7 +53360,7 @@ function mergeByteRuns(runs, original) {
   return { offset: start, bytes: window };
 }
 function normalizeChangeSet(change, targets, original, localizer = createWebLocalizer("en")) {
-  if (!isRecord4(change)) return void 0;
+  if (!isRecord5(change)) return void 0;
   const declared = change["targets"];
   if (Array.isArray(declared) && declared.length > 0) return change;
   const target = targets[0];
@@ -51095,14 +54105,14 @@ function createHexEditor(options = {}) {
                 event.preventDefault();
             });
             cell.addEventListener("blur", () => {
-              const text3 = (cell.textContent ?? "").trim();
-              if (!HEX_BYTE.test(text3)) {
+              const text4 = (cell.textContent ?? "").trim();
+              if (!HEX_BYTE.test(text4)) {
                 const key3 = absolute.toString(10);
                 const known = pending.get(key3)?.after ?? value2;
                 setByte(absolute, value2, known);
                 return;
               }
-              setByte(absolute, value2, Number.parseInt(text3, 16));
+              setByte(absolute, value2, Number.parseInt(text4, 16));
             });
           }
           const ascii = element(line, "span", { part: "hex.ascii" });
@@ -51123,8 +54133,8 @@ function createHexEditor(options = {}) {
               }
             });
             glyph.addEventListener("blur", () => {
-              const text3 = glyph.textContent ?? "";
-              const code = text3.length === 1 ? text3.charCodeAt(0) : Number.NaN;
+              const text4 = glyph.textContent ?? "";
+              const code = text4.length === 1 ? text4.charCodeAt(0) : Number.NaN;
               if (Number.isNaN(code) || code < 32 || code > 126) {
                 const known = pending.get(absolute.toString(10))?.after ?? value2;
                 setByte(absolute, value2, known);
@@ -51590,11 +54600,11 @@ function createImageViewer(options = {}) {
           ["slice", "slice"]
         ];
         for (const [axis, name] of axes) {
-          const count2 = axisCount(info, axis);
-          if (count2 <= 1)
+          const count3 = axisCount(info, axis);
+          if (count3 <= 1)
             continue;
           const step = (delta) => {
-            const next = Math.min(count2 - 1, Math.max(0, subresource[axis] + delta));
+            const next = Math.min(count3 - 1, Math.max(0, subresource[axis] + delta));
             subresource = Object.freeze({ ...subresource, [axis]: next });
             reload();
           };
@@ -51751,9 +54761,9 @@ function renderMetadata(root, descriptor, localizer) {
     const row = element(list, "div", { part: "metadata.row" });
     element(row, "dt", { text: trait.id, part: "metadata.label" });
     const value2 = element(row, "dd", { part: "metadata.value" });
-    const text3 = traitValue(trait);
-    setViewerText(value2, text3, 4096);
-    value2.title = text3;
+    const text4 = traitValue(trait);
+    setViewerText(value2, text4, 4096);
+    value2.title = text4;
   }
 }
 function createMetadataPanel(options = {}) {
@@ -52118,7 +55128,270 @@ function createViewGizmo(host, options = {}) {
   };
 }
 
+// packages/ui/dist/model/scene.js
+init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
+var MODEL_FIELD_OF_VIEW = 0.8;
+var MODEL_DEFAULT_BASE_COLOR = Object.freeze([0.78, 0.8, 0.84, 1]);
+var MODEL_KEY_LIGHT = Object.freeze({
+  direction: Object.freeze([0.35, 0.72, 0.6]),
+  color: Object.freeze([1, 1, 1, 1]),
+  ambient: 0.28
+});
+var finite2 = (value2) => typeof value2 === "number" && Number.isFinite(value2);
+function boundsFraming(bounds) {
+  const { min, max } = bounds;
+  if (!min.every(finite2) || !max.every(finite2))
+    return void 0;
+  const center = [(min[0] + max[0]) / 2, (min[1] + max[1]) / 2, (min[2] + max[2]) / 2];
+  const radius = Math.hypot(max[0] - min[0], max[1] - min[1], max[2] - min[2]) / 2;
+  return radius > 0 ? { center, radius } : { center, radius: 1 };
+}
+function framePrimitive(primitive) {
+  if (primitive.bounds !== void 0) {
+    const framing = boundsFraming(primitive.bounds);
+    if (framing !== void 0)
+      return framing;
+  }
+  const positions = primitive.positions;
+  let minX = Infinity;
+  let minY = Infinity;
+  let minZ = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  let maxZ = -Infinity;
+  for (let index = 0; index + 2 < positions.length; index += 3) {
+    const x = positions[index];
+    const y = positions[index + 1];
+    const z = positions[index + 2];
+    if (!finite2(x) || !finite2(y) || !finite2(z))
+      continue;
+    minX = Math.min(minX, x);
+    minY = Math.min(minY, y);
+    minZ = Math.min(minZ, z);
+    maxX = Math.max(maxX, x);
+    maxY = Math.max(maxY, y);
+    maxZ = Math.max(maxZ, z);
+  }
+  if (minX > maxX)
+    return { center: [0, 0, 0], radius: 1 };
+  return boundsFraming({ min: [minX, minY, minZ], max: [maxX, maxY, maxZ] }) ?? {
+    center: [0, 0, 0],
+    radius: 1
+  };
+}
+var dot = (left, right) => left[0] * right[0] + left[1] * right[1] + left[2] * right[2];
+function modelCamera(framing, basis, distanceScale, viewport) {
+  const radius = framing.radius > 0 && Number.isFinite(framing.radius) ? framing.radius : 1;
+  const distance = radius / Math.sin(MODEL_FIELD_OF_VIEW / 2) * Math.max(0.15, distanceScale);
+  const { right, up, backward } = basis;
+  const eye = [
+    framing.center[0] + backward[0] * distance,
+    framing.center[1] + backward[1] * distance,
+    framing.center[2] + backward[2] * distance
+  ];
+  const aspect = viewport.height <= 0 ? 1 : viewport.width / viewport.height;
+  const focal = 1 / Math.tan(MODEL_FIELD_OF_VIEW / 2);
+  const near = Math.max(distance - radius, radius * 1e-3, 1e-4);
+  const far = distance + radius * 2 + near;
+  const rightAxis = right;
+  const upAxis = up;
+  const backwardAxis = backward;
+  const view = new Float32Array(16);
+  view[0] = rightAxis[0];
+  view[4] = rightAxis[1];
+  view[8] = rightAxis[2];
+  view[12] = -dot(rightAxis, eye);
+  view[1] = upAxis[0];
+  view[5] = upAxis[1];
+  view[9] = upAxis[2];
+  view[13] = -dot(upAxis, eye);
+  view[2] = backwardAxis[0];
+  view[6] = backwardAxis[1];
+  view[10] = backwardAxis[2];
+  view[14] = -dot(backwardAxis, eye);
+  view[15] = 1;
+  const projection = new Float32Array(16);
+  projection[0] = focal / (aspect === 0 ? 1 : aspect);
+  projection[5] = focal;
+  projection[10] = (far + near) / (near - far);
+  projection[11] = -1;
+  projection[14] = 2 * far * near / (near - far);
+  return { eye, framing, viewProjection: multiply4x4(projection, view) };
+}
+function multiply4x4(left, right) {
+  const out = new Float32Array(16);
+  for (let column = 0; column < 4; column += 1) {
+    for (let row = 0; row < 4; row += 1) {
+      let value2 = 0;
+      for (let index = 0; index < 4; index += 1) {
+        value2 += left[index * 4 + row] * right[column * 4 + index];
+      }
+      out[column * 4 + row] = value2;
+    }
+  }
+  return out;
+}
+function projectPoint(viewProjection, point, viewport) {
+  const x = point[0];
+  const y = point[1];
+  const z = point[2];
+  const clipX = viewProjection[0] * x + viewProjection[4] * y + viewProjection[8] * z + viewProjection[12];
+  const clipY = viewProjection[1] * x + viewProjection[5] * y + viewProjection[9] * z + viewProjection[13];
+  const clipW = viewProjection[3] * x + viewProjection[7] * y + viewProjection[11] * z + viewProjection[15];
+  if (!Number.isFinite(clipW) || clipW <= 1e-6)
+    return void 0;
+  const ndcX = clipX / clipW;
+  const ndcY = clipY / clipW;
+  if (!Number.isFinite(ndcX) || !Number.isFinite(ndcY))
+    return void 0;
+  return [(ndcX * 0.5 + 0.5) * viewport.width, (1 - (ndcY * 0.5 + 0.5)) * viewport.height];
+}
+function materialColorFor(id2) {
+  let hash = 2166136261;
+  for (let index = 0; index < id2.length; index += 1) {
+    hash = Math.imul(hash ^ id2.charCodeAt(index), 16777619) >>> 0;
+  }
+  const hue = hash % 3600 / 3600;
+  const [red, green, blue] = hueToRgb(hue, 0.28, 0.72);
+  return [red, green, blue, 1];
+}
+function hueToRgb(hue, saturation, lightness) {
+  const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
+  const sector = hue * 6;
+  const second = chroma * (1 - Math.abs(sector % 2 - 1));
+  const match = lightness - chroma / 2;
+  const table = [
+    [chroma, second, 0],
+    [second, chroma, 0],
+    [0, chroma, second],
+    [0, second, chroma],
+    [second, 0, chroma],
+    [chroma, 0, second]
+  ];
+  const base = table[Math.min(5, Math.floor(sector))] ?? table[0];
+  const rgb = base;
+  return [rgb[0] + match, rgb[1] + match, rgb[2] + match];
+}
+var BASE_COLOR_SLOTS = Object.freeze([
+  "diffuse",
+  "basecolor",
+  "albedo",
+  "color",
+  "colour",
+  "mapkd"
+]);
+var slotKey2 = (value2) => value2.toLowerCase().replace(/[^a-z0-9]/gu, "");
+function baseColorResourceOf(material) {
+  const layers = material.layers ?? [];
+  for (const slot of BASE_COLOR_SLOTS) {
+    for (const layer of layers) {
+      if (slotKey2(layer.slot) === slot && layer.resourceId !== void 0)
+        return layer.resourceId;
+    }
+  }
+  return void 0;
+}
+function sceneMaterials(refs, textures, shaded) {
+  const used = /* @__PURE__ */ new Map();
+  const materials = refs.map((ref2) => {
+    const resourceId2 = baseColorResourceOf(ref2);
+    const texture = resourceId2 === void 0 ? void 0 : textures.get(resourceId2);
+    if (texture !== void 0)
+      used.set(texture.id, texture);
+    return Object.freeze({
+      id: ref2.id,
+      baseColor: texture === void 0 ? materialColorFor(ref2.id) : MODEL_DEFAULT_BASE_COLOR,
+      ...texture === void 0 ? {} : { baseColorTexture: texture.id },
+      shading: shaded ? "lambert" : "unlit"
+    });
+  });
+  return Object.freeze({
+    materials: Object.freeze(materials),
+    textures: Object.freeze([...used.values()])
+  });
+}
+function modelSceneRequest(options) {
+  return {
+    scene: {
+      primitives: [options.primitive],
+      ...options.materials === void 0 || options.materials.length === 0 ? {} : { materials: options.materials },
+      ...options.textures === void 0 || options.textures.length === 0 ? {} : { textures: options.textures },
+      ...options.light === void 0 ? {} : { light: options.light }
+    },
+    camera: { viewProjection: options.camera.viewProjection },
+    viewport: options.viewport,
+    ...options.clearColor === void 0 ? {} : { clearColor: options.clearColor },
+    outputKind: "rgba8",
+    ...options.signal === void 0 ? {} : { signal: options.signal }
+  };
+}
+function boneOrigin(matrix2) {
+  if (matrix2.length < 16 || !matrix2.every(finite2))
+    return void 0;
+  const [a2, b2, c3, , d, e2, f2, , g, h, i2] = matrix2;
+  const tx = matrix2[12];
+  const ty = matrix2[13];
+  const tz = matrix2[14];
+  const A = a2;
+  const B = b2;
+  const C = c3;
+  const D = d;
+  const E = e2;
+  const F = f2;
+  const G = g;
+  const H = h;
+  const I = i2;
+  const determinant = A * (E * I - F * H) - B * (D * I - F * G) + C * (D * H - E * G);
+  if (!finite2(determinant) || Math.abs(determinant) < 1e-12)
+    return void 0;
+  const inverse = [
+    (E * I - F * H) / determinant,
+    (C * H - B * I) / determinant,
+    (B * F - C * E) / determinant,
+    (F * G - D * I) / determinant,
+    (A * I - C * G) / determinant,
+    (C * D - A * F) / determinant,
+    (D * H - E * G) / determinant,
+    (B * G - A * H) / determinant,
+    (A * E - B * D) / determinant
+  ];
+  const position = [
+    -(tx * inverse[0] + ty * inverse[3] + tz * inverse[6]),
+    -(tx * inverse[1] + ty * inverse[4] + tz * inverse[7]),
+    -(tx * inverse[2] + ty * inverse[5] + tz * inverse[8])
+  ];
+  return position.every(finite2) ? position : void 0;
+}
+function skeletonJoints(bindings) {
+  const byBoneIndex = /* @__PURE__ */ new Map();
+  const joints = [];
+  for (const binding of bindings) {
+    const matrix2 = binding.restMatrix;
+    if (matrix2 === void 0)
+      continue;
+    const position = boneOrigin(matrix2);
+    if (position === void 0)
+      continue;
+    byBoneIndex.set(binding.boneIndex, joints.length);
+    joints.push({ boneIndex: binding.boneIndex, name: binding.boneName, position });
+  }
+  return Object.freeze(joints.map((joint) => {
+    const binding = bindings.find((item) => item.boneIndex === joint.boneIndex);
+    const parentBoneIndex = binding?.parentBoneIndex;
+    const parent = parentBoneIndex === void 0 || parentBoneIndex === null ? void 0 : byBoneIndex.get(parentBoneIndex);
+    return Object.freeze(parent === void 0 ? joint : { ...joint, parent });
+  }));
+}
+
 // packages/ui/dist/model/index.js
+var MODEL_RENDERER_BACKENDS = Object.freeze({
+  "modkit.browser-webgl": "webgl2",
+  "modkit.headless": "cpu-raster"
+});
+var MODEL_WIREFRAME_BACKEND = "wireframe";
+function modelRendererBackend(rendererId) {
+  return MODEL_RENDERER_BACKENDS[rendererId] ?? "provider";
+}
 var MODEL_MAXIMUM_PRIMITIVE_BYTES = 64 * 1024 * 1024;
 var MODEL_MAXIMUM_PRIMITIVES = 4096;
 var MODEL_FACET_DETAIL_LIMIT = 64;
@@ -52168,10 +55441,10 @@ async function loadModelStage(source2, signal) {
       ...cursor4 === void 0 ? {} : { cursor: cursor4 }
     }, signal);
     for (const mesh of page2.items) {
-      for (const id of mesh.primitiveIds) {
+      for (const id2 of mesh.primitiveIds) {
         if (primitiveIds.length >= MODEL_MAXIMUM_PRIMITIVES)
           break;
-        primitiveIds.push(id);
+        primitiveIds.push(id2);
       }
     }
     cursor4 = primitiveIds.length >= MODEL_MAXIMUM_PRIMITIVES ? void 0 : page2.nextCursor;
@@ -52185,8 +55458,8 @@ async function loadModelStage(source2, signal) {
   };
 }
 function short(value2) {
-  const text3 = String(value2 ?? "").trim();
-  return text3.length <= 160 ? text3 : `${text3.slice(0, 157)}\u2026`;
+  const text4 = String(value2 ?? "").trim();
+  return text4.length <= 160 ? text4 : `${text4.slice(0, 157)}\u2026`;
 }
 function facetItem(contract, value2, localizer) {
   if (contract === "common.view/model-resource-refs-source") {
@@ -52218,24 +55491,33 @@ function facetItem(contract, value2, localizer) {
   const item = value2;
   return `${short(item.sourceName ?? item.id)} \xB7 ${item.role} \xB7 ${item.nodeId}`;
 }
-async function readModelFacetDetails(sources, slot, scope, signal, localizer = withEnglishUiFallback(void 0, MODEL_FALLBACK_MESSAGES)) {
-  const methods = {
-    "common.view/model-resource-refs-source": "references",
-    "common.view/model-skeleton-source": "bindings",
-    "common.view/model-animation-source": "clips",
-    "common.view/model-collision-source": "volumes",
-    "common.view/model-material-source": "materials",
-    "common.view/model-socket-source": "sockets"
-  };
-  const details = [];
+var FACET_PAGE_METHOD = Object.freeze({
+  "common.view/model-resource-refs-source": "references",
+  "common.view/model-skeleton-source": "bindings",
+  "common.view/model-animation-source": "clips",
+  "common.view/model-collision-source": "volumes",
+  "common.view/model-material-source": "materials",
+  "common.view/model-socket-source": "sockets"
+});
+async function readModelFacetPages(sources, slot, scope, signal) {
+  const pages = /* @__PURE__ */ new Map();
   for (const contract of MODEL_FACET_CONTRACTS) {
     const lease2 = await unknownSourceLease(sources, slot, contract);
     if (lease2 === void 0)
       continue;
     scope.lease(lease2);
-    const method = methods[contract];
     const source2 = lease2.value;
-    const page2 = await source2[method]?.({ limit: MODEL_FACET_DETAIL_LIMIT }, signal);
+    const page2 = await source2[FACET_PAGE_METHOD[contract]]?.({ limit: MODEL_FACET_DETAIL_LIMIT }, signal);
+    if (page2 === void 0)
+      continue;
+    pages.set(contract, { items: page2.items, truncated: page2.nextCursor !== void 0 });
+  }
+  return pages;
+}
+function describeModelFacetPages(pages, localizer = withEnglishUiFallback(void 0, MODEL_FALLBACK_MESSAGES)) {
+  const details = [];
+  for (const contract of MODEL_FACET_CONTRACTS) {
+    const page2 = pages.get(contract);
     if (page2 === void 0)
       continue;
     const readout = FACET_READOUT[contract];
@@ -52243,7 +55525,7 @@ async function readModelFacetDetails(sources, slot, scope, signal, localizer = w
       contract,
       label: readout === void 0 ? contract : localizer.text(readout.labelKey),
       items: Object.freeze(page2.items.map((item) => facetItem(contract, item, localizer))),
-      truncated: page2.nextCursor !== void 0
+      truncated: page2.truncated
     }));
   }
   return Object.freeze(details);
@@ -52252,8 +55534,8 @@ function drawPrimitive(canvas, primitive, basis, distanceScale) {
   const context = canvas.getContext("2d");
   if (context === null)
     throw new TypeError("2d canvas context is unavailable");
-  const width = 720;
-  const height = 480;
+  const width = MODEL_STAGE_WIDTH;
+  const height = MODEL_STAGE_HEIGHT;
   canvas.width = width;
   canvas.height = height;
   context.clearRect(0, 0, width, height);
@@ -52348,6 +55630,37 @@ function drawPrimitive(canvas, primitive, basis, distanceScale) {
     }
   }
 }
+var MODEL_STAGE_WIDTH = 720;
+var MODEL_STAGE_HEIGHT = 480;
+function drawSkeleton(context, joints, viewProjection, viewport, stroke) {
+  const projected = joints.map((joint) => projectPoint(viewProjection, joint.position, viewport));
+  context.save();
+  context.strokeStyle = stroke;
+  context.fillStyle = stroke;
+  context.lineWidth = 1.5;
+  let drawn = 0;
+  for (const [index, joint] of joints.entries()) {
+    const point = projected[index];
+    if (point === void 0)
+      continue;
+    drawn += 1;
+    context.beginPath();
+    context.arc(point[0], point[1], 2.5, 0, Math.PI * 2);
+    context.fill();
+    const parent = joint.parent === void 0 ? void 0 : projected[joint.parent];
+    if (parent === void 0)
+      continue;
+    context.beginPath();
+    context.moveTo(parent[0], parent[1]);
+    context.lineTo(point[0], point[1]);
+    context.stroke();
+  }
+  context.restore();
+  return drawn;
+}
+function themeColor(canvas, token, fallback) {
+  return getComputedStyle(canvas).getPropertyValue(token).trim() || fallback;
+}
 function createModelViewer(options = {}) {
   const localizer = withEnglishUiFallback(options.localizer, MODEL_FALLBACK_MESSAGES);
   return defineViewerModule({
@@ -52361,7 +55674,8 @@ function createModelViewer(options = {}) {
       toolbar.setAttribute("aria-label", localizer.text("viewer.modelView"));
       const canvas = element(stage, "canvas", { part: "model.canvas" });
       canvas.setAttribute("role", "img");
-      canvas.setAttribute("data-model-renderer", "wireframe");
+      canvas.setAttribute("data-model-renderer", MODEL_WIREFRAME_BACKEND);
+      canvas.setAttribute("data-model-renderer-status", "unavailable");
       canvas.tabIndex = 0;
       const camera = createOrbitController();
       const gizmo = createViewGizmo(stage, { localizer, onAxis: (axis) => camera.snapTo(axis) });
@@ -52373,10 +55687,11 @@ function createModelViewer(options = {}) {
       try {
         const sceneSource = lease2.value;
         const model = await loadModelStage(sceneSource, scope.signal);
-        const [facets, facetDetails] = await Promise.all([
+        const [facets, facetPages] = await Promise.all([
           readModelFacets(args.sources, args.slot, scope, scope.signal, localizer),
-          readModelFacetDetails(args.sources, args.slot, scope, scope.signal, localizer)
+          readModelFacetPages(args.sources, args.slot, scope, scope.signal)
         ]);
+        const facetDetails = describeModelFacetPages(facetPages, localizer);
         setViewerText(readout, localizer.text("viewer.modelSummary", {
           nodes: model.info.nodes,
           meshes: model.info.meshes,
@@ -52410,10 +55725,108 @@ function createModelViewer(options = {}) {
           });
         } else {
           let primitive = model.primitive;
-          const redraw = () => {
+          const viewport = { width: MODEL_STAGE_WIDTH, height: MODEL_STAGE_HEIGHT };
+          let provider;
+          if (options.renderer !== void 0) {
+            try {
+              const acquisition = await options.renderer.acquire({
+                outputKind: "rgba8",
+                signal: scope.signal
+              });
+              if (acquisition.state === "resolved") {
+                provider = acquisition.lease.renderer;
+                scope.cleanup(() => acquisition.lease.release());
+                canvas.setAttribute("data-model-renderer", modelRendererBackend(provider.rendererId));
+                canvas.setAttribute("data-model-renderer-id", provider.rendererId);
+                canvas.setAttribute("data-model-renderer-status", "resolved");
+              } else {
+                canvas.setAttribute("data-model-renderer-status", "unresolved");
+                const reason = acquisition.diagnostics.at(-1);
+                if (reason !== void 0) {
+                  canvas.setAttribute("data-model-renderer-diagnostic", reason.code);
+                }
+              }
+            } catch (error5) {
+              canvas.setAttribute("data-model-renderer-status", "unresolved");
+              canvas.setAttribute("data-model-renderer-diagnostic", "x3.ui/renderer-acquire-threw");
+              canvas.setAttribute("data-model-renderer-detail", error5 instanceof Error ? error5.message : String(error5));
+            }
+          }
+          const materialRefs = facetPages.get("common.view/model-material-source")?.items ?? [];
+          const resourceRefs = facetPages.get("common.view/model-resource-refs-source")?.items ?? [];
+          const boneBindings = facetPages.get("common.view/model-skeleton-source")?.items ?? [];
+          const joints = skeletonJoints(boneBindings);
+          let texels = /* @__PURE__ */ new Map();
+          if (options.textures !== void 0 && provider !== void 0 && resourceRefs.length > 0) {
+            texels = await options.textures(resourceRefs, scope.signal).catch(() => /* @__PURE__ */ new Map());
+          }
+          const surfaces = sceneMaterials(materialRefs, texels, true);
+          canvas.setAttribute("data-model-textures", String(surfaces.textures.length));
+          canvas.setAttribute("data-model-skeleton", String(joints.length));
+          let skeletonVisible = joints.length > 0;
+          const framing = () => framePrimitive(primitive);
+          let generation = 0;
+          const drawWireframe = () => {
             const pose = camera.pose;
             drawPrimitive(canvas, primitive, camera.basis(), pose.distanceScale);
+            const context = canvas.getContext("2d");
+            if (context !== null && skeletonVisible && joints.length > 0) {
+              const placement = modelCamera(framing(), camera.basis(), pose.distanceScale, viewport);
+              drawSkeleton(context, joints, placement.viewProjection, viewport, themeColor(canvas, "--mk-chart-categorical-3", "#f0a04b"));
+            }
+          };
+          const redraw = () => {
+            const pose = camera.pose;
             gizmo.update(pose.yaw, pose.pitch);
+            const request = ++generation;
+            if (provider === void 0) {
+              drawWireframe();
+              return;
+            }
+            const placement = modelCamera(framing(), camera.basis(), pose.distanceScale, viewport);
+            const renderer = provider;
+            void (async () => {
+              try {
+                const frame = await renderer.render(modelSceneRequest({
+                  primitive,
+                  camera: placement,
+                  viewport,
+                  materials: surfaces.materials,
+                  textures: surfaces.textures,
+                  clearColor: [0, 0, 0, 0],
+                  light: MODEL_KEY_LIGHT,
+                  signal: scope.signal
+                }));
+                if (request !== generation || scope.signal.aborted)
+                  return;
+                const context = canvas.getContext("2d");
+                if (context === null)
+                  throw new TypeError("2d canvas context is unavailable");
+                const expected = frame.width * frame.height * 4;
+                if (frame.rgba.length !== expected) {
+                  throw new TypeError(`renderer returned ${frame.rgba.length} bytes for a ${frame.width}x${frame.height} frame`);
+                }
+                canvas.width = frame.width;
+                canvas.height = frame.height;
+                const pixels = new Uint8ClampedArray(expected);
+                pixels.set(frame.rgba);
+                context.putImageData(new ImageData(pixels, frame.width, frame.height), 0, 0);
+                if (skeletonVisible && joints.length > 0) {
+                  drawSkeleton(context, joints, placement.viewProjection, { width: frame.width, height: frame.height }, themeColor(canvas, "--mk-chart-categorical-3", "#f0a04b"));
+                }
+              } catch (error5) {
+                if (scope.signal.aborted)
+                  return;
+                provider = void 0;
+                canvas.setAttribute("data-model-renderer", MODEL_WIREFRAME_BACKEND);
+                canvas.removeAttribute("data-model-renderer-id");
+                canvas.setAttribute("data-model-renderer-status", "failed");
+                canvas.setAttribute("data-model-renderer-diagnostic", "x3.ui/renderer-frame-failed");
+                canvas.setAttribute("data-model-renderer-detail", error5 instanceof Error ? error5.message : String(error5));
+                canvas.setAttribute("data-model-textures", "0");
+                drawWireframe();
+              }
+            })();
           };
           scope.cleanup(camera.onChange(redraw));
           camera.attach(canvas, scope.signal);
@@ -52422,18 +55835,29 @@ function createModelViewer(options = {}) {
             node.setAttribute("type", "button");
             node.title = title;
             node.addEventListener("click", run, { signal: scope.signal });
+            return node;
           };
           button(localizer.text("viewer.reset"), localizer.text("viewer.resetCamera"), () => camera.reset());
           button("\u2212", localizer.text("viewer.zoomOut"), () => camera.zoom(1));
           button("+", localizer.text("viewer.zoomIn"), () => camera.zoom(-1));
+          if (joints.length > 0) {
+            const toggle = button(localizer.text("viewer.modelBones"), localizer.text("viewer.modelSkeletonOverlay"), () => {
+              skeletonVisible = !skeletonVisible;
+              toggle.setAttribute("aria-pressed", String(skeletonVisible));
+              canvas.setAttribute("data-model-skeleton-visible", String(skeletonVisible));
+              redraw();
+            });
+            toggle.setAttribute("aria-pressed", String(skeletonVisible));
+            canvas.setAttribute("data-model-skeleton-visible", String(skeletonVisible));
+          }
           if (model.primitiveIds.length > 1 && sceneSource.primitive !== void 0) {
             const selector = element(toolbar, "select", {
               part: "model.primitive-selector"
             });
             selector.setAttribute("aria-label", localizer.text("viewer.modelPrimitive"));
-            for (const id of model.primitiveIds) {
-              const option = element(selector, "option", { text: id });
-              option.value = id;
+            for (const id2 of model.primitiveIds) {
+              const option = element(selector, "option", { text: id2 });
+              option.value = id2;
             }
             let selection = 0;
             selector.addEventListener("change", async () => {
@@ -52684,7 +56108,7 @@ async function loadRelationGraphOptions(source2, options) {
 var CATEGORICAL = 6;
 function createRelationGraph(document2, options) {
   const localizer = withEnglishUiFallback(options.localizer, GRAPH_FALLBACK_MESSAGES);
-  const cap = options.cap ?? 500;
+  const cap2 = options.cap ?? 500;
   const root = document2.createElement("div");
   root.className = "modkit-graph";
   root.setAttribute("aria-label", options.label);
@@ -52706,8 +56130,8 @@ function createRelationGraph(document2, options) {
     button.type = "button";
     button.textContent = label;
     button.addEventListener("click", () => {
-      for (const id of hidden.keys())
-        hidden.set(id, !all);
+      for (const id2 of hidden.keys())
+        hidden.set(id2, !all);
       syncTypes();
       draw();
     });
@@ -52738,10 +56162,10 @@ function createRelationGraph(document2, options) {
     setPart(swatch, "graph.type-swatch");
     const label = document2.createElement("span");
     label.textContent = safeViewerText(type.label, 64);
-    const count2 = document2.createElement("span");
-    count2.textContent = String(type.count);
-    setPart(count2, "graph.type-count");
-    row.append(swatch, label, count2);
+    const count3 = document2.createElement("span");
+    count3.textContent = String(type.count);
+    setPart(count3, "graph.type-count");
+    row.append(swatch, label, count3);
     row.addEventListener("click", () => {
       hidden.set(type.id, !(hidden.get(type.id) ?? false));
       syncTypes();
@@ -52759,8 +56183,8 @@ function createRelationGraph(document2, options) {
     }
   });
   const syncTypes = () => {
-    for (const [id, row] of typeRows) {
-      const off = hidden.get(id) ?? false;
+    for (const [id2, row] of typeRows) {
+      const off = hidden.get(id2) ?? false;
       row.setAttribute("aria-pressed", String(!off));
       setState(row, off ? ["disabled"] : ["active"]);
     }
@@ -52802,8 +56226,8 @@ function createRelationGraph(document2, options) {
   labels.checked = true;
   labelsWrapper.append(labels, document2.createTextNode(localizer.text("graph.labels")));
   controls.append(labelsWrapper);
-  const nodeChoices = [.../* @__PURE__ */ new Set([100, 250, 500, 1e3, cap])].sort((left, right) => left - right).map(String);
-  const nodesCap = control(localizer.text("graph.nodes"), nodeChoices, String(cap));
+  const nodeChoices = [.../* @__PURE__ */ new Set([100, 250, 500, 1e3, cap2])].sort((left, right) => left - right).map(String);
+  const nodesCap = control(localizer.text("graph.nodes"), nodeChoices, String(cap2));
   const rendererIds = ["canvas-2d", ...(options.renderers ?? []).map((item) => item.id)];
   const rendererSelect = control(localizer.text("graph.renderer"), [localizer.text("graph.canvas2d"), ...(options.renderers ?? []).map((item) => item.label)], localizer.text("graph.canvas2d"));
   const reset = document2.createElement("button");
@@ -53047,16 +56471,16 @@ function createRelationGraph(document2, options) {
   });
   const selectRenderer = () => {
     const index = rendererSelect.selectedIndex;
-    const id = rendererIds[index] ?? "canvas-2d";
+    const id2 = rendererIds[index] ?? "canvas-2d";
     external?.destroy();
     external = void 0;
-    if (id === "canvas-2d") {
+    if (id2 === "canvas-2d") {
       canvas.hidden = false;
       externalHost.hidden = true;
       resize();
       return;
     }
-    const factory = (options.renderers ?? []).find((item) => item.id === id);
+    const factory = (options.renderers ?? []).find((item) => item.id === id2);
     if (factory === void 0)
       return;
     canvas.hidden = true;
@@ -53172,7 +56596,7 @@ function displayValue(value2, localizer) {
     return String(value2);
   return JSON.stringify(value2);
 }
-function text2(document2, part, value2) {
+function text3(document2, part, value2) {
   const node = document2.createElement("span");
   setPart(node, part);
   node.textContent = safeViewerText(value2, 2048);
@@ -53206,11 +56630,11 @@ function createSubjectCalculationsView(document2, snapshot3, options = {}) {
     const heading = document2.createElement("h3");
     setPart(heading, "calculations.heading");
     heading.textContent = safeViewerText(calculation.label, 256);
-    const result = text2(document2, "calculations.result", `${displayValue(calculation.value, localizer)}${calculation.unit === void 0 ? "" : ` ${calculation.unit}`} \xB7 ${calculation.status}`);
-    const formula = text2(document2, "calculations.formula", `${calculation.formula.name} ${calculation.formula.version}: ${calculation.formula.expression}`);
+    const result = text3(document2, "calculations.result", `${displayValue(calculation.value, localizer)}${calculation.unit === void 0 ? "" : ` ${calculation.unit}`} \xB7 ${calculation.status}`);
+    const formula = text3(document2, "calculations.formula", `${calculation.formula.name} ${calculation.formula.version}: ${calculation.formula.expression}`);
     item.append(heading, result, formula);
     if (calculation.provenance.length > 0) {
-      item.append(text2(document2, "calculations.formula", localizer.text("calculations.sources", {
+      item.append(text3(document2, "calculations.formula", localizer.text("calculations.sources", {
         sources: calculation.provenance.map((origin) => origin.label).join(" \xB7 ")
       })));
     }
@@ -53365,13 +56789,13 @@ function createAccordion(document2, options) {
   }
   return {
     root,
-    async expand(id) {
-      const entry2 = entries.get(id);
+    async expand(id2) {
+      const entry2 = entries.get(id2);
       if (entry2 !== void 0)
         await setOpen(entry2, true);
     },
-    collapse(id) {
-      const entry2 = entries.get(id);
+    collapse(id2) {
+      const entry2 = entries.get(id2);
       if (entry2 !== void 0)
         void setOpen(entry2, false);
     },
@@ -53386,6 +56810,73 @@ function createAccordion(document2, options) {
 }
 
 // packages/ui/dist/card/index.js
+var SubjectNavigationHistory = class {
+  currentAddress;
+  backStack = [];
+  forwardStack = [];
+  get current() {
+    return this.currentAddress;
+  }
+  get canBack() {
+    return this.backStack.length > 0;
+  }
+  get canForward() {
+    return this.forwardStack.length > 0;
+  }
+  get breadcrumbs() {
+    return Object.freeze([
+      ...this.backStack,
+      ...this.currentAddress === void 0 ? [] : [this.currentAddress]
+    ]);
+  }
+  reset(address) {
+    this.backStack.length = 0;
+    this.forwardStack.length = 0;
+    this.currentAddress = address;
+  }
+  open(address) {
+    if (address === this.currentAddress)
+      return;
+    if (this.currentAddress !== void 0)
+      this.backStack.push(this.currentAddress);
+    this.currentAddress = address;
+    this.forwardStack.length = 0;
+  }
+  back() {
+    const address = this.backStack.pop();
+    if (address !== void 0) {
+      if (this.currentAddress !== void 0)
+        this.forwardStack.push(this.currentAddress);
+      this.currentAddress = address;
+    }
+    return address;
+  }
+  forward() {
+    const address = this.forwardStack.pop();
+    if (address !== void 0) {
+      if (this.currentAddress !== void 0)
+        this.backStack.push(this.currentAddress);
+      this.currentAddress = address;
+    }
+    return address;
+  }
+  /** Jump to an earlier breadcrumb while retaining the newer branch for forward navigation. */
+  jump(address) {
+    const index = this.backStack.indexOf(address);
+    if (index < 0)
+      return void 0;
+    const skipped = this.backStack.splice(index);
+    if (this.currentAddress !== void 0)
+      this.forwardStack.push(this.currentAddress);
+    for (let item = skipped.length - 1; item > 0; item -= 1) {
+      const next = skipped[item];
+      if (next !== void 0)
+        this.forwardStack.push(next);
+    }
+    this.currentAddress = address;
+    return address;
+  }
+};
 function cardLoadLimit(value2, label) {
   if (!Number.isSafeInteger(value2) || value2 <= 0)
     throw new RangeError(`${label} must be positive`);
@@ -53477,11 +56968,11 @@ var NO_FACT_MESSAGE_KEYS = Object.freeze({});
 function isRepositorySubjectKind(kind) {
   return kind === VENDOR_SUBJECT_KIND2 || kind === GAME_SUBJECT_KIND2;
 }
-function systemSubjectLabel(localizer, subjectKind, keys, id, fallback) {
+function systemSubjectLabel(localizer, subjectKind, keys, id2, fallback) {
   if (subjectKind !== EXTENSION_SUBJECT_KIND2 && subjectKind !== CONTRIBUTION_SUBJECT_KIND2 && !isRepositorySubjectKind(subjectKind)) {
     return fallback;
   }
-  const key3 = keys[id];
+  const key3 = keys[id2];
   return key3 === void 0 ? fallback : localizer.text(key3);
 }
 function factField(fact3, subjectKind, localizer) {
@@ -53526,6 +57017,21 @@ function repositorySubjectTableField(fact3) {
     ref: { label: fact3.label, href: subjectId }
   };
 }
+function applyCardLayout(sections, layout) {
+  if (layout === void 0 || layout.length === 0)
+    return Object.freeze([...sections]);
+  const rank = new Map(layout.map((id2, index) => [id2, index]));
+  const layoutId = (section) => {
+    if (section.kind === "header")
+      return "identity";
+    if (rank.has(section.id))
+      return section.id;
+    if (section.id === "related-subjects" || section.id === "contributions")
+      return "relations";
+    return section.id;
+  };
+  return Object.freeze(sections.map((section, index) => ({ section, index, rank: rank.get(layoutId(section)) })).sort((left, right) => (left.rank ?? Number.MAX_SAFE_INTEGER) - (right.rank ?? Number.MAX_SAFE_INTEGER) || left.index - right.index).map((item) => item.section));
+}
 async function loadSubjectCardSections(source2, options = {}) {
   const localizer = withEnglishUiFallback(options.localizer, CARD_FALLBACK_MESSAGES);
   const groupLimit = cardLoadLimit(options.groupLimit ?? 32, "groupLimit");
@@ -53566,6 +57072,21 @@ async function loadSubjectCardSections(source2, options = {}) {
     const header = sections[0];
     if (header?.kind === "header")
       sections[0] = { ...header, description };
+  }
+  if (summary.preview !== void 0 && summary.card?.preview !== "none") {
+    sections.push({
+      kind: "links",
+      id: "preview",
+      title: localizer.text("card.preview"),
+      links: [
+        {
+          label: summary.preview.label ?? summary.preview.source.id,
+          href: summary.preview.source.uri,
+          ...summary.preview.mediaType === void 0 ? {} : { title: summary.preview.mediaType }
+        }
+      ],
+      expanded: true
+    });
   }
   for (const { group: group2, page: page2 } of factGroups) {
     if (summary.identity.kind === EXTENSION_SUBJECT_KIND2 && group2.id === "contributions")
@@ -53615,21 +57136,27 @@ async function loadSubjectCardSections(source2, options = {}) {
       links: relations.items.map((item) => ({
         label: item.label,
         href: item.subjectId,
-        title: `${item.role} \xB7 ${item.kind}`
+        title: `${item.role} \xB7 ${item.kind}`,
+        ...item.dead === void 0 ? {} : { dead: item.dead }
       })),
       ...extensionContributions ? { expanded: true } : {}
     });
   }
-  return Object.freeze(sections);
+  return applyCardLayout(sections, summary.card?.sections);
 }
 function ref(document2, item, onNavigate) {
-  const node = document2.createElement(onNavigate === void 0 ? "span" : "button");
+  const navigable = onNavigate !== void 0 && item.href !== void 0 && item.dead !== true;
+  const node = document2.createElement(navigable ? "button" : "span");
   node.className = "modkit-card__ref";
   setPart(node, "card.ref");
   node.textContent = safeViewerText(item.label, 256);
   if (item.title !== void 0)
     node.title = item.title;
-  if (onNavigate !== void 0) {
+  if (item.dead === true) {
+    node.setAttribute("aria-disabled", "true");
+    setState(node, ["disabled"]);
+  }
+  if (navigable) {
     ;
     node.type = "button";
     node.addEventListener("click", () => onNavigate(item));
@@ -53745,31 +57272,31 @@ function renderFields(document2, host, fields, inspectKnowledge, onNavigate) {
   list.className = "modkit-card__fields";
   list.setAttribute("role", "table");
   setPart(list, "card.fields");
-  for (const field of fields) {
+  for (const field2 of fields) {
     const row = document2.createElement("div");
     row.className = "modkit-card__field";
     setPart(row, "card.field");
     row.tabIndex = 0;
-    if (field.title !== void 0)
-      row.title = field.title;
-    const name = field.ref === void 0 ? document2.createElement("span") : ref(document2, field.ref, onNavigate);
-    if (field.ref === void 0)
-      name.textContent = safeViewerText(field.name, 128);
+    if (field2.title !== void 0)
+      row.title = field2.title;
+    const name = field2.ref === void 0 ? document2.createElement("span") : ref(document2, field2.ref, onNavigate);
+    if (field2.ref === void 0)
+      name.textContent = safeViewerText(field2.name, 128);
     setPart(name, "card.field-name");
     const value2 = document2.createElement("span");
-    value2.textContent = safeViewerText(field.value, 2048);
+    value2.textContent = safeViewerText(field2.value, 2048);
     setPart(value2, "card.field-value");
     row.append(name, value2);
-    if (field.badge !== void 0) {
+    if (field2.badge !== void 0) {
       const badge = document2.createElement("span");
       badge.className = "modkit-card__chip";
       badge.dataset["tone"] = "neutral";
-      badge.textContent = safeViewerText(field.badge, 48);
+      badge.textContent = safeViewerText(field2.badge, 48);
       setPart(badge, "card.chip");
       row.append(badge);
     }
     if (inspectKnowledge !== void 0) {
-      const inspect = () => inspectKnowledge(field.knowledgeTarget);
+      const inspect = () => inspectKnowledge(field2.knowledgeTarget);
       row.addEventListener("focus", inspect);
       row.addEventListener("mouseenter", inspect);
     }
@@ -54022,11 +57549,18 @@ function createSubjectCardViewer(options = {}) {
           localizer,
           signal: scope.signal
         });
+        const subjectNavigation = args.subjectNavigation;
+        const navigate = subjectNavigation === void 0 ? void 0 : (reference) => {
+          if (reference.href === void 0)
+            return;
+          void subjectNavigation.open({ scope: subjectNavigation.scope, target: reference.href }, scope.signal).catch(() => void 0);
+        };
         const card = createSubjectCard(root.ownerDocument, {
           label: localizer.text("card.subject"),
           localizer,
           sections,
-          ...args.knowledge === void 0 ? {} : { knowledge: args.knowledge }
+          ...args.knowledge === void 0 ? {} : { knowledge: args.knowledge },
+          ...navigate === void 0 ? {} : { onNavigate: navigate }
         });
         root.append(card.root);
         scope.cleanup(() => card.destroy());
@@ -54068,14 +57602,14 @@ async function loadText(source2, maximum, signal) {
     throw new RangeError("editor source requires a streaming editor");
   return slice.text;
 }
-function defaultChangeSet(text3, targets) {
+function defaultChangeSet(text4, targets) {
   return {
     targets,
     edits: targets.map((target) => ({
       operation: "replace",
       targetId: target.targetId,
       source: target.ownerSource,
-      payload: { kind: "text", text: text3 },
+      payload: { kind: "text", text: text4 },
       label: "Edit text"
     })),
     provenance: { actor: "user" }
@@ -54480,8 +58014,8 @@ function createVirtualTextViewer(options = {}) {
           more.disabled = true;
           return;
         }
-        const text3 = append ? `${viewport.textContent ?? ""}${page2.text}` : page2.text;
-        setViewerText(viewport, text3, 2 * VIRTUAL_TEXT_PAGE_BYTES);
+        const text4 = append ? `${viewport.textContent ?? ""}${page2.text}` : page2.text;
+        setViewerText(viewport, text4, 2 * VIRTUAL_TEXT_PAGE_BYTES);
         more.disabled = page2.complete;
         viewport.dataset["fromLine"] = String(page2.fromLine);
       };
@@ -55449,7 +58983,7 @@ var hexDump = (bytes2) => {
 };
 function archiveStage(context) {
   const localizer = context.localizer ?? DEFAULT_UI_LOCALIZER;
-  const text3 = localizer.text;
+  const text4 = localizer.text;
   return defineViewerModule({
     abiVersion: 1,
     async mount(args) {
@@ -55470,7 +59004,7 @@ function archiveStage(context) {
       const openAsSubject = entryHost.ownerDocument.createElement("button");
       openAsSubject.className = "web-archive-open-subject";
       openAsSubject.type = "button";
-      openAsSubject.textContent = text3("web.archive.openSubject");
+      openAsSubject.textContent = text4("web.archive.openSubject");
       entryHost.append(openAsSubject);
       openAsSubject.disabled = true;
       if (context.openNestedEntry === void 0) openAsSubject.hidden = true;
@@ -55485,7 +59019,7 @@ function archiveStage(context) {
         }).catch((error5) => {
           setViewerText(
             status,
-            text3("web.archive.openFailed", {
+            text4("web.archive.openFailed", {
               path: target.path,
               reason: error5 instanceof Error ? error5.message : String(error5)
             })
@@ -55495,7 +59029,7 @@ function archiveStage(context) {
         });
       });
       const body = element(entryHost, "pre", { part: "hex.content" });
-      setViewerText(status, text3("web.archive.pick"));
+      setViewerText(status, text4("web.archive.pick"));
       const lease2 = await unknownSourceLease(
         args.sources,
         slot,
@@ -55529,7 +59063,7 @@ function archiveStage(context) {
         const entryId = String(detail.entryId ?? "");
         setViewerText(
           status,
-          `${entryId} \u2192 ${reference?.uri ?? text3("web.archive.noReference")}${extract === void 0 ? ` \xB7 ${text3("web.archive.noExtract")}` : ""}`
+          `${entryId} \u2192 ${reference?.uri ?? text4("web.archive.noReference")}${extract === void 0 ? ` \xB7 ${text4("web.archive.noExtract")}` : ""}`
         );
         if (extract === void 0) {
           setViewerText(body, "");
@@ -55537,14 +59071,14 @@ function archiveStage(context) {
         }
         const operations = context.operationsFor(args.descriptor);
         if (operations === void 0) {
-          setViewerText(body, text3("web.archive.sessionGone"));
+          setViewerText(body, text4("web.archive.sessionGone"));
           return;
         }
         void (async () => {
           try {
             const path = await pathFor(entryId);
             if (path === void 0) {
-              setViewerText(body, text3("web.archive.unknownEntry", { entry: entryId }));
+              setViewerText(body, text4("web.archive.unknownEntry", { entry: entryId }));
               return;
             }
             const input = { entryId };
@@ -55554,7 +59088,7 @@ function archiveStage(context) {
             if (result.state !== "ok" || result.output.kind !== "bytes") {
               setViewerText(
                 body,
-                result.state === "ok" ? text3("web.archive.wrongOutput", { kind: result.output.kind }) : text3("web.archive.rejected", { reason: result.reason })
+                result.state === "ok" ? text4("web.archive.wrongOutput", { kind: result.output.kind }) : text4("web.archive.rejected", { reason: result.reason })
               );
               return;
             }
@@ -55563,7 +59097,7 @@ function archiveStage(context) {
             setViewerText(body, preview2 ?? hexDump(bytes2), ARCHIVE_ENTRY_PREVIEW_BYTES * 4);
             setViewerText(
               status,
-              text3("web.archive.shown", {
+              text4("web.archive.shown", {
                 path,
                 bytes: result.output.value.length,
                 mode: preview2 === void 0 ? localizer.text("web.archive.modeHex") : localizer.text("web.archive.modeText")
@@ -55574,7 +59108,7 @@ function archiveStage(context) {
           } catch (error5) {
             setViewerText(
               body,
-              text3("web.archive.readFailed", {
+              text4("web.archive.readFailed", {
                 reason: error5 instanceof Error ? error5.message : String(error5)
               })
             );
@@ -55601,98 +59135,103 @@ function archiveStage(context) {
 }
 function createWebPreviewStages(context) {
   const localizer = context.localizer ?? DEFAULT_UI_LOCALIZER;
-  const text3 = localizer.text;
+  const text4 = localizer.text;
   return Object.freeze([
     {
       id: "image",
-      label: text3("web.view.image"),
+      label: text4("web.view.image"),
       contract: "common.view/raster-image-source",
       module: createImageViewer({ localizer })
     },
     {
       id: "vector",
-      label: text3("web.view.vector"),
+      label: text4("web.view.vector"),
       contract: "common.view/vector-scene-source",
       module: createVectorViewer({ localizer })
     },
     {
       id: "world",
-      label: text3("web.view.world"),
+      label: text4("web.view.world"),
       contract: "common.view/world-scene-source",
       module: createWorldViewer({ localizer })
     },
     {
       id: "model",
-      label: text3("web.view.model"),
+      label: text4("web.view.model"),
       contract: "common.view/model-scene-source",
-      module: createModelViewer({ localizer }),
+      module: createModelViewer({
+        localizer,
+        // A GPU frame where this page can resolve a provider, the 2D wireframe where it cannot —
+        // the stage decides on the answer, not on the presence of the option.
+        ...context.renderer === void 0 ? {} : { renderer: context.renderer }
+      }),
       // optional, never a selection rule: a codec publishing none of these still gets the stage
       optionalContracts: MODEL_FACET_CONTRACTS
     },
     {
       id: "audio",
-      label: text3("web.view.audio"),
+      label: text4("web.view.audio"),
       contract: "common.view/audio-media-source",
       module: audioStage(localizer)
     },
     {
       id: "video",
-      label: text3("web.view.video"),
+      label: text4("web.view.video"),
       contract: "common.view/video-media-source",
       module: createVideoViewer({ localizer })
     },
     {
       id: "archive",
-      label: text3("web.view.archive"),
+      label: text4("web.view.archive"),
       contract: "common.view/namespace-entry-source",
       module: archiveStage(context)
     },
     {
       id: "template",
-      label: text3("web.view.template"),
+      label: text4("web.view.template"),
       operation: "view.template",
       module: gameTemplateViewer
     },
     {
       id: "card",
-      label: text3("web.view.card"),
+      label: text4("web.view.card"),
       contract: "common.view/subject-facts-source",
       module: createSubjectCardViewer({ localizer })
     },
     {
       id: "calculations",
-      label: text3("web.view.calculations"),
+      label: text4("web.view.calculations"),
       contract: "common.view/subject-calculations-source",
       module: createSubjectCalculationsViewer({ localizer })
     },
     {
       id: "table",
-      label: text3("web.view.table"),
+      label: text4("web.view.table"),
       contract: "common.view/table-data-source",
       module: tableViewer
     },
     {
       id: "tree",
-      label: text3("web.view.tree"),
+      label: text4("web.view.tree"),
       contract: "common.view/tree-data-source",
       module: createTreeViewer({ localizer })
     },
     {
       id: "relations",
-      label: text3("web.view.relations"),
+      label: text4("web.view.relations"),
       contract: "common.view/relation-graph-source",
       module: createRelationGraphViewer({ localizer })
     },
     {
       id: "text",
-      label: text3("web.view.text"),
+      label: text4("web.view.text"),
       contract: "common.view/text-data-source",
       module: createBoundedTextViewer({ localizer }),
       trait: "content.text"
     },
     {
       id: "virtual-text",
-      label: text3("web.view.virtualText"),
+      label: text4("web.view.virtualText"),
       contract: "common.view/text-data-source",
       module: virtualTextViewer,
       trait: "content.text"
@@ -55706,14 +59245,14 @@ function createWebPreviewStages(context) {
      */
     {
       id: "metadata",
-      label: text3("web.view.metadata"),
+      label: text4("web.view.metadata"),
       contract: "common.view/byte-range-source",
       module: metadataPanel,
       appLocal: true
     },
     {
       id: "hex",
-      label: text3("web.view.hex"),
+      label: text4("web.view.hex"),
       contract: "common.view/byte-range-source",
       module: createHexViewer({ localizer })
     },
@@ -55723,7 +59262,7 @@ function createWebPreviewStages(context) {
      */
     {
       id: "text-editor",
-      label: text3("web.view.textEditor"),
+      label: text4("web.view.textEditor"),
       contract: "common.view/text-data-source",
       module: createTextEditorModule({ localizer }),
       trait: "content.text",
@@ -55732,7 +59271,7 @@ function createWebPreviewStages(context) {
     },
     {
       id: "hex-editor",
-      label: text3("web.view.hexEditor"),
+      label: text4("web.view.hexEditor"),
       contract: "common.view/byte-range-source",
       module: createHexEditor({ localizer }),
       editable: true,
@@ -55756,11 +59295,18 @@ export {
   diagnostic,
   compareUtf8,
   normalizeModkitIdentifier,
+  isKnowledgeTarget,
+  loadSubjectCandidatePage,
+  createSubjectCandidateProvider,
+  serializeSubjectRef,
+  parseSubjectRef,
   revisionId,
   presentationSlotId,
   nestedSubjectServices,
+  openNestedSubjectRef,
   openNestedSubject,
   coordinateMapPreviewAssetSession,
+  createScopedViewerSubjectNavigation,
   resolveCommonPresentationPlan,
   resolveFormatWriter,
   setPart,
@@ -55776,6 +59322,7 @@ export {
   defineViewerModule,
   invokeOperation,
   diagnosticsBySeverity,
+  unknownSourceLease,
   DEFAULT_UI_LOCALIZER,
   contributionContractLabel,
   PANELS_FALLBACK_MESSAGES,
@@ -55813,6 +59360,7 @@ export {
   probeWebFacilities,
   createWebTopology,
   mountWebWorkbench,
+  SubjectNavigationHistory,
   loadSubjectCardSections,
   createSubjectCard,
   sourceUriFor,

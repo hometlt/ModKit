@@ -116,6 +116,41 @@
         "handlerId": "set-text",
         "mutatesSource": true,
         "requiredPermissions": ["read-source", "write-source"],
+        "inputSchema": {
+          "$ref": "modkit://image-png/edit-field.v1",
+          "document": {
+            "schemaVersion": 1,
+            "forms": [
+              {
+                "id": "png-set-text",
+                "label": "Set a PNG text field",
+                "summary": "Sets or replaces one tEXt chunk; every other byte of the file is kept.",
+                "binding": { "groupId": "png-text" },
+                "fields": [
+                  {
+                    "key": "key",
+                    "label": "Keyword",
+                    "type": { "kind": "text", "pattern": "^[^\\u0000]{1,79}$" },
+                    "inputPath": ["key"],
+                    "required": true,
+                    "initial": "Description",
+                    "source": "entry-key",
+                    "description": "1–79 Latin-1 characters, no NUL"
+                  },
+                  {
+                    "key": "value",
+                    "label": "Text",
+                    "type": { "kind": "text" },
+                    "inputPath": ["value"],
+                    "initial": "set from the Modkit inspector",
+                    "source": "entry-value",
+                    "description": "Latin-1, no NUL"
+                  }
+                ]
+              }
+            ]
+          }
+        },
         "outputKinds": ["edit-plan"]
       }
     ],

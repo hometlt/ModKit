@@ -20,7 +20,7 @@ import {
   uint64,
   uniqueSortedUtf8,
   versionRangeTargetsMajor
-} from "./chunk-X2ENULEB.js";
+} from "./chunk-S5ITZJYV.js";
 
 // packages/sdk/dist/schemas/patterns.js
 var DOTTED_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
@@ -389,7 +389,7 @@ var DATA_SOURCE_MATURITY = Object.freeze({
   "common.view/model-material-source": "admitted",
   "common.view/model-socket-source": "publisher-candidate",
   "common.view/relation-graph-source": "admitted",
-  "common.view/subject-selector-source": "publisher-candidate",
+  "common.view/subject-selector-source": "admitted",
   "common.view/subject-facts-source": "admitted",
   "common.view/subject-calculations-source": "admitted",
   "common.view/slide-deck-source": "publisher-candidate"
@@ -480,7 +480,7 @@ var jsonSchemaRefSchema = {
   type: "object",
   additionalProperties: false,
   required: ["$ref"],
-  properties: { $ref: nonEmptyString }
+  properties: { $ref: nonEmptyString, document: { title: "JsonValue" } }
 };
 var resourceBudgetWireSchema = {
   type: "object",
@@ -595,7 +595,12 @@ var probePlanSchema = {
           maxItems: 256,
           uniqueItems: true
         },
-        prefixes: { type: "array", items: nonEmptyString },
+        prefixes: {
+          type: "array",
+          items: nonEmptyString,
+          maxItems: 256,
+          uniqueItems: true
+        },
         maxEntries: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
         maxBytes: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
         maxDepth: { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER },
@@ -877,6 +882,12 @@ var codecContributionSpecV1Schema = {
       properties: {
         ...codecContributionProperties,
         sourceTopology: { const: "namespace" },
+        container: {
+          type: "object",
+          additionalProperties: false,
+          required: ["formatId"],
+          properties: { formatId: nonEmptyString }
+        },
         probe: probePlanSchema.oneOf[1]
       }
     },
@@ -969,6 +980,17 @@ var viewerContributionSpecV1Schema = {
      * model facets instead of splitting into a contribution per facet combination.
      */
     optionalDataSources: { type: "array", items: dataSourceRefWireSchema },
+    /*
+     * Service contracts this viewer asks the host for when the host can offer one.
+     *
+     * Same vocabulary a codec's `requires` uses, and deliberately a separate key from the data
+     * sources above: a renderer is not published by the subject's codec and can never appear in a
+     * descriptor's `dataSources`, so declaring it there would be a dependency the resolver is
+     * structurally unable to bind. Optional because the answer is realm-dependent — the same
+     * viewer runs in a page with a GPU and in a bridge realm without one — and a stage that
+     * disappeared where no provider was offered would be worse than one that degrades and says so.
+     */
+    optionalServices: { type: "array", items: contractRequirementSchema },
     applicability: viewerApplicabilitySchema,
     hosts: { type: "array", items: nonEmptyString },
     priority: { type: "number" },
@@ -1535,6 +1557,414 @@ function writerSelectionKey(request) {
   return `writer:${request.formatId}:${request.representationId}:${request.mutationMode}:${request.minimumRoundTrip}`;
 }
 
+// packages/sdk/dist/subjects/candidates.js
+var nonEmptyStrings = (value2) => value2 === void 0 || value2.every((item) => typeof item === "string" && item.length > 0) && new Set(value2).size === value2.length;
+function validCandidate(candidate) {
+  return typeof candidate === "object" && candidate !== null && typeof candidate.subjectId === "string" && candidate.subjectId.length > 0 && typeof candidate.label === "string" && candidate.label.length > 0 && typeof candidate.kind === "string" && candidate.kind.length > 0 && (candidate.type === void 0 || typeof candidate.type === "string" && candidate.type.length > 0) && nonEmptyStrings(candidate.tags) && (candidate.asset === void 0 || typeof candidate.asset === "object" && candidate.asset !== null && typeof candidate.asset.formatId === "string" && candidate.asset.formatId.length > 0 && nonEmptyStrings(candidate.asset.traits));
+}
+function validSummary(summary) {
+  return typeof summary === "object" && summary !== null && typeof summary.snapshotId === "string" && summary.snapshotId.length > 0 && Number.isSafeInteger(summary.totalSubjects) && summary.totalSubjects >= 0 && (summary.completeness === "complete" || summary.completeness === "partial" || summary.completeness === "capped") && (summary.reason === void 0 || typeof summary.reason === "string");
+}
+function validateQuery(query) {
+  if (!Number.isSafeInteger(query.limit) || query.limit < 1) {
+    throw new RangeError("subject candidate limit must be a positive safe integer");
+  }
+  if (query.text !== void 0 && typeof query.text !== "string") {
+    throw new TypeError("subject candidate text must be a string");
+  }
+  if (query.cursor !== void 0 && (typeof query.cursor !== "string" || query.cursor.length === 0)) {
+    throw new TypeError("subject candidate cursor must be a non-empty string");
+  }
+  if (query.target.kind === "subject-ref" && (typeof query.target.subjectKind !== "string" || query.target.subjectKind.length === 0)) {
+    throw new TypeError("subject candidate kind must be a non-empty string");
+  }
+  if (query.target.kind === "asset-ref" && (!nonEmptyStrings(query.target.accepts.formatIds) || !nonEmptyStrings(query.target.accepts.traits))) {
+    throw new TypeError("asset candidate constraints must contain unique non-empty strings");
+  }
+}
+async function loadSubjectCandidatePage(provider, query, signal) {
+  signal?.throwIfAborted();
+  validateQuery(query);
+  const [summary, page] = await Promise.all([
+    provider.summary(signal),
+    provider.candidates(query, signal)
+  ]);
+  signal?.throwIfAborted();
+  if (!validSummary(summary))
+    throw new TypeError("subject candidate summary is malformed");
+  if (typeof page !== "object" || page === null || !Array.isArray(page.items) || page.items.length > query.limit || !page.items.every(validCandidate) || new Set(page.items.map((item) => item.subjectId)).size !== page.items.length || page.nextCursor !== void 0 && (typeof page.nextCursor !== "string" || page.nextCursor.length === 0)) {
+    throw new TypeError("subject candidate page is malformed or exceeds its requested limit");
+  }
+  return Object.freeze({ summary, page });
+}
+function createSubjectCandidateProvider(source) {
+  return Object.freeze({
+    summary: (signal) => source.summary(signal),
+    candidates(query, signal) {
+      const page = {
+        ...query.cursor === void 0 ? {} : { cursor: query.cursor },
+        limit: query.limit,
+        ...query.text === void 0 ? {} : { text: query.text },
+        ...query.target.kind === "subject-ref" ? {
+          kind: query.target.subjectKind,
+          ...query.target.filter === void 0 ? {} : { filter: query.target.filter }
+        } : { asset: query.target.accepts }
+      };
+      return source.subjects(page, signal);
+    }
+  });
+}
+
+// packages/sdk/dist/schemas/fields.js
+var text = { type: "string" };
+var id = { type: "string", minLength: 1 };
+var strings = { type: "array", items: id };
+var boolean = { type: "boolean" };
+var count = { type: "integer", minimum: 0, maximum: Number.MAX_SAFE_INTEGER };
+var json = { $ref: "#/$defs/jsonValue" };
+var field = { $ref: "#/$defs/fieldType" };
+var member = {
+  type: "object",
+  additionalProperties: false,
+  required: ["id"],
+  properties: { id, label: text }
+};
+var members = { type: "array", items: member };
+var subjectFilterSchema = {
+  type: "object",
+  additionalProperties: false,
+  properties: {
+    type: id,
+    sameTypeAs: id,
+    text,
+    requireTags: strings,
+    excludeTags: strings,
+    predicate: {
+      type: "object",
+      additionalProperties: false,
+      required: ["id"],
+      properties: { id, params: json }
+    }
+  }
+};
+var fieldSchemaValueSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["key", "label", "type"],
+  properties: {
+    key: id,
+    label: text,
+    type: field,
+    cardinality: { enum: ["scalar", "append", "indexed"] },
+    description: text,
+    knowledgeTarget: knowledgeTargetSchema
+  }
+};
+var fieldTypeValueSchema = {
+  title: "FieldType",
+  oneOf: [
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind"],
+      properties: { kind: { const: "text" }, multiline: boolean, pattern: text, maxLength: count }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind"],
+      properties: {
+        kind: { const: "number" },
+        min: { type: "number" },
+        max: { type: "number" },
+        integer: boolean,
+        unit: text
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind"],
+      properties: { kind: { const: "boolean" } }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "members"],
+      properties: { kind: { const: "enum" }, members, unknown: text }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "members"],
+      properties: { kind: { const: "flags" }, members }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "model"],
+      properties: { kind: { const: "color" }, model: { enum: ["rgb", "rgba", "argb"] } }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "size"],
+      properties: { kind: { const: "vector" }, size: { enum: [2, 3, 4] }, unit: text }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind"],
+      properties: { kind: { enum: ["duration", "date", "bytes", "id", "path"] } }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind"],
+      properties: { kind: { const: "text-key" }, catalog: id }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "subjectKind"],
+      properties: { kind: { const: "subject-ref" }, subjectKind: id, filter: subjectFilterSchema }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "accepts"],
+      properties: {
+        kind: { const: "asset-ref" },
+        accepts: {
+          type: "object",
+          additionalProperties: false,
+          properties: { formatIds: strings, traits: strings }
+        }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "language"],
+      properties: { kind: { const: "script" }, language: id }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "fields"],
+      properties: {
+        kind: { const: "struct" },
+        fields: { type: "array", items: fieldSchemaValueSchema }
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "item"],
+      properties: { kind: { const: "array" }, item: field, max: count }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "key", "value"],
+      properties: { kind: { const: "record" }, key: field, value: field }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "keywords", "delimiter"],
+      properties: {
+        kind: { const: "instructions" },
+        keywords: { type: "object", additionalProperties: { type: "array", items: field } },
+        delimiter: text,
+        listDelimiter: text
+      }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind"],
+      properties: { kind: { const: "json" }, schema: jsonSchemaRefSchema }
+    },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: ["kind", "typeId"],
+      properties: { kind: { const: "custom" }, typeId: id, params: json }
+    }
+  ]
+};
+var fieldSchemaDefinitions = {
+  jsonValue: {
+    title: "JsonValue",
+    oneOf: [
+      { type: "null" },
+      boolean,
+      { type: "number" },
+      text,
+      { type: "array", items: json },
+      { type: "object", additionalProperties: json }
+    ]
+  },
+  fieldType: fieldTypeValueSchema
+};
+var fieldEditableValueSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["write"],
+  properties: {
+    editor: id,
+    readonlyReason: text,
+    write: {
+      oneOf: [
+        {
+          type: "object",
+          additionalProperties: false,
+          required: ["operation"],
+          properties: { operation: { type: "string", pattern: OPERATION_PATTERN } }
+        },
+        {
+          type: "object",
+          additionalProperties: false,
+          required: ["writer"],
+          properties: { writer: writerRequirementSchema }
+        }
+      ]
+    }
+  }
+};
+var fieldTypeV1Schema = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/field-type.v1.schema.json",
+  $defs: fieldSchemaDefinitions,
+  ...field
+};
+var fieldSchemaV1Schema = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/field-schema.v1.schema.json",
+  $defs: fieldSchemaDefinitions,
+  ...fieldSchemaValueSchema
+};
+var fieldWriteRequestV1Schema = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/field-write-request.v1.schema.json",
+  $defs: fieldSchemaDefinitions,
+  type: "object",
+  additionalProperties: false,
+  required: ["groupId", "key", "value"],
+  properties: { groupId: id, key: id, path: { type: "array", items: text }, value: json }
+};
+var subjectKindDefinitionSpecV1Schema = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/subject-kind-definition-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["kindId", "label"],
+  properties: {
+    kindId: id,
+    label: text,
+    icon: extensionAssetReferenceSchema,
+    parentKinds: strings,
+    card: {
+      type: "object",
+      additionalProperties: false,
+      required: ["sections"],
+      properties: { sections: strings, preview: { enum: ["raster", "model", "none"] } }
+    },
+    selector: {
+      type: "object",
+      additionalProperties: false,
+      required: ["facets", "predicates"],
+      properties: {
+        facets: strings,
+        predicates: {
+          type: "array",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["id", "label"],
+            properties: { id, label: text, params: jsonSchemaRefSchema }
+          }
+        }
+      }
+    },
+    diff: {
+      type: "object",
+      additionalProperties: false,
+      required: ["profile"],
+      properties: { profile: { enum: ["generic", "provider"] } }
+    },
+    knowledgeEcosystem: id
+  }
+};
+var inputPathSegment = {
+  oneOf: [id, count]
+};
+var fieldEditFormFieldSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["key", "label", "type", "inputPath"],
+  properties: {
+    ...fieldSchemaValueSchema.properties,
+    inputPath: { type: "array", items: inputPathSegment, minItems: 1 },
+    required: boolean,
+    initial: json,
+    source: { enum: ["entry-key", "entry-value"] },
+    encoding: { const: "utf8-base64" }
+  }
+};
+var fieldEditInputSchemaV1Schema = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/field-edit-input-schema.v1.schema.json",
+  $defs: fieldSchemaDefinitions,
+  type: "object",
+  additionalProperties: false,
+  required: ["schemaVersion", "forms"],
+  properties: {
+    schemaVersion: { const: 1 },
+    forms: {
+      type: "array",
+      minItems: 1,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["id", "label", "summary", "fields"],
+        properties: {
+          id,
+          label: text,
+          summary: text,
+          binding: {
+            type: "object",
+            additionalProperties: false,
+            required: ["groupId"],
+            properties: { groupId: id, entryKey: id }
+          },
+          fields: { type: "array", minItems: 1, items: fieldEditFormFieldSchema }
+        }
+      }
+    }
+  }
+};
+var fieldEditorContributionSpecV1Schema = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://schemas.modkit.org/x3/field-editor-contribution-spec.v1.schema.json",
+  type: "object",
+  additionalProperties: false,
+  required: ["fieldTypeId", "editorId", "priority"],
+  properties: {
+    fieldTypeId: id,
+    editorId: id,
+    priority: { type: "integer", minimum: -1e6, maximum: 1e6 },
+    hosts: { type: "array", minItems: 1, uniqueItems: true, items: id }
+  }
+};
+deepFreeze(fieldTypeV1Schema);
+deepFreeze(fieldSchemaV1Schema);
+deepFreeze(fieldWriteRequestV1Schema);
+deepFreeze(subjectKindDefinitionSpecV1Schema);
+deepFreeze(fieldEditInputSchemaV1Schema);
+deepFreeze(fieldEditorContributionSpecV1Schema);
+
 // packages/sdk/dist/manifest/operation-permissions.js
 function operationScopedPermissionClasses(operations) {
   const out = /* @__PURE__ */ new Set();
@@ -1632,6 +2062,14 @@ function nestedSubject(owner, kind, key2) {
   assertSubjectIdentity({ kind, key: key2 });
   return { ...owner, identity: { kind, key: key2 } };
 }
+function sourceChainEquals(a, b) {
+  if (a === void 0 || b === void 0)
+    return a === b;
+  return a.id === b.id && sourceChainEquals(a.parent, b.parent);
+}
+function subjectRefEquals(a, b) {
+  return a.workspace === b.workspace && sourceChainEquals(a.source, b.source) && a.identity.kind === b.identity.kind && a.identity.key === b.identity.key;
+}
 var EXTENDED_SUBJECT_PREFIX = "x3-subject:";
 function sourceIdChain(source) {
   const chain = [];
@@ -1644,11 +2082,11 @@ function sourceFromIdChain(chain) {
   if (chain.length === 0)
     throw new TypeError("subject source chain must be non-empty");
   let source;
-  for (const id of chain) {
-    if (typeof id !== "string" || id.length === 0) {
+  for (const id2 of chain) {
+    if (typeof id2 !== "string" || id2.length === 0) {
       throw new TypeError("subject source id must be non-empty");
     }
-    source = { id, ...source === void 0 ? {} : { parent: source } };
+    source = { id: id2, ...source === void 0 ? {} : { parent: source } };
   }
   return source;
 }
@@ -1907,7 +2345,7 @@ var jsonSchemaRefSchema2 = {
   type: "object",
   additionalProperties: false,
   required: ["$ref"],
-  properties: { $ref: nonEmptyString2 }
+  properties: { $ref: nonEmptyString2, document: jsonValueRef }
 };
 var operationProperties = {
   id: operationId3,
@@ -1954,7 +2392,26 @@ var metadataEntrySchema = {
   required: ["key", "value"],
   properties: {
     key: nonEmptyString2,
-    value: jsonValueRef
+    value: jsonValueRef,
+    type: { $ref: "#/$defs/fieldType" },
+    unit: { type: "string" },
+    diagnosticIds: stringArray,
+    provenance: {
+      type: "array",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["label"],
+        properties: {
+          label: { type: "string" },
+          source: assetSourceRefSchema,
+          range: sourceSpanValueSchema,
+          semanticPath: stringArray
+        }
+      }
+    },
+    knowledgeTarget: knowledgeTargetSchema,
+    editable: fieldEditableValueSchema
   }
 };
 var metadataGroupSchema = {
@@ -1964,7 +2421,8 @@ var metadataGroupSchema = {
   properties: {
     id: nonEmptyString2,
     label: { type: "string" },
-    entries: { type: "array", items: metadataEntrySchema }
+    entries: { type: "array", items: metadataEntrySchema },
+    order: { type: "number" }
   }
 };
 var companionBaseProperties = {
@@ -2191,14 +2649,15 @@ var resolvedAssetDescriptorSchema = {
 var subjectDescriptorV2Schema = {
   $schema: "https://json-schema.org/draft/2020-12/schema",
   $id: "https://schemas.modkit.org/x3/subject-descriptor.v2.schema.json",
-  $defs: { jsonValue: jsonValueSchema },
+  $defs: { ...fieldSchemaDefinitions, jsonValue: jsonValueSchema },
   oneOf: [unresolvedSourceDescriptorSchema, resolvedAssetDescriptorSchema]
 };
 var subjectDescriptorV2InferenceSchema = {
   ...subjectDescriptorV2Schema,
   $defs: {
     ...subjectDescriptorV2Schema.$defs,
-    jsonValue: { title: "JsonValue" }
+    jsonValue: { title: "JsonValue" },
+    fieldType: { title: "FieldType" }
   }
 };
 var anyDescriptorV2Schema = subjectDescriptorV2Schema;
@@ -2208,7 +2667,7 @@ deepFreeze(subjectDescriptorV2InferenceSchema);
 // packages/sdk/dist/manifest/validate.js
 var platformValidatorsPromise;
 function platformValidators() {
-  platformValidatorsPromise ??= import("./validators.generated-5WV6ORZ6.js").then((module) => module.PRECOMPILED_SCHEMA_VALIDATORS);
+  platformValidatorsPromise ??= import("./validators.generated-Y4DUUWE3.js").then((module) => module.PRECOMPILED_SCHEMA_VALIDATORS);
   return platformValidatorsPromise;
 }
 function toPath(error) {
@@ -2458,8 +2917,8 @@ function assetSourceRefFromSourceRef(source, uri) {
 }
 function sourceRefFromAssetSourceRef(ref) {
   let parent;
-  for (const id of ref.parentIds ?? []) {
-    parent = Object.freeze({ id, ...parent === void 0 ? {} : { parent } });
+  for (const id2 of ref.parentIds ?? []) {
+    parent = Object.freeze({ id: id2, ...parent === void 0 ? {} : { parent } });
   }
   return Object.freeze({ id: ref.id, ...parent === void 0 ? {} : { parent } });
 }
@@ -2551,25 +3010,25 @@ function invalidProfile(message, context) {
     ...context === void 0 ? {} : { context }
   });
 }
-function exactKeys(value2, allowed, field) {
+function exactKeys(value2, allowed, field2) {
   const extra = Object.keys(value2).filter((key2) => !allowed.includes(key2));
   if (extra.length > 0)
-    invalidProfile(`${field} contains unsupported fields`, { field, extra });
+    invalidProfile(`${field2} contains unsupported fields`, { field: field2, extra });
 }
-function nonEmpty(value2, field) {
+function nonEmpty(value2, field2) {
   if (value2.trim().length === 0)
-    return invalidProfile(`${field} must not be empty`, { field });
+    return invalidProfile(`${field2} must not be empty`, { field: field2 });
   return value2;
 }
-function count(value2, field) {
+function count2(value2, field2) {
   if (!Number.isSafeInteger(value2) || value2 < 0) {
-    return invalidProfile(`${field} must be a non-negative safe integer`, { field, value: value2 });
+    return invalidProfile(`${field2} must be a non-negative safe integer`, { field: field2, value: value2 });
   }
   return value2;
 }
-function bytes(value2, field) {
+function bytes(value2, field2) {
   if (!isUInt64String(value2))
-    return invalidProfile(`${field} must be an unsigned 64-bit string`, { field });
+    return invalidProfile(`${field2} must be an unsigned 64-bit string`, { field: field2 });
   return value2;
 }
 function normalizeStrings(values) {
@@ -2623,11 +3082,11 @@ function createHostRealmProfile(profile) {
     ...rawTarget.externalTools === void 0 ? {} : { externalTools: normalizeStrings(rawTarget.externalTools) }
   });
   const budgets = Object.freeze({
-    maxConcurrentTasks: count(snapshot.budgets.maxConcurrentTasks, "budgets.maxConcurrentTasks"),
-    maxWorkerCount: count(snapshot.budgets.maxWorkerCount, "budgets.maxWorkerCount"),
+    maxConcurrentTasks: count2(snapshot.budgets.maxConcurrentTasks, "budgets.maxConcurrentTasks"),
+    maxWorkerCount: count2(snapshot.budgets.maxWorkerCount, "budgets.maxWorkerCount"),
     maxResidentBytes: bytes(snapshot.budgets.maxResidentBytes, "budgets.maxResidentBytes"),
     maxTransferBytes: bytes(snapshot.budgets.maxTransferBytes, "budgets.maxTransferBytes"),
-    defaultDeadlineMs: count(snapshot.budgets.defaultDeadlineMs, "budgets.defaultDeadlineMs")
+    defaultDeadlineMs: count2(snapshot.budgets.defaultDeadlineMs, "budgets.defaultDeadlineMs")
   });
   const policy2 = Object.freeze({
     id: nonEmpty(snapshot.policy.id, "policy.id"),
@@ -2882,10 +3341,10 @@ async function runSemanticValidator(validator, manifest) {
   }
 }
 function normalizeContributionManifest(wire) {
-  const { contract, dependsOn, id, ...rest } = wire;
+  const { contract, dependsOn, id: id2, ...rest } = wire;
   return Object.freeze({
     ...rest,
-    id: contributionId(normalizeModkitIdentifier(id)),
+    id: contributionId(normalizeModkitIdentifier(id2)),
     contract: Object.freeze({
       ...contract,
       id: contractId(normalizeModkitIdentifier(contract.id))
@@ -3109,10 +3568,13 @@ function isStandardTraitId(value2) {
 }
 
 // packages/sdk/dist/manifest/contribution-contract-registry.js
+var SUBJECT_KIND_DEFINITION_CONTRIBUTION_CONTRACT = contractId("modkit/subject-kind-definition");
+var SUBJECT_KIND_DEFINITION_FACT = contractId("modkit.inventory/subject-kind-definition");
 var CODEC_CONTRIBUTION_CONTRACT = contractId("modkit/codec-contribution");
 var SERVICE_PROVIDER_CONTRIBUTION_CONTRACT = contractId("modkit/service-provider-contribution");
 var VIEWER_CONTRIBUTION_CONTRACT = contractId("modkit/viewer-contribution");
 var EDITOR_CONTRIBUTION_CONTRACT = contractId("modkit/editor-contribution");
+var FIELD_EDITOR_CONTRIBUTION_CONTRACT = contractId("modkit/field-editor-contribution");
 var TRAIT_DEFINITION_CONTRIBUTION_CONTRACT = contractId("modkit/trait-definition");
 var CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT = contractId("modkit/contract-definition");
 var KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT = contractId("modkit/knowledge-pack");
@@ -3120,6 +3582,7 @@ var LOCALIZATION_CONTRIBUTION_CONTRACT = contractId("modkit/localization-contrib
 var TRAIT_DEFINITION_FACT = contractId("modkit.inventory/trait-definition");
 var CONTRACT_DEFINITION_FACT = contractId("modkit.inventory/contract-definition");
 var EDITOR_CONTRIBUTION_FACT = contractId("modkit.inventory/editor-contribution");
+var FIELD_EDITOR_CONTRIBUTION_FACT = contractId("modkit.inventory/field-editor-contribution");
 var KNOWLEDGE_PACK_FACT = contractId("modkit.inventory/knowledge-pack");
 var LOCALIZATION_CONTRIBUTION_FACT = contractId("modkit.inventory/localization-contribution");
 function duplicateFieldDiagnostics(values, path, label) {
@@ -3141,31 +3604,57 @@ function requirementRangeDiagnostics(requirement, path) {
     diagnostic("error", "x3.sdk/invalid-contract-range", `contract range ${requirement.range} cannot be evaluated safely`, [...path, "range"])
   ] : [];
 }
-function traitDefinitionRangeDiagnostics(id, range, path) {
-  if (isStandardTraitId(id)) {
+function traitDefinitionRangeDiagnostics(id2, range, path) {
+  if (isStandardTraitId(id2)) {
     return range === void 0 ? [] : [
-      diagnostic("error", "x3.sdk/standard-trait-versioned", `standard trait ${id} does not use an extension definition range`, [...path, "definitionRange"])
+      diagnostic("error", "x3.sdk/standard-trait-versioned", `standard trait ${id2} does not use an extension definition range`, [...path, "definitionRange"])
     ];
   }
   if (range === void 0 || parseVersionRange(range) === void 0) {
     return [
-      diagnostic("error", "x3.sdk/custom-trait-definition-unbound", `custom trait ${id} must declare a safe definition range`, [...path, "definitionRange"])
+      diagnostic("error", "x3.sdk/custom-trait-definition-unbound", `custom trait ${id2} must declare a safe definition range`, [...path, "definitionRange"])
     ];
   }
   return [];
 }
-function traitDefinitionOfferDiagnostics(id, version, path) {
-  if (isStandardTraitId(id)) {
+function traitDefinitionOfferDiagnostics(id2, version, path) {
+  if (isStandardTraitId(id2)) {
     return version === void 0 ? [] : [
-      diagnostic("error", "x3.sdk/standard-trait-versioned", `standard trait ${id} does not use an extension definition version`, [...path, "definitionVersion"])
+      diagnostic("error", "x3.sdk/standard-trait-versioned", `standard trait ${id2} does not use an extension definition version`, [...path, "definitionVersion"])
     ];
   }
   if (version === void 0 || parseSemver(version) === void 0) {
     return [
-      diagnostic("error", "x3.sdk/custom-trait-definition-unbound", `custom trait ${id} must declare one exact safe definition version`, [...path, "definitionVersion"])
+      diagnostic("error", "x3.sdk/custom-trait-definition-unbound", `custom trait ${id2} must declare one exact safe definition version`, [...path, "definitionVersion"])
     ];
   }
   return [];
+}
+function normalizedNamespaceProbePath(value2) {
+  if (value2.includes("\0") || value2.includes("\\"))
+    return void 0;
+  const parts = value2.split("/").filter((part) => part !== "" && part !== ".");
+  if (parts.length === 0 || parts.some((part) => part === ".."))
+    return void 0;
+  return parts.join("/");
+}
+function namespaceProbePathDiagnostics(values, field2) {
+  const diagnostics = [];
+  const first = /* @__PURE__ */ new Map();
+  values.forEach((value2, index) => {
+    const normalized = normalizedNamespaceProbePath(value2);
+    if (normalized === void 0) {
+      diagnostics.push(diagnostic("error", "x3.sdk/namespace-probe-path-invalid", `namespace probe ${field2.slice(0, -1)} \xAB${value2}\xBB is not a confined POSIX path`, ["spec", "probe", field2, index]));
+      return;
+    }
+    const previous = first.get(normalized);
+    if (previous === void 0)
+      first.set(normalized, index);
+    else {
+      diagnostics.push(diagnostic("error", "x3.sdk/namespace-probe-path-duplicate", `namespace probe ${field2.slice(0, -1)} \xAB${value2}\xBB duplicates index ${previous} after normalization`, ["spec", "probe", field2, index]));
+    }
+  });
+  return diagnostics;
 }
 var validateCodecContributionSemantics = (manifest) => {
   const spec = manifest.spec;
@@ -3180,6 +3669,16 @@ var validateCodecContributionSemantics = (manifest) => {
     ...duplicateFieldDiagnostics(spec.fidelityEvidence?.map((item) => item.evidenceId) ?? [], ["spec", "fidelityEvidence"], "fidelity evidence ID")
   ];
   const formatIds = new Set(spec.formatRefs.map((format) => format.formatId));
+  const containerPack = spec.operations.find((operation) => operation.id === "container.pack");
+  if (containerPack !== void 0) {
+    if (!spec.roles.includes("container") || spec.sourceTopology !== "single" || spec.probe.kind !== "bytes") {
+      diagnostics.push(diagnostic("error", "x3.sdk/container-pack-topology-invalid", "container.pack requires a container-role codec with single byte topology", ["spec", "operations", spec.operations.indexOf(containerPack)]));
+    }
+    const permissions = new Set(containerPack.requiredPermissions ?? []);
+    if (containerPack.mutatesSource !== true || permissions.size !== 2 || !permissions.has("read-source") || !permissions.has("write-source") || containerPack.outputKinds?.length !== 1 || containerPack.outputKinds[0] !== "edit-plan") {
+      diagnostics.push(diagnostic("error", "x3.sdk/container-pack-operation-invalid", "container.pack must mutate the source, require read-source and write-source, and return only edit-plan", ["spec", "operations", spec.operations.indexOf(containerPack)]));
+    }
+  }
   const representationIds = new Set(spec.representations.map((representation) => representation.id));
   spec.fidelityEvidence?.forEach((item, index) => {
     if (!formatIds.has(item.formatId)) {
@@ -3192,6 +3691,26 @@ var validateCodecContributionSemantics = (manifest) => {
   const expectedProbeKind = spec.sourceTopology === "namespace" ? "namespace" : spec.sourceTopology === "derived" ? "derived" : "bytes";
   if (spec.probe.kind !== expectedProbeKind) {
     diagnostics.push(diagnostic("error", "x3.sdk/probe-topology-mismatch", `topology ${spec.sourceTopology} requires a ${expectedProbeKind} probe policy`, ["spec", "probe", "kind"]));
+  }
+  if (spec.probe.kind === "namespace") {
+    diagnostics.push(...namespaceProbePathDiagnostics(spec.probe.markers, "markers"), ...namespaceProbePathDiagnostics(spec.probe.prefixes ?? [], "prefixes"));
+  }
+  if (spec.container !== void 0) {
+    if (spec.sourceTopology !== "namespace" || spec.probe.kind !== "namespace") {
+      diagnostics.push(diagnostic("error", "x3.sdk/container-alias-topology-invalid", "a container topology alias requires namespace topology and a namespace probe", ["spec", "container"]));
+    }
+    if (spec.roles.includes("container")) {
+      diagnostics.push(diagnostic("error", "x3.sdk/container-alias-role-invalid", "a semantic container alias cannot also claim the container role", ["spec", "roles"]));
+    }
+    if ((spec.match.signatures?.length ?? 0) > 0) {
+      diagnostics.push(diagnostic("error", "x3.sdk/container-alias-signature-forbidden", "a semantic container alias must not copy the carrier container signature", ["spec", "match", "signatures"]));
+    }
+    if ((spec.match.extensions?.length ?? 0) === 0 && (spec.match.mediaTypes?.length ?? 0) === 0 && (spec.match.pathGlobs?.length ?? 0) === 0) {
+      diagnostics.push(diagnostic("error", "x3.sdk/container-alias-selector-missing", "a semantic container alias requires an extension, media type, or path selector", ["spec", "match"]));
+    }
+    if (formatIds.has(spec.container.formatId)) {
+      diagnostics.push(diagnostic("error", "x3.sdk/container-alias-self-cycle", `container alias ${spec.container.formatId} also appears in the semantic codec formatRefs`, ["spec", "container", "formatId"]));
+    }
   }
   spec.requires?.forEach((requirement, index) => {
     diagnostics.push(...requirementRangeDiagnostics(requirement, ["spec", "requires", index]));
@@ -3262,17 +3781,17 @@ var validateCodecContributionSemantics = (manifest) => {
   });
   return diagnostics;
 };
-function isPortableOperationReference(id) {
-  if (SHARED_OPERATION_IDS.includes(id))
+function isPortableOperationReference(id2) {
+  if (SHARED_OPERATION_IDS.includes(id2))
     return true;
   if (OPERATION_DOMAINS.some((domain) => {
     const prefix = `${domain}.`;
-    return id.startsWith(prefix) && isSegment(id.slice(prefix.length));
+    return id2.startsWith(prefix) && isSegment(id2.slice(prefix.length));
   })) {
     return true;
   }
-  const separator = id.lastIndexOf(".");
-  return separator > 0 && isQualifiedId(id.slice(0, separator)) && isSegment(id.slice(separator + 1));
+  const separator = id2.lastIndexOf(".");
+  return separator > 0 && isQualifiedId(id2.slice(0, separator)) && isSegment(id2.slice(separator + 1));
 }
 var validateViewerContributionSemantics = (manifest) => {
   const spec = manifest.spec;
@@ -3280,9 +3799,9 @@ var validateViewerContributionSemantics = (manifest) => {
     ...duplicateFieldDiagnostics(spec.requiresTraits?.map((requirement) => requirement.id) ?? [], ["spec", "requiresTraits"], "trait requirement"),
     ...duplicateFieldDiagnostics(spec.requiresOperations ?? [], ["spec", "requiresOperations"], "operation requirement")
   ];
-  spec.requiresOperations?.forEach((id, index) => {
-    if (!isPortableOperationReference(id)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-operation-namespace", `viewer operation requirement ${id} is not shared, canonical-domain, or qualified-local`, ["spec", "requiresOperations", index]));
+  spec.requiresOperations?.forEach((id2, index) => {
+    if (!isPortableOperationReference(id2)) {
+      diagnostics.push(diagnostic("error", "x3.sdk/invalid-operation-namespace", `viewer operation requirement ${id2} is not shared, canonical-domain, or qualified-local`, ["spec", "requiresOperations", index]));
     }
   });
   spec.requiresTraits?.forEach((requirement, index) => {
@@ -3308,15 +3827,15 @@ var validateEditorContributionSemantics = (manifest) => {
     ...duplicateFieldDiagnostics(spec.requiresOperations, ["spec", "requiresOperations"], "operation"),
     ...duplicateFieldDiagnostics(spec.consumesDataSources.map((source) => `${source.contract}@${source.major}`), ["spec", "consumesDataSources"], "data-source requirement")
   ];
-  spec.requiresOperations.forEach((id, index) => {
-    if (!EDITING_OPERATION_IDS.includes(id)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/invalid-editor-operation", `editor operation ${id} is not one of the shared editing operations`, ["spec", "requiresOperations", index]));
+  spec.requiresOperations.forEach((id2, index) => {
+    if (!EDITING_OPERATION_IDS.includes(id2)) {
+      diagnostics.push(diagnostic("error", "x3.sdk/invalid-editor-operation", `editor operation ${id2} is not one of the shared editing operations`, ["spec", "requiresOperations", index]));
     }
   });
-  if (!spec.requiresOperations.some((id) => id.startsWith("edit."))) {
+  if (!spec.requiresOperations.some((id2) => id2.startsWith("edit."))) {
     diagnostics.push(diagnostic("error", "x3.sdk/editor-edit-operation-missing", "an editor contribution requires an explicit edit operation", ["spec", "requiresOperations"]));
   }
-  if (spec.requiresTransactions && !spec.requiresOperations.some((id) => id === "source.save" || id === "source.save-as")) {
+  if (spec.requiresTransactions && !spec.requiresOperations.some((id2) => id2 === "source.save" || id2 === "source.save-as")) {
     diagnostics.push(diagnostic("error", "x3.sdk/editor-save-operation-missing", "a transactional editor requires source.save or source.save-as", ["spec", "requiresOperations"]));
   }
   if (spec.requiresTransactions && spec.writer.mutationMode !== "mutate") {
@@ -3369,9 +3888,9 @@ function dataSourceSurfaceDiagnostics(surface, path) {
       diagnostics.push(diagnostic("error", "x3.sdk/surface-release-via-kind", `releaseVia \xAB${surface.releaseVia}\xBB must name a value method, found ${target.kind}`, [...path, "releaseVia"]));
     }
   }
-  for (const field of surface.fields ?? []) {
-    if (Object.hasOwn(surface.methods, field)) {
-      diagnostics.push(diagnostic("error", "x3.sdk/surface-field-is-method", `\xAB${field}\xBB cannot be both a field and a method`, [...path, "fields"]));
+  for (const field2 of surface.fields ?? []) {
+    if (Object.hasOwn(surface.methods, field2)) {
+      diagnostics.push(diagnostic("error", "x3.sdk/surface-field-is-method", `\xAB${field2}\xBB cannot be both a field and a method`, [...path, "fields"]));
     }
   }
   return diagnostics;
@@ -3497,6 +4016,10 @@ var validateLocalizationContributionSemantics = (manifest) => {
   });
   return diagnostics;
 };
+var validateFieldEditorContributionSemantics = (manifest) => {
+  const spec = manifest.spec;
+  return duplicateFieldDiagnostics(spec.hosts ?? [], ["spec", "hosts"], "field editor host");
+};
 function key(contract, major) {
   return `${contract}@${major}`;
 }
@@ -3519,17 +4042,17 @@ function validatedRegistrationCoordinate(value2) {
     return invalidOpenRegistration("contribution contract coordinate must be an object", {});
   }
   const candidate = value2;
-  const id = candidate.id;
+  const id2 = candidate.id;
   const major = candidate.major;
-  if (typeof id !== "string" || !isQualifiedId(id)) {
+  if (typeof id2 !== "string" || !isQualifiedId(id2)) {
     return invalidOpenRegistration("contribution contract id must be a qualified id", {
-      contract: typeof id === "string" ? id : typeof id
+      contract: typeof id2 === "string" ? id2 : typeof id2
     });
   }
   if (!Number.isSafeInteger(major) || major < 0) {
-    return invalidOpenRegistration("contribution contract major must be a safe non-negative integer", { contract: id, major: safeRegistrationContextValue(major) });
+    return invalidOpenRegistration("contribution contract major must be a safe non-negative integer", { contract: id2, major: safeRegistrationContextValue(major) });
   }
-  return Object.freeze({ id: contractId(id), major });
+  return Object.freeze({ id: contractId(id2), major });
 }
 function validatedRegistrationProfile(value2, contract, major) {
   if (typeof value2 !== "string" || value2.trim().length === 0) {
@@ -3663,6 +4186,28 @@ function dataOnlyProjector(factContract) {
 }
 var A1_SPEC_SCHEMA_ENTRIES = [
   {
+    contract: SUBJECT_KIND_DEFINITION_CONTRIBUTION_CONTRACT,
+    major: 1,
+    schema: subjectKindDefinitionSpecV1Schema,
+    validateSemantics: (manifest) => {
+      const spec = manifest.spec;
+      const diagnostics = [
+        ...duplicateFieldDiagnostics(spec.parentKinds ?? [], ["spec", "parentKinds"], "parent kind"),
+        ...duplicateFieldDiagnostics(spec.card?.sections ?? [], ["spec", "card", "sections"], "card section"),
+        ...duplicateFieldDiagnostics(spec.selector?.facets ?? [], ["spec", "selector", "facets"], "selector facet"),
+        ...duplicateFieldDiagnostics(spec.selector?.predicates.map((item) => item.id) ?? [], ["spec", "selector", "predicates"], "selector predicate")
+      ];
+      if (spec.parentKinds?.includes(spec.kindId))
+        diagnostics.push(diagnostic("error", "x3.sdk/subject-kind-self-parent", "a subject kind cannot inherit itself", ["spec", "parentKinds"]));
+      return diagnostics;
+    },
+    registration: {
+      mode: "data-only",
+      project: dataOnlyProjector(SUBJECT_KIND_DEFINITION_FACT),
+      conformanceProfile: "modkit/subject-kind-definition-v1"
+    }
+  },
+  {
     contract: CODEC_CONTRIBUTION_CONTRACT,
     major: 1,
     schema: codecContributionSpecV1Schema,
@@ -3685,6 +4230,12 @@ var A1_SPEC_SCHEMA_ENTRIES = [
     major: 1,
     schema: editorContributionSpecV1Schema,
     validateSemantics: validateEditorContributionSemantics
+  },
+  {
+    contract: FIELD_EDITOR_CONTRIBUTION_CONTRACT,
+    major: 1,
+    schema: fieldEditorContributionSpecV1Schema,
+    validateSemantics: validateFieldEditorContributionSemantics
   },
   {
     contract: TRAIT_DEFINITION_CONTRIBUTION_CONTRACT,
@@ -3967,9 +4518,10 @@ function immutableDiagnostic2(value2) {
   });
 }
 function immutableSchema(value2) {
-  const immutableField = (field) => Object.freeze({
-    ...field,
-    ...field.fields === void 0 ? {} : { fields: Object.freeze(field.fields.map(immutableField)) }
+  const immutableField = (field2) => Object.freeze({
+    ...field2,
+    ...field2.type === void 0 ? {} : { type: immutableJson(field2.type) },
+    ...field2.fields === void 0 ? {} : { fields: Object.freeze(field2.fields.map(immutableField)) }
   });
   return Object.freeze({ ...value2, fields: Object.freeze(value2.fields.map(immutableField)) });
 }
@@ -4032,25 +4584,25 @@ function schemaFields(schema, schemas, diagnostics, visiting = /* @__PURE__ */ n
     } else {
       const next = new Set(visiting);
       next.add(schema.typeId);
-      for (const [fieldId, field] of schemaFields(parent, schemas, diagnostics, next)) {
-        fields.set(fieldId, field);
+      for (const [fieldId, field2] of schemaFields(parent, schemas, diagnostics, next)) {
+        fields.set(fieldId, field2);
       }
     }
   }
-  for (const field of schema.fields)
-    fields.set(field.fieldId, field);
+  for (const field2 of schema.fields)
+    fields.set(field2.fieldId, field2);
   return fields;
 }
 function mergeFields(base, patch, fields) {
   const merged = Object.fromEntries(Object.entries(base).map(([key2, value2]) => [key2, cloneJson(value2)]));
   for (const [fieldId, incoming] of Object.entries(patch)) {
-    const field = fields.get(fieldId);
-    if (field === void 0)
+    const field2 = fields.get(fieldId);
+    if (field2 === void 0)
       continue;
-    if (field.cardinality === "append") {
+    if (field2.cardinality === "append") {
       merged[fieldId] = mergeAppend(merged[fieldId], incoming);
-    } else if (field.cardinality === "indexed") {
-      merged[fieldId] = mergeIndexed(merged[fieldId], incoming, field.indexKey ?? "index");
+    } else if (field2.cardinality === "indexed") {
+      merged[fieldId] = mergeIndexed(merged[fieldId], incoming, field2.indexKey ?? "index");
     } else {
       merged[fieldId] = cloneJson(incoming);
     }
@@ -4067,14 +4619,14 @@ function relationScalarValues(value2) {
     return [];
   return record["value"] === void 0 ? [] : relationScalarValues(record["value"]);
 }
-function visitRelationField(value2, field, path, visit) {
-  if (field.linkNamespace !== void 0 && field.linkNamespace !== "") {
+function visitRelationField(value2, field2, path, visit) {
+  if (field2.linkNamespace !== void 0 && field2.linkNamespace !== "") {
     for (const entityId of relationScalarValues(value2)) {
       if (entityId.length > 0)
-        visit(field.linkNamespace, entityId, path);
+        visit(field2.linkNamespace, entityId, path);
     }
   }
-  if (field.fields === void 0)
+  if (field2.fields === void 0)
     return;
   const values = Array.isArray(value2) ? value2 : [value2];
   for (const item of values) {
@@ -4083,7 +4635,7 @@ function visitRelationField(value2, field, path, visit) {
       continue;
     const wrapped = record["value"];
     const nested = wrapped === void 0 ? record : recordOf(wrapped) ?? record;
-    for (const child of field.fields) {
+    for (const child of field2.fields) {
       const childValue = nested[child.fieldId];
       if (childValue === void 0)
         continue;
@@ -4284,10 +4836,10 @@ function resolveDataCatalog(input) {
   for (const entity of extended ? definitions : []) {
     const fields = fieldsByType.get(entity.typeId) ?? /* @__PURE__ */ new Map();
     for (const [fieldId, value2] of Object.entries(entity.fields)) {
-      const field = fields.get(fieldId);
-      if (field === void 0)
+      const field2 = fields.get(fieldId);
+      if (field2 === void 0)
         continue;
-      visitRelationField(value2, field, fieldId, (namespace, entityId, role) => {
+      visitRelationField(value2, field2, fieldId, (namespace, entityId, role) => {
         const key2 = `${entity.namespace}\0${entity.entityId}\0${namespace}\0${entityId}\0${role}`;
         if (relationKeys.has(key2))
           return;
@@ -4495,8 +5047,8 @@ function splitExtensionCoordinate(coordinate) {
     id: coordinate.slice(separator + 1)
   };
 }
-function normalizeExtensionIdentityParts(publisher, id) {
-  return splitExtensionCoordinate(normalizeModkitIdentifier(`${publisher}/${id}`));
+function normalizeExtensionIdentityParts(publisher, id2) {
+  return splitExtensionCoordinate(normalizeModkitIdentifier(`${publisher}/${id2}`));
 }
 function normalizeExtensionManifestIdentities(manifest) {
   const identity = normalizeExtensionIdentityParts(manifest.publisher, manifest.id);
@@ -4582,9 +5134,9 @@ async function normalizeExtensionManifest(input) {
   }
   const diagnostics = [];
   const blockRecord = block;
-  for (const field of ["version", "license"]) {
-    if (field in blockRecord) {
-      diagnostics.push(diagnostic("error", "x3.sdk/npm-field-duplicated-in-block", `\xAB${field}\xBB belongs to the top-level package.json only (Q76 packaging error)`, ["modkit", field]));
+  for (const field2 of ["version", "license"]) {
+    if (field2 in blockRecord) {
+      diagnostics.push(diagnostic("error", "x3.sdk/npm-field-duplicated-in-block", `\xAB${field2}\xBB belongs to the top-level package.json only (Q76 packaging error)`, ["modkit", field2]));
     }
   }
   diagnostics.push(...await validateWithSchema(modkitBlockSchema, blockRecord));
@@ -5379,13 +5931,13 @@ async function validateSubjectDescriptorV2(value2) {
     }
     if (trait.state !== "available") {
       const diagnosticIds = /* @__PURE__ */ new Set();
-      for (const id of trait.diagnosticIds) {
-        if (diagnosticIds.has(id)) {
-          semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-trait-diagnostic", `trait diagnostic ${id} is referenced more than once`, ["traits", index, "diagnosticIds"]));
+      for (const id2 of trait.diagnosticIds) {
+        if (diagnosticIds.has(id2)) {
+          semanticDiagnostics.push(diagnostic("error", "x3.sdk/duplicate-trait-diagnostic", `trait diagnostic ${id2} is referenced more than once`, ["traits", index, "diagnosticIds"]));
         }
-        diagnosticIds.add(id);
-        if (!knownDiagnostics.has(id)) {
-          semanticDiagnostics.push(diagnostic("error", "x3.sdk/unknown-trait-diagnostic", `trait diagnostic ${id} is not present in descriptor diagnostics`, ["traits", index, "diagnosticIds"]));
+        diagnosticIds.add(id2);
+        if (!knownDiagnostics.has(id2)) {
+          semanticDiagnostics.push(diagnostic("error", "x3.sdk/unknown-trait-diagnostic", `trait diagnostic ${id2} is not present in descriptor diagnostics`, ["traits", index, "diagnosticIds"]));
         }
       }
     }
@@ -5408,6 +5960,21 @@ async function validateSubjectDescriptorV2(value2) {
       semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-descriptor-operation", `operation ${operation.id} is not owned by ${operationOwner}`, ["operations", index, "id"]));
     }
   });
+  if (wire.interpretation !== "none") {
+    wire.metadata.forEach((group, groupIndex) => group.entries.forEach((entry, entryIndex) => {
+      const write = entry.editable?.write;
+      if (write !== void 0 && "operation" in write) {
+        try {
+          operationId(write.operation, { contributionId: operationOwner });
+          if (!wire.operations.some((operation) => operation.id === write.operation && operation.mutatesSource)) {
+            throw new TypeError("field write must name a published mutating operation");
+          }
+        } catch {
+          semanticDiagnostics.push(diagnostic("error", "x3.sdk/invalid-field-write-operation", `field write ${write.operation} is not a declared owned mutation`, ["metadata", groupIndex, "entries", entryIndex, "editable", "write", "operation"]));
+        }
+      }
+    }));
+  }
   if (wire.origin.kind === "bundle") {
     const bindingIds = /* @__PURE__ */ new Set();
     wire.origin.bindings.forEach((binding, index) => {
@@ -5441,9 +6008,9 @@ async function validateSubjectDescriptorV2(value2) {
           companionBindingIds.add(bindingId2);
         });
       } else {
-        for (const id of companion.diagnosticIds ?? []) {
-          if (!knownDiagnostics.has(id)) {
-            semanticDiagnostics.push(diagnostic("error", "x3.sdk/unknown-companion-diagnostic", `companion diagnostic ${id} is not present in descriptor diagnostics`, ["companions", index, "diagnosticIds"]));
+        for (const id2 of companion.diagnosticIds ?? []) {
+          if (!knownDiagnostics.has(id2)) {
+            semanticDiagnostics.push(diagnostic("error", "x3.sdk/unknown-companion-diagnostic", `companion diagnostic ${id2} is not present in descriptor diagnostics`, ["companions", index, "diagnosticIds"]));
           }
         }
         if (companion.state === "ambiguous") {
@@ -5509,6 +6076,28 @@ async function validateSubjectDescriptorV2(value2) {
   };
   const descriptor = Object.freeze(wire.interpretation === "none" ? { ...base, candidates: Object.freeze(wire.candidates.map(normalizeDetection)) } : {
     ...base,
+    metadata: Object.freeze(wire.metadata.map((group) => Object.freeze({
+      ...group,
+      entries: Object.freeze(group.entries.map((entry) => Object.freeze({
+        ...entry,
+        ...entry.provenance === void 0 ? {} : {
+          provenance: Object.freeze(entry.provenance.map((origin) => Object.freeze({
+            ...origin,
+            ...origin.range === void 0 ? {} : { range: normalizeSourceSpan(origin.range) }
+          })))
+        },
+        ...entry.editable === void 0 ? {} : {
+          editable: Object.freeze({
+            ...entry.editable,
+            write: "operation" in entry.editable.write ? Object.freeze({
+              operation: operationId(entry.editable.write.operation, {
+                contributionId: operationOwner
+              })
+            }) : entry.editable.write
+          })
+        }
+      })))
+    }))),
     ...wire.companions === void 0 ? {} : { companions: Object.freeze(wire.companions.map(normalizeCompanion)) }
   });
   return { descriptor, diagnostics: [...schemaDiagnostics2, ...semanticDiagnostics] };
@@ -5900,8 +6489,20 @@ export {
   ROUND_TRIP_RANK,
   writerOfferSatisfies,
   writerSelectionKey,
+  loadSubjectCandidatePage,
+  createSubjectCandidateProvider,
+  fieldTypeV1Schema,
+  fieldSchemaV1Schema,
+  fieldWriteRequestV1Schema,
+  subjectKindDefinitionSpecV1Schema,
+  fieldEditInputSchemaV1Schema,
+  fieldEditorContributionSpecV1Schema,
   operationScopedPermissionClasses,
   activationRequiredPermissionClasses,
+  rootSubject,
+  subjectRefEquals,
+  serializeSubjectRef,
+  parseSubjectRef,
   subjectDescriptorV2Schema,
   anyDescriptorV2Schema,
   validateWithSchema,
@@ -5927,10 +6528,13 @@ export {
   validateContributionManifest,
   TRAIT_IDS,
   isStandardTraitId,
+  SUBJECT_KIND_DEFINITION_CONTRIBUTION_CONTRACT,
+  SUBJECT_KIND_DEFINITION_FACT,
   CODEC_CONTRIBUTION_CONTRACT,
   SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
   VIEWER_CONTRIBUTION_CONTRACT,
   EDITOR_CONTRIBUTION_CONTRACT,
+  FIELD_EDITOR_CONTRIBUTION_CONTRACT,
   TRAIT_DEFINITION_CONTRIBUTION_CONTRACT,
   CONTRACT_DEFINITION_CONTRIBUTION_CONTRACT,
   KNOWLEDGE_PACK_CONTRIBUTION_CONTRACT,
@@ -5938,11 +6542,13 @@ export {
   TRAIT_DEFINITION_FACT,
   CONTRACT_DEFINITION_FACT,
   EDITOR_CONTRIBUTION_FACT,
+  FIELD_EDITOR_CONTRIBUTION_FACT,
   KNOWLEDGE_PACK_FACT,
   LOCALIZATION_CONTRIBUTION_FACT,
   validateEditorContributionSemantics,
   validateKnowledgePackSemantics,
   validateLocalizationContributionSemantics,
+  validateFieldEditorContributionSemantics,
   createContributionContractRegistry,
   A1_SPEC_SCHEMA_ENTRIES,
   foreignServiceContractId,

@@ -13,7 +13,7 @@ import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunk-BLWUC7LO.js";
 
-// packages/code/src/editor.js
+// packages/code/dist/editor.js
 init_define_MODKIT_EMBED_EXTENSION_ORIGINS();
 
 // node_modules/.pnpm/monaco-editor@0.56.0/node_modules/monaco-editor/esm/vs/editor/editor.main.js
@@ -2537,7 +2537,7 @@ if (!FindWidget[tabIndexPatchKey]) {
   FindWidget[tabIndexPatchKey] = true;
 }
 
-// packages/code/src/editor.js
+// packages/code/dist/editor.js
 var abiVersion = 1;
 var LANGUAGE_BY_FORMAT = Object.freeze({
   json: "json",
@@ -2596,20 +2596,18 @@ async function loadText(source, maximum, signal) {
   if (info.bytes > BigInt(maximum)) {
     throw new RangeError(`source exceeds the editor budget: ${info.bytes} bytes`);
   }
-  const slice = await source.slice(
-    {
-      kind: "from-line",
-      line: 0,
-      lineCount: info.lines === "unknown" ? Number.MAX_SAFE_INTEGER : Math.max(1, info.lines),
-      maxBytes: maximum
-    },
-    signal
-  );
+  const slice = await source.slice({
+    kind: "from-line",
+    line: 0,
+    lineCount: info.lines === "unknown" ? Number.MAX_SAFE_INTEGER : Math.max(1, info.lines),
+    maxBytes: maximum
+  }, signal);
   return slice.text;
 }
 function editorFont(root) {
   const style = root.ownerDocument.defaultView?.getComputedStyle(root);
-  if (style === void 0) return {};
+  if (style === void 0)
+    return {};
   const family = style.getPropertyValue("--mk-font-mono").trim();
   const size = Number.parseFloat(style.getPropertyValue("--mk-font-size-sm")) || 12;
   const ratio = Number.parseFloat(style.getPropertyValue("--mk-line-normal")) || 1.45;
@@ -2631,27 +2629,29 @@ function createMonacoEditor(options = {}) {
       root.className = "modkit-viewer";
       root.setAttribute("role", "region");
       root.setAttribute("aria-label", readOnly ? "Code viewer" : "Code editor");
-      root.dataset.mkPart = "viewer";
+      root.dataset["mkPart"] = "viewer";
       container.replaceChildren(root);
       const toolbar = document.createElement("div");
-      toolbar.dataset.mkPart = "editor.toolbar";
+      toolbar.dataset["mkPart"] = "editor.toolbar";
       toolbar.setAttribute("role", "toolbar");
       root.append(toolbar);
       const status = document.createElement("output");
-      status.dataset.mkPart = "viewer.status";
+      status.dataset["mkPart"] = "viewer.status";
       status.textContent = "Ready";
       const save = document.createElement("button");
       save.type = "button";
       save.textContent = "Save";
       save.disabled = true;
-      save.dataset.mkPart = "operations.button";
-      if (!readOnly) toolbar.append(save);
+      save.dataset["mkPart"] = "operations.button";
+      if (!readOnly)
+        toolbar.append(save);
       toolbar.append(status);
       const host = document.createElement("div");
-      host.dataset.mkPart = "editor.text";
+      host.dataset["mkPart"] = "editor.text";
       root.append(host);
       const lease = await args.sources.get(TEXT_SOURCE);
-      if (lease === void 0) throw new TypeError("code editor text binding is unavailable");
+      if (lease === void 0)
+        throw new TypeError("code editor text binding is unavailable");
       const formatId = args.descriptor?.identity?.formatId;
       const language = languageForFormat(formatId);
       const text = await loadText(lease.value, maximum, args.signal);
@@ -2669,7 +2669,8 @@ function createMonacoEditor(options = {}) {
       });
       let disposed = false;
       const remeasure = () => {
-        if (disposed) return;
+        if (disposed)
+          return;
         editor.remeasureFonts();
         editor2.layout();
       };
@@ -2677,12 +2678,14 @@ function createMonacoEditor(options = {}) {
       });
       const sizeWatch = new ResizeObserver((entries) => {
         const box = entries[0]?.contentRect;
-        if (box === void 0 || box.width === 0 || box.height === 0) return;
+        if (box === void 0 || box.width === 0 || box.height === 0)
+          return;
         sizeWatch.disconnect();
         remeasure();
       });
       const themeWatch = new MutationObserver(() => {
-        if (disposed) return;
+        if (disposed)
+          return;
         editor.setTheme(defineTheme(root));
       });
       themeWatch.observe(root.ownerDocument.documentElement, {
@@ -2696,7 +2699,7 @@ function createMonacoEditor(options = {}) {
         const dirty = editor2.getValue() !== baseline;
         save.disabled = readOnly || !dirty;
         status.textContent = dirty ? "Modified" : "Ready";
-        root.dataset.mkState = dirty ? "mutating" : "";
+        root.dataset["mkState"] = dirty ? "mutating" : "";
       };
       const subscription = editor2.onDidChangeModelContent(syncDirty);
       save.addEventListener("click", async () => {
@@ -2704,7 +2707,7 @@ function createMonacoEditor(options = {}) {
         const target = args.edit.targets[0];
         if (target === void 0) {
           status.textContent = "Nothing to save: this session carries no writable target";
-          root.dataset.mkState = "error";
+          root.dataset["mkState"] = "error";
           return;
         }
         const change = {
@@ -2726,7 +2729,7 @@ function createMonacoEditor(options = {}) {
         if (validation?.valid === false) {
           const first = validation.diagnostics?.[0];
           status.textContent = first === void 0 ? "Rejected by validation" : `Rejected: ${first.message}`;
-          root.dataset.mkState = "error";
+          root.dataset["mkState"] = "error";
           return;
         }
         const plan = await args.edit.plan(change);
@@ -2738,13 +2741,13 @@ function createMonacoEditor(options = {}) {
         const prepared = await args.commit.prepare(plan, { grant: authorization.grant });
         if (prepared?.state !== "ready") {
           status.textContent = prepared?.state === "conflict" ? "Conflict: the source changed" : `Prepare rejected: ${prepared?.reason ?? prepared?.state ?? "unknown"}`;
-          root.dataset.mkState = "error";
+          root.dataset["mkState"] = "error";
           return;
         }
         const receipt = await args.commit.commit(prepared.prepared, { grant: authorization.grant });
         if (receipt?.state !== void 0 && receipt.state !== "committed") {
           status.textContent = receipt.state === "not-applied" ? `Save rejected: ${receipt.reason ?? "not applied"}` : `Save ${receipt.state}`;
-          root.dataset.mkState = "error";
+          root.dataset["mkState"] = "error";
           return;
         }
         baseline = next;
@@ -2753,7 +2756,7 @@ function createMonacoEditor(options = {}) {
       });
       return {
         async update(next) {
-          root.dataset.revision = String(next.revision ?? "");
+          root.dataset["revision"] = String(next.revision ?? "");
         },
         async unmount() {
           disposed = true;

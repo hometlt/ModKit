@@ -259,7 +259,7 @@ function decodeTextChunks(bytes, png) {
 
 /**
  * ADR-HOST-002 Path A: the one mutating operation of this codec. `edit.field` with
- * `{ keyword, text }` sets or replaces a `tEXt` chunk and returns an edit plan — a single
+ * `FieldWriteRequest` sets or replaces a `tEXt` chunk and returns an edit plan — a single
  * byte-range replace (an insert before IEND when the keyword is new), every other byte of the file
  * untouched, so the claim is byte-identical preservation of unknown data. The codec never writes:
  * the host commits the plan under `write-source` through its editing backend.
@@ -269,6 +269,41 @@ const EDIT_FIELD_OPERATION = Object.freeze({
   handlerId: 'set-text',
   mutatesSource: true,
   requiredPermissions: Object.freeze(['read-source', 'write-source']),
+  inputSchema: Object.freeze({
+    $ref: 'modkit://image-png/edit-field.v1',
+    document: Object.freeze({
+      schemaVersion: 1,
+      forms: Object.freeze([
+        Object.freeze({
+          id: 'png-set-text',
+          label: 'Set a PNG text field',
+          summary: 'Sets or replaces one tEXt chunk; every other byte of the file is kept.',
+          binding: Object.freeze({ groupId: 'png-text' }),
+          fields: Object.freeze([
+            Object.freeze({
+              key: 'key',
+              label: 'Keyword',
+              type: Object.freeze({ kind: 'text', pattern: '^[^\\u0000]{1,79}$' }),
+              inputPath: Object.freeze(['key']),
+              required: true,
+              initial: 'Description',
+              source: 'entry-key',
+              description: '1–79 Latin-1 characters, no NUL',
+            }),
+            Object.freeze({
+              key: 'value',
+              label: 'Text',
+              type: Object.freeze({ kind: 'text' }),
+              inputPath: Object.freeze(['value']),
+              initial: 'set from the Modkit inspector',
+              source: 'entry-value',
+              description: 'Latin-1, no NUL',
+            }),
+          ]),
+        }),
+      ]),
+    }),
+  }),
   outputKinds: Object.freeze(['edit-plan']),
 })
 
@@ -332,31 +367,33 @@ function textKeywordOf(bytes, chunk) {
 /** The `set-text` handler: a plan that sets or replaces one tEXt keyword, nothing else moves. */
 function setTextHandler(bytes, png, input) {
   return async value => {
+    const keyword = value?.groupId === 'png-text' ? value.key : value?.keyword
+    const text = value?.groupId === 'png-text' ? value.value : value?.text
     if (
       typeof value !== 'object' ||
       value === null ||
-      typeof value.keyword !== 'string' ||
-      typeof value.text !== 'string'
+      typeof keyword !== 'string' ||
+      typeof text !== 'string'
     ) {
-      throw new TypeError('edit.field expects { keyword, text }')
+      throw new TypeError('edit.field expects a png-text FieldWriteRequest')
     }
-    const replacement = textChunkBytes(value.keyword, value.text)
-    const existing = png.chunks.find(chunk => textKeywordOf(bytes, chunk) === value.keyword)
+    const replacement = textChunkBytes(keyword, text)
+    const existing = png.chunks.find(chunk => textKeywordOf(bytes, chunk) === keyword)
     const iend = png.chunks.find(chunk => chunk.type === 'IEND')
     if (iend === undefined) throw new TypeError('PNG has no IEND chunk')
     const edit =
       existing === undefined
-        ? replaceBytes(iend.offset, 0, replacement, `insert tEXt ${value.keyword}`)
+        ? replaceBytes(iend.offset, 0, replacement, `insert tEXt ${keyword}`)
         : replaceBytes(
             existing.offset,
             12 + existing.length,
             replacement,
-            `replace tEXt ${value.keyword}`,
+            `replace tEXt ${keyword}`,
           )
     return {
       kind: 'edit-plan',
       plan: editPlanFromInput(input, {
-        planId: `png-set-text:${value.keyword}`,
+        planId: `png-set-text:${keyword}`,
         edits: [edit],
         fidelity: { roundTrip: 'byte-identical', preservesUnknownData: true },
       }),
@@ -450,15 +487,20 @@ const definition = Object.freeze({
          */
         ...(() => {
           const texts = decodeTextChunks(bytes, png)
-          return texts.length === 0
-            ? []
-            : [
-                {
-                  id: 'png-text',
-                  label: 'Text fields (tEXt)',
-                  entries: texts.map(item => ({ key: item.keyword, value: item.text })),
-                },
-              ]
+          return [
+            {
+              id: 'png-text',
+              label: 'Text fields (tEXt)',
+              entries: (texts.length === 0 ? [{ keyword: 'Description', text: null }] : texts).map(
+                item => ({
+                  key: item.keyword,
+                  value: item.text,
+                  type: { kind: 'text' },
+                  editable: { write: { operation: 'edit.field' } },
+                }),
+              ),
+            },
+          ]
         })(),
       ],
       traits: [

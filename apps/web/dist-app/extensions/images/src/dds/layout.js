@@ -9,8 +9,9 @@
 
 /** Bytes of one 4x4 block, or 0 when the payload is not block-compressed. */
 export function blockBytesFor(format) {
-  if (format === 'DXT1') return 8
-  if (format === 'DXT3' || format === 'DXT5') return 16
+  if (format === 'DXT1' || format === 'BC4') return 8
+  if (format === 'DXT3' || format === 'DXT5' || format === 'BC5') return 16
+  if (format === 'BC6H' || format === 'BC7') return 16
   return 0
 }
 

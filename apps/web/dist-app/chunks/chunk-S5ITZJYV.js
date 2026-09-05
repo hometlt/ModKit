@@ -79,6 +79,8 @@ var SHARED_OPERATION_IDS = Object.freeze([
   "asset.search",
   "asset.validate",
   "asset.compare",
+  "subject.compare",
+  "subject.select",
   "content.resolve-dependencies",
   "content.mount"
 ]);

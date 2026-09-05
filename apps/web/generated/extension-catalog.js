@@ -6,7 +6,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
   extensions: [
     {
       artifact: {
-        artifactDigest: 'sha256:0cb356a96ed9a541422f37e686793925900400b0471e547941146d01e3883c93',
+        artifactDigest: 'sha256:064da7e525ab39cf1d29771644644b1ede7d0f501ccf3f49877e7bd217affb9e',
         fileDigests: {
           'MIGRATION-NOTES-common-archives.json':
             'sha256:4e1d77808583a26fb61d65d660ef09c3f4c222915c2e3581d793b202cbde4b44',
@@ -36,7 +36,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-xz.json':
             'sha256:effe08ca5ab5605658d355535cc91e496855e2f9c0bbdac63bbd8bd6044a753b',
           'contributions/codec-zip.json':
-            'sha256:3a639f3c70c44cd9068c7123c0ef91ff002e15fce5c80ca267e19d053b43cd28',
+            'sha256:d765dacf8928d2e723ed903b99b4d86a89e1d6d7dfcb25229cb8a5f9dd438c4b',
           'contributions/codec-zstd.json':
             'sha256:04f0c3c2fbad4b0f3f31f14ef33da92e4e2fa8957be84ddc0aa16ca4b007765f',
           'package.json': 'sha256:0f450dab994733b1f04493efbe9a07bb0f7f702969fbf9350675f2d425600c04',
@@ -68,12 +68,12 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/xz/codec.js':
             'sha256:44e9ac364de3143616a034e357e2af0150f579a73ba9778c51a04897bb554799',
           'src/zip/codec.js':
-            'sha256:d1440a62734d6d4c2ae80c24158599cd9d0dee4c49a9fab4d71695b4e357d34d',
+            'sha256:d79f278cf8be4906cdecde32def292c5b09456cb2cd64205afd33b3d2e9aeb09',
           'src/zstd/codec.js':
             'sha256:6266e084d92f68329bb8ea89d24977a809e59d6db68fb03c4af97f43660231ca',
         },
         inventoryRecordId:
-          'artifact:sha256:0cb356a96ed9a541422f37e686793925900400b0471e547941146d01e3883c93',
+          'artifact:sha256:064da7e525ab39cf1d29771644644b1ede7d0f501ccf3f49877e7bd217affb9e',
       },
       artifactRoot: 'extensions/archives/',
       containers: {
@@ -173,7 +173,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-zip.json',
-          'sha256:3a639f3c70c44cd9068c7123c0ef91ff002e15fce5c80ca267e19d053b43cd28',
+          'sha256:d765dacf8928d2e723ed903b99b4d86a89e1d6d7dfcb25229cb8a5f9dd438c4b',
         ],
         [
           'contributions/codec-zstd.json',
@@ -1886,6 +1886,87 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 {
                   handlerId: 'edit-structure',
                   id: 'edit.structure',
+                  inputSchema: {
+                    $ref: 'modkit://archive-zip/edit-structure.v1',
+                    document: {
+                      forms: [
+                        {
+                          fields: [
+                            {
+                              initial: 'added/hello.txt',
+                              inputPath: ['add', 0, 'path'],
+                              key: 'path',
+                              label: 'Entry path',
+                              required: true,
+                              type: {
+                                kind: 'path',
+                              },
+                            },
+                            {
+                              encoding: 'utf8-base64',
+                              initial: 'added from the Modkit inspector',
+                              inputPath: ['add', 0, 'bytes'],
+                              key: 'content',
+                              label: 'Contents',
+                              type: {
+                                kind: 'text',
+                              },
+                            },
+                          ],
+                          id: 'zip-add-entry',
+                          label: 'Add an entry to the archive',
+                          summary:
+                            'Adds one stored entry and repacks; kept entries retain their bytes.',
+                        },
+                        {
+                          fields: [
+                            {
+                              initial: 'readme.txt',
+                              inputPath: ['remove', 0],
+                              key: 'path',
+                              label: 'Entry path',
+                              required: true,
+                              type: {
+                                kind: 'path',
+                              },
+                            },
+                          ],
+                          id: 'zip-remove-entry',
+                          label: 'Remove an entry from the archive',
+                          summary:
+                            'Removes one entry and repacks; other entries retain their bytes.',
+                        },
+                        {
+                          fields: [
+                            {
+                              initial: 'readme.txt',
+                              inputPath: ['rename', 0, 'from'],
+                              key: 'from',
+                              label: 'From',
+                              required: true,
+                              type: {
+                                kind: 'path',
+                              },
+                            },
+                            {
+                              initial: 'docs/readme.txt',
+                              inputPath: ['rename', 0, 'to'],
+                              key: 'to',
+                              label: 'To',
+                              required: true,
+                              type: {
+                                kind: 'path',
+                              },
+                            },
+                          ],
+                          id: 'zip-rename-entry',
+                          label: 'Rename an entry in the archive',
+                          summary: 'Renames one entry without touching its payload or compression.',
+                        },
+                      ],
+                      schemaVersion: 1,
+                    },
+                  },
                   mutatesSource: true,
                   outputKinds: ['edit-plan'],
                   requiredPermissions: ['read-source', 'write-source'],
@@ -1893,6 +1974,41 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 {
                   handlerId: 'edit-content',
                   id: 'edit.content',
+                  inputSchema: {
+                    $ref: 'modkit://archive-zip/edit-content.v1',
+                    document: {
+                      forms: [
+                        {
+                          fields: [
+                            {
+                              initial: 'readme.txt',
+                              inputPath: ['path'],
+                              key: 'path',
+                              label: 'Entry path',
+                              required: true,
+                              type: {
+                                kind: 'path',
+                              },
+                            },
+                            {
+                              encoding: 'utf8-base64',
+                              initial: 'replaced from the Modkit inspector',
+                              inputPath: ['bytes'],
+                              key: 'content',
+                              label: 'Contents',
+                              type: {
+                                kind: 'text',
+                              },
+                            },
+                          ],
+                          id: 'zip-replace-entry',
+                          label: "Replace an entry's contents",
+                          summary: "Replaces one file entry's payload; nothing else moves.",
+                        },
+                      ],
+                      schemaVersion: 1,
+                    },
+                  },
                   mutatesSource: true,
                   outputKinds: ['edit-plan'],
                   requiredPermissions: ['read-source', 'write-source'],
@@ -2131,7 +2247,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:635314a89da917111341771b7cb0b96ec32fbdfd13666a752647e1816247c9bc',
+        artifactDigest: 'sha256:ee747f65044950b9d7c42a75d20908ac69b3ae9e87764fab76ac13bf72f7ee2c',
         fileDigests: {
           'MIGRATION-NOTES-common-audio.json':
             'sha256:9208bc42ef1da984ce9776d9bed7024eaf3f797a1cd56ca193919caf142ee636',
@@ -2143,7 +2259,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-m4a.json':
             'sha256:fa5b142c50b5a95dff81122bb06919d7e1410e6b9e42986ac8c93d9501408f2a',
           'contributions/codec-mp3.json':
-            'sha256:e61f2c053fdd4f3bdbf37b7b8a496f4ba8e85395806c41e065c6933528c2ad11',
+            'sha256:a1ad4c179df18d041d04254e4eb8cb3f9902e7001ef74f86a912c277821fa1ae',
           'contributions/codec-ogg.json':
             'sha256:eb7ddb19893b6958df00f28a4c9364205f9865e4318afe4fefca3efe9abd4fe5',
           'contributions/codec-wav.json':
@@ -2159,7 +2275,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/m4a/codec.js':
             'sha256:6a30b4aa492b27d5b4ae8d94529ddee3f3f695fa39c3eb2ee10ac5c379fce097',
           'src/mp3/codec.js':
-            'sha256:791b750035bfac4bf61ba89fc3c234e24461d946fa0abcb91fa07a5fb61ddb3f',
+            'sha256:28719273aa436ed4f6867abba1101a01dff67096079c8fe03d6a5738f48e8d65',
           'src/ogg/codec.js':
             'sha256:4615fe83734068e90591d68c46614b158c40cd1d10466e5f320170cea719e515',
           'src/wav/codec.js':
@@ -2170,7 +2286,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:69f5cada4c7a40bc0834dc4b52d03d2d9fcc47f71e406d8b399cc011b2de0c07',
         },
         inventoryRecordId:
-          'artifact:sha256:635314a89da917111341771b7cb0b96ec32fbdfd13666a752647e1816247c9bc',
+          'artifact:sha256:ee747f65044950b9d7c42a75d20908ac69b3ae9e87764fab76ac13bf72f7ee2c',
       },
       artifactRoot: 'extensions/audio/',
       containers: {
@@ -2235,7 +2351,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-mp3.json',
-          'sha256:e61f2c053fdd4f3bdbf37b7b8a496f4ba8e85395806c41e065c6933528c2ad11',
+          'sha256:a1ad4c179df18d041d04254e4eb8cb3f9902e7001ef74f86a912c277821fa1ae',
         ],
         [
           'contributions/codec-ogg.json',
@@ -2725,6 +2841,49 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 {
                   handlerId: 'set-text-frame',
                   id: 'edit.field',
+                  inputSchema: {
+                    $ref: 'modkit://audio-mp3/edit-field.v1',
+                    document: {
+                      forms: [
+                        {
+                          binding: {
+                            groupId: 'id3',
+                          },
+                          fields: [
+                            {
+                              description: 'A four-character ID3v2 text frame id',
+                              initial: 'TIT2',
+                              inputPath: ['key'],
+                              key: 'key',
+                              label: 'Frame',
+                              required: true,
+                              source: 'entry-key',
+                              type: {
+                                kind: 'text',
+                                maxLength: 4,
+                                pattern: '^T[A-Z0-9]{3}$',
+                              },
+                            },
+                            {
+                              initial: 'set from the Modkit inspector',
+                              inputPath: ['value'],
+                              key: 'value',
+                              label: 'Text',
+                              source: 'entry-value',
+                              type: {
+                                kind: 'text',
+                              },
+                            },
+                          ],
+                          id: 'mp3-set-text-frame',
+                          label: 'Set an ID3v2 text frame',
+                          summary:
+                            'Sets or replaces one ID3v2 text frame, creating the tag when absent; audio bytes stay in place.',
+                        },
+                      ],
+                      schemaVersion: 1,
+                    },
+                  },
                   mutatesSource: true,
                   outputKinds: ['edit-plan'],
                   requiredPermissions: ['read-source', 'write-source'],
@@ -6382,7 +6541,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:6a8e4a21b05eed00bbeae3b9370652916b5bcfe67b61dae21648576a366404f7',
+        artifactDigest: 'sha256:b06849f267e9a43bb145e7f5ceeaf839dacee3b54e698622a066566f075c27fc',
         fileDigests: {
           'MIGRATION-NOTES-common-images.json':
             'sha256:44c30ea45aaceceff66d53f72e5e0d0ec8efb1a7f2afbc2f9913849720632e93',
@@ -6400,7 +6559,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-cur.json':
             'sha256:ca83a2ee185f99c30030382692eb875a4a7301aeb0d072a4bbf109f787d17bdf',
           'contributions/codec-dds.json':
-            'sha256:303693201ab5d818e5c5e831a89895d433be7f0ac6c3c6b0a462295704c05749',
+            'sha256:f500c919ceb5328c6dd24b82f0df025a42d6dff3a5df5975a3df769ada77f65e',
           'contributions/codec-exr.json':
             'sha256:377eb43959c01dff23c3117a6a1263a9797e91503b79e65a718d049336e6cca7',
           'contributions/codec-gif.json':
@@ -6410,7 +6569,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-ico.json':
             'sha256:8d7b323ab46e27bffa3aa2b71d99ba7ee3a66e6486bae4eb8f9123cf86212c70',
           'contributions/codec-jpeg.json':
-            'sha256:fcb1026e71eb76e3f873367a6a1936e9f44a708bf5e446ff2682135b6cca0df3',
+            'sha256:946928d5d5905b0bf752292d0fd16a2ec80ed5687e1876d0da7e1026af46bcc2',
           'contributions/codec-ktx.json':
             'sha256:4ee4d58d454dd57f3968ffcc394b48b08d4be9cdbc023a8467f8a1bc66bc4806',
           'contributions/codec-ktx2.json':
@@ -6422,7 +6581,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-pkm.json':
             'sha256:a59ca6a16fac9666bc9a22c5ec29584dce1fd6a58c1f76b66b069d77e8239929',
           'contributions/codec-png.json':
-            'sha256:b9081fcc28060974eb31feb891a1083edd2464c01010491f7e7780ae8ec8f69f',
+            'sha256:81fcb364ce343b12455cd2037e2028e557b6cf44e2bce8e3b2a07236e2169188',
           'contributions/codec-pvr.json':
             'sha256:e5eff0a04b8c20ee5806859a00d5e843a4c6a1cc089d768b0bed3c701fd1476b',
           'contributions/codec-tga.json':
@@ -6431,9 +6590,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:5ab60e9ca9f2b5adbafc4364d3d60f47be6966875a65f48e62a053f69c31c37f',
           'contributions/codec-webp.json':
             'sha256:0bba481e6804a0854bcfa8b4d44d2211df0bbdde6f34c1c19a181b19148512c5',
+          'contributions/writer-dds.json':
+            'sha256:811f3e474aa56eb4317369fdb2e628be861ed9e26a4be5660fce16fe75f3b448',
           'contributions/writer-png.json':
             'sha256:49583a58d35f864423155eae81992ed56764d4efe6c82c6931491f1b3157ee13',
-          'package.json': 'sha256:38a43b9396aaa7d2b309af11909487f474ec75567aeb295e9b45988b7381e1ef',
+          'package.json': 'sha256:58b890127452522b69a3439c9452958590b14b490c67da491d3e5fd608a6cee1',
           'src/ani/codec.js':
             'sha256:18bf84dd6807f2caf4d7bf3d5bb497cfba746f92b0e6bb3e459a0b09563f3c00',
           'src/astc/codec.js':
@@ -6448,10 +6609,16 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:5b53995e0429115ea6020430dc80c5bd70b208c6666392b7b0f57f9eef25917d',
           'src/cur/codec.js':
             'sha256:daf34dd18dd2ed3f13ea0d74668fc9c40bdda171899ee0667cd558c9f7fe24a9',
+          'src/dds/bptc.js':
+            'sha256:f3a0636b0f5dde9b7f7ccc2e6874425bfef0f5e86f6a1801a8032885f61a39b4',
           'src/dds/codec.js':
-            'sha256:0d482ac028af92426cd4ab3947e04410f5f4bf540df46e71608aeba27c20b36b',
+            'sha256:eb6e45ace449513b0b12d021baba82597808f9c746dcc85e9606f6e634d6f5f4',
+          'src/dds/compressed.js':
+            'sha256:af63c9438834ec0618e5ce3a207d45195cc603dcf4376c7964dfd3e939f7823e',
+          'src/dds/encode.js':
+            'sha256:5f28fb28df56882fd869bcb0ea24d3fa0e2f66ba3988ef4e0c3ffb6fd6c84254',
           'src/dds/layout.js':
-            'sha256:feb37c0f0157512697eaa3f80b4b8545ac33d937ac2a37e95f13ca24e8d92e26',
+            'sha256:ad84d000700f52fb29f3fb4a6ea7cf421f9a9d1e9335fa5c247d1e70fc13b6b0',
           'src/exr/codec.js':
             'sha256:3c46fa55f1ca7aea4ff36011f91ff350832f174e6c82633c037d41cc09daf9a9',
           'src/gif/codec.js':
@@ -6464,13 +6631,15 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:407cdb7ed7d152a32f1d78da0c9cd445d9a642c42c72230621fb7fbeab65e67c',
           'src/index.js': 'sha256:bcbc40812fa5dcdb2937b0ff5b617c1483725570302b99f569249ac3c441ce41',
           'src/jpeg/codec.js':
-            'sha256:5b60aea8f7fae6df27a558b959d29ae1e49e67a814c850ca6d923f42ebdc6b21',
+            'sha256:a88284f59e5072c44e8352f772dd3de9342c06418e035f92fb9bd26c0b13d44e',
           'src/ktx/codec.js':
             'sha256:9d24a991d8a64e241895849cc43305babfc20647d4226f5bea8fc6cb44e92903',
           'src/ktx2/codec.js':
             'sha256:4d6240d729468880b18a12e629d29972d0e70b25b6b909329786a24637c463f1',
           'src/linked.js':
             'sha256:bbe85af6cdf6da5544829b2bd7ad09a733ca00edc56e2229659247eba5cf8975',
+          'src/ops/raster-ops.js':
+            'sha256:01cf3696184a2597c96233219ab3c1084c6250cc78800e64e93e5e220b4ff798',
           'src/pal/codec.js':
             'sha256:68718910cbdbc34fdca7a99817fc26d4a54b8521da4d38d4d13cbf633acbfc0b',
           'src/pcx/codec.js':
@@ -6480,7 +6649,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/pkm/etc.js':
             'sha256:99c4f4ab06d944e71e0993f671e3af6904c37bb5eb2bc0a65fdf1e6de265db7f',
           'src/png/codec.js':
-            'sha256:1c659861f79e3aa36e8a7f2242d2cc2085fe848a3ac9776e8f48f4533a9d7eaa',
+            'sha256:5d35aa5d47999b7ce541fa6b12f4da4b0acee79ab8391c200e0189d281f71ab7',
           'src/pvr/codec.js':
             'sha256:3c02b42c1d6963dcb8e38a8bbfcc49ccf9b115118180835d59eb4ada15de7fea',
           'src/tga/codec.js':
@@ -6489,6 +6658,8 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:2a875351ce1ac3fb1aa74354a9c09a46464662c8003aa95a7e5e86afc6026d4c',
           'src/webp/codec.js':
             'sha256:b131633cfb14f7fccbfe981c919a0c37a28dbcf4b6e1a6d41de0757085eb0389',
+          'src/writers/dds-encoder.js':
+            'sha256:c4123ea5aa1089b6b53f6c8580e525cd7886c5be354ade13db3836ee53471cf1',
           'src/writers/png-encoder.js':
             'sha256:afe0012d7a40473d5e545ed61df93bf790a118402a56f447960cb933a063616f',
           'test/ani-raster-decode.test.ts':
@@ -6500,12 +6671,20 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'test/codec-session.ts':
             'sha256:fa6bcdf1bc58315268af02ca9b02076ec655a28bee8a327cf6664f1f0ea163e6',
           'test/dds-subresources.test.ts':
-            'sha256:600156ad576f93af37451d373b93a488460f95642682c114feb6885f3ea9f8ff',
+            'sha256:5d6311bef32d04f6a4a241efe7af0b1d7effa58414eae9db5406a746f9a60e25',
           'test/eac-r11-decode.test.ts':
             'sha256:2a0d83d3152224ce7ea530605bb9441912aa9be68b3b4ec60d1e51cb0e5beed4',
+          'vendor/texture2ddecoder/LICENSE':
+            'sha256:49e3169a509b9a5311fe50957a334e9e1975164f27da6004358c22e91e10747c',
+          'vendor/texture2ddecoder/README.md':
+            'sha256:62e287f319c051b451df4516dd94c0a14d1a3d95dc52690ee4f477e07921ab85',
+          'vendor/texture2ddecoder/texture2ddecoder.js':
+            'sha256:0a2b33ff735566fd3184e0421ff38fb7578d1348b3cc44fc4646cce29d001110',
+          'vendor/texture2ddecoder/texture2ddecoder.wasm':
+            'sha256:8b819b0622cce57f809b369081bdd6eca09d1c1793da7f82192db39229356c1d',
         },
         inventoryRecordId:
-          'artifact:sha256:6a8e4a21b05eed00bbeae3b9370652916b5bcfe67b61dae21648576a366404f7',
+          'artifact:sha256:b06849f267e9a43bb145e7f5ceeaf839dacee3b54e698622a066566f075c27fc',
       },
       artifactRoot: 'extensions/images/',
       containers: {
@@ -6517,13 +6696,17 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           exports: {
             '.': './src/index.js',
             './formats/*/codec': './src/*/codec.js',
+            './formats/dds/compressed': './src/dds/compressed.js',
+            './formats/dds/encode': './src/dds/encode.js',
             './formats/jpeg/codec': './src/jpeg/codec.js',
             './formats/png/codec': './src/png/codec.js',
             './linked': './src/linked.js',
+            './ops/raster': './src/ops/raster-ops.js',
             './package.json': './package.json',
+            './writers/dds-encoder': './src/writers/dds-encoder.js',
             './writers/png-encoder': './src/writers/png-encoder.js',
           },
-          files: ['contributions', 'src', 'README.md'],
+          files: ['contributions', 'src', 'vendor', 'README.md'],
           license: 'MIT',
           modkit: {
             contributionManifests: ['./contributions/*.json'],
@@ -6583,7 +6766,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-dds.json',
-          'sha256:303693201ab5d818e5c5e831a89895d433be7f0ac6c3c6b0a462295704c05749',
+          'sha256:f500c919ceb5328c6dd24b82f0df025a42d6dff3a5df5975a3df769ada77f65e',
         ],
         [
           'contributions/codec-exr.json',
@@ -6603,7 +6786,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-jpeg.json',
-          'sha256:fcb1026e71eb76e3f873367a6a1936e9f44a708bf5e446ff2682135b6cca0df3',
+          'sha256:946928d5d5905b0bf752292d0fd16a2ec80ed5687e1876d0da7e1026af46bcc2',
         ],
         [
           'contributions/codec-ktx.json',
@@ -6627,7 +6810,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-png.json',
-          'sha256:b9081fcc28060974eb31feb891a1083edd2464c01010491f7e7780ae8ec8f69f',
+          'sha256:81fcb364ce343b12455cd2037e2028e557b6cf44e2bce8e3b2a07236e2169188',
         ],
         [
           'contributions/codec-pvr.json',
@@ -6644,6 +6827,10 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         [
           'contributions/codec-webp.json',
           'sha256:0bba481e6804a0854bcfa8b4d44d2211df0bbdde6f34c1c19a181b19148512c5',
+        ],
+        [
+          'contributions/writer-dds.json',
+          'sha256:811f3e474aa56eb4317369fdb2e628be861ed9e26a4be5660fce16fe75f3b448',
         ],
         [
           'contributions/writer-png.json',
@@ -7425,10 +7612,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             displayName: 'DirectDraw Surface',
             id: 'modkit/dds',
             limitations: [
-              'Decoded to pixels: BC1/BC2/BC3 (FourCC DXT1/DXT3/DXT5 and the equivalent DXGI numbers 70-78) and uncompressed RGB/RGBA masks at 24 or 32 bits.',
-              'NOT decoded: BC4, BC5, BC6H and BC7. The header parser recognises those DXGI numbers and refuses them by name; this package ships no decoder and no WASM for them, and the manifest no longer claims one.',
-              'Decode is pure JavaScript inside the codec runtime. There is no optional WASM asset, no URL-based ESM boundary and nothing for a host to deploy separately.',
+              'Decoded to pixels: BC1/BC2/BC3 (FourCC DXT1-DXT5 and DXGI 70-78), BC4 and BC5 including the signed spellings (ATI1/ATI2/BC4U/BC5U/BC4S/BC5S and DXGI 79-84 minus the two typeless numbers), BC6H and BC7 (DXGI 94-99), and uncompressed RGB, luminance and alpha-only masks at 8, 16, 24 or 32 bits.',
+              'NOT decoded: DXGI 79 (BC4_TYPELESS) and 82 (BC5_TYPELESS), refused by name. The legacy MK2 codec refused them too.',
+              'BC6H and BC7 blocks are decoded by the vendored third-party texture2ddecoder runtime under vendor/texture2ddecoder/ (MIT), which is the implementation the legacy MK2 codec called. Every other format is pure JavaScript inside the codec runtime. The runtime resolves its .wasm next to its own module; nothing is deployed separately by a host.',
+              'BC6H_UF16 and BC6H_SF16 decode through the same entry point, so the unsigned and signed profiles produce the same pixels. That is what the vendored runtime does and what legacy therefore did; the compressed-texture descriptor still reports the two profiles apart.',
               'Mip, array-layer, cubemap-face and volume-slice selection is implemented: readRegion resolves any subresource the header declares and refuses out-of-range coordinates by name.',
+              'Writing is a separate contribution: modkit/dds-encoder-writer (common.edit/writer@1) encodes RGBA8 pixels as rgba8, dxt1, dxt3 or dxt5.',
+              'The compressed-texture view of a DDS (GPU blocks handed over undecoded, with block geometry, colour space, alpha mode and per-subresource byte ranges) is implemented in src/dds/compressed.js but is not published: MK3 has no common.view contract for compressed textures yet.',
               'Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global signature sniffing.',
             ],
             runtimeVariants: [
@@ -8136,6 +8326,36 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 {
                   handlerId: 'set-comment',
                   id: 'edit.field',
+                  inputSchema: {
+                    $ref: 'modkit://image-jpeg/edit-field.v1',
+                    document: {
+                      forms: [
+                        {
+                          binding: {
+                            entryKey: 'comment',
+                            groupId: 'jpeg-comment',
+                          },
+                          fields: [
+                            {
+                              initial: 'set from the Modkit inspector',
+                              inputPath: ['value'],
+                              key: 'value',
+                              label: 'Comment',
+                              source: 'entry-value',
+                              type: {
+                                kind: 'text',
+                              },
+                            },
+                          ],
+                          id: 'jpeg-set-comment',
+                          label: 'Set the JPEG comment',
+                          summary:
+                            'Writes the COM segment after the APP block, replacing it when it exists.',
+                        },
+                      ],
+                      schemaVersion: 1,
+                    },
+                  },
                   mutatesSource: true,
                   outputKinds: ['edit-plan'],
                   requiredPermissions: ['read-source', 'write-source'],
@@ -8143,6 +8363,33 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 {
                   handlerId: 'remove-segment',
                   id: 'edit.structure',
+                  inputSchema: {
+                    $ref: 'modkit://image-jpeg/edit-structure.v1',
+                    document: {
+                      forms: [
+                        {
+                          fields: [
+                            {
+                              description: 'A metadata marker name, e.g. APP0, APP1 or COM',
+                              initial: 'APP0',
+                              inputPath: ['marker'],
+                              key: 'marker',
+                              label: 'Marker',
+                              required: true,
+                              type: {
+                                kind: 'text',
+                              },
+                            },
+                          ],
+                          id: 'jpeg-remove-segment',
+                          label: 'Remove a JPEG metadata segment',
+                          summary:
+                            'Drops one metadata segment; image-bearing markers are refused by the codec.',
+                        },
+                      ],
+                      schemaVersion: 1,
+                    },
+                  },
                   mutatesSource: true,
                   outputKinds: ['edit-plan'],
                   requiredPermissions: ['read-source', 'write-source'],
@@ -8964,6 +9211,49 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 {
                   handlerId: 'set-text',
                   id: 'edit.field',
+                  inputSchema: {
+                    $ref: 'modkit://image-png/edit-field.v1',
+                    document: {
+                      forms: [
+                        {
+                          binding: {
+                            groupId: 'png-text',
+                          },
+                          fields: [
+                            {
+                              description: '1–79 Latin-1 characters, no NUL',
+                              initial: 'Description',
+                              inputPath: ['key'],
+                              key: 'key',
+                              label: 'Keyword',
+                              required: true,
+                              source: 'entry-key',
+                              type: {
+                                kind: 'text',
+                                pattern: '^[^\\u0000]{1,79}$',
+                              },
+                            },
+                            {
+                              description: 'Latin-1, no NUL',
+                              initial: 'set from the Modkit inspector',
+                              inputPath: ['value'],
+                              key: 'value',
+                              label: 'Text',
+                              source: 'entry-value',
+                              type: {
+                                kind: 'text',
+                              },
+                            },
+                          ],
+                          id: 'png-set-text',
+                          label: 'Set a PNG text field',
+                          summary:
+                            'Sets or replaces one tEXt chunk; every other byte of the file is kept.',
+                        },
+                      ],
+                      schemaVersion: 1,
+                    },
+                  },
                   mutatesSource: true,
                   outputKinds: ['edit-plan'],
                   requiredPermissions: ['read-source', 'write-source'],
@@ -9548,6 +9838,48 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           },
         ],
         [
+          'contributions/writer-dds.json',
+          {
+            contract: {
+              id: 'modkit/service-provider-contribution',
+              major: 1,
+            },
+            displayName: 'DDS encoder (writer)',
+            id: 'modkit/dds-encoder-writer',
+            runtimeVariants: [
+              {
+                entrypoint: './src/writers/dds-encoder.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: [],
+                target: {
+                  environments: ['node-worker', 'browser-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              lifecycleScope: 'session',
+              provides: [
+                {
+                  contract: 'common.edit/writer',
+                  facet: {
+                    fidelityEvidenceId: 'dds-encoder-v1',
+                    formatId: 'dds',
+                    minimumRoundTrip: 'lossy',
+                    mutationMode: 'mutate',
+                    providerId: 'modkit/dds-encoder-writer',
+                    representationId: 'rgba8',
+                  },
+                  major: 1,
+                  offerId: 'dds-rgba8-encoder',
+                  version: '1.0.0',
+                },
+              ],
+            },
+          },
+        ],
+        [
           'contributions/writer-png.json',
           {
             contract: {
@@ -9615,6 +9947,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'contributions/codec-tga.json',
         'contributions/codec-tiff.json',
         'contributions/codec-webp.json',
+        'contributions/writer-dds.json',
         'contributions/writer-png.json',
         'package.json',
         'src/ani/codec.js',
@@ -9624,7 +9957,10 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'src/basis/codec.js',
         'src/bmp/codec.js',
         'src/cur/codec.js',
+        'src/dds/bptc.js',
         'src/dds/codec.js',
+        'src/dds/compressed.js',
+        'src/dds/encode.js',
         'src/dds/layout.js',
         'src/exr/codec.js',
         'src/gif/codec.js',
@@ -9636,6 +9972,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'src/ktx/codec.js',
         'src/ktx2/codec.js',
         'src/linked.js',
+        'src/ops/raster-ops.js',
         'src/pal/codec.js',
         'src/pcx/codec.js',
         'src/pkm/codec.js',
@@ -9645,6 +9982,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'src/tga/codec.js',
         'src/tiff/codec.js',
         'src/webp/codec.js',
+        'src/writers/dds-encoder.js',
         'src/writers/png-encoder.js',
         'test/ani-raster-decode.test.ts',
         'test/astc-ordinary-ldr.test.ts',
@@ -9652,6 +9990,10 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'test/codec-session.ts',
         'test/dds-subresources.test.ts',
         'test/eac-r11-decode.test.ts',
+        'vendor/texture2ddecoder/LICENSE',
+        'vendor/texture2ddecoder/README.md',
+        'vendor/texture2ddecoder/texture2ddecoder.js',
+        'vendor/texture2ddecoder/texture2ddecoder.wasm',
       ],
       name: 'images',
       source: 'extensions/images',

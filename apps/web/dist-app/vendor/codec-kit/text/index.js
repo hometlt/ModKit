@@ -2,20 +2,20 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../../chunks/chunk-EFBPRTFA.js";
-import "../../../chunks/chunk-NYQ4TTPH.js";
+} from "../../../chunks/chunk-VCFHQMDA.js";
+import "../../../chunks/chunk-GUANBBUV.js";
 import {
   revisionId
-} from "../../../chunks/chunk-F4XKVL72.js";
+} from "../../../chunks/chunk-YFALMPQO.js";
 import {
   diagnostic,
   throwIfAborted,
   uint64
-} from "../../../chunks/chunk-X2ENULEB.js";
+} from "../../../chunks/chunk-S5ITZJYV.js";
 import "../../../chunks/chunk-YRQVWMJF.js";
 import "../../../chunks/chunk-CQ52GEHY.js";
 
-// packages/codec-kit/src/text/codec-runtime.js
+// packages/codec-kit/src/text/codec-runtime.ts
 var BASE_OPERATIONS = Object.freeze([
   {
     id: "view.inspect",
@@ -256,12 +256,24 @@ function createTextCodec(definition, context) {
       ]);
       if (definition.semantic === "table") {
         handlers.set("scan", async (operationInput) => {
-          const request = operationInput && typeof operationInput === "object" && operationInput.kind === "cursor" ? { kind: "cursor", cursor: String(operationInput.cursor ?? "0"), count: 100 } : {
+          const request = operationInput && typeof operationInput === "object" && operationInput.kind === "cursor" ? {
+            kind: "cursor",
+            cursor: String(operationInput.cursor ?? "0"),
+            count: 100
+          } : {
             kind: "range",
             from: operationInput && typeof operationInput === "object" && Number.isSafeInteger(operationInput.from) ? Math.max(0, operationInput.from) : 0,
-            count: operationInput && typeof operationInput === "object" && Number.isSafeInteger(operationInput.count) ? Math.min(1e3, Math.max(1, operationInput.count)) : 100
+            count: operationInput && typeof operationInput === "object" && Number.isSafeInteger(operationInput.count) ? Math.min(
+              1e3,
+              Math.max(1, operationInput.count)
+            ) : 100
           };
-          return { kind: "json", value: await dataLease.value.rows(request) };
+          return {
+            kind: "json",
+            value: await dataLease.value.rows(
+              request
+            )
+          };
         });
       }
       const managed = createAssetSession({
@@ -274,9 +286,12 @@ function createTextCodec(definition, context) {
         },
         handlers,
         async openDataSource(contract) {
-          if (contract === semanticContract) return simpleLease(dataLease.value);
-          if (contract === "common.view/text-data-source") return simpleLease(textSource);
-          if (contract === "common.view/byte-range-source") return simpleLease(byteSource);
+          if (contract === semanticContract)
+            return simpleLease(dataLease.value);
+          if (contract === "common.view/text-data-source")
+            return simpleLease(textSource);
+          if (contract === "common.view/byte-range-source")
+            return simpleLease(byteSource);
           throw new TypeError(`text-${definition.format} does not publish ${contract}`);
         },
         release: [
@@ -290,7 +305,7 @@ function createTextCodec(definition, context) {
   });
 }
 
-// packages/codec-kit/src/text/text.js
+// packages/codec-kit/src/text/text.ts
 function decodeInput(input) {
   if (typeof input.text === "string") {
     return {
@@ -416,12 +431,15 @@ function lease(value) {
   });
 }
 
-// packages/codec-kit/src/text/tree-data-source.js
+// packages/codec-kit/src/text/tree-data-source.ts
 function treeDataSource(document) {
   const nodes = /* @__PURE__ */ new Map();
   const root = { id: "root", hasChildren: true };
   nodes.set("root", { value: document, children: [] });
-  const entries = document.root?.kind === "object" ? document.root.members.map((member) => [member.key, member.value]) : Object.entries(document);
+  const entries = document.root?.kind === "object" ? document.root.members.map((member) => [
+    member.key,
+    member.value
+  ]) : Object.entries(document);
   nodes.get("root").children = entries.map(([key, value], index) => {
     const id = `root/${index}`;
     nodes.set(id, { value, label: String(key), children: [] });
@@ -458,7 +476,7 @@ function treeDataSource(document) {
   };
 }
 
-// packages/codec-kit/src/text/provider-runtime.js
+// packages/codec-kit/src/text/provider-runtime.ts
 function decode(request) {
   try {
     return { decoded: decodeInput(request.input) };
@@ -525,7 +543,7 @@ function createSelectedProvider(definition, selection, factory = createTextSynta
   return factory(definition);
 }
 
-// packages/codec-kit/src/text/scalars.js
+// packages/codec-kit/src/text/scalars.ts
 function scalar(value, raw = JSON.stringify(value)) {
   if (value === null) return { kind: "null", raw: "null" };
   if (typeof value === "boolean") return { kind: "boolean", value, raw: String(value) };

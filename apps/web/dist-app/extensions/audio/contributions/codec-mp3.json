@@ -97,6 +97,40 @@
         "handlerId": "set-text-frame",
         "mutatesSource": true,
         "requiredPermissions": ["read-source", "write-source"],
+        "inputSchema": {
+          "$ref": "modkit://audio-mp3/edit-field.v1",
+          "document": {
+            "schemaVersion": 1,
+            "forms": [
+              {
+                "id": "mp3-set-text-frame",
+                "label": "Set an ID3v2 text frame",
+                "summary": "Sets or replaces one ID3v2 text frame, creating the tag when absent; audio bytes stay in place.",
+                "binding": { "groupId": "id3" },
+                "fields": [
+                  {
+                    "key": "key",
+                    "label": "Frame",
+                    "type": { "kind": "text", "pattern": "^T[A-Z0-9]{3}$", "maxLength": 4 },
+                    "inputPath": ["key"],
+                    "required": true,
+                    "initial": "TIT2",
+                    "source": "entry-key",
+                    "description": "A four-character ID3v2 text frame id"
+                  },
+                  {
+                    "key": "value",
+                    "label": "Text",
+                    "type": { "kind": "text" },
+                    "inputPath": ["value"],
+                    "initial": "set from the Modkit inspector",
+                    "source": "entry-value"
+                  }
+                ]
+              }
+            ]
+          }
+        },
         "outputKinds": ["edit-plan"]
       }
     ],
