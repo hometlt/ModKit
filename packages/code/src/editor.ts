@@ -1,4 +1,4 @@
-import type { EditorModule, TextDataSource, ChangeSet } from '@modkit/sdk'
+import type { AnyDescriptor, EditorModule, TextDataSource, ChangeSet } from '@modkit/sdk'
 /**
  * Monaco code-editor implementation for the built-in MK3 code module.
  *
@@ -42,6 +42,33 @@ const LANGUAGE_BY_FORMAT: Readonly<Record<string, string>> = Object.freeze({
 
 export function languageForFormat(formatId: string) {
   return LANGUAGE_BY_FORMAT[formatId] ?? 'plaintext'
+}
+
+/**
+ * Choose the Monaco language for a subject: what the host observed first, the format table second.
+ *
+ * The table alone does not scale. It has to name every format any extension will ever add, so a
+ * codec that ships its own format gets plain text until somebody remembers to edit this file in
+ * core — which is exactly what happened to every StarCraft II format: four of them are XML, the
+ * codecs say so, and the editor still showed them grey. The `content.text` trait already carries
+ * `language` as an observed parameter, so a codec that knows its own syntax can simply say it.
+ *
+ * The trait is only trusted when Monaco actually has that language registered. An unknown id would
+ * otherwise silently produce an unhighlighted buffer with no way to tell why.
+ */
+export function languageForSubject(descriptor: AnyDescriptor): string {
+  const observed = descriptor.traits.find(trait => trait.id === 'content.text')
+  const parameters = observed?.parameters
+  const stated =
+    typeof parameters === 'object' && parameters !== null && !Array.isArray(parameters)
+      ? (parameters as Record<string, unknown>)['language']
+      : undefined
+  if (typeof stated === 'string' && stated.length > 0) {
+    const known = monaco.languages.getLanguages().some(language => language.id === stated)
+    if (known) return stated
+  }
+  const identity = 'identity' in descriptor ? descriptor.identity : undefined
+  return languageForFormat(identity?.formatId ?? '')
 }
 
 /**
@@ -166,8 +193,7 @@ export function createMonacoEditor(
       )
       if (lease === undefined) throw new TypeError('code editor text binding is unavailable')
 
-      const formatId = args.descriptor?.identity?.formatId
-      const language = languageForFormat(formatId)
+      const language = languageForSubject(args.descriptor)
 
       const text = await loadText(lease.value, maximum, args.signal)
 
