@@ -1727,3 +1727,10 @@ export {
   type ScannedAttr,
   type ScannedElement,
 } from './xml-scan.js'
+
+export {
+  createReferenceIndex,
+  type ReferenceIndex,
+  type ReferenceIndexOptions,
+  type ReferenceIndexSnapshot,
+} from './reference-index.js'
