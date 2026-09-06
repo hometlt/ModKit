@@ -197,7 +197,10 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
         const facts = await model.cell(coord, scope.signal)
         if (scope.signal.aborted) return
         if (facts.type === undefined) return
-        const refusal = fieldWriteRefusal(args.descriptor, facts.editable)
+        const refusal = fieldWriteRefusal(args.descriptor, facts.editable, {
+          ...(args.commit === undefined ? {} : { commit: args.commit }),
+          ...(args.authorization === undefined ? {} : { authorization: args.authorization }),
+        })
         if (refusal !== undefined) {
           cell.title = refusal
           return
@@ -219,6 +222,8 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
           },
           descriptor: args.descriptor,
           operations: args.operations,
+          ...(args.commit === undefined ? {} : { commit: args.commit }),
+          ...(args.authorization === undefined ? {} : { authorization: args.authorization }),
           signal: scope.signal,
           ...(options.fieldEditors === undefined ? {} : { fieldEditors: options.fieldEditors }),
           ...(options.candidates === undefined ? {} : { candidates: options.candidates }),

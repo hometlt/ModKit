@@ -10,6 +10,7 @@ import type {
 } from './data-sources.js'
 import type { AnyDescriptor, RevisionId } from './types.js'
 import type { OperationSession } from '../runtime-abi.js'
+import type { CommitCoordinator, EditAuthorizationPort } from '../editing.js'
 import type { KnowledgeCatalog } from '../knowledge/index.js'
 import { snapshotJsonWireData } from '../manifest/validate.js'
 
@@ -230,6 +231,20 @@ export interface ViewerModule {
     readonly knowledge?: KnowledgeCatalog
     /** Optional host-owned route scoped to this exact mounted subject session. */
     readonly subjectNavigation?: ViewerSubjectNavigation
+    /**
+     * Optional commit route for a viewer that publishes editable values.
+     *
+     * A tree node or a table cell may carry `editable`, and writing it means invoking the operation
+     * the codec named — which answers with an *edit plan*, not a finished write. Without somewhere
+     * to send that plan the surface can accept a value, report success and change nothing, which is
+     * the worst outcome available. So the route is optional and its absence is meaningful: a viewer
+     * mounted without it must refuse to offer editing rather than pretend.
+     *
+     * The ports are the same ones `EditorModule` receives, because the write is the same write. A
+     * host that grants them to a viewer is stating that this surface may spend them.
+     */
+    readonly commit?: CommitCoordinator
+    readonly authorization?: EditAuthorizationPort
     readonly signal?: AbortSignal
   }): Promise<ViewerMount>
 }

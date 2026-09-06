@@ -125,22 +125,29 @@
   }
 
   /*
-   * The row carries the columns: chevron, label, value. The nested `tree.children` list already
-   * supplies indentation, so the row itself never adds any — otherwise depth would count twice.
+   * The row is a two-column record: key, then value. A fixed second column is what makes a tree of
+   * key/value pairs readable — values line up down the page instead of drifting with the length of
+   * each key — and the nested `tree.children` list supplies the indentation, so the row adds none.
    */
   [data-mk-part='tree.row'] {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 18rem);
+    gap: var(--mk-space-2);
+    align-items: center;
+    min-width: 0;
+  }
+
+  [data-mk-part='tree.key'] {
     display: flex;
     gap: var(--mk-space-1);
     align-items: center;
     min-width: 0;
-    border-radius: var(--mk-radius-sm);
   }
 
-  [data-mk-part='tree.row']:hover {
-    background: var(--mk-color-hover);
-  }
-
-  /* One chevron shape across the product; a leaf keeps the slot so labels stay on one column. */
+  /*
+   * The same chevron Monaco draws for folding a range, inlined as SVG so no icon font is required.
+   * A leaf keeps the slot so labels stay on one optical column instead of stepping left.
+   */
   [data-mk-part='tree.twisty'] {
     display: inline-flex;
     flex: 0 0 auto;
@@ -149,34 +156,47 @@
     width: var(--mk-size-icon);
     height: var(--mk-size-icon);
     color: var(--mk-color-fg-muted);
-    font-size: var(--mk-font-size-lg);
-    line-height: 1;
     transition: transform var(--mk-motion-fast) var(--mk-motion-ease);
   }
 
   [data-mk-part='tree.item'][aria-expanded='true'] > [data-mk-part='tree.row'] >
-    [data-mk-part='tree.twisty'] {
+    [data-mk-part='tree.key'] > [data-mk-part='tree.twisty'] {
     transform: rotate(90deg);
   }
 
-  [data-mk-part='tree.value'] {
+  /*
+   * The key is text, not a control. It stays clickable for disclosure, but a background, a border
+   * or a full-width hit box makes a tree of properties read as a column of buttons.
+   */
+  [data-mk-part='tree.label'] {
+    display: block;
     flex: 0 1 auto;
     min-width: 0;
-    margin-inline-start: auto;
-    padding-inline: var(--mk-space-2);
+    padding: 0;
     overflow: hidden;
-    color: var(--mk-color-fg-muted);
-    font-variant-numeric: tabular-nums;
-    white-space: nowrap;
+    border: none;
+    border-radius: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    text-align: start;
     text-overflow: ellipsis;
+    white-space: nowrap;
+    cursor: pointer;
   }
 
-  [data-mk-part='tree.label'],
+  [data-mk-part='tree.label']:disabled {
+    cursor: default;
+  }
+
+  [data-mk-part='tree.label']:hover:not(:disabled) {
+    text-decoration: underline;
+  }
+
   [data-mk-part='namespace.label'] {
     display: flex;
-    flex: 1 1 auto;
     align-items: center;
-    min-width: 0;
+    width: 100%;
     min-height: var(--mk-tree-row-height);
     padding-inline: var(--mk-space-2);
     border-radius: var(--mk-radius-sm);
@@ -184,17 +204,19 @@
     cursor: pointer;
   }
 
-  /* A leaf has nothing to disclose: keep the label readable rather than dimmed as "disabled". */
-  [data-mk-part='tree.label']:disabled {
-    cursor: default;
-  }
-
-  [data-mk-part='tree.label']:hover,
   [data-mk-part='namespace.label']:hover {
     background: var(--mk-color-hover);
   }
 
-  [data-mk-part='tree.item'][aria-selected='true'] > [data-mk-part='tree.label'],
+  [data-mk-part='tree.value'] {
+    min-width: 0;
+    overflow: hidden;
+    color: var(--mk-color-fg-muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
   [data-mk-part='namespace.item'][aria-selected='true'] > [data-mk-part='namespace.label'] {
     color: var(--mk-color-selection-fg);
     background: var(--mk-color-selection);

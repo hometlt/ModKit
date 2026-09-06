@@ -6,6 +6,8 @@
  */
 import type {
   AnyDescriptor,
+  CommitCoordinator,
+  EditAuthorizationPort,
   MetadataGroup,
   OperationSession,
   ResolvedAssetDescriptor,
@@ -42,6 +44,8 @@ function traitValue(trait: AnyDescriptor['traits'][number]): string {
 /** Editing ports, present only when the panel was mounted with a live operation session. */
 interface MetadataEditing {
   readonly operations: OperationSession
+  readonly commit?: CommitCoordinator
+  readonly authorization?: EditAuthorizationPort
   readonly signal: AbortSignal
   readonly fieldEditors?: FieldEditorRegistry
   readonly candidates?: SubjectCandidateProvider
@@ -77,7 +81,7 @@ function renderMetadata(
       const writable =
         editing !== undefined &&
         entry.type !== undefined &&
-        fieldWriteRefusal(descriptor, entry.editable) === undefined
+        fieldWriteRefusal(descriptor, entry.editable, editing) === undefined
       if (writable && entry.type !== undefined) {
         void mountInlineField(value, {
           label: entry.key,
@@ -88,6 +92,8 @@ function renderMetadata(
           target: { groupId: group.id, key: entry.key },
           descriptor,
           operations: editing.operations,
+          ...(editing.commit === undefined ? {} : { commit: editing.commit }),
+          ...(editing.authorization === undefined ? {} : { authorization: editing.authorization }),
           signal: editing.signal,
           ...(editing.fieldEditors === undefined
             ? {}
@@ -104,7 +110,7 @@ function renderMetadata(
       value.title =
         entry.editable === undefined
           ? String(entry.value)
-          : (fieldWriteRefusal(descriptor, entry.editable) ?? String(entry.value))
+          : (fieldWriteRefusal(descriptor, entry.editable, editing) ?? String(entry.value))
     }
   }
 
@@ -152,6 +158,8 @@ export function createMetadataPanel(options: MetadataPanelOptions = {}): ViewerM
       let current = args.descriptor
       const editing: MetadataEditing = {
         operations: args.operations,
+        ...(args.commit === undefined ? {} : { commit: args.commit }),
+        ...(args.authorization === undefined ? {} : { authorization: args.authorization }),
         signal: scope.signal,
         ...(options.fieldEditors === undefined ? {} : { fieldEditors: options.fieldEditors }),
         ...(options.candidates === undefined ? {} : { candidates: options.candidates }),

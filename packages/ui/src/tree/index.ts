@@ -50,6 +50,27 @@ export class LazyTreeModel {
   }
 }
 
+/**
+ * The disclosure chevron, drawn as the glyph Monaco uses for folding a range.
+ *
+ * Monaco renders folding controls from the codicon font; a viewer that must work in any host cannot
+ * assume that font is loaded, so the same path is inlined as SVG. Pointing right and rotating on
+ * expand keeps one element and one transition, which is also how the archive tree behaves.
+ */
+function chevron(document: Document): SVGSVGElement {
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+  svg.setAttribute('viewBox', '0 0 16 16')
+  svg.setAttribute('width', '16')
+  svg.setAttribute('height', '16')
+  svg.setAttribute('aria-hidden', 'true')
+  svg.setAttribute('focusable', 'false')
+  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+  path.setAttribute('fill', 'currentColor')
+  path.setAttribute('d', 'M5.7 13.7L5 13l4.6-5L5 3.7l.7-.7 5 5v.7l-5 5z')
+  svg.append(path)
+  return svg
+}
+
 export interface TreeViewerOptions extends UiLocalizationOptions {
   readonly fieldEditors?: FieldEditorRegistry
   readonly candidates?: SubjectCandidateProvider
@@ -87,11 +108,12 @@ export function createTreeViewer(options: TreeViewerOptions = {}): ViewerModule 
          * so labels stay on one optical column instead of stepping left at every leaf.
          */
         const row = element(item, 'div', { part: 'tree.row' })
-        const twisty = element(row, 'span', { part: 'tree.twisty' })
+        const key = element(row, 'div', { part: 'tree.key' })
+        const twisty = element(key, 'span', { part: 'tree.twisty' })
         twisty.setAttribute('aria-hidden', 'true')
-        twisty.textContent = node.hasChildren ? '›' : ''
+        if (node.hasChildren) twisty.append(chevron(twisty.ownerDocument))
 
-        const label = element(row, 'button', { part: 'tree.label' }) as HTMLButtonElement
+        const label = element(key, 'button', { part: 'tree.label' }) as HTMLButtonElement
         label.type = 'button'
         label.disabled = !node.hasChildren
         if (facts.preview !== undefined) label.title = facts.preview
@@ -106,9 +128,13 @@ export function createTreeViewer(options: TreeViewerOptions = {}): ViewerModule 
          */
         const editable: FieldEditable | undefined = facts.editable
         if (facts.value !== undefined && facts.type !== undefined) {
-          const writable = fieldWriteRefusal(args.descriptor, editable) === undefined
+          const route = {
+            ...(args.commit === undefined ? {} : { commit: args.commit }),
+            ...(args.authorization === undefined ? {} : { authorization: args.authorization }),
+          }
+          const writable = fieldWriteRefusal(args.descriptor, editable, route) === undefined
           if (writable) {
-            const cell = element(row, 'span', { part: 'tree.value' })
+            const cell = element(row, 'div', { part: 'tree.value' })
             const mount = await mountInlineField(cell, {
               label: facts.label,
               type: facts.type,
@@ -122,6 +148,7 @@ export function createTreeViewer(options: TreeViewerOptions = {}): ViewerModule 
               },
               descriptor: args.descriptor,
               operations: args.operations,
+              ...route,
               signal: scope.signal,
               ...(options.fieldEditors === undefined
                 ? {}
@@ -134,12 +161,12 @@ export function createTreeViewer(options: TreeViewerOptions = {}): ViewerModule 
             scope.cleanup(() => cell.removeEventListener('change', commit))
             scope.cleanup(() => void mount.unmount())
           } else {
-            const cell = element(row, 'span', { part: 'tree.value' })
+            const cell = element(row, 'div', { part: 'tree.value' })
             setViewerText(cell, facts.value, 4096)
-            cell.title = fieldWriteRefusal(args.descriptor, editable) ?? ''
+            cell.title = fieldWriteRefusal(args.descriptor, editable, route) ?? ''
           }
         } else if (facts.preview !== undefined) {
-          const cell = element(row, 'span', { part: 'tree.value' })
+          const cell = element(row, 'div', { part: 'tree.value' })
           setViewerText(cell, facts.preview, 4096)
         }
 

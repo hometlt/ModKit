@@ -38,6 +38,7 @@ export const PARTS = Object.freeze([
   'tree.list',
   'tree.item',
   'tree.row',
+  'tree.key',
   'tree.twisty',
   'tree.label',
   'tree.value',

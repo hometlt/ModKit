@@ -13,6 +13,9 @@
  */
 import type {
   AnyDescriptor,
+  AssetEditPlan,
+  CommitCoordinator,
+  EditAuthorizationPort,
   FieldEditable,
   FieldType,
   FieldWriteRequest,
@@ -39,6 +42,13 @@ export interface FieldWriteTarget {
   readonly path?: readonly string[]
 }
 
+export interface FieldWriteRoute {
+  readonly operations: OperationSession
+  /** Where an operation's edit plan goes. Absent means this surface cannot finish a write. */
+  readonly commit?: CommitCoordinator
+  readonly authorization?: EditAuthorizationPort
+}
+
 export interface InlineFieldOptions {
   readonly label: string
   readonly type: FieldType
@@ -48,6 +58,8 @@ export interface InlineFieldOptions {
   readonly target: FieldWriteTarget
   readonly descriptor: AnyDescriptor
   readonly operations: OperationSession
+  readonly commit?: CommitCoordinator
+  readonly authorization?: EditAuthorizationPort
   readonly signal: AbortSignal
   readonly fieldEditors?: FieldEditorRegistry
   readonly candidates?: SubjectCandidateProvider
@@ -65,7 +77,17 @@ export interface InlineFieldOptions {
 export function fieldWriteRefusal(
   descriptor: AnyDescriptor,
   editable: FieldEditable | undefined,
+  route?: Pick<FieldWriteRoute, 'commit' | 'authorization'>,
 ): FieldWriteRefusal {
+  /*
+   * The commit route is checked first and separately from the codec's declaration, because the two
+   * failures are not the same failure. A codec that offers no write is telling the reader something
+   * about the format; a surface mounted without a commit route is telling them something about this
+   * host. Conflating them would report "this cannot be edited" for a file that can.
+   */
+  if (route !== undefined && (route.commit === undefined || route.authorization === undefined)) {
+    return 'this surface was mounted without a route to save a change'
+  }
   if (editable === undefined) return 'this codec does not offer this value for editing'
   if (editable.readonlyReason !== undefined) return editable.readonlyReason
   const write = editable.write
@@ -79,6 +101,18 @@ export function fieldWriteRefusal(
     return `the operation «${String(write.operation)}» is ${operation.state} for this file`
   }
   return undefined
+}
+
+/**
+ * The edit plan an operation answered with, if it answered with one.
+ *
+ * Operation results carry their product in `output`; a mutating operation's is `edit-plan`. Anything
+ * else here means the codec did something other than plan a write, and the caller must not treat it
+ * as a saved change.
+ */
+function editPlanOf(result: unknown): AssetEditPlan | undefined {
+  const output = (result as { output?: { kind?: string; plan?: AssetEditPlan } }).output
+  return output?.kind === 'edit-plan' ? output.plan : undefined
 }
 
 /** The control the field editor needs, synthesised from one data-source value. */
@@ -114,7 +148,10 @@ export async function mountInlineField(
   options: InlineFieldOptions,
 ): Promise<InlineFieldMount> {
   const root = element(container, 'span', { part: 'field' })
-  const refusal = fieldWriteRefusal(options.descriptor, options.editable)
+  const refusal = fieldWriteRefusal(options.descriptor, options.editable, {
+    ...(options.commit === undefined ? {} : { commit: options.commit }),
+    ...(options.authorization === undefined ? {} : { authorization: options.authorization }),
+  })
   if (refusal !== undefined) {
     const text = element(root, 'span', { part: 'field.control' })
     setViewerText(text, options.value ?? '', 4096)
@@ -149,8 +186,21 @@ export async function mountInlineField(
     candidate => candidate.id === operationId,
   )
 
+  /**
+   * Run one field write all the way to a committed change.
+   *
+   * The operation answers with an *edit plan*, not a finished write — that is the whole point of the
+   * plan/prepare/commit sequence, and stopping at the plan is how a surface ends up reporting
+   * success while the file on disk never changes. Every stage that can refuse is reported where the
+   * reader is looking, in its own words, rather than collapsed into a single failure.
+   */
   const commit = async (): Promise<boolean> => {
-    if (operation === undefined) return false
+    const coordinator = options.commit
+    const authorization = options.authorization
+    if (operation === undefined || coordinator === undefined || authorization === undefined) {
+      setViewerText(status, 'no route to save this change', 512)
+      return false
+    }
     const problem = control.validate()
     if (problem !== undefined) {
       setViewerText(status, problem, 512)
@@ -170,6 +220,38 @@ export async function mountInlineField(
     )
     if (isRejected(result)) {
       setViewerText(status, invokeRefusalMessage(result), 512)
+      return false
+    }
+    const plan = editPlanOf(result)
+    if (plan === undefined) {
+      setViewerText(status, 'the codec returned no edit plan for this write', 512)
+      return false
+    }
+    const grant = await authorization.request(plan, { signal: options.signal })
+    if (grant === undefined) {
+      setViewerText(status, 'not authorised to write this file', 512)
+      return false
+    }
+    const prepared = await coordinator.prepare(plan, {
+      grant: grant.grant,
+      signal: options.signal,
+    })
+    if (prepared.state !== 'ready') {
+      setViewerText(
+        status,
+        prepared.state === 'conflict'
+          ? 'the file changed after this view opened it'
+          : `refused: ${prepared.reason ?? prepared.state}`,
+        512,
+      )
+      return false
+    }
+    const receipt = await coordinator.commit(prepared.prepared, {
+      grant: grant.grant,
+      signal: options.signal,
+    })
+    if (receipt.state !== 'committed') {
+      setViewerText(status, `not saved: ${receipt.state}`, 512)
       return false
     }
     setViewerText(status, '', 1)
