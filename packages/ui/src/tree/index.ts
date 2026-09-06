@@ -16,6 +16,7 @@ import {
 } from '../viewer/index.js'
 import { type FieldEditorRegistry } from '../field-editor/index.js'
 import { fieldWriteRefusal, mountInlineField } from '../field-write/index.js'
+import { renderValueWithSpans } from '../spans/index.js'
 import { type UiLocalizationOptions } from '../localization/index.js'
 import { TREE_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
@@ -162,12 +163,13 @@ export function createTreeViewer(options: TreeViewerOptions = {}): ViewerModule 
             scope.cleanup(() => void mount.unmount())
           } else {
             const cell = element(row, 'div', { part: 'tree.value' })
-            setViewerText(cell, facts.value, 4096)
+            renderValueWithSpans(cell, String(facts.value ?? ''), facts.spans)
             cell.title = fieldWriteRefusal(args.descriptor, editable, route) ?? ''
           }
         } else if (facts.preview !== undefined) {
           const cell = element(row, 'div', { part: 'tree.value' })
-          setViewerText(cell, facts.preview, 4096)
+          // A preview is prose unless the codec described its grammar; then it is drawn as code.
+          renderValueWithSpans(cell, facts.preview, facts.spans)
         }
 
         const children = element(item, 'ul', { part: 'tree.children' })

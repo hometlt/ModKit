@@ -12,6 +12,7 @@ import type {
   DataSourceMajor,
   FieldEditable,
   FieldType,
+  ValueSpan,
   Writer,
 } from '@modkit/sdk'
 import type { HostOperationHandler } from '@modkit/host'
@@ -101,6 +102,8 @@ export interface InspectionTreeNode {
   readonly type?: FieldType
   readonly unit?: string
   readonly editable?: FieldEditable
+  /** Syntax runs over the displayed value, when the codec knows the grammar of what it holds. */
+  readonly spans?: readonly ValueSpan[]
 }
 
 export interface InspectionTrait {
@@ -360,6 +363,7 @@ export function createTreeDataSource(rootNode: InspectionTreeNode): TreeDataSour
         ...(value.type === undefined ? {} : { type: value.type }),
         ...(value.unit === undefined ? {} : { unit: value.unit }),
         ...(value.editable === undefined ? {} : { editable: value.editable }),
+        ...(value.spans === undefined ? {} : { spans: value.spans }),
       })
     },
     async *search(query, signal) {

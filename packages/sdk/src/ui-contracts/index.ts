@@ -49,6 +49,7 @@ export {
   type TransportTrack,
   type TreeDataSource,
   type TreeNodeFacts,
+  type ValueSpan,
   type TreeNodeRef,
   type TreeQuery,
 } from '../asset-capabilities/data-sources.js'

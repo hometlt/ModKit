@@ -44,6 +44,9 @@ export const PARTS = Object.freeze([
   'tree.value',
   'tree.children',
 
+  // one displayed value, drawn with its syntax runs
+  'value.token',
+
   // inline, schema-driven field editing shared by the tree, the table and the metadata panel
   'field',
   'field.control',

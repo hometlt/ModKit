@@ -222,6 +222,52 @@
     background: var(--mk-color-selection);
   }
 
+  /* ---------------------------------------------------------------- value syntax runs */
+  /*
+   * One palette for every surface that shows a value with grammar — tree, table, properties. The
+   * kinds are the language contract's, so a codec that tokenises for its editor colours the same
+   * things here. Unlisted kinds inherit the surrounding colour rather than falling back to a
+   * default that would quietly mis-colour a language nobody has themed yet.
+   */
+  [data-mk-part='value.token'][data-mk-token='keyword'] {
+    color: var(--mk-color-syntax-keyword, var(--mk-color-accent));
+  }
+
+  [data-mk-part='value.token'][data-mk-token='string'] {
+    color: var(--mk-color-syntax-string, var(--mk-color-success-fg, var(--mk-color-fg)));
+  }
+
+  [data-mk-part='value.token'][data-mk-token='number'] {
+    color: var(--mk-color-syntax-number, var(--mk-color-fg));
+    font-variant-numeric: tabular-nums;
+  }
+
+  [data-mk-part='value.token'][data-mk-token='comment'] {
+    color: var(--mk-color-fg-subtle);
+    font-style: italic;
+  }
+
+  [data-mk-part='value.token'][data-mk-token='type'],
+  [data-mk-part='value.token'][data-mk-token='class'],
+  [data-mk-part='value.token'][data-mk-token='namespace'] {
+    color: var(--mk-color-syntax-type, var(--mk-color-fg));
+  }
+
+  [data-mk-part='value.token'][data-mk-token='variable'],
+  [data-mk-part='value.token'][data-mk-token='parameter'],
+  [data-mk-part='value.token'][data-mk-token='property'] {
+    color: var(--mk-color-syntax-variable, var(--mk-color-fg-muted));
+  }
+
+  [data-mk-part='value.token'][data-mk-token='operator'] {
+    color: var(--mk-color-fg-muted);
+  }
+
+  /* A run the codec marked as wrong is worth seeing even in a one-line cell. */
+  [data-mk-part='value.token'][data-mk-token-modifiers~='invalid'] {
+    text-decoration: underline wavy var(--mk-color-danger-fg, currentColor);
+  }
+
   /* ---------------------------------------------------------------- inline field editing */
   [data-mk-part='field'] {
     display: inline-flex;

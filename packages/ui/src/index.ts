@@ -136,6 +136,11 @@ export {
   type UnsupportedEditOperation,
 } from './field-editor/index.js'
 export {
+  renderValueWithSpans,
+  normalizeSpans,
+  SPAN_TEXT_LIMIT,
+} from './spans/index.js'
+export {
   mountInlineField,
   fieldWriteRefusal,
   type FieldWriteRefusal,

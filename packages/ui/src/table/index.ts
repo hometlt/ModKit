@@ -19,6 +19,7 @@ import {
 } from '../viewer/index.js'
 import { type FieldEditorRegistry } from '../field-editor/index.js'
 import { fieldWriteRefusal, mountInlineField } from '../field-write/index.js'
+import { renderValueWithSpans } from '../spans/index.js'
 import { type UiLocalizationOptions } from '../localization/index.js'
 import { TABLE_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
@@ -60,6 +61,14 @@ export class LazyTableModel {
 export interface TableViewerOptions extends UiLocalizationOptions {
   readonly fieldEditors?: FieldEditorRegistry
   readonly candidates?: SubjectCandidateProvider
+  /**
+   * Draw each cell's syntax runs, when the codec publishes them.
+   *
+   * Off by default, and deliberately a decision rather than a side effect: `rows()` returns display
+   * text and the runs live in `cell()`, so highlighting costs one call per cell the reader touches.
+   * A host that wants it says so; a host that does not keeps the calls it makes today.
+   */
+  readonly highlight?: boolean
 }
 
 export function createTableViewer(options: TableViewerOptions = {}): ViewerModule {
@@ -267,6 +276,25 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
             const inspect = () => inspectCell(coord)
             cell.addEventListener('focus', inspect)
             cell.addEventListener('mouseenter', inspect)
+            if (options.highlight === true) {
+              // Once per cell: the runs do not change until the value does, and a re-render replaces
+              // the whole body anyway.
+              const highlight = () => {
+                if (cell.dataset['highlighted'] === 'true' || cell.dataset['editing'] === 'true') {
+                  return
+                }
+                cell.dataset['highlighted'] = 'true'
+                void model
+                  .cell(coord, scope.signal)
+                  .then(facts => {
+                    if (facts.spans === undefined || cell.dataset['editing'] === 'true') return
+                    renderValueWithSpans(cell, facts.value, facts.spans)
+                  })
+                  .catch(() => undefined)
+              }
+              cell.addEventListener('focus', highlight)
+              cell.addEventListener('mouseenter', highlight)
+            }
             /*
              * Editing is on demand, not on render. `rows()` returns display text only; the type and
              * the write declaration live in `cell(coord)`, one call per cell. A localisation table

@@ -6,6 +6,7 @@
 import { compareUtf8, isQualifiedId, type SourceSpan, type SourceSpanWire } from '@modkit/core'
 import type { FieldEditable, FieldType } from '../fields/index.js'
 import type { KnowledgeTarget } from '../knowledge/index.js'
+import type { LanguageTokenKind } from '../language/index.js'
 import { snapshotJsonWireData } from '../manifest/validate.js'
 import { validateWithSchema } from '../manifest/validate.js'
 import { dataSourceContractDefinitionSpecV1Schema } from '../schemas/contribution-specs.js'
@@ -195,6 +196,21 @@ export interface TreeNodeRef {
   readonly hasChildren: boolean
 }
 
+/**
+ * One highlighted run inside a displayed value.
+ *
+ * Offsets are characters within that value, not positions in a document: a tree node and a table
+ * cell each show one value, and a line/character range would have to be translated by every widget
+ * that draws one. The kind vocabulary is the language contract's, so a codec that already produces
+ * tokens for its editor produces the same tokens here — one vocabulary, not two that drift.
+ */
+export interface ValueSpan {
+  readonly from: number
+  readonly to: number
+  readonly kind: LanguageTokenKind
+  readonly modifiers?: readonly string[]
+}
+
 export interface TreeNodeFacts {
   readonly kind: string
   readonly label: string
@@ -220,6 +236,8 @@ export interface TreeNodeFacts {
    * id, or a writer requirement. Absence means read-only, and a surface must not guess otherwise.
    */
   readonly editable?: FieldEditable
+  /** Syntax runs over the displayed value, when the codec knows its grammar. */
+  readonly spans?: readonly ValueSpan[]
 }
 
 export interface TreeQuery {
@@ -272,6 +290,8 @@ export interface CellFacts {
   readonly type?: FieldType
   readonly unit?: string
   readonly editable?: FieldEditable
+  /** Syntax runs over `value`, when the codec knows its grammar. */
+  readonly spans?: readonly ValueSpan[]
 }
 
 export interface TableQuery {
