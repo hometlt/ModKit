@@ -134,12 +134,24 @@ export function createTreeViewer(options: TreeViewerOptions = {}): ViewerModule 
             ...(args.authorization === undefined ? {} : { authorization: args.authorization }),
           }
           const writable = fieldWriteRefusal(args.descriptor, editable, route) === undefined
-          if (writable) {
-            const cell = element(row, 'div', { part: 'tree.value' })
+          /*
+           * A value with syntax runs is shown, not replaced by an input.
+           *
+           * A single-line control renders markup as one flat string, which throws away exactly the
+           * structure the codec went to the trouble of describing — a localization entry stops
+           * being readable the moment it becomes a text box. So a value that has grammar is drawn
+           * with it and turns into the editor when the reader activates it; a value with none, a
+           * number or a flag, gets its control straight away, because there is nothing to lose.
+           */
+          // Narrowed once here so the closure below does not have to re-prove what the branch
+          // condition already established.
+          const fieldType = facts.type
+          const fieldValue = facts.value
+          const mountEditor = async (cell: HTMLElement) => {
             const mount = await mountInlineField(cell, {
               label: facts.label,
-              type: facts.type,
-              value: facts.value,
+              type: fieldType,
+              value: fieldValue,
               ...(facts.unit === undefined ? {} : { unit: facts.unit }),
               ...(editable === undefined ? {} : { editable }),
               target: {
@@ -161,6 +173,34 @@ export function createTreeViewer(options: TreeViewerOptions = {}): ViewerModule 
             cell.addEventListener('change', commit)
             scope.cleanup(() => cell.removeEventListener('change', commit))
             scope.cleanup(() => void mount.unmount())
+          }
+
+          if (writable && (facts.spans === undefined || facts.spans.length === 0)) {
+            const cell = element(row, 'div', { part: 'tree.value' })
+            await mountEditor(cell)
+          } else if (writable) {
+            const cell = element(row, 'div', { part: 'tree.value' })
+            renderValueWithSpans(cell, String(facts.value ?? ''), facts.spans)
+            cell.tabIndex = 0
+            cell.title = 'click to edit'
+            const open = () => {
+              if (cell.dataset['editing'] === 'true') return
+              cell.dataset['editing'] = 'true'
+              cell.replaceChildren()
+              void mountEditor(cell)
+            }
+            cell.addEventListener('dblclick', open)
+            const onKey = (event: KeyboardEvent) => {
+              if (event.key === 'Enter') {
+                event.preventDefault()
+                open()
+              }
+            }
+            cell.addEventListener('keydown', onKey)
+            scope.cleanup(() => {
+              cell.removeEventListener('dblclick', open)
+              cell.removeEventListener('keydown', onKey)
+            })
           } else {
             const cell = element(row, 'div', { part: 'tree.value' })
             renderValueWithSpans(cell, String(facts.value ?? ''), facts.spans)
