@@ -1718,3 +1718,12 @@ export function defineWriter({
     },
   })
 }
+
+export {
+  scanXml,
+  getAttr,
+  elementPathAt,
+  attrAt,
+  type ScannedAttr,
+  type ScannedElement,
+} from './xml-scan.js'
