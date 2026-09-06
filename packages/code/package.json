@@ -21,6 +21,14 @@
       "types": "./dist/module.d.ts",
       "default": "./dist/module.js"
     },
+    "./language-bridge": {
+      "types": "./dist/language-bridge.d.ts",
+      "default": "./dist/language-bridge.js"
+    },
+    "./worker": {
+      "types": "./dist/worker.d.ts",
+      "default": "./dist/worker.js"
+    },
     "./package.json": "./package.json"
   },
   "files": [

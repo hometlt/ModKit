@@ -45,6 +45,24 @@ export interface LanguageBridgeOptions {
   readonly maxResults?: number
   readonly maxDocuments?: number
   readonly subjects?: SubjectCompletionResolver
+  /**
+   * Monaco language ids to register under, when they differ from the ones the provider declares.
+   *
+   * The two are not always the same, and the difference is not a mistake. A provider names the
+   * *format* it understands — `sc2-bank` — while a model is opened in the language Monaco can
+   * colour, which for a bank is `xml`. Routing is the host's job in this contract: the host knows
+   * this buffer is a bank, so it says so here rather than the provider claiming every XML file in
+   * the workspace.
+   */
+  readonly languageIds?: readonly string[]
+  /**
+   * Restrict the registration to models this predicate accepts.
+   *
+   * Without it, a provider registered under `xml` would answer for every XML document open in the
+   * editor. With it, a host that routed by format keeps that routing: the bank provider is asked
+   * about the bank buffer and nothing else.
+   */
+  readonly models?: (model: monaco.editor.ITextModel) => boolean
 }
 
 const SEVERITY: Readonly<Record<LanguageDiagnostic['severity'], monaco.MarkerSeverity>> =
@@ -125,7 +143,8 @@ export function bridgeLanguageProvider(
   provider: LanguageProvider,
   options: LanguageBridgeOptions = {},
 ): monaco.IDisposable {
-  const selector = [...provider.languageIds]
+  const selector = [...(options.languageIds ?? provider.languageIds)]
+  const claims = options.models ?? (() => true)
   const maxResults = options.maxResults ?? 200
   const maxDocuments = options.maxDocuments ?? 1
   const disposables: monaco.IDisposable[] = []
@@ -149,6 +168,7 @@ export function bridgeLanguageProvider(
     disposables.push(
       monaco.languages.registerCompletionItemProvider(selector, {
         async provideCompletionItems(model, position, _context, token) {
+          if (!claims(model)) return { suggestions: [] }
           const word = model.getWordUntilPosition(position)
           const range: monaco.IRange = {
             startLineNumber: position.lineNumber,
@@ -202,6 +222,7 @@ export function bridgeLanguageProvider(
     disposables.push(
       monaco.languages.registerHoverProvider(selector, {
         async provideHover(model, position, token) {
+          if (!claims(model)) return undefined
           const result = await hover({
             ...request(model, token),
             position: { line: position.lineNumber - 1, character: position.column - 1 },
@@ -221,6 +242,7 @@ export function bridgeLanguageProvider(
     disposables.push(
       monaco.languages.registerDefinitionProvider(selector, {
         async provideDefinition(model, position, token) {
+          if (!claims(model)) return []
           const list = await definition({
             ...request(model, token),
             position: { line: position.lineNumber - 1, character: position.column - 1 },
@@ -248,6 +270,7 @@ export function bridgeLanguageProvider(
     disposables.push(
       monaco.languages.registerDocumentSymbolProvider(selector, {
         async provideDocumentSymbols(model, token) {
+          if (!claims(model)) return []
           const list = await symbols(request(model, token))
           return list.symbols.map(convert)
         },

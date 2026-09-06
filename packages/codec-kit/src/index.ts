@@ -10,6 +10,8 @@ import type {
   DataSourceOf,
   KnownDataSourceId,
   DataSourceMajor,
+  FieldEditable,
+  FieldType,
   Writer,
 } from '@modkit/sdk'
 import type { HostOperationHandler } from '@modkit/host'
@@ -88,6 +90,17 @@ export interface InspectionTreeNode {
   readonly preview?: string
   readonly semanticPath?: readonly string[]
   readonly children?: readonly InspectionTreeNode[]
+  /**
+   * Typed value for this node, passed through to `TreeNodeFacts` untouched.
+   *
+   * `preview` is prose and cannot carry a type, so a surface reading it can only ever render text.
+   * A codec that knows its node holds a bounded integer says so here, and gets the right control
+   * instead of a text box. Publishing nothing keeps the read-only rendering a codec has today.
+   */
+  readonly value?: JsonValue
+  readonly type?: FieldType
+  readonly unit?: string
+  readonly editable?: FieldEditable
 }
 
 export interface InspectionTrait {
@@ -343,6 +356,10 @@ export function createTreeDataSource(rootNode: InspectionTreeNode): TreeDataSour
         ...(value.semanticPath === undefined
           ? {}
           : { semanticPath: Object.freeze([...value.semanticPath]) }),
+        ...(value.value === undefined ? {} : { value: value.value }),
+        ...(value.type === undefined ? {} : { type: value.type }),
+        ...(value.unit === undefined ? {} : { unit: value.unit }),
+        ...(value.editable === undefined ? {} : { editable: value.editable }),
       })
     },
     async *search(query, signal) {
