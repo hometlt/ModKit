@@ -1,4 +1,10 @@
-import type { TreeDataSource, TreeNodeRef, ViewerModule } from '@modkit/sdk'
+import type {
+  FieldEditable,
+  SubjectCandidateProvider,
+  TreeDataSource,
+  TreeNodeRef,
+  ViewerModule,
+} from '@modkit/sdk'
 import {
   createSurface,
   createViewerMount,
@@ -8,6 +14,8 @@ import {
   unknownSourceLease,
   ViewerMountScope,
 } from '../viewer/index.js'
+import { type FieldEditorRegistry } from '../field-editor/index.js'
+import { fieldWriteRefusal, mountInlineField } from '../field-write/index.js'
 import { type UiLocalizationOptions } from '../localization/index.js'
 import { TREE_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
@@ -28,6 +36,11 @@ export class LazyTreeModel {
     return value
   }
 
+  /** Drop one node's cached facts so the next read reflects a write the codec accepted. */
+  forget(node: TreeNodeRef): void {
+    this.#facts.delete(node.id)
+  }
+
   children(node: TreeNodeRef, cursor?: string, signal?: AbortSignal) {
     return this.source.children(
       node,
@@ -37,7 +50,12 @@ export class LazyTreeModel {
   }
 }
 
-export function createTreeViewer(options: UiLocalizationOptions = {}): ViewerModule {
+export interface TreeViewerOptions extends UiLocalizationOptions {
+  readonly fieldEditors?: FieldEditorRegistry
+  readonly candidates?: SubjectCandidateProvider
+}
+
+export function createTreeViewer(options: TreeViewerOptions = {}): ViewerModule {
   const localizer = withEnglishUiFallback(options.localizer, TREE_FALLBACK_MESSAGES)
   return defineViewerModule({
     abiVersion: 1,
@@ -61,14 +79,70 @@ export function createTreeViewer(options: UiLocalizationOptions = {}): ViewerMod
         const item = element(parent, 'li', { part: 'tree.item' })
         item.setAttribute('role', 'treeitem')
         item.dataset['nodeId'] = node.id
-        item.setAttribute('aria-expanded', node.hasChildren ? 'false' : 'undefined')
-        const label = element(item, 'button', {
-          text: facts.label,
-          part: 'tree.label',
-        }) as HTMLButtonElement
+        if (node.hasChildren) item.setAttribute('aria-expanded', 'false')
+
+        /*
+         * The row is the layout unit: chevron, label, value. The chevron follows the same shape as
+         * the archive tree's twisty — one disclosure glyph everywhere — and a leaf keeps the slot
+         * so labels stay on one optical column instead of stepping left at every leaf.
+         */
+        const row = element(item, 'div', { part: 'tree.row' })
+        const twisty = element(row, 'span', { part: 'tree.twisty' })
+        twisty.setAttribute('aria-hidden', 'true')
+        twisty.textContent = node.hasChildren ? '›' : ''
+
+        const label = element(row, 'button', { part: 'tree.label' }) as HTMLButtonElement
         label.type = 'button'
         label.disabled = !node.hasChildren
         if (facts.preview !== undefined) label.title = facts.preview
+        setViewerText(label, facts.label)
+
+        /*
+         * The value column shows what the node holds, and becomes a control when the codec says the
+         * value is writable. Two separate sources feed it: `value`, which is typed and may be
+         * edited, and `preview`, which is prose for a reader. Preferring the typed one keeps a
+         * number rendering as a number; falling back to the preview keeps every existing codec
+         * looking exactly as it did before this column existed.
+         */
+        const editable: FieldEditable | undefined = facts.editable
+        if (facts.value !== undefined && facts.type !== undefined) {
+          const writable = fieldWriteRefusal(args.descriptor, editable) === undefined
+          if (writable) {
+            const cell = element(row, 'span', { part: 'tree.value' })
+            const mount = await mountInlineField(cell, {
+              label: facts.label,
+              type: facts.type,
+              value: facts.value,
+              ...(facts.unit === undefined ? {} : { unit: facts.unit }),
+              ...(editable === undefined ? {} : { editable }),
+              target: {
+                groupId: 'tree',
+                key: facts.label,
+                ...(facts.semanticPath === undefined ? {} : { path: facts.semanticPath }),
+              },
+              descriptor: args.descriptor,
+              operations: args.operations,
+              signal: scope.signal,
+              ...(options.fieldEditors === undefined
+                ? {}
+                : { fieldEditors: options.fieldEditors }),
+              ...(options.candidates === undefined ? {} : { candidates: options.candidates }),
+              onWritten: () => model.forget(node),
+            })
+            const commit = () => void mount.commit()
+            cell.addEventListener('change', commit)
+            scope.cleanup(() => cell.removeEventListener('change', commit))
+            scope.cleanup(() => void mount.unmount())
+          } else {
+            const cell = element(row, 'span', { part: 'tree.value' })
+            setViewerText(cell, facts.value, 4096)
+            cell.title = fieldWriteRefusal(args.descriptor, editable) ?? ''
+          }
+        } else if (facts.preview !== undefined) {
+          const cell = element(row, 'span', { part: 'tree.value' })
+          setViewerText(cell, facts.preview, 4096)
+        }
+
         const children = element(item, 'ul', { part: 'tree.children' })
         children.hidden = true
         children.setAttribute('role', 'group')
@@ -84,7 +158,6 @@ export function createTreeViewer(options: UiLocalizationOptions = {}): ViewerMod
         }
         label.addEventListener('click', expand)
         scope.cleanup(() => label.removeEventListener('click', expand))
-        setViewerText(label, facts.label)
       }
 
       await renderNode(await model.root(), list)

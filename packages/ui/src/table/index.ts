@@ -1,4 +1,12 @@
-import type { CellCoord, KnowledgeHit, Page, Row, TableDataSource, ViewerModule } from '@modkit/sdk'
+import type {
+  CellCoord,
+  KnowledgeHit,
+  Page,
+  Row,
+  SubjectCandidateProvider,
+  TableDataSource,
+  ViewerModule,
+} from '@modkit/sdk'
 import {
   createSurface,
   createViewerMount,
@@ -9,6 +17,8 @@ import {
   unknownSourceLease,
   ViewerMountScope,
 } from '../viewer/index.js'
+import { type FieldEditorRegistry } from '../field-editor/index.js'
+import { fieldWriteRefusal, mountInlineField } from '../field-write/index.js'
 import { type UiLocalizationOptions } from '../localization/index.js'
 import { TABLE_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
@@ -47,7 +57,12 @@ export class LazyTableModel {
   }
 }
 
-export function createTableViewer(options: UiLocalizationOptions = {}): ViewerModule {
+export interface TableViewerOptions extends UiLocalizationOptions {
+  readonly fieldEditors?: FieldEditorRegistry
+  readonly candidates?: SubjectCandidateProvider
+}
+
+export function createTableViewer(options: TableViewerOptions = {}): ViewerModule {
   const localizer = withEnglishUiFallback(options.localizer, TABLE_FALLBACK_MESSAGES)
   return defineViewerModule({
     abiVersion: 1,
@@ -170,6 +185,66 @@ export function createTableViewer(options: UiLocalizationOptions = {}): ViewerMo
         })()
       }
 
+      /**
+       * Turn one cell into a control, or say why it cannot become one.
+       *
+       * The cell keeps its display text until the codec accepts the write. That ordering matters:
+       * showing the typed value immediately and reverting on refusal is how a surface ends up
+       * lying about what is in the file.
+       */
+      const beginEdit = async (cell: HTMLTableCellElement, coord: CellCoord): Promise<void> => {
+        if (cell.dataset['editing'] === 'true') return
+        const facts = await model.cell(coord, scope.signal)
+        if (scope.signal.aborted) return
+        if (facts.type === undefined) return
+        const refusal = fieldWriteRefusal(args.descriptor, facts.editable)
+        if (refusal !== undefined) {
+          cell.title = refusal
+          return
+        }
+        const previous = cell.textContent ?? ''
+        cell.dataset['editing'] = 'true'
+        cell.replaceChildren()
+        const header = shape.header?.[coord.column]
+        const mount = await mountInlineField(cell, {
+          label: header ?? String(coord.column),
+          type: facts.type,
+          value: facts.typedValue ?? facts.value,
+          ...(facts.unit === undefined ? {} : { unit: facts.unit }),
+          ...(facts.editable === undefined ? {} : { editable: facts.editable }),
+          target: {
+            groupId: 'table',
+            key: header ?? String(coord.column),
+            path: [String(coord.row), String(coord.column)],
+          },
+          descriptor: args.descriptor,
+          operations: args.operations,
+          signal: scope.signal,
+          ...(options.fieldEditors === undefined ? {} : { fieldEditors: options.fieldEditors }),
+          ...(options.candidates === undefined ? {} : { candidates: options.candidates }),
+        })
+        const finish = async (write: boolean) => {
+          const accepted = write ? await mount.commit() : false
+          if (!accepted && write) return // the status line inside the field says why; stay open
+          const settled = accepted ? await model.cell(coord, scope.signal) : undefined
+          await mount.unmount()
+          delete cell.dataset['editing']
+          setViewerText(cell, settled?.value ?? previous)
+        }
+        const onKey = (event: KeyboardEvent) => {
+          if (event.key === 'Enter') {
+            event.preventDefault()
+            void finish(true)
+          }
+          if (event.key === 'Escape') {
+            event.preventDefault()
+            void finish(false)
+          }
+        }
+        cell.addEventListener('keydown', onKey)
+        scope.cleanup(() => cell.removeEventListener('keydown', onKey))
+      }
+
       const render = (rows: readonly Row[]) => {
         cancelLookup('table-page-changed')
         showMissingKnowledge()
@@ -183,9 +258,29 @@ export function createTableViewer(options: UiLocalizationOptions = {}): ViewerMo
             setPart(cell, 'table.cell')
             cell.tabIndex = 0
             setViewerText(cell, value)
-            const inspect = () => inspectCell({ row: row.index, column })
+            const coord = { row: row.index, column }
+            const inspect = () => inspectCell(coord)
             cell.addEventListener('focus', inspect)
             cell.addEventListener('mouseenter', inspect)
+            /*
+             * Editing is on demand, not on render. `rows()` returns display text only; the type and
+             * the write declaration live in `cell(coord)`, one call per cell. A localisation table
+             * of eleven thousand rows must not make eleven thousand of those calls to draw itself,
+             * so the facts are fetched when the reader actually asks to edit that one cell.
+             */
+            const begin = () => void beginEdit(cell, coord)
+            cell.addEventListener('dblclick', begin)
+            const onKey = (event: KeyboardEvent) => {
+              if (event.key === 'Enter' && cell.dataset['editing'] !== 'true') {
+                event.preventDefault()
+                begin()
+              }
+            }
+            cell.addEventListener('keydown', onKey)
+            scope.cleanup(() => {
+              cell.removeEventListener('dblclick', begin)
+              cell.removeEventListener('keydown', onKey)
+            })
           }
         }
       }

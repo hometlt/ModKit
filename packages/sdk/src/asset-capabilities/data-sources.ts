@@ -4,6 +4,7 @@
  */
 
 import { compareUtf8, isQualifiedId, type SourceSpan, type SourceSpanWire } from '@modkit/core'
+import type { FieldEditable, FieldType } from '../fields/index.js'
 import type { KnowledgeTarget } from '../knowledge/index.js'
 import { snapshotJsonWireData } from '../manifest/validate.js'
 import { validateWithSchema } from '../manifest/validate.js'
@@ -200,8 +201,25 @@ export interface TreeNodeFacts {
   readonly preview?: string
   readonly range?: SourceSpan
   readonly semanticPath?: readonly string[]
-  /** Exact lookup coordinate for optional host-provided help. */
+  /** Exact lookup coordinate for optional help provided by the host. */
   readonly knowledgeTarget?: KnowledgeTarget
+  /**
+   * Typed value of this node, in the same shape a `MetadataEntry` uses.
+   *
+   * `preview` is prose for a human and cannot carry a type: nothing in `"9999999"` says whether the
+   * node holds an int with a range or a string that happens to read as digits. A surface that wants
+   * to offer the right control — a spinner, a checkbox, an enum list, a filtered subject picker —
+   * needs the schema, so it is published here or not at all. Every field is optional, so a codec
+   * that publishes nothing keeps working and simply gets the read-only rendering it has today.
+   */
+  readonly value?: JsonValue
+  readonly type?: FieldType
+  readonly unit?: string
+  /**
+   * Present only when the codec can actually write this node back, and it names how: an operation
+   * id, or a writer requirement. Absence means read-only, and a surface must not guess otherwise.
+   */
+  readonly editable?: FieldEditable
 }
 
 export interface TreeQuery {
@@ -240,11 +258,20 @@ export interface CellCoord {
 }
 
 export interface CellFacts {
+  /** Display text. Always present, because every table can be read even when nothing is typed. */
   readonly value: string
   readonly range?: SourceSpan
   readonly diagnostics?: readonly AssetDiagnostic[]
-  /** Exact lookup coordinate for optional host-provided help. */
+  /** Exact lookup coordinate for optional help provided by the host. */
   readonly knowledgeTarget?: KnowledgeTarget
+  /**
+   * The same optional schema a tree node may carry; see `TreeNodeFacts`. `typedValue` exists
+   * because `value` is display text: `"true"` and `true` render alike and edit differently.
+   */
+  readonly typedValue?: JsonValue
+  readonly type?: FieldType
+  readonly unit?: string
+  readonly editable?: FieldEditable
 }
 
 export interface TableQuery {

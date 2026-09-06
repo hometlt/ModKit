@@ -37,8 +37,16 @@ export const PARTS = Object.freeze([
   'tree',
   'tree.list',
   'tree.item',
+  'tree.row',
+  'tree.twisty',
   'tree.label',
+  'tree.value',
   'tree.children',
+
+  // inline, schema-driven field editing shared by the tree, the table and the metadata panel
+  'field',
+  'field.control',
+  'field.status',
 
   // table
   'table',

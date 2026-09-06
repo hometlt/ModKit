@@ -116,6 +116,34 @@ export {
 } from './editor/index.js'
 export { hexEditor, createHexEditor, type HexEditorOptions } from './hex-editor/index.js'
 export {
+  createFieldEditorRegistry,
+  editOffer,
+  offersEditPanel,
+  mountFieldEditor,
+  declaredMutatingOperations,
+  invokeRefusalMessage,
+  isRejected,
+  fieldValue,
+  fidelityNote,
+  type EditOffer,
+  type EditOfferOptions,
+  type EditOperationField,
+  type EditOperationForm,
+  type FieldEditorControlV1,
+  type FieldEditorModuleV1,
+  type FieldEditorRegistration,
+  type FieldEditorRegistry,
+  type UnsupportedEditOperation,
+} from './field-editor/index.js'
+export {
+  mountInlineField,
+  fieldWriteRefusal,
+  type FieldWriteRefusal,
+  type FieldWriteTarget,
+  type InlineFieldMount,
+  type InlineFieldOptions,
+} from './field-write/index.js'
+export {
   SubjectSelectorModel,
   candidateTargetForField,
   mountSubjectSelector,

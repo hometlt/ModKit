@@ -124,16 +124,69 @@
     padding-inline-start: var(--mk-tree-indent);
   }
 
+  /*
+   * The row carries the columns: chevron, label, value. The nested `tree.children` list already
+   * supplies indentation, so the row itself never adds any — otherwise depth would count twice.
+   */
+  [data-mk-part='tree.row'] {
+    display: flex;
+    gap: var(--mk-space-1);
+    align-items: center;
+    min-width: 0;
+    border-radius: var(--mk-radius-sm);
+  }
+
+  [data-mk-part='tree.row']:hover {
+    background: var(--mk-color-hover);
+  }
+
+  /* One chevron shape across the product; a leaf keeps the slot so labels stay on one column. */
+  [data-mk-part='tree.twisty'] {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: var(--mk-size-icon);
+    height: var(--mk-size-icon);
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-lg);
+    line-height: 1;
+    transition: transform var(--mk-motion-fast) var(--mk-motion-ease);
+  }
+
+  [data-mk-part='tree.item'][aria-expanded='true'] > [data-mk-part='tree.row'] >
+    [data-mk-part='tree.twisty'] {
+    transform: rotate(90deg);
+  }
+
+  [data-mk-part='tree.value'] {
+    flex: 0 1 auto;
+    min-width: 0;
+    margin-inline-start: auto;
+    padding-inline: var(--mk-space-2);
+    overflow: hidden;
+    color: var(--mk-color-fg-muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
   [data-mk-part='tree.label'],
   [data-mk-part='namespace.label'] {
     display: flex;
+    flex: 1 1 auto;
     align-items: center;
-    width: 100%;
+    min-width: 0;
     min-height: var(--mk-tree-row-height);
     padding-inline: var(--mk-space-2);
     border-radius: var(--mk-radius-sm);
     text-align: start;
     cursor: pointer;
+  }
+
+  /* A leaf has nothing to disclose: keep the label readable rather than dimmed as "disabled". */
+  [data-mk-part='tree.label']:disabled {
+    cursor: default;
   }
 
   [data-mk-part='tree.label']:hover,
@@ -145,6 +198,37 @@
   [data-mk-part='namespace.item'][aria-selected='true'] > [data-mk-part='namespace.label'] {
     color: var(--mk-color-selection-fg);
     background: var(--mk-color-selection);
+  }
+
+  /* ---------------------------------------------------------------- inline field editing */
+  [data-mk-part='field'] {
+    display: inline-flex;
+    gap: var(--mk-space-1);
+    align-items: center;
+    min-width: 0;
+  }
+
+  [data-mk-part='field.control'] {
+    display: inline-flex;
+    min-width: 0;
+  }
+
+  /*
+   * A read-only value must not look like a control the reader can use and then lose work in.
+   * The reason travels in `title`, set by the field-write layer.
+   */
+  [data-mk-part='field'][data-readonly='true'] > [data-mk-part='field.control'] {
+    color: var(--mk-color-fg-muted);
+    cursor: help;
+  }
+
+  [data-mk-part='field.status'] {
+    color: var(--mk-color-danger-fg, var(--mk-color-fg-muted));
+    font-size: var(--mk-font-size-sm);
+  }
+
+  [data-mk-part='field.status']:empty {
+    display: none;
   }
 
   /* ---------------------------------------------------------------- table */

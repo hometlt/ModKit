@@ -7,7 +7,9 @@
 import type {
   AnyDescriptor,
   MetadataGroup,
+  OperationSession,
   ResolvedAssetDescriptor,
+  SubjectCandidateProvider,
   ViewerModule,
 } from '@modkit/sdk'
 import {
@@ -18,6 +20,8 @@ import {
   setViewerText,
   ViewerMountScope,
 } from '../viewer/index.js'
+import { type FieldEditorRegistry } from '../field-editor/index.js'
+import { fieldWriteRefusal, mountInlineField } from '../field-write/index.js'
 import type { UiLocalizationOptions, UiLocalizer } from '../localization/index.js'
 import { METADATA_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
@@ -35,10 +39,20 @@ function traitValue(trait: AnyDescriptor['traits'][number]): string {
   return `${trait.state} · ${stated}`
 }
 
+/** Editing ports, present only when the panel was mounted with a live operation session. */
+interface MetadataEditing {
+  readonly operations: OperationSession
+  readonly signal: AbortSignal
+  readonly fieldEditors?: FieldEditorRegistry
+  readonly candidates?: SubjectCandidateProvider
+  readonly onWritten: () => void | Promise<void>
+}
+
 function renderMetadata(
   root: HTMLElement,
   descriptor: AnyDescriptor,
   localizer: UiLocalizer,
+  editing?: MetadataEditing,
 ): void {
   root.replaceChildren()
   const groups: readonly MetadataGroup[] = resolved(descriptor)?.metadata ?? []
@@ -55,8 +69,42 @@ function renderMetadata(
       const row = element(list, 'div', { part: 'metadata.row' })
       element(row, 'dt', { text: entry.key, part: 'metadata.label' })
       const value = element(row, 'dd', { part: 'metadata.value' })
+      /*
+       * An entry becomes a control only when three things hold at once: the codec typed it, the
+       * codec declared how to write it, and the panel was given a session to write through. A
+       * descriptor-only mount stays exactly as read-only as it has always been.
+       */
+      const writable =
+        editing !== undefined &&
+        entry.type !== undefined &&
+        fieldWriteRefusal(descriptor, entry.editable) === undefined
+      if (writable && entry.type !== undefined) {
+        void mountInlineField(value, {
+          label: entry.key,
+          type: entry.type,
+          value: entry.value,
+          ...(entry.unit === undefined ? {} : { unit: entry.unit }),
+          ...(entry.editable === undefined ? {} : { editable: entry.editable }),
+          target: { groupId: group.id, key: entry.key },
+          descriptor,
+          operations: editing.operations,
+          signal: editing.signal,
+          ...(editing.fieldEditors === undefined
+            ? {}
+            : { fieldEditors: editing.fieldEditors }),
+          ...(editing.candidates === undefined ? {} : { candidates: editing.candidates }),
+          onWritten: editing.onWritten,
+        }).then(mount => {
+          const commit = () => void mount.commit()
+          value.addEventListener('change', commit)
+        })
+        continue
+      }
       setViewerText(value, entry.value, 4096)
-      value.title = String(entry.value)
+      value.title =
+        entry.editable === undefined
+          ? String(entry.value)
+          : (fieldWriteRefusal(descriptor, entry.editable) ?? String(entry.value))
     }
   }
 
@@ -88,7 +136,12 @@ function renderMetadata(
   }
 }
 
-export function createMetadataPanel(options: UiLocalizationOptions = {}): ViewerModule {
+export interface MetadataPanelOptions extends UiLocalizationOptions {
+  readonly fieldEditors?: FieldEditorRegistry
+  readonly candidates?: SubjectCandidateProvider
+}
+
+export function createMetadataPanel(options: MetadataPanelOptions = {}): ViewerModule {
   const localizer = withEnglishUiFallback(options.localizer, METADATA_FALLBACK_MESSAGES)
   return defineViewerModule({
     abiVersion: 1,
@@ -96,10 +149,23 @@ export function createMetadataPanel(options: UiLocalizationOptions = {}): Viewer
       const scope = new ViewerMountScope(args.signal)
       const root = createSurface(args.container, localizer.text('metadata.title'))
       const body = element(root, 'div', { part: 'metadata' })
-      renderMetadata(body, args.descriptor, localizer)
+      let current = args.descriptor
+      const editing: MetadataEditing = {
+        operations: args.operations,
+        signal: scope.signal,
+        ...(options.fieldEditors === undefined ? {} : { fieldEditors: options.fieldEditors }),
+        ...(options.candidates === undefined ? {} : { candidates: options.candidates }),
+        /*
+         * A write changes the file, so the entries this panel drew are stale. The host re-emits the
+         * descriptor through `update`; redrawing from the one we hold would show the old values.
+         */
+        onWritten: () => renderMetadata(body, current, localizer, editing),
+      }
+      renderMetadata(body, current, localizer, editing)
       return createViewerMount(root, scope, args, ({ descriptor }) => {
+        current = descriptor
         root.dataset['revision'] = descriptor.revision
-        renderMetadata(body, descriptor, localizer)
+        renderMetadata(body, descriptor, localizer, editing)
       })
     },
   })
