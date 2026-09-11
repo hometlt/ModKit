@@ -15,7 +15,7 @@
  */
 
 import { dirname, resolve } from 'node:path'
-import { writeFile } from 'node:fs/promises'
+import { open, writeFile } from 'node:fs/promises'
 import process from 'node:process'
 import {
   commandRequest,
@@ -29,10 +29,12 @@ import {
 } from '@modkit/host'
 import { createPathSubjectOpener, loadExtensionDirectory } from '@modkit/host/node'
 import { createModkitCliSubjectServices } from './profile.js'
+import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
+import type { JsonValue } from '@modkit/sdk'
 
 export const RUN_USAGE =
   'usage: modkit run <command> <file> --ext <dir> [--ext <dir>...] [--entry <path>] ' +
-  '[--target <id>] [--out <file>] [--trust] [--format text|json|protocol-json]\n'
+  '[--target <id>] [--operation <id>] [--input <json-file>] [--out <file>] [--trust] [--format text|json|protocol-json]\n'
 
 export type RunOutputFormat = 'text' | 'json' | 'protocol-json'
 
@@ -43,6 +45,8 @@ export interface RunArguments {
   readonly entry?: string
   readonly target?: string
   readonly out?: string
+  readonly operation?: string
+  readonly inputFile?: string
   readonly trust: boolean
   readonly format: RunOutputFormat
 }
@@ -67,6 +71,8 @@ export function parseRunArguments(
   let entry: string | undefined
   let convertTarget: string | undefined
   let out: string | undefined
+  let operation: string | undefined
+  let inputFile: string | undefined
   let trust = false
   let format: RunOutputFormat = 'text'
   const value = (index: number): string | undefined => {
@@ -88,6 +94,14 @@ export function parseRunArguments(
       convertTarget = value(index + 1)
       if (convertTarget === undefined) return undefined
       index += 1
+    } else if (argument === '--operation') {
+      operation = value(index + 1)
+      if (operation === undefined) return undefined
+      index += 1
+    } else if (argument === '--input') {
+      inputFile = value(index + 1)
+      if (inputFile === undefined) return undefined
+      index += 1
     } else if (argument === '--out') {
       out = value(index + 1)
       if (out === undefined) return undefined
@@ -102,6 +116,12 @@ export function parseRunArguments(
     else return undefined
   }
   if (roots.length === 0) return undefined
+  if (
+    (operation !== undefined || inputFile !== undefined) &&
+    command !== 'subject.convert' &&
+    command !== 'subject.preview'
+  )
+    return undefined
   return {
     command,
     file: target,
@@ -109,8 +129,38 @@ export function parseRunArguments(
     ...(entry === undefined ? {} : { entry }),
     ...(convertTarget === undefined ? {} : { target: convertTarget }),
     ...(out === undefined ? {} : { out }),
+    ...(operation === undefined ? {} : { operation }),
+    ...(inputFile === undefined ? {} : { inputFile }),
     trust,
     format,
+  }
+}
+
+/** Own a bounded JSON request; the file cannot override the subject or command envelope. */
+export async function readOperationInput(path: string, signal?: AbortSignal): Promise<JsonValue> {
+  const maxBytes = 16 << 20
+  signal?.throwIfAborted()
+  const file = await open(resolve(path), 'r')
+  try {
+    const stat = await file.stat()
+    if (!stat.isFile() || stat.size > maxBytes)
+      throw new RangeError('operation input must be a JSON file at most 16 MiB')
+    // A bounded read also detects growth after stat without allocating an unbounded readFile buffer.
+    const bytes = Buffer.alloc(Math.min(maxBytes + 1, stat.size + 1))
+    let length = 0
+    while (length < bytes.length) {
+      signal?.throwIfAborted()
+      const read = await file.read(bytes, length, bytes.length - length, null)
+      if (read.bytesRead === 0) break
+      length += read.bytesRead
+    }
+    if (length !== stat.size) throw new Error('operation input changed while reading')
+    const value: unknown = JSON.parse(
+      new TextDecoder('utf-8', { fatal: true }).decode(bytes.subarray(0, length)),
+    )
+    return snapshotJson(value, { maxDepth: 64, maxNodes: 1_000_000, maxBytes }, signal)
+  } finally {
+    await file.close()
   }
 }
 
@@ -178,6 +228,10 @@ export async function runCommand(
     return 2
   }
   try {
+    const operationInput =
+      arguments_.inputFile === undefined
+        ? undefined
+        : await readOperationInput(arguments_.inputFile, options.signal)
     const loaded = await Promise.all(
       arguments_.roots.map(root => loadExtensionDirectory(resolve(root))),
     )
@@ -198,6 +252,8 @@ export async function runCommand(
       subject: file,
       ...(arguments_.entry === undefined ? {} : { entry: arguments_.entry }),
       ...(arguments_.target === undefined ? {} : { target: arguments_.target }),
+      ...(arguments_.operation === undefined ? {} : { operation: arguments_.operation }),
+      ...(operationInput === undefined ? {} : { operationInput }),
     }
     const out = arguments_.out
     const receipt = await executeCommandRequest(

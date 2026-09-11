@@ -137,6 +137,43 @@ const exactSubjectsInput = z
 const selectSubjectInput = z
   .object({ handle: handleSchema, subjectId: z.string().min(1).max(512) })
   .strict()
+const subjectEditTargetInput = z
+  .object({
+    handle: handleSchema,
+    fieldPath: z.array(z.string().min(1).max(128)).min(1).max(32),
+    targetDocument: z
+      .object({
+        rootId: z.string().min(1).max(512),
+        path: z.string().min(1).max(4_096),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict()
+const subjectIsolationInput = z
+  .object({
+    handle: handleSchema,
+    targetSubjectId: z.string().min(1).max(512),
+    ownerFieldPath: z.array(z.string().min(1).max(128)).min(1).max(32),
+    maxEdges: z.number().int().min(1).max(250_000).default(50_000),
+    always: z.boolean().optional(),
+  })
+  .strict()
+const isolationDocumentInput = z
+  .object({ rootId: z.string().min(1).max(512), path: z.string().min(1).max(4_096) })
+  .strict()
+const subjectIsolationPlanInput = z
+  .object({
+    handle: handleSchema,
+    targetSubjectId: z.string().min(1).max(512),
+    cloneSubjectId: z.string().min(1).max(512),
+    ownerFieldPath: z.array(z.string().min(1).max(128)).min(1).max(32),
+    maxEdges: z.number().int().min(1).max(250_000).default(50_000),
+    always: z.boolean().optional(),
+    ownerTargetDocument: isolationDocumentInput.optional(),
+    cloneTargetDocument: isolationDocumentInput.optional(),
+  })
+  .strict()
 const openSelectionInput = z
   .object({ handle: handleSchema, selectionId: z.string().min(1).max(512) })
   .strict()
@@ -147,13 +184,22 @@ const discoverInstallationsInput = z
   })
   .strict()
 const openDiscoveredInput = z.object({ selectionId: z.string().min(1).max(128) }).strict()
+const outputIdSchema = z.string().uuid()
+const inputArtifactSchema = z
+  .object({ id: outputIdSchema, field: z.string().min(1).max(128), encoding: z.literal('hex') })
+  .strict()
 const invokeReadonlyInput = z
   .object({
     handle: handleSchema,
     operationId: z.string().min(1).max(256),
     input: z.unknown().refine(value => value !== undefined, 'input is required'),
+    retainOutput: z.boolean().optional(),
+    inputArtifact: inputArtifactSchema.optional(),
   })
   .strict()
+
+/** Same shape; the operation named here is a mutating one and the answer is a plan, not a write. */
+const proposeEditInput = invokeReadonlyInput.omit({ retainOutput: true, inputArtifact: true })
 
 const factsInput = z.discriminatedUnion('view', [
   z.object({ handle: handleSchema, view: z.literal('summary') }).strict(),
@@ -556,13 +602,128 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
     {
       title: 'Invoke an advertised read-only operation',
       description:
-        'Invoke an exact available operation ID only when the current subject descriptor declares mutatesSource=false.',
+        'Invoke an exact available operation ID only when the descriptor declares mutatesSource=false. With host output artifacts enabled, retainOutput returns complete bytes as retrievable resources; inputArtifact inserts an owned retained output as hex into one absent input field.',
       inputSchema: invokeReadonlyInput,
       outputSchema: envelopeSchema,
       annotations: { ...readOnlyAnnotations, idempotentHint: false },
     },
+    ({ handle, operationId, input, retainOutput, inputArtifact }, context) =>
+      safeTool(() =>
+        runtime.invokeReadonly(handle, operationId, input, context.mcpReq.signal, {
+          ...(retainOutput === undefined ? {} : { retainOutput }),
+          ...(inputArtifact === undefined ? {} : { inputArtifact }),
+        }),
+      ),
+  )
+  server.registerTool(
+    'modkit.subject_edit_target',
+    {
+      title: 'Preview the write destination for a subject field',
+      description:
+        'Resolve the exact writable mod, logical file, host binding and guarded revisions for a selected subject field. Nothing is written.',
+      inputSchema: subjectEditTargetInput,
+      outputSchema: envelopeSchema,
+      annotations: { ...readOnlyAnnotations, idempotentHint: true },
+    },
+    ({ handle, fieldPath, targetDocument }, context) =>
+      safeTool(() =>
+        runtime.subjectEditTarget(
+          handle,
+          fieldPath,
+          targetDocument,
+          context.mcpReq.signal,
+        ),
+      ),
+  )
+  server.registerTool(
+    'modkit.subject_isolation',
+    {
+      title: 'Preview shared-object isolation impact',
+      description:
+        'Analyze whether the exact referenced subject is shared, list its referrers and show which selected owner field would be rewired. Nothing is written.',
+      inputSchema: subjectIsolationInput,
+      outputSchema: envelopeSchema,
+      annotations: { ...readOnlyAnnotations, idempotentHint: true },
+    },
+    ({ handle, targetSubjectId, ownerFieldPath, maxEdges, always }, context) =>
+      safeTool(() =>
+        runtime.subjectIsolation(
+          handle,
+          targetSubjectId,
+          ownerFieldPath,
+          maxEdges,
+          always,
+          context.mcpReq.signal,
+        ),
+      ),
+  )
+  server.registerTool(
+    'modkit.subject_isolation_plan',
+    {
+      title: 'Propose isolating a shared subject',
+      description:
+        'Build and re-resolve a bounded clone/rewire proposal for the selected owner. Returns destinations and byte counts without returning replacement XML or writing files.',
+      inputSchema: subjectIsolationPlanInput,
+      outputSchema: envelopeSchema,
+      annotations: { ...readOnlyAnnotations, idempotentHint: false },
+    },
+    (
+      {
+        handle,
+        targetSubjectId,
+        cloneSubjectId,
+        ownerFieldPath,
+        maxEdges,
+        always,
+        ownerTargetDocument,
+        cloneTargetDocument,
+      },
+      context,
+    ) =>
+      safeTool(() =>
+        runtime.subjectIsolationPlan(
+          handle,
+          {
+            targetSubjectId,
+            cloneSubjectId,
+            ownerFieldPath,
+            maxEdges,
+            ...(always === undefined ? {} : { always }),
+            ...(ownerTargetDocument === undefined ? {} : { ownerTargetDocument }),
+            ...(cloneTargetDocument === undefined ? {} : { cloneTargetDocument }),
+          },
+          context.mcpReq.signal,
+        ),
+      ),
+  )
+  server.registerTool(
+    'modkit.release_output',
+    {
+      title: 'Release a retained output',
+      description: 'Release temporary output memory. Source files are unchanged.',
+      inputSchema: z.object({ id: outputIdSchema }).strict(),
+      outputSchema: envelopeSchema,
+      annotations: { ...readOnlyAnnotations, idempotentHint: false },
+    },
+    ({ id }, context) => safeTool(async () => runtime.releaseOutput(id, context.mcpReq.signal)),
+  )
+  server.registerTool(
+    'modkit.propose_edit',
+    {
+      title: 'Propose an edit without applying it',
+      description:
+        'Invoke a mutating operation for its edit plan and return what would change. Nothing is written: committing needs a host authorization this adapter does not hold.',
+      inputSchema: proposeEditInput,
+      outputSchema: envelopeSchema,
+      /*
+       * Annotated read-only, and that is not a technicality. The tool reads what a change would be;
+       * a client that treats "may write" as "needs confirmation" should not prompt for a proposal,
+       * and should prompt for the commit that this adapter deliberately does not offer.
+       */
+      annotations: { ...readOnlyAnnotations, idempotentHint: false },
+    },
     ({ handle, operationId, input }, context) =>
-      safeTool(() => runtime.invokeReadonly(handle, operationId, input, context.mcpReq.signal)),
+      safeTool(() => runtime.proposeEdit(handle, operationId, input, context.mcpReq.signal)),
   )
   server.registerTool(
     'modkit.knowledge_search',
@@ -627,6 +788,70 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
             text: JSON.stringify(value),
           },
         ],
+      }
+    },
+  )
+  server.registerResource(
+    'modkit-output',
+    new ResourceTemplate('modkit://output/{id}', { list: undefined }),
+    {
+      title: 'Retained operation output',
+      description:
+        'Complete output identity and first bounded binary resource; valid until released or the owning subject closes.',
+      mimeType: 'application/json',
+    },
+    async (uri, variables, context) => {
+      try {
+        const id = outputIdSchema.parse(templateValue(variables, 'id'))
+        return {
+          contents: [
+            {
+              uri: uri.href,
+              mimeType: 'application/json',
+              text: JSON.stringify(runtime.outputManifest(id, context.mcpReq.signal)),
+            },
+          ],
+        }
+      } catch (error) {
+        return resourceFailure(uri, error)
+      }
+    },
+  )
+  server.registerResource(
+    'modkit-output-chunk',
+    new ResourceTemplate('modkit://output/{id}/chunks/{offset}', { list: undefined }),
+    {
+      title: 'Retained operation output chunk',
+      description:
+        'Full bounded binary chunk. Follow nextUri in result metadata and verify each chunk and complete artifact SHA-256.',
+      mimeType: 'application/octet-stream',
+    },
+    async (uri, variables, context) => {
+      try {
+        const id = outputIdSchema.parse(templateValue(variables, 'id'))
+        const rawOffset = templateValue(variables, 'offset')
+        if (rawOffset === undefined || !/^(0|[1-9][0-9]{0,9})$/u.test(rawOffset))
+          throw new McpOperationError(
+            'x3.mcp/output-artifact-range',
+            'Invalid output chunk offset.',
+          )
+        const chunk = runtime.outputChunk(id, Number(rawOffset), context.mcpReq.signal)
+        return {
+          contents: [
+            {
+              uri: uri.href,
+              mimeType: 'application/octet-stream',
+              blob: Buffer.from(chunk.bytes).toString('base64'),
+            },
+          ],
+          _meta: {
+            nextUri: chunk.nextUri,
+            sha256: chunk.sha256,
+            byteLength: chunk.bytes.byteLength,
+          },
+        }
+      } catch (error) {
+        return resourceFailure(uri, error)
       }
     },
   )

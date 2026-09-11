@@ -4,8 +4,24 @@
   "title": "UV_game_variants",
   "description": "Geometry, visibility and whole-asset variants. Runtime packages additionally require assetSha256 for every external asset URI.",
   "type": "object",
-  "required": ["variants"],
+  "anyOf": [{ "required": ["variants"] }, { "required": ["visibility"] }],
   "properties": {
+    "visibility": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["mesh", "primitive", "value"],
+        "properties": {
+          "mesh": { "type": "integer", "minimum": 0 },
+          "primitive": { "type": "integer", "minimum": 0 },
+          "value": {
+            "type": "number",
+            "description": "Finite scalar; visible iff > 0, for every instance. Mesh/primitive targets must be unique and in range."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
     "variants": {
       "type": "array",
       "minItems": 1,
@@ -15,13 +31,22 @@
         "properties": {
           "name": { "type": "string", "minLength": 1 },
           "default": { "type": "boolean", "default": false },
-          "showNodes": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
-          "hideNodes": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+          "showNodes": {
+            "type": "array",
+            "items": { "type": "integer", "minimum": 0 }
+          },
+          "hideNodes": {
+            "type": "array",
+            "items": { "type": "integer", "minimum": 0 }
+          },
           "materialVariant": { "type": "integer", "minimum": 0 },
           "asset": { "type": "string", "minLength": 1 },
           "assetSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
           "alignSocket": { "type": "string", "minLength": 1 },
-          "effects": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+          "effects": {
+            "type": "array",
+            "items": { "type": "integer", "minimum": 0 }
+          },
           "extras": {}
         },
         "additionalProperties": false

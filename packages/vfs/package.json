@@ -9,6 +9,14 @@
     "node": ">=22"
   },
   "exports": {
+    "./content-sources": {
+      "types": "./dist/content-sources.d.ts",
+      "default": "./dist/content-sources.js"
+    },
+    "./content-sources/node": {
+      "types": "./dist/content-sources-node.d.ts",
+      "default": "./dist/content-sources-node.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"

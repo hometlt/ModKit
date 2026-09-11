@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+  "title": "UVW profile, version 1",
+  "$comment": "The graph envelope over the candidate: a world is spaces plus connections. Each space carries ONE primitive topology; the candidate document body (basis/bounds/layers) becomes the body of one heightfield space, so a candidate document is exactly a profile document with a single space and no connections. Connections are RESERVED at zero entries in this version: SC2 and Warzone need none, and minting connection schemas before a publisher exists is the lie the world-interchange registry note forbids. The connection amendment (portal/seam with affine mappings, scale, wrap, dynamic anchors) is designed in ../../design/DESIGN_UVW_TOPOLOGIES.md and lifts maxItems when the first consumer lands. Modkit migrates its UVW writer from the candidate to this profile in GA wave 4; until then both schemas are current, candidate marked superseded-by.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["uv", "spaces", "connections"],
+  "properties": {
+    "$comment": { "description": "Free commentary; never semantic.", "type": "string" },
+    "uv": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "version", "status"],
+      "properties": {
+        "format": { "const": "UVW" },
+        "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+$" },
+        "status": { "const": "profile" }
+      }
+    },
+    "spaces": {
+      "$comment": "At least one. Space ids must be unique — uniqueness across objects is a composition check, not expressible here. Ordering is canonical by id; the graph has no privileged first space, a viewer picks an entry space by convention (lowest id) unless a package says otherwise.",
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/space" }
+    },
+    "connections": {
+      "$comment": "RESERVED: zero entries in profile v1. The amendment defines portal (point anchors, pass rules, affine mapping incl. scale) and seam (boundary gluing incl. self-seams for wrap) and lifts this cap.",
+      "type": "array",
+      "maxItems": 0
+    }
+  },
+  "$defs": {
+    "space": {
+      "$comment": "topology names the whole catalog so the day a publisher lands the name is already taken by the right thing (the candidate's own reservation pattern); only heightfield is admitted by this version — the oneOf below is the single gate to widen.",
+      "type": "object",
+      "required": ["id", "topology"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "topology": { "enum": ["heightfield", "tile-grid", "node-graph", "volume"] },
+        "label": { "type": "string" }
+      },
+      "oneOf": [{ "$ref": "#/$defs/heightfieldSpace" }]
+    },
+    "heightfieldSpace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "topology", "basis", "bounds", "layers"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "topology": { "const": "heightfield" },
+        "label": { "type": "string" },
+        "basis": { "$ref": "#/$defs/basis" },
+        "bounds": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["min", "max"],
+          "properties": {
+            "min": { "$ref": "#/$defs/vec3" },
+            "max": { "$ref": "#/$defs/vec3" }
+          }
+        },
+        "layers": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/layer" }
+        }
+      }
+    },
+    "basis": {
+      "$comment": "Verbatim the candidate's ProjectionBasis: canonical frame pinned, only the unit story varies; source-unit forbids inventing a metre factor (SPEC_UV_COORDINATES section 2).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["handedness", "upAxis", "forwardAxis", "unit"],
+      "properties": {
+        "handedness": { "const": "right" },
+        "upAxis": { "const": "y" },
+        "forwardAxis": { "const": "+z" },
+        "unit": { "enum": ["meter", "source-unit"] },
+        "metersPerUnit": { "type": "number", "exclusiveMinimum": 0 },
+        "sourceUnit": { "type": "string", "minLength": 1 },
+        "unitsPerCell": { "type": "number", "exclusiveMinimum": 0 }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "unit": { "const": "source-unit" } }, "required": ["unit"] },
+          "then": {
+            "required": ["sourceUnit"],
+            "not": { "required": ["metersPerUnit"] }
+          }
+        }
+      ]
+    },
+    "vec3": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": { "type": "number" }
+    },
+    "layer": {
+      "type": "object",
+      "required": ["id", "kind"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": {
+          "$comment": "heightfield is defined; the rest are reserved names, unchanged from the candidate.",
+          "enum": [
+            "heightfield",
+            "grid",
+            "mesh",
+            "raster",
+            "vector",
+            "objects",
+            "regions",
+            "navigation"
+          ]
+        },
+        "label": { "type": "string" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "kind": { "const": "heightfield" } }, "required": ["kind"] },
+          "then": { "$ref": "#/$defs/heightfieldLayer" }
+        }
+      ]
+    },
+    "heightfieldLayer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "columns", "rows", "cellSize", "origin", "samples"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "kind": { "const": "heightfield" },
+        "label": { "type": "string" },
+        "columns": { "type": "integer", "minimum": 2 },
+        "rows": { "type": "integer", "minimum": 2 },
+        "cellSize": { "type": "number", "exclusiveMinimum": 0 },
+        "origin": { "$ref": "#/$defs/vec3" },
+        "noDataValue": { "type": "number" },
+        "samples": {
+          "$comment": "row-major: `rows` arrays of `columns` numbers. Sample counts, not cell counts — the usual off-by-one.",
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "array",
+            "minItems": 2,
+            "items": { "type": "number" }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,346 @@
+{
+  "$comment": "EXECUTABLE composition vectors: uv-conformance.mjs runs them through tools/uv-composition.mjs. Inputs are inline manifest stubs (the fields composition reads: id, version, kind, dependencies, requires) — schema validity of full manifests is the schema-assertions suite's job, not this one's. These vectors execute the rules conformance/uvp/vectors.json declares; hash-ignores-container and real-package admission stay declared there.",
+  "schemaVersion": "uv-conformance-vectors-1",
+  "suite": "uvp-composition",
+  "spec": "../../package/SPEC_UVP.md",
+  "vectors": [
+    {
+      "id": "layer-order/accept",
+      "expect": "accept",
+      "root": "v/map-a",
+      "manifests": [
+        {
+          "id": "v/map-a",
+          "version": "1.0.0",
+          "kind": "map",
+          "dependencies": [
+            {
+              "id": "v/base",
+              "range": "^1.0.0",
+              "rank": "base"
+            },
+            {
+              "id": "v/official",
+              "range": "^1.0.0",
+              "rank": "official"
+            },
+            {
+              "id": "v/mod-one",
+              "range": "^1.0.0",
+              "rank": "mod",
+              "order": 0
+            },
+            {
+              "id": "v/mod-two",
+              "range": "^1.0.0",
+              "rank": "mod",
+              "order": 1
+            }
+          ]
+        },
+        {
+          "id": "v/base",
+          "version": "1.2.0",
+          "kind": "game-base",
+          "dependencies": []
+        },
+        {
+          "id": "v/official",
+          "version": "1.0.3",
+          "kind": "mod",
+          "dependencies": [
+            {
+              "id": "v/base",
+              "range": "^1.0.0",
+              "rank": "base"
+            }
+          ]
+        },
+        {
+          "id": "v/mod-one",
+          "version": "1.0.0",
+          "kind": "mod",
+          "dependencies": []
+        },
+        {
+          "id": "v/mod-two",
+          "version": "1.0.0",
+          "kind": "mod",
+          "dependencies": []
+        }
+      ],
+      "expectLayers": [
+        "v/base",
+        "v/official",
+        "v/map-a",
+        "v/mod-one",
+        "v/mod-two"
+      ],
+      "note": "base < official < map < mod, mods by explicit order, and the map root composes over its dependencies but UNDER its mods"
+    },
+    {
+      "id": "no-dependency-cycles/reject",
+      "expect": "reject",
+      "rule": "no-dependency-cycles",
+      "root": "v/alpha",
+      "manifests": [
+        {
+          "id": "v/alpha",
+          "version": "1.0.0",
+          "kind": "map",
+          "dependencies": [
+            {
+              "id": "v/beta",
+              "range": "^1.0.0",
+              "rank": "base"
+            }
+          ]
+        },
+        {
+          "id": "v/beta",
+          "version": "1.0.0",
+          "kind": "game-base",
+          "dependencies": [
+            {
+              "id": "v/alpha",
+              "range": "^1.0.0",
+              "rank": "base"
+            }
+          ]
+        }
+      ],
+      "note": "the refusal names the cycle members, detected before any content loads"
+    },
+    {
+      "id": "explicit-order-within-rank/reject",
+      "expect": "reject",
+      "rule": "explicit-order-within-rank",
+      "root": "v/map-a",
+      "manifests": [
+        {
+          "id": "v/map-a",
+          "version": "1.0.0",
+          "kind": "map",
+          "dependencies": [
+            {
+              "id": "v/mod-one",
+              "range": "^1.0.0",
+              "rank": "mod"
+            },
+            {
+              "id": "v/mod-two",
+              "range": "^1.0.0",
+              "rank": "mod"
+            }
+          ]
+        },
+        {
+          "id": "v/mod-one",
+          "version": "1.0.0",
+          "kind": "mod",
+          "dependencies": []
+        },
+        {
+          "id": "v/mod-two",
+          "version": "1.0.0",
+          "kind": "mod",
+          "dependencies": []
+        }
+      ],
+      "note": "two same-rank dependencies without explicit order: file systems and install order never decide composition"
+    },
+    {
+      "id": "version-unsatisfied/reject",
+      "expect": "reject",
+      "rule": "version-unsatisfied",
+      "root": "v/map-a",
+      "manifests": [
+        {
+          "id": "v/map-a",
+          "version": "1.0.0",
+          "kind": "map",
+          "dependencies": [
+            {
+              "id": "v/base",
+              "range": "^2.0.0",
+              "rank": "base"
+            }
+          ]
+        },
+        {
+          "id": "v/base",
+          "version": "1.9.0",
+          "kind": "game-base",
+          "dependencies": []
+        }
+      ]
+    },
+    {
+      "id": "requirements-before-content/reject",
+      "expect": "reject",
+      "rule": "requirements-before-content",
+      "root": "v/map-a",
+      "manifests": [
+        {
+          "id": "v/map-a",
+          "version": "1.0.0",
+          "kind": "map",
+          "dependencies": [],
+          "requires": {
+            "intrinsics": [
+              "entity.create@2"
+            ],
+            "capabilities": [
+              "mutate"
+            ]
+          }
+        }
+      ],
+      "note": "entity.create exists only at version 1 in runtime/intrinsics.v1.json; the refusal lands before content bytes load"
+    },
+    {
+      "id": "capabilities-granted/reject",
+      "expect": "reject",
+      "rule": "capabilities-granted",
+      "root": "v/map-a",
+      "granted": [
+        "read",
+        "mutate"
+      ],
+      "manifests": [
+        {
+          "id": "v/map-a",
+          "version": "1.0.0",
+          "kind": "map",
+          "dependencies": [],
+          "requires": {
+            "intrinsics": [
+              "entity.create@1"
+            ],
+            "capabilities": [
+              "read",
+              "mutate",
+              "space-mutate"
+            ]
+          }
+        }
+      ],
+      "note": "a requested capability class the host did not grant refuses before content loads"
+    },
+    {
+      "id": "campaign-root-rank/accept",
+      "expect": "accept",
+      "root": "v/campaign-a",
+      "manifests": [
+        {
+          "id": "v/campaign-a",
+          "version": "1.0.0",
+          "kind": "campaign",
+          "dependencies": [
+            {
+              "id": "v/base",
+              "range": "^1.0.0",
+              "rank": "base"
+            },
+            {
+              "id": "v/rules-mod",
+              "range": "^1.0.0",
+              "rank": "mod"
+            }
+          ]
+        },
+        {
+          "id": "v/base",
+          "version": "1.0.0",
+          "kind": "game-base",
+          "dependencies": []
+        },
+        {
+          "id": "v/rules-mod",
+          "version": "1.0.0",
+          "kind": "mod",
+          "dependencies": []
+        }
+      ],
+      "expectLayers": [
+        "v/base",
+        "v/campaign-a",
+        "v/rules-mod"
+      ],
+      "note": "a campaign root composes at the official rank: under maps and mods, over the game base"
+    },
+    {
+      "id": "conflicting-order/reject",
+      "expect": "reject",
+      "rule": "conflicting-order",
+      "root": "v/map-a",
+      "manifests": [
+        {
+          "id": "v/map-a",
+          "version": "1.0.0",
+          "kind": "map",
+          "dependencies": [
+            {
+              "id": "v/mod-one",
+              "range": "^1.0.0",
+              "rank": "mod",
+              "order": 0
+            },
+            {
+              "id": "v/via",
+              "range": "^1.0.0",
+              "rank": "official"
+            }
+          ]
+        },
+        {
+          "id": "v/via",
+          "version": "1.0.0",
+          "kind": "mod",
+          "dependencies": [
+            {
+              "id": "v/mod-one",
+              "range": "^1.0.0",
+              "rank": "mod",
+              "order": 3
+            }
+          ]
+        },
+        {
+          "id": "v/mod-one",
+          "version": "1.0.0",
+          "kind": "mod",
+          "dependencies": []
+        }
+      ],
+      "note": "one package declared at two different orders in one rank is refused, not first-wins"
+    },
+    {
+      "id": "caret-zero-minor/reject",
+      "expect": "reject",
+      "rule": "version-unsatisfied",
+      "root": "v/map-a",
+      "manifests": [
+        {
+          "id": "v/map-a",
+          "version": "1.0.0",
+          "kind": "map",
+          "dependencies": [
+            {
+              "id": "v/base",
+              "range": "^0.2.0",
+              "rank": "base"
+            }
+          ]
+        },
+        {
+          "id": "v/base",
+          "version": "0.3.0",
+          "kind": "game-base",
+          "dependencies": []
+        }
+      ],
+      "note": "^0.2.0 pins the minor: 0.3.0 does not satisfy it (conventional caret semantics)"
+    }
+  ]
+}

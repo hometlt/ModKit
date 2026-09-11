@@ -25,7 +25,7 @@ import {
   sourceRevisionToken,
   sourceUriFor,
   stageIdOf
-} from "./chunks/chunk-EMVH2BTX.js";
+} from "./chunks/chunk-TZJEGHI3.js";
 import {
   define_MODKIT_EMBED_EXTENSION_ORIGINS_default,
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
@@ -367,7 +367,8 @@ function embedPreviewSession(host, opened, grant, budget, sessionId, onNavigate)
         budget,
         signal
       });
-      if (nested?.result.state !== "opened") return { state: "rejected", reason: "target-unavailable" };
+      if (nested?.result.state !== "opened")
+        return { state: "rejected", reason: "target-unavailable" };
       openCount += 1;
       const child = embedPreviewSession(
         host,
@@ -429,7 +430,14 @@ async function openEmbedSession(host, entry, bytes, options, signal) {
     ...signal === void 0 ? {} : { signal }
   });
   if (result.state === "unresolved") return void 0;
-  return embedPreviewSession(host, result, grant, budget, `modkit-embed-${openCount}`, options.onNavigate);
+  return embedPreviewSession(
+    host,
+    result,
+    grant,
+    budget,
+    `modkit-embed-${openCount}`,
+    options.onNavigate
+  );
 }
 var RELOADING_ATTRIBUTES = Object.freeze(["src", "name", "asset-base", "extension-catalog"]);
 var OBSERVED_ATTRIBUTES = Object.freeze([
@@ -928,6 +936,7 @@ export {
   extensionCatalogRefusal,
   fileLikeFrom,
   installEmbedHostLifecycle,
+  openEmbedSession,
   parseWebExtensionCatalog,
   preferStage,
   resolveAssetBase,

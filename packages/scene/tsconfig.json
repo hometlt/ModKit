@@ -9,13 +9,19 @@
   "include": ["src/**/*.ts"],
   "references": [
     {
+      "path": "../core"
+    },
+    {
       "path": "../host"
     },
     {
       "path": "../sdk"
     },
     {
-      "path": "../ui"
+      "path": "../codec-kit"
+    },
+    {
+      "path": "../uv"
     }
   ]
 }

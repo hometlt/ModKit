@@ -310,14 +310,61 @@ describe('DDS subresource selection', () => {
   })
 })
 
-describe('DDS formats the decoder does not decode', () => {
+/*
+ * BC6H and BC7 arrived with the port of MK2's decoder, which reaches them through the same vendored
+ * `texture2ddecoder` runtime MK2 loaded. This block used to assert that all four were refused, and
+ * it went on asserting it after they started working — a stale expectation is worse than a missing
+ * one, because the suite keeps reporting a capability the product has as absent.
+ */
+describe('DDS BPTC formats, decoded through the ported runtime', () => {
   it.each([
-    [79, 'BC4_TYPELESS'],
-    [82, 'BC5_TYPELESS'],
     [95, 'BC6H_UF16'],
     [96, 'BC6H_SF16'],
     [98, 'BC7_UNORM'],
     [99, 'BC7_UNORM_SRGB'],
+  ])('decodes DXGI %i (%s) to pixels rather than refusing it', async dxgi => {
+    const bytes = buildDds({ width: 4, height: 4, dxgiFormat: dxgi }, [new Uint8Array(16)])
+    const raster = await rasterOf(bytes)
+    const pixel = await pixelAt(raster, { width: 4, height: 4 })
+    expect(pixel).toHaveLength(4)
+    /*
+     * An all-zero block is black in both formats. BC6H carries no alpha channel so the decoder fills
+     * it opaque; BC7's alpha comes from the block and is zero here. Asserting that difference is the
+     * point — it distinguishes a working decoder from one handing back a blank buffer either way.
+     */
+    expect(pixel.slice(0, 3)).toEqual([0, 0, 0])
+    expect(pixel[3]).toBe(dxgi === 95 || dxgi === 96 ? 255 : 0)
+  })
+
+  /*
+   * A BC7 mode-6 block with saturated endpoints. Mode 6 is the one-subset mode: the low bit selects
+   * it, the endpoints follow, and every texel interpolates between them, so 0xFF endpoints must come
+   * back white. "Returns 64 bytes" and "returns the right 64 bytes" are different claims, and the
+   * zero-block case above only establishes the first.
+   */
+  it('decodes a BC7 mode-6 block to the colour its endpoints describe', async () => {
+    const block = new Uint8Array(16)
+    block[0] = 0x40
+    for (let index = 1; index < 8; index += 1) block[index] = 0xff
+    const raster = await rasterOf(buildDds({ width: 4, height: 4, dxgiFormat: 98 }, [block]))
+    const pixel = await pixelAt(raster, { width: 4, height: 4 })
+    // Endpoints carry 7 bits, so white lands one step below 255 on the first channel.
+    expect(pixel[0]).toBeGreaterThanOrEqual(250)
+    expect(pixel[1]).toBe(255)
+    expect(pixel[2]).toBe(255)
+    expect(pixel[3]).toBe(255)
+  })
+})
+
+describe('DDS formats the decoder does not decode', () => {
+  /*
+   * Still refused, and MK2 refused them too: its DXGI table carries 80/81 and 83/84 but not the
+   * TYPELESS spellings, so parity means declining them rather than guessing which of the two
+   * interpretations a file meant.
+   */
+  it.each([
+    [79, 'BC4_TYPELESS'],
+    [82, 'BC5_TYPELESS'],
   ])('refuses DXGI %i by its name %s rather than claiming support', async (dxgi, name) => {
     const bytes = buildDds({ width: 4, height: 4, dxgiFormat: dxgi }, [new Uint8Array(16)])
     await expect(openImageCodec('dds/codec.js', bytes)).rejects.toThrow(
@@ -379,6 +426,7 @@ describe('DDS formats ported from the legacy decoder', () => {
     expect(await pixelAt(raster, { width: 4, height: 4 })).toEqual([0x40, 0x40, 0x40, 255])
     expect((await raster.info()).channels).toBe(1)
     expect((await raster.info()).alphaMode).toBe('none')
+    expect(await raster.info()).toMatchObject({ channelLayout: 'r', compression: 'bc4' })
   })
 
   it.each(['ATI2', 'BC5U'])('decodes %s as two channels, blue left at zero', async fourCc => {
@@ -386,6 +434,7 @@ describe('DDS formats ported from the legacy decoder', () => {
     const raster = await rasterOf(bytes)
     expect(await pixelAt(raster, { width: 4, height: 4 })).toEqual([0x30, 0x90, 0, 255])
     expect((await raster.info()).channels).toBe(2)
+    expect(await raster.info()).toMatchObject({ channelLayout: 'rg', compression: 'bc5' })
   })
 
   it('walks a BC5 mip chain, which mis-sized payloads could not reach', async () => {
@@ -418,6 +467,7 @@ describe('DDS formats ported from the legacy decoder', () => {
     const info = await raster.info()
     expect(info.channels).toBe(2)
     expect(info.alphaMode).toBe('straight')
+    expect(info).toMatchObject({ channelLayout: 'luminance-alpha', compression: 'none' })
   })
 
   it('decodes an L8 luminance surface as opaque grey', async () => {

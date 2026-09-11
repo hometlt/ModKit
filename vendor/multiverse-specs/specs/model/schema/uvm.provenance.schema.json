@@ -1,12 +1,16 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://modkitx.org/uvm/1.0/uvm.provenance.schema.json",
-  "title": "UV_provenance and UV_source_blob",
-  "description": "Conversion history and verbatim source preservation. Attaches to the glTF document root.",
+  "title": "UV_provenance",
+  "description": "Source identity, conversion history, and explicit loss diagnostics. Native source bytes are never embedded in UVM.",
   "$defs": {
     "axes": {
       "type": "object",
-      "required": ["up", "forward", "handedness"],
+      "required": [
+        "up",
+        "forward",
+        "handedness"
+      ],
       "properties": {
         "up": {
           "$ref": "#/$defs/axis"
@@ -16,25 +20,48 @@
         },
         "handedness": {
           "type": "string",
-          "enum": ["left", "right"]
+          "enum": [
+            "left",
+            "right"
+          ]
         }
       },
       "additionalProperties": false
     },
     "axis": {
       "type": "string",
-      "enum": ["+x", "-x", "+y", "-y", "+z", "-z"]
+      "enum": [
+        "+x",
+        "-x",
+        "+y",
+        "-y",
+        "+z",
+        "-z"
+      ]
     },
     "source": {
       "type": "object",
-      "required": ["format"],
+      "required": [
+        "format"
+      ],
       "properties": {
         "format": {
           "type": "string",
-          "examples": ["m3", "mdx", "w3d", "s3o", "scm", "psk", "fbx"]
+          "examples": [
+            "m3",
+            "mdx",
+            "w3d",
+            "s3o",
+            "scm",
+            "psk",
+            "fbx"
+          ]
         },
         "formatVersion": {
-          "type": ["integer", "string"]
+          "type": [
+            "integer",
+            "string"
+          ]
         },
         "file": {
           "type": "string"
@@ -56,14 +83,20 @@
       "$anchor": "provenance",
       "title": "UV_provenance",
       "type": "object",
-      "required": ["source", "importer"],
+      "required": [
+        "source",
+        "importer"
+      ],
       "properties": {
         "source": {
           "$ref": "#/$defs/source"
         },
         "importer": {
           "type": "object",
-          "required": ["id", "version"],
+          "required": [
+            "id",
+            "version"
+          ],
           "properties": {
             "id": {
               "type": "string"
@@ -101,17 +134,28 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["code", "severity", "feature"],
+            "required": [
+              "code",
+              "severity",
+              "feature"
+            ],
             "properties": {
               "code": {
                 "type": "string",
                 "pattern": "^[A-Z0-9]+_[A-Z0-9_]+$",
                 "description": "Stable identifier, never localised text.",
-                "examples": ["M3_PHYSICS_JOINT", "W3D_AABTREE_DROPPED"]
+                "examples": [
+                  "M3_PHYSICS_JOINT",
+                  "W3D_AABTREE_DROPPED"
+                ]
               },
               "severity": {
                 "type": "string",
-                "enum": ["info", "warning", "error"],
+                "enum": [
+                  "info",
+                  "warning",
+                  "error"
+                ],
                 "description": "Build pipelines SHOULD fail on `error`."
               },
               "feature": {
@@ -123,35 +167,6 @@
               },
               "detail": {
                 "type": "string"
-              },
-              "recoverable": {
-                "type": "boolean",
-                "default": false
-              },
-              "blob": {
-                "type": "integer",
-                "minimum": 0,
-                "description": "Index into UV_source_blob.blobs when recoverable."
-              }
-            },
-            "additionalProperties": false
-          }
-        },
-        "preserved": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["format", "blob"],
-            "properties": {
-              "format": {
-                "type": "string"
-              },
-              "chunk": {
-                "type": "string"
-              },
-              "blob": {
-                "type": "integer",
-                "minimum": 0
               }
             },
             "additionalProperties": false
@@ -169,68 +184,6 @@
                 "type": "string"
               }
             }
-          }
-        },
-        "extras": {}
-      },
-      "additionalProperties": false
-    },
-    "sourceBlob": {
-      "$anchor": "sourceBlob",
-      "title": "UV_source_blob",
-      "description": "Verbatim source payloads in bufferViews. Inert data: consumers MUST NOT parse or execute blobs.",
-      "type": "object",
-      "required": ["blobs"],
-      "properties": {
-        "blobs": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["format", "bufferView"],
-            "properties": {
-              "format": {
-                "type": "string"
-              },
-              "chunk": {
-                "type": "string"
-              },
-              "bufferView": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "encoding": {
-                "type": "string",
-                "enum": ["raw", "zstd", "deflate"],
-                "default": "raw"
-              },
-              "uncompressedLength": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "sha256": {
-                "type": "string",
-                "pattern": "^[0-9a-f]{64}$"
-              },
-              "note": {
-                "type": "string"
-              }
-            },
-            "additionalProperties": false,
-            "allOf": [
-              {
-                "if": {
-                  "properties": {
-                    "encoding": {
-                      "enum": ["zstd", "deflate"]
-                    }
-                  },
-                  "required": ["encoding"]
-                },
-                "then": {
-                  "required": ["uncompressedLength"]
-                }
-              }
-            ]
           }
         },
         "extras": {}

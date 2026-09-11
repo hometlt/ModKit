@@ -6,14 +6,22 @@ import type {
   ModelMaterialRef,
   ModelPrimitive,
   ModelResourceRef,
-  ModelSceneInfo,
   ModelSceneSource,
   ModelSocketRef,
   SceneRenderer,
+  SceneRendererPrimitive,
   SceneRendererPort,
   SceneRendererTexture,
   ViewerModule,
 } from '@modkit/sdk'
+import { createModelSceneSampler } from '@modkit/scene/model'
+import { loadModelStage, readModelRecords, MODEL_MAXIMUM_RECORDS } from './source.js'
+export {
+  loadModelStage,
+  MODEL_MAXIMUM_PRIMITIVE_BYTES,
+  MODEL_MAXIMUM_PRIMITIVES,
+} from './source.js'
+export type { ModelStageModel } from './source.js'
 import {
   createSurface,
   createViewerMount,
@@ -24,21 +32,38 @@ import {
   unknownSourceLease,
   ViewerMountScope,
 } from '../viewer/index.js'
-import { createOrbitController, type OrbitBasis } from './orbit.js'
+import { createOrbitController } from './orbit.js'
 import { createViewGizmo } from './gizmo.js'
 import {
-  framePrimitive,
+  framePrimitives,
   MODEL_KEY_LIGHT,
   modelCamera,
   modelSceneRequest,
+  multiply4x4,
   projectPoint,
   sceneMaterials,
-  skeletonJoints,
   type SkeletonJoint,
 } from './scene.js'
 import { type UiLocalizer, type UiMessageKey } from '../localization/index.js'
 import { MODEL_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
+
+/** Duration exposed by the generic player, including finite independent channel cycles. */
+export function modelAnimationPlaybackDuration(clip: ModelAnimationClip | undefined): number {
+  if (clip === undefined) return 0
+  let duration = clip.durationSeconds ?? 0
+  if (clip.repeatCount !== undefined && clip.repeatCount > 0)
+    duration = Math.max(duration, duration * clip.repeatCount)
+  for (const channel of clip.channels) {
+    if (
+      channel.concurrent === true &&
+      channel.wrapSeconds !== undefined &&
+      channel.repeatCount !== undefined &&
+      channel.repeatCount > 0
+    ) duration = Math.max(duration, channel.wrapSeconds * channel.repeatCount)
+  }
+  return duration
+}
 
 export {
   createOrbitController,
@@ -51,6 +76,7 @@ export { createViewGizmo, GIZMO_SIZE, type ViewGizmo, type ViewGizmoOptions } fr
 export {
   baseColorResourceOf,
   framePrimitive,
+  framePrimitives,
   materialColorFor,
   MODEL_DEFAULT_BASE_COLOR,
   MODEL_FIELD_OF_VIEW,
@@ -93,8 +119,6 @@ export function modelRendererBackend(rendererId: string): string {
   return MODEL_RENDERER_BACKENDS[rendererId] ?? 'provider'
 }
 
-export const MODEL_MAXIMUM_PRIMITIVE_BYTES = 64 * 1024 * 1024
-export const MODEL_MAXIMUM_PRIMITIVES = 4096
 const MODEL_FACET_DETAIL_LIMIT = 64
 
 /**
@@ -127,12 +151,6 @@ const FACET_READOUT: Readonly<Record<string, { labelKey: UiMessageKey; key: stri
     'common.view/model-material-source': { labelKey: 'viewer.modelMaterials', key: 'materials' },
     'common.view/model-socket-source': { labelKey: 'viewer.modelSockets', key: 'sockets' },
   })
-
-export interface ModelStageModel {
-  readonly info: ModelSceneInfo
-  readonly primitiveIds: readonly string[]
-  readonly primitive?: ModelPrimitive
-}
 
 export interface ModelFacetDetail {
   readonly contract: (typeof MODEL_FACET_CONTRACTS)[number]
@@ -171,41 +189,6 @@ export async function readModelFacets(
     }
   }
   return parts
-}
-
-export async function loadModelStage(
-  source: ModelSceneSource,
-  signal?: AbortSignal,
-): Promise<ModelStageModel> {
-  const info = await source.info(signal)
-  const primitiveIds: string[] = []
-  let cursor: string | undefined
-  do {
-    const page = await source.meshes(
-      {
-        limit: Math.min(256, MODEL_MAXIMUM_PRIMITIVES - primitiveIds.length),
-        ...(cursor === undefined ? {} : { cursor }),
-      },
-      signal,
-    )
-    for (const mesh of page.items) {
-      for (const id of mesh.primitiveIds) {
-        if (primitiveIds.length >= MODEL_MAXIMUM_PRIMITIVES) break
-        primitiveIds.push(id)
-      }
-    }
-    cursor = primitiveIds.length >= MODEL_MAXIMUM_PRIMITIVES ? undefined : page.nextCursor
-  } while (cursor !== undefined)
-  const primitiveId = primitiveIds[0]
-  const primitive =
-    primitiveId === undefined || source.primitive === undefined
-      ? undefined
-      : await source.primitive(primitiveId, { maxBytes: MODEL_MAXIMUM_PRIMITIVE_BYTES }, signal)
-  return {
-    info,
-    primitiveIds: Object.freeze(primitiveIds),
-    ...(primitive === undefined ? {} : { primitive }),
-  }
 }
 
 function short(value: unknown): string {
@@ -267,7 +250,7 @@ export interface ModelFacetPage {
 }
 
 /**
- * One bounded page of every optional facet the subject published, as data.
+ * Complete bounded optional facets, shared by the renderer and the shorter details list.
  *
  * Read once and shared, because two consumers now want the same records: the details list renders
  * them as text, and the stage renders materials as colours and bone rest poses as an overlay.
@@ -288,19 +271,21 @@ export async function readModelFacetPages(
     const source = lease.value as Record<
       string,
       (
-        request: { readonly limit: number },
+        request: { readonly limit: number; readonly cursor?: string },
         abort?: AbortSignal,
       ) => Promise<{
         readonly items: readonly unknown[]
         readonly nextCursor?: string
       }>
     >
-    const page = await source[FACET_PAGE_METHOD[contract]]?.(
-      { limit: MODEL_FACET_DETAIL_LIMIT },
+    const method = source[FACET_PAGE_METHOD[contract]]
+    if (method === undefined) continue
+    const items = await readModelRecords(
+      (request, abort) => method.call(source, request, abort),
+      MODEL_MAXIMUM_RECORDS,
       signal,
     )
-    if (page === undefined) continue
-    pages.set(contract, { items: page.items, truncated: page.nextCursor !== undefined })
+    pages.set(contract, { items, truncated: false })
   }
   return pages
 }
@@ -319,8 +304,12 @@ export function describeModelFacetPages(
       Object.freeze({
         contract,
         label: readout === undefined ? contract : localizer.text(readout.labelKey),
-        items: Object.freeze(page.items.map(item => facetItem(contract, item, localizer))),
-        truncated: page.truncated,
+        items: Object.freeze(
+          page.items
+            .slice(0, MODEL_FACET_DETAIL_LIMIT)
+            .map(item => facetItem(contract, item, localizer)),
+        ),
+        truncated: page.truncated || page.items.length > MODEL_FACET_DETAIL_LIMIT,
       }),
     )
   }
@@ -338,66 +327,27 @@ export async function readModelFacetDetails(
   return describeModelFacetPages(await readModelFacetPages(sources, slot, scope, signal), localizer)
 }
 
-/**
- * Orthographic wireframe projection along the camera's view direction.
- *
- * Orthographic, not perspective, on purpose: this is the built-in fallback stage that runs when no
- * GPU renderer provider is resolved, and a wireframe with no depth cue reads better without
- * foreshortening. A provider that wants a perspective camera drives the same `OrbitController`.
- */
+/** The fallback draws the same complete posed scene and camera as a renderer provider. */
 function drawPrimitive(
   canvas: HTMLCanvasElement,
-  primitive: ModelPrimitive,
-  basis: OrbitBasis,
-  distanceScale: number,
+  primitive: SceneRendererPrimitive,
+  viewProjection: Float32Array,
 ): void {
   const context = canvas.getContext('2d')
   if (context === null) throw new TypeError('2d canvas context is unavailable')
-  const width = MODEL_STAGE_WIDTH
-  const height = MODEL_STAGE_HEIGHT
-  canvas.width = width
-  canvas.height = height
-  context.clearRect(0, 0, width, height)
   const positions = primitive.positions
-  if (positions.length < 3) return
-  if (positions.length % 3 !== 0 || !positions.every(Number.isFinite)) {
+  if (positions.length % 3 !== 0 || !positions.every(Number.isFinite))
     throw new TypeError('model primitive positions are malformed')
-  }
-
-  const { right, up } = basis
-  // Project first, then fit: the extent depends on the pose, so a fixed XY box would make the model
-  // swim in and out of frame as it turns.
-  const flat = new Float64Array((positions.length / 3) * 2)
-  let minX = Infinity
-  let maxX = -Infinity
-  let minY = Infinity
-  let maxY = -Infinity
-  for (let index = 0, vertex = 0; index + 2 < positions.length; index += 3, vertex += 1) {
-    const x = positions[index] as number
-    const y = positions[index + 1] as number
-    const z = positions[index + 2] as number
-    const screenX = x * right[0] + y * right[1] + z * right[2]
-    const screenY = x * up[0] + y * up[1] + z * up[2]
-    flat[vertex * 2] = screenX
-    flat[vertex * 2 + 1] = screenY
-    minX = Math.min(minX, screenX)
-    maxX = Math.max(maxX, screenX)
-    minY = Math.min(minY, screenY)
-    maxY = Math.max(maxY, screenY)
-  }
-
-  const extentX = Math.max(1e-9, maxX - minX)
-  const extentY = Math.max(1e-9, maxY - minY)
-  const margin = 16
-  const fit = Math.min((width - margin * 2) / extentX, (height - margin * 2) / extentY)
-  // `distanceScale` is a camera distance multiplier, so a larger value must shrink the model.
-  const scale = fit / Math.max(0.15, distanceScale)
-  const offsetX = width / 2 - ((minX + maxX) / 2) * scale
-  const offsetY = height / 2 + ((minY + maxY) / 2) * scale
-  const point = (vertex: number): readonly [number, number] => [
-    offsetX + (flat[vertex * 2] as number) * scale,
-    offsetY - (flat[vertex * 2 + 1] as number) * scale,
-  ]
+  const matrix =
+    primitive.transform === undefined
+      ? viewProjection
+      : multiply4x4(viewProjection, primitive.transform)
+  const point = (vertex: number): readonly [number, number] | undefined =>
+    projectPoint(
+      matrix,
+      [positions[vertex * 3]!, positions[vertex * 3 + 1]!, positions[vertex * 3 + 2]!],
+      { width: canvas.width, height: canvas.height },
+    )
   const indices =
     primitive.indices ?? Uint32Array.from({ length: positions.length / 3 }, (_, i) => i)
   const vertexCount = positions.length / 3
@@ -414,6 +364,7 @@ function drawPrimitive(
   const edge = (from: number, to: number): void => {
     const a = point(from)
     const b = point(to)
+    if (a === undefined || b === undefined) return
     context.beginPath()
     context.moveTo(a[0], a[1])
     context.lineTo(b[0], b[1])
@@ -423,6 +374,7 @@ function drawPrimitive(
     const a = point(first)
     const b = point(second)
     const c = point(third)
+    if (a === undefined || b === undefined || c === undefined) return
     context.beginPath()
     context.moveTo(a[0], a[1])
     context.lineTo(b[0], b[1])
@@ -433,6 +385,7 @@ function drawPrimitive(
   if (primitive.topology === 'points') {
     for (const vertex of indices) {
       const value = point(vertex)
+      if (value === undefined) continue
       context.fillRect(value[0] - 1, value[1] - 1, 3, 3)
     }
   } else if (primitive.topology === 'lines') {
@@ -629,7 +582,6 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
             text: localizer.text('viewer.modelGeometryUnavailable'),
           })
         } else {
-          let primitive = model.primitive
           const viewport = { width: MODEL_STAGE_WIDTH, height: MODEL_STAGE_HEIGHT }
 
           /*
@@ -685,7 +637,23 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
             []) as readonly ModelResourceRef[]
           const boneBindings = (facetPages.get('common.view/model-skeleton-source')?.items ??
             []) as readonly ModelBoneBinding[]
-          const joints = skeletonJoints(boneBindings)
+          const clips = (facetPages.get('common.view/model-animation-source')?.items ??
+            []) as readonly ModelAnimationClip[]
+          const projection = { ...model, skeleton: boneBindings }
+          let player = createModelSceneSampler(projection, { signal: scope.signal })
+          let scene = player.sample(0, scope.signal)
+          let selectedPrimitive: string | undefined
+          let timeSeconds = 0
+          const restFraming = framePrimitives(scene.primitives)
+          const playbackStatus = element(stage, 'output', { part: 'model.playback-status' })
+          const showDiagnostics = () => {
+            setViewerText(playbackStatus, player.diagnostics.map(item => item.message).join(' '))
+            canvas.setAttribute(
+              'data-model-pose-diagnostics',
+              player.diagnostics.map(item => item.code).join(' '),
+            )
+          }
+          showDiagnostics()
           let texels: ReadonlyMap<string, SceneRendererTexture> = new Map()
           if (options.textures !== undefined && provider !== undefined && resourceRefs.length > 0) {
             texels = await options
@@ -694,10 +662,10 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
           }
           const surfaces = sceneMaterials(materialRefs, texels, true)
           canvas.setAttribute('data-model-textures', String(surfaces.textures.length))
-          canvas.setAttribute('data-model-skeleton', String(joints.length))
-          let skeletonVisible = joints.length > 0
+          canvas.setAttribute('data-model-skeleton', String(scene.joints.length))
+          let skeletonVisible = scene.joints.length > 0
 
-          const framing = () => framePrimitive(primitive)
+          const framing = () => restFraming
 
           /*
            * One draw at a time. `render` is asynchronous — it may cross a worker boundary — while
@@ -706,35 +674,66 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
            */
           let generation = 0
           const drawWireframe = (): void => {
-            const pose = camera.pose
-            drawPrimitive(canvas, primitive, camera.basis(), pose.distanceScale)
+            canvas.width = viewport.width
+            canvas.height = viewport.height
+            const placement = modelCamera(
+              framing(),
+              camera.basis(),
+              camera.pose.distanceScale,
+              viewport,
+            )
+            for (const primitive of scene.primitives)
+              if (selectedPrimitive === undefined || primitive.id === selectedPrimitive)
+                drawPrimitive(canvas, primitive, placement.viewProjection)
             const context = canvas.getContext('2d')
-            if (context !== null && skeletonVisible && joints.length > 0) {
-              const placement = modelCamera(framing(), camera.basis(), pose.distanceScale, viewport)
+            if (context !== null && skeletonVisible)
               drawSkeleton(
                 context,
-                joints,
+                scene.joints,
                 placement.viewProjection,
                 viewport,
                 themeColor(canvas, '--mk-chart-categorical-3', '#f0a04b'),
               )
-            }
+            canvas.setAttribute('data-model-animation-time', String(timeSeconds))
           }
+          let renderBusy = false
+          let redrawPending = false
+          let pendingFrame: Promise<void> | undefined
           const redraw = (): void => {
             const pose = camera.pose
             gizmo.update(pose.yaw, pose.pitch)
-            const request = ++generation
+            const request = generation
+            if (scope.signal.aborted) return
+            if (renderBusy) {
+              redrawPending = true
+              return
+            }
+            try {
+              scene = player.sample(timeSeconds, scope.signal)
+            } catch (error) {
+              setViewerText(playbackStatus, error instanceof Error ? error.message : String(error))
+              canvas.setAttribute('data-model-pose-diagnostics', 'common.model/pose-failed')
+              return
+            }
+            const drawnTime = timeSeconds
+            const joints = scene.joints
+            const primitives = scene.primitives.filter(
+              item => selectedPrimitive === undefined || item.id === selectedPrimitive,
+            )
+            canvas.setAttribute('data-model-primitives', String(primitives.length))
+            canvas.setAttribute('data-model-skeleton', String(joints.length))
             if (provider === undefined) {
               drawWireframe()
               return
             }
             const placement = modelCamera(framing(), camera.basis(), pose.distanceScale, viewport)
             const renderer = provider
-            void (async () => {
+            renderBusy = true
+            pendingFrame = (async () => {
               try {
                 const frame = await renderer.render(
                   modelSceneRequest({
-                    primitive,
+                    primitives,
                     camera: placement,
                     viewport,
                     materials: surfaces.materials,
@@ -763,6 +762,7 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
                 const pixels = new Uint8ClampedArray(expected)
                 pixels.set(frame.rgba)
                 context.putImageData(new ImageData(pixels, frame.width, frame.height), 0, 0)
+                canvas.setAttribute('data-model-animation-time', String(drawnTime))
                 if (skeletonVisible && joints.length > 0) {
                   drawSkeleton(
                     context,
@@ -796,9 +796,18 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
                 )
                 canvas.setAttribute('data-model-textures', '0')
                 drawWireframe()
+              } finally {
+                renderBusy = false
+                if (redrawPending && !scope.signal.aborted) {
+                  redrawPending = false
+                  redraw()
+                }
               }
             })()
           }
+          scope.cleanup(async () => {
+            await pendingFrame
+          })
           scope.cleanup(camera.onChange(redraw))
           camera.attach(canvas, scope.signal)
 
@@ -814,7 +823,7 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
           )
           button('−', localizer.text('viewer.zoomOut'), () => camera.zoom(1))
           button('+', localizer.text('viewer.zoomIn'), () => camera.zoom(-1))
-          if (joints.length > 0) {
+          if (scene.joints.length > 0) {
             const toggle = button(
               localizer.text('viewer.modelBones'),
               localizer.text('viewer.modelSkeletonOverlay'),
@@ -829,37 +838,119 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
             canvas.setAttribute('data-model-skeleton-visible', String(skeletonVisible))
           }
 
-          if (model.primitiveIds.length > 1 && sceneSource.primitive !== undefined) {
+          if (model.primitiveIds.length > 1) {
             const selector = element(toolbar, 'select', {
               part: 'model.primitive-selector',
             }) as HTMLSelectElement
             selector.setAttribute('aria-label', localizer.text('viewer.modelPrimitive'))
+            const all = element(selector, 'option', {
+              text: localizer.text('viewer.modelAllPrimitives'),
+            }) as HTMLOptionElement
+            all.value = ''
             for (const id of model.primitiveIds) {
               const option = element(selector, 'option', { text: id }) as HTMLOptionElement
               option.value = id
             }
-            let selection = 0
             selector.addEventListener(
               'change',
-              async () => {
-                const request = ++selection
-                selector.disabled = true
+              () => {
+                generation++
+                selectedPrimitive = selector.value || undefined
+                redraw()
+              },
+              { signal: scope.signal },
+            )
+          }
+          if (clips.length > 0) {
+            const selector = element(toolbar, 'select', {
+              part: 'model.animation-selector',
+            }) as HTMLSelectElement
+            selector.setAttribute('aria-label', localizer.text('viewer.modelAnimation'))
+            const rest = element(selector, 'option', {
+              text: localizer.text('viewer.modelRestPose'),
+            }) as HTMLOptionElement
+            rest.value = ''
+            for (const clip of clips) {
+              const option = element(selector, 'option', { text: clip.name }) as HTMLOptionElement
+              option.value = clip.id
+            }
+            const seek = element(toolbar, 'input', {
+              part: 'model.animation-seek',
+            }) as HTMLInputElement
+            seek.type = 'range'
+            seek.min = '0'
+            seek.max = '0'
+            seek.step = '0.001'
+            seek.value = '0'
+            seek.disabled = true
+            seek.setAttribute('aria-label', localizer.text('viewer.modelAnimationTime'))
+            let frameId = 0
+            let playing = false
+            let duration = 0
+            let startedAt = 0
+            const toggle = button('▶', localizer.text('viewer.playPause'), () => {
+              if (duration <= 0) return
+              playing = !playing
+              if (playing) {
+                if (timeSeconds >= duration) timeSeconds = 0
+                startedAt = performance.now() - timeSeconds * 1000
+                frameId = requestAnimationFrame(tick)
+              } else cancelAnimationFrame(frameId)
+              toggle.setAttribute('aria-pressed', String(playing))
+            })
+            toggle.setAttribute('aria-pressed', 'false')
+            const stop = () => {
+              playing = false
+              cancelAnimationFrame(frameId)
+              toggle.setAttribute('aria-pressed', 'false')
+            }
+            const tick = (now: number) => {
+              if (!playing || scope.signal.aborted) return
+              timeSeconds = Math.min(duration, (now - startedAt) / 1000)
+              seek.value = String(timeSeconds)
+              redraw()
+              if (timeSeconds < duration) frameId = requestAnimationFrame(tick)
+              else stop()
+            }
+            selector.addEventListener(
+              'change',
+              () => {
+                stop()
                 try {
-                  const selected = await sceneSource.primitive?.(
-                    selector.value,
-                    { maxBytes: MODEL_MAXIMUM_PRIMITIVE_BYTES },
-                    scope.signal,
+                  const clip = clips.find(item => item.id === selector.value)
+                  player = createModelSceneSampler(projection, {
+                    signal: scope.signal,
+                    ...(clip === undefined ? {} : { clip }),
+                  })
+                  duration = modelAnimationPlaybackDuration(clip)
+                  timeSeconds = 0
+                  generation++
+                  seek.max = String(duration)
+                  seek.value = '0'
+                  seek.disabled = duration <= 0
+                  canvas.setAttribute('data-model-animation', clip?.id ?? '')
+                  showDiagnostics()
+                  redraw()
+                } catch (error) {
+                  setViewerText(
+                    playbackStatus,
+                    error instanceof Error ? error.message : String(error),
                   )
-                  if (selected !== undefined && request === selection) {
-                    primitive = selected
-                    redraw()
-                  }
-                } finally {
-                  if (request === selection) selector.disabled = false
                 }
               },
               { signal: scope.signal },
             )
+            seek.addEventListener(
+              'input',
+              () => {
+                stop()
+                generation++
+                timeSeconds = Number(seek.value)
+                redraw()
+              },
+              { signal: scope.signal },
+            )
+            scope.cleanup(stop)
           }
 
           scope.cleanup(() => gizmo.destroy())

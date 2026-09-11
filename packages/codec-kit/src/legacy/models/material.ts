@@ -30,6 +30,8 @@ export type StandardLayerSlot =
   | 'height'
   | 'lightMap'
   | 'ao'
+  /** Renderer-neutral red-channel mask for post-light team-colour grain merge. */
+  | 'teamColorMask'
 
 /** A sparse material-property track for one RenderModel animation index. */
 export interface SequenceIndexedAnimationTrack {
@@ -124,7 +126,13 @@ export interface StandardMaterialLayer {
   uvTriplanarOffset?: AnimatedVec3
   /** Axis-specific scale used by M3 triplanar UV sources 16-18. */
   uvTriplanarScale?: AnimatedVec3
-  flipbook?: { rows: number; cols: number; frame: AnimatedScalar }
+  flipbook?: {
+    rows: number
+    cols: number
+    frame: AnimatedScalar
+    /** Optional atlas stride. When present, frame selection offsets authored UVs without scaling them. */
+    frameSize?: readonly [number, number]
+  }
 }
 
 export interface StandardLayerFresnel {
@@ -187,6 +195,10 @@ export interface StandardMaterialModel {
   usesVertexAlpha: boolean
   /** Filled by the texture pipeline at bind time. */
   normalMapFormat?: NormalMapFormat
+  /** Coordinate space of the decoded primary normal layer. Tangent remains the default. */
+  normalMapSpace?: 'tangent' | 'object'
+  /** Column-major mapping from decoded RGB axes into the authored object frame. */
+  normalMapTransform?: readonly [number, number, number, number, number, number, number, number, number]
 }
 
 export interface CompositeMaterialModel {
@@ -219,6 +231,7 @@ const LAYER_SLOTS: readonly StandardLayerSlot[] = [
   'height',
   'lightMap',
   'ao',
+  'teamColorMask',
 ]
 
 export function isStandardLayerSlot(value: string): value is StandardLayerSlot {

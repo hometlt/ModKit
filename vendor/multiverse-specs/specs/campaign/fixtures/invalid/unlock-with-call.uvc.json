@@ -1,0 +1,76 @@
+{
+  "$comment": "INVALID: an unlock querying the world instead of carryover is refused by the expression grammar itself (unlock-reads-carryover-only).",
+  "uv": {
+    "format": "UVC",
+    "version": "1.0"
+  },
+  "entries": [
+    {
+      "id": "opening",
+      "package": {
+        "id": "example-vendor/mission-alpha",
+        "range": "^1.0.0"
+      },
+      "title": "campaign.opening.title"
+    },
+    {
+      "id": "branch-rescue",
+      "package": {
+        "id": "example-vendor/mission-beta",
+        "range": "^1.0.0"
+      },
+      "title": "campaign.rescue.title",
+      "unlock": {
+        "kind": "var",
+        "name": "rescuedPilot"
+      }
+    },
+    {
+      "id": "finale",
+      "package": {
+        "id": "example-vendor/mission-omega",
+        "range": "^1.0.0"
+      },
+      "title": "campaign.finale.title",
+      "unlock": {
+        "kind": "call",
+        "intrinsic": "player.resource@1"
+      }
+    }
+  ],
+  "sharedLayers": [
+    {
+      "id": "example-vendor/campaign-rules",
+      "range": "^1.0.0",
+      "order": 0
+    }
+  ],
+  "carryover": [
+    {
+      "name": "rescuedPilot",
+      "type": "bool",
+      "initial": false
+    },
+    {
+      "name": "bankedCredits",
+      "type": "i64",
+      "initial": 0
+    },
+    {
+      "name": "difficulty",
+      "type": "enum",
+      "values": [
+        "normal",
+        "hard"
+      ],
+      "initial": "normal"
+    },
+    {
+      "name": "veterans",
+      "type": "list",
+      "itemType": "strref",
+      "initial": []
+    }
+  ],
+  "campaignChart": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}

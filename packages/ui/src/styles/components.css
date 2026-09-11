@@ -139,7 +139,7 @@
 
   [data-mk-part='tree.key'] {
     display: flex;
-    gap: var(--mk-space-1);
+    gap: var(--mk-space-2);
     align-items: center;
     min-width: 0;
   }
@@ -271,7 +271,7 @@
   /* ---------------------------------------------------------------- inline field editing */
   [data-mk-part='field'] {
     display: inline-flex;
-    gap: var(--mk-space-1);
+    gap: var(--mk-space-2);
     align-items: center;
     min-width: 0;
   }
@@ -297,6 +297,13 @@
 
   [data-mk-part='field.status']:empty {
     display: none;
+  }
+
+  [data-mk-part='field.target'] {
+    display: block;
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-sm);
+    margin-inline-start: var(--mk-space-2);
   }
 
   /* ---------------------------------------------------------------- table */
@@ -363,7 +370,7 @@
   [data-mk-part='diagnostics.group'] {
     display: flex;
     flex-direction: column;
-    gap: var(--mk-space-1);
+    gap: var(--mk-space-2);
     padding-block: var(--mk-space-2);
     border-bottom: 1px solid var(--mk-color-separator);
   }
@@ -381,7 +388,7 @@
     align-items: center;
     gap: var(--mk-space-2);
     width: 100%;
-    padding: var(--mk-space-1) var(--mk-space-2);
+    padding: var(--mk-space-2) var(--mk-space-3);
     border-inline-start: 2px solid transparent;
     border-radius: var(--mk-radius-sm);
     text-align: start;
@@ -528,7 +535,7 @@
     justify-content: center;
     min-width: var(--mk-size-icon);
     height: var(--mk-size-icon);
-    padding-inline: var(--mk-space-1);
+    padding-inline: var(--mk-space-2);
     color: var(--mk-color-fg-muted);
     border: 1px solid transparent;
     border-radius: var(--mk-radius-sm);
@@ -607,7 +614,7 @@
   [data-mk-part='filter-bar.facets'] {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--mk-space-1);
+    gap: var(--mk-space-2);
   }
 
   [data-mk-part='filter-bar.facet'] {
@@ -729,7 +736,7 @@
   }
 
   [data-mk-part='properties.origin'] {
-    padding: 0 var(--mk-space-2);
+    padding: 0 var(--mk-space-3);
     color: var(--mk-color-fg-subtle);
     border: 1px solid var(--mk-color-border);
     border-radius: var(--mk-radius-pill);
@@ -751,7 +758,7 @@
   [data-mk-part='audio.toolbar'] {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--mk-space-1);
+    gap: var(--mk-space-2);
     align-items: center;
   }
 
@@ -827,7 +834,8 @@
     align-items: center;
   }
 
-  [data-mk-part='model.primitive-selector'] {
+  [data-mk-part='model.primitive-selector'],
+  [data-mk-part='model.animation-selector'] {
     min-width: 10rem;
     max-width: min(24rem, 45vw);
   }
@@ -1015,7 +1023,7 @@
   [data-mk-part='imageedit.actions'] {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--mk-space-1);
+    gap: var(--mk-space-2);
     align-items: center;
   }
 
@@ -1222,7 +1230,7 @@
     display: flex;
     flex: 0 0 auto;
     flex-wrap: wrap;
-    gap: var(--mk-space-1);
+    gap: var(--mk-space-2);
     padding: var(--mk-space-2) var(--mk-space-2) 0;
     border-bottom: 1px solid var(--mk-color-border);
   }
@@ -1362,7 +1370,7 @@
   [data-mk-part='explorer.breadcrumb'] {
     display: flex;
     flex: 1 1 auto;
-    gap: var(--mk-space-1);
+    gap: var(--mk-space-2);
     align-items: center;
     min-width: 0;
     overflow: hidden;
@@ -1391,7 +1399,7 @@
   [data-mk-part='settings.groups'] {
     display: flex;
     flex-direction: column;
-    gap: var(--mk-space-1);
+    gap: var(--mk-space-2);
     padding: var(--mk-space-3);
     border-right: 1px solid var(--mk-color-border);
     overflow: auto;
@@ -1445,7 +1453,7 @@
     display: flex;
     max-width: 70ch;
     flex-direction: column;
-    gap: var(--mk-space-1);
+    gap: var(--mk-space-2);
   }
 
   [data-mk-part='form.label'] {
@@ -1508,7 +1516,7 @@
     display: flex;
     max-width: 70ch;
     flex-direction: column;
-    gap: var(--mk-space-1);
+    gap: var(--mk-space-2);
   }
 
   [data-mk-part='settings.label'] {
@@ -1876,5 +1884,86 @@
   [data-mk-part='hex.ascii'] > span[data-mk-state~='mutating'] {
     color: var(--mk-status-warn);
     background: var(--mk-status-warn-bg);
+  }
+}
+
+@layer mk.components {
+  /* ------------------------------------------------------------------ toolbar */
+  /*
+   * The shared toolbar. Every viewer that has one now builds it from the same parts, so a theme
+   * styles a toggle once instead of once per viewer.
+   */
+  .modkit-toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--mk-space-2);
+    flex-wrap: wrap;
+    padding: var(--mk-space-2) var(--mk-space-3);
+    border-block-end: 1px solid var(--mk-color-border);
+    background: var(--mk-color-surface);
+  }
+
+  [data-mk-part='toolbar.toggle'],
+  [data-mk-part='toolbar.chip'],
+  [data-mk-part='toolbar.action'] {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--mk-space-2);
+    min-height: 22px;
+    padding: 0 var(--mk-space-3);
+    border: 1px solid transparent;
+    border-radius: var(--mk-radius-sm);
+    background: transparent;
+    color: var(--mk-color-fg);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  [data-mk-part='toolbar.toggle']:hover,
+  [data-mk-part='toolbar.chip']:hover,
+  [data-mk-part='toolbar.action']:hover:not(:disabled) {
+    background: var(--mk-color-hover);
+  }
+
+  /* Pressed state comes from ARIA, so the accessible name and the paint cannot disagree. */
+  [data-mk-part='toolbar.toggle'][aria-pressed='true'],
+  [data-mk-part='toolbar.chip'][aria-pressed='true'] {
+    background: var(--mk-color-selection);
+    border-color: var(--mk-color-accent);
+  }
+
+  [data-mk-part='toolbar.action']:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  [data-mk-part='toolbar.chip'] {
+    border-color: var(--mk-color-border);
+  }
+
+  [data-mk-part='toolbar.separator'] {
+    inline-size: 1px;
+    align-self: stretch;
+    margin-inline: var(--mk-space-2);
+    background: var(--mk-color-border);
+  }
+
+  [data-mk-part='toolbar.spacer'] {
+    flex: 1 1 auto;
+  }
+
+  [data-mk-part='toolbar.label'] {
+    color: var(--mk-color-fg-subtle);
+    padding-inline: var(--mk-space-2);
+  }
+
+  [data-mk-part='toolbar.search-input'] {
+    min-height: 22px;
+    padding: 0 var(--mk-space-3);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    background: var(--mk-color-bg);
+    color: var(--mk-color-fg);
+    font: inherit;
   }
 }

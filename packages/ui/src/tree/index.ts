@@ -5,6 +5,7 @@ import type {
   TreeNodeRef,
   ViewerModule,
 } from '@modkit/sdk'
+import { createToolbar, type ToolbarHandle, type ToolbarSpec } from '../toolbar/index.js'
 import {
   createSurface,
   createViewerMount,
@@ -15,7 +16,11 @@ import {
   ViewerMountScope,
 } from '../viewer/index.js'
 import { type FieldEditorRegistry } from '../field-editor/index.js'
-import { fieldWriteRefusal, mountInlineField } from '../field-write/index.js'
+import {
+  fieldWriteRefusal,
+  mountFieldEditTarget,
+  mountInlineField,
+} from '../field-write/index.js'
 import { renderValueWithSpans } from '../spans/index.js'
 import { type UiLocalizationOptions } from '../localization/index.js'
 import { TREE_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
@@ -75,6 +80,16 @@ function chevron(document: Document): SVGSVGElement {
 export interface TreeViewerOptions extends UiLocalizationOptions {
   readonly fieldEditors?: FieldEditorRegistry
   readonly candidates?: SubjectCandidateProvider
+  /**
+   * A toolbar above the tree.
+   *
+   * The viewer draws it and reports clicks; it does not decide what belongs in it. Which filters a
+   * format has is the host's knowledge, and a tree that invented its own would be wrong for every
+   * format but the one it was written against. `handle` hands the built toolbar back so the host can
+   * set counts and pressed states as its own model changes.
+   */
+  readonly toolbar?: ToolbarSpec
+  readonly onToolbar?: (handle: ToolbarHandle) => void
 }
 
 export function createTreeViewer(options: TreeViewerOptions = {}): ViewerModule {
@@ -84,7 +99,16 @@ export function createTreeViewer(options: TreeViewerOptions = {}): ViewerModule 
     async mount(args) {
       const scope = new ViewerMountScope(args.signal)
       const root = createSurface(args.container, localizer.text('viewer.tree'))
-      root.setAttribute('role', 'tree')
+      /*
+       * The toolbar sits inside the viewer surface but outside the tree itself: `role="tree"` on the
+       * surface would make the buttons children of a tree, which is a lie to a screen reader. So the
+       * role moves to the list that actually holds the rows.
+       */
+      if (options.toolbar !== undefined) {
+        const handle = createToolbar(root, options.toolbar)
+        scope.cleanup(() => handle.destroy())
+        options.onToolbar?.(handle)
+      }
       const lease = await unknownSourceLease(
         args.sources,
         args.slot,
@@ -94,10 +118,16 @@ export function createTreeViewer(options: TreeViewerOptions = {}): ViewerModule 
       scope.lease(lease)
       const model = new LazyTreeModel(lease.value as TreeDataSource)
       const list = element(root, 'ul', { className: 'modkit-viewer__tree', part: 'tree.list' })
-      list.setAttribute('role', 'group')
+      // The tree is this list, not the surface: a toolbar above it must not be a tree item.
+      list.setAttribute('role', 'tree')
 
-      const renderNode = async (node: TreeNodeRef, parent: HTMLElement) => {
+      const renderNode = async (
+        node: TreeNodeRef,
+        parent: HTMLElement,
+        nodeScope: ViewerMountScope = scope,
+      ): Promise<void> => {
         const facts = await model.facts(node)
+        if (nodeScope.signal.aborted) return
         const item = element(parent, 'li', { part: 'tree.item' })
         item.setAttribute('role', 'treeitem')
         item.dataset['nodeId'] = node.id
@@ -162,17 +192,19 @@ export function createTreeViewer(options: TreeViewerOptions = {}): ViewerModule 
               descriptor: args.descriptor,
               operations: args.operations,
               ...route,
-              signal: scope.signal,
-              ...(options.fieldEditors === undefined
-                ? {}
-                : { fieldEditors: options.fieldEditors }),
+              signal: nodeScope.signal,
+              ...(options.fieldEditors === undefined ? {} : { fieldEditors: options.fieldEditors }),
               ...(options.candidates === undefined ? {} : { candidates: options.candidates }),
               onWritten: () => model.forget(node),
             })
+            if (nodeScope.signal.aborted) {
+              await mount.unmount()
+              return
+            }
             const commit = () => void mount.commit()
             cell.addEventListener('change', commit)
-            scope.cleanup(() => cell.removeEventListener('change', commit))
-            scope.cleanup(() => void mount.unmount())
+            nodeScope.cleanup(() => cell.removeEventListener('change', commit))
+            nodeScope.cleanup(() => mount.unmount())
           }
 
           if (writable && (facts.spans === undefined || facts.spans.length === 0)) {
@@ -197,7 +229,7 @@ export function createTreeViewer(options: TreeViewerOptions = {}): ViewerModule 
               }
             }
             cell.addEventListener('keydown', onKey)
-            scope.cleanup(() => {
+            nodeScope.cleanup(() => {
               cell.removeEventListener('dblclick', open)
               cell.removeEventListener('keydown', onKey)
             })
@@ -212,21 +244,81 @@ export function createTreeViewer(options: TreeViewerOptions = {}): ViewerModule 
           renderValueWithSpans(cell, facts.preview, facts.spans)
         }
 
+        mountFieldEditTarget(row, facts.editTarget)
+
+        if (!node.hasChildren) return
         const children = element(item, 'ul', { part: 'tree.children' })
         children.hidden = true
         children.setAttribute('role', 'group')
         let loaded = false
-        const expand = async () => {
-          if (!loaded) {
-            const page = await model.children(node, undefined, scope.signal)
-            for (const child of page.items) await renderNode(child, children)
+        let loading = false
+        let cursor: string | undefined
+        const seenIds = new Set<string>()
+        const seenCursors = new Set<string>()
+        const paging = element(children, 'li', { part: 'tree.item' })
+        paging.setAttribute('role', 'none')
+        paging.hidden = true
+        const more = element(paging, 'button', { part: 'tree.label' }) as HTMLButtonElement
+        more.type = 'button'
+        setViewerText(more, localizer.text('tree.more'))
+        const status = element(paging, 'span', { part: 'tree.value' })
+        status.setAttribute('role', 'status')
+        const loadPage = async () => {
+          if (loading || nodeScope.signal.aborted || (loaded && cursor === undefined)) return
+          loading = true
+          more.disabled = true
+          setViewerText(status, '')
+          // A failed facts request can retry the whole page without duplicating visible rows.
+          const staging = children.ownerDocument.createElement('ul')
+          const pageScope = new ViewerMountScope(nodeScope.signal)
+          let adopted = false
+          try {
+            const page = await model.children(node, cursor, nodeScope.signal)
+            if (nodeScope.signal.aborted) return
+            const ids = new Set(page.items.map(child => child.id))
+            if (
+              page.items.length > 200 ||
+              ids.size !== page.items.length ||
+              page.items.some(child => seenIds.has(child.id)) ||
+              (page.nextCursor !== undefined &&
+                (page.nextCursor === cursor ||
+                  seenCursors.has(page.nextCursor) ||
+                  page.items.length === 0))
+            )
+              throw new TypeError('tree source returned a non-progressing page')
+            for (const child of page.items) {
+              await renderNode(child, staging, pageScope)
+              if (nodeScope.signal.aborted) return
+            }
+            while (staging.firstChild) children.insertBefore(staging.firstChild, paging)
+            for (const id of ids) seenIds.add(id)
+            if (cursor !== undefined) seenCursors.add(cursor)
+            cursor = page.nextCursor
             loaded = true
+            nodeScope.cleanup(() => pageScope.close())
+            adopted = true
+            paging.hidden = cursor === undefined
+          } catch {
+            if (!nodeScope.signal.aborted) {
+              paging.hidden = false
+              setViewerText(status, localizer.text('tree.loadFailed'))
+            }
+          } finally {
+            if (!adopted) await pageScope.close()
+            loading = false
+            if (!nodeScope.signal.aborted) more.disabled = false
           }
+        }
+        const expand = () => {
           children.hidden = !children.hidden
           item.setAttribute('aria-expanded', String(!children.hidden))
+          if (!children.hidden && !loaded) void loadPage()
         }
+        const next = () => void loadPage()
+        more.addEventListener('click', next)
+        nodeScope.cleanup(() => more.removeEventListener('click', next))
         label.addEventListener('click', expand)
-        scope.cleanup(() => label.removeEventListener('click', expand))
+        nodeScope.cleanup(() => label.removeEventListener('click', expand))
       }
 
       await renderNode(await model.root(), list)

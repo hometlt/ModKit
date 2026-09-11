@@ -1,6 +1,9 @@
 /** Interface-only runtime ABI. Host behavior lands in A-2/A-3; no extension code runs here. */
 
 import type { Diagnostic, OperationId } from '@modkit/core'
+import type { RasterResourcePort } from './raster-resources.js'
+import type { ModelResourcePort } from './model-resources.js'
+import type { LogicalResourcePort } from './logical-resources.js'
 import type {
   AnyDescriptor,
   AssetDiagnostic,
@@ -60,6 +63,11 @@ export interface ContributionProviderIdentity {
 
 export interface ContributionContext {
   readonly contracts: ContractResolverPort
+  /** Available after the owning subject opens; sources and codecs are selected by its host. */
+  readonly rasterResources?: RasterResourcePort
+  readonly modelResources?: ModelResourcePort
+  /** Host-owned logical resources, live after open and before initial descriptor inspection. */
+  readonly logicalResources?: LogicalResourcePort
   readonly diagnostics: DiagnosticSink
   readonly budgets: ResourceBudget
   /** Present for service providers activated from trusted inventory; never extension-authored. */
@@ -218,6 +226,8 @@ export interface AssetNamespaceEntry {
 export interface AssetNamespace {
   readonly revision: RevisionId
   list(prefix: string, signal?: AbortSignal): AsyncIterable<AssetNamespaceEntry>
+  /** Bounded carrier bytes before the namespace payload, when the carrier exposes them. */
+  readPreamble?(maxBytes: number, signal?: AbortSignal): Promise<Uint8Array>
   open(path: string, signal?: AbortSignal): Promise<Lease<ArtifactSource>>
 }
 

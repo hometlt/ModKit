@@ -34,7 +34,9 @@
     ]
   },
   "dependencies": {
-    "@modkit/codec-kit": "workspace:*"
+    "@modkit/codec-kit": "workspace:*",
+    "@modkit/uv": "workspace:*",
+    "@modkit/scene": "workspace:*"
   },
   "peerDependencies": {
     "@modkit/host": "workspace:*",

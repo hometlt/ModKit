@@ -2,17 +2,336 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../../../chunks/chunk-VCFHQMDA.js";
-import "../../../../chunks/chunk-GUANBBUV.js";
+} from "../../../../chunks/chunk-J5QGUWNB.js";
+import "../../../../chunks/chunk-V3SJMNU5.js";
 import {
   revisionId,
   toPortableProjectionReceipt
-} from "../../../../chunks/chunk-YFALMPQO.js";
+} from "../../../../chunks/chunk-3JQHXTSW.js";
 import {
-  canonicalJsonStringify
+  ModkitError,
+  canonicalJsonStringify,
+  diagnostic
 } from "../../../../chunks/chunk-S5ITZJYV.js";
 import "../../../../chunks/chunk-YRQVWMJF.js";
 import "../../../../chunks/chunk-CQ52GEHY.js";
+
+// packages/codec-kit/dist/paging.js
+function pageStart(cursor) {
+  if (cursor === void 0)
+    return 0;
+  if (!/^(?:0|[1-9][0-9]*)$/u.test(cursor))
+    throw new TypeError("invalid page cursor");
+  const value = Number(cursor);
+  if (!Number.isSafeInteger(value))
+    throw new TypeError("page cursor exceeds safe integer range");
+  return value;
+}
+
+// packages/codec-kit/dist/json-snapshot.js
+function utf8ByteLength(text) {
+  let bytes = 0;
+  for (let index = 0; index < text.length; index++) {
+    const code = text.charCodeAt(index);
+    if (code < 128)
+      bytes++;
+    else if (code < 2048)
+      bytes += 2;
+    else if (code >= 55296 && code <= 56319 && text.charCodeAt(index + 1) >= 56320 && text.charCodeAt(index + 1) <= 57343) {
+      bytes += 4;
+      index++;
+    } else
+      bytes += 3;
+  }
+  return bytes;
+}
+function snapshotJson(value, budget, signal) {
+  for (const limit of [budget?.maxDepth, budget?.maxNodes, budget?.maxBytes]) {
+    if (!Number.isSafeInteger(limit) || limit < 0)
+      throw new TypeError("invalid JSON snapshot budget");
+  }
+  const ancestors = /* @__PURE__ */ new Set();
+  let nodes = 0;
+  let bytes = 0;
+  const charge = (count) => {
+    bytes += count;
+    if (bytes > budget.maxBytes)
+      throw new RangeError("JSON snapshot exceeds maxBytes");
+  };
+  const copy = (entry, depth) => {
+    if (signal?.aborted)
+      throw new DOMException("operation cancelled", "AbortError");
+    if (depth > budget.maxDepth)
+      throw new RangeError("JSON snapshot exceeds maxDepth");
+    if (++nodes > budget.maxNodes)
+      throw new RangeError("JSON snapshot exceeds maxNodes");
+    if (entry === null || typeof entry === "boolean") {
+      charge(entry === false ? 5 : 4);
+      return entry;
+    }
+    if (typeof entry === "string") {
+      charge(utf8ByteLength(JSON.stringify(entry)));
+      return entry;
+    }
+    if (typeof entry === "number" && Number.isFinite(entry)) {
+      charge(JSON.stringify(entry).length);
+      return entry;
+    }
+    if (typeof entry !== "object" || entry === null)
+      throw new TypeError("non-JSON snapshot value");
+    const prototype = Object.getPrototypeOf(entry);
+    if (!Array.isArray(entry) && prototype !== null && prototype !== Object.prototype) {
+      throw new TypeError("JSON snapshot requires plain objects");
+    }
+    if (ancestors.has(entry))
+      throw new TypeError("cyclic JSON snapshot");
+    ancestors.add(entry);
+    try {
+      charge(2);
+      if (Array.isArray(entry)) {
+        const result2 = [];
+        for (let index = 0; index < entry.length; index++) {
+          if (index > 0)
+            charge(1);
+          result2.push(copy(entry[index], depth + 1));
+        }
+        return Object.freeze(result2);
+      }
+      const result = [];
+      const entries = Object.entries(entry);
+      if (budget.sortKeys)
+        entries.sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0);
+      for (const [key, item] of entries) {
+        if (item === void 0)
+          continue;
+        charge(utf8ByteLength(JSON.stringify(key)) + 1 + (result.length > 0 ? 1 : 0));
+        result.push([key, copy(item, depth + 1)]);
+      }
+      return Object.freeze(Object.fromEntries(result));
+    } finally {
+      ancestors.delete(entry);
+    }
+  };
+  return copy(value, 0);
+}
+
+// packages/codec-kit/dist/deferred-session.js
+function deferAssetSession(revision, initialize, budget, openingSignal) {
+  const controller = new AbortController();
+  const signal = openingSignal === void 0 ? controller.signal : AbortSignal.any([openingSignal, controller.signal]);
+  let pending;
+  let resolved;
+  let disposed = false;
+  let disposal;
+  let release;
+  const releaseResolved = () => {
+    if (release === void 0)
+      release = resolved?.dispose() ?? Promise.resolve();
+    return release;
+  };
+  const requireLive = () => {
+    if (disposed)
+      throw new ModkitError({
+        code: "x3.host/session-disposed",
+        message: "the deferred asset session has been disposed"
+      });
+    signal.throwIfAborted();
+  };
+  const get = async () => {
+    requireLive();
+    pending ??= Promise.resolve().then(async () => {
+      requireLive();
+      resolved = await initialize(signal);
+      try {
+        requireLive();
+        if (resolved.revision !== revision)
+          throw new ModkitError({
+            code: "x3.host/subject-session-identity-mismatch",
+            message: "deferred inspection changed the selected source revision"
+          });
+        return resolved;
+      } catch (error) {
+        await releaseResolved();
+        throw error;
+      }
+    });
+    const session = await pending;
+    requireLive();
+    return session;
+  };
+  const waitForSession = (waitSignal) => {
+    if (waitSignal.aborted)
+      return Promise.resolve(void 0);
+    return new Promise((resolve, reject) => {
+      let finished = false;
+      const finish = (action) => {
+        if (finished)
+          return;
+        finished = true;
+        waitSignal.removeEventListener("abort", onAbort);
+        action();
+      };
+      const onAbort = () => finish(() => resolve(void 0));
+      waitSignal.addEventListener("abort", onAbort, { once: true });
+      void get().then((session) => finish(() => resolve(session)), (error) => finish(() => reject(error)));
+    });
+  };
+  const dispose = () => {
+    if (disposal !== void 0)
+      return disposal;
+    disposed = true;
+    controller.abort();
+    disposal = (async () => {
+      if (pending === void 0)
+        return;
+      await pending.catch(() => void 0);
+      if (resolved !== void 0)
+        await releaseResolved();
+    })();
+    return disposal;
+  };
+  const rejected = (reason, message) => ({
+    state: "rejected",
+    reason,
+    diagnostics: [diagnostic("error", `x3.host/${reason}`, message)]
+  });
+  const operations = Object.freeze({
+    async invoke(handlerId, input, options) {
+      if (disposed || signal.aborted || options?.signal?.aborted)
+        return rejected("cancelled", "the deferred operation was cancelled before dispatch");
+      let owned;
+      try {
+        owned = snapshotJson(input, {
+          maxDepth: budget.maxDepth,
+          maxNodes: budget.maxNodes,
+          maxBytes: budget.maxScalarBytes
+        }, options?.signal);
+      } catch {
+        return rejected("input-not-serializable", "operation input must be bounded JSON data");
+      }
+      const invokeSignal = options?.signal === void 0 ? signal : AbortSignal.any([signal, options.signal]);
+      const invokeOptions = { ...options, signal: invokeSignal };
+      try {
+        const session = await waitForSession(invokeSignal);
+        if (session === void 0 || invokeSignal.aborted)
+          return rejected("cancelled", "the deferred operation was cancelled");
+        const result = await session.operations().invoke(handlerId, owned, invokeOptions);
+        if (disposed || invokeSignal.aborted)
+          return rejected("cancelled", "the deferred operation was cancelled");
+        return result;
+      } catch (error) {
+        if (disposed || signal.aborted || invokeOptions?.signal?.aborted)
+          return rejected("cancelled", "the deferred operation was cancelled");
+        throw error;
+      }
+    },
+    dispose
+  });
+  return Object.freeze({
+    revision,
+    state: () => disposed ? "disposed" : resolved?.state() ?? "live",
+    async descriptor() {
+      const descriptor = await (await get()).descriptor();
+      requireLive();
+      return descriptor;
+    },
+    async dataSource(contract, major) {
+      const lease = await (await get()).dataSource(contract, major);
+      try {
+        requireLive();
+        return lease;
+      } catch (error) {
+        await lease.release();
+        throw error;
+      }
+    },
+    operations: () => operations,
+    async *events(eventSignal) {
+      const waitSignal = eventSignal === void 0 ? signal : AbortSignal.any([signal, eventSignal]);
+      const session = await waitForSession(waitSignal);
+      if (session === void 0 || waitSignal.aborted)
+        return;
+      yield* session.events(waitSignal);
+    },
+    dispose
+  });
+}
+
+// packages/codec-kit/dist/projection.js
+var PROJECTION_RECEIPT_METADATA_ID = "uv-projection-receipt";
+
+// packages/codec-kit/dist/model/animation.js
+var DEFAULT_MODEL_ANIMATION_BUDGET = Object.freeze({
+  maxDepth: 64,
+  maxNodes: 1e6,
+  maxBytes: 134217728
+});
+
+// packages/codec-kit/dist/model/skeleton.js
+var DEFAULT_MODEL_SKELETON_BUDGET = Object.freeze({
+  maxDepth: 64,
+  maxNodes: 1e6,
+  maxBytes: 134217728
+});
+
+// packages/codec-kit/dist/editing.js
+function assetRevisionFromInput(input) {
+  if (input.originKind !== "single" || input.revisions.topology !== "single") {
+    throw new TypeError("assetRevisionFromInput: single-source subjects only");
+  }
+  const [binding] = input.bindings;
+  if (binding === void 0)
+    throw new TypeError("assetRevisionFromInput: no binding");
+  const revision = binding.revision;
+  return Object.freeze({
+    bindings: Object.freeze({ [binding.bindingId]: revision }),
+    compositionFingerprint: canonicalJsonStringify({
+      topology: "single",
+      bindingId: binding.bindingId,
+      source: { id: binding.source.id, uri: binding.source.uri },
+      revision
+    })
+  });
+}
+function editPlanFromInput(input, { planId, edits, fidelity, guarantee = "atomic", diagnostics = [] }) {
+  const revision = assetRevisionFromInput(input);
+  const [binding] = input.bindings;
+  const target = Object.freeze({
+    targetId: binding.bindingId,
+    subjectUri: binding.source.uri,
+    ownerSource: Object.freeze({ ...binding.source }),
+    semanticPath: Object.freeze([]),
+    expectedRevision: revision
+  });
+  return Object.freeze({
+    planId,
+    targets: Object.freeze([target]),
+    edits: Object.freeze(edits.map((edit) => Object.freeze({
+      ...edit,
+      targetId: edit.targetId ?? binding.bindingId,
+      source: edit.source ?? target.ownerSource
+    }))),
+    semantics: Object.freeze({ mutationMode: "mutate", minimumGuarantee: guarantee }),
+    fidelity,
+    diagnostics: Object.freeze([...diagnostics])
+  });
+}
+
+// packages/codec-kit/dist/model/materials.js
+var DEFAULT_MODEL_MATERIAL_BUDGET = Object.freeze({
+  maxDepth: 64,
+  maxNodes: 1e6,
+  maxBytes: 134217728
+});
+
+// packages/codec-kit/dist/xml-scan.js
+var NAMED_ENTITIES = Object.freeze({
+  amp: "&",
+  apos: "'",
+  gt: ">",
+  lt: "<",
+  quot: '"'
+});
 
 // packages/codec-kit/dist/index.js
 var INSPECTION_OPERATIONS = Object.freeze([
@@ -47,16 +366,6 @@ function simpleLease(value) {
     },
     isReleased: () => released
   });
-}
-function pageStart(cursor) {
-  if (cursor === void 0)
-    return 0;
-  if (!/^(?:0|[1-9][0-9]*)$/u.test(cursor))
-    throw new TypeError("invalid page cursor");
-  const value = Number(cursor);
-  if (!Number.isSafeInteger(value))
-    throw new TypeError("page cursor exceeds safe integer range");
-  return value;
 }
 function createTreeDataSource(rootNode) {
   const nodes = /* @__PURE__ */ new Map();
@@ -96,7 +405,12 @@ function createTreeDataSource(rootNode) {
         kind: value.kind,
         label: value.label,
         ...value.preview === void 0 ? {} : { preview: value.preview },
-        ...value.semanticPath === void 0 ? {} : { semanticPath: Object.freeze([...value.semanticPath]) }
+        ...value.semanticPath === void 0 ? {} : { semanticPath: Object.freeze([...value.semanticPath]) },
+        ...value.value === void 0 ? {} : { value: value.value },
+        ...value.type === void 0 ? {} : { type: value.type },
+        ...value.unit === void 0 ? {} : { unit: value.unit },
+        ...value.editable === void 0 ? {} : { editable: value.editable },
+        ...value.spans === void 0 ? {} : { spans: value.spans }
       });
     },
     async *search(query, signal) {
@@ -142,7 +456,6 @@ var TRANSPORT_OPERATIONS = Object.freeze([
     outputKinds: Object.freeze(["none"])
   })
 ]);
-var PROJECTION_RECEIPT_METADATA_ID = "uv-projection-receipt";
 function jsonSafe(value) {
   if (typeof value === "bigint")
     return value.toString();
@@ -257,6 +570,17 @@ function probeLength(plan, size) {
   return Math.max(0, Math.min(declared, available));
 }
 function createInspectionCodec(definition2, contributionContext) {
+  if (definition2.deferInspection === true) {
+    const codec = createInspectionCodec({ ...definition2, deferInspection: false }, contributionContext);
+    return Object.freeze({
+      ...codec,
+      async open(input, intent, budget, signal) {
+        signal?.throwIfAborted();
+        const ownedBudget = Object.freeze({ ...budget });
+        return deferAssetSession(revisionId(input.revisions.revision), (initializeSignal) => codec.open(input, intent, ownedBudget, initializeSignal), ownedBudget, signal);
+      }
+    });
+  }
   const namespaceDefinition = definition2.namespace;
   const customOperations = Object.freeze([...definition2.operations ?? []]);
   const sharedOperations = namespaceDefinition === void 0 ? INSPECTION_OPERATIONS : INSPECTION_OPERATIONS.filter((operation) => operation.handlerId !== "export-raw");
@@ -366,6 +690,12 @@ function createInspectionCodec(definition2, contributionContext) {
         const namespaceLease = await input.openNamespace(signal);
         try {
           const inspection = await namespaceDefinition.inspect(namespaceLease.value, {
+            ...contributionContext === void 0 ? {} : {
+              contracts: contributionContext.contracts,
+              ...contributionContext.modelResources === void 0 ? {} : { modelResources: contributionContext.modelResources },
+              ...contributionContext.rasterResources === void 0 ? {} : { rasterResources: contributionContext.rasterResources },
+              ...contributionContext.logicalResources === void 0 ? {} : { logicalResources: contributionContext.logicalResources }
+            },
             budget,
             signal,
             intent,
@@ -419,6 +749,7 @@ function createInspectionCodec(definition2, contributionContext) {
             ...Object.entries(inspection.handlers ?? {})
           ]);
           return createAssetSession({
+            maxOperationDiagnostics: budget.maxDiagnostics,
             revision: revisionId(input.revisions.revision),
             descriptor,
             operationDeclarations,
@@ -464,6 +795,12 @@ function createInspectionCodec(definition2, contributionContext) {
           }
         });
         const inspection = await definition2.inspect(bytes, {
+          ...contributionContext === void 0 ? {} : {
+            contracts: contributionContext.contracts,
+            ...contributionContext.modelResources === void 0 ? {} : { modelResources: contributionContext.modelResources },
+            ...contributionContext.rasterResources === void 0 ? {} : { rasterResources: contributionContext.rasterResources },
+            ...contributionContext.logicalResources === void 0 ? {} : { logicalResources: contributionContext.logicalResources }
+          },
           budget,
           signal,
           intent,
@@ -543,6 +880,7 @@ function createInspectionCodec(definition2, contributionContext) {
           ...Object.entries(inspection.handlers ?? {})
         ]);
         return createAssetSession({
+          maxOperationDiagnostics: budget.maxDiagnostics,
           revision: revisionId(input.revisions.revision),
           descriptor,
           operationDeclarations,
@@ -575,47 +913,6 @@ function declaredPermissionClasses(operations) {
       classes.add("write-source");
   }
   return Object.freeze([...classes].sort());
-}
-function assetRevisionFromInput(input) {
-  if (input.originKind !== "single" || input.revisions.topology !== "single") {
-    throw new TypeError("assetRevisionFromInput: single-source subjects only");
-  }
-  const [binding] = input.bindings;
-  if (binding === void 0)
-    throw new TypeError("assetRevisionFromInput: no binding");
-  const revision = binding.revision;
-  return Object.freeze({
-    bindings: Object.freeze({ [binding.bindingId]: revision }),
-    compositionFingerprint: canonicalJsonStringify({
-      topology: "single",
-      bindingId: binding.bindingId,
-      source: { id: binding.source.id, uri: binding.source.uri },
-      revision
-    })
-  });
-}
-function editPlanFromInput(input, { planId, edits, fidelity, guarantee = "atomic", diagnostics = [] }) {
-  const revision = assetRevisionFromInput(input);
-  const [binding] = input.bindings;
-  const target = Object.freeze({
-    targetId: binding.bindingId,
-    subjectUri: binding.source.uri,
-    ownerSource: Object.freeze({ id: binding.source.id, uri: binding.source.uri }),
-    semanticPath: Object.freeze([]),
-    expectedRevision: revision
-  });
-  return Object.freeze({
-    planId,
-    targets: Object.freeze([target]),
-    edits: Object.freeze(edits.map((edit) => Object.freeze({
-      ...edit,
-      targetId: edit.targetId ?? binding.bindingId,
-      source: edit.source ?? target.ownerSource
-    }))),
-    semantics: Object.freeze({ mutationMode: "mutate", minimumGuarantee: guarantee }),
-    fidelity,
-    diagnostics: Object.freeze([...diagnostics])
-  });
 }
 
 // extensions/archives/src/zip/codec.js

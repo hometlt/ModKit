@@ -60,11 +60,13 @@ export {
   type ModelAnimationChannel,
   type ModelAnimationClip,
   type ModelAnimationInfo,
+  type ModelAnimationInterpolation,
   type ModelAnimationKind,
   type ModelAnimationSample,
   type ModelAnimationSource,
   type ModelAnimationTimeBounds,
   type ModelBoneBinding,
+  type ModelBoneLocalPose,
   type ModelBoneProvenance,
   type ModelCollisionInfo,
   type ModelCollisionOrigin,
@@ -236,6 +238,8 @@ export interface TreeNodeFacts {
    * id, or a writer requirement. Absence means read-only, and a surface must not guess otherwise.
    */
   readonly editable?: FieldEditable
+  /** Host-bound destination preview for this exact semantic field. */
+  readonly editTarget?: SubjectEditTargetResult
   /** Syntax runs over the displayed value, when the codec knows its grammar. */
   readonly spans?: readonly ValueSpan[]
 }
@@ -290,6 +294,8 @@ export interface CellFacts {
   readonly type?: FieldType
   readonly unit?: string
   readonly editable?: FieldEditable
+  /** Host-bound destination preview for this exact semantic field. */
+  readonly editTarget?: SubjectEditTargetResult
   /** Syntax runs over `value`, when the codec knows its grammar. */
   readonly spans?: readonly ValueSpan[]
 }
@@ -452,6 +458,11 @@ export type ContainerPackInputV1 = ContainerPackReplaceInputV1 | ContainerPackCr
 
 export interface NamespaceEntrySource {
   list(prefix: string, page: PageRequest, signal?: AbortSignal): Promise<Page<NamespaceEntry>>
+  /**
+   * Optional bounded bytes stored before the namespace container itself. The carrier owns the
+   * physical range; a semantic codec owns its interpretation.
+   */
+  readPreamble?(maxBytes: number, signal?: AbortSignal): Promise<Uint8Array>
   /** Optional indexed lookup; absence means the namespace only supports prefix listing. */
   search?(
     query: NamespaceEntrySearchQuery,
@@ -542,6 +553,19 @@ export interface SubjectFact {
   readonly provenance: readonly SubjectFactProvenance[]
   /** Exact lookup coordinate for optional host-provided help. */
   readonly knowledgeTarget?: KnowledgeTarget
+  /**
+   * The same optional schema a tree node or a table cell may carry; see `TreeNodeFacts`.
+   *
+   * A card is a view of one subject, and a subject that can be edited through a tree can be edited
+   * through its card — the difference was never anything but which surface a reader happened to
+   * open. Without these three a card is permanently read-only, which is why entity cards in MK2
+   * ended up with an editing path of their own instead of the one every other surface uses.
+   */
+  readonly type?: FieldType
+  readonly unit?: string
+  readonly editable?: FieldEditable
+  /** Host-bound destination preview for this exact semantic field. */
+  readonly editTarget?: SubjectEditTargetResult
 }
 
 export interface RelatedSubjectFact {
@@ -668,6 +692,143 @@ export interface SubjectSelectorSummary {
   readonly reason?: string
 }
 
+export interface SubjectEditDocumentRef {
+  readonly rootId: string
+  readonly path: string
+  readonly revision?: RevisionId
+}
+
+export interface SubjectEditTargetRequest {
+  readonly subjectId: string
+  readonly fieldPath: readonly string[]
+  readonly targetDocument?: Pick<SubjectEditDocumentRef, 'rootId' | 'path'>
+}
+
+export interface SubjectEditDestination extends SubjectEditDocumentRef {
+  readonly mode: 'replace' | 'create'
+  readonly label: string
+  readonly targetId: string
+  readonly subjectUri: string
+}
+
+export type SubjectEditTargetResult =
+  | Readonly<{
+      readonly state: 'resolved'
+      readonly snapshotId: string
+      readonly workspaceId: string
+      readonly selectedRootId: string
+      readonly subjectId: string
+      readonly fieldPath: readonly string[]
+      readonly action: string
+      readonly destination: SubjectEditDestination
+      readonly candidates: readonly SubjectEditDocumentRef[]
+      readonly lastDeclaration?: SubjectEditDocumentRef
+      readonly effectiveFieldSource?: SubjectEditDocumentRef
+      readonly selectionReason: string
+      readonly guards: readonly SubjectEditDocumentRef[]
+    }>
+  | Readonly<{
+      readonly state: 'selection-required'
+      readonly snapshotId: string
+      readonly workspaceId: string
+      readonly selectedRootId: string
+      readonly subjectId: string
+      readonly fieldPath: readonly string[]
+      readonly candidates: readonly SubjectEditDocumentRef[]
+      readonly reason: string
+    }>
+  | Readonly<{
+      readonly state: 'unavailable'
+      readonly snapshotId: string
+      readonly subjectId: string
+      readonly fieldPath: readonly string[]
+      readonly reason: string
+    }>
+
+export interface SubjectIsolationRequest {
+  readonly schemaVersion: 1
+  readonly ownerSubjectId: string
+  readonly targetSubjectId: string
+  /** Exact typed-link field selected by the caller; publishers must not guess a branch. */
+  readonly ownerFieldPath: readonly string[]
+  readonly maxEdges: number
+  readonly always?: boolean
+}
+
+export interface SubjectIsolationReferrer {
+  readonly subjectId: string
+  readonly fieldPaths: readonly (readonly string[])[]
+}
+
+export type SubjectIsolationResult =
+  | Readonly<{
+      readonly schemaVersion: 1
+      readonly state: 'unavailable'
+      readonly snapshotId: string
+      readonly ownerSubjectId: string
+      readonly targetSubjectId: string
+      readonly ownerFieldPath: readonly string[]
+      readonly cloneRequired: false
+      readonly reason: string
+    }>
+  | Readonly<{
+      readonly schemaVersion: 1
+      readonly state: 'ready'
+      readonly snapshotId: string
+      readonly ownerSubjectId: string
+      readonly targetSubjectId: string
+      readonly ownerFieldPath: readonly string[]
+      readonly shared: boolean
+      readonly cloneRequired: boolean
+      readonly referrers: readonly SubjectIsolationReferrer[]
+      readonly otherReferrerIds: readonly string[]
+      readonly rewireFieldPaths: readonly (readonly string[])[]
+    }>
+
+export interface SubjectIsolationPlanRequest extends SubjectIsolationRequest {
+  readonly cloneSubjectId: string
+  readonly ownerTargetDocument?: Pick<SubjectEditDocumentRef, 'rootId' | 'path'>
+  readonly cloneTargetDocument?: Pick<SubjectEditDocumentRef, 'rootId' | 'path'>
+}
+
+export interface SubjectIsolationPlanReplacement {
+  readonly purpose: 'clone' | 'rewire' | 'clone-and-rewire'
+  readonly destination: SubjectEditDestination
+  readonly replacementBytes: number
+}
+
+export interface SubjectIsolationPlanDiagnostic {
+  readonly severity: 'error' | 'warning' | 'information'
+  readonly code: string
+  readonly message: string
+}
+
+export type SubjectIsolationPlanResult =
+  | Extract<SubjectIsolationResult, { readonly state: 'unavailable' }>
+  | Readonly<{
+      readonly schemaVersion: 1
+      readonly state: 'selection-required'
+      readonly snapshotId: string
+      readonly ownerSubjectId: string
+      readonly targetSubjectId: string
+      readonly cloneSubjectId: string
+      readonly purpose: 'clone' | 'rewire'
+      readonly candidates: readonly SubjectEditDocumentRef[]
+      readonly reason: string
+    }>
+  | Readonly<{
+      readonly schemaVersion: 1
+      readonly state: 'planned'
+      readonly snapshotId: string
+      readonly previewSnapshotId: string
+      readonly ownerSubjectId: string
+      readonly targetSubjectId: string
+      readonly cloneSubjectId: string
+      readonly analysis: Extract<SubjectIsolationResult, { readonly state: 'ready' }>
+      readonly replacements: readonly SubjectIsolationPlanReplacement[]
+      readonly diagnostics: readonly SubjectIsolationPlanDiagnostic[]
+    }>
+
 /** Optional publisher-applied filters for large nested-subject catalogs. */
 export interface SubjectSelectorQuery extends PageRequest {
   readonly filter?: import('../fields/index.js').SubjectFilter
@@ -693,6 +854,21 @@ export interface SubjectSelectorSource {
     subjectId: string,
     signal?: AbortSignal,
   ): Promise<Lease<SubjectCalculationsSource>>
+  /** Optional host-bound destination preview for fields of a selected resolved subject. */
+  editTarget?(
+    request: SubjectEditTargetRequest,
+    signal?: AbortSignal,
+  ): Promise<SubjectEditTargetResult>
+  /** Optional read-only impact preview for isolating a shared referenced subject. */
+  isolation?(
+    request: SubjectIsolationRequest,
+    signal?: AbortSignal,
+  ): Promise<SubjectIsolationResult>
+  /** Optional bounded clone/rewire proposal; full replacement bytes remain provider/host-owned. */
+  isolationPlan?(
+    request: SubjectIsolationPlanRequest,
+    signal?: AbortSignal,
+  ): Promise<SubjectIsolationPlanResult>
 }
 
 /**
@@ -1031,7 +1207,7 @@ function isInventoryEntry(value: unknown): value is DataSourceInventoryEntry {
     keys.length === 2 &&
     keys[0] === 'definition' &&
     keys[1] === 'provenance' &&
-    hasExactStringKeys(record.provenance, PROVENANCE_KEYS)
+    hasExactStringKeys(record['provenance'], PROVENANCE_KEYS)
   )
 }
 

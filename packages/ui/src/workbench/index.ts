@@ -35,6 +35,15 @@ export interface WorkbenchOptions {
    * are never mounted in this mode.
    */
   readonly embedded?: boolean | { readonly aside?: boolean }
+  /**
+   * Mount a second sidebar on the trailing edge.
+   *
+   * Off by default, because a workbench with an empty right-hand column reads as a broken layout
+   * rather than an unused one. An application that has something permanently beside the content —
+   * metadata about what is open, an outline, a property sheet — asks for it; the ones that do not
+   * keep the three-column grid they have today.
+   */
+  readonly auxiliary?: boolean
 }
 
 export interface Workbench {
@@ -43,10 +52,16 @@ export interface Workbench {
   readonly sidebar: HTMLElement
   readonly main: HTMLElement
   readonly panel: HTMLElement
+  /** The trailing sidebar, present only when `auxiliary` was requested. */
+  readonly auxbar?: HTMLElement
   setHostState(state: WorkbenchHostState): void
   setSidebar(content?: Node): void
   setMain(content?: Node): void
   setPanel(content?: Node): void
+  /** Replace the trailing sidebar's content; a no-op when there is no trailing sidebar. */
+  setAuxiliary(content?: Node): void
+  /** Replace the status bar's content beside the host state it already shows. */
+  setStatus(content?: Node): void
   dispose(): void
 }
 
@@ -76,18 +91,31 @@ export function createWorkbench(document: Document, options: WorkbenchOptions): 
   const panel = document.createElement('section')
   setPart(panel, 'workbench.panel')
 
+  const auxiliary = options.auxiliary === true
+  const auxbar = document.createElement('aside')
+  setPart(auxbar, 'workbench.auxbar')
+
   const statusbar = document.createElement('footer')
   setPart(statusbar, 'workbench.statusbar')
 
   const hostStatus = document.createElement('span')
   setPart(hostStatus, 'workbench.host-status')
-  statusbar.append(hostStatus)
+  const statusSlot = document.createElement('span')
+  setPart(statusSlot, 'workbench.status-slot')
+  statusbar.append(hostStatus, statusSlot)
   if (embedded) {
     if (includeAside) root.append(sidebar)
     root.append(main)
   } else {
-    root.append(titlebar, activitybar, sidebar, main, panel, statusbar)
+    root.append(titlebar, activitybar, sidebar, main)
+    if (auxiliary) root.append(auxbar)
+    root.append(panel, statusbar)
   }
+  /*
+   * The grid needs to know: its columns are declared in CSS and the trailing one only exists when
+   * this is set, so a workbench without an auxiliary sidebar keeps exactly the layout it had.
+   */
+  if (auxiliary) root.dataset['mkAuxiliary'] = 'true'
 
   const setHostState = (state: WorkbenchHostState): void => {
     const reasons = state.degradedReasons ?? []
@@ -116,10 +144,15 @@ export function createWorkbench(document: Document, options: WorkbenchOptions): 
     sidebar,
     main,
     panel,
+    ...(auxiliary ? { auxbar } : {}),
     setHostState,
     setSidebar: (content?: Node) => replace(sidebar, content),
     setMain: (content?: Node) => replace(main, content),
     setPanel: (content?: Node) => replace(panel, content),
+    setAuxiliary: (content?: Node) => {
+      if (auxiliary) replace(auxbar, content)
+    },
+    setStatus: (content?: Node) => replace(statusSlot, content),
     dispose: () => root.remove(),
   })
 }

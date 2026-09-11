@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "sources": [{
+    "path": "extensions/common/models/codecs/uvm/src/index.ts",
+    "symbols": ["sha256Hex"]
+  }],
+  "imports": ["import { ModkitError } from '../legacy/core/index.js'"],
+  "exports": [],
+  "output": "packages/codec-kit/src/crypto/digest.ts",
+  "provenance": "packages/codec-kit/MK2-DIGEST-KERNELS.json"
+}

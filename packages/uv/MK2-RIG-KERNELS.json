@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "transformation": "exact top-level declaration extraction; explicit import bindings and export list only",
+  "sources": [
+    {
+      "path": "extensions/common/models/codecs/uvm/src/index.ts",
+      "sha256": "60c3280eb3f80deb80f85c32e1275c031d22d1416d703436d1ac9098646377f8",
+      "symbols": [
+        {
+          "name": "SkeletonEncoding",
+          "sha256": "3f88cb3f7a0a22c1e4a37fd753ad52f4ea7c1ad179f388a1e10b08c0889387c0"
+        },
+        {
+          "name": "BufferBuilder",
+          "sha256": "76bab19da8aa415aff05155dbd8d517035a8ac513228501c94d629fa394153f7"
+        },
+        {
+          "name": "IDENTITY_MATRIX",
+          "sha256": "603289be69ce6ab4475bb637407785b731038fce764557b777bc1e5dfd3ffc3f"
+        },
+        {
+          "name": "encodeSkeleton",
+          "sha256": "1dd649660216c8dab99710074a98d9de730bd2cdde5b30f7284ada9755c641a4"
+        },
+        {
+          "name": "addJointAttribute",
+          "sha256": "c948a474ce0cf5c38faa94fcabdee907b445ef80f76a626bccd617f371343e92"
+        },
+        {
+          "name": "addAttribute",
+          "sha256": "e7c18292b3f8675565d8b3c0c7b786c8b41cda33336a24ff15e36454b0a4d4b7"
+        },
+        {
+          "name": "encodeAnimationChannel",
+          "sha256": "e25f48d085ca293968994f4d1a11e6d8ee3f962b18e5899197de5c2fef3e108d"
+        },
+        {
+          "name": "encodeCubicEffectValues",
+          "sha256": "a8dc142f2052817b25b56412f4a3527111325ab5704638f33217c8bb15afff6f"
+        },
+        {
+          "name": "cubicDerivative",
+          "sha256": "871a8ee511e1e001e2c9dcfed2820e46592a89bf9b74ad4e2cd9e5005867c6d6"
+        },
+        {
+          "name": "addAccessor",
+          "sha256": "63eb8b7c6b49fac8b439f91af35ccba83a8ddd22bf73733b0df5575706e5ae11"
+        },
+        {
+          "name": "littleEndianBytes",
+          "sha256": "eb232b5101f45bab3919f0f447ebfd3cd8c080079c18fc794bc3b852a6a34595"
+        },
+        {
+          "name": "bounds",
+          "sha256": "49f21ec4944ebe750d0830918e9c6efc6dbd6e35a945f119f2400fb097afe5ac"
+        },
+        {
+          "name": "accessorWidth",
+          "sha256": "3acc97fe4c808e92999119b286b158323c42b0e7971c771ceac7317cb276055a"
+        },
+        {
+          "name": "vectorType",
+          "sha256": "192d99e4c1d540c623ffe8dc220bb7b578bfdd86b77768162121bb75106f7bfe"
+        },
+        {
+          "name": "invalidAttribute",
+          "sha256": "4740f5c41a26f1204b01f5cbfc2deca6d5da22d2e87ffeebad31bcedbdc4b358"
+        }
+      ]
+    }
+  ],
+  "imports": [
+    "import { ModkitError } from '@modkit/codec-kit/legacy/core'",
+    "import type { RenderModel, RenderMesh, RenderScalarAnimationTrack } from '@modkit/codec-kit/legacy/models'",
+    "import type { UvmJsonObject } from './rig-types.js'"
+  ],
+  "exports": [
+    "BufferBuilder",
+    "encodeSkeleton",
+    "addJointAttribute",
+    "encodeAnimationChannel",
+    "addAccessor",
+    "type SkeletonEncoding"
+  ],
+  "output": {
+    "path": "packages/uv/src/model/legacy/rig-kernels.ts",
+    "sha256": "9b3656a0a9f1dfba088fb559140302149ba90effee217577d50631c8db594242"
+  }
+}

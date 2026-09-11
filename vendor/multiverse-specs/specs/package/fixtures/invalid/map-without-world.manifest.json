@@ -1,0 +1,47 @@
+{
+  "$comment": "INVALID: a map without a world is not a map (map-needs-exactly-one-world).",
+  "uv": {
+    "format": "UVP",
+    "version": "1.0"
+  },
+  "id": "example-vendor/mission-alpha",
+  "version": "1.0.0",
+  "kind": "map",
+  "title": "Mission Alpha",
+  "contents": [
+    {
+      "family": "uvd",
+      "path": "data/mission-overrides.uvd.json",
+      "hash": "sha256:b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2b2",
+      "layer": 0
+    },
+    {
+      "family": "uvs",
+      "path": "charts/objectives.uvs.json",
+      "hash": "sha256:c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3"
+    }
+  ],
+  "dependencies": [
+    {
+      "id": "example-vendor/base-game",
+      "range": "^1.0.0",
+      "rank": "base"
+    }
+  ],
+  "requires": {
+    "intrinsics": [
+      "entity.create@1",
+      "order.move@1",
+      "scenario.objective-add@1",
+      "timer.start@1"
+    ],
+    "capabilities": [
+      "read",
+      "mutate",
+      "control"
+    ]
+  },
+  "namespaces": [
+    "example-vendor"
+  ]
+}

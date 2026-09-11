@@ -1,0 +1,100 @@
+{
+  "$comment": "INVALID: a refusal without its original fragment is silent loss with extra steps (refusal-carries-origin).",
+  "uv": {
+    "format": "UVS",
+    "version": "1.0"
+  },
+  "namespace": "example-vendor",
+  "charts": [
+    {
+      "name": "intro-objective",
+      "initialState": "waiting",
+      "variables": [
+        {
+          "name": "reinforced",
+          "type": "bool",
+          "initial": false
+        }
+      ],
+      "states": [
+        {
+          "name": "waiting",
+          "on": [
+            {
+              "event": "timer.fired",
+              "condition": {
+                "kind": "cmp",
+                "op": "ge",
+                "args": [
+                  {
+                    "kind": "call",
+                    "intrinsic": "player.resource@1",
+                    "args": [
+                      {
+                        "kind": "const",
+                        "value": "example-vendor/player/one"
+                      },
+                      {
+                        "kind": "const",
+                        "value": "supply"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "const",
+                    "value": 10
+                  }
+                ]
+              },
+              "actions": [
+                {
+                  "kind": "intrinsic",
+                  "intrinsic": "scenario.objective-add@1",
+                  "args": [
+                    {
+                      "kind": "const",
+                      "value": "hold-the-line"
+                    }
+                  ]
+                },
+                {
+                  "kind": "set-var",
+                  "name": "reinforced",
+                  "value": {
+                    "kind": "const",
+                    "value": true
+                  }
+                },
+                {
+                  "kind": "refusal",
+                  "reason": "audio cue natives are not mapped in intrinsic table v1"
+                }
+              ],
+              "goto": "active"
+            }
+          ]
+        },
+        {
+          "name": "active",
+          "on": [
+            {
+              "event": "entity.died",
+              "actions": [
+                {
+                  "kind": "intrinsic",
+                  "intrinsic": "scenario.objective-complete@1",
+                  "args": [
+                    {
+                      "kind": "const",
+                      "value": "hold-the-line"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

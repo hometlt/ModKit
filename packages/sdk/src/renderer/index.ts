@@ -7,6 +7,8 @@
  */
 
 import type { ModelPrimitive } from '../asset-capabilities/media-data-sources.js'
+import type { ModelMaterialRef } from '../asset-capabilities/model-facet-sources.js'
+import type { RasterImageInfo } from '../asset-capabilities/media-data-sources.js'
 import type { ServiceProviderModule } from '../runtime-abi.js'
 
 /** Standard service coordinate for renderer-neutral 3D scene frames. */
@@ -30,6 +32,9 @@ export type SceneRendererColor = readonly [number, number, number, number]
  */
 export type SceneRendererShadingModel = 'unlit' | 'lambert'
 
+/** glTF-style coverage: opaque ignores alpha, mask tests it, blend uses source-over. */
+export type SceneRendererAlphaMode = 'opaque' | 'mask' | 'blend'
+
 /** Sampler behaviour outside the unit UV square. */
 export type SceneRendererTextureWrap = 'repeat' | 'clamp'
 
@@ -41,18 +46,52 @@ export type SceneRendererTextureWrap = 'repeat' | 'clamp'
  * be a second codec host. The producer hands over pixels; this contract carries them.
  */
 export interface SceneRendererTexture {
+  /** Defaults to 2d. Cube images contain six square faces in +X,-X,+Y,-Y,+Z,-Z order. */
+  readonly dimension?: '2d' | 'cube'
+  /** Decoder-supplied storage facts; the material vocabulary assigns their interpretation. */
+  readonly channelLayout?: RasterImageInfo['channelLayout']
+  readonly compression?: RasterImageInfo['compression']
   readonly id: string
   readonly width: number
   readonly height: number
-  /** Tightly packed row-major RGBA8 texels, `width * height * 4` bytes, top-left origin. */
+  /** Tightly packed row-major RGBA8 texels, top-left origin. A 2D image has width * height * 4
+   * bytes; a cube has six such faces concatenated without padding. */
   readonly rgba: Uint8Array
   readonly wrapU?: SceneRendererTextureWrap
   readonly wrapV?: SceneRendererTextureWrap
+  /** Explicit first-surface filtering. Material programs default to linear in both providers. */
+  readonly filter?: 'nearest' | 'linear'
 }
 
+export interface SceneRendererSimpleEffect {
+  /** Fragment coordinates use a bottom-left viewport origin; threshold is the larger dimension in pixels. */
+  readonly screenUv?: {
+    readonly offset: readonly [number, number]
+    readonly tiling: readonly [number, number]
+    readonly angle: number
+    readonly threshold: number
+  }
+  readonly blend:
+    'opaque' | 'alpha-test' | 'blend' | 'premultiplied' | 'additive' | 'add-alpha' | 'modulate' | 'modulate2x'
+  readonly depthTest: boolean
+  readonly depthWrite: boolean
+  readonly doubleSided: boolean
+  readonly alphaCutoff: number
+  readonly textureResource?: string
+  readonly wrapU: 'repeat' | 'clamp'
+  readonly wrapV: 'repeat' | 'clamp'
+}
 export interface SceneRendererMaterial {
+  /** Optional instance playback/lighting context, e.g. the age of a nested model particle. */
+  readonly context?: SceneRendererMaterialContext
+  /** Explicit unlit texel-times-RGBA draw. Authored shader may remain for scoped resources. */
+  readonly simpleEffect?: SceneRendererSimpleEffect
   readonly id: string
   readonly baseColor: SceneRendererColor
+  /** Defaults to opaque. Blend draws after solid geometry, without writing depth. */
+  readonly alphaMode?: SceneRendererAlphaMode
+  /** Nonnegative mask threshold, default 0.5. Values above 1 discard the entire material. */
+  readonly alphaCutoff?: number
   /**
    * Id of a `SceneRendererScene.textures` entry modulated with `baseColor`.
    *
@@ -65,6 +104,35 @@ export interface SceneRendererMaterial {
   readonly shading?: SceneRendererShadingModel
   /** Draw back faces too. Absent means the provider's own default, as before. */
   readonly doubleSided?: boolean
+  /** Inert, publisher-qualified material vocabulary, as published by model-material-source.
+   * A provider must report an unsupported shader and use the base-color fallback explicitly.
+   */
+  readonly shader?: NonNullable<ModelMaterialRef['shader']>
+  /** Logical shader resource ids bound to already decoded scene texture ids; no path authority. */
+  readonly textureBindings?: readonly {
+    readonly resourceId: string
+    readonly textureId: string
+  }[]
+}
+
+/** Explicit mapping for environment materials. Supplied by the scene, never inferred from a file. */
+export interface SceneRendererEnvironment {
+  /** Finite affine column-major 4x4. The render-material vocabulary transforms both the world
+   * normal and unit eye-to-surface vector with w=1 before reflection, retaining affine offsets.
+   * Matrices whose affine row bounds permit float32 reflection overflow are refused. */
+  readonly worldToEnvironment: readonly number[]
+}
+
+export interface SceneRendererMaterialContext {
+  /** Elapsed time for independent concurrent material tracks. Defaults to zero. */
+  readonly time?: number
+  /** Clip-local time. Defaults to time. */
+  readonly sequenceTime?: number
+  /** The selected index in the shader vocabulary's sequence table. */
+  readonly sequenceIndex?: number
+  readonly teamColor?: readonly [number, number, number]
+  readonly ambient?: SceneRendererColor
+  readonly environment?: SceneRendererEnvironment
 }
 
 /**
@@ -75,15 +143,36 @@ export interface SceneRendererMaterial {
  * the draft contract describes rather than in the minimum slice that makes shading possible.
  */
 export interface SceneRendererDirectionalLight {
-  /** Points from the surface towards the light. Normalised by the renderer if it is not already. */
+  /** World-space direction from the surface towards the light. Normalised by the renderer. */
   readonly direction: readonly [number, number, number]
   readonly color?: SceneRendererColor
   /** Fraction of base colour surviving where the light does not reach. Defaults to 0.25. */
   readonly ambient?: number
 }
 
+/** Explicit world-space preview lights. The shared preview pass averages at most four lights;
+ * material-specific shaders retain their own lighting model and the primary `light` input. */
+export interface SceneRendererLight {
+  readonly type: 'directional' | 'point' | 'spot'
+  /** Surface-to-light for directional lights; emitted ray direction for spot lights. */
+  readonly direction: readonly [number, number, number]
+  readonly color: readonly [number, number, number]
+  readonly position?: readonly [number, number, number]
+  readonly range?: number
+  readonly attenuationStart?: number
+  readonly attenuationEnd?: number
+  readonly decayExponent?: number
+  /** Full cone angles in radians, matching the common preview vocabulary. */
+  readonly innerConeAngle?: number
+  readonly outerConeAngle?: number
+}
+
 /** Existing decoded primitive plus an optional column-major model transform. */
 export interface SceneRendererPrimitive extends ModelPrimitive {
+  /** Instance color multiplier after material shading; authored blend/depth policy is retained. */
+  readonly tint?: readonly [number, number, number, number]
+  /** Draw-local polygon offset. Units are steps in the provider depth representation; absent disables it. */
+  readonly depthBias?: { readonly slopeScale: number; readonly units: number }
   readonly transform?: Float32Array
 }
 
@@ -93,13 +182,22 @@ export interface SceneRendererScene {
   readonly materials?: readonly SceneRendererMaterial[]
   /** Texel sources named by `SceneRendererMaterial.baseColorTexture`. */
   readonly textures?: readonly SceneRendererTexture[]
-  /** Absent means unlit, whatever the materials ask for: no light, no shading. */
+  /** Base-colour Lambert materials require this light. Game-material vocabularies can supply
+   * their own default: modkit.render-material.v1 uses world direction [0, 0, 1] when absent. */
   readonly light?: SceneRendererDirectionalLight
+  readonly lights?: readonly SceneRendererLight[]
+  readonly ambientLight?: readonly [number, number, number]
+  readonly materialContext?: SceneRendererMaterialContext
 }
 
 export interface SceneRendererCamera {
   /** Column-major 4x4 view-projection matrix. */
   readonly viewProjection: Float32Array
+  /** World-to-view frame for material lighting, Fresnel and generated texture coordinates. */
+  readonly viewMatrix?: Float32Array
+  /** Explicit world-space observer for environment reflection. This does not alter projection
+   * or the existing lighting/viewMatrix behavior. Required by world-environment reflection. */
+  readonly eyePosition?: readonly [number, number, number]
 }
 
 export interface SceneRendererViewport {
@@ -135,7 +233,7 @@ export interface SceneRenderFrame {
   readonly outputKind: SceneRendererOutputKind
   readonly width: number
   readonly height: number
-  /** Tightly packed row-major RGBA8 pixels owned by this frame. */
+  /** Owned top-left, row-major straight RGBA8. Fully transparent pixels have zero RGB. */
   readonly rgba: Uint8Array
   readonly diagnostics: readonly SceneRendererDiagnostic[]
   readonly statistics: SceneRendererStatistics

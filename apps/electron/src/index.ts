@@ -1,4 +1,5 @@
 import { compareUtf8, ModkitError, uint64, type Diagnostic } from '@modkit/core'
+export { loadContentSources, callContentSources } from '@modkit/vfs/content-sources/node'
 export { ModkitError }
 import { codeModule } from '@modkit/code/module'
 import { sceneModule } from '@modkit/scene/module'

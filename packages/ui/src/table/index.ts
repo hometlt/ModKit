@@ -7,6 +7,7 @@ import type {
   TableDataSource,
   ViewerModule,
 } from '@modkit/sdk'
+import { createToolbar, type ToolbarHandle, type ToolbarSpec } from '../toolbar/index.js'
 import {
   createSurface,
   createViewerMount,
@@ -18,7 +19,11 @@ import {
   ViewerMountScope,
 } from '../viewer/index.js'
 import { type FieldEditorRegistry } from '../field-editor/index.js'
-import { fieldWriteRefusal, mountInlineField } from '../field-write/index.js'
+import {
+  fieldWriteRefusal,
+  mountFieldEditTarget,
+  mountInlineField,
+} from '../field-write/index.js'
 import { renderValueWithSpans } from '../spans/index.js'
 import { type UiLocalizationOptions } from '../localization/index.js'
 import { TABLE_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
@@ -69,6 +74,14 @@ export interface TableViewerOptions extends UiLocalizationOptions {
    * A host that wants it says so; a host that does not keeps the calls it makes today.
    */
   readonly highlight?: boolean
+  /**
+   * A toolbar above the table.
+   *
+   * Same contract as the tree's: the viewer draws what the host specifies and reports clicks, so a
+   * format contributes its own filters without the table learning about any of them.
+   */
+  readonly toolbar?: ToolbarSpec
+  readonly onToolbar?: (handle: ToolbarHandle) => void
 }
 
 export function createTableViewer(options: TableViewerOptions = {}): ViewerModule {
@@ -78,6 +91,11 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
     async mount(args) {
       const scope = new ViewerMountScope(args.signal)
       const root = createSurface(args.container, localizer.text('viewer.table'))
+      if (options.toolbar !== undefined) {
+        const handle = createToolbar(root, options.toolbar)
+        scope.cleanup(() => handle.destroy())
+        options.onToolbar?.(handle)
+      }
       const lease = await unknownSourceLease(
         args.sources,
         args.slot,
@@ -107,6 +125,15 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
       })
       knowledge.setAttribute('aria-live', 'polite')
       knowledge.dataset['knowledgeState'] = 'missing'
+      const editTarget = element(root, 'aside', {
+        className: 'modkit-viewer__table-edit-target',
+        part: 'viewer.status',
+      })
+      editTarget.hidden = true
+      const clearEditTarget = (): void => {
+        editTarget.replaceChildren()
+        editTarget.hidden = true
+      }
       let lookupRevision = 0
       let lookupController: AbortController | undefined
 
@@ -159,21 +186,27 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
       const inspectCell = (coord: CellCoord): void => {
         if (scope.signal.aborted) return
         cancelLookup('table-cell-changed')
+        clearEditTarget()
         const revision = lookupRevision
-        const catalog = args.knowledge
-        if (catalog === undefined) {
-          showMissingKnowledge()
-          return
-        }
         const controller = new AbortController()
         lookupController = controller
-        knowledge.dataset['knowledgeState'] = 'loading'
-        knowledge.replaceChildren()
-        setViewerText(knowledge, localizer.text('card.loadingDescription'))
+        const catalog = args.knowledge
+        if (catalog !== undefined) {
+          knowledge.dataset['knowledgeState'] = 'loading'
+          knowledge.replaceChildren()
+          setViewerText(knowledge, localizer.text('card.loadingDescription'))
+        }
         void (async () => {
           try {
             const facts = await model.cell(coord, controller.signal)
             if (controller.signal.aborted || revision !== lookupRevision) return
+            editTarget.replaceChildren()
+            const target = mountFieldEditTarget(editTarget, facts.editTarget)
+            editTarget.hidden = target === undefined
+            if (catalog === undefined) {
+              showMissingKnowledge()
+              return
+            }
             if (facts.knowledgeTarget === undefined) {
               showMissingKnowledge()
               return
@@ -261,6 +294,7 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
 
       const render = (rows: readonly Row[]) => {
         cancelLookup('table-page-changed')
+        clearEditTarget()
         showMissingKnowledge()
         body.replaceChildren()
         for (const row of rows) {
@@ -338,6 +372,7 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
       scope.cleanup(() => next.removeEventListener('click', advance))
       return createViewerMount(root, scope, args, ({ descriptor }) => {
         cancelLookup('viewer-updated')
+        clearEditTarget()
         showMissingKnowledge()
         root.dataset['revision'] = descriptor.revision
       })

@@ -10,6 +10,7 @@ import type {
   WorldSceneSource,
   WorldSceneTerrainItem,
 } from '@modkit/sdk/maps'
+import type { TransportSource } from '@modkit/sdk'
 import { WORLD_SCENE_SOURCE_CONTRACT } from '@modkit/sdk/maps'
 import type { ViewerModule } from '@modkit/sdk'
 import {
@@ -242,6 +243,24 @@ export interface WorldViewerModuleOptions {
   readonly localizer?: UiLocalizer
 }
 
+/**
+ * Re-reads a dynamic world snapshot whenever its optional transport publishes a position change.
+ * The helper is format-neutral: replay, cutscene and future simulation codecs can share it.
+ */
+export async function watchTransportedWorld(
+  transport: TransportSource,
+  render: () => Promise<void>,
+  signal?: AbortSignal,
+): Promise<void> {
+  try {
+    for await (const event of transport.events(signal)) {
+      if (event.kind === 'snapshot') await render()
+    }
+  } catch (error) {
+    if (!signal?.aborted) throw error
+  }
+}
+
 export function createWorldViewer(options: WorldViewerModuleOptions = {}): ViewerModule {
   const localizer = withEnglishUiFallback(options.localizer, WORLD_FALLBACK_MESSAGES)
   return defineViewerModule({
@@ -255,17 +274,40 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       canvas.setAttribute('role', 'img')
       canvas.setAttribute('aria-label', localizer.text('viewer.worldPreview'))
 
-      const lease = await unknownSourceLease(args.sources, args.slot, WORLD_SCENE_SOURCE_CONTRACT)
-      if (lease === undefined) throw new TypeError('world binding is unavailable')
+      const [lease, transportLease] = await Promise.all([
+        unknownSourceLease(args.sources, args.slot, WORLD_SCENE_SOURCE_CONTRACT),
+        unknownSourceLease(args.sources, args.slot, 'common.view/transport-source'),
+      ])
+      if (lease === undefined) {
+        await transportLease?.release()
+        throw new TypeError('world binding is unavailable')
+      }
       scope.lease(lease)
-
-      setState(stage, ['loading'])
-      try {
-        const model = await inspectCandidateWorld(lease.value as WorldSceneSource, {
-          maxLayers: WORLD_VIEWER_MAX_LAYERS,
-          maxItemsPerLayer: WORLD_VIEWER_MAX_ITEMS_PER_LAYER,
-          signal: scope.signal,
-        })
+      if (transportLease !== undefined) scope.lease(transportLease)
+      let renderRevision = 0
+      const render = async () => {
+        const revision = ++renderRevision
+        setState(stage, ['loading'])
+        let model: CandidateWorldViewerModel
+        try {
+          model = await inspectCandidateWorld(lease.value as WorldSceneSource, {
+            maxLayers: WORLD_VIEWER_MAX_LAYERS,
+            maxItemsPerLayer: WORLD_VIEWER_MAX_ITEMS_PER_LAYER,
+            signal: scope.signal,
+          })
+        } catch (error) {
+          if (revision !== renderRevision || scope.signal.aborted) return
+          setState(stage, ['error'])
+          canvas.hidden = true
+          setViewerText(
+            readout,
+            localizer.text('viewer.worldError', {
+              reason: error instanceof Error ? error.message : String(error),
+            }),
+          )
+          return
+        }
+        if (revision !== renderRevision || scope.signal.aborted) return
         const available = model.layers.filter(layer => layer.page.state === 'available')
         const itemCount = available.reduce((total, layer) => total + layer.page.items.length, 0)
         const partial =
@@ -282,23 +324,30 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
             bounded: partial ? localizer.text('viewer.boundedPreview') : '',
           }),
         )
-        drawCandidateWorld(canvas, model)
+        canvas.hidden = itemCount === 0
+        if (itemCount > 0) drawCandidateWorld(canvas, model)
         if (itemCount === 0) {
-          canvas.remove()
-          element(stage, 'p', {
-            part: 'viewer.empty',
-            text: localizer.text('viewer.worldEmpty'),
-          })
+          setViewerText(readout, localizer.text('viewer.worldEmpty'))
         }
         setState(stage, [])
-      } catch (error) {
-        setState(stage, ['error'])
-        canvas.remove()
-        element(stage, 'p', {
-          part: 'viewer.empty',
-          text: localizer.text('viewer.worldError', {
-            reason: error instanceof Error ? error.message : String(error),
-          }),
+      }
+
+      await render()
+      if (transportLease !== undefined) {
+        void watchTransportedWorld(
+          transportLease.value as TransportSource,
+          render,
+          scope.signal,
+        ).catch(error => {
+          if (scope.signal.aborted) return
+          setState(stage, ['error'])
+          canvas.hidden = true
+          setViewerText(
+            readout,
+            localizer.text('viewer.worldError', {
+              reason: error instanceof Error ? error.message : String(error),
+            }),
+          )
         })
       }
 

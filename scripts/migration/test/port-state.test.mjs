@@ -28,6 +28,16 @@ const audits = {
 }
 const requirements = requirementsFor(inventory, audits, [])
 
+test('stable keeps existing default bytes and supports compact canonical JSON', () => {
+  const value = { z: [{ y: 2, a: '\n' }], a: { z: false, a: null } }
+  const pretty = '{\n  "a": {\n    "a": null,\n    "z": false\n  },\n  "z": [\n    {\n      "a": "\\n",\n      "y": 2\n    }\n  ]\n}\n'
+  const compact = '{"a":{"a":null,"z":false},"z":[{"a":"\\n","y":2}]}\n'
+  assert.equal(stable(value), pretty)
+  assert.equal(stable(value, 2), pretty)
+  assert.equal(stable(value, 0), compact)
+  assert.deepEqual(JSON.parse(compact), JSON.parse(pretty))
+})
+
 async function fixture(t) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'modkit-port-ledger-'))
   t.after(() => rm(root, { recursive: true, force: true }))

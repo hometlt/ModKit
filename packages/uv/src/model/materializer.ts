@@ -1,39 +1,89 @@
+import { packUvmGlb } from './container.js'
+export { packUvmGlb } from './container.js'
 import type {
   ModelSceneInfo,
   ModelNode,
   ModelMesh,
   ModelPrimitive,
   ModelSocketRef,
+  ModelMaterialRef,
+  ModelBoneBinding,
+  ModelAnimationClip,
   MaterializationRequest,
   MaterializationDiffEntry,
 } from '@modkit/sdk'
+import {
+  snapshotModelMaterials,
+  DEFAULT_MODEL_MATERIAL_BUDGET,
+} from '@modkit/codec-kit/model/materials'
+import { DEFAULT_MODEL_SKELETON_BUDGET } from '@modkit/codec-kit/model/skeleton'
+import { DEFAULT_MODEL_ANIMATION_BUDGET } from '@modkit/codec-kit/model/animation'
+import { BufferBuilder as RigBufferBuilder } from './legacy/rig-kernels.js'
+import type { UvmJsonObject } from './legacy/rig-types.js'
+import { prepareUvmSkeleton, writeUvmSkinAttributes, writeUvmAnimations } from './rig.js'
 export interface ModelProjection {
   readonly info: ModelSceneInfo
   readonly nodes?: readonly ModelNode[]
   readonly meshes?: readonly ModelMesh[]
   readonly primitives?: readonly ModelPrimitive[]
   readonly sockets?: readonly ModelSocketRef[]
+  /** Complete material definitions, when the material facet is available. Absence remains valid. */
+  readonly materials?: readonly ModelMaterialRef[]
+  /** Complete explicit scene-node bindings; unknown bind transforms are never guessed. */
+  readonly skeleton?: readonly ModelBoneBinding[]
+  readonly animations?: readonly ModelAnimationClip[]
   readonly excludedFacetIds?: readonly string[]
   readonly resourceClosure?: {
     readonly mode: 'logical' | 'content-qualified'
     readonly entries?: readonly {
       readonly role: string
       readonly logicalId: string
-      readonly mediaHint?: string
+      readonly mediaHint?: string | null
     }[]
     readonly unavailable?: readonly { readonly logicalId: string }[]
   }
 }
 export interface MaterializationOptions {
   readonly digest?: (bytes: Uint8Array) => string
+  /** Bounds the aggregate material definitions, including shader keys and composite passes. */
+  readonly materialBudget?: typeof DEFAULT_MODEL_MATERIAL_BUDGET
+  readonly skeletonBudget?: typeof DEFAULT_MODEL_SKELETON_BUDGET
+  readonly animationBudget?: typeof DEFAULT_MODEL_ANIMATION_BUDGET
+  readonly signal?: AbortSignal
 }
-export interface BufferView {
+export interface BufferView extends UvmJsonObject {
   buffer: number
   byteOffset: number
   byteLength: number
 }
+export interface DocumentAccessor extends UvmJsonObject {
+  bufferView: number
+  componentType: number
+  count: number
+  type: string
+  min?: number[]
+  max?: number[]
+}
+export interface UvmMaterial {
+  pbrMetallicRoughness: { metallicFactor: number; roughnessFactor: number }
+  name?: string
+  extensions?: {
+    UV_game_material: {
+      shader: string
+      params: NonNullable<ModelMaterialRef['shader']>['parameters']
+    }
+  }
+  extras?: {
+    modkit: {
+      material: {
+        version: 1
+        fields: Omit<ModelMaterialRef, 'id' | 'name' | 'shader' | 'contracts'>
+      }
+    }
+  }
+}
 interface PrimitiveEntry {
-  attributes: { POSITION?: number; NORMAL?: number; TEXCOORD_0?: number }
+  attributes: { [semantic: string]: number }
   indices: number
   material?: string
 }
@@ -47,6 +97,10 @@ export interface DocumentNode {
   children?: number[]
   mesh?: number | undefined
   matrix?: number[]
+  skin?: number
+  translation?: number[]
+  rotation?: number[]
+  scale?: number[]
   extensions?: object
 }
 /**
@@ -54,14 +108,14 @@ export interface DocumentNode {
  *
  * It turns a **drained faceted model projection** into UVM/core 1.0 bytes, and it is deliberately
  * the only thing in the tree that does so. Native model codecs and their live projectors do not
- * import this module — `packages/testkit/test/uv-materializer-boundary.test.ts` proves it rather
+ * import this module — `scripts/test/uv-materializer-boundary.test.ts` proves it rather
  * than trusting the convention — because a codec that could also write UVM would be two owners of
  * one format wearing one name.
  *
  * **What it will not do.** It never invents data. Texture identity is written only when the live
  * projection carries the scope's resolved resource closure; a bare count still produces no empty
- * texture objects. Animation channels remain outside UVM/core unless a future admitted scope says
- * how to carry them.
+ * texture objects. Optional explicit skeleton and animation facets supply standard glTF skinning
+ * and TRS channels; unsupported channels remain named losses in the receipt.
  *
  * **Determinism.** Emission order, buffer layout and JSON key order are fixed by this code, not by
  * iteration order of anything. `JSON.stringify` of a freshly built object, a JSON chunk padded with
@@ -76,17 +130,13 @@ export interface DocumentNode {
  * identity intact and its scope hash unchanged. Other identities are renumbered and every affected
  * plane becomes a diff entry in the receipt. It does not pretend the two hashes match.
  *
- * Dependency-free by design: no crypto, no Node built-ins, browser-safe. The digest of the produced
+ * No crypto or Node built-ins; the bounded JSON/material helper is also browser-safe. The digest of the produced
  * bytes is optional evidence supplied by the caller, exactly as `ProjectionReceipt` treats digests.
  */
 
 const MATERIALIZER_ID = 'modkit/uvm-materializer'
 const MATERIALIZER_VERSION = '1.0.0'
 const PROFILE = 'UVM/core@1.0'
-
-const GLB_MAGIC = 0x46546c67
-const JSON_CHUNK = 0x4e4f534a
-const BIN_CHUNK = 0x004e4942
 
 const FLOAT = 5126
 const UINT32 = 5125
@@ -140,38 +190,19 @@ function positionalOrder(ids: readonly string[], pattern: RegExp): string[] | nu
 // buffer assembly
 
 class BufferBuilder {
-  declare chunks: Uint8Array[]
-  declare length: number
-  declare views: BufferView[]
-  constructor() {
-    this.chunks = []
-    this.length = 0
-    this.views = []
-  }
+  readonly buffer = new RigBufferBuilder()
+  readonly views: BufferView[] = []
 
   /** Appends one 4-byte-aligned view and returns its bufferView index. */
   push(typed: Float32Array | Uint32Array) {
     const bytes = new Uint8Array(typed.buffer, typed.byteOffset, typed.byteLength)
-    const offset = this.length
-    this.chunks.push(bytes)
-    this.length += bytes.byteLength
-    const padding = (4 - (this.length % 4)) % 4
-    if (padding > 0) {
-      this.chunks.push(new Uint8Array(padding))
-      this.length += padding
-    }
+    const offset = this.buffer.append(bytes)
     this.views.push({ buffer: 0, byteOffset: offset, byteLength: bytes.byteLength })
     return this.views.length - 1
   }
 
   build() {
-    const result = new Uint8Array(this.length)
-    let cursor = 0
-    for (const chunk of this.chunks) {
-      result.set(chunk, cursor)
-      cursor += chunk.byteLength
-    }
-    return result
+    return this.buffer.finish()
   }
 }
 
@@ -190,48 +221,6 @@ function boundsOf(positions: Float32Array) {
 
 // ---------------------------------------------------------------------------------------------
 // GLB packing — the rule pinned by `conformance/uvm-core/vectors.json`
-
-function le32(value: number) {
-  const result = new Uint8Array(4)
-  new DataView(result.buffer).setUint32(0, value, true)
-  return result
-}
-
-function pad4(bytes: Uint8Array, fill: number) {
-  const result = new Uint8Array((bytes.byteLength + 3) & ~3)
-  result.fill(fill)
-  result.set(bytes)
-  return result
-}
-
-function concat(parts: readonly Uint8Array[]) {
-  const total = parts.reduce((size, part) => size + part.byteLength, 0)
-  const result = new Uint8Array(total)
-  let cursor = 0
-  for (const part of parts) {
-    result.set(part, cursor)
-    cursor += part.byteLength
-  }
-  return result
-}
-
-/** Deterministic `.uvm.glb` bytes for a GLB-shaped document plus its BIN payload. */
-export function packUvmGlb(document: object, binary: Uint8Array) {
-  const json = pad4(encoder.encode(JSON.stringify(document)), 0x20)
-  const bin = pad4(binary, 0x00)
-  const length = 12 + 8 + json.byteLength + 8 + bin.byteLength
-  return concat([
-    le32(GLB_MAGIC),
-    le32(2),
-    le32(length),
-    le32(json.byteLength),
-    le32(JSON_CHUNK),
-    json,
-    le32(bin.byteLength),
-    le32(BIN_CHUNK),
-    bin,
-  ])
-}
 
 // ---------------------------------------------------------------------------------------------
 // the materializer
@@ -254,8 +243,15 @@ export function packUvmGlb(document: object, binary: Uint8Array) {
 export function materializeUvmCore(
   projection: ModelProjection,
   request: MaterializationRequest,
-  { digest }: MaterializationOptions = {},
+  {
+    digest,
+    materialBudget = DEFAULT_MODEL_MATERIAL_BUDGET,
+    skeletonBudget = DEFAULT_MODEL_SKELETON_BUDGET,
+    animationBudget = DEFAULT_MODEL_ANIMATION_BUDGET,
+    signal,
+  }: MaterializationOptions = {},
 ) {
+  if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
   const info = projection?.info
   if (info === undefined) fail('the projection carries no info')
   if (request?.scope === undefined) fail('a materialization request must name its semantic scope')
@@ -370,12 +366,20 @@ export function materializeUvmCore(
 
   // --- geometry ------------------------------------------------------------------------------
   const buffers = new BufferBuilder()
-  const accessors = []
+  const accessors: DocumentAccessor[] = []
+  const rigStorage = { buffer: buffers.buffer, views: buffers.views, accessors }
+  const skeleton =
+    projection.skeleton === undefined
+      ? undefined
+      : prepareUvmSkeleton(projection.skeleton, orderedNodes, rigStorage, skeletonBudget, signal)
+  const meshSkins = new Map<string, number | null>()
   const emittedMeshes = []
   const materialIds = new Set<string>()
   let emittedPrimitives = 0
 
   const primitiveById = new Map((primitives ?? []).map(item => [item.id, item]))
+  const primitiveIndices = new Map<string, { mesh: number; primitive: number }>()
+  const ambiguousPrimitiveIds = new Set<string>()
 
   for (const mesh of orderedMeshes) {
     const meshPrimitives = []
@@ -408,7 +412,7 @@ export function materializeUvmCore(
       }
       const vertexCount = positions.length / 3
       const attributes: PrimitiveEntry['attributes'] = {}
-      attributes.POSITION = accessors.length
+      attributes['POSITION'] = accessors.length
       const positionBounds = boundsOf(positions)
       accessors.push({
         bufferView: buffers.push(positions),
@@ -418,29 +422,94 @@ export function materializeUvmCore(
         min: positionBounds.min,
         max: positionBounds.max,
       })
-      if (primitive.normals !== undefined && primitive.normals !== null) {
-        const normals = Float32Array.from(
-          finite(primitive.normals, `primitive ${primitive.id} normals`),
-        )
-        attributes.NORMAL = accessors.length
+      const attribute = (semantic: string, values: Float32Array, width: 2 | 3 | 4) => {
+        const data = Float32Array.from(finite(values, `primitive ${primitive.id} ${semantic}`))
+        if (data.length !== vertexCount * width || !data.every(Number.isFinite)) {
+          fail(
+            `primitive ${primitive.id} ${semantic} must contain ${vertexCount} finite VEC${width} values`,
+          )
+        }
+        if (
+          semantic === 'TANGENT' &&
+          data.some((value, index) => index % 4 === 3 && value !== -1 && value !== 1)
+        ) {
+          fail(`primitive ${primitive.id} tangent handedness must be -1 or 1`)
+        }
+        if (semantic === 'NORMAL' || semantic === 'TANGENT') {
+          let normalized = 0
+          for (let offset = 0; offset < data.length; offset += width) {
+            const length = Math.hypot(data[offset]!, data[offset + 1]!, data[offset + 2]!)
+            if (length === 0) fail(`primitive ${primitive.id} ${semantic} has no direction`)
+            if (Math.abs(length - 1) <= 0.0001) continue
+            for (let axis = 0; axis < 3; axis++) data[offset + axis] = data[offset + axis]! / length
+            normalized++
+          }
+          if (normalized > 0) {
+            const message = `${normalized} ${semantic} directions normalized to the unit vectors required by glTF`
+            losses.push(`primitive ${primitive.id}: ${message}`)
+            note(
+              'uv.model/geometry@1',
+              'value-differs',
+              `/primitives/${primitive.id}/${semantic}`,
+              message,
+            )
+          }
+        }
+        attributes[semantic] = accessors.length
         accessors.push({
-          bufferView: buffers.push(normals),
+          bufferView: buffers.push(data),
           componentType: FLOAT,
-          count: normals.length / 3,
-          type: 'VEC3',
+          count: vertexCount,
+          type: `VEC${width}`,
         })
       }
-      if (primitive.textureCoordinates !== undefined && primitive.textureCoordinates !== null) {
-        const uv = Float32Array.from(
-          finite(primitive.textureCoordinates, `primitive ${primitive.id} texture coordinates`),
-        )
-        attributes.TEXCOORD_0 = accessors.length
-        accessors.push({
-          bufferView: buffers.push(uv),
-          componentType: FLOAT,
-          count: uv.length / 2,
-          type: 'VEC2',
-        })
+      if (primitive.normals != null) attribute('NORMAL', primitive.normals, 3)
+      if (primitive.tangents != null) attribute('TANGENT', primitive.tangents, 4)
+      if (primitive.colors != null) attribute('COLOR_0', primitive.colors, 4)
+      const uvSets = new Map<number, Float32Array>()
+      for (const channel of primitive.textureCoordinateSets ?? []) {
+        if (!Number.isSafeInteger(channel.set) || channel.set < 0 || uvSets.has(channel.set)) {
+          fail(`primitive ${primitive.id} has an invalid or duplicate UV set`)
+        }
+        uvSets.set(channel.set, channel.coordinates)
+      }
+      if (primitive.textureCoordinates != null) {
+        const setZero = uvSets.get(0)
+        if (
+          setZero !== undefined &&
+          (setZero.length !== primitive.textureCoordinates.length ||
+            setZero.some((value, index) => value !== primitive.textureCoordinates?.[index]))
+        ) {
+          fail(`primitive ${primitive.id} has conflicting UV set zero values`)
+        }
+        uvSets.set(0, primitive.textureCoordinates)
+      }
+      const orderedUvSets = [...uvSets].sort(([a], [b]) => a - b)
+      if (orderedUvSets.some(([set], index) => set !== index)) {
+        fail(`primitive ${primitive.id} UV sets must be consecutive from zero for UVM/core`)
+      }
+      for (const [set, coordinates] of orderedUvSets) {
+        attribute(`TEXCOORD_${set}`, coordinates, 2)
+      }
+      if (primitive.boneIndices !== undefined || primitive.boneWeights !== undefined) {
+        if (skeleton === undefined) {
+          losses.push(`primitive ${primitive.id} skin bindings require a skeleton projection`)
+          note(
+            'uv.model/geometry@1',
+            'absent-in-artifact',
+            `/primitives/${primitive.id}/skin`,
+            'bone indices and weights cannot be materialized without their skeleton and bind transforms',
+          )
+        } else {
+          const skin = writeUvmSkinAttributes(primitive, attributes, skeleton, rigStorage)
+          if (meshSkins.has(mesh.id) && meshSkins.get(mesh.id) !== skin)
+            fail(`mesh ${mesh.id} mixes different skin bindings`)
+          meshSkins.set(mesh.id, skin)
+        }
+      } else {
+        if (meshSkins.has(mesh.id) && meshSkins.get(mesh.id) !== null)
+          fail(`mesh ${mesh.id} mixes skinned and unskinned primitives`)
+        meshSkins.set(mesh.id, null)
       }
       const indexValues =
         primitive.indices === undefined || primitive.indices === null
@@ -458,6 +527,13 @@ export function materializeUvmCore(
         materialIds.add(primitive.materialId)
         entry.material = primitive.materialId
       }
+      if (primitiveIndices.has(primitive.id)) ambiguousPrimitiveIds.add(primitive.id)
+      if (ambiguousPrimitiveIds.has(primitive.id)) primitiveIndices.delete(primitive.id)
+      else
+        primitiveIndices.set(primitive.id, {
+          mesh: emittedMeshes.length,
+          primitive: meshPrimitives.length,
+        })
       meshPrimitives.push(entry)
       emittedPrimitives += 1
     }
@@ -466,17 +542,34 @@ export function materializeUvmCore(
 
   // --- materials -----------------------------------------------------------------------------
   /*
-   * The base contract publishes a material *count* and a material id per primitive, and nothing
-   * else — no name, no parameters. So the document carries exactly as many neutral materials as
-   * the projection counted, which reproduces the count without claiming to know what they looked
-   * like. The optional `common.view/model-material-source@1` facet is what will carry the rest,
-   * once a publisher exists for it.
+   * A base-only projection still carries neutral materials. The optional material facet adds the
+   * definitions, including unused materials. Artifact bindings remain positional; renumbering is
+   * reported, and a missing definition in a supplied complete facet is a contradiction.
    */
-  const referenced = [...materialIds]
+  const definitions =
+    projection.materials === undefined
+      ? undefined
+      : snapshotModelMaterials(projection.materials, materialBudget, signal)
+  if (definitions !== undefined && definitions.length !== Number(info.materials ?? 0)) {
+    fail('material definitions do not match the declared material count')
+  }
+  const definitionsById = new Map(definitions?.map(material => [material.id, material]))
+  if (definitions !== undefined) {
+    for (const id of materialIds)
+      if (!definitionsById.has(id)) fail(`primitive refers to undefined material ${id}`)
+  }
+  const referenced = [...new Set([...materialIds, ...definitionsById.keys()])]
   const materialIndexById = new Map<string, number>()
   const materialCount = Math.max(Number(info.materials ?? 0), referenced.length)
+  if (
+    !Number.isSafeInteger(materialCount) ||
+    materialCount < 0 ||
+    materialCount > materialBudget.maxNodes
+  ) {
+    fail('material count exceeds the material budget')
+  }
   const positionalMaterials = referenced.every(id => {
-    const match = /^material-(\d+)$/u.exec(id)
+    const match = /^material-(0|[1-9]\d*)$/u.exec(id)
     if (match === null) return false
     const index = Number(match[1])
     if (!Number.isSafeInteger(index) || index < 0 || index >= materialCount) return false
@@ -496,10 +589,55 @@ export function materializeUvmCore(
         'the source names its materials outside the positional convention, so reopening renumbers them',
       )
     }
+    if (definitions !== undefined)
+      note(
+        'common.view/model-material-source@1',
+        'value-differs',
+        '/materials/*/id',
+        'material identity was renumbered to the positional UVM artifact convention',
+      )
   }
-  const materials = Array.from({ length: materialCount }, () => ({
+  const materials: UvmMaterial[] = Array.from({ length: materialCount }, () => ({
     pbrMetallicRoughness: { metallicFactor: 0, roughnessFactor: 1 },
   }))
+  for (const definition of definitions ?? []) {
+    const index = materialIndexById.get(definition.id)!
+    const target = materials[index]!
+    const { id: _id, name, shader, contracts, ...fields } = definition
+    if (name !== undefined) target.name = name
+    if (Object.keys(fields).length > 0)
+      target.extras = { modkit: { material: { version: 1, fields } } }
+    const artifactContracts: string[] = []
+    if (shader !== undefined) {
+      target.extensions = { UV_game_material: { shader: shader.id, params: shader.parameters } }
+      const renderModel = shader.parameters['renderModel']
+      if (renderModel !== null && typeof renderModel === 'object' && !Array.isArray(renderModel)) {
+        const snapshot = renderModel as Readonly<Record<string, unknown>>
+        if (snapshot['version'] === 1 && snapshot['standard'] !== undefined)
+          artifactContracts.push('UV_game_material/standard')
+        if (snapshot['version'] === 1 && snapshot['composite'] !== undefined)
+          artifactContracts.push('UV_game_material/composite')
+      }
+    }
+    if (
+      JSON.stringify([...(contracts ?? [])].sort(byUtf8)) !==
+      JSON.stringify(artifactContracts.sort(byUtf8))
+    ) {
+      note(
+        'common.view/model-material-source@1',
+        'value-differs',
+        `/materials/${definition.id}/contracts`,
+        'contract coverage is derived from the extensions actually written to UVM',
+      )
+    }
+    const omitted = (contracts ?? []).filter(contract => !artifactContracts.includes(contract))
+    if (omitted.length > 0) {
+      lostFacetIds.push('common.view/model-material-source@1')
+      losses.push(
+        `material ${definition.id}: contract payloads not available: ${omitted.join(', ')}`,
+      )
+    }
+  }
   // --- planes this profile cannot carry from the base contract alone --------------------------
   const closure = projection.resourceClosure
   const resourceImages = []
@@ -560,7 +698,7 @@ export function materializeUvmCore(
       `the resource closure carries ${resourceImages.length} image identity or identities, while the base model contract counts ${Number(info.textures ?? 0)} texture(s)`,
     )
   }
-  if (Number(info.animations ?? 0) > 0) {
+  if (Number(info.animations ?? 0) > 0 && projection.animations === undefined) {
     losses.push(`${info.animations} animation(s) were not carried`)
     note(
       'uv.model/structure@1',
@@ -642,9 +780,9 @@ export function materializeUvmCore(
   for (const node of orderedNodes) {
     for (const child of node.childIds ?? []) childless.delete(child)
   }
-  const rootIndices = orderedNodes
+  let rootIndices = orderedNodes
     .filter(node => childless.has(node.id))
-    .map(node => nodeIndexById.get(node.id))
+    .map(node => nodeIndexById.get(node.id)!)
 
   const socketByNodeId = new Map()
   const roleOrdinals = new Map<string, number>()
@@ -682,13 +820,18 @@ export function materializeUvmCore(
 
   const documentNodes = orderedNodes.map(node => {
     const entry: DocumentNode = {}
+    const bone = skeleton?.boneByNode.get(node.id)
     if (typeof node.name === 'string') entry.name = node.name
+    else if (typeof bone?.boneName === 'string' && bone.boneName.length > 0)
+      entry.name = bone.boneName
     const children = (node.childIds ?? [])
       .map(child => nodeIndexById.get(child))
       .filter(index => index !== undefined)
     if (children.length > 0) entry.children = children
     const meshId = (node.meshIds ?? [])[0]
     if (meshId !== undefined && meshIndexById.has(meshId)) entry.mesh = meshIndexById.get(meshId)
+    const skin = meshId === undefined ? undefined : meshSkins.get(meshId)
+    if (skin !== undefined && skin !== null) entry.skin = skin
     if ((node.meshIds ?? []).length > 1) {
       note(
         'uv.model/hierarchy@1',
@@ -700,7 +843,11 @@ export function materializeUvmCore(
     const transform = finite([...(node.transform ?? [])], `node ${node.id} transform`)
     if (transform.length !== 16) fail(`node «${node.id}» transform must carry 16 numbers`)
     // identity is the reader's default; writing it back would be noise, and it reopens the same
-    if (transform.some((value, index) => value !== (index % 5 === 0 ? 1 : 0))) {
+    if (bone !== undefined) {
+      entry.translation = [...bone.localPose!.translation]
+      entry.rotation = [...bone.localPose!.rotation]
+      entry.scale = [...bone.localPose!.scale]
+    } else if (transform.some((value, index) => value !== (index % 5 === 0 ? 1 : 0))) {
       entry.matrix = transform
     }
     const socket = socketByNodeId.get(node.id)
@@ -719,6 +866,98 @@ export function materializeUvmCore(
     return value
   })
 
+  for (const group of skeleton?.groupingRoots ?? []) {
+    // A glTF skin needs one common ancestor. An identity grouping node changes no bind or pose.
+    // Retain an existing common identity ancestor on re-export instead of nesting more wrappers.
+    const existing =
+      group.children.length === 1
+        ? group.children[0]!
+        : documentNodes.findIndex(node =>
+            group.children.every(child => node.children?.includes(child)),
+          )
+    if (existing >= 0) {
+      skeleton!.skins[group.skin]!.skeleton = existing
+      continue
+    }
+    const root = documentNodes.length
+    documentNodes.push({ children: [...group.children] })
+    const children = new Set(group.children)
+    rootIndices = [...rootIndices.filter(index => !children.has(index)), root]
+    skeleton!.skins[group.skin]!.skeleton = root
+    note(
+      'uv.model/hierarchy@1',
+      'absent-in-live',
+      `/nodes/node-${root}`,
+      'an identity grouping node gives the independent skeleton roots a common glTF ancestor',
+    )
+    note(
+      'uv.model/structure@1',
+      'value-differs',
+      '/nodes',
+      'glTF skin grouping adds one identity scene node',
+    )
+  }
+
+  const animation =
+    projection.animations === undefined
+      ? undefined
+      : writeUvmAnimations(
+          projection.animations,
+          nodeIndexById,
+          skeleton?.boneByNode ?? new Map(),
+          rigStorage,
+          animationBudget,
+          signal,
+          primitiveIndices,
+          // Identity scene nodes have explicit TRS defaults without inventing skin membership.
+          // Authored matrix nodes remain ineligible: decomposition is not an implicit export step.
+          new Set(
+            orderedNodes
+              .filter(node => {
+                const index = nodeIndexById.get(node.id)
+                return index !== undefined && documentNodes[index]?.matrix === undefined
+              })
+              .map(node => node.id),
+          ),
+        )
+  for (const loss of animation?.losses ?? []) {
+    losses.push(`animation ${loss.clipId}: ${loss.reason}`)
+    note(
+      'common.view/model-animation-source@1',
+      'value-differs',
+      `/animations/${loss.clipId}${loss.channel === undefined ? '' : `/channels/${loss.channel}`}`,
+      loss.reason,
+    )
+    lostFacetIds.push('common.view/model-animation-source@1')
+  }
+  if (animation !== undefined && animation.animations.length !== Number(info.animations ?? 0))
+    note(
+      'uv.model/structure@1',
+      'value-differs',
+      '/animations',
+      'only clips with writable channels appear as glTF animations; the complete selectable set is retained in UV_game_animation_clips',
+    )
+  if (skeleton !== undefined && skeleton.skins.length > 0) {
+    note(
+      'common.view/model-skeleton-source@1',
+      'value-differs',
+      undefined,
+      'bone indices and hierarchy identities use positional skin joints; publisher-native flags, part identity and matrix annotations are not glTF skin fields',
+    )
+    note(
+      'uv.model/geometry@1',
+      'value-differs',
+      '/primitives/*/skin',
+      'bone indices are remapped to their positional skin joint slots',
+    )
+  }
+  if (animation !== undefined && animation.animations.length > 0)
+    note(
+      'common.view/model-animation-source@1',
+      'value-differs',
+      undefined,
+      'clip and target identities are positional; native frame indices, provenance, bounds and movement speed are not glTF TRS fields',
+    )
   const binary = buffers.build()
   const document = {
     asset: {
@@ -730,8 +969,27 @@ export function materializeUvmCore(
       'UV_asset',
       'UV_provenance',
       ...(socketByNodeId.size === 0 ? [] : ['UV_game_socket']),
+      ...(materials.some(material => material.extensions?.UV_game_material !== undefined)
+        ? ['UV_game_material']
+        : []),
+      ...(animation === undefined || animation.catalog.length === 0
+        ? []
+        : ['UV_game_animation_clips']),
+      ...(animation === undefined || animation.visibility.length === 0
+        ? []
+        : ['UV_game_variants', 'KHR_animation_pointer']),
     ],
     extensions: {
+      ...(animation === undefined || animation.visibility.length === 0
+        ? {}
+        : {
+            UV_game_variants: { visibility: animation.visibility },
+          }),
+      ...(animation === undefined || animation.catalog.length === 0
+        ? {}
+        : {
+            UV_game_animation_clips: { clips: animation.catalog },
+          }),
       UV_asset: {
         id: assetId,
         class: (request.options as { assetClass?: string } | undefined)?.assetClass ?? 'prop',
@@ -747,8 +1005,12 @@ export function materializeUvmCore(
     scene: 0,
     scenes: [{ nodes: rootIndices }],
     nodes: documentNodes,
-    meshes: documentMeshes,
-    materials,
+    ...(documentMeshes.length === 0 ? {} : { meshes: documentMeshes }),
+    ...(materials.length === 0 ? {} : { materials }),
+    ...(skeleton === undefined || skeleton.skins.length === 0 ? {} : { skins: skeleton.skins }),
+    ...(animation === undefined || animation.animations.length === 0
+      ? {}
+      : { animations: animation.animations }),
     ...(resourceImages.length === 0
       ? {}
       : {
@@ -775,7 +1037,14 @@ export function materializeUvmCore(
     diff,
     ...(digest === undefined ? {} : { artifactDigest: digest(bytes) }),
   }
-  return { bytes, document, binary, receipt }
+  // Native importers retain these exact correspondences beside their original fields. The
+  // materializer owns ordering; callers must not reconstruct it from names or source array order.
+  const bindings = {
+    nodes: Object.fromEntries(nodeIndexById),
+    meshes: Object.fromEntries(meshIndexById),
+    materials: Object.fromEntries(materialIndexById),
+  }
+  return { bytes, document, binary, receipt, bindings }
 }
 
 export const MATERIALIZER_COORDINATE = Object.freeze({

@@ -8,29 +8,29 @@
 
 ## Table of contents
 
-| Section | Title |
-| --- | --- |
-| [1](#1-scope-and-goals) | Scope and goals |
-| [2](#2-non-goals) | Non-goals |
-| [3](#3-conformance) | Conformance |
-| [4](#4-relationship-to-gltf-20) | Relationship to glTF 2.0 |
-| [5](#5-container-and-packaging) | Container and packaging |
-| [6](#6-coordinate-system-and-units) | Coordinate system and units |
-| [7](#7-object-model) | Object model |
-| [8](#8-geometry) | Geometry |
-| [9](#9-skeleton-and-skinning) | Skeleton and skinning |
-| [10](#10-sockets-and-attachment) | Sockets and attachment |
-| [11](#11-materials) | Materials |
-| [12](#12-animation) | Animation |
-| [13](#13-effects) | Effects |
-| [14](#14-collision-and-physics) | Collision and physics |
-| [15](#15-lods-and-variants) | LODs and variants |
-| [16](#16-gameplay-metadata) | Gameplay metadata |
+| Section                                   | Title                           |
+| ----------------------------------------- | ------------------------------- |
+| [1](#1-scope-and-goals)                   | Scope and goals                 |
+| [2](#2-non-goals)                         | Non-goals                       |
+| [3](#3-conformance)                       | Conformance                     |
+| [4](#4-relationship-to-gltf-20)           | Relationship to glTF 2.0        |
+| [5](#5-container-and-packaging)           | Container and packaging         |
+| [6](#6-coordinate-system-and-units)       | Coordinate system and units     |
+| [7](#7-object-model)                      | Object model                    |
+| [8](#8-geometry)                          | Geometry                        |
+| [9](#9-skeleton-and-skinning)             | Skeleton and skinning           |
+| [10](#10-sockets-and-attachment)          | Sockets and attachment          |
+| [11](#11-materials)                       | Materials                       |
+| [12](#12-animation)                       | Animation                       |
+| [13](#13-effects)                         | Effects                         |
+| [14](#14-collision-and-physics)           | Collision and physics           |
+| [15](#15-lods-and-variants)               | LODs and variants               |
+| [16](#16-gameplay-metadata)               | Gameplay metadata               |
 | [17](#17-provenance-and-lossy-conversion) | Provenance and lossy conversion |
-| [18](#18-versioning-and-compatibility) | Versioning and compatibility |
-| [19](#19-runtime-integration) | Runtime integration |
-| [20](#20-authoring-tools) | Authoring tools |
-| [21](#21-security-considerations) | Security considerations |
+| [18](#18-versioning-and-compatibility)    | Versioning and compatibility    |
+| [19](#19-runtime-integration)             | Runtime integration             |
+| [20](#20-authoring-tools)                 | Authoring tools                 |
+| [21](#21-security-considerations)         | Security considerations         |
 
 ---
 
@@ -63,13 +63,13 @@ value of the hub is entirely determined by how little it loses, which is why
 UVM explicitly does **not** attempt:
 
 - **A universal shader language.** Games render differently. UVM preserves shader
-  *parameters* and provides a PBR approximation; it does not define pixel output.
+  _parameters_ and provides a PBR approximation; it does not define pixel output.
 - **A universal particle simulator.** No two engines produce identical particle motion.
   UVM preserves emitter parameters faithfully and defines a minimal common subset that
   consumers must approximate. Bit-identical playback across engines is not achievable and
   is not promised.
 - **A universal gameplay model.** Unit statistics belong to a game's balance data, not to
-  its art. UVM carries gameplay metadata as *optional, advisory* payload
+  its art. UVM carries gameplay metadata as _optional, advisory_ payload
   ([section 16](#16-gameplay-metadata)).
 - **Replacing engine-native formats.** UVM is an interchange and tooling format. Shipping
   titles will keep compiling to engine-native runtime formats; UVM is what feeds that
@@ -147,50 +147,49 @@ See [section 13.3](#133-effect-profiles).
 UVM does not define anything a ratified Khronos or well-established vendor extension
 already covers. Writers **SHOULD** prefer these:
 
-| Need | Use | Rationale |
-| --- | --- | --- |
-| Mesh compression | `KHR_draco_mesh_compression`, `EXT_meshopt_compression` | Ratified Khronos standards |
-| GPU texture formats | `KHR_texture_basisu` (KTX2/Basis) | Ratified Khronos standard |
-| Unlit / fixed-function look | `KHR_materials_unlit` | Ratified Khronos standard |
-| Emissive strength | `KHR_materials_emissive_strength` | Ratified Khronos standard (2024) |
-| Specular, sheen, transmission, etc. | `KHR_materials_specular`, `_sheen`, `_transmission`, `_volume`, `_ior` | Ratified Khronos standards (2024–2025) |
-| Texture UV transform | `KHR_texture_transform` | Ratified Khronos standard |
-| Punctual lights | `KHR_lights_punctual` | Ratified Khronos standard |
-| Instancing | `EXT_mesh_gpu_instancing` | Ratified Khronos standard |
-| Variant switching | `KHR_materials_variants` | Ratified Khronos standard; UVM adds game semantics via `UV_game_variants` |
-| Discrete LOD | `MSFT_lod` | Microsoft vendor extension; stable and used in production |
-| Property animation | `KHR_animation_pointer` | Ratified Khronos standard; allows animating any JSON path (used for effects parameters) |
-| Rigid bodies / collision shapes | `KHR_physics_rigid_bodies`, `KHR_collision_shapes` | Draft (ratification expected 2026); UVM uses `UV_game_collision` until standardized |
+| Need                                | Use                                                                    | Rationale                                                                               |
+| ----------------------------------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| Mesh compression                    | `KHR_draco_mesh_compression`, `EXT_meshopt_compression`                | Ratified Khronos standards                                                              |
+| GPU texture formats                 | `KHR_texture_basisu` (KTX2/Basis)                                      | Ratified Khronos standard                                                               |
+| Unlit / fixed-function look         | `KHR_materials_unlit`                                                  | Ratified Khronos standard                                                               |
+| Emissive strength                   | `KHR_materials_emissive_strength`                                      | Ratified Khronos standard (2024)                                                        |
+| Specular, sheen, transmission, etc. | `KHR_materials_specular`, `_sheen`, `_transmission`, `_volume`, `_ior` | Ratified Khronos standards (2024–2025)                                                  |
+| Texture UV transform                | `KHR_texture_transform`                                                | Ratified Khronos standard                                                               |
+| Punctual lights                     | `KHR_lights_punctual`                                                  | Ratified Khronos standard                                                               |
+| Instancing                          | `EXT_mesh_gpu_instancing`                                              | Ratified Khronos standard                                                               |
+| Variant switching                   | `KHR_materials_variants`                                               | Ratified Khronos standard; UVM adds game semantics via `UV_game_variants`               |
+| Discrete LOD                        | `MSFT_lod`                                                             | Microsoft vendor extension; stable and used in production                               |
+| Property animation                  | `KHR_animation_pointer`                                                | Ratified Khronos standard; allows animating any JSON path (used for effects parameters) |
+| Rigid bodies / collision shapes     | `KHR_physics_rigid_bodies`, `KHR_collision_shapes`                     | Draft (ratification expected 2026); UVM uses `UV_game_collision` until standardized     |
 
 `UV_game_collision` uses a migration path: when `KHR_collision_shapes` ratifies, a mechanical 1:1 rewrite is possible. Writers SHOULD emit both during a grace period, then migrate to Khronos. See [the extension registry](SPEC_UVM_EXTENSIONS.md) for the
 migration notes.
 
 ### 4.3 The UVM extension registry
 
-| Extension | Attaches to | Purpose |
-| --- | --- | --- |
-| `UV_asset` | document root | Game-object identity, class, capability flags |
-| `UV_units` | document root | Game-unit ↔ metre scale, grid cell size |
-| `UV_game_socket` | node | Attachment point semantics |
-| `UV_game_skeleton` | skin | Bone roles for cross-game retargeting |
-| `UV_retarget` | skin | Humanoid / vehicle rig profile mapping |
-| `UV_game_material_team_color` | material | Team, house and player colour |
-| `UV_game_material` | material | Legacy fixed-function and game-shader parameters |
-| `UV_game_animation_clips` | animation | Clip name, priority, loop, blend, concurrency |
-| `UV_game_animation_events` | animation | Timestamped gameplay events |
-| `UV_animation_layers` | document root | Additive/override layers with bone masks |
-| `KHR_animation_pointer` | animation channel target | Channels targeting extension properties |
-| `UV_game_effects` | document root | Particles, ribbons, forces, warps, projectors |
-| `UV_game_collision` | node | Collision primitives and meshes |
-| `MSFT_lod` | node/material | Standard glTF LOD topology (`ids`) |
-| `MODKITX_lod_selection` | document root | Incubating selection/hysteresis beside official topology |
-| `MODKITX_batching_hints` | document root | Incubating advisory renderer batching hints |
-| `MODKITX_impostor_relation` | document root | Incubating node-to-impostor relation |
-| `UV_game_variants` | document root | Named non-material variants (damage states, wrecks) |
-| `UV_game_gameplay` | document root | Advisory unit statistics |
-| `UV_game_<id>` | any | Game-specific escape hatch (`UV_game_sc2`, …) |
-| `UV_provenance` | document root | Source identity, lost features, preserved blobs |
-| `UV_source_blob` | document root | Verbatim source chunks for lossless round-trip |
+| Extension                     | Attaches to              | Purpose                                                                         |
+| ----------------------------- | ------------------------ | ------------------------------------------------------------------------------- |
+| `UV_asset`                    | document root            | Game-object identity, class, capability flags                                   |
+| `UV_units`                    | document root            | Game-unit ↔ metre scale, grid cell size                                         |
+| `UV_game_socket`              | node                     | Attachment point semantics                                                      |
+| `UV_game_skeleton`            | skin                     | Bone roles for cross-game retargeting                                           |
+| `UV_retarget`                 | skin                     | Humanoid / vehicle rig profile mapping                                          |
+| `UV_game_material_team_color` | material                 | Team, house and player colour                                                   |
+| `UV_game_material`            | material                 | Legacy fixed-function and game-shader parameters                                |
+| `UV_game_animation_clips`     | root and animation       | Complete selectable clip catalog; clip name, priority, loop, blend, concurrency |
+| `UV_game_animation_events`    | animation                | Timestamped gameplay events                                                     |
+| `UV_animation_layers`         | document root            | Additive/override layers with bone masks                                        |
+| `KHR_animation_pointer`       | animation channel target | Channels targeting extension properties                                         |
+| `UV_game_effects`             | document root            | Particles, ribbons, forces, warps, projectors                                   |
+| `UV_game_collision`           | node                     | Collision primitives and meshes                                                 |
+| `MSFT_lod`                    | node/material            | Standard glTF LOD topology (`ids`)                                              |
+| `MODKITX_lod_selection`       | document root            | Incubating selection/hysteresis beside official topology                        |
+| `MODKITX_batching_hints`      | document root            | Incubating advisory renderer batching hints                                     |
+| `MODKITX_impostor_relation`   | document root            | Incubating node-to-impostor relation                                            |
+| `UV_game_variants`            | document root            | Named non-material variants (damage states, wrecks)                             |
+| `UV_game_gameplay`            | document root            | Advisory unit statistics                                                        |
+| `UV_game_<id>`                | any                      | Game-specific escape hatch (`UV_game_sc2`, …)                                   |
+| `UV_provenance`               | document root            | Source identity, conversion history and explicit loss diagnostics               |
 
 Full property tables: [SPEC_UVM_EXTENSIONS.md](SPEC_UVM_EXTENSIONS.md).
 
@@ -199,9 +198,9 @@ Full property tables: [SPEC_UVM_EXTENSIONS.md](SPEC_UVM_EXTENSIONS.md).
 UVM defines two encodings of the **same** data model. Conversion between them is lossless
 and byte-deterministic after canonicalization rules are implemented.
 
-| Encoding | Extension | Layout |
-| --- | --- | --- |
-| Binary | `.uvm.glb` | GLB — JSON chunk + BIN chunk, single file |
+| Encoding  | Extension              | Layout                                          |
+| --------- | ---------------------- | ----------------------------------------------- |
+| Binary    | `.uvm.glb`             | GLB — JSON chunk + BIN chunk, single file       |
 | Directory | `.uvm.gltf` + siblings | glTF JSON + external `.bin` + external textures |
 
 ### 5.1 Trade-offs
@@ -254,7 +253,6 @@ tank.uvm.glb.d/
 │   └── tank_wreck.uvm.gltf # separate asset, referenced by UV_game_variants
 └── provenance/
     ├── source.json          # UV_provenance, if externalised
-    └── blobs/               # UV_source_blob payloads
 ```
 
 `provenance/` is separable on purpose: a shipping build strips it, an authoring build keeps
@@ -275,17 +273,17 @@ deviating would break every consumer listed in [section 4.2](#42-khronos-extensi
 
 Source games differ. The importer, not the format, performs the change of basis:
 
-| Source | Basis | Forward | Units | Transform to UVM |
-| --- | --- | --- | --- | --- |
-| StarCraft II M3 | RH, +Z up | +X | game units | `(x, y, z) → (x, z, -y)`; scale by `metersPerGameUnit` |
-| Warcraft 3 MDX | RH, +Z up | +X | game units | same as M3 |
-| C&C W3D | RH, +Z up | +X | inches or units | `(x, y, z) → (x, z, -y)` |
-| Spring / Recoil S3O | LH, +Y up | +Z | elmos (1 elmo = 1/8 of a map square) | negate X to convert handedness; `1 elmo = 0.125 × squareSize` |
-| Supreme Commander SCM | RH, +Y up | +Z | metres | identity except forward-axis metadata |
-| Unreal | LH, +Z up | +X | centimetres | `(x, y, z) → (x, z, y)` with X negation; `× 0.01` |
-| Unity | LH, +Y up | +Z | metres | negate Z |
-| Blender | RH, +Z up | -Y | metres | `(x, y, z) → (x, z, -y)` |
-| 3ds Max | RH, +Z up | +Y | generic | `(x, y, z) → (x, z, -y)` |
+| Source                | Basis     | Forward | Units                                | Transform to UVM                                              |
+| --------------------- | --------- | ------- | ------------------------------------ | ------------------------------------------------------------- |
+| StarCraft II M3       | RH, +Z up | +X      | game units                           | `(x, y, z) → (x, z, -y)`; scale by `metersPerGameUnit`        |
+| Warcraft 3 MDX        | RH, +Z up | +X      | game units                           | same as M3                                                    |
+| C&C W3D               | RH, +Z up | +X      | inches or units                      | `(x, y, z) → (x, z, -y)`                                      |
+| Spring / Recoil S3O   | LH, +Y up | +Z      | elmos (1 elmo = 1/8 of a map square) | negate X to convert handedness; `1 elmo = 0.125 × squareSize` |
+| Supreme Commander SCM | RH, +Y up | +Z      | metres                               | identity except forward-axis metadata                         |
+| Unreal                | LH, +Z up | +X      | centimetres                          | `(x, y, z) → (x, z, y)` with X negation; `× 0.01`             |
+| Unity                 | LH, +Y up | +Z      | metres                               | negate Z                                                      |
+| Blender               | RH, +Z up | -Y      | metres                               | `(x, y, z) → (x, z, -y)`                                      |
+| 3ds Max               | RH, +Z up | +Y      | generic                              | `(x, y, z) → (x, z, -y)`                                      |
 
 Importers **MUST** record the source basis in `UV_provenance.sourceAxes` so an exporter
 back to that format reproduces the original numerically, rather than re-deriving a guess.
@@ -313,7 +311,7 @@ discarding the grid relationship destroys the only scale that mattered.
 ```
 
 `metersPerSourceUnit` makes the asset physically placeable; `sourceUnitsPerCell` and
-`footprintCells` make it *gameplay*-placeable. An RTS exporter uses the second pair; a
+`footprintCells` make it _gameplay_-placeable. An RTS exporter uses the second pair; a
 Blender or Unreal exporter uses the first.
 
 ## 7. Object model
@@ -382,33 +380,33 @@ correctness, only for display and filtering.
 
 ### 7.2 Coverage of the required object kinds
 
-| Object kind | Encoding |
-| --- | --- |
-| Static model | meshes, no skin, no animations |
-| Animated (rigid) model | meshes + node TRS animation, no skin |
-| Skeletal model | meshes + skin + animations |
-| Vehicle | skin with `UV_game_skeleton` roles `turret_yaw`, `barrel_pitch`, `wheel_*`, `track_*` |
-| Building | mesh + `UV_game_variants` construction and damage states + `UV_game_collision` footprint |
-| Creature / character | skin + `UV_retarget` humanoid profile |
-| Weapon | mesh + sockets `grip`, `muzzle`; usually a separate asset attached at runtime |
-| RTS unit | all of the above plus `UV_game_gameplay` and team-colour material |
+| Object kind            | Encoding                                                                                 |
+| ---------------------- | ---------------------------------------------------------------------------------------- |
+| Static model           | meshes, no skin, no animations                                                           |
+| Animated (rigid) model | meshes + node TRS animation, no skin                                                     |
+| Skeletal model         | meshes + skin + animations                                                               |
+| Vehicle                | skin with `UV_game_skeleton` roles `turret_yaw`, `barrel_pitch`, `wheel_*`, `track_*`    |
+| Building               | mesh + `UV_game_variants` construction and damage states + `UV_game_collision` footprint |
+| Creature / character   | skin + `UV_retarget` humanoid profile                                                    |
+| Weapon                 | mesh + sockets `grip`, `muzzle`; usually a separate asset attached at runtime            |
+| RTS unit               | all of the above plus `UV_game_gameplay` and team-colour material                        |
 
 ## 8. Geometry
 
 Geometry is plain glTF. Nothing is redefined.
 
-| Concept | glTF encoding |
-| --- | --- |
-| Vertices | `POSITION` accessor, `VEC3`/`FLOAT` |
-| Indices | `indices` accessor, `UNSIGNED_SHORT` or `UNSIGNED_INT` |
-| Normals | `NORMAL`, `VEC3`/`FLOAT` |
-| Tangents | `TANGENT`, `VEC4`/`FLOAT`; `w` is bitangent handedness |
-| UV channels | `TEXCOORD_0` … `TEXCOORD_n` |
-| Vertex colours | `COLOR_0`, `VEC3` or `VEC4` |
-| Skin weights | `JOINTS_0`/`WEIGHTS_0`, plus `_1` for up to 8 influences |
-| Multiple materials | one `primitive` per material within a mesh |
-| Morph targets | `targets` array + `weights` |
-| Topology | `mode`: 4 triangles, 1 lines, 3 line strip, 0 points |
+| Concept            | glTF encoding                                            |
+| ------------------ | -------------------------------------------------------- |
+| Vertices           | `POSITION` accessor, `VEC3`/`FLOAT`                      |
+| Indices            | `indices` accessor, `UNSIGNED_SHORT` or `UNSIGNED_INT`   |
+| Normals            | `NORMAL`, `VEC3`/`FLOAT`                                 |
+| Tangents           | `TANGENT`, `VEC4`/`FLOAT`; `w` is bitangent handedness   |
+| UV channels        | `TEXCOORD_0` … `TEXCOORD_n`                              |
+| Vertex colours     | `COLOR_0`, `VEC3` or `VEC4`                              |
+| Skin weights       | `JOINTS_0`/`WEIGHTS_0`, plus `_1` for up to 8 influences |
+| Multiple materials | one `primitive` per material within a mesh               |
+| Morph targets      | `targets` array + `weights`                              |
+| Topology           | `mode`: 4 triangles, 1 lines, 3 line strip, 0 points     |
 
 ### 8.1 Recommended encodings
 
@@ -429,37 +427,92 @@ Writers **SHOULD**:
 
 ```json
 {
-  "meshes": [{
-    "name": "hull",
-    "primitives": [{
-      "attributes": { "POSITION": 0, "NORMAL": 1, "TANGENT": 2, "TEXCOORD_0": 3,
-                      "JOINTS_0": 4, "WEIGHTS_0": 5 },
-      "indices": 6,
-      "material": 0,
-      "mode": 4
-    }]
-  }],
+  "meshes": [
+    {
+      "name": "hull",
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0,
+            "NORMAL": 1,
+            "TANGENT": 2,
+            "TEXCOORD_0": 3,
+            "JOINTS_0": 4,
+            "WEIGHTS_0": 5
+          },
+          "indices": 6,
+          "material": 0,
+          "mode": 4
+        }
+      ]
+    }
+  ],
   "accessors": [
-    { "bufferView": 0, "byteOffset": 0,  "componentType": 5126, "count": 2048,
-      "type": "VEC3", "min": [-1.4, 0.0, -2.6], "max": [1.4, 1.9, 2.6] },
-    { "bufferView": 0, "byteOffset": 12, "componentType": 5122, "count": 2048,
-      "type": "VEC3", "normalized": true },
-    { "bufferView": 0, "byteOffset": 18, "componentType": 5122, "count": 2048,
-      "type": "VEC4", "normalized": true },
-    { "bufferView": 0, "byteOffset": 26, "componentType": 5123, "count": 2048,
-      "type": "VEC2", "normalized": true },
+    {
+      "bufferView": 0,
+      "byteOffset": 0,
+      "componentType": 5126,
+      "count": 2048,
+      "type": "VEC3",
+      "min": [-1.4, 0.0, -2.6],
+      "max": [1.4, 1.9, 2.6]
+    },
+    {
+      "bufferView": 0,
+      "byteOffset": 12,
+      "componentType": 5122,
+      "count": 2048,
+      "type": "VEC3",
+      "normalized": true
+    },
+    {
+      "bufferView": 0,
+      "byteOffset": 18,
+      "componentType": 5122,
+      "count": 2048,
+      "type": "VEC4",
+      "normalized": true
+    },
+    {
+      "bufferView": 0,
+      "byteOffset": 26,
+      "componentType": 5123,
+      "count": 2048,
+      "type": "VEC2",
+      "normalized": true
+    },
     { "bufferView": 1, "componentType": 5121, "count": 2048, "type": "VEC4" },
-    { "bufferView": 2, "componentType": 5121, "count": 2048, "type": "VEC4",
-      "normalized": true },
+    {
+      "bufferView": 2,
+      "componentType": 5121,
+      "count": 2048,
+      "type": "VEC4",
+      "normalized": true
+    },
     { "bufferView": 3, "componentType": 5123, "count": 5412, "type": "SCALAR" }
   ],
   "bufferViews": [
-    { "buffer": 0, "byteOffset": 0,     "byteLength": 69632, "byteStride": 34,
-      "target": 34962 },
-    { "buffer": 0, "byteOffset": 69632, "byteLength": 8192,  "byteStride": 4,
-      "target": 34962 },
-    { "buffer": 0, "byteOffset": 77824, "byteLength": 8192,  "byteStride": 4,
-      "target": 34962 },
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 69632,
+      "byteStride": 34,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 69632,
+      "byteLength": 8192,
+      "byteStride": 4,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 77824,
+      "byteLength": 8192,
+      "byteStride": 4,
+      "target": 34962
+    },
     { "buffer": 0, "byteOffset": 86016, "byteLength": 10824, "target": 34963 }
   ]
 }
@@ -480,22 +533,27 @@ mechanism, and every glTF tool already understands it.
 ```json
 {
   "nodes": [
-    { "name": "Root",   "children": [1] },
+    { "name": "Root", "children": [1] },
     { "name": "Turret", "children": [2], "rotation": [0, 0, 0, 1] },
     { "name": "Barrel", "translation": [0, 0.4, 1.2] }
   ],
-  "skins": [{
-    "name": "tank_rig",
-    "skeleton": 0,
-    "joints": [0, 1, 2],
-    "inverseBindMatrices": 7,
-    "extensions": {
-      "UV_game_skeleton": {
-        "roles": { "0": "root", "1": "turret_yaw", "2": "barrel_pitch" },
-        "axes":  { "1": { "rotate": "y" }, "2": { "rotate": "x", "limits": [-0.17, 0.35] } }
+  "skins": [
+    {
+      "name": "tank_rig",
+      "skeleton": 0,
+      "joints": [0, 1, 2],
+      "inverseBindMatrices": 7,
+      "extensions": {
+        "UV_game_skeleton": {
+          "roles": { "0": "root", "1": "turret_yaw", "2": "barrel_pitch" },
+          "axes": {
+            "1": { "rotate": "y" },
+            "2": { "rotate": "x", "limits": [-0.17, 0.35] }
+          }
+        }
       }
     }
-  }]
+  ]
 }
 ```
 
@@ -503,12 +561,12 @@ mechanism, and every glTF tool already understands it.
 
 Hierarchies from different games are structurally similar and nominally incompatible:
 
-| Game | Hierarchy | Bone naming |
-| --- | --- | --- |
-| StarCraft II M3 | `Root → Marine → Weapon` | `Bone_*`, `Ref_*` for attachments |
-| C&C W3D | `Tank → Turret → Barrel` | `TURRET`, `BARREL`, `MUZZLE*`, `FIREPOINT*` |
-| Spring / Recoil | `Unit → Turret → Weapon` | piece names referenced by Lua/BOS scripts |
-| Warcraft 3 MDX | flat-ish, `Bone_*` | attachment objects named `Hand Left Ref` |
+| Game            | Hierarchy                | Bone naming                                 |
+| --------------- | ------------------------ | ------------------------------------------- |
+| StarCraft II M3 | `Root → Marine → Weapon` | `Bone_*`, `Ref_*` for attachments           |
+| C&C W3D         | `Tank → Turret → Barrel` | `TURRET`, `BARREL`, `MUZZLE*`, `FIREPOINT*` |
+| Spring / Recoil | `Unit → Turret → Weapon` | piece names referenced by Lua/BOS scripts   |
+| Warcraft 3 MDX  | flat-ish, `Bone_*`       | attachment objects named `Hand Left Ref`    |
 
 Nothing in a raw bone hierarchy tells a converter that W3D's `TURRET` and M3's yaw bone are
 the same concept. Name matching fails as soon as an artist renames a bone or works in
@@ -546,7 +604,13 @@ original in `UV_provenance` so the export path can undo it.
   "extensions": {
     "UV_retarget": {
       "profile": "humanoid-1",
-      "bones": { "hips": 3, "spine": 4, "head": 9, "leftHand": 14, "rightHand": 19 },
+      "bones": {
+        "hips": 3,
+        "spine": 4,
+        "head": 9,
+        "leftHand": 14,
+        "rightHand": 19
+      },
       "restPose": "t-pose",
       "scaleReference": { "boneA": 3, "boneB": 9, "meters": 0.72 }
     }
@@ -568,7 +632,8 @@ socket **a glTF node with a `UV_game_socket` extension**:
 {
   "nodes": [
     { "name": "Barrel", "children": [4] },
-    { "name": "muzzle_main",
+    {
+      "name": "muzzle_main",
       "translation": [0, 0, 2.4],
       "rotation": [0, 0, 0, 1],
       "extensions": {
@@ -586,7 +651,7 @@ socket **a glTF node with a `UV_game_socket` extension**:
 
 Reasons a node beats a record:
 
-- The full transform — translation, rotation *and* scale — comes for free, correctly
+- The full transform — translation, rotation _and_ scale — comes for free, correctly
   composed through the parent chain. A `{bone, position}` record cannot express orientation,
   which is exactly what a muzzle needs.
 - Sockets animate. A node can be a channel target, so a recoiling muzzle or a moving
@@ -597,17 +662,17 @@ Reasons a node beats a record:
 
 ### 10.2 Socket roles
 
-| Role | Meaning | Convention |
-| --- | --- | --- |
-| `muzzle` | Projectile origin | `forward` axis is the firing direction |
-| `attach` | Generic child-asset mount | child's origin aligns to socket origin |
-| `hardpoint` | Swappable weapon/equipment mount | carries `capacity` and `accepts` tags |
-| `effect` | Particle/decal spawn point | may carry `effectHint` |
-| `passenger` | Rider or garrison slot | `index` orders the slots |
-| `wreck-pivot` | Where the wreck variant aligns | used by `UV_game_variants` |
-| `ui-anchor` | Health bar, selection ring, status icon | usually top-centre |
-| `ground-contact` | IK foot or wheel contact | paired with `UV_game_skeleton` role |
-| `hitpoint` | Damage impact reference | `tags` may name a body region |
+| Role             | Meaning                                 | Convention                             |
+| ---------------- | --------------------------------------- | -------------------------------------- |
+| `muzzle`         | Projectile origin                       | `forward` axis is the firing direction |
+| `attach`         | Generic child-asset mount               | child's origin aligns to socket origin |
+| `hardpoint`      | Swappable weapon/equipment mount        | carries `capacity` and `accepts` tags  |
+| `effect`         | Particle/decal spawn point              | may carry `effectHint`                 |
+| `passenger`      | Rider or garrison slot                  | `index` orders the slots               |
+| `wreck-pivot`    | Where the wreck variant aligns          | used by `UV_game_variants`             |
+| `ui-anchor`      | Health bar, selection ring, status icon | usually top-centre                     |
+| `ground-contact` | IK foot or wheel contact                | paired with `UV_game_skeleton` role    |
+| `hitpoint`       | Damage impact reference                 | `tags` may name a body region          |
 
 `forward` names which local axis points "out" of the socket (`+x`, `-x`, `+y`, `-y`, `+z`,
 `-z`), defaulting to `-z` to match glTF's forward convention. This matters because source
@@ -634,13 +699,13 @@ understands all three reproduces the original look.
 Team, house and player colour is the single most common game-specific material feature and
 every RTS solves it differently:
 
-| Game | Mechanism |
-| --- | --- |
-| StarCraft II | Team-colour texture layer multiplied into diffuse; a per-material colour slot |
-| Warcraft 3 | Replaceable texture IDs 1 (team colour) and 2 (team glow) |
-| C&C (SAGE, W3D) | House colour applied to a masked channel |
-| Spring / Recoil | Dedicated team texture (`tex2`) with the team colour in a channel |
-| Total Annihilation | Palette index ranges remapped per player |
+| Game               | Mechanism                                                                     |
+| ------------------ | ----------------------------------------------------------------------------- |
+| StarCraft II       | Team-colour texture layer multiplied into diffuse; a per-material colour slot |
+| Warcraft 3         | Replaceable texture IDs 1 (team colour) and 2 (team glow)                     |
+| C&C (SAGE, W3D)    | House colour applied to a masked channel                                      |
+| Spring / Recoil    | Dedicated team texture (`tex2`) with the team colour in a channel             |
+| Total Annihilation | Palette index ranges remapped per player                                      |
 
 `UV_game_material_team_color` unifies these into "where is the mask, and how is the colour
 combined":
@@ -686,11 +751,16 @@ exponents, fresnel terms, per-layer operations. This is the serialisation of the
       "cull": "back",
       "depthWrite": true,
       "layers": [
-        { "slot": "diffuse",  "texture": 0, "uv": 0, "op": "modulate" },
-        { "slot": "normal",   "texture": 1, "uv": 0 },
+        { "slot": "diffuse", "texture": 0, "uv": 0, "op": "modulate" },
+        { "slot": "normal", "texture": 1, "uv": 0 },
         { "slot": "specular", "texture": 4, "uv": 0, "exponent": 24.0 },
-        { "slot": "emissive", "texture": 5, "uv": 1, "op": "add",
-          "scroll": [0.0, 0.35] }
+        {
+          "slot": "emissive",
+          "texture": 5,
+          "uv": 1,
+          "op": "add",
+          "scroll": [0.0, 0.35]
+        }
       ],
       "params": { "fresnelPower": 2.2, "fresnelColor": [0.2, 0.6, 1.0] }
     }
@@ -714,10 +784,9 @@ PNG and JPEG payloads use ordinary glTF images and texture `source` indices. KTX
 **MUST** use `mimeType: "image/ktx2"` and `KHR_texture_basisu`; a texture without a core fallback
 **MUST** list `KHR_texture_basisu` in both `extensionsUsed` and `extensionsRequired`. Writers
 **MUST NOT** decode and re-encode an already valid KTX2 companion merely to package it as UVM.
-When archival preservation is enabled, the same original bytes MAY also appear in
-`UV_source_blob`; the image buffer view and preserved record then refer to the same byte-exact
-payload. A source texture container for which no safe glTF projection or installed transcoder is
-available remains a preserved blob plus an explicit loss record, never a guessed image.
+A source texture container for which no safe glTF projection or installed transcoder is available
+is recorded as an explicit loss. Native texture containers are never retained as opaque UVM data
+and are never replaced with a guessed image.
 
 ## 12. Animation
 
@@ -749,23 +818,28 @@ glTF has an animation name and nothing else. Games need considerably more:
 
 ```json
 {
-  "animations": [{
-    "name": "Attack",
-    "channels": [], "samplers": [],
-    "extensions": {
-      "UV_game_animation_clips": {
-        "clip": "attack",
-        "variant": "01",
-        "loop": "once",
-        "priority": 20,
-        "concurrent": false,
-        "blendInSeconds": 0.15,
-        "blendOutSeconds": 0.25,
-        "sourceFrameRate": 30,
-        "sourceRange": [0, 47]
+  "animations": [
+    {
+      "name": "Attack",
+      "channels": [
+        { "sampler": 0, "target": { "node": 0, "path": "translation" } }
+      ],
+      "samplers": [{ "input": 0, "output": 1, "interpolation": "LINEAR" }],
+      "extensions": {
+        "UV_game_animation_clips": {
+          "clip": "attack",
+          "variant": "01",
+          "loop": "once",
+          "priority": 20,
+          "concurrent": false,
+          "blendInSeconds": 0.15,
+          "blendOutSeconds": 0.25,
+          "sourceFrameRate": 30,
+          "sourceRange": [0, 47]
+        }
       }
     }
-  }]
+  ]
 }
 ```
 
@@ -774,6 +848,55 @@ several can play simultaneously on different bone sets; this is already modelled
 `RenderAnimation.priority` and `RenderAnimation.concurrent` in the Modkit IR. Discarding
 those fields turns a working SC2 animation set into an arbitrary list of clips.
 
+The document ROOT MAY also carry `UV_game_animation_clips.clips`, a complete catalog of
+selectable clips. This is distinct from the animation-attached metadata above. Each record has
+`id` (unique nonempty string), `name`, `durationSeconds` (finite, nonnegative), and
+`sourceSequenceIndex` (unique nonnegative integer). Optional fields are `animation` (glTF
+animation index), `sourceId` (original facet identity), `looping`, `kind` (`animation` or
+`rest-pose`), and `frames` (nonnegative integer).
+
+An absent `animation` is meaningful: a material-only or truly empty sequence remains selectable.
+Producers MUST NOT invent a bone, dummy channel, or empty glTF animation to represent it. A linked
+animation MUST have nonempty channels and samplers. Every selectable glTF animation MUST be linked
+exactly once; explicitly absolute/global effect timelines are not selectable clips and may be
+unlinked. If both catalog and animation extras supply a sequence index, they MUST agree.
+Without a root catalog, legacy `animation-N` selection continues unchanged. A producer can retain
+those ids for linked clips while using `sequence-N` for channel-less clips; `sourceId` preserves the
+original identity. Material playback uses the catalog sequence index, never the catalog ordinal or
+the suffix of a clip id.
+
+An animation bundle MAY contain inactive `materialTargets` beside `clips`. A target is
+`{id, properties:[{path,value,sequenceTracks}]}`. `path` addresses an existing published animated
+property of `UV_game_material.params.renderModel`, such as
+`/renderModel/standard/layers/diffuse/constantColor`. `value` is its finite scalar/vector default
+and determines its width. `sequenceTracks` retains the common material track representation and
+references catalog sequence indices. The allowed paths are standard or composite-pass layer
+animation properties (`constantColor`, `colorMultiply`, `colorAdd`, `alphaFactor`, `uvOffset`,
+`uvAngle`, `uvTiling`, `uvTriplanarOffset`, `uvTriplanarScale`, `flipbook/frame`), plus
+`parallaxHeight`, `normalBlendFactors/0..7`, and composite-pass `alphaFactor`.
+These slots are binding descriptions, not active glTF materials: they carry no texture/image
+indices, resolve no resources, and do not create geometry. Native static metadata that common
+glTF/UVM structures cannot represent remains in bounded publisher extras. A UVM document never
+retains the native source blob. Current shared material playback supports step/linear
+tracks with explicit sequence clocks; unsupported interpolation MUST be refused or reported.
+
+Bundle attachment requires explicit source/destination clip ids and sequence indices, node and
+primitive mappings, and material mappings. An inactive slot is selected with
+`sourceKind: "animation-target"`; ordinary active material indices use `sourceKind: "material"`
+(the default). Selected tracks append to the matched properties of actual destination materials;
+existing values and sequences remain unchanged. A conflicting target, missing property, unknown
+path, or ambiguous timeline MUST refuse the whole operation. A legacy global material fallback
+cannot silently become a per-sequence fallback. Required source accessors and animation data are
+copied into the destination container. An inert `attachments` receipt records the explicit mapping,
+appended clips and playback limitations without retaining the source container. Copied
+bufferViews/accessors retain exact bytes with rebased indices; source metadata is never interpreted
+as a scene command. Prepared
+document replacement is validated and committed against its captured revision as one undo step.
+
+Storage preservation does not by itself imply playback of every glTF channel: implementations
+MUST distinguish their support for morph weights, CUBICSPLINE and arbitrary animation pointers.
+Primitive visibility uses the explicit shared target below and needs no publisher-specific logic.
+
 ### 12.3 `UV_game_animation_events`
 
 ```json
@@ -781,12 +904,19 @@ those fields turns a working SC2 animation set into an arbitrary list of clips.
   "extensions": {
     "UV_game_animation_events": {
       "events": [
-        { "t": 0.500, "name": "fire_weapon", "socket": 4,
-          "payload": { "weapon": "cannon" } },
-        { "t": 0.667, "name": "spawn_effect",
-          "payload": { "effect": "muzzle_flash", "effectIndex": 2 } },
-        { "t": 0.900, "name": "sound", "payload": { "cue": "tank_fire" } },
-        { "t": 1.200, "name": "footstep", "socket": 7 }
+        {
+          "t": 0.5,
+          "name": "fire_weapon",
+          "socket": 4,
+          "payload": { "weapon": "cannon" }
+        },
+        {
+          "t": 0.667,
+          "name": "spawn_effect",
+          "payload": { "effect": "muzzle_flash", "effectIndex": 2 }
+        },
+        { "t": 0.9, "name": "sound", "payload": { "cue": "tank_fire" } },
+        { "t": 1.2, "name": "footstep", "socket": 7 }
       ]
     }
   }
@@ -808,11 +938,19 @@ original frame index is recoverable from `sourceFrameRate`.
   "extensions": {
     "UV_animation_layers": {
       "layers": [
-        { "name": "base",  "mode": "override", "weight": 1.0 },
-        { "name": "aim",   "mode": "additive", "weight": 1.0,
-          "boneMask": [1, 2, 5, 6] },
-        { "name": "flinch","mode": "additive", "weight": 0.0,
-          "boneMask": [3, 4] }
+        { "name": "base", "mode": "override", "weight": 1.0 },
+        {
+          "name": "aim",
+          "mode": "additive",
+          "weight": 1.0,
+          "boneMask": [1, 2, 5, 6]
+        },
+        {
+          "name": "flinch",
+          "mode": "additive",
+          "weight": 0.0,
+          "boneMask": [3, 4]
+        }
       ],
       "assignments": { "0": 0, "1": 0, "2": 1, "3": 2 }
     }
@@ -835,20 +973,24 @@ document:
 
 ```json
 {
-  "animations": [{
-    "samplers": [{ "input": 20, "output": 21, "interpolation": "LINEAR" }],
-    "channels": [{
-      "sampler": 0,
-      "target": {
-        "path": "pointer",
-        "extensions": {
-          "KHR_animation_pointer": {
-            "pointer": "/extensions/UV_game_effects/particles/0/emissionRate"
+  "animations": [
+    {
+      "samplers": [{ "input": 20, "output": 21, "interpolation": "LINEAR" }],
+      "channels": [
+        {
+          "sampler": 0,
+          "target": {
+            "path": "pointer",
+            "extensions": {
+              "KHR_animation_pointer": {
+                "pointer": "/extensions/UV_game_effects/particles/0/emissionRate"
+              }
+            }
           }
         }
-      }
-    }]
-  }]
+      ]
+    }
+  ]
 }
 ```
 
@@ -895,28 +1037,45 @@ material.
   "extensions": {
     "UV_game_effects": {
       "profile": "m3",
-      "particles": [{
-        "name": "muzzle_smoke",
-        "node": 6,
-        "material": 3,
-        "emitShape": "sphere",
-        "emitShapeRadius": 0.12,
-        "emissionRate": 40.0,
-        "emitCount": 0,
-        "lifeSpan": 1.4, "lifeSpanRandom": 0.3,
-        "speed": 3.2,    "speedRandom": 0.8,
-        "gravity": -1.1,
-        "mass": 0.4,
-        "drag": 0.6,
-        "orientationMode": "billboard",
-        "lifecycleSize": { "start": [0.2,0.2,0.2], "middle": [0.9,0.9,0.9],
-                           "end": [1.6,1.6,1.6], "timeMiddle": 0.35 },
-        "segmentColors": [[1,0.9,0.7],[0.5,0.5,0.5],[0.2,0.2,0.2]],
-        "segmentAlphas": [0.9, 0.6, 0.0],
-        "collideTerrain": true, "bounce": 0.2, "friction": 0.4,
-        "maxParticles": 256
-      }],
-      "ribbons": [], "forces": [], "warps": [], "projectors": []
+      "particles": [
+        {
+          "name": "muzzle_smoke",
+          "node": 6,
+          "material": 3,
+          "emitShape": "sphere",
+          "emitShapeRadius": 0.12,
+          "emissionRate": 40.0,
+          "emitCount": 0,
+          "lifeSpan": 1.4,
+          "lifeSpanRandom": 0.3,
+          "speed": 3.2,
+          "speedRandom": 0.8,
+          "gravity": -1.1,
+          "mass": 0.4,
+          "drag": 0.6,
+          "orientationMode": "billboard",
+          "lifecycleSize": {
+            "start": [0.2, 0.2, 0.2],
+            "middle": [0.9, 0.9, 0.9],
+            "end": [1.6, 1.6, 1.6],
+            "timeMiddle": 0.35
+          },
+          "segmentColors": [
+            [1, 0.9, 0.7],
+            [0.5, 0.5, 0.5],
+            [0.2, 0.2, 0.2]
+          ],
+          "segmentAlphas": [0.9, 0.6, 0.0],
+          "collideTerrain": true,
+          "bounce": 0.2,
+          "friction": 0.4,
+          "maxParticles": 256
+        }
+      ],
+      "ribbons": [],
+      "forces": [],
+      "warps": [],
+      "projectors": []
     }
   }
 }
@@ -926,7 +1085,7 @@ material.
 
 Particle systems are where interchange formats usually give up, and the resulting loss is
 severe: for StarCraft II assets, the effects are a substantial fraction of what the asset
-*is*. The Modkit `RenderModelEffects` contract already carries roughly 120 emitter
+_is_. The Modkit `RenderModelEffects` contract already carries roughly 120 emitter
 properties covering emission shapes (point, sphere, box, cylinder, disc, spline, mesh),
 lifetime curves, per-particle randomisation, force channels, collision response with child
 emitters, noise fields, and screen-space UV projection — because reproducing SC2 effects
@@ -949,14 +1108,14 @@ consumer can skip capability checks.
 
 ### 13.3 Effect profiles
 
-| Profile | Meaning |
-| --- | --- |
-| `common` | Only common-subset properties present; portable everywhere |
-| `m3` | Full StarCraft II emitter fidelity |
-| `mdx` | Warcraft 3 emitter semantics, including model-space pivot behaviour |
-| `w3d` | C&C emitter semantics |
+| Profile  | Meaning                                                             |
+| -------- | ------------------------------------------------------------------- |
+| `common` | Only common-subset properties present; portable everywhere          |
+| `m3`     | Full StarCraft II emitter fidelity                                  |
+| `mdx`    | Warcraft 3 emitter semantics, including model-space pivot behaviour |
+| `w3d`    | C&C emitter semantics                                               |
 
-The profile changes *interpretation*, not just presence. MDX emitters simulate in model
+The profile changes _interpretation_, not just presence. MDX emitters simulate in model
 space by default while M3 emitters are bone-anchored; the same numeric parameters produce
 different motion. `modelSpace` and `boneAnchored` are separate booleans for exactly this
 reason.
@@ -965,21 +1124,26 @@ reason.
 
 ```json
 {
-  "nodes": [{
-    "name": "hull_collision",
-    "extensions": {
-      "UV_game_collision": {
-        "shapes": [
-          { "kind": "box", "size": [2.8, 1.6, 5.2],
-            "matrix": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0.8,0,1] },
-          { "kind": "capsule", "radius": 0.4, "height": 1.8, "axis": "y" }
-        ],
-        "layer": "unit",
-        "mask": ["projectile", "terrain", "unit"],
-        "role": "physics"
+  "nodes": [
+    {
+      "name": "hull_collision",
+      "extensions": {
+        "UV_game_collision": {
+          "shapes": [
+            {
+              "kind": "box",
+              "size": [2.8, 1.6, 5.2],
+              "matrix": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0.8, 0, 1]
+            },
+            { "kind": "capsule", "radius": 0.4, "height": 1.8, "axis": "y" }
+          ],
+          "layer": "unit",
+          "mask": ["projectile", "terrain", "unit"],
+          "role": "physics"
+        }
       }
     }
-  }]
+  ]
 }
 ```
 
@@ -987,16 +1151,16 @@ Supported `kind`: `box`, `sphere`, `capsule`, `cylinder`, `convex-hull`, `mesh`,
 `convex-hull` and `mesh` reference an accessor of positions (and indices for `mesh`) rather
 than inlining vertices in JSON.
 
-`role` distinguishes what the shape is *for*, which engines conflate at their peril:
+`role` distinguishes what the shape is _for_, which engines conflate at their peril:
 
-| Role | Use |
-| --- | --- |
-| `physics` | Rigid-body simulation |
-| `hit` | Weapon and projectile hit testing |
-| `selection` | Mouse picking |
+| Role        | Use                                |
+| ----------- | ---------------------------------- |
+| `physics`   | Rigid-body simulation              |
+| `hit`       | Weapon and projectile hit testing  |
+| `selection` | Mouse picking                      |
 | `footprint` | Ground occupancy for RTS placement |
-| `effect` | Particle collision surfaces |
-| `vision` | Line-of-sight blocking |
+| `effect`    | Particle collision surfaces        |
+| `vision`    | Line-of-sight blocking             |
 
 `matrix` is column-major, matching `Float32Array` upload order, consistent with
 `RenderCollisionShape.matrix` in the Modkit IR.
@@ -1029,7 +1193,7 @@ Microsoft's namespace and are not stable registry claims:
   "extensions": {
     "MODKITX_lod_selection": {
       "levels": [
-        { "node": 0, "screenCoverage": 1.00, "maxDistance": 30 },
+        { "node": 0, "screenCoverage": 1.0, "maxDistance": 30 },
         { "node": 1, "screenCoverage": 0.25, "maxDistance": 90 },
         { "node": 2, "screenCoverage": 0.06, "maxDistance": 240 },
         { "node": 3, "screenCoverage": 0.01, "maxDistance": 999 }
@@ -1063,15 +1227,22 @@ substitution:
     "UV_game_variants": {
       "variants": [
         { "name": "default", "default": true },
-        { "name": "damaged", "showNodes": [12, 13], "hideNodes": [8],
-          "materialVariant": 1 },
-        { "name": "wreck",   "asset": "tank_wreck.uvm.glb",
+        {
+          "name": "damaged",
+          "showNodes": [12, 13],
+          "hideNodes": [8],
+          "materialVariant": 1
+        },
+        {
+          "name": "wreck",
+          "asset": "tank_wreck.uvm.glb",
           "assetSha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-          "alignSocket": "wreck-pivot" }
+          "alignSocket": "wreck-pivot"
+        }
       ],
       "transitions": [
         { "from": "default", "to": "damaged", "trigger": "health<0.4" },
-        { "from": "damaged", "to": "wreck",   "trigger": "death" }
+        { "from": "damaged", "to": "wreck", "trigger": "death" }
       ]
     }
   }
@@ -1083,6 +1254,17 @@ inflating the primary asset.
 `assetSha256` is REQUIRED for immutable/runtime packages and OPTIONAL for mutable authored
 workspaces; a mismatch is an integrity failure at runtime and a stale-reference diagnostic while
 authoring.
+
+For scalar primitive visibility, `UV_game_variants` MAY contain
+`"visibility": [{"mesh": 0, "primitive": 1, "value": 1}]`, independently of named variants.
+Each pair names an actual glTF mesh primitive and MUST be unique. The finite numeric value is
+visible exactly when greater than zero, for every scene instance of that primitive. Values are
+not clamped to `0..1`: imported native scalar tracks may use other finite magnitudes, while their
+visibility predicate stays explicit. An omitted record leaves the primitive visible. A channel
+animates `/extensions/UV_game_variants/visibility/N/value` using `KHR_animation_pointer` (§12.5).
+No synthetic scene nodes or dummy materials are needed. Selecting a clip samples its property;
+with no clip selected the stored value applies. Stage playback time remains caller-controlled,
+with explicitly concurrent channels using their own declared wrap duration.
 
 ## 16. Gameplay metadata
 
@@ -1110,14 +1292,29 @@ no access to your catalog:
       "schema": "https://modkitx.org/uvm/gameplay/rts-1",
       "faction": "terran",
       "unitClass": "vehicle",
-      "cost": { "minerals": 150, "vespene": 125, "supply": 3, "buildTimeSeconds": 32 },
-      "health": 175, "armor": 1, "shields": 0,
-      "sight": 11.0, "speed": 2.25, "turnRate": 6.28,
+      "cost": {
+        "minerals": 150,
+        "vespene": 125,
+        "supply": 3,
+        "buildTimeSeconds": 32
+      },
+      "health": 175,
+      "armor": 1,
+      "shields": 0,
+      "sight": 11.0,
+      "speed": 2.25,
+      "turnRate": 6.28,
       "footprintCells": [2, 2],
       "weapons": [
-        { "id": "cannon", "socket": 4, "projectile": "shell",
-          "damage": 15, "range": 7.0, "cooldownSeconds": 1.04,
-          "targets": ["ground"] }
+        {
+          "id": "cannon",
+          "socket": 4,
+          "projectile": "shell",
+          "damage": 15,
+          "range": 7.0,
+          "cooldownSeconds": 1.04,
+          "targets": ["ground"]
+        }
       ],
       "tags": ["mechanical", "armored", "siege"]
     }
@@ -1140,13 +1337,13 @@ script hooks.
 
 This section is normative. It is the difference between a hub format and a lossy funnel.
 
-### 17.1 Three tiers of preservation
+### 17.1 Three conversion outcomes
 
-| Tier | Mechanism | Guarantee |
-| --- | --- | --- |
-| **Converted** | Native UVM/glTF structures | Semantically preserved, renderable anywhere |
-| **Preserved** | `UV_source_blob` — original bytes in a bufferView | Byte-exact round-trip to the source format |
-| **Lost** | `UV_provenance.lost` entry | Not recoverable; recorded so nobody is surprised |
+| Tier          | Mechanism                                         | Guarantee                                        |
+| ------------- | ------------------------------------------------- | ------------------------------------------------ |
+| **Converted** | Native UVM/glTF structures                        | Semantically preserved, renderable anywhere      |
+| **Residual**  | Bounded format namespace in root `extras`       | Reconstruction fields absent from common UVM    |
+| **Lost**      | `UV_provenance.lost` entry                        | Not recoverable; recorded so nobody is surprised |
 
 The middle tier is borrowed from this repository's own map pipeline, where `SC2MapData`
 keeps a `rawFiles` map of every embedded file verbatim specifically so a write can be
@@ -1170,16 +1367,19 @@ means an M3 chunk UVM does not understand still survives an M3 → UVM → M3 ro
       "importer": { "id": "modkitx.m3", "version": "1.4.2" },
       "generatedAt": "2026-08-06T00:00:00Z",
       "lost": [
-        { "code": "M3_STC_UNMAPPED_TRACK", "severity": "warning",
+        {
+          "code": "M3_STC_UNMAPPED_TRACK",
+          "severity": "warning",
           "feature": "sequence track targeting an unmodelled property",
-          "count": 3, "detail": "STC entries 14,15,22", "recoverable": false },
-        { "code": "M3_PHYSICS_JOINT", "severity": "info",
-          "feature": "ragdoll joint constraints", "count": 6,
-          "recoverable": true, "blob": 2 }
-      ],
-      "preserved": [
-        { "format": "m3", "chunk": "PHRB", "blob": 2 },
-        { "format": "m3", "chunk": "IREF", "blob": 3 }
+          "count": 3,
+          "detail": "STC entries 14,15,22"
+        },
+        {
+          "code": "M3_PHYSICS_JOINT",
+          "severity": "info",
+          "feature": "ragdoll joint constraints",
+          "count": 6
+        }
       ]
     }
   }
@@ -1195,34 +1395,25 @@ because a sidecar file gets separated from the asset it describes on the first c
 operation. The directory packaging in [section 5.3](#53-directory-layout) still allows
 externalising it via `$ref` when a shipping build wants it stripped.
 
-### 17.3 `UV_source_blob`
+### 17.3 Format-owned residuals
 
-```json
-{
-  "extensions": {
-    "UV_source_blob": {
-      "blobs": [
-        { "format": "m3", "chunk": "PHRB", "bufferView": 14,
-          "encoding": "raw", "sha256": "1a4e…" },
-        { "format": "m3", "chunk": "IREF", "bufferView": 15, "encoding": "raw" }
-      ]
-    }
-  }
-}
-```
+A converter **MUST** project every representable value into glTF or a registered common UVM
+extension. It may place only reconstruction fields with no common representation in a bounded,
+format-owned root `extras` namespace such as `BlizzardM3` or `WarzonePIE`.
 
-Blobs live in bufferViews, so in GLB form they are part of the binary chunk and cost one
-pointer to skip. A shipping build strips this extension and its bufferViews with
-`gltf-transform prune`; the result is still a valid UVM file.
+The namespace envelope contains `schemaVersion`, `format`, `profile`, `residual` and `mapping`.
+`residual` contains the minimal target-format fields; `mapping` relates them to common UVM objects.
+It **MUST NOT** contain the original file, opaque source chunks, byte ranges whose purpose is source
+recovery, or duplicate values already carried by common glTF/UVM structures. Exporters always
+regenerate target bytes from the common scene plus the bounded residual.
 
 ### 17.4 Loss policy by conversion direction
 
-Lossy conversion is a property of the *pair*, not of UVM. The conversion guide
+Lossy conversion is a property of the _pair_, not of UVM. The conversion guide
 ([SPEC_UVM_CONVERSION.md](SPEC_UVM_CONVERSION.md)) tabulates what each importer and
 exporter loses. Two rules apply universally:
 
-1. **An importer must never silently drop data.** Anything not converted is either preserved
-   as a blob or recorded in `lost`.
+1. **An importer must never silently drop data.** Anything not represented in common UVM or a justified bounded residual is recorded in `lost`.
 2. **An exporter must never invent data.** If a target format requires a field UVM does not
    carry, the exporter emits its documented default and records that it did so.
 
@@ -1288,12 +1479,12 @@ A UVM loader **SHOULD**:
 
 ### 19.3 Genre coverage
 
-| Genre | Which parts matter |
-| --- | --- |
-| RTS | `MSFT_lod` topology + provisional split selection/batching/impostor extensions, team colour, footprint collision, sockets for weapons |
-| RPG | `UV_retarget` humanoid, `UV_game_variants` equipment, hardpoint sockets, animation layers |
-| FPS | Animation events for damage windows, muzzle sockets, `role: "hit"` collision regions |
-| Simulation | `UV_game_skeleton.axes` mechanical joints with limits, `UV_game_gameplay` physical parameters |
+| Genre      | Which parts matter                                                                                                                    |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| RTS        | `MSFT_lod` topology + provisional split selection/batching/impostor extensions, team colour, footprint collision, sockets for weapons |
+| RPG        | `UV_retarget` humanoid, `UV_game_variants` equipment, hardpoint sockets, animation layers                                             |
+| FPS        | Animation events for damage windows, muzzle sockets, `role: "hit"` collision regions                                                  |
+| Simulation | `UV_game_skeleton.axes` mechanical joints with limits, `UV_game_gameplay` physical parameters                                         |
 
 ## 20. Authoring tools
 
@@ -1304,25 +1495,28 @@ skinning and animation. UVM semantics arrive through the loader's plugin API:
 
 ```js
 class UvmSocketPlugin {
-  constructor(parser) { this.parser = parser; this.name = 'UV_game_socket' }
+  constructor(parser) {
+    this.parser = parser;
+    this.name = "UV_game_socket";
+  }
   afterRoot(result) {
-    const json = this.parser.json
-    result.userData.sockets = new Map()
+    const json = this.parser.json;
+    result.userData.sockets = new Map();
     json.nodes?.forEach((node, i) => {
-      const socket = node.extensions?.UV_game_socket
-      if (!socket) return
+      const socket = node.extensions?.UV_game_socket;
+      if (!socket) return;
       const object = result.parser?.getDependency
         ? undefined
-        : result.scene.getObjectByName(node.name)
+        : result.scene.getObjectByName(node.name);
       if (object) {
-        object.userData.uvSocket = socket
-        result.userData.sockets.set(socket.role + (socket.index ?? ''), object)
+        object.userData.uvSocket = socket;
+        result.userData.sockets.set(socket.role + (socket.index ?? ""), object);
       }
-    })
+    });
   }
 }
 
-loader.register((parser) => new UvmSocketPlugin(parser))
+loader.register((parser) => new UvmSocketPlugin(parser));
 ```
 
 Because sockets are nodes, attaching a weapon is `socketObject.add(weapon.scene)` — no
@@ -1377,6 +1571,6 @@ UVM files are untrusted input. Implementations **MUST**:
 - Bound `UV_game_effects.maxParticles` at the consumer, regardless of the declared value — a
   hostile asset otherwise requests an unbounded particle budget.
 - Never evaluate `UV_provenance` or `UV_game_*` payloads as code. `UV_game_animation_events`
-  with `name: "script"` carries a *name*, never a script body.
+  with `name: "script"` carries a _name_, never a script body.
 - Bound `KHR_animation_pointer` JSON pointer resolution to the document, and reject
-  pointers into `UV_source_blob` or outside the document root.
+  pointers into binary storage or outside the document root.

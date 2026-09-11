@@ -10,6 +10,7 @@ import {
   parsePolicyLock,
 } from '@modkit/host'
 import { loadExtensionDirectory } from '@modkit/host/node'
+import { createCompanionInputResolver } from '../src/input-resolution.js'
 import {
   revisionId,
   type ArtifactByteSource,
@@ -137,6 +138,66 @@ async function openedComposition() {
 }
 
 describe('host-owned container composition', () => {
+  it('resolves semantic resources inside the carrier without using an outer filesystem origin', async () => {
+    const built = await harness()
+    let outerReads = 0
+    const result = await openSubject({
+      inventory: built.inventory,
+      source: source(),
+      path: 'map.car',
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'container-resources', classes: ['read-source', 'write-source'] },
+      executionBackends: built.executionBackends,
+      budget,
+      resolveInput: createCompanionInputResolver({
+        primaryLogicalId: 'map.car',
+        caseSensitivity: 'sensitive',
+        scopes: ['sibling-directory'],
+        async *enumerate() {
+          outerReads++
+          yield { logicalId: 'world.bin' }
+        },
+        async open() {
+          outerReads++
+          throw new Error('outer resources must not serve the semantic namespace')
+        },
+      }),
+    })
+    if (result.state !== 'opened' || result.resources === undefined)
+      throw new Error('semantic resource origin missing')
+    const resources = result.resources
+    try {
+      const world = await resources.resolve({
+        id: 'world',
+        logicalId: 'Base.SC2Data/world.bin',
+        role: 'buffer',
+        scopes: ['current-mount'],
+      })
+      if (world.state !== 'resolved' || world.lease.value.kind !== 'bytes')
+        throw new Error('world missing from carrier')
+      expect(new TextDecoder().decode(await world.lease.value.read(0n, 9))).toBe('old-world')
+      expect(outerReads).toBe(0)
+      expect(world.lease.value.ref.uri).toMatch(/^test-entry:/)
+    } finally {
+      await result.session.dispose()
+    }
+    expect(resources.state()).toBe('disposed')
+  })
+
+  it('passes a bounded carrier preamble to the root semantic namespace', async () => {
+    const { result } = await openedComposition()
+    try {
+      const inspected = await result.session.operations().invoke('inspect', null)
+      expect(inspected).toMatchObject({
+        state: 'ok',
+        output: { kind: 'json', value: { preamble: 'carrier-preamble' } },
+      })
+    } finally {
+      await result.session.dispose()
+    }
+  })
+
   it('invokes typed creation through inventory on the application-owned empty target and reopens', async () => {
     const built = await harness({ noEntries: true })
     const targetSource = source('created.newcar', new Uint8Array())
@@ -198,16 +259,13 @@ describe('host-owned container composition', () => {
     })
     if (opened.state !== 'opened') throw new Error('empty target did not open')
     await expect(
-      invokeContainerPack(
-        opened,
-        {
-          schemaVersion: 1,
-          mode: 'create',
-          expectedContainerRevision: targetSource.revision,
-          files: [],
-          replacements: [],
-        } as never,
-      ),
+      invokeContainerPack(opened, {
+        schemaVersion: 1,
+        mode: 'create',
+        expectedContainerRevision: targetSource.revision,
+        files: [],
+        replacements: [],
+      } as never),
     ).rejects.toMatchObject({ code: 'x3.host/container-pack-input-invalid' })
     expect(globalThis.__x3ContainerComposition?.carrierPackCalls).toBe(0)
 

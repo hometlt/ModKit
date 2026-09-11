@@ -23,6 +23,34 @@ review; artifact identity alone does not prove that a projection is correct.
 An empty corpus, two implementations that both refuse every input, or an invalid
 comparison is a failure. Synthetic receipts establish only their declared scope.
 
+The generated runner also accepts one `--config /absolute/path/parity.json` argument:
+
+```json
+{
+  "schemaVersion": 1,
+  "legacy": "legacy.mjs",
+  "migrated": "native.mjs",
+  "corpus": "corpus.json",
+  "operation": "material.project",
+  "receipt": "receipt.json",
+  "outputs": "outputs.json"
+}
+```
+
+Paths resolve against that file's directory. `outputs` is optional; when supplied, it retains the
+full normalized results of both adapters and the receipt binds its bytes by SHA-256. Config and
+inline flags cannot be mixed, and an output cannot overwrite a declared input or another output.
+Adapters, corpus and configuration are hashed before execution and checked again afterwards.
+The shared runner's implementation is recorded and checked as well.
+
+A native adapter may implement `prepareMigrated({ operation, corpus, corpusPath })`, returning
+`{ module, evidence, verify?, release? }`. `module[operation]` performs the actual product route;
+`verify` runs after comparison and `release` runs in `finally`. The shared `port-runtime-proof.mjs`
+captures explicit implementation roots and resolves dependency trees from the adapter's actual
+installed packages, rather than treating a sibling source checkout as the executed runtime.
+Its digest detects changed, added and removed files; missing optional dependencies are recorded.
+These snapshots supplement semantic comparison and do not turn an unexercised operation into proof.
+
 `migration:check` checks inventory, operation mappings, and evidence integrity.
 Pending requirements are visible and permitted during implementation. Explicit
 acceptance uses `check-feature-ledger.mjs --closure <codec|family|all>` and fails

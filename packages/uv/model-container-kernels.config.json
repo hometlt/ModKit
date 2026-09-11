@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "sources": [{
+    "path": "extensions/common/models/codecs/uvm/src/glb.ts",
+    "symbols": ["GLB_MAGIC", "GLB_JSON_CHUNK", "GLB_BIN_CHUNK", "UvmGlbContainer", "decodeUvmContainer", "isGlb", "decodeGlb", "readUint32", "corrupt"]
+  }],
+  "imports": [
+    "import { ModkitError } from '@modkit/codec-kit/legacy/core'",
+    "import type { UvmJsonObject } from './rig-types.js'"
+  ],
+  "exports": [],
+  "output": "packages/uv/src/model/legacy/container-kernels.ts",
+  "provenance": "packages/uv/MK2-CONTAINER-KERNELS.json"
+}

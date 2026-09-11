@@ -3,6 +3,7 @@ import { delimiter, resolve } from 'node:path'
 import { Client, InMemoryTransport } from '@modelcontextprotocol/client'
 import type { Inventory } from '@modkit/host'
 import type { AnyDescriptor, AssetSession, KnowledgeCatalog, KnowledgeTarget } from '@modkit/sdk'
+import { revisionId } from '@modkit/sdk'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   ConfigurationError,
@@ -250,6 +251,94 @@ function fakeSession(
       if (subjectId !== 'fixture-subject') throw new RangeError('fixture subject not found')
       return { value: calculations, release: async () => undefined }
     },
+    editTarget: async (request: { subjectId: string; fieldPath: readonly string[] }) => ({
+      state: 'resolved' as const,
+      snapshotId: 'facts-v1',
+      workspaceId: 'fixture-workspace',
+      selectedRootId: 'C',
+      subjectId: request.subjectId,
+      fieldPath: request.fieldPath,
+      action: 'create-local-field',
+      destination: {
+        rootId: 'C',
+        path: 'C.SC2Mod/Base.SC2Data/GameData/UnitData.xml',
+        mode: 'replace' as const,
+        label: 'Write: C → C.SC2Mod/Base.SC2Data/GameData/UnitData.xml',
+        targetId: 'fixture-target',
+        subjectUri: 'file:///C.SC2Mod/Base.SC2Data/GameData/UnitData.xml',
+      },
+      candidates: [],
+      selectionReason: 'last-local-declaration',
+      guards: [
+        {
+          rootId: 'C',
+          path: 'C.SC2Mod/Base.SC2Data/GameData/UnitData.xml',
+          revision: 'content-hash.sha256:fixture' as const,
+        },
+      ],
+    }),
+    isolation: async (request: {
+      ownerSubjectId: string
+      targetSubjectId: string
+      ownerFieldPath: readonly string[]
+    }) => ({
+      schemaVersion: 1 as const,
+      state: 'ready' as const,
+      snapshotId: 'facts-v1',
+      ownerSubjectId: request.ownerSubjectId,
+      targetSubjectId: request.targetSubjectId,
+      ownerFieldPath: request.ownerFieldPath,
+      shared: true,
+      cloneRequired: true,
+      referrers: [
+        { subjectId: request.ownerSubjectId, fieldPaths: [[...request.ownerFieldPath]] },
+        { subjectId: 'fixture/other-owner', fieldPaths: [['WeaponArray', '0', 'Link']] },
+      ],
+      otherReferrerIds: ['fixture/other-owner'],
+      rewireFieldPaths: [[...request.ownerFieldPath]],
+    }),
+    isolationPlan: async (request: {
+      ownerSubjectId: string
+      targetSubjectId: string
+      cloneSubjectId: string
+      ownerFieldPath: readonly string[]
+    }) => ({
+      schemaVersion: 1 as const,
+      state: 'planned' as const,
+      snapshotId: 'facts-v1',
+      previewSnapshotId: 'facts-preview-v1',
+      ownerSubjectId: request.ownerSubjectId,
+      targetSubjectId: request.targetSubjectId,
+      cloneSubjectId: request.cloneSubjectId,
+      analysis: {
+        schemaVersion: 1 as const,
+        state: 'ready' as const,
+        snapshotId: 'facts-v1',
+        ownerSubjectId: request.ownerSubjectId,
+        targetSubjectId: request.targetSubjectId,
+        ownerFieldPath: [...request.ownerFieldPath],
+        shared: true,
+        cloneRequired: true,
+        referrers: [],
+        otherReferrerIds: ['fixture/other-owner'],
+        rewireFieldPaths: [[...request.ownerFieldPath]],
+      },
+      replacements: [
+        {
+          purpose: 'clone-and-rewire' as const,
+          destination: {
+            rootId: 'C',
+            path: 'C.SC2Mod/Base.SC2Data/GameData/UnitData.xml',
+            mode: 'replace' as const,
+            label: 'Write: C → C.SC2Mod/Base.SC2Data/GameData/UnitData.xml',
+            targetId: 'fixture-target',
+            subjectUri: 'file:///C.SC2Mod/Base.SC2Data/GameData/UnitData.xml',
+          },
+          replacementBytes: 512,
+        },
+      ],
+      diagnostics: [],
+    }),
   }
   return {
     revision: 'fixture-revision' as never,
@@ -323,6 +412,38 @@ function fakeSession(
                   },
                 },
                 release: async () => options.onStreamRelease?.(),
+              },
+            },
+            diagnostics: [],
+          }
+        }
+        if (handlerId === 'write') {
+          // What a codec really answers a write with: a plan, not a changed file.
+          return {
+            state: 'ok',
+            output: {
+              kind: 'edit-plan',
+              plan: {
+                planId: 'fixture-plan',
+                targets: [{
+                  targetId: 'content', subjectUri: 'fixture://subject',
+                  ownerSource: { id: 'fixture', uri: 'fixture://subject' }, semanticPath: [],
+                  expectedRevision: { bindings: { content: revisionId('provider-token:fixture') },
+                    compositionFingerprint: 'fixture' },
+                }],
+                semantics: { mutationMode: 'mutate', minimumGuarantee: 'atomic' },
+                diagnostics: [],
+                fidelity: { roundTrip: 'byte-identical', preservesUnknownData: true },
+                edits: [
+                  {
+                    operation: 'replace',
+                    label: 'set the fixture value',
+                    targetId: 'content',
+                    source: { id: 'fixture', uri: 'fixture://subject' },
+                    range: { kind: 'bytes', offset: 4n, length: 2n },
+                    payload: { kind: 'inline', bytes: new Uint8Array([65, 66, 67]) },
+                  },
+                ],
               },
             },
             diagnostics: [],
@@ -597,6 +718,12 @@ describe('read-only MCP v2 adapter', () => {
       'modkit.relation_graph',
       'modkit.subject_calculations',
       'modkit.invoke_readonly',
+      'modkit.subject_edit_target',
+      'modkit.subject_isolation',
+      'modkit.subject_isolation_plan',
+      'modkit.release_output',
+      // Reads what a change would be and writes nothing; see propose_edit's own case below.
+      'modkit.propose_edit',
       'modkit.knowledge_search',
       'modkit.knowledge_resolve',
     ])
@@ -609,6 +736,8 @@ describe('read-only MCP v2 adapter', () => {
     ])
     const templates = await client.listResourceTemplates()
     expect(templates.resourceTemplates.map(template => template.uriTemplate)).toEqual([
+      'modkit://output/{id}',
+      'modkit://output/{id}/chunks/{offset}',
       'modkit://subject/{handle}/inspect',
       'modkit://subject/{handle}/facts',
       'modkit://subject/{handle}/graph',
@@ -905,6 +1034,69 @@ describe('read-only MCP v2 adapter', () => {
     )
     expect(facts.data).toMatchObject({ identity: { subjectId: 'fixture-subject' } })
     expect(calculations.data).toMatchObject({ subjectId: 'fixture-subject' })
+    const editTarget = structured(
+      await client.callTool({
+        name: 'modkit.subject_edit_target',
+        arguments: { handle: entityHandle, fieldPath: ['LifeMax'] },
+      }),
+    )
+    expect(editTarget.data).toMatchObject({
+      state: 'resolved',
+      subjectId: 'fixture-subject',
+      destination: {
+        rootId: 'C',
+        label: 'Write: C → C.SC2Mod/Base.SC2Data/GameData/UnitData.xml',
+        targetId: 'fixture-target',
+      },
+      guards: [{ rootId: 'C', revision: 'content-hash.sha256:fixture' }],
+    })
+    const isolation = structured(
+      await client.callTool({
+        name: 'modkit.subject_isolation',
+        arguments: {
+          handle: entityHandle,
+          targetSubjectId: 'fixture/weapon',
+          ownerFieldPath: ['WeaponArray', '0', 'Link'],
+        },
+      }),
+    )
+    expect(isolation.data).toMatchObject({
+      schemaVersion: 1,
+      state: 'ready',
+      ownerSubjectId: 'fixture-subject',
+      targetSubjectId: 'fixture/weapon',
+      shared: true,
+      cloneRequired: true,
+      otherReferrerIds: ['fixture/other-owner'],
+      rewireFieldPaths: [['WeaponArray', '0', 'Link']],
+    })
+    const isolationPlan = structured(
+      await client.callTool({
+        name: 'modkit.subject_isolation_plan',
+        arguments: {
+          handle: entityHandle,
+          targetSubjectId: 'fixture/weapon',
+          cloneSubjectId: 'fixture/marine-weapon',
+          ownerFieldPath: ['WeaponArray', '0', 'Link'],
+        },
+      }),
+    )
+    expect(isolationPlan.data).toMatchObject({
+      schemaVersion: 1,
+      state: 'planned',
+      ownerSubjectId: 'fixture-subject',
+      targetSubjectId: 'fixture/weapon',
+      cloneSubjectId: 'fixture/marine-weapon',
+      replacements: [
+        {
+          purpose: 'clone-and-rewire',
+          replacementBytes: 512,
+          destination: { rootId: 'C', mode: 'replace', targetId: 'fixture-target' },
+        },
+      ],
+    })
+    expect(JSON.stringify(isolationPlan.data)).not.toContain('replacementText')
+    expect(JSON.stringify(isolationPlan.data)).not.toContain('<Catalog')
     const closed = structured(
       await client.callTool({
         name: 'modkit.close_selected_subject',
@@ -1022,6 +1214,62 @@ describe('read-only MCP v2 adapter', () => {
     expect(unknown.isError).toBe(true)
     expect(structured(unknown).diagnostics[0]?.code).toBe('x3.mcp/operation-not-declared')
     expect(fake.operationInvocations()).toEqual([])
+  })
+
+  /*
+   * An agent that can read a mod and not propose a change to it is half a tool. The obvious way to
+   * close that gap — letting it invoke mutating operations — is the wrong one, and MK3 already has
+   * the right shape: a codec answers a write with a plan, so the plan is what an agent gets.
+   */
+  it('returns what a mutating operation would change, and writes nothing', async () => {
+    const fake = fakeHost()
+    const { client } = await connected(fake.host)
+    const opened = structured(
+      await client.callTool({
+        name: 'modkit.open_subject',
+        arguments: { path: 'C:\allowed\fixture' },
+      }),
+    )
+    const result = structured(
+      await client.callTool({
+        name: 'modkit.propose_edit',
+        arguments: { handle: handleFrom(opened), operationId: 'fixture/write', input: { value: 1 } },
+      }),
+    )
+    expect(result.completeness).toBe('complete')
+    const data = result.data as {
+      committed?: boolean
+      plan?: { planId?: string; edits?: readonly Record<string, unknown>[] }
+    }
+    expect(data.committed).toBe(false)
+    expect(data.plan?.planId).toBe('fixture-plan')
+    const edit = data.plan?.edits?.[0]
+    expect(edit).toMatchObject({ operation: 'replace', offset: '4', length: '2' })
+    /*
+     * The replacement bytes are counted, not carried. For a re-encoded texture they are the whole
+     * file, and an agent asking what would change wants the shape of the change.
+     */
+    expect(edit?.['replacementBytes']).toBe(3)
+    expect(result.diagnostics.some(item => item.code === 'x3.mcp/edit-not-committed')).toBe(true)
+  })
+
+  it('refuses a read-only operation sent to the proposal adapter', async () => {
+    const fake = fakeHost()
+    const { client } = await connected(fake.host)
+    const opened = structured(
+      await client.callTool({
+        name: 'modkit.open_subject',
+        arguments: { path: 'C:\allowed\fixture' },
+      }),
+    )
+    const response = await client.callTool({
+      name: 'modkit.propose_edit',
+      arguments: { handle: handleFrom(opened), operationId: 'fixture/read', input: null },
+    })
+    expect(response.isError).toBe(true)
+    expect(structured(response).diagnostics[0]?.code).toBe(
+      'x3.mcp/non-mutating-operation-refused',
+    )
   })
 
   it('preserves a host operation rejection as bounded invalid data', async () => {

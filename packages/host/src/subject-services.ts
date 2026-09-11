@@ -42,6 +42,10 @@ import { registerStandardEditingDefinitions, WRITER_FACET_MATCHER } from './edit
 import { LANGUAGE_DOCUMENT_MATCHER, registerStandardLanguageDefinitions } from './language/index.js'
 import { RUNTIME_PROVIDER_MATCHER, registerStandardRuntimeDefinitions } from './runtime/index.js'
 import { SCENE_RENDERER_MATCHER, registerStandardRendererDefinitions } from './renderer/index.js'
+import {
+  NATIVE_MODEL_ENCODER_MATCHER,
+  registerStandardModelEncodingDefinitions,
+} from './model-encoding.js'
 import { GAME_INSTALLATION_MATCHER, registerStandardGameDefinitions } from './games/index.js'
 import { MOD_WORKSPACE_MATCHER, registerStandardModDefinitions } from './mods/index.js'
 import {
@@ -55,6 +59,7 @@ import {
   registerStandardMapDefinitions,
 } from './maps/index.js'
 import { openSubject, type OpenSubjectResult, type SubjectInputResolver } from './subject-open.js'
+import type { ResourceSessionLimits } from './resource-session.js'
 
 // ---------------------------------------------------------------------------------------------
 // the request every host accepts
@@ -74,6 +79,7 @@ export interface SubjectOpenRequest {
    * with `x3.host/input-resolver-required`, and a plan without them never needed one.
    */
   readonly resolveInput?: SubjectInputResolver
+  readonly resourceLimits?: Partial<ResourceSessionLimits>
   readonly signal?: AbortSignal
 }
 
@@ -243,6 +249,7 @@ export function createBundledServiceDefinitionRegistry(
       LANGUAGE_DOCUMENT_MATCHER,
       RUNTIME_PROVIDER_MATCHER,
       SCENE_RENDERER_MATCHER,
+      NATIVE_MODEL_ENCODER_MATCHER,
       GAME_INSTALLATION_MATCHER,
       MOD_WORKSPACE_MATCHER,
       DATA_CATALOG_MATCHER,
@@ -271,6 +278,7 @@ export async function registerServiceDefinitionsOrThrow(
   const language = await registerStandardLanguageDefinitions(definitions)
   const runtime = await registerStandardRuntimeDefinitions(definitions)
   const renderer = await registerStandardRendererDefinitions(definitions)
+  const modelEncoding = await registerStandardModelEncodingDefinitions(definitions)
   const games = await registerStandardGameDefinitions(definitions)
   const mods = await registerStandardModDefinitions(definitions)
   const data = await registerStandardDataDefinitions(definitions)
@@ -280,6 +288,7 @@ export async function registerServiceDefinitionsOrThrow(
     language,
     runtime,
     renderer,
+    modelEncoding,
     games,
     mods,
     data,

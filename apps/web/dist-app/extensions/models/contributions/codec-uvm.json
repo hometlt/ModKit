@@ -1,22 +1,33 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "modkit/codec-contribution", "major": 1 },
+  "contract": {
+    "id": "modkit/codec-contribution",
+    "major": 1
+  },
   "id": "modkit/model-uvm",
   "displayName": "Universal Verse Model 1.0",
+  "limitations": [
+    "model.render acquires common.render/scene-3d through the host and returns PNG with operation diagnostics. It supports explicit camera, scene and animation selection, glTF base color, first-surface textures through ordinary host image codecs, and collision overlays. Native game shaders, full PBR, mip/filter selection, image-source extensions, vertex-color modulation, texture transforms and effect simulation remain incomplete; the operation does not claim complete visual fidelity.",
+    "model.export-native resolves common.model/native-encoder by formatId. The UVM codec owns target selection and validation but contains no M3, PIE or other native-format implementation."
+  ],
   "runtimeVariants": [
     {
       "variantId": "trusted-node",
       "entrypoint": "./src/uvm/codec.js",
-      "target": { "environments": ["node"] },
+      "target": {
+        "environments": ["node"]
+      },
       "executionProfile": "trusted-in-process",
-      "requestedPermissionClasses": ["read-source"]
+      "requestedPermissionClasses": ["read-source", "write-source"]
     },
     {
       "variantId": "portable",
       "entrypoint": "./src/uvm/codec.js",
-      "target": { "environments": ["browser-worker", "node-worker"] },
+      "target": {
+        "environments": ["browser-worker", "node-worker"]
+      },
       "executionProfile": "worker-brokered",
-      "requestedPermissionClasses": ["read-source"]
+      "requestedPermissionClasses": ["read-source", "write-source"]
     }
   ],
   "spec": {
@@ -37,7 +48,12 @@
     },
     "probe": {
       "kind": "bytes",
-      "ranges": [{ "from": "start", "length": 65536 }],
+      "ranges": [
+        {
+          "from": "start",
+          "length": 65536
+        }
+      ],
       "maxBytes": 65536
     },
     "representations": [
@@ -50,14 +66,61 @@
       }
     ],
     "publishesDataSources": [
-      { "contract": "common.view/model-scene-source", "major": 1 },
-      { "contract": "common.view/model-collision-source", "major": 1 },
-      { "contract": "common.view/model-material-source", "major": 1 },
-      { "contract": "common.view/model-socket-source", "major": 1 },
-      { "contract": "common.view/tree-data-source", "major": 1 },
-      { "contract": "common.view/byte-range-source", "major": 1 }
+      {
+        "contract": "common.view/model-scene-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/model-collision-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/model-material-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/model-socket-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/model-skeleton-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/model-animation-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/tree-data-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/byte-range-source",
+        "major": 1
+      }
     ],
     "operations": [
+      {
+        "id": "model.export-native",
+        "handlerId": "export-uvm-native",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "model.attach-animation",
+        "handlerId": "attach-uvm-animation",
+        "mutatesSource": true,
+        "requiredPermissions": ["read-source", "write-source"],
+        "outputKinds": ["edit-plan"]
+      },
+      {
+        "id": "model.render",
+        "handlerId": "render-uvm-scene",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
       {
         "id": "view.inspect",
         "handlerId": "inspect",
@@ -78,28 +141,85 @@
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]
+      },
+      {
+        "id": "edit.field",
+        "handlerId": "set-uvm-field",
+        "mutatesSource": true,
+        "requiredPermissions": ["read-source", "write-source"],
+        "outputKinds": ["edit-plan"]
+      },
+      {
+        "id": "model.edit",
+        "handlerId": "edit-uvm-document",
+        "mutatesSource": true,
+        "requiredPermissions": ["read-source", "write-source"],
+        "outputKinds": ["edit-plan"]
       }
     ],
     "traitDeclarations": [
-      { "id": "model.geometry", "representation": "runtime", "presence": "may-expose" },
-      { "id": "model.materials", "representation": "runtime", "presence": "may-expose" },
-      { "id": "model.textures", "representation": "runtime", "presence": "may-expose" },
-      { "id": "model.skeleton", "representation": "runtime", "presence": "may-expose" },
-      { "id": "model.animations", "representation": "runtime", "presence": "may-expose" },
-      { "id": "scene.objects", "representation": "runtime", "presence": "will-expose" },
+      {
+        "id": "model.geometry",
+        "representation": "runtime",
+        "presence": "may-expose"
+      },
+      {
+        "id": "model.materials",
+        "representation": "runtime",
+        "presence": "may-expose"
+      },
+      {
+        "id": "model.textures",
+        "representation": "runtime",
+        "presence": "may-expose"
+      },
+      {
+        "id": "model.skeleton",
+        "representation": "runtime",
+        "presence": "may-expose"
+      },
+      {
+        "id": "model.animations",
+        "representation": "runtime",
+        "presence": "may-expose"
+      },
+      {
+        "id": "scene.objects",
+        "representation": "runtime",
+        "presence": "will-expose"
+      },
       {
         "id": "structure.hierarchy",
         "representation": "runtime",
         "presence": "will-expose"
       }
     ],
-    "implementationTier": { "claimed": 2 },
+    "implementationTier": {
+      "claimed": 2
+    },
     "budgets": {
       "maxInputBytes": "1073741824",
       "maxDepth": 256,
       "maxNodes": 10000000,
       "maxScalarBytes": 268435456,
       "maxDiagnostics": 10000
-    }
+    },
+    "fidelityEvidence": [
+      {
+        "formatId": "uvm",
+        "representationId": "uvm-scene",
+        "claim": {
+          "roundTrip": "semantic",
+          "preservesUnknownData": true
+        },
+        "evidenceId": "uvm-json-document-edits-v1",
+        "corpusId": "modkit/packages/host/test/uvm-edits.test.ts",
+        "corpusDigest": "none:proof-suite",
+        "conformanceProfile": "modkit/codec-contribution-v1",
+        "optionsFingerprint": "options:json-edits-preserve-binary",
+        "inputClass": "validated-uvm-embedded-glb",
+        "provenAt": "2026-09-07T00:00:00Z"
+      }
+    ]
   }
 }

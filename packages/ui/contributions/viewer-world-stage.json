@@ -15,6 +15,7 @@
   "spec": {
     "kind": "stage",
     "consumesDataSources": [{ "contract": "common.view/world-scene-source", "major": 1 }],
+    "optionalDataSources": [{ "contract": "common.view/transport-source", "major": 1 }],
     "priority": 380,
     "singletonGroup": "center-stage"
   }

@@ -1,3 +1,4 @@
+import { OutputArtifacts, OutputArtifactError, OUTPUT_ARTIFACT_POLICY } from './output-artifacts.js'
 import { randomUUID } from 'node:crypto'
 import { describeInventoryContributions } from '@modkit/host'
 import type {
@@ -136,6 +137,7 @@ const hostFailure = (code: string, message: string): McpEnvelope =>
   })
 
 export const operationFailure = (error: unknown): McpEnvelope => {
+  if (error instanceof OutputArtifactError) return hostFailure(error.code, error.message)
   if (error instanceof McpOperationError) return hostFailure(error.code, error.message)
   if (
     (error instanceof DOMException && error.name === 'AbortError') ||
@@ -328,11 +330,13 @@ const traversedEdges = (
 export class ModkitMcpRuntime {
   private readonly handles = new Map<string, HandleEntry>()
   private readonly entityHandles = new Map<string, EntityHandleEntry>()
+  private readonly outputs: OutputArtifacts
   private readonly cursorSecret = createCursorSecret()
   private readonly inventoryRows
   private readonly inventorySnapshotId: string
 
   constructor(private readonly host: ModkitMcpHostPort) {
+    this.outputs = new OutputArtifacts(host.outputArtifacts === true)
     this.inventoryRows = describeInventoryContributions(host.inventory)
     this.inventorySnapshotId = `inventory-v1:${fingerprint(
       host.inventory.extensions.flatMap(extension =>
@@ -425,6 +429,7 @@ export class ModkitMcpRuntime {
       ),
       data: {
         readOnly: true,
+        outputArtifacts: { enabled: this.host.outputArtifacts === true, ...OUTPUT_ARTIFACT_POLICY },
         roots: this.host.roots,
         extensionCoordinates: this.host.extensionCoordinates,
         executionProfiles: this.host.executionProfiles,
@@ -565,6 +570,7 @@ export class ModkitMcpRuntime {
       )
     }
     this.handles.delete(handle)
+    this.outputs.closeOwner(handle)
     const children = [...this.entityHandles.values()]
       .filter(candidate => candidate.parentId === handle)
       .map(candidate => candidate.id)
@@ -1343,11 +1349,196 @@ export class ModkitMcpRuntime {
     operationId: string,
     input: unknown,
     signal: AbortSignal,
+    outputOptions: {
+      readonly retainOutput?: boolean
+      readonly inputArtifact?: {
+        readonly id: string
+        readonly field: string
+        readonly encoding: 'hex'
+      }
+    } = {},
   ): Promise<McpEnvelope> {
+    const capturedInput = boundedJson(input)
+    const retainOutput = outputOptions.retainOutput === true
+    const requestedArtifact =
+      outputOptions.inputArtifact === undefined
+        ? undefined
+        : Object.freeze({ ...outputOptions.inputArtifact })
+    if (requestedArtifact !== undefined && requestedArtifact.encoding !== 'hex')
+      throw new OutputArtifactError(
+        'x3.mcp/output-artifact-encoding',
+        'Only explicit hex input substitution is supported.',
+      )
     return this.withHandle(handle, signal, async (entry, scopedSignal) => {
       const session = entry.opened.session
       if (session === undefined)
         throw new McpOperationError('x3.mcp/no-session', 'No session exists.')
+      const reservation = retainOutput ? this.outputs.reserve(entry.id) : undefined
+      let substituted: ReturnType<OutputArtifacts['input']> | undefined
+      try {
+        const descriptor = await session.descriptor()
+        scopedSignal.throwIfAborted()
+        const operation = descriptor.operations.find(candidate => candidate.id === operationId)
+        if (operation === undefined) {
+          throw new McpOperationError(
+            'x3.mcp/operation-not-declared',
+            'The exact operation ID is not declared by the current subject descriptor.',
+          )
+        }
+        if (operation.mutatesSource) {
+          throw new McpOperationError(
+            'x3.mcp/mutating-operation-refused',
+            'The subject declares this operation as mutating, so the read-only adapter refused it.',
+          )
+        }
+        if (operation.state !== 'available') {
+          throw new McpOperationError(
+            'x3.mcp/operation-unavailable',
+            `The declared read-only operation is ${operation.state}: ${operation.reason}`,
+          )
+        }
+
+        const projectedInput = capturedInput
+        if (projectedInput.capped) {
+          throw new McpOperationError(
+            'x3.mcp/operation-input-too-large',
+            'The operation input exceeds the bounded JSON limits.',
+          )
+        }
+
+        substituted =
+          requestedArtifact === undefined
+            ? undefined
+            : this.outputs.input(
+                entry.id,
+                requestedArtifact.id,
+                requestedArtifact.field,
+                projectedInput.value,
+              )
+        const progress: unknown[] = []
+        let progressCapped = false
+        const result = await session
+          .operations()
+          .invoke(operation.handlerId, (substituted?.value ?? projectedInput.value) as JsonValue, {
+            signal: scopedSignal,
+            onProgress: event => {
+              if (progress.length >= MCP_MAX_PROGRESS_EVENTS) {
+                progressCapped = true
+                return
+              }
+              const projected = boundedJson(event)
+              progress.push(projected.value)
+              progressCapped ||= projected.capped
+            },
+          })
+        const streamLease =
+          result.state === 'ok' && result.output.kind === 'stream'
+            ? result.output.stream
+            : undefined
+        try {
+          scopedSignal.throwIfAborted()
+
+          const diagnostics: unknown[] = [...result.diagnostics]
+          let resultValue: unknown = result
+          const artifact =
+            reservation !== undefined && result.state === 'ok' && result.output.kind === 'bytes'
+              ? this.outputs.commit(reservation, result.output.value, {
+                  sourceRevision: String(descriptor.revision),
+                  operationId: operation.id,
+                  ...(substituted === undefined ? {} : { inputArtifact: substituted.provenance }),
+                })
+              : undefined
+          if (artifact !== undefined)
+            resultValue = {
+              ...result,
+              output: {
+                kind: 'bytes',
+                byteLength: artifact.byteLength,
+                sha256: artifact.sha256,
+                artifactUri: artifact.uri,
+              },
+            }
+          if (reservation !== undefined && artifact === undefined && result.state === 'ok')
+            throw new OutputArtifactError(
+              'x3.mcp/output-artifact-not-bytes',
+              'This operation did not return a complete byte output to retain.',
+            )
+          let completeness: McpCompleteness = result.state === 'ok' ? 'complete' : 'invalid'
+          if (streamLease !== undefined) {
+            resultValue = {
+              ...result,
+              output: { kind: 'stream', state: 'not-materialized' },
+            }
+            completeness = 'capped'
+            diagnostics.push({
+              code: 'x3.mcp/operation-stream-not-materialized',
+              message:
+                'The bounded read-only adapter released the stream without materializing it.',
+              severity: 'information',
+            })
+          }
+          const projectedResult = boundedJson(resultValue)
+          if (projectedResult.capped || progressCapped) {
+            completeness = result.state === 'rejected' ? 'invalid' : 'capped'
+            diagnostics.push({
+              code: 'x3.mcp/operation-output-capped',
+              message: 'The operation result or progress exceeded the bounded JSON limits.',
+              severity: 'warning',
+            })
+          }
+          const snapshot = entry.opened.snapshot
+          if (snapshot.state !== 'opened') {
+            throw new McpOperationError('x3.mcp/no-session', 'No opened snapshot exists.')
+          }
+          return envelope({
+            snapshotId: String(descriptor.revision),
+            completeness,
+            diagnostics,
+            provenance: [descriptor.origin, snapshot.selected],
+            data: {
+              handle: entry.id,
+              operationId: operation.id,
+              result: projectedResult.value,
+              progress,
+              ...(artifact === undefined ? {} : { outputArtifact: artifact }),
+              ...(substituted === undefined ? {} : { inputArtifact: substituted.provenance }),
+            },
+          })
+        } finally {
+          await streamLease?.release()
+        }
+      } finally {
+        substituted?.release()
+        if (reservation !== undefined) this.outputs.cancel(reservation)
+      }
+    })
+  }
+
+  /**
+   * Ask a mutating operation what it *would* change, without changing it.
+   *
+   * An agent that can read a mod and not propose a change to it is half a tool, and the obvious way
+   * to close that gap — letting it invoke mutating operations — is the wrong one: it puts an
+   * unreviewed write into a file the moment a model misreads a request. MK3 already has the right
+   * shape for this, because a codec answers a write with an edit *plan* rather than performing one.
+   * So this returns the plan.
+   *
+   * What the caller gets is exactly what would happen: which bytes, how many, with what label and
+   * what round-trip fidelity. What it does not get is a commit — that needs an authorization the
+   * host owns and a person to grant it, and routing it through here would be routing around the
+   * approval rather than asking for it.
+   */
+  async proposeEdit(
+    handle: string,
+    operationId: string,
+    input: unknown,
+    signal: AbortSignal,
+  ): Promise<McpEnvelope> {
+    return this.withHandle(handle, signal, async (entry, scopedSignal) => {
+      const session = entry.opened.session
+      if (session === undefined) {
+        throw new McpOperationError('x3.mcp/no-session', 'No session exists.')
+      }
       const descriptor = await session.descriptor()
       scopedSignal.throwIfAborted()
       const operation = descriptor.operations.find(candidate => candidate.id === operationId)
@@ -1357,16 +1548,20 @@ export class ModkitMcpRuntime {
           'The exact operation ID is not declared by the current subject descriptor.',
         )
       }
-      if (operation.mutatesSource) {
+      /*
+       * The mirror of `invokeReadonly`'s refusal. A read-only operation sent here would be executed
+       * for its result and reported as a proposal, which is a lie about what happened.
+       */
+      if (!operation.mutatesSource) {
         throw new McpOperationError(
-          'x3.mcp/mutating-operation-refused',
-          'The subject declares this operation as mutating, so the read-only adapter refused it.',
+          'x3.mcp/non-mutating-operation-refused',
+          'The subject declares this operation as read-only; invoke it through the read-only adapter.',
         )
       }
       if (operation.state !== 'available') {
         throw new McpOperationError(
           'x3.mcp/operation-unavailable',
-          `The declared read-only operation is ${operation.state}: ${operation.reason}`,
+          `The declared operation is ${operation.state}: ${operation.reason}`,
         )
       }
 
@@ -1378,70 +1573,90 @@ export class ModkitMcpRuntime {
         )
       }
 
-      const progress: unknown[] = []
-      let progressCapped = false
       const result = await session
         .operations()
-        .invoke(operation.handlerId, projectedInput.value as JsonValue, {
-          signal: scopedSignal,
-          onProgress: event => {
-            if (progress.length >= MCP_MAX_PROGRESS_EVENTS) {
-              progressCapped = true
-              return
-            }
-            const projected = boundedJson(event)
-            progress.push(projected.value)
-            progressCapped ||= projected.capped
-          },
-        })
-      const streamLease =
-        result.state === 'ok' && result.output.kind === 'stream' ? result.output.stream : undefined
-      try {
-        scopedSignal.throwIfAborted()
+        .invoke(operation.handlerId, projectedInput.value as JsonValue, { signal: scopedSignal })
+      scopedSignal.throwIfAborted()
 
-        const diagnostics: unknown[] = [...result.diagnostics]
-        let resultValue: unknown = result
-        let completeness: McpCompleteness = result.state === 'ok' ? 'complete' : 'invalid'
-        if (streamLease !== undefined) {
-          resultValue = {
-            ...result,
-            output: { kind: 'stream', state: 'not-materialized' },
-          }
-          completeness = 'capped'
-          diagnostics.push({
-            code: 'x3.mcp/operation-stream-not-materialized',
-            message: 'The bounded read-only adapter released the stream without materializing it.',
-            severity: 'information',
-          })
+      const diagnostics: unknown[] = [...result.diagnostics]
+      let completeness: McpCompleteness = result.state === 'ok' ? 'complete' : 'invalid'
+      let plan: unknown
+
+      if (result.state === 'ok' && result.output.kind === 'edit-plan') {
+        /*
+         * The plan is summarized rather than passed through. Its payloads are the replacement bytes,
+         * which for a re-encoded texture is the whole file — an agent asking "what would change"
+         * wants the shape of the change, and the bytes would blow the JSON bound and tell it nothing.
+         */
+        const raw = result.output.plan as {
+          planId?: string
+          fidelity?: unknown
+          edits?: readonly {
+            operation?: string
+            label?: string
+            targetId?: string
+            range?: { offset?: unknown; length?: unknown }
+            payload?: { kind?: string; bytes?: { byteLength?: number } }
+          }[]
         }
-        const projectedResult = boundedJson(resultValue)
-        if (projectedResult.capped || progressCapped) {
-          completeness = result.state === 'rejected' ? 'invalid' : 'capped'
-          diagnostics.push({
-            code: 'x3.mcp/operation-output-capped',
-            message: 'The operation result or progress exceeded the bounded JSON limits.',
-            severity: 'warning',
-          })
+        plan = {
+          planId: raw.planId,
+          fidelity: raw.fidelity,
+          edits: (raw.edits ?? []).map(edit => ({
+            operation: edit.operation,
+            label: edit.label,
+            targetId: edit.targetId,
+            ...(edit.range === undefined
+              ? {}
+              : { offset: String(edit.range.offset ?? 0), length: String(edit.range.length ?? 0) }),
+            replacementBytes:
+              edit.payload?.kind === 'inline'
+                ? (edit.payload.bytes?.byteLength ?? 0)
+                : undefined,
+          })),
         }
-        const snapshot = entry.opened.snapshot
-        if (snapshot.state !== 'opened') {
-          throw new McpOperationError('x3.mcp/no-session', 'No opened snapshot exists.')
-        }
-        return envelope({
-          snapshotId: String(descriptor.revision),
-          completeness,
-          diagnostics,
-          provenance: [descriptor.origin, snapshot.selected],
-          data: {
-            handle: entry.id,
-            operationId: operation.id,
-            result: projectedResult.value,
-            progress,
-          },
+        diagnostics.push({
+          code: 'x3.mcp/edit-not-committed',
+          message:
+            'The plan describes the change and was not applied. Committing needs the host authorization this adapter does not hold.',
+          severity: 'information',
         })
-      } finally {
-        await streamLease?.release()
+      } else if (result.state === 'ok') {
+        completeness = 'invalid'
+        diagnostics.push({
+          code: 'x3.mcp/operation-not-an-edit-plan',
+          message: `The mutating operation answered with ${result.output.kind}, not an edit plan.`,
+          severity: 'error',
+        })
       }
+
+      const projectedPlan = boundedJson(plan ?? null)
+      if (projectedPlan.capped) {
+        completeness = 'capped'
+        diagnostics.push({
+          code: 'x3.mcp/operation-output-capped',
+          message: 'The plan summary exceeded the bounded JSON limits.',
+          severity: 'warning',
+        })
+      }
+      const snapshot = entry.opened.snapshot
+      if (snapshot.state !== 'opened') {
+        throw new McpOperationError('x3.mcp/no-session', 'No opened snapshot exists.')
+      }
+      return envelope({
+        snapshotId: String(descriptor.revision),
+        completeness,
+        diagnostics,
+        provenance: [descriptor.origin, snapshot.selected],
+        data: {
+          handle: entry.id,
+          operationId: operation.id,
+          state: result.state,
+          ...(result.state === 'rejected' ? { reason: result.reason } : {}),
+          plan: projectedPlan.value,
+          committed: false,
+        },
+      })
     })
   }
 
@@ -1473,8 +1688,190 @@ export class ModkitMcpRuntime {
     })
   }
 
+  outputManifest(id: string, signal: AbortSignal) {
+    signal.throwIfAborted()
+    return this.outputs.manifest(id)
+  }
+
+  async subjectEditTarget(
+    handle: string,
+    fieldPath: readonly string[],
+    targetDocument: Readonly<{ rootId: string; path: string }> | undefined,
+    signal: AbortSignal,
+  ): Promise<McpEnvelope> {
+    return this.withEntity(handle, signal, async (entry, scopedSignal) => {
+      const resolve = entry.selector.value.editTarget
+      if (resolve === undefined) {
+        throw new McpOperationError(
+          'x3.mcp/subject-edit-target-unavailable',
+          'This selected subject does not publish a resolved edit target.',
+        )
+      }
+      const result = await resolve.call(
+        entry.selector.value,
+        {
+          subjectId: entry.subjectId,
+          fieldPath,
+          ...(targetDocument === undefined ? {} : { targetDocument }),
+        },
+        scopedSignal,
+      )
+      if (result.snapshotId !== entry.snapshotId) {
+        throw new McpOperationError(
+          'x3.mcp/subject-edit-target-snapshot-mismatch',
+          'The edit target belongs to a different resolved workspace snapshot.',
+        )
+      }
+      return envelope({
+        snapshotId: result.snapshotId,
+        completeness:
+          result.state === 'resolved'
+            ? 'complete'
+            : result.state === 'selection-required'
+              ? 'partial'
+              : 'invalid',
+        diagnostics:
+          result.state === 'unavailable'
+            ? [
+                {
+                  code: 'x3.mcp/subject-edit-target-unavailable',
+                  message: result.reason,
+                  severity: 'information' as const,
+                },
+              ]
+            : [],
+        data: result,
+      })
+    })
+  }
+  async subjectIsolation(
+    handle: string,
+    targetSubjectId: string,
+    ownerFieldPath: readonly string[],
+    maxEdges: number,
+    always: boolean | undefined,
+    signal: AbortSignal,
+  ): Promise<McpEnvelope> {
+    return this.withEntity(handle, signal, async (entry, scopedSignal) => {
+      const analyze = entry.selector.value.isolation
+      if (analyze === undefined) {
+        throw new McpOperationError(
+          'x3.mcp/subject-isolation-unavailable',
+          'This selected subject does not publish shared-object isolation analysis.',
+        )
+      }
+      const result = await analyze.call(
+        entry.selector.value,
+        {
+          schemaVersion: 1,
+          ownerSubjectId: entry.subjectId,
+          targetSubjectId,
+          ownerFieldPath,
+          maxEdges,
+          ...(always === undefined ? {} : { always }),
+        },
+        scopedSignal,
+      )
+      if (result.snapshotId !== entry.snapshotId) {
+        throw new McpOperationError(
+          'x3.mcp/subject-isolation-snapshot-mismatch',
+          'The isolation analysis belongs to a different resolved workspace snapshot.',
+        )
+      }
+      return envelope({
+        snapshotId: result.snapshotId,
+        completeness: result.state === 'ready' ? 'complete' : 'invalid',
+        diagnostics:
+          result.state === 'unavailable'
+            ? [
+                {
+                  code: 'x3.mcp/subject-isolation-unavailable',
+                  message: result.reason,
+                  severity: 'information' as const,
+                },
+              ]
+            : [],
+        data: result,
+      })
+    })
+  }
+  async subjectIsolationPlan(
+    handle: string,
+    request: Readonly<{
+      targetSubjectId: string
+      cloneSubjectId: string
+      ownerFieldPath: readonly string[]
+      maxEdges: number
+      always?: boolean
+      ownerTargetDocument?: Readonly<{ rootId: string; path: string }>
+      cloneTargetDocument?: Readonly<{ rootId: string; path: string }>
+    }>,
+    signal: AbortSignal,
+  ): Promise<McpEnvelope> {
+    return this.withEntity(handle, signal, async (entry, scopedSignal) => {
+      const plan = entry.selector.value.isolationPlan
+      if (plan === undefined) {
+        throw new McpOperationError(
+          'x3.mcp/subject-isolation-plan-unavailable',
+          'This selected subject does not publish shared-object isolation plans.',
+        )
+      }
+      const result = await plan.call(
+        entry.selector.value,
+        {
+          schemaVersion: 1,
+          ownerSubjectId: entry.subjectId,
+          ...request,
+        },
+        scopedSignal,
+      )
+      if (result.snapshotId !== entry.snapshotId) {
+        throw new McpOperationError(
+          'x3.mcp/subject-isolation-plan-snapshot-mismatch',
+          'The isolation plan belongs to a different resolved workspace snapshot.',
+        )
+      }
+      const diagnostics =
+        result.state === 'planned'
+          ? result.diagnostics
+          : result.state === 'unavailable'
+            ? [
+                {
+                  code: 'x3.mcp/subject-isolation-plan-unavailable',
+                  message: result.reason,
+                  severity: 'information' as const,
+                },
+              ]
+            : []
+      return envelope({
+        snapshotId: result.snapshotId,
+        completeness:
+          result.state === 'planned'
+            ? 'complete'
+            : result.state === 'selection-required'
+              ? 'partial'
+              : 'invalid',
+        diagnostics,
+        data: result,
+      })
+    })
+  }
+  outputChunk(id: string, offset: number, signal: AbortSignal) {
+    signal.throwIfAborted()
+    return this.outputs.chunk(id, offset)
+  }
+  releaseOutput(id: string, signal: AbortSignal): McpEnvelope {
+    signal.throwIfAborted()
+    this.outputs.release(id)
+    return envelope({
+      snapshotId: 'output-released',
+      completeness: 'complete',
+      data: { id, released: true },
+    })
+  }
   async dispose(): Promise<void> {
     const handles = [...this.handles.keys()]
     await Promise.allSettled(handles.map(handle => this.close(handle)))
+    this.outputs.dispose()
   }
 }

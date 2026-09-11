@@ -52,6 +52,7 @@ const definition = Object.freeze({
       return { confidence: directory && world ? 0.99 : 0, kind: 'structure', note: 'world marker' }
     },
     async inspect(namespace, context) {
+      const preamble = await namespace.readPreamble?.(context.budget.maxScalarBytes, context.signal)
       const opened = await namespace.open('Base.SC2Data/world.bin', context.signal)
       try {
         if (opened.value.kind !== 'bytes') throw new TypeError('world entry is not bytes')
@@ -108,6 +109,7 @@ const definition = Object.freeze({
             world: globalThis.__x3ContainerSkipInspectRead
               ? 'not-read'
               : new TextDecoder().decode(bytes),
+            preamble: preamble === undefined ? '' : new TextDecoder().decode(preamble),
           },
           metadata: [],
           traits: [{ id: 'structure.hierarchy' }],

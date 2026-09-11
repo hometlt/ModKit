@@ -29,6 +29,10 @@ import {
 } from './uvm-core.mjs'
 import { buildFacetBundle, projectionSemanticHash, DESCRIPTOR } from './model-interchange.mjs'
 import { assertUvtProfile } from './uvt-profile.mjs'
+import { assertUvwProfile } from './uvw-profile.mjs'
+import { composePackages, resolveDefinitions } from './uv-composition.mjs'
+import { encodeUvb, decodeUvb, uvbIdentityDigest, locateFirstInstructionFlags } from './uvb-binary.mjs'
+import { verifyModule, verifyCharts } from './uv-verify.mjs'
 
 const specsRoot = new URL('../', import.meta.url)
 const readJson = relative => JSON.parse(readFileSync(fileURLToPath(new URL(relative, specsRoot)), 'utf8'))
@@ -290,13 +294,232 @@ function runModelInterchange() {
   return file.vectors.length
 }
 
+// --- suite: uvw ----------------------------------------------------------------------------------
+
+function runUvw() {
+  const suite = 'uvw'
+  const file = readJson('conformance/uvw/vectors.json')
+  for (const vector of file.vectors) {
+    const document = readJson(`world/fixtures/${vector.fixture}`)
+    const mutated = applyMutations(document, vector.mutations ?? [])
+    checks += 1
+    if (vector.expect === 'reject') {
+      try {
+        assertUvwProfile(mutated)
+      } catch (error) {
+        if (error.rule !== vector.rule) {
+          fail(suite, vector.id, `refused for rule «${String(error.rule)}», the vector names «${vector.rule}»`)
+        }
+        continue
+      }
+      fail(suite, vector.id, `expected the «${vector.rule}» rule to refuse this world`)
+      continue
+    }
+    try {
+      assertUvwProfile(mutated)
+    } catch (error) {
+      fail(suite, vector.id, `a shipped fixture must conform: ${error.message}`)
+    }
+  }
+  return file.vectors.length
+}
+
+// --- suite: uvp-composition ----------------------------------------------------------------------
+
+function runUvpComposition() {
+  const suite = 'uvp-composition'
+  const file = readJson('conformance/uvp-composition/vectors.json')
+  const registry = readJson('runtime/intrinsics.v1.json')
+  for (const vector of file.vectors) {
+    checks += 1
+    const outcome = composePackages(vector.root, vector.manifests, registry, vector.granted)
+    if (vector.expect === 'accept') {
+      if (outcome.refusal !== undefined) {
+        fail(suite, vector.id, `unexpected refusal ${outcome.refusal.rule}: ${outcome.refusal.message}`)
+        continue
+      }
+      const actual = JSON.stringify(outcome.layers.map(layer => layer.id))
+      const expected = JSON.stringify(vector.expectLayers)
+      if (actual !== expected) fail(suite, vector.id, `layer order\n    expected ${expected}\n    actual   ${actual}`)
+      continue
+    }
+    if (outcome.refusal === undefined) {
+      fail(suite, vector.id, `expected refusal ${vector.rule}, composition was accepted`)
+    } else if (outcome.refusal.rule !== vector.rule) {
+      fail(suite, vector.id, `expected refusal ${vector.rule}, got ${outcome.refusal.rule}: ${outcome.refusal.message}`)
+    }
+  }
+  return file.vectors.length
+}
+
+// --- suite: uvd-resolution -----------------------------------------------------------------------
+
+function runUvdResolution() {
+  const suite = 'uvd-resolution'
+  const file = readJson('conformance/uvd-resolution/vectors.json')
+  for (const vector of file.vectors) {
+    const layers = vector.layers.map(layer => ({
+      id: layer.id,
+      documents: layer.documents.map(doc => (typeof doc === 'string' ? file[doc] : doc)),
+    }))
+    const outcome = resolveDefinitions(layers, vector.options)
+    if (vector.expect === 'accept') {
+      if (outcome.refusal !== undefined) {
+        checks += 1
+        fail(suite, vector.id, `unexpected refusal ${outcome.refusal.rule}: ${outcome.refusal.message}`)
+        continue
+      }
+      if (vector.expectDiagnostics !== undefined) {
+        checks += 1
+        expectEqual(suite, vector.id, outcome.diagnostics.length, vector.expectDiagnostics, 'diagnostic count')
+      }
+      for (const absent of vector.absent ?? []) {
+        checks += 1
+        if (outcome.definitions.get(absent.def)?.fields[absent.field] !== undefined) {
+          fail(suite, vector.id, `${absent.def}.${absent.field} should be absent`)
+        }
+      }
+      for (const check of vector.checks) {
+        checks += 1
+        const definition = outcome.definitions.get(check.def)
+        const entry = definition?.fields[check.field]
+        if (entry === undefined) {
+          fail(suite, vector.id, `${check.def}.${check.field} has no effective value`)
+          continue
+        }
+        if (JSON.stringify(entry.value) !== JSON.stringify(check.value)) {
+          fail(suite, vector.id, `${check.def}.${check.field} value\n    expected ${JSON.stringify(check.value)}\n    actual   ${JSON.stringify(entry.value)}`)
+        }
+        if (entry.provenance.layer !== check.layer) {
+          fail(suite, vector.id, `${check.def}.${check.field} provenance layer\n    expected ${check.layer}\n    actual   ${entry.provenance.layer}`)
+        }
+        if ((entry.provenance.via ?? undefined) !== (check.via ?? undefined)) {
+          fail(suite, vector.id, `${check.def}.${check.field} provenance via\n    expected ${check.via}\n    actual   ${entry.provenance.via}`)
+        }
+      }
+      continue
+    }
+    checks += 1
+    if (outcome.refusal === undefined) {
+      fail(suite, vector.id, `expected refusal ${vector.rule}, resolution was accepted`)
+    } else if (outcome.refusal.rule !== vector.rule) {
+      fail(suite, vector.id, `expected refusal ${vector.rule}, got ${outcome.refusal.rule}: ${outcome.refusal.message}`)
+    }
+  }
+  return file.vectors.length
+}
+
+// --- suite: uvb-binary ---------------------------------------------------------------------------
+
+function runUvbBinary() {
+  const suite = 'uvb-binary'
+  const file = readJson('conformance/uvb-binary/vectors.json')
+  for (const vector of file.vectors) {
+    const module = readJson(`conformance/uvb-binary/${vector.fixture}`)
+    delete module.$comment
+    if (vector.stripSourceMap === true) {
+      for (const fn of module.functions) for (const instruction of fn.body) delete instruction.source
+    }
+    if (vector.expect === 'reject-encode') {
+      expectThrow(suite, vector.id, vector.reason, () => encodeUvb(applyMutations(module, vector.mutations)))
+      continue
+    }
+    const bytes = encodeUvb(vector.mutations !== undefined ? applyMutations(module, vector.mutations) : module)
+    if (vector.expect === 'reject') {
+      const corrupted = Uint8Array.from(bytes)
+      if (vector.corrupt !== undefined) {
+        const offset =
+          vector.corrupt.offset === 'first-instruction-flags-high-byte'
+            ? locateFirstInstructionFlags(bytes) + 1
+            : vector.corrupt.offset
+        corrupted[offset] = vector.corrupt.value
+      }
+      const input = vector.truncateTo !== undefined ? corrupted.subarray(0, vector.truncateTo) : corrupted
+      expectThrow(suite, vector.id, vector.reason, () => decodeUvb(input))
+      continue
+    }
+    const source = vector.mutations !== undefined ? applyMutations(module, vector.mutations) : module
+    const decoded = decodeUvb(bytes)
+    expectEqual(suite, vector.id, canonicalStringify(decoded), canonicalStringify(source), 'binary → structural bijection')
+    const again = encodeUvb(decoded)
+    expectEqual(suite, vector.id, Buffer.compare(Buffer.from(again), Buffer.from(bytes)), 0, 'structural → binary byte identity')
+    if (vector.identityDigest !== undefined) {
+      expectEqual(suite, vector.id, uvbIdentityDigest(bytes), vector.identityDigest, 'pinned identity digest')
+    }
+    if (vector.byteLength !== undefined) expectEqual(suite, vector.id, bytes.length, vector.byteLength, 'pinned byte length')
+  }
+  return file.vectors.length
+}
+
+// --- suite: uvs-uvb-verifier ---------------------------------------------------------------------
+
+function runVerifier() {
+  const suite = 'uvs-uvb-verifier'
+  const file = readJson('conformance/uvs-uvb-verifier/vectors.json')
+  const registry = readJson('runtime/intrinsics.v1.json')
+  const events = readJson('runtime/events.v1.json')
+  for (const vector of file.vectors) {
+    const fixture = readJson(`conformance/uvs-uvb-verifier/${vector.fixture}`)
+    delete fixture.$comment
+    const input = vector.mutations !== undefined ? applyMutations(fixture, vector.mutations) : fixture
+    let outcome
+    try {
+      outcome =
+        vector.kind === 'module'
+          ? verifyModule(input, registry, { granted: vector.granted })
+          : verifyCharts(input, registry, events)
+    } catch (thrown) {
+      outcome = thrown.refusal !== undefined ? thrown : { refusal: { rule: 'crash', message: String(thrown?.message ?? thrown) } }
+    }
+    checks += 1
+    if (vector.expect === 'accept') {
+      if (outcome.refusal !== undefined) {
+        fail(suite, vector.id, `unexpected refusal ${outcome.refusal.rule}: ${outcome.refusal.message}`)
+        continue
+      }
+      if (vector.expectBound !== undefined) {
+        expectEqual(suite, vector.id, JSON.stringify(outcome.bound), JSON.stringify(vector.expectBound), 'bound intrinsics')
+      }
+      continue
+    }
+    if (outcome.refusal === undefined) fail(suite, vector.id, `expected refusal ${vector.rule}, verification passed`)
+    else if (outcome.refusal.rule !== vector.rule) fail(suite, vector.id, `expected refusal ${vector.rule}, got ${outcome.refusal.rule}: ${outcome.refusal.message}`)
+  }
+  return file.vectors.length
+}
+
+// --- suite: uv-families --------------------------------------------------------------------------
+
+function runUvFamilies() {
+  const suite = 'uv-families'
+  const families = readJson('foundation/uv-families.v1.schema.json').$defs
+  const copies = [
+    ['package/schema/uvp.manifest.v1.schema.json', ['properties', 'contents', 'items', 'properties', 'family', 'enum'], 'contentFamily'],
+    ['receipts/schema/lowering.receipt.v1.schema.json', ['properties', 'outputs', 'items', 'properties', 'family', 'enum'], 'outputFamily'],
+    ['receipts/schema/lowering.receipt.v1.schema.json', ['properties', 'coverage', 'items', 'properties', 'category', 'enum'], 'loweringCategory'],
+  ]
+  for (const [file, path, def] of copies) {
+    checks += 1
+    const schema = readJson(file)
+    const actual = path.reduce((cursor, key) => cursor?.[key], schema)
+    expectEqual(suite, `${file}#${def}`, JSON.stringify(actual), JSON.stringify(families[def].enum), 'inline family enum equals the foundation vocabulary')
+  }
+  return copies.length
+}
+
 // --- entry point -----------------------------------------------------------------------------------
 
 const suites = {
   'canonical-form': runCanonicalForm,
   'uvm-core': runUvmCore,
   uvt: runUvt,
+  uvw: runUvw,
   'model-interchange-v1': runModelInterchange,
+  'uvp-composition': runUvpComposition,
+  'uvd-resolution': runUvdResolution,
+  'uvb-binary': runUvbBinary,
+  'uv-families': runUvFamilies,
+  'uvs-uvb-verifier': runVerifier,
 }
 
 const argv = process.argv.slice(2)
@@ -314,7 +537,7 @@ for (const [name, run] of Object.entries(suites)) {
   vectorCount += run()
 }
 
-let schemaNote = ''
+let schemaNote = requested === undefined ? '' : ', schema assertions skipped (single-suite run)'
 if (requested === undefined) {
   const { executed, declared } = await runSchemaAssertions(engineUrl)
   schemaNote =

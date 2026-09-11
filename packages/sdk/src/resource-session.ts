@@ -79,6 +79,10 @@ export type ResourceUnresolvedReason =
   | 'cycle-detected'
   /** The session was disposed; its leases are gone and it resolves nothing further. */
   | 'session-disposed'
+  /** A previously observed resource changed while this session requires pinned content. */
+  | 'source-revision-changed'
+  /** The host's current grant no longer admits reading a newly requested resource. */
+  | 'permission-missing'
 
 /**
  * What the session did about one requirement — recorded whether it succeeded or not.
@@ -120,8 +124,10 @@ export type ResourceSessionState = 'live' | 'disposed'
 /**
  * The host-owned port a projection resolves its lazy references through.
  *
- * `revision` pins the resource plane the whole session resolves against, so two resolutions inside
- * one session cannot silently straddle a change in the underlying container.
+ * `revision` identifies the host's origin context. Each resolved source also carries its own
+ * revision. Subject projections pin that source's first observed revision and refuse subsequent
+ * changes; older observing consumers may record a newer revision on a later resolution. This is
+ * lazy observation, not an atomic snapshot of every file before it has been requested.
  */
 export interface ResourceSessionPort {
   readonly sessionId: string

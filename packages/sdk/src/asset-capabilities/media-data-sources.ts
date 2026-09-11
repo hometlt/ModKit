@@ -24,6 +24,10 @@ export type RasterPixelFormat =
   'gray8' | 'gray-alpha8' | 'rgb8' | 'rgba8' | 'bgra8' | 'rgba16' | 'rgba32f'
 
 export interface RasterImageInfo {
+  /** Meaningful channel layout before RGBA padding/replication. This does not assign material usage. */
+  readonly channelLayout?: 'r' | 'rg' | 'rgb' | 'rgba' | 'luminance' | 'luminance-alpha' | 'alpha'
+  /** Source block compression, if known; consumers must not infer it from filenames. */
+  readonly compression?: 'none' | 'bc1' | 'bc2' | 'bc3' | 'bc4' | 'bc5' | 'bc6h' | 'bc7'
   readonly width: number
   readonly height: number
   readonly depth: number
@@ -224,7 +228,23 @@ export interface ModelPrimitive {
   readonly positions: Float32Array
   readonly indices?: Uint32Array
   readonly normals?: Float32Array
+  /** Four floats per vertex: tangent xyz and bitangent handedness. */
+  readonly tangents?: Float32Array
+  /** Normalized RGBA, four floats per vertex in the source color space. */
+  readonly colors?: Float32Array
+  /** UV set zero, retained for consumers that only support one texture coordinate set. */
   readonly textureCoordinates?: Float32Array
+  /** Authored UV sets, including set zero when present; each has two floats per vertex. */
+  readonly textureCoordinateSets?: readonly {
+    readonly set: number
+    readonly coordinates: Float32Array
+  }[]
+  /** Four indices per vertex, resolved against ModelSkeletonSource boneIndex values. */
+  readonly boneIndices?: Uint32Array
+  /** Four weights per vertex, paired with boneIndices. */
+  readonly boneWeights?: Float32Array
+  /** Exact hierarchy for boneIndices. Absence leaves the buffers without a portable skin binding. */
+  readonly hierarchyId?: string
   readonly materialId?: string
   readonly bounds?: ModelBounds
 }

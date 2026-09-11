@@ -100,6 +100,21 @@ describe('A-4 authoring builders and profiles', () => {
     expect(Object.isFrozen(definition.contribution)).toBe(true)
   })
 
+  it('preserves an explicit isolation profile for each runtime target', () => {
+    const definition = defineCodec(codecSpec({
+      profile: 'explicit',
+      permissions: ['read-source', 'write-source'],
+      targets: [
+        { variantId: 'trusted', environments: ['node'], entrypoint: './dist/index.js', executionProfile: 'trusted-in-process' },
+        { variantId: 'portable', environments: ['browser-worker'], entrypoint: './dist/index.js', executionProfile: 'worker-brokered' },
+      ],
+    }))
+    expect(definition.runtimeVariants.map(variant => variant.executionProfile)).toEqual([
+      'trusted-in-process', 'worker-brokered',
+    ])
+    expect(definition.runtimeVariants[0]?.target).toEqual({ environments: ['node'] })
+  })
+
   it('requires a passing smoke test for every declared environment before pack', () => {
     const definition = defineCodec(codecSpec())
     const partial = [

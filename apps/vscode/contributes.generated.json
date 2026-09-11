@@ -9,6 +9,10 @@
       "title": "%command.browseContainer%"
     },
     {
+      "command": "modkit.contentSources",
+      "title": "%command.contentSources%"
+    },
+    {
       "command": "modkit.explainResolution",
       "title": "%command.explainResolution%"
     },

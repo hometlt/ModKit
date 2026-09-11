@@ -281,6 +281,9 @@ describe('NXT-103 — standard data-source surfaces', () => {
         wrapper: 'lease',
         signal: 'last',
       },
+      editTarget: { kind: 'value', signal: 'last', optional: true },
+      isolation: { kind: 'value', signal: 'last', optional: true },
+      isolationPlan: { kind: 'value', signal: 'last', optional: true },
     })
   })
 

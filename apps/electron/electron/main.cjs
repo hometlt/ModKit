@@ -160,6 +160,8 @@ async function registerFileTypes(extensions, localizer) {
 
 async function createWindow() {
   const {
+    loadContentSources,
+    callContentSources,
     ELECTRON_SECURE_WEB_PREFERENCES,
     ELECTRON_BROKER_CHANNELS,
     assertElectronBrokerRequest,
@@ -196,6 +198,24 @@ async function createWindow() {
     openNestedSubject,
   } = await root
   const repositoryRoot = path.resolve(__dirname, '..', '..', '..')
+  let contentSourcesPromise
+  const requireContentSources = async () => {
+    const storage = path.join(app.getPath('userData'), 'content-sources')
+    const defaultConfig = path.join(storage, 'provider.json')
+    contentSourcesPromise ??= loadContentSources(process.env.MODKIT_CONTENT_SOURCE_CONFIG ||
+      (fs.existsSync(defaultConfig) ? defaultConfig : undefined), storage)
+    const sources = await contentSourcesPromise
+    if (!sources) throw new Error('Battle.net source runtime is not configured for this installation')
+    return sources
+  }
+  const sourceLocation = value => {
+    if (typeof value !== 'string' || !value.startsWith('modkit-source:')) return undefined
+    const uri = new URL(value)
+    if (uri.hostname !== 'battlenet' || uri.username || uri.password || uri.port || uri.search || uri.hash) throw new Error('Invalid source URI')
+    const [id, ...parts] = decodeURIComponent(uri.pathname).slice(1).split('/')
+    if (!id || parts.some(part => part === '..' || part === '.')) throw new Error('Invalid source path')
+    return { id, path: parts.join('/') }
+  }
   const packagedCommonExtensions = path.join(__dirname, '..', 'dist-app', 'extensions')
   const BUNDLED_ROOTS = BUNDLED_EXTENSION_DIRECTORIES.map(directory =>
     path.join(packagedCommonExtensions, directory),
@@ -638,6 +658,30 @@ async function createWindow() {
    * the RPC endpoint to lease — no session table, no method dispatch, no allowlists here.
    */
   const openSubjectForRpc = async (requestedPath, signal) => {
+    const remote = sourceLocation(requestedPath)
+    if (remote) {
+      signal?.throwIfAborted()
+      const bytes = await (await requireContentSources()).read(remote.id, remote.path, 64 * 1024 * 1024)
+      signal?.throwIfAborted()
+      const source = {
+        kind: 'bytes', ref: { id: requestedPath, uri: requestedPath },
+        revision: `content-hash.sha256:${createHash('sha256').update(bytes).digest('hex')}`,
+        size: BigInt(bytes.length),
+        async read(offset, length) {
+          if (offset < 0n || length < 0 || offset + BigInt(length) > BigInt(bytes.length)) throw new Error('Source read out of bounds')
+          return bytes.slice(Number(offset), Number(offset) + length)
+        },
+        async *stream() { yield bytes },
+      }
+      const result = await subjectServices.open({ source, path: remote.path, intent: 'full',
+        grant: { id: `source:${randomUUID()}`, classes: ['read-source'] },
+        budget: { maxInputBytes: BigInt(bytes.length || 1), maxDepth: 256, maxNodes: 1_000_000,
+          maxScalarBytes: 64 * 1024 * 1024, maxDiagnostics: 1000, deadlineMs: 30_000 },
+        ...(signal ? { signal } : {}),
+      })
+      try { return await nestedAnswerForRpc({}, { result, entry: { size: bytes.length } }, []) }
+      catch (error) { if (result.state === 'opened') await result.session.dispose(); throw error }
+    }
     const nestedRequest = parseContainerEntryRequest(requestedPath)
     if (nestedRequest !== undefined) {
       const parent = openedSessions.get(nestedRequest.parentSessionId)
@@ -1348,6 +1392,15 @@ async function createWindow() {
 
   // Settings live in a JSON file the renderer never touches directly — it has no filesystem access.
   ipcMain.handle('modkit.settings.read', () => readSettings(app))
+  ipcMain.handle('modkit.content-sources', async (event, request) => {
+    if (event.sender !== window.webContents || event.senderFrame !== window.webContents.mainFrame ||
+      event.senderFrame.url.split('?')[0] !== pathToFileURL(RENDERER).href) throw new Error('Local Modkit source window required')
+    return callContentSources(await requireContentSources(), request?.method, request?.args)
+  })
+  window.once('closed', () => {
+    void contentSourcesPromise?.then(sources => sources?.dispose()).catch(() => {})
+    ipcMain.removeHandler('modkit.content-sources')
+  })
   ipcMain.handle('modkit.settings.write', async (_event, text) => {
     if (typeof text !== 'string' || text.length > 1_000_000) {
       throw new TypeError('settings payload must be a bounded JSON string')

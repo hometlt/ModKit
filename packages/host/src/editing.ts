@@ -98,6 +98,7 @@ export interface HostCommitCoordinatorOptions {
   readonly createRecovery?: (preparedId: string, planDigest: string) => Promise<RecoveryRef>
   readonly confirmationMatches?: (token: string, plan: AssetEditPlan) => boolean
   readonly now?: () => string
+  /** Injected IDs must be unique across coordinators sharing a backend or recovery store. */
   readonly nextId?: (kind: 'prepared' | 'transaction') => string
   readonly maxInlinePayloadBytes?: number
 }
@@ -119,6 +120,8 @@ interface HistoryEntry {
   readonly plan: AssetEditPlan
   readonly prepared: InternalPrepared
   readonly receipt: CommitReceipt
+  readonly undoneRevisions?: readonly AssetRevision[]
+  readonly replayed?: true
   readonly steps: readonly {
     readonly edit: SourceEdit
     readonly backend: EditingBackend
@@ -577,12 +580,15 @@ function derive(
 async function conflictsFor(
   targets: ReadonlyMap<string, SubjectEditTarget>,
   backends: ReadonlyMap<string, EditingBackend>,
+  backendFor: HostCommitCoordinatorOptions['backendFor'],
   signal?: AbortSignal,
 ): Promise<readonly SourceConflict[]> {
   const conflicts: SourceConflict[] = []
   for (const [targetId, target] of targets) {
-    const backend = backends.get(targetId)
-    if (backend === undefined) continue
+    // Targets without writes still pin inputs used by the operation. Their read backend does
+    // not contribute to write guarantees or require writability, but it must verify the revision.
+    const backend = backends.get(targetId) ?? backendFor(target.ownerSource.id)
+    if (backend === undefined) throw new TypeError('revision guard has no backend')
     const actual = snapshot(await backend.currentRevision(target, signal))
     if (!sameRevision(target.expectedRevision, actual)) {
       conflicts.push(
@@ -682,10 +688,8 @@ function invalidPlan(plan: AssetEditPlan): boolean {
     }
     ids.add(target['targetId'])
   }
-  const editedIds = new Set<string>()
   for (const edit of plan.edits) {
     if (!isSourceEdit(edit) || !ids.has(edit.targetId)) return true
-    editedIds.add(edit.targetId)
     if (
       (edit.operation === 'create' || edit.operation === 'delete' || edit.operation === 'rename') &&
       plan.targets.find(target => target.targetId === edit.targetId)?.expectedRevision
@@ -694,7 +698,8 @@ function invalidPlan(plan: AssetEditPlan): boolean {
       return true
     }
   }
-  return editedIds.size !== ids.size || [...ids].some(id => !editedIds.has(id))
+  // Unwritten targets are mandatory revision guards, checked at prepare/commit/undo.
+  return false
 }
 
 export function createCommitCoordinator(options: HostCommitCoordinatorOptions): CommitCoordinator {
@@ -708,9 +713,10 @@ export function createCommitCoordinator(options: HostCommitCoordinatorOptions): 
       ? {}
       : { expectedEvidenceContext: snapshot(options.expectedEvidenceContext) }),
   })
-  let serial = 0
+  // Backends retain pre-images by transaction ID across opened subjects/coordinators. A local
+  // counter aliases independent edits and makes undo restore another transaction's bytes.
   const nextId = (kind: 'prepared' | 'transaction') =>
-    options.nextId?.(kind) ?? `${kind}-${String(++serial).padStart(6, '0')}`
+    options.nextId?.(kind) ?? `${kind}-${globalThis.crypto.randomUUID()}`
   const preparedInputs = new WeakMap<object, InternalPrepared>()
   const history = new Map<string, HistoryEntry>()
 
@@ -811,7 +817,12 @@ export function createCommitCoordinator(options: HostCommitCoordinatorOptions): 
     }
     let conflicts: readonly SourceConflict[]
     try {
-      conflicts = await conflictsFor(targetMap, derived.backends, prepareOptions.signal)
+      conflicts = await conflictsFor(
+        targetMap,
+        derived.backends,
+        options.backendFor,
+        prepareOptions.signal,
+      )
     } catch {
       return { state: 'rejected', reason: 'plan-invalid', diagnostics: [] }
     }
@@ -888,7 +899,12 @@ export function createCommitCoordinator(options: HostCommitCoordinatorOptions): 
     }
     let conflicts: readonly SourceConflict[]
     try {
-      conflicts = await conflictsFor(internal.targets, fresh.backends, commitOptions.signal)
+      conflicts = await conflictsFor(
+        internal.targets,
+        fresh.backends,
+        options.backendFor,
+        commitOptions.signal,
+      )
     } catch {
       return { state: 'not-applied', reason: 'plan-invalid', diagnostics: [] }
     }
@@ -1183,7 +1199,7 @@ export function createCommitCoordinator(options: HostCommitCoordinatorOptions): 
 
   const undo: CommitCoordinator['undo'] = async (transactionId, undoOptions) => {
     const item = history.get(transactionId)
-    if (item === undefined) {
+    if (item === undefined || item.undoneRevisions !== undefined || item.replayed === true) {
       return { state: 'not-applied', reason: 'plan-invalid', diagnostics: [] }
     }
     let grant: GrantSnapshot
@@ -1215,7 +1231,12 @@ export function createCommitCoordinator(options: HostCommitCoordinatorOptions): 
     )
     let conflicts: readonly SourceConflict[]
     try {
-      conflicts = await conflictsFor(currentTargets, fresh.backends, undoOptions.signal)
+      conflicts = await conflictsFor(
+        currentTargets,
+        fresh.backends,
+        options.backendFor,
+        undoOptions.signal,
+      )
     } catch {
       return { state: 'not-applied', reason: 'plan-invalid', diagnostics: [] }
     }
@@ -1257,6 +1278,7 @@ export function createCommitCoordinator(options: HostCommitCoordinatorOptions): 
       ),
       fidelity: item.receipt.fidelity,
     }) satisfies CommitReceipt
+    history.set(transactionId, { ...item, undoneRevisions: Object.freeze(after) })
     return {
       state: 'committed',
       receipt: receipt as CommitReceipt & { readonly status: 'committed' },
@@ -1265,14 +1287,24 @@ export function createCommitCoordinator(options: HostCommitCoordinatorOptions): 
 
   const redo: CommitCoordinator['redo'] = async (transactionId, redoOptions) => {
     const item = history.get(transactionId)
-    if (item === undefined) {
+    if (item === undefined || item.undoneRevisions === undefined || item.replayed === true) {
       return { state: 'not-applied', reason: 'plan-invalid', diagnostics: [] }
     }
-    const prepared = await prepare(item.plan, {
-      grant: redoOptions.grant,
-      confirmationToken: item.prepared.confirmationToken ?? 'explicit-redo',
-      ...(redoOptions.signal === undefined ? {} : { signal: redoOptions.signal }),
+    // Restoring bytes creates new provider revisions. Reuse the revisions actually returned by
+    // undo, never the original pre-write tokens (which may contain mtimes or generation IDs).
+    const targets = item.plan.targets.map((target, index) => {
+      const expectedRevision = item.undoneRevisions?.[index]
+      if (expectedRevision === undefined) throw new TypeError('undo revision is absent')
+      return Object.freeze({ ...target, expectedRevision })
     })
+    const prepared = await prepare(
+      { ...item.plan, targets },
+      {
+        grant: redoOptions.grant,
+        confirmationToken: item.prepared.confirmationToken ?? 'explicit-redo',
+        ...(redoOptions.signal === undefined ? {} : { signal: redoOptions.signal }),
+      },
+    )
     if (prepared.state === 'conflict') {
       return {
         state: 'not-applied',
@@ -1284,7 +1316,9 @@ export function createCommitCoordinator(options: HostCommitCoordinatorOptions): 
     if (prepared.state === 'rejected') {
       return { state: 'not-applied', reason: prepared.reason, diagnostics: prepared.diagnostics }
     }
-    return commit(prepared.prepared, redoOptions)
+    const result = await commit(prepared.prepared, redoOptions)
+    if (result.state === 'committed') history.set(transactionId, { ...item, replayed: true })
+    return result
   }
 
   return Object.freeze({ prepare, commit, undo, redo })
@@ -1294,6 +1328,7 @@ export function createEditSession(options: {
   readonly revision: AssetRevision
   readonly targets: readonly SubjectEditTarget[]
   readonly writer: Writer
+  readonly transformPlan?: (plan: AssetEditPlan, signal?: AbortSignal) => Promise<AssetEditPlan>
 }): ManagedEditSession {
   let state: EditSessionState = 'live'
   const targets = snapshot(options.targets)
@@ -1329,9 +1364,14 @@ export function createEditSession(options: {
       }
       return result
     },
-    async plan(change: ChangeSet): Promise<AssetEditPlan> {
+    async plan(change: ChangeSet, signal?: AbortSignal): Promise<AssetEditPlan> {
       ensureLive()
-      return snapshot(await plan(snapshot(change)))
+      const authored = snapshot(await plan(snapshot(change), signal))
+      return snapshot(
+        options.transformPlan === undefined
+          ? authored
+          : await options.transformPlan(authored, signal),
+      )
     },
     markStale() {
       if (state !== 'disposed') state = 'stale-revision'

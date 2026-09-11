@@ -31,6 +31,14 @@ export interface FileTreeNode {
    */
   readonly size?: number
   readonly kind?: string
+  /** Buttons rendered on this row. They never alter tree selection or expansion. */
+  readonly actions?: readonly FileTreeAction[]
+}
+export interface FileTreeAction {
+  readonly id: string
+  readonly label: string
+  readonly title?: string
+  readonly confirm?: string
 }
 
 export interface FileTreeOptions {
@@ -42,6 +50,7 @@ export interface FileTreeOptions {
   ): Promise<readonly FileTreeNode[]>
   onSelect?(node: FileTreeNode): void
   onActivate?(node: FileTreeNode): void
+  onAction?(node: FileTreeNode, action: FileTreeAction): void
   /** Rows whose label does not match are hidden; ancestors of a match stay visible. */
   matches?(node: FileTreeNode): boolean
 }
@@ -167,6 +176,21 @@ export function createFileTree(document: Document, options: FileTreeOptions): Fi
       badge.textContent = safeViewerText(node.badge, 32)
       setPart(badge, 'filetree.badge')
       line.append(badge)
+    }
+
+    for (const action of node.actions ?? []) {
+      const control = document.createElement('button')
+      control.type = 'button'
+      control.className = 'modkit-filetree__action'
+      control.textContent = safeViewerText(action.label, 48)
+      control.title = safeViewerText(action.title ?? action.label, 160)
+      setPart(control, 'filetree.action')
+      control.addEventListener('click', event => {
+        event.preventDefault()
+        event.stopPropagation()
+        options.onAction?.(node, action)
+      })
+      line.append(control)
     }
 
     const childrenHost = document.createElement('div')

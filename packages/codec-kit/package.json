@@ -9,9 +9,45 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
+    "./editing": {
+      "types": "./dist/editing.d.ts",
+      "default": "./dist/editing.js"
+    },
+    "./graph/isolation": {
+      "types": "./dist/graph-isolation.d.ts",
+      "default": "./dist/graph-isolation.js"
+    },
     "./text": {
       "types": "./dist/text/index.d.ts",
       "default": "./dist/text/index.js"
+    },
+    "./model/materials": {
+      "types": "./dist/model/materials.d.ts",
+      "default": "./dist/model/materials.js"
+    },
+    "./model/animation": {
+      "types": "./dist/model/animation.d.ts",
+      "default": "./dist/model/animation.js"
+    },
+    "./model/skeleton": {
+      "types": "./dist/model/skeleton.d.ts",
+      "default": "./dist/model/skeleton.js"
+    },
+    "./model/skinning": {
+      "types": "./dist/model/skinning.d.ts",
+      "default": "./dist/model/skinning.js"
+    },
+    "./model/geometry": {
+      "types": "./dist/model/geometry.d.ts",
+      "default": "./dist/model/geometry.js"
+    },
+    "./json-snapshot": {
+      "types": "./dist/json-snapshot.d.ts",
+      "default": "./dist/json-snapshot.js"
+    },
+    "./tree/json": {
+      "types": "./dist/tree/json-tree.d.ts",
+      "default": "./dist/tree/json-tree.js"
     },
     "./package.json": "./package.json",
     "./legacy": {
@@ -53,6 +89,10 @@
     "./crypto/sha1": {
       "types": "./dist/crypto/sha1.d.ts",
       "default": "./dist/crypto/sha1.js"
+    },
+    "./crypto/digest": {
+      "types": "./dist/crypto/digest.d.ts",
+      "default": "./dist/crypto/digest.js"
     },
     "./texture": {
       "types": "./dist/texture/index.d.ts",
@@ -97,10 +137,20 @@
     "./compression": {
       "types": "./dist/compression/index.d.ts",
       "default": "./dist/compression/index.js"
+    },
+    "./model/sources": {
+      "types": "./dist/model/sources.d.ts",
+      "default": "./dist/model/sources.js"
+    },
+    "./projection": {
+      "types": "./dist/projection.d.ts",
+      "default": "./dist/projection.js"
     }
   },
   "files": [
     "dist",
+    "MK2-SKINNING-KERNELS.json",
+    "MK2-DIGEST-KERNELS.json",
     "README.md"
   ],
   "dependencies": {

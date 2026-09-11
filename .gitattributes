@@ -26,6 +26,14 @@ packages/extension-manager/generated/offline-release/*.bundle.json binary
 packages/extension-manager/generated/offline-release/catalog.v1.json -text
 packages/extension-manager/generated/offline-release/release.v1.json -text
 # Canonical MK2 copies are validated byte-for-byte by mk2-copy:check.
+packages/codec-kit/src/model/legacy/skinning-kernels.ts -text
+packages/codec-kit/MK2-SKINNING-KERNELS.json -text
+packages/uv/src/model/legacy/rig-kernels.ts -text
+packages/uv/MK2-RIG-KERNELS.json -text
+packages/uv/src/model/legacy/container-kernels.ts -text
+packages/uv/MK2-CONTAINER-KERNELS.json -text
+packages/codec-kit/src/crypto/digest.ts -text
+packages/codec-kit/MK2-DIGEST-KERNELS.json -text
 packages/codec-kit/src/legacy/assets/artifact-codec.ts -text
 packages/codec-kit/src/legacy/assets/artifact-session.ts -text
 packages/codec-kit/src/legacy/assets/source.ts -text

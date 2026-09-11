@@ -45,6 +45,7 @@ import type {
   RevisionId,
 } from '@modkit/sdk'
 import {
+  COMPANION_BUDGET_EXCEEDED,
   COMPANION_PATH_REFUSED,
   normalizeCompanionLogicalId,
   type CompanionCaseSensitivity,
@@ -68,6 +69,9 @@ export const RESOURCE_BUDGET_EXCEEDED = 'x3.host/resource-budget-exceeded'
 export const RESOURCE_CYCLE_DETECTED = 'x3.host/resource-cycle-detected'
 /** The session was disposed; it holds no leases and resolves nothing further. */
 export const RESOURCE_SESSION_DISPOSED = 'x3.host/resource-session-disposed'
+/** A resource changed after its first observed revision in a pinning session. */
+export const RESOURCE_REVISION_CHANGED = 'x3.host/resource-revision-changed'
+export const RESOURCE_PERMISSION_MISSING = 'x3.host/resource-permission-missing'
 
 const REASON_CODES: Readonly<Record<ResourceUnresolvedReason, string>> = Object.freeze({
   'not-found': RESOURCE_NOT_FOUND,
@@ -77,6 +81,8 @@ const REASON_CODES: Readonly<Record<ResourceUnresolvedReason, string>> = Object.
   'budget-exceeded': RESOURCE_BUDGET_EXCEEDED,
   'cycle-detected': RESOURCE_CYCLE_DETECTED,
   'session-disposed': RESOURCE_SESSION_DISPOSED,
+  'source-revision-changed': RESOURCE_REVISION_CHANGED,
+  'permission-missing': RESOURCE_PERMISSION_MISSING,
 })
 
 /** The diagnostic code a given unresolved reason is reported under. */
@@ -90,7 +96,7 @@ export function resourceDiagnosticCode(reason: ResourceUnresolvedReason): string
 export interface ResourceSessionLimits {
   /** Distinct resources one session may hold open at once. */
   readonly maxResources: number
-  /** Bytes the session may hand out in total, summed over resolved resources. */
+  /** Declared bytes held by outstanding resource leases; releasing a lease returns its budget. */
   readonly maxBytes: bigint
   /** Depth of the resource-names-resource chain. */
   readonly maxDepth: number
@@ -116,6 +122,10 @@ export interface ResourceSessionOptions {
   /** The resource plane every resolution in this session is pinned against. */
   readonly revision: RevisionId
   readonly sessionId?: string
+  /** Existing consumers observe fresh content; subject projections pin each first observed source revision. */
+  readonly revisionPolicy?: 'observe' | 'pin'
+  /** Optional current host authorization; the origin and grant themselves remain closed over. */
+  readonly isAuthorized?: () => boolean
   readonly limits?: Partial<ResourceSessionLimits>
   /**
    * Segment-aligned logical-id prefixes this session may resolve inside.
@@ -134,12 +144,6 @@ export interface ResourceSessionOptions {
 
 function fold(value: string, caseSensitivity: CompanionCaseSensitivity): string {
   return caseSensitivity === 'insensitive' ? value.toLowerCase() : value
-}
-
-/** Directory part of a logical id: the listing hint a large namespace needs to stay bounded. */
-function prefixOf(logicalId: string): string {
-  const cut = logicalId.lastIndexOf('/')
-  return cut < 0 ? '' : logicalId.slice(0, cut + 1)
 }
 
 function allowed(logicalId: string, allowlist: readonly string[] | undefined): boolean {
@@ -167,12 +171,19 @@ interface CacheEntry {
  */
 export function createResourceSession(options: ResourceSessionOptions): ResourceSessionPort {
   const limits: ResourceSessionLimits = { ...DEFAULT_RESOURCE_SESSION_LIMITS, ...options.limits }
+  for (const key of ['maxResources', 'maxDepth', 'maxEntries'] as const)
+    if (!Number.isSafeInteger(limits[key]) || limits[key] < 0)
+      throw new TypeError(`invalid resource session ${key}`)
+  if (typeof limits.maxBytes !== 'bigint' || limits.maxBytes < 0n)
+    throw new TypeError('invalid resource session maxBytes')
   const sessionId = options.sessionId ?? `resource-session-${String(options.revision)}`
   const origin = options.origin
   const provenance: ResourceProvenanceRecord[] = []
   const byRequirementId = new Map<string, ResourceProvenanceRecord>()
   const index = new Map<string, CacheEntry>()
   const held = new Set<Lease<ArtifactSource>>()
+  const pinnedRevisions = new Map<string, RevisionId>()
+  let opening = 0
   let resources = 0
   let bytes = 0n
   let state: ResourceSessionState = 'live'
@@ -282,7 +293,11 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
     let entries = 0
     for (const scope of scopes) {
       throwIfAborted(signal)
-      for await (const entry of origin.enumerate(scope, { prefix: prefixOf(normalized) }, signal)) {
+      for await (const entry of origin.enumerate(
+        scope,
+        { prefix: byName ? '' : normalized },
+        signal,
+      )) {
         entries += 1
         if (entries > limits.maxEntries) return { found: undefined, overBudget: true }
         const candidate = byName
@@ -302,6 +317,10 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
     state: () => state,
 
     async resolve(requirement, signal) {
+      requirement = Object.freeze({
+        ...requirement,
+        scopes: Object.freeze([...requirement.scopes]),
+      })
       if (state === 'disposed') {
         return unresolved(
           requirement,
@@ -310,6 +329,12 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
         )
       }
       throwIfAborted(signal)
+      if (options.isAuthorized?.() === false)
+        return unresolved(
+          requirement,
+          'permission-missing',
+          'the current host grant does not admit reading resources',
+        )
       if (requirement.parentResourceId !== undefined) {
         parents.set(requirement.id, requirement.parentResourceId)
       }
@@ -364,7 +389,8 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
         )
       }
 
-      const key = fold(normalized, origin.caseSensitivity)
+      // Scope order is lookup precedence. A cached miss or hit from another scope is not reusable.
+      const key = JSON.stringify([fold(normalized, origin.caseSensitivity), servedScopes])
       const cached = index.get(key)
       let found: string | undefined
       if (cached !== undefined) {
@@ -378,7 +404,16 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
           )
         }
       } else {
-        const located = await locate(normalized, servedScopes, signal)
+        let located: Awaited<ReturnType<typeof locate>>
+        try {
+          located = await locate(normalized, servedScopes, signal)
+        } catch (error) {
+          if (isModkitError(error) && error.code === COMPANION_BUDGET_EXCEEDED)
+            return unresolved(requirement, 'budget-exceeded', error.message)
+          if (isModkitError(error) && error.code === COMPANION_PATH_REFUSED)
+            return unresolved(requirement, 'path-refused', error.message)
+          throw error
+        }
         if (located.overBudget) {
           return unresolved(
             requirement,
@@ -397,7 +432,14 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
         }
       }
 
-      if (resources >= limits.maxResources) {
+      if (disposed()) {
+        return unresolved(
+          requirement,
+          'session-disposed',
+          `resource session ${sessionId} is disposed`,
+        )
+      }
+      if (resources + opening >= limits.maxResources) {
         return unresolved(
           requirement,
           'budget-exceeded',
@@ -406,7 +448,37 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
       }
 
       throwIfAborted(signal)
-      const originLease = await origin.open(found, signal)
+      if (options.isAuthorized?.() === false)
+        return unresolved(
+          requirement,
+          'permission-missing',
+          'the current host grant does not admit reading resources',
+        )
+      opening += 1
+      let originLease: Lease<ArtifactSource>
+      try {
+        originLease = await origin.open(found, signal)
+      } catch (error) {
+        if (isModkitError(error) && error.code === COMPANION_BUDGET_EXCEEDED)
+          return unresolved(requirement, 'budget-exceeded', error.message)
+        if (isModkitError(error) && error.code === COMPANION_PATH_REFUSED)
+          return unresolved(requirement, 'path-refused', error.message)
+        throw error
+      } finally {
+        opening -= 1
+      }
+      if (signal?.aborted) {
+        await originLease.release()
+        throwIfAborted(signal)
+      }
+      if (options.isAuthorized?.() === false) {
+        await originLease.release()
+        return unresolved(
+          requirement,
+          'permission-missing',
+          'the host grant changed while the resource was opening',
+        )
+      }
       /*
        * The session may have been disposed while this open was in flight.
        *
@@ -423,6 +495,19 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
           requirement,
           'session-disposed',
           `resource session ${sessionId} was disposed while «${requirement.logicalId}» was being opened`,
+        )
+      }
+      const pinnedRevision = pinnedRevisions.get(originLease.value.ref.id)
+      if (
+        options.revisionPolicy === 'pin' &&
+        pinnedRevision !== undefined &&
+        pinnedRevision !== originLease.value.revision
+      ) {
+        await originLease.release()
+        return unresolved(
+          requirement,
+          'source-revision-changed',
+          `resource «${requirement.logicalId}» changed after its first observed revision`,
         )
       }
       const size = originLease.value.kind === 'bytes' ? (originLease.value.size ?? 0n) : 0n
@@ -449,6 +534,8 @@ export function createResourceSession(options: ResourceSessionOptions): Resource
       held.add(lease)
       resources += 1
       bytes += size
+      if (options.revisionPolicy === 'pin')
+        pinnedRevisions.set(lease.value.ref.id, lease.value.revision)
       return {
         state: 'resolved',
         lease,

@@ -1,0 +1,42 @@
+{
+  "name": "modkit-extension-translation",
+  "version": "1.0.0",
+  "license": "MIT",
+  "type": "module",
+  "description": "Vendor-neutral machine translation for formats with localized text.",
+  "exports": {
+    ".": "./src/index.js",
+    "./provider": "./src/provider.js",
+    "./backends": "./src/backends.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "contributions",
+    "src",
+    "README.md"
+  ],
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "modkit",
+    "id": "translation",
+    "presentation": {
+      "displayName": "Modkit Translation",
+      "description": "Machine translation service shared by every localization format.",
+      "vendor": {
+        "id": "modkit",
+        "displayName": "Modkit"
+      }
+    },
+    "contributionManifests": [
+      "./contributions/*.json"
+    ]
+  },
+  "peerDependencies": {
+    "@modkit/sdk": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@modkit/sdk": {
+      "optional": true
+    }
+  }
+}

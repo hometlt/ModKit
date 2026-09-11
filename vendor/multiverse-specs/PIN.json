@@ -3,27 +3,87 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "a72b703c3b133153464d6d29a8ac1e4c7f9e45a7",
-    "subject": "docs(world): normalize Warzone ADR formatting",
-    "committedOn": "2026-08-28T01:53:22+04:00"
+    "commit": "f2f7f4824e53a321afb7924d9a92a0be36988146",
+    "subject": "Define UVM animation catalogs, material targets and visibility bindings",
+    "committedOn": "2026-09-08T17:40:58+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
-    "files": 58,
-    "bytes": 511118
+    "files": 140,
+    "bytes": 921295
   },
   "files": [
     {
       "path": "specs/NOTES.md",
-      "bytes": 14715,
-      "digest": "sha256:a3db38849e7b9c8d7ddcf78e28086b050cff925f0511b8ec03d55d597aa3236a"
+      "bytes": 15037,
+      "digest": "sha256:b21af4456406825030925ce079144198fd73fad36a1c4c7af791fd3c506fca03"
     },
     {
       "path": "specs/README.md",
-      "bytes": 12051,
-      "digest": "sha256:e3788eb0f38d0c6613d0a2128c8ad26cca46401c287b9c05a9215401c65e8c1f"
+      "bytes": 14621,
+      "digest": "sha256:48ddd2c9ad3b42cfc49188036fa7c142f345020114d2a428f940b274800ae5e7"
+    },
+    {
+      "path": "specs/behavior/SPEC_UVB.md",
+      "bytes": 4374,
+      "digest": "sha256:041fe3192664acac26aff25684e293b359869a524dab79b053614a657091c369"
+    },
+    {
+      "path": "specs/behavior/fixtures/invalid/float-op.uvb.json",
+      "bytes": 1891,
+      "digest": "sha256:fe2a138d8deb142704f93982f0115afc5ede19688724e63076f2096e43fb0ddf"
+    },
+    {
+      "path": "specs/behavior/fixtures/invalid/loop-without-budget.uvb.json",
+      "bytes": 1798,
+      "digest": "sha256:b1ada7073e9c64cc428e50d8a14b62436992bbd1cb92b2dfa647aa38c304a203"
+    },
+    {
+      "path": "specs/behavior/fixtures/invalid/no-effects.uvb.json",
+      "bytes": 1754,
+      "digest": "sha256:a770808604e0d67a77f853fcc2bc59a98422de820cbf5fa18f77110ed2d202aa"
+    },
+    {
+      "path": "specs/behavior/fixtures/uvb-module-minimal.uvb.json",
+      "bytes": 1420,
+      "digest": "sha256:3373a66c160ae4e6b021786e9d463f2019863540d45c9cc9bb4360ace7afa39b"
+    },
+    {
+      "path": "specs/behavior/schema/uvb.module.v1.schema.json",
+      "bytes": 10538,
+      "digest": "sha256:1323dc6d8f515685d990ff5a43b047ebbad5e42f9cbda6a79f1c1db4bf4010b1"
+    },
+    {
+      "path": "specs/campaign/SPEC_UVC.md",
+      "bytes": 1868,
+      "digest": "sha256:1fd66586c8bd354e42fe1d0ff5e9658467044320c7bebc3d26db1c84163f605f"
+    },
+    {
+      "path": "specs/campaign/fixtures/invalid/carryover-f64.uvc.json",
+      "bytes": 2062,
+      "digest": "sha256:e134019f73bba7c7736e6809c0d420c96f5493c2de9f04d021818ae9786f2d0c"
+    },
+    {
+      "path": "specs/campaign/fixtures/invalid/entry-without-package.uvc.json",
+      "bytes": 1845,
+      "digest": "sha256:e5a147e44c375acef3fc7cc6902afe50ed846e7c3c02b4d8579fc44a9ffa152d"
+    },
+    {
+      "path": "specs/campaign/fixtures/invalid/unlock-with-call.uvc.json",
+      "bytes": 1602,
+      "digest": "sha256:d76cbc2497c12cb6dc7719b3586bb59b08a33badbe3bcc0feb2f070805dc5d06"
+    },
+    {
+      "path": "specs/campaign/fixtures/uvc-mini-campaign.uvc.json",
+      "bytes": 2029,
+      "digest": "sha256:ff0e765f8ddc3e2d712802346491b063fbad4e23624063e1c3c158d691bc1035"
+    },
+    {
+      "path": "specs/campaign/schema/uvc.campaign.v1.schema.json",
+      "bytes": 4746,
+      "digest": "sha256:b64d2938d09c3cf6803b42c931857650672db440c280419684e716b345aaa18b"
     },
     {
       "path": "specs/conformance/canonical-form/vectors.json",
@@ -36,14 +96,64 @@
       "digest": "sha256:120b98c5fb81f5d7e5917ae113d9240bbaaa09c3b2a3e43c0301def81163bb0d"
     },
     {
+      "path": "specs/conformance/receipts/vectors.json",
+      "bytes": 1475,
+      "digest": "sha256:451734bb39860c330b24c6434124754fc6e57ec591477cab00d9d70a6fe8e248"
+    },
+    {
       "path": "specs/conformance/schema-assertions.json",
-      "bytes": 5861,
-      "digest": "sha256:fb610fe465aafc2094b2826782d7ab7042a86715c53159061d415e266ab5e7d7"
+      "bytes": 16561,
+      "digest": "sha256:f722956deeb0637a214e891e239bc54653962fb071bfde2b6e7f23e944e5e712"
+    },
+    {
+      "path": "specs/conformance/state/vectors.json",
+      "bytes": 1630,
+      "digest": "sha256:4cba385e6afe27b7c33192f4e4cdd644f422119ce770dc8d8afcd90d11bee4d8"
+    },
+    {
+      "path": "specs/conformance/uvb-binary/vectors.json",
+      "bytes": 3935,
+      "digest": "sha256:a2842af538343c4ba9c544288a8c953d66a1431f3479d7f93381b8e79ae476fa"
+    },
+    {
+      "path": "specs/conformance/uvc/vectors.json",
+      "bytes": 1404,
+      "digest": "sha256:b428959908ac743fd5b9fffe06f0d91b798e5a5a57746667ba6c5e8c390374d9"
+    },
+    {
+      "path": "specs/conformance/uvd-resolution/vectors.json",
+      "bytes": 45470,
+      "digest": "sha256:f7313799022fe1be5836029235ab5a2df79bf85489b2e81158452d71a4fb3035"
+    },
+    {
+      "path": "specs/conformance/uvd/vectors.json",
+      "bytes": 1845,
+      "digest": "sha256:80e4548f8497308d23a798f173ce32c73d1a4b62de204360b38dcf42fc8e6ef0"
     },
     {
       "path": "specs/conformance/uvm-core/vectors.json",
       "bytes": 4363,
       "digest": "sha256:c39a72eeb57e7e559bc3b6f02cb6b2f297acb29c5b285a000843605e7b83db32"
+    },
+    {
+      "path": "specs/conformance/uvp-composition/vectors.json",
+      "bytes": 8782,
+      "digest": "sha256:afda49503fdcf323f8b2d2f95ed49b85cb90e3e7fc28c0bf8991f2b5c57b70d9"
+    },
+    {
+      "path": "specs/conformance/uvp/vectors.json",
+      "bytes": 1700,
+      "digest": "sha256:b53b7025ce5a4d777a6f23aea4aab2d8acf9a275181db08923efa0176259a674"
+    },
+    {
+      "path": "specs/conformance/uvs-uvb-verifier/vectors.json",
+      "bytes": 4255,
+      "digest": "sha256:4923b0f88f12cda098e7d42d495de8af12654d893c2dc8bc1944a0d724727a34"
+    },
+    {
+      "path": "specs/conformance/uvs-uvb/vectors.json",
+      "bytes": 2287,
+      "digest": "sha256:5cccd1a28c96e5fc4caddc10d89cfd1dbae99ff152502f5604efff30db24c1bf"
     },
     {
       "path": "specs/conformance/uvt/vectors.json",
@@ -56,6 +166,56 @@
       "digest": "sha256:5b952a2f71e66d9c6b8cc32859b7b198bdb5af615f0b81a6ddb9e192d929ab76"
     },
     {
+      "path": "specs/data/SPEC_UVD.md",
+      "bytes": 6468,
+      "digest": "sha256:3c4d3308a74a3369bd3910cdd7ed47b20dbd6dbc7c7fdd8d9adef62482d81fe5"
+    },
+    {
+      "path": "specs/data/fixtures/invalid/enum-without-values.uvd.json",
+      "bytes": 1415,
+      "digest": "sha256:815830d1dbf2b787997e0bcf2f69655e836a0f7cc7a7c1f2cbcecb0f38f4dfd1"
+    },
+    {
+      "path": "specs/data/fixtures/invalid/f64-in-gameplay.uvd.json",
+      "bytes": 1538,
+      "digest": "sha256:71f28c979838175c23c68874d670fe02045df074ddcb7ad941a2a727326ab5ea"
+    },
+    {
+      "path": "specs/data/fixtures/invalid/ref-without-kind.uvd.json",
+      "bytes": 1482,
+      "digest": "sha256:c1fc46f188f18c505cb96238f50c35630b494e6383c531f38cd230267cf88ad7"
+    },
+    {
+      "path": "specs/data/fixtures/invalid/remove-with-value.uvd.json",
+      "bytes": 618,
+      "digest": "sha256:1cf79af7585ea52f012762f3b6750ec41a84041714d8cc55e12f99ae1182d553"
+    },
+    {
+      "path": "specs/data/fixtures/invalid/role-mixing.uvd.json",
+      "bytes": 778,
+      "digest": "sha256:42500fce68ee5a51704152526f0f4046373730f41a908bcd92825b9222729408"
+    },
+    {
+      "path": "specs/data/fixtures/uvd-definitions-inheritance.uvd.json",
+      "bytes": 936,
+      "digest": "sha256:2b55f095da5db21c47e1beedac0f0fb443724b41da2d971b2b4a0f53c8059421"
+    },
+    {
+      "path": "specs/data/fixtures/uvd-kind-schema-minimal.uvd.json",
+      "bytes": 1136,
+      "digest": "sha256:0e89c67fba16eac9ff7105a8c49340616ffc12c81861a127bc07d0ff1121f9dc"
+    },
+    {
+      "path": "specs/data/fixtures/uvd-overlay-basic.uvd.json",
+      "bytes": 731,
+      "digest": "sha256:4bdd9c9833cf0292583334caf005c72ed2030d52dba41e3ccfea27601db2e31a"
+    },
+    {
+      "path": "specs/data/schema/uvd.document.v1.schema.json",
+      "bytes": 20305,
+      "digest": "sha256:b663502f56efc9d0d7c8268a8cd364c4a541b413bdc148675ef4dbe0303302e8"
+    },
+    {
       "path": "specs/foundation/SPEC_UV_CANONICALIZATION.md",
       "bytes": 5823,
       "digest": "sha256:6ff8c9eb2ae432480fa70fc37a4a344a92654eb30572a459ec679239a8749074"
@@ -64,6 +224,11 @@
       "path": "specs/foundation/SPEC_UV_COORDINATES.md",
       "bytes": 7186,
       "digest": "sha256:354b3c8eef9c53588901a069e314623ee937acf52fec945c2480e242f91696ee"
+    },
+    {
+      "path": "specs/foundation/SPEC_UV_FIXED_POINT.md",
+      "bytes": 3089,
+      "digest": "sha256:7217e3382cd73dc4abbc62a2206a310d17d22fab3fa3855aabaf226b87ab8287"
     },
     {
       "path": "specs/foundation/SPEC_UV_FOUNDATION.md",
@@ -86,9 +251,14 @@
       "digest": "sha256:7bd0ca4e01033571c6614f0b28256b0fc8ba07a0e6e530a8e6906b0b7268428e"
     },
     {
+      "path": "specs/foundation/uv-families.v1.schema.json",
+      "bytes": 1310,
+      "digest": "sha256:0c24b2825a76d3b873931f255ba2fc57e0d2e370bfe4411e6d170bdfc8c13e8e"
+    },
+    {
       "path": "specs/model/SPEC_UVM.md",
-      "bytes": 59772,
-      "digest": "sha256:7ee0ae7b01ceaa6b4e77ed255d8272e1f98240e20c36e0c93de25d1d0c815494"
+      "bytes": 73588,
+      "digest": "sha256:d48261405a3530671c7819c751cae1bc110074d778694091bca44e75effa1e34"
     },
     {
       "path": "specs/model/SPEC_UVM_CONVERSION.md",
@@ -97,8 +267,8 @@
     },
     {
       "path": "specs/model/SPEC_UVM_EXTENSIONS.md",
-      "bytes": 32624,
-      "digest": "sha256:eebc24e5114d5a20b709994e275756fcc0d9511a8e6f60bacaeb8a775419ee11"
+      "bytes": 51211,
+      "digest": "sha256:5c0ec469fb01873af50a81583920618fce7bbbd41284eb930390f9610b758df2"
     },
     {
       "path": "specs/model/examples/siege_tank.uvm.gltf",
@@ -122,8 +292,8 @@
     },
     {
       "path": "specs/model/schema/uvm.animation.schema.json",
-      "bytes": 9996,
-      "digest": "sha256:a273bc70be16c9486644e3780d70493de2e302298d7e310422758f0644e446a4"
+      "bytes": 14939,
+      "digest": "sha256:5b19016f0fb4515da04c79b927e36d6ab3969a55d5ee2972fa156ab30b292bd2"
     },
     {
       "path": "specs/model/schema/uvm.asset.schema.json",
@@ -177,13 +347,158 @@
     },
     {
       "path": "specs/model/schema/uvm.variants.schema.json",
-      "bytes": 1736,
-      "digest": "sha256:23a45d72cd831938755f1c2ff23c8a580d499f1021e7127490eecedd881a607f"
+      "bytes": 2422,
+      "digest": "sha256:129ae4311da2fc99711d45736a498281ae85ab1a8ecc70f7d1ea62738209c030"
+    },
+    {
+      "path": "specs/package/SPEC_UVP.md",
+      "bytes": 2594,
+      "digest": "sha256:5cfc901d5acaab854156ee1b5739b7dc901b54dc057425d59651c971f523cccd"
+    },
+    {
+      "path": "specs/package/fixtures/invalid/bare-intrinsic-requirement.manifest.json",
+      "bytes": 1260,
+      "digest": "sha256:c3ecb5f873b8fb3ab43c7bd8bd85be181236caf6c56b90cf89b38fead71008a6"
+    },
+    {
+      "path": "specs/package/fixtures/invalid/map-two-worlds.manifest.json",
+      "bytes": 1405,
+      "digest": "sha256:a331d3cf87878e83bc41a2718aa9ace21b0225526b81945b898434b065369d43"
+    },
+    {
+      "path": "specs/package/fixtures/invalid/map-without-world.manifest.json",
+      "bytes": 1030,
+      "digest": "sha256:a966e5354a52d9e22f4a31e17ea8da0bb38ef9587cb89a0655d7450c7b43b947"
+    },
+    {
+      "path": "specs/package/fixtures/invalid/path-escape.manifest.json",
+      "bytes": 1210,
+      "digest": "sha256:acaba668e2e68398b9e2f9a7a7cafe83a34c82e30840bdf0f1a1f6c3c42a2a03"
+    },
+    {
+      "path": "specs/package/fixtures/uvp-map-minimal.manifest.json",
+      "bytes": 1341,
+      "digest": "sha256:ec9c406c88dfe1c05900fa98f3073d1e5c029e4bc76c4b0b24baeb792050fcc3"
+    },
+    {
+      "path": "specs/package/fixtures/uvp-mod-overlay.manifest.json",
+      "bytes": 1210,
+      "digest": "sha256:0ac7ab55695751cae09a61e42f6882ad57f96430c98959d9f75456b1d67f86ad"
+    },
+    {
+      "path": "specs/package/schema/uvp.manifest.v1.schema.json",
+      "bytes": 8490,
+      "digest": "sha256:16095b2bc69cc0b944aadc66ca30463e7c1bc3aa651c8a830993927341fd1ef3"
+    },
+    {
+      "path": "specs/receipts/SPEC_RECEIPTS.md",
+      "bytes": 2390,
+      "digest": "sha256:d88d94b6a41653cb92c7614e9259f6d4d3e943e1d49465a32b02e385c9551b19"
+    },
+    {
+      "path": "specs/receipts/fixtures/composition-layer-order.receipt.json",
+      "bytes": 1534,
+      "digest": "sha256:73520fa6f997687281d9a6304fcb04923f363c376babfd3891b155309f5f8587"
+    },
+    {
+      "path": "specs/receipts/fixtures/composition-refused.receipt.json",
+      "bytes": 408,
+      "digest": "sha256:0c88de6fc30bba913babe6e844d4727d01d56dbf3f345723527e2298115ce33b"
+    },
+    {
+      "path": "specs/receipts/fixtures/invalid/absolute-path-source.receipt.json",
+      "bytes": 1677,
+      "digest": "sha256:2d19d8afe4e43a067b059d61e86233132b0eef7eaf2c4a3d2a6134c96ff2a7c1"
+    },
+    {
+      "path": "specs/receipts/fixtures/invalid/composed-without-hash.receipt.json",
+      "bytes": 1338,
+      "digest": "sha256:a34432d4c2eac00254a8f4523128488796508e888e7a86fb9bf1532491f73583"
+    },
+    {
+      "path": "specs/receipts/fixtures/invalid/refusal-without-origin-digest.receipt.json",
+      "bytes": 1596,
+      "digest": "sha256:1006114fd47d6d38862e769e17731c9ee7da98d13efd5f5807e18d0e95afb1e3"
+    },
+    {
+      "path": "specs/receipts/fixtures/invalid/simulation-without-save-restore.receipt.json",
+      "bytes": 791,
+      "digest": "sha256:996fe877d097ae4fc381b42d158954dee8e71bbc7d17880f12521f4cd7ffffb3"
+    },
+    {
+      "path": "specs/receipts/fixtures/lowering-galaxy.receipt.json",
+      "bytes": 1709,
+      "digest": "sha256:7f0733c96e372dc997d58112646d36026d0233b0ad580707e34e66572abf863c"
+    },
+    {
+      "path": "specs/receipts/fixtures/simulation-spike-phase1.receipt.json",
+      "bytes": 997,
+      "digest": "sha256:c0109ae3dcc8fa28818ba25e1f4cf650eb84b2391e941bdc781772b688903e33"
+    },
+    {
+      "path": "specs/receipts/schema/composition.receipt.v1.schema.json",
+      "bytes": 3118,
+      "digest": "sha256:966527107293a99ddbd3af903e55fe0acfec3d5719c3cb3546e4d0c40b4f768b"
+    },
+    {
+      "path": "specs/receipts/schema/lowering.receipt.v1.schema.json",
+      "bytes": 6093,
+      "digest": "sha256:dd1264e5002388ed80a8626fd75538e64ac16c74b04eba50bc1c5e25c5fd6c7d"
+    },
+    {
+      "path": "specs/receipts/schema/simulation.receipt.v1.schema.json",
+      "bytes": 3980,
+      "digest": "sha256:455b08975bbd3952c71f2f32c93bb8fed90d846beacb53686ef6292346a63d77"
+    },
+    {
+      "path": "specs/runtime/events.v1.json",
+      "bytes": 2959,
+      "digest": "sha256:cda9e8b923552406e5d68b2ed801287936a61ca39464390cb84df6dbf05fb34a"
+    },
+    {
+      "path": "specs/runtime/intrinsics.v1.json",
+      "bytes": 24152,
+      "digest": "sha256:f39fd868b46c2a160670d70d1b3d8433eca2baf7d3cfcb73c02c7ef323048d09"
+    },
+    {
+      "path": "specs/runtime/schema/events.registry.v1.schema.json",
+      "bytes": 2169,
+      "digest": "sha256:f95602b5673a1e296a679f8715a7a232f27d224ac260bb71ec6edee0665b6e19"
+    },
+    {
+      "path": "specs/runtime/schema/intrinsics.registry.v1.schema.json",
+      "bytes": 6074,
+      "digest": "sha256:3d0636a0cd6047b2e4715c2200f04f57e97f784fdee93df2e4cf9731e231e95f"
+    },
+    {
+      "path": "specs/scenario/SPEC_UVS.md",
+      "bytes": 1788,
+      "digest": "sha256:aab2219dee6b1a3b4f80a354e3f080f3fb0d2aaf82662bae90d8bbda27743bb3"
+    },
+    {
+      "path": "specs/scenario/fixtures/invalid/bare-intrinsic-action.uvs.json",
+      "bytes": 2827,
+      "digest": "sha256:e4486999cbfeb9007b1166454abb316c1a7b35204edc9f904ba9bfce1ac3fa94"
+    },
+    {
+      "path": "specs/scenario/fixtures/invalid/refusal-without-origin.uvs.json",
+      "bytes": 2628,
+      "digest": "sha256:b153b837f1e2e198ceedfbb966f40f74b7467cd217968f803f6e492928b3255f"
+    },
+    {
+      "path": "specs/scenario/fixtures/uvs-chart-minimal.uvs.json",
+      "bytes": 1958,
+      "digest": "sha256:2160fc66d215183c589deb1a2e93f197e94659233308c2047baf2f6fd5505a22"
+    },
+    {
+      "path": "specs/scenario/schema/uvs.document.v1.schema.json",
+      "bytes": 10552,
+      "digest": "sha256:4719b17a8bfccc438e35aab3cdc1c9583e42d8f990b25962f99c1a3dbbb44de4"
     },
     {
       "path": "specs/semantic-scopes/SPEC_SEMANTIC_SCOPE_DESCRIPTOR.md",
-      "bytes": 8538,
-      "digest": "sha256:0af9b4ca298b22f6aa1efe745448faa9a46fa7a1ecafb5785c8ab183853ab4c7"
+      "bytes": 8790,
+      "digest": "sha256:f5011d86383623baaa55946c08422fb187839f34916d819eec3304f446226abf"
     },
     {
       "path": "specs/semantic-scopes/model-interchange-v1.json",
@@ -192,18 +507,63 @@
     },
     {
       "path": "specs/semantic-scopes/registry.json",
-      "bytes": 2810,
-      "digest": "sha256:5cbaf2865fe49b907c67d6f5c877e67002125fb2e6bbbaf37f78ea726b5334f1"
+      "bytes": 3783,
+      "digest": "sha256:63c6d440e48c38be53f999752eae5a4c4b86b026d39fac3f55617eba4f7db3bb"
+    },
+    {
+      "path": "specs/semantic-scopes/runtime-interchange-v1.json",
+      "bytes": 12623,
+      "digest": "sha256:c89676727ccd98bf75a0a4f3aef30b76c5c5340c2b11e980889471d83715dc93"
     },
     {
       "path": "specs/semantic-scopes/semantic-scope-descriptor.v1.schema.json",
-      "bytes": 7507,
-      "digest": "sha256:a005c1c92dc409b8b2ca737d732135d4374ce6760cb901cbd69011f6f259d263"
+      "bytes": 10408,
+      "digest": "sha256:d331bfb44584883e376648c8e8ffd9bb16e1e179e42a79247543289ba147199b"
     },
     {
       "path": "specs/semantic-scopes/texture-interchange-v1.json",
       "bytes": 11387,
       "digest": "sha256:24dfc03588275caa123bdf84ec81c2ce59136fd43eace09bfa995803bfa4b1ec"
+    },
+    {
+      "path": "specs/state/SPEC_STATE_SAVES_REPLAYS.md",
+      "bytes": 3796,
+      "digest": "sha256:20d8234dc68bcbddcc07b5510375a3a66073478306628b3ca94538c0a3a17bf1"
+    },
+    {
+      "path": "specs/state/fixtures/invalid/replay-command-without-player.replay.json",
+      "bytes": 1194,
+      "digest": "sha256:65dbd8c1fb63766e742a27681fdc382a6a7f77abbf62134857e33b918be101f0"
+    },
+    {
+      "path": "specs/state/fixtures/invalid/save-composition-without-hash.save.json",
+      "bytes": 857,
+      "digest": "sha256:bd77c078f76ca91b0b94085e392ff8018e69f7e2374a4133b90cd3a9bc50f299"
+    },
+    {
+      "path": "specs/state/fixtures/invalid/save-without-state-hash.save.json",
+      "bytes": 812,
+      "digest": "sha256:906f297584864c9e37b8510e97241c4de113d4b0addf351f236327b599bcae2a"
+    },
+    {
+      "path": "specs/state/fixtures/replay-two-commands.replay.json",
+      "bytes": 1281,
+      "digest": "sha256:57512cc122299a368e400a48ec100f2b3260f6a1a01902cc2f6269ebe1af5995"
+    },
+    {
+      "path": "specs/state/fixtures/save-spike-tick5000.save.json",
+      "bytes": 978,
+      "digest": "sha256:1aac71c3a21dc41a93a763c51378d9840ede4bc2ab0620ac0d5f49295acff0a7"
+    },
+    {
+      "path": "specs/state/schema/replay.journal.v1.schema.json",
+      "bytes": 3391,
+      "digest": "sha256:26ffcc73da3f2bb72f38998bd7f403c4dc56e16c11734e81a6bb1276f245e07c"
+    },
+    {
+      "path": "specs/state/schema/save.envelope.v1.schema.json",
+      "bytes": 3755,
+      "digest": "sha256:c3764fb7aafc02aed8c17bf43eaa575c3df3aa88f00ea5407b4633e3c18ac410"
     },
     {
       "path": "specs/texture/SPEC_UVT.md",
@@ -251,14 +611,29 @@
       "digest": "sha256:989d23abb84398be17b6a2e0fc361689996057beed95e876e86acb4da431a1e6"
     },
     {
+      "path": "specs/tools/uv-composition.mjs",
+      "bytes": 26661,
+      "digest": "sha256:bafc11595232987c407bc09fd4720bfb1e6b3e1ca814ac679939c33adae8eb7a"
+    },
+    {
       "path": "specs/tools/uv-conformance-emit.mjs",
       "bytes": 25852,
       "digest": "sha256:d58a4a9c5eab659a6734b15f1a62b1b1d4cb13eeba37dea70e1d0b8305c7c8eb"
     },
     {
       "path": "specs/tools/uv-conformance.mjs",
-      "bytes": 12064,
-      "digest": "sha256:e9f5a93b2a1b38fbe9b857c0af829922dc6b2edd81a128966b197751100b9fc6"
+      "bytes": 22341,
+      "digest": "sha256:aed1515e3f5110093445c41c7bd9c023c320fcce2efb3a83f134ca107e1b7e26"
+    },
+    {
+      "path": "specs/tools/uv-verify.mjs",
+      "bytes": 7939,
+      "digest": "sha256:4b1f8ea34810a05608b86c2c37e8a38f5e04ce7dafa696464b7d83b063f77c02"
+    },
+    {
+      "path": "specs/tools/uvb-binary.mjs",
+      "bytes": 15421,
+      "digest": "sha256:e4d849fa56acff8a2615316084e234c7d877c181669cdd4a97a899d775aa06ed"
     },
     {
       "path": "specs/tools/uvm-core.mjs",
@@ -287,13 +662,43 @@
     },
     {
       "path": "specs/world/SPEC_UVW.md",
-      "bytes": 6098,
-      "digest": "sha256:3f6cd04620c54df1c276685ecacf3a494b464c7f36933551c6b85c3b0c6d34e3"
+      "bytes": 6375,
+      "digest": "sha256:57dbf4d68631cb3acf293e53bed9b67516670b8505729524e14cbc9a8332009b"
+    },
+    {
+      "path": "specs/world/SPEC_UVW_PROFILE.md",
+      "bytes": 2724,
+      "digest": "sha256:77c4f46e65ae4c184f88f2805151dc02161defad18df9b16a57dee550b4376bd"
+    },
+    {
+      "path": "specs/world/fixtures/invalid/connections-not-empty.uvw.json",
+      "bytes": 1584,
+      "digest": "sha256:bcf14c2432cd9b2a6f668cfd4c940b04c344e1c99a774c5136a8e3dc3cd0db21"
+    },
+    {
+      "path": "specs/world/fixtures/invalid/no-spaces.uvw.json",
+      "bytes": 208,
+      "digest": "sha256:d987cee4172d480c4b8770ee2b8c36ec38e8c84263d542405563ff86278423a2"
+    },
+    {
+      "path": "specs/world/fixtures/invalid/reserved-topology.uvw.json",
+      "bytes": 1526,
+      "digest": "sha256:3e128c82fa1f3640132e0df65c20c9868e5bdd00cc7926ba56f102d824eaf1a1"
     },
     {
       "path": "specs/world/fixtures/uvw-heightfield-basic.uvw.json",
       "bytes": 1036,
       "digest": "sha256:578ef8350f28edea5fc38b95da3d0a9baba291cb58b08b42b4ca74f1de32494e"
+    },
+    {
+      "path": "specs/world/fixtures/uvw-profile-single-space.uvw.json",
+      "bytes": 1546,
+      "digest": "sha256:3b5e729bf1a4da4936e4a1d7b5baaae3e3e904b9c741f1990e763aceabb2c9c2"
+    },
+    {
+      "path": "specs/world/fixtures/uvw-profile-source-units.uvw.json",
+      "bytes": 1806,
+      "digest": "sha256:f6824eace2f59b78e37852dd7158ebb0e30a9070eeb9b915c02d8ace9fa6c7c9"
     },
     {
       "path": "specs/world/fixtures/uvw-source-unit-layers.uvw.json",
@@ -302,8 +707,13 @@
     },
     {
       "path": "specs/world/schema/uvw.candidate.v1.schema.json",
-      "bytes": 4216,
-      "digest": "sha256:b2c3ba00cc1d32f50ed01d8e9d9a70ba8d041759c204625ec4491e2c749f37a8"
+      "bytes": 5668,
+      "digest": "sha256:ab1c15a4a2309a73cfdd9ac55872f413e3d4b16809b3d2b20387d950068bede0"
+    },
+    {
+      "path": "specs/world/schema/uvw.profile.v1.schema.json",
+      "bytes": 6525,
+      "digest": "sha256:57989313e9286ca799f120518c887305f9e4ed362439ce71869175bef99db39c"
     }
   ]
 }

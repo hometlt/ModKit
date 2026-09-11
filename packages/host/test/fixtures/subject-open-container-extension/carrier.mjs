@@ -53,6 +53,11 @@ function maybeCorruptPlan(plan) {
 
 function namespaceSource(source) {
   return Object.freeze({
+    async readPreamble(maxBytes, signal) {
+      if (signal?.aborted) throw new DOMException('cancelled', 'AbortError')
+      if (!Number.isSafeInteger(maxBytes) || maxBytes < 0) throw new TypeError('invalid preamble bound')
+      return encoder.encode('carrier-preamble').slice(0, maxBytes)
+    },
     async list(prefix, page, signal) {
       if (signal?.aborted) throw new DOMException('cancelled', 'AbortError')
       const items =

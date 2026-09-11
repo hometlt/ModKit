@@ -10,6 +10,7 @@ import type {
   CompanionRule,
   DataSourceRef,
   DerivedProbePlan,
+  ExecutionProfile,
   FormatRef,
   FormatRole,
   ImplementationTierClaim,
@@ -39,6 +40,8 @@ export interface TargetDecl extends Omit<RuntimeTargetConstraint, 'environments'
   readonly variantId: string
   readonly environments: readonly [RuntimeEnvironment, ...RuntimeEnvironment[]]
   readonly entrypoint: string
+  /** Override the profile-derived default when targets use different isolation. */
+  readonly executionProfile?: ExecutionProfile
 }
 
 export type NodeTargetDecl = Omit<TargetDecl, 'environments'> & {
@@ -230,12 +233,12 @@ function runtimeVariants(execution: AuthoringExecution) {
   const requestedPermissionClasses = permissions(execution)
   return snapshot(
     execution.targets.map(target => {
-      const { variantId, entrypoint, ...constraint } = target
+      const { variantId, entrypoint, executionProfile: targetProfile, ...constraint } = target
       return {
         variantId,
         entrypoint,
         target: constraint,
-        executionProfile: executionProfile(execution.profile),
+        executionProfile: targetProfile ?? executionProfile(execution.profile),
         requestedPermissionClasses,
       }
     }),

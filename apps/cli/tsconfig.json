@@ -6,6 +6,7 @@
   },
   "include": ["src/**/*.ts"],
   "references": [
+    { "path": "../../packages/codec-kit" },
     {
       "path": "../../packages/core"
     },

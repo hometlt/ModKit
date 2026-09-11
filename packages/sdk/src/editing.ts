@@ -60,6 +60,24 @@ export interface PayloadStore {
   open(ref: StagedPayloadRef, signal?: AbortSignal): Promise<Lease<PayloadReader>>
 }
 
+/** Bytes accepted by a host-owned staging store without requiring one contiguous allocation. */
+export type PayloadSource = Uint8Array | AsyncIterable<Uint8Array>
+
+export interface StagePayloadOptions {
+  readonly expiresAt?: string
+}
+
+/** Producer and lifecycle side of a host-owned staged-payload store. */
+export interface PayloadStagingStore extends PayloadStore {
+  stage(
+    source: PayloadSource,
+    options?: StagePayloadOptions,
+    signal?: AbortSignal,
+  ): Promise<StagedPayloadRef>
+  verify(ref: StagedPayloadRef, signal?: AbortSignal): Promise<boolean>
+  release(ref: StagedPayloadRef): Promise<void>
+}
+
 export type EditPayload =
   | { readonly kind: 'text'; readonly text: string }
   | { readonly kind: 'inline'; readonly bytes: Uint8Array }
@@ -158,6 +176,8 @@ export type FidelityEvidence = FidelityClaim & {
 
 export interface AssetEditPlan {
   readonly planId: string
+  /** Source snapshots used by this change. Targets without edits are read dependencies:
+   * the host checks their revisions, but they add neither writes nor write guarantees. */
   readonly targets: readonly SubjectEditTarget[]
   readonly edits: readonly SourceEdit[]
   readonly semantics: TransactionSemantics
@@ -414,7 +434,7 @@ export interface EditSession {
   readonly targets: readonly SubjectEditTarget[]
   state(): EditSessionState
   propose(change: ChangeSet): Promise<ValidationResult>
-  plan(change: ChangeSet): Promise<AssetEditPlan>
+  plan(change: ChangeSet, signal?: AbortSignal): Promise<AssetEditPlan>
   dispose(): Promise<void>
 }
 

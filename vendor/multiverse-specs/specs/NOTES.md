@@ -26,7 +26,7 @@ than declarative.
 
 Deliberately **not** transferred yet, and why:
 
-- UVW, UVD, UVS specifications, schemas and examples — block 22 moves the remaining format drafts
+- UVW (profile 1.0), UVD, UVS, UVB, UVP, UVC, receipts, state — transferred and promoted by the Multiverse design lane on 2026-09-01 with executable schema assertions; block 22 moves only the engine packages and proof artifacts. (Was: block 22 moves the remaining format drafts
   and the engine proofs into this history. Slice 11C0 owns the UVM plane; pre-empting the world and
   definition planes here would also pre-empt the block-12 and block-18 decisions about their
   candidate scopes.
@@ -155,7 +155,7 @@ rather than papered over, and they are what a second texture family would have t
 
 | Item                      | State                                                                                        |
 | ------------------------- | -------------------------------------------------------------------------------------------- |
-| Schema `$id` publication  | `https://modkitx.org/uv*/…` and `https://multiverse.engine/spec/…` are unpublished draft identifiers. Not renamed here: renaming would invalidate the differential against the sealed validator, which resolves those exact ids. Hosting, permanence and redirects remain an owner decision before any release. |
+| Schema `$id` publication  | `https://modkitx.org/uv*/…`, `https://modkitx.dev/specs/world/…` (the two UVW schemas) and `https://multiverse.engine/spec/…` are unpublished draft identifiers; target form on publication: `modkitx.org/<family>/<version>/<name>.schema.json`. Not renamed here: renaming would invalidate the differential against the sealed validator, which resolves those exact ids. Hosting, permanence and redirects remain an owner decision before any release. |
 | Legacy brand in identifiers | The `modkitx.org` schema host and the `MODKITX_*` incubating extension prefix carry the old brand while the UV names are deliberately vendor-neutral. Same reason for leaving them: they are load-bearing identifiers today. |
 | Licensing                 | This repository carries no LICENSE, matching `modkitX3`. The UV README states these formats are designed so a third party can write a conforming implementation, which needs an explicit license before publication. Owner decision, not an agent decision. |
 | UVI / UVY admission       | Reserved candidates. The gate needs SC2Layout plus a second independent UI family.            |

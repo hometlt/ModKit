@@ -26,9 +26,13 @@ import {
   ABI_ASSET_INPUT,
   ABI_CONTRACT_RESOLVER,
   ABI_DIAGNOSTIC_SINK,
+  ABI_RASTER_RESOURCES,
+  ABI_MODEL_RESOURCES,
+  ABI_LOGICAL_RESOURCES,
   ABI_SERVICE_PROVIDER_MODULE,
 } from './abi-surfaces.js'
 import type { Endpoint, RemoteCapability } from './endpoint.js'
+import { wireLogicalResources } from './logical-resources.js'
 
 /** Everything the consumer adapters need from one live realm. */
 export interface ConsumerRealm {
@@ -52,7 +56,7 @@ export function moduleAdapter(
   watch: ConsumerWatch,
 ): Record<string, unknown> {
   const abiVersion = first.data['abiVersion']
-  /** `context` crosses as data + two host capabilities (diagnostics sink, contract resolver). */
+  /** Context data plus host capabilities: diagnostics, contract resolution and optional raster reads. */
   const wireContext = (endpoint: Endpoint, context: ContributionContext) => ({
     budgets: context.budgets,
     ...(context.providerIdentity === undefined
@@ -65,6 +69,24 @@ export function moduleAdapter(
     // the host executes contract resolution; the worker gets a proxy whose leased providers
     // carry the surface of the requested contract's definition
     contracts: endpoint.expose(context.contracts, ABI_CONTRACT_RESOLVER),
+    ...(context.modelResources === undefined
+      ? {}
+      : {
+          modelResources: endpoint.expose(context.modelResources, ABI_MODEL_RESOURCES),
+        }),
+    ...(context.logicalResources === undefined
+      ? {}
+      : {
+          logicalResources: endpoint.expose(
+            wireLogicalResources(context.logicalResources),
+            ABI_LOGICAL_RESOURCES,
+          ),
+        }),
+    ...(context.rasterResources === undefined
+      ? {}
+      : {
+          rasterResources: endpoint.expose(context.rasterResources, ABI_RASTER_RESOURCES),
+        }),
   })
   if (first.contract === ABI_SERVICE_PROVIDER_MODULE.contract) {
     // ServiceProviderModule ABI v1: the provider is leased by the contract the selection names
@@ -194,7 +216,13 @@ function codecAdapter(bound: Promise<BoundCodec>, watch: ConsumerWatch): Codec {
           message: 'open did not lease a session',
         })
       }
-      return sessionAdapter(realm, outcome.remote, exposedInput, watch) as unknown as AssetSession
+      return sessionAdapter(
+        realm,
+        outcome.remote,
+        exposedInput,
+        watch,
+        signal,
+      ) as unknown as AssetSession
     },
   }
 }
@@ -204,6 +232,7 @@ function sessionAdapter(
   session: RemoteCapability,
   exposedInput: { release(): Promise<void> },
   watch: ConsumerWatch,
+  openingSignal?: AbortSignal,
 ) {
   const endpoint = realm.endpoint
   const materialized = endpoint.materialize(session) as Record<
@@ -211,6 +240,18 @@ function sessionAdapter(
     (...args: unknown[]) => Promise<unknown>
   >
   let state: 'live' | 'stale-revision' | 'disposed' = 'live'
+  let disposal: Promise<void> | undefined
+  let initialDescriptorSignal = openingSignal
+  const sessionValue = (method: 'descriptor' | 'state', signal?: AbortSignal) =>
+    watch(realm, async () => {
+      const outcome = await session.call(method, [], signal === undefined ? {} : { signal })
+      if (outcome.kind !== 'value')
+        throw new ModkitError({
+          code: 'x3.host/rpc-bad-return',
+          message: `${method} returned a capability instead of a value`,
+        })
+      return outcome.value
+    })
   // one leased OperationSession, materialized once so its `invoke` carries the ABI placements
   // (`signal`/`onProgress` inside the third options argument are lifted by the RPC core and
   // re-created in the worker) and its `dispose` releases the lease
@@ -253,19 +294,46 @@ function sessionAdapter(
   return {
     revision: session.data['revision'],
     state: () => state,
-    descriptor: () => materialized['descriptor']?.(),
+    descriptor: async () => {
+      const signal = initialDescriptorSignal
+      try {
+        const descriptor = await sessionValue('descriptor', signal)
+        if (disposal === undefined) {
+          const remoteState = await sessionValue('state', signal)
+          if (
+            remoteState !== 'live' &&
+            remoteState !== 'stale-revision' &&
+            remoteState !== 'disposed'
+          )
+            throw new ModkitError({
+              code: 'x3.host/invalid-session-state',
+              message:
+                'The worker session returned an invalid state after descriptor initialization.',
+            })
+          // A concurrent local dispose must never be undone by a late remote reply.
+          if (disposal === undefined) state = remoteState
+        }
+        return descriptor
+      } finally {
+        initialDescriptorSignal = undefined
+      }
+    },
     dataSource: (contract: string, major: number) => materialized['dataSource']?.(contract, major),
     operations: () => operations,
     events: (signal?: AbortSignal) =>
       materialized['events']?.(...(signal === undefined ? [] : [signal])),
-    dispose: async () => {
+    dispose: () => {
+      if (disposal !== undefined) return disposal
       state = 'disposed'
-      try {
-        await operations.dispose()
-        await materialized['dispose']?.()
-      } finally {
-        await exposedInput.release()
-      }
+      disposal = (async () => {
+        try {
+          await operations.dispose()
+          await watch(realm, async () => materialized['dispose']?.())
+        } finally {
+          await exposedInput.release()
+        }
+      })()
+      return disposal
     },
   }
 }

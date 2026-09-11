@@ -1,0 +1,10 @@
+{
+  "$comment": "INVALID: a world with no spaces is not a world (at-least-one-space).",
+  "uv": {
+    "format": "UVW",
+    "version": "1.0",
+    "status": "profile"
+  },
+  "spaces": [],
+  "connections": []
+}

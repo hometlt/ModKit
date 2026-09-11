@@ -2,17 +2,1440 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../chunks/chunk-VCFHQMDA.js";
-import "../../chunks/chunk-GUANBBUV.js";
+} from "../../chunks/chunk-J5QGUWNB.js";
+import "../../chunks/chunk-V3SJMNU5.js";
 import {
   revisionId,
   toPortableProjectionReceipt
-} from "../../chunks/chunk-YFALMPQO.js";
+} from "../../chunks/chunk-3JQHXTSW.js";
 import {
-  canonicalJsonStringify
+  ModkitError,
+  canonicalJsonStringify,
+  diagnostic
 } from "../../chunks/chunk-S5ITZJYV.js";
 import "../../chunks/chunk-YRQVWMJF.js";
 import "../../chunks/chunk-CQ52GEHY.js";
+
+// packages/codec-kit/src/paging.ts
+function pageStart(cursor) {
+  if (cursor === void 0) return 0;
+  if (!/^(?:0|[1-9][0-9]*)$/u.test(cursor)) throw new TypeError("invalid page cursor");
+  const value = Number(cursor);
+  if (!Number.isSafeInteger(value)) throw new TypeError("page cursor exceeds safe integer range");
+  return value;
+}
+
+// packages/codec-kit/src/json-snapshot.ts
+function utf8ByteLength(text2) {
+  let bytes = 0;
+  for (let index = 0; index < text2.length; index++) {
+    const code = text2.charCodeAt(index);
+    if (code < 128) bytes++;
+    else if (code < 2048) bytes += 2;
+    else if (code >= 55296 && code <= 56319 && text2.charCodeAt(index + 1) >= 56320 && text2.charCodeAt(index + 1) <= 57343) {
+      bytes += 4;
+      index++;
+    } else bytes += 3;
+  }
+  return bytes;
+}
+function snapshotJson(value, budget, signal) {
+  for (const limit of [budget?.maxDepth, budget?.maxNodes, budget?.maxBytes]) {
+    if (!Number.isSafeInteger(limit) || limit < 0)
+      throw new TypeError("invalid JSON snapshot budget");
+  }
+  const ancestors = /* @__PURE__ */ new Set();
+  let nodes = 0;
+  let bytes = 0;
+  const charge = (count) => {
+    bytes += count;
+    if (bytes > budget.maxBytes) throw new RangeError("JSON snapshot exceeds maxBytes");
+  };
+  const copy = (entry, depth) => {
+    if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+    if (depth > budget.maxDepth) throw new RangeError("JSON snapshot exceeds maxDepth");
+    if (++nodes > budget.maxNodes) throw new RangeError("JSON snapshot exceeds maxNodes");
+    if (entry === null || typeof entry === "boolean") {
+      charge(entry === false ? 5 : 4);
+      return entry;
+    }
+    if (typeof entry === "string") {
+      charge(utf8ByteLength(JSON.stringify(entry)));
+      return entry;
+    }
+    if (typeof entry === "number" && Number.isFinite(entry)) {
+      charge(JSON.stringify(entry).length);
+      return entry;
+    }
+    if (typeof entry !== "object" || entry === null) throw new TypeError("non-JSON snapshot value");
+    const prototype = Object.getPrototypeOf(entry);
+    if (!Array.isArray(entry) && prototype !== null && prototype !== Object.prototype) {
+      throw new TypeError("JSON snapshot requires plain objects");
+    }
+    if (ancestors.has(entry)) throw new TypeError("cyclic JSON snapshot");
+    ancestors.add(entry);
+    try {
+      charge(2);
+      if (Array.isArray(entry)) {
+        const result2 = [];
+        for (let index = 0; index < entry.length; index++) {
+          if (index > 0) charge(1);
+          result2.push(copy(entry[index], depth + 1));
+        }
+        return Object.freeze(result2);
+      }
+      const result = [];
+      const entries = Object.entries(entry);
+      if (budget.sortKeys)
+        entries.sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0);
+      for (const [key, item] of entries) {
+        if (item === void 0) continue;
+        charge(utf8ByteLength(JSON.stringify(key)) + 1 + (result.length > 0 ? 1 : 0));
+        result.push([key, copy(item, depth + 1)]);
+      }
+      return Object.freeze(Object.fromEntries(result));
+    } finally {
+      ancestors.delete(entry);
+    }
+  };
+  return copy(value, 0);
+}
+
+// packages/codec-kit/src/deferred-session.ts
+function deferAssetSession(revision, initialize, budget, openingSignal) {
+  const controller = new AbortController();
+  const signal = openingSignal === void 0 ? controller.signal : AbortSignal.any([openingSignal, controller.signal]);
+  let pending;
+  let resolved;
+  let disposed = false;
+  let disposal;
+  let release;
+  const releaseResolved = () => {
+    if (release === void 0) release = resolved?.dispose() ?? Promise.resolve();
+    return release;
+  };
+  const requireLive = () => {
+    if (disposed)
+      throw new ModkitError({
+        code: "x3.host/session-disposed",
+        message: "the deferred asset session has been disposed"
+      });
+    signal.throwIfAborted();
+  };
+  const get = async () => {
+    requireLive();
+    pending ??= Promise.resolve().then(async () => {
+      requireLive();
+      resolved = await initialize(signal);
+      try {
+        requireLive();
+        if (resolved.revision !== revision)
+          throw new ModkitError({
+            code: "x3.host/subject-session-identity-mismatch",
+            message: "deferred inspection changed the selected source revision"
+          });
+        return resolved;
+      } catch (error) {
+        await releaseResolved();
+        throw error;
+      }
+    });
+    const session = await pending;
+    requireLive();
+    return session;
+  };
+  const waitForSession = (waitSignal) => {
+    if (waitSignal.aborted) return Promise.resolve(void 0);
+    return new Promise((resolve, reject) => {
+      let finished = false;
+      const finish = (action) => {
+        if (finished) return;
+        finished = true;
+        waitSignal.removeEventListener("abort", onAbort);
+        action();
+      };
+      const onAbort = () => finish(() => resolve(void 0));
+      waitSignal.addEventListener("abort", onAbort, { once: true });
+      void get().then(
+        (session) => finish(() => resolve(session)),
+        (error) => finish(() => reject(error))
+      );
+    });
+  };
+  const dispose = () => {
+    if (disposal !== void 0) return disposal;
+    disposed = true;
+    controller.abort();
+    disposal = (async () => {
+      if (pending === void 0) return;
+      await pending.catch(() => void 0);
+      if (resolved !== void 0) await releaseResolved();
+    })();
+    return disposal;
+  };
+  const rejected = (reason, message) => ({
+    state: "rejected",
+    reason,
+    diagnostics: [diagnostic("error", `x3.host/${reason}`, message)]
+  });
+  const operations = Object.freeze({
+    async invoke(handlerId, input, options) {
+      if (disposed || signal.aborted || options?.signal?.aborted)
+        return rejected("cancelled", "the deferred operation was cancelled before dispatch");
+      let owned;
+      try {
+        owned = snapshotJson(
+          input,
+          {
+            maxDepth: budget.maxDepth,
+            maxNodes: budget.maxNodes,
+            maxBytes: budget.maxScalarBytes
+          },
+          options?.signal
+        );
+      } catch {
+        return rejected("input-not-serializable", "operation input must be bounded JSON data");
+      }
+      const invokeSignal = options?.signal === void 0 ? signal : AbortSignal.any([signal, options.signal]);
+      const invokeOptions = { ...options, signal: invokeSignal };
+      try {
+        const session = await waitForSession(invokeSignal);
+        if (session === void 0 || invokeSignal.aborted)
+          return rejected("cancelled", "the deferred operation was cancelled");
+        const result = await session.operations().invoke(handlerId, owned, invokeOptions);
+        if (disposed || invokeSignal.aborted)
+          return rejected("cancelled", "the deferred operation was cancelled");
+        return result;
+      } catch (error) {
+        if (disposed || signal.aborted || invokeOptions?.signal?.aborted)
+          return rejected("cancelled", "the deferred operation was cancelled");
+        throw error;
+      }
+    },
+    dispose
+  });
+  return Object.freeze({
+    revision,
+    state: () => disposed ? "disposed" : resolved?.state() ?? "live",
+    async descriptor() {
+      const descriptor = await (await get()).descriptor();
+      requireLive();
+      return descriptor;
+    },
+    async dataSource(contract, major) {
+      const lease = await (await get()).dataSource(contract, major);
+      try {
+        requireLive();
+        return lease;
+      } catch (error) {
+        await lease.release();
+        throw error;
+      }
+    },
+    operations: () => operations,
+    async *events(eventSignal) {
+      const waitSignal = eventSignal === void 0 ? signal : AbortSignal.any([signal, eventSignal]);
+      const session = await waitForSession(waitSignal);
+      if (session === void 0 || waitSignal.aborted) return;
+      yield* session.events(waitSignal);
+    },
+    dispose
+  });
+}
+
+// packages/codec-kit/src/projection.ts
+var PROJECTION_RECEIPT_METADATA_ID = "uv-projection-receipt";
+var PLANE_STATES = /* @__PURE__ */ new Set(["normalized", "preserved", "inferred", "lost"]);
+var CONFIDENCES = /* @__PURE__ */ new Set(["exact", "high", "partial", "heuristic"]);
+function createProjectionReceipt(receipt) {
+  const planes = [...receipt.planes ?? []];
+  if (planes.length === 0)
+    throw new TypeError("a projection receipt must record at least one plane");
+  for (const plane of planes) {
+    if (!PLANE_STATES.has(plane.state)) {
+      throw new TypeError(`projection plane \xAB${plane.planeId}\xBB has an unknown state ${plane.state}`);
+    }
+  }
+  if (!CONFIDENCES.has(receipt.confidence)) {
+    throw new TypeError(`projection receipt has an unknown confidence ${receipt.confidence}`);
+  }
+  if ((receipt.evidence ?? []).length === 0) {
+    throw new TypeError(
+      "a projection receipt made of no evidence is a claim with nothing behind it; state at least one declared or observed fact"
+    );
+  }
+  return Object.freeze({
+    form: "local",
+    adapter: Object.freeze({ ...receipt.adapter }),
+    subjectRevision: receipt.subjectRevision,
+    companions: Object.freeze((receipt.companions ?? []).map((item) => Object.freeze({ ...item }))),
+    basis: Object.freeze({ ...receipt.basis }),
+    planes: Object.freeze(planes.map((plane) => Object.freeze({ ...plane }))),
+    evidence: Object.freeze(receipt.evidence.map((item) => Object.freeze({ ...item }))),
+    confidence: receipt.confidence,
+    ...receipt.semanticHash === void 0 ? {} : { semanticHash: receipt.semanticHash },
+    ...receipt.sourceUri === void 0 ? {} : { sourceUri: receipt.sourceUri }
+  });
+}
+
+// packages/codec-kit/src/model-math/sequence-pose.ts
+function sampleTrackValue(track, timeSeconds, out, options = {}) {
+  const keys = track.keys;
+  const count = keys.length;
+  if (count === 0) {
+    out.length = 0;
+    return out;
+  }
+  let time = timeSeconds;
+  let wrapRoundoff = 0;
+  if (options.wrapSeconds && options.wrapSeconds > 0) {
+    time = timeSeconds % options.wrapSeconds;
+    wrapRoundoff = Math.max(options.wrapSeconds, Math.abs(timeSeconds)) * Number.EPSILON * 2;
+    if (Math.abs(time - options.wrapSeconds) <= wrapRoundoff) time = 0;
+  }
+  const first = keys[0];
+  if (time <= first.frame || count === 1) return copyVector(first.vector, out);
+  const last = keys[count - 1];
+  if (time >= last.frame) return copyVector(last.vector, out);
+  let b = 1;
+  while (b < count - 1 && time + wrapRoundoff >= keys[b].frame) b += 1;
+  const ka = keys[b - 1];
+  const kb = keys[b];
+  if (track.lineType === 0) return copyVector(ka.vector, out);
+  const span = kb.frame - ka.frame;
+  const t = span > 0 ? Math.min(Math.max((time - ka.frame) / span, 0), 1) : 0;
+  if (options.isQuat && ka.vector.length === 4 && kb.vector.length === 4) {
+    return slerpVector(ka.vector, kb.vector, t, out);
+  }
+  out.length = ka.vector.length;
+  for (let i = 0; i < ka.vector.length; i += 1) {
+    const a = ka.vector[i];
+    out[i] = a + ((kb.vector[i] ?? a) - a) * t;
+  }
+  return out;
+}
+function copyVector(source, out) {
+  out.length = source.length;
+  for (let i = 0; i < source.length; i += 1) out[i] = source[i];
+  return out;
+}
+function slerpVector(a, b, t, out) {
+  let dot = a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
+  let sign = 1;
+  if (dot < 0) {
+    dot = -dot;
+    sign = -1;
+  }
+  out.length = 4;
+  if (dot > 0.9995) {
+    for (let i = 0; i < 4; i += 1) out[i] = a[i] + (sign * b[i] - a[i]) * t;
+  } else {
+    const theta = Math.acos(Math.min(1, dot));
+    const sinTheta = Math.sin(theta);
+    const wa = Math.sin((1 - t) * theta) / sinTheta;
+    const wb = Math.sin(t * theta) / sinTheta * sign;
+    for (let i = 0; i < 4; i += 1) out[i] = wa * a[i] + wb * b[i];
+  }
+  const len = Math.hypot(out[0], out[1], out[2], out[3]);
+  if (len > 0) {
+    for (let i = 0; i < 4; i += 1) out[i] /= len;
+  }
+  return out;
+}
+function composeTrsMatrix(out, offset, translation, rotation, scale) {
+  const x = rotation[0] ?? 0;
+  const y = rotation[1] ?? 0;
+  const z = rotation[2] ?? 0;
+  const w = rotation[3] ?? 1;
+  const sx = scale[0] ?? 1;
+  const sy = scale[1] ?? 1;
+  const sz = scale[2] ?? 1;
+  const x2 = x + x;
+  const y2 = y + y;
+  const z2 = z + z;
+  const xx = x * x2;
+  const xy = x * y2;
+  const xz = x * z2;
+  const yy = y * y2;
+  const yz = y * z2;
+  const zz = z * z2;
+  const wx = w * x2;
+  const wy = w * y2;
+  const wz = w * z2;
+  out[offset] = (1 - (yy + zz)) * sx;
+  out[offset + 1] = (xy + wz) * sx;
+  out[offset + 2] = (xz - wy) * sx;
+  out[offset + 3] = 0;
+  out[offset + 4] = (xy - wz) * sy;
+  out[offset + 5] = (1 - (xx + zz)) * sy;
+  out[offset + 6] = (yz + wx) * sy;
+  out[offset + 7] = 0;
+  out[offset + 8] = (xz + wy) * sz;
+  out[offset + 9] = (yz - wx) * sz;
+  out[offset + 10] = (1 - (xx + yy)) * sz;
+  out[offset + 11] = 0;
+  out[offset + 12] = translation[0] ?? 0;
+  out[offset + 13] = translation[1] ?? 0;
+  out[offset + 14] = translation[2] ?? 0;
+  out[offset + 15] = 1;
+}
+function multiplyMat4(out, outOffset, a, aOffset, b, bOffset) {
+  const a00 = a[aOffset];
+  const a01 = a[aOffset + 1];
+  const a02 = a[aOffset + 2];
+  const a03 = a[aOffset + 3];
+  const a10 = a[aOffset + 4];
+  const a11 = a[aOffset + 5];
+  const a12 = a[aOffset + 6];
+  const a13 = a[aOffset + 7];
+  const a20 = a[aOffset + 8];
+  const a21 = a[aOffset + 9];
+  const a22 = a[aOffset + 10];
+  const a23 = a[aOffset + 11];
+  const a30 = a[aOffset + 12];
+  const a31 = a[aOffset + 13];
+  const a32 = a[aOffset + 14];
+  const a33 = a[aOffset + 15];
+  for (let col = 0; col < 4; col += 1) {
+    const b0 = b[bOffset + col * 4];
+    const b1 = b[bOffset + col * 4 + 1];
+    const b2 = b[bOffset + col * 4 + 2];
+    const b3 = b[bOffset + col * 4 + 3];
+    out[outOffset + col * 4] = a00 * b0 + a10 * b1 + a20 * b2 + a30 * b3;
+    out[outOffset + col * 4 + 1] = a01 * b0 + a11 * b1 + a21 * b2 + a31 * b3;
+    out[outOffset + col * 4 + 2] = a02 * b0 + a12 * b1 + a22 * b2 + a32 * b3;
+    out[outOffset + col * 4 + 3] = a03 * b0 + a13 * b1 + a23 * b2 + a33 * b3;
+  }
+}
+
+// packages/codec-kit/src/model/animation.ts
+var DEFAULT_MODEL_ANIMATION_BUDGET = Object.freeze({
+  maxDepth: 64,
+  maxNodes: 1e6,
+  maxBytes: 134217728
+});
+function finite(value, label) {
+  if (typeof value !== "number" || !Number.isFinite(value))
+    throw new TypeError(`${label} must be finite`);
+}
+function snapshotModelAnimations(value, budget = DEFAULT_MODEL_ANIMATION_BUDGET, signal) {
+  const clips = snapshotJson(value, budget, signal);
+  if (!Array.isArray(clips)) throw new TypeError("model animations must be an array");
+  const ids = /* @__PURE__ */ new Set();
+  for (const clip of clips) {
+    if (clip === null || typeof clip !== "object" || typeof clip.id !== "string" || !clip.id || ids.has(clip.id)) {
+      throw new TypeError("animation clip needs a unique id");
+    }
+    ids.add(clip.id);
+    if (typeof clip.name !== "string" || !["animation", "rest-pose"].includes(clip.kind) || !["direct", "companion"].includes(clip.provenance) || !Number.isSafeInteger(clip.frames) || clip.frames < 0 || !Array.isArray(clip.channels))
+      throw new TypeError("invalid animation clip");
+    if (clip.durationSeconds !== void 0) {
+      finite(clip.durationSeconds, "clip duration");
+      if (clip.durationSeconds < 0) throw new TypeError("negative clip duration");
+    }
+    if (clip.looping !== void 0 && typeof clip.looping !== "boolean")
+      throw new TypeError("invalid clip looping");
+    if (clip.repeatCount !== void 0 && (!Number.isSafeInteger(clip.repeatCount) || clip.repeatCount < 0))
+      throw new TypeError("invalid clip repeat count");
+    if (clip.sequenceIndex !== void 0 && (!Number.isSafeInteger(clip.sequenceIndex) || clip.sequenceIndex < 0))
+      throw new TypeError("invalid animation material sequence index");
+    if (clip.movementSpeed !== void 0) finite(clip.movementSpeed, "clip movement speed");
+    if (clip.boundsSphere !== void 0) {
+      if (!Array.isArray(clip.boundsSphere.center) || clip.boundsSphere.center.length !== 3)
+        throw new TypeError("invalid clip bounds");
+      for (const component of clip.boundsSphere.center) finite(component, "clip bounds center");
+      finite(clip.boundsSphere.radius, "clip bounds radius");
+      if (clip.boundsSphere.radius < 0) throw new TypeError("negative clip bounds radius");
+    }
+    for (const channel of clip.channels) {
+      if (channel === null || typeof channel !== "object" || typeof channel.target !== "string" || typeof channel.kind !== "string")
+        throw new TypeError("invalid animation channel");
+      if (channel.concurrent !== void 0 && typeof channel.concurrent !== "boolean")
+        throw new TypeError("invalid concurrent flag");
+      if (channel.wrapSeconds !== void 0) {
+        finite(channel.wrapSeconds, "channel wrap");
+        if (channel.wrapSeconds <= 0 || channel.concurrent !== true)
+          throw new TypeError("invalid independent channel wrap");
+      }
+      if (channel.repeatCount !== void 0 && (!Number.isSafeInteger(channel.repeatCount) || channel.repeatCount < 0 || channel.concurrent !== true || channel.wrapSeconds === void 0))
+        throw new TypeError("invalid independent channel repeat count");
+      if (channel.samples !== void 0 && !Array.isArray(channel.samples))
+        throw new TypeError("invalid animation samples");
+      if (channel.interpolation === void 0) continue;
+      if (!["step", "linear", "spherical-linear"].includes(channel.interpolation) || !channel.samples?.length) {
+        throw new TypeError("sampleable channel needs interpolation and keys");
+      }
+      let previous = -Infinity;
+      let components;
+      for (const sample of channel.samples) {
+        finite(sample.timeSeconds, "key time");
+        if (sample.timeSeconds < previous) throw new TypeError("animation keys are not ordered");
+        previous = sample.timeSeconds;
+        if (!Array.isArray(sample.value) || sample.value.length === 0)
+          throw new TypeError("empty animation key");
+        components ??= sample.value.length;
+        if (components !== sample.value.length || channel.interpolation === "spherical-linear" && components !== 4) {
+          throw new TypeError("inconsistent animation key components");
+        }
+        for (const component of sample.value) finite(component, "key component");
+      }
+    }
+  }
+  return clips;
+}
+function createModelAnimationSampler(clip, budget, signal) {
+  const owned = snapshotModelAnimations([clip], budget, signal)[0];
+  const tracks = owned.channels.map((channel) => {
+    if (channel.interpolation === void 0 || channel.samples === void 0)
+      throw new TypeError("channel has no sampling semantics");
+    const track = {
+      lineType: channel.interpolation === "step" ? 0 : 1,
+      globalSeqId: null,
+      keys: channel.samples.map((key) => ({ frame: key.timeSeconds, vector: key.value }))
+    };
+    return { channel, track };
+  });
+  return Object.freeze({
+    sample(timeSeconds, requestSignal) {
+      if (requestSignal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+      finite(timeSeconds, "sample time");
+      return Object.freeze(
+        tracks.map(({ channel, track }) => {
+          if (requestSignal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+          return Object.freeze({
+            target: channel.target,
+            kind: channel.kind,
+            ...channel.axis === void 0 ? {} : { axis: channel.axis },
+            value: Object.freeze(
+              sampleTrackValue(track, timeSeconds, [], {
+                isQuat: channel.interpolation === "spherical-linear",
+                wrapSeconds: channel.concurrent ? channel.wrapSeconds : void 0
+              })
+            )
+          });
+        })
+      );
+    }
+  });
+}
+
+// packages/codec-kit/src/model/skeleton.ts
+var DEFAULT_MODEL_SKELETON_BUDGET = Object.freeze({
+  maxDepth: 64,
+  maxNodes: 1e6,
+  maxBytes: 134217728
+});
+function vector(value, size, label) {
+  if (!Array.isArray(value) || value.length !== size || value.some((x) => typeof x !== "number" || !Number.isFinite(x)))
+    throw new TypeError(`invalid ${label}`);
+}
+function snapshotModelSkeleton(bindings, budget = DEFAULT_MODEL_SKELETON_BUDGET, signal) {
+  const owned = snapshotJson(bindings, budget, signal);
+  if (!Array.isArray(owned)) throw new TypeError("skeleton bindings must be an array");
+  for (const bone of owned) {
+    if (bone === null || typeof bone !== "object" || typeof bone.partId !== "string" || !Number.isSafeInteger(bone.boneIndex) || bone.boneIndex < 0 || bone.boneName !== null && typeof bone.boneName !== "string")
+      throw new TypeError("invalid bone binding");
+    if (bone.nodeId !== void 0 && (typeof bone.nodeId !== "string" || bone.nodeId.length === 0))
+      throw new TypeError("invalid bone node id");
+    if (bone.localPose !== void 0) {
+      vector(bone.localPose.translation, 3, "bone translation");
+      vector(bone.localPose.rotation, 4, "bone rotation");
+      vector(bone.localPose.scale, 3, "bone scale");
+    }
+    if (bone.inverseBindMatrix !== void 0)
+      vector(bone.inverseBindMatrix, 16, "inverse bind matrix");
+  }
+  return owned;
+}
+function compileHierarchy(bindings, hierarchyId) {
+  const bones = bindings.filter((bone) => bone.hierarchyId === hierarchyId).sort((a, b) => a.boneIndex - b.boneIndex);
+  if (!hierarchyId || bones.length === 0) throw new TypeError("skeleton hierarchy is absent");
+  const byIndex = /* @__PURE__ */ new Map();
+  const byNode = /* @__PURE__ */ new Map();
+  for (const [slot, bone] of bones.entries()) {
+    if (bone.nodeId === void 0 || bone.localPose === void 0 || bone.parentBoneIndex === void 0)
+      throw new TypeError("bone has no explicit scene node, local pose or parent");
+    if (byIndex.has(bone.boneIndex) || byNode.has(bone.nodeId))
+      throw new TypeError("ambiguous skeleton binding");
+    byIndex.set(bone.boneIndex, slot);
+    byNode.set(bone.nodeId, slot);
+  }
+  const parents = bones.map((bone) => {
+    if (bone.parentBoneIndex === null) return -1;
+    const slot = byIndex.get(bone.parentBoneIndex);
+    if (slot === void 0) throw new TypeError("bone parent is absent from hierarchy");
+    return slot;
+  });
+  const order = [];
+  const done = /* @__PURE__ */ new Set();
+  for (let slot = 0; slot < bones.length; slot++) {
+    const chain = [];
+    const visiting = /* @__PURE__ */ new Set();
+    let current = slot;
+    while (current !== -1 && !done.has(current)) {
+      if (visiting.has(current)) throw new TypeError("cyclic skeleton hierarchy");
+      visiting.add(current);
+      chain.push(current);
+      current = parents[current];
+    }
+    for (const entry of chain.reverse()) {
+      done.add(entry);
+      order.push(entry);
+    }
+  }
+  return { bones, byNode, parents, order };
+}
+function createModelSkeletonNodes(bindings, hierarchyId, budget, signal) {
+  const { bones, parents } = compileHierarchy(
+    snapshotModelSkeleton(bindings, budget, signal),
+    hierarchyId
+  );
+  const children = bones.map(() => []);
+  for (const [slot, parent] of parents.entries())
+    if (parent >= 0) children[parent].push(bones[slot].nodeId);
+  return Object.freeze(
+    bones.map((bone, slot) => {
+      const transform = new Float32Array(16);
+      const pose = bone.localPose;
+      composeTrsMatrix(transform, 0, pose.translation, pose.rotation, pose.scale);
+      if (!transform.every(Number.isFinite))
+        throw new RangeError("bone transform exceeds finite float range");
+      return Object.freeze({
+        id: bone.nodeId,
+        ...bone.boneName === null ? {} : { name: bone.boneName },
+        childIds: Object.freeze(children[slot]),
+        meshIds: Object.freeze([]),
+        transform: Object.freeze(Array.from(transform))
+      });
+    })
+  );
+}
+function createModelPoseSampler({
+  bindings,
+  hierarchyId,
+  clip,
+  budget,
+  signal
+}) {
+  const { bones, byNode, parents, order } = compileHierarchy(
+    snapshotModelSkeleton(bindings, budget, signal),
+    hierarchyId
+  );
+  if (clip?.hierarchyId !== void 0 && clip.hierarchyId !== hierarchyId)
+    throw new TypeError("animation belongs to a different hierarchy");
+  const animation = clip === void 0 ? void 0 : createModelAnimationSampler(clip, budget, signal);
+  const world = new Float32Array(bones.length * 16);
+  const local = new Float32Array(16);
+  const skin = new Float32Array(16);
+  return Object.freeze({
+    sample(timeSeconds, requestSignal) {
+      if (requestSignal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+      if (!Number.isFinite(timeSeconds)) throw new TypeError("pose time must be finite");
+      const channels = animation?.sample(timeSeconds, requestSignal) ?? Object.freeze([]);
+      const poses = bones.map((bone) => ({ ...bone.localPose }));
+      const assigned = /* @__PURE__ */ new Set();
+      for (const channel of channels) {
+        if (!["translation", "rotation", "scale"].includes(channel.kind)) continue;
+        const slot = byNode.get(channel.target);
+        if (slot === void 0 || channel.axis !== void 0)
+          throw new TypeError("animation has no whole-bone target");
+        const key = `${slot}/${channel.kind}`;
+        if (assigned.has(key)) throw new TypeError("duplicate bone animation channel");
+        assigned.add(key);
+        vector(channel.value, channel.kind === "rotation" ? 4 : 3, "bone animation value");
+        Object.assign(poses[slot], { [channel.kind]: channel.value });
+      }
+      const result = new Array(bones.length);
+      for (const slot of order) {
+        if (requestSignal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+        const bone = bones[slot];
+        const pose = poses[slot];
+        composeTrsMatrix(local, 0, pose.translation, pose.rotation, pose.scale);
+        const parent = parents[slot];
+        if (parent < 0) world.set(local, slot * 16);
+        else multiplyMat4(world, slot * 16, world, parent * 16, local, 0);
+        if (bone.inverseBindMatrix !== void 0)
+          multiplyMat4(skin, 0, world, slot * 16, bone.inverseBindMatrix, 0);
+        if (!world.subarray(slot * 16, slot * 16 + 16).every(Number.isFinite) || bone.inverseBindMatrix !== void 0 && !skin.every(Number.isFinite))
+          throw new RangeError("bone pose exceeds finite float range");
+        result[slot] = Object.freeze({
+          boneIndex: bone.boneIndex,
+          nodeId: bone.nodeId,
+          worldMatrix: Object.freeze(Array.from(world.subarray(slot * 16, slot * 16 + 16))),
+          ...bone.inverseBindMatrix === void 0 ? {} : { skinningMatrix: Object.freeze(Array.from(skin)) }
+        });
+      }
+      return Object.freeze({ bones: Object.freeze(result), channels });
+    }
+  });
+}
+
+// packages/codec-kit/src/model/geometry.ts
+function modelPrimitiveByteLength(primitive) {
+  return primitive.positions.byteLength + (primitive.indices?.byteLength ?? 0) + (primitive.normals?.byteLength ?? 0) + (primitive.tangents?.byteLength ?? 0) + (primitive.colors?.byteLength ?? 0) + (primitive.boneIndices?.byteLength ?? 0) + (primitive.boneWeights?.byteLength ?? 0) + (primitive.textureCoordinates?.byteLength ?? 0) + (primitive.textureCoordinateSets?.reduce((total, channel) => total + channel.coordinates.byteLength, 0) ?? 0);
+}
+
+// packages/codec-kit/src/editing.ts
+function assetRevisionFromInput(input) {
+  if (input.originKind !== "single" || input.revisions.topology !== "single") {
+    throw new TypeError("assetRevisionFromInput: single-source subjects only");
+  }
+  const [binding] = input.bindings;
+  if (binding === void 0) throw new TypeError("assetRevisionFromInput: no binding");
+  const revision = binding.revision;
+  return Object.freeze({
+    bindings: Object.freeze({ [binding.bindingId]: revision }),
+    compositionFingerprint: canonicalJsonStringify({
+      topology: "single",
+      bindingId: binding.bindingId,
+      source: { id: binding.source.id, uri: binding.source.uri },
+      revision
+    })
+  });
+}
+function editPlanFromInput(input, { planId, edits, fidelity, guarantee = "atomic", diagnostics = [] }) {
+  const revision = assetRevisionFromInput(input);
+  const [binding] = input.bindings;
+  const target = Object.freeze({
+    targetId: binding.bindingId,
+    subjectUri: binding.source.uri,
+    ownerSource: Object.freeze({ ...binding.source }),
+    semanticPath: Object.freeze([]),
+    expectedRevision: revision
+  });
+  return Object.freeze({
+    planId,
+    targets: Object.freeze([target]),
+    edits: Object.freeze(
+      edits.map(
+        (edit) => Object.freeze({
+          ...edit,
+          targetId: edit.targetId ?? binding.bindingId,
+          source: edit.source ?? target.ownerSource
+        })
+      )
+    ),
+    semantics: Object.freeze({ mutationMode: "mutate", minimumGuarantee: guarantee }),
+    fidelity,
+    diagnostics: Object.freeze([...diagnostics])
+  });
+}
+function editPlanFromBinding(input, bindingId, { planId, edits, fidelity, guarantee = "atomic", diagnostics = [] }) {
+  if (input.originKind !== "single" && input.originKind !== "bundle")
+    throw new TypeError("editPlanFromBinding requires a physical subject");
+  const primary = input.bindings.find((binding) => binding.bindingId === input.primaryBindingId);
+  const selected = input.bindings.find((binding) => binding.bindingId === bindingId);
+  if (primary === void 0 || selected === void 0 || selected.ownership !== "owned")
+    throw new TypeError("editPlanFromBinding requires an exact owned binding");
+  const ids = /* @__PURE__ */ new Set(), sourceIds = /* @__PURE__ */ new Set(), uris = /* @__PURE__ */ new Set();
+  const targets = input.bindings.map((binding) => {
+    if (ids.has(binding.bindingId) || sourceIds.has(binding.source.id) || uris.has(binding.source.uri))
+      throw new TypeError("editPlanFromBinding refuses aliased bindings");
+    ids.add(binding.bindingId);
+    sourceIds.add(binding.source.id);
+    uris.add(binding.source.uri);
+    return Object.freeze({
+      targetId: binding.bindingId,
+      subjectUri: primary.source.uri,
+      ownerSource: Object.freeze({ ...binding.source }),
+      semanticPath: Object.freeze([]),
+      expectedRevision: Object.freeze({
+        bindings: Object.freeze({ [binding.bindingId]: binding.revision }),
+        compositionFingerprint: canonicalJsonStringify({
+          topology: "single",
+          bindingId: binding.bindingId,
+          source: { id: binding.source.id, uri: binding.source.uri },
+          revision: binding.revision
+        })
+      })
+    });
+  });
+  const prepared = edits.map((edit) => {
+    if (edit.targetId !== void 0 && edit.targetId !== bindingId || edit.source !== void 0 && canonicalJsonStringify(edit.source) !== canonicalJsonStringify(selected.source))
+      throw new TypeError("editPlanFromBinding edit belongs to a different owner");
+    return Object.freeze({
+      ...edit,
+      targetId: bindingId,
+      source: Object.freeze({ ...selected.source })
+    });
+  });
+  return Object.freeze({
+    planId,
+    targets: Object.freeze(targets),
+    edits: Object.freeze(prepared),
+    semantics: Object.freeze({ mutationMode: "mutate", minimumGuarantee: guarantee }),
+    fidelity,
+    diagnostics: Object.freeze([...diagnostics])
+  });
+}
+function replaceBytes(offset, length, bytes, label) {
+  return Object.freeze({
+    operation: "replace",
+    range: Object.freeze({ kind: "bytes", offset: BigInt(offset), length: BigInt(length) }),
+    payload: Object.freeze({ kind: "inline", bytes }),
+    ...label === void 0 ? {} : { label }
+  });
+}
+
+// packages/codec-kit/src/model/materials.ts
+var DEFAULT_MODEL_MATERIAL_BUDGET = Object.freeze({
+  maxDepth: 64,
+  maxNodes: 1e6,
+  maxBytes: 134217728
+});
+var record = (value, label) => {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    throw new TypeError(`${label} must be an object`);
+  }
+  return value;
+};
+var text = (value, label, nonEmpty = false) => {
+  if (typeof value !== "string" || nonEmpty && value.trim() === "") throw new TypeError(`${label} must be a string`);
+};
+var strings = (value, label) => {
+  if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) {
+    throw new TypeError(`${label} must be a string array`);
+  }
+};
+var optionalFields = (value, label) => {
+  for (const key of ["name", "libraryId", "type", "blendMode"]) {
+    if (value[key] !== void 0) text(value[key], `${label}.${key}`);
+  }
+  for (const key of ["priority", "uvSource", "colorChannels", "nativeFlags"]) {
+    if (value[key] !== void 0 && typeof value[key] !== "number") throw new TypeError(`${label}.${key} must be a number`);
+  }
+  for (const key of ["contracts", "flagNames"]) {
+    if (value[key] !== void 0) strings(value[key], `${label}.${key}`);
+  }
+};
+function snapshotModelMaterials(value, budget = DEFAULT_MODEL_MATERIAL_BUDGET, signal) {
+  const snapshot = snapshotJson(value, { ...budget, sortKeys: true }, signal);
+  if (!Array.isArray(snapshot)) throw new TypeError("model materials must be an array");
+  const ids = /* @__PURE__ */ new Set();
+  for (const entry of snapshot) {
+    const material = record(entry, "material");
+    text(material["id"], "material.id", true);
+    const id = material["id"];
+    if (ids.has(id)) throw new TypeError(`duplicate material id ${id}`);
+    ids.add(id);
+    optionalFields(material, `material ${id}`);
+    if (material["layers"] !== void 0) {
+      if (!Array.isArray(material["layers"])) throw new TypeError("material.layers must be an array");
+      for (const entry2 of material["layers"]) {
+        const layer = record(entry2, "material layer");
+        text(layer["slot"], "material layer.slot", true);
+        if (layer["resourceId"] !== void 0) text(layer["resourceId"], "material layer.resourceId", true);
+        optionalFields(layer, "material layer");
+      }
+    }
+    if (material["shader"] !== void 0) {
+      const shader = record(material["shader"], "material.shader");
+      text(shader["id"], "material.shader.id", true);
+      record(shader["parameters"], "material.shader.parameters");
+    }
+  }
+  return snapshot;
+}
+
+// packages/codec-kit/src/model/sources.ts
+function frozenModelNode(node) {
+  return Object.freeze({
+    ...node,
+    childIds: Object.freeze([...node.childIds]),
+    meshIds: Object.freeze([...node.meshIds]),
+    transform: Object.freeze([...node.transform])
+  });
+}
+function frozenModelMesh(mesh) {
+  return Object.freeze({ ...mesh, primitiveIds: Object.freeze([...mesh.primitiveIds]) });
+}
+function clonePrimitive(primitive) {
+  return Object.freeze({
+    ...primitive,
+    positions: primitive.positions.slice(),
+    ...primitive.indices === void 0 ? {} : { indices: primitive.indices.slice() },
+    ...primitive.normals === void 0 ? {} : { normals: primitive.normals.slice() },
+    ...primitive.tangents === void 0 ? {} : { tangents: primitive.tangents.slice() },
+    ...primitive.colors === void 0 ? {} : { colors: primitive.colors.slice() },
+    ...primitive.boneIndices === void 0 ? {} : { boneIndices: primitive.boneIndices.slice() },
+    ...primitive.boneWeights === void 0 ? {} : { boneWeights: primitive.boneWeights.slice() },
+    ...primitive.textureCoordinates === void 0 ? {} : { textureCoordinates: primitive.textureCoordinates.slice() },
+    ...primitive.textureCoordinateSets === void 0 ? {} : {
+      textureCoordinateSets: Object.freeze(
+        primitive.textureCoordinateSets.map(
+          (channel) => Object.freeze({ set: channel.set, coordinates: channel.coordinates.slice() })
+        )
+      )
+    }
+  });
+}
+function createModelSceneSource({
+  info,
+  nodes,
+  meshes,
+  primitives = []
+}) {
+  const ownedInfo = Object.freeze({ ...info });
+  const ownedNodes = Object.freeze(nodes.map(frozenModelNode));
+  const ownedMeshes = Object.freeze(meshes.map(frozenModelMesh));
+  const ownedPrimitives = new Map(primitives.map((value) => [value.id, clonePrimitive(value)]));
+  const page = (items, request) => {
+    if (!Number.isSafeInteger(request.limit) || request.limit <= 0) {
+      throw new TypeError("model page limit must be a positive safe integer");
+    }
+    const start = pageStart(request.cursor);
+    const values = items.slice(start, start + request.limit);
+    return Object.freeze({
+      items: Object.freeze(values),
+      ...start + values.length < items.length ? { nextCursor: String(start + values.length) } : {}
+    });
+  };
+  const source = {
+    async info(signal) {
+      if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+      return ownedInfo;
+    },
+    async nodes(request, signal) {
+      if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+      return page(ownedNodes, request);
+    },
+    async meshes(request, signal) {
+      if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+      return page(ownedMeshes, request);
+    }
+  };
+  if (ownedPrimitives.size > 0) {
+    source.primitive = async (primitiveId, request, signal) => {
+      if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+      if (!Number.isSafeInteger(request?.maxBytes) || request.maxBytes < 0) {
+        throw new TypeError("model primitive maxBytes must be a non-negative safe integer");
+      }
+      const primitive = ownedPrimitives.get(primitiveId);
+      if (primitive === void 0) throw new RangeError(`unknown model primitive ${primitiveId}`);
+      const bytes = modelPrimitiveByteLength(primitive);
+      if (bytes > request.maxBytes) throw new RangeError("model primitive exceeds maxBytes budget");
+      return clonePrimitive(primitive);
+    };
+  }
+  return Object.freeze(source);
+}
+function facetPage(items, request) {
+  if (!Number.isSafeInteger(request?.limit) || request.limit <= 0) {
+    throw new TypeError("model facet page limit must be a positive safe integer");
+  }
+  const start = pageStart(request.cursor);
+  const values = items.slice(start, start + request.limit);
+  return Object.freeze({
+    items: Object.freeze(values),
+    ...start + values.length < items.length ? { nextCursor: String(start + values.length) } : {}
+  });
+}
+function facetSource(info, key, items) {
+  const owned = Object.freeze(items.map((item) => Object.freeze({ ...item })));
+  const source = {
+    async info(signal) {
+      if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+      return info;
+    }
+  };
+  source[key] = async (request, signal) => {
+    if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+    return facetPage(owned, request);
+  };
+  return Object.freeze(source);
+}
+function createModelResourceRefsSource({
+  references,
+  truncated = false
+}) {
+  const items = [...references];
+  const info = Object.freeze({
+    references: items.length,
+    bound: items.filter((item) => item.bindingId !== void 0).length,
+    truncated: truncated === true
+  });
+  return facetSource(info, "references", items);
+}
+function createModelSkeletonSource({
+  bindings,
+  hierarchies,
+  budget
+}) {
+  const items = snapshotModelSkeleton(bindings, budget);
+  const info = Object.freeze({
+    bindings: items.length,
+    named: items.filter((item) => item.boneName !== null).length,
+    companionBound: items.filter((item) => item.provenance === "companion").length,
+    // absent, not zero, when the publisher does not enumerate hierarchies
+    ...hierarchies === void 0 ? {} : { hierarchies }
+  });
+  return facetSource(info, "bindings", items);
+}
+function createModelAnimationSource({
+  clips,
+  budget
+}) {
+  const items = snapshotModelAnimations(clips, budget);
+  const info = Object.freeze({
+    clips: items.length,
+    channelled: items.filter((clip) => clip.channels.length > 0).length,
+    companionBound: items.filter((clip) => clip.provenance === "companion").length
+  });
+  return facetSource(info, "clips", items);
+}
+function createModelCollisionSource({
+  volumes
+}) {
+  const items = volumes.map((volume) => ({
+    ...volume,
+    ...volume.types === void 0 ? {} : { types: Object.freeze([...volume.types]) }
+  }));
+  const byKind = {};
+  for (const volume of items) byKind[volume.kind] = (byKind[volume.kind] ?? 0) + 1;
+  const info = Object.freeze({ volumes: items.length, byKind: Object.freeze(byKind) });
+  return facetSource(info, "volumes", items);
+}
+function createModelMaterialSource({
+  materials,
+  libraries,
+  budget
+}) {
+  const items = snapshotModelMaterials(materials, budget);
+  const byContract = {};
+  for (const material of items) {
+    for (const contract of material.contracts ?? []) {
+      byContract[contract] = (byContract[contract] ?? 0) + 1;
+    }
+  }
+  const info = Object.freeze({
+    materials: items.length,
+    // absent, not zero, when the format has no library concept at all
+    ...libraries === void 0 ? {} : { libraries },
+    ...Object.keys(byContract).length === 0 ? {} : { byContract: Object.freeze(byContract) }
+  });
+  return facetSource(info, "materials", items);
+}
+function createModelSocketSource({
+  sockets
+}) {
+  const items = sockets.map((socket) => ({
+    ...socket,
+    ...socket.orientation === void 0 ? {} : { orientation: Object.freeze({ ...socket.orientation }) }
+  }));
+  const byRole = {};
+  for (const socket of items) byRole[socket.role] = (byRole[socket.role] ?? 0) + 1;
+  return facetSource(
+    Object.freeze({ sockets: items.length, byRole: Object.freeze(byRole) }),
+    "sockets",
+    items
+  );
+}
+
+// packages/codec-kit/src/xml-scan.ts
+function decodeXmlEntities(source) {
+  if (!source.includes("&")) return source;
+  return source.replace(/&(?:#(x[0-9A-Fa-f]+|[0-9]+)|([A-Za-z][A-Za-z0-9]*));/gu, (raw, numeric, named) => {
+    if (numeric !== void 0) {
+      const hex = numeric[0]?.toLowerCase() === "x";
+      const codePoint = Number.parseInt(hex ? numeric.slice(1) : numeric, hex ? 16 : 10);
+      return Number.isSafeInteger(codePoint) && codePoint >= 0 && codePoint <= 1114111 ? String.fromCodePoint(codePoint) : raw;
+    }
+    return NAMED_ENTITIES[named.toLowerCase()] ?? raw;
+  });
+}
+var NAMED_ENTITIES = Object.freeze({
+  amp: "&",
+  apos: "'",
+  gt: ">",
+  lt: "<",
+  quot: '"'
+});
+function encodeXmlText(value) {
+  return value.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+}
+function encodeXmlAttribute(value, quote = '"') {
+  const escaped = encodeXmlText(value);
+  if (quote === "both") return escaped.replaceAll('"', "&quot;").replaceAll("'", "&apos;");
+  return quote === '"' ? escaped.replaceAll('"', "&quot;") : escaped.replaceAll("'", "&apos;");
+}
+var NAME_CHAR = /[A-Za-z0-9_:.-]/;
+function readTag(text2, lt) {
+  let i = lt + 1;
+  let closing = false;
+  if (text2[i] === "/") {
+    closing = true;
+    i++;
+  }
+  const tagStart = i;
+  while (i < text2.length && NAME_CHAR.test(text2[i])) i++;
+  if (i === tagStart) return void 0;
+  const tag = text2.slice(tagStart, i);
+  const tagEnd = i;
+  const attrs = [];
+  let selfClosing = false;
+  while (i < text2.length) {
+    const ch = text2[i];
+    if (ch === ">") {
+      i++;
+      break;
+    }
+    if (ch === "/" && text2[i + 1] === ">") {
+      selfClosing = true;
+      i += 2;
+      break;
+    }
+    if (ch === "<") break;
+    if (NAME_CHAR.test(ch)) {
+      const nameStart = i;
+      while (i < text2.length && NAME_CHAR.test(text2[i])) i++;
+      const name = text2.slice(nameStart, i);
+      const nameEnd = i;
+      while (i < text2.length && /\s/.test(text2[i])) i++;
+      if (text2[i] === "=") {
+        i++;
+        while (i < text2.length && /\s/.test(text2[i])) i++;
+        const quote = text2[i];
+        if (quote === '"' || quote === "'") {
+          const valueStart = i + 1;
+          const close = text2.indexOf(quote, valueStart);
+          const valueEnd = close === -1 ? text2.length : close;
+          attrs.push({
+            name,
+            nameStart,
+            nameEnd,
+            value: decodeXmlEntities(text2.slice(valueStart, valueEnd)),
+            valueStart,
+            valueEnd
+          });
+          i = close === -1 ? text2.length : close + 1;
+        }
+      }
+      continue;
+    }
+    i++;
+  }
+  return {
+    open: { tag, tagStart, tagEnd, attrs, openEnd: i, selfClosing },
+    next: i,
+    closing
+  };
+}
+function scanXml(text2) {
+  const roots = [];
+  const stack = [];
+  let i = 0;
+  const attach = (el) => {
+    const parent = stack[stack.length - 1];
+    if (parent) parent.el.children.push(el);
+    else roots.push(el);
+  };
+  while (i < text2.length) {
+    const lt = text2.indexOf("<", i);
+    if (lt === -1) break;
+    if (text2.startsWith("<!--", lt)) {
+      const e = text2.indexOf("-->", lt + 4);
+      i = e === -1 ? text2.length : e + 3;
+      continue;
+    }
+    if (text2.startsWith("<![CDATA[", lt)) {
+      const e = text2.indexOf("]]>", lt + 9);
+      i = e === -1 ? text2.length : e + 3;
+      continue;
+    }
+    if (text2.startsWith("<?", lt)) {
+      const e = text2.indexOf("?>", lt + 2);
+      i = e === -1 ? text2.length : e + 2;
+      continue;
+    }
+    if (text2.startsWith("<!", lt)) {
+      const e = text2.indexOf(">", lt + 2);
+      i = e === -1 ? text2.length : e + 1;
+      continue;
+    }
+    const parsed = readTag(text2, lt);
+    if (!parsed) {
+      i = lt + 1;
+      continue;
+    }
+    if (parsed.closing) {
+      for (let s = stack.length - 1; s >= 0; s--) {
+        if (stack[s].tag === parsed.open.tag) {
+          for (let k = s + 1; k < stack.length; k++) stack[k].el.end = text2.length;
+          stack[s].el.end = parsed.next;
+          stack.length = s;
+          break;
+        }
+      }
+      i = parsed.next;
+      continue;
+    }
+    const { open } = parsed;
+    const el = {
+      tag: open.tag,
+      tagStart: open.tagStart,
+      tagEnd: open.tagEnd,
+      start: lt,
+      end: open.openEnd,
+      openEnd: open.openEnd,
+      attrs: open.attrs,
+      children: []
+    };
+    attach(el);
+    if (!open.selfClosing) stack.push({ el, tag: open.tag });
+    i = parsed.next;
+  }
+  for (const s of stack) s.el.end = text2.length;
+  return roots;
+}
+function getAttr(el, name) {
+  return el.attrs.find((a) => a.name === name);
+}
+function elementPathAt(text2, offset) {
+  return pathTo(scanXml(text2), offset, []);
+}
+function pathTo(els, offset, acc) {
+  for (const el of els) {
+    if (offset > el.start && offset < el.end) {
+      acc.push(el);
+      pathTo(el.children, offset, acc);
+      return acc;
+    }
+  }
+  return acc;
+}
+function attrAt(el, offset) {
+  return el.attrs.find((a) => offset >= a.valueStart && offset <= a.valueEnd);
+}
+
+// packages/codec-kit/src/reference-index.ts
+function createReferenceIndex(options = {}) {
+  const normalize = options.normalizeDocumentId ?? ((id) => id);
+  const byTarget = /* @__PURE__ */ new Map();
+  const byDocument = /* @__PURE__ */ new Map();
+  const detach = (documentId) => {
+    for (const target of byDocument.get(documentId) ?? []) {
+      const documents = byTarget.get(target);
+      documents?.delete(documentId);
+      if (documents !== void 0 && documents.size === 0) byTarget.delete(target);
+    }
+  };
+  return {
+    set(documentId, targets) {
+      const id = normalize(documentId);
+      detach(id);
+      const set = new Set(targets);
+      byDocument.set(id, set);
+      for (const target of set) {
+        let documents = byTarget.get(target);
+        if (documents === void 0) {
+          documents = /* @__PURE__ */ new Set();
+          byTarget.set(target, documents);
+        }
+        documents.add(id);
+      }
+    },
+    remove(documentId) {
+      const id = normalize(documentId);
+      detach(id);
+      byDocument.delete(id);
+    },
+    referencing(target) {
+      return [...byTarget.get(target) ?? []];
+    },
+    targetsOf(documentId) {
+      return [...byDocument.get(normalize(documentId)) ?? []];
+    },
+    documents() {
+      return [...byDocument.keys()];
+    },
+    snapshot() {
+      return { documents: byDocument.size, targets: byTarget.size };
+    },
+    clear() {
+      byTarget.clear();
+      byDocument.clear();
+    }
+  };
+}
+
+// packages/codec-kit/src/subject-facts.ts
+function abort(signal) {
+  if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
+}
+function pageOf(items, request, signal) {
+  abort(signal);
+  if (request === null || typeof request !== "object" || !Number.isSafeInteger(request.limit) || request.limit <= 0) {
+    throw new TypeError("page limit must be a positive safe integer");
+  }
+  const start = request.cursor === void 0 ? 0 : Number(request.cursor);
+  if (!Number.isSafeInteger(start) || start < 0 || start > items.length) {
+    throw new RangeError("page cursor is invalid");
+  }
+  const end = Math.min(items.length, start + request.limit);
+  return Object.freeze({
+    items: Object.freeze(items.slice(start, end)),
+    ...end < items.length ? { nextCursor: String(end) } : {}
+  });
+}
+function provenanceOf(source, semanticPath = []) {
+  return Object.freeze([
+    Object.freeze({
+      label: source.uri,
+      source,
+      semanticPath: Object.freeze([...semanticPath])
+    })
+  ]);
+}
+function fact(source, id, label, value, semanticPath = []) {
+  return Object.freeze({ id, label, value, provenance: provenanceOf(source, semanticPath) });
+}
+function createSubjectFactsSource(options) {
+  const groups = Object.freeze(
+    options.groups.filter((group) => group.facts.length > 0).map(
+      (group) => Object.freeze({ id: group.id, label: group.label, factCount: group.facts.length })
+    )
+  );
+  const facts = new Map(options.groups.map((group) => [group.id, Object.freeze([...group.facts])]));
+  const relations = Object.freeze([...options.relations ?? []]);
+  const summary = Object.freeze({
+    snapshotId: options.snapshotId,
+    identity: Object.freeze({
+      subjectId: options.subjectId,
+      label: options.label,
+      kind: options.kind,
+      ...options.type === void 0 ? {} : { type: options.type },
+      origins: provenanceOf(options.source)
+    }),
+    groupCount: groups.length,
+    relationCount: relations.length
+  });
+  return Object.freeze({
+    async summary(signal) {
+      abort(signal);
+      return summary;
+    },
+    async groups(request, signal) {
+      return pageOf(groups, request, signal);
+    },
+    async facts(groupId, request, signal) {
+      const values = facts.get(groupId);
+      if (values === void 0) throw new RangeError(`unknown fact group: ${groupId}`);
+      return pageOf(values, request, signal);
+    },
+    async relations(request, signal) {
+      return pageOf(relations, request, signal);
+    }
+  });
+}
+function createRelationGraphSource(options) {
+  const nodes = Object.freeze([...options.nodes]);
+  const edges = Object.freeze([...options.edges]);
+  const counts = /* @__PURE__ */ new Map();
+  for (const node of nodes) counts.set(node.type, (counts.get(node.type) ?? 0) + 1);
+  const types = Object.freeze(
+    [...counts.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([id, count], tone) => Object.freeze({ id, label: id, count, tone }))
+  );
+  const summary = Object.freeze({
+    snapshotId: options.snapshotId,
+    totalNodes: nodes.length,
+    totalEdges: edges.length,
+    types,
+    completeness: options.completeness ?? "complete",
+    ...options.reason === void 0 ? {} : { reason: options.reason }
+  });
+  return Object.freeze({
+    async summary(signal) {
+      abort(signal);
+      return summary;
+    },
+    async nodes(request, signal) {
+      return pageOf(nodes, request, signal);
+    },
+    async edges(request, signal) {
+      return pageOf(edges, request, signal);
+    }
+  });
+}
+function subjectIdFor(scope, path) {
+  if (scope === "") throw new TypeError("a subject id needs a scope");
+  if (path.length === 0) throw new TypeError("a subject id needs at least one path segment");
+  return `modkit-subject://${encodeURIComponent(scope)}/${path.map(encodeURIComponent).join("/")}`;
+}
+function parseSubjectId(id) {
+  const prefix = "modkit-subject://";
+  if (!id.startsWith(prefix)) return void 0;
+  const segments = id.slice(prefix.length).split("/").filter((part) => part !== "");
+  if (segments.length < 2) return void 0;
+  return {
+    scope: decodeURIComponent(segments[0]),
+    path: segments.slice(1).map(decodeURIComponent)
+  };
+}
+function subjectFieldGroup(source, group, fields) {
+  return {
+    id: group.id,
+    label: group.label,
+    facts: fields.map(
+      (field) => Object.freeze({
+        id: field.id,
+        label: field.label,
+        value: field.value,
+        provenance: provenanceOf(source, field.semanticPath ?? []),
+        ...field.type === void 0 ? {} : { type: field.type },
+        ...field.unit === void 0 ? {} : { unit: field.unit },
+        ...field.editable === void 0 ? {} : { editable: field.editable }
+      })
+    )
+  };
+}
+
+// packages/codec-kit/src/table-source.ts
+function createTableDataSource(options) {
+  const header = Object.freeze([...options.header]);
+  const rows = options.rows.map(
+    (cells, index) => Object.freeze({ index, cells: Object.freeze(cells.map(String)) })
+  );
+  const startOf = (request) => {
+    if (!Number.isSafeInteger(request.count) || request.count <= 0) {
+      throw new TypeError("table page count must be a positive safe integer");
+    }
+    const start = request.kind === "range" ? request.from : Number(request.cursor ?? 0);
+    if (!Number.isSafeInteger(start) || (start ?? -1) < 0) {
+      throw new TypeError("table page start is invalid");
+    }
+    return start;
+  };
+  return Object.freeze({
+    async shape() {
+      return { rows: rows.length, columns: header.length, header: [...header] };
+    },
+    async rows(request, signal) {
+      signal?.throwIfAborted();
+      const start = startOf(request);
+      const items = rows.slice(start, start + request.count);
+      return Object.freeze({
+        items: Object.freeze(items),
+        ...start + items.length < rows.length ? { nextCursor: String(start + items.length) } : {}
+      });
+    },
+    async cell(coord) {
+      const value = rows[coord.row]?.cells[coord.column];
+      if (value === void 0) throw new RangeError("table cell is outside the table");
+      return Object.freeze({ value, ...options.cellFacts?.(coord, value) ?? {} });
+    },
+    async *search(query, signal) {
+      const needle = query.pattern.toLocaleLowerCase();
+      for (const row of rows) {
+        for (let column = 0; column < row.cells.length; column += 1) {
+          signal?.throwIfAborted();
+          if (row.cells[column].toLocaleLowerCase().includes(needle)) {
+            yield { row: row.index, column };
+          }
+        }
+      }
+    }
+  });
+}
 
 // packages/codec-kit/src/index.ts
 var INSPECTION_OPERATIONS = Object.freeze([
@@ -47,13 +1470,6 @@ function simpleLease(value) {
     },
     isReleased: () => released
   });
-}
-function pageStart(cursor) {
-  if (cursor === void 0) return 0;
-  if (!/^(?:0|[1-9][0-9]*)$/u.test(cursor)) throw new TypeError("invalid page cursor");
-  const value = Number(cursor);
-  if (!Number.isSafeInteger(value)) throw new TypeError("page cursor exceeds safe integer range");
-  return value;
 }
 function createTreeDataSource(rootNode) {
   const nodes = /* @__PURE__ */ new Map();
@@ -91,7 +1507,12 @@ function createTreeDataSource(rootNode) {
         kind: value.kind,
         label: value.label,
         ...value.preview === void 0 ? {} : { preview: value.preview },
-        ...value.semanticPath === void 0 ? {} : { semanticPath: Object.freeze([...value.semanticPath]) }
+        ...value.semanticPath === void 0 ? {} : { semanticPath: Object.freeze([...value.semanticPath]) },
+        ...value.value === void 0 ? {} : { value: value.value },
+        ...value.type === void 0 ? {} : { type: value.type },
+        ...value.unit === void 0 ? {} : { unit: value.unit },
+        ...value.editable === void 0 ? {} : { editable: value.editable },
+        ...value.spans === void 0 ? {} : { spans: value.spans }
       });
     },
     async *search(query, signal) {
@@ -134,9 +1555,9 @@ function createTransportSource(snapshot) {
         queue.push(event);
         wake?.();
       };
-      const abort = () => wake?.();
+      const abort2 = () => wake?.();
       listeners.add(listener);
-      signal?.addEventListener("abort", abort, { once: true });
+      signal?.addEventListener("abort", abort2, { once: true });
       try {
         while (!signal?.aborted) {
           if (queue.length === 0) await new Promise((resolve) => wake = resolve);
@@ -146,7 +1567,7 @@ function createTransportSource(snapshot) {
         }
       } finally {
         listeners.delete(listener);
-        signal?.removeEventListener("abort", abort);
+        signal?.removeEventListener("abort", abort2);
       }
     },
     control(kind, input = {}) {
@@ -306,7 +1727,7 @@ function createVideoMediaSource(bytes, mediaType, info) {
     }
   });
 }
-function createVectorSceneSource(info, text) {
+function createVectorSceneSource(info, text2) {
   const ownedInfo = Object.freeze({
     ...info,
     ...info.viewBox === void 0 ? {} : { viewBox: Object.freeze([...info.viewBox]) }
@@ -314,7 +1735,7 @@ function createVectorSceneSource(info, text) {
   const document = Object.freeze({
     mediaType: "image/svg+xml",
     profile: "uvg.secure-static.v1",
-    text
+    text: text2
   });
   return Object.freeze({
     async info(signal) {
@@ -325,248 +1746,6 @@ function createVectorSceneSource(info, text) {
       if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
       return document;
     }
-  });
-}
-function frozenModelNode(node) {
-  return Object.freeze({
-    ...node,
-    childIds: Object.freeze([...node.childIds]),
-    meshIds: Object.freeze([...node.meshIds]),
-    transform: Object.freeze([...node.transform])
-  });
-}
-function frozenModelMesh(mesh) {
-  return Object.freeze({ ...mesh, primitiveIds: Object.freeze([...mesh.primitiveIds]) });
-}
-function clonePrimitive(primitive) {
-  return Object.freeze({
-    ...primitive,
-    positions: primitive.positions.slice(),
-    ...primitive.indices === void 0 ? {} : { indices: primitive.indices.slice() },
-    ...primitive.normals === void 0 ? {} : { normals: primitive.normals.slice() },
-    ...primitive.textureCoordinates === void 0 ? {} : { textureCoordinates: primitive.textureCoordinates.slice() }
-  });
-}
-function createModelSceneSource({
-  info,
-  nodes,
-  meshes,
-  primitives = []
-}) {
-  const ownedInfo = Object.freeze({ ...info });
-  const ownedNodes = Object.freeze(nodes.map(frozenModelNode));
-  const ownedMeshes = Object.freeze(meshes.map(frozenModelMesh));
-  const ownedPrimitives = new Map(primitives.map((value) => [value.id, clonePrimitive(value)]));
-  const page = (items, request) => {
-    if (!Number.isSafeInteger(request.limit) || request.limit <= 0) {
-      throw new TypeError("model page limit must be a positive safe integer");
-    }
-    const start = pageStart(request.cursor);
-    const values = items.slice(start, start + request.limit);
-    return Object.freeze({
-      items: Object.freeze(values),
-      ...start + values.length < items.length ? { nextCursor: String(start + values.length) } : {}
-    });
-  };
-  const source = {
-    async info(signal) {
-      if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
-      return ownedInfo;
-    },
-    async nodes(request, signal) {
-      if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
-      return page(ownedNodes, request);
-    },
-    async meshes(request, signal) {
-      if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
-      return page(ownedMeshes, request);
-    }
-  };
-  if (ownedPrimitives.size > 0) {
-    source.primitive = async (primitiveId, request, signal) => {
-      if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
-      if (!Number.isSafeInteger(request?.maxBytes) || request.maxBytes < 0) {
-        throw new TypeError("model primitive maxBytes must be a non-negative safe integer");
-      }
-      const primitive = ownedPrimitives.get(primitiveId);
-      if (primitive === void 0) throw new RangeError(`unknown model primitive ${primitiveId}`);
-      const bytes = primitive.positions.byteLength + (primitive.indices?.byteLength ?? 0) + (primitive.normals?.byteLength ?? 0) + (primitive.textureCoordinates?.byteLength ?? 0);
-      if (bytes > request.maxBytes) throw new RangeError("model primitive exceeds maxBytes budget");
-      return clonePrimitive(primitive);
-    };
-  }
-  return Object.freeze(source);
-}
-function facetPage(items, request) {
-  if (!Number.isSafeInteger(request?.limit) || request.limit <= 0) {
-    throw new TypeError("model facet page limit must be a positive safe integer");
-  }
-  const start = pageStart(request.cursor);
-  const values = items.slice(start, start + request.limit);
-  return Object.freeze({
-    items: Object.freeze(values),
-    ...start + values.length < items.length ? { nextCursor: String(start + values.length) } : {}
-  });
-}
-function facetSource(info, key, items) {
-  const owned = Object.freeze(items.map((item) => Object.freeze({ ...item })));
-  const source = {
-    async info(signal) {
-      if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
-      return info;
-    }
-  };
-  source[key] = async (request, signal) => {
-    if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
-    return facetPage(owned, request);
-  };
-  return Object.freeze(source);
-}
-function createModelResourceRefsSource({
-  references,
-  truncated = false
-}) {
-  const items = [...references];
-  const info = Object.freeze({
-    references: items.length,
-    bound: items.filter((item) => item.bindingId !== void 0).length,
-    truncated: truncated === true
-  });
-  return facetSource(info, "references", items);
-}
-function createModelSkeletonSource({
-  bindings,
-  hierarchies
-}) {
-  const items = bindings.map((binding) => ({
-    ...binding,
-    ...binding.flagNames === void 0 ? {} : { flagNames: Object.freeze([...binding.flagNames]) },
-    ...binding.restMatrix === void 0 ? {} : { restMatrix: Object.freeze([...binding.restMatrix]) }
-  }));
-  const info = Object.freeze({
-    bindings: items.length,
-    named: items.filter((item) => item.boneName !== null).length,
-    companionBound: items.filter((item) => item.provenance === "companion").length,
-    // absent, not zero, when the publisher does not enumerate hierarchies
-    ...hierarchies === void 0 ? {} : { hierarchies }
-  });
-  return facetSource(info, "bindings", items);
-}
-function createModelAnimationSource({
-  clips
-}) {
-  const items = clips.map((clip) => ({
-    ...clip,
-    ...clip.nativeTimeBounds === void 0 ? {} : { nativeTimeBounds: Object.freeze({ ...clip.nativeTimeBounds }) },
-    channels: Object.freeze(
-      clip.channels.map((channel) => ({
-        ...channel,
-        ...channel.samples === void 0 ? {} : {
-          samples: Object.freeze(
-            channel.samples.map(
-              (sample) => Object.freeze({ ...sample, value: Object.freeze([...sample.value]) })
-            )
-          )
-        }
-      }))
-    )
-  }));
-  const info = Object.freeze({
-    clips: items.length,
-    channelled: items.filter((clip) => clip.channels.length > 0).length,
-    companionBound: items.filter((clip) => clip.provenance === "companion").length
-  });
-  return facetSource(info, "clips", items);
-}
-function createModelCollisionSource({
-  volumes
-}) {
-  const items = volumes.map((volume) => ({
-    ...volume,
-    ...volume.types === void 0 ? {} : { types: Object.freeze([...volume.types]) }
-  }));
-  const byKind = {};
-  for (const volume of items) byKind[volume.kind] = (byKind[volume.kind] ?? 0) + 1;
-  const info = Object.freeze({ volumes: items.length, byKind: Object.freeze(byKind) });
-  return facetSource(info, "volumes", items);
-}
-function createModelMaterialSource({
-  materials,
-  libraries
-}) {
-  const items = materials.map((material) => ({
-    ...material,
-    ...material.contracts === void 0 ? {} : { contracts: Object.freeze([...material.contracts]) },
-    ...material.flagNames === void 0 ? {} : { flagNames: Object.freeze([...material.flagNames]) },
-    ...material.layers === void 0 ? {} : {
-      layers: Object.freeze(
-        material.layers.map((layer) => ({
-          ...layer,
-          ...layer.flagNames === void 0 ? {} : { flagNames: Object.freeze([...layer.flagNames]) }
-        }))
-      )
-    }
-  }));
-  const byContract = {};
-  for (const material of items) {
-    for (const contract of material.contracts ?? []) {
-      byContract[contract] = (byContract[contract] ?? 0) + 1;
-    }
-  }
-  const info = Object.freeze({
-    materials: items.length,
-    // absent, not zero, when the format has no library concept at all
-    ...libraries === void 0 ? {} : { libraries },
-    ...Object.keys(byContract).length === 0 ? {} : { byContract: Object.freeze(byContract) }
-  });
-  return facetSource(info, "materials", items);
-}
-function createModelSocketSource({
-  sockets
-}) {
-  const items = sockets.map((socket) => ({
-    ...socket,
-    ...socket.orientation === void 0 ? {} : { orientation: Object.freeze({ ...socket.orientation }) }
-  }));
-  const byRole = {};
-  for (const socket of items) byRole[socket.role] = (byRole[socket.role] ?? 0) + 1;
-  return facetSource(
-    Object.freeze({ sockets: items.length, byRole: Object.freeze(byRole) }),
-    "sockets",
-    items
-  );
-}
-var PROJECTION_RECEIPT_METADATA_ID = "uv-projection-receipt";
-var PLANE_STATES = /* @__PURE__ */ new Set(["normalized", "preserved", "inferred", "lost"]);
-var CONFIDENCES = /* @__PURE__ */ new Set(["exact", "high", "partial", "heuristic"]);
-function createProjectionReceipt(receipt) {
-  const planes = [...receipt.planes ?? []];
-  if (planes.length === 0)
-    throw new TypeError("a projection receipt must record at least one plane");
-  for (const plane of planes) {
-    if (!PLANE_STATES.has(plane.state)) {
-      throw new TypeError(`projection plane \xAB${plane.planeId}\xBB has an unknown state ${plane.state}`);
-    }
-  }
-  if (!CONFIDENCES.has(receipt.confidence)) {
-    throw new TypeError(`projection receipt has an unknown confidence ${receipt.confidence}`);
-  }
-  if ((receipt.evidence ?? []).length === 0) {
-    throw new TypeError(
-      "a projection receipt made of no evidence is a claim with nothing behind it; state at least one declared or observed fact"
-    );
-  }
-  return Object.freeze({
-    form: "local",
-    adapter: Object.freeze({ ...receipt.adapter }),
-    subjectRevision: receipt.subjectRevision,
-    companions: Object.freeze((receipt.companions ?? []).map((item) => Object.freeze({ ...item }))),
-    basis: Object.freeze({ ...receipt.basis }),
-    planes: Object.freeze(planes.map((plane) => Object.freeze({ ...plane }))),
-    evidence: Object.freeze(receipt.evidence.map((item) => Object.freeze({ ...item }))),
-    confidence: receipt.confidence,
-    ...receipt.semanticHash === void 0 ? {} : { semanticHash: receipt.semanticHash },
-    ...receipt.sourceUri === void 0 ? {} : { sourceUri: receipt.sourceUri }
   });
 }
 function jsonSafe(value) {
@@ -686,6 +1865,25 @@ function probeLength(plan, size) {
   return Math.max(0, Math.min(declared, available));
 }
 function createInspectionCodec(definition, contributionContext) {
+  if (definition.deferInspection === true) {
+    const codec = createInspectionCodec(
+      { ...definition, deferInspection: false },
+      contributionContext
+    );
+    return Object.freeze({
+      ...codec,
+      async open(input, intent, budget, signal) {
+        signal?.throwIfAborted();
+        const ownedBudget = Object.freeze({ ...budget });
+        return deferAssetSession(
+          revisionId(input.revisions.revision),
+          (initializeSignal) => codec.open(input, intent, ownedBudget, initializeSignal),
+          ownedBudget,
+          signal
+        );
+      }
+    });
+  }
   const namespaceDefinition = definition.namespace;
   const customOperations = Object.freeze([...definition.operations ?? []]);
   const sharedOperations = namespaceDefinition === void 0 ? INSPECTION_OPERATIONS : INSPECTION_OPERATIONS.filter((operation) => operation.handlerId !== "export-raw");
@@ -803,6 +2001,12 @@ function createInspectionCodec(definition, contributionContext) {
         const namespaceLease = await input.openNamespace(signal);
         try {
           const inspection = await namespaceDefinition.inspect(namespaceLease.value, {
+            ...contributionContext === void 0 ? {} : {
+              contracts: contributionContext.contracts,
+              ...contributionContext.modelResources === void 0 ? {} : { modelResources: contributionContext.modelResources },
+              ...contributionContext.rasterResources === void 0 ? {} : { rasterResources: contributionContext.rasterResources },
+              ...contributionContext.logicalResources === void 0 ? {} : { logicalResources: contributionContext.logicalResources }
+            },
             budget,
             signal,
             intent,
@@ -858,6 +2062,7 @@ function createInspectionCodec(definition, contributionContext) {
             ...Object.entries(inspection.handlers ?? {})
           ]);
           return createAssetSession({
+            maxOperationDiagnostics: budget.maxDiagnostics,
             revision: revisionId(input.revisions.revision),
             descriptor,
             operationDeclarations,
@@ -901,6 +2106,12 @@ function createInspectionCodec(definition, contributionContext) {
           }
         });
         const inspection = await definition.inspect(bytes, {
+          ...contributionContext === void 0 ? {} : {
+            contracts: contributionContext.contracts,
+            ...contributionContext.modelResources === void 0 ? {} : { modelResources: contributionContext.modelResources },
+            ...contributionContext.rasterResources === void 0 ? {} : { rasterResources: contributionContext.rasterResources },
+            ...contributionContext.logicalResources === void 0 ? {} : { logicalResources: contributionContext.logicalResources }
+          },
           budget,
           signal,
           intent,
@@ -984,6 +2195,7 @@ function createInspectionCodec(definition, contributionContext) {
           ...Object.entries(inspection.handlers ?? {})
         ]);
         return createAssetSession({
+          maxOperationDiagnostics: budget.maxDiagnostics,
           revision: revisionId(input.revisions.revision),
           descriptor,
           operationDeclarations,
@@ -1014,58 +2226,6 @@ function declaredPermissionClasses(operations) {
     if (operation.mutatesSource === true) classes.add("write-source");
   }
   return Object.freeze([...classes].sort());
-}
-function assetRevisionFromInput(input) {
-  if (input.originKind !== "single" || input.revisions.topology !== "single") {
-    throw new TypeError("assetRevisionFromInput: single-source subjects only");
-  }
-  const [binding] = input.bindings;
-  if (binding === void 0) throw new TypeError("assetRevisionFromInput: no binding");
-  const revision = binding.revision;
-  return Object.freeze({
-    bindings: Object.freeze({ [binding.bindingId]: revision }),
-    compositionFingerprint: canonicalJsonStringify({
-      topology: "single",
-      bindingId: binding.bindingId,
-      source: { id: binding.source.id, uri: binding.source.uri },
-      revision
-    })
-  });
-}
-function editPlanFromInput(input, { planId, edits, fidelity, guarantee = "atomic", diagnostics = [] }) {
-  const revision = assetRevisionFromInput(input);
-  const [binding] = input.bindings;
-  const target = Object.freeze({
-    targetId: binding.bindingId,
-    subjectUri: binding.source.uri,
-    ownerSource: Object.freeze({ id: binding.source.id, uri: binding.source.uri }),
-    semanticPath: Object.freeze([]),
-    expectedRevision: revision
-  });
-  return Object.freeze({
-    planId,
-    targets: Object.freeze([target]),
-    edits: Object.freeze(
-      edits.map(
-        (edit) => Object.freeze({
-          ...edit,
-          targetId: edit.targetId ?? binding.bindingId,
-          source: edit.source ?? target.ownerSource
-        })
-      )
-    ),
-    semantics: Object.freeze({ mutationMode: "mutate", minimumGuarantee: guarantee }),
-    fidelity,
-    diagnostics: Object.freeze([...diagnostics])
-  });
-}
-function replaceBytes(offset, length, bytes, label) {
-  return Object.freeze({
-    operation: "replace",
-    range: Object.freeze({ kind: "bytes", offset: BigInt(offset), length: BigInt(length) }),
-    payload: Object.freeze({ kind: "inline", bytes }),
-    ...label === void 0 ? {} : { label }
-  });
 }
 function defineWriter({
   providerId,
@@ -1132,27 +2292,52 @@ export {
   PROJECTION_RECEIPT_METADATA_ID,
   TRANSPORT_OPERATIONS,
   assetRevisionFromInput,
+  attrAt,
   createAudioMediaSource,
   createEncodedMediaSource,
   createInspectionCodec,
+  createModelAnimationSampler,
   createModelAnimationSource,
   createModelCollisionSource,
   createModelMaterialSource,
+  createModelPoseSampler,
   createModelResourceRefsSource,
   createModelSceneSource,
+  createModelSkeletonNodes,
   createModelSkeletonSource,
   createModelSocketSource,
   createProjectionReceipt,
   createRasterImageSource,
+  createReferenceIndex,
+  createRelationGraphSource,
+  createSubjectFactsSource,
+  createTableDataSource,
   createTransportHandlers,
   createTransportSource,
   createTreeDataSource,
   createVectorSceneSource,
   createVideoMediaSource,
   declaredPermissionClasses,
+  decodeXmlEntities,
   defineWriter,
+  editPlanFromBinding,
   editPlanFromInput,
+  elementPathAt,
+  encodeXmlAttribute,
+  encodeXmlText,
+  fact,
+  getAttr,
+  modelPrimitiveByteLength,
+  pageOf,
+  parseSubjectId,
   projectionReceiptMetadataGroup,
+  provenanceOf,
   replaceBytes,
-  simpleLease
+  scanXml,
+  simpleLease,
+  snapshotJson,
+  snapshotModelAnimations,
+  snapshotModelSkeleton,
+  subjectFieldGroup,
+  subjectIdFor
 };

@@ -36,8 +36,13 @@ export function sampleTrackValue(
     return out
   }
   let time = timeSeconds
+  let wrapRoundoff = 0
   if (options.wrapSeconds && options.wrapSeconds > 0) {
     time = timeSeconds % options.wrapSeconds
+    // Modulo can land one double ULP below an exact discrete key (e.g. .5 % .2).
+    // Compensate arithmetic roundoff only; do not use a visual/frame-sized tolerance.
+    wrapRoundoff = Math.max(options.wrapSeconds, Math.abs(timeSeconds)) * Number.EPSILON * 2
+    if (Math.abs(time - options.wrapSeconds) <= wrapRoundoff) time = 0
   }
   const first = keys[0]!
   if (time <= first.frame || count === 1) return copyVector(first.vector, out)
@@ -45,7 +50,7 @@ export function sampleTrackValue(
   if (time >= last.frame) return copyVector(last.vector, out)
 
   let b = 1
-  while (b < count - 1 && time >= keys[b]!.frame) b += 1
+  while (b < count - 1 && time + wrapRoundoff >= keys[b]!.frame) b += 1
   const ka = keys[b - 1]!
   const kb = keys[b]!
   if (track.lineType === 0) return copyVector(ka.vector, out) // step

@@ -252,3 +252,51 @@ describe('generic field editor', () => {
     },
   )
 })
+
+describe('fixed operation input in common forms', () => {
+  it('owns a new fixed input tree on every submission', () => {
+    const document = {
+      ...schema,
+      forms: [{ ...schema.forms[0], baseInput: { schemaVersion: 1, context: { owner: 'scene' } } }],
+    }
+    const form = editOffer(descriptor(document), { editable: true }).forms[0]
+    if (form === undefined) throw new Error('form unavailable')
+    const first = form.build(new Map([['value', 'next']]))
+    if (first === null || Array.isArray(first) || typeof first !== 'object')
+      throw new Error('input absent')
+    expect(Reflect.get(first, 'schemaVersion')).toBe(1)
+    const context: unknown = Reflect.get(first, 'context')
+    if (context === null || Array.isArray(context) || typeof context !== 'object')
+      throw new Error('context absent')
+    Reflect.set(context, 'owner', 'changed')
+    expect(form.build(new Map([['value', 'again']]))).toMatchObject({
+      schemaVersion: 1,
+      context: { owner: 'scene' },
+    })
+    expect(document.forms[0]?.baseInput.context.owner).toBe('scene')
+  })
+  it('refuses an editable path overlapping a fixed key, including a descendant', () => {
+    for (const inputPath of [['schemaVersion'], ['context', 'owner']]) {
+      const document = {
+        ...schema,
+        forms: [
+          {
+            ...schema.forms[0],
+            baseInput: { schemaVersion: 1, context: { owner: 'scene' } },
+            fields: [{ ...schema.forms[0].fields[0], inputPath }],
+          },
+        ],
+      }
+      expect(editOffer(descriptor(document), { editable: true }).forms).toEqual([])
+    }
+  })
+  it('refuses malformed fixed objects and unsafe fixed keys', () => {
+    for (const baseInput of [[], null, JSON.parse('{"__proto__":{}}') as JsonValue]) {
+      expect(
+        editOffer(descriptor({ ...schema, forms: [{ ...schema.forms[0], baseInput }] }), {
+          editable: true,
+        }).forms,
+      ).toEqual([])
+    }
+  })
+})

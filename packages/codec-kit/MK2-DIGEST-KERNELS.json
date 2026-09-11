@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "transformation": "exact top-level declaration extraction; explicit import bindings and export list only",
+  "sources": [
+    {
+      "path": "extensions/common/models/codecs/uvm/src/index.ts",
+      "sha256": "60c3280eb3f80deb80f85c32e1275c031d22d1416d703436d1ac9098646377f8",
+      "symbols": [
+        {
+          "name": "sha256Hex",
+          "sha256": "443b1c52dca324d12f1d270bc57f3d8923d4aa3c5d07f69494d59751e39f96ce"
+        }
+      ]
+    }
+  ],
+  "imports": [
+    "import { ModkitError } from '../legacy/core/index.js'"
+  ],
+  "exports": [],
+  "output": {
+    "path": "packages/codec-kit/src/crypto/digest.ts",
+    "sha256": "5e2dc6d83347d0c72f2ec19b47cd6850e07706f11a7d5203e33836c3f8db02a4"
+  }
+}

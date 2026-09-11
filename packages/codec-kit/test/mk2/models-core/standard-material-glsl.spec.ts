@@ -353,6 +353,27 @@ describe('composeStandardPixelCpu (1.8)', () => {
     expect(rgba[2]).toBeCloseTo(1, 5) // fully team blue
   })
 
+  it('applies a red-channel team-color mask as post-light grain merge', () => {
+    const input = {
+      ...base([0.25, 0.5, 0.75, 1]),
+      ambient: [0, 0, 0, 1] as const,
+      teamColor: [1, 0.5, 0] as const,
+      layers: {
+        diffuse: sample({ texel: [0.25, 0.5, 0.75, 1], op: 6 as const }),
+        teamColorMask: sample({ texel: [0.5, 1, 1, 1], channels: 3 as const }),
+      },
+    }
+    const { rgba } = composeStandardPixelCpu(input)
+    expect(rgba).toEqual([0.5, 0.5, 0.5, 1])
+    const source = buildStandardFragmentSource(buildMaterialDefines(material({
+      layers: {
+        diffuse: layer('diffuse'),
+        teamColorMask: layer('teamColorMask', { channels: 3 }),
+      },
+    })))
+    expect(source).toContain('(u_teamColor - vec3(0.5)) * teamColorMask')
+  })
+
   it('spec_mode 1 uses the specular alpha channel only', () => {
     const withSpec = (specMode: 0 | 1) =>
       composeStandardPixelCpu({
@@ -462,6 +483,7 @@ describe('standardBlendModeName (1.10)', () => {
     expect(standardBlendModeName(3, 0)).toBe('add-alpha')
     expect(standardBlendModeName(4, 0)).toBe('modulate')
     expect(standardBlendModeName(5, 0)).toBe('modulate2x')
+    expect(standardBlendModeName(6, 0)).toBe('premultiplied')
   })
 })
 

@@ -277,6 +277,9 @@ export function subjectOpenSnapshot(
 export interface SubjectEditingState {
   readonly revision: AssetRevision
   readonly targets: readonly SubjectEditTarget[]
+  /** UI hint from the host-owned scope. Other targets are dependency revision guards.
+   * This list conveys no authority; prepare/commit still validate the server-side grant. */
+  readonly writableTargetIds: readonly string[]
 }
 
 /** `prepare` answers with an id, never with the prepared commit itself. */
@@ -486,6 +489,13 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
         state: (): SubjectEditingState => ({
           revision: editing.revision,
           targets: editing.targets,
+          writableTargetIds: editing.targets
+            .filter(
+              target =>
+                editing.grantSnapshot.permissions.includes('write-source') &&
+                editing.grantSnapshot.sourceIds.includes(target.ownerSource.id),
+            )
+            .map(target => target.targetId),
         }),
         propose: async (change: unknown, signal?: AbortSignal): Promise<ValidationResult> => {
           if (editing.session === undefined) {

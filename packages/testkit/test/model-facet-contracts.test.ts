@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { describe, expect, it } from 'vitest'
+import { beforeAll, describe, expect, it } from 'vitest'
 import {
   revisionId,
   type ArtifactByteSource,
@@ -120,6 +120,12 @@ async function drain<T>(
 const richObj = new TextEncoder().encode(
   'mtllib tank.mtl\no hull\nv 0 0 0\nv 1 0 0\nv 0 1 0\nusemtl hull\nf 1 2 3\n',
 )
+
+beforeAll(async () => {
+  // Lazy SDK descriptor validation is cold host setup, outside the unchanged semantic-test limit.
+  const { session } = await openCodec('obj', richObj)
+  await session.dispose()
+}, 60_000)
 
 describe('common model facet contracts', () => {
   it('publishes OBJ materials and sidecar references through generic contracts', async () => {

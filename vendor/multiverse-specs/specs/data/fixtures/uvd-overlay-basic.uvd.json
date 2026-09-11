@@ -1,0 +1,25 @@
+{
+  "$comment": "UVD staging fixture, role overlay: a mod editing another namespace's definitions with the full op set. No logic, no conditions: data edits are declarative and their application order comes from package composition ranks.",
+  "uv": { "format": "UVD", "version": "1.0" },
+  "namespace": "example-mod",
+  "role": "overlay",
+  "overlays": [
+    {
+      "target": "example-vendor/unit/trooper",
+      "op": "set",
+      "field": "health",
+      "value": 120000
+    },
+    {
+      "target": "example-vendor/unit/trooper",
+      "op": "append",
+      "field": "tags",
+      "value": "buffed"
+    },
+    {
+      "target": "example-vendor/unit/elite-trooper",
+      "op": "remove",
+      "field": "displayTint"
+    }
+  ]
+}

@@ -84,7 +84,7 @@ Pending requires source copy, behavioral evidence and the declared acceptance su
 | ktx | other | core:modkit/ktx | pending | 5 / 5 | pending |
 | ktx2 | other | core:modkit/ktx2 | pending | 5 / 5 | pending |
 | lzma | other | core:modkit/lzma | pending | 3 / 3 | pending |
-| m3 | sc2 | blizzard:blizzard/m3 | available | 14 / 22 | pending |
+| m3 | sc2 | blizzard:blizzard/m3, blizzard:blizzard/m3a | available | 0 / 22 | evidence-ready |
 | m4a | other | core:modkit/m4a | pending | 3 / 3 | pending |
 | markdown | other | core:modkit/document-markdown | pending | 6 / 6 | pending |
 | max | other | none | pending | 1 / 1 | pending |

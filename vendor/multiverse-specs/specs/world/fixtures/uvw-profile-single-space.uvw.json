@@ -1,0 +1,81 @@
+{
+  "$comment": "Profile fixture: the candidate heightfield-basic body wrapped as one space, zero connections — the degenerate graph every current SC2/WZ map is.",
+  "uv": {
+    "format": "UVW",
+    "version": "1.0",
+    "status": "profile"
+  },
+  "spaces": [
+    {
+      "id": "main",
+      "topology": "heightfield",
+      "basis": {
+        "handedness": "right",
+        "upAxis": "y",
+        "forwardAxis": "+z",
+        "unit": "meter",
+        "metersPerUnit": 1,
+        "unitsPerCell": 1
+      },
+      "bounds": {
+        "min": [
+          0,
+          0,
+          0
+        ],
+        "max": [
+          8,
+          3,
+          6
+        ]
+      },
+      "layers": [
+        {
+          "id": "terrain",
+          "kind": "heightfield",
+          "label": "Ground",
+          "columns": 5,
+          "rows": 4,
+          "cellSize": 2,
+          "origin": [
+            0,
+            0,
+            0
+          ],
+          "noDataValue": -9999,
+          "samples": [
+            [
+              0,
+              0.5,
+              1,
+              1.5,
+              2
+            ],
+            [
+              0.25,
+              0.75,
+              1.25,
+              1.75,
+              2.25
+            ],
+            [
+              0.5,
+              1,
+              1.5,
+              -9999,
+              2.5
+            ],
+            [
+              0.75,
+              1.25,
+              1.75,
+              2.25,
+              2.75
+            ]
+          ]
+        }
+      ]
+    }
+  ],
+  "connections": []
+}

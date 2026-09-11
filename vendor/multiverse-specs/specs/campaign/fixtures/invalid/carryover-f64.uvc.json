@@ -1,0 +1,100 @@
+{
+  "$comment": "INVALID: f64 does not exist in the carryover type set; persistence is deterministic by construction (carryover-deterministic-types).",
+  "uv": {
+    "format": "UVC",
+    "version": "1.0"
+  },
+  "entries": [
+    {
+      "id": "opening",
+      "package": {
+        "id": "example-vendor/mission-alpha",
+        "range": "^1.0.0"
+      },
+      "title": "campaign.opening.title"
+    },
+    {
+      "id": "branch-rescue",
+      "package": {
+        "id": "example-vendor/mission-beta",
+        "range": "^1.0.0"
+      },
+      "title": "campaign.rescue.title",
+      "unlock": {
+        "kind": "var",
+        "name": "rescuedPilot"
+      }
+    },
+    {
+      "id": "finale",
+      "package": {
+        "id": "example-vendor/mission-omega",
+        "range": "^1.0.0"
+      },
+      "title": "campaign.finale.title",
+      "unlock": {
+        "kind": "and",
+        "args": [
+          {
+            "kind": "var",
+            "name": "rescuedPilot"
+          },
+          {
+            "kind": "cmp",
+            "op": "ge",
+            "args": [
+              {
+                "kind": "var",
+                "name": "bankedCredits"
+              },
+              {
+                "kind": "const",
+                "value": 500
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "sharedLayers": [
+    {
+      "id": "example-vendor/campaign-rules",
+      "range": "^1.0.0",
+      "order": 0
+    }
+  ],
+  "carryover": [
+    {
+      "name": "rescuedPilot",
+      "type": "bool",
+      "initial": false
+    },
+    {
+      "name": "bankedCredits",
+      "type": "i64",
+      "initial": 0
+    },
+    {
+      "name": "difficulty",
+      "type": "enum",
+      "values": [
+        "normal",
+        "hard"
+      ],
+      "initial": "normal"
+    },
+    {
+      "name": "veterans",
+      "type": "list",
+      "itemType": "strref",
+      "initial": []
+    },
+    {
+      "name": "morale",
+      "type": "f64",
+      "initial": 0.5
+    }
+  ],
+  "campaignChart": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}

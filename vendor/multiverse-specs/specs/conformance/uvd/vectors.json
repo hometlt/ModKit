@@ -1,0 +1,39 @@
+{
+  "$comment": "Declared composition/verifier/runtime expectations for the uvd suite. Schema-level accept/reject cases are EXECUTABLE via conformance/schema-assertions.json (valid fixtures and fixtures/invalid/*), run with --schemas <ajv 2020 module url>. Most expectations below are NOW EXECUTABLE in the uvd-resolution suite (tools/uv-composition.mjs); only container-hashing and real-corpus admission stay declared.",
+  "schemaVersion": "uv-conformance-vectors-1",
+  "suite": "uvd",
+  "profile": "UVD/1.0",
+  "spec": "../../data/SPEC_UVD.md",
+  "vectors": [
+    {
+      "id": "composition/nearest-setter-wins",
+      "expect": "declared",
+      "rule": "inheritance-and-layer-resolution",
+      "note": "effective value = nearest setting layer, else nearest ancestor; provenance names layer and document. Verified against Modkit SC2 value chains at real-corpus admission"
+    },
+    {
+      "id": "composition/parent-cycle",
+      "expect": "declared",
+      "rule": "no-parent-cycles",
+      "note": "a parent cycle is a typed refusal naming the cycle"
+    },
+    {
+      "id": "composition/undeclared-field",
+      "expect": "declared",
+      "rule": "fields-match-kind-schema",
+      "note": "a field the kind-schema does not declare is refused by name; vendor extensions live in namespaced kinds"
+    },
+    {
+      "id": "composition/required-field-removal",
+      "expect": "declared",
+      "rule": "required-fields-survive-overlays",
+      "note": "an overlay removing a required field is refused: a mod reshapes values, not the shape"
+    },
+    {
+      "id": "admission/real-corpus",
+      "expect": "declared",
+      "rule": "real-corpus-vectors",
+      "note": "promotion to registered requires an SC2 catalog slice and a Warzone table slice converted, reopened losslessly and matched against Modkit resolved values"
+    }
+  ]
+}

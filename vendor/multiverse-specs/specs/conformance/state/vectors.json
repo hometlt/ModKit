@@ -1,0 +1,14 @@
+{
+  "$comment": "Declared invariants for world state, saves and replays (SPEC_STATE_SAVES_REPLAYS section 4). Schema-level cases are EXECUTABLE via conformance/schema-assertions.json (state/fixtures). The invariants below are already PROVEN on the phase-1 spike kernel (spike/wasm-kernel/receipt.json: continuity and instance isolation) and become executable on the real kernel.",
+  "schemaVersion": "uv-conformance-vectors-1",
+  "suite": "state",
+  "profile": "state/1.0",
+  "spec": "../../state/SPEC_STATE_SAVES_REPLAYS.md",
+  "vectors": [
+    { "id": "invariant/continuity", "expect": "declared", "rule": "n-equals-k-save-restore", "note": "N ticks ≡ K ticks + save + restore + (N−K) ticks by stateHash; proven on the spike kernel at N=10000, K=5000" },
+    { "id": "invariant/instance-isolation", "expect": "declared", "rule": "instances-never-diverge", "note": "two instances with one composition and one journal never diverge, even interleaved with a third instance; proven on the spike kernel" },
+    { "id": "invariant/replay", "expect": "declared", "rule": "journal-reproduces-checkpoints", "note": "composition + journal reproduces every recorded checkpoint" },
+    { "id": "invariant/migration", "expect": "declared", "rule": "section-migration-equivalence", "note": "a save at section version v migrated to v+1 and continued matches a fresh run at v+1 from the same tick" },
+    { "id": "envelope/sections-cover-writable-areas", "expect": "declared", "rule": "every-writable-area-has-a-section", "note": "every stateArea an active intrinsic writes maps to exactly one save section; space → space-deltas" }
+  ]
+}

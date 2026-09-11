@@ -61,6 +61,7 @@ import {
 } from '@modkit/sdk'
 import { matchesSignatures, signatureNeeds, type SignatureWindows } from './detection-index.js'
 import type { Inventory } from './inventory.js'
+import { createResourceSession, type ResourceSessionOptions } from './resource-session.js'
 import {
   defaultResolveInput,
   type SubjectInputResolutionContext,
@@ -344,7 +345,7 @@ function compilePatterns(
 ): {
   readonly test: (logicalId: string) => boolean
   /** Listing hint for backends whose namespace is too large to enumerate whole. */
-  readonly prefix: string
+  readonly prefixes: readonly string[]
 } {
   if (patterns === undefined || patterns.length === 0) {
     throw new ModkitError({
@@ -401,8 +402,25 @@ function compilePatterns(
       const name = logicalId.split('/').at(-1) ?? logicalId
       return expressions.some(item => item.expression.test(item.whole ? logicalId : name))
     },
-    prefix: enumerationPrefix(patterns),
+    prefixes: enumerationPrefixes(patterns, caseSensitivity),
   }
+}
+
+/** Exact qualified paths need no common-directory scan. Bare names and wildcards retain the
+ * existing conservative hint; every returned entry is still matched and budgeted by the host. */
+function enumerationPrefixes(
+  patterns: readonly string[],
+  caseSensitivity: CompanionCaseSensitivity,
+): readonly string[] {
+  const paths = patterns.map(pattern => pattern.replaceAll('\\', '/'))
+  if (paths.some(path => !path.includes('/') || /[*?]/u.test(path)))
+    return [enumerationPrefix(patterns)]
+  const unique = new Map<string, string>()
+  for (const path of paths) {
+    const key = caseSensitivity === 'insensitive' ? path.toLowerCase() : path
+    if (!unique.has(key)) unique.set(key, path)
+  }
+  return [...unique.values()]
 }
 
 /**
@@ -511,7 +529,9 @@ export function createCompanionInputResolver(
   const report = options.onDiagnostic
   const explicit = options.explicitSelections
 
-  return async (context: SubjectInputResolutionContext): Promise<AssetInput> => {
+  const resolver: SubjectInputResolver = async (
+    context: SubjectInputResolutionContext,
+  ): Promise<AssetInput> => {
     const plan = context.plan
     /*
      * The hot path. `single` never carries requirements and a bare namespace has none either, so
@@ -654,18 +674,20 @@ export function createCompanionInputResolver(
       // outcome never depends on the order the backend happened to enumerate in
       const matched: string[] = []
       for (const scope of usable) {
-        for (const logicalId of await enumerateScope(scope, patterns.prefix)) {
-          if (
-            scope === 'explicit-user-selection' &&
-            !(explicit?.[requirement.id] ?? []).some(
-              value => fold(normalizeCompanionLogicalId(value)) === fold(logicalId),
-            )
-          ) {
-            continue
+        for (const prefix of patterns.prefixes) {
+          for (const logicalId of await enumerateScope(scope, prefix)) {
+            if (
+              scope === 'explicit-user-selection' &&
+              !(explicit?.[requirement.id] ?? []).some(
+                value => fold(normalizeCompanionLogicalId(value)) === fold(logicalId),
+              )
+            ) {
+              continue
+            }
+            if (fold(logicalId) === primaryKey) continue
+            if (!patterns.test(logicalId)) continue
+            matched.push(logicalId)
           }
-          if (fold(logicalId) === primaryKey) continue
-          if (!patterns.test(logicalId)) continue
-          matched.push(logicalId)
         }
       }
       matched.sort(compareUtf8)
@@ -804,6 +826,10 @@ export function createCompanionInputResolver(
 
     return buildAssetInput(context, plan, origin, selected, signal)
   }
+  return Object.assign(resolver, {
+    openResources: (request: Omit<ResourceSessionOptions, 'origin'>) =>
+      createResourceSession({ ...request, origin }),
+  })
 }
 
 /**

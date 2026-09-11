@@ -16,6 +16,7 @@
     "generated"
   ],
   "dependencies": {
+    "@modkit/vfs": "workspace:*",
     "@modkit/extension-manager": "workspace:*",
     "@modkit/core": "workspace:*",
     "@modkit/code": "workspace:*",

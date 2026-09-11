@@ -1,0 +1,687 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/uvd/1.0/uvd.document.schema.json",
+  "title": "UVD document",
+  "description": "Status: candidate (SPEC_UVD.md). One Universal Definitions document in canonical readable JSON. Three roles share the envelope: `kind-schema` declares the typed fields of definition kinds (the self-describing layer), `definitions` ships full definitions, `overlay` ships partial edits applied during composition (the modding core). UVD is terminal for the engine: definitions never compile to UVB. String/strref values may carry the late-binding token ${self}, replaced at resolution by the local name of the definition being resolved (the leaf) — the SC2 ##id## semantics. `flags` is a closed set of named booleans (SC2 FlagArray/Attributes) whose value is an object keyed by the declared names; it merges by name across inheritance and overlays. Composition resolves inheritance, then package layers in rank order; every resulting value keeps provenance (which layer, which document set it).",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "uv",
+    "namespace",
+    "role"
+  ],
+  "properties": {
+    "uv": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "version"
+      ],
+      "properties": {
+        "format": {
+          "const": "UVD"
+        },
+        "version": {
+          "const": "1.0"
+        }
+      }
+    },
+    "namespace": {
+      "description": "Every id this document declares lives here. Vendor fields with no shared meaning keep their own vendor namespace and lose nothing; the engine reads them as opaque typed values.",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*(\\.[a-z0-9][a-z0-9-]*)*$"
+    },
+    "role": {
+      "enum": [
+        "kind-schema",
+        "definitions",
+        "overlay"
+      ]
+    },
+    "kinds": {
+      "description": "role kind-schema only. Each kind names its typed fields. Field order is not semantic; canonical form sorts by name. `fixed64` values serialise as integer quanta at the Q32.32 scale SPEC_UV_FIXED_POINT fixes; `f64` exists for presentation-only fields and is refused anywhere gameplay reads it.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "kind",
+          "version",
+          "fields"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "fields": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "type"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-zA-Z0-9]*$"
+                },
+                "type": {
+                  "enum": [
+                    "bool",
+                    "i64",
+                    "fixed64",
+                    "f64",
+                    "string",
+                    "enum",
+                    "ref",
+                    "list",
+                    "record",
+                    "flags"
+                  ]
+                },
+                "required": {
+                  "type": "boolean",
+                  "default": false
+                },
+                "presentation": {
+                  "description": "true: the field never reaches gameplay state or the state hash. Required true when type is f64.",
+                  "type": "boolean",
+                  "default": false
+                },
+                "unit": {
+                  "description": "Declared unit for numeric fields, from the UV coordinates/units vocabulary (e.g. `metre`, `tick`, `per-tick`). Unitless numbers say `scalar`.",
+                  "type": "string"
+                },
+                "values": {
+                  "description": "enum and flags types: the closed value set in canonical order. Values are VERBATIM source tokens (e.g. `SUPER HEAVY`, `Half-Tracked`): a UVD document stays a faithful mirror of its catalog and reverse conversion needs no external table.",
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "refKind": {
+                  "description": "ref type only: the kind (or the closed set of kinds — polymorphic references such as SC2 Effect, which may name several effect kinds) the reference must point to. The verifier checks the target definition's kind against this set (reference-kind-mismatch).",
+                  "oneOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9-]*$"
+                    },
+                    {
+                      "type": "array",
+                      "minItems": 1,
+                      "items": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9-]*$"
+                      }
+                    }
+                  ]
+                },
+                "itemType": {
+                  "description": "list type only: the element type. Lists of lists are not v1.",
+                  "enum": [
+                    "bool",
+                    "i64",
+                    "fixed64",
+                    "string",
+                    "enum",
+                    "ref",
+                    "record"
+                  ]
+                },
+                "recordFields": {
+                  "description": "record type (and list of record): nested field declarations; nesting may recurse (Warzone propulsionExtraModels is two levels deep).",
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {
+                    "$ref": "#/$defs/scalarField"
+                  }
+                },
+                "inherit": {
+                  "description": "list fields only. replace (default): nearest setter wins whole. append: every ancestor list root-to-leaf followed by the own list (SC2 AbilArray). merge: lists of records merged by keyField root-to-leaf — a later record with the same key replaces the earlier one, new keys are appended (SC2 indexed arrays such as CostResource index=Minerals); an overlay append on a merge field upserts by key. A tombstone in the chain restarts the list.",
+                  "enum": [
+                    "replace",
+                    "append",
+                    "merge"
+                  ],
+                  "default": "replace"
+                },
+                "keyField": {
+                  "description": "merge lists only: the record field that identifies an element; must be a declared recordField.",
+                  "type": "string",
+                  "pattern": "^[a-z][a-zA-Z0-9]*$"
+                }
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "type": {
+                        "const": "f64"
+                      }
+                    }
+                  },
+                  "then": {
+                    "properties": {
+                      "presentation": {
+                        "const": true
+                      }
+                    },
+                    "required": [
+                      "presentation"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "type": {
+                        "const": "enum"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "values"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "type": {
+                        "const": "ref"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "refKind"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "type": {
+                        "const": "list"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "itemType"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "type": {
+                        "const": "record"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "recordFields"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "type": {
+                        "const": "list"
+                      },
+                      "itemType": {
+                        "const": "record"
+                      }
+                    },
+                    "required": [
+                      "type",
+                      "itemType"
+                    ]
+                  },
+                  "then": {
+                    "required": [
+                      "recordFields"
+                    ]
+                  }
+                },
+                {
+                  "if": {
+                    "required": [
+                      "inherit"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "type": {
+                        "const": "list"
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "inherit": {
+                        "const": "merge"
+                      }
+                    },
+                    "required": [
+                      "inherit"
+                    ]
+                  },
+                  "then": {
+                    "required": [
+                      "keyField"
+                    ],
+                    "properties": {
+                      "type": {
+                        "const": "list"
+                      },
+                      "itemType": {
+                        "const": "record"
+                      }
+                    }
+                  }
+                },
+                {
+                  "if": {
+                    "properties": {
+                      "type": {
+                        "const": "flags"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "values"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    "definitions": {
+      "description": "role definitions only. Ids are document-namespace-local: the full identity is <namespace>/<kind>/<name>. `parent` names single inheritance inside the same kind; the effective value of a field is the nearest setting layer or ancestor, and composition records that origin as provenance. A parent cycle or a reference to a missing definition is a typed composition refusal, never a default.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "kind",
+          "kindVersion",
+          "fields"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "kind": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "kindVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "parent": {
+            "description": "Full id of the parent definition, same kind: <namespace>/<kind>/<name>.",
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*(\\.[a-z0-9][a-z0-9-]*)*/[a-z][a-z0-9-]*/[a-z][a-z0-9-]*$"
+          },
+          "fields": {
+            "description": "Field values. fixed64 as integer quanta, refs as full ids, enums as their string value. A field the kind-schema does not declare is refused.",
+            "type": "object",
+            "additionalProperties": true,
+            "propertyNames": {
+              "pattern": "^[a-z][a-zA-Z0-9]*$"
+            }
+          }
+        }
+      }
+    },
+    "overlays": {
+      "description": "role overlay only. Partial edits applied at this document's package layer. No scripted logic lives in data: an overlay is `set`, `remove` or `append`, nothing else. Removing a field the kind-schema marks required is a composition refusal.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "target",
+          "op",
+          "field"
+        ],
+        "properties": {
+          "target": {
+            "description": "Full id of the definition being edited.",
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*(\\.[a-z0-9][a-z0-9-]*)*/[a-z][a-z0-9-]*/[a-z][a-z0-9-]*$"
+          },
+          "op": {
+            "enum": [
+              "set",
+              "remove",
+              "append"
+            ]
+          },
+          "field": {
+            "type": "string",
+            "pattern": "^[a-z][a-zA-Z0-9]*$"
+          },
+          "value": {
+            "description": "Required for set and append; forbidden for remove."
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "op": {
+                  "enum": [
+                    "set",
+                    "append"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "required": [
+                "value"
+              ]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "op": {
+                  "const": "remove"
+                }
+              }
+            },
+            "then": {
+              "not": {
+                "required": [
+                  "value"
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    "$comment": {
+      "description": "Free commentary; never semantic.",
+      "type": "string"
+    },
+    "upsert": {
+      "description": "role definitions only: when true, a definition whose full id already exists in an earlier layer REPLACES that definition's own fields instead of refusing as duplicate-definition — the way a later archive re-publishes whole records (Warzone mp.wz over base.wz). One source table maps to one UVD document; provenance names this layer.",
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "role": {
+            "const": "kind-schema"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "kinds"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "definitions"
+              ]
+            },
+            {
+              "required": [
+                "overlays"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "role": {
+            "const": "definitions"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "definitions"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "kinds"
+              ]
+            },
+            {
+              "required": [
+                "overlays"
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "role": {
+            "const": "overlay"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "overlays"
+        ],
+        "not": {
+          "anyOf": [
+            {
+              "required": [
+                "kinds"
+              ]
+            },
+            {
+              "required": [
+                "definitions"
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "scalarField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "type"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-zA-Z0-9]*$"
+        },
+        "type": {
+          "enum": [
+            "bool",
+            "i64",
+            "fixed64",
+            "string",
+            "enum",
+            "ref",
+            "record",
+            "list"
+          ]
+        },
+        "required": {
+          "type": "boolean",
+          "default": false
+        },
+        "unit": {
+          "type": "string"
+        },
+        "values": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "refKind": {
+          "description": "ref type only: the kind (or the closed set of kinds — polymorphic references such as SC2 Effect, which may name several effect kinds) the reference must point to. The verifier checks the target definition's kind against this set (reference-kind-mismatch).",
+          "oneOf": [
+            {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9-]*$"
+            },
+            {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9-]*$"
+              }
+            }
+          ]
+        },
+        "recordFields": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/scalarField"
+          }
+        },
+        "itemType": {
+          "enum": [
+            "bool",
+            "i64",
+            "fixed64",
+            "string",
+            "enum",
+            "ref",
+            "record"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "enum"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "values"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "ref"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "refKind"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "record"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "recordFields"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "list"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "itemType"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "list"
+              },
+              "itemType": {
+                "const": "record"
+              }
+            },
+            "required": [
+              "type",
+              "itemType"
+            ]
+          },
+          "then": {
+            "required": [
+              "recordFields"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

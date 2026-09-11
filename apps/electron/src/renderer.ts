@@ -75,6 +75,9 @@ import {
   type ElectronFormatSmokeRouteStep,
 } from './format-smoke-acceptance.js'
 import { findExactNamespaceFile } from './namespace-index.js'
+import { chooseContentSource, createSourceDialogs, type SourceRoot } from '@modkit/ui/content-sources'
+import { namespaceFileAccess } from './content-source-access.js'
+import type { NamespaceEntrySource } from '@modkit/sdk'
 
 /**
  * Hand Monaco its language workers. Monaco reads this the first time an editor asks for one, which
@@ -485,6 +488,7 @@ async function boot(): Promise<void> {
    * extracted bytes for its evidence and raw fallback.
    */
   const preopenedSubjects = new Map<string, ElectronSubjectOpenResult>()
+  const localSourceAccess = new Map<string, FileAccess>()
   /** Live editor ports per open subject: a stage switch and the close prompt reach the same arm. */
   const portsByPath = new Map<string, RendererEditorPorts>()
   /** Why a tab has no editors, kept so the footer keeps saying it after the open report. */
@@ -861,6 +865,10 @@ async function boot(): Promise<void> {
     async read(entry, signal) {
       const virtual = virtualBytes.get(entry.id)
       if (virtual !== undefined) return virtual
+      if (entry.id.startsWith('modkit-source:')) return readRemoteSource(entry.id, MAXIMUM_BYTES)
+      for (const [prefix, source] of localSourceAccess) {
+        if (entry.id.startsWith(prefix)) return source.read(entry.id, MAXIMUM_BYTES, signal)
+      }
       if (access === undefined) throw new Error('no folder is open')
       return access.read(entry.id, MAXIMUM_BYTES, signal)
     },
@@ -942,6 +950,112 @@ async function boot(): Promise<void> {
       return (await host.registerFileTypes(preview.supported)).message
     },
   })
+
+  const sourceBridge = (globalThis as unknown as { modkitContentSources?: {
+    call(method: string, args: readonly unknown[]): Promise<unknown>
+  } }).modkitContentSources
+  async function readRemoteSource(uriText: string, maxBytes: number): Promise<Uint8Array> {
+    if (!sourceBridge) throw new Error('Content source bridge is unavailable')
+    const uri = new URL(uriText)
+    const [id, ...parts] = decodeURIComponent(uri.pathname).slice(1).split('/')
+    const bytes = await sourceBridge.call('read', [id, parts.join('/'), maxBytes]) as Uint8Array
+    return new Uint8Array(bytes)
+  }
+  function remoteAccess(root: SourceRoot): FileAccess {
+    const uri = (path: string) => `modkit-source://battlenet/${encodeURIComponent(root.id)}/${path.split('/').map(encodeURIComponent).join('/')}`
+    const russian = document.documentElement.lang.startsWith('ru') || navigator.language.startsWith('ru')
+    const action = (id: 'download' | 'clear-cache' | 'delete-publication') => {
+      const text = id === 'download' ? (russian ? 'Загрузить' : 'Download')
+        : id === 'clear-cache' ? (russian ? 'Очистить кэш' : 'Clear cache')
+          : (russian ? 'Удалить' : 'Delete')
+      const title = id === 'download' ? (russian ? 'Загрузить мод в локальный кэш' : 'Download this mod to the local cache')
+        : id === 'clear-cache' ? (russian ? 'Удалить локальную кэшированную копию' : 'Remove the local cached copy')
+          : (russian ? 'Удалить публикацию из Battle.net' : 'Delete this publication from Battle.net')
+      const confirm = id === 'delete-publication'
+        ? (russian ? 'Удалить эту публикацию из Battle.net? Локальные кэшированные копии могут остаться.'
+          : 'Delete this publication from Battle.net? Local cached copies may remain.')
+        : undefined
+      return { id, label: text, title, ...(confirm === undefined ? {} : { confirm }) }
+    }
+    return { label: root.label,
+      async list(entryId) {
+        if (!sourceBridge) throw new Error('Content source bridge is unavailable')
+        const path = entryId ? decodeURIComponent(new URL(entryId).pathname).slice(1).split('/').slice(1).join('/') : ''
+        const entries = await sourceBridge.call('list', [root.id, path]) as readonly {
+          path: string; name: string; directory: boolean; size?: number
+          actions?: readonly { id: 'download' | 'clear-cache' | 'delete-publication' }[]
+        }[]
+        return entries.map(item => ({ id: uri(item.path), name: item.name, directory: item.directory,
+          ...(item.size === undefined ? {} : { size: item.size }),
+          ...(item.actions === undefined ? {} : { actions: item.actions.map(item => action(item.id)) }) }))
+      },
+      read: (id, maximum) => id.startsWith('modkit-source:') ? readRemoteSource(id, maximum) : accessFor('').read(id, maximum),
+      async runAction(entryId, actionId) {
+        if (!sourceBridge) throw new Error('Content source bridge is unavailable')
+        const parsed = new URL(entryId)
+        const [encodedSource, ...parts] = decodeURIComponent(parsed.pathname).slice(1).split('/')
+        const sourceId = decodeURIComponent(encodedSource ?? '')
+        const path = parts.join('/')
+        if (!sourceId || !path) throw new Error('Select a published mod or map')
+        if (actionId === 'delete-publication') {
+          const review = await sourceBridge.call('prepareDeletePublication', [sourceId, path]) as { id?: unknown }
+          if (typeof review.id !== 'string') throw new Error('The publication could not be verified for deletion')
+          await sourceBridge.call('deletePublication', [review.id])
+        } else if (actionId === 'download') await sourceBridge.call('download', [sourceId, path])
+        else if (actionId === 'clear-cache') await sourceBridge.call('clearCache', [sourceId, path])
+        else throw new Error('Unknown source action')
+      },
+    }
+  }
+  if (sourceBridge) {
+    const button = document.createElement('button')
+    button.type = 'button'
+    const russian = document.documentElement.lang.startsWith('ru') || navigator.language.startsWith('ru')
+    button.textContent = russian ? 'Источники…' : 'Sources…'
+    const dialogs = createSourceDialogs(document)
+    button.addEventListener('click', () => {
+      button.disabled = true
+      void chooseContentSource({ ...dialogs, russian,
+        call: (method, args) => sourceBridge.call(method, args),
+        async open(root) { access = remoteAccess(root); await explorer.setAccess(access) },
+        async openLocal() {
+          const picked = await broker.request('dialog.open-directory', { requestId: crypto.randomUUID() }) as { canceled: boolean; root?: string }
+          if (picked.canceled || !picked.root) return
+          const opened = await subjectClient.open(picked.root)
+          if (opened.state !== 'opened') {
+            access = accessFor(picked.root); await explorer.setAccess(access); return
+          }
+          let lease: Awaited<ReturnType<typeof opened.session.dataSource>> | undefined
+          try {
+            lease = await opened.session.dataSource('common.view/namespace-entry-source', 1)
+            const source = lease.value as NamespaceEntrySource
+            const operations = await opened.session.operations()
+            const offers = opened.snapshot.descriptor['operations'] as readonly { id?: string; state?: string; handlerId?: string }[] | undefined
+            const handler = offers?.find(item => item.id === 'container.extract' && item.state === 'available')?.handlerId
+            if (!handler) throw new Error('This folder has no readable archive namespace')
+            const next = namespaceFileAccess({ label: basename(picked.root), parentSessionId: opened.snapshot.sessionId,
+              source, async read(entryId, _maximum, signal) {
+                signal?.throwIfAborted()
+                const result = await operations.invoke(handler, { entryId } as never)
+                if (result.state !== 'ok' || result.output.kind !== 'bytes') throw new Error('Cannot extract this namespace entry')
+                return result.output.value
+              } })
+            await explorer.setAccess(next)
+            access = next
+            localSourceAccess.set(`modkit-container:${encodeURIComponent(opened.snapshot.sessionId)}?entryId=`, next)
+            const retainedLease = lease
+            window.addEventListener('beforeunload', () => {
+              void (retainedLease as { release?: () => Promise<void> })?.release?.(); void opened.session.dispose()
+            }, { once: true })
+          } catch (error) {
+            await (lease as { release?: () => Promise<void> })?.release?.(); await opened.session.dispose(); throw error
+          }
+        },
+      }).catch(error => setFooter('', error instanceof Error ? error.message : 'Content source failed', true))
+        .finally(() => { button.disabled = false })
+    })
+    explorer.root.querySelector('[data-mk-part="explorer.sidebar"]')?.prepend(button)
+  }
 
   // The explorer's own single preview pane is replaced by the editor area, which owns tabs/splits.
   const singlePane = explorer.root.querySelector('[data-mk-part="explorer.preview"]')

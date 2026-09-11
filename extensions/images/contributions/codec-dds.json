@@ -1,6 +1,9 @@
 {
   "schemaVersion": 1,
-  "contract": { "id": "modkit/codec-contribution", "major": 1 },
+  "contract": {
+    "id": "modkit/codec-contribution",
+    "major": 1
+  },
   "id": "modkit/dds",
   "displayName": "DirectDraw Surface",
   "status": "partial",
@@ -8,16 +11,20 @@
     {
       "variantId": "trusted-node",
       "entrypoint": "./src/dds/codec.js",
-      "target": { "environments": ["node"] },
+      "target": {
+        "environments": ["node"]
+      },
       "executionProfile": "trusted-in-process",
-      "requestedPermissionClasses": ["read-source"]
+      "requestedPermissionClasses": ["read-source", "write-source"]
     },
     {
       "variantId": "portable",
       "entrypoint": "./src/dds/codec.js",
-      "target": { "environments": ["browser-worker", "node-worker"] },
+      "target": {
+        "environments": ["browser-worker", "node-worker"]
+      },
       "executionProfile": "worker-brokered",
-      "requestedPermissionClasses": ["read-source"]
+      "requestedPermissionClasses": ["read-source", "write-source"]
     }
   ],
   "limitations": [
@@ -28,19 +35,40 @@
     "Mip, array-layer, cubemap-face and volume-slice selection is implemented: readRegion resolves any subresource the header declares and refuses out-of-range coordinates by name.",
     "Writing is a separate contribution: modkit/dds-encoder-writer (common.edit/writer@1) encodes RGBA8 pixels as rgba8, dxt1, dxt3 or dxt5.",
     "The compressed-texture view of a DDS (GPU blocks handed over undecoded, with block geometry, colour space, alpha mode and per-subresource byte ranges) is implemented in src/dds/compressed.js but is not published: MK3 has no common.view contract for compressed textures yet.",
-    "Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global signature sniffing."
+    "Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global signature sniffing.",
+    "edit.content applies one named pixel transform (resize, normal-map, combine-normal-specular, rounded-alpha, button-icon, color-key) and re-encodes the whole surface: mip levels, array layers and cube faces past the first are not carried over."
   ],
   "spec": {
-    "formatRefs": [{ "formatId": "dds", "label": "DirectDraw Surface" }],
+    "formatRefs": [
+      {
+        "formatId": "dds",
+        "label": "DirectDraw Surface"
+      }
+    ],
     "roles": ["media"],
     "sourceTopology": "single",
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
     "match": {
       "extensions": ["dds"],
-      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "44445320" }]
+      "signatures": [
+        {
+          "from": "start",
+          "offset": 0,
+          "bytesHex": "44445320"
+        }
+      ]
     },
-    "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
+    "probe": {
+      "kind": "bytes",
+      "ranges": [
+        {
+          "from": "start",
+          "length": 4096
+        }
+      ],
+      "maxBytes": 4096
+    },
     "representations": [
       {
         "id": "raster-metadata",
@@ -51,9 +79,18 @@
       }
     ],
     "publishesDataSources": [
-      { "contract": "common.view/raster-image-source", "major": 1 },
-      { "contract": "common.view/tree-data-source", "major": 1 },
-      { "contract": "common.view/byte-range-source", "major": 1 }
+      {
+        "contract": "common.view/raster-image-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/tree-data-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/byte-range-source",
+        "major": 1
+      }
     ],
     "operations": [
       {
@@ -76,12 +113,25 @@
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
         "outputKinds": ["bytes"]
+      },
+      {
+        "id": "edit.content",
+        "handlerId": "transform",
+        "mutatesSource": true,
+        "requiredPermissions": ["read-source", "write-source"],
+        "outputKinds": ["edit-plan"]
       }
     ],
     "traitDeclarations": [
-      { "id": "image.compressed-blocks", "representation": "runtime", "presence": "may-expose" }
+      {
+        "id": "image.compressed-blocks",
+        "representation": "runtime",
+        "presence": "may-expose"
+      }
     ],
-    "implementationTier": { "claimed": 1 },
+    "implementationTier": {
+      "claimed": 1
+    },
     "budgets": {
       "maxInputBytes": "1073741824",
       "maxDepth": 64,

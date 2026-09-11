@@ -37,36 +37,16 @@ export interface GraphFooterGroup {
   readonly items: readonly { readonly label: string; readonly count: number }[]
 }
 
-/**
- * A graph renderer owns only pixels. The sidebar, controls and footer stay in the component, so a
- * GPU backend is a drop-in replacement rather than a second widget (doc 06 §19: alternative
- * backends are provider offers of one render contract, not hardcoded imports).
- */
-export interface GraphRenderState {
-  readonly nodes: readonly GraphNode[]
-  readonly edges: readonly GraphEdge[]
-  readonly types: readonly GraphTypeBucket[]
-  readonly labels: boolean
-  /** Resolved from the host theme so a renderer never hardcodes colour. */
-  readonly palette: Readonly<Record<string, string>>
-}
-
-export interface GraphRenderer {
-  /** Draw or redraw. Called on state change, resize and theme change. */
-  render(state: GraphRenderState): void
-  resize(width: number, height: number): void
-  /** Reset camera/zoom to the default framing. */
-  reset(): void
-  destroy(): void
-  /** Reported back into the status line; a renderer that caps must say so. */
-  drawnEdges?(): number
-}
-
-export interface GraphRendererFactory {
-  readonly id: string
-  readonly label: string
-  create(host: HTMLElement, hooks: { onOpen?(node: GraphNode): void }): GraphRenderer
-}
+import type {
+  GraphRenderState,
+  GraphRenderer,
+  GraphRendererFactory,
+} from '@modkit/scene/relations/contracts'
+export type {
+  GraphRenderState,
+  GraphRenderer,
+  GraphRendererFactory,
+} from '@modkit/scene/relations/contracts'
 
 export interface RelationGraphOptions {
   readonly localizer?: UiLocalizer

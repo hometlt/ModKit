@@ -48,6 +48,7 @@ import {
   type SubjectEditTarget,
 } from '@modkit/sdk'
 import type { EditingBackend, EditingBackendApplyResult } from '../editing.js'
+import { containerEntryRevision } from '../namespace-origin.js'
 import {
   applySequentialBatch,
   editingError,
@@ -100,7 +101,41 @@ function filePathOf(source: AssetSourceRef): string {
   if (url.protocol !== 'file:') {
     throw editingError('x3.host/edit-source-not-file', `source «${source.uri}» is not a file: URL`)
   }
-  return fileURLToPath(url)
+  const entryPath = url.searchParams.get('vfs-path')
+  if (entryPath === null) return fileURLToPath(url)
+  const segments = entryPath.replaceAll('\\', '/').split('/')
+  if (
+    segments.length === 0 ||
+    segments.some(segment => segment === '' || segment === '.' || segment === '..')
+  ) {
+    throw editingError(
+      'x3.host/edit-source-not-file',
+      `source «${source.uri}» has an invalid VFS entry path`,
+    )
+  }
+  const rootUrl = new URL(url)
+  rootUrl.search = ''
+  rootUrl.hash = ''
+  const root = resolve(fileURLToPath(rootUrl))
+  const candidate = resolve(root, ...segments)
+  const child = relative(root, candidate)
+  if (child === '' || child.startsWith('..') || isAbsolute(child)) {
+    throw editingError(
+      'x3.host/edit-source-not-file',
+      `source «${source.uri}» escapes its VFS namespace`,
+    )
+  }
+  return candidate
+}
+
+function virtualEntryOf(source: AssetSourceRef): { readonly root: string; readonly entryId: string } | undefined {
+  const url = new URL(source.uri)
+  const entryId = url.searchParams.get('vfs-path')
+  if (entryId === null) return undefined
+  const rootUrl = new URL(url)
+  rootUrl.search = ''
+  rootUrl.hash = ''
+  return { root: resolve(fileURLToPath(rootUrl)), entryId: entryId.replaceAll('\\', '/') }
 }
 
 function revisionTokenOf(stats: {
@@ -201,6 +236,39 @@ function bindingIdOf(expected: AssetRevision): string {
     )
   }
   return ids[0]
+}
+
+async function liveTargetRevision(
+  source: AssetSourceRef,
+  expected: AssetRevision,
+  path: string,
+): Promise<AssetRevision> {
+  const bindingId = bindingIdOf(expected)
+  const virtual = virtualEntryOf(source)
+  if (virtual !== undefined && (await isDirectory(virtual.root))) {
+    let size = 0n
+    try {
+      const info = await stat(path, { bigint: true })
+      if (!info.isFile()) {
+        return revisionFor(bindingId, source, 'provider-token:not-a-file', expected.namespaceRevision)
+      }
+      size = info.size
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error
+    }
+    const entryRevision = containerEntryRevision(
+      revisionId(await liveNamespaceToken(virtual.root)),
+      virtual.entryId,
+      size,
+    )
+    return revisionFor(bindingId, source, String(entryRevision), expected.namespaceRevision)
+  }
+  return revisionFor(
+    bindingId,
+    source,
+    await liveRevisionToken(path),
+    expected.namespaceRevision,
+  )
 }
 
 function sameRevision(left: AssetRevision, right: AssetRevision): boolean {
@@ -361,13 +429,7 @@ export function createFileEditingBackend(
       if (await isDirectory(path)) {
         return namespaceRevisionFor(target.ownerSource, await liveNamespaceToken(path))
       }
-      const bindingId = bindingIdOf(target.expectedRevision)
-      return revisionFor(
-        bindingId,
-        target.ownerSource,
-        await liveRevisionToken(path),
-        target.expectedRevision.namespaceRevision,
-      )
+      return liveTargetRevision(target.ownerSource, target.expectedRevision, path)
     },
 
     async apply(edit, applyOptions): Promise<EditingBackendApplyResult> {
@@ -379,12 +441,7 @@ export function createFileEditingBackend(
       const bindingId = bindingIdOf(applyOptions.expectedRevision)
       const live =
         namespaceDirectory === undefined
-          ? revisionFor(
-              bindingId,
-              edit.source,
-              await liveRevisionToken(path),
-              applyOptions.expectedRevision.namespaceRevision,
-            )
+          ? await liveTargetRevision(edit.source, applyOptions.expectedRevision, path)
           : namespaceRevisionFor(edit.source, await liveNamespaceToken(namespaceDirectory))
       if (!sameRevision(live, applyOptions.expectedRevision)) {
         throw editingError(
@@ -481,12 +538,7 @@ export function createFileEditingBackend(
       return {
         after:
           namespaceDirectory === undefined
-            ? revisionFor(
-                bindingId,
-                edit.source,
-                await liveRevisionToken(path),
-                applyOptions.expectedRevision.namespaceRevision,
-              )
+            ? await liveTargetRevision(edit.source, applyOptions.expectedRevision, path)
             : namespaceRevisionFor(edit.source, await liveNamespaceToken(namespaceDirectory)),
       }
     },
@@ -550,12 +602,7 @@ export function createFileEditingBackend(
       }
       const bindingId = bindingIdOf(before)
       return namespaceDirectory === undefined
-        ? revisionFor(
-            bindingId,
-            edit.source,
-            await liveRevisionToken(path),
-            before.namespaceRevision,
-          )
+        ? liveTargetRevision(edit.source, before, path)
         : namespaceRevisionFor(edit.source, await liveNamespaceToken(namespaceDirectory))
     },
 

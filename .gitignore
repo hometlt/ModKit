@@ -20,3 +20,5 @@ reports/evidence/
 .claude/
 # Local codebase graph cache; regenerate it from the repository when needed.
 .codebase-memory/
+artifacts/
+downloads/

@@ -1,0 +1,103 @@
+{
+  "$comment": "EXECUTABLE canonical-binary vectors for UVB 1.0: uv-conformance.mjs runs them through tools/uvb-binary.mjs. Binary 1.1 (1.0 re-pinned the same day it was frozen, before any consumer, to add the types section). The pinned identity digest FREEZES the encoding: any change to the byte layout that alters it is a new binary version, not a fix. `.uvbt` text projection = canonical-form JSON of the structural module, so binary<->text bijection is binary<->canonical JSON; $comment is stripped before comparison because it is never semantic.",
+  "schemaVersion": "uv-conformance-vectors-1",
+  "suite": "uvb-binary",
+  "spec": "../../behavior/SPEC_UVB.md",
+  "vectors": [
+    {
+      "id": "bijection/fixture",
+      "expect": "accept",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "identityDigest": "sha256:552561bb29d19cf4245d7491511a54fff610428fc79d5dcf8e487947d8e51ff7",
+      "byteLength": 419,
+      "note": "encode → decode → canonical JSON equal; decode → encode byte-identical; digest pinned — the freeze"
+    },
+    {
+      "id": "digest-ignores-source-map",
+      "expect": "accept",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "stripSourceMap": true,
+      "identityDigest": "sha256:552561bb29d19cf4245d7491511a54fff610428fc79d5dcf8e487947d8e51ff7",
+      "note": "the same module without its source map has DIFFERENT bytes and the SAME identity: debug provenance never changes what a module is"
+    },
+    {
+      "id": "reject/bad-magic",
+      "expect": "reject",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "corrupt": {
+        "offset": 0,
+        "value": 88
+      },
+      "reason": "bad magic"
+    },
+    {
+      "id": "reject/unsupported-version",
+      "expect": "reject",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "corrupt": {
+        "offset": 4,
+        "value": 2
+      },
+      "reason": "unsupported UVB binary version"
+    },
+    {
+      "id": "reject/truncated",
+      "expect": "reject",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "truncateTo": 200,
+      "reason": "truncated"
+    },
+    {
+      "id": "reject/unknown-op-in-structure",
+      "expect": "reject-encode",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "functions.0.body.6.op",
+          "value": "add.f64"
+        }
+      ],
+      "reason": "unknown op",
+      "note": "float ops are not merely disallowed by schema: the encoder has no opcode for them"
+    },
+    {
+      "id": "reject/unknown-flag-bits",
+      "expect": "reject",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "corrupt": {
+        "offset": "first-instruction-flags-high-byte",
+        "value": 128
+      },
+      "reason": "unknown field flags",
+      "note": "unused flag bits must be zero: two byte sequences decoding to one module would break the identity"
+    },
+    {
+      "id": "reject/strref-const-with-number",
+      "expect": "reject-encode",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "functions.0.body.0.type",
+          "value": "strref"
+        }
+      ],
+      "reason": "const of type strref carries",
+      "note": "constants encode by DECLARED type, never by the JavaScript type of the value"
+    },
+    {
+      "id": "bijection/big-i64-string",
+      "expect": "accept",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "mutations": [
+        {
+          "op": "set",
+          "path": "functions.0.body.5.value",
+          "value": "9007199254740993"
+        }
+      ],
+      "note": "an i64 constant outside the safe range travels as a decimal string and decodes back to the same string"
+    }
+  ]
+}

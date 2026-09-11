@@ -1,0 +1,55 @@
+{
+  "$comment": "Valid fixture: a Galaxy source lowered through the readable Luau layer into UVB, one honest refusal carrying its preserved original by digest.",
+  "kind": "uv.receipt/lowering",
+  "schemaVersion": 1,
+  "adapter": {
+    "id": "blizzard/sc2-adapter",
+    "version": "0.1.0"
+  },
+  "source": {
+    "name": "maps/mission-alpha/Triggers.galaxy",
+    "language": "galaxy",
+    "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  },
+  "stages": [
+    {
+      "from": "native",
+      "to": "luau",
+      "inputDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "outputDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    {
+      "from": "luau",
+      "to": "uvb",
+      "inputDigest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "outputDigest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    }
+  ],
+  "coverage": [
+    {
+      "category": "functions",
+      "totalUnits": 10,
+      "loweredUnits": 9,
+      "refusedUnits": 1
+    }
+  ],
+  "refusals": [
+    {
+      "rule": "unmapped-native",
+      "unit": "gf_PlayIntroSting",
+      "reason": "audio cue natives are not mapped in intrinsic table v1",
+      "originDigest": "sha256:dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+    }
+  ],
+  "outputs": [
+    {
+      "family": "luau",
+      "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+    },
+    {
+      "family": "uvb",
+      "digest": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+    }
+  ],
+  "verdict": "lowered-with-refusals"
+}

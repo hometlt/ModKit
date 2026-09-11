@@ -1,0 +1,38 @@
+{
+  "$comment": "UVB staging fixture (structural form): one function computing a fixed64 bonus and issuing one intrinsic call, with declared effects and a bounded loop. The canonical binary encodes exactly this content; the hash never comes from this JSON.",
+  "uv": { "format": "UVB", "version": "1.0" },
+  "namespace": "example-vendor",
+  "requires": {
+    "intrinsics": ["entity.set-stat-modifier@1", "query.entities@1"]
+  },
+  "strings": ["health", "tuning"],
+  "functions": [
+    {
+      "name": "apply-bonus",
+      "params": ["list<ref<entity>>", "fixed64"],
+      "returns": "result<i64>",
+      "registers": 8,
+      "effects": {
+        "reads": ["entities"],
+        "writes": ["entities"]
+      },
+      "body": [
+        { "op": "const", "dst": 2, "type": "i64", "value": 0 },
+        { "op": "list.len", "dst": 3, "a": 0 },
+        {
+          "op": "loop",
+          "target": 8,
+          "budget": { "onExhausted": "typed-error" },
+          "source": { "file": "tuning.luau", "line": 12 }
+        },
+        { "op": "list.get", "dst": 4, "a": 0, "b": 2 },
+        { "op": "call.intrinsic", "intrinsicIndex": 0, "args": [4, 5, 6, 1], "dst": 7 },
+        { "op": "const", "dst": 5, "type": "i64", "value": 1 },
+        { "op": "add.i64", "dst": 2, "a": 2, "b": 5 },
+        { "op": "br", "target": 2 },
+        { "op": "result.ok", "dst": 7, "a": 2 },
+        { "op": "ret", "a": 7 }
+      ]
+    }
+  ]
+}

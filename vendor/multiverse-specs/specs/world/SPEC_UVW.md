@@ -1,5 +1,9 @@
 # UVW — Universal Verse World
 
+> **Profile note (2026-09-01):** the current document form is the space-graph envelope of
+> [`SPEC_UVW_PROFILE.md`](SPEC_UVW_PROFILE.md); this candidate body becomes the body of one
+> heightfield space. This file stays normative for the space body until the wave 4 migration.
+
 **Status:** **candidate**, 2026-08-28 — schema, fixtures and executable vectors exist for the
 heightfield base facet, and the StarCraft II and Warzone 2100 live publishers have independent
 measured candidate materializations. The two-family evidence gate is closed, but block 18 has not

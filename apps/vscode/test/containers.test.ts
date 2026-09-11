@@ -674,20 +674,17 @@ describe('a member is a subject in its own right', () => {
     const parent = await client.open(archive)
     if (parent.state !== 'opened') throw new Error('the parent archive did not open over RPC')
     const namespace = await parent.session.dataSource('common.view/namespace-entry-source', 1)
+    const entries = await (namespace.value as NamespaceEntrySource).list('', { limit: 16 })
+    const hello = entries.items.find(item => item.path === 'hello.txt')
+    if (hello === undefined) throw new Error('the parent archive has no hello.txt entry')
+    const ref = await (namespace.value as NamespaceEntrySource).openEntry(hello.id)
     let target: string
     try {
-      const entries = await (namespace.value as NamespaceEntrySource).list('', { limit: 16 })
-      const hello = entries.items.find(item => item.path === 'hello.txt')
-      if (hello === undefined) throw new Error('the parent archive has no hello.txt entry')
-      const ref = await (namespace.value as NamespaceEntrySource).openEntry(hello.id)
-      try {
-        target = serializeSubjectRef(rootSubject({ id: ref.value.uri }))
-      } finally {
-        await ref.release()
-      }
+      target = serializeSubjectRef(rootSubject({ id: ref.value.uri }))
     } finally {
-      await namespace.release()
+      await ref.release()
     }
+    // The attached viewer session owns the namespace source lease until parent.dispose().
     const navigation = parent.session.subjectNavigation
     if (navigation === undefined) throw new Error('the live RPC session has no navigation port')
     const navigationResult = await navigation

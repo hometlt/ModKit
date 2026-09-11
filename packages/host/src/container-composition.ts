@@ -26,7 +26,12 @@ import {
   type SourceEdit,
   type SubjectEditTarget,
 } from '@modkit/sdk'
-import { containerEntryRevision, containerEntrySource } from './namespace-origin.js'
+import {
+  containerEntryRevision,
+  containerEntrySource,
+  createNamespaceCompanionOrigin,
+} from './namespace-origin.js'
+import { createResourceSession, type ResourceSessionOptions } from './resource-session.js'
 
 const NAMESPACE_ENTRY_SOURCE = 'common.view/namespace-entry-source'
 const CONTAINER_EXTRACT = 'container.extract'
@@ -48,6 +53,9 @@ interface EntryBinding {
 export interface ContainerNamespaceComposition {
   readonly source: ArtifactNamespaceSource
   readonly descriptor: AnyDescriptor
+  openResources(
+    options: Omit<ResourceSessionOptions, 'origin'>,
+  ): ReturnType<typeof createResourceSession>
   readonly packHandlerId?: string
   readonly exportRawHandlerId?: string
   wrapSession(
@@ -596,6 +604,29 @@ export async function createContainerNamespaceComposition(
         ensureLive(signal)
         const assetNamespace: AssetNamespace = Object.freeze({
           revision,
+          ...(prefix === '' && namespace.readPreamble !== undefined
+            ? {
+                async readPreamble(maxBytes: number, preambleSignal?: AbortSignal) {
+                  ensureLive(preambleSignal)
+                  if (!Number.isSafeInteger(maxBytes) || maxBytes < 0) {
+                    throw new ModkitError({
+                      code: 'x3.host/container-preamble-bound-invalid',
+                      message: 'container preamble maxBytes must be a non-negative safe integer',
+                    })
+                  }
+                  const limit = Math.min(maxBytes, options.budget.maxScalarBytes)
+                  const value = await namespace.readPreamble!(limit, preambleSignal)
+                  ensureLive(preambleSignal)
+                  if (!(value instanceof Uint8Array) || value.byteLength > limit) {
+                    throw new ModkitError({
+                      code: 'x3.host/container-preamble-invalid',
+                      message: 'container returned an invalid or over-budget preamble',
+                    })
+                  }
+                  return value
+                },
+              }
+            : {}),
           async *list(requestedPrefix: string, listSignal?: AbortSignal) {
             ensureLive(listSignal)
             const relativePrefix = normalizePath(requestedPrefix, true)
@@ -829,6 +860,38 @@ export async function createContainerNamespaceComposition(
   const composition: ContainerNamespaceComposition = Object.freeze({
     source,
     descriptor,
+    openResources(request: Omit<ResourceSessionOptions, 'origin'>) {
+      const requestedBytes = request.limits?.maxBytes ?? options.budget.maxInputBytes
+      const maxSourceBytes =
+        requestedBytes < BigInt(options.budget.maxScalarBytes)
+          ? requestedBytes
+          : BigInt(options.budget.maxScalarBytes)
+      return createResourceSession({
+        ...request,
+        origin: createNamespaceCompanionOrigin({
+          namespace,
+          primaryLogicalId: '',
+          containerRevision: options.revision,
+          maxPages: options.budget.maxNodes,
+          maxSourceBytes,
+          async extract(entryId, signal) {
+            ensureLive(signal)
+            const result = await parentOperations.invoke(
+              extractHandlerId,
+              { entryId },
+              signal === undefined ? {} : { signal },
+            )
+            ensureLive(signal)
+            if (result.state !== 'ok' || result.output.kind !== 'bytes')
+              throw new ModkitError({
+                code: 'x3.host/container-entry-unreadable',
+                message: `container refused to extract entry «${entryId}»`,
+              })
+            return result.output.value
+          },
+        }),
+      })
+    },
     ...(packHandlerId === undefined ? {} : { packHandlerId }),
     ...(exportRawHandlerId === undefined ? {} : { exportRawHandlerId }),
     wrapSession(

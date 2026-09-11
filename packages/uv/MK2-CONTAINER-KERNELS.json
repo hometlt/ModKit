@@ -1,0 +1,58 @@
+{
+  "schemaVersion": 1,
+  "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "transformation": "exact top-level declaration extraction; explicit import bindings and export list only",
+  "sources": [
+    {
+      "path": "extensions/common/models/codecs/uvm/src/glb.ts",
+      "sha256": "7a87769e804a48725fcca3e7289febeb2f33215c264a910cc2108d00109d88c2",
+      "symbols": [
+        {
+          "name": "GLB_MAGIC",
+          "sha256": "4eedb9b6313b1bdb83275bc67819d8e4e2db1314bcb6776612f1b2f434347473"
+        },
+        {
+          "name": "GLB_JSON_CHUNK",
+          "sha256": "c313e2d3a392f3fca0c0b7e4a5cc50f7ab8777b318e79b55479ac36497b78792"
+        },
+        {
+          "name": "GLB_BIN_CHUNK",
+          "sha256": "0b786616dda5d89378cfef45860167596f605a0c984586ee9ee7ac75ef4fdcea"
+        },
+        {
+          "name": "UvmGlbContainer",
+          "sha256": "30367b84522e8807451e7ff4cf3ac488711a7a5428bd3148cf6f22ffdf8d8842"
+        },
+        {
+          "name": "decodeUvmContainer",
+          "sha256": "94ede79585662d39790edf45f855523c24f29ff51b824b25c307125469b087c9"
+        },
+        {
+          "name": "isGlb",
+          "sha256": "89df40298fbbde0328fb2aebebcf715809a957bb24ccad0a48ba6ff88df23504"
+        },
+        {
+          "name": "decodeGlb",
+          "sha256": "6664ed7893f28527381676a20c11727662b8e89c538442b88429538a60e92472"
+        },
+        {
+          "name": "readUint32",
+          "sha256": "c2aaafd7939ddb8b3710b30ad06333f2301cf85017d1c5710d402cde1f06d090"
+        },
+        {
+          "name": "corrupt",
+          "sha256": "3078443757091a5541615e0086864811b2492679dbaaed8238de2110a0fb63f8"
+        }
+      ]
+    }
+  ],
+  "imports": [
+    "import { ModkitError } from '@modkit/codec-kit/legacy/core'",
+    "import type { UvmJsonObject } from './rig-types.js'"
+  ],
+  "exports": [],
+  "output": {
+    "path": "packages/uv/src/model/legacy/container-kernels.ts",
+    "sha256": "c83e2a50048a40f12d34162933b5bce36294e647502021c6606881bc31460fb2"
+  }
+}

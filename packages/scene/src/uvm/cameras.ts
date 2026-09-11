@@ -1,0 +1,200 @@
+import {
+  Matrix4,
+  PerspectiveCamera,
+  OrthographicCamera,
+  Quaternion,
+  Vector3,
+  MathUtils,
+} from 'three'
+import type { JsonObject, SceneRendererCamera } from '@modkit/sdk'
+import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
+import { array, object, safeIndex } from './values.js'
+
+type Vec3 = readonly [number, number, number]
+function numbers(value: unknown, count: number, label: string): number[] {
+  if (
+    (!Array.isArray(value) && !(value instanceof Float32Array)) ||
+    value.length !== count ||
+    !Array.from(value).every(
+      component => typeof component === 'number' && Number.isFinite(component),
+    )
+  )
+    throw new TypeError(`${label} must contain ${count} finite numbers`)
+  return Array.from(value)
+}
+function positive(value: unknown, label: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0)
+    throw new TypeError(`${label} must be finite and positive`)
+  return value
+}
+function xyz(value: Vector3): Vec3 {
+  return [value.x, value.y, value.z]
+}
+function ownedMatrix(matrix: Matrix4): Float32Array {
+  const output = Float32Array.from(matrix.elements)
+  if (!output.every(Number.isFinite)) throw new RangeError('camera matrix exceeds finite float32')
+  return output
+}
+function affine(value: unknown): Matrix4 {
+  const values = numbers(value, 16, 'camera frame')
+  if (values[3] !== 0 || values[7] !== 0 || values[11] !== 0 || values[15] !== 1)
+    throw new TypeError('camera frame must be affine')
+  const matrix = new Matrix4().fromArray(values)
+  const determinant = matrix.determinant()
+  if (!Number.isFinite(determinant) || determinant === 0)
+    throw new TypeError('camera frame is singular')
+  return matrix
+}
+
+/** Neutral rest-frame extraction used by format mappings; no native enum or axis policy. */
+export function previewFrameFromInverseBind(value: readonly number[]): {
+  position: Vec3
+  forward: Vec3
+} {
+  const matrix = affine(value).invert()
+  ownedMatrix(matrix)
+  const position = new Vector3().setFromMatrixPosition(matrix)
+  const forward = new Vector3().setFromMatrixColumn(matrix, 2).negate()
+  if (!(forward.length() > 1e-8)) throw new TypeError('preview bind frame has no forward axis')
+  return { position: xyz(position), forward: xyz(forward.normalize()) }
+}
+
+/** A static glTF camera node points down local -Z; the caller supplies its source-frame up. */
+export function previewCameraNodeMatrix(position: Vec3, target: Vec3, up: Vec3): number[] {
+  const eye = new Vector3().fromArray(numbers(position, 3, 'camera position'))
+  const aim = new Vector3().fromArray(numbers(target, 3, 'camera target'))
+  const vertical = new Vector3().fromArray(numbers(up, 3, 'camera up'))
+  if (
+    eye.distanceToSquared(aim) === 0 ||
+    vertical.lengthSq() === 0 ||
+    new Vector3().subVectors(eye, aim).cross(vertical).lengthSq() === 0
+  )
+    throw new TypeError('camera look-at frame is singular')
+  const matrix = new Matrix4().lookAt(eye, aim, vertical).setPosition(eye)
+  ownedMatrix(matrix)
+  return [...matrix.elements]
+}
+
+export interface UvmCameraOptions {
+  readonly aspect: number
+  /** Already sampled by the existing common scene sampler; this helper evaluates no animation. */
+  readonly nodeTransforms: ReadonlyMap<string, Float32Array>
+  readonly activeNodes: ReadonlySet<string>
+  readonly maxBytes: number
+  readonly maxNodes: number
+  readonly signal?: AbortSignal
+}
+
+/** Resolve explicit matrices OR a glTF camera node. No default-camera override is inferred.
+ * glTF camera scale is ignored; shear/reflection and infinite-far cameras explicitly refuse. */
+export function resolveUvmCamera(
+  document: JsonObject,
+  input: unknown,
+  options: UvmCameraOptions,
+): SceneRendererCamera {
+  options.signal?.throwIfAborted()
+  if (
+    !Number.isSafeInteger(options.maxBytes) ||
+    options.maxBytes < 2048 ||
+    !Number.isSafeInteger(options.maxNodes) ||
+    options.maxNodes < 1
+  )
+    throw new RangeError('camera snapshot exceeds budget')
+  const snapshotBudget = {
+    maxDepth: 16,
+    maxNodes: Math.floor(options.maxNodes / 2),
+    maxBytes: Math.floor((options.maxBytes - 1024) / 2),
+  }
+  const request = object(snapshotJson(input, snapshotBudget, options.signal), 'camera request')
+  if (request['node'] === undefined) {
+    if (
+      Object.keys(request).some(
+        key => !['viewProjection', 'viewMatrix', 'eyePosition'].includes(key),
+      )
+    )
+      throw new TypeError('camera matrix request contains an unsupported field')
+    const viewProjection = Float32Array.from(
+      numbers(request['viewProjection'], 16, 'viewProjection'),
+    )
+    const view =
+      request['viewMatrix'] === undefined
+        ? undefined
+        : Float32Array.from(numbers(request['viewMatrix'], 16, 'viewMatrix'))
+    const eye =
+      request['eyePosition'] === undefined
+        ? undefined
+        : numbers(request['eyePosition'], 3, 'eyePosition')
+    if (view !== undefined && (view[3] !== 0 || view[7] !== 0 || view[11] !== 0 || view[15] !== 1))
+      throw new TypeError('camera viewMatrix must be affine')
+    if (
+      !viewProjection.every(Number.isFinite) ||
+      (view !== undefined && !view.every(Number.isFinite))
+    )
+      throw new RangeError('camera request exceeds finite float32')
+    return {
+      viewProjection,
+      ...(view === undefined ? {} : { viewMatrix: view }),
+      ...(eye === undefined
+        ? {}
+        : { eyePosition: [eye[0] ?? 0, eye[1] ?? 0, eye[2] ?? 0] as Vec3 }),
+    }
+  }
+  if (Object.keys(request).length !== 1)
+    throw new TypeError('camera node and explicit matrices are mutually exclusive')
+  const nodes = array(document, 'nodes'),
+    cameras = array(document, 'cameras')
+  const nodeIndex = safeIndex(request['node'], nodes.length, 'camera node'),
+    id = `node-${nodeIndex}`
+  if (!options.activeNodes.has(id)) throw new TypeError('camera node is outside the selected scene')
+  const node = object(nodes[nodeIndex], 'camera node'),
+    cameraIndex = safeIndex(node['camera'], cameras.length, 'camera')
+  const camera = object(
+    snapshotJson(cameras[cameraIndex], snapshotBudget, options.signal),
+    'camera',
+  )
+  const world = affine(options.nodeTransforms.get(id))
+  const position = new Vector3(),
+    rotation = new Quaternion(),
+    scale = new Vector3()
+  world.decompose(position, rotation, scale)
+  const reconstructed = new Matrix4().compose(position, rotation, scale)
+  if (
+    [scale.x, scale.y, scale.z].some(value => !(value > 0)) ||
+    world.elements.some(
+      (value, index) =>
+        Math.abs(value - (reconstructed.elements[index] ?? 0)) >
+        1e-6 * Math.max(1, Math.abs(value)),
+    )
+  )
+    throw new TypeError('camera frame shear/reflection is unsupported')
+  const view = new Matrix4().compose(position, rotation, new Vector3(1, 1, 1)).invert()
+  let projection: Matrix4
+  if (camera['type'] === 'perspective') {
+    const perspective = object(camera['perspective'], 'perspective camera')
+    const fov = positive(perspective['yfov'], 'camera yfov'),
+      near = positive(perspective['znear'], 'camera znear')
+    if (!(fov < Math.PI)) throw new TypeError('camera yfov must be below PI')
+    if (perspective['zfar'] === undefined)
+      throw new TypeError('infinite-far camera is not supported by the selected projection library')
+    const far = positive(perspective['zfar'], 'camera zfar')
+    if (!(far > near)) throw new TypeError('camera zfar must exceed znear')
+    const aspect = positive(perspective['aspectRatio'] ?? options.aspect, 'camera aspect')
+    projection = new PerspectiveCamera(MathUtils.radToDeg(fov), aspect, near, far).projectionMatrix
+  } else if (camera['type'] === 'orthographic') {
+    const orthographic = object(camera['orthographic'], 'orthographic camera')
+    const x = positive(orthographic['xmag'], 'camera xmag'),
+      y = positive(orthographic['ymag'], 'camera ymag')
+    const near = orthographic['znear'],
+      far = positive(orthographic['zfar'], 'camera zfar')
+    if (typeof near !== 'number' || !Number.isFinite(near) || near < 0 || far <= near)
+      throw new TypeError('orthographic camera clip interval is invalid')
+    projection = new OrthographicCamera(-x, x, y, -y, near, far).projectionMatrix
+  } else throw new TypeError('camera type is unsupported')
+  const result = {
+    viewProjection: ownedMatrix(new Matrix4().multiplyMatrices(projection, view)),
+    viewMatrix: ownedMatrix(view),
+    eyePosition: xyz(position),
+  }
+  options.signal?.throwIfAborted()
+  return result
+}

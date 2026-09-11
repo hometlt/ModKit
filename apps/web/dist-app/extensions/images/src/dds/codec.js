@@ -2,8 +2,19 @@ import {
   createInspectionCodec,
   createRasterImageSource,
   createTreeDataSource,
+  editPlanFromInput,
+  replaceBytes,
 } from '@modkit/codec-kit'
 import { decodeBc6h, decodeBc7 } from './bptc.js'
+import { ENCODABLE_FORMATS, encodeDds } from './encode.js'
+import {
+  applyColorKeyTransparency,
+  applyRoundedAlpha,
+  combineNormalSpecular,
+  convertNormalMapToSc2,
+  prepareSc2ButtonIcon,
+  resizeRgba,
+} from '../ops/raster-ops.js'
 import {
   blockBytesFor,
   levelDimensions,
@@ -649,9 +660,123 @@ function regionReader(bytes, info) {
   }
 }
 
+/**
+ * The pixel transforms MK2 shipped, as one operation.
+ *
+ * `ops/raster-ops.js` holds six of them — resize, the SC2 normal-map conversion, the normal and
+ * specular combine, rounded alpha, the button-icon preparation and colour-key transparency — ported
+ * and, until now, imported by nothing. MK2 reached them from VS Code commands; MK3 puts them behind
+ * an operation instead, so the app, the editor and a script all reach the same code rather than the
+ * editor owning a capability the others cannot have.
+ *
+ * Each entry states what it needs, because the failures are silent otherwise: `combineNormalSpecular`
+ * wants a second image and produces nonsense from one, and `prepareSc2ButtonIcon` assumes a square
+ * icon. Checking here means a caller gets told; checking nowhere means a modder gets a wrong texture.
+ */
+const TRANSFORMS = Object.freeze({
+  resize: {
+    label: 'Resize',
+    apply: (image, request) => {
+      const width = Number(request.width)
+      const height = Number(request.height)
+      if (
+        !Number.isSafeInteger(width) ||
+        !Number.isSafeInteger(height) ||
+        width <= 0 ||
+        height <= 0
+      ) {
+        throw new TypeError('resize requires a positive integer width and height')
+      }
+      return resizeRgba(image, width, height)
+    },
+  },
+  'normal-map': {
+    label: 'Convert normal map to the SC2 channel layout',
+    apply: image => convertNormalMapToSc2(image),
+  },
+  'combine-normal-specular': {
+    label: 'Combine a normal map with a specular map',
+    apply: (image, request) => {
+      const specular = imageFromRequest(request.specular)
+      if (specular === undefined) {
+        throw new TypeError('combine-normal-specular requires a specular image')
+      }
+      if (specular.width !== image.width || specular.height !== image.height) {
+        throw new TypeError('combine-normal-specular requires both images at the same size')
+      }
+      return combineNormalSpecular(image, specular)
+    },
+  },
+  'rounded-alpha': {
+    label: 'Round the alpha corners',
+    apply: (image, request) => {
+      const radius = Number(request.radius ?? 0)
+      if (!Number.isFinite(radius) || radius < 0) {
+        throw new TypeError('rounded-alpha requires a non-negative radius')
+      }
+      return applyRoundedAlpha(image, radius)
+    },
+  },
+  'button-icon': {
+    label: 'Prepare an SC2 button icon',
+    apply: (image, request) => {
+      if (image.width !== image.height) {
+        throw new TypeError(
+          `button-icon requires a square image, got ${image.width} x ${image.height}`,
+        )
+      }
+      return prepareSc2ButtonIcon(image, request.options ?? {})
+    },
+  },
+  'color-key': {
+    label: 'Make one colour transparent',
+    apply: (image, request) => {
+      // The library's own option names, so a caller reads one vocabulary rather than two.
+      const target = request.target
+      if (target === null || typeof target !== 'object') {
+        throw new TypeError('color-key requires a target colour as { r, g, b }')
+      }
+      for (const channel of ['r', 'g', 'b']) {
+        if (!Number.isFinite(Number(target[channel]))) {
+          throw new TypeError(`color-key target is missing ${channel}`)
+        }
+      }
+      return applyColorKeyTransparency(image, {
+        target,
+        ...(request.tolerance === undefined ? {} : { tolerance: Number(request.tolerance) }),
+        ...(request.replacement === undefined ? {} : { replacement: request.replacement }),
+      })
+    },
+  },
+})
+
+/** An `{ width, height, pixels }` image supplied in a request, with pixels as a number array. */
+function imageFromRequest(value) {
+  if (value === null || typeof value !== 'object') return undefined
+  const width = Number(value.width)
+  const height = Number(value.height)
+  const pixels = Array.isArray(value.pixels) ? Uint8Array.from(value.pixels) : undefined
+  if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || pixels === undefined) {
+    return undefined
+  }
+  if (pixels.length !== width * height * 4) {
+    throw new TypeError('a supplied image needs width * height * 4 RGBA bytes')
+  }
+  return { width, height, pixels }
+}
+
 const definition = Object.freeze({
   id: ID,
   version: '1.0.0',
+  operations: Object.freeze([
+    Object.freeze({
+      id: 'edit.content',
+      handlerId: 'transform',
+      mutatesSource: true,
+      requiredPermissions: Object.freeze(['read-source', 'write-source']),
+      outputKinds: Object.freeze(['edit-plan']),
+    }),
+  ]),
   format: Object.freeze({ id: 'dds', label: 'DirectDraw Surface', mediaType: 'image/vnd-ms.dds' }),
   async detect(prefix) {
     const matches = prefix.byteLength >= 4 && viewOf(prefix).getUint32(0, true) === DDS_MAGIC
@@ -677,6 +802,30 @@ const definition = Object.freeze({
         mipLevels: info.mipLevels,
         frames: 1,
         channels: channelsOf(info),
+        channelLayout:
+          info.format === 'BC5'
+            ? 'rg'
+            : info.format === 'BC4'
+              ? 'r'
+              : info.alphaOnly
+                ? 'alpha'
+                : info.luminance
+                  ? info.masks[3] === 0
+                    ? 'luminance'
+                    : 'luminance-alpha'
+                  : channelsOf(info) === 3
+                    ? 'rgb'
+                    : 'rgba',
+        compression:
+          {
+            DXT1: 'bc1',
+            DXT3: 'bc2',
+            DXT5: 'bc3',
+            BC4: 'bc4',
+            BC5: 'bc5',
+            BC6H: 'bc6h',
+            BC7: 'bc7',
+          }[info.format] ?? 'none',
         bitDepth: 8,
         colorSpace: info.srgb ? 'srgb' : info.dxgiFormat === undefined ? 'unknown' : 'linear',
         alphaMode: alphaModeOf(info),
@@ -781,7 +930,69 @@ const definition = Object.freeze({
         'common.view/raster-image-source': raster,
       },
       maxDecodedBytes: BigInt(decodedBytes),
-      unsupportedFeatures: ['pixel-editing', 'dds-writing'],
+      /*
+       * Writing is no longer unsupported, and one caveat replaces the two claims that were here:
+       * a transform re-encodes the whole surface, so mip levels, array layers and cube faces beyond
+       * the first are not carried over. Saying which is lost is the difference between a lossy
+       * operation and a surprising one.
+       */
+      unsupportedFeatures: ['dds-transform-writes-a-single-surface'],
+      handlers: {
+        /**
+         * Apply one named pixel transform and hand back the re-encoded file.
+         *
+         * The whole file is replaced rather than patched, because every one of these operations
+         * changes the pixels and most change the dimensions — there is no byte range that means
+         * "the image" in a block-compressed payload. The plan says so through its fidelity, and the
+         * output format defaults to what the source used when that format can be written back.
+         */
+        transform: async input => {
+          const request = input ?? {}
+          const name = typeof request.transform === 'string' ? request.transform : undefined
+          const transform = name === undefined ? undefined : TRANSFORMS[name]
+          if (transform === undefined) {
+            throw new TypeError(
+              `DDS transform must be one of ${Object.keys(TRANSFORMS).join(', ')}`,
+            )
+          }
+          const region = await regionReader(
+            bytes,
+            info,
+          )({
+            x: 0,
+            y: 0,
+            width: info.width,
+            height: info.height,
+            frame: 0,
+            mipLevel: 0,
+            layer: 0,
+            face: 0,
+            slice: 0,
+            pixelFormat: 'rgba8',
+            maxBytes: decodedBytes,
+          })
+          const source = { width: region.width, height: region.height, pixels: region.pixels }
+          const result = transform.apply(source, request)
+          const requested = typeof request.format === 'string' ? request.format : undefined
+          const format =
+            requested ?? (ENCODABLE_FORMATS.includes(info.format) ? info.format : 'rgba8')
+          const encoded = encodeDds(result, { format })
+          return {
+            kind: 'edit-plan',
+            plan: editPlanFromInput(context.input, {
+              planId: `${ID}:${context.input.revisions.revision}:${name}`,
+              edits: [replaceBytes(0, bytes.byteLength, encoded, `${transform.label} (${format})`)],
+              fidelity: {
+                roundTrip: 'lossy',
+                preservesUnknownData: false,
+                notes: [
+                  'The surface is re-encoded; mip levels, layers and faces past the first are dropped.',
+                ],
+              },
+            }),
+          }
+        },
+      },
     }
   },
 })

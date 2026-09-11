@@ -25,6 +25,7 @@ import type {
   FidelityEvidence,
   GrantSnapshot,
   OperationOutput,
+  PayloadStagingStore,
   PayloadStore,
   PermissionGrant,
   StagedPayloadRef,
@@ -45,7 +46,7 @@ import type { OpenedSubject, UnresolvedSubject } from './subject-open.js'
 function unsupported(kind: string): ModkitError {
   return new ModkitError({
     code: 'x3.host/edit-topology-unsupported',
-    message: `editing a «${kind}» subject is not supported yet (single-source and namespace subjects only)`,
+    message: `editing a «${kind}» subject is not supported yet (physical and namespace subjects only)`,
     context: { kind },
   })
 }
@@ -54,7 +55,8 @@ function unsupported(kind: string): ModkitError {
  * The subject's composite revision as 13D sees it, derived from the descriptor's origin with
  * subject-open's fingerprint rule (`{topology, bindingId, source, revision}` canonical JSON).
  *
- * Two topologies answer, and the difference between them is the whole point of the namespace case.
+ * Physical single/bundle subjects and namespaces answer. A bundle retains a composite identity;
+ * each physical binding also has its own revision target, including unwritten dependencies.
  * A `single` subject is one artifact: it can be replaced, and its revision is that artifact's. A
  * `namespace` subject is a directory of artifacts: it can gain and lose entries, so its revision is
  * the namespace's own, carried in `namespaceRevision` — the field the commit coordinator requires
@@ -65,6 +67,24 @@ function unsupported(kind: string): ModkitError {
  */
 export function assetRevisionFromDescriptor(descriptor: AnyDescriptor): AssetRevision {
   const origin = descriptor.origin
+  if (origin.kind === 'bundle') {
+    return Object.freeze({
+      bindings: Object.freeze(
+        Object.fromEntries(origin.bindings.map(binding => [binding.id, binding.revision])),
+      ),
+      compositionFingerprint: canonicalJsonStringify({
+        topology: 'bundle',
+        ...(origin.primary === undefined ? {} : { primary: origin.primary }),
+        bindings: origin.bindings.map(binding => ({
+          bindingId: binding.id,
+          source: binding.source,
+          revision: binding.revision,
+          ownership: binding.ownership,
+          role: binding.role,
+        })),
+      }),
+    })
+  }
   if (origin.kind === 'namespace') {
     // one binding, and it is the namespace itself: the file backend edits single-binding subjects,
     // and a directory is exactly one thing to pin
@@ -91,12 +111,43 @@ export function assetRevisionFromDescriptor(descriptor: AnyDescriptor): AssetRev
   })
 }
 
-/** One edit target per origin binding, pinned to the subject's current revision. */
+/** One revision target per physical binding. Unwritten targets guard dependencies; ownership
+ * and the host grant determine which of them may receive edits. */
 export function subjectEditTargetsFromDescriptor(
   descriptor: AnyDescriptor,
 ): readonly SubjectEditTarget[] {
   const origin = descriptor.origin
   const revision = assetRevisionFromDescriptor(descriptor)
+  if (origin.kind === 'bundle') {
+    const ids = new Set<string>(),
+      sourceIds = new Set<string>(),
+      uris = new Set<string>()
+    if (origin.bindings.length === 0) throw unsupported('empty bundle')
+    return Object.freeze(
+      origin.bindings.map(binding => {
+        if (ids.has(binding.id) || sourceIds.has(binding.source.id) || uris.has(binding.source.uri))
+          throw unsupported('aliased bundle bindings')
+        ids.add(binding.id)
+        sourceIds.add(binding.source.id)
+        uris.add(binding.source.uri)
+        return Object.freeze({
+          targetId: binding.id,
+          subjectUri: descriptor.subjectUri,
+          ownerSource: Object.freeze({ ...binding.source }),
+          semanticPath: Object.freeze([]),
+          expectedRevision: Object.freeze({
+            bindings: Object.freeze({ [binding.id]: binding.revision }),
+            compositionFingerprint: canonicalJsonStringify({
+              topology: 'single',
+              bindingId: binding.id,
+              source: { id: binding.source.id, uri: binding.source.uri },
+              revision: binding.revision,
+            }),
+          }),
+        })
+      }),
+    )
+  }
   if (origin.kind === 'namespace') {
     return Object.freeze([
       Object.freeze({
@@ -158,6 +209,9 @@ export function editPlanFromOperationForDescriptor(
     const expectedTarget = expectedTargets.get(edit.targetId)
     if (
       expectedTarget === undefined ||
+      (descriptor.origin.kind === 'bundle' &&
+        descriptor.origin.bindings.find(binding => binding.id === edit.targetId)?.ownership !==
+          'owned') ||
       !declaredTargetIds.has(edit.targetId) ||
       canonicalJsonStringify(edit.source) !== canonicalJsonStringify(expectedTarget.ownerSource)
     ) {
@@ -168,6 +222,12 @@ export function editPlanFromOperationForDescriptor(
       })
     }
   }
+  // Unwritten bindings are revision guards. A codec cannot omit a dependency from its plan.
+  if (descriptor.origin.kind === 'bundle' && declaredTargetIds.size !== expectedTargets.size)
+    throw new ModkitError({
+      code: 'x3.host/edit-plan-subject-mismatch',
+      message: 'bundle edit plan must retain every opened binding revision',
+    })
   return plan
 }
 
@@ -231,7 +291,7 @@ export interface SubjectEditingOptions {
 export interface SubjectEditorPorts {
   readonly edit: EditSession
   readonly commit: CommitCoordinator
-  readonly payloads: PayloadStore
+  readonly payloads: PayloadStore | PayloadStagingStore
   readonly authorization: EditAuthorizationPort
 }
 
@@ -250,6 +310,10 @@ export interface SubjectEditing {
    * kind, a plan whose targets are not this subject's, or a plan pinned to another revision.
    */
   planFromOperation(output: OperationOutput): AssetEditPlan
+  /** Stage oversized operation payloads through this editing owner's host store. */
+  stagePlan(plan: AssetEditPlan, signal?: AbortSignal): Promise<AssetEditPlan>
+  /** Dispose the writer session and staged refs created by this editing owner. */
+  dispose(): Promise<void>
 }
 
 /**
@@ -257,10 +321,50 @@ export interface SubjectEditing {
  * 1 MiB — right for a primitive, unusable for a product: a format whose edit is a whole-source
  * rewrite (an archive repack, an image encode) exceeds it with the first real file, and the user
  * sees `payload-unavailable` for a save that is perfectly ordinary. 16 MiB covers those and stays
- * far below the realms' transfer limits. Larger sources need staged payloads, which no codec can
- * produce yet — a known limit, not a silent truncation: above this the commit is refused.
+ * far below the realms' transfer limits. A host staging store moves larger writer/operation
+ * payloads out of the inline plan; hosts without one refuse them instead of truncating.
  */
 const DEFAULT_INLINE_PAYLOAD_BYTES = 16 * 1024 * 1024
+
+function isStagingStore(store: PayloadStore): store is PayloadStagingStore {
+  const candidate = store as Partial<PayloadStagingStore>
+  return (
+    typeof candidate.stage === 'function' &&
+    typeof candidate.verify === 'function' &&
+    typeof candidate.release === 'function'
+  )
+}
+
+async function stageOversizedPlan(
+  plan: AssetEditPlan,
+  store: PayloadStagingStore | undefined,
+  maximum: number,
+  owned: Map<string, StagedPayloadRef>,
+  signal?: AbortSignal,
+): Promise<AssetEditPlan> {
+  if (store === undefined) return plan
+  const created: StagedPayloadRef[] = []
+  try {
+    const edits = await Promise.all(
+      plan.edits.map(async edit => {
+        if (!('payload' in edit) || edit.payload.kind === 'staged') return edit
+        const bytes =
+          edit.payload.kind === 'text'
+            ? new TextEncoder().encode(edit.payload.text)
+            : edit.payload.bytes
+        if (bytes.byteLength <= maximum) return edit
+        const ref = await store.stage(bytes, {}, signal)
+        created.push(ref)
+        return Object.freeze({ ...edit, payload: Object.freeze({ kind: 'staged' as const, ref }) })
+      }),
+    )
+    for (const ref of created) owned.set(`${ref.storeId}:${ref.handleId}`, ref)
+    return created.length === 0 ? plan : Object.freeze({ ...plan, edits: Object.freeze(edits) })
+  } catch (error) {
+    await Promise.allSettled(created.map(ref => store.release(ref)))
+    throw error
+  }
+}
 
 const defaultDigest = (value: unknown): string =>
   canonicalJsonStringify(JSON.parse(JSON.stringify(value)) as never)
@@ -272,11 +376,24 @@ export function createSubjectEditing(options: SubjectEditingOptions): SubjectEdi
   const grantSnapshot = createGrantSnapshot({
     snapshotId: options.snapshotId ?? `${options.grant.id}#edit`,
     permissions: options.grant.classes,
-    sourceIds: targets.map(target => target.ownerSource.id),
+    sourceIds: targets
+      .filter(
+        target =>
+          descriptor.origin.kind !== 'bundle' ||
+          descriptor.origin.bindings.find(binding => binding.id === target.targetId)?.ownership ===
+            'owned',
+      )
+      .map(target => target.ownerSource.id),
   })
   const issued = new Set([grantSnapshot.snapshotId])
+  const payloads = options.payloads ?? NO_STAGED_PAYLOADS
+  const staging = isStagingStore(payloads) ? payloads : undefined
+  const maximumInline = options.maxInlinePayloadBytes ?? DEFAULT_INLINE_PAYLOAD_BYTES
+  const ownedStaged = new Map<string, StagedPayloadRef>()
+  const stagePlan = (plan: AssetEditPlan, signal?: AbortSignal) =>
+    stageOversizedPlan(plan, staging, maximumInline, ownedStaged, signal)
   const coordinator = createCommitCoordinator({
-    payloads: options.payloads ?? NO_STAGED_PAYLOADS,
+    payloads,
     backendFor: options.backendFor,
     evidenceFor: options.evidenceFor,
     ...(options.expectedWriter === undefined ? {} : { expectedWriter: options.expectedWriter }),
@@ -294,12 +411,12 @@ export function createSubjectEditing(options: SubjectEditingOptions): SubjectEdi
       : { confirmationMatches: options.confirmationMatches }),
     ...(options.now === undefined ? {} : { now: options.now }),
     ...(options.nextId === undefined ? {} : { nextId: options.nextId }),
-    maxInlinePayloadBytes: options.maxInlinePayloadBytes ?? DEFAULT_INLINE_PAYLOAD_BYTES,
+    maxInlinePayloadBytes: maximumInline,
   })
   const session =
     options.writer === undefined
       ? undefined
-      : createEditSession({ revision, targets, writer: options.writer })
+      : createEditSession({ revision, targets, writer: options.writer, transformPlan: stagePlan })
   // one authorization port over the host-issued snapshot: the user already chose to edit; a host
   // with a stricter policy (a confirm dialog, a per-save grant) replaces this without the editor
   // knowing. `request` hands back the same snapshot `prepare`/`commit` validate.
@@ -314,7 +431,7 @@ export function createSubjectEditing(options: SubjectEditingOptions): SubjectEdi
       : Object.freeze({
           edit: session,
           commit: coordinator,
-          payloads: options.payloads ?? NO_STAGED_PAYLOADS,
+          payloads,
           authorization,
         })
   const editing: SubjectEditing = {
@@ -326,6 +443,13 @@ export function createSubjectEditing(options: SubjectEditingOptions): SubjectEdi
     ...(editorPorts === undefined ? {} : { editorPorts }),
     planFromOperation(output) {
       return editPlanFromOperationForDescriptor(descriptor, output)
+    },
+    stagePlan,
+    async dispose() {
+      await session?.dispose()
+      const refs = [...ownedStaged.values()]
+      ownedStaged.clear()
+      if (staging !== undefined) await Promise.allSettled(refs.map(ref => staging.release(ref)))
     },
   }
   return Object.freeze(editing)

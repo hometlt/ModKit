@@ -243,4 +243,43 @@ describe('12-3 a writer can create a new artifact through the commit coordinator
     expect(listed).toEqual(['someone-elses-file.txt'])
     await mount.dispose()
   }, 60_000)
+
+  it('undo removes a file created inside the pinned namespace', async () => {
+    scratch = await mkdtemp(join(tmpdir(), 'x3-namespace-seam-'))
+    const { opened, mount } = await openNamespaceSubject(scratch)
+    const backend = createFileEditingBackend({ roots: [scratch] })
+    const editing = createSubjectEditing({
+      opened,
+      grant: WRITE,
+      backendFor: () => backend,
+      evidenceFor: () => EXPORT_EVIDENCE,
+      confirmationMatches: token => token === CONFIRM,
+    })
+    const createdPath = join(scratch, 'undo-created.uvm.json')
+    const plan = planFor(editing.targets, [
+      { name: 'undo-created.uvm.json', text: '{"schemaVersion":1}' },
+    ])
+    const prepared = await editing.coordinator.prepare(plan, {
+      grant: editing.grantSnapshot,
+      confirmationToken: CONFIRM,
+    })
+    expect(prepared.state).toBe('ready')
+    if (prepared.state !== 'ready') throw new Error('create did not prepare')
+    const committed = await editing.coordinator.commit(prepared.prepared, {
+      grant: editing.grantSnapshot,
+    })
+    expect(committed.state).toBe('committed')
+    if (committed.state !== 'committed') throw new Error('create did not commit')
+    expect(await readFile(createdPath, 'utf8')).toBe('{"schemaVersion":1}')
+
+    const undone = await editing.coordinator.undo(committed.receipt.transactionId, {
+      grant: editing.grantSnapshot,
+    })
+    expect(undone.state).toBe('committed')
+    expect((await readdir(scratch)).filter(name => !name.startsWith('.x3-edit-'))).toEqual([])
+
+    await editing.dispose()
+    await backend.dispose()
+    await mount.dispose()
+  }, 60_000)
 })

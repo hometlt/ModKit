@@ -24,75 +24,209 @@
     "compatibility"
   ],
   "properties": {
-    "$comment": { "type": "string" },
-    "schemaVersion": { "const": "semantic-scope-descriptor-1" },
-    "scopeId": { "type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$", "minLength": 3 },
-    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
-    "status": { "enum": ["registered", "candidate"] },
-    "plane": { "enum": ["model", "world", "definitions", "presentation"] },
-    "owner": { "const": "multiverse/specs" },
-    "registeredOn": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
-    "summary": { "type": "string", "minLength": 20 },
+    "$comment": {
+      "type": "string"
+    },
+    "schemaVersion": {
+      "const": "semantic-scope-descriptor-1"
+    },
+    "scopeId": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+      "minLength": 3
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "status": {
+      "enum": [
+        "registered",
+        "candidate"
+      ]
+    },
+    "plane": {
+      "enum": [
+        "model",
+        "world",
+        "definitions",
+        "presentation",
+        "runtime"
+      ]
+    },
+    "owner": {
+      "const": "multiverse/specs"
+    },
+    "registeredOn": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 20
+    },
     "hash": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["algorithm", "canonicalForm", "envelopeSchemaVersion", "domain", "output", "envelope", "facetKey"],
+      "required": [
+        "algorithm",
+        "canonicalForm",
+        "envelopeSchemaVersion",
+        "domain",
+        "output",
+        "envelope",
+        "facetKey"
+      ],
       "properties": {
-        "algorithm": { "enum": ["sha256"] },
-        "canonicalForm": { "const": "uv.canonical/typed-form@1" },
-        "envelopeSchemaVersion": { "type": "integer", "minimum": 1 },
-        "domain": { "type": "string", "minLength": 5 },
-        "output": { "const": "algorithm-qualified" },
-        "envelope": { "type": "object" },
-        "facetKey": { "type": "string", "minLength": 3 }
+        "algorithm": {
+          "enum": [
+            "sha256"
+          ]
+        },
+        "canonicalForm": {
+          "const": "uv.canonical/typed-form@1"
+        },
+        "envelopeSchemaVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "domain": {
+          "type": "string",
+          "minLength": 5
+        },
+        "output": {
+          "const": "algorithm-qualified"
+        },
+        "envelope": {
+          "type": "object"
+        },
+        "facetKey": {
+          "type": "string",
+          "minLength": 3
+        }
       }
     },
     "numeric": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["model", "float32Widening", "negativeZero", "nonFinite", "comparison"],
+      "required": [
+        "model",
+        "float32Widening",
+        "negativeZero",
+        "nonFinite",
+        "comparison"
+      ],
       "properties": {
-        "model": { "type": "string", "minLength": 10 },
-        "float32Widening": { "type": "string", "minLength": 10 },
-        "negativeZero": { "type": "string", "minLength": 10 },
-        "nonFinite": { "type": "string", "minLength": 10 },
-        "comparison": { "type": "string", "minLength": 10 }
+        "model": {
+          "type": "string",
+          "minLength": 10
+        },
+        "float32Widening": {
+          "type": "string",
+          "minLength": 10
+        },
+        "negativeZero": {
+          "type": "string",
+          "minLength": 10
+        },
+        "nonFinite": {
+          "type": "string",
+          "minLength": 10
+        },
+        "comparison": {
+          "type": "string",
+          "minLength": 10
+        }
       }
     },
     "missingSemantics": {
       "type": "object",
-      "required": ["absentFacet", "absentKey", "null", "empty", "unknown"],
-      "additionalProperties": { "type": "string", "minLength": 10 }
+      "required": [
+        "absentFacet",
+        "absentKey",
+        "null",
+        "empty",
+        "unknown"
+      ],
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 10
+      }
     },
     "ordering": {
       "type": "object",
-      "required": ["facets", "absentFacets", "objectKeys", "sequences"],
-      "additionalProperties": { "type": "string", "minLength": 5 }
+      "required": [
+        "facets",
+        "absentFacets",
+        "objectKeys",
+        "sequences"
+      ],
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 5
+      }
     },
     "resourceClosure": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["policy", "modes", "modeIsHashed", "digestForm", "acceptedAlgorithms", "roles"],
+      "required": [
+        "policy",
+        "modes",
+        "modeIsHashed",
+        "digestForm",
+        "acceptedAlgorithms",
+        "roles"
+      ],
       "properties": {
-        "policy": { "type": "string", "minLength": 10 },
+        "policy": {
+          "type": "string",
+          "minLength": 10
+        },
         "modes": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["logical", "content-qualified"],
+          "required": [
+            "logical",
+            "content-qualified"
+          ],
           "properties": {
-            "logical": { "type": "string", "minLength": 20 },
-            "content-qualified": { "type": "string", "minLength": 20 }
+            "logical": {
+              "type": "string",
+              "minLength": 20
+            },
+            "content-qualified": {
+              "type": "string",
+              "minLength": 20
+            }
           }
         },
-        "modeIsHashed": { "const": true },
-        "modeIsHashedRationale": { "type": "string" },
-        "digestForm": { "type": "string", "minLength": 5 },
+        "modeIsHashed": {
+          "const": true
+        },
+        "modeIsHashedRationale": {
+          "type": "string"
+        },
+        "digestForm": {
+          "type": "string",
+          "minLength": 5
+        },
         "acceptedAlgorithms": {
           "type": "array",
           "minItems": 1,
-          "items": { "enum": ["sha256"] }
+          "items": {
+            "enum": [
+              "sha256"
+            ]
+          }
         },
-        "roles": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } }
+        "roles": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
       }
     },
     "facets": {
@@ -101,35 +235,92 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["facetId", "version", "requirement", "summary", "keys", "binding"],
+        "required": [
+          "facetId",
+          "version",
+          "requirement",
+          "summary",
+          "keys",
+          "binding"
+        ],
         "properties": {
-          "facetId": { "type": "string", "pattern": "^uv\\.[a-z]+/[a-z0-9-]+$" },
-          "version": { "type": "integer", "minimum": 1 },
-          "requirement": { "enum": ["required", "optional"] },
-          "summary": { "type": "string", "minLength": 20 },
-          "keys": { "type": "object", "minProperties": 1 },
-          "presenceRule": { "type": "string", "minLength": 10 },
+          "facetId": {
+            "type": "string",
+            "pattern": "^uv\\.[a-z]+/[a-z0-9-]+$"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "requirement": {
+            "enum": [
+              "required",
+              "optional"
+            ]
+          },
+          "summary": {
+            "type": "string",
+            "minLength": 20
+          },
+          "keys": {
+            "type": "object",
+            "minProperties": 1
+          },
+          "presenceRule": {
+            "type": "string",
+            "minLength": 10
+          },
           "binding": {
             "type": "object",
             "additionalProperties": false,
-            "required": ["live", "artifact"],
+            "required": [
+              "live",
+              "artifact"
+            ],
             "properties": {
               "live": {
                 "type": "object",
-                "required": ["note"],
+                "required": [
+                  "note"
+                ],
                 "properties": {
-                  "contract": { "type": ["string", "null"] },
-                  "major": { "type": "integer", "minimum": 1 },
-                  "members": { "type": "array", "items": { "type": "string" } },
-                  "note": { "type": "string", "minLength": 10 }
+                  "contract": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "major": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "members": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 10
+                  }
                 }
               },
               "artifact": {
                 "type": "object",
-                "required": ["profile", "note"],
+                "required": [
+                  "profile",
+                  "note"
+                ],
                 "properties": {
-                  "profile": { "type": "string", "minLength": 3 },
-                  "note": { "type": "string", "minLength": 10 }
+                  "profile": {
+                    "type": "string",
+                    "minLength": 3
+                  },
+                  "note": {
+                    "type": "string",
+                    "minLength": 10
+                  }
                 }
               }
             }
@@ -140,30 +331,71 @@
     "bindings": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["liveBaseContract", "artifactProfile", "notFrozenHere"],
+      "required": [
+        "liveBaseContract",
+        "artifactProfile",
+        "notFrozenHere"
+      ],
       "properties": {
         "liveBaseContract": {
           "type": "object",
-          "required": ["contract", "major", "maturity"],
+          "required": [
+            "contract",
+            "major",
+            "maturity"
+          ],
           "properties": {
-            "contract": { "type": "string" },
-            "major": { "type": "integer", "minimum": 1 },
-            "maturity": { "enum": ["admitted", "publisher-candidate"] },
-            "note": { "type": "string" }
+            "contract": {
+              "type": "string"
+            },
+            "major": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "maturity": {
+              "enum": [
+                "admitted",
+                "publisher-candidate"
+              ]
+            },
+            "note": {
+              "type": "string"
+            }
           }
         },
-        "artifactProfile": { "type": "object" },
-        "notFrozenHere": { "type": "array", "items": { "type": "string", "minLength": 10 } }
+        "artifactProfile": {
+          "type": "object"
+        },
+        "notFrozenHere": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 10
+          }
+        }
       }
     },
     "compatibility": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["minorVersions", "majorVersions", "hashComparability"],
+      "required": [
+        "minorVersions",
+        "majorVersions",
+        "hashComparability"
+      ],
       "properties": {
-        "minorVersions": { "type": "string", "minLength": 20 },
-        "majorVersions": { "type": "string", "minLength": 20 },
-        "hashComparability": { "type": "string", "minLength": 20 }
+        "minorVersions": {
+          "type": "string",
+          "minLength": 20
+        },
+        "majorVersions": {
+          "type": "string",
+          "minLength": 20
+        },
+        "hashComparability": {
+          "type": "string",
+          "minLength": 20
+        }
       }
     },
     "amendments": {
@@ -172,14 +404,34 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["date", "change", "hashImpact", "rationale"],
+        "required": [
+          "date",
+          "change",
+          "hashImpact",
+          "rationale"
+        ],
         "properties": {
-          "date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
-          "change": { "type": "string", "minLength": 20 },
-          "hashImpact": { "const": "none" },
-          "rationale": { "type": "string", "minLength": 20 }
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "change": {
+            "type": "string",
+            "minLength": 20
+          },
+          "hashImpact": {
+            "const": "none"
+          },
+          "rationale": {
+            "type": "string",
+            "minLength": 20
+          }
         }
       }
+    },
+    "annex": {
+      "description": "Non-hashed, non-normative pointers a descriptor may carry (family specs, admission ladder, related receipt/state specs). Nothing in the annex reaches the hash or the compatibility statement.",
+      "type": "object"
     }
   }
 }

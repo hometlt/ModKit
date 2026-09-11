@@ -16,6 +16,23 @@ export const PARTS = Object.freeze([
   'viewer.status',
   'viewer.empty',
 
+  /*
+   * Toolbar items, shared by every viewer that has a toolbar.
+   *
+   * They are one vocabulary rather than one per viewer because a theme styles "a toggle in a
+   * toolbar" once: a tree, a table and a strings editor that each invented their own part names
+   * would make the same button three different things to style.
+   */
+  'toolbar.group',
+  'toolbar.toggle',
+  'toolbar.chip',
+  'toolbar.action',
+  'toolbar.search',
+  'toolbar.search-input',
+  'toolbar.separator',
+  'toolbar.spacer',
+  'toolbar.label',
+
   // bounded + virtual text
   'text',
   'text.line',
@@ -51,6 +68,7 @@ export const PARTS = Object.freeze([
   'field',
   'field.control',
   'field.status',
+  'field.target',
 
   // table
   'table',
@@ -163,6 +181,9 @@ export const PARTS = Object.freeze([
   'model.readout',
   'model.toolbar',
   'model.primitive-selector',
+  'model.animation-selector',
+  'model.animation-seek',
+  'model.playback-status',
   'model.facets',
   'model.facet',
   'model.facet-summary',
@@ -192,6 +213,7 @@ export const PARTS = Object.freeze([
   'filetree.icon',
   'filetree.label',
   'filetree.badge',
+  'filetree.action',
   'filetree.children',
   'filetree.empty',
 
@@ -302,7 +324,9 @@ export const PARTS = Object.freeze([
   'workbench.sidebar',
   'workbench.main',
   'workbench.panel',
+  'workbench.auxbar',
   'workbench.statusbar',
+  'workbench.status-slot',
   'workbench.host-status',
 
   // view picker

@@ -103,6 +103,8 @@ export interface FieldEditFormField extends FieldSchema {
 
 /** A form published by one operation input schema. */
 export interface FieldEditFormSpecV1 {
+  /** Fixed operation input, copied per submission. Controls cannot overwrite its top-level keys. */
+  readonly baseInput?: Readonly<Record<string, JsonValue>>
   readonly id: string
   readonly label: string
   readonly summary: string

@@ -41,6 +41,7 @@ import {
   type ProviderPolicyLockEntry,
   type ProviderRequest,
   type ResourceBudget,
+  type ResourceSessionPort,
   type RuntimeTarget,
   type ServiceContractDefinitionRegistry,
   type SelectedServiceOffer,
@@ -68,7 +69,22 @@ import {
 import { DEFAULT_EXECUTION_BACKENDS, type ExecutionBackendRegistry } from './execution/backend.js'
 import { matchesSignatures, signatureNeeds, type SignatureWindows } from './detection-index.js'
 import { assembleSubjectDescriptor } from './session.js'
+import {
+  createSubjectRasterResources,
+  type SubjectRasterResourceState,
+} from './raster-resources.js'
+import {
+  createSubjectLogicalResources,
+  snapshotLogicalResourceDiscoveryPolicies,
+  type HostLogicalResourceDiscoveryPolicy,
+  type SubjectLogicalResourceState,
+} from './logical-resources.js'
 import { createContainerNamespaceComposition } from './container-composition.js'
+import {
+  DEFAULT_RESOURCE_SESSION_LIMITS,
+  type ResourceSessionLimits,
+  type ResourceSessionOptions,
+} from './resource-session.js'
 
 const DEFAULT_MINIMUM_CONFIDENCE = 0.5
 const DEFAULT_MAX_CANDIDATES = 64
@@ -95,9 +111,11 @@ export interface SubjectInputResolutionContext {
 }
 
 /** Host-owned companion/namespace resolver. The default handles direct single and namespace roots. */
-export type SubjectInputResolver = (
-  context: SubjectInputResolutionContext,
-) => AssetInput | Promise<AssetInput>
+export interface SubjectInputResolver {
+  (context: SubjectInputResolutionContext): AssetInput | Promise<AssetInput>
+  /** Same closed host origin, separate post-open leases. No enumeration handle crosses this API. */
+  openResources?(options: Omit<ResourceSessionOptions, 'origin'>): ResourceSessionPort
+}
 
 export interface OpenSubjectOptions {
   readonly inventory: Inventory
@@ -112,6 +130,14 @@ export interface OpenSubjectOptions {
   readonly budget: ResourceBudget
   readonly serviceDefinitions?: ServiceContractDefinitionRegistry
   readonly resolveInput?: SubjectInputResolver
+  /** Borrowed post-open origin for a scoped child. Parent owns disposal; no pre-open input authority is added. */
+  readonly resourceSession?: ResourceSessionPort
+  /** Host ceilings for resources discovered after open; narrowed by the effective codec budget. */
+  readonly resourceLimits?: Partial<ResourceSessionLimits>
+  /** Registered host-owned discovery closures; codecs receive only role/extension requests. */
+  readonly logicalResourceDiscovery?: readonly HostLogicalResourceDiscoveryPolicy[]
+  /** Nested raster decoding cannot recursively acquire another subject raster decoder. */
+  readonly provideRasterResources?: boolean
   readonly minimumConfidence?: number
   readonly maxCandidates?: number
   readonly signal?: AbortSignal
@@ -120,6 +146,11 @@ export interface OpenSubjectOptions {
 export interface OpenedSubject {
   readonly state: 'opened'
   readonly session: AssetSession
+  /**
+   * Lazy resources from the same host-owned origin as resolveInput. Available with read-source;
+   * disposed with session. A codec receives only its input, never this origin or port.
+   */
+  readonly resources?: ResourceSessionPort
   readonly descriptor: AnyDescriptor
   readonly ticket: ActivationTicket
   /** Codec detection provenance is not a provider-policy lock entry. */
@@ -162,6 +193,8 @@ interface RunnableCandidate {
 }
 
 interface SubjectOpenRoute {
+  /** A semantic alias resolves late resources inside its retained carrier namespace. */
+  readonly openResources?: NonNullable<SubjectInputResolver['openResources']>
   /** Restrict a byte open to the exact carrier provider selected by a namespace alias. */
   readonly containerProviderFormatId?: string
   /** Admit only namespace aliases bound to this already-open carrier format. */
@@ -183,6 +216,8 @@ interface DetectedCandidate extends RunnableCandidate {
   readonly detection: DetectionResult
   readonly effectiveBudget: ResourceBudget
   readonly nestedLocks: ProviderPolicyLockEntry[]
+  readonly rasterState: SubjectRasterResourceState
+  readonly logicalState: SubjectLogicalResourceState
   /** The pinned request that resolved this candidate; the open phase re-resolves with it. */
   readonly request: ProviderRequest
   /** Builds a ContributionContext bound to this candidate's *current* resource scope. */
@@ -291,6 +326,7 @@ function sessionWithResources(
   session: AssetSession,
   resources: AsyncReleaseScope,
   gating?: { readonly spec: CodecContributionSpecV1Wire; readonly grant: PermissionGrant },
+  beforeDispose?: () => void,
 ): AssetSession {
   let disposed = false
   const operations =
@@ -305,6 +341,7 @@ function sessionWithResources(
     async dispose(): Promise<void> {
       if (disposed) return
       disposed = true
+      beforeDispose?.()
       let firstError: unknown
       try {
         await session.dispose()
@@ -1297,6 +1334,13 @@ async function openSubjectDirect(
       }
       const record = {
         resources,
+        rasterState: { live: false, reservedBytes: 0 } as SubjectRasterResourceState,
+        logicalState: {
+          live: false,
+          reservedBytes: 0,
+          resolveCalls: 0,
+          discoveryCalls: 0,
+        } as SubjectLogicalResourceState,
         nestedLocks: [] as ProviderPolicyLockEntry[],
         ...(route.includeSelectionLock
           ? { selectionLock: buildLockEntry(request, resolved.result) }
@@ -1379,6 +1423,73 @@ async function openSubjectDirect(
                 })
           return Object.freeze({
             contracts,
+            logicalResources: createSubjectLogicalResources({
+              state: record.logicalState,
+              budget: effectiveBudget,
+              ...(options.logicalResourceDiscovery === undefined
+                ? {}
+                : { policies: options.logicalResourceDiscovery }),
+              isAuthorized: () =>
+                grantValidity(grant).state === 'valid' && grant.classes.includes('read-source'),
+            }),
+            modelResources: createSubjectModelResources({
+              state: record.rasterState,
+              budget: effectiveBudget,
+              isAuthorized: () =>
+                grantValidity(grant).state === 'valid' && grant.classes.includes('read-source'),
+              ancestors: [`${options.source.ref.id}@${options.source.revision}`],
+              own: release => record.resources.add(release),
+              open: (source, path, signal) =>
+                openSubject({
+                  inventory: options.inventory,
+                  source,
+                  path,
+                  target,
+                  intent: 'full',
+                  grant: { ...grant, classes: ['read-source'] },
+                  budget: effectiveBudget,
+                  executionBackends,
+                  ...(record.rasterState.resources === undefined
+                    ? {}
+                    : { resourceSession: record.rasterState.resources }),
+                  ...(options.resolveInput === undefined
+                    ? {}
+                    : { resolveInput: options.resolveInput }),
+                  ...(options.serviceDefinitions === undefined
+                    ? {}
+                    : { serviceDefinitions: options.serviceDefinitions }),
+                  ...(options.policy === undefined ? {} : { policy: options.policy }),
+                  ...(signal === undefined ? {} : { signal }),
+                }),
+            }),
+            ...(options.provideRasterResources === false
+              ? {}
+              : {
+                  rasterResources: createSubjectRasterResources({
+                    state: record.rasterState,
+                    budget: effectiveBudget,
+                    isAuthorized: () =>
+                      grantValidity(grant).state === 'valid' &&
+                      grant.classes.includes('read-source'),
+                    open: (source, hint, signal) =>
+                      openSubject({
+                        inventory: options.inventory,
+                        source,
+                        ...hint,
+                        target,
+                        intent: 'full',
+                        grant: { ...grant, classes: ['read-source'] },
+                        budget: effectiveBudget,
+                        executionBackends,
+                        provideRasterResources: false,
+                        ...(options.serviceDefinitions === undefined
+                          ? {}
+                          : { serviceDefinitions: options.serviceDefinitions }),
+                        ...(options.policy === undefined ? {} : { policy: options.policy }),
+                        ...(signal === undefined ? {} : { signal }),
+                      }),
+                  }),
+                }),
             budgets: effectiveBudget,
             diagnostics: {
               report(item: Diagnostic) {
@@ -1560,9 +1671,62 @@ async function openSubjectDirect(
       options.signal,
     )
     const session = openedSession
+    throwIfAborted(options.signal)
+    if (session.revision !== options.source.revision) {
+      throw new ModkitError({
+        code: 'x3.host/subject-session-identity-mismatch',
+        message: 'opened codec session revision does not match the selected source',
+      })
+    }
+    if (session.state() === 'disposed' || grantValidity(best.effectiveGrant).state !== 'valid') {
+      throw new ModkitError({
+        code: 'x3.host/subject-context-unavailable',
+        message: 'The opened subject context is no longer live.',
+      })
+    }
+    let postOpenResources: ResourceSessionPort | undefined = best.effectiveGrant.classes.includes(
+      'read-source',
+    )
+      ? options.resourceSession
+      : undefined
+    const openResources = route.openResources ?? options.resolveInput?.openResources
+    if (openResources !== undefined && best.effectiveGrant.classes.includes('read-source')) {
+      const requested = { ...DEFAULT_RESOURCE_SESSION_LIMITS, ...options.resourceLimits }
+      const openedResources = openResources({
+        revision: session.revision,
+        revisionPolicy: 'pin',
+        isAuthorized: () =>
+          grantValidity(best.effectiveGrant).state === 'valid' &&
+          best.effectiveGrant.classes.includes('read-source'),
+        limits: {
+          maxResources: Math.min(requested.maxResources, best.effectiveBudget.maxNodes),
+          maxBytes:
+            requested.maxBytes < best.effectiveBudget.maxInputBytes
+              ? requested.maxBytes
+              : best.effectiveBudget.maxInputBytes,
+          maxDepth: Math.min(requested.maxDepth, best.effectiveBudget.maxDepth),
+          maxEntries: Math.min(requested.maxEntries, best.effectiveBudget.maxNodes),
+        },
+      })
+      postOpenResources = openedResources
+      best.resources.add(() => openedResources.dispose())
+      best.logicalState.resources = openedResources
+    }
+    if (postOpenResources !== undefined) best.logicalState.resources = postOpenResources
+    best.logicalState.live = true
+    best.resources.add(() => {
+      best.logicalState.live = false
+    })
     const descriptor = await assembleSubjectDescriptor(
       (await session.descriptor()) as AnyDescriptorWire,
     )
+    throwIfAborted(options.signal)
+    if (session.state() === 'disposed' || grantValidity(best.effectiveGrant).state !== 'valid') {
+      throw new ModkitError({
+        code: 'x3.host/subject-context-unavailable',
+        message: 'The subject context stopped being live while its descriptor was initialized.',
+      })
+    }
     if (
       descriptor.interpretation !== 'codec' ||
       descriptor.identity.codecId !== best.contributionId ||
@@ -1608,14 +1772,27 @@ async function openSubjectDirect(
       ...best.nestedLocks,
       ...(best.selectionLock === undefined ? [] : [best.selectionLock]),
     ])
-    const managedSession = sessionWithResources(session, best.resources, {
-      spec: best.spec,
-      grant: best.effectiveGrant,
+    const managedSession = sessionWithResources(
+      session,
+      best.resources,
+      {
+        spec: best.spec,
+        grant: best.effectiveGrant,
+      },
+      () => {
+        best.logicalState.live = false
+      },
+    )
+    if (postOpenResources !== undefined) best.rasterState.resources = postOpenResources
+    best.rasterState.live = true
+    best.resources.add(() => {
+      best.rasterState.live = false
     })
     openedSession = undefined
     return Object.freeze({
       state: 'opened' as const,
       session: managedSession,
+      ...(postOpenResources === undefined ? {} : { resources: postOpenResources }),
       descriptor,
       ticket: best.ticket,
       detectionSelectionText,
@@ -1631,6 +1808,7 @@ async function openSubjectDirect(
       diagnostics: Object.freeze([...diagnostics, ...best.activationDiagnostics]),
     })
   } catch (error) {
+    best.logicalState.live = false
     if (openedSession !== undefined) {
       try {
         await openedSession.dispose()
@@ -1700,7 +1878,14 @@ async function disposeOpened(result: OpenSubjectResult): Promise<void> {
  * the already-open generic container is returned; ambiguity and composition failures do not fall
  * back to another interpretation.
  */
-export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubjectResult> {
+export async function openSubject(request: OpenSubjectOptions): Promise<OpenSubjectResult> {
+  const policies = request.logicalResourceDiscovery
+  const options: OpenSubjectOptions = {
+    ...request,
+    ...(policies === undefined
+      ? {}
+      : { logicalResourceDiscovery: snapshotLogicalResourceDiscoveryPolicies(policies) }),
+  }
   const compositionStartedAt = Date.now()
   const aliases = matchingContainerAliases(options)
   if (aliases.length === 0) return openSubjectDirect(options)
@@ -1773,6 +1958,7 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
       { ...options, source: composition.source, budget: semanticBudget },
       {
         containerAliasFormatId: formatId,
+        openResources: composition.openResources,
         containerAliasContributionIds: new Set(aliases.map(alias => alias.contributionId)),
       },
     )
@@ -1854,3 +2040,4 @@ export async function openSubject(options: OpenSubjectOptions): Promise<OpenSubj
     throw error
   }
 }
+import { createSubjectModelResources } from './model-resources.js'

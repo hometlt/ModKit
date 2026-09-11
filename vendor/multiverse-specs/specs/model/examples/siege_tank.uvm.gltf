@@ -3,9 +3,14 @@
     "version": "2.0",
     "generator": "modkitx-uvm/1.0.0 (m3 importer 1.4.2)",
     "copyright": "Example fixture. Buffer and image URIs are placeholders.",
-    "extras": { "uv": { "format": "UVM", "version": "1.0", "profile": "m3" } }
+    "extras": {
+      "uv": {
+        "format": "UVM",
+        "version": "1.0",
+        "profile": "m3"
+      }
+    }
   },
-
   "extensionsUsed": [
     "KHR_texture_basisu",
     "KHR_materials_emissive_strength",
@@ -26,16 +31,19 @@
     "UV_game_variants",
     "UV_game_gameplay",
     "UV_game_sc2",
-    "UV_provenance",
-    "UV_source_blob"
+    "UV_provenance"
   ],
   "extensionsRequired": [],
-
   "extensions": {
     "UV_asset": {
       "id": "terran/siege_tank",
       "class": "unit",
-      "categories": ["vehicle", "ground", "mechanical", "armored"],
+      "categories": [
+        "vehicle",
+        "ground",
+        "mechanical",
+        "armored"
+      ],
       "displayName": "Siege Tank",
       "coreRenderable": true,
       "capabilities": {
@@ -44,21 +52,26 @@
         "effects": true,
         "collision": true,
         "lods": 3,
-        "variants": ["default", "sieged", "wreck"],
+        "variants": [
+          "default",
+          "sieged",
+          "wreck"
+        ],
         "sockets": 4,
         "triangles": 8412,
         "bones": 9
       }
     },
-
     "UV_units": {
       "sourceUnit": "sc2-game-unit",
       "metersPerSourceUnit": 1.0,
       "sourceUnitsPerCell": 1.0,
-      "footprintCells": [2, 2],
+      "footprintCells": [
+        2,
+        2
+      ],
       "sourceFrameRate": 30
     },
-
     "UV_game_effects": {
       "profile": "m3",
       "particles": [
@@ -83,17 +96,45 @@
           "boneAnchored": true,
           "modelSpace": false,
           "lifecycleSize": {
-            "start": [0.2, 0.2, 0.2],
-            "middle": [0.9, 0.9, 0.9],
-            "end": [1.6, 1.6, 1.6],
+            "start": [
+              0.2,
+              0.2,
+              0.2
+            ],
+            "middle": [
+              0.9,
+              0.9,
+              0.9
+            ],
+            "end": [
+              1.6,
+              1.6,
+              1.6
+            ],
             "timeMiddle": 0.35
           },
           "segmentColors": [
-            [1.0, 0.9, 0.7],
-            [0.5, 0.5, 0.5],
-            [0.2, 0.2, 0.2]
+            [
+              1.0,
+              0.9,
+              0.7
+            ],
+            [
+              0.5,
+              0.5,
+              0.5
+            ],
+            [
+              0.2,
+              0.2,
+              0.2
+            ]
           ],
-          "segmentAlphas": [0.9, 0.6, 0.0],
+          "segmentAlphas": [
+            0.9,
+            0.6,
+            0.0
+          ],
           "collideTerrain": true,
           "bounce": 0.2,
           "friction": 0.4,
@@ -107,13 +148,20 @@
       "warps": [],
       "projectors": []
     },
-
     "MODKITX_lod_selection": {
       "policy": "screen-coverage",
       "hysteresis": 0.1,
       "levels": [
-        { "node": 1, "screenCoverage": 1.0, "maxDistance": 30 },
-        { "node": 8, "screenCoverage": 0.25, "maxDistance": 90 },
+        {
+          "node": 1,
+          "screenCoverage": 1.0,
+          "maxDistance": 30
+        },
+        {
+          "node": 8,
+          "screenCoverage": 0.25,
+          "maxDistance": 90
+        },
         {
           "node": 9,
           "screenCoverage": 0.06,
@@ -121,15 +169,30 @@
         }
       ]
     },
-
     "MODKITX_batching_hints": {
-      "nodes": [{ "node": 9, "mode": "batched", "triangleCountHint": 486 }]
+      "nodes": [
+        {
+          "node": 9,
+          "mode": "batched",
+          "triangleCountHint": 486
+        }
+      ]
     },
-
     "UV_game_variants": {
       "variants": [
-        { "name": "default", "default": true },
-        { "name": "sieged", "showNodes": [10], "hideNodes": [4] },
+        {
+          "name": "default",
+          "default": true
+        },
+        {
+          "name": "sieged",
+          "showNodes": [
+            10
+          ],
+          "hideNodes": [
+            4
+          ]
+        },
         {
           "name": "wreck",
           "asset": "siege_tank_wreck.uvm.glb",
@@ -137,21 +200,34 @@
           "alignSocket": "wreck-pivot"
         }
       ],
-      "transitions": [{ "from": "default", "to": "wreck", "trigger": "death" }]
+      "transitions": [
+        {
+          "from": "default",
+          "to": "wreck",
+          "trigger": "death"
+        }
+      ]
     },
-
     "UV_game_gameplay": {
       "schema": "https://modkitx.org/uvm/gameplay/rts-1",
       "faction": "terran",
       "unitClass": "vehicle",
-      "cost": { "minerals": 150, "vespene": 125, "supply": 3, "buildTimeSeconds": 32 },
+      "cost": {
+        "minerals": 150,
+        "vespene": 125,
+        "supply": 3,
+        "buildTimeSeconds": 32
+      },
       "health": 175,
       "armor": 1,
       "armorType": "armored",
       "sight": 11.0,
       "speed": 2.25,
       "turnRate": 6.2832,
-      "footprintCells": [2, 2],
+      "footprintCells": [
+        2,
+        2
+      ],
       "movementClass": "tank",
       "weapons": [
         {
@@ -163,33 +239,55 @@
           "damageType": "normal",
           "range": 7.0,
           "cooldownSeconds": 1.04,
-          "targets": ["ground"],
+          "targets": [
+            "ground"
+          ],
           "arc": 6.2832
         }
       ],
-      "tags": ["mechanical", "armored", "siege"]
+      "tags": [
+        "mechanical",
+        "armored",
+        "siege"
+      ]
     },
-
     "UV_game_sc2": {
       "modelLink": "SiegeTank",
       "actorLink": "SiegeTank",
       "unitLink": "SiegeTank",
-      "attachmentPoints": { "6": "Ref_Weapon", "7": "Ref_Overhead", "11": "Ref_Damage" },
-      "boundingSphere": { "center": [0, 0.95, 0], "radius": 3.1 },
+      "attachmentPoints": {
+        "6": "Ref_Weapon",
+        "7": "Ref_Overhead",
+        "11": "Ref_Damage"
+      },
+      "boundingSphere": {
+        "center": [
+          0,
+          0.95,
+          0
+        ],
+        "radius": 3.1
+      },
       "flags": 458755,
       "version": 34
     },
-
     "UV_provenance": {
       "source": {
         "format": "m3",
         "formatVersion": 34,
         "file": "Assets/Units/Terran/SiegeTank/SiegeTank.m3",
         "sha256": "9f2c1d4a8b3e5f60718293a4b5c6d7e8f9012345678990abcdef0123456789ab",
-        "sourceAxes": { "up": "+z", "forward": "+x", "handedness": "right" },
+        "sourceAxes": {
+          "up": "+z",
+          "forward": "+x",
+          "handedness": "right"
+        },
         "sourceUnits": "sc2-game-unit"
       },
-      "importer": { "id": "modkitx.m3", "version": "1.4.2" },
+      "importer": {
+        "id": "modkitx.m3",
+        "version": "1.4.2"
+      },
       "generatedAt": "2026-08-06T00:00:00Z",
       "lost": [
         {
@@ -197,109 +295,200 @@
           "severity": "info",
           "feature": "ragdoll joint constraints",
           "count": 6,
-          "detail": "PHSH entries 0-5",
-          "recoverable": true,
-          "blob": 0
+          "detail": "PHSH entries 0-5"
         },
         {
           "code": "M3_STC_UNMAPPED_TRACK",
           "severity": "warning",
           "feature": "sequence track targeting an unmodelled property",
           "count": 3,
-          "detail": "STC entries 14, 15, 22",
-          "recoverable": false
-        }
-      ],
-      "preserved": [{ "format": "m3", "chunk": "PHSH", "blob": 0 }]
-    },
-
-    "UV_source_blob": {
-      "blobs": [
-        {
-          "format": "m3",
-          "chunk": "PHSH",
-          "bufferView": 8,
-          "encoding": "raw",
-          "sha256": "3c7e9a1b2d4f6081927384a5b6c7d8e9f00112233445566778899aabbccddeef",
-          "note": "Physics joint constraints; reinstated verbatim on M3 export."
+          "detail": "STC entries 14, 15, 22"
         }
       ]
     }
   },
-
   "scene": 0,
-  "scenes": [{ "name": "siege_tank", "nodes": [0] }],
-
+  "scenes": [
+    {
+      "name": "siege_tank",
+      "nodes": [
+        0
+      ]
+    }
+  ],
   "nodes": [
-    { "name": "Root", "children": [1, 2, 5, 7, 8, 9, 10, 11] },
-
+    {
+      "name": "Root",
+      "children": [
+        1,
+        2,
+        5,
+        7,
+        8,
+        9,
+        10,
+        11
+      ]
+    },
     {
       "name": "Hull",
       "mesh": 0,
       "skin": 0,
       "extensions": {
-        "MSFT_lod": { "ids": [8, 9] },
+        "MSFT_lod": {
+          "ids": [
+            8,
+            9
+          ]
+        },
         "UV_game_collision": {
           "role": "footprint",
           "layer": "unit",
-          "mask": ["terrain", "unit", "projectile"],
+          "mask": [
+            "terrain",
+            "unit",
+            "projectile"
+          ],
           "shapes": [
             {
               "kind": "box",
-              "size": [2.8, 1.6, 5.2],
-              "matrix": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0.8, 0, 1]
+              "size": [
+                2.8,
+                1.6,
+                5.2
+              ],
+              "matrix": [
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                1,
+                0,
+                0,
+                0.8,
+                0,
+                1
+              ]
             }
           ]
         }
       }
     },
-
-    { "name": "Turret", "children": [3], "rotation": [0, 0, 0, 1] },
-    { "name": "Barrel", "translation": [0, 0.42, 0.9], "children": [4, 6] },
-    { "name": "Recoil", "translation": [0, 0, 0] },
-
-    { "name": "Tracks" },
-
+    {
+      "name": "Turret",
+      "children": [
+        3
+      ],
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "name": "Barrel",
+      "translation": [
+        0,
+        0.42,
+        0.9
+      ],
+      "children": [
+        4,
+        6
+      ]
+    },
+    {
+      "name": "Recoil",
+      "translation": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "name": "Tracks"
+    },
     {
       "name": "muzzle_main",
-      "translation": [0, 0, 1.5],
+      "translation": [
+        0,
+        0,
+        1.5
+      ],
       "extensions": {
         "UV_game_socket": {
           "role": "muzzle",
           "index": 0,
-          "tags": ["primary", "cannon"],
+          "tags": [
+            "primary",
+            "cannon"
+          ],
           "forward": "-z",
           "sourceName": "Ref_Weapon"
         }
       }
     },
-
     {
       "name": "ui_overhead",
-      "translation": [0, 2.4, 0],
+      "translation": [
+        0,
+        2.4,
+        0
+      ],
       "extensions": {
-        "UV_game_socket": { "role": "ui-anchor", "sourceName": "Ref_Overhead" }
+        "UV_game_socket": {
+          "role": "ui-anchor",
+          "sourceName": "Ref_Overhead"
+        }
       }
     },
-
-    { "name": "Hull_LOD1", "mesh": 1, "skin": 0 },
-    { "name": "Hull_LOD2", "mesh": 2 },
-    { "name": "SiegeLegs", "mesh": 3 },
-
+    {
+      "name": "Hull_LOD1",
+      "mesh": 1,
+      "skin": 0
+    },
+    {
+      "name": "Hull_LOD2",
+      "mesh": 2
+    },
+    {
+      "name": "SiegeLegs",
+      "mesh": 3
+    },
     {
       "name": "wreck_pivot",
-      "translation": [0, 0, 0],
+      "translation": [
+        0,
+        0,
+        0
+      ],
       "extensions": {
-        "UV_game_socket": { "role": "wreck-pivot", "sourceName": "Ref_Damage" }
+        "UV_game_socket": {
+          "role": "wreck-pivot",
+          "sourceName": "Ref_Damage"
+        }
       }
     }
   ],
-
   "skins": [
     {
       "name": "siege_tank_rig",
       "skeleton": 0,
-      "joints": [0, 1, 2, 3, 4, 5],
+      "joints": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
       "inverseBindMatrices": 7,
       "extensions": {
         "UV_game_skeleton": {
@@ -311,35 +500,74 @@
             "5": "track_l"
           },
           "axes": {
-            "2": { "rotate": "y" },
-            "3": { "rotate": "x", "limits": [-0.17, 0.35] },
-            "4": { "translate": "z", "translateLimits": [-0.4, 0.0] }
+            "2": {
+              "rotate": "y"
+            },
+            "3": {
+              "rotate": "x",
+              "limits": [
+                -0.17,
+                0.35
+              ]
+            },
+            "4": {
+              "translate": "z",
+              "translateLimits": [
+                -0.4,
+                0.0
+              ]
+            }
           },
-          "sourceOrder": [0, 1, 2, 3, 4, 5],
-          "billboards": { "7": "spherical" }
+          "sourceOrder": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "billboards": {
+            "7": "spherical"
+          }
         }
       }
     }
   ],
-
   "materials": [
     {
       "name": "hull",
       "pbrMetallicRoughness": {
-        "baseColorTexture": { "index": 0 },
-        "metallicRoughnessTexture": { "index": 2 },
+        "baseColorTexture": {
+          "index": 0
+        },
+        "metallicRoughnessTexture": {
+          "index": 2
+        },
         "metallicFactor": 1.0,
         "roughnessFactor": 1.0
       },
-      "normalTexture": { "index": 1 },
+      "normalTexture": {
+        "index": 1
+      },
       "extensions": {
         "UV_game_material_team_color": {
           "maskSource": "texture",
-          "maskTexture": { "index": 3, "texCoord": 0, "channel": "r" },
-          "targets": ["baseColor"],
+          "maskTexture": {
+            "index": 3,
+            "texCoord": 0,
+            "channel": "r"
+          },
+          "targets": [
+            "baseColor"
+          ],
           "blend": "multiply",
           "strength": 1.0,
-          "defaultColor": [0.18, 0.42, 0.92, 1.0]
+          "defaultColor": [
+            0.18,
+            0.42,
+            0.92,
+            1.0
+          ]
         },
         "UV_game_material": {
           "shader": "sc2.standard",
@@ -347,33 +575,77 @@
           "cull": "back",
           "depthWrite": true,
           "layers": [
-            { "slot": "diffuse", "texture": 0, "uv": 0, "op": "modulate" },
-            { "slot": "normal", "texture": 1, "uv": 0 },
-            { "slot": "specular", "texture": 2, "uv": 0, "exponent": 24.0 },
-            { "slot": "emissive", "texture": 4, "uv": 1, "op": "add", "scroll": [0.0, 0.35] }
+            {
+              "slot": "diffuse",
+              "texture": 0,
+              "uv": 0,
+              "op": "modulate"
+            },
+            {
+              "slot": "normal",
+              "texture": 1,
+              "uv": 0
+            },
+            {
+              "slot": "specular",
+              "texture": 2,
+              "uv": 0,
+              "exponent": 24.0
+            },
+            {
+              "slot": "emissive",
+              "texture": 4,
+              "uv": 1,
+              "op": "add",
+              "scroll": [
+                0.0,
+                0.35
+              ]
+            }
           ],
-          "params": { "fresnelPower": 2.2, "fresnelColor": [0.2, 0.6, 1.0] }
+          "params": {
+            "fresnelPower": 2.2,
+            "fresnelColor": [
+              0.2,
+              0.6,
+              1.0
+            ]
+          }
         }
       }
     },
     {
       "name": "tracks",
       "pbrMetallicRoughness": {
-        "baseColorTexture": { "index": 5 },
+        "baseColorTexture": {
+          "index": 5
+        },
         "metallicFactor": 0.9,
         "roughnessFactor": 0.7
       },
       "extensions": {
         "UV_game_material": {
           "shader": "sc2.standard",
-          "layers": [{ "slot": "diffuse", "texture": 5, "uv": 0, "scroll": [0.0, 1.0] }]
+          "layers": [
+            {
+              "slot": "diffuse",
+              "texture": 5,
+              "uv": 0,
+              "scroll": [
+                0.0,
+                1.0
+              ]
+            }
+          ]
         }
       }
     },
     {
       "name": "smoke",
       "pbrMetallicRoughness": {
-        "baseColorTexture": { "index": 6 },
+        "baseColorTexture": {
+          "index": 6
+        },
         "metallicFactor": 0.0,
         "roughnessFactor": 1.0
       },
@@ -388,12 +660,25 @@
       }
     }
   ],
-
   "animations": [
     {
       "name": "Stand",
-      "channels": [{ "sampler": 0, "target": { "node": 2, "path": "rotation" } }],
-      "samplers": [{ "input": 8, "output": 9, "interpolation": "LINEAR" }],
+      "channels": [
+        {
+          "sampler": 0,
+          "target": {
+            "node": 2,
+            "path": "rotation"
+          }
+        }
+      ],
+      "samplers": [
+        {
+          "input": 8,
+          "output": 9,
+          "interpolation": "LINEAR"
+        }
+      ],
       "extensions": {
         "UV_game_animation_clips": {
           "clip": "stand",
@@ -402,7 +687,10 @@
           "concurrent": false,
           "blendInSeconds": 0.2,
           "sourceFrameRate": 30,
-          "sourceRange": [0, 90],
+          "sourceRange": [
+            0,
+            90
+          ],
           "sourceName": "Stand"
         }
       }
@@ -410,13 +698,37 @@
     {
       "name": "Attack",
       "channels": [
-        { "sampler": 0, "target": { "node": 4, "path": "translation" } },
-        { "sampler": 1, "target": { "node": 3, "path": "rotation" } }
+        {
+          "sampler": 0,
+          "target": {
+            "node": 4,
+            "path": "translation"
+          }
+        },
+        {
+          "sampler": 1,
+          "target": {
+            "node": 3,
+            "path": "rotation"
+          }
+        }
       ],
       "samplers": [
-        { "input": 10, "output": 11, "interpolation": "CUBICSPLINE" },
-        { "input": 10, "output": 12, "interpolation": "LINEAR" },
-        { "input": 10, "output": 13, "interpolation": "LINEAR" }
+        {
+          "input": 10,
+          "output": 11,
+          "interpolation": "CUBICSPLINE"
+        },
+        {
+          "input": 10,
+          "output": 12,
+          "interpolation": "LINEAR"
+        },
+        {
+          "input": 10,
+          "output": 13,
+          "interpolation": "LINEAR"
+        }
       ],
       "extensions": {
         "UV_game_animation_clips": {
@@ -428,30 +740,58 @@
           "blendInSeconds": 0.15,
           "blendOutSeconds": 0.25,
           "sourceFrameRate": 30,
-          "sourceRange": [0, 47],
+          "sourceRange": [
+            0,
+            47
+          ],
           "sourceName": "Attack 01"
         },
         "UV_game_animation_events": {
           "events": [
-            { "t": 0.5, "name": "fire_weapon", "socket": 6, "payload": { "weapon": "cannon" } },
+            {
+              "t": 0.5,
+              "name": "fire_weapon",
+              "socket": 6,
+              "payload": {
+                "weapon": "cannon"
+              }
+            },
             {
               "t": 0.533,
               "name": "spawn_effect",
-              "payload": { "effect": "muzzle_flash", "effectIndex": 0 }
+              "payload": {
+                "effect": "muzzle_flash",
+                "effectIndex": 0
+              }
             },
-            { "t": 0.533, "name": "sound", "payload": { "cue": "SiegeTankFire" } },
-            { "t": 0.9, "name": "camera_shake", "payload": { "amplitude": 0.15, "seconds": 0.3 } }
+            {
+              "t": 0.533,
+              "name": "sound",
+              "payload": {
+                "cue": "SiegeTankFire"
+              }
+            },
+            {
+              "t": 0.9,
+              "name": "camera_shake",
+              "payload": {
+                "amplitude": 0.15,
+                "seconds": 0.3
+              }
+            }
           ]
         },
         "KHR_animation_pointer": {
           "channels": [
-            { "sampler": 2, "target": "/extensions/UV_game_effects/particles/0/emissionRate" }
+            {
+              "sampler": 2,
+              "target": "/extensions/UV_game_effects/particles/0/emissionRate"
+            }
           ]
         }
       }
     }
   ],
-
   "meshes": [
     {
       "name": "hull",
@@ -473,18 +813,44 @@
     },
     {
       "name": "hull_lod1",
-      "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 6, "material": 0, "mode": 4 }]
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0
+          },
+          "indices": 6,
+          "material": 0,
+          "mode": 4
+        }
+      ]
     },
     {
       "name": "hull_lod2",
-      "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 6, "material": 0, "mode": 4 }]
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0
+          },
+          "indices": 6,
+          "material": 0,
+          "mode": 4
+        }
+      ]
     },
     {
       "name": "siege_legs",
-      "primitives": [{ "attributes": { "POSITION": 0 }, "indices": 6, "material": 1, "mode": 4 }]
+      "primitives": [
+        {
+          "attributes": {
+            "POSITION": 0
+          },
+          "indices": 6,
+          "material": 1,
+          "mode": 4
+        }
+      ]
     }
   ],
-
   "accessors": [
     {
       "bufferView": 0,
@@ -492,8 +858,16 @@
       "componentType": 5126,
       "count": 2048,
       "type": "VEC3",
-      "min": [-1.4, 0.0, -2.6],
-      "max": [1.4, 1.9, 2.6]
+      "min": [
+        -1.4,
+        0.0,
+        -2.6
+      ],
+      "max": [
+        1.4,
+        1.9,
+        2.6
+      ]
     },
     {
       "bufferView": 0,
@@ -519,68 +893,221 @@
       "type": "VEC2",
       "normalized": true
     },
-    { "bufferView": 1, "componentType": 5121, "count": 2048, "type": "VEC4" },
-    { "bufferView": 2, "componentType": 5121, "count": 2048, "type": "VEC4", "normalized": true },
-    { "bufferView": 3, "componentType": 5123, "count": 5412, "type": "SCALAR" },
-    { "bufferView": 4, "componentType": 5126, "count": 6, "type": "MAT4" },
+    {
+      "bufferView": 1,
+      "componentType": 5121,
+      "count": 2048,
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 2,
+      "componentType": 5121,
+      "count": 2048,
+      "type": "VEC4",
+      "normalized": true
+    },
+    {
+      "bufferView": 3,
+      "componentType": 5123,
+      "count": 5412,
+      "type": "SCALAR"
+    },
+    {
+      "bufferView": 4,
+      "componentType": 5126,
+      "count": 6,
+      "type": "MAT4"
+    },
     {
       "bufferView": 5,
       "componentType": 5126,
       "count": 4,
       "type": "SCALAR",
-      "min": [0.0],
-      "max": [3.0]
+      "min": [
+        0.0
+      ],
+      "max": [
+        3.0
+      ]
     },
-    { "bufferView": 6, "componentType": 5126, "count": 4, "type": "VEC4" },
+    {
+      "bufferView": 6,
+      "componentType": 5126,
+      "count": 4,
+      "type": "VEC4"
+    },
     {
       "bufferView": 5,
       "byteOffset": 16,
       "componentType": 5126,
       "count": 6,
       "type": "SCALAR",
-      "min": [0.0],
-      "max": [1.567]
+      "min": [
+        0.0
+      ],
+      "max": [
+        1.567
+      ]
     },
-    { "bufferView": 6, "byteOffset": 64, "componentType": 5126, "count": 18, "type": "VEC3" },
-    { "bufferView": 6, "byteOffset": 280, "componentType": 5126, "count": 6, "type": "VEC4" },
-    { "bufferView": 7, "componentType": 5126, "count": 6, "type": "SCALAR" }
+    {
+      "bufferView": 6,
+      "byteOffset": 64,
+      "componentType": 5126,
+      "count": 18,
+      "type": "VEC3"
+    },
+    {
+      "bufferView": 6,
+      "byteOffset": 280,
+      "componentType": 5126,
+      "count": 6,
+      "type": "VEC4"
+    },
+    {
+      "bufferView": 7,
+      "componentType": 5126,
+      "count": 6,
+      "type": "SCALAR"
+    }
   ],
-
   "bufferViews": [
-    { "buffer": 0, "byteOffset": 0, "byteLength": 69632, "byteStride": 34, "target": 34962 },
-    { "buffer": 0, "byteOffset": 69632, "byteLength": 8192, "byteStride": 4, "target": 34962 },
-    { "buffer": 0, "byteOffset": 77824, "byteLength": 8192, "byteStride": 4, "target": 34962 },
-    { "buffer": 0, "byteOffset": 86016, "byteLength": 10824, "target": 34963 },
-    { "buffer": 0, "byteOffset": 96840, "byteLength": 384 },
-    { "buffer": 1, "byteOffset": 0, "byteLength": 40 },
-    { "buffer": 1, "byteOffset": 40, "byteLength": 304 },
-    { "buffer": 1, "byteOffset": 344, "byteLength": 24 },
-    { "buffer": 2, "byteOffset": 0, "byteLength": 1152 }
+    {
+      "buffer": 0,
+      "byteOffset": 0,
+      "byteLength": 69632,
+      "byteStride": 34,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 69632,
+      "byteLength": 8192,
+      "byteStride": 4,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 77824,
+      "byteLength": 8192,
+      "byteStride": 4,
+      "target": 34962
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 86016,
+      "byteLength": 10824,
+      "target": 34963
+    },
+    {
+      "buffer": 0,
+      "byteOffset": 96840,
+      "byteLength": 384
+    },
+    {
+      "buffer": 1,
+      "byteOffset": 0,
+      "byteLength": 40
+    },
+    {
+      "buffer": 1,
+      "byteOffset": 40,
+      "byteLength": 304
+    },
+    {
+      "buffer": 1,
+      "byteOffset": 344,
+      "byteLength": 24
+    }
   ],
-
   "buffers": [
-    { "uri": "buffers/geometry.bin", "byteLength": 97224 },
-    { "uri": "buffers/animation.bin", "byteLength": 368 },
-    { "uri": "buffers/source.bin", "byteLength": 1152 }
+    {
+      "uri": "buffers/geometry.bin",
+      "byteLength": 97224
+    },
+    {
+      "uri": "buffers/animation.bin",
+      "byteLength": 368
+    }
   ],
-
   "images": [
-    { "uri": "textures/tank_diffuse.ktx2", "mimeType": "image/ktx2" },
-    { "uri": "textures/tank_normal.ktx2", "mimeType": "image/ktx2" },
-    { "uri": "textures/tank_spec.ktx2", "mimeType": "image/ktx2" },
-    { "uri": "textures/tank_team.ktx2", "mimeType": "image/ktx2" },
-    { "uri": "textures/tank_emissive.ktx2", "mimeType": "image/ktx2" },
-    { "uri": "textures/tank_tracks.ktx2", "mimeType": "image/ktx2" },
-    { "uri": "textures/smoke.ktx2", "mimeType": "image/ktx2" }
+    {
+      "uri": "textures/tank_diffuse.ktx2",
+      "mimeType": "image/ktx2"
+    },
+    {
+      "uri": "textures/tank_normal.ktx2",
+      "mimeType": "image/ktx2"
+    },
+    {
+      "uri": "textures/tank_spec.ktx2",
+      "mimeType": "image/ktx2"
+    },
+    {
+      "uri": "textures/tank_team.ktx2",
+      "mimeType": "image/ktx2"
+    },
+    {
+      "uri": "textures/tank_emissive.ktx2",
+      "mimeType": "image/ktx2"
+    },
+    {
+      "uri": "textures/tank_tracks.ktx2",
+      "mimeType": "image/ktx2"
+    },
+    {
+      "uri": "textures/smoke.ktx2",
+      "mimeType": "image/ktx2"
+    }
   ],
-
   "textures": [
-    { "extensions": { "KHR_texture_basisu": { "source": 0 } } },
-    { "extensions": { "KHR_texture_basisu": { "source": 1 } } },
-    { "extensions": { "KHR_texture_basisu": { "source": 2 } } },
-    { "extensions": { "KHR_texture_basisu": { "source": 3 } } },
-    { "extensions": { "KHR_texture_basisu": { "source": 4 } } },
-    { "extensions": { "KHR_texture_basisu": { "source": 5 } } },
-    { "extensions": { "KHR_texture_basisu": { "source": 6 } } }
+    {
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 0
+        }
+      }
+    },
+    {
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 1
+        }
+      }
+    },
+    {
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 2
+        }
+      }
+    },
+    {
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 3
+        }
+      }
+    },
+    {
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 4
+        }
+      }
+    },
+    {
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 5
+        }
+      }
+    },
+    {
+      "extensions": {
+        "KHR_texture_basisu": {
+          "source": 6
+        }
+      }
+    }
   ]
 }

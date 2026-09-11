@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/receipts/1.0/composition.receipt.schema.json",
+  "title": "CompositionReceipt",
+  "description": "One composition attempt: which layers in which order, under which checked requirements, produced which run identity — or which typed refusal stopped it before content loaded. verdict=composed REQUIRES compositionHash and layers; verdict=refused REQUIRES the refusal and forbids a hash: a refused composition has no identity to claim.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "schemaVersion", "root", "verdict"],
+  "properties": {
+    "$comment": { "type": "string" },
+    "kind": { "const": "uv.receipt/composition" },
+    "schemaVersion": { "const": 1 },
+    "root": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "version"],
+      "properties": {
+        "id": { "type": "string" },
+        "version": { "type": "string", "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$" }
+      }
+    },
+    "layers": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "version", "rank", "contentDigest"],
+        "properties": {
+          "id": { "type": "string" },
+          "version": { "type": "string" },
+          "rank": { "enum": ["base", "official", "map", "mod"] },
+          "contentDigest": {
+            "description": "Canonical digest over the package's ordered content hashes — container-neutral by construction.",
+            "$ref": "#/$defs/digest"
+          }
+        }
+      }
+    },
+    "requirements": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["intrinsicsChecked", "capabilitiesGranted"],
+      "properties": {
+        "intrinsicsChecked": { "type": "integer", "minimum": 0 },
+        "capabilitiesGranted": {
+          "type": "array",
+          "items": { "enum": ["read", "mutate", "present", "control", "space-mutate"] }
+        }
+      }
+    },
+    "compositionHash": {
+      "description": "The run identity: canonical hash of the ordered layer list with content digests. Same layers, same order, same hash — on any machine.",
+      "$ref": "#/$defs/digest"
+    },
+    "refusal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["rule", "message"],
+      "properties": {
+        "rule": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+        "message": { "type": "string", "minLength": 1 }
+      }
+    },
+    "verdict": { "enum": ["composed", "refused"] }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "verdict": { "const": "composed" } } },
+      "then": { "required": ["layers", "compositionHash", "requirements"], "not": { "required": ["refusal"] } }
+    },
+    {
+      "if": { "properties": { "verdict": { "const": "refused" } } },
+      "then": { "required": ["refusal"], "not": { "required": ["compositionHash"] } }
+    }
+  ],
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

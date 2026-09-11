@@ -2,7 +2,7 @@
   "$comment": "The versioned SemanticScopeDescriptor registry owned by multiverse/specs (PLAN_MODKIT_MK3_FINAL_RU §2.6). Until a scope is registered here its name is not a release or compatibility guarantee.",
   "schemaVersion": "semantic-scope-registry-1",
   "owner": "multiverse/specs",
-  "updatedOn": "2026-08-26",
+  "updatedOn": "2026-09-01",
   "statuses": {
     "registered": "the descriptor is complete, has conformance vectors and may be named in a release or compatibility statement",
     "candidate": "a pinned descriptor that exists for admission-only reports; it must not be used as a compatibility guarantee",
@@ -47,7 +47,17 @@
       "descriptor": null,
       "vectors": null,
       "registeredBy": "block 23",
-      "note": "reserved id only. No descriptor exists, so the name carries no guarantee."
+      "note": "reserved id only. No descriptor exists, so the name carries no guarantee. Composed-definitions hashing is currently carried by the runtime-interchange-v1 candidate; block 23 decides whether this scope becomes a definitions-only exchange or folds into it."
+    },
+    {
+      "scopeId": "runtime-interchange-v1",
+      "status": "candidate",
+      "version": "1.0.0",
+      "plane": "runtime",
+      "descriptor": "runtime-interchange-v1.json",
+      "vectors": "../conformance/uvp-composition/vectors.json ../conformance/uvd-resolution/vectors.json ../conformance/uvb-binary/vectors.json (executable); ../conformance/uvp ../conformance/uvd ../conformance/uvs-uvb ../conformance/uvc ../conformance/receipts ../conformance/state (declared)",
+      "registeredBy": "multiverse design lane, owner decisions 2026-09-01 (ADR-RUNTIME-001/002)",
+      "note": "candidate: schema assertions, composition/resolution and the UVB binary codec are executable; verifier/kernel vectors and real-corpus admission are declared. Hashes are admission-only evidence."
     }
   ]
 }

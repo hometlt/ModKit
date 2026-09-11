@@ -740,6 +740,60 @@ describe('13D universal editing contracts and host transaction coordinator', () 
     ).toMatchObject({ state: 'committed' })
   })
 
+  it('keeps default commit identities distinct across coordinators sharing a backend', async () => {
+    const initial = revision('shared-coordinators')
+    const sharedTarget = target('shared', 'a', initial)
+    const backend = new MemoryEditingBackend(atomicCapability)
+    backend.seed('shared', initial)
+    // Both use the production default ID generator, as separate browser tabs/subjects do.
+    const first = coordinator({ a: backend })
+    const second = coordinator({ a: backend })
+    const options = { grant: grant() }
+    const firstReady = await first.prepare(
+      plan([sharedTarget], [replaceEdit('shared', 'a', 'first')]),
+      options,
+    )
+    if (firstReady.state !== 'ready') throw new Error('first coordinator did not prepare')
+    const firstCommit = await first.commit(firstReady.prepared, options)
+    if (firstCommit.state !== 'committed') throw new Error('first coordinator did not commit')
+    const afterFirst = await backend.currentRevision(sharedTarget)
+    const secondReady = await second.prepare(
+      plan(
+        [{ ...sharedTarget, expectedRevision: afterFirst }],
+        [replaceEdit('shared', 'a', 'second')],
+      ),
+      options,
+    )
+    if (secondReady.state !== 'ready') throw new Error('second coordinator did not prepare')
+    expect(secondReady.prepared.preparedId).not.toBe(firstReady.prepared.preparedId)
+    const secondCommit = await second.commit(secondReady.prepared, options)
+    if (secondCommit.state !== 'committed') throw new Error('second coordinator did not commit')
+    expect(secondCommit.receipt.transactionId).not.toBe(firstCommit.receipt.transactionId)
+    expect(await backend.currentRevision(sharedTarget)).toEqual(secondCommit.receipt.after[0])
+
+    const secondUndo = await second.undo(secondCommit.receipt.transactionId, options)
+    if (secondUndo.state !== 'committed') throw new Error('second coordinator did not undo')
+    expect(await backend.currentRevision(sharedTarget)).toEqual(afterFirst)
+    const secondRedo = await second.redo(secondCommit.receipt.transactionId, options)
+    if (secondRedo.state !== 'committed') throw new Error('second coordinator did not redo')
+    expect(await backend.currentRevision(sharedTarget)).toEqual(secondRedo.receipt.after[0])
+    const replayUndo = await second.undo(secondRedo.receipt.transactionId, options)
+    if (replayUndo.state !== 'committed') throw new Error('replayed transaction did not undo')
+    expect(await backend.currentRevision(sharedTarget)).toEqual(afterFirst)
+    const firstUndo = await first.undo(firstCommit.receipt.transactionId, options)
+    if (firstUndo.state !== 'committed') throw new Error('first coordinator history was lost')
+    expect(await backend.currentRevision(sharedTarget)).toEqual(initial)
+    const transactionIds = [
+      firstCommit,
+      secondCommit,
+      secondUndo,
+      secondRedo,
+      replayUndo,
+      firstUndo,
+    ].map(result => result.receipt.transactionId)
+    expect(new Set(transactionIds).size).toBe(transactionIds.length)
+  })
+
   it('undoes multiple writes to one target through their exact per-step revisions', async () => {
     const initial = revision('same-target')
     const sameTarget = target('same', 's', initial)

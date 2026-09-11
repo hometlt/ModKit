@@ -8,6 +8,10 @@
     "node": ">=22"
   },
   "exports": {
+    "./content-sources": {
+      "types": "./dist/content-sources/index.d.ts",
+      "default": "./dist/content-sources/index.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
@@ -149,6 +153,10 @@
     "./media": {
       "types": "./dist/media/encoded.d.ts",
       "default": "./dist/media/encoded.js"
+    },
+    "./toolbar": {
+      "types": "./dist/toolbar/index.d.ts",
+      "default": "./dist/toolbar/index.js"
     }
   },
   "files": [
@@ -169,6 +177,8 @@
     "clean": "tsc -b --clean"
   },
   "dependencies": {
+    "@modkit/codec-kit": "workspace:*",
+    "@modkit/scene": "workspace:*",
     "@modkit/core": "workspace:*",
     "@modkit/sdk": "workspace:*"
   },

@@ -28,6 +28,7 @@ import {
 import { VirtualFileSystem, type VfsMount } from '@modkit/vfs'
 import { createFileVfsProvider } from '@modkit/vfs/providers/file'
 import { loadExtensionDirectory } from '@modkit/host/node'
+import { createCompanionInputResolver } from '../src/input-resolution.js'
 import {
   bindingId,
   presentationSlotId,
@@ -62,7 +63,7 @@ const uvmFixture = join(
   'test',
   'fixtures',
   'uvm',
-  'm3-native-triangle.uvm.glb.b64',
+  'm3-triangle.uvm.glb.b64',
 )
 
 const budget: ResourceBudget = {
@@ -133,6 +134,60 @@ function countingTrustedBackends() {
 }
 
 describe('host-owned subject opening pipeline', () => {
+  it('retains a resource origin without searching it when the codec declares no companions', async () => {
+    let enumerations = 0
+    let opens = 0
+    let releases = 0
+    const resolveInput = createCompanionInputResolver({
+      primaryLogicalId: 'GrantsRoot',
+      caseSensitivity: 'sensitive',
+      scopes: ['current-mount'],
+      async *enumerate() {
+        enumerations++
+        yield { logicalId: 'later.dds' }
+      },
+      async open() {
+        opens++
+        return {
+          value: byteSource(new Uint8Array([1]), 'later.dds'),
+          release: async () => {
+            releases++
+          },
+        }
+      },
+    })
+    const result = await openSubject({
+      inventory: await bundledInventory(grantsProbeDir),
+      source: byteSource(new TextEncoder().encode('GRANTS'), 'GrantsRoot'),
+      path: 'GrantsRoot',
+      intent: 'full',
+      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+      grant: { id: 'resource-origin-no-io', classes: ['read-source', 'write-source'] },
+      executionBackends: countingTrustedBackends().registry,
+      budget,
+      resolveInput,
+    })
+    if (result.state !== 'opened' || result.resources === undefined)
+      throw new Error('post-open origin absent')
+    expect([enumerations, opens]).toEqual([0, 0])
+    try {
+      expect(
+        (
+          await result.resources.resolve({
+            id: 'later',
+            logicalId: 'later.dds',
+            role: 'texture',
+            scopes: ['current-mount'],
+          })
+        ).state,
+      ).toBe('resolved')
+      expect([enumerations, opens]).toEqual([1, 1])
+    } finally {
+      await result.session.dispose()
+    }
+    expect(releases).toBe(1)
+  })
+
   it('matches a case-insensitive **/ glob at the subject root', async () => {
     const result = await openSubject({
       inventory: await bundledInventory(grantsProbeDir),

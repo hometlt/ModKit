@@ -1,0 +1,1293 @@
+{
+  "$comment": "Intrinsic table v1: the minimal common set of the two GA games, generated from design/DRAFT_INTRINSIC_TABLE_V1.md and now the machine authority over it. Growth rule: an adapter first expresses a missing operation as a UVB library; the table admits only what two or more games need or UVB cannot express.",
+  "schemaVersion": "intrinsic-registry-1",
+  "scope": "runtime-interchange-v1",
+  "types": [
+    {
+      "name": "Pos",
+      "fields": [
+        {
+          "name": "space",
+          "type": "strref"
+        },
+        {
+          "name": "x",
+          "type": "fixed64"
+        },
+        {
+          "name": "y",
+          "type": "fixed64"
+        },
+        {
+          "name": "z",
+          "type": "fixed64"
+        }
+      ]
+    },
+    {
+      "name": "Filter",
+      "fields": [
+        {
+          "name": "player",
+          "type": "ref<player>",
+          "optional": true
+        },
+        {
+          "name": "def",
+          "type": "ref<def>",
+          "optional": true
+        },
+        {
+          "name": "tag",
+          "type": "strref",
+          "optional": true
+        },
+        {
+          "name": "alive",
+          "type": "bool",
+          "optional": true
+        }
+      ]
+    },
+    {
+      "name": "OrderInfo",
+      "fields": [
+        {
+          "name": "kind",
+          "type": "strref"
+        },
+        {
+          "name": "target",
+          "type": "ref<entity>",
+          "optional": true
+        },
+        {
+          "name": "at",
+          "type": "Pos",
+          "optional": true
+        }
+      ]
+    }
+  ],
+  "intrinsics": [
+    {
+      "id": "entity.create",
+      "version": 1,
+      "params": [
+        {
+          "name": "def",
+          "type": "ref<def>"
+        },
+        {
+          "name": "owner",
+          "type": "ref<player>"
+        },
+        {
+          "name": "at",
+          "type": "Pos"
+        }
+      ],
+      "returns": "ref<entity>",
+      "reads": [
+        "defs"
+      ],
+      "writes": [
+        "entities"
+      ],
+      "capability": "mutate"
+    },
+    {
+      "id": "entity.destroy",
+      "version": 1,
+      "params": [
+        {
+          "name": "e",
+          "type": "ref<entity>"
+        },
+        {
+          "name": "reason",
+          "type": "strref"
+        }
+      ],
+      "returns": "bool",
+      "reads": [],
+      "writes": [
+        "entities"
+      ],
+      "capability": "mutate"
+    },
+    {
+      "id": "entity.exists",
+      "version": 1,
+      "params": [
+        {
+          "name": "e",
+          "type": "ref<entity>"
+        }
+      ],
+      "returns": "bool",
+      "reads": [
+        "entities"
+      ],
+      "writes": [],
+      "capability": "read"
+    },
+    {
+      "id": "entity.is-alive",
+      "version": 1,
+      "params": [
+        {
+          "name": "e",
+          "type": "ref<entity>"
+        }
+      ],
+      "returns": "bool",
+      "reads": [
+        "entities"
+      ],
+      "writes": [],
+      "capability": "read"
+    },
+    {
+      "id": "entity.def",
+      "version": 1,
+      "params": [
+        {
+          "name": "e",
+          "type": "ref<entity>"
+        }
+      ],
+      "returns": "ref<def>",
+      "reads": [
+        "entities"
+      ],
+      "writes": [],
+      "capability": "read"
+    },
+    {
+      "id": "entity.owner",
+      "version": 1,
+      "params": [
+        {
+          "name": "e",
+          "type": "ref<entity>"
+        }
+      ],
+      "returns": "ref<player>",
+      "reads": [
+        "entities"
+      ],
+      "writes": [],
+      "capability": "read"
+    },
+    {
+      "id": "entity.set-owner",
+      "version": 1,
+      "params": [
+        {
+          "name": "e",
+          "type": "ref<entity>"
+        },
+        {
+          "name": "p",
+          "type": "ref<player>"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [],
+      "writes": [
+        "entities"
+      ],
+      "capability": "mutate"
+    },
+    {
+      "id": "entity.position",
+      "version": 1,
+      "params": [
+        {
+          "name": "e",
+          "type": "ref<entity>"
+        }
+      ],
+      "returns": "Pos",
+      "reads": [
+        "entities"
+      ],
+      "writes": [],
+      "capability": "read"
+    },
+    {
+      "id": "entity.teleport",
+      "version": 1,
+      "params": [
+        {
+          "name": "e",
+          "type": "ref<entity>"
+        },
+        {
+          "name": "at",
+          "type": "Pos"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [
+        "space"
+      ],
+      "writes": [
+        "entities"
+      ],
+      "capability": "mutate"
+    },
+    {
+      "id": "entity.stat",
+      "version": 1,
+      "params": [
+        {
+          "name": "e",
+          "type": "ref<entity>"
+        },
+        {
+          "name": "stat",
+          "type": "strref"
+        }
+      ],
+      "returns": "fixed64",
+      "reads": [
+        "entities",
+        "defs"
+      ],
+      "writes": [],
+      "capability": "read"
+    },
+    {
+      "id": "entity.set-stat-modifier",
+      "version": 1,
+      "params": [
+        {
+          "name": "e",
+          "type": "ref<entity>"
+        },
+        {
+          "name": "stat",
+          "type": "strref"
+        },
+        {
+          "name": "layer",
+          "type": "strref"
+        },
+        {
+          "name": "v",
+          "type": "fixed64"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [],
+      "writes": [
+        "entities"
+      ],
+      "capability": "mutate"
+    },
+    {
+      "id": "entity.health",
+      "version": 1,
+      "params": [
+        {
+          "name": "e",
+          "type": "ref<entity>"
+        }
+      ],
+      "returns": "fixed64",
+      "reads": [
+        "entities"
+      ],
+      "writes": [],
+      "capability": "read"
+    },
+    {
+      "id": "entity.set-health",
+      "version": 1,
+      "params": [
+        {
+          "name": "e",
+          "type": "ref<entity>"
+        },
+        {
+          "name": "v",
+          "type": "fixed64"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [],
+      "writes": [
+        "entities"
+      ],
+      "capability": "mutate"
+    },
+    {
+      "id": "entity.has-tag",
+      "version": 1,
+      "params": [
+        {
+          "name": "e",
+          "type": "ref<entity>"
+        },
+        {
+          "name": "tag",
+          "type": "strref"
+        }
+      ],
+      "returns": "bool",
+      "reads": [
+        "entities"
+      ],
+      "writes": [],
+      "capability": "read"
+    },
+    {
+      "id": "entity.add-tag",
+      "version": 1,
+      "params": [
+        {
+          "name": "e",
+          "type": "ref<entity>"
+        },
+        {
+          "name": "tag",
+          "type": "strref"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [],
+      "writes": [
+        "entities"
+      ],
+      "capability": "mutate"
+    },
+    {
+      "id": "entity.remove-tag",
+      "version": 1,
+      "params": [
+        {
+          "name": "e",
+          "type": "ref<entity>"
+        },
+        {
+          "name": "tag",
+          "type": "strref"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [],
+      "writes": [
+        "entities"
+      ],
+      "capability": "mutate"
+    },
+    {
+      "id": "query.entities",
+      "version": 1,
+      "params": [
+        {
+          "name": "f",
+          "type": "Filter"
+        }
+      ],
+      "returns": "list<ref<entity>>",
+      "reads": [
+        "entities"
+      ],
+      "writes": [],
+      "capability": "read",
+      "determinism": "list ordered by entity id in UTF-8 byte order"
+    },
+    {
+      "id": "query.in-region",
+      "version": 1,
+      "params": [
+        {
+          "name": "r",
+          "type": "ref<region>"
+        },
+        {
+          "name": "f",
+          "type": "Filter"
+        }
+      ],
+      "returns": "list<ref<entity>>",
+      "reads": [
+        "entities",
+        "space"
+      ],
+      "writes": [],
+      "capability": "read",
+      "determinism": "list ordered by entity id"
+    },
+    {
+      "id": "query.count",
+      "version": 1,
+      "params": [
+        {
+          "name": "f",
+          "type": "Filter"
+        }
+      ],
+      "returns": "i64",
+      "reads": [
+        "entities"
+      ],
+      "writes": [],
+      "capability": "read"
+    },
+    {
+      "id": "query.nearest",
+      "version": 1,
+      "params": [
+        {
+          "name": "at",
+          "type": "Pos"
+        },
+        {
+          "name": "f",
+          "type": "Filter"
+        }
+      ],
+      "returns": "ref<entity>?",
+      "reads": [
+        "entities",
+        "space"
+      ],
+      "writes": [],
+      "capability": "read",
+      "determinism": "distance ties break by lowest entity id"
+    },
+    {
+      "id": "query.def",
+      "version": 1,
+      "params": [
+        {
+          "name": "id",
+          "type": "strref"
+        }
+      ],
+      "returns": "ref<def>?",
+      "reads": [
+        "defs"
+      ],
+      "writes": [],
+      "capability": "read"
+    },
+    {
+      "id": "query.def-field",
+      "version": 1,
+      "params": [
+        {
+          "name": "d",
+          "type": "ref<def>"
+        },
+        {
+          "name": "field",
+          "type": "strref"
+        }
+      ],
+      "returns": "value",
+      "reads": [
+        "defs"
+      ],
+      "writes": [],
+      "capability": "read"
+    },
+    {
+      "id": "order.move",
+      "version": 1,
+      "params": [
+        {
+          "name": "e",
+          "type": "ref<entity>"
+        },
+        {
+          "name": "to",
+          "type": "Pos"
+        },
+        {
+          "name": "queue",
+          "type": "bool"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [],
+      "writes": [
+        "orders"
+      ],
+      "capability": "mutate"
+    },
+    {
+      "id": "order.attack",
+      "version": 1,
+      "params": [
+        {
+          "name": "e",
+          "type": "ref<entity>"
+        },
+        {
+          "name": "target",
+          "type": "ref<entity>"
+        },
+        {
+          "name": "queue",
+          "type": "bool"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [],
+      "writes": [
+        "orders"
+      ],
+      "capability": "mutate"
+    },
+    {
+      "id": "order.use-ability",
+      "version": 1,
+      "params": [
+        {
+          "name": "e",
+          "type": "ref<entity>"
+        },
+        {
+          "name": "ability",
+          "type": "ref<def>"
+        },
+        {
+          "name": "queue",
+          "type": "bool"
+        },
+        {
+          "name": "targetEntity",
+          "type": "ref<entity>",
+          "optional": true
+        },
+        {
+          "name": "targetPos",
+          "type": "Pos",
+          "optional": true
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [
+        "defs"
+      ],
+      "writes": [
+        "orders"
+      ],
+      "capability": "mutate"
+    },
+    {
+      "id": "order.build",
+      "version": 1,
+      "params": [
+        {
+          "name": "e",
+          "type": "ref<entity>"
+        },
+        {
+          "name": "what",
+          "type": "ref<def>"
+        },
+        {
+          "name": "at",
+          "type": "Pos"
+        },
+        {
+          "name": "queue",
+          "type": "bool"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [
+        "defs"
+      ],
+      "writes": [
+        "orders"
+      ],
+      "capability": "mutate"
+    },
+    {
+      "id": "order.stop",
+      "version": 1,
+      "params": [
+        {
+          "name": "e",
+          "type": "ref<entity>"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [],
+      "writes": [
+        "orders"
+      ],
+      "capability": "mutate"
+    },
+    {
+      "id": "order.current",
+      "version": 1,
+      "params": [
+        {
+          "name": "e",
+          "type": "ref<entity>"
+        }
+      ],
+      "returns": "OrderInfo",
+      "reads": [
+        "orders"
+      ],
+      "writes": [],
+      "capability": "read"
+    },
+    {
+      "id": "world.tick",
+      "version": 1,
+      "params": [],
+      "returns": "i64",
+      "reads": [],
+      "writes": [],
+      "capability": "read"
+    },
+    {
+      "id": "world.region",
+      "version": 1,
+      "params": [
+        {
+          "name": "id",
+          "type": "strref"
+        }
+      ],
+      "returns": "ref<region>?",
+      "reads": [
+        "space"
+      ],
+      "writes": [],
+      "capability": "read"
+    },
+    {
+      "id": "world.region-contains",
+      "version": 1,
+      "params": [
+        {
+          "name": "r",
+          "type": "ref<region>"
+        },
+        {
+          "name": "at",
+          "type": "Pos"
+        }
+      ],
+      "returns": "bool",
+      "reads": [
+        "space"
+      ],
+      "writes": [],
+      "capability": "read"
+    },
+    {
+      "id": "world.height",
+      "version": 1,
+      "params": [
+        {
+          "name": "at",
+          "type": "Pos"
+        }
+      ],
+      "returns": "fixed64",
+      "reads": [
+        "space"
+      ],
+      "writes": [],
+      "capability": "read"
+    },
+    {
+      "id": "world.pathable",
+      "version": 1,
+      "params": [
+        {
+          "name": "at",
+          "type": "Pos"
+        }
+      ],
+      "returns": "bool",
+      "reads": [
+        "space"
+      ],
+      "writes": [],
+      "capability": "read"
+    },
+    {
+      "id": "world.path-exists",
+      "version": 1,
+      "params": [
+        {
+          "name": "a",
+          "type": "Pos"
+        },
+        {
+          "name": "b",
+          "type": "Pos"
+        },
+        {
+          "name": "profile",
+          "type": "strref"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [
+        "space"
+      ],
+      "writes": [],
+      "capability": "read",
+      "determinism": "bounded by the composition path budget; exhaustion is a typed error, never a hang"
+    },
+    {
+      "id": "player.list",
+      "version": 1,
+      "params": [],
+      "returns": "list<ref<player>>",
+      "reads": [
+        "players"
+      ],
+      "writes": [],
+      "capability": "read",
+      "determinism": "ordered by player id"
+    },
+    {
+      "id": "player.resource",
+      "version": 1,
+      "params": [
+        {
+          "name": "p",
+          "type": "ref<player>"
+        },
+        {
+          "name": "kind",
+          "type": "strref"
+        }
+      ],
+      "returns": "fixed64",
+      "reads": [
+        "players"
+      ],
+      "writes": [],
+      "capability": "read"
+    },
+    {
+      "id": "player.add-resource",
+      "version": 1,
+      "params": [
+        {
+          "name": "p",
+          "type": "ref<player>"
+        },
+        {
+          "name": "kind",
+          "type": "strref"
+        },
+        {
+          "name": "v",
+          "type": "fixed64"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [],
+      "writes": [
+        "players"
+      ],
+      "capability": "mutate"
+    },
+    {
+      "id": "player.set-resource",
+      "version": 1,
+      "params": [
+        {
+          "name": "p",
+          "type": "ref<player>"
+        },
+        {
+          "name": "kind",
+          "type": "strref"
+        },
+        {
+          "name": "v",
+          "type": "fixed64"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [],
+      "writes": [
+        "players"
+      ],
+      "capability": "mutate"
+    },
+    {
+      "id": "player.tech-unlocked",
+      "version": 1,
+      "params": [
+        {
+          "name": "p",
+          "type": "ref<player>"
+        },
+        {
+          "name": "tech",
+          "type": "ref<def>"
+        }
+      ],
+      "returns": "bool",
+      "reads": [
+        "players"
+      ],
+      "writes": [],
+      "capability": "read"
+    },
+    {
+      "id": "player.unlock-tech",
+      "version": 1,
+      "params": [
+        {
+          "name": "p",
+          "type": "ref<player>"
+        },
+        {
+          "name": "tech",
+          "type": "ref<def>"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [],
+      "writes": [
+        "players"
+      ],
+      "capability": "mutate"
+    },
+    {
+      "id": "player.alliance",
+      "version": 1,
+      "params": [
+        {
+          "name": "a",
+          "type": "ref<player>"
+        },
+        {
+          "name": "b",
+          "type": "ref<player>"
+        }
+      ],
+      "returns": "strref",
+      "reads": [
+        "players"
+      ],
+      "writes": [],
+      "capability": "read"
+    },
+    {
+      "id": "player.set-alliance",
+      "version": 1,
+      "params": [
+        {
+          "name": "a",
+          "type": "ref<player>"
+        },
+        {
+          "name": "b",
+          "type": "ref<player>"
+        },
+        {
+          "name": "kind",
+          "type": "strref"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [],
+      "writes": [
+        "players"
+      ],
+      "capability": "mutate"
+    },
+    {
+      "id": "timer.start",
+      "version": 1,
+      "params": [
+        {
+          "name": "ticks",
+          "type": "i64"
+        }
+      ],
+      "returns": "ref<timer>",
+      "reads": [],
+      "writes": [
+        "timers"
+      ],
+      "capability": "mutate"
+    },
+    {
+      "id": "timer.cancel",
+      "version": 1,
+      "params": [
+        {
+          "name": "t",
+          "type": "ref<timer>"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [],
+      "writes": [
+        "timers"
+      ],
+      "capability": "mutate"
+    },
+    {
+      "id": "timer.remaining",
+      "version": 1,
+      "params": [
+        {
+          "name": "t",
+          "type": "ref<timer>"
+        }
+      ],
+      "returns": "i64",
+      "reads": [
+        "timers"
+      ],
+      "writes": [],
+      "capability": "read"
+    },
+    {
+      "id": "rng.roll",
+      "version": 1,
+      "params": [
+        {
+          "name": "stream",
+          "type": "strref"
+        },
+        {
+          "name": "maxExclusive",
+          "type": "i64"
+        }
+      ],
+      "returns": "i64",
+      "reads": [],
+      "writes": [
+        "rng"
+      ],
+      "capability": "mutate",
+      "determinism": "named per-rule streams; one shared stream is forbidden by ADR-RUNTIME-001"
+    },
+    {
+      "id": "rng.roll-fixed",
+      "version": 1,
+      "params": [
+        {
+          "name": "stream",
+          "type": "strref"
+        }
+      ],
+      "returns": "fixed64",
+      "reads": [],
+      "writes": [
+        "rng"
+      ],
+      "capability": "mutate",
+      "determinism": "uniform in [0,1) at the fixed64 scale"
+    },
+    {
+      "id": "scenario.var",
+      "version": 1,
+      "params": [
+        {
+          "name": "id",
+          "type": "strref"
+        }
+      ],
+      "returns": "value",
+      "reads": [
+        "scenario"
+      ],
+      "writes": [],
+      "capability": "read"
+    },
+    {
+      "id": "scenario.set-var",
+      "version": 1,
+      "params": [
+        {
+          "name": "id",
+          "type": "strref"
+        },
+        {
+          "name": "v",
+          "type": "value"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [],
+      "writes": [
+        "scenario"
+      ],
+      "capability": "control"
+    },
+    {
+      "id": "scenario.send-message",
+      "version": 1,
+      "params": [
+        {
+          "name": "id",
+          "type": "strref"
+        },
+        {
+          "name": "payload",
+          "type": "value",
+          "optional": true
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [],
+      "writes": [
+        "scenario"
+      ],
+      "capability": "control"
+    },
+    {
+      "id": "scenario.enable-chart",
+      "version": 1,
+      "params": [
+        {
+          "name": "chart",
+          "type": "ref<chart>"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [],
+      "writes": [
+        "scenario"
+      ],
+      "capability": "control"
+    },
+    {
+      "id": "scenario.disable-chart",
+      "version": 1,
+      "params": [
+        {
+          "name": "chart",
+          "type": "ref<chart>"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [],
+      "writes": [
+        "scenario"
+      ],
+      "capability": "control"
+    },
+    {
+      "id": "scenario.objective-add",
+      "version": 1,
+      "params": [
+        {
+          "name": "id",
+          "type": "strref"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [],
+      "writes": [
+        "scenario"
+      ],
+      "capability": "control"
+    },
+    {
+      "id": "scenario.objective-complete",
+      "version": 1,
+      "params": [
+        {
+          "name": "id",
+          "type": "strref"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [],
+      "writes": [
+        "scenario"
+      ],
+      "capability": "control"
+    },
+    {
+      "id": "scenario.objective-fail",
+      "version": 1,
+      "params": [
+        {
+          "name": "id",
+          "type": "strref"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [],
+      "writes": [
+        "scenario"
+      ],
+      "capability": "control"
+    },
+    {
+      "id": "scenario.set-result",
+      "version": 1,
+      "params": [
+        {
+          "name": "p",
+          "type": "ref<player>"
+        },
+        {
+          "name": "outcome",
+          "type": "strref"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [],
+      "writes": [
+        "scenario"
+      ],
+      "capability": "control"
+    },
+    {
+      "id": "ui.print",
+      "version": 1,
+      "params": [
+        {
+          "name": "text",
+          "type": "strref"
+        },
+        {
+          "name": "to",
+          "type": "ref<player>",
+          "optional": true
+        }
+      ],
+      "returns": "void",
+      "reads": [],
+      "writes": [],
+      "capability": "present"
+    },
+    {
+      "id": "ui.ping",
+      "version": 1,
+      "params": [
+        {
+          "name": "at",
+          "type": "Pos"
+        },
+        {
+          "name": "to",
+          "type": "ref<player>",
+          "optional": true
+        }
+      ],
+      "returns": "void",
+      "reads": [],
+      "writes": [],
+      "capability": "present"
+    },
+    {
+      "id": "world.portal-create",
+      "version": 1,
+      "params": [
+        {
+          "name": "from",
+          "type": "Pos"
+        },
+        {
+          "name": "to",
+          "type": "Pos"
+        },
+        {
+          "name": "rules",
+          "type": "strref"
+        }
+      ],
+      "returns": "result<ref<region>>",
+      "reads": [
+        "space"
+      ],
+      "writes": [
+        "space"
+      ],
+      "capability": "space-mutate",
+      "status": "reserved",
+      "amendment": "uvw-dynamic-topology"
+    },
+    {
+      "id": "world.portal-destroy",
+      "version": 1,
+      "params": [
+        {
+          "name": "portal",
+          "type": "ref<region>"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [
+        "space"
+      ],
+      "writes": [
+        "space"
+      ],
+      "capability": "space-mutate",
+      "status": "reserved",
+      "amendment": "uvw-dynamic-topology"
+    },
+    {
+      "id": "world.portal-set-state",
+      "version": 1,
+      "params": [
+        {
+          "name": "portal",
+          "type": "ref<region>"
+        },
+        {
+          "name": "state",
+          "type": "strref"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [
+        "space"
+      ],
+      "writes": [
+        "space"
+      ],
+      "capability": "space-mutate",
+      "status": "reserved",
+      "amendment": "uvw-dynamic-topology"
+    },
+    {
+      "id": "world.layer-set",
+      "version": 1,
+      "params": [
+        {
+          "name": "at",
+          "type": "Pos"
+        },
+        {
+          "name": "layer",
+          "type": "strref"
+        },
+        {
+          "name": "value",
+          "type": "fixed64"
+        }
+      ],
+      "returns": "result<bool>",
+      "reads": [
+        "space"
+      ],
+      "writes": [
+        "space"
+      ],
+      "capability": "space-mutate",
+      "status": "reserved",
+      "amendment": "uvw-dynamic-topology"
+    }
+  ]
+}

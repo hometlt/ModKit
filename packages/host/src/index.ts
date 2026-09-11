@@ -131,6 +131,7 @@ export {
   NESTED_SUBJECT_REF_UNAVAILABLE,
   NESTED_SUBJECT_UNSUPPORTED,
   type NestedSubjectOptions,
+  type NestedLogicalResourceSearch,
   type NestedSubjectRefOptions,
   type NestedSubjectResult,
 } from './nested-subject.js'
@@ -239,6 +240,7 @@ export * from './language/index.js'
 export * from './knowledge/index.js'
 export * from './runtime/index.js'
 export * from './renderer/index.js'
+export * from './model-encoding.js'
 export * from './games/index.js'
 export * from './mods/index.js'
 export * from './data/index.js'
@@ -384,3 +386,7 @@ export {
   type FormatWriterRequest,
   type FormatWriterResolution,
 } from './format-writer.js'
+export type {
+  HostLogicalResourceDiscoveryContext,
+  HostLogicalResourceDiscoveryPolicy,
+} from './logical-resources.js'

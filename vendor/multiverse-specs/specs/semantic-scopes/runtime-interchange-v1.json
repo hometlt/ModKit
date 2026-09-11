@@ -1,0 +1,248 @@
+{
+  "$comment": "Pinned candidate SemanticScopeDescriptor, rewritten 2026-09-01 to satisfy semantic-scope-descriptor.v1.schema.json in full (the independent review found the first draft failing its own schema on 20 points and absent from schema-assertions). Normative family texts: ../package/SPEC_UVP.md, ../data/SPEC_UVD.md, ../scenario/SPEC_UVS.md, ../behavior/SPEC_UVB.md, ../campaign/SPEC_UVC.md. Executable: ../conformance/schema-assertions.json, ../conformance/uvp-composition, ../conformance/uvd-resolution, ../conformance/uvb-binary. Declared: ../conformance/uvs-uvb (verifier/kernel).",
+  "schemaVersion": "semantic-scope-descriptor-1",
+  "scopeId": "runtime-interchange-v1",
+  "version": "1.0.0",
+  "status": "candidate",
+  "plane": "runtime",
+  "owner": "multiverse/specs",
+  "registeredOn": "2026-09-01",
+  "summary": "The runtime semantic plane a game adapter and the deterministic kernel must agree on: composed definitions (UVD), reactive scenarios (UVS) and behavior modules (UVB) packaged as UVP and addressed through one versioned intrinsic table. Candidate: composition and the UVB canonical binary are executable by reference tools today; the verifier and the kernel are not, and no adapter publishes a lowered corpus yet, so its hashes are admission-only evidence rather than a compatibility guarantee.",
+  "hash": {
+    "algorithm": "sha256",
+    "canonicalForm": "uv.canonical/typed-form@1",
+    "envelopeSchemaVersion": 1,
+    "domain": "uv.semantic-scope/runtime-interchange-v1",
+    "output": "algorithm-qualified",
+    "envelope": {
+      "scope": {
+        "id": "runtime-interchange-v1",
+        "version": "1.0.0"
+      },
+      "facets": "ordered [facetKey, value] pairs for every present facet",
+      "absentFacets": "ordered facetKey list for every optional facet the composition did not produce"
+    },
+    "facetKey": "<facetId>@<version>"
+  },
+  "numeric": {
+    "model": "gameplay values are i64 and fixed64 (Q32.32, SPEC_UV_FIXED_POINT) integer quanta only; the canonical form encodes them as integers, never as decimal rationals",
+    "float32Widening": "not applicable: no float32 exists in this plane; a presentation-marked f64 field never enters the hash",
+    "negativeZero": "not applicable to integer quanta; an integer zero has one encoding",
+    "nonFinite": "NaN and infinities cannot arise from integer quanta; a lowering that would need one is a named refusal, never a hash",
+    "comparison": "equality is byte equality of the canonical encoding; no epsilon exists in this scope, and admission comparisons against decimal references are made at quantum level"
+  },
+  "missingSemantics": {
+    "absentFacet": "an optional facet (scenarios, behavior) the composition did not produce; it is named in absentFacets and contributes its key, never a fabricated value",
+    "absentKey": "forbidden inside a facet value: every key a facet declares is always present",
+    "null": "not used by this plane: an optional kind-schema field no layer sets is absent from the resolved definition rather than null",
+    "empty": "an empty list is a positive fact (a definition with no tags, a composition with no mods), never a stand-in for absent",
+    "unknown": "this scope defines no unknown sentinel; an unlowerable construct is a named refusal that hashes like any other node",
+    "refusals": "UVS refusal actions and lowering refusals are content, not omissions: dropping one silently changes identity"
+  },
+  "ordering": {
+    "facets": "by facetKey in UTF-8 byte order",
+    "absentFacets": "by facetKey in UTF-8 byte order",
+    "objectKeys": "by UTF-8 byte order of the key, applied by the canonical form itself",
+    "sequences": "layer lists, resolved field lists and bound intrinsic lists are ordered by the rules below; module bodies keep publication order because instruction order is semantic",
+    "layers": "by rank (base < official < map < mod), then explicit order, then packageId in UTF-8 byte order",
+    "definitions": "by full id in UTF-8 byte order; fields by field name in UTF-8 byte order",
+    "charts": "by (composition rank, chart name) — the same order the runtime fires them",
+    "intrinsics": "by id@version in UTF-8 byte order"
+  },
+  "resourceClosure": {
+    "policy": "content-qualified: every layer of a composition is named by its package id, version and canonical content digest; a composition hash is a function of those digests and nothing outside them",
+    "modes": {
+      "logical": "package identity only (id@version) — used for dependency resolution, never for the hash",
+      "content-qualified": "package identity plus the canonical content digest of its ordered contents — the only mode the composition hash accepts"
+    },
+    "modeIsHashed": true,
+    "modeIsHashedRationale": "a composition that named packages logically would hash the same across different bytes; content qualification is what makes the run identity a fact",
+    "digestForm": "<algorithm>:<lowercase hex>; a bare hex string is rejected",
+    "acceptedAlgorithms": [
+      "sha256"
+    ],
+    "roles": [
+      "package",
+      "module",
+      "world",
+      "media"
+    ]
+  },
+  "facets": [
+    {
+      "facetId": "uv.runtime/composition",
+      "version": 1,
+      "requirement": "required",
+      "summary": "The ordered layer list that produced this run: rank, explicit order, package id, version and content digest per layer.",
+      "keys": {
+        "layers": "ordered array of [rank, order, packageId, packageVersion, contentDigest]",
+        "root": "the root package id and version the composition was requested for"
+      },
+      "binding": {
+        "live": {
+          "contract": null,
+          "note": "no live publisher yet: adapters are not built; today the facet is produced by tools/uv-composition.mjs from schema-valid manifests"
+        },
+        "artifact": {
+          "profile": "UVP/1.0",
+          "note": "the composed manifests and their canonical content digests, per SPEC_UVP section 2"
+        }
+      }
+    },
+    {
+      "facetId": "uv.runtime/definitions",
+      "version": 1,
+      "requirement": "required",
+      "summary": "Every resolved definition with its effective field values and the layer that set each value.",
+      "keys": {
+        "definitions": "ordered array of [fullId, kind, [fieldName, value, provenanceLayer]...]"
+      },
+      "binding": {
+        "live": {
+          "contract": null,
+          "note": "no live publisher yet; produced by tools/uv-composition.mjs resolveDefinitions; admission compares it against Modkit resolved values at quantum level"
+        },
+        "artifact": {
+          "profile": "UVD/1.0",
+          "note": "kind-schema, definitions and overlay documents composed in layer order, per SPEC_UVD section 4"
+        }
+      }
+    },
+    {
+      "facetId": "uv.runtime/scenarios",
+      "version": 1,
+      "requirement": "optional",
+      "summary": "Every scenario chart the composition ships, in canonical document form, ordered as the runtime fires them.",
+      "keys": {
+        "charts": "ordered array of canonical UVS chart documents keyed by (rank, chart name)"
+      },
+      "presenceRule": "absent when the composition ships no UVS document; a package with no charts contributes nothing here",
+      "binding": {
+        "live": {
+          "contract": null,
+          "note": "no live publisher yet; the verifier that admits charts does not exist"
+        },
+        "artifact": {
+          "profile": "UVS/1.0",
+          "note": "UVS documents per SPEC_UVS"
+        }
+      }
+    },
+    {
+      "facetId": "uv.runtime/behavior",
+      "version": 1,
+      "requirement": "optional",
+      "summary": "Every behavior module the composition binds, by the identity digest of its canonical binary.",
+      "keys": {
+        "modules": "ordered array of [namespace, identityDigest]; the structural JSON never reaches this facet"
+      },
+      "presenceRule": "absent when the composition ships no UVB module",
+      "binding": {
+        "live": {
+          "contract": null,
+          "note": "no live publisher yet; the luau→uvb compiler does not exist"
+        },
+        "artifact": {
+          "profile": "UVB/1.1",
+          "note": "canonical binaries per SPEC_UVB section 2a; the identity digest excludes the source map"
+        }
+      }
+    },
+    {
+      "facetId": "uv.runtime/intrinsics",
+      "version": 1,
+      "requirement": "required",
+      "summary": "The intrinsic ids and versions actually bound at composition, against the registered table.",
+      "keys": {
+        "bound": "ordered array of id@version strings"
+      },
+      "binding": {
+        "live": {
+          "contract": null,
+          "note": "no live publisher yet; the requirement check is executed by tools/uv-composition.mjs against runtime/intrinsics.v1.json"
+        },
+        "artifact": {
+          "profile": "intrinsics.v1",
+          "note": "runtime/intrinsics.v1.json is the registered table"
+        }
+      }
+    }
+  ],
+  "bindings": {
+    "liveBaseContract": {
+      "contract": "uv.tools/uv-composition",
+      "major": 1,
+      "maturity": "publisher-candidate",
+      "note": "the dependency-free reference composition tool is the only publisher today; a candidate publisher, not an admitted host contract"
+    },
+    "artifactProfile": {
+      "profile": "UVP/1.0",
+      "version": "1.0",
+      "marker": "a package manifest whose uv block is { format: UVP, version: 1.0 } plus its composed UVD/UVS/UVB contents",
+      "mandatoryMapping": "every facet value is a function of manifests and canonical documents; no facet reads anything a package does not ship"
+    },
+    "notFrozenHere": [
+      "the kernel state hash algorithm and save section encodings (specs/state) are named by receipts, not by this scope",
+      "the UVB verifier's exact diagnostics are named by the Luau frontend draft, not by this scope",
+      "media closure (UVM/UVT/UVW) is covered by its own scopes; this scope names media only by role and digest"
+    ]
+  },
+  "compatibility": {
+    "minorVersions": "a minor version may add an optional facet or a key with a declared default; hashes across minors are comparable only for the facets both versions declare",
+    "majorVersions": "a major version may change facet ids, encodings, ordering or numeric rules; hashes across majors are never comparable",
+    "hashComparability": "two hashes are comparable when scopeId, major version and the set of present facet keys are equal; otherwise the comparison is undefined and a tool must say so"
+  },
+  "annex": {
+    "families": {
+      "uvp": {
+        "spec": "../package/SPEC_UVP.md",
+        "schema": "../package/schema/uvp.manifest.v1.schema.json",
+        "status": "candidate"
+      },
+      "uvd": {
+        "spec": "../data/SPEC_UVD.md",
+        "schema": "../data/schema/uvd.document.v1.schema.json",
+        "status": "candidate"
+      },
+      "uvs": {
+        "spec": "../scenario/SPEC_UVS.md",
+        "schema": "../scenario/schema/uvs.document.v1.schema.json",
+        "status": "candidate"
+      },
+      "uvb": {
+        "spec": "../behavior/SPEC_UVB.md",
+        "schema": "../behavior/schema/uvb.module.v1.schema.json",
+        "status": "candidate"
+      },
+      "uvc": {
+        "spec": "../campaign/SPEC_UVC.md",
+        "schema": "../campaign/schema/uvc.campaign.v1.schema.json",
+        "status": "candidate"
+      }
+    },
+    "receipts": {
+      "spec": "../receipts/SPEC_RECEIPTS.md",
+      "kinds": [
+        "uv.receipt/lowering",
+        "uv.receipt/composition",
+        "uv.receipt/simulation"
+      ]
+    },
+    "state": {
+      "spec": "../state/SPEC_STATE_SAVES_REPLAYS.md",
+      "kinds": [
+        "uv.save",
+        "uv.replay"
+      ]
+    },
+    "fixedPoint": "../foundation/SPEC_UV_FIXED_POINT.md",
+    "admission": {
+      "toRegistered": [
+        "DONE 2026-09-01: the composition tool executes conformance/uvp-composition and uvd-resolution vectors (tools/uv-composition.mjs)",
+        "PARTLY DONE 2026-09-02: the verifier executes the uvs-uvb verifier rules (tools/uv-verify.mjs, conformance/uvs-uvb-verifier); the kernel runtime rules (firing order, budget exhaustion) stay declared",
+        "DONE 2026-09-01: UVB canonical binary 1.1 frozen with bijection vectors and a pinned identity digest (tools/uvb-binary.mjs, conformance/uvb-binary)",
+        "DONE 2026-09-01 (matching): real-corpus admission on UVD 1.1 — SC2 374/374 and Warzone 211/211 values match Modkit resolved values at quantum level (admission/uvd-real-corpus/REPORT.md §11); LoweringReceipts still owed by the adapters once they exist"
+      ]
+    }
+  }
+}

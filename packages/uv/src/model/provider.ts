@@ -8,7 +8,7 @@
  * list or a structured diff. So the service produces; the one writer seam still commits.
  *
  * The provider is a thin, session-scoped wrapper: all the format knowledge is in `materializer.js`,
- * which is dependency-free and therefore equally usable from the testkit harness and from a worker.
+ * which uses portable data helpers and is equally usable from the testkit harness and from a worker.
  */
 import { simpleLease } from '../support.js'
 import { MATERIALIZER_COORDINATE, materializeUvmCore } from './materializer.js'
@@ -24,12 +24,12 @@ const OFFER_ID = 'uvm-core-materializer-v1'
  */
 const materializer = Object.freeze({
   coordinate: MATERIALIZER_COORDINATE,
-  materialize(
+  async materialize(
     projection: Parameters<typeof materializeUvmCore>[0],
     request: Parameters<typeof materializeUvmCore>[1],
     options?: Parameters<typeof materializeUvmCore>[2],
   ) {
-    return Promise.resolve(materializeUvmCore(projection, request, options ?? {}))
+    return materializeUvmCore(projection, request, options ?? {})
   },
 })
 

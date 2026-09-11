@@ -24,6 +24,7 @@
  */
 
 import type { Page, PageRequest } from './data-sources.js'
+import type { JsonValue } from './types.js'
 
 // ---------------------------------------------------------------------------------------------
 // resource references — publishers: M3 (`textureReferences`), W3D (`textures` + `textureBindings`)
@@ -81,6 +82,13 @@ export interface ModelResourceRefsSource {
  */
 export type ModelBoneProvenance = 'direct' | 'companion' | 'absent'
 
+/** Authored default local TRS, in the same space as the scene and animation channels. */
+export interface ModelBoneLocalPose {
+  readonly translation: readonly [number, number, number]
+  readonly rotation: readonly [number, number, number, number]
+  readonly scale: readonly [number, number, number]
+}
+
 export interface ModelBoneBinding {
   /** The model part this binding belongs to; ids come from the publisher's own part space. */
   readonly partId: string
@@ -96,8 +104,14 @@ export interface ModelBoneBinding {
   readonly nativeFlags?: number
   /** Names for the native flag bits the publisher understands. */
   readonly flagNames?: readonly string[]
-  /** Publisher-native 4×4 rest/bind matrix, in row order. Absent when the format has none. */
+  /** Publisher-native rest/bind matrix with format-specific role/order. Use inverseBindMatrix for portable skin. */
   readonly restMatrix?: readonly number[]
+  /** Exact ModelNode id used by portable animation channels; absent means no scene-node join. */
+  readonly nodeId?: string
+  /** Authored default local pose. This is not an inverse bind matrix or a sampled animation frame. */
+  readonly localPose?: ModelBoneLocalPose
+  /** Column-major 4x4 matrix from model-space bind vertices into this bone's bind space. */
+  readonly inverseBindMatrix?: readonly number[]
 }
 
 export interface ModelSkeletonInfo {
@@ -126,6 +140,9 @@ export interface ModelSkeletonSource {
  */
 export type ModelAnimationKind = 'animation' | 'rest-pose'
 
+/** Explicit numerical interpolation; absent means that the channel cannot be sampled generically. */
+export type ModelAnimationInterpolation = 'step' | 'linear' | 'spherical-linear'
+
 export interface ModelAnimationChannel {
   /** What the channel drives, in the publisher's own target space (a W3D pivot, for instance). */
   readonly target: string
@@ -136,6 +153,13 @@ export interface ModelAnimationChannel {
   readonly lastFrame: number
   /** Decoded samples. Their values use the publisher's native component order. */
   readonly samples?: readonly ModelAnimationSample[]
+  /** Requires sequence-local `timeSeconds` on every sample. Quaternion order is x, y, z, w. */
+  readonly interpolation?: ModelAnimationInterpolation
+  /** An independent track clock, retained separately from the sequence's looping policy. */
+  readonly concurrent?: boolean
+  readonly wrapSeconds?: number
+  /** Requires concurrent + wrapSeconds. Zero is unbounded; positive values count full cycles. */
+  readonly repeatCount?: number
 }
 
 export interface ModelAnimationSample {
@@ -143,6 +167,8 @@ export interface ModelAnimationSample {
   readonly frame: number
   /** Native timestamp when the publisher exposes one. */
   readonly timeMilliseconds?: number
+  /** Sequence-local time, or the independent clock of a concurrent channel. */
+  readonly timeSeconds?: number
   /** Scalar/vector/quaternion components in the publisher's documented order. */
   readonly value: readonly number[]
 }
@@ -155,6 +181,17 @@ export interface ModelAnimationClip {
   readonly provenance: Exclude<ModelBoneProvenance, 'absent'>
   readonly frames: number
   readonly frameRate?: number
+  readonly durationSeconds?: number
+  /** Explicit nonnegative sequence key shared with material tracks; independent of clip order. */
+  readonly sequenceIndex?: number
+  readonly looping?: boolean
+  /** Zero means unbounded looping; a positive integer is the authored number of complete cycles. */
+  readonly repeatCount?: number
+  readonly movementSpeed?: number
+  readonly boundsSphere?: {
+    readonly center: readonly [number, number, number]
+    readonly radius: number
+  }
   readonly hierarchyId?: string
   /** Native inclusive time bounds; distinct from the normalized frame count. */
   readonly nativeTimeBounds?: ModelAnimationTimeBounds
@@ -252,6 +289,15 @@ export interface ModelMaterialRef {
   readonly nativeFlags?: number
   readonly flagNames?: readonly string[]
   readonly layers?: readonly ModelMaterialLayerRef[]
+  /**
+   * Preserved shader parameters, using the shader identity and params convention of
+   * UV_game_material. An identity describes the parameter vocabulary, not pixel equivalence.
+   * Logical texture paths in parameters do not grant access to resources; use the resource facet.
+   */
+  readonly shader?: {
+    readonly id: string
+    readonly parameters: Readonly<Record<string, JsonValue>>
+  }
 }
 
 export interface ModelMaterialInfo {

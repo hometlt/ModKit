@@ -4,6 +4,7 @@ import {
   diagnostic,
   isCancellation,
   throwIfAborted,
+  type Diagnostic,
 } from '@modkit/core'
 import {
   grantValidity,
@@ -45,6 +46,8 @@ import {
 export interface HostOperationContext {
   readonly signal?: AbortSignal
   readonly onProgress?: (progress: Progress) => void
+  /** Per-call diagnostics travel with OperationResult, including when the output is bytes. */
+  readonly reportDiagnostic?: (value: Diagnostic) => void
 }
 
 export type HostOperationHandler = (
@@ -53,6 +56,8 @@ export type HostOperationHandler = (
 ) => Promise<OperationOutput>
 
 export interface AssetSessionOptions {
+  /** Bounded per-call diagnostics, default 100; the last slot reports truncation. */
+  readonly maxOperationDiagnostics?: number
   readonly revision: RevisionId
   readonly descriptor: AnyDescriptor
   readonly operationDeclarations: readonly OperationDecl[]
@@ -199,6 +204,9 @@ export async function assembleSubjectDescriptor(value: AnyDescriptorWire): Promi
 
 /** Host-owned session reference implementation for the A-3 lifecycle contract. */
 export function createAssetSession(options: AssetSessionOptions): ManagedAssetSession {
+  const maxOperationDiagnostics = options.maxOperationDiagnostics ?? 100
+  if (!Number.isSafeInteger(maxOperationDiagnostics) || maxOperationDiagnostics < 0)
+    throw new TypeError('invalid maxOperationDiagnostics')
   const originalDescriptor = options.descriptor
   const originalOffers = new Set(
     originalDescriptor.dataSources.map(item => `${item.contract}@${item.major}`),
@@ -382,7 +390,47 @@ export function createAssetSession(options: AssetSessionOptions): ManagedAssetSe
       }
       try {
         throwIfAborted(invokeOptions.signal)
-        const output = snapshotOutput(await handler(ownedInput, invokeOptions))
+        const diagnostics: Diagnostic[] = []
+        let reporting = true
+        const reportDiagnostic = (value: Diagnostic) => {
+          if (!reporting || maxOperationDiagnostics === 0) return
+          if (diagnostics.length >= maxOperationDiagnostics) {
+            diagnostics[maxOperationDiagnostics - 1] = diagnostic(
+              'information',
+              'x3.host/operation-diagnostics-truncated',
+              'Further operation diagnostics were omitted by the session budget.',
+            )
+            return
+          }
+          try {
+            const encoded = canonicalJsonStringify(value)
+            if (encoded.length > 65_536) throw new TypeError('oversized diagnostic')
+            const owned = JSON.parse(encoded) as Diagnostic
+            if (
+              !['error', 'warning', 'information', 'hint'].includes(owned.severity) ||
+              typeof owned.message !== 'string' ||
+              typeof owned.code !== 'string'
+            )
+              throw new TypeError('invalid diagnostic')
+            // Validate the qualified code using the same public constructor.
+            diagnostic(owned.severity, owned.code, owned.message)
+            diagnostics.push(snapshotStructured(owned))
+          } catch {
+            diagnostics.push(
+              diagnostic(
+                'warning',
+                'x3.host/invalid-operation-diagnostic',
+                'An operation diagnostic was not bounded, serializable diagnostic data.',
+              ),
+            )
+          }
+        }
+        let output: OperationOutput
+        try {
+          output = snapshotOutput(await handler(ownedInput, { ...invokeOptions, reportDiagnostic }))
+        } finally {
+          reporting = false
+        }
         throwIfAborted(invokeOptions.signal)
         if (
           declaration.outputKinds !== undefined &&
@@ -394,7 +442,7 @@ export function createAssetSession(options: AssetSessionOptions): ManagedAssetSe
             context: { handlerId, outputKind: output.kind },
           })
         }
-        return { state: 'ok', output, diagnostics: [] }
+        return { state: 'ok', output, diagnostics: Object.freeze(diagnostics) }
       } catch (error) {
         if (isCancellation(error) || invokeOptions.signal?.aborted) {
           return rejected('cancelled', 'the operation was cancelled')

@@ -1,0 +1,409 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/uvs/1.0/uvs.document.schema.json",
+  "title": "UVS document",
+  "description": "Status: candidate (SPEC_UVS.md). One Universal Scenario document: flat automata reacting to engine events with pure conditions and a bounded action set. Chart state (current state, variables, armed timers, unfinished reactions) is world state: saved, hashed, replayed. Firing order on one event is (composition rank, chart name) — fixed by the spec, never by the implementation. A non-portable source construct stays visible as a refusal action carrying the original fragment; silent loss is forbidden.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "uv",
+    "namespace",
+    "charts"
+  ],
+  "properties": {
+    "uv": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "version"
+      ],
+      "properties": {
+        "format": {
+          "const": "UVS"
+        },
+        "version": {
+          "const": "1.0"
+        }
+      }
+    },
+    "namespace": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*(\\.[a-z0-9][a-z0-9-]*)*$"
+    },
+    "charts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "initialState",
+          "states"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "initialState": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "variables": {
+            "description": "Chart-local typed variables; part of saved state. Types are the UVB value types: no doubles, no objects.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "type",
+                "initial"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-zA-Z0-9]*$"
+                },
+                "type": {
+                  "enum": [
+                    "bool",
+                    "i64",
+                    "fixed64",
+                    "strref",
+                    "ref"
+                  ]
+                },
+                "refKind": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]*$"
+                },
+                "initial": {}
+              },
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "type": {
+                        "const": "ref"
+                      }
+                    }
+                  },
+                  "then": {
+                    "required": [
+                      "refKind"
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "states": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "on"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9-]*$"
+                },
+                "on": {
+                  "description": "Handlers for this state. The event vocabulary is the engine's (timer.fired, entity.died, scenario.message, ...); an id outside the registered vocabulary is a composition refusal against the intrinsic/event table, not a schema guess.",
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": [
+                      "event",
+                      "actions"
+                    ],
+                    "properties": {
+                      "event": {
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$"
+                      },
+                      "condition": {
+                        "$ref": "#/$defs/expr"
+                      },
+                      "actions": {
+                        "type": "array",
+                        "items": {
+                          "$ref": "#/$defs/action"
+                        }
+                      },
+                      "goto": {
+                        "description": "Target state after the actions; staying is the default. A goto naming a state the chart does not declare is a composition refusal.",
+                        "type": "string",
+                        "pattern": "^[a-z][a-z0-9-]*$"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "$comment": {
+      "description": "Free commentary; never semantic.",
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "expr": {
+      "description": "Pure expression tree. `call` may only name read-class intrinsics; the composition verifier checks the class against the intrinsic table — a condition with side effects is refused there. Waits do not exist in expressions: delay is a timer plus a timer.fired handler.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "const",
+            "var",
+            "call",
+            "and",
+            "or",
+            "not",
+            "cmp"
+          ]
+        },
+        "value": {},
+        "name": {
+          "type": "string"
+        },
+        "intrinsic": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+@[1-9]\\d*$"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/expr"
+          }
+        },
+        "op": {
+          "enum": [
+            "eq",
+            "ne",
+            "lt",
+            "le",
+            "gt",
+            "ge"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "const"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "value"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "var"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "name"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "call"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "intrinsic"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "cmp"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "op",
+              "args"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "enum": [
+                  "and",
+                  "or",
+                  "not"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "args"
+            ]
+          }
+        }
+      ]
+    },
+    "action": {
+      "description": "One bounded action. `intrinsic` maps 1:1 onto the table; `uvb` calls shipped module code for bodies the bounded set cannot express; `set-var` writes a chart variable; `refusal` is the honest placeholder for a non-portable source construct and always carries the original.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "intrinsic",
+            "uvb",
+            "set-var",
+            "refusal"
+          ]
+        },
+        "intrinsic": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+@[1-9]\\d*$"
+        },
+        "module": {
+          "type": "string"
+        },
+        "function": {
+          "type": "string"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/expr"
+          }
+        },
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "$ref": "#/$defs/expr"
+        },
+        "origin": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "language",
+            "source"
+          ],
+          "properties": {
+            "language": {
+              "enum": [
+                "galaxy",
+                "js",
+                "other"
+              ]
+            },
+            "source": {
+              "type": "string"
+            }
+          }
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "intrinsic"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "intrinsic"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "uvb"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "module",
+              "function"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "set-var"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "name",
+              "value"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "refusal"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "origin",
+              "reason"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

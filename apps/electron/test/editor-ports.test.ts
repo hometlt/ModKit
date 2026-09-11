@@ -79,7 +79,7 @@ function fakeArm(
     committed,
     disposed: false,
     async state(): Promise<SubjectEditingState> {
-      return { revision: REVISION, targets: [TARGET] }
+      return { revision: REVISION, targets: [TARGET], writableTargetIds: [TARGET.targetId] }
     },
     async propose(change) {
       proposed.push(change)

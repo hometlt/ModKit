@@ -20,32 +20,31 @@ consumer that ignores it loses.
 
 ## Extension index
 
-| Extension | Attaches to | Degradation if ignored |
-| --- | --- | --- |
-| [`UV_asset`](#uv_asset) | root | Asset loads; identity and capability summary unavailable |
-| [`UV_units`](#uv_units) | root | Asset renders at metre scale; grid placement wrong |
-| [`UV_game_socket`](#uv_game_socket) | node | Socket becomes an ordinary empty node |
-| [`UV_game_skeleton`](#uv_game_skeleton) | skin | Rig animates correctly; retargeting and mechanical joints unavailable |
-| [`UV_retarget`](#uv_retarget) | skin | Animation cannot be shared with other rigs |
-| [`UV_game_material_team_color`](#uv_game_material_team_color) | material | Unit renders in its neutral colour |
-| [`UV_game_material`](#uv_game_material) | material | PBR approximation is used |
-| [`UV_game_animation_clips`](#uv_game_animation_clips) | animation | Clips play, selection metadata lost |
-| [`UV_game_animation_events`](#uv_game_animation_events) | animation | No gameplay events fire |
-| [`UV_animation_layers`](#uv_animation_layers) | root | All clips treated as full-body overrides |
-| [`KHR_animation_pointer`](#khr_animation_pointer) | animation channel target | Static authored values used (see Khronos registry) |
-| [`UV_game_effects`](#uv_game_effects) | root | No particles, ribbons or projectors |
-| [`UV_game_collision`](#uv_game_collision) | node | No collision; consumer may fall back to mesh bounds |
-| `MSFT_lod` (external Microsoft extension) | node/material | Highest detail only; lower LODs ignored |
-| [`MODKITX_lod_selection`](#incubating-lod-selection-batching-and-impostors) | root | Standard LOD chain remains; custom selection policy unavailable |
-| `MODKITX_batching_hints` | root | Rendering remains correct; advisory batching hints unavailable |
-| `MODKITX_impostor_relation` | root | Original LOD nodes remain; impostor proxy unavailable |
-| [`UV_game_variants`](#uv_game_variants) | root | Default variant only |
-| [`UV_game_gameplay`](#uv_game_gameplay) | root | Art loads without statistics |
-| [`UV_game_spring`](#uv_game_spring) | any | Spring-specific data unavailable |
-| [`UV_game_sc2`](#uv_game_sc2) | any | SC2-specific data unavailable |
-| [`UV_game_cnc`](#uv_game_cnc) | any | C&C-specific data unavailable |
-| [`UV_provenance`](#uv_provenance) | root | Conversion history unavailable |
-| [`UV_source_blob`](#uv_source_blob) | root | Byte-exact round-trip unavailable |
+| Extension                                                                   | Attaches to              | Degradation if ignored                                                |
+| --------------------------------------------------------------------------- | ------------------------ | --------------------------------------------------------------------- |
+| [`UV_asset`](#uv_asset)                                                     | root                     | Asset loads; identity and capability summary unavailable              |
+| [`UV_units`](#uv_units)                                                     | root                     | Asset renders at metre scale; grid placement wrong                    |
+| [`UV_game_socket`](#uv_game_socket)                                         | node                     | Socket becomes an ordinary empty node                                 |
+| [`UV_game_skeleton`](#uv_game_skeleton)                                     | skin                     | Rig animates correctly; retargeting and mechanical joints unavailable |
+| [`UV_retarget`](#uv_retarget)                                               | skin                     | Animation cannot be shared with other rigs                            |
+| [`UV_game_material_team_color`](#uv_game_material_team_color)               | material                 | Unit renders in its neutral colour                                    |
+| [`UV_game_material`](#uv_game_material)                                     | material                 | PBR approximation is used                                             |
+| [`UV_game_animation_clips`](#uv_game_animation_clips)                       | root and animation       | glTF clips play; catalog-only selection and binding slots unavailable |
+| [`UV_game_animation_events`](#uv_game_animation_events)                     | animation                | No gameplay events fire                                               |
+| [`UV_animation_layers`](#uv_animation_layers)                               | root                     | All clips treated as full-body overrides                              |
+| [`KHR_animation_pointer`](#khr_animation_pointer)                           | animation channel target | Static authored values used (see Khronos registry)                    |
+| [`UV_game_effects`](#uv_game_effects)                                       | root                     | No particles, ribbons or projectors                                   |
+| [`UV_game_collision`](#uv_game_collision)                                   | node                     | No collision; consumer may fall back to mesh bounds                   |
+| `MSFT_lod` (external Microsoft extension)                                   | node/material            | Highest detail only; lower LODs ignored                               |
+| [`MODKITX_lod_selection`](#incubating-lod-selection-batching-and-impostors) | root                     | Standard LOD chain remains; custom selection policy unavailable       |
+| `MODKITX_batching_hints`                                                    | root                     | Rendering remains correct; advisory batching hints unavailable        |
+| `MODKITX_impostor_relation`                                                 | root                     | Original LOD nodes remain; impostor proxy unavailable                 |
+| [`UV_game_variants`](#uv_game_variants)                                     | root                     | Default variant only                                                  |
+| [`UV_game_gameplay`](#uv_game_gameplay)                                     | root                     | Art loads without statistics                                          |
+| [`UV_game_spring`](#uv_game_spring)                                         | any                      | Spring-specific data unavailable                                      |
+| [`UV_game_sc2`](#uv_game_sc2)                                               | any                      | SC2-specific data unavailable                                         |
+| [`UV_game_cnc`](#uv_game_cnc)                                               | any                      | C&C-specific data unavailable                                         |
+| [`UV_provenance`](#uv_provenance)                                           | root                     | Conversion history unavailable                                        |
 
 ---
 
@@ -53,17 +52,17 @@ consumer that ignores it loses.
 
 Attaches to: document root.
 
-| Property | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `id` | string | yes | — | Stable identifier, `namespace/name` form |
-| `class` | string | yes | — | `unit`, `building`, `character`, `vehicle`, `creature`, `weapon`, `projectile`, `prop`, `feature`, `effect`, `terrain-object`, `ui`. Unknown → treat as `prop` |
-| `categories` | string[] | no | `[]` | Free-form classification tags |
-| `displayName` | string | no | — | Human-readable name |
-| `description` | string | no | — | Free text |
-| `coreRenderable` | boolean | no | `true` | `false` only when the asset has no meaningful geometry without extensions |
-| `capabilities` | object | no | — | Summary, see below |
-| `author` | string | no | — | Attribution |
-| `licence` | string | no | — | SPDX identifier or URL |
+| Property         | Type     | Required | Default | Description                                                                                                                                                    |
+| ---------------- | -------- | -------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`             | string   | yes      | —       | Stable identifier, `namespace/name` form                                                                                                                       |
+| `class`          | string   | yes      | —       | `unit`, `building`, `character`, `vehicle`, `creature`, `weapon`, `projectile`, `prop`, `feature`, `effect`, `terrain-object`, `ui`. Unknown → treat as `prop` |
+| `categories`     | string[] | no       | `[]`    | Free-form classification tags                                                                                                                                  |
+| `displayName`    | string   | no       | —       | Human-readable name                                                                                                                                            |
+| `description`    | string   | no       | —       | Free text                                                                                                                                                      |
+| `coreRenderable` | boolean  | no       | `true`  | `false` only when the asset has no meaningful geometry without extensions                                                                                      |
+| `capabilities`   | object   | no       | —       | Summary, see below                                                                                                                                             |
+| `author`         | string   | no       | —       | Attribution                                                                                                                                                    |
+| `licence`        | string   | no       | —       | SPDX identifier or URL                                                                                                                                         |
 
 `capabilities`: `skinned` (boolean), `animated` (boolean), `effects` (boolean),
 `collision` (boolean), `lods` (integer), `variants` (string[]), `sockets` (integer),
@@ -79,13 +78,13 @@ the JSON chunk.
 
 Attaches to: document root.
 
-| Property | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `sourceUnit` | string | no | `meter` | Name of the source game's distance unit |
-| `metersPerSourceUnit` | number | yes | — | Physical scale factor already applied to geometry |
-| `sourceUnitsPerCell` | number | no | — | Source units spanning one gameplay grid cell |
-| `footprintCells` | number[2] | no | — | Grid footprint, integer or fractional |
-| `sourceFrameRate` | number | no | — | Authoring frame rate, when the source was frame-based |
+| Property              | Type      | Required | Default | Description                                           |
+| --------------------- | --------- | -------- | ------- | ----------------------------------------------------- |
+| `sourceUnit`          | string    | no       | `meter` | Name of the source game's distance unit               |
+| `metersPerSourceUnit` | number    | yes      | —       | Physical scale factor already applied to geometry     |
+| `sourceUnitsPerCell`  | number    | no       | —       | Source units spanning one gameplay grid cell          |
+| `footprintCells`      | number[2] | no       | —       | Grid footprint, integer or fractional                 |
+| `sourceFrameRate`     | number    | no       | —       | Authoring frame rate, when the source was frame-based |
 
 Geometry in a UVM file is **already in metres**. These fields describe the relationship the
 importer used, so an exporter can invert it exactly rather than re-deriving it.
@@ -96,18 +95,18 @@ importer used, so an exporter can invert it exactly rather than re-deriving it.
 
 Attaches to: node.
 
-| Property | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `role` | string | yes | — | See role table in [SPEC_UVM.md §10.2](SPEC_UVM.md#102-socket-roles) |
-| `index` | integer | no | `0` | Ordinal among sockets sharing a role |
-| `tags` | string[] | no | `[]` | Free-form qualifiers (`primary`, `left`, `cannon`) |
-| `forward` | string | no | `-z` | Local axis pointing out of the socket |
-| `up` | string | no | `+y` | Local axis defining roll reference |
-| `accepts` | string[] | no | — | For `hardpoint`: asset classes or tags it accepts |
-| `capacity` | integer | no | `1` | For `passenger`/`hardpoint`: slot count |
-| `radius` | number | no | — | Advisory attachment volume |
-| `effectHint` | string | no | — | For `effect`: suggested effect id |
-| `sourceName` | string | no | — | Original attachment name in the source format |
+| Property     | Type     | Required | Default | Description                                                         |
+| ------------ | -------- | -------- | ------- | ------------------------------------------------------------------- |
+| `role`       | string   | yes      | —       | See role table in [SPEC_UVM.md §10.2](SPEC_UVM.md#102-socket-roles) |
+| `index`      | integer  | no       | `0`     | Ordinal among sockets sharing a role                                |
+| `tags`       | string[] | no       | `[]`    | Free-form qualifiers (`primary`, `left`, `cannon`)                  |
+| `forward`    | string   | no       | `-z`    | Local axis pointing out of the socket                               |
+| `up`         | string   | no       | `+y`    | Local axis defining roll reference                                  |
+| `accepts`    | string[] | no       | —       | For `hardpoint`: asset classes or tags it accepts                   |
+| `capacity`   | integer  | no       | `1`     | For `passenger`/`hardpoint`: slot count                             |
+| `radius`     | number   | no       | —       | Advisory attachment volume                                          |
+| `effectHint` | string   | no       | —       | For `effect`: suggested effect id                                   |
+| `sourceName` | string   | no       | —       | Original attachment name in the source format                       |
 
 `sourceName` matters for round-trip: Spring scripts and Warcraft 3 triggers reference
 attachments by their original string name, and a renamed node would break them.
@@ -118,12 +117,12 @@ attachments by their original string name, and a renamed node would break them.
 
 Attaches to: skin.
 
-| Property | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `roles` | object | no | `{}` | Map of joint index (as string key) → role name |
-| `axes` | object | no | `{}` | Map of joint index → axis descriptor |
-| `sourceOrder` | integer[] | no | — | Original bone indices, for exact re-export ordering |
-| `billboards` | object | no | `{}` | Map of joint index → `none`/`spherical`/`cylindrical-x`/`cylindrical-y`/`cylindrical-z` |
+| Property      | Type      | Required | Default | Description                                                                             |
+| ------------- | --------- | -------- | ------- | --------------------------------------------------------------------------------------- |
+| `roles`       | object    | no       | `{}`    | Map of joint index (as string key) → role name                                          |
+| `axes`        | object    | no       | `{}`    | Map of joint index → axis descriptor                                                    |
+| `sourceOrder` | integer[] | no       | —       | Original bone indices, for exact re-export ordering                                     |
+| `billboards`  | object    | no       | `{}`    | Map of joint index → `none`/`spherical`/`cylindrical-x`/`cylindrical-y`/`cylindrical-z` |
 
 Axis descriptor: `{ "rotate": "x"|"y"|"z", "limits": [min, max], "translate": "x"|"y"|"z",
 "translateLimits": [min, max] }`.
@@ -148,12 +147,12 @@ sprite-like sub-objects.
 
 Attaches to: skin.
 
-| Property | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `profile` | string | yes | — | `humanoid-1`, `quadruped-1`, `vehicle-1`, or a custom name |
-| `bones` | object | yes | — | Map of profile bone name → joint index |
-| `restPose` | string | no | `unknown` | `t-pose`, `a-pose`, `bind`, `unknown` |
-| `scaleReference` | object | no | — | `{ boneA, boneB, meters }` — measured distance for proportion normalisation |
+| Property         | Type   | Required | Default   | Description                                                                 |
+| ---------------- | ------ | -------- | --------- | --------------------------------------------------------------------------- |
+| `profile`        | string | yes      | —         | `humanoid-1`, `quadruped-1`, `vehicle-1`, or a custom name                  |
+| `bones`          | object | yes      | —         | Map of profile bone name → joint index                                      |
+| `restPose`       | string | no       | `unknown` | `t-pose`, `a-pose`, `bind`, `unknown`                                       |
+| `scaleReference` | object | no       | —         | `{ boneA, boneB, meters }` — measured distance for proportion normalisation |
 
 ---
 
@@ -161,17 +160,17 @@ Attaches to: skin.
 
 Attaches to: material.
 
-| Property | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `maskSource` | string | yes | — | `texture`, `vertexColor`, `paletteRange`, `whole` |
-| `maskTexture` | object | conditional | — | `{ index, texCoord, channel }` — required when `maskSource` is `texture` |
-| `range` | integer[2] | conditional | — | Palette index range, required when `maskSource` is `paletteRange` |
-| `vertexChannel` | string | conditional | `a` | `r`/`g`/`b`/`a`, when `maskSource` is `vertexColor` |
-| `targets` | string[] | no | `["baseColor"]` | Which PBR slots the colour applies to: `baseColor`, `emissive`, `specular` |
-| `blend` | string | no | `multiply` | `multiply`, `add`, `replace`, `overlay`, `lerp` |
-| `strength` | number | no | `1.0` | Blend weight |
-| `defaultColor` | number[4] | no | `[1,1,1,1]` | Colour to use when no team is assigned |
-| `glow` | object | no | — | Secondary emissive team mask: `{ maskTexture, blend, strength }` |
+| Property        | Type       | Required    | Default         | Description                                                                |
+| --------------- | ---------- | ----------- | --------------- | -------------------------------------------------------------------------- |
+| `maskSource`    | string     | yes         | —               | `texture`, `vertexColor`, `paletteRange`, `whole`                          |
+| `maskTexture`   | object     | conditional | —               | `{ index, texCoord, channel }` — required when `maskSource` is `texture`   |
+| `range`         | integer[2] | conditional | —               | Palette index range, required when `maskSource` is `paletteRange`          |
+| `vertexChannel` | string     | conditional | `a`             | `r`/`g`/`b`/`a`, when `maskSource` is `vertexColor`                        |
+| `targets`       | string[]   | no          | `["baseColor"]` | Which PBR slots the colour applies to: `baseColor`, `emissive`, `specular` |
+| `blend`         | string     | no          | `multiply`      | `multiply`, `add`, `replace`, `overlay`, `lerp`                            |
+| `strength`      | number     | no          | `1.0`           | Blend weight                                                               |
+| `defaultColor`  | number[4]  | no          | `[1,1,1,1]`     | Colour to use when no team is assigned                                     |
+| `glow`          | object     | no          | —               | Secondary emissive team mask: `{ maskTexture, blend, strength }`           |
 
 `channel` is `r`, `g`, `b`, `a`, or `rgb` for a full-colour mask.
 
@@ -184,38 +183,38 @@ mask from team colour and behaves as emissive rather than albedo.
 
 Attaches to: material.
 
-| Property | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `shader` | string | yes | — | Namespaced shader identity, e.g. `sc2.standard`, `mdx.layer`, `w3d.vertex-material` |
-| `blendMode` | string | no | `opaque` | `opaque`, `alpha-blend`, `alpha-test`, `additive`, `modulate`, `modulate2x`, `alpha-key`, `screen`, `subtract` |
-| `alphaCutoff` | number | no | `0.5` | For `alpha-test` |
-| `cull` | string | no | `back` | `back`, `front`, `none` |
-| `depthTest` | boolean | no | `true` | |
-| `depthWrite` | boolean | no | `true` | |
-| `sortPriority` | integer | no | `0` | Higher draws later |
-| `unshaded` | boolean | no | `false` | Skip lighting; prefer `KHR_materials_unlit` when the whole material is unlit |
-| `twoSidedNormals` | boolean | no | `false` | Flip normals on backfaces |
-| `layers` | object[] | no | `[]` | Layer stack, see below |
-| `passes` | object[] | no | — | Multi-pass composite; each entry has its own `blendMode`, `layers` |
-| `params` | object | no | `{}` | Shader-specific scalar/vector parameters |
+| Property          | Type     | Required | Default  | Description                                                                                                    |
+| ----------------- | -------- | -------- | -------- | -------------------------------------------------------------------------------------------------------------- |
+| `shader`          | string   | yes      | —        | Namespaced shader identity, e.g. `sc2.standard`, `mdx.layer`, `w3d.vertex-material`                            |
+| `blendMode`       | string   | no       | `opaque` | `opaque`, `alpha-blend`, `alpha-test`, `additive`, `modulate`, `modulate2x`, `alpha-key`, `screen`, `subtract` |
+| `alphaCutoff`     | number   | no       | `0.5`    | For `alpha-test`                                                                                               |
+| `cull`            | string   | no       | `back`   | `back`, `front`, `none`                                                                                        |
+| `depthTest`       | boolean  | no       | `true`   |                                                                                                                |
+| `depthWrite`      | boolean  | no       | `true`   |                                                                                                                |
+| `sortPriority`    | integer  | no       | `0`      | Higher draws later                                                                                             |
+| `unshaded`        | boolean  | no       | `false`  | Skip lighting; prefer `KHR_materials_unlit` when the whole material is unlit                                   |
+| `twoSidedNormals` | boolean  | no       | `false`  | Flip normals on backfaces                                                                                      |
+| `layers`          | object[] | no       | `[]`     | Layer stack, see below                                                                                         |
+| `passes`          | object[] | no       | —        | Multi-pass composite; each entry has its own `blendMode`, `layers`                                             |
+| `params`          | object   | no       | `{}`     | Shader-specific scalar/vector parameters                                                                       |
 
 Layer object:
 
-| Property | Type | Default | Description |
-| --- | --- | --- | --- |
-| `slot` | string | — | `diffuse`, `normal`, `specular`, `emissive`, `alpha`, `ao`, `height`, `env`, `decal`, `layer{n}` |
-| `texture` | integer | — | glTF texture index |
-| `uv` | integer | `0` | `TEXCOORD_n` channel |
-| `op` | string | `modulate` | `modulate`, `add`, `blend`, `replace`, `subtract`, `modulate2x`, `lerp` |
-| `tiling` | number[2] | `[1,1]` | UV scale |
-| `offset` | number[2] | `[0,0]` | UV offset |
-| `scroll` | number[2] | `[0,0]` | UV units per second |
-| `rotation` | number | `0` | UV rotation |
-| `invert` | boolean | `false` | Invert sampled value |
-| `channel` | string | — | Restrict to one channel |
-| `exponent` | number | — | Specular exponent, `specular` slot |
-| `strength` | number | `1.0` | Slot-specific intensity |
-| `wrap` | string[2] | `["repeat","repeat"]` | `repeat`, `clamp`, `mirror` per axis |
+| Property   | Type      | Default               | Description                                                                                      |
+| ---------- | --------- | --------------------- | ------------------------------------------------------------------------------------------------ |
+| `slot`     | string    | —                     | `diffuse`, `normal`, `specular`, `emissive`, `alpha`, `ao`, `height`, `env`, `decal`, `layer{n}` |
+| `texture`  | integer   | —                     | glTF texture index                                                                               |
+| `uv`       | integer   | `0`                   | `TEXCOORD_n` channel                                                                             |
+| `op`       | string    | `modulate`            | `modulate`, `add`, `blend`, `replace`, `subtract`, `modulate2x`, `lerp`                          |
+| `tiling`   | number[2] | `[1,1]`               | UV scale                                                                                         |
+| `offset`   | number[2] | `[0,0]`               | UV offset                                                                                        |
+| `scroll`   | number[2] | `[0,0]`               | UV units per second                                                                              |
+| `rotation` | number    | `0`                   | UV rotation                                                                                      |
+| `invert`   | boolean   | `false`               | Invert sampled value                                                                             |
+| `channel`  | string    | —                     | Restrict to one channel                                                                          |
+| `exponent` | number    | —                     | Specular exponent, `specular` slot                                                               |
+| `strength` | number    | `1.0`                 | Slot-specific intensity                                                                          |
+| `wrap`     | string[2] | `["repeat","repeat"]` | `repeat`, `clamp`, `mirror` per axis                                                             |
 
 When `passes` is present, `layers` **MUST** describe pass 0 as well, so single-pass consumers
 have something to render.
@@ -224,22 +223,39 @@ have something to render.
 
 ## `UV_game_animation_clips`
 
-Attaches to: animation.
+Attaches to: document root (catalog), animation (per-animation selection metadata).
 
-| Property | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `clip` | string | yes | — | Canonical clip name, lower-case (`stand`, `walk`, `attack`, `death`, `birth`, `work`) |
-| `variant` | string | no | — | Variant suffix (`01`, `ready`, `channel`) |
-| `loop` | string | no | `once` | `once`, `loop`, `ping-pong`, `hold` |
-| `priority` | integer | no | `0` | Higher wins when several clips are eligible |
-| `concurrent` | boolean | no | `false` | May play simultaneously with other clips |
-| `blendInSeconds` | number | no | `0` | |
-| `blendOutSeconds` | number | no | `0` | |
-| `speedScale` | number | no | `1.0` | Playback rate multiplier |
-| `sourceFrameRate` | number | no | — | Original frame rate |
-| `sourceRange` | integer[2] | no | — | Original `[startFrame, endFrame]` |
-| `sourceName` | string | no | — | Original sequence name, verbatim |
-| `boneMask` | integer[] | no | — | Joints this clip may affect |
+ROOT payload:
+
+| Property          | Type     | Required | Description                                                                                                                                           |
+| ----------------- | -------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `clips`           | object[] | yes      | Complete catalog: unique `id`, `name`, `durationSeconds`, unique `sourceSequenceIndex`; optional `animation`, `sourceId`, `looping`, `kind`, `frames` |
+| `materialTargets` | object[] | no       | Inactive `{id,properties:[{path,value,sequenceTracks}]}` slots; published common material animation paths only; no resource graph                     |
+| `attachments`     | object[] | no       | Composition receipts: `id`, `mapping`, `clips`, `playbackLimitations`; source data is copied into common UVM structures                                        |
+
+Every selectable glTF animation is linked exactly once. An absent animation link retains a
+material-only or truly empty sequence without invalid empty glTF animations. Explicit absolute or
+global effect timelines can remain outside the selectable catalog. Catalog sequence indices are
+the material timeline keys, independent of glTF and catalog ordering. See SPEC_UVM §12.2 for the
+binding path whitelist and atomic attachment rules. `uvm.animation.schema.json#catalog` describes
+the root shape; the existing `#clips` anchor continues to describe animation-attached metadata.
+
+Animation-attached payload:
+
+| Property          | Type       | Required | Default | Description                                                                           |
+| ----------------- | ---------- | -------- | ------- | ------------------------------------------------------------------------------------- |
+| `clip`            | string     | yes      | —       | Canonical clip name, lower-case (`stand`, `walk`, `attack`, `death`, `birth`, `work`) |
+| `variant`         | string     | no       | —       | Variant suffix (`01`, `ready`, `channel`)                                             |
+| `loop`            | string     | no       | `once`  | `once`, `loop`, `ping-pong`, `hold`                                                   |
+| `priority`        | integer    | no       | `0`     | Higher wins when several clips are eligible                                           |
+| `concurrent`      | boolean    | no       | `false` | May play simultaneously with other clips                                              |
+| `blendInSeconds`  | number     | no       | `0`     |                                                                                       |
+| `blendOutSeconds` | number     | no       | `0`     |                                                                                       |
+| `speedScale`      | number     | no       | `1.0`   | Playback rate multiplier                                                              |
+| `sourceFrameRate` | number     | no       | —       | Original frame rate                                                                   |
+| `sourceRange`     | integer[2] | no       | —       | Original `[startFrame, endFrame]`                                                     |
+| `sourceName`      | string     | no       | —       | Original sequence name, verbatim                                                      |
+| `boneMask`        | integer[]  | no       | —       | Joints this clip may affect                                                           |
 
 `priority` and `concurrent` mirror `RenderAnimation.priority` and
 `RenderAnimation.concurrent` in the Modkit IR; StarCraft II selects sequences by priority and
@@ -260,19 +276,19 @@ preserves the parent clip duration independently of those sampler key ranges.
 
 Attaches to: animation.
 
-| Property | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `events` | object[] | yes | — | Ordered by `t` ascending |
+| Property | Type     | Required | Default | Description              |
+| -------- | -------- | -------- | ------- | ------------------------ |
+| `events` | object[] | yes      | —       | Ordered by `t` ascending |
 
 Event object:
 
-| Property | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `t` | number | yes | — | Time in seconds from clip start |
-| `name` | string | yes | — | Registered or custom event name |
-| `socket` | integer | no | — | Node index of the relevant socket |
-| `payload` | object | no | `{}` | Event-specific data |
-| `duration` | number | no | `0` | For windowed events |
+| Property   | Type    | Required | Default | Description                       |
+| ---------- | ------- | -------- | ------- | --------------------------------- |
+| `t`        | number  | yes      | —       | Time in seconds from clip start   |
+| `name`     | string  | yes      | —       | Registered or custom event name   |
+| `socket`   | integer | no       | —       | Node index of the relevant socket |
+| `payload`  | object  | no       | `{}`    | Event-specific data               |
+| `duration` | number  | no       | `0`     | For windowed events               |
 
 Registered names: `fire_weapon`, `spawn_effect`, `sound`, `footstep`, `hit`,
 `damage_window_start`, `damage_window_end`, `spawn_object`, `detach_object`, `swap_variant`,
@@ -287,10 +303,10 @@ consumers **MUST NOT** evaluate payloads.
 
 Attaches to: document root.
 
-| Property | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `layers` | object[] | yes | — | Ordered; index 0 is the base layer |
-| `assignments` | object | no | `{}` | Map of animation index → layer index; unassigned animations use layer 0 |
+| Property      | Type     | Required | Default | Description                                                             |
+| ------------- | -------- | -------- | ------- | ----------------------------------------------------------------------- |
+| `layers`      | object[] | yes      | —       | Ordered; index 0 is the base layer                                      |
+| `assignments` | object   | no       | `{}`    | Map of animation index → layer index; unassigned animations use layer 0 |
 
 Layer object: `name` (string, required), `mode` (`override`/`additive`, default `override`),
 `weight` (number, default `1.0`), `boneMask` (integer[], optional — omitted means all joints),
@@ -305,14 +321,14 @@ Attaches to: `animation.channel.target`, following the ratified Khronos extensio
 The containing channel keeps its ordinary `sampler` index. Its target **MUST** set
 `path: "pointer"`, **MUST NOT** set `node`, and carries:
 
-| Property | Type | Required | Description |
-| --- | --- | --- | --- |
-| `pointer` | string | yes | JSON Pointer (RFC 6901) into the glTF document |
+| Property  | Type   | Required | Description                                    |
+| --------- | ------ | -------- | ---------------------------------------------- |
+| `pointer` | string | yes      | JSON Pointer (RFC 6901) into the glTF document |
 
 Constraints:
 
 - `pointer` **MUST** resolve to an existing property in the document at load time.
-- `pointer` **MUST NOT** point into `/extensions/UV_source_blob`, `/buffers`, `/bufferViews`
+- `pointer` **MUST NOT** point into `/buffers`, `/bufferViews`
   or `/accessors`.
 - Writers **MUST** leave the pointed-to static value populated with the sequence-neutral
   default so consumers ignoring this extension still render sensibly.
@@ -336,37 +352,37 @@ Constraints:
 
 Attaches to: document root.
 
-| Property | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `profile` | string | no | `common` | `common`, `m3`, `mdx`, `w3d` |
-| `particles` | object[] | no | `[]` | |
-| `ribbons` | object[] | no | `[]` | |
-| `forces` | object[] | no | `[]` | |
-| `warps` | object[] | no | `[]` | |
-| `projectors` | object[] | no | `[]` | |
+| Property     | Type     | Required | Default  | Description                  |
+| ------------ | -------- | -------- | -------- | ---------------------------- |
+| `profile`    | string   | no       | `common` | `common`, `m3`, `mdx`, `w3d` |
+| `particles`  | object[] | no       | `[]`     |                              |
+| `ribbons`    | object[] | no       | `[]`     |                              |
+| `forces`     | object[] | no       | `[]`     |                              |
+| `warps`      | object[] | no       | `[]`     |                              |
+| `projectors` | object[] | no       | `[]`     |                              |
 
 ### Particle emitter
 
 Common-subset properties (every effects-capable consumer **MUST** support these):
 
-| Property | Type | Default | Description |
-| --- | --- | --- | --- |
-| `name` | string | — | |
-| `node` | integer | required | Node supplying the emitter transform |
-| `material` | integer | required | glTF material index |
-| `emitShape` | string | `point` | `point`, `sphere`, `box`, `disc`, `cylinder`, `plane`, `spline`, `mesh` |
-| `emitShapeRadius` | number | `0` | |
-| `emitShapeSize` | number[3] | `[0,0,0]` | |
-| `emissionRate` | number | `0` | Particles per second |
-| `emitCount` | integer | `0` | Burst count; `squirt` semantics |
-| `lifeSpan` | number | `1` | Seconds |
-| `speed` | number | `0` | m/s |
-| `gravity` | number | `0` | m/s² along world down |
-| `maxParticles` | integer | `256` | Advisory cap; consumers **MUST** apply their own bound |
-| `orientationMode` | string | `billboard` | See below |
-| `lifecycleSize` | object | — | `{ start, middle, end, timeMiddle }`, each a `number[3]` |
-| `segmentColors` | number[3][] | — | Start, middle, end colours |
-| `segmentAlphas` | number[3] | — | Start, middle, end alpha |
+| Property          | Type        | Default     | Description                                                             |
+| ----------------- | ----------- | ----------- | ----------------------------------------------------------------------- |
+| `name`            | string      | —           |                                                                         |
+| `node`            | integer     | required    | Node supplying the emitter transform                                    |
+| `material`        | integer     | required    | glTF material index                                                     |
+| `emitShape`       | string      | `point`     | `point`, `sphere`, `box`, `disc`, `cylinder`, `plane`, `spline`, `mesh` |
+| `emitShapeRadius` | number      | `0`         |                                                                         |
+| `emitShapeSize`   | number[3]   | `[0,0,0]`   |                                                                         |
+| `emissionRate`    | number      | `0`         | Particles per second                                                    |
+| `emitCount`       | integer     | `0`         | Burst count; `squirt` semantics                                         |
+| `lifeSpan`        | number      | `1`         | Seconds                                                                 |
+| `speed`           | number      | `0`         | m/s                                                                     |
+| `gravity`         | number      | `0`         | m/s² along world down                                                   |
+| `maxParticles`    | integer     | `256`       | Advisory cap; consumers **MUST** apply their own bound                  |
+| `orientationMode` | string      | `billboard` | See below                                                               |
+| `lifecycleSize`   | object      | —           | `{ start, middle, end, timeMiddle }`, each a `number[3]`                |
+| `segmentColors`   | number[3][] | —           | Start, middle, end colours                                              |
+| `segmentAlphas`   | number[3]   | —           | Start, middle, end alpha                                                |
 
 Extended properties (preserved always, implemented as the consumer is able):
 `speedRandom`, `randomizeSpeed`, `lifeSpanRandom`, `randomizeLifeSpan`, `mass`, `massRandom`,
@@ -435,27 +451,27 @@ Collapsing the two into one flag produces visibly wrong motion for one of the tw
 
 Attaches to: node.
 
-| Property | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `shapes` | object[] | yes | — | One or more primitives |
-| `role` | string | no | `physics` | `physics`, `hit`, `selection`, `footprint`, `effect`, `vision` |
-| `layer` | string | no | — | Collision layer name |
-| `mask` | string[] | no | — | Layers this collider interacts with |
+| Property | Type     | Required | Default   | Description                                                    |
+| -------- | -------- | -------- | --------- | -------------------------------------------------------------- |
+| `shapes` | object[] | yes      | —         | One or more primitives                                         |
+| `role`   | string   | no       | `physics` | `physics`, `hit`, `selection`, `footprint`, `effect`, `vision` |
+| `layer`  | string   | no       | —         | Collision layer name                                           |
+| `mask`   | string[] | no       | —         | Layers this collider interacts with                            |
 
 Shape object:
 
-| Property | Type | Required | Description |
-| --- | --- | --- | --- |
-| `kind` | string | yes | `box`, `sphere`, `capsule`, `cylinder`, `convex-hull`, `mesh`, `plane` |
-| `matrix` | number[16] | no | Column-major local transform; identity if omitted |
-| `size` | number[3] | conditional | Full extents for `box` |
-| `radius` | number | conditional | For `sphere`, `capsule`, `cylinder` |
-| `height` | number | conditional | For `capsule`, `cylinder` |
-| `axis` | string | no | `x`/`y`/`z` for `capsule`, `cylinder`; default `y` |
-| `positions` | integer | conditional | Accessor index for `convex-hull` and `mesh` |
-| `indices` | integer | conditional | Accessor index for `mesh` |
-| `normal` | number[3] | conditional | For `plane` |
-| `collisionMask` | integer | no | Effect collision channel bitmask |
+| Property        | Type       | Required    | Description                                                            |
+| --------------- | ---------- | ----------- | ---------------------------------------------------------------------- |
+| `kind`          | string     | yes         | `box`, `sphere`, `capsule`, `cylinder`, `convex-hull`, `mesh`, `plane` |
+| `matrix`        | number[16] | no          | Column-major local transform; identity if omitted                      |
+| `size`          | number[3]  | conditional | Full extents for `box`                                                 |
+| `radius`        | number     | conditional | For `sphere`, `capsule`, `cylinder`                                    |
+| `height`        | number     | conditional | For `capsule`, `cylinder`                                              |
+| `axis`          | string     | no          | `x`/`y`/`z` for `capsule`, `cylinder`; default `y`                     |
+| `positions`     | integer    | conditional | Accessor index for `convex-hull` and `mesh`                            |
+| `indices`       | integer    | conditional | Accessor index for `mesh`                                              |
+| `normal`        | number[3]  | conditional | For `plane`                                                            |
+| `collisionMask` | integer    | no          | Effect collision channel bitmask                                       |
 
 Vertex data lives in accessors, never inline in JSON — a convex hull with 400 vertices is
 4.8 KB of binary and roughly 12 KB of JSON.
@@ -477,11 +493,11 @@ claims:
 
 All attach to the document root.
 
-| Property | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `levels` | object[] | yes | — | Nodes participating in selection; topology remains `MSFT_lod` |
-| `policy` | string | no | `screen-coverage` | `screen-coverage`, `distance`, `manual` |
-| `hysteresis` | number | no | `0.1` | Fractional dead-band to prevent LOD flicker |
+| Property     | Type     | Required | Default           | Description                                                   |
+| ------------ | -------- | -------- | ----------------- | ------------------------------------------------------------- |
+| `levels`     | object[] | yes      | —                 | Nodes participating in selection; topology remains `MSFT_lod` |
+| `policy`     | string   | no       | `screen-coverage` | `screen-coverage`, `distance`, `manual`                       |
+| `hysteresis` | number   | no       | `0.1`             | Fractional dead-band to prevent LOD flicker                   |
 
 Selection level object: `node` (integer, required), `screenCoverage` (number, fraction of viewport
 height) and/or `maxDistance` (number, metres). Batching entry contains `node`, advisory `mode` and
@@ -496,12 +512,19 @@ consumer; until then consumers must preserve unknown data and may ignore all thr
 
 ## `UV_game_variants`
 
+In addition to named variants, optional `visibility` records are
+`{mesh:<glTF mesh index>,primitive:<mesh primitive index>,value:<finite number>}`. Each target is
+unique and affects every instance of that primitive. `value > 0` draws it; other finite values hide
+it. The numeric range is intentionally not clamped, preserving native scalar visibility tracks.
+`KHR_animation_pointer` may target `/extensions/UV_game_variants/visibility/N/value`. A visibility
+array alone is valid and does not require an invented named variant. See SPEC_UVM §15.2.
+
 Attaches to: document root.
 
-| Property | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `variants` | object[] | yes | — | Exactly one **SHOULD** set `default: true` |
-| `transitions` | object[] | no | `[]` | Advisory state machine |
+| Property      | Type     | Required | Default | Description                                |
+| ------------- | -------- | -------- | ------- | ------------------------------------------ |
+| `variants`    | object[] | yes      | —       | Exactly one **SHOULD** set `default: true` |
+| `transitions` | object[] | no       | `[]`    | Advisory state machine                     |
 
 Variant object: `name` (string, required), `default` (boolean), `showNodes` (integer[]),
 `hideNodes` (integer[]), `materialVariant` (integer — index into
@@ -525,26 +548,26 @@ Attaches to: document root.
 Either `{ "$ref": "<uri>" }` referencing an external JSON document with the same shape, or
 inline:
 
-| Property | Type | Description |
-| --- | --- | --- |
-| `schema` | string | URI naming the vocabulary, so a validator can check the payload |
-| `faction` | string | |
-| `unitClass` | string | |
-| `cost` | object | Open map of resource name → amount, plus `buildTimeSeconds`, `supply` |
-| `health` | number | |
-| `shields` | number | |
-| `armor` | number | |
-| `armorType` | string | |
-| `sight` | number | Metres |
-| `speed` | number | m/s |
-| `turnRate` | number | rad/s |
-| `footprintCells` | number[2] | |
-| `movementClass` | string | Matches a UVW navigation class id |
-| `weapons` | object[] | See below |
-| `abilities` | string[] | |
-| `builds` | string[] | Asset ids this can construct |
-| `requires` | string[] | Prerequisite asset ids |
-| `tags` | string[] | |
+| Property         | Type      | Description                                                           |
+| ---------------- | --------- | --------------------------------------------------------------------- |
+| `schema`         | string    | URI naming the vocabulary, so a validator can check the payload       |
+| `faction`        | string    |                                                                       |
+| `unitClass`      | string    |                                                                       |
+| `cost`           | object    | Open map of resource name → amount, plus `buildTimeSeconds`, `supply` |
+| `health`         | number    |                                                                       |
+| `shields`        | number    |                                                                       |
+| `armor`          | number    |                                                                       |
+| `armorType`      | string    |                                                                       |
+| `sight`          | number    | Metres                                                                |
+| `speed`          | number    | m/s                                                                   |
+| `turnRate`       | number    | rad/s                                                                 |
+| `footprintCells` | number[2] |                                                                       |
+| `movementClass`  | string    | Matches a UVW navigation class id                                     |
+| `weapons`        | object[]  | See below                                                             |
+| `abilities`      | string[]  |                                                                       |
+| `builds`         | string[]  | Asset ids this can construct                                          |
+| `requires`       | string[]  | Prerequisite asset ids                                                |
+| `tags`           | string[]  |                                                                       |
 
 Weapon object: `id`, `socket` (node index), `projectile` (asset id or URI), `damage`,
 `damageType`, `range`, `minRange`, `cooldownSeconds`, `salvo`, `targets`
@@ -559,24 +582,24 @@ Unknown properties **MUST** be preserved verbatim.
 Attaches to: any object. Preserves Spring/Recoil concepts that have no cross-engine meaning.
 This is **not** the Spring model format; it is a compatibility record.
 
-| Property | Type | Description |
-| --- | --- | --- |
-| `unitDef` | string | `UnitDef` name this asset belongs to |
-| `featureDef` | string | `FeatureDef` name, for world features |
-| `wreck` | string | `FeatureDef` or asset URI spawned on death |
-| `heap` | string | Second-stage wreck |
-| `movementClass` | string | `MoveDef` name |
-| `movementType` | string | `ground_vehicle`, `hover`, `ship`, `sub`, `air`, `spider`, `kbot` |
-| `pieces` | object | Map of joint index → Spring piece name |
-| `scriptType` | string | `cob`, `lua` |
-| `scriptHooks` | string[] | Named script entry points (`Create`, `AimWeapon1`, `FireWeapon1`, `Killed`) |
-| `weaponPieces` | object | Map of weapon number → `{ aimFrom, muzzle, flare }` joint indices |
-| `collisionVolume` | object | `{ type, scale, offset, axis }` in Spring's own convention |
-| `radius` | number | Spring collision radius, in elmos |
-| `height` | number | Spring model height, in elmos |
-| `midPos` | number[3] | Spring mid-position offset, in elmos |
-| `teamTexture` | integer | glTF texture index used as Spring `tex2` |
-| `flags` | object | Remaining `S3O`/`OBJ` header flags |
+| Property          | Type      | Description                                                                 |
+| ----------------- | --------- | --------------------------------------------------------------------------- |
+| `unitDef`         | string    | `UnitDef` name this asset belongs to                                        |
+| `featureDef`      | string    | `FeatureDef` name, for world features                                       |
+| `wreck`           | string    | `FeatureDef` or asset URI spawned on death                                  |
+| `heap`            | string    | Second-stage wreck                                                          |
+| `movementClass`   | string    | `MoveDef` name                                                              |
+| `movementType`    | string    | `ground_vehicle`, `hover`, `ship`, `sub`, `air`, `spider`, `kbot`           |
+| `pieces`          | object    | Map of joint index → Spring piece name                                      |
+| `scriptType`      | string    | `cob`, `lua`                                                                |
+| `scriptHooks`     | string[]  | Named script entry points (`Create`, `AimWeapon1`, `FireWeapon1`, `Killed`) |
+| `weaponPieces`    | object    | Map of weapon number → `{ aimFrom, muzzle, flare }` joint indices           |
+| `collisionVolume` | object    | `{ type, scale, offset, axis }` in Spring's own convention                  |
+| `radius`          | number    | Spring collision radius, in elmos                                           |
+| `height`          | number    | Spring model height, in elmos                                               |
+| `midPos`          | number[3] | Spring mid-position offset, in elmos                                        |
+| `teamTexture`     | integer   | glTF texture index used as Spring `tex2`                                    |
+| `flags`           | object    | Remaining `S3O`/`OBJ` header flags                                          |
 
 Spring keeps a strict piece-name contract with its scripts, so `pieces` and `weaponPieces`
 must survive a round-trip or every script targeting the model breaks. Values are in Spring's
@@ -587,30 +610,30 @@ records the conversion factor used for the geometry.
 
 ## `UV_game_sc2`
 
-| Property | Type | Description |
-| --- | --- | --- |
-| `modelLink` | string | `CModel` catalog entry name |
-| `actorLink` | string | `CActor` catalog entry name |
-| `unitLink` | string | `CUnit` catalog entry name |
-| `attachmentPoints` | object | Map of node index → M3 `Ref_*` name |
-| `sequences` | object[] | `{ name, animation, priority, concurrent, flags }` |
-| `physicsShapes` | integer[] | Node indices carrying M3 `PHRB` shapes |
-| `boundingSphere` | object | `{ center, radius }` from `MODL` |
-| `flags` | integer | `MODL` flag word |
-| `version` | integer | `MODL` chunk version |
+| Property           | Type      | Description                                        |
+| ------------------ | --------- | -------------------------------------------------- |
+| `modelLink`        | string    | `CModel` catalog entry name                        |
+| `actorLink`        | string    | `CActor` catalog entry name                        |
+| `unitLink`         | string    | `CUnit` catalog entry name                         |
+| `attachmentPoints` | object    | Map of node index → M3 `Ref_*` name                |
+| `sequences`        | object[]  | `{ name, animation, priority, concurrent, flags }` |
+| `physicsShapes`    | integer[] | Node indices carrying M3 `PHRB` shapes             |
+| `boundingSphere`   | object    | `{ center, radius }` from `MODL`                   |
+| `flags`            | integer   | `MODL` flag word                                   |
+| `version`          | integer   | `MODL` chunk version                               |
 
 ---
 
 ## `UV_game_cnc`
 
-| Property | Type | Description |
-| --- | --- | --- |
-| `w3dHierarchy` | string | Hierarchy (`.w3d` HLOD) name |
-| `houseColorSlot` | integer | Material slot receiving house colour |
-| `damageStates` | object[] | `{ name, threshold, variant }` |
-| `turrets` | object[] | `{ yawJoint, pitchJoint, muzzleSockets }` |
-| `aggregates` | object[] | `{ socket, asset }` — W3D aggregate attachments |
-| `iniSection` | string | Rules `.ini` section this asset belongs to |
+| Property         | Type     | Description                                     |
+| ---------------- | -------- | ----------------------------------------------- |
+| `w3dHierarchy`   | string   | Hierarchy (`.w3d` HLOD) name                    |
+| `houseColorSlot` | integer  | Material slot receiving house colour            |
+| `damageStates`   | object[] | `{ name, threshold, variant }`                  |
+| `turrets`        | object[] | `{ yawJoint, pitchJoint, muzzleSockets }`       |
+| `aggregates`     | object[] | `{ socket, asset }` — W3D aggregate attachments |
+| `iniSection`     | string   | Rules `.ini` section this asset belongs to      |
 
 ---
 
@@ -619,15 +642,14 @@ records the conversion factor used for the geometry.
 Attaches to: document root. See
 [SPEC_UVM.md §17.2](SPEC_UVM.md#172-uv_provenance) for the worked example.
 
-| Property | Type | Required | Description |
-| --- | --- | --- | --- |
-| `source` | object | yes | `{ format, formatVersion, file, sha256, sourceAxes, sourceUnits }` |
-| `importer` | object | yes | `{ id, version }` |
-| `generatedAt` | string | no | RFC 3339 timestamp |
-| `chain` | object[] | no | Prior conversions, oldest first — a UVM file converted twice records both |
-| `lost` | object[] | no | `{ code, severity, feature, count, detail, recoverable, blob }` |
-| `preserved` | object[] | no | `{ format, chunk, blob }` |
-| `warnings` | object[] | no | Non-loss diagnostics |
+| Property      | Type     | Required | Description                                                               |
+| ------------- | -------- | -------- | ------------------------------------------------------------------------- |
+| `source`      | object   | yes      | `{ format, formatVersion, file, sha256, sourceAxes, sourceUnits }`        |
+| `importer`    | object   | yes      | `{ id, version }`                                                         |
+| `generatedAt` | string   | no       | RFC 3339 timestamp                                                        |
+| `chain`       | object[] | no       | Prior conversions, oldest first — a UVM file converted twice records both |
+| `lost`        | object[] | no       | `{ code, severity, feature, count, detail }`           |
+| `warnings`    | object[] | no       | Non-loss diagnostics                                                      |
 
 `sourceAxes`: `{ up, forward, handedness }` where `up`/`forward` are `+x`…`-z` and
 `handedness` is `left`/`right`.
@@ -638,23 +660,3 @@ Attaches to: document root. See
 re-imported has two entries, and the second importer can see that the first conversion
 already lost the Spring piece names.
 
----
-
-## `UV_source_blob`
-
-Attaches to: document root.
-
-| Property | Type | Required | Description |
-| --- | --- | --- | --- |
-| `blobs` | object[] | yes | Verbatim source payloads |
-
-Blob object: `format` (string), `chunk` (string — source-format chunk or section
-identifier), `bufferView` (integer), `encoding` (`raw`/`zstd`/`deflate`, default `raw`),
-`uncompressedLength` (integer, required when `encoding` is not `raw`), `sha256` (string),
-`note` (string).
-
-Blobs are inert data. Consumers **MUST NOT** parse or execute them; only an exporter
-targeting the matching `format` may interpret them.
-
-A shipping build removes this extension and its bufferViews. `gltf-transform prune` does this
-correctly because the bufferViews are unreferenced by any accessor.

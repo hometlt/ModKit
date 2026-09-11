@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/state/1.0/replay.journal.schema.json",
+  "title": "Replay journal",
+  "description": "Every external input of one run, by tick: player commands addressed through the intrinsic vocabulary, scenario messages, and topology mutations that came from outside the kernel. Kernel outputs are never recorded — they are recomputed, and optional expected checkpoints let a replay verify itself against the original. Entry tick monotonicity is a verifier check.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "schemaVersion", "subject", "kernel", "init", "entries", "journalDigest"],
+  "properties": {
+    "$comment": { "type": "string" },
+    "kind": { "const": "uv.replay" },
+    "schemaVersion": { "const": 1 },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["composition", "standalone-kernel"] },
+        "compositionHash": { "$ref": "#/$defs/digest" }
+      },
+      "allOf": [
+        { "if": { "properties": { "kind": { "const": "composition" } } }, "then": { "required": ["compositionHash"] } }
+      ]
+    },
+    "kernel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["moduleDigest"],
+      "properties": { "moduleDigest": { "$ref": "#/$defs/digest" } }
+    },
+    "init": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["seed"],
+      "properties": { "seed": { "type": "string", "pattern": "^[0-9]+$" } }
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["tick", "kind"],
+        "properties": {
+          "tick": { "type": "integer", "minimum": 0 },
+          "kind": { "enum": ["command", "scenario-message", "topology-mutation"] },
+          "player": { "type": "string" },
+          "intrinsic": {
+            "description": "For commands: the order-domain intrinsic the input maps to, versioned.",
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+@(0|[1-9]\\d*)$"
+          },
+          "args": { "type": "array" },
+          "message": { "type": "string" },
+          "payload": {}
+        },
+        "allOf": [
+          { "if": { "properties": { "kind": { "const": "command" } } }, "then": { "required": ["player", "intrinsic", "args"] } },
+          { "if": { "properties": { "kind": { "const": "scenario-message" } } }, "then": { "required": ["message"] } },
+          { "if": { "properties": { "kind": { "const": "topology-mutation" } } }, "then": { "required": ["intrinsic", "args"] } }
+        ]
+      }
+    },
+    "checkpoints": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["tick", "stateHash"],
+        "properties": {
+          "tick": { "type": "integer", "minimum": 0 },
+          "stateHash": { "type": "string", "pattern": "^[0-9a-f]{16}$" }
+        }
+      }
+    },
+    "journalDigest": {
+      "description": "Digest of the canonical form of `entries`; the SimulationReceipt names it as inputJournalDigest.",
+      "$ref": "#/$defs/digest"
+    }
+  },
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

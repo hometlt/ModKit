@@ -1,0 +1,36 @@
+{
+  "$comment": "INVALID: one document plays one role; mixing overlays and definitions hides which layer a value came from (one-role-per-document).",
+  "uv": {
+    "format": "UVD",
+    "version": "1.0"
+  },
+  "namespace": "example-mod",
+  "role": "overlay",
+  "overlays": [
+    {
+      "target": "example-vendor/unit/trooper",
+      "op": "set",
+      "field": "health",
+      "value": 120000
+    },
+    {
+      "target": "example-vendor/unit/trooper",
+      "op": "append",
+      "field": "tags",
+      "value": "buffed"
+    },
+    {
+      "target": "example-vendor/unit/elite-trooper",
+      "op": "remove",
+      "field": "displayTint"
+    }
+  ],
+  "definitions": [
+    {
+      "name": "smuggled",
+      "kind": "unit",
+      "kindVersion": 1,
+      "fields": {}
+    }
+  ]
+}

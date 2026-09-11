@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdir, mkdtemp, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
@@ -145,6 +145,35 @@ test('discovers bounded local candidates from the nearest parent workspace and e
     result.diagnostics.map(item => [item.code, item.sourceId]),
     [['extension-manager/non-local-source-skipped', 'remote-source']],
   )
+})
+
+test('discovers contribution manifests through one confined wildcard directory segment', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'modkit-local-codec-layout-'))
+  const repository = join(root, 'repository')
+  const extensionRoot = join(repository, 'demo')
+  await writeExtension(extensionRoot, 'example.layout', 'demo')
+  for (const name of ['alpha', 'beta']) {
+    const directory = join(extensionRoot, 'codecs', name)
+    await mkdir(directory, { recursive: true })
+    await writeFile(join(directory, 'codec.json'), JSON.stringify({ schemaVersion: 1, contract: { id: 'modkit/codec-contribution', major: 1 }, id: `example.layout/${name}`, displayName: `${name} codec`, spec: { operations: [] } }))
+  }
+  const packageJson = JSON.parse(await readFile(join(extensionRoot, 'package.json'), 'utf8'))
+  packageJson.modkit.contributionManifests = ['./codecs/*/codec.json']
+  await writeFile(join(extensionRoot, 'package.json'), JSON.stringify(packageJson))
+  await writeFile(join(repository, 'modkit.repository.json'), JSON.stringify({ schemaVersion: 1, extensions: [{ id: 'example.layout/demo', path: 'demo' }] }))
+  const configurationPath = join(root, 'modkit.workspace.json')
+  await writeFile(configurationPath, JSON.stringify({ schemaVersion: 1, sources: [{ id: 'layout', uri: './repository' }] }))
+
+  const result = await discoverLocalExtensionCandidates({ configurationPath })
+
+  assert.deepEqual(result.extensions[0].contributions.map(item => item.id), ['example.layout/alpha', 'example.layout/beta'])
+  assert.deepEqual(result.extensions[0].diagnostics, [])
+
+  packageJson.modkit.contributionManifests = ['./codecs/*/*/codec.json']
+  await writeFile(join(extensionRoot, 'package.json'), JSON.stringify(packageJson))
+  const refused = await discoverLocalExtensionCandidates({ configurationPath })
+  assert.equal(refused.extensions[0].contributions.length, 0)
+  assert.equal(refused.extensions[0].diagnostics[0].code, 'extension-manager/contribution-pattern-unsupported')
 })
 
 test('bounds contribution inspection and keeps the extension candidate available', async () => {

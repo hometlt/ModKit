@@ -1,0 +1,33 @@
+{
+  "$comment": "Declared composition/verifier/runtime expectations for the uvp suite. Schema-level accept/reject cases are EXECUTABLE via conformance/schema-assertions.json (valid fixtures and fixtures/invalid/*), run with --schemas <ajv 2020 module url>. Most expectations below are NOW EXECUTABLE in the uvp-composition suite (tools/uv-composition.mjs); only container-hashing and real-corpus admission stay declared.",
+  "schemaVersion": "uv-conformance-vectors-1",
+  "suite": "uvp",
+  "profile": "UVP/1.0",
+  "spec": "../../package/SPEC_UVP.md",
+  "vectors": [
+    {
+      "id": "composition/layer-order",
+      "expect": "declared",
+      "rule": "layer-order-and-provenance",
+      "note": "base < official < map < mod; inside one rank the explicit order field decides; two same-rank dependencies without order is a typed refusal. The same field set by base and by a mod resolves to the mod value with provenance naming both writers"
+    },
+    {
+      "id": "composition/cycle",
+      "expect": "declared",
+      "rule": "no-dependency-cycles",
+      "note": "a dependency cycle across manifests is a typed refusal naming the cycle members, detected before any content loads"
+    },
+    {
+      "id": "composition/requirements-first",
+      "expect": "declared",
+      "rule": "requirements-before-content",
+      "note": "unsatisfied intrinsic or capability requirements refuse the composition BEFORE content bytes load"
+    },
+    {
+      "id": "composition/container-neutral-hash",
+      "expect": "declared",
+      "rule": "hash-ignores-container",
+      "note": "directory and archive packings of identical contents produce identical content hashes and one composition hash"
+    }
+  ]
+}

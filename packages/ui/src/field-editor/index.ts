@@ -619,7 +619,7 @@ function parseSchema(value: unknown): FieldEditInputSchemaV1 | undefined {
   for (const form of value['forms']) {
     if (
       !object(form) ||
-      !onlyKeys(form, ['id', 'label', 'summary', 'binding', 'fields']) ||
+      !onlyKeys(form, ['id', 'label', 'summary', 'binding', 'fields', 'baseInput']) ||
       typeof form['id'] !== 'string' ||
       form['id'].length === 0 ||
       ids.has(form['id']) ||
@@ -630,6 +630,14 @@ function parseSchema(value: unknown): FieldEditInputSchemaV1 | undefined {
     ) {
       return undefined
     }
+    if (
+      form['baseInput'] !== undefined &&
+      (!object(form['baseInput']) ||
+        Object.keys(form['baseInput']).some(
+          key => key === '__proto__' || key === 'constructor' || key === 'prototype',
+        ))
+    )
+      return undefined
     ids.add(form['id'])
     if (
       form['binding'] !== undefined &&
@@ -687,6 +695,13 @@ function parseSchema(value: unknown): FieldEditInputSchemaV1 | undefined {
       ) {
         return undefined
       }
+      const firstSegment = field['inputPath'][0]
+      if (
+        object(form['baseInput']) &&
+        (typeof firstSegment === 'string' || typeof firstSegment === 'number') &&
+        Object.hasOwn(form['baseInput'], firstSegment)
+      )
+        return undefined
       const path = JSON.stringify(field['inputPath'])
       const segments = field['inputPath'] as readonly (string | number)[]
       if (
@@ -820,7 +835,10 @@ function resolveForm(
     summary: spec.summary,
     fields,
     build(values: ReadonlyMap<string, JsonValue>): JsonValue {
-      const input: Record<string, JsonValue> = {}
+      const input: Record<string, JsonValue> =
+        spec.baseInput === undefined
+          ? {}
+          : (JSON.parse(JSON.stringify(spec.baseInput)) as Record<string, JsonValue>)
       for (const field of fields) {
         let value = values.get(field.key)
         if (value === undefined) value = field.initial ?? ''

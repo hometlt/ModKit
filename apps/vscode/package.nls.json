@@ -1,4 +1,5 @@
 {
+  "command.contentSources": "Modkit: Content Sources (local / Battle.net)…",
   "extension.displayName": "Modkit MK3",
   "extension.description": "Modkit MK3 host for game mod assets.",
   "command.addExtensionFolder": "Modkit: Add Extension Folder…",

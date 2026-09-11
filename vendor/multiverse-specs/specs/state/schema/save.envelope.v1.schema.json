@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/state/1.0/save.envelope.schema.json",
+  "title": "Save envelope",
+  "description": "The manifest of one world save: composition identity, kernel identity, the tick, the kernel state hash, and one typed, versioned, digested section per subsystem. Never a memory dump: sections are independently versioned so migration touches one subsystem at a time, and a save the kernel cannot fully migrate is refused by name, never loaded partially.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "schemaVersion",
+    "subject",
+    "kernel",
+    "tick",
+    "stateHash",
+    "sections",
+    "envelopeHash"
+  ],
+  "properties": {
+    "$comment": {
+      "type": "string"
+    },
+    "kind": {
+      "const": "uv.save"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "composition",
+            "standalone-kernel"
+          ]
+        },
+        "compositionHash": {
+          "$ref": "#/$defs/digest"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "composition"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "compositionHash"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "standalone-kernel"
+              }
+            }
+          },
+          "then": {
+            "not": {
+              "required": [
+                "compositionHash"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "kernel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "moduleDigest"
+      ],
+      "properties": {
+        "moduleDigest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "tick": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "stateHash": {
+      "description": "The kernel's own integer state hash at `tick`, hex. Restoring this save and hashing must reproduce it before a single further tick runs.",
+      "type": "string",
+      "pattern": "^[0-9a-f]{16}$"
+    },
+    "sections": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "subsystem",
+          "version",
+          "byteLength",
+          "digest"
+        ],
+        "properties": {
+          "subsystem": {
+            "enum": [
+              "entities",
+              "orders",
+              "events",
+              "timers",
+              "rng",
+              "scenario",
+              "players",
+              "space-deltas",
+              "campaign"
+            ],
+            "description": "One section per writable state area of the intrinsic table (entities, orders, players, timers, rng, scenario; space → space-deltas: connection state, created portals, terrain/layer deltas) plus the event queue and campaign state. `defs` is composition, never saved."
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "byteLength": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "digest": {
+            "$ref": "#/$defs/digest"
+          }
+        }
+      }
+    },
+    "envelopeHash": {
+      "$ref": "#/$defs/digest"
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    }
+  }
+}

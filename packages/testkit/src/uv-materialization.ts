@@ -24,6 +24,12 @@ import { throwIfAborted } from '@modkit/core'
 
 import type {
   MaterializationReceipt,
+  ModelMaterialRef,
+  ModelMaterialSource,
+  ModelBoneBinding,
+  ModelSkeletonSource,
+  ModelAnimationClip,
+  ModelAnimationSource,
   ModelMesh,
   ModelNode,
   ModelPrimitive,
@@ -48,6 +54,9 @@ export interface DrainedModelProjection {
   readonly primitives?: readonly ModelPrimitive[]
   /** Optional independent socket facet carried by `UV_game_socket` node extensions. */
   readonly sockets?: readonly ModelSocketRef[]
+  readonly materials?: readonly ModelMaterialRef[]
+  readonly skeleton?: readonly ModelBoneBinding[]
+  readonly animations?: readonly ModelAnimationClip[]
   readonly resourceClosure?: ModelResourceClosure
   /** Live facets deliberately outside `model-interchange-v1`, carried into the receipt. */
   readonly excludedFacetIds?: readonly string[]
@@ -187,23 +196,51 @@ const sha256 = (bytes: Uint8Array): string =>
  */
 export async function drainModelProjection(
   source: ModelSceneSource,
-  options: { readonly maxBytes?: number } = {},
+  options: {
+    readonly maxBytes?: number
+    readonly maxRecords?: number
+    readonly materialSource?: ModelMaterialSource
+    readonly skeletonSource?: ModelSkeletonSource
+    readonly animationSource?: ModelAnimationSource
+  } = {},
 ): Promise<DrainedModelProjection> {
   const info = await source.info()
+  const maxRecords = options.maxRecords ?? 1_000_000
+  if (!Number.isSafeInteger(maxRecords) || maxRecords < 1) throw new RangeError('invalid model drain record limit')
+  let records = 0
   const drain = async <T>(read: (request: PageRequest) => Promise<Page<T>>): Promise<T[]> => {
     const items: T[] = []
     let cursor: string | undefined
+    const seenCursors = new Set<string>()
     do {
       const page: Page<T> = await read(cursor === undefined ? { limit: 1 } : { limit: 1, cursor })
+      records += page.items.length
+      if (records > maxRecords || page.items.length > 1) throw new RangeError('model drain record budget exceeded')
       items.push(...page.items)
       cursor = page.nextCursor
+      if (cursor !== undefined) {
+        if (seenCursors.has(cursor)) throw new TypeError('model drain cursor repeated')
+        seenCursors.add(cursor)
+        if (seenCursors.size > maxRecords) throw new RangeError('model drain page budget exceeded')
+      }
     } while (cursor !== undefined)
     return items
   }
   const nodes = await drain<ModelNode>(request => source.nodes(request))
   const meshes = await drain<ModelMesh>(request => source.meshes(request))
+  const facets = {
+    ...(options.materialSource === undefined ? {} : {
+      materials: await drain<ModelMaterialRef>(request => options.materialSource!.materials(request)),
+    }),
+    ...(options.skeletonSource === undefined ? {} : {
+      skeleton: await drain<ModelBoneBinding>(request => options.skeletonSource!.bindings(request)),
+    }),
+    ...(options.animationSource === undefined ? {} : {
+      animations: await drain<ModelAnimationClip>(request => options.animationSource!.clips(request)),
+    }),
+  }
   if (info.geometryAccess !== 'decoded' || source.primitive === undefined) {
-    return { info, nodes, meshes }
+    return { info, nodes, meshes, ...facets }
   }
   const maxBytes = options.maxBytes ?? 64 * 1024 * 1024
   const primitives: ModelPrimitive[] = []
@@ -212,7 +249,7 @@ export async function drainModelProjection(
       primitives.push(await source.primitive(primitiveId, { maxBytes }))
     }
   }
-  return { info, nodes, meshes, primitives }
+  return { info, nodes, meshes, primitives, ...facets }
 }
 
 function imageMediaHint(logicalId: string): string | null {

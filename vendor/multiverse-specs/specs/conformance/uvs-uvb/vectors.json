@@ -1,0 +1,45 @@
+{
+  "$comment": "Declared composition/verifier/runtime expectations for the uvs-uvb suite. Schema-level accept/reject cases are EXECUTABLE via conformance/schema-assertions.json (valid fixtures and fixtures/invalid/*), run with --schemas <ajv 2020 module url>. The expectations below become executable when the composition verifier and the kernel land; they are contract, not prose. UPDATE 2026-09-02: the verifier rules (conditions-are-pure, references-resolve, effects-within-declaration, results-are-handled) are now EXECUTABLE in the uvs-uvb-verifier suite (tools/uv-verify.mjs); the runtime rules (firing order, budget exhaustion) stay declared until the kernel.",
+  "schemaVersion": "uv-conformance-vectors-1",
+  "suite": "uvs-uvb",
+  "profile": "UVS-UVB/1.0",
+  "spec": "../../scenario/SPEC_UVS.md ../../behavior/SPEC_UVB.md",
+  "vectors": [
+    {
+      "id": "verifier/condition-purity",
+      "expect": "declared",
+      "rule": "conditions-are-pure",
+      "note": "a UVS condition calling a mutate-class intrinsic is refused against the intrinsic table"
+    },
+    {
+      "id": "verifier/references-resolve",
+      "expect": "declared",
+      "rule": "references-resolve",
+      "note": "goto to an undeclared state and a uvb action naming a missing function are refusals by name"
+    },
+    {
+      "id": "verifier/effects-superset",
+      "expect": "declared",
+      "rule": "effects-within-declaration",
+      "note": "the union of called intrinsics effects stays inside the function declaration, proven before the first tick"
+    },
+    {
+      "id": "verifier/results-handled",
+      "expect": "declared",
+      "rule": "results-are-handled",
+      "note": "a discarded result<T> fails verification: errors are values and values are obligations"
+    },
+    {
+      "id": "runtime/firing-order",
+      "expect": "declared",
+      "rule": "deterministic-firing-and-save",
+      "note": "charts fire in (composition rank, chart name) order; save/restore between two reactions preserves the remainder queue and the final state hash"
+    },
+    {
+      "id": "runtime/budget-exhaustion",
+      "expect": "declared",
+      "rule": "budget-typed-error",
+      "note": "an exhausted loop budget is a typed scenario error naming chart or function, never a hung tick"
+    }
+  ]
+}

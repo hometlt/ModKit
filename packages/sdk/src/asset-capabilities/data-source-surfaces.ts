@@ -156,6 +156,7 @@ const transportSourceSurface = {
 const namespaceEntrySourceSurface = {
   methods: {
     list: cancellableValue,
+    readPreamble: { kind: 'value', optional: true, ...sig },
     search: { kind: 'value', optional: true, ...sig },
     /** `Lease<AssetSourceRef>`: the ref crosses by copy, the lease is a release-only handle. */
     openEntry: { kind: 'leased-value', ...sig },
@@ -304,6 +305,9 @@ const subjectSelectorSourceSurface = {
       wrapper: 'lease',
       ...sig,
     },
+    editTarget: { ...cancellableValue, optional: true },
+    isolation: { ...cancellableValue, optional: true },
+    isolationPlan: { ...cancellableValue, optional: true },
   },
 } as const satisfies SurfaceOf<SubjectSelectorSource>
 

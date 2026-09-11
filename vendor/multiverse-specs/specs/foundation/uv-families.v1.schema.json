@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/foundation/1.0/uv-families.schema.json",
+  "title": "UV family vocabulary",
+  "description": "The single list of UV family ids. Consumer schemas keep these enums INLINE so every schema stays self-contained (a schema a third party cannot compile alone carries a hidden dependency); the conformance runner's `uv-families` suite proves the inline copies equal this file byte for byte. Extending a list is an amendment here first; a consumer drifting from it turns the suite red.",
+  "$defs": {
+    "family": {
+      "enum": [
+        "uvd",
+        "uvs",
+        "uvb",
+        "uvw",
+        "uvm",
+        "uvt",
+        "uvc",
+        "uvp"
+      ]
+    },
+    "contentFamily": {
+      "enum": [
+        "uvd",
+        "uvs",
+        "uvb",
+        "uvw",
+        "uvm",
+        "uvt",
+        "uvc",
+        "media",
+        "locale"
+      ]
+    },
+    "outputFamily": {
+      "enum": [
+        "uvd",
+        "uvs",
+        "uvb",
+        "uvw",
+        "uvm",
+        "uvt",
+        "uvc",
+        "uvp",
+        "luau"
+      ]
+    },
+    "loweringCategory": {
+      "enum": [
+        "definitions",
+        "triggers",
+        "functions",
+        "maps",
+        "campaigns",
+        "media"
+      ]
+    }
+  }
+}

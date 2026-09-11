@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "sources": [
+    {
+      "path": "extensions/common/models/codecs/uvm/src/index.ts",
+      "symbols": [
+        "SkeletonEncoding", "BufferBuilder", "IDENTITY_MATRIX", "encodeSkeleton",
+        "addJointAttribute", "addAttribute", "encodeAnimationChannel", "encodeCubicEffectValues",
+        "cubicDerivative", "addAccessor", "littleEndianBytes", "bounds", "accessorWidth",
+        "vectorType", "invalidAttribute"
+      ]
+    }
+  ],
+  "imports": [
+    "import { ModkitError } from '@modkit/codec-kit/legacy/core'",
+    "import type { RenderModel, RenderMesh, RenderScalarAnimationTrack } from '@modkit/codec-kit/legacy/models'",
+    "import type { UvmJsonObject } from './rig-types.js'"
+  ],
+  "exports": ["BufferBuilder", "encodeSkeleton", "addJointAttribute", "encodeAnimationChannel", "addAccessor", "type SkeletonEncoding"],
+  "output": "packages/uv/src/model/legacy/rig-kernels.ts",
+  "provenance": "packages/uv/MK2-RIG-KERNELS.json"
+}

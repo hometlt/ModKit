@@ -27,6 +27,7 @@ import {
   type RevisionId,
 } from '@modkit/sdk'
 import {
+  COMPANION_BUDGET_EXCEEDED,
   normalizeCompanionLogicalId,
   type CompanionCaseSensitivity,
   type CompanionEnumerationOptions,
@@ -82,6 +83,10 @@ export interface NamespaceCompanionOriginOptions {
   readonly caseSensitivity?: CompanionCaseSensitivity
   /** Entries per `list` page; the resolver's own entry budget still bounds the total. */
   readonly pageLimit?: number
+  /** Bound empty/malformed page sequences as well as the caller's yielded-entry budget. */
+  readonly maxPages?: number
+  /** Optional per-source extraction ceiling checked both before and after extraction. */
+  readonly maxSourceBytes?: bigint
 }
 
 /** One game-provider-resolved logical root, in VFS overlay precedence. */
@@ -95,7 +100,7 @@ export interface WorkspaceNamespaceLogicalRoot {
 
 export interface WorkspaceNamespaceCompanionOriginOptions extends Omit<
   NamespaceCompanionOriginOptions,
-  'primaryLogicalId'
+  'primaryLogicalId' | 'maxSourceBytes'
 > {
   readonly primaryLogicalId: string
   /** Active root first, then dependency layers; the first matching resource wins. */
@@ -123,7 +128,8 @@ export interface CompositeWorkspaceNamespaceCompanionOriginOptions {
 /** One caller-owned subtree to inspect inside a game-provider-resolved logical root. */
 export interface WorkspaceNamespaceCandidateSearch {
   readonly rootId: string
-  /** Resource-relative directory. The empty string explicitly selects the whole logical root. */
+  /** Public resource directory, including the root's logicalPrefix when present. Empty selects
+   * the whole logical root; a nonempty prefix outside that root's logical mapping is refused. */
   readonly logicalPrefix: string
 }
 
@@ -202,6 +208,7 @@ export function createNamespaceCompanionOrigin(
    * It is built lazily: a plan with no requirements never pages the container at all.
    */
   const index = new Map<string, Map<string, IndexedEntry>>()
+  const observed = new Map<string, IndexedEntry>()
 
   /**
    * Pages one prefix out of the container, merging the spellings a literal matcher might need.
@@ -217,18 +224,29 @@ export function createNamespaceCompanionOrigin(
    * wrong. Covering that would mean giving up prefix narrowing altogether, which is what makes a
    * 666,588-entry namespace searchable at all.
    */
-  const listing = async (
+  const listing = async function* (
     prefix: string,
     signal?: AbortSignal,
-  ): Promise<Map<string, IndexedEntry>> => {
+  ): AsyncIterable<IndexedEntry> {
     const cached = index.get(prefix)
-    if (cached !== undefined) return cached
+    if (cached !== undefined) {
+      yield* cached.values()
+      return
+    }
     const built = new Map<string, IndexedEntry>()
     const spellings = [...new Set(prefix === '' ? [''] : [prefix, fold(prefix)])]
+    let pages = 0
     for (const spelling of spellings) {
       let cursor: string | undefined
+      const cursors = new Set<string>()
       do {
         throwIfAborted(signal)
+        if (++pages > (options.maxPages ?? 4096) || (cursor !== undefined && cursors.has(cursor)))
+          throw new ModkitError({
+            code: COMPANION_BUDGET_EXCEEDED,
+            message: 'namespace listing did not terminate within its page budget',
+          })
+        if (cursor !== undefined) cursors.add(cursor)
         const page = await options.namespace.list(
           spelling,
           cursor === undefined ? { limit: pageLimit } : { cursor, limit: pageLimit },
@@ -239,19 +257,21 @@ export function createNamespaceCompanionOrigin(
           const key = fold(entry.path)
           // first spelling wins, deterministically, because the resolver sorts before it selects
           if (!built.has(key)) {
-            built.set(key, {
+            const value = {
               entryId: entry.id,
               path: entry.path,
               ...(entry.size === undefined ? {} : { size: entry.size }),
               revision: entry.revision,
-            })
+            }
+            built.set(key, value)
+            if (!observed.has(key)) observed.set(key, value)
+            yield value
           }
         }
         cursor = page.nextCursor
       } while (cursor !== undefined)
     }
     index.set(prefix, built)
-    return built
   }
 
   return Object.freeze({
@@ -277,7 +297,7 @@ export function createNamespaceCompanionOrigin(
        * between a bounded search and a scan: a production namespace may list hundreds of thousands of entries,
        * and a requirement that names a directory reads a few hundred of them instead.
        */
-      for (const entry of (await listing(enumeration.prefix, signal)).values()) {
+      for await (const entry of listing(enumeration.prefix, signal)) {
         throwIfAborted(signal)
         yield Object.freeze({
           logicalId: entry.path,
@@ -293,7 +313,15 @@ export function createNamespaceCompanionOrigin(
        * measurably: resolving a texture read thousands of entries when the open re-listed its
        * folder, and 2 once it stopped.
        */
-      const entry = (await listing(logicalId, signal)).get(fold(logicalId))
+      let entry = observed.get(fold(logicalId))
+      if (entry === undefined) {
+        for await (const candidate of listing(logicalId, signal)) {
+          if (fold(candidate.path) === fold(logicalId)) {
+            entry = candidate
+            break
+          }
+        }
+      }
       if (entry === undefined) {
         throw new ModkitError({
           code: NESTED_ENTRY_NOT_FOUND,
@@ -301,11 +329,28 @@ export function createNamespaceCompanionOrigin(
           context: { logicalId },
         })
       }
+      if (
+        options.maxSourceBytes !== undefined &&
+        entry.size !== undefined &&
+        entry.size > options.maxSourceBytes
+      )
+        throw new ModkitError({
+          code: COMPANION_BUDGET_EXCEEDED,
+          message: `resource «${logicalId}» exceeds the extraction byte budget`,
+        })
       // the container's own reference for this entry, held for as long as the source it names
       const refLease = await options.namespace.openEntry(entry.entryId, signal)
       let bytes: Uint8Array
       try {
         bytes = await options.extract(entry.entryId, signal)
+        if (
+          options.maxSourceBytes !== undefined &&
+          BigInt(bytes.byteLength) > options.maxSourceBytes
+        )
+          throw new ModkitError({
+            code: COMPANION_BUDGET_EXCEEDED,
+            message: `resource «${logicalId}» exceeds the extraction byte budget`,
+          })
       } catch (error) {
         await refLease.release()
         throw error
@@ -554,7 +599,10 @@ export function createWorkspaceNamespaceCandidateDiscovery(
   const maxPages = positiveDiscoveryLimit(options.limits.maxPages, 'maxPages')
   const maxEntries = positiveDiscoveryLimit(options.limits.maxEntries, 'maxEntries')
   const maxCandidates = positiveDiscoveryLimit(options.limits.maxCandidates, 'maxCandidates')
-  if (typeof options.limits.maxBytes !== 'bigint' || options.limits.maxBytes < 0n) {
+  const maxBytes = options.limits.maxBytes
+  const namespace = options.namespace
+  const containerRevision = options.containerRevision
+  if (typeof maxBytes !== 'bigint' || maxBytes < 0n) {
     throw new TypeError('maxBytes must be a non-negative bigint')
   }
   if (!/^\.[a-z0-9][a-z0-9_-]*$/iu.test(options.extension)) {
@@ -568,8 +616,13 @@ export function createWorkspaceNamespaceCandidateDiscovery(
     if (typeof root.rootId !== 'string' || root.rootId.trim() === '') {
       throw new TypeError(`logicalRoots[${index}].rootId must be a non-empty string`)
     }
-    const pathPrefix = normalizeCompanionLogicalId(root.pathPrefix).replace(/\/$/u, '')
-    return Object.freeze({ rootId: root.rootId, pathPrefix, rank: index })
+    const pathPrefix =
+      root.pathPrefix === '' ? '' : normalizeCompanionLogicalId(root.pathPrefix).replace(/\/$/u, '')
+    const logicalPrefix =
+      root.logicalPrefix === undefined || root.logicalPrefix === ''
+        ? ''
+        : normalizeCompanionLogicalId(root.logicalPrefix).replace(/\/$/u, '')
+    return Object.freeze({ rootId: root.rootId, pathPrefix, logicalPrefix, rank: index })
   })
   if (roots.length === 0) throw new TypeError('candidate discovery requires a logical root')
   const rootsById = new Map(roots.map(root => [root.rootId, root]))
@@ -578,6 +631,14 @@ export function createWorkspaceNamespaceCandidateDiscovery(
   if (options.searches.length === 0) {
     throw new TypeError('candidate discovery requires an explicit search root')
   }
+  const relativeRequest = (root: (typeof roots)[number], logicalId: string): string | undefined => {
+    if (logicalId === '' || fold(logicalId) === fold(root.logicalPrefix)) return ''
+    if (root.logicalPrefix === '') return logicalId
+    const prefix = `${root.logicalPrefix}/`
+    return fold(logicalId).startsWith(fold(prefix)) ? logicalId.slice(prefix.length) : undefined
+  }
+  const joinPrefix = (prefix: string, suffix: string): string =>
+    prefix === '' ? suffix : suffix === '' ? prefix : `${prefix}/${suffix}`
   const searches = options.searches.map((search, index) => {
     const root = rootsById.get(search.rootId)
     if (root === undefined) {
@@ -590,12 +651,19 @@ export function createWorkspaceNamespaceCandidateDiscovery(
       search.logicalPrefix.trim() === ''
         ? ''
         : normalizeCompanionLogicalId(search.logicalPrefix).replace(/\/$/u, '')
-    return Object.freeze({ root, logicalPrefix, rank: index })
+    const relative = relativeRequest(root, logicalPrefix)
+    if (relative === undefined)
+      throw new TypeError(`searches[${index}] is outside logical root «${root.rootId}»`)
+    return Object.freeze({ root, logicalPrefix, relative, rank: index })
   })
   const receiptSearches = Object.freeze(
     searches.map(search =>
       Object.freeze({ rootId: search.root.rootId, logicalPrefix: search.logicalPrefix }),
     ),
+  )
+  // Candidate precedence follows resolve's root order, independent of the caller's search order.
+  const orderedSearches = [...searches].sort(
+    (left, right) => left.root.rank - right.root.rank || left.rank - right.rank,
   )
 
   return Object.freeze({
@@ -632,12 +700,10 @@ export function createWorkspaceNamespaceCandidateDiscovery(
           receipt: receipt(false),
         })
 
-      for (const search of searches) {
-        const rootPrefix = `${search.root.pathPrefix}/`
-        const namespacePrefix =
-          search.logicalPrefix === ''
-            ? rootPrefix
-            : `${rootPrefix}${search.logicalPrefix.replace(/\/$/u, '')}/`
+      for (const search of orderedSearches) {
+        const rootPrefix = search.root.pathPrefix === '' ? '' : `${search.root.pathPrefix}/`
+        const subtree = joinPrefix(search.root.pathPrefix, search.relative)
+        const namespacePrefix = subtree === '' ? '' : `${subtree}/`
         const spellings = [
           ...new Set(
             caseSensitivity === 'insensitive'
@@ -662,7 +728,7 @@ export function createWorkspaceNamespaceCandidateDiscovery(
               }
               seenCursors.add(cursor)
             }
-            const page = await options.namespace.list(
+            const page = await namespace.list(
               spelling,
               cursor === undefined ? { limit: pageItems } : { cursor, limit: pageItems },
               signal,
@@ -707,17 +773,50 @@ export function createWorkspaceNamespaceCandidateDiscovery(
                   `candidate discovery exceeded its ${maxEntries}-entry budget`,
                 )
               }
-              if (entry.kind !== 'file' || !fold(entry.path).endsWith(extension)) continue
-              if (!fold(entry.path).startsWith(fold(rootPrefix))) {
+              let path: string
+              try {
+                path = normalizeCompanionLogicalId(entry.path)
+              } catch {
                 return refused(
                   'namespace-invalid',
-                  `namespace entry «${entry.path}» escaped logical root «${search.root.rootId}»`,
+                  'candidate discovery received an invalid entry path',
                 )
               }
-              const logicalId = entry.path.slice(rootPrefix.length)
-              if (logicalId === '') continue
+              // Noncanonical file paths would normalize to a different id when resolve opens them.
+              // Check every entry, including directories and other extensions, before filtering.
+              if (
+                (entry.kind === 'file' && path !== entry.path) ||
+                (namespacePrefix !== '' &&
+                  !fold(path).startsWith(fold(namespacePrefix)) &&
+                  !(entry.kind !== 'file' && fold(path) === fold(subtree)))
+              ) {
+                return refused(
+                  'namespace-invalid',
+                  `namespace entry «${entry.path}» escaped or changed requested subtree «${subtree}» of logical root «${search.root.rootId}»`,
+                )
+              }
+              if (entry.kind !== 'file' || !fold(path).endsWith(extension)) continue
+              const relative = path.slice(rootPrefix.length)
+              if (relative === '') continue
+              const logicalId = joinPrefix(search.root.logicalPrefix, relative)
               const key = fold(logicalId)
               if (candidates.has(key)) continue
+              const uncovered = roots.find(
+                root =>
+                  root.rank < search.root.rank &&
+                  (relativeRequest(root, logicalId)?.length ?? 0) > 0 &&
+                  !searches.some(
+                    higher =>
+                      higher.root.rank === root.rank &&
+                      (higher.logicalPrefix === '' ||
+                        key.startsWith(fold(`${higher.logicalPrefix}/`))),
+                  ),
+              )
+              if (uncovered !== undefined)
+                return refused(
+                  'namespace-invalid',
+                  `candidate «${logicalId}» has incomplete precedence coverage for logical root «${uncovered.rootId}»; that root may serve the same logical id`,
+                )
               if (
                 entry.size === undefined ||
                 typeof entry.size !== 'bigint' ||
@@ -735,10 +834,10 @@ export function createWorkspaceNamespaceCandidateDiscovery(
                   `candidate discovery exceeded its ${maxCandidates}-candidate budget`,
                 )
               }
-              if (bytes + entry.size > options.limits.maxBytes) {
+              if (bytes + entry.size > maxBytes) {
                 return refused(
                   'budget-exceeded',
-                  `candidate discovery exceeded its ${options.limits.maxBytes}-byte budget`,
+                  `candidate discovery exceeded its ${maxBytes}-byte budget`,
                 )
               }
               bytes += entry.size
@@ -747,7 +846,7 @@ export function createWorkspaceNamespaceCandidateDiscovery(
                 Object.freeze({
                   logicalId,
                   expectedRevision: containerEntryRevision(
-                    options.containerRevision,
+                    containerRevision,
                     entry.id,
                     Number(entry.size),
                   ),

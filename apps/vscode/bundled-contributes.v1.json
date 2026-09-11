@@ -2,6 +2,10 @@
   "schemaVersion": 1,
   "commands": [
     {
+      "command": "modkit.contentSources",
+      "title": "%command.contentSources%"
+    },
+    {
       "command": "modkit.addExtensionFolder",
       "title": "%command.addExtensionFolder%"
     },
@@ -363,5 +367,5 @@
       }
     ]
   },
-  "fileSystemSchemes": ["modkit-container"]
+  "fileSystemSchemes": ["modkit-container", "modkit-source"]
 }

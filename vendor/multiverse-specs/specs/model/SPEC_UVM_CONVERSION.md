@@ -63,12 +63,11 @@ A conversion is **lossless** when the target can express every construct the sou
 That is rare and pair-specific — it depends on the *asset*, not only the formats. A static
 OBJ cube to UVM is lossless; an M3 siege tank to OBJ loses everything but one mesh.
 
-The three tiers from [SPEC_UVM.md §17.1](SPEC_UVM.md#171-three-tiers-of-preservation)
+The three outcomes from [SPEC_UVM.md §17.1](SPEC_UVM.md#171-three-conversion-outcomes)
 apply to every importer:
 
 1. **Converted** — becomes native UVM/glTF structure.
-2. **Preserved** — original bytes in `UV_source_blob`, recoverable only by an exporter
-   targeting the same format.
+2. **Residual** — minimal format-owned metadata that common glTF/UVM structures cannot express; native source bytes are never retained.
 3. **Lost** — recorded in `UV_provenance.lost` with a stable code.
 
 The brief's example — M3 particles not existing in C&C — is a *round-trip* loss, and it
@@ -111,13 +110,13 @@ M3 is the richest source format in scope and the one that most tests the design.
 | `RIB_` ribbons | `UV_game_effects.ribbons` | |
 | `FOR_` forces | `UV_game_effects.forces` | |
 | `PHRB` physics shapes | `UV_game_collision`, `role: "physics"` | |
-| `PHSH` physics joints | **preserved blob** | No glTF or UVM representation yet |
+| `PHSH` physics joints | format residual or loss report | Keep only reconstruction fields that have no common UVM representation |
 | `ATVL`/`ATT_` attachment volumes | `UV_game_collision`, `role: "hit"` | |
 | `PROJ` projectors | `UV_game_effects.projectors` | |
 | `WRP_` warps | `UV_game_effects.warps` | |
 | `CAM_` cameras | glTF `cameras` + nodes | |
 | `.m3a` external animations | merged into `animations`, `UV_provenance.chain` records the file | |
-| Unrecognised chunks | **preserved blob** | Keeps M3 → UVM → M3 byte-recoverable |
+| Unrecognised chunks | loss report | Unknown source bytes are not embedded in UVM |
 
 Coordinate change: `(x, y, z)_m3 → (x, z, -y)_uvm`, +Z-up right-handed to +Y-up
 right-handed.
@@ -175,7 +174,7 @@ Loss codes: `MDX_INTERPOLATION_APPROXIMATED`, `MDX_GEOSET_ANIM_UNMAPPED`,
 | Bone names `TURRET`, `BARREL` | `UV_game_skeleton.roles` `turret_yaw`, `barrel_pitch` | Name-based inference, recorded as inferred |
 | `MUZZLE*`, `FIREPOINT*` bones | `UV_game_socket` role `muzzle` | |
 | `AABTREE` | dropped | Regenerable spatial index |
-| `DAZZLE`, `RING`, `SPHERE` | `UV_game_effects` or preserved blob | Format-specific primitives |
+| `DAZZLE`, `RING`, `SPHERE` | `UV_game_effects` or bounded format residual | Format-specific primitives |
 | Damage states (`_D1`, `_D2` meshes) | `UV_game_variants` | |
 | Bind-pose quirk | corrected into `inverseBindMatrices` | See `packages/models-processing/src/core/westwood-bind-pose.ts` in the sealed legacy oracle |
 
@@ -231,7 +230,7 @@ units/armcom.lua          UnitDef        → UV_game_gameplay + UV_game_spring
 objects3d/armcom.s3o      geometry       → meshes, nodes
 unittextures/armcom1.dds  tex1           → material base colour
 unittextures/armcom2.dds  tex2           → team colour mask
-scripts/armcom.lua        unit script    → preserved blob + scriptHooks
+scripts/armcom.lua        unit script    → common scriptHooks or explicit loss
 features/armcom_dead.lua  FeatureDef     → UV_game_variants → external asset
 objects3d/armcom_dead.s3o wreck geometry → separate UVM file
 ```
@@ -339,9 +338,7 @@ to accept the build.
 
 1. **Never invent.** If the target requires a field UVM lacks, emit the documented default
    and record `<TARGET>_<FIELD>_DEFAULTED`.
-2. **Prefer preserved blobs.** When exporting to the same format the asset came from, an
-   exporter **MUST** consult `UV_source_blob` and reuse original chunk bytes for anything it
-   would otherwise regenerate.
+2. **Use bounded residuals only when necessary.** Exporters reconstruct from common glTF/UVM data and may consult a format-owned residual only for fields that cannot be represented there. Residuals MUST NOT contain the source file or opaque source chunks.
 3. **Report before writing.** A conversion report is produced even on success, so a build can
    gate on severity.
 4. **Deterministic output.** Same input, same options, same bytes.

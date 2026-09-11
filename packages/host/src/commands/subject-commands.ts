@@ -23,6 +23,7 @@ import {
   ok,
   unavailable,
   COMMAND_SUBJECT_UNRESOLVED,
+  COMMAND_INPUT_INVALID,
   type CommandContext,
   type CommandDescriptor,
   type CommandDiagnostic,
@@ -39,10 +40,8 @@ const CONTAINER_EXTRACT_OPERATION_ID = SUBJECT_COMMAND_TARGETS.extract.operation
 const NAMESPACE_ENTRY_SOURCE = SUBJECT_COMMAND_TARGETS.extract.dataSourceContracts[0]
 const CONVERT_COMMAND = SUBJECT_COMMAND_TARGETS.convert.commandId
 const CONVERT = SUBJECT_COMMAND_TARGETS.convert.operationIds[0]
-const RAW_EXPORT = SUBJECT_COMMAND_TARGETS.convert.operationIds[1]
 const PREVIEW_COMMAND = SUBJECT_COMMAND_TARGETS.preview.commandId
 const THUMBNAIL = SUBJECT_COMMAND_TARGETS.preview.operationIds[0]
-const RENDER = SUBJECT_COMMAND_TARGETS.preview.operationIds[1]
 
 /** The descriptor fields these commands read. Structural, so no codec type leaks in here. */
 interface DescriptorLike {
@@ -69,6 +68,22 @@ function availableOperation(
     item => item.id === id && item.state === 'available' && item.mutatesSource !== true,
   )
   return found === undefined ? undefined : { handlerId: found.handlerId }
+}
+
+/** Explicit selection never falls back to a different export or silently invokes a writer. */
+function selectedOperation(
+  descriptor: DescriptorLike,
+  allowed: readonly string[],
+  requested: JsonValue | undefined,
+): { readonly id: string; readonly handlerId: string } | undefined {
+  const candidates =
+    requested === undefined ? allowed : typeof requested === 'string' ? [requested] : []
+  for (const id of candidates) {
+    if (!allowed.includes(id)) continue
+    const operation = availableOperation(descriptor, id)
+    if (operation !== undefined) return { id, ...operation }
+  }
+  return undefined
 }
 
 /** What a subject publishes, named for a refusal message that helps rather than scolds. */
@@ -128,7 +143,11 @@ async function invoke(
   input: JsonValue,
   diagnostics: readonly CommandDiagnostic[],
 ): Promise<
-  | { readonly state: 'ok'; readonly output: { kind: string; value?: unknown } }
+  | {
+      readonly state: 'ok'
+      readonly output: { kind: string; value?: unknown }
+      readonly diagnostics: readonly CommandDiagnostic[]
+    }
   | { readonly state: 'failed'; readonly result: CommandResult }
 > {
   const answer = await session
@@ -146,7 +165,11 @@ async function invoke(
       ),
     }
   }
-  return { state: 'ok', output: answer.output as { kind: string; value?: unknown } }
+  return {
+    state: 'ok',
+    output: answer.output as { kind: string; value?: unknown },
+    diagnostics: carried,
+  }
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -413,12 +436,22 @@ const convertCommand: CommandDescriptor = {
       context,
       String(input.subject),
       async (subject, session, descriptor, diagnostics) => {
-        const operation =
-          availableOperation(descriptor, CONVERT) ?? availableOperation(descriptor, RAW_EXPORT)
+        if (input['operation'] !== undefined && typeof input['operation'] !== 'string')
+          return failed(
+            CONVERT_COMMAND,
+            COMMAND_INPUT_INVALID,
+            'operation must be an operation id',
+            diagnostics,
+          )
+        const operation = selectedOperation(
+          descriptor,
+          SUBJECT_COMMAND_TARGETS.convert.operationIds,
+          input['operation'],
+        )
         if (operation === undefined) {
           return unavailable(
             CONVERT_COMMAND,
-            `this subject publishes neither «${CONVERT}» nor «${RAW_EXPORT}» — ${publishedOperations(descriptor)}`,
+            `the requested export is unavailable — ${publishedOperations(descriptor)}`,
             'run subject.inspect to see which data sources it does publish; a universal projection is ' +
               'the route for formats with no native export',
             diagnostics,
@@ -426,7 +459,13 @@ const convertCommand: CommandDescriptor = {
         }
         context.progress?.({ step: 'convert', message: 'running the codec’s export' })
         const request: JsonValue =
-          typeof input['target'] === 'string' ? { target: input['target'] } : {}
+          input['operationInput'] === undefined
+            ? typeof input['target'] === 'string'
+              ? operation.id === 'model.export-native'
+                ? { schemaVersion: 1, formatId: input['target'] }
+                : { target: input['target'] }
+              : {}
+            : input['operationInput']
         const answer = await invoke(
           CONVERT_COMMAND,
           context,
@@ -450,11 +489,12 @@ const convertCommand: CommandDescriptor = {
           CONVERT_COMMAND,
           {
             ref: subject.ref,
+            via: operation.id,
             outputKind: answer.output.kind,
             ...(bytes === undefined ? {} : { byteLength: bytes.byteLength }),
             ...(wroteTo === undefined ? { wroteTo: null } : { wroteTo }),
           },
-          diagnostics,
+          answer.diagnostics,
         )
       },
     )
@@ -477,8 +517,18 @@ const previewCommand: CommandDescriptor = {
       context,
       String(input.subject),
       async (subject, session, descriptor, diagnostics) => {
-        const thumbnail = availableOperation(descriptor, THUMBNAIL)
-        const operation = thumbnail ?? availableOperation(descriptor, RENDER)
+        if (input['operation'] !== undefined && typeof input['operation'] !== 'string')
+          return failed(
+            PREVIEW_COMMAND,
+            COMMAND_INPUT_INVALID,
+            'operation must be an operation id',
+            diagnostics,
+          )
+        const operation = selectedOperation(
+          descriptor,
+          SUBJECT_COMMAND_TARGETS.preview.operationIds,
+          input['operation'],
+        )
         if (operation === undefined) {
           /*
            * Not a failure: most formats in this lab are previewed by a *viewer* reading a data
@@ -487,7 +537,7 @@ const previewCommand: CommandDescriptor = {
            */
           return unavailable(
             PREVIEW_COMMAND,
-            `this subject publishes no «${THUMBNAIL}» or «${RENDER}» — ${publishedOperations(descriptor)}`,
+            `the requested preview is unavailable — ${publishedOperations(descriptor)}`,
             `mount a viewer over one of its data sources instead: ${
               (descriptor.dataSources ?? []).map(item => item.contract).join(', ') ||
               'it publishes none'
@@ -501,21 +551,26 @@ const previewCommand: CommandDescriptor = {
           context,
           session,
           operation.handlerId,
-          {},
+          input['operationInput'] === undefined ? {} : input['operationInput'],
           diagnostics,
         )
         if (answer.state === 'failed') return answer.result
         const bytes =
           answer.output.kind === 'bytes' ? (answer.output.value as Uint8Array) : undefined
+        const wroteTo =
+          bytes === undefined || context.writeOutput === undefined
+            ? undefined
+            : await context.writeOutput('preview.png', bytes, context.signal)
         return ok(
           PREVIEW_COMMAND,
           {
             ref: subject.ref,
-            via: thumbnail === undefined ? RENDER : THUMBNAIL,
+            via: operation.id,
             outputKind: answer.output.kind,
             ...(bytes === undefined ? {} : { byteLength: bytes.byteLength }),
+            ...(wroteTo === undefined ? {} : { wroteTo }),
           },
-          diagnostics,
+          answer.diagnostics,
         )
       },
     )

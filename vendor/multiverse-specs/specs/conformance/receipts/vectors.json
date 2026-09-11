@@ -1,0 +1,14 @@
+{
+  "$comment": "Declared verifier expectations for the three receipt kinds. Schema-level cases are EXECUTABLE via conformance/schema-assertions.json (receipts/fixtures). The arithmetic and chaining rules below become executable with the receipt verifier.",
+  "schemaVersion": "uv-conformance-vectors-1",
+  "suite": "receipts",
+  "profile": "receipts/1.0",
+  "spec": "../../receipts/SPEC_RECEIPTS.md",
+  "vectors": [
+    { "id": "lowering/coverage-arithmetic", "expect": "declared", "rule": "coverage-sums", "note": "loweredUnits + refusedUnits == totalUnits per category; refusals.length == sum of refusedUnits" },
+    { "id": "lowering/stage-chain", "expect": "declared", "rule": "stages-chain-by-digest", "note": "each stage's inputDigest equals the previous stage's outputDigest; the first stage's input is the source digest" },
+    { "id": "composition/hash-recomputes", "expect": "declared", "rule": "composition-hash-reproducible", "note": "compositionHash equals the canonical hash of the ordered layers list recomputed from the receipt itself" },
+    { "id": "simulation/checkpoints-monotonic", "expect": "declared", "rule": "checkpoint-ticks-increase", "note": "checkpoint ticks strictly increase and the last one equals init.ticks" },
+    { "id": "simulation/save-restore-consistent", "expect": "declared", "rule": "resumed-hash-at-dump-tick", "note": "resumedStateHash equals the checkpoint stateHash recorded at dumpAtTick when such a checkpoint exists" }
+  ]
+}

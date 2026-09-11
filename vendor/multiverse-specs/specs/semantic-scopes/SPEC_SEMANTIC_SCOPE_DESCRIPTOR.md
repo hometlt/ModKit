@@ -93,6 +93,8 @@ numeric handling.
 | `model-interchange-v1`      | registered | [descriptor](model-interchange-v1.json)                 | [vectors](../conformance/model-interchange-v1/vectors.json)      |
 | `world-interchange-v1`      | reserved   | —                                                       | —                                                                |
 | `definition-interchange-v1` | reserved   | —                                                       | —                                                                |
+| `texture-interchange-v1`    | candidate  | admission-only texture plane; see registry.json |
+| `runtime-interchange-v1`    | candidate  | composed UVD + UVS + UVB in UVP through one intrinsic table; registry.json is the single source of this table |
 
 ## 6. `model-interchange-v1` at a glance
 

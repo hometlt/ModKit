@@ -1,0 +1,14 @@
+{
+  "$comment": "Valid fixture: a refused composition has a typed refusal and NO composition hash — a refused run has no identity to claim.",
+  "kind": "uv.receipt/composition",
+  "schemaVersion": 1,
+  "root": {
+    "id": "v/alpha",
+    "version": "1.0.0"
+  },
+  "refusal": {
+    "rule": "no-dependency-cycles",
+    "message": "dependency cycle: v/alpha -> v/beta -> v/alpha"
+  },
+  "verdict": "refused"
+}

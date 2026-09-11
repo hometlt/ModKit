@@ -12,6 +12,8 @@
  * ADR-DOC-001 keeps one vector path for both instead of a presentation-shaped fork.
  */
 
+import { encodeXmlAttribute } from '@modkit/codec-kit'
+
 import { childrenNamed, descendants, firstNamed, textOf } from './package.js'
 
 /** CSS reference pixels per unit, so a scene's numbers mean the same thing everywhere. */
@@ -454,14 +456,6 @@ export async function readDrawPages(pkg) {
   return { pages, size }
 }
 
-function escapeXml(value) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-}
-
 const round = value => Math.round(value * 1000) / 1000
 
 function shapeSvg(shape, p) {
@@ -496,12 +490,12 @@ function shapeSvg(shape, p) {
   const open = `<g transform="translate(${round(box.x)} ${round(box.y)}) scale(${round(scaleX)} ${round(scaleY)}) translate(${round(-viewBox[0])} ${round(-viewBox[1])})">`
   if (shape.kind === 'path') {
     const d = a[`${p.svg}:d`]
-    return typeof d === 'string' ? `${open}<path d="${escapeXml(d)}"/></g>` : undefined
+    return typeof d === 'string' ? `${open}<path d="${encodeXmlAttribute(d)}"/></g>` : undefined
   }
   const points = a[`${p.draw}:points`]
   if (typeof points !== 'string') return undefined
   const tag = shape.kind === 'polygon' ? 'polygon' : 'polyline'
-  return `${open}<${tag} points="${escapeXml(points)}"/></g>`
+  return `${open}<${tag} points="${encodeXmlAttribute(points)}"/></g>`
 }
 
 /**
@@ -536,7 +530,7 @@ export function pageSceneSvg(page, prefixes, size) {
     let offset = fontSize
     for (const run of frame.runs) {
       textParts.push(
-        `<text x="${round(frame.box.x)}" y="${round(frame.box.y + offset)}" font-size="${fontSize}">${escapeXml(run)}</text>`,
+        `<text x="${round(frame.box.x)}" y="${round(frame.box.y + offset)}" font-size="${fontSize}">${encodeXmlAttribute(run)}</text>`,
       )
       // no font is loaded here, so a run's width is nominal (0.6em per character) and is used only
       // to keep the canvas large enough to hold what was drawn — never presented as a measurement

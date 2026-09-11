@@ -37,6 +37,9 @@ import {
   revisionId,
   type ArtifactByteSource,
   type AssetSession,
+  type Codec,
+  type ContributionContext,
+  type LogicalResourcePort,
   type NamespaceEntrySource,
   type PageRequest,
   type ResourceBudget,
@@ -315,6 +318,266 @@ afterEach(async () => {
 // ---------------------------------------------------------------------------------------------
 
 describe('a container entry opens as its own subject, with companions from the same container', () => {
+  it('binds captured logical discovery policies to the same nested roots and excludes the primary', async () => {
+    const archive = await openArchive([
+      { path: 'active/props/lamp.mesh', bytes: MODEL_BYTES },
+      { path: 'active/clips/walk.mesh', bytes: new Uint8Array([60]) },
+      { path: 'dependency/clips/walk.mesh', bytes: new Uint8Array([45]) },
+      { path: 'dependency/clips/idle.mesh', bytes: new Uint8Array([30]) },
+      { path: 'unopened/clips/hidden.mesh', bytes: new Uint8Array([90]) },
+    ])
+    openSessions.push(archive)
+    const subjects = await nestedServices()
+    const ports: LogicalResourcePort[] = []
+    const executionBackends = createExecutionBackendRegistry([
+      {
+        profile: 'trusted-in-process',
+        supports: (_target, variant) => variant.executionProfile === 'trusted-in-process',
+        async activate(context) {
+          const module = (await import(context.entrypoint.href)) as {
+            createCodec?: (context: ContributionContext) => Codec
+          }
+          const create = module.createCodec
+          return {
+            module:
+              create === undefined
+                ? module
+                : {
+                    ...module,
+                    createCodec(contribution: ContributionContext) {
+                      if (contribution.logicalResources !== undefined)
+                        ports.push(contribution.logicalResources)
+                      return create(contribution)
+                    },
+                  },
+            release: async () => undefined,
+          }
+        },
+      },
+    ])
+    const resourceDiscovery = [
+      {
+        role: 'sidecar' as const,
+        extension: '.mesh',
+        searches: [
+          { rootId: 'dependency', logicalPrefix: '' },
+          { rootId: 'active', logicalPrefix: '' },
+        ],
+        limits: {
+          pageItems: 64,
+          maxPages: 10,
+          maxEntries: 100,
+          maxCandidates: 10,
+          maxBytes: 1024n,
+        },
+      },
+    ]
+    const entryId = await entryIdOf(archive, 'active/props/lamp.mesh')
+    const opening = openNestedSubject({
+      parent: archive,
+      entryId,
+      inventory: subjects.inventory,
+      executionBackends,
+      target,
+      grant,
+      budget,
+      logicalRoots: [
+        { rootId: 'active', pathPrefix: 'active', logicalPrefix: 'project' },
+        { rootId: 'dependency', pathPrefix: 'dependency', logicalPrefix: 'project' },
+      ],
+      resourceDiscovery,
+    })
+    resourceDiscovery[0]?.searches.splice(0)
+    if (resourceDiscovery[0] !== undefined) resourceDiscovery[0].limits.maxBytes = 0n
+    const { result } = await opening
+    if (result.state !== 'opened') throw new Error(JSON.stringify(result.diagnostics))
+    openSessions.push(result.session)
+    const port = ports.at(-1)
+    if (port === undefined) throw new Error('nested codec did not receive a logical resource port')
+    const discovery = await port.discover({ role: 'sidecar', extension: '.mesh' })
+    if (discovery.state !== 'complete') throw new Error(discovery.message)
+    expect(discovery.receipt).toMatchObject({ complete: true, candidates: 2, bytes: 2n })
+    expect(discovery.candidates.map(candidate => candidate.logicalId).sort()).toEqual([
+      'project/clips/idle.mesh',
+      'project/clips/walk.mesh',
+    ])
+    for (const candidate of discovery.candidates) {
+      const resolution = await port.resolve({
+        id: candidate.logicalId,
+        logicalId: candidate.logicalId,
+        role: 'sidecar',
+        scopes: ['workspace-dependency-layer'],
+      })
+      if (resolution.state !== 'resolved' || resolution.lease.value.kind !== 'bytes')
+        throw new Error('nested logical candidate did not resolve')
+      expect(resolution.revision).toBe(candidate.expectedRevision)
+      expect(await resolution.lease.value.read(0n, 1)).toEqual(
+        new Uint8Array([candidate.logicalId.endsWith('/walk.mesh') ? 60 : 30]),
+      )
+      await resolution.lease.release()
+    }
+    expect(await port.discover({ role: 'sidecar', extension: '.m3a' })).toMatchObject({
+      state: 'refused',
+      reason: 'request-unsupported',
+    })
+    await result.session.dispose()
+    expect(await port.discover({ role: 'sidecar', extension: '.mesh' })).toMatchObject({
+      state: 'refused',
+      reason: 'context-unavailable',
+    })
+  })
+
+  it('projects explicit active and dependency roots, preserves precedence and excludes other archive roots', async () => {
+    const archive = await openArchive([
+      { path: 'active/assets/props/lamp.mesh', bytes: MODEL_BYTES },
+      {
+        path: 'active/assets/textures/shared.texture',
+        bytes: new Uint8Array([60]),
+        compress: true,
+      },
+      { path: 'dependency/assets/textures/shared.texture', bytes: new Uint8Array([45]) },
+      { path: 'dependency/assets/textures/inherited.texture', bytes: new Uint8Array([30]) },
+      { path: 'unopened/assets/textures/hidden.texture', bytes: new Uint8Array([90]) },
+    ])
+    openSessions.push(archive)
+    const subjects = await nestedServices()
+    const logicalRoots = [
+      { rootId: 'active', pathPrefix: 'active/', logicalPrefix: 'project/' },
+      { rootId: 'dependency', pathPrefix: 'dependency', logicalPrefix: 'project' },
+    ]
+    const opening = openNestedSubject({
+      parent: archive,
+      entryId: await entryIdOf(archive, 'active/assets/props/lamp.mesh'),
+      inventory: subjects.inventory,
+      executionBackends: subjects.executionBackends,
+      target,
+      grant,
+      budget,
+      logicalRoots,
+    })
+    // Context belongs to this open even if the UI changes its roots while opening yields.
+    logicalRoots.splice(0, logicalRoots.length, {
+      rootId: 'unopened',
+      pathPrefix: 'unopened',
+      logicalPrefix: 'project',
+    })
+    const { result } = await opening
+    if (result.state !== 'opened' || result.resources === undefined)
+      throw new Error('projected nested resource session missing')
+    openSessions.push(result.session)
+    const resources = result.resources
+    for (const [name, value] of [
+      ['shared', 60],
+      ['inherited', 30],
+    ] as const) {
+      const texture = await resources.resolve({
+        id: name,
+        logicalId: `project/assets/textures/${name}.texture`,
+        role: 'texture',
+        scopes: ['workspace-dependency-layer'],
+      })
+      if (texture.state !== 'resolved' || texture.lease.value.kind !== 'bytes')
+        throw new Error(`projected ${name} texture missing`)
+      expect(await texture.lease.value.read(0n, 1)).toEqual(new Uint8Array([value]))
+      expect(texture.provenance.revision).toBe(texture.lease.value.revision)
+      await texture.lease.release()
+    }
+    for (const logicalId of [
+      'project/assets/textures/hidden.texture',
+      'unopened/assets/textures/hidden.texture',
+      'dependency/assets/textures/inherited.texture',
+    ]) {
+      expect(
+        await resources.resolve({
+          id: logicalId,
+          logicalId,
+          role: 'texture',
+          scopes: ['workspace-dependency-layer', 'current-mount', 'enclosing-container'],
+        }),
+      ).toMatchObject({ state: 'unresolved' })
+    }
+    await result.session.dispose()
+    expect(resources.state()).toBe('disposed')
+  })
+
+  it('refuses a nested entry outside explicit roots before extracting its bytes', async () => {
+    const archive = await openArchive(await standardEntries())
+    openSessions.push(archive)
+    const subjects = await nestedServices()
+    const extracted: string[] = []
+    const operations = archive.operations()
+    const parent: AssetSession = {
+      ...archive,
+      operations: () => ({
+        ...operations,
+        invoke: (...args) => {
+          extracted.push(args[0])
+          return operations.invoke(...args)
+        },
+      }),
+    }
+    await expect(
+      openNestedSubject({
+        parent,
+        entryId: await entryIdOf(archive, 'assets/props/lamp.mesh'),
+        inventory: subjects.inventory,
+        executionBackends: subjects.executionBackends,
+        target,
+        grant,
+        budget,
+        logicalRoots: [{ rootId: 'other', pathPrefix: 'other' }],
+      }),
+    ).rejects.toThrow('nested entry is outside the declared logical roots')
+    expect(extracted).toEqual([])
+    expect(archive.state()).toBe('live')
+  })
+
+  it('resolves an exact post-open path through the retained namespace and disposes its resource session', async () => {
+    const archive = await openArchive([
+      ...(await standardEntries()),
+      { path: 'assets/textures/late.texture', bytes: new Uint8Array([9, 8, 7]), compress: true },
+    ])
+    openSessions.push(archive)
+    const subjects = await nestedServices()
+    const { result } = await openNestedSubject({
+      parent: archive,
+      entryId: await entryIdOf(archive, 'assets/models/cube.mesh'),
+      inventory: subjects.inventory,
+      executionBackends: subjects.executionBackends,
+      target,
+      grant,
+      budget,
+    })
+    if (result.state !== 'opened' || result.resources === undefined)
+      throw new Error('nested resource origin missing')
+    const resources = result.resources
+    try {
+      expect(resources.provenance()).toEqual([])
+      const texture = await resources.resolve({
+        id: 'late',
+        logicalId: 'assets/textures/late.texture',
+        role: 'texture',
+        scopes: ['current-mount'],
+      })
+      if (texture.state !== 'resolved' || texture.lease.value.kind !== 'bytes')
+        throw new Error('late texture missing')
+      expect(await texture.lease.value.read(0n, 3)).toEqual(new Uint8Array([9, 8, 7]))
+      expect(texture.provenance.revision).toBe(texture.lease.value.revision)
+      // Deliberately leave the resource lease outstanding: child teardown owns it too.
+    } finally {
+      await result.session.dispose()
+    }
+    expect(resources.state()).toBe('disposed')
+    expect(
+      await resources.resolve({
+        id: 'closed',
+        logicalId: 'assets/textures/late.texture',
+        role: 'texture',
+        scopes: ['current-mount'],
+      }),
+    ).toMatchObject({ state: 'unresolved', reason: 'session-disposed' })
+  })
+
   it('binds the deflated texture beside the mesh and hands the codec byte-exact bytes', async () => {
     const archive = await openArchive(await standardEntries())
     openSessions.push(archive)

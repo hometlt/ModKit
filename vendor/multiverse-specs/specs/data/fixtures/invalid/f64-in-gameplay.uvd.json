@@ -1,0 +1,73 @@
+{
+  "$comment": "INVALID: an f64 field without presentation:true would let a double leak into gameplay state (f64-presentation-only).",
+  "uv": {
+    "format": "UVD",
+    "version": "1.0"
+  },
+  "namespace": "example-vendor",
+  "role": "kind-schema",
+  "kinds": [
+    {
+      "kind": "unit",
+      "version": 1,
+      "fields": [
+        {
+          "name": "health",
+          "type": "fixed64",
+          "required": true,
+          "unit": "scalar"
+        },
+        {
+          "name": "speed",
+          "type": "fixed64",
+          "unit": "per-tick"
+        },
+        {
+          "name": "armor",
+          "type": "i64",
+          "unit": "scalar"
+        },
+        {
+          "name": "stance",
+          "type": "enum",
+          "values": [
+            "aggressive",
+            "defensive",
+            "hold"
+          ]
+        },
+        {
+          "name": "weapon",
+          "type": "ref",
+          "refKind": "weapon"
+        },
+        {
+          "name": "tags",
+          "type": "list",
+          "itemType": "string"
+        },
+        {
+          "name": "cost",
+          "type": "record",
+          "recordFields": [
+            {
+              "name": "amount",
+              "type": "i64",
+              "unit": "scalar"
+            },
+            {
+              "name": "time",
+              "type": "i64",
+              "unit": "tick"
+            }
+          ]
+        },
+        {
+          "name": "displayTint",
+          "type": "f64",
+          "presentation": false
+        }
+      ]
+    }
+  ]
+}

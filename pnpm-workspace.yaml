@@ -25,6 +25,7 @@ packages:
   - 'extensions/video'
   - 'extensions/data'
   - 'extensions/documents'
+  - 'extensions/translation'
   - 'examples/extensions/counter-runtime'
   - 'examples/extensions/software-renderer'
 # esbuild works through its platform binary package (@esbuild/win32-x64); its postinstall is only a

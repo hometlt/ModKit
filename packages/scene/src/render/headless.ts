@@ -1,3 +1,18 @@
+import { readSimpleEffectColors } from './effect-colors.js'
+import {
+  readPreviewLighting,
+  samplePreviewLighting,
+  type PreviewLighting,
+} from './preview-lighting.js'
+import {
+  bindSimpleEffectTexture,
+  readSimpleEffect,
+  blendSimpleEffectPixel,
+  sampleScreenEffectUv,
+  type SimpleEffectState,
+} from './simple-effect.js'
+import { sampleMaterialTexture } from './materials.js'
+import { headlessDepthBias, type SceneDepthBias } from './depth-bias.js'
 import type {
   SceneRenderRequest,
   SceneRenderFrame,
@@ -8,6 +23,18 @@ import type {
   SceneRendererDirectionalLight,
   SceneRendererDiagnostic,
 } from '@modkit/sdk/renderer'
+import { materialAlpha, straightenAlpha, type MaterialAlpha } from './alpha.js'
+import { prepareSceneMaterialPrograms } from './materials.js'
+import {
+  sceneMaterialDraws,
+  blendMaterialPixel,
+  materialIsSolid,
+  type MaterialDraw,
+} from './material-draws.js'
+import { materialGeometry, type MaterialVertex } from './material-geometry.js'
+import { shadeMaterial, interpolateMaterialVertex } from './material-sampling.js'
+import { sceneTextureBytes } from '../textures/cube.js'
+import { requiresEnvironmentEye, snapshotEyePosition } from '../materials/environment.js'
 type Vec3 = readonly [number, number, number]
 type Vec4 = readonly [number, number, number, number]
 type Triangle<T> = readonly [T, T, T]
@@ -24,7 +51,9 @@ interface Light {
   color: Vec4
 }
 interface Surface {
+  simpleEffect?: SimpleEffectState
   baseColor: Vec4
+  alpha: MaterialAlpha
   shading: 'unlit' | 'lambert'
   texture?: SceneRendererTexture
 }
@@ -36,6 +65,7 @@ interface RasterContext {
   viewProjection: Float32Array
   materials: Map<string, Surface>
   light: Light | undefined
+  previewLighting: PreviewLighting | undefined
   diagnostics: SceneRendererDiagnostic[]
   triangles: number
   fragments: number
@@ -86,9 +116,9 @@ function color(value: Vec4, label: string): Vec4 {
 const byte = (value: number) => Math.round(value * 255)
 
 function clearFrame(rgba: Uint8Array, clearColor: Vec4) {
-  const red = byte(clearColor[0])
-  const green = byte(clearColor[1])
-  const blue = byte(clearColor[2])
+  const red = byte(clearColor[0] * clearColor[3])
+  const green = byte(clearColor[1] * clearColor[3])
+  const blue = byte(clearColor[2] * clearColor[3])
   const alpha = byte(clearColor[3])
   for (let offset = 0; offset < rgba.length; offset += 4) {
     rgba[offset] = red
@@ -145,8 +175,8 @@ function screenVertex(
     return undefined
   }
   return {
-    x: (ndcX * 0.5 + 0.5) * (width - 1),
-    y: (1 - (ndcY * 0.5 + 0.5)) * (height - 1),
+    x: (ndcX * 0.5 + 0.5) * width,
+    y: (1 - (ndcY * 0.5 + 0.5)) * height,
     z: ndcZ,
     /* Reciprocal clip w, kept per vertex so attributes interpolate perspective-correctly. */
     invW: 1 / clipW,
@@ -229,25 +259,45 @@ function rasterizeTriangle(
   surface: Surface,
   uvs: Triangle<readonly [number, number]> | undefined,
   normals: Triangle<Vec3> | undefined,
+  materialDraw?: { readonly draw: MaterialDraw; readonly vertices: Triangle<MaterialVertex> },
+  depthBias?: SceneDepthBias,
+  colors?: Triangle<Vec4>,
+  tint: readonly [number, number, number, number] = [1, 1, 1, 1],
 ) {
   const [first, second, third] = vertices
+  const effect = surface.simpleEffect
+  const materialTint =
+    materialDraw === undefined ? undefined : primitiveTint(materialDraw.draw.primitive)
+  const polygonOffset = headlessDepthBias(
+    vertices,
+    depthBias ?? materialDraw?.draw.primitive.depthBias,
+  )
   const area = edge(first, second, third.x, third.y)
   if (!Number.isFinite(area) || Math.abs(area) < 0.000_001) return 0
+  if ((materialDraw?.draw.program?.twoSided === false || effect?.doubleSided === false) && area < 0)
+    return 0
+  // A shared edge belongs to one triangle. Without a half-open coverage rule, alpha doubles
+  // along the diagonal of a triangulated quad. Account for either authored winding.
+  const inclusive = (a: Vertex, b: Vertex) =>
+    area < 0 ? b.y < a.y || (b.y === a.y && b.x > a.x) : b.y > a.y || (b.y === a.y && b.x < a.x)
+  const edges = [inclusive(second, third), inclusive(third, first), inclusive(first, second)]
   const minimumX = Math.max(0, Math.floor(Math.min(first.x, second.x, third.x)))
   const maximumX = Math.min(context.width - 1, Math.ceil(Math.max(first.x, second.x, third.x)))
   const minimumY = Math.max(0, Math.floor(Math.min(first.y, second.y, third.y)))
   const maximumY = Math.min(context.height - 1, Math.ceil(Math.max(first.y, second.y, third.y)))
   const base = surface.baseColor
   const light = context.light
-  const shaded = light !== undefined && surface.shading === 'lambert'
+  const shaded =
+    (light !== undefined || context.previewLighting !== undefined) &&
+    surface.shading === 'lambert' &&
+    effect === undefined
   /*
    * Per-vertex normals when the primitive published them, one face normal otherwise. Computed once
    * per triangle rather than per fragment: a flat-shaded triangle needs one, and a smooth-shaded
    * one needs the three it already has.
    */
   const flatNormal = shaded && normals === undefined ? faceNormal(first, second, third) : undefined
-  const flatShade = flatNormal === undefined ? 1 : lambert(flatNormal, light as Light)
-  const alpha = byte(base[3])
+  const flatShade = flatNormal === undefined || light === undefined ? 1 : lambert(flatNormal, light)
   let fragments = 0
   for (let y = minimumY; y <= maximumY; y += 1) {
     for (let x = minimumX; x <= maximumX; x += 1) {
@@ -257,36 +307,113 @@ function rasterizeTriangle(
       const secondWeight = edge(third, first, sampleX, sampleY) / area
       const thirdWeight = edge(first, second, sampleX, sampleY) / area
       if (firstWeight < 0 || secondWeight < 0 || thirdWeight < 0) continue
-      const sampleDepth = firstWeight * first.z + secondWeight * second.z + thirdWeight * third.z
+      if (
+        (firstWeight === 0 && !edges[0]) ||
+        (secondWeight === 0 && !edges[1]) ||
+        (thirdWeight === 0 && !edges[2])
+      )
+        continue
+      const rawDepth = firstWeight * first.z + secondWeight * second.z + thirdWeight * third.z
+      const sampleDepth = Math.fround(
+        polygonOffset === 0 ? rawDepth : Math.max(-1, Math.min(1, rawDepth + polygonOffset)),
+      )
       const pixel = y * context.width + x
-      if (sampleDepth >= (context.depth[pixel] as number)) continue
-      context.depth[pixel] = sampleDepth
+      if (effect?.depthTest !== false && sampleDepth > (context.depth[pixel] as number)) continue
+      if (materialDraw !== undefined) {
+        const { draw, vertices: attributes } = materialDraw
+        if (draw.program === undefined || draw.material === undefined)
+          throw new TypeError('missing material draw program')
+        const weights: Triangle<number> = [
+          firstWeight * first.invW,
+          secondWeight * second.invW,
+          thirdWeight * third.invW,
+        ]
+        const sum = weights[0] + weights[1] + weights[2]
+        if (sum <= 1e-9) continue
+        const fragment = interpolateMaterialVertex(attributes, [
+          weights[0] / sum,
+          weights[1] / sum,
+          weights[2] / sum,
+        ])
+        const shaded = shadeMaterial(draw.program, draw.material.textures, fragment)
+        if (!shaded.alphaTestPassed) continue
+        if (draw.depthOnly || materialIsSolid(draw.program)) context.depth[pixel] = sampleDepth
+        if (!draw.depthOnly) {
+          const multiplier = materialTint ?? [1, 1, 1, 1]
+          blendMaterialPixel(
+            context.frame,
+            pixel * 4,
+            [
+              shaded.rgba[0] * multiplier[0],
+              shaded.rgba[1] * multiplier[1],
+              shaded.rgba[2] * multiplier[2],
+              shaded.rgba[3] * multiplier[3],
+            ],
+            draw.program,
+          )
+        }
+        fragments++
+        continue
+      }
+      let alpha = Math.fround(base[3])
       let red = base[0]
       let green = base[1]
       let blue = base[2]
-      if (surface.texture !== undefined && uvs !== undefined) {
+      if (effect !== undefined && colors !== undefined) {
+        const a = firstWeight * first.invW,
+          b = secondWeight * second.invW,
+          c = thirdWeight * third.invW,
+          sum = a + b + c
+        if (sum <= 1e-9) continue
+        red *= (a * colors[0][0] + b * colors[1][0] + c * colors[2][0]) / sum
+        green *= (a * colors[0][1] + b * colors[1][1] + c * colors[2][1]) / sum
+        blue *= (a * colors[0][2] + b * colors[1][2] + c * colors[2][2]) / sum
+        alpha = Math.fround(
+          alpha * ((a * colors[0][3] + b * colors[1][3] + c * colors[2][3]) / sum),
+        )
+      }
+      if (surface.texture !== undefined && (uvs !== undefined || effect?.screenUv !== undefined)) {
         // perspective-correct: interpolate attribute/w and 1/w, then divide
         const invW =
           firstWeight * first.invW + secondWeight * second.invW + thirdWeight * third.invW
         if (invW > 1e-9) {
-          const u =
-            (firstWeight * uvs[0][0] * first.invW +
-              secondWeight * uvs[1][0] * second.invW +
-              thirdWeight * uvs[2][0] * third.invW) /
-            invW
-          const v =
-            (firstWeight * uvs[0][1] * first.invW +
-              secondWeight * uvs[1][1] * second.invW +
-              thirdWeight * uvs[2][1] * third.invW) /
-            invW
-          const texel = sampleTexture(surface.texture, u, v)
+          let u =
+            uvs === undefined
+              ? 0
+              : (firstWeight * uvs[0][0] * first.invW +
+                  secondWeight * uvs[1][0] * second.invW +
+                  thirdWeight * uvs[2][0] * third.invW) /
+                invW
+          let v =
+            uvs === undefined
+              ? 0
+              : (firstWeight * uvs[0][1] * first.invW +
+                  secondWeight * uvs[1][1] * second.invW +
+                  thirdWeight * uvs[2][1] * third.invW) /
+                invW
+          if (effect?.screenUv !== undefined) {
+            // Raster rows are top-down, unlike the pinned GLSL gl_FragCoord origin.
+            const screen = sampleScreenEffectUv(
+              effect.screenUv,
+              sampleX,
+              context.height - sampleY,
+              context.width,
+              context.height,
+            )
+            if (screen !== undefined) [u, v] = screen
+          }
+          const texel =
+            effect === undefined
+              ? sampleTexture(surface.texture, u, v)
+              : sampleMaterialTexture(surface.texture, u, v, effect.wrapU, effect.wrapV)
           red *= texel[0]
           green *= texel[1]
           blue *= texel[2]
+          alpha = Math.fround(alpha * Math.fround(texel[3]))
         }
       }
       let shade = flatShade
-      if (shaded && normals !== undefined) {
+      if (shaded && normals !== undefined && light !== undefined) {
         const smooth = normalize([
           firstWeight * normals[0][0] + secondWeight * normals[1][0] + thirdWeight * normals[2][0],
           firstWeight * normals[0][1] + secondWeight * normals[1][1] + thirdWeight * normals[2][1],
@@ -294,20 +421,165 @@ function rasterizeTriangle(
         ])
         shade = smooth === undefined ? 1 : lambert(smooth, light)
       }
-      if (shaded) {
+      if (shaded && context.previewLighting !== undefined) {
+        const a = firstWeight * first.invW,
+          b = secondWeight * second.invW,
+          c = thirdWeight * third.invW
+        const sum = a + b + c
+        if (sum <= 1e-9) continue
+        const interpolate = (values: Triangle<Vec3>): Vec3 => [
+          (a * values[0][0] + b * values[1][0] + c * values[2][0]) / sum,
+          (a * values[0][1] + b * values[1][1] + c * values[2][1]) / sum,
+          (a * values[0][2] + b * values[1][2] + c * values[2][2]) / sum,
+        ]
+        const rgb = samplePreviewLighting(
+          context.previewLighting,
+          normals === undefined ? (flatNormal ?? [0, 0, 1]) : interpolate(normals),
+          interpolate([first.world, second.world, third.world]),
+        )
+        red *= rgb[0]
+        green *= rgb[1]
+        blue *= rgb[2]
+      } else if (shaded && light !== undefined) {
         red *= shade * light.color[0]
         green *= shade * light.color[1]
         blue *= shade * light.color[2]
       }
+      red *= tint[0]
+      green *= tint[1]
+      blue *= tint[2]
+      alpha *= tint[3]
       const offset = pixel * 4
-      context.frame[offset] = byte(Math.min(1, Math.max(0, red)))
-      context.frame[offset + 1] = byte(Math.min(1, Math.max(0, green)))
-      context.frame[offset + 2] = byte(Math.min(1, Math.max(0, blue)))
-      context.frame[offset + 3] = alpha
+      if (effect !== undefined) {
+        if (effect.alphaCutoff > 0 && alpha < effect.alphaCutoff) continue
+        if (effect.depthTest && effect.depthWrite) context.depth[pixel] = sampleDepth
+        blendSimpleEffectPixel(context.frame, offset, [red, green, blue, alpha], effect)
+        fragments++
+        continue
+      }
+      if (surface.alpha.mode === 'mask' && alpha < surface.alpha.cutoff) continue
+      if (surface.alpha.mode !== 'blend') {
+        alpha = 1
+        context.depth[pixel] = sampleDepth
+      }
+      const remaining = 1 - alpha
+      context.frame[offset] = byte(
+        Math.min(1, Math.max(0, red)) * alpha + ((context.frame[offset] ?? 0) / 255) * remaining,
+      )
+      context.frame[offset + 1] = byte(
+        Math.min(1, Math.max(0, green)) * alpha +
+          ((context.frame[offset + 1] ?? 0) / 255) * remaining,
+      )
+      context.frame[offset + 2] = byte(
+        Math.min(1, Math.max(0, blue)) * alpha +
+          ((context.frame[offset + 2] ?? 0) / 255) * remaining,
+      )
+      context.frame[offset + 3] = byte(alpha + ((context.frame[offset + 3] ?? 0) / 255) * remaining)
       fragments += 1
     }
   }
   return fragments
+}
+
+/** Homogeneous clipping interpolates the same varyings later interpolated by the rasterizer. */
+function clipMaterialTriangle(vertices: Triangle<MaterialVertex>): MaterialVertex[] {
+  let polygon: MaterialVertex[] = [...vertices]
+  for (const [axis, sign] of [
+    [0, 1],
+    [0, -1],
+    [1, 1],
+    [1, -1],
+    [2, 1],
+    [2, -1],
+  ] as const) {
+    const output: MaterialVertex[] = []
+    for (let i = 0; i < polygon.length; i++) {
+      const a = polygon[i],
+        b = polygon[(i + 1) % polygon.length]
+      if (a === undefined || b === undefined) continue
+      const da = a.clip[3] + a.clip[axis] * sign,
+        db = b.clip[3] + b.clip[axis] * sign
+      if (da >= 0) output.push(a)
+      if (da < 0 !== db < 0) {
+        const t = da / (da - db)
+        output.push(interpolateMaterialVertex([a, b, b], [1 - t, t, 0]))
+      }
+    }
+    polygon = output
+  }
+  return polygon
+}
+
+function renderMaterialDraw(
+  context: RasterContext,
+  draw: MaterialDraw,
+  request: SceneRenderRequest,
+): void {
+  if (
+    draw.program !== undefined &&
+    requiresEnvironmentEye(draw.program) &&
+    snapshotEyePosition(request.camera.eyePosition) === undefined
+  )
+    throw new TypeError('explicit reflection environment requires eyePosition')
+  const primitive = draw.primitive,
+    geometry = materialGeometry(
+      primitive,
+      request.camera,
+      request.scene.light,
+      draw.program?.worldToMaterial,
+      draw.program?.environment !== undefined,
+      draw.program?.normalBlendPolicy !== undefined || draw.program?.normalMapSpace === 'object',
+    )
+  const elements = triangleElements(
+    primitive.topology,
+    primitive.indices?.length ?? primitive.positions.length / 3,
+  )
+  if (elements === undefined) {
+    context.diagnostics.push({
+      severity: 'warning',
+      code: 'common.scene/unsupported-topology',
+      message: `Material renderer skipped ${primitive.topology}`,
+      primitiveId: primitive.id,
+    })
+    return
+  }
+  for (const indices of elements) {
+    context.signal?.throwIfAborted()
+    const source: Triangle<MaterialVertex> = [
+      geometry.vertex(primitive.indices?.[indices[0]] ?? indices[0]),
+      geometry.vertex(primitive.indices?.[indices[1]] ?? indices[1]),
+      geometry.vertex(primitive.indices?.[indices[2]] ?? indices[2]),
+    ]
+    const polygon = clipMaterialTriangle(source)
+    context.triangles++
+    for (let i = 1; i + 1 < polygon.length; i++) {
+      const a = polygon[0],
+        b = polygon[i],
+        c = polygon[i + 1]
+      if (
+        a === undefined ||
+        b === undefined ||
+        c === undefined ||
+        [a, b, c].some(v => v.clip[3] < 1e-9)
+      )
+        continue
+      const screen = (v: MaterialVertex): Vertex => ({
+        x: ((v.clip[0] / v.clip[3]) * 0.5 + 0.5) * context.width,
+        y: (0.5 - (v.clip[1] / v.clip[3]) * 0.5) * context.height,
+        z: v.clip[2] / v.clip[3],
+        invW: 1 / v.clip[3],
+        world: v.worldPosition,
+      })
+      context.fragments += rasterizeTriangle(
+        context,
+        [screen(a), screen(b), screen(c)],
+        DEFAULT_SURFACE,
+        undefined,
+        undefined,
+        { draw, vertices: [a, b, c] },
+      )
+    }
+  }
 }
 
 function textureTable(textures: readonly SceneRendererTexture[] | undefined) {
@@ -316,11 +588,9 @@ function textureTable(textures: readonly SceneRendererTexture[] | undefined) {
     if (!nonEmptyString(texture.id) || table.has(texture.id)) {
       throw new TypeError('renderer textures must have unique non-empty ids')
     }
-    const width = dimension(texture.width, `texture ${texture.id} width`)
-    const height = dimension(texture.height, `texture ${texture.id} height`)
-    if (!(texture.rgba instanceof Uint8Array) || texture.rgba.length !== width * height * 4) {
-      throw new TypeError(`texture ${texture.id} must carry width * height * 4 RGBA8 bytes`)
-    }
+    dimension(texture.width, `texture ${texture.id} width`)
+    dimension(texture.height, `texture ${texture.id} height`)
+    sceneTextureBytes(texture)
     table.set(texture.id, texture)
   }
   return table
@@ -339,7 +609,7 @@ function materialSurfaces(
   diagnostics: SceneRendererDiagnostic[],
 ) {
   const surfaces = new Map<string, Surface>()
-  for (const material of materials ?? []) {
+  for (const material of (materials ?? []).map(bindSimpleEffectTexture)) {
     if (!nonEmptyString(material.id) || surfaces.has(material.id)) {
       throw new TypeError('renderer materials must have unique non-empty ids')
     }
@@ -350,6 +620,14 @@ function materialSurfaces(
     let texture
     if (material.baseColorTexture !== undefined) {
       texture = textures.get(material.baseColorTexture)
+      if (texture?.dimension === 'cube') {
+        diagnostics.push({
+          severity: 'warning',
+          code: 'common.scene/base-color-texture-dimension',
+          message: `Material ${material.id}: base-color UV sampling requires a 2D texture.`,
+        })
+        texture = undefined
+      }
       if (texture === undefined) {
         diagnostics.push(
           Object.freeze({
@@ -360,10 +638,16 @@ function materialSurfaces(
         )
       }
     }
+    if (texture !== undefined && material.simpleEffect !== undefined)
+      texture = { ...texture, filter: 'linear' as const }
     surfaces.set(
       material.id,
       Object.freeze({
         baseColor: color(material.baseColor, `material ${material.id} baseColor`),
+        alpha: materialAlpha(material),
+        ...(material.simpleEffect === undefined
+          ? {}
+          : { simpleEffect: readSimpleEffect(material.simpleEffect) as SimpleEffectState }),
         shading,
         ...(texture === undefined ? {} : { texture }),
       }),
@@ -372,7 +656,11 @@ function materialSurfaces(
   return surfaces
 }
 
-const DEFAULT_SURFACE: Surface = Object.freeze({ baseColor: DEFAULT_COLOR, shading: 'unlit' })
+const DEFAULT_SURFACE: Surface = Object.freeze({
+  baseColor: DEFAULT_COLOR,
+  shading: 'unlit',
+  alpha: materialAlpha(),
+})
 
 /** Normalised light, or `undefined` for a scene that declared none — which means unlit. */
 function sceneLight(value: SceneRendererDirectionalLight | undefined): Light | undefined {
@@ -449,6 +737,8 @@ function renderPrimitive(context: RasterContext, primitive: SceneRendererPrimiti
     primitive.materialId === undefined
       ? DEFAULT_SURFACE
       : (context.materials.get(primitive.materialId) ?? DEFAULT_SURFACE)
+  const colorBuffer =
+    surface.simpleEffect === undefined ? undefined : readSimpleEffectColors(primitive)
   const uvBuffer =
     surface.texture === undefined || !(primitive.textureCoordinates instanceof Float32Array)
       ? undefined
@@ -499,6 +789,17 @@ function renderPrimitive(context: RasterContext, primitive: SceneRendererPrimiti
       surface,
       uvs as Triangle<readonly [number, number]> | undefined,
       normals as Triangle<Vec3> | undefined,
+      undefined,
+      primitive.depthBias,
+      colorBuffer === undefined
+        ? undefined
+        : (indices.map(index => [
+            colorBuffer[index * 4] ?? 1,
+            colorBuffer[index * 4 + 1] ?? 1,
+            colorBuffer[index * 4 + 2] ?? 1,
+            colorBuffer[index * 4 + 3] ?? 1,
+          ]) as unknown as Triangle<Vec4>),
+      primitiveTint(primitive),
     )
   }
 }
@@ -528,20 +829,40 @@ export async function renderHeadless(request: SceneRenderRequest): Promise<Scene
   depth.fill(Number.POSITIVE_INFINITY)
   clearFrame(frame, color(request.clearColor ?? DEFAULT_CLEAR_COLOR, 'clearColor'))
   const diagnostics: SceneRendererDiagnostic[] = []
+  const textures = textureTable(scene.textures)
+  const programs = prepareSceneMaterialPrograms(
+    scene.materials ?? [],
+    textures,
+    scene.materialContext,
+    diagnostics,
+    request.signal,
+  )
   const context: RasterContext = {
     width,
     height,
     frame,
     depth,
     viewProjection: matrix(camera.viewProjection, 'camera viewProjection'),
-    materials: materialSurfaces(scene.materials, textureTable(scene.textures), diagnostics),
+    materials: materialSurfaces(scene.materials, textures, diagnostics),
     light: sceneLight(scene.light),
+    previewLighting: readPreviewLighting(scene.lights, scene.ambientLight),
     diagnostics,
     triangles: 0,
     fragments: 0,
     signal: request.signal,
   }
-  for (const primitive of scene.primitives) renderPrimitive(context, primitive)
+  for (const draw of sceneMaterialDraws(
+    scene.primitives,
+    scene.materials ?? [],
+    programs,
+    context.viewProjection,
+    diagnostics,
+    request.clearColor?.[3] ?? 0,
+  )) {
+    if (draw.program === undefined) renderPrimitive(context, draw.primitive)
+    else renderMaterialDraw(context, draw, request)
+  }
+  straightenAlpha(frame)
   return Object.freeze({
     outputKind: 'rgba8',
     width,
@@ -576,3 +897,4 @@ export function createProvider(selection: { readonly contract: string; readonly 
     release: async () => undefined,
   })
 }
+import { primitiveTint } from './tint.js'

@@ -35,6 +35,18 @@ const LANGUAGE_BY_FORMAT: Readonly<Record<string, string>> = Object.freeze({
   hlsl: 'cpp',
   wgsl: 'rust',
   galaxy: 'cpp',
+  /*
+   * StarCraft II formats. Four of them are XML and say so through `content.text`, but the trait is
+   * only trusted when Monaco has that language registered — and a format that publishes no trait at
+   * all still has to land somewhere better than plain text. `sc2-strings` is a `key=value` catalog
+   * with `#` comments, which is what Monaco's `ini` grammar draws; its markup is coloured by the
+   * codec's own tokens rather than by a grammar that does not know about `<d ref=…/>`.
+   */
+  'sc2-bank': 'xml',
+  'sc2-data': 'xml',
+  'sc2-layout': 'xml',
+  'sc2-triggers': 'xml',
+  'sc2-strings': 'ini',
   csv: 'plaintext',
   tsv: 'plaintext',
   rtf: 'plaintext',
@@ -207,6 +219,16 @@ export function createMonacoEditor(
         automaticLayout: true,
         minimap: { enabled: false },
         scrollBeyondLastLine: false,
+        /*
+         * Colour from the codec's own tokenizer.
+         *
+         * Monaco defaults this to "whatever the theme says", and a theme that stays silent — as
+         * every theme built from tokens rather than a published palette does — turns semantic
+         * highlighting off entirely. The provider is then asked for nothing and a format with no
+         * Monaco grammar renders in one colour, which reads as "this format has no highlighting"
+         * rather than "the theme declined it". Stated here so it does not depend on the theme.
+         */
+        'semanticHighlighting.enabled': true,
         fontLigatures: false,
         ...font,
       })

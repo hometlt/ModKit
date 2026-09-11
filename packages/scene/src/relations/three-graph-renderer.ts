@@ -1,4 +1,5 @@
-import type { GraphRenderer, GraphRendererFactory, GraphNode } from '@modkit/ui/graph'
+import type { GraphRenderer, GraphRendererFactory } from './contracts.js'
+import type { RelationGraphNode as GraphNode } from '@modkit/sdk'
 /**
  * Three.js relation-graph renderer owned by the built-in scene package.
  *

@@ -1,9 +1,18 @@
+import { pageStart } from './paging.js'
+import { deferAssetSession } from './deferred-session.js'
+import { PROJECTION_RECEIPT_METADATA_ID } from './projection.js'
 import type { SourceSpan } from '@modkit/core'
+export {
+  snapshotModelSkeleton,
+  createModelSkeletonNodes,
+  createModelPoseSampler,
+} from './model/skeleton.js'
+export type { ModelBonePoseSample } from './model/skeleton.js'
+export { snapshotModelAnimations, createModelAnimationSampler } from './model/animation.js'
+export type { ModelAnimationValue } from './model/animation.js'
+export { modelPrimitiveByteLength } from './model/geometry.js'
 import type { ArtifactSource, DataSourceRefWire } from '@modkit/sdk'
-type EditWithoutTarget<T> = T extends SourceEdit ? Omit<T, 'targetId' | 'source'> : never
 import type {
-  PageRequest,
-  Page,
   TransportEvent,
   ProbePlan,
   AssetOriginDescriptorWire,
@@ -16,7 +25,6 @@ import type {
   Writer,
 } from '@modkit/sdk'
 import type { HostOperationHandler } from '@modkit/host'
-import type { Diagnostic } from '@modkit/core'
 
 import type {
   ArtifactByteSource,
@@ -24,10 +32,7 @@ import type {
   AssetNamespace,
   AssetEditPlan,
   AssetInput,
-  AssetRevision,
-  AssetSourceRef,
   ChangeSet,
-  CommitGuarantee,
   FidelityClaim,
   MutationMode,
   PermissionClass,
@@ -48,23 +53,6 @@ import type {
   JsonValue,
   Lease,
   MetadataGroup,
-  ModelAnimationClip,
-  ModelAnimationSource,
-  ModelBoneBinding,
-  ModelCollisionSource,
-  ModelCollisionVolume,
-  ModelMaterialRef,
-  ModelMaterialSource,
-  ModelMesh,
-  ModelNode,
-  ModelPrimitive,
-  ModelResourceRef,
-  ModelResourceRefsSource,
-  ModelSceneInfo,
-  ModelSceneSource,
-  ModelSkeletonSource,
-  ModelSocketRef,
-  ModelSocketSource,
   OperationDecl,
   PortableSourceIdentity,
   ProjectionReceipt,
@@ -112,6 +100,11 @@ export interface InspectionTrait {
 }
 
 export interface InspectionContext {
+  /** Host-provided capability resolver; codecs never construct a provider inventory. */
+  readonly contracts?: ContributionContext['contracts']
+  readonly rasterResources?: ContributionContext['rasterResources']
+  readonly modelResources?: ContributionContext['modelResources']
+  readonly logicalResources?: ContributionContext['logicalResources']
   readonly budget: ResourceBudget
   readonly signal?: AbortSignal | undefined
   readonly intent: OpenIntent
@@ -137,7 +130,7 @@ export interface InspectionResult {
   /** `true` publishes the raw source; a string publishes decoded UTF-8 text. */
   readonly text?: boolean | string
   readonly dataSources?: Readonly<Record<string, unknown>>
-  readonly handlers?: Readonly<Record<string, (input: JsonValue) => Promise<OperationOutput>>>
+  readonly handlers?: Readonly<Record<string, HostOperationHandler>>
   /** Overrides declared operations by id for this open; omitted operations remain available. */
   readonly operationStates?: readonly InspectionOperationState[]
   readonly diagnostics?: readonly AssetDiagnostic[]
@@ -158,6 +151,10 @@ export interface NamespaceMarker {
 }
 
 export interface NamespaceInspectionContext {
+  readonly contracts?: ContributionContext['contracts']
+  readonly rasterResources?: ContributionContext['rasterResources']
+  readonly modelResources?: ContributionContext['modelResources']
+  readonly logicalResources?: ContributionContext['logicalResources']
   readonly budget: ResourceBudget
   readonly signal?: AbortSignal | undefined
   readonly intent: OpenIntent
@@ -185,6 +182,8 @@ export interface NamespaceInspectionDefinition {
 }
 
 export interface InspectionCodecDefinition {
+  /** Inspect once on first session access, after the host binds post-open resource capabilities. */
+  readonly deferInspection?: boolean
   readonly id: string
   readonly version?: string
   readonly format: {
@@ -212,6 +211,7 @@ export interface InspectionCodecDefinition {
 }
 
 export interface NamespaceInspectionCodecDefinition {
+  readonly deferInspection?: boolean
   readonly id: string
   readonly version?: string
   readonly format: {
@@ -233,16 +233,19 @@ export interface TransportController extends TransportSource {
   ): void
 }
 
-export interface EditPlanFromInputOptions {
-  readonly planId: string
-  readonly edits: readonly (EditWithoutTarget<SourceEdit> & {
-    readonly targetId?: string
-    readonly source?: AssetSourceRef
-  })[]
-  readonly fidelity: FidelityClaim
-  readonly guarantee?: CommitGuarantee
-  readonly diagnostics?: readonly Diagnostic[]
+export interface TransportSourceOptions {
+  /** Advance position from elapsed wall time while playing and at least one event consumer exists. */
+  readonly wallClock?: boolean
+  readonly updateIntervalMs?: number
 }
+
+export {
+  assetRevisionFromInput,
+  editPlanFromInput,
+  editPlanFromBinding,
+  replaceBytes,
+  type EditPlanFromInputOptions,
+} from './editing.js'
 
 export interface DefineWriterOptions {
   readonly providerId: string
@@ -260,7 +263,6 @@ export interface DefineWriterOptions {
   readonly plan?: (change: ChangeSet, signal?: AbortSignal) => Promise<AssetEditPlan>
 }
 
-import { canonicalJsonStringify } from '@modkit/core'
 import {
   assembleSubjectDescriptor,
   createAssetSession,
@@ -307,14 +309,6 @@ export function simpleLease<Value>(value: Value): Lease<Value> & {
     },
     isReleased: () => released,
   })
-}
-
-function pageStart(cursor?: string) {
-  if (cursor === undefined) return 0
-  if (!/^(?:0|[1-9][0-9]*)$/u.test(cursor)) throw new TypeError('invalid page cursor')
-  const value = Number(cursor)
-  if (!Number.isSafeInteger(value)) throw new TypeError('page cursor exceeds safe integer range')
-  return value
 }
 
 /** Build a bounded lazy tree from inert nodes shaped as `{kind,label,preview?,children?}`. */
@@ -377,13 +371,22 @@ export function createTreeDataSource(rootNode: InspectionTreeNode): TreeDataSour
   })
 }
 
-export function createTransportSource(snapshot: TransportSnapshot): TransportController {
+export function createTransportSource(
+  snapshot: TransportSnapshot,
+  options: TransportSourceOptions = {},
+): TransportController {
+  const updateIntervalMs = options.updateIntervalMs ?? 50
+  if (!Number.isSafeInteger(updateIntervalMs) || updateIntervalMs <= 0) {
+    throw new RangeError('transport updateIntervalMs must be a positive safe integer')
+  }
   let current = {
     ...snapshot,
     tracks: snapshot.tracks.map(track => ({ ...track })),
     controls: { ...snapshot.controls },
   }
   const listeners = new Set<(event: TransportEvent) => void>()
+  let timer: ReturnType<typeof globalThis.setInterval> | undefined
+  let previousTick = 0
   const owned = () =>
     Object.freeze({
       ...current,
@@ -393,6 +396,37 @@ export function createTransportSource(snapshot: TransportSnapshot): TransportCon
   const publish = () => {
     const event = Object.freeze({ kind: 'snapshot' as const, snapshot: owned() })
     for (const listener of listeners) listener(event)
+  }
+  const stopClock = () => {
+    if (timer !== undefined) globalThis.clearInterval(timer)
+    timer = undefined
+  }
+  const startClock = () => {
+    if (
+      options.wallClock !== true ||
+      timer !== undefined ||
+      current.state !== 'playing' ||
+      listeners.size === 0 ||
+      typeof current.durationMs !== 'number'
+    )
+      return
+    previousTick = Date.now()
+    timer = globalThis.setInterval(() => {
+      const now = Date.now()
+      const elapsed = now - previousTick
+      previousTick = now
+      const positionMs = Math.min(
+        current.durationMs as number,
+        current.positionMs + elapsed * current.rate,
+      )
+      current = {
+        ...current,
+        positionMs,
+        state: positionMs >= (current.durationMs as number) ? 'ended' : current.state,
+      }
+      publish()
+      if (current.state === 'ended') stopClock()
+    }, updateIntervalMs)
   }
   return Object.freeze<TransportController>({
     async snapshot(signal) {
@@ -409,6 +443,7 @@ export function createTransportSource(snapshot: TransportSnapshot): TransportCon
       }
       const abort = () => wake?.()
       listeners.add(listener)
+      startClock()
       signal?.addEventListener('abort', abort, { once: true })
       try {
         while (!signal?.aborted) {
@@ -419,12 +454,17 @@ export function createTransportSource(snapshot: TransportSnapshot): TransportCon
         }
       } finally {
         listeners.delete(listener)
+        if (listeners.size === 0) stopClock()
         signal?.removeEventListener('abort', abort)
       }
     },
     control(kind, input = {}) {
       if (kind === 'playPause') {
-        current = { ...current, state: current.state === 'playing' ? 'paused' : 'playing' }
+        current = {
+          ...current,
+          positionMs: current.state === 'ended' ? 0 : current.positionMs,
+          state: current.state === 'playing' ? 'paused' : 'playing',
+        }
       } else if (kind === 'seek') {
         const positionMs = input?.['positionMs'] as number
         if (!Number.isFinite(positionMs) || positionMs < 0)
@@ -448,6 +488,8 @@ export function createTransportSource(snapshot: TransportSnapshot): TransportCon
         throw new RangeError(`unknown transport control: ${kind}`)
       }
       publish()
+      if (current.state === 'playing') startClock()
+      else stopClock()
     },
   })
 }
@@ -651,366 +693,19 @@ export function createVectorSceneSource(info: VectorSceneInfo, text: string): Ve
   })
 }
 
-function frozenModelNode(node: ModelNode): ModelNode {
-  return Object.freeze<ModelNode>({
-    ...node,
-    childIds: Object.freeze([...node.childIds]),
-    meshIds: Object.freeze([...node.meshIds]),
-    transform: Object.freeze([...node.transform]),
-  })
-}
+export {
+  createModelSceneSource,
+  createModelResourceRefsSource,
+  createModelSkeletonSource,
+  createModelAnimationSource,
+  createModelCollisionSource,
+  createModelMaterialSource,
+  createModelSocketSource,
+} from './model/sources.js'
 
-function frozenModelMesh(mesh: ModelMesh): ModelMesh {
-  return Object.freeze<ModelMesh>({ ...mesh, primitiveIds: Object.freeze([...mesh.primitiveIds]) })
-}
-
-function clonePrimitive(primitive: ModelPrimitive): ModelPrimitive {
-  return Object.freeze<ModelPrimitive>({
-    ...primitive,
-    positions: primitive.positions.slice(),
-    ...(primitive.indices === undefined ? {} : { indices: primitive.indices.slice() }),
-    ...(primitive.normals === undefined ? {} : { normals: primitive.normals.slice() }),
-    ...(primitive.textureCoordinates === undefined
-      ? {}
-      : { textureCoordinates: primitive.textureCoordinates.slice() }),
-  })
-}
-
-/** Create a lazy model-scene source; decoded primitive buffers are returned as owned copies. */
-export function createModelSceneSource({
-  info,
-  nodes,
-  meshes,
-  primitives = [],
-}: {
-  readonly info: ModelSceneInfo
-  readonly nodes: readonly ModelNode[]
-  readonly meshes: readonly ModelMesh[]
-  readonly primitives?: readonly ModelPrimitive[]
-}): ModelSceneSource {
-  const ownedInfo = Object.freeze({ ...info })
-  const ownedNodes = Object.freeze(nodes.map(frozenModelNode))
-  const ownedMeshes = Object.freeze(meshes.map(frozenModelMesh))
-  const ownedPrimitives = new Map(primitives.map(value => [value.id, clonePrimitive(value)]))
-  const page = <T>(items: readonly T[], request: PageRequest): Page<T> => {
-    if (!Number.isSafeInteger(request.limit) || request.limit <= 0) {
-      throw new TypeError('model page limit must be a positive safe integer')
-    }
-    const start = pageStart(request.cursor)
-    const values = items.slice(start, start + request.limit)
-    return Object.freeze({
-      items: Object.freeze(values),
-      ...(start + values.length < items.length
-        ? { nextCursor: String(start + values.length) }
-        : {}),
-    })
-  }
-  const source: ModelSceneSource = {
-    async info(signal?: AbortSignal) {
-      if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-      return ownedInfo
-    },
-    async nodes(request, signal) {
-      if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-      return page(ownedNodes, request)
-    },
-    async meshes(request, signal) {
-      if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-      return page(ownedMeshes, request)
-    },
-  }
-  if (ownedPrimitives.size > 0) {
-    source.primitive = async (primitiveId, request, signal) => {
-      if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-      if (!Number.isSafeInteger(request?.maxBytes) || request.maxBytes < 0) {
-        throw new TypeError('model primitive maxBytes must be a non-negative safe integer')
-      }
-      const primitive = ownedPrimitives.get(primitiveId)
-      if (primitive === undefined) throw new RangeError(`unknown model primitive ${primitiveId}`)
-      const bytes =
-        primitive.positions.byteLength +
-        (primitive.indices?.byteLength ?? 0) +
-        (primitive.normals?.byteLength ?? 0) +
-        (primitive.textureCoordinates?.byteLength ?? 0)
-      if (bytes > request.maxBytes) throw new RangeError('model primitive exceeds maxBytes budget')
-      return clonePrimitive(primitive)
-    }
-  }
-  return Object.freeze(source)
-}
-
-// ---------------------------------------------------------------------------------------------
-// optional model facet sources (block 12, slice 12-1 — migration of the ad hoc summaries)
-//
-// The five contracts of `model-facet-sources.ts` were derived from what these codecs already
-// computed; these builders are the other half of that move. Each derives its `info()` counts from
-// the records it was handed rather than accepting them from the caller, so a publisher physically
-// cannot say "seven references" and then page four: the summary and the page are the same data.
-//
-// A publisher that cannot answer does not call the builder at all. None of these fills a missing
-// field with a zero, an empty array or an invented name — an absent facet is absent (§2.7).
-
-/** Shared page rule for the facet sources: same cursor grammar as the base model source. */
-function facetPage<T>(items: readonly T[], request: PageRequest): Page<T> {
-  if (!Number.isSafeInteger(request?.limit) || request.limit <= 0) {
-    throw new TypeError('model facet page limit must be a positive safe integer')
-  }
-  const start = pageStart(request.cursor)
-  const values = items.slice(start, start + request.limit)
-  return Object.freeze<Page<T>>({
-    items: Object.freeze(values),
-    ...(start + values.length < items.length ? { nextCursor: String(start + values.length) } : {}),
-  })
-}
-
-function facetSource<Info, Key extends string, Item extends object>(
-  info: Info,
-  key: Key,
-  items: readonly Item[],
-): Readonly<
-  { info(signal?: AbortSignal): Promise<Info> } & Record<
-    Key,
-    (request: PageRequest, signal?: AbortSignal) => Promise<Page<Item>>
-  >
-> {
-  const owned = Object.freeze(items.map(item => Object.freeze({ ...item })))
-  const source = {
-    async info(signal?: AbortSignal) {
-      if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-      return info
-    },
-  }
-  ;(
-    source as unknown as Record<
-      Key,
-      (request: PageRequest, signal?: AbortSignal) => Promise<Page<Item>>
-    >
-  )[key] = async (request, signal) => {
-    if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-    return facetPage(owned, request)
-  }
-  return Object.freeze(source) as Readonly<
-    { info(signal?: AbortSignal): Promise<Info> } & Record<
-      Key,
-      (request: PageRequest, signal?: AbortSignal) => Promise<Page<Item>>
-    >
-  >
-}
-
-/**
- * `common.view/model-resource-refs-source@1` — logical requirements, never opened here.
- *
- * `bound` counts the entries the host actually bound, which is why `bindingId` is the only thing
- * that may promote a reference: a codec that guessed a companion existed would be reporting the
- * resolver's job as its own.
- */
-export function createModelResourceRefsSource({
-  references,
-  truncated = false,
-}: {
-  readonly references: readonly ModelResourceRef[]
-  readonly truncated?: boolean
-}): ModelResourceRefsSource {
-  const items = [...references]
-  const info = Object.freeze({
-    references: items.length,
-    bound: items.filter(item => item.bindingId !== undefined).length,
-    truncated: truncated === true,
-  })
-  return facetSource(info, 'references', items)
-}
-
-/** `common.view/model-skeleton-source@1` — bone bindings and where each name came from. */
-export function createModelSkeletonSource({
-  bindings,
-  hierarchies,
-}: {
-  readonly bindings: readonly ModelBoneBinding[]
-  readonly hierarchies?: number
-}): ModelSkeletonSource {
-  const items = bindings.map(binding => ({
-    ...binding,
-    ...(binding.flagNames === undefined
-      ? {}
-      : { flagNames: Object.freeze([...binding.flagNames]) }),
-    ...(binding.restMatrix === undefined
-      ? {}
-      : { restMatrix: Object.freeze([...binding.restMatrix]) }),
-  }))
-  const info = Object.freeze({
-    bindings: items.length,
-    named: items.filter(item => item.boneName !== null).length,
-    companionBound: items.filter(item => item.provenance === 'companion').length,
-    // absent, not zero, when the publisher does not enumerate hierarchies
-    ...(hierarchies === undefined ? {} : { hierarchies }),
-  })
-  return facetSource(info, 'bindings', items)
-}
-
-/** `common.view/model-animation-source@1` — clips, and a rest pose stays a rest pose. */
-export function createModelAnimationSource({
-  clips,
-}: {
-  readonly clips: readonly ModelAnimationClip[]
-}): ModelAnimationSource {
-  const items = clips.map(clip => ({
-    ...clip,
-    ...(clip.nativeTimeBounds === undefined
-      ? {}
-      : { nativeTimeBounds: Object.freeze({ ...clip.nativeTimeBounds }) }),
-    channels: Object.freeze(
-      clip.channels.map(channel => ({
-        ...channel,
-        ...(channel.samples === undefined
-          ? {}
-          : {
-              samples: Object.freeze(
-                channel.samples.map(sample =>
-                  Object.freeze({ ...sample, value: Object.freeze([...sample.value]) }),
-                ),
-              ),
-            }),
-      })),
-    ),
-  }))
-  const info = Object.freeze({
-    clips: items.length,
-    channelled: items.filter(clip => clip.channels.length > 0).length,
-    companionBound: items.filter(clip => clip.provenance === 'companion').length,
-  })
-  return facetSource(info, 'clips', items)
-}
-
-/** `common.view/model-collision-source@1` — declared volumes and mesh roles, kept apart. */
-export function createModelCollisionSource({
-  volumes,
-}: {
-  readonly volumes: readonly ModelCollisionVolume[]
-}): ModelCollisionSource {
-  const items = volumes.map(volume => ({
-    ...volume,
-    ...(volume.types === undefined ? {} : { types: Object.freeze([...volume.types]) }),
-  }))
-  const byKind: Record<string, number> = {}
-  for (const volume of items) byKind[volume.kind] = (byKind[volume.kind] ?? 0) + 1
-  const info = Object.freeze({ volumes: items.length, byKind: Object.freeze(byKind) })
-  return facetSource(info, 'volumes', items)
-}
-
-/** `common.view/model-material-source@1` — identity and contract coverage, not shader semantics. */
-export function createModelMaterialSource({
-  materials,
-  libraries,
-}: {
-  readonly materials: readonly ModelMaterialRef[]
-  readonly libraries?: number
-}): ModelMaterialSource {
-  const items = materials.map(material => ({
-    ...material,
-    ...(material.contracts === undefined
-      ? {}
-      : { contracts: Object.freeze([...material.contracts]) }),
-    ...(material.flagNames === undefined
-      ? {}
-      : { flagNames: Object.freeze([...material.flagNames]) }),
-    ...(material.layers === undefined
-      ? {}
-      : {
-          layers: Object.freeze(
-            material.layers.map(layer => ({
-              ...layer,
-              ...(layer.flagNames === undefined
-                ? {}
-                : { flagNames: Object.freeze([...layer.flagNames]) }),
-            })),
-          ),
-        }),
-  }))
-  const byContract: Record<string, number> = {}
-  for (const material of items) {
-    for (const contract of material.contracts ?? []) {
-      byContract[contract] = (byContract[contract] ?? 0) + 1
-    }
-  }
-  const info = Object.freeze({
-    materials: items.length,
-    // absent, not zero, when the format has no library concept at all
-    ...(libraries === undefined ? {} : { libraries }),
-    ...(Object.keys(byContract).length === 0 ? {} : { byContract: Object.freeze(byContract) }),
-  })
-  return facetSource(info, 'materials', items)
-}
-
-/** `common.view/model-socket-source@1` — stable attachment identity and native source name. */
-export function createModelSocketSource({
-  sockets,
-}: {
-  readonly sockets: readonly ModelSocketRef[]
-}): ModelSocketSource {
-  const items = sockets.map(socket => ({
-    ...socket,
-    ...(socket.orientation === undefined
-      ? {}
-      : { orientation: Object.freeze({ ...socket.orientation }) }),
-  }))
-  const byRole: Record<string, number> = {}
-  for (const socket of items) byRole[socket.role] = (byRole[socket.role] ?? 0) + 1
-  return facetSource(
-    Object.freeze({ sockets: items.length, byRole: Object.freeze(byRole) }),
-    'sockets',
-    items,
-  )
-}
-
-// ---------------------------------------------------------------------------------------------
 // ProjectionReceipt — the native → live boundary (§2.6, block 12 item 5)
 
-/** Metadata group id every codec publishes its projection receipt under. */
-export const PROJECTION_RECEIPT_METADATA_ID = 'uv-projection-receipt'
-
-const PLANE_STATES = new Set(['normalized', 'preserved', 'inferred', 'lost'])
-const CONFIDENCES = new Set(['exact', 'high', 'partial', 'heuristic'])
-
-/**
- * Build the local `ProjectionReceipt` a codec emits when it opens a subject.
- *
- * Checked rather than trusted: a plane state outside the four §2.6 distinguishes, or a receipt with
- * no plane and no evidence at all, is refused here instead of reaching a consumer as a receipt that
- * says nothing. `inferred` stays separate from `normalized` because a value the adapter computed is
- * not the same fact as one it converted.
- */
-export function createProjectionReceipt(
-  receipt: Omit<ProjectionReceipt, 'form' | 'sourceIdentity'>,
-): ProjectionReceipt {
-  const planes = [...(receipt.planes ?? [])]
-  if (planes.length === 0)
-    throw new TypeError('a projection receipt must record at least one plane')
-  for (const plane of planes) {
-    if (!PLANE_STATES.has(plane.state)) {
-      throw new TypeError(`projection plane «${plane.planeId}» has an unknown state ${plane.state}`)
-    }
-  }
-  if (!CONFIDENCES.has(receipt.confidence)) {
-    throw new TypeError(`projection receipt has an unknown confidence ${receipt.confidence}`)
-  }
-  if ((receipt.evidence ?? []).length === 0) {
-    throw new TypeError(
-      'a projection receipt made of no evidence is a claim with nothing behind it; state at least one declared or observed fact',
-    )
-  }
-  return Object.freeze<ProjectionReceipt>({
-    form: 'local',
-    adapter: Object.freeze({ ...receipt.adapter }),
-    subjectRevision: receipt.subjectRevision,
-    companions: Object.freeze((receipt.companions ?? []).map(item => Object.freeze({ ...item }))),
-    basis: Object.freeze({ ...receipt.basis }),
-    planes: Object.freeze(planes.map(plane => Object.freeze({ ...plane }))),
-    evidence: Object.freeze(receipt.evidence.map(item => Object.freeze({ ...item }))),
-    confidence: receipt.confidence,
-    ...(receipt.semanticHash === undefined ? {} : { semanticHash: receipt.semanticHash }),
-    ...(receipt.sourceUri === undefined ? {} : { sourceUri: receipt.sourceUri }),
-  })
-}
+export { PROJECTION_RECEIPT_METADATA_ID, createProjectionReceipt } from './projection.js'
 
 /**
  * JSON-safe deep copy: the descriptor carries `JsonValue`, and `bytesRead` is a `bigint`.
@@ -1191,6 +886,25 @@ export function createInspectionCodec(
   definition: InspectionCodecDefinition | NamespaceInspectionCodecDefinition,
   contributionContext?: ContributionContext,
 ): Codec {
+  if (definition.deferInspection === true) {
+    const codec = createInspectionCodec(
+      { ...definition, deferInspection: false },
+      contributionContext,
+    )
+    return Object.freeze<Codec>({
+      ...codec,
+      async open(input, intent, budget, signal) {
+        signal?.throwIfAborted()
+        const ownedBudget = Object.freeze({ ...budget })
+        return deferAssetSession(
+          revisionId(input.revisions.revision),
+          initializeSignal => codec.open(input, intent, ownedBudget, initializeSignal),
+          ownedBudget,
+          signal,
+        )
+      },
+    })
+  }
   const namespaceDefinition = definition.namespace
   const customOperations = Object.freeze([...(definition.operations ?? [])])
   const sharedOperations =
@@ -1325,6 +1039,20 @@ export function createInspectionCodec(
         const namespaceLease = await input.openNamespace(signal)
         try {
           const inspection = await namespaceDefinition.inspect(namespaceLease.value, {
+            ...(contributionContext === undefined
+              ? {}
+              : {
+                  contracts: contributionContext.contracts,
+                  ...(contributionContext.modelResources === undefined
+                    ? {}
+                    : { modelResources: contributionContext.modelResources }),
+                  ...(contributionContext.rasterResources === undefined
+                    ? {}
+                    : { rasterResources: contributionContext.rasterResources }),
+                  ...(contributionContext.logicalResources === undefined
+                    ? {}
+                    : { logicalResources: contributionContext.logicalResources }),
+                }),
             budget,
             signal,
             intent,
@@ -1388,6 +1116,7 @@ export function createInspectionCodec(
             ...Object.entries(inspection.handlers ?? {}),
           ])
           return createAssetSession({
+            maxOperationDiagnostics: budget.maxDiagnostics,
             revision: revisionId(input.revisions.revision),
             descriptor,
             operationDeclarations,
@@ -1449,6 +1178,20 @@ export function createInspectionCodec(
             context: InspectionContext,
           ) => Promise<InspectionResult>
         )(bytes, {
+          ...(contributionContext === undefined
+            ? {}
+            : {
+                contracts: contributionContext.contracts,
+                ...(contributionContext.modelResources === undefined
+                  ? {}
+                  : { modelResources: contributionContext.modelResources }),
+                ...(contributionContext.rasterResources === undefined
+                  ? {}
+                  : { rasterResources: contributionContext.rasterResources }),
+                ...(contributionContext.logicalResources === undefined
+                  ? {}
+                  : { logicalResources: contributionContext.logicalResources }),
+              }),
           budget,
           signal,
           intent,
@@ -1536,6 +1279,7 @@ export function createInspectionCodec(
           ...Object.entries(inspection.handlers ?? {}),
         ])
         return createAssetSession({
+          maxOperationDiagnostics: budget.maxDiagnostics,
           revision: revisionId(input.revisions.revision),
           descriptor,
           operationDeclarations,
@@ -1573,82 +1317,6 @@ export function declaredPermissionClasses(
     if (operation.mutatesSource === true) classes.add('write-source')
   }
   return Object.freeze([...classes].sort())
-}
-
-// ---------------------------------------------------------------------------------------------
-// ADR-HOST-002 — editing helpers
-
-/**
- * The subject's 13D revision vector, derived from the opened input with the host's own rule
- * (subject-open: canonical `{topology, bindingId, source, revision}`), so a plan built here and
- * the host's expectation agree byte for byte. Single-source subjects only.
- */
-export function assetRevisionFromInput(input: AssetInput): AssetRevision {
-  if (input.originKind !== 'single' || input.revisions.topology !== 'single') {
-    throw new TypeError('assetRevisionFromInput: single-source subjects only')
-  }
-  const [binding] = input.bindings
-  if (binding === undefined) throw new TypeError('assetRevisionFromInput: no binding')
-  const revision = binding.revision
-  return Object.freeze<AssetRevision>({
-    bindings: Object.freeze({ [binding.bindingId]: revision }),
-    compositionFingerprint: canonicalJsonStringify({
-      topology: 'single',
-      bindingId: binding.bindingId,
-      source: { id: binding.source.id, uri: binding.source.uri },
-      revision,
-    }),
-  })
-}
-
-/** Path A: the plan a mutating codec operation returns as `{ kind: 'edit-plan', plan }`. */
-export function editPlanFromInput(
-  input: AssetInput,
-  { planId, edits, fidelity, guarantee = 'atomic', diagnostics = [] }: EditPlanFromInputOptions,
-): AssetEditPlan {
-  const revision = assetRevisionFromInput(input)
-  const [binding] = (input as Extract<AssetInput, { originKind: 'single' }>).bindings as readonly [
-    ResolvedAssetInputBinding,
-    ...ResolvedAssetInputBinding[],
-  ]
-  const target = Object.freeze({
-    targetId: binding.bindingId,
-    subjectUri: binding.source.uri,
-    ownerSource: Object.freeze({ id: binding.source.id, uri: binding.source.uri }),
-    semanticPath: Object.freeze([]),
-    expectedRevision: revision,
-  })
-  return Object.freeze<AssetEditPlan>({
-    planId,
-    targets: Object.freeze([target]),
-    edits: Object.freeze(
-      edits.map(edit =>
-        Object.freeze({
-          ...edit,
-          targetId: edit.targetId ?? binding.bindingId,
-          source: edit.source ?? target.ownerSource,
-        }),
-      ),
-    ),
-    semantics: Object.freeze({ mutationMode: 'mutate', minimumGuarantee: guarantee }),
-    fidelity,
-    diagnostics: Object.freeze([...diagnostics]),
-  })
-}
-
-/** A byte-range `replace` edit (`length: 0` inserts) with an inline payload. */
-export function replaceBytes(
-  offset: number | bigint,
-  length: number | bigint,
-  bytes: Uint8Array,
-  label?: string,
-): Omit<Extract<SourceEdit, { operation: 'replace' }>, 'targetId' | 'source'> {
-  return Object.freeze<Omit<Extract<SourceEdit, { operation: 'replace' }>, 'targetId' | 'source'>>({
-    operation: 'replace',
-    range: Object.freeze({ kind: 'bytes', offset: BigInt(offset), length: BigInt(length) }),
-    payload: Object.freeze({ kind: 'inline', bytes }),
-    ...(label === undefined ? {} : { label }),
-  })
 }
 
 /**
@@ -1724,6 +1392,9 @@ export {
   getAttr,
   elementPathAt,
   attrAt,
+  decodeXmlEntities,
+  encodeXmlText,
+  encodeXmlAttribute,
   type ScannedAttr,
   type ScannedElement,
 } from './xml-scan.js'
@@ -1734,3 +1405,33 @@ export {
   type ReferenceIndexOptions,
   type ReferenceIndexSnapshot,
 } from './reference-index.js'
+
+export {
+  analyzeGraphIsolation,
+  type GraphIsolationAnalysis,
+  type GraphIsolationEdge,
+  type GraphIsolationReferrer,
+  type GraphIsolationRequest,
+} from './graph-isolation.js'
+
+export {
+  createSubjectFactsSource,
+  createRelationGraphSource,
+  fact,
+  pageOf,
+  parseSubjectId,
+  provenanceOf,
+  subjectFieldGroup,
+  subjectIdFor,
+  type RelationGraphSourceOptions,
+  type SubjectFactGroupInput,
+  type SubjectFactsSourceOptions,
+  type SubjectFieldInput,
+} from './subject-facts.js'
+
+export {
+  createTableDataSource,
+  type TableColumn,
+  type TableDataSourceOptions,
+} from './table-source.js'
+export { snapshotJson, type JsonSnapshotBudget, type JsonSnapshotOptions } from './json-snapshot.js'

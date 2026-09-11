@@ -437,6 +437,15 @@ const definition = Object.freeze({
         mipLevels: 1,
         frames: png.frames,
         channels: png.channels,
+        channelLayout:
+          png.colorType === 0
+            ? 'luminance'
+            : png.colorType === 4
+              ? 'luminance-alpha'
+              : hasAlpha
+                ? 'rgba'
+                : 'rgb',
+        compression: 'none',
         bitDepth: png.bitDepth,
         colorSpace: png.chunks.some(chunk => chunk.type === 'sRGB') ? 'srgb' : 'unknown',
         alphaMode: hasAlpha ? 'straight' : 'none',

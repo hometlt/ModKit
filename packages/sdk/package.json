@@ -60,6 +60,10 @@
       "types": "./dist/renderer/index.d.ts",
       "default": "./dist/renderer/index.js"
     },
+    "./model-encoding": {
+      "types": "./dist/model-encoding.d.ts",
+      "default": "./dist/model-encoding.js"
+    },
     "./games": {
       "types": "./dist/games/index.d.ts",
       "default": "./dist/games/index.js"
@@ -89,7 +93,11 @@
       "default": "./dist/ui-contracts/index.js"
     },
     "./schemas/*.schema.json": "./schemas/*.schema.json",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./language/translation": {
+      "types": "./dist/language/translation.d.ts",
+      "default": "./dist/language/translation.js"
+    }
   },
   "files": [
     "dist",

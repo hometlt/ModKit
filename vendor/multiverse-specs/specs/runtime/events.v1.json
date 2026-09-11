@@ -1,0 +1,152 @@
+{
+  "$comment": "Event vocabulary v1 for UVS subscriptions. Reserved names belong to named amendments and refuse subscription until those land.",
+  "schemaVersion": "event-registry-1",
+  "scope": "runtime-interchange-v1",
+  "events": [
+    {
+      "id": "entity.created",
+      "version": 1,
+      "status": "active",
+      "payload": [
+        {
+          "name": "entity",
+          "type": "ref<entity>"
+        }
+      ]
+    },
+    {
+      "id": "entity.died",
+      "version": 1,
+      "status": "active",
+      "payload": [
+        {
+          "name": "entity",
+          "type": "ref<entity>"
+        }
+      ]
+    },
+    {
+      "id": "timer.fired",
+      "version": 1,
+      "status": "active",
+      "payload": [
+        {
+          "name": "timer",
+          "type": "ref<timer>"
+        }
+      ]
+    },
+    {
+      "id": "region.entered",
+      "version": 1,
+      "status": "active",
+      "payload": [
+        {
+          "name": "entity",
+          "type": "ref<entity>"
+        },
+        {
+          "name": "region",
+          "type": "ref<region>"
+        }
+      ]
+    },
+    {
+      "id": "region.exited",
+      "version": 1,
+      "status": "active",
+      "payload": [
+        {
+          "name": "entity",
+          "type": "ref<entity>"
+        },
+        {
+          "name": "region",
+          "type": "ref<region>"
+        }
+      ]
+    },
+    {
+      "id": "player.resource-changed",
+      "version": 1,
+      "status": "active",
+      "payload": [
+        {
+          "name": "player",
+          "type": "ref<player>"
+        },
+        {
+          "name": "kind",
+          "type": "strref"
+        }
+      ]
+    },
+    {
+      "id": "scenario.message",
+      "version": 1,
+      "status": "active",
+      "payload": [
+        {
+          "name": "id",
+          "type": "strref"
+        },
+        {
+          "name": "payload",
+          "type": "value"
+        }
+      ]
+    },
+    {
+      "id": "world.connection-changed",
+      "version": 1,
+      "status": "reserved",
+      "payload": [
+        {
+          "name": "connection",
+          "type": "strref"
+        }
+      ],
+      "amendment": "uvw-dynamic-topology"
+    },
+    {
+      "id": "world.layer-changed",
+      "version": 1,
+      "status": "reserved",
+      "payload": [
+        {
+          "name": "space",
+          "type": "strref"
+        },
+        {
+          "name": "layer",
+          "type": "strref"
+        }
+      ],
+      "amendment": "uvw-dynamic-topology"
+    },
+    {
+      "id": "campaign.entry-completed",
+      "version": 1,
+      "status": "reserved",
+      "payload": [
+        {
+          "name": "entry",
+          "type": "strref"
+        }
+      ],
+      "amendment": "uvc-campaign"
+    },
+    {
+      "id": "campaign.carryover-changed",
+      "version": 1,
+      "status": "reserved",
+      "payload": [
+        {
+          "name": "field",
+          "type": "strref"
+        }
+      ],
+      "amendment": "uvc-campaign"
+    }
+  ]
+}

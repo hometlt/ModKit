@@ -2,6 +2,7 @@
 import { createServer, type Server } from 'node:http'
 import { readFile } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
+import { createRequire } from 'node:module'
 import { build } from 'esbuild'
 import { chromium, type Browser, type Page } from 'playwright-core'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -53,6 +54,7 @@ beforeAll(async () => {
         import * as browserHost from '@modkit/testkit/browser';
         import * as host from '@modkit/host';
         import * as sceneRenderer from '@modkit/scene/render/browser';
+        import { createJsonTreeSource } from ${JSON.stringify(createRequire(import.meta.url).resolve('@modkit/codec-kit/tree/json'))};
         import { plainTextCodec } from './examples/modkit-extension-plain-text/src/codec.js';
         ${imports}
         const codecFactories = {
@@ -76,7 +78,7 @@ beforeAll(async () => {
           browserHost,
           host,
           sceneRenderer,
-          fixtures: { plainTextCodec, createTextCodec, createTextSyntaxProvider },
+          fixtures: { plainTextCodec, createTextCodec, createTextSyntaxProvider, createJsonTreeSource },
         };
       `,
       resolveDir: process.cwd(),
@@ -152,6 +154,176 @@ async function reset(): Promise<void> {
 }
 
 describe('13C real-browser viewer host', () => {
+  it('loads all JSON tree pages, retries failed facts atomically and avoids duplicate requests', async () => {
+    await reset()
+    await page.evaluate(async () => {
+      const { ui, fixtures } = (
+        globalThis as unknown as {
+          modkit: {
+            ui: { treeViewer: { mount(args: unknown): Promise<{ unmount(): Promise<void> }> } }
+            fixtures: {
+              createJsonTreeSource: typeof import('@modkit/codec-kit/tree/json').createJsonTreeSource
+            }
+          }
+        }
+      ).modkit
+      const source = fixtures.createJsonTreeSource(
+        Object.fromEntries(Array.from({ length: 503 }, (_, i) => [`entry-${i}`, i])),
+        {
+          budget: { maxBytes: 100_000, maxDepth: 128, maxNodes: 10_000 },
+          label: 'Native metadata',
+        },
+      )
+      let failed = false
+      const cursors: (string | undefined)[] = []
+      const tree = {
+        ...source,
+        async children(...args: Parameters<typeof source.children>) {
+          cursors.push(args[1].cursor)
+          return source.children(...args)
+        },
+        async facts(...args: Parameters<typeof source.facts>) {
+          if (args[0].id === 'json:/entry-230' && !failed) {
+            failed = true
+            throw new Error('transient facts failure')
+          }
+          return source.facts(...args)
+        },
+      }
+      const mount = await ui.treeViewer.mount({
+        container: document.querySelector('#app'),
+        descriptor: { revision: 'r', operations: [], diagnostics: [] },
+        slot: {
+          slotId: 'tree',
+          kind: 'stage',
+          contributionId: 'modkit.ui/tree-stage',
+          extensionId: 'modkit/ui',
+          priority: 300,
+          bindings: [{ bindingId: 'tree', contract: 'common.view/tree-data-source', major: 1 }],
+        },
+        sources: {
+          async get() {
+            return { value: tree, async release() {} }
+          },
+        },
+        operations: { async invoke() {}, async dispose() {} },
+      })
+      Object.assign(globalThis, { treePaging: { cursors, mount } })
+    })
+    const disclosure = page.getByRole('button', { name: 'Native metadata', exact: true })
+    await disclosure.click()
+    await expect.poll(() => page.locator('[role=treeitem]').count()).toBe(201)
+    const more = page.getByRole('button', { name: 'Load more', exact: true })
+    await more.click()
+    await expect
+      .poll(() => page.getByRole('status').filter({ hasText: 'Could not load' }).count())
+      .toBe(1)
+    expect(await page.locator('[role=treeitem]').count()).toBe(201)
+    // Two synchronous activations must share the single in-flight request.
+    await more.evaluate(element => {
+      ;(element as HTMLButtonElement).click()
+      ;(element as HTMLButtonElement).click()
+    })
+    await expect.poll(() => page.locator('[role=treeitem]').count()).toBe(401)
+    await more.click()
+    await expect.poll(() => page.locator('[role=treeitem]').count()).toBe(504)
+    expect(await page.getByRole('button', { name: 'Load more', exact: true }).count()).toBe(0)
+    await disclosure.click()
+    await disclosure.click()
+    expect(
+      await page.evaluate(
+        () =>
+          (globalThis as unknown as { treePaging: { cursors: (string | undefined)[] } }).treePaging
+            .cursors,
+      ),
+    ).toEqual([undefined, '200', '200', '400'])
+    await page.evaluate(async () =>
+      (
+        globalThis as unknown as { treePaging: { mount: { unmount(): Promise<void> } } }
+      ).treePaging.mount.unmount(),
+    )
+    expect(await page.locator('[role=tree]').count()).toBe(0)
+  })
+
+  it('discards an in-flight tree page after unmount without requesting child facts', async () => {
+    await reset()
+    await page.evaluate(async () => {
+      const { ui } = (
+        globalThis as unknown as {
+          modkit: {
+            ui: { treeViewer: { mount(args: unknown): Promise<{ unmount(): Promise<void> }> } }
+          }
+        }
+      ).modkit
+      let releasePage = () => {}
+      let childFacts = 0
+      let requested = false
+      const pending = new Promise<{ items: { id: string; hasChildren: boolean }[] }>(resolve => {
+        releasePage = () => resolve({ items: [{ id: 'late-child', hasChildren: false }] })
+      })
+      const tree = {
+        async root() {
+          return { id: 'root', hasChildren: true }
+        },
+        async children() {
+          requested = true
+          return pending
+        },
+        async facts(node: { id: string }) {
+          if (node.id !== 'root') childFacts++
+          return { label: node.id, kind: 'node' }
+        },
+        async *search() {},
+      }
+      const mount = await ui.treeViewer.mount({
+        container: document.querySelector('#app'),
+        descriptor: { revision: 'r', operations: [], diagnostics: [] },
+        slot: {
+          slotId: 'tree',
+          kind: 'stage',
+          contributionId: 'modkit.ui/tree-stage',
+          extensionId: 'modkit/ui',
+          priority: 300,
+          bindings: [{ bindingId: 'tree', contract: 'common.view/tree-data-source', major: 1 }],
+        },
+        sources: {
+          async get() {
+            return { value: tree, async release() {} }
+          },
+        },
+        operations: { async invoke() {}, async dispose() {} },
+      })
+      Object.assign(globalThis, {
+        treePending: {
+          mount,
+          releasePage,
+          childFacts: () => childFacts,
+          requested: () => requested,
+        },
+      })
+    })
+    await page.getByRole('button', { name: 'root', exact: true }).click()
+    const facts = await page.evaluate(async () => {
+      const state = (
+        globalThis as unknown as {
+          treePending: {
+            mount: { unmount(): Promise<void> }
+            releasePage(): void
+            childFacts(): number
+            requested(): boolean
+          }
+        }
+      ).treePending
+      if (!state.requested()) throw new Error('page was not requested')
+      await state.mount.unmount()
+      state.releasePage()
+      await new Promise(resolve => setTimeout(resolve, 0))
+      return state.childFacts()
+    })
+    expect(facts).toBe(0)
+    expect(await page.locator('#app').textContent()).toBe('')
+  })
+
   it('localizes shared component chrome per instance without changing English defaults', async () => {
     const result = await page.evaluate(() => {
       const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
@@ -770,7 +942,18 @@ describe('13C real-browser viewer host', () => {
           return { items: [{ id: 'child', hasChildren: false }] }
         },
         async facts(node: { id: string }) {
-          return { kind: 'node', label: node.id }
+          return node.id === 'child'
+            ? {
+                kind: 'node',
+                label: node.id,
+                value: 45,
+                type: { kind: 'number' },
+                editTarget: {
+                  state: 'resolved',
+                  destination: { label: 'Write: C → C.SC2Mod/GameData/UnitData.xml' },
+                },
+              }
+            : { kind: 'node', label: node.id }
         },
         async *search() {},
       }
@@ -796,6 +979,9 @@ describe('13C real-browser viewer host', () => {
     })
     await page.getByRole('button', { name: 'root' }).click()
     expect(await page.getByRole('button', { name: 'child' }).count()).toBe(1)
+    expect(await page.locator('[data-mk-part="field.target"]').textContent()).toContain(
+      'Write: C → C.SC2Mod/GameData/UnitData.xml',
+    )
     expect(
       await page.evaluate(() =>
         (globalThis as unknown as { childrenCalls: () => number }).childrenCalls(),
@@ -818,7 +1004,14 @@ describe('13C real-browser viewer host', () => {
             : { items: [{ index: 999999, cells: ['\u202Ejavascript:alert(1)<img src=x>'] }] }
         },
         async cell() {
-          return { value: '' }
+          return {
+            value: 'safe',
+            editTarget: {
+              state: 'selection-required',
+              reason: 'choose the authored document',
+              candidates: [{ rootId: 'B', path: 'B.SC2Mod/GameData/UnitData.xml' }],
+            },
+          }
         },
         async *search() {},
       }
@@ -841,6 +1034,10 @@ describe('13C real-browser viewer host', () => {
         operations: { async invoke() {}, async dispose() {} },
       })
     })
+    await page.locator('td').focus()
+    await expect
+      .poll(() => page.locator('[data-mk-part="field.target"]').textContent())
+      .toContain('B → B.SC2Mod/GameData/UnitData.xml')
     await page.getByRole('button', { name: 'Next rows' }).click()
     await page.waitForFunction(() =>
       document.querySelector('td')?.textContent?.includes('javascript'),
@@ -1384,7 +1581,18 @@ describe('13C real-browser viewer host', () => {
         },
         async facts() {
           return {
-            items: [{ id: 'life', label: 'Life', value: 45, provenance: [{ label: 'UnitData' }] }],
+            items: [
+              {
+                id: 'life',
+                label: 'Life',
+                value: 45,
+                provenance: [{ label: 'UnitData' }],
+                editTarget: {
+                  state: 'unavailable',
+                  reason: 'the selected mod is read-only',
+                },
+              },
+            ],
           }
         },
         async relations() {
@@ -1507,6 +1715,7 @@ describe('13C real-browser viewer host', () => {
 
     expect(result.cardText).toContain('Marine')
     expect(result.cardText).toContain('Life')
+    expect(result.cardText).toContain('the selected mod is read-only')
     expect(result.cardText).toContain('Gauss Rifle')
     expect(result.calculationsText).toContain('Weapon DPS')
     expect(result.calculationsText).toContain('damage / period')
@@ -3412,7 +3621,7 @@ describe('13C real-browser viewer host', () => {
     expect(
       await page.locator('[data-mk-part="model.canvas"]').getAttribute('data-model-renderer'),
     ).toBe('wireframe')
-    expect(await page.getByRole('combobox', { name: 'Model primitive' }).inputValue()).toBe('hull')
+    expect(await page.getByRole('combobox', { name: 'Model primitive' }).inputValue()).toBe('')
     expect(await page.getByText('bones (2)', { exact: true }).isVisible()).toBe(true)
     expect(await page.getByText('materials (1)', { exact: true }).isVisible()).toBe(true)
     await page.getByRole('combobox', { name: 'Model primitive' }).selectOption('turret')
@@ -3449,7 +3658,9 @@ describe('13C real-browser viewer host', () => {
    * contract's own `SceneRendererPort`, so what is exercised is the product route rather than a
    * test double of it.
    */
-  const mountModelStage = async (mode: 'resolved' | 'refused'): Promise<void> => {
+  const mountModelStage = async (
+    mode: 'resolved' | 'refused' | 'animated' | 'animated-slow',
+  ): Promise<void> => {
     await page.evaluate(async selection => {
       const globals = globalThis as unknown as {
         modkit: {
@@ -3461,6 +3672,10 @@ describe('13C real-browser viewer host', () => {
       }
       const typed = globals.modkit.ui as unknown as typeof import('@modkit/ui')
       const root = document.querySelector('#app') as HTMLElement
+      const animated = selection.startsWith('animated')
+      let inFlight = 0
+      let maximumInFlight = 0
+      let completedFrames = 0
       const port = {
         async acquire(request: { outputKind: string }) {
           if (selection === 'refused') {
@@ -3479,10 +3694,29 @@ describe('13C real-browser viewer host', () => {
             contract: 'common.render/scene-3d',
             major: request.outputKind === 'rgba8' ? 1 : 0,
           })
+          const renderer = provider.value as import('@modkit/sdk').SceneRenderer
+          const selectedRenderer =
+            selection !== 'animated-slow'
+              ? renderer
+              : {
+                  ...renderer,
+                  async render(request: import('@modkit/sdk').SceneRenderRequest) {
+                    inFlight++
+                    maximumInFlight = Math.max(maximumInFlight, inFlight)
+                    try {
+                      await new Promise<void>(resolve => setTimeout(resolve, 75))
+                      const frame = await renderer.render(request)
+                      completedFrames++
+                      return frame
+                    } finally {
+                      inFlight--
+                    }
+                  },
+                }
           return {
             state: 'resolved',
             diagnostics: [],
-            lease: { renderer: provider.value, release: async () => undefined },
+            lease: { renderer: selectedRenderer, release: async () => undefined },
           }
         },
       }
@@ -3514,6 +3748,13 @@ describe('13C real-browser viewer host', () => {
             normals: new Float32Array([0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1]),
             indices: new Uint32Array([0, 1, 2, 0, 2, 3]),
             materialId: 'plate-material',
+            ...(!animated
+              ? {}
+              : {
+                  hierarchyId: 'fixture-rig',
+                  boneIndices: new Uint32Array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]),
+                  boneWeights: new Float32Array([1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0]),
+                }),
           }
         },
       }
@@ -3528,16 +3769,24 @@ describe('13C real-browser viewer host', () => {
                 partId: 'bone/0',
                 boneIndex: 0,
                 boneName: 'Root',
+                hierarchyId: 'fixture-rig',
+                nodeId: 'bone-root',
+                localPose: { translation: [0, 0, 0], rotation: [0, 0, 0, 1], scale: [1, 1, 1] },
                 provenance: 'direct' as const,
                 parentBoneIndex: null,
+                inverseBindMatrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
                 restMatrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
               },
               {
                 partId: 'bone/1',
                 boneIndex: 1,
                 boneName: 'Tip',
+                hierarchyId: 'fixture-rig',
+                nodeId: 'bone-tip',
+                localPose: { translation: [0, 0.5, 0], rotation: [0, 0, 0, 1], scale: [1, 1, 1] },
                 provenance: 'direct' as const,
                 parentBoneIndex: 0,
+                inverseBindMatrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, -0.5, 0, 1],
                 restMatrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, -0.5, 0, 1],
               },
             ],
@@ -3548,6 +3797,38 @@ describe('13C real-browser viewer host', () => {
         'common.view/model-scene-source': scene,
         'common.view/model-skeleton-source': skeleton,
       }
+      if (animated)
+        values['common.view/model-animation-source'] = {
+          async info() {
+            return { clips: 1 }
+          },
+          async clips() {
+            return {
+              items: [
+                {
+                  id: 'move',
+                  name: 'Move',
+                  kind: 'animation',
+                  provenance: 'direct',
+                  frames: 2,
+                  durationSeconds: 1,
+                  hierarchyId: 'fixture-rig',
+                  channels: [
+                    {
+                      target: 'bone-root',
+                      kind: 'translation',
+                      interpolation: 'linear',
+                      samples: [
+                        { frame: 0, timeSeconds: 0, value: [0, 0, 0] },
+                        { frame: 1, timeSeconds: 1, value: [1, 0, 0] },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            }
+          },
+        }
       const slot = {
         slotId: 'model',
         kind: 'stage',
@@ -3571,7 +3852,12 @@ describe('13C real-browser viewer host', () => {
         },
         operations: { async dispose() {} },
       } as never)
-      ;(globalThis as unknown as Record<string, unknown>)['renderFixture'] = { mount }
+      ;(globalThis as unknown as Record<string, unknown>)['renderFixture'] = {
+        mount,
+        maximumInFlight: () => maximumInFlight,
+        completedFrames: () => completedFrames,
+        inFlight: () => inFlight,
+      }
     }, mode)
   }
 
@@ -3641,6 +3927,104 @@ describe('13C real-browser viewer host', () => {
         globalThis as unknown as { renderFixture: { mount: { unmount(): Promise<void> } } }
       ).renderFixture.mount.unmount()
     })
+  })
+
+  it('scrubs a skinned model through the shipped WebGL renderer and releases animation on unmount', async () => {
+    await reset()
+    await mountModelStage('animated')
+    await page.getByRole('combobox', { name: 'Animation', exact: true }).selectOption('move')
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('[data-mk-part="model.canvas"]')
+          ?.getAttribute('data-model-animation-time') === '0',
+    )
+    // Turn the overlay off: the pixel difference must be the deformed mesh itself.
+    await page.getByRole('button', { name: 'bones', exact: true }).click()
+    const pixels = () =>
+      page.evaluate(() => {
+        const canvas = document.querySelector('[data-mk-part="model.canvas"]') as HTMLCanvasElement
+        const rgba = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data
+        let hash = 2166136261
+        let opaque = 0
+        for (let i = 0; i < rgba.length; i++) {
+          hash = Math.imul(hash ^ rgba[i]!, 16777619)
+          if (i % 4 === 3 && rgba[i]! > 0) opaque++
+        }
+        return { hash: hash >>> 0, opaque }
+      })
+    // Wait for the renderer to apply the overlay change before recording the reference.
+    await page.evaluate(
+      () =>
+        new Promise<void>(resolve =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    )
+    const before = await pixels()
+    await page.locator('[data-mk-part="model.animation-seek"]').evaluate(node => {
+      ;(node as HTMLInputElement).value = '1'
+      node.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('[data-mk-part="model.canvas"]')
+          ?.getAttribute('data-model-animation-time') === '1',
+    )
+    const after = await pixels()
+    expect(after.hash).not.toBe(before.hash)
+    expect(after.opaque).toBeGreaterThan(0)
+    expect(
+      await page.locator('[data-mk-part="model.canvas"]').getAttribute('data-model-renderer'),
+    ).toBe('webgl2')
+    expect(
+      await page
+        .locator('[data-mk-part="model.canvas"]')
+        .getAttribute('data-model-pose-diagnostics'),
+    ).toBe('')
+    await page.getByTitle('Play or pause', { exact: true }).click()
+    await page.evaluate(async () => {
+      await (
+        globalThis as unknown as { renderFixture: { mount: { unmount(): Promise<void> } } }
+      ).renderFixture.mount.unmount()
+    })
+    expect(await page.locator('[data-mk-part="model.canvas"]').count()).toBe(0)
+  })
+
+  it('keeps rendering during slow playback with one in-flight frame and drains it on unmount', async () => {
+    await reset()
+    await mountModelStage('animated-slow')
+    await page.getByRole('combobox', { name: 'Animation', exact: true }).selectOption('move')
+    await page.getByTitle('Play or pause', { exact: true }).click()
+    await page.waitForFunction(() => {
+      const value = Number(
+        document
+          .querySelector('[data-mk-part="model.canvas"]')
+          ?.getAttribute('data-model-animation-time') ?? 0,
+      )
+      return value > 0 && value < 1
+    })
+    const stats = await page.evaluate(async () => {
+      const fixture = (
+        globalThis as unknown as {
+          renderFixture: {
+            mount: { unmount(): Promise<void> }
+            maximumInFlight(): number
+            completedFrames(): number
+            inFlight(): number
+          }
+        }
+      ).renderFixture
+      await fixture.mount.unmount()
+      return {
+        maximum: fixture.maximumInFlight(),
+        completed: fixture.completedFrames(),
+        inFlight: fixture.inFlight(),
+      }
+    })
+    expect(stats.maximum).toBe(1)
+    expect(stats.completed).toBeGreaterThan(0)
+    expect(stats.inFlight).toBe(0)
   })
 
   it('keeps the 2D wireframe when the host offers no renderer, and says which reason', async () => {

@@ -18,6 +18,9 @@ import { copyFileSync, createReadStream, existsSync, readFileSync, statSync } fr
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import * as vscode from 'vscode'
+import { loadContentSources, callContentSources } from '@modkit/vfs/content-sources/node'
+import type { ContentSources } from '@modkit/vfs/content-sources'
+import { chooseContentSource } from '@modkit/ui/content-sources'
 import type { CatalogSource, ExtensionManagerEntry } from '@modkit/extension-manager'
 import {
   loadRepositorySubjectProfiles,
@@ -568,11 +571,12 @@ function readPackagedManagedRegistry(extensionRoot: string): PackagedManagedRegi
  * downstream would silently address a file that does not exist.
  */
 function subjectPathOf(uri: vscode.Uri): string {
-  return uri.scheme === CONTAINER_SCHEME ? uri.toString() : uri.fsPath
+  return uri.scheme === CONTAINER_SCHEME || uri.scheme === 'modkit-source' ? uri.toString() : uri.fsPath
 }
 
 /** The inverse: the URI a subject string names, for the editor surfaces that take one. */
 function subjectUriOf(path: string): vscode.Uri {
+  if (path.startsWith('modkit-source:')) return vscode.Uri.parse(path)
   return parseContainerUriText(path) === undefined ? vscode.Uri.file(path) : vscode.Uri.parse(path)
 }
 
@@ -599,7 +603,7 @@ class ModkitCustomDocument implements vscode.CustomDocument {
     forceReadOnly = false,
   ) {
     this.state = new CustomDocumentState(subjectPathOf(uri))
-    this.readOnly = forceReadOnly || uri.scheme === CONTAINER_SCHEME
+    this.readOnly = forceReadOnly || uri.scheme === CONTAINER_SCHEME || uri.scheme === 'modkit-source'
   }
 
   dispose(): void {
@@ -1529,6 +1533,99 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
 
   const containerChanges = new vscode.EventEmitter<vscode.FileChangeEvent[]>()
   context.subscriptions.push(containerChanges)
+  // The same Explorer accepts local containers and remote VFS roots. This adapter owns no login protocol.
+  let contentSources: Promise<ContentSources | undefined> | undefined
+  const requireContentSources = async (): Promise<ContentSources> => {
+    if (!vscode.workspace.isTrusted) throw new Error('Content sources require a trusted workspace')
+    const storage = join(context.globalStorageUri.fsPath, 'content-sources')
+    const defaultConfig = join(storage, 'provider.json')
+    contentSources ??= loadContentSources(process.env['MODKIT_CONTENT_SOURCE_CONFIG'] ??
+      (existsSync(defaultConfig) ? defaultConfig : undefined), storage)
+    const source = await contentSources
+    if (!source) throw new Error('Battle.net source runtime is not configured for this installation')
+    return source
+  }
+  const sourceChanges = new vscode.EventEmitter<vscode.FileChangeEvent[]>()
+  const readContentSource = async (uri: string, maxBytes: number, signal?: AbortSignal) => {
+    signal?.throwIfAborted()
+    const location = sourceLocation(vscode.Uri.parse(uri))
+    const bytes = await (await requireContentSources()).read(location.id, location.path, maxBytes)
+    signal?.throwIfAborted()
+    return bytes
+  }
+  const sourceLocation = (uri: vscode.Uri) => {
+    if (uri.scheme !== 'modkit-source' || uri.authority !== 'battlenet' || uri.query || uri.fragment) {
+      throw vscode.FileSystemError.FileNotFound(uri)
+    }
+    const [id, ...parts] = uri.path.replace(/^\//u, '').split('/')
+    if (!id || parts.some(part => part === '..' || part === '.')) throw vscode.FileSystemError.FileNotFound(uri)
+    return { id, path: parts.join('/') }
+  }
+  const sourceFileSystem: vscode.FileSystemProvider = {
+    onDidChangeFile: sourceChanges.event,
+    watch: () => new vscode.Disposable(() => undefined),
+    async stat(uri) {
+      const location = sourceLocation(uri)
+      const source = await requireContentSources()
+      if (!location.path) {
+        if (!(await source.snapshot()).roots.some(root => root.id === location.id)) throw vscode.FileSystemError.FileNotFound(uri)
+        return { type: vscode.FileType.Directory, ctime: 0, mtime: 0, size: 0, permissions: vscode.FilePermission.Readonly }
+      }
+      const parts = location.path.split('/'); const name = parts.pop()
+      const node = (await source.list(location.id, parts.join('/'))).find(item => item.name === name)
+      if (!node) throw vscode.FileSystemError.FileNotFound(uri)
+      return { type: node.directory ? vscode.FileType.Directory : vscode.FileType.File,
+        ctime: 0, mtime: 0, size: node.size ?? 0, permissions: vscode.FilePermission.Readonly }
+    },
+    async readDirectory(uri) {
+      const location = sourceLocation(uri)
+      return (await (await requireContentSources()).list(location.id, location.path))
+        .map(item => [item.name, item.directory ? vscode.FileType.Directory : vscode.FileType.File])
+    },
+    async readFile(uri) {
+      const location = sourceLocation(uri)
+      return (await requireContentSources()).read(location.id, location.path, 64 * 1024 * 1024)
+    },
+    createDirectory: uri => { throw vscode.FileSystemError.NoPermissions(uri) },
+    writeFile: uri => { throw vscode.FileSystemError.NoPermissions(uri) },
+    delete: uri => { throw vscode.FileSystemError.NoPermissions(uri) },
+    rename: uri => { throw vscode.FileSystemError.NoPermissions(uri) },
+  }
+  context.subscriptions.push(sourceChanges,
+    vscode.workspace.registerFileSystemProvider('modkit-source', sourceFileSystem, { isReadonly: true, isCaseSensitive: true }),
+    { dispose: () => { void contentSources?.then(source => source?.dispose()).catch(() => undefined) } },
+    vscode.commands.registerCommand('modkit.contentSources', async () => {
+      try {
+        await chooseContentSource({
+          russian: vscode.env.language.startsWith('ru'),
+          choose: async (title, items) => (await vscode.window.showQuickPick([...items], { title }))?.id,
+          input: title => Promise.resolve(vscode.window.showInputBox({ title })),
+          async call(method, args) {
+            const source = await requireContentSources()
+            const value = await callContentSources(source, method, args)
+            if (['connect', 'disconnect', 'add', 'remove', 'refresh', 'publish', 'deletePublication'].includes(method)) {
+              sourceChanges.fire((vscode.workspace.workspaceFolders ?? []).filter(folder => folder.uri.scheme === 'modkit-source')
+                .map(folder => ({ type: vscode.FileChangeType.Changed, uri: folder.uri })))
+            }
+            return value
+          },
+          async open(source) {
+            if (!vscode.workspace.workspaceFolders?.length) {
+              throw new Error(localizer.text('vscode.container.openFolderFirst'))
+            }
+            const uri = vscode.Uri.from({ scheme: 'modkit-source', authority: 'battlenet', path: `/${source.id}` })
+            const result = await addContainerWorkspaceFolder(uri, source.label)
+            if (result === 'rejected') throw new Error('The workspace could not add this content source')
+            await vscode.commands.executeCommand('revealInExplorer', uri)
+          },
+          async openLocal() {
+            const selected = await vscode.commands.executeCommand<{ installPath: string } | undefined>('modkit.selectGameInstallation')
+            if (selected) await vscode.commands.executeCommand('modkit.browseContainer', vscode.Uri.file(selected.installPath))
+          },
+        })
+      } catch (error) { void vscode.window.showErrorMessage(`Modkit: ${error instanceof Error ? error.message : 'Content source failed'}`) }
+    }),
+  )
   const containerFileSystem: vscode.FileSystemProvider = {
     // A refresh explicitly invalidates the held session/listing and emits one native root change.
     onDidChangeFile: containerChanges.event,
@@ -4771,6 +4868,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       // The window's one registry, so a page opening a member reaches the archive the Explorer
       // already has open rather than a second copy of it.
       containers,
+      readContentSource,
       ...(lifecycle === undefined
         ? {}
         : {
@@ -4826,7 +4924,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
    */
   const grantFor = (target: {
     readonly path: string
-    readonly kind: 'file' | 'container-entry'
+    readonly kind: 'file' | 'container-entry' | 'source-entry'
   }) => {
     if (target.kind === 'file') {
       granted.add(dirname(target.path))
@@ -4863,6 +4961,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   const commandRuntime = createSubjectCommandRuntime()
   const commandOpener = commandSubjectsFrom(
     createVsCodeCommandOpener({
+      readContentSource,
       services: host.services,
       roots,
       containers,

@@ -33,6 +33,7 @@ import {
   type OpenIntent,
   type PermissionGrant,
   type ResourceBudget,
+  type ResourceRole,
   type RuntimeTarget,
   type ServiceContractDefinitionRegistry,
 } from '@modkit/sdk'
@@ -41,6 +42,7 @@ import type { ExecutionBackendRegistry } from './execution/backend.js'
 import type { Inventory } from './inventory.js'
 import {
   createCompanionInputResolver,
+  normalizeCompanionLogicalId,
   type CompanionCaseSensitivity,
   type CompanionResolutionLimits,
   type CompanionTraitProbe,
@@ -49,10 +51,19 @@ import {
   containerEntryRevision,
   containerEntrySource,
   createNamespaceCompanionOrigin,
+  createWorkspaceNamespaceCompanionOrigin,
+  createWorkspaceNamespaceCandidateDiscovery,
+  type WorkspaceNamespaceCandidateSearch,
+  type WorkspaceNamespaceCandidateDiscoveryLimits,
+  type WorkspaceNamespaceLogicalRoot,
   NESTED_ENTRY_NOT_FOUND,
 } from './namespace-origin.js'
 import { openSubject, type OpenSubjectResult } from './subject-open.js'
 import type { SubjectServices } from './subject-services.js'
+import type {
+  HostLogicalResourceDiscoveryPolicy,
+  HostLogicalResourceDiscoveryContext,
+} from './logical-resources.js'
 
 /** The parent subject publishes no entry listing, or no bounded extraction for its entries. */
 export const NESTED_SUBJECT_UNSUPPORTED = 'x3.host/nested-subject-unsupported'
@@ -62,6 +73,14 @@ export const NESTED_ENTRY_UNREADABLE = 'x3.host/nested-entry-unreadable'
 /** The standard container operation this route needs; a container declares it or it is not one. */
 const CONTAINER_EXTRACT = 'container.extract'
 const NAMESPACE_ENTRY_SOURCE = 'common.view/namespace-entry-source'
+
+/** Host-selected discovery policies inside the same explicit roots as resource resolution. */
+export interface NestedLogicalResourceSearch {
+  readonly role: ResourceRole
+  readonly extension: string
+  readonly searches: readonly WorkspaceNamespaceCandidateSearch[]
+  readonly limits: WorkspaceNamespaceCandidateDiscoveryLimits
+}
 
 export interface NestedSubjectOptions {
   /** The opened container subject. It stays the caller's to dispose; this route never disposes it. */
@@ -82,6 +101,11 @@ export interface NestedSubjectOptions {
   readonly traitProbe?: CompanionTraitProbe
   readonly limits?: Partial<CompanionResolutionLimits>
   readonly caseSensitivity?: CompanionCaseSensitivity
+  /** Explicit active/dependency roots in this container, in precedence order. When supplied,
+   * resource-relative names are confined to these roots instead of the whole archive. */
+  readonly logicalRoots?: readonly WorkspaceNamespaceLogicalRoot[]
+  /** Optional bounded searches chosen by the game/workspace host; never supplied by a codec. */
+  readonly resourceDiscovery?: readonly NestedLogicalResourceSearch[]
   /** Entries per listing page requested from the container. */
   readonly pageLimit?: number
   /** Named non-fatal companion outcomes (an absent optional companion, an unserved scope). */
@@ -246,6 +270,51 @@ export async function openNestedSubject(
   options: NestedSubjectOptions,
 ): Promise<NestedSubjectResult> {
   throwIfAborted(options.signal)
+  // Capture caller-owned context before the parent descriptor/listing can yield.
+  const caseSensitivity = options.caseSensitivity
+  const logicalRoots = options.logicalRoots?.map(root => {
+    if (typeof root.rootId !== 'string' || root.rootId.length === 0)
+      throw new TypeError('nested logical root requires an id')
+    return Object.freeze({
+      rootId: root.rootId,
+      pathPrefix: root.pathPrefix === '' ? '' : normalizeCompanionLogicalId(root.pathPrefix),
+      ...(root.logicalPrefix === undefined
+        ? {}
+        : {
+            logicalPrefix:
+              root.logicalPrefix === '' ? '' : normalizeCompanionLogicalId(root.logicalPrefix),
+          }),
+    })
+  })
+  const resourceDiscovery = options.resourceDiscovery?.map(policy =>
+    Object.freeze({
+      role: policy.role,
+      extension: policy.extension,
+      searches: Object.freeze(
+        policy.searches.map(search =>
+          Object.freeze({
+            rootId: search.rootId,
+            logicalPrefix: search.logicalPrefix,
+          }),
+        ),
+      ),
+      limits: Object.freeze({ ...policy.limits }),
+    }),
+  )
+  if (
+    resourceDiscovery !== undefined &&
+    (logicalRoots === undefined || resourceDiscovery.length > options.budget.maxNodes)
+  )
+    throw new TypeError(
+      'nested discovery requires explicit logical roots and a bounded policy list',
+    )
+  if (
+    logicalRoots !== undefined &&
+    (logicalRoots.length === 0 ||
+      logicalRoots.length > options.budget.maxNodes ||
+      new Set(logicalRoots.map(root => root.rootId)).size !== logicalRoots.length)
+  )
+    throw new TypeError('nested logical roots must have unique ids within the node budget')
   const pageLimit = options.pageLimit ?? 256
   const descriptor = await options.parent.descriptor()
   const handlerId = extractHandlerOf(descriptor)
@@ -277,6 +346,10 @@ export async function openNestedSubject(
   try {
     const namespace = namespaceLease.value
     const entry = await findEntry(namespace, options.entryId, pageLimit, options.signal)
+    const primaryLogicalId =
+      logicalRoots === undefined
+        ? entry.path
+        : logicalEntryPath(entry.path, logicalRoots, caseSensitivity)
     const extract = async (entryId: string, signal?: AbortSignal): Promise<Uint8Array> => {
       throwIfAborted(signal ?? options.signal)
       const invoked = await options.parent
@@ -315,16 +388,70 @@ export async function openNestedSubject(
         containerEntryRevision(descriptor.revision, entry.id, bytes.byteLength),
         bytes,
       )
-      const origin = createNamespaceCompanionOrigin({
+      const originOptions = {
         namespace,
-        primaryLogicalId: entry.path,
+        primaryLogicalId,
         containerRevision: descriptor.revision,
         extract,
-        ...(options.caseSensitivity === undefined
-          ? {}
-          : { caseSensitivity: options.caseSensitivity }),
+        ...(caseSensitivity === undefined ? {} : { caseSensitivity }),
         pageLimit,
-      })
+      }
+      const origin =
+        logicalRoots === undefined
+          ? createNamespaceCompanionOrigin(originOptions)
+          : createWorkspaceNamespaceCompanionOrigin({
+              ...originOptions,
+              logicalRoots,
+            })
+      const logicalResourceDiscovery: readonly HostLogicalResourceDiscoveryPolicy[] | undefined =
+        resourceDiscovery?.map(policy =>
+          Object.freeze({
+            role: policy.role,
+            extension: policy.extension,
+            async discover(context: HostLogicalResourceDiscoveryContext) {
+              if (logicalRoots === undefined)
+                throw new TypeError('nested discovery roots are absent')
+              const allowedBytes =
+                context.budget.maxInputBytes < BigInt(context.budget.maxScalarBytes)
+                  ? context.budget.maxInputBytes
+                  : BigInt(context.budget.maxScalarBytes)
+              const discovery = createWorkspaceNamespaceCandidateDiscovery({
+                namespace,
+                containerRevision: descriptor.revision,
+                logicalRoots,
+                searches: policy.searches,
+                extension: policy.extension,
+                ...(caseSensitivity === undefined ? {} : { caseSensitivity }),
+                limits: {
+                  pageItems: Math.min(policy.limits.pageItems, context.budget.maxNodes),
+                  maxPages: Math.min(policy.limits.maxPages, context.budget.maxNodes),
+                  maxEntries: Math.min(policy.limits.maxEntries, context.budget.maxNodes),
+                  maxCandidates: Math.min(policy.limits.maxCandidates, context.budget.maxNodes),
+                  maxBytes:
+                    policy.limits.maxBytes < allowedBytes ? policy.limits.maxBytes : allowedBytes,
+                },
+              })
+              const result = await discovery.discover(context.signal)
+              if (result.state === 'refused') return result
+              const fold = (id: string) => (caseSensitivity === 'sensitive' ? id : id.toLowerCase())
+              // A source is not its own companion. Keep namespace enumeration statistics, while
+              // the admitted candidate/byte counts describe exactly the returned source list.
+              const candidates = result.candidates.filter(
+                candidate => fold(candidate.logicalId) !== fold(primaryLogicalId),
+              )
+              return Object.freeze({
+                state: 'complete' as const,
+                context: Object.freeze({ primaryLogicalId }),
+                candidates: Object.freeze(candidates),
+                receipt: Object.freeze({
+                  ...result.receipt,
+                  candidates: candidates.length,
+                  bytes: candidates.reduce((sum, candidate) => sum + candidate.size, 0n),
+                }),
+              })
+            },
+          }),
+        )
       const result = await openSubject({
         inventory: options.inventory,
         source,
@@ -333,6 +460,7 @@ export async function openNestedSubject(
         target: options.target,
         grant: options.grant,
         budget: options.budget,
+        ...(logicalResourceDiscovery === undefined ? {} : { logicalResourceDiscovery }),
         resolveInput: createCompanionInputResolver(origin, {
           ...(options.traitProbe === undefined ? {} : { traitProbe: options.traitProbe }),
           ...(options.limits === undefined ? {} : { limits: options.limits }),
@@ -374,6 +502,25 @@ export async function openNestedSubject(
     await release()
     throw error
   }
+}
+
+/** The entry's resource-relative identity, using the same explicit prefix projection as its
+ * companions. This keeps self-reference exclusion valid inside a projected archive root. */
+function logicalEntryPath(
+  entryPath: string,
+  roots: readonly WorkspaceNamespaceLogicalRoot[],
+  caseSensitivity: CompanionCaseSensitivity = 'insensitive',
+): string {
+  const normalized = normalizeCompanionLogicalId(entryPath)
+  const fold = (value: string) => (caseSensitivity === 'insensitive' ? value.toLowerCase() : value)
+  for (const root of roots) {
+    const prefix = root.pathPrefix === '' ? '' : `${root.pathPrefix}/`
+    if (!fold(normalized).startsWith(fold(prefix))) continue
+    const relative = normalized.slice(prefix.length)
+    if (relative === '') continue
+    return root.logicalPrefix ? `${root.logicalPrefix}/${relative}` : relative
+  }
+  throw new TypeError('nested entry is outside the declared logical roots')
 }
 
 /** The child session, with the container leases it depends on attached to its own disposal. */

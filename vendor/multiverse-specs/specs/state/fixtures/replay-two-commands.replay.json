@@ -1,0 +1,55 @@
+{
+  "$comment": "Valid fixture: a replay journal for a composed world — two player commands through the order domain, one scenario message, expected checkpoints for self-verification.",
+  "kind": "uv.replay",
+  "schemaVersion": 1,
+  "subject": {
+    "kind": "composition",
+    "compositionHash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "kernel": {
+    "moduleDigest": "sha256:4fa6915851f466938e4c81458e1d63871f6b60f2f1144b2df918ff85b38d4797"
+  },
+  "init": {
+    "seed": "12345"
+  },
+  "entries": [
+    {
+      "tick": 12,
+      "kind": "command",
+      "player": "v/player/one",
+      "intrinsic": "order.move@1",
+      "args": [
+        "e:17",
+        {
+          "x": 65536,
+          "y": 0,
+          "z": 131072
+        },
+        false
+      ]
+    },
+    {
+      "tick": 40,
+      "kind": "scenario-message",
+      "message": "wave-two"
+    },
+    {
+      "tick": 41,
+      "kind": "command",
+      "player": "v/player/one",
+      "intrinsic": "order.attack@1",
+      "args": [
+        "e:17",
+        "e:99",
+        true
+      ]
+    }
+  ],
+  "checkpoints": [
+    {
+      "tick": 100,
+      "stateHash": "0ce7f9b9e819a557"
+    }
+  ],
+  "journalDigest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+}

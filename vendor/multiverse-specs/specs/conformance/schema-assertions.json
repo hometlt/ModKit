@@ -3,12 +3,22 @@
   "schemaVersion": "uv-schema-assertions-1",
   "engine": "JSON Schema draft 2020-12",
   "checkedWith": "ajv 8.20.0, { allErrors: true, strict: false, validateFormats: false }",
-  "checkedOn": "2026-08-25",
+  "checkedOn": "2026-09-01",
   "note": "the engine and the options are the ones the sealed legacy validator used, so a pass here means what a pass meant there",
   "schemaDirectories": [
+    "behavior/schema",
+    "campaign/schema",
+    "data/schema",
+    "foundation",
     "model/schema",
+    "package/schema",
+    "receipts/schema",
+    "runtime/schema",
+    "scenario/schema",
     "semantic-scopes",
-    "texture/schema"
+    "state/schema",
+    "texture/schema",
+    "world/schema"
   ],
   "assertions": [
     {
@@ -144,6 +154,306 @@
       "schemaId": "https://multiverse.engine/spec/semantic-scope-descriptor/1/schema.json",
       "expect": "valid",
       "note": "a candidate descriptor satisfies the same schema as a registered one: candidate says the scope is not a compatibility guarantee, not that it may be incomplete"
+    },
+    {
+      "document": "package/fixtures/uvp-map-minimal.manifest.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvp/1.0/uvp.manifest.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "package/fixtures/uvp-mod-overlay.manifest.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvp/1.0/uvp.manifest.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "package/fixtures/invalid/map-without-world.manifest.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvp/1.0/uvp.manifest.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "package/fixtures/invalid/map-two-worlds.manifest.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvp/1.0/uvp.manifest.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "package/fixtures/invalid/bare-intrinsic-requirement.manifest.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvp/1.0/uvp.manifest.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "package/fixtures/invalid/path-escape.manifest.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvp/1.0/uvp.manifest.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "data/fixtures/uvd-kind-schema-minimal.uvd.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvd/1.0/uvd.document.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "data/fixtures/uvd-definitions-inheritance.uvd.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvd/1.0/uvd.document.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "data/fixtures/uvd-overlay-basic.uvd.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvd/1.0/uvd.document.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "data/fixtures/invalid/f64-in-gameplay.uvd.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvd/1.0/uvd.document.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "data/fixtures/invalid/enum-without-values.uvd.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvd/1.0/uvd.document.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "data/fixtures/invalid/ref-without-kind.uvd.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvd/1.0/uvd.document.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "data/fixtures/invalid/role-mixing.uvd.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvd/1.0/uvd.document.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "data/fixtures/invalid/remove-with-value.uvd.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvd/1.0/uvd.document.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "scenario/fixtures/uvs-chart-minimal.uvs.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvs/1.0/uvs.document.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "scenario/fixtures/invalid/refusal-without-origin.uvs.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvs/1.0/uvs.document.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "scenario/fixtures/invalid/bare-intrinsic-action.uvs.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvs/1.0/uvs.document.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "behavior/fixtures/uvb-module-minimal.uvb.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvb/1.0/uvb.module.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "behavior/fixtures/invalid/float-op.uvb.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvb/1.0/uvb.module.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "behavior/fixtures/invalid/loop-without-budget.uvb.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvb/1.0/uvb.module.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "behavior/fixtures/invalid/no-effects.uvb.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvb/1.0/uvb.module.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "world/fixtures/uvw-profile-single-space.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "world/fixtures/uvw-profile-source-units.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "world/fixtures/invalid/connections-not-empty.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "world/fixtures/invalid/reserved-topology.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "world/fixtures/invalid/no-spaces.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "world/fixtures/uvw-heightfield-basic.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.candidate.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "world/fixtures/uvw-source-unit-layers.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.candidate.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "runtime/intrinsics.v1.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/runtime/1.0/intrinsics.registry.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "runtime/events.v1.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/runtime/1.0/events.registry.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "receipts/fixtures/lowering-galaxy.receipt.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/receipts/1.0/lowering.receipt.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "receipts/fixtures/composition-layer-order.receipt.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/receipts/1.0/composition.receipt.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "receipts/fixtures/composition-refused.receipt.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/receipts/1.0/composition.receipt.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "receipts/fixtures/simulation-spike-phase1.receipt.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/receipts/1.0/simulation.receipt.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "receipts/fixtures/invalid/refusal-without-origin-digest.receipt.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/receipts/1.0/lowering.receipt.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "receipts/fixtures/invalid/absolute-path-source.receipt.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/receipts/1.0/lowering.receipt.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "receipts/fixtures/invalid/composed-without-hash.receipt.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/receipts/1.0/composition.receipt.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "receipts/fixtures/invalid/simulation-without-save-restore.receipt.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/receipts/1.0/simulation.receipt.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "campaign/fixtures/uvc-mini-campaign.uvc.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvc/1.0/uvc.campaign.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "campaign/fixtures/invalid/unlock-with-call.uvc.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvc/1.0/uvc.campaign.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "campaign/fixtures/invalid/carryover-f64.uvc.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvc/1.0/uvc.campaign.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "campaign/fixtures/invalid/entry-without-package.uvc.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/uvc/1.0/uvc.campaign.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "state/fixtures/save-spike-tick5000.save.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/state/1.0/save.envelope.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "state/fixtures/replay-two-commands.replay.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/state/1.0/replay.journal.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "state/fixtures/invalid/save-without-state-hash.save.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/state/1.0/save.envelope.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "state/fixtures/invalid/save-composition-without-hash.save.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/state/1.0/save.envelope.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "state/fixtures/invalid/replay-command-without-player.replay.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/state/1.0/replay.journal.schema.json",
+      "expect": "invalid"
+    },
+    {
+      "document": "semantic-scopes/runtime-interchange-v1.json",
+      "pointer": "/",
+      "schemaId": "https://multiverse.engine/spec/semantic-scope-descriptor/1/schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "../admission/uvd-real-corpus/lowering-sc2.receipt.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/receipts/1.0/lowering.receipt.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "../admission/uvd-real-corpus/lowering-wz.receipt.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.org/receipts/1.0/lowering.receipt.schema.json",
+      "expect": "valid"
     }
   ]
 }

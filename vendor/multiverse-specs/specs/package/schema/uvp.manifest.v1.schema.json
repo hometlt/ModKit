@@ -1,0 +1,260 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/uvp/1.0/uvp.manifest.schema.json",
+  "title": "UVP package manifest",
+  "description": "Status: candidate (SPEC_UVP.md). The manifest of one Universal Package: the unit of shipping and dependency. A game base, a mod, a map and a campaign entry are all the same kind of object with a different `kind`. The world stays pure UVW; everything a shipped map carries besides terrain (map-local data overlays, triggers, code, media) lives in the package, mirroring how a real SC2Map archive and a Warzone .wz actually bundle content.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "uv",
+    "id",
+    "version",
+    "kind",
+    "contents",
+    "dependencies",
+    "requires"
+  ],
+  "properties": {
+    "uv": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "version"
+      ],
+      "properties": {
+        "format": {
+          "const": "UVP"
+        },
+        "version": {
+          "const": "1.0"
+        }
+      }
+    },
+    "id": {
+      "description": "Stable package identity under UV foundation id rules: <namespace>/<name>. The namespace is a declared vendor or author namespace; core never special-cases one.",
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*(\\.[a-z0-9][a-z0-9-]*)*/[a-z0-9][a-z0-9-]*$"
+    },
+    "version": {
+      "description": "Semantic version of this package. Composition resolves dependency ranges against it.",
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$"
+    },
+    "kind": {
+      "description": "What role the package plays in composition. `map` REQUIRES exactly one uvw entry in contents. `library` carries shared UVB/UVS/UVD for other packages and no world. The kind name `universe` (multi-world packages with inter-world portals, DESIGN_UVW_TOPOLOGIES §5) is RESERVED and not admitted by this version.",
+      "enum": [
+        "game-base",
+        "mod",
+        "map",
+        "campaign",
+        "library"
+      ]
+    },
+    "title": {
+      "description": "Presentation name. Optional: identity is `id`, never the title.",
+      "type": "string",
+      "maxLength": 200
+    },
+    "contents": {
+      "description": "Every artifact the package ships, each with the family it belongs to and its canonical hash. Paths are package-relative, forward-slash, no `..`. The hash is over the artifact's canonical form, so container packing (directory vs archive) never changes identity.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "family",
+          "path",
+          "hash"
+        ],
+        "properties": {
+          "family": {
+            "$comment": "inline copy of foundation/uv-families.v1.schema.json#/$defs/contentFamily — verified equal by the uv-families suite",
+            "enum": [
+              "uvd",
+              "uvs",
+              "uvb",
+              "uvw",
+              "uvm",
+              "uvt",
+              "uvc",
+              "media",
+              "locale"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^(?![A-Za-z]:)(?!/)(?!.*(^|/)\\.\\.(/|$))[^\\\\]+$",
+            "description": "Package-relative, forward-slash: no drive letter, no leading slash, no `..` segment. `a..b.json` is a legal name; `/etc/x`, `C:/x` and `../x` are not."
+          },
+          "hash": {
+            "description": "Algorithm-qualified canonical digest, e.g. `sha256:<64 hex>`.",
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "layer": {
+            "description": "For uvd entries only: overlay rank inside this package when it ships more than one data document. Composition orders packages first, then this rank.",
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "dependencies": {
+      "description": "Ordered composition inputs. Order inside one rank is explicit here, never derived from file systems or install order. A dependency cycle is a typed composition refusal.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "range",
+          "rank"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]*(\\.[a-z0-9][a-z0-9-]*)*/[a-z0-9][a-z0-9-]*$"
+          },
+          "range": {
+            "description": "Accepted version range, caret/tilde/exact: `^1.2.0`, `~1.2.3` or `1.2.3`.",
+            "type": "string",
+            "pattern": "^[~^]?(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$"
+          },
+          "rank": {
+            "description": "Composition layer this dependency joins: base < official < map < mod. Two writers of one field inside the same rank without an explicit order entry is a conflict, refused at composition.",
+            "enum": [
+              "base",
+              "official",
+              "map",
+              "mod"
+            ]
+          },
+          "order": {
+            "description": "Explicit order inside the rank; lower applies first. Required when more than one dependency shares a rank.",
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "requires": {
+      "description": "Aggregated runtime requirements of everything inside: checked at composition BEFORE any content loads, so an unsatisfiable package refuses early and by name.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "intrinsics",
+        "capabilities"
+      ],
+      "properties": {
+        "intrinsics": {
+          "description": "Every intrinsic id@version any shipped UVB/UVS references.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+@[1-9]\\d*$"
+          }
+        },
+        "capabilities": {
+          "description": "Capability classes the package's code needs (UVE rights): a package that only reads may never mutate.",
+          "type": "array",
+          "items": {
+            "enum": [
+              "read",
+              "mutate",
+              "present",
+              "control",
+              "space-mutate"
+            ]
+          }
+        }
+      }
+    },
+    "namespaces": {
+      "description": "Vendor namespaces this package declares definitions in. A package writing into a namespace it does not declare and does not depend on is refused.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z0-9][a-z0-9-]*(\\.[a-z0-9][a-z0-9-]*)*$"
+      }
+    },
+    "provenance": {
+      "description": "Optional lowering origin when an adapter produced this package from native game content: the LoweringReceipt digest chain.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "adapter",
+        "receipt"
+      ],
+      "properties": {
+        "adapter": {
+          "type": "string"
+        },
+        "receipt": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      }
+    },
+    "$comment": {
+      "description": "Free commentary; never semantic.",
+      "type": "string"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "map"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "contents": {
+            "contains": {
+              "properties": {
+                "family": {
+                  "const": "uvw"
+                }
+              },
+              "required": [
+                "family"
+              ]
+            },
+            "minContains": 1,
+            "maxContains": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "library"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "contents": {
+            "not": {
+              "contains": {
+                "properties": {
+                  "family": {
+                    "const": "uvw"
+                  }
+                },
+                "required": [
+                  "family"
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

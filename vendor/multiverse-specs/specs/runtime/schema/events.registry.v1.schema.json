@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/runtime/1.0/events.registry.schema.json",
+  "title": "Event vocabulary registry",
+  "$comment": "The machine-readable event vocabulary UVS charts subscribe to. An event id outside this registry is a composition refusal. Additions are minor amendments; payload changes are major. Reserved events name future amendments (dynamic topology, campaigns) so the names are taken by the right thing.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "scope", "events"],
+  "properties": {
+    "$comment": { "type": "string" },
+    "schemaVersion": { "const": "event-registry-1" },
+    "scope": { "const": "runtime-interchange-v1" },
+    "events": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "version", "status", "payload"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$" },
+          "version": { "type": "integer", "minimum": 1 },
+          "status": {
+            "$comment": "active: the kernel emits it in v1. reserved: the name is registered for a named amendment; subscribing to it refuses until the amendment lands.",
+            "enum": ["active", "reserved"]
+          },
+          "amendment": { "type": "string" },
+          "payload": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "type"],
+              "properties": {
+                "name": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]*$" },
+                "type": {
+                  "type": "string",
+                  "pattern": "^(bool|i64|fixed64|strref|value|ref<[a-z][a-z0-9-]*>|[A-Z][A-Za-z0-9]*)$"
+                }
+              }
+            }
+          },
+          "note": { "type": "string" }
+        },
+        "allOf": [
+          { "if": { "properties": { "status": { "const": "reserved" } } }, "then": { "required": ["amendment"] } }
+        ]
+      }
+    }
+  }
+}

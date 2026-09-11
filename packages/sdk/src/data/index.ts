@@ -412,6 +412,19 @@ function visitRelationField(
   path: string,
   visit: (namespace: string, entityId: string, role: string) => void,
 ): void {
+  if (Array.isArray(value) && (field.cardinality === 'indexed' || field.cardinality === 'append')) {
+    value.forEach((item, ordinal) => {
+      const record = recordOf(item)
+      const indexKey = field.indexKey ?? 'index'
+      const explicitIndex = field.cardinality === 'indexed' ? record?.[indexKey] : undefined
+      const selector =
+        typeof explicitIndex === 'string' || typeof explicitIndex === 'number'
+          ? String(explicitIndex)
+          : String(ordinal)
+      visitRelationField(item, { ...field, cardinality: 'scalar' }, `${path}.${selector}`, visit)
+    })
+    return
+  }
   if (field.linkNamespace !== undefined && field.linkNamespace !== '') {
     for (const entityId of relationScalarValues(value)) {
       if (entityId.length > 0) visit(field.linkNamespace, entityId, path)
@@ -815,6 +828,176 @@ export interface DataSubjectCalculationsOpenRequest extends DataFacetOpenRequest
   readonly maxCalculations: number
 }
 
+export type DataEditTargetAction =
+  'update-local-field' | 'create-local-field' | 'declare-local-entity'
+
+export interface DataEditDocumentRef {
+  readonly rootId: string
+  readonly path: string
+  readonly revision?: RevisionId
+  readonly documentIndex?: number
+}
+
+/** Resolve an edit inside one explicitly selected writable mod context. */
+export interface DataEditTargetRequest {
+  readonly snapshotId: string
+  readonly selectedRootId: string
+  readonly writableRootIds: readonly string[]
+  readonly subject: DataEntityRef
+  readonly fieldPath: readonly string[]
+  /** Required only when the provider reports more than one admissible local document. */
+  readonly targetDocument?: Pick<DataEditDocumentRef, 'rootId' | 'path'>
+  readonly signal?: AbortSignal
+}
+
+export interface DataEditTargetResolution {
+  readonly state: 'resolved'
+  readonly schemaVersion: 1
+  readonly snapshotId: string
+  readonly workspaceId: string
+  readonly selectedRootId: string
+  readonly writableRootIds: readonly string[]
+  readonly subject: DataEntityRef
+  readonly fieldPath: readonly string[]
+  readonly action: DataEditTargetAction
+  readonly target: DataEditDocumentRef & { readonly mode: 'replace' | 'create' }
+  readonly candidates: readonly DataEditDocumentRef[]
+  readonly lastDeclaration?: DataEntitySource
+  readonly effectiveFieldSource?: DataEntitySource
+  readonly selectionReason:
+    'last-local-declaration' | 'explicit-local-document' | 'canonical-namespace-document'
+  /** Every source revision that participated in the resolved context. */
+  readonly guards: readonly DataEditDocumentRef[]
+}
+
+export interface DataEditTargetSelectionRequired {
+  readonly state: 'selection-required'
+  readonly schemaVersion: 1
+  readonly snapshotId: string
+  readonly workspaceId: string
+  readonly selectedRootId: string
+  readonly writableRootIds: readonly string[]
+  readonly subject: DataEntityRef
+  readonly fieldPath: readonly string[]
+  readonly candidates: readonly DataEditDocumentRef[]
+  readonly reason: string
+}
+
+export type DataEditTargetResult = DataEditTargetResolution | DataEditTargetSelectionRequired
+
+export type DataEditIntent =
+  | Readonly<{ readonly kind: 'set-field'; readonly value: JsonValue }>
+  | Readonly<{ readonly kind: 'remove-local-override' }>
+  | Readonly<{
+      readonly kind: 'set-indexed-entry'
+      readonly index: string | number
+      readonly value: JsonValue
+    }>
+  | Readonly<{ readonly kind: 'remove-indexed-entry'; readonly index: string | number }>
+
+export interface DataEditPlanRequest extends DataEditTargetRequest {
+  /** Explicit source-level operation; removing an override is distinct from assigning a value. */
+  readonly intent: DataEditIntent
+}
+
+/** Provider-owned semantic proposal. The host maps its logical target to an authorized edit plan. */
+export interface DataEditPlanProposal {
+  readonly schemaVersion: 1
+  readonly target: DataEditTargetResolution
+  readonly intent: DataEditIntent
+  readonly replacementText: string
+  readonly previewSnapshotId: string
+  readonly expectedEffectiveValue?: JsonValue
+  readonly diagnostics: readonly DataCatalogDiagnostic[]
+}
+
+export type DataEditPlanResult = DataEditPlanProposal | DataEditTargetSelectionRequired
+
+export interface DataGraphIsolationRequest {
+  readonly schemaVersion: 1
+  readonly snapshotId: string
+  readonly owner: DataEntityRef
+  readonly target: DataEntityRef
+  /** Exact typed-link field selected by the caller; providers must not guess a branch. */
+  readonly ownerFieldPath: readonly string[]
+  readonly maxEdges: number
+  readonly always?: boolean
+  readonly signal?: AbortSignal
+}
+
+export interface DataGraphIsolationReferrer {
+  readonly subject: DataEntityRef
+  readonly fieldPaths: readonly (readonly string[])[]
+}
+
+export type DataGraphIsolationAnalysis =
+  | Readonly<{
+      readonly schemaVersion: 1
+      readonly state: 'unavailable'
+      readonly owner: DataEntityRef
+      readonly target: DataEntityRef
+      readonly ownerFieldPath: readonly string[]
+      readonly cloneRequired: false
+      readonly reason: string
+    }>
+  | Readonly<{
+      readonly schemaVersion: 1
+      readonly state: 'ready'
+      readonly owner: DataEntityRef
+      readonly target: DataEntityRef
+      readonly ownerFieldPath: readonly string[]
+      readonly shared: boolean
+      readonly cloneRequired: boolean
+      readonly referrers: readonly DataGraphIsolationReferrer[]
+      readonly otherReferrers: readonly DataEntityRef[]
+      readonly rewireFieldPaths: readonly (readonly string[])[]
+    }>
+
+export interface DataGraphIsolationPlanRequest extends DataGraphIsolationRequest {
+  readonly selectedRootId: string
+  readonly writableRootIds: readonly string[]
+  readonly cloneEntityId: string
+  readonly ownerTargetDocument?: Pick<DataEditDocumentRef, 'rootId' | 'path'>
+  readonly cloneTargetDocument?: Pick<DataEditDocumentRef, 'rootId' | 'path'>
+}
+
+export interface DataGraphIsolationReplacement {
+  readonly purpose: 'clone' | 'rewire' | 'clone-and-rewire'
+  readonly target: DataEditDocumentRef & { readonly mode: 'replace' | 'create' }
+  readonly replacementText: string
+}
+
+export interface DataGraphIsolationPlanSelectionRequired {
+  readonly schemaVersion: 1
+  readonly state: 'selection-required'
+  readonly snapshotId: string
+  readonly workspaceId: string
+  readonly selectedRootId: string
+  readonly purpose: 'clone' | 'rewire'
+  readonly candidates: readonly DataEditDocumentRef[]
+  readonly reason: string
+}
+
+export interface DataGraphIsolationPlanProposal {
+  readonly schemaVersion: 1
+  readonly state: 'planned'
+  readonly analysis: Extract<DataGraphIsolationAnalysis, { readonly state: 'ready' }>
+  readonly snapshotId: string
+  readonly workspaceId: string
+  readonly selectedRootId: string
+  readonly writableRootIds: readonly string[]
+  readonly clone: DataEntityRef
+  readonly guards: readonly DataEditDocumentRef[]
+  readonly replacements: readonly DataGraphIsolationReplacement[]
+  readonly previewSnapshotId: string
+  readonly diagnostics: readonly DataCatalogDiagnostic[]
+}
+
+export type DataGraphIsolationPlanResult =
+  | DataGraphIsolationPlanProposal
+  | DataGraphIsolationPlanSelectionRequired
+  | Extract<DataGraphIsolationAnalysis, { readonly state: 'unavailable' }>
+
 /** Resource-plan accounting required by the additive workspace contract. */
 export interface ResolvedDataWorkspaceAnalysisRequest extends DataCatalogAnalysisRequest {
   readonly plannedDocumentCount: number
@@ -847,6 +1030,14 @@ export interface ResolvedDataWorkspace {
   openSubjectCalculations?(
     request: DataSubjectCalculationsOpenRequest,
   ): Promise<Lease<SubjectCalculationsSource>>
+  /** Optional authoring extension over the same immutable snapshot and dependency context. */
+  resolveEditTarget?(request: DataEditTargetRequest): Promise<DataEditTargetResult>
+  /** Produces prospective text and a re-resolved effective value; it performs no I/O or commit. */
+  planEdit?(request: DataEditPlanRequest): Promise<DataEditPlanResult>
+  /** Read-only impact preview for cloning one shared object and rewiring an exact owner field. */
+  analyzeIsolation?(request: DataGraphIsolationRequest): Promise<DataGraphIsolationAnalysis>
+  /** Prospective multi-document clone/rewire plan. It performs no I/O or commit. */
+  planIsolation?(request: DataGraphIsolationPlanRequest): Promise<DataGraphIsolationPlanResult>
 }
 
 /** JSON-safe route advertised by a data contribution. */

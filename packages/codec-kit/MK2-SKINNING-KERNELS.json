@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "transformation": "exact top-level declaration extraction; explicit import bindings and export list only",
+  "sources": [
+    {
+      "path": "packages/rendering-3d/src/webgl-core/index.ts",
+      "sha256": "82674ed59deea023b47e59eecfe8a213ee19ee0f79f8646ef4b8293535bf0d66",
+      "symbols": [
+        {
+          "name": "skinInterleaved",
+          "sha256": "41944efb39c2bf01f043ce8b521b3a779e438f6ff9d65993b18fa72b2c12b25d"
+        },
+        {
+          "name": "transformPoint",
+          "sha256": "6cef75b0b0b4aea8d0d268b7b45c62b7f3ea34412a6a21f850d402549b1102d9"
+        },
+        {
+          "name": "transformVector",
+          "sha256": "67f798af46ccd5258deccada415ad45a949ad61d2ff61607e96a3973cf6dadd4"
+        }
+      ]
+    }
+  ],
+  "imports": [
+    "import type { WebGlMeshPlan } from './skinning-types.js'"
+  ],
+  "exports": [
+    "skinInterleaved"
+  ],
+  "output": {
+    "path": "packages/codec-kit/src/model/legacy/skinning-kernels.ts",
+    "sha256": "3011f21e00d64d0d0fd9a0ba6ff8fdc67bfdf3973ab30cd4727750b7dde6ae01"
+  }
+}

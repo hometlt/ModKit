@@ -23,7 +23,9 @@ import type {
   SceneRendererDirectionalLight,
   SceneRendererMaterial,
   SceneRendererTexture,
+  SceneRendererPrimitive,
 } from '@modkit/sdk'
+import { createModelSceneSampler } from '@modkit/scene/model'
 
 import type { OrbitBasis } from './orbit.js'
 
@@ -109,6 +111,29 @@ export function framePrimitive(primitive: ModelPrimitive): ModelFraming {
       radius: 1,
     }
   )
+}
+
+/** Frame all instances in scene coordinates, including authored node transforms. */
+export function framePrimitives(primitives: readonly SceneRendererPrimitive[]): ModelFraming {
+  const min: [number, number, number] = [Infinity, Infinity, Infinity]
+  const max: [number, number, number] = [-Infinity, -Infinity, -Infinity]
+  for (const primitive of primitives)
+    for (let i = 0; i < primitive.positions.length; i += 3) {
+      const x = primitive.positions[i]!,
+        y = primitive.positions[i + 1]!,
+        z = primitive.positions[i + 2]!
+      const matrix = primitive.transform
+      for (let axis = 0; axis < 3; axis++) {
+        const value =
+          matrix === undefined
+            ? primitive.positions[i + axis]!
+            : matrix[axis]! * x + matrix[4 + axis]! * y + matrix[8 + axis]! * z + matrix[12 + axis]!
+        if (!Number.isFinite(value)) throw new TypeError('invalid model framing positions')
+        min[axis] = Math.min(min[axis]!, value)
+        max[axis] = Math.max(max[axis]!, value)
+      }
+    }
+  return boundsFraming({ min, max }) ?? { center: [0, 0, 0], radius: 1 }
 }
 
 const dot = (left: Vector3, right: Vector3): number =>
@@ -342,7 +367,8 @@ export function sceneMaterials(
 // the request
 
 export interface ModelSceneRequestOptions {
-  readonly primitive: ModelPrimitive
+  readonly primitive?: SceneRendererPrimitive
+  readonly primitives?: readonly SceneRendererPrimitive[]
   readonly camera: CameraPlacement
   readonly viewport: { readonly width: number; readonly height: number }
   readonly materials?: readonly SceneRendererMaterial[]
@@ -354,9 +380,11 @@ export interface ModelSceneRequestOptions {
 
 /** One bounded render request. The provider does not retain any of it. */
 export function modelSceneRequest(options: ModelSceneRequestOptions): SceneRenderRequest {
+  if ((options.primitive === undefined) === (options.primitives === undefined))
+    throw new TypeError('provide either one primitive or a complete primitive list')
   return {
     scene: {
-      primitives: [options.primitive],
+      primitives: options.primitives ?? [options.primitive!],
       ...(options.materials === undefined || options.materials.length === 0
         ? {}
         : { materials: options.materials }),
@@ -384,89 +412,12 @@ export interface SkeletonJoint {
   readonly parent?: number
 }
 
-/**
- * Where a bone sits, from the 4×4 the skeleton facet publishes for it.
- *
- * Two conventions have to be got right together, and getting either wrong puts the whole skeleton
- * at the origin or inside out.
- *
- * **Row order.** `ModelBoneBinding.restMatrix` is documented as "publisher-native 4×4 … in row
- * order", which is the opposite of the column-major layout the *renderer* contract uses for camera
- * and model transforms. With row-major, row-vector maths the translation is the last row —
- * elements 12..14.
- *
- * **Direction.** The only publisher in this workspace that fills the field is M3, and what it fills
- * it from is the `IREF` chunk — the matrix M3's own writer calls `inverseBindMatrix`. An inverse
- * bind matrix takes world space *to* bone space, so its translation is not where the bone is; the
- * bone is at the translation of its inverse. The field's own documentation says "rest/bind" without
- * choosing, so a viewer cannot read the direction off the contract — this inverts because that is
- * what the data that exists today means, and a publisher that starts filling a forward rest matrix
- * would need the contract to say which it is. That ambiguity is worth closing in the facet
- * contract; until it is, this is the reading that draws real M3 skeletons in the right place.
- *
- * A binding whose matrix is missing or singular has no position and is not a joint. A skeleton
- * drawn from invented coordinates would be worse than one that says a format publishes names only.
- */
-function boneOrigin(matrix: readonly number[]): Vector3 | undefined {
-  if (matrix.length < 16 || !matrix.every(finite)) return undefined
-  // upper 3x3 (rows 0..2, columns 0..2 in row-major order) and the translation row
-  const [a, b, c, , d, e, f, , g, h, i] = matrix as unknown as number[]
-  const tx = matrix[12] as number
-  const ty = matrix[13] as number
-  const tz = matrix[14] as number
-  const A = a as number
-  const B = b as number
-  const C = c as number
-  const D = d as number
-  const E = e as number
-  const F = f as number
-  const G = g as number
-  const H = h as number
-  const I = i as number
-  const determinant = A * (E * I - F * H) - B * (D * I - F * G) + C * (D * H - E * G)
-  if (!finite(determinant) || Math.abs(determinant) < 1e-12) return undefined
-  // inverse of the upper 3x3, as the adjugate over the determinant
-  const inverse = [
-    (E * I - F * H) / determinant,
-    (C * H - B * I) / determinant,
-    (B * F - C * E) / determinant,
-    (F * G - D * I) / determinant,
-    (A * I - C * G) / determinant,
-    (C * D - A * F) / determinant,
-    (D * H - E * G) / determinant,
-    (B * G - A * H) / determinant,
-    (A * E - B * D) / determinant,
-  ]
-  // row-vector convention: the inverse's translation row is -t · R⁻¹
-  const position: Vector3 = [
-    -(tx * (inverse[0] as number) + ty * (inverse[3] as number) + tz * (inverse[6] as number)),
-    -(tx * (inverse[1] as number) + ty * (inverse[4] as number) + tz * (inverse[7] as number)),
-    -(tx * (inverse[2] as number) + ty * (inverse[5] as number) + tz * (inverse[8] as number)),
-  ]
-  return position.every(finite) ? position : undefined
-}
-
-/** Joint positions and parent links from the bindings the skeleton facet published. */
+/** Joint positions use only explicit local TRS and parent bindings. Legacy restMatrix stays descriptive. */
 export function skeletonJoints(bindings: readonly ModelBoneBinding[]): readonly SkeletonJoint[] {
-  const byBoneIndex = new Map<number, number>()
-  const joints: SkeletonJoint[] = []
-  for (const binding of bindings) {
-    const matrix = binding.restMatrix
-    if (matrix === undefined) continue
-    const position = boneOrigin(matrix)
-    if (position === undefined) continue
-    byBoneIndex.set(binding.boneIndex, joints.length)
-    joints.push({ boneIndex: binding.boneIndex, name: binding.boneName, position })
-  }
-  return Object.freeze(
-    joints.map(joint => {
-      const binding = bindings.find(item => item.boneIndex === joint.boneIndex)
-      const parentBoneIndex = binding?.parentBoneIndex
-      const parent =
-        parentBoneIndex === undefined || parentBoneIndex === null
-          ? undefined
-          : byBoneIndex.get(parentBoneIndex)
-      return Object.freeze(parent === undefined ? joint : { ...joint, parent })
-    }),
-  )
+  return createModelSceneSampler({
+    nodes: [],
+    meshes: [],
+    primitives: [],
+    skeleton: bindings,
+  }).sample(0).joints
 }

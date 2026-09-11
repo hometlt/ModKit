@@ -1,7 +1,7 @@
 /** Normalized sRGB display color used by renderer-neutral model materials. */
 export type RenderRgba = readonly [number, number, number, number]
 
-export type RenderMaterialColorRemapOperation = 'replace' | 'multiply' | 'hsv-shade'
+export type RenderMaterialColorRemapOperation = 'replace' | 'multiply' | 'hsv-shade' | 'grain-merge'
 
 /**
  * Semantic color override for a material that does not depend on its source format.
@@ -36,6 +36,14 @@ export function applyRenderMaterialColorRemap(
   if (remap.operation === 'replace') return [team[0], team[1], team[2], base[3]]
   if (remap.operation === 'multiply') {
     return [base[0] * team[0], base[1] * team[1], base[2] * team[2], base[3]]
+  }
+  if (remap.operation === 'grain-merge') {
+    return [
+      clamp01(base[0] + team[0] - 0.5),
+      clamp01(base[1] + team[1] - 0.5),
+      clamp01(base[2] + team[2] - 0.5),
+      base[3],
+    ]
   }
 
   const sourceLinear = base.slice(0, 3).map(srgbToLinear) as [number, number, number]

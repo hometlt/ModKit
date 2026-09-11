@@ -1,0 +1,93 @@
+{
+  "$comment": "EXECUTABLE verifier vectors for UVS charts and UVB modules: uv-conformance.mjs runs them through tools/uv-verify.mjs against runtime/intrinsics.v1.json and runtime/events.v1.json. These execute the verifier half of conformance/uvs-uvb/vectors.json; the kernel half (firing order, runtime budgets, save/restore) stays declared until a kernel exists. Fixtures are the shipped scenario/behavior fixtures plus inline mutations.",
+  "schemaVersion": "uv-conformance-vectors-1",
+  "suite": "uvs-uvb-verifier",
+  "spec": "../../scenario/SPEC_UVS.md ../../behavior/SPEC_UVB.md",
+  "vectors": [
+    {
+      "id": "module/fixture-verifies",
+      "expect": "accept",
+      "kind": "module",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "granted": ["read", "mutate"],
+      "expectBound": ["entity.set-stat-modifier@1", "query.entities@1"],
+      "note": "the shipped module binds both requirements, its effects cover the called intrinsics, and the result of set-stat-modifier is read"
+    },
+    {
+      "id": "module/effects-within-declaration",
+      "expect": "reject",
+      "kind": "module",
+      "rule": "effects-within-declaration",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "mutations": [{ "op": "set", "path": "functions.0.effects.writes", "value": [] }],
+      "note": "calling a mutate intrinsic from a function that declares no writes is refused before the first tick"
+    },
+    {
+      "id": "module/result-discarded",
+      "expect": "reject",
+      "kind": "module",
+      "rule": "results-are-handled",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "mutations": [{ "op": "delete", "path": "functions.0.body.4.dst" }],
+      "note": "a result<T> without a destination register is a discarded error"
+    },
+    {
+      "id": "module/capability-not-granted",
+      "expect": "reject",
+      "kind": "module",
+      "rule": "capability-not-granted",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "granted": ["read"],
+      "note": "the composition granted read only; set-stat-modifier needs mutate"
+    },
+    {
+      "id": "module/reserved-intrinsic",
+      "expect": "reject",
+      "kind": "module",
+      "rule": "intrinsic-reserved",
+      "fixture": "../../behavior/fixtures/uvb-module-minimal.uvb.json",
+      "mutations": [{ "op": "set", "path": "requires.intrinsics.1", "value": "world.portal-create@1" }],
+      "note": "a name reserved for the uvw-dynamic-topology amendment cannot be bound until the amendment lands"
+    },
+    {
+      "id": "chart/fixture-verifies",
+      "expect": "accept",
+      "kind": "chart",
+      "fixture": "../../scenario/fixtures/uvs-chart-minimal.uvs.json",
+      "note": "the shipped chart: known events, a pure condition over player.resource (read class), declared variable, existing goto"
+    },
+    {
+      "id": "chart/condition-impure",
+      "expect": "reject",
+      "kind": "chart",
+      "rule": "conditions-are-pure",
+      "fixture": "../../scenario/fixtures/uvs-chart-minimal.uvs.json",
+      "mutations": [{ "op": "set", "path": "charts.0.states.0.on.0.condition.args.0.intrinsic", "value": "player.add-resource@1" }],
+      "note": "a condition calling a mutate-class intrinsic is refused against the table"
+    },
+    {
+      "id": "chart/goto-missing",
+      "expect": "reject",
+      "kind": "chart",
+      "rule": "references-resolve",
+      "fixture": "../../scenario/fixtures/uvs-chart-minimal.uvs.json",
+      "mutations": [{ "op": "set", "path": "charts.0.states.0.on.0.goto", "value": "nowhere" }]
+    },
+    {
+      "id": "chart/unknown-event",
+      "expect": "reject",
+      "kind": "chart",
+      "rule": "references-resolve",
+      "fixture": "../../scenario/fixtures/uvs-chart-minimal.uvs.json",
+      "mutations": [{ "op": "set", "path": "charts.0.states.1.on.0.event", "value": "entity.teleported" }]
+    },
+    {
+      "id": "chart/undeclared-variable",
+      "expect": "reject",
+      "kind": "chart",
+      "rule": "references-resolve",
+      "fixture": "../../scenario/fixtures/uvs-chart-minimal.uvs.json",
+      "mutations": [{ "op": "set", "path": "charts.0.states.0.on.0.actions.1.name", "value": "ghost" }]
+    }
+  ]
+}

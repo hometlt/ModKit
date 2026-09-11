@@ -173,30 +173,28 @@ describe('model stage materials', () => {
 })
 
 describe('model stage skeleton', () => {
-  /**
-   * A binding whose 4x4 is the *inverse* bind matrix of a bone standing at `at`.
-   *
-   * Row-major, row-vector, as `ModelBoneBinding.restMatrix` is documented and as M3's IREF chunk
-   * fills it: the inverse of a pure translation to `at` is a translation to `-at`.
-   */
   const binding = (
     boneIndex: number,
     at: readonly [number, number, number],
-    parentBoneIndex?: number | null,
+    parentBoneIndex: number | null,
   ): ModelBoneBinding => ({
     partId: 'part',
+    hierarchyId: 'rig',
+    nodeId: `bone-${boneIndex}`,
     boneIndex,
     boneName: `bone-${boneIndex}`,
     provenance: 'direct',
-    ...(parentBoneIndex === undefined ? {} : { parentBoneIndex }),
-    restMatrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -at[0], -at[1], -at[2], 1],
+    parentBoneIndex,
+    localPose: { translation: at, rotation: [0, 0, 0, 1], scale: [1, 1, 1] },
+    // Deliberately unrelated native matrix: the viewer must not interpret it.
+    restMatrix: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 900, 800, 700, 1],
   })
 
-  it('places a joint where the inverse bind matrix says the bone stands, and links parents', () => {
+  it('composes explicit local bone poses and links parents', () => {
     const joints = skeletonJoints([
       binding(0, [0, 0, 0], null),
       binding(1, [0, 1, 0], 0),
-      binding(2, [0, 2, 0], 1),
+      binding(2, [0, 1, 0], 1),
     ])
     expect(joints.map(joint => joint.position)).toEqual([
       [0, 0, 0],
@@ -206,46 +204,14 @@ describe('model stage skeleton', () => {
     expect(joints.map(joint => joint.parent)).toEqual([undefined, 0, 1])
   })
 
-  it('undoes the bone rotation too, not only its translation', () => {
-    // A bone at (3, 0, 0) rotated a quarter turn about +Z. Its inverse bind matrix is the
-    // transposed rotation, with the translation carried through it.
-    const at: readonly [number, number, number] = [3, 0, 0]
-    const rt = [0, -1, 0, 1, 0, 0, 0, 0, 1] as const
-    const t = [
-      -(at[0] * rt[0] + at[1] * rt[3] + at[2] * rt[6]),
-      -(at[0] * rt[1] + at[1] * rt[4] + at[2] * rt[7]),
-      -(at[0] * rt[2] + at[1] * rt[5] + at[2] * rt[8]),
-    ]
+  it('rotates child positions through the parent local pose', () => {
+    const root = binding(0, [3, 0, 0], null)
     const joints = skeletonJoints([
-      {
-        partId: 'part',
-        boneIndex: 0,
-        boneName: 'rotated',
-        provenance: 'direct',
-        restMatrix: [
-          rt[0],
-          rt[1],
-          rt[2],
-          0,
-          rt[3],
-          rt[4],
-          rt[5],
-          0,
-          rt[6],
-          rt[7],
-          rt[8],
-          0,
-          t[0] as number,
-          t[1] as number,
-          t[2] as number,
-          1,
-        ],
-      },
+      { ...root, localPose: { ...root.localPose!, rotation: [0, 0, Math.SQRT1_2, Math.SQRT1_2] } },
+      binding(1, [1, 0, 0], 0),
     ])
-    expect(joints).toHaveLength(1)
-    for (const [axis, value] of (joints[0]?.position ?? []).entries()) {
-      expect(value).toBeCloseTo(at[axis] as number, 6)
-    }
+    expect(joints[1]?.position[0]).toBeCloseTo(3)
+    expect(joints[1]?.position[1]).toBeCloseTo(1)
   })
 
   it('drops a binding with no rest matrix rather than placing it at the origin', () => {

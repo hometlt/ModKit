@@ -320,6 +320,9 @@ export const METADATA_FALLBACK_MESSAGES = {
 
 export const MODEL_FALLBACK_MESSAGES = {
   'viewer.model': 'Model viewer',
+  'viewer.modelAllPrimitives': 'Complete model',
+  'viewer.modelAnimation': 'Animation',
+  'viewer.modelAnimationTime': 'Animation time in seconds',
   'viewer.modelBlendUnknown': 'blend unknown',
   'viewer.modelBones': 'bones',
   'viewer.modelClipDetail': '{frames} frames · {channels} channels · {samples} samples',
@@ -336,12 +339,14 @@ export const MODEL_FALLBACK_MESSAGES = {
   'viewer.modelParent': 'parent {parent}',
   'viewer.modelPrimitive': 'Model primitive',
   'viewer.modelResources': 'resources',
+  'viewer.modelRestPose': 'Rest pose',
   'viewer.modelSkeletonOverlay': 'Show the bone overlay',
   'viewer.modelSockets': 'sockets',
   'viewer.modelSummary':
     '{nodes} nodes · {meshes} meshes · {primitives} primitives · {materials} materials · {animations} animations{facets}',
   'viewer.modelUnnamed': '(unnamed)',
   'viewer.modelView': 'Model view',
+  'viewer.playPause': 'Play or pause',
   'viewer.reset': 'Reset',
   'viewer.resetCamera': 'Reset the camera to its default pose',
   'viewer.zoomIn': 'Zoom in',
@@ -481,6 +486,8 @@ export const TRANSPORT_FALLBACK_MESSAGES = {
 } as const satisfies UiMessageCatalog
 
 export const TREE_FALLBACK_MESSAGES = {
+  'tree.loadFailed': 'Could not load this page. Try again.',
+  'tree.more': 'Load more',
   'viewer.tree': 'Tree viewer',
 } as const satisfies UiMessageCatalog
 

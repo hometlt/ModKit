@@ -16,6 +16,26 @@
       "types": "./dist/module.d.ts",
       "default": "./dist/module.js"
     },
+    "./model": {
+      "types": "./dist/model/index.d.ts",
+      "default": "./dist/model/index.js"
+    },
+    "./materials": {
+      "types": "./dist/materials/index.d.ts",
+      "default": "./dist/materials/index.js"
+    },
+    "./materials/webgl": {
+      "types": "./dist/materials/webgl.d.ts",
+      "default": "./dist/materials/webgl.js"
+    },
+    "./uvm": {
+      "types": "./dist/uvm/index.d.ts",
+      "default": "./dist/uvm/index.js"
+    },
+    "./relations/contracts": {
+      "types": "./dist/relations/contracts.d.ts",
+      "default": "./dist/relations/contracts.js"
+    },
     "./render/browser": {
       "types": "./dist/render/browser.d.ts",
       "default": "./dist/render/browser.js"
@@ -36,7 +56,75 @@
       "types": "./dist/relations/three-graph-renderer.d.ts",
       "default": "./dist/relations/three-graph-renderer.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./uvm/rig-bounds": {
+      "types": "./dist/uvm/rig-bounds.d.ts",
+      "default": "./dist/uvm/rig-bounds.js"
+    },
+    "./uvm/rig-model": {
+      "types": "./dist/uvm/rig-model.d.ts",
+      "default": "./dist/uvm/rig-model.js"
+    },
+    "./uvm/static-model": {
+      "types": "./dist/uvm/static-model.d.ts",
+      "default": "./dist/uvm/static-model.js"
+    },
+    "./uvm/model": {
+      "types": "./dist/uvm/model.d.ts",
+      "default": "./dist/uvm/model.js"
+    },
+    "./uvm/frame": {
+      "types": "./dist/uvm/frame.d.ts",
+      "default": "./dist/uvm/frame.js"
+    },
+    "./uvm/sockets": {
+      "types": "./dist/uvm/sockets.d.ts",
+      "default": "./dist/uvm/sockets.js"
+    },
+    "./uvm/facets": {
+      "types": "./dist/uvm/facets.d.ts",
+      "default": "./dist/uvm/facets.js"
+    },
+    "./uvm/collisions": {
+      "types": "./dist/uvm/collisions.d.ts",
+      "default": "./dist/uvm/collisions.js"
+    },
+    "./uvm/collision-overlay": {
+      "types": "./dist/uvm/collision-overlay.d.ts",
+      "default": "./dist/uvm/collision-overlay.js"
+    },
+    "./uvm/inspection": {
+      "types": "./dist/uvm/inspection.d.ts",
+      "default": "./dist/uvm/inspection.js"
+    },
+    "./uvm/cameras": {
+      "types": "./dist/uvm/cameras.d.ts",
+      "default": "./dist/uvm/cameras.js"
+    },
+    "./uvm/billboards": {
+      "types": "./dist/uvm/billboards.d.ts",
+      "default": "./dist/uvm/billboards.js"
+    },
+    "./uvm/model-states": {
+      "types": "./dist/uvm/model-states.d.ts",
+      "default": "./dist/uvm/model-states.js"
+    },
+    "./uvm/shadow-meshes": {
+      "types": "./dist/uvm/shadow-meshes.d.ts",
+      "default": "./dist/uvm/shadow-meshes.js"
+    },
+    "./uvm/ordered-euler-chains": {
+      "types": "./dist/uvm/ordered-euler-chains.d.ts",
+      "default": "./dist/uvm/ordered-euler-chains.js"
+    },
+    "./uvm/render": {
+      "types": "./dist/uvm/render.d.ts",
+      "default": "./dist/uvm/render.js"
+    },
+    "./uvm/normals": {
+      "types": "./dist/uvm/normals.d.ts",
+      "default": "./dist/uvm/normals.js"
+    }
   },
   "files": [
     "contributions",
@@ -50,10 +138,12 @@
     "clean": "tsc -b --clean"
   },
   "dependencies": {
+    "@modkit/core": "workspace:*",
     "@modkit/host": "workspace:*",
     "@modkit/sdk": "workspace:*",
     "three": "^0.180.0",
-    "@modkit/ui": "workspace:*"
+    "@modkit/codec-kit": "workspace:*",
+    "@modkit/uv": "workspace:*"
   },
   "sideEffects": false
 }

@@ -1,0 +1,51 @@
+{
+  "$comment": "Valid fixture: the layer-order composition of the uvp-composition suite as its receipt would record it. Content digests are placeholders; the SHAPE and the composed/refused discipline are what the schema pins.",
+  "kind": "uv.receipt/composition",
+  "schemaVersion": 1,
+  "root": {
+    "id": "v/map-a",
+    "version": "1.0.0"
+  },
+  "layers": [
+    {
+      "id": "v/base",
+      "version": "1.2.0",
+      "rank": "base",
+      "contentDigest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "id": "v/official",
+      "version": "1.0.3",
+      "rank": "official",
+      "contentDigest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+    },
+    {
+      "id": "v/map-a",
+      "version": "1.0.0",
+      "rank": "map",
+      "contentDigest": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+    },
+    {
+      "id": "v/mod-one",
+      "version": "1.0.0",
+      "rank": "mod",
+      "contentDigest": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+    },
+    {
+      "id": "v/mod-two",
+      "version": "1.0.0",
+      "rank": "mod",
+      "contentDigest": "sha256:5555555555555555555555555555555555555555555555555555555555555555"
+    }
+  ],
+  "requirements": {
+    "intrinsicsChecked": 4,
+    "capabilitiesGranted": [
+      "read",
+      "mutate",
+      "control"
+    ]
+  },
+  "compositionHash": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+  "verdict": "composed"
+}

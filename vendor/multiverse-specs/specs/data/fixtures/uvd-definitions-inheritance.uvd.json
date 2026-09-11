@@ -1,0 +1,32 @@
+{
+  "$comment": "UVD staging fixture, role definitions: a base and a child. The child sets only health; every other effective value resolves to the parent, and composition records that origin as provenance. fixed64 values are integer quanta.",
+  "uv": { "format": "UVD", "version": "1.0" },
+  "namespace": "example-vendor",
+  "role": "definitions",
+  "definitions": [
+    {
+      "name": "trooper",
+      "kind": "unit",
+      "kindVersion": 1,
+      "fields": {
+        "health": 100000,
+        "speed": 2500,
+        "armor": 1,
+        "stance": "aggressive",
+        "weapon": "example-vendor/weapon/rifle",
+        "tags": ["infantry"],
+        "cost": { "amount": 50, "time": 300 }
+      }
+    },
+    {
+      "name": "elite-trooper",
+      "kind": "unit",
+      "kindVersion": 1,
+      "parent": "example-vendor/unit/trooper",
+      "fields": {
+        "health": 150000,
+        "tags": ["infantry", "elite"]
+      }
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { OperationCancelledError } from '@modkit/core'
+import { OperationCancelledError, diagnostic, type Diagnostic } from '@modkit/core'
 import {
   revisionId,
   type Codec,
@@ -8,7 +8,11 @@ import {
   type OperationOutput,
   type PermissionGrant,
 } from '@modkit/sdk'
-import { assembleSubjectDescriptor, createAssetSession } from '@modkit/host'
+import {
+  assembleSubjectDescriptor,
+  createAssetSession,
+  type HostOperationHandler,
+} from '@modkit/host'
 import { resolvedDescriptorWire } from './fixtures/descriptor.js'
 
 const operations = [
@@ -95,6 +99,75 @@ async function fixture() {
   })
   return { descriptor, managed, release }
 }
+
+async function diagnosticSession(handler: HostOperationHandler, limit = 2) {
+  const descriptor = await assembleSubjectDescriptor(resolvedDescriptorWire([operations[0]]))
+  const operation = descriptor.operations[0]
+  if (operation === undefined) throw new Error('diagnostic operation is absent')
+  return createAssetSession({
+    revision: descriptor.revision,
+    descriptor,
+    maxOperationDiagnostics: limit,
+    operationDeclarations: [
+      { id: operation.id, handlerId: 'good', mutatesSource: false, outputKinds: ['bytes'] },
+    ],
+    permissionGrant: { id: 'diagnostics', classes: ['read-source'] },
+    handlers: new Map([['good', handler]]),
+    openDataSource: async () => {
+      throw new Error('not used')
+    },
+  }).session
+}
+
+describe('operation diagnostics accompanying binary output', () => {
+  it('owns per-call diagnostics and ignores reports after completion', async () => {
+    let late: ((value: Diagnostic) => void) | undefined
+    const data = { value: 1 }
+    const session = await diagnosticSession(async (_input, context) => {
+      context.reportDiagnostic?.(
+        diagnostic('warning', 'example/render-partial', 'Texture missing', undefined, data),
+      )
+      data.value = 9
+      late = context.reportDiagnostic
+      return { kind: 'bytes', value: Uint8Array.of(137, 80, 78, 71) }
+    })
+    try {
+      const result = await session.operations().invoke('good', null)
+      expect(result).toMatchObject({
+        state: 'ok',
+        output: { kind: 'bytes' },
+        diagnostics: [{ data: { value: 1 } }],
+      })
+      late?.(diagnostic('warning', 'example/late', 'Late report'))
+      expect(result.diagnostics).toHaveLength(1)
+      const next = await session.operations().invoke('good', null)
+      expect(next.diagnostics).toHaveLength(1)
+      expect(next.diagnostics[0]?.data).toEqual({ value: 9 })
+    } finally {
+      await session.dispose()
+    }
+  })
+  it('bounds diagnostic count and replaces malformed data without losing binary output', async () => {
+    const session = await diagnosticSession(async (_input, context) => {
+      const cyclic: Record<string, unknown> = {}
+      cyclic['self'] = cyclic
+      context.reportDiagnostic?.(diagnostic('warning', 'example/bad', 'Cyclic', undefined, cyclic))
+      context.reportDiagnostic?.(diagnostic('warning', 'example/one', 'One'))
+      context.reportDiagnostic?.(diagnostic('warning', 'example/two', 'Two'))
+      return { kind: 'bytes', value: Uint8Array.of(1) }
+    })
+    try {
+      const result = await session.operations().invoke('good', null)
+      expect(result.state).toBe('ok')
+      expect(result.diagnostics.map(item => item.code)).toEqual([
+        'x3.host/invalid-operation-diagnostic',
+        'x3.host/operation-diagnostics-truncated',
+      ])
+    } finally {
+      await session.dispose()
+    }
+  })
+})
 
 describe('A-3 asset and operation sessions', () => {
   it('makes all eight operation rejection reasons reachable and dispatches owned JSON', async () => {

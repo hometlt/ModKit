@@ -24,6 +24,14 @@ export interface ExplorerEntry {
   readonly name: string
   readonly directory: boolean
   readonly size?: number
+  /** Small host-provided actions displayed alongside this row. */
+  readonly actions?: readonly ExplorerEntryAction[]
+}
+export interface ExplorerEntryAction {
+  readonly id: string
+  readonly label: string
+  readonly title?: string
+  readonly confirm?: string
 }
 
 /** The host's file capability. Absent means no folder is open yet. */
@@ -33,6 +41,8 @@ export interface FileAccess {
   /** `undefined` lists the root. */
   list(entryId: string | undefined, signal?: AbortSignal): Promise<readonly ExplorerEntry[]>
   read(entryId: string, maxBytes: number, signal?: AbortSignal): Promise<Uint8Array>
+  /** Executes an opaque action from a listed entry. */
+  runAction?(entryId: string, actionId: string, signal?: AbortSignal): Promise<void>
 }
 
 /** One rendering of an opened file. The explorer draws the picker; the resolver owns the stages. */
@@ -351,12 +361,21 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
             ...(entry.size === undefined || entry.directory
               ? {}
               : { badge: formatBytes(entry.size), size: entry.size }),
+            ...(entry.actions === undefined ? {} : { actions: entry.actions }),
             kind: entry.directory ? 'directory' : extensionOf(entry.name),
           }))
       },
       onActivate(node) {
         if (node.kind === 'directory') return
         void activate(nodeToEntry(node))
+      },
+      onAction(node, action) {
+        const run = current.runAction
+        if (run === undefined) return
+        if (action.confirm !== undefined && !globalThis.confirm(action.confirm)) return
+        void run(node.id, action.id).then(() => buildTree()).catch(error => {
+          say(describe(error), 'error')
+        })
       },
       matches(node) {
         return query === undefined ? true : matches(node.label, query)

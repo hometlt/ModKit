@@ -196,7 +196,9 @@ export type {
   ResolveRequest,
 } from './service-contracts.js'
 export { foreignServiceContractId } from './service-contracts.js'
+export * from './model-encoding.js'
 export * from './language/index.js'
+export * from './language/translation.js'
 export * from './knowledge/index.js'
 export * from './runtime/index.js'
 export * from './renderer/index.js'
@@ -433,6 +435,17 @@ export {
   type SubjectSelectorQuery,
   type SubjectSelectorSource,
   type SubjectSelectorSummary,
+  type SubjectEditDocumentRef,
+  type SubjectEditDestination,
+  type SubjectEditTargetRequest,
+  type SubjectEditTargetResult,
+  type SubjectIsolationRequest,
+  type SubjectIsolationReferrer,
+  type SubjectIsolationResult,
+  type SubjectIsolationPlanRequest,
+  type SubjectIsolationPlanReplacement,
+  type SubjectIsolationPlanDiagnostic,
+  type SubjectIsolationPlanResult,
   type SubjectPreviewResource,
   type VectorSceneDocument,
   type VectorSceneInfo,
@@ -463,11 +476,13 @@ export {
   type ModelAnimationChannel,
   type ModelAnimationClip,
   type ModelAnimationInfo,
+  type ModelAnimationInterpolation,
   type ModelAnimationKind,
   type ModelAnimationSample,
   type ModelAnimationSource,
   type ModelAnimationTimeBounds,
   type ModelBoneBinding,
+  type ModelBoneLocalPose,
   type ModelBoneProvenance,
   type ModelCollisionInfo,
   type ModelCollisionOrigin,
@@ -769,3 +784,29 @@ export {
   type GameTemplatePreviewResult,
   type GameTemplateViewport,
 } from './templates/index.js'
+export type {
+  RasterResourcePort,
+  RasterResourceRequest,
+  RasterResourceResult,
+  RasterResourceSelection,
+  RasterSubresource,
+} from './raster-resources.js'
+export type {
+  LogicalResourceCandidate,
+  LogicalResourceDiscoveryIdentity,
+  LogicalResourceDiscoveryReceipt,
+  LogicalResourceDiscoveryRefusal,
+  LogicalResourceDiscoveryRequest,
+  LogicalResourceDiscoveryResult,
+  LogicalResourcePort,
+  LogicalResourceReadBatchItem,
+  LogicalResourceReadBatchRequest,
+  LogicalResourceReadBatchResult,
+  LogicalResourceReadOutcome,
+} from './logical-resources.js'
+export type {
+  ModelResourcePort,
+  ModelResourceAsset,
+  ModelResourceRequest,
+  ModelResourceResult,
+} from './model-resources.js'

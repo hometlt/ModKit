@@ -154,6 +154,7 @@ const contributions = [
     spec: {
       kind: 'stage',
       consumesDataSources: [dataSource('common.view/world-scene-source')],
+      optionalDataSources: [dataSource('common.view/transport-source')],
       priority: 380,
       singletonGroup: 'center-stage',
     },

@@ -147,7 +147,9 @@ function packageFileEntries(packageJson, packageRoot) {
 }
 
 function normalizePackageFileEntry(value, label) {
-  const text = String(value).replace(/\/+$/u, '')
+  // A terminal recursive files glob names the whole directory (e.g. texture2ddecoder-wasm).
+  // cpSync already walks that tree; a literal "dist/**/*" is not a filesystem path.
+  const text = String(value).replace(/\/\*\*(?:\/\*)?$/u, '').replace(/\/+$/u, '')
   assertRelativePackagePath(text, label)
   return text
 }

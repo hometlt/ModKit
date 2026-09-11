@@ -1,6 +1,6 @@
-import type { AnyDescriptor, FieldEditable } from '@modkit/sdk'
+import type { AnyDescriptor, FieldEditable, SubjectEditTargetResult } from '@modkit/sdk'
 import { describe, expect, it } from 'vitest'
-import { fieldWriteRefusal } from '../src/field-write/index.js'
+import { fieldEditTargetText, fieldWriteRefusal } from '../src/field-write/index.js'
 
 function descriptor(
   operations: readonly { id: string; state: string; handlerId?: string }[],
@@ -55,5 +55,41 @@ describe('field write eligibility', () => {
       write: { writer: { contract: 'common.edit/writer' } },
     } as unknown as FieldEditable
     expect(fieldWriteRefusal(available, editable)).toMatch(/writer service/u)
+  })
+})
+
+describe('field edit target preview', () => {
+  it('uses the exact host-bound destination label', () => {
+    const target = {
+      state: 'resolved',
+      destination: {
+        label: 'Write: C → C.SC2Mod/Base.SC2Data/GameData/UnitData.xml',
+      },
+    } as SubjectEditTargetResult
+    expect(fieldEditTargetText(target)).toBe(
+      'Write: C → C.SC2Mod/Base.SC2Data/GameData/UnitData.xml',
+    )
+  })
+
+  it('names every candidate when explicit target selection is required', () => {
+    const target = {
+      state: 'selection-required',
+      reason: 'choose the authored document',
+      candidates: [
+        { rootId: 'B', path: 'B.SC2Mod/Base.SC2Data/GameData/UnitData.xml' },
+        { rootId: 'C', path: 'C.SC2Mod/Base.SC2Data/GameData/UnitData.xml' },
+      ],
+    } as SubjectEditTargetResult
+    expect(fieldEditTargetText(target)).toBe(
+      'choose the authored document: B → B.SC2Mod/Base.SC2Data/GameData/UnitData.xml; C → C.SC2Mod/Base.SC2Data/GameData/UnitData.xml',
+    )
+  })
+
+  it('shows the provider refusal when no destination exists', () => {
+    const target = {
+      state: 'unavailable',
+      reason: 'the selected mod is read-only',
+    } as SubjectEditTargetResult
+    expect(fieldEditTargetText(target)).toBe('the selected mod is read-only')
   })
 })

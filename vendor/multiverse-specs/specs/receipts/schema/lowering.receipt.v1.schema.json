@@ -1,0 +1,235 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/receipts/1.0/lowering.receipt.schema.json",
+  "title": "LoweringReceipt",
+  "description": "One adapter run turning native game content into UV artifacts. Coverage is counted, refusals are named, and every refusal carries the digest of the preserved original fragment: the receipt makes silent loss unrepresentable, not merely discouraged. Sources and outputs are digests plus logical names — never absolute paths.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "schemaVersion",
+    "adapter",
+    "source",
+    "stages",
+    "coverage",
+    "refusals",
+    "outputs",
+    "verdict"
+  ],
+  "properties": {
+    "$comment": {
+      "type": "string"
+    },
+    "kind": {
+      "const": "uv.receipt/lowering"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "adapter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "version"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z0-9][a-z0-9-]*(\\.[a-z0-9][a-z0-9-]*)*/[a-z0-9][a-z0-9-]*$"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$"
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "language",
+        "digest"
+      ],
+      "properties": {
+        "name": {
+          "description": "Logical, machine-free identity: no drive letters, no backslashes, no URI schemes.",
+          "type": "string",
+          "pattern": "^(?![A-Za-z]:)(?!.*\\\\)(?!.*://).+$"
+        },
+        "language": {
+          "enum": [
+            "galaxy",
+            "js",
+            "xml",
+            "ini",
+            "lua",
+            "other"
+          ]
+        },
+        "digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "stages": {
+      "description": "The hop chain, e.g. native->luau then luau->uvb. Each hop binds input to output by digest so the readable middle layer is part of the evidence, not a loose file.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "from",
+          "to",
+          "inputDigest",
+          "outputDigest"
+        ],
+        "properties": {
+          "from": {
+            "enum": [
+              "native",
+              "luau",
+              "uvs-text"
+            ]
+          },
+          "to": {
+            "enum": [
+              "luau",
+              "uvs-text",
+              "uvd",
+              "uvs",
+              "uvb"
+            ]
+          },
+          "inputDigest": {
+            "$ref": "#/$defs/digest"
+          },
+          "outputDigest": {
+            "$ref": "#/$defs/digest"
+          }
+        }
+      }
+    },
+    "coverage": {
+      "description": "Counted per unit category; loweredUnits + refusedUnits = totalUnits is a verifier check, not a schema one.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "category",
+          "totalUnits",
+          "loweredUnits",
+          "refusedUnits"
+        ],
+        "properties": {
+          "category": {
+            "$comment": "inline copy of foundation/uv-families.v1.schema.json#/$defs/loweringCategory — verified equal by the uv-families suite",
+            "enum": [
+              "definitions",
+              "triggers",
+              "functions",
+              "maps",
+              "campaigns",
+              "media"
+            ]
+          },
+          "totalUnits": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "loweredUnits": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "refusedUnits": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "refusals": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "rule",
+          "unit",
+          "reason",
+          "originDigest"
+        ],
+        "properties": {
+          "rule": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          },
+          "unit": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "originDigest": {
+            "description": "Digest of the preserved original fragment. Mandatory: a refusal without its original is silent loss.",
+            "$ref": "#/$defs/digest"
+          },
+          "diagnostic": {
+            "description": "Optional stable compiler diagnostic code (Luau frontend catalogue), e.g. MV1001. `rule` stays the domain rule; this is the machine reference.",
+            "type": "string",
+            "pattern": "^MV[0-9]{4}$"
+          }
+        }
+      }
+    },
+    "outputs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "family",
+          "digest"
+        ],
+        "properties": {
+          "family": {
+            "$comment": "inline copy of foundation/uv-families.v1.schema.json#/$defs/outputFamily — verified equal by the uv-families suite",
+            "enum": [
+              "uvd",
+              "uvs",
+              "uvb",
+              "uvw",
+              "uvm",
+              "uvt",
+              "uvc",
+              "uvp",
+              "luau"
+            ]
+          },
+          "digest": {
+            "$ref": "#/$defs/digest"
+          }
+        }
+      }
+    },
+    "verdict": {
+      "enum": [
+        "lowered",
+        "lowered-with-refusals",
+        "refused"
+      ]
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    }
+  }
+}

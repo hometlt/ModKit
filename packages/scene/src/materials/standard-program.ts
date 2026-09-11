@@ -1,0 +1,607 @@
+import type { JsonSnapshotBudget } from '@modkit/codec-kit/json-snapshot'
+import type { SceneRendererEnvironment } from '@modkit/sdk/renderer'
+import type { StandardLayerSlot, NormalMapFormat } from '@modkit/codec-kit/legacy/models/material'
+import {
+  buildMaterialDefines,
+  buildStandardFragmentSource,
+  buildStandardVertexSource,
+  canonicalDefineKey,
+  composeStandardPixelCpu,
+  computeLayerColorCpu,
+  decodeNormalCpu,
+  calculateLayerFresnelCpu,
+  standardBlendModeName,
+  type CpuLayerSample,
+  type CpuPixelResult,
+  type Vec3,
+  type Vec4,
+  type StandardMaterialDefines,
+  type StandardBlendName,
+} from '@modkit/codec-kit/model-math/standard-material-glsl'
+import {
+  createRenderMaterialSampler,
+  type MaterialSampleTime,
+  type RenderMaterialPass,
+  type SceneStandardMaterial,
+  type MaterialTangentGeneration,
+} from './render-model.js'
+import {
+  materialNormalFormats,
+  snapshotNormalFormats,
+  normalLayerShader,
+  normalTexelRgb,
+  NORMAL_SLOTS,
+  type NormalFormats,
+  type NormalSlot,
+} from './normal-maps.js'
+import { cubeLayerShader, UnsupportedCubeCoordinatesError } from './cube-maps.js'
+import { snapshotEnvironment, isEnvironmentBinding } from './environment.js'
+import { sceneMaterialVertexSource } from '../render/material-geometry.js'
+import {
+  blendSignedNormals,
+  signedNormalFactor,
+  normalInBasis,
+  signedNormalLayerShader,
+  objectSpaceNormalLayerShader,
+  WORLD_NORMAL_VARYINGS,
+  type MaterialNormalBasis,
+  type NormalBlendPolicy,
+} from './normal-blending.js'
+
+export interface MaterialLighting {
+  readonly teamColor?: Vec3
+  readonly ambient?: Vec4
+}
+export interface MaterialFrameOptions extends MaterialLighting {
+  /** Decoder-derived conventions by logical resource id. Authored material formats override them. */
+  readonly normalMapFormats?: ReadonlyMap<string, NormalMapFormat>
+  readonly textureDimensions?: ReadonlyMap<string, '2d' | 'cube'>
+  readonly environment?: SceneRendererEnvironment
+}
+
+export interface MaterialPixel extends MaterialLighting {
+  /** Texture filtering, UV mapping and tangent-space geometry belong to the renderer adapter. */
+  readonly texels?: Readonly<Partial<Record<StandardLayerSlot, Vec4>>>
+  readonly normal?: Vec3
+  /** Fully evaluated normal in the same frame as lightDirection/halfVector. Bypasses layer blending. */
+  readonly shadingNormal?: Vec3
+  readonly lightDirection?: Vec3
+  readonly halfVector?: Vec3
+  readonly viewNormal?: Vec3
+  readonly eyeToVertex?: Vec3
+  readonly vertexColor?: Vec4
+}
+
+export interface MaterialTextureBinding {
+  readonly dimension?: '2d' | 'cube'
+  readonly slot: StandardLayerSlot
+  readonly resourceId: string
+  readonly uniform: string
+  readonly wrapU: 'repeat' | 'clamp'
+  readonly wrapV: 'repeat' | 'clamp'
+}
+
+export interface StandardMaterialProgram {
+  /** Derived only from validated data, never from user-provided shader code. */
+  readonly key: string
+  readonly vertexSource: string
+  readonly fragmentSource: string
+  readonly uniforms: Readonly<Record<string, number | readonly number[]>>
+  readonly textures: readonly MaterialTextureBinding[]
+  readonly defines: StandardMaterialDefines
+  readonly blend: StandardBlendName
+  readonly twoSided: boolean
+  readonly depthPrepass: boolean
+  readonly priority: number
+  /** Features that require additional renderer behavior; never silently marked as supported. */
+  readonly diagnostics: readonly string[]
+  /** Projection frame for world-generated UVs; independent of the geometry/camera transforms. */
+  readonly worldToMaterial?: readonly number[]
+  readonly environment?: SceneRendererEnvironment
+  readonly normalBlendPolicy?: NormalBlendPolicy
+  /** Geometry preparation input; independent of shader source and normal texture sampling UVs. */
+  readonly tangentGeneration?: MaterialTangentGeneration
+  readonly normalMapSpace: 'tangent' | 'object'
+  /** Evaluated normal in the supplied basis, or tangent space when no basis is supplied. */
+  sampleNormal(pixel?: MaterialPixel, basis?: MaterialNormalBasis): Vec3
+  shade(pixel?: MaterialPixel): CpuPixelResult
+}
+
+type ShaderSources = Pick<StandardMaterialProgram, 'vertexSource' | 'fragmentSource' | 'defines'>
+
+function finiteVector(value: readonly number[], size: number, name: string) {
+  if (
+    !Array.isArray(value) ||
+    value.length !== size ||
+    value.some(
+      component =>
+        typeof component !== 'number' ||
+        !Number.isFinite(component) ||
+        !Number.isFinite(Math.fround(component)),
+    )
+  )
+    throw new TypeError(`${name} requires ${size} finite float32 components`)
+  return value
+}
+
+/** Prepare all authored passes over the shared material kernels, with no native codec imports. */
+export function createStandardMaterialPrograms(
+  parameters: unknown,
+  options: {
+    readonly budget: JsonSnapshotBudget
+    readonly signal?: AbortSignal
+  },
+) {
+  const sampler = createRenderMaterialSampler(parameters, options.budget, options.signal)
+  // Compile-time properties are immutable. This cache is bounded by the authored pass variants;
+  // changing playback time, lights or team color only creates a fresh uniform snapshot.
+  const sources = new Map<string, ShaderSources>()
+  return Object.freeze({
+    resources: sampler.resources,
+    sample(
+      time: MaterialSampleTime,
+      lighting: MaterialFrameOptions = {},
+      signal?: AbortSignal,
+    ): readonly StandardMaterialProgram[] {
+      const teamColor = Object.freeze([
+        ...finiteVector(lighting.teamColor ?? [1, 0, 0], 3, 'team color'),
+      ]) as Vec3
+      const ambient = Object.freeze([
+        ...finiteVector(lighting.ambient ?? [0.02, 0.02, 0.02, 0], 4, 'material ambient'),
+      ]) as Vec4
+      const normalFormats = snapshotNormalFormats(lighting.normalMapFormats)
+      const textureDimensions = new Map(lighting.textureDimensions)
+      const environment = snapshotEnvironment(lighting.environment)
+      for (const value of textureDimensions.values())
+        if (value !== '2d' && value !== 'cube')
+          throw new TypeError('invalid material texture dimension')
+      return Object.freeze(
+        sampler
+          .sample(time, signal)
+          .map(pass =>
+            compilePass(
+              pass,
+              { teamColor, ambient },
+              sources,
+              normalFormats,
+              sampler.worldToMaterial,
+              textureDimensions,
+              environment,
+            ),
+          ),
+      )
+    },
+  })
+}
+
+function compilePass(
+  pass: RenderMaterialPass,
+  lighting: Required<MaterialLighting>,
+  sources: Map<string, ShaderSources>,
+  bindings: ReadonlyMap<string, NormalMapFormat>,
+  worldToMaterial?: readonly number[],
+  textureDimensions: ReadonlyMap<string, '2d' | 'cube'> = new Map(),
+  environment?: SceneRendererEnvironment,
+): StandardMaterialProgram {
+  const { material, alpha } = pass
+  const normalFormats = materialNormalFormats(material, bindings)
+  const objectSpaceNormal = material.normalMapSpace === 'object'
+  const defines = buildMaterialDefines(
+    material,
+    normalFormats === undefined ? {} : { normalMapFormat: 'rgb8' },
+  )
+  const uniforms: Record<string, number | readonly number[]> = {
+    u_teamColor: lighting.teamColor,
+    u_ambient: lighting.ambient,
+    u_specularity: material.specularity,
+    u_specMult: material.specMult,
+    u_emisMult: material.emisMult,
+    u_emissiveTint: material.emissiveTint ?? [1, 1, 1],
+    u_environmentMultipliers: material.environmentMultipliers ?? [1, 0, 0],
+    u_terrainTiling: [1, 1, 0, 0],
+    u_materialAlpha: alpha,
+    u_alphaTestThreshold: material.alphaTestThreshold,
+    u_parallaxHeight: material.parallaxHeight?.value ?? 0,
+    u_normalBlend1Factors: material.normalBlendFactors?.slice(0, 4).map(factor => factor.value) ?? [
+      1, 0, 0, 0,
+    ],
+    u_normalBlend2Factors: material.normalBlendFactors?.slice(4, 8).map(factor => factor.value) ?? [
+      1, 0, 0, 0,
+    ],
+    u_normalMapTransform: material.normalMapTransform ?? [1, 0, 0, 0, 1, 0, 0, 0, 1],
+  }
+  const textures: MaterialTextureBinding[] = [],
+    diagnostics: string[] = []
+  for (const definition of defines.layers) {
+    const { slot } = definition,
+      layer = material.layers[slot]
+    if (layer === undefined) throw new TypeError(`missing material layer ${slot}`)
+    const prefix = `u_${slot}`
+    if (layer.texturePath !== null)
+      textures.push(
+        Object.freeze({
+          slot,
+          resourceId: layer.texturePath,
+          uniform: `${prefix}Map`,
+          wrapU: layer.wrapX ? 'repeat' : 'clamp',
+          wrapV: layer.wrapY ? 'repeat' : 'clamp',
+          ...(textureDimensions.get(layer.texturePath) === 'cube'
+            ? { dimension: 'cube' as const }
+            : {}),
+        }),
+      )
+    else uniforms[`${prefix}Color`] = layer.constantColor?.value ?? [1, 1, 1, 1]
+    uniforms[`${prefix}Multiply`] = layer.colorMultiply?.value ?? 1
+    uniforms[`${prefix}Add`] = layer.colorAdd?.value ?? 0
+    uniforms[`${prefix}AlphaFactor`] = layer.alphaFactor?.value ?? 1
+    uniforms[`${prefix}UvAngle`] = layer.uvAngle?.value ?? [0, 0, 0]
+    uniforms[`${prefix}UvTriplanarOffset`] = layer.uvTriplanarOffset?.value ?? [0, 0, 0]
+    uniforms[`${prefix}UvTriplanarScale`] = layer.uvTriplanarScale?.value ?? [1, 1, 1]
+    const tiling = layer.uvTiling?.value ?? [1, 1],
+      offset = layer.uvOffset?.value ?? [0, 0]
+    if (layer.flipbook === undefined) {
+      uniforms[`${prefix}UvTiling`] = tiling
+      uniforms[`${prefix}UvOffset`] = offset
+    } else {
+      const { rows, cols } = layer.flipbook
+      const frame =
+        ((Math.floor(layer.flipbook.frame.value) % (rows * cols)) + rows * cols) % (rows * cols)
+      const frameSize = layer.flipbook.frameSize
+      if (frameSize === undefined) {
+        uniforms[`${prefix}UvTiling`] = [tiling[0] / cols, tiling[1] / rows]
+        uniforms[`${prefix}UvOffset`] = [
+          (offset[0] + (frame % cols)) / cols,
+          (offset[1] + Math.floor(frame / cols)) / rows,
+        ]
+      } else {
+        uniforms[`${prefix}UvTiling`] = tiling
+        uniforms[`${prefix}UvOffset`] = [
+          offset[0] + (frame % cols) * frameSize[0],
+          offset[1] + Math.floor(frame / cols) * frameSize[1],
+        ]
+      }
+    }
+    if (layer.fresnel !== undefined && layer.fresnel.transformMode !== 0)
+      diagnostics.push(
+        `${slot}: Fresnel matrix transform is preserved but not evaluated by the shared kernel`,
+      )
+    if (layer.uvSource === 6)
+      diagnostics.push(`${slot}: particle UV requires a particle geometry adapter`)
+  }
+  for (const binding of textures)
+    if (
+      binding.dimension === 'cube' &&
+      !(environment !== undefined && isEnvironmentBinding(binding))
+    ) {
+      const slot = `u_${binding.slot}`
+      const same = (key: string, expected: readonly number[]) => {
+        const value = uniforms[key]
+        return (
+          Array.isArray(value) &&
+          value.length === expected.length &&
+          value.every((item, index) => item === expected[index])
+        )
+      }
+      if (
+        !same(`${slot}UvAngle`, [0, 0, 0]) ||
+        !same(`${slot}UvOffset`, [0, 0]) ||
+        !same(`${slot}UvTiling`, [1, 1]) ||
+        uniforms['u_parallaxHeight'] !== 0
+      )
+        throw new UnsupportedCubeCoordinatesError(
+          `${binding.slot}: transformed UV/flipbook/parallax sampling of a cube image requires a direction-space mapping`,
+        )
+    }
+  // The CPU pixel function receives sampled texels; parallax and generated UVs must be supplied
+  // by its geometry adapter. The GLSL builder already contains those sampling paths.
+  const worldEnvironment = environment !== undefined && textures.some(isEnvironmentBinding)
+  const policy = material.normalBlendPolicy
+  if (worldEnvironment)
+    for (const row of [0, 1, 2])
+      uniforms[`u_sceneEnvironment${row}`] = [0, 4, 8, 12].map(
+        column => environment.worldToEnvironment[row + column] ?? 0,
+      )
+  const key =
+    canonicalDefineKey(defines) +
+    (normalFormats === undefined
+      ? ''
+      : `;normals=${NORMAL_SLOTS.map(slot => normalFormats[slot]).join(',')}`) +
+    textures
+      .filter(binding => binding.dimension === 'cube')
+      .map(binding => `;cube=${binding.slot}`)
+      .join('') +
+    (worldEnvironment ? ';environment=world' : '') +
+    (policy === undefined ? '' : `;normals=signed-two-detail;mask2=${policy.secondMask}`)
+  let compiled = sources.get(key)
+  if (compiled === undefined) {
+    let fragmentSource =
+      '#version 300 es\n' +
+      buildStandardFragmentSource(defines, { precision: 'precision highp float;' })
+        .replaceAll('varying ', 'in ')
+        .replaceAll('texture2D(', 'texture(')
+        .replace('void main() {', 'out vec4 materialColor;\nvoid main() {')
+        .replaceAll('gl_FragColor', 'materialColor')
+    if (normalFormats !== undefined)
+      fragmentSource = normalLayerShader(fragmentSource, normalFormats)
+    if (policy !== undefined)
+      fragmentSource = signedNormalLayerShader(
+        fragmentSource,
+        defines,
+        policy,
+        normalFormats !== undefined,
+      )
+    if (objectSpaceNormal) fragmentSource = objectSpaceNormalLayerShader(fragmentSource)
+    fragmentSource = cubeLayerShader(
+      fragmentSource,
+      defines,
+      textures,
+      worldEnvironment,
+      policy !== undefined,
+    )
+    if (worldEnvironment || policy !== undefined || objectSpaceNormal)
+      fragmentSource = fragmentSource.replace(
+        'precision highp float;',
+        `precision highp float;\n${WORLD_NORMAL_VARYINGS}`,
+      )
+    const vertexSource =
+      worldEnvironment || policy !== undefined || objectSpaceNormal
+        ? sceneMaterialVertexSource(defines, worldEnvironment, policy !== undefined || objectSpaceNormal)
+        : '#version 300 es\nprecision highp float;\n' +
+          buildStandardVertexSource(defines)
+            .replaceAll('attribute ', 'in ')
+            .replaceAll('varying ', 'out ')
+            .replaceAll('texture2D(', 'texture(')
+    for (const layer of defines.layers) Object.freeze(layer)
+    Object.freeze(defines.layers)
+    compiled = Object.freeze({ vertexSource, fragmentSource, defines: Object.freeze(defines) })
+    sources.set(key, compiled)
+  }
+  for (const value of Object.values(uniforms)) if (Array.isArray(value)) Object.freeze(value)
+  return Object.freeze({
+    key,
+    ...compiled,
+    uniforms: Object.freeze(uniforms),
+    textures: Object.freeze(textures),
+    blend: standardBlendModeName(material.blendMode, material.alphaTestThreshold),
+    twoSided: material.twoSided,
+    depthPrepass: material.depthPrepass ?? false,
+    priority: pass.priority,
+    diagnostics: Object.freeze(diagnostics),
+    normalMapSpace: material.normalMapSpace ?? 'tangent',
+    ...(worldToMaterial === undefined ? {} : { worldToMaterial }),
+    ...(worldEnvironment ? { environment } : {}),
+    ...(policy === undefined ? {} : { normalBlendPolicy: policy }),
+    ...(material.tangentGeneration === undefined
+      ? {}
+      : { tangentGeneration: material.tangentGeneration }),
+    sampleNormal: (pixel: MaterialPixel = {}, basis?: MaterialNormalBasis) =>
+      sampleNormal(material, lighting, pixel, normalFormats, basis),
+    shade: (pixel: MaterialPixel = {}) => shade(material, alpha, lighting, pixel, normalFormats),
+  })
+}
+
+function shade(
+  material: SceneStandardMaterial,
+  alpha: number,
+  lighting: Required<MaterialLighting>,
+  pixel: MaterialPixel,
+  normalFormats?: NormalFormats,
+): CpuPixelResult {
+  const teamColor = pixel.teamColor ?? lighting.teamColor,
+    ambient = pixel.ambient ?? lighting.ambient
+  finiteVector(teamColor, 3, 'team color')
+  finiteVector(ambient, 4, 'material ambient')
+  for (const vector of [
+    pixel.normal,
+    pixel.shadingNormal,
+    pixel.lightDirection,
+    pixel.halfVector,
+    pixel.viewNormal,
+    pixel.eyeToVertex,
+  ])
+    if (vector !== undefined) finiteVector(vector, 3, 'material lighting vector')
+  if (pixel.vertexColor !== undefined) finiteVector(pixel.vertexColor, 4, 'material vertex color')
+  const shadingNormal =
+    pixel.shadingNormal ??
+    (material.normalBlendPolicy === undefined
+      ? undefined
+      : sampleNormal(material, lighting, pixel, normalFormats))
+  const layers = pixelLayers(
+    material,
+    pixel,
+    teamColor,
+    normalFormats,
+    Object.keys(material.layers).filter(
+      slot =>
+        shadingNormal === undefined ||
+        ![
+          'normal',
+          'normalBlend1',
+          'normalBlend2',
+          'normalBlend1Mask',
+          'normalBlend2Mask',
+        ].includes(slot),
+    ),
+  )
+  const vertexNormal = shadingNormal ?? pixel.normal
+  return composeStandardPixelCpu({
+    layers,
+    teamColor,
+    ambient,
+    materialAlpha: alpha,
+    specularity: material.specularity,
+    specMult: material.specMult,
+    emisMult: material.emisMult,
+    specMode: material.specMode,
+    unshaded: material.unshaded,
+    doubleLambert: material.doubleLambert,
+    clampOutput: material.clampOutput,
+    alphaTestThreshold: material.alphaTestThreshold,
+    usesVertexColor: material.usesVertexColor,
+    usesVertexAlpha: material.usesVertexAlpha,
+    ...(normalFormats === undefined && material.normalMapFormat === undefined
+      ? {}
+      : { normalMapFormat: normalFormats === undefined ? material.normalMapFormat : 'rgb8' }),
+    ...(material.environmentMultipliers === undefined
+      ? {}
+      : { environmentMultipliers: material.environmentMultipliers }),
+    ...(material.emissiveTint === undefined ? {} : { emissiveTint: material.emissiveTint }),
+    ...(material.normalBlendFactors === undefined
+      ? {}
+      : {
+          normalBlendFactors: material.normalBlendFactors.map(factor => factor.value) as [
+            number,
+            number,
+            number,
+            number,
+            number,
+            number,
+            number,
+            number,
+          ],
+        }),
+    ...(vertexNormal === undefined ? {} : { vertexNormal }),
+    ...(pixel.lightDirection === undefined ? {} : { lightDir: pixel.lightDirection }),
+    ...(pixel.halfVector === undefined ? {} : { halfVec: pixel.halfVector }),
+    ...(pixel.vertexColor === undefined ? {} : { vertexColor: pixel.vertexColor }),
+  })
+}
+
+function pixelLayers(
+  material: SceneStandardMaterial,
+  pixel: MaterialPixel,
+  teamColor: Vec3,
+  normalFormats?: NormalFormats,
+  slots = Object.keys(material.layers),
+): Partial<Record<StandardLayerSlot, CpuLayerSample>> {
+  const layers: Partial<Record<StandardLayerSlot, CpuLayerSample>> = {}
+  for (const slot of slots) {
+    const layer = material.layers[slot as StandardLayerSlot]
+    if (layer === undefined) continue
+    const texel =
+      layer.texturePath === null ? layer.constantColor?.value : pixel.texels?.[layer.slot]
+    if (texel === undefined)
+      throw new TypeError(`material ${slot} requires sampled texture ${layer.texturePath}`)
+    finiteVector(texel, 4, `${slot} texel`)
+    const sample: CpuLayerSample = {
+      texel:
+        normalFormats !== undefined && NORMAL_SLOTS.some(normal => normal === slot)
+          ? normalTexelRgb(texel, normalFormats[slot as NormalSlot])
+          : texel,
+      channels: layer.channels,
+      op: layer.op,
+      teamColorMode: layer.teamColorMode,
+      invert: layer.invert,
+      clampResult: layer.clampResult,
+      ...(layer.colorMultiply === undefined ? {} : { colorMultiply: layer.colorMultiply.value }),
+      ...(layer.colorAdd === undefined ? {} : { colorAdd: layer.colorAdd.value }),
+      ...(layer.alphaFactor === undefined ? {} : { alphaFactor: layer.alphaFactor.value }),
+      ...(layer.fresnel === undefined
+        ? {}
+        : {
+            fresnel: {
+              ...layer.fresnel,
+              // The frozen composition kernel has no view-vector argument. Resolve its Fresnel
+              // scalar with the shared function, then supply that constant at the same pipeline
+              // stage. Keep channel metadata: environment masks distinguish RGBA from AAAA.
+              min: calculateLayerFresnelCpu(
+                layer.fresnel,
+                pixel.viewNormal ?? [0, 0, 1],
+                pixel.eyeToVertex ?? [0, 0, -1],
+              ),
+              maxOffset: 0,
+            },
+          }),
+    }
+    layers[layer.slot] = sample
+  }
+  return layers
+}
+
+/** Evaluate the selected normal policy before color/environment composition. */
+function sampleNormal(
+  material: SceneStandardMaterial,
+  lighting: Required<MaterialLighting>,
+  pixel: MaterialPixel,
+  formats?: NormalFormats,
+  basis?: MaterialNormalBasis,
+): Vec3 {
+  const team = pixel.teamColor ?? lighting.teamColor
+  finiteVector(team, 3, 'team color')
+  for (const value of [pixel.normal, pixel.viewNormal, pixel.eyeToVertex])
+    if (value !== undefined) finiteVector(value, 3, 'material normal vector')
+  if (basis !== undefined)
+    for (const value of [basis.tangent, basis.bitangent, basis.normal])
+      finiteVector(value, 3, 'material normal basis')
+  const layers = pixelLayers(material, pixel, team, formats, [
+    'normal',
+    'normalBlend1',
+    'normalBlend2',
+    'normalBlend1Mask',
+    'normalBlend2Mask',
+  ])
+  const format = formats === undefined ? (material.normalMapFormat ?? 'dxt5nm') : 'rgb8'
+  let normal: Vec3 =
+    layers.normal === undefined
+      ? (pixel.normal ?? [0, 0, 1])
+      : decodeNormalCpu(layers.normal.texel, format)
+  if (material.normalMapSpace === 'object' && layers.normal !== undefined) {
+    const transform = material.normalMapTransform ?? [1, 0, 0, 0, 1, 0, 0, 0, 1]
+    normal = [
+      transform[0] * normal[0] + transform[3] * normal[1] + transform[6] * normal[2],
+      transform[1] * normal[0] + transform[4] * normal[1] + transform[7] * normal[2],
+      transform[2] * normal[0] + transform[5] * normal[1] + transform[8] * normal[2],
+    ]
+  }
+  const maskValue = (index: 0 | 1): Vec4 => {
+    const mask = layers[index === 0 ? 'normalBlend1Mask' : 'normalBlend2Mask']
+    return mask === undefined ? [1, 0, 0, 0] : computeLayerColorCpu(mask, team)
+  }
+  const maskFactors = (index: 0 | 1): Vec4 => {
+    const read = (channel: number) =>
+      material.normalBlendFactors?.[index * 4 + channel]?.value ?? (channel === 0 ? 1 : 0)
+    return [read(0), read(1), read(2), read(3)]
+  }
+  const maskWeight = (index: 0 | 1): number => {
+    const weights = maskValue(index)
+    return weights.reduce(
+      (sum, value, channel) =>
+        sum +
+        value *
+          (material.normalBlendFactors?.[index * 4 + channel]?.value ?? (channel === 0 ? 1 : 0)),
+      0,
+    )
+  }
+  if (material.normalBlendPolicy !== undefined) {
+    const first = layers.normalBlend1,
+      second = layers.normalBlend2
+    if (first === undefined || second === undefined)
+      throw new TypeError('signed normal policy requires both detail layers')
+    return blendSignedNormals(
+      normal,
+      decodeNormalCpu(first.texel, format),
+      decodeNormalCpu(second.texel, format),
+      signedNormalFactor(
+        maskValue(0),
+        maskFactors(0),
+        material.normalBlendPolicy.secondMask ? maskValue(1) : [0, 0, 0, 0],
+        material.normalBlendPolicy.secondMask ? maskFactors(1) : [0, 0, 0, 0],
+      ),
+      basis,
+    )
+  }
+  for (const index of [0, 1] as const) {
+    const detail = layers[index === 0 ? 'normalBlend1' : 'normalBlend2']
+    if (detail === undefined) continue
+    const factor = Math.min(1, Math.max(0, maskWeight(index)))
+    const decoded = decodeNormalCpu(detail.texel, format)
+    const mixed: Vec3 = [
+      normal[0] + (decoded[0] - normal[0]) * factor,
+      normal[1] + (decoded[1] - normal[1]) * factor,
+      normal[2] + (decoded[2] - normal[2]) * factor,
+    ]
+    const length = Math.hypot(...mixed)
+    normal = length > 1e-8 ? [mixed[0] / length, mixed[1] / length, mixed[2] / length] : [0, 0, 1]
+  }
+  return basis === undefined ? normal : normalInBasis(normal, basis)
+}

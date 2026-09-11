@@ -1,6 +1,6 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises'
 import path from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { pathToFileURL, fileURLToPath } from 'node:url'
 import {
   hash,
   stable,
@@ -13,6 +13,7 @@ import { MK2_PIN, digestManifest } from './legacy-oracle.mjs'
 import { parseFlags, requiredFlag } from './port-cli.mjs'
 import { verifyPreparedOracle } from './port-oracle-proof.mjs'
 import { workspaceRoot } from './port-context.mjs'
+import { captureRuntimeProof, verifyRuntimeProof } from './port-runtime-proof.mjs'
 
 export function validateOracleEvidence(evidence, corpus) {
   const modules = evidence?.modules ?? (evidence ? [evidence] : [])
@@ -124,6 +125,7 @@ export async function runDifferential({
   operation,
   corpusKind,
   proofs = [],
+  onCase,
 }) {
   if (typeof legacy !== 'function' || typeof migrated !== 'function')
     throw new Error('two executable adapters are required')
@@ -153,12 +155,14 @@ export async function runDifferential({
     const left = await invoke(legacy)
     const right = await invoke(migrated)
     const match = stable(left) === stable(right)
-    rows.push({
+    const row = {
       id: item.id,
       verdict: !match ? 'different' : left.result === 'refused' ? 'both-refused' : 'identical',
       legacySha256: hash(stable(left)),
       migratedSha256: hash(stable(right)),
-    })
+    }
+    if (onCase !== undefined) await onCase({ ...row, legacy: left, migrated: right })
+    rows.push(row)
   }
   const identical = rows.filter(row => row.verdict === 'identical').length
   const differing = rows.filter(row => row.verdict === 'different').length
@@ -184,15 +188,56 @@ export async function runDifferentialCli({ codec, requirementIds }) {
     '--corpus',
     '--receipt',
     '--operation',
+    '--config',
+    '--outputs',
   ])
-  const get = name => requiredFlag(args, name)
-  const sourcePath = path.resolve(get('--legacy'))
-  const targetPath = path.resolve(get('--migrated'))
-  const corpusPath = path.resolve(get('--corpus'))
-  const receiptPath = path.resolve(get('--receipt'))
+  let base = process.cwd()
+  let configPath
+  let configBytes
+  let config
+  if (args.has('--config')) {
+    if (args.size !== 1) throw new Error('--config cannot be combined with inline parity options')
+    configPath = path.resolve(requiredFlag(args, '--config'))
+    configBytes = await readFile(configPath)
+    config = JSON.parse(configBytes)
+    const keys = ['schemaVersion', 'legacy', 'migrated', 'corpus', 'receipt', 'operation', 'outputs']
+    if (config?.schemaVersion !== 1 || Object.keys(config).some(key => !keys.includes(key))) {
+      throw new Error('invalid parity config schema')
+    }
+    base = path.dirname(configPath)
+  }
+  const get = name => {
+    const value = config === undefined ? requiredFlag(args, name) : config[name.slice(2)]
+    if (typeof value !== 'string' || !value.trim()) throw new Error(`required ${name}`)
+    return value
+  }
+  const sourcePath = path.resolve(base, get('--legacy'))
+  const targetPath = path.resolve(base, get('--migrated'))
+  const corpusPath = path.resolve(base, get('--corpus'))
+  const receiptPath = path.resolve(base, get('--receipt'))
+  const outputOption = config === undefined ? args.get('--outputs') : config.outputs
+  if (outputOption !== undefined && (typeof outputOption !== 'string' || !outputOption.trim())) {
+    throw new Error('invalid parity outputs path')
+  }
+  const outputsPath = outputOption === undefined ? undefined : path.resolve(base, outputOption)
+  const pathKey = value => process.platform === 'win32' ? value.toLowerCase() : value
+  const inputPaths = [sourcePath, targetPath, corpusPath, ...(configPath === undefined ? [] : [configPath])]
+  const outputPaths = [receiptPath, ...(outputsPath === undefined ? [] : [outputsPath])]
+  if (new Set(outputPaths.map(pathKey)).size !== outputPaths.length ||
+    outputPaths.some(output => inputPaths.some(input => pathKey(output) === pathKey(input)))) {
+    throw new Error('parity output would overwrite an input or another output')
+  }
   const operation = get('--operation')
-  const corpusBytes = await readFile(corpusPath)
+  const inputBytes = new Map(await Promise.all(inputPaths.map(async file => [file, file === configPath ? configBytes : await readFile(file)])))
+  const inputHashes = [...inputBytes].map(([file, bytes]) => [file, hash(bytes)])
+  const corpusBytes = inputBytes.get(corpusPath)
   const corpus = JSON.parse(corpusBytes)
+  for (const proof of corpus.proofs ?? [])
+    if (!requirementIds.includes(proof.requirement))
+      throw new Error(`out-of-scope proof: ${proof.requirement}`)
+  const harnessSelection = { roots: [path.dirname(fileURLToPath(import.meta.url)),
+    ...(process.argv[1] === undefined ? [] : [path.resolve(process.argv[1])])] }
+  const harnessProof = await captureRuntimeProof(harnessSelection)
   const oracle = await import(pathToFileURL(sourcePath).href)
   const target = await import(pathToFileURL(targetPath).href)
   const prepared =
@@ -209,18 +254,30 @@ export async function runDifferentialCli({ codec, requirementIds }) {
       repoRoot: path.join(workspaceRoot, 'references/modkitmk2'),
     })
   }
-  for (const proof of corpus.proofs ?? [])
-    if (!requirementIds.includes(proof.requirement))
-      throw new Error(`out-of-scope proof: ${proof.requirement}`)
-  const receipt = await runDifferential({
-    legacy: prepared.module[operation],
-    migrated: target[operation],
-    cases: corpus.cases,
-    codec,
-    operation,
-    corpusKind: corpus.kind,
-    proofs: corpus.proofs ?? [],
-  })
+  const migrated = typeof target.prepareMigrated === 'function'
+    ? await target.prepareMigrated({ operation, corpus, corpusPath })
+    : { module: target }
+  const caseOutputs = []
+  let receipt
+  try {
+    receipt = await runDifferential({
+      legacy: prepared.module[operation],
+      migrated: migrated.module[operation],
+      cases: corpus.cases,
+      codec,
+      operation,
+      corpusKind: corpus.kind,
+      proofs: corpus.proofs ?? [],
+      ...(outputsPath === undefined ? {} : { onCase: value => { caseOutputs.push(value) } }),
+    })
+    if (typeof migrated.verify === 'function') await migrated.verify()
+    await verifyRuntimeProof(harnessProof, harnessSelection)
+  } finally {
+    if (typeof migrated.release === 'function') await migrated.release()
+  }
+  for (const [file, expected] of inputHashes) {
+    if (hash(await readFile(file)) !== expected) throw new Error(`parity input changed during execution: ${file}`)
+  }
   receipt.inputs = {
     legacyAdapterSha256: hash(await readFile(sourcePath)),
     migratedAdapterSha256: hash(await readFile(targetPath)),
@@ -229,6 +286,16 @@ export async function runDifferentialCli({ codec, requirementIds }) {
   }
   if (prepared.evidence) receipt.oracle = prepared.evidence
   if (oracleVerification) receipt.oracleVerification = oracleVerification
+  if (migrated.evidence !== undefined) receipt.migrated = migrated.evidence
+  receipt.harness = harnessProof
+  if (configBytes !== undefined) receipt.inputs.configSha256 = hash(configBytes)
+  if (outputsPath !== undefined) {
+    // Deep canonical values are large; indentation must not multiply retained output size.
+    const bytes = stable({ schemaVersion: 1, codec, operation, cases: caseOutputs }, 0)
+    await mkdir(path.dirname(outputsPath), { recursive: true })
+    await writeFile(outputsPath, bytes)
+    receipt.outputs = { path: path.relative(path.dirname(receiptPath), outputsPath).replaceAll('\\', '/'), sha256: hash(bytes) }
+  }
   await mkdir(path.dirname(receiptPath), { recursive: true })
   await writeFile(receiptPath, stable(receipt))
   console.log(

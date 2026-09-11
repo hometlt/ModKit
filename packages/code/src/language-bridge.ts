@@ -32,6 +32,7 @@ import type {
   LanguageSymbol,
 } from '@modkit/sdk'
 import * as monaco from 'monaco-editor/editor/editor.main.js'
+import { encodeSemanticTokens, SEMANTIC_TOKEN_TYPES } from './semantic-tokens.js'
 
 /** Resolve a declarative subject-reference completion into concrete labels. */
 export interface SubjectCompletionResolver {
@@ -63,6 +64,37 @@ export interface LanguageBridgeOptions {
    * about the bank buffer and nothing else.
    */
   readonly models?: (model: monaco.editor.ITextModel) => boolean
+  /**
+   * The language id the provider should see on the document, when it differs from the one Monaco
+   * colours with.
+   *
+   * These are two different things and conflating them silently disables a provider. A GameData
+   * document is coloured as `xml` and understood as `sc2-data`; SC2's triggers and Galaxy providers
+   * check the id they were given and refuse anything else, so handed `xml` they answer "cannot
+   * inspect xml" — correctly, and invisibly, because a refusal looks exactly like a file with no
+   * problems. The host knows which document this is, so the host says so.
+   */
+  readonly documentLanguageId?: string
+  /**
+   * Put the open document into its own workspace snapshot.
+   *
+   * Providers disagree about this and both readings are defensible, so it is stated rather than
+   * assumed. Galaxy refuses outright when the primary document is absent from the snapshot — it
+   * resolves includes against that set. sc2-data reads a non-empty snapshot as "other files are
+   * visible" and switches on cross-file reference checking, so handing it only itself would report
+   * every link into another catalog as broken. Defaulting either way breaks one of them quietly.
+   */
+  readonly includePrimaryInWorkspace?: boolean
+  /**
+   * Neighbouring documents to put in the workspace snapshot with every request.
+   *
+   * The contract has always carried this and no host ever filled it, which quietly capped what the
+   * SC2 providers could answer: a localization buffer's style and colour names live in
+   * `FontStyles.SC2Style`, and its entity names live in a GameData catalog. It is a callback rather
+   * than a list because the neighbours change as the reader opens files, and a provider asked today
+   * should see today's set.
+   */
+  readonly workspaceDocuments?: () => readonly LanguageDocument[]
 }
 
 const SEVERITY: Readonly<Record<LanguageDiagnostic['severity'], monaco.MarkerSeverity>> =
@@ -120,10 +152,13 @@ const SYMBOL_KIND: Readonly<Record<string, monaco.languages.SymbolKind>> = Objec
   file: monaco.languages.SymbolKind.File,
 })
 
-function documentOf(model: monaco.editor.ITextModel): LanguageDocument {
+function documentOf(
+  model: monaco.editor.ITextModel,
+  languageId?: string,
+): LanguageDocument {
   return {
     uri: model.uri.toString(),
-    languageId: model.getLanguageId(),
+    languageId: languageId ?? model.getLanguageId(),
     version: model.getVersionId(),
     text: model.getValue(),
   }
@@ -153,12 +188,17 @@ export function bridgeLanguageProvider(
   const request = (model: monaco.editor.ITextModel, token: monaco.CancellationToken) => {
     const controller = new AbortController()
     token.onCancellationRequested(() => controller.abort('monaco-cancelled'))
+    const document = documentOf(model, options.documentLanguageId)
+    const neighbours = options.workspaceDocuments?.() ?? []
     return {
-      document: documentOf(model),
-      workspaceDocuments: [],
+      document,
+      workspaceDocuments:
+        options.includePrimaryInWorkspace === true ? [document, ...neighbours] : neighbours,
       workspaceIncomplete: true,
       maxResults,
-      maxDocuments,
+      // A cap below the snapshot size would make the provider ignore documents the host chose to
+      // send, which reads as a missing neighbour rather than a deliberate limit.
+      maxDocuments: Math.max(maxDocuments, neighbours.length + 1),
       signal: controller.signal,
     }
   }
@@ -212,6 +252,40 @@ export function bridgeLanguageProvider(
             })
           }
           return { suggestions, incomplete: list.isIncomplete }
+        },
+      }),
+    )
+  }
+
+  /*
+   * Syntax colouring from the codec's own tokenizer.
+   *
+   * A format like GameStrings has no Monaco grammar and was opened as `ini`, which is to say with no
+   * colouring of its own at all. Writing a Monarch grammar would be a second tokenizer beside the
+   * one the provider already runs — two of them disagree eventually, and the disagreement shows up
+   * as text that is coloured one way in the editor and another in the tree. So the editor is fed the
+   * provider's own tokens instead, and there is one tokenizer per format for every surface.
+   */
+  {
+    const analyze = provider.analyze.bind(provider)
+    const legend = { tokenTypes: [...SEMANTIC_TOKEN_TYPES], tokenModifiers: [] }
+    disposables.push(
+      monaco.languages.registerDocumentSemanticTokensProvider(selector, {
+        getLegend: () => legend,
+        async provideDocumentSemanticTokens(model, _lastResultId, token) {
+          if (!claims(model)) return null
+          const controller = new AbortController()
+          token.onCancellationRequested(() => controller.abort('monaco-cancelled'))
+          const analysis = await analyze({
+            document: documentOf(model, options.documentLanguageId),
+            // Only the tokens are wanted here; a checker run on every keystroke is waste.
+            include: { tokens: true, diagnostics: false, symbols: false },
+            signal: controller.signal,
+          })
+          return { data: encodeSemanticTokens(analysis) }
+        },
+        releaseDocumentSemanticTokens() {
+          // Full results only: there is no cached previous state to release.
         },
       }),
     )
@@ -296,7 +370,25 @@ export function bridgeLanguageProvider(
 export async function publishDiagnostics(
   provider: LanguageProvider,
   model: monaco.editor.ITextModel,
-  options: { readonly owner?: string; readonly signal?: AbortSignal; readonly maxResults?: number } = {},
+  options: {
+    readonly owner?: string
+    readonly signal?: AbortSignal
+    readonly maxResults?: number
+    /** The id the provider should see; see `documentLanguageId` on the bridge options. */
+    readonly documentLanguageId?: string
+  /**
+   * Put the open document into its own workspace snapshot.
+   *
+   * Providers disagree about this and both readings are defensible, so it is stated rather than
+   * assumed. Galaxy refuses outright when the primary document is absent from the snapshot — it
+   * resolves includes against that set. sc2-data reads a non-empty snapshot as "other files are
+   * visible" and switches on cross-file reference checking, so handing it only itself would report
+   * every link into another catalog as broken. Defaulting either way breaks one of them quietly.
+   */
+  readonly includePrimaryInWorkspace?: boolean
+    /** Neighbouring documents to check against; see the bridge option of the same name. */
+    readonly workspaceDocuments?: readonly LanguageDocument[]
+  } = {},
 ): Promise<number> {
   const owner = options.owner ?? 'modkit.language'
   const diagnose = provider.diagnostics?.bind(provider)
@@ -304,9 +396,12 @@ export async function publishDiagnostics(
     monaco.editor.setModelMarkers(model, owner, [])
     return 0
   }
+  const primary = documentOf(model, options.documentLanguageId)
+  const neighbours = options.workspaceDocuments ?? []
   const list = await diagnose({
-    document: documentOf(model),
-    workspaceDocuments: [],
+    document: primary,
+    workspaceDocuments:
+      options.includePrimaryInWorkspace === true ? [primary, ...neighbours] : neighbours,
     workspaceIncomplete: true,
     maxResults: options.maxResults ?? 1000,
     maxDocuments: 1,

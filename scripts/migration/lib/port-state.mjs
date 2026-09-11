@@ -4,7 +4,7 @@ import { readFile, readdir, realpath, glob } from 'node:fs/promises'
 import path from 'node:path'
 
 export const hash = value => createHash('sha256').update(value).digest('hex')
-export const stable = value =>
+export const stable = (value, space = 2) =>
   JSON.stringify(
     value,
     (_key, item) =>
@@ -15,7 +15,7 @@ export const stable = value =>
               .map(key => [key, item[key]]),
           )
         : item,
-    2,
+    space,
   ) + '\n'
 export const readJson = async file => JSON.parse(await readFile(file, 'utf8'))
 

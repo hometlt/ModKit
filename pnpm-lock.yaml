@@ -80,6 +80,9 @@ importers:
 
   apps/cli:
     dependencies:
+      '@modkit/codec-kit':
+        specifier: workspace:*
+        version: link:../../packages/codec-kit
       '@modkit/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -122,6 +125,9 @@ importers:
       '@modkit/uv':
         specifier: workspace:*
         version: link:../../packages/uv
+      '@modkit/vfs':
+        specifier: workspace:*
+        version: link:../../packages/vfs
     devDependencies:
       electron:
         specifier: ^43.4.0
@@ -332,6 +338,18 @@ importers:
       '@modkit/host':
         specifier: workspace:*
         version: link:../../packages/host
+      '@modkit/scene':
+        specifier: workspace:*
+        version: link:../../packages/scene
+      '@modkit/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      '@modkit/uv':
+        specifier: workspace:*
+        version: link:../../packages/uv
+
+  extensions/translation:
+    dependencies:
       '@modkit/sdk':
         specifier: workspace:*
         version: link:../../packages/sdk
@@ -436,15 +454,21 @@ importers:
 
   packages/scene:
     dependencies:
+      '@modkit/codec-kit':
+        specifier: workspace:*
+        version: link:../codec-kit
+      '@modkit/core':
+        specifier: workspace:*
+        version: link:../core
       '@modkit/host':
         specifier: workspace:*
         version: link:../host
       '@modkit/sdk':
         specifier: workspace:*
         version: link:../sdk
-      '@modkit/ui':
+      '@modkit/uv':
         specifier: workspace:*
-        version: link:../ui
+        version: link:../uv
       three:
         specifier: ^0.180.0
         version: 0.180.0
@@ -485,15 +509,24 @@ importers:
 
   packages/ui:
     dependencies:
+      '@modkit/codec-kit':
+        specifier: workspace:*
+        version: link:../codec-kit
       '@modkit/core':
         specifier: workspace:*
         version: link:../core
+      '@modkit/scene':
+        specifier: workspace:*
+        version: link:../scene
       '@modkit/sdk':
         specifier: workspace:*
         version: link:../sdk
 
   packages/uv:
     dependencies:
+      '@modkit/codec-kit':
+        specifier: workspace:*
+        version: link:../codec-kit
       '@modkit/host':
         specifier: workspace:*
         version: link:../host

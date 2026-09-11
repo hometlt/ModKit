@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "commit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "sources": [{
+    "path": "packages/rendering-3d/src/webgl-core/index.ts",
+    "symbols": ["skinInterleaved", "transformPoint", "transformVector"]
+  }],
+  "imports": ["import type { WebGlMeshPlan } from './skinning-types.js'"],
+  "exports": ["skinInterleaved"],
+  "output": "packages/codec-kit/src/model/legacy/skinning-kernels.ts",
+  "provenance": "packages/codec-kit/MK2-SKINNING-KERNELS.json"
+}

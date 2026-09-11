@@ -250,4 +250,58 @@ describe('game-neutral data catalog resolution', () => {
       'workspaceId',
     ])
   })
+
+  it('keeps exact numeric and named selectors in indexed typed-link relation paths', () => {
+    const source = { rootId: 'workspace', path: 'UnitData.xml', documentIndex: 0 }
+    const snapshot = resolveDataCatalog({
+      workspaceId: 'indexed-relations',
+      gameId: 'example/game',
+      analyzerId: 'example/analyzer',
+      schemas: [
+        { typeId: 'Weapon', fields: [] },
+        {
+          typeId: 'Unit',
+          fields: [
+            {
+              fieldId: 'WeaponArray',
+              cardinality: 'indexed',
+              indexKey: 'index',
+              fields: [
+                {
+                  fieldId: 'Link',
+                  cardinality: 'scalar',
+                  type: { kind: 'subject-ref', subjectKind: 'fixture/weapon' },
+                  linkNamespace: 'Weapon',
+                },
+              ],
+            },
+          ],
+        },
+      ],
+      patches: [
+        {
+          namespace: 'Unit',
+          typeId: 'Unit',
+          entityId: 'Marine',
+          fields: {
+            WeaponArray: [
+              { index: '0', value: { Link: 'Rifle' } },
+              { index: 'Secondary', value: { Link: 'Laser' } },
+            ],
+          },
+          source,
+        },
+        { namespace: 'Weapon', typeId: 'Weapon', entityId: 'Rifle', fields: {}, source },
+        { namespace: 'Weapon', typeId: 'Weapon', entityId: 'Laser', fields: {}, source },
+      ],
+      queries: [],
+      includeWorkspaceFacets: true,
+      maxEntities: 8,
+      maxDepth: 8,
+    })
+    expect(snapshot.relations?.map(relation => relation.role)).toEqual([
+      'WeaponArray.0.Link',
+      'WeaponArray.Secondary.Link',
+    ])
+  })
 })

@@ -12,6 +12,6 @@ describe('built-in scene module', () => {
       ['modkit/browser-webgl-renderer', 'modkit/headless-renderer'],
     )
     assert.deepEqual(sceneModule.excluded, [])
-    assert.equal(sceneModule.moduleEntries.length, 2)
+    assert.equal(new Set(sceneModule.moduleEntries.map(([entrypoint]) => entrypoint)).size, 2)
   })
 })

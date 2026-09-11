@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "modkit/service-provider-contribution",
+    "major": 1
+  },
+  "id": "modkit/translation",
+  "displayName": "Machine translation",
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./src/provider.js",
+      "target": { "environments": ["node"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["network", "credentials"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./src/provider.js",
+      "target": { "environments": ["browser-worker", "node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["network", "credentials"]
+    }
+  ],
+  "spec": {
+    "provides": [
+      {
+        "offerId": "translation-v1",
+        "contract": "common.language/translation",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": {
+          "backends": [
+            "google",
+            "openai",
+            "codex",
+            "openai-compatible",
+            "anthropic",
+            "gemini"
+          ]
+        }
+      }
+    ],
+    "lifecycleScope": "session"
+  }
+}

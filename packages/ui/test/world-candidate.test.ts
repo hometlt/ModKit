@@ -8,7 +8,8 @@ import type {
   WorldScenePageRequest,
 } from '@modkit/sdk/maps'
 import { WORLD_SCENE_SOURCE_CONTRACT } from '@modkit/sdk/maps'
-import { drawCandidateWorld, inspectCandidateWorld } from '@modkit/ui/world'
+import type { TransportSource } from '@modkit/sdk'
+import { drawCandidateWorld, inspectCandidateWorld, watchTransportedWorld } from '@modkit/ui/world'
 
 const contract = 'example.publisher/world-source'
 const snapshotId = 'example-snapshot'
@@ -64,6 +65,43 @@ const info: CandidateWorldSceneInfo = Object.freeze({
 })
 
 describe('generic publisher-candidate world harness', () => {
+  it('refreshes a dynamic world for transport snapshots only', async () => {
+    const snapshot = {
+      state: 'paused' as const,
+      positionMs: 0,
+      durationMs: 1000,
+      rate: 1,
+      seekable: true,
+      live: false,
+      tracks: [],
+      controls: {},
+    }
+    const transport: TransportSource = {
+      async snapshot() {
+        return snapshot
+      },
+      async *events() {
+        yield { kind: 'snapshot', snapshot }
+        yield {
+          kind: 'diagnostic',
+          diagnostic: {
+            id: 'test-diagnostic',
+            code: 'test/diagnostic',
+            category: 'structure',
+            severity: 'information',
+            message: 'ignored by the world refresh binding',
+          },
+        }
+        yield { kind: 'snapshot', snapshot: { ...snapshot, positionMs: 500 } }
+      },
+    }
+    let refreshes = 0
+    await watchTransportedWorld(transport, async () => {
+      refreshes += 1
+    })
+    expect(refreshes).toBe(2)
+  })
+
   it('consumes an arbitrary publisher structurally with bounded layer/item requests', async () => {
     const requests: unknown[] = []
     const source: CandidateWorldSceneSource = Object.freeze({

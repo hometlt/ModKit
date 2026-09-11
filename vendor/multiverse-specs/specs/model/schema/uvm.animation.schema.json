@@ -2,25 +2,268 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://modkitx.org/uvm/1.0/uvm.animation.schema.json",
   "title": "UVM animation extensions",
-  "description": "UV_game_animation_clips and UV_game_animation_events attach to a glTF animation; KHR_animation_pointer attaches to an animation channel target. UV_animation_layers attaches to the document root.",
+  "description": "UV_game_animation_clips has root catalog and animation metadata forms. UV_game_animation_events attaches to an animation; KHR_animation_pointer to a channel target; UV_animation_layers to the root.",
   "$defs": {
+    "catalog": {
+      "$anchor": "catalog",
+      "type": "object",
+      "required": [
+        "clips"
+      ],
+      "properties": {
+        "clips": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/catalogClip"
+          }
+        },
+        "materialTargets": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/materialTarget"
+          }
+        },
+        "attachments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/attachment"
+          }
+        },
+        "extras": {}
+      },
+      "additionalProperties": false
+    },
+    "catalogClip": {
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "durationSeconds",
+        "sourceSequenceIndex"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "durationSeconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "sourceSequenceIndex": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "animation": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "sourceId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "looping": {
+          "type": "boolean"
+        },
+        "kind": {
+          "enum": [
+            "animation",
+            "rest-pose"
+          ]
+        },
+        "frames": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "extras": {}
+      },
+      "additionalProperties": false
+    },
+    "materialTarget": {
+      "type": "object",
+      "required": [
+        "id",
+        "properties"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "properties": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "value",
+              "sequenceTracks"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "pattern": "^/renderModel/",
+                "description": "Unique published animated property path; SPEC_UVM 12.2 defines the whitelist and width."
+              },
+              "value": {
+                "oneOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 4,
+                    "items": {
+                      "type": "number"
+                    }
+                  }
+                ]
+              },
+              "sequenceTracks": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "sequenceIndex",
+                    "track"
+                  ],
+                  "properties": {
+                    "sequenceIndex": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 4294967295
+                    },
+                    "concurrent": {
+                      "type": "boolean"
+                    },
+                    "wrapSeconds": {
+                      "type": "number",
+                      "exclusiveMinimum": 0
+                    },
+                    "track": {
+                      "type": "object",
+                      "required": [
+                        "lineType",
+                        "globalSeqId",
+                        "keys"
+                      ],
+                      "properties": {
+                        "lineType": {
+                          "enum": [
+                            0,
+                            1
+                          ]
+                        },
+                        "globalSeqId": {
+                          "const": null
+                        },
+                        "keys": {
+                          "type": "array",
+                          "minItems": 1,
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "frame",
+                              "vector"
+                            ],
+                            "properties": {
+                              "frame": {
+                                "type": "number"
+                              },
+                              "vector": {
+                                "type": "array",
+                                "minItems": 1,
+                                "maxItems": 4,
+                                "items": {
+                                  "type": "number"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "attachment": {
+      "type": "object",
+      "required": [
+        "id",
+        "mapping",
+        "clips",
+        "playbackLimitations"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "mapping": {
+          "type": "object",
+          "description": "Inert explicit attachment input; never executable."
+        },
+        "clips": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "playbackLimitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
     "clips": {
       "$anchor": "clips",
       "title": "UV_game_animation_clips",
       "type": "object",
-      "required": ["clip"],
+      "required": [
+        "clip"
+      ],
       "properties": {
         "clip": {
           "type": "string",
           "description": "Canonical lower-case clip name.",
-          "examples": ["stand", "walk", "run", "attack", "death", "birth", "work"]
+          "examples": [
+            "stand",
+            "walk",
+            "run",
+            "attack",
+            "death",
+            "birth",
+            "work"
+          ]
         },
         "variant": {
           "type": "string"
         },
         "loop": {
           "type": "string",
-          "enum": ["once", "loop", "ping-pong", "hold"],
+          "enum": [
+            "once",
+            "loop",
+            "ping-pong",
+            "hold"
+          ],
           "default": "once"
         },
         "priority": {
@@ -79,13 +322,18 @@
       "$anchor": "events",
       "title": "UV_game_animation_events",
       "type": "object",
-      "required": ["events"],
+      "required": [
+        "events"
+      ],
       "properties": {
         "events": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["t", "name"],
+            "required": [
+              "t",
+              "name"
+            ],
             "properties": {
               "t": {
                 "type": "number",
@@ -144,21 +392,28 @@
       "$anchor": "layers",
       "title": "UV_animation_layers",
       "type": "object",
-      "required": ["layers"],
+      "required": [
+        "layers"
+      ],
       "properties": {
         "layers": {
           "type": "array",
           "minItems": 1,
           "items": {
             "type": "object",
-            "required": ["name"],
+            "required": [
+              "name"
+            ],
             "properties": {
               "name": {
                 "type": "string"
               },
               "mode": {
                 "type": "string",
-                "enum": ["override", "additive"],
+                "enum": [
+                  "override",
+                  "additive"
+                ],
                 "default": "override"
               },
               "weight": {
@@ -220,7 +475,10 @@
         },
         "effectTrackScope": {
           "type": "string",
-          "enum": ["global", "absolute"]
+          "enum": [
+            "global",
+            "absolute"
+          ]
         },
         "globalSeqId": {
           "type": "integer",
@@ -235,10 +493,14 @@
                 "const": "global"
               }
             },
-            "required": ["effectTrackScope"]
+            "required": [
+              "effectTrackScope"
+            ]
           },
           "then": {
-            "required": ["globalSeqId"]
+            "required": [
+              "globalSeqId"
+            ]
           }
         },
         {
@@ -248,17 +510,23 @@
                 "const": "absolute"
               }
             },
-            "required": ["effectTrackScope"]
+            "required": [
+              "effectTrackScope"
+            ]
           },
           "then": {
             "not": {
-              "required": ["globalSeqId"]
+              "required": [
+                "globalSeqId"
+              ]
             }
           }
         },
         {
           "if": {
-            "required": ["globalSeqId"]
+            "required": [
+              "globalSeqId"
+            ]
           },
           "then": {
             "properties": {
@@ -266,7 +534,9 @@
                 "const": "global"
               }
             },
-            "required": ["effectTrackScope"]
+            "required": [
+              "effectTrackScope"
+            ]
           }
         }
       ],
@@ -277,11 +547,18 @@
       "title": "UVM animation channel metadata",
       "description": "Lossless source interpolation and independent-timeline metadata for TRS and pointer channels, stored at animation.channel.extras.uv. Values are 0=step, 1=linear, 2=Hermite and 3=Bezier. M3 concurrent STCs set concurrent=true and carry their positive wrap duration in seconds; global TRS channels carry globalSeqId.",
       "type": "object",
-      "required": ["sourceLineType"],
+      "required": [
+        "sourceLineType"
+      ],
       "properties": {
         "sourceLineType": {
           "type": "integer",
-          "enum": [0, 1, 2, 3]
+          "enum": [
+            0,
+            1,
+            2,
+            3
+          ]
         },
         "concurrent": {
           "const": true
@@ -298,18 +575,26 @@
       "allOf": [
         {
           "if": {
-            "required": ["concurrent"]
+            "required": [
+              "concurrent"
+            ]
           },
           "then": {
-            "required": ["wrapSeconds"]
+            "required": [
+              "wrapSeconds"
+            ]
           }
         },
         {
           "if": {
-            "required": ["wrapSeconds"]
+            "required": [
+              "wrapSeconds"
+            ]
           },
           "then": {
-            "required": ["concurrent"]
+            "required": [
+              "concurrent"
+            ]
           }
         }
       ],
@@ -320,12 +605,14 @@
       "title": "KHR_animation_pointer",
       "description": "Official Khronos animation channel target payload. The containing target uses path `pointer`; this object supplies the RFC 6901 pointer.",
       "type": "object",
-      "required": ["pointer"],
+      "required": [
+        "pointer"
+      ],
       "properties": {
         "pointer": {
           "type": "string",
           "pattern": "^/",
-          "description": "JSON Pointer (RFC 6901). MUST resolve within the document and MUST NOT point into /buffers, /bufferViews, /accessors or /extensions/UV_source_blob.",
+          "description": "JSON Pointer (RFC 6901). MUST resolve within the document and MUST NOT point into /buffers, /bufferViews or /accessors.",
           "examples": [
             "/extensions/UV_game_effects/particles/0/emissionRate",
             "/materials/2/extensions/UV_game_material/layers/3/scroll"

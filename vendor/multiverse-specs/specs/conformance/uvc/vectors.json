@@ -1,0 +1,14 @@
+{
+  "$comment": "Declared graph-semantics expectations for UVC 1.0. Schema-level accept/reject cases are EXECUTABLE via conformance/schema-assertions.json (campaign/fixtures). The rules below cannot be expressed by JSON Schema (uniqueness across items, graph reachability, variable resolution) and become executable with the campaign composer.",
+  "schemaVersion": "uv-conformance-vectors-1",
+  "suite": "uvc",
+  "profile": "UVC/1.0",
+  "spec": "../../campaign/SPEC_UVC.md",
+  "vectors": [
+    { "id": "graph/duplicate-entry-id", "expect": "declared", "rule": "entry-ids-unique", "note": "two entries sharing an id refuse by name" },
+    { "id": "graph/unreachable-entry", "expect": "declared", "rule": "entries-reachable", "note": "an entry no unlock condition can ever satisfy from the initial carryover is refused, not silently hidden" },
+    { "id": "graph/cycle", "expect": "declared", "rule": "no-progression-cycles", "note": "a cycle in the unlock graph refuses naming its members" },
+    { "id": "unlock/undeclared-variable", "expect": "declared", "rule": "unlock-reads-declared-carryover", "note": "a var in an unlock expression must name a declared carryover variable" },
+    { "id": "carryover/initial-matches-type", "expect": "declared", "rule": "carryover-initial-typed", "note": "the initial value of every carryover variable conforms to its declared type; enum initial ∈ values" }
+  ]
+}

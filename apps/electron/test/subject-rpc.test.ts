@@ -223,6 +223,7 @@ describe('Electron subject RPC — the production pair without the binary', () =
     const repositoryRoot = join(import.meta.dirname, '..', '..', '..')
     const services = await createElectronSubjectServices([
       join(repositoryRoot, 'extensions', 'archives'),
+      join(repositoryRoot, 'extensions', 'data'),
     ])
     const bytes = new Uint8Array(
       readFileSync(join(repositoryRoot, 'apps', 'web', 'public', 'samples', 'sample.zip')),
@@ -293,16 +294,15 @@ describe('Electron subject RPC — the production pair without the binary', () =
     const entryRef = await (listing.value as NamespaceEntrySource).openEntry(entry.id)
     const target = serializeSubjectRef(rootSubject({ id: entryRef.value.uri }))
     await entryRef.release()
-    await listing.release()
+    // Viewer data sources are retained by the attached session and released when it closes.
 
     const navigation = parent.session.subjectNavigation
     if (navigation === undefined) throw new Error('the attached session has no navigation port')
-    await expect(navigation.open(target)).resolves.toEqual({ state: 'opened' })
+    await expect(navigation.open({ scope: navigation.scope, target })).resolves.toEqual({ state: 'opened' })
     if (child?.state !== 'opened') throw new Error('the renderer route received no opened child')
     expect((await child.session.descriptor())['subjectUri']).toBe(target)
     await child.session.dispose()
     await parent.session.dispose()
-    await services.dispose()
   }, 60_000)
 
   it('unresolved subjects cross as inert snapshots; never-attached sessions are disposed on close', async () => {

@@ -1,0 +1,1781 @@
+{
+  "$comment": "EXECUTABLE definition-resolution vectors: uv-conformance.mjs runs them through tools/uv-composition.mjs resolveDefinitions. Layers carry inline UVD documents; the checks pin effective values AND provenance, because 'which layer set this' is half the contract. These execute the rules conformance/uvd/vectors.json declares; the real-corpus admission vector stays declared there.",
+  "schemaVersion": "uv-conformance-vectors-1",
+  "suite": "uvd-resolution",
+  "spec": "../../data/SPEC_UVD.md",
+  "kindSchema": {
+    "uv": {
+      "format": "UVD",
+      "version": "1.0"
+    },
+    "namespace": "v",
+    "role": "kind-schema",
+    "kinds": [
+      {
+        "kind": "unit",
+        "version": 1,
+        "fields": [
+          {
+            "name": "health",
+            "type": "fixed64",
+            "required": true
+          },
+          {
+            "name": "speed",
+            "type": "fixed64"
+          },
+          {
+            "name": "stance",
+            "type": "enum",
+            "values": [
+              "aggressive",
+              "defensive"
+            ]
+          },
+          {
+            "name": "weapon",
+            "type": "ref",
+            "refKind": "weapon"
+          },
+          {
+            "name": "tags",
+            "type": "list",
+            "itemType": "string"
+          }
+        ]
+      },
+      {
+        "kind": "weapon",
+        "version": 1,
+        "fields": [
+          {
+            "name": "damage",
+            "type": "fixed64",
+            "required": true
+          }
+        ]
+      }
+    ]
+  },
+  "vectors": [
+    {
+      "id": "nearest-setter-wins/accept",
+      "expect": "accept",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchema",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "trooper",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 100000,
+                    "speed": 2500,
+                    "stance": "aggressive",
+                    "tags": [
+                      "infantry"
+                    ]
+                  }
+                },
+                {
+                  "name": "elite",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "parent": "v/unit/trooper",
+                  "fields": {
+                    "health": 150000
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mod",
+          "documents": [
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "m",
+              "role": "overlay",
+              "overlays": [
+                {
+                  "target": "v/unit/trooper",
+                  "op": "set",
+                  "field": "health",
+                  "value": 120000
+                },
+                {
+                  "target": "v/unit/trooper",
+                  "op": "append",
+                  "field": "tags",
+                  "value": "buffed"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "def": "v/unit/trooper",
+          "field": "health",
+          "value": 120000,
+          "layer": "mod"
+        },
+        {
+          "def": "v/unit/trooper",
+          "field": "tags",
+          "value": [
+            "infantry",
+            "buffed"
+          ],
+          "layer": "mod"
+        },
+        {
+          "def": "v/unit/elite",
+          "field": "health",
+          "value": 150000,
+          "layer": "base"
+        },
+        {
+          "def": "v/unit/elite",
+          "field": "speed",
+          "value": 2500,
+          "layer": "base",
+          "via": "parent v/unit/trooper"
+        },
+        {
+          "def": "v/unit/elite",
+          "field": "tags",
+          "value": [
+            "infantry",
+            "buffed"
+          ],
+          "layer": "mod",
+          "via": "parent v/unit/trooper"
+        }
+      ],
+      "note": "effective value = nearest setting layer, else nearest ancestor; the elite inherits the MOD-buffed trooper tags because inheritance reads effective values, not base ones"
+    },
+    {
+      "id": "no-parent-cycles/reject",
+      "expect": "reject",
+      "rule": "no-parent-cycles",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchema",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "a",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "parent": "v/unit/b",
+                  "fields": {
+                    "health": 1
+                  }
+                },
+                {
+                  "name": "b",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "parent": "v/unit/a",
+                  "fields": {
+                    "health": 1
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fields-match-kind-schema/reject",
+      "expect": "reject",
+      "rule": "fields-match-kind-schema",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchema",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "trooper",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1,
+                    "smuggled": 5
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "note": "vendor extensions live in namespaced kinds, not in unknown fields"
+    },
+    {
+      "id": "required-fields-survive-overlays/reject",
+      "expect": "reject",
+      "rule": "required-fields-survive-overlays",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchema",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "trooper",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mod",
+          "documents": [
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "m",
+              "role": "overlay",
+              "overlays": [
+                {
+                  "target": "v/unit/trooper",
+                  "op": "remove",
+                  "field": "health"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "note": "a mod reshapes values, not the shape"
+    },
+    {
+      "id": "missing-reference/reject",
+      "expect": "reject",
+      "rule": "missing-reference",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchema",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "trooper",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1,
+                    "weapon": "v/weapon/rifle"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "note": "a typed reference to a definition nobody ships is refused by name"
+    },
+    {
+      "id": "tombstone-inherited/accept",
+      "expect": "accept",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchema",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "trooper",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1,
+                    "speed": 5
+                  }
+                },
+                {
+                  "name": "elite",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "parent": "v/unit/trooper",
+                  "fields": {
+                    "health": 2
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mod",
+          "documents": [
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "m",
+              "role": "overlay",
+              "overlays": [
+                {
+                  "target": "v/unit/trooper",
+                  "op": "remove",
+                  "field": "speed"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "def": "v/unit/elite",
+          "field": "health",
+          "value": 2,
+          "layer": "base"
+        }
+      ],
+      "absent": [
+        {
+          "def": "v/unit/elite",
+          "field": "speed"
+        }
+      ],
+      "note": "an ancestor's tombstone is inherited as absence: the elite has no speed after the mod removed it from the trooper"
+    },
+    {
+      "id": "append-after-inherited-remove/accept",
+      "expect": "accept",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchema",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "trooper",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1,
+                    "tags": [
+                      "a"
+                    ]
+                  }
+                },
+                {
+                  "name": "elite",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "parent": "v/unit/trooper",
+                  "fields": {
+                    "health": 2
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mod",
+          "documents": [
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "m",
+              "role": "overlay",
+              "overlays": [
+                {
+                  "target": "v/unit/trooper",
+                  "op": "remove",
+                  "field": "tags"
+                },
+                {
+                  "target": "v/unit/elite",
+                  "op": "append",
+                  "field": "tags",
+                  "value": "b"
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "def": "v/unit/elite",
+          "field": "tags",
+          "value": [
+            "b"
+          ],
+          "layer": "mod"
+        }
+      ],
+      "note": "append on a definition whose inherited list was removed starts from an empty list — a typed rule, not a TypeError"
+    },
+    {
+      "id": "kind-version-mismatch/reject",
+      "expect": "reject",
+      "rule": "kind-version-mismatch",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchema",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "trooper",
+                  "kind": "unit",
+                  "kindVersion": 9,
+                  "fields": {
+                    "health": 1
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "note": "kindVersion is checked against the kind-schema, not merely required"
+    },
+    {
+      "id": "duplicate-kind/reject",
+      "expect": "reject",
+      "rule": "duplicate-kind",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchema"
+          ]
+        },
+        {
+          "id": "mod",
+          "documents": [
+            "kindSchema"
+          ]
+        }
+      ],
+      "note": "a later layer redefining a kind is refused by name; kind-schema extension by mods is a future amendment, not an accident"
+    },
+    {
+      "id": "append-to-non-list/reject",
+      "expect": "reject",
+      "rule": "append-to-non-list",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchema",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "trooper",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mod",
+          "documents": [
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "m",
+              "role": "overlay",
+              "overlays": [
+                {
+                  "target": "v/unit/trooper",
+                  "op": "append",
+                  "field": "health",
+                  "value": 5
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "append-inheritance/accept",
+      "expect": "accept",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchemaExt",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "ground",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1,
+                    "abilities": [
+                      "move",
+                      "stop"
+                    ]
+                  }
+                },
+                {
+                  "name": "infantry",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "parent": "v/unit/ground",
+                  "fields": {
+                    "abilities": [
+                      "attack"
+                    ]
+                  }
+                },
+                {
+                  "name": "rifleman",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "parent": "v/unit/infantry",
+                  "fields": {
+                    "abilities": [
+                      "build"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "def": "v/unit/rifleman",
+          "field": "abilities",
+          "value": [
+            "move",
+            "stop",
+            "attack",
+            "build"
+          ],
+          "layer": "base"
+        }
+      ],
+      "note": "inherit: append — the SC2 AbilArray case from real-corpus admission: ancestors first, own last"
+    },
+    {
+      "id": "self-binding/accept",
+      "expect": "accept",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchemaExt",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "ground",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1,
+                    "alias": "${self}-glossary"
+                  }
+                },
+                {
+                  "name": "rifleman",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "parent": "v/unit/ground",
+                  "fields": {}
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "def": "v/unit/rifleman",
+          "field": "alias",
+          "value": "rifleman-glossary",
+          "layer": "base",
+          "via": "parent v/unit/ground"
+        },
+        {
+          "def": "v/unit/ground",
+          "field": "alias",
+          "value": "ground-glossary",
+          "layer": "base"
+        }
+      ],
+      "note": "${self} binds late to the leaf being resolved — the SC2 ##id## token; provenance still names the setter"
+    },
+    {
+      "id": "type-mismatch/fixed64-decimal",
+      "expect": "reject",
+      "rule": "type-mismatch",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchemaExt",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "g",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 2.5
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "note": "fixed64 carries integer quanta only; a decimal is refused, so a converter cannot silently pick its own scale"
+    },
+    {
+      "id": "type-mismatch/enum-out-of-values",
+      "expect": "reject",
+      "rule": "type-mismatch",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchemaExt",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "g",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1,
+                    "stance": "berserk"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "type-mismatch/record-field",
+      "expect": "reject",
+      "rule": "type-mismatch",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchemaExt",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "g",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1,
+                    "cost": {
+                      "amount": "many"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "missing-reference/inside-list",
+      "expect": "reject",
+      "rule": "missing-reference",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchemaExt",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "g",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1,
+                    "loadout": [
+                      "v/weapon/rifle"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "note": "a dangling reference inside a list is refused exactly like a scalar one"
+    },
+    {
+      "id": "dangling-diagnose/accept",
+      "expect": "accept",
+      "options": {
+        "danglingReferences": "diagnose"
+      },
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchemaExt",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "g",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1,
+                    "loadout": [
+                      "v/weapon/rifle"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "def": "v/unit/g",
+          "field": "loadout",
+          "value": [
+            "v/weapon/rifle"
+          ],
+          "layer": "base"
+        }
+      ],
+      "expectDiagnostics": 1,
+      "note": "policy mode: a real shipped catalog contains dead links; diagnose keeps the value and names the link, as Modkit does"
+    },
+    {
+      "id": "external-parent-truncate/accept",
+      "expect": "accept",
+      "options": {
+        "externalParents": "truncate"
+      },
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchemaExt",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "g",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "parent": "v/unit/from-base-game",
+                  "fields": {
+                    "health": 1
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "def": "v/unit/g",
+          "field": "health",
+          "value": 1,
+          "layer": "base"
+        }
+      ],
+      "expectDiagnostics": 1,
+      "note": "a loose mod inherits from the base game outside the package closure; truncate keeps the chain honest with a diagnostic instead of refusing the whole corpus"
+    },
+    {
+      "id": "self-binding-in-ref/accept",
+      "expect": "accept",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchemaExt",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "rifle-damage",
+                  "kind": "weapon",
+                  "kindVersion": 1,
+                  "fields": {
+                    "damage": 5
+                  }
+                },
+                {
+                  "name": "template",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1,
+                    "loadout": [
+                      "v/weapon/${self}-damage"
+                    ]
+                  }
+                },
+                {
+                  "name": "rifle",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "parent": "v/unit/template",
+                  "fields": {}
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "options": {
+        "danglingReferences": "diagnose"
+      },
+      "checks": [
+        {
+          "def": "v/unit/rifle",
+          "field": "loadout",
+          "value": [
+            "v/weapon/rifle-damage"
+          ],
+          "layer": "base",
+          "via": "parent v/unit/template"
+        }
+      ],
+      "expectDiagnostics": 1,
+      "note": "${self} binds inside ref lists too, so a template can declare effect = ${self}-damage as a TYPED reference; the template itself resolves to v/weapon/template-damage, which does not exist — one honest diagnostic under diagnose"
+    },
+    {
+      "id": "polymorphic-ref/accept",
+      "expect": "accept",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchemaExt",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "decoy",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1
+                  }
+                },
+                {
+                  "name": "g",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1,
+                    "target": "v/unit/decoy"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "def": "v/unit/g",
+          "field": "target",
+          "value": "v/unit/decoy",
+          "layer": "base"
+        }
+      ],
+      "note": "refKind as a closed set of kinds — the SC2 Effect case from admission section 12.5.7: a unit target satisfies [weapon, unit]"
+    },
+    {
+      "id": "reference-kind-mismatch/reject",
+      "expect": "reject",
+      "rule": "reference-kind-mismatch",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchemaExt",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "decoy",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1
+                  }
+                },
+                {
+                  "name": "g",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1,
+                    "loadout": [
+                      "v/unit/decoy"
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "note": "an existing definition of the wrong kind is refused by name, not accepted because it exists"
+    },
+    {
+      "id": "merge-inheritance-by-key/accept",
+      "expect": "accept",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchemaExt",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "ground",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1,
+                    "costResource": [
+                      {
+                        "index": "minerals",
+                        "value": 50
+                      },
+                      {
+                        "index": "gas",
+                        "value": 0
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "tank",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "parent": "v/unit/ground",
+                  "fields": {
+                    "costResource": [
+                      {
+                        "index": "gas",
+                        "value": 125
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "def": "v/unit/tank",
+          "field": "costResource",
+          "value": [
+            {
+              "index": "minerals",
+              "value": 50
+            },
+            {
+              "index": "gas",
+              "value": 125
+            }
+          ],
+          "layer": "base"
+        }
+      ],
+      "note": "inherit: merge with keyField — the SC2 indexed-array case (CostResource index=Gas): the child replaces one keyed element and keeps the rest in order"
+    },
+    {
+      "id": "merge-overlay-upsert/accept",
+      "expect": "accept",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchemaExt",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "ground",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1,
+                    "costResource": [
+                      {
+                        "index": "minerals",
+                        "value": 50
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mod",
+          "documents": [
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "m",
+              "role": "overlay",
+              "overlays": [
+                {
+                  "target": "v/unit/ground",
+                  "op": "append",
+                  "field": "costResource",
+                  "value": {
+                    "index": "minerals",
+                    "value": 75
+                  }
+                },
+                {
+                  "target": "v/unit/ground",
+                  "op": "append",
+                  "field": "costResource",
+                  "value": {
+                    "index": "gas",
+                    "value": 25
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "def": "v/unit/ground",
+          "field": "costResource",
+          "value": [
+            {
+              "index": "minerals",
+              "value": 75
+            },
+            {
+              "index": "gas",
+              "value": 25
+            }
+          ],
+          "layer": "mod"
+        }
+      ],
+      "note": "an overlay append on a merge field upserts by key: a mod patches one indexed element without restating the whole list"
+    },
+    {
+      "id": "flags-merge-by-name/accept",
+      "expect": "accept",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchemaExt",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "ground",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1,
+                    "attributes": {
+                      "Light": true,
+                      "Biological": true
+                    }
+                  }
+                },
+                {
+                  "name": "tank",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "parent": "v/unit/ground",
+                  "fields": {
+                    "attributes": {
+                      "Light": false,
+                      "Armored": true
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "def": "v/unit/tank",
+          "field": "attributes",
+          "value": {
+            "Light": false,
+            "Biological": true,
+            "Armored": true
+          },
+          "layer": "base"
+        }
+      ],
+      "note": "flags merge by name: the tank clears Light, adds Armored, keeps the inherited Biological — SC2 Attributes index=Light value=0"
+    },
+    {
+      "id": "flags-overlay-partial-set/accept",
+      "expect": "accept",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchemaExt",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "ground",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1,
+                    "attributes": {
+                      "Light": true
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mod",
+          "documents": [
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "m",
+              "role": "overlay",
+              "overlays": [
+                {
+                  "target": "v/unit/ground",
+                  "op": "set",
+                  "field": "attributes",
+                  "value": {
+                    "Armored": true
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "def": "v/unit/ground",
+          "field": "attributes",
+          "value": {
+            "Light": true,
+            "Armored": true
+          },
+          "layer": "mod"
+        }
+      ],
+      "note": "an overlay set with a partial flag object patches named flags and keeps the rest"
+    },
+    {
+      "id": "flags-undeclared/reject",
+      "expect": "reject",
+      "rule": "type-mismatch",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchemaExt",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "g",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1,
+                    "attributes": {
+                      "Invisible": true
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "enum-verbatim-source-token/accept",
+      "expect": "accept",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchemaExt",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "g",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1,
+                    "size": "SUPER HEAVY"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "def": "v/unit/g",
+          "field": "size",
+          "value": "SUPER HEAVY",
+          "layer": "base"
+        }
+      ],
+      "note": "enum values are verbatim source tokens (Warzone `SUPER HEAVY`): no slugging, no external table for reverse conversion"
+    },
+    {
+      "id": "upsert-document/accept",
+      "expect": "accept",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchemaExt",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "body",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 100,
+                    "alias": "old"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "mp",
+          "documents": [
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "body",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 130
+                  }
+                },
+                {
+                  "name": "super",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 350
+                  }
+                }
+              ],
+              "upsert": true
+            }
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "def": "v/unit/body",
+          "field": "health",
+          "value": 130,
+          "layer": "mp"
+        },
+        {
+          "def": "v/unit/super",
+          "field": "health",
+          "value": 350,
+          "layer": "mp"
+        }
+      ],
+      "absent": [
+        {
+          "def": "v/unit/body",
+          "field": "alias"
+        }
+      ],
+      "note": "a later document with upsert re-publishes a whole record (Warzone mp.wz over base.wz): one source table → one UVD document; the old own field alias is gone because the record was replaced, not overlaid"
+    },
+    {
+      "id": "nested-record-two-levels/accept",
+      "expect": "accept",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchemaExt",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "hover",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1,
+                    "extraModels": [
+                      {
+                        "propulsion": "hover",
+                        "slots": [
+                          {
+                            "slot": "left",
+                            "model": "hover-l.pie"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "checks": [
+        {
+          "def": "v/unit/hover",
+          "field": "extraModels",
+          "value": [
+            {
+              "propulsion": "hover",
+              "slots": [
+                {
+                  "slot": "left",
+                  "model": "hover-l.pie"
+                }
+              ]
+            }
+          ],
+          "layer": "base"
+        }
+      ],
+      "note": "records nest beyond one level (Warzone propulsionExtraModels: propulsion → slot → model); type discipline recurses"
+    },
+    {
+      "id": "nested-record-undeclared/reject",
+      "expect": "reject",
+      "rule": "type-mismatch",
+      "layers": [
+        {
+          "id": "base",
+          "documents": [
+            "kindSchemaExt",
+            {
+              "uv": {
+                "format": "UVD",
+                "version": "1.0"
+              },
+              "namespace": "v",
+              "role": "definitions",
+              "definitions": [
+                {
+                  "name": "hover",
+                  "kind": "unit",
+                  "kindVersion": 1,
+                  "fields": {
+                    "health": 1,
+                    "extraModels": [
+                      {
+                        "propulsion": "hover",
+                        "slots": [
+                          {
+                            "slot": "left",
+                            "colour": "red"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "kindSchemaExt": {
+    "uv": {
+      "format": "UVD",
+      "version": "1.0"
+    },
+    "namespace": "v",
+    "role": "kind-schema",
+    "kinds": [
+      {
+        "kind": "unit",
+        "version": 1,
+        "fields": [
+          {
+            "name": "health",
+            "type": "fixed64",
+            "required": true
+          },
+          {
+            "name": "alias",
+            "type": "string"
+          },
+          {
+            "name": "abilities",
+            "type": "list",
+            "itemType": "string",
+            "inherit": "append"
+          },
+          {
+            "name": "stance",
+            "type": "enum",
+            "values": [
+              "aggressive",
+              "defensive"
+            ]
+          },
+          {
+            "name": "loadout",
+            "type": "list",
+            "itemType": "ref",
+            "refKind": "weapon"
+          },
+          {
+            "name": "cost",
+            "type": "record",
+            "recordFields": [
+              {
+                "name": "amount",
+                "type": "i64",
+                "required": true
+              }
+            ]
+          },
+          {
+            "name": "target",
+            "type": "ref",
+            "refKind": [
+              "weapon",
+              "unit"
+            ]
+          },
+          {
+            "name": "costResource",
+            "type": "list",
+            "itemType": "record",
+            "inherit": "merge",
+            "keyField": "index",
+            "recordFields": [
+              {
+                "name": "index",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "value",
+                "type": "i64",
+                "required": true
+              }
+            ]
+          },
+          {
+            "name": "attributes",
+            "type": "flags",
+            "values": [
+              "Light",
+              "Armored",
+              "Biological"
+            ]
+          },
+          {
+            "name": "size",
+            "type": "enum",
+            "values": [
+              "LIGHT",
+              "SUPER HEAVY"
+            ]
+          },
+          {
+            "name": "extraModels",
+            "type": "list",
+            "itemType": "record",
+            "recordFields": [
+              {
+                "name": "propulsion",
+                "type": "string",
+                "required": true
+              },
+              {
+                "name": "slots",
+                "type": "list",
+                "itemType": "record",
+                "recordFields": [
+                  {
+                    "name": "slot",
+                    "type": "string",
+                    "required": true
+                  },
+                  {
+                    "name": "model",
+                    "type": "string",
+                    "required": true
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "weapon",
+        "version": 1,
+        "fields": [
+          {
+            "name": "damage",
+            "type": "fixed64",
+            "required": true
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -67,3 +67,39 @@
     color: var(--mk-status-warn);
   }
 }
+
+@layer mk.components {
+  /*
+   * The trailing sidebar, mounted only when an application asks for it.
+   *
+   * The grid gains a fourth column rather than reflowing: an application that does not use it keeps
+   * exactly the three-column layout it had, and one that does gets the same proportions on the other
+   * edge. `data-mk-auxiliary` is set by the workbench itself, so a theme never has to guess.
+   */
+  [data-mk-part='workbench'][data-mk-auxiliary='true'] {
+    grid-template:
+      'title title title title' var(--mk-toolbar-height)
+      'activity sidebar main aux' minmax(0, 1fr)
+      'activity panel panel panel' minmax(0, auto)
+      'status status status status' var(--mk-size-control)
+      / var(--mk-shell-rail-width) minmax(calc(var(--mk-space-8) * 4), 22%) minmax(0, 1fr)
+        minmax(calc(var(--mk-space-8) * 4), 22%);
+  }
+
+  [data-mk-part='workbench.auxbar'] {
+    grid-area: aux;
+    min-width: 0;
+    overflow: auto;
+    border-left: 1px solid var(--mk-color-border);
+    background: var(--mk-color-sunken);
+  }
+
+  [data-mk-part='workbench.status-slot'] {
+    display: flex;
+    align-items: center;
+    gap: var(--mk-space-3);
+    margin-inline-start: auto;
+    padding-inline-end: var(--mk-space-3);
+    color: var(--mk-color-fg-subtle);
+  }
+}

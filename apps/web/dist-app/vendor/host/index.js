@@ -45,6 +45,8 @@ import {
   MAP_SEMANTIC_MATCHER,
   MOD_WORKSPACE_CONTRACT_DEFINITION,
   MOD_WORKSPACE_MATCHER,
+  NATIVE_MODEL_ENCODER_CONTRACT_DEFINITION,
+  NATIVE_MODEL_ENCODER_MATCHER,
   NATIVE_TEXT_INPUT,
   NATIVE_TEXT_MODULES,
   NESTED_ENTRY_UNREADABLE,
@@ -67,6 +69,7 @@ import {
   STANDARD_GAMES_OWNER,
   STANDARD_LANGUAGE_OWNER,
   STANDARD_MAPS_OWNER,
+  STANDARD_MODEL_ENCODING_OWNER,
   STANDARD_MODS_OWNER,
   STANDARD_RENDERER_OWNER,
   STANDARD_RUNTIME_DEFINITIONS,
@@ -180,6 +183,7 @@ import {
   registerStandardLanguageDefinitions,
   registerStandardMapDefinitions,
   registerStandardModDefinitions,
+  registerStandardModelEncodingDefinitions,
   registerStandardRendererDefinitions,
   registerStandardRuntimeDefinitions,
   renderProviderResolutionExplanation,
@@ -216,9 +220,9 @@ import {
   switchPresentationStage,
   unavailable,
   withNativeTextModules
-} from "../../chunks/chunk-VCFHQMDA.js";
-import "../../chunks/chunk-GUANBBUV.js";
-import "../../chunks/chunk-YFALMPQO.js";
+} from "../../chunks/chunk-J5QGUWNB.js";
+import "../../chunks/chunk-V3SJMNU5.js";
+import "../../chunks/chunk-3JQHXTSW.js";
 import "../../chunks/chunk-S5ITZJYV.js";
 import "../../chunks/chunk-YRQVWMJF.js";
 import "../../chunks/chunk-CQ52GEHY.js";
@@ -269,6 +273,8 @@ export {
   MAP_SEMANTIC_MATCHER,
   MOD_WORKSPACE_CONTRACT_DEFINITION,
   MOD_WORKSPACE_MATCHER,
+  NATIVE_MODEL_ENCODER_CONTRACT_DEFINITION,
+  NATIVE_MODEL_ENCODER_MATCHER,
   NATIVE_TEXT_INPUT,
   NATIVE_TEXT_MODULES,
   NESTED_ENTRY_UNREADABLE,
@@ -291,6 +297,7 @@ export {
   STANDARD_GAMES_OWNER,
   STANDARD_LANGUAGE_OWNER,
   STANDARD_MAPS_OWNER,
+  STANDARD_MODEL_ENCODING_OWNER,
   STANDARD_MODS_OWNER,
   STANDARD_RENDERER_OWNER,
   STANDARD_RUNTIME_DEFINITIONS,
@@ -405,6 +412,7 @@ export {
   registerStandardLanguageDefinitions,
   registerStandardMapDefinitions,
   registerStandardModDefinitions,
+  registerStandardModelEncodingDefinitions,
   registerStandardRendererDefinitions,
   registerStandardRuntimeDefinitions,
   renderProviderResolutionExplanation,

@@ -1198,11 +1198,11 @@
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/models/contributions/codec-m3.json",
+      "handlerId": "render-m3-scene",
       "id": "legacy/codec-manifest/modkit/m3/operation/model.render",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "model.render"
     },
     {
       "contribution": "modkit-extensions-blizzard/models/contributions/codec-m3.json",

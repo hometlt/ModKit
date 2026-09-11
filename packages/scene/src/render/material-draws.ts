@@ -1,0 +1,186 @@
+import type {
+  SceneRendererPrimitive,
+  SceneRendererMaterial,
+  SceneRendererDiagnostic,
+} from '@modkit/sdk/renderer'
+import type { StandardMaterialProgram } from '../materials/index.js'
+import type { SceneMaterialPrograms } from './materials.js'
+import { alphaDrawOrder, materialAlpha } from './alpha.js'
+import { prepareMaterialGeometry } from './material-geometry.js'
+
+export interface MaterialDraw {
+  readonly primitive: SceneRendererPrimitive
+  readonly material?: SceneMaterialPrograms
+  readonly program?: StandardMaterialProgram
+  readonly depthOnly?: boolean
+}
+export const materialIsSolid = (program: StandardMaterialProgram) =>
+  program.blend === 'opaque' || program.blend === 'alpha-test'
+
+/** One draw schedule for both providers, including composite passes and requested depth prepasses. */
+export function sceneMaterialDraws(
+  primitives: readonly SceneRendererPrimitive[],
+  materials: readonly SceneRendererMaterial[],
+  programs: ReadonlyMap<string, SceneMaterialPrograms>,
+  viewProjection: Float32Array,
+  diagnostics: SceneRendererDiagnostic[],
+  clearAlpha: number,
+  maxGeometryBytes = 256 * 1024 * 1024,
+): readonly MaterialDraw[] {
+  if (!Number.isSafeInteger(maxGeometryBytes) || maxGeometryBytes < 0)
+    throw new TypeError('invalid material geometry byte budget')
+  const prepasses: MaterialDraw[] = [],
+    entries = new Map<SceneRendererPrimitive, MaterialDraw>()
+  const alphas = new Map(materials.map(material => [material.id, materialAlpha(material)]))
+  const prepared = new Map<
+    SceneRendererPrimitive,
+    Map<number | undefined, SceneRendererPrimitive>
+  >()
+  const preparedBuffers = new Set<ArrayBufferLike>()
+  let remaining = maxGeometryBytes
+  const prepare = (source: SceneRendererPrimitive, program: StandardMaterialProgram) => {
+    // Authored tangents win even when normals need expansion. Explicit UV0 stays distinct from
+    // omission because only the explicit choice requires that UV set and emits fallback warnings.
+    const texCoord = source.tangents === undefined ? program.tangentGeneration?.texCoord : undefined
+    let choices = prepared.get(source)
+    const cached = choices?.get(texCoord)
+    if (cached !== undefined) return cached
+    const primitive = prepareMaterialGeometry(source, remaining, {
+      ...(texCoord === undefined ? {} : { texCoord }),
+      diagnostics,
+    })
+    if (primitive !== source)
+      for (const buffer of [
+        primitive.positions,
+        primitive.normals,
+        primitive.tangents,
+        primitive.colors,
+        primitive.textureCoordinates,
+        ...(primitive.textureCoordinateSets ?? []).map(set => set.coordinates),
+      ])
+        if (buffer !== undefined && !preparedBuffers.has(buffer.buffer)) {
+          preparedBuffers.add(buffer.buffer)
+          remaining -= buffer.byteLength
+        }
+    if (choices === undefined) {
+      choices = new Map()
+      prepared.set(source, choices)
+    }
+    choices.set(texCoord, primitive)
+    return primitive
+  }
+  let emissionWarning = false
+  for (const source of primitives) {
+    const material = programs.get(source.materialId ?? '')
+    if (material === undefined) {
+      entries.set(source, { primitive: source })
+      continue
+    }
+    for (const pass of material.passes)
+      for (const layer of pass.defines.layers) {
+        const set =
+          layer.uvSource === 0 || layer.uvSource === 6
+            ? 0
+            : layer.uvSource === 1
+              ? 1
+              : layer.uvSource === 9
+                ? 2
+                : layer.uvSource === 10
+                  ? 3
+                  : undefined
+        if (
+          layer.hasTexture &&
+          set !== undefined &&
+          !source.textureCoordinateSets?.some(uv => uv.set === set) &&
+          !(set === 0 && source.textureCoordinates !== undefined)
+        )
+          throw new TypeError(`primitive ${source.id} lacks TEXCOORD_${set}`)
+      }
+    for (const program of material.passes) {
+      const primitive = prepare(source, program)
+      const key = { ...primitive }
+      entries.set(key, { primitive, material, program })
+      if (program.depthPrepass) prepasses.push({ primitive, material, program, depthOnly: true })
+      if (clearAlpha !== 1 && !materialIsSolid(program) && program.blend !== 'blend')
+        emissionWarning = true
+    }
+  }
+  if (emissionWarning)
+    diagnostics.push({
+      severity: 'warning',
+      code: 'common.scene/material-background-alpha',
+      message:
+        'Additive and modulate passes preserve destination alpha. A transparent RGBA export cannot retain emission over zero alpha; use an opaque background for these passes.',
+    })
+  const alpha = (primitive: SceneRendererPrimitive) => {
+    const program = entries.get(primitive)?.program
+    return program === undefined
+      ? (alphas.get(primitive.materialId ?? '') ?? materialAlpha())
+      : { mode: materialIsSolid(program) ? ('opaque' as const) : ('blend' as const), cutoff: 0 }
+  }
+  // Unique scheduling ids allow the existing stable depth sort to retain composite pass identity.
+  const keys = [...entries.keys()].map((primitive, index) => ({
+    ...primitive,
+    materialId: String(index),
+  }))
+  const originals = [...entries.keys()]
+  const ordered = alphaDrawOrder(
+    keys,
+    id => {
+      const p = originals[Number(id)]
+      return p === undefined ? materialAlpha() : alpha(p)
+    },
+    viewProjection,
+  )
+  const draws = ordered.map(key => {
+    const original = originals[Number(key.materialId)],
+      entry = original === undefined ? undefined : entries.get(original)
+    if (entry === undefined) throw new TypeError('invalid material draw')
+    return entry
+  })
+  draws.sort((a, b) => {
+    const solid = (draw: MaterialDraw) =>
+      draw.program === undefined
+        ? (alphas.get(draw.primitive.materialId ?? '')?.mode ?? 'opaque') !== 'blend'
+        : materialIsSolid(draw.program)
+    return (
+      Number(solid(b)) - Number(solid(a)) ||
+      (solid(a) ? 0 : (a.program?.priority ?? 0) - (b.program?.priority ?? 0))
+    )
+  })
+  return [...prepasses, ...draws]
+}
+
+/** RGBA8 target blend equations match WebGL's normalized framebuffer, including destination alpha. */
+export function blendMaterialPixel(
+  frame: Uint8Array,
+  offset: number,
+  rgba: readonly [number, number, number, number],
+  program: StandardMaterialProgram,
+): void {
+  const clamp = (value: number) => Math.max(0, Math.min(1, value)),
+    a = clamp(rgba[3]),
+    mode = program.blend
+  for (let channel = 0; channel < 3; channel++) {
+    const source = clamp(rgba[channel] ?? 0),
+      dest = (frame[offset + channel] ?? 0) / 255
+    const value =
+      mode === 'blend'
+        ? source * a + dest * (1 - a)
+        : mode === 'premultiplied'
+          ? source + dest * (1 - a)
+        : mode === 'additive'
+          ? source + dest
+          : mode === 'add-alpha'
+            ? source * a + dest
+            : mode === 'modulate'
+              ? source * dest
+              : mode === 'modulate2x'
+                ? 2 * source * dest
+                : source * a
+    frame[offset + channel] = Math.round(clamp(value) * 255)
+  }
+  if (materialIsSolid(program)) frame[offset + 3] = Math.round(a * 255)
+  else if (mode === 'blend' || mode === 'premultiplied')
+    frame[offset + 3] = Math.round((a + ((frame[offset + 3] ?? 0) / 255) * (1 - a)) * 255)
+}

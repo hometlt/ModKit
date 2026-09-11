@@ -11,6 +11,7 @@
 import { ModkitError, type Diagnostic } from '@modkit/core'
 import type { ContributionContext, ContributionProviderIdentity, ResourceBudget } from '@modkit/sdk'
 import { ABI_CODEC_MODULE, ABI_SERVICE_PROVIDER_MODULE } from './abi-surfaces.js'
+import { logicalResourcesFromWire, type WireLogicalResourcePort } from './logical-resources.js'
 
 export interface WireContext {
   readonly budgets: ResourceBudget
@@ -18,6 +19,9 @@ export interface WireContext {
   readonly diagnostics?: { report(diagnostic: Diagnostic): Promise<unknown> }
   /** Host-executed contract resolver (materialized proxy of `x3.abi/contract-resolver@1`). */
   readonly contracts?: ContributionContext['contracts']
+  readonly rasterResources?: ContributionContext['rasterResources']
+  readonly modelResources?: ContributionContext['modelResources']
+  readonly logicalResources?: WireLogicalResourcePort
 }
 
 const unavailableResolver = {
@@ -47,6 +51,11 @@ export function contributionContext(wire: WireContext): ContributionContext {
       },
     },
     contracts: wire.contracts ?? unavailableResolver,
+    ...(wire.modelResources === undefined ? {} : { modelResources: wire.modelResources }),
+    ...(wire.logicalResources === undefined
+      ? {}
+      : { logicalResources: logicalResourcesFromWire(wire.logicalResources) }),
+    ...(wire.rasterResources === undefined ? {} : { rasterResources: wire.rasterResources }),
     ...(wire.providerIdentity === undefined
       ? {}
       : { providerIdentity: Object.freeze({ ...wire.providerIdentity }) }),

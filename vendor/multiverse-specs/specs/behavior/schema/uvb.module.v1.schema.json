@@ -1,0 +1,388 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/uvb/1.0/uvb.module.schema.json",
+  "title": "UVB module (structural form)",
+  "description": "Status: candidate (SPEC_UVB.md), binary 1.1. The structural content one UVB module carries — what both the canonical binary and the derived .uvbt text projection encode. The hash is computed ONLY from the canonical binary; this JSON structure is the specification and tooling view. Value types come from ADR-RUNTIME-001: no floats exist anywhere in this format. Verification (types on every path, resolved requirements, loop budgets, effects within declaration, no discarded results) runs at composition, before the first tick.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "uv",
+    "namespace",
+    "requires",
+    "functions"
+  ],
+  "properties": {
+    "uv": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "format",
+        "version"
+      ],
+      "properties": {
+        "format": {
+          "const": "UVB"
+        },
+        "version": {
+          "const": "1.0"
+        }
+      }
+    },
+    "namespace": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*(\\.[a-z0-9][a-z0-9-]*)*$"
+    },
+    "requires": {
+      "description": "Every intrinsic this module may call, versioned. A call to an undeclared intrinsic fails verification; the declared set is what composition checks against the table and against granted capabilities.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "intrinsics"
+      ],
+      "properties": {
+        "intrinsics": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+@[1-9]\\d*$"
+          }
+        }
+      }
+    },
+    "strings": {
+      "description": "Interned strings; instructions reference them by index. State math never touches string content.",
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "functions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "params",
+          "returns",
+          "registers",
+          "effects",
+          "body"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[a-z][a-zA-Z0-9-]*$"
+          },
+          "params": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/valueType"
+            }
+          },
+          "returns": {
+            "description": "`void`, a value type, or result<T> — errors are values, obligatory to handle; exceptions do not exist.",
+            "type": "string",
+            "pattern": "^(void|bool|i64|fixed64|strref|ref<[a-z][a-z0-9-]*>|list<[a-z0-9<>-]+>|[A-Z][A-Za-z0-9]*|result<[A-Za-z0-9<>-]+>)$"
+          },
+          "registers": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 4096
+          },
+          "effects": {
+            "description": "Declared state areas. The verifier proves the union of called intrinsics' effects stays inside; the scheduler orders rules from this.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "reads",
+              "writes"
+            ],
+            "properties": {
+              "reads": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "entities",
+                    "defs",
+                    "orders",
+                    "space",
+                    "players",
+                    "timers",
+                    "rng",
+                    "scenario"
+                  ]
+                }
+              },
+              "writes": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "entities",
+                    "defs",
+                    "orders",
+                    "space",
+                    "players",
+                    "timers",
+                    "rng",
+                    "scenario"
+                  ]
+                }
+              }
+            }
+          },
+          "body": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/instruction"
+            }
+          }
+        }
+      }
+    },
+    "$comment": {
+      "description": "Free commentary; never semantic.",
+      "type": "string"
+    },
+    "types": {
+      "description": "Nominal record types this module uses (Pos, Filter, OrderInfo, ...). Declarations must be structurally identical to the intrinsic table entries of the same name; the verifier checks that. Binary section 4.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "fields"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Za-z0-9]*$"
+          },
+          "fields": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "type"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-zA-Z0-9]*$"
+                },
+                "type": {
+                  "$ref": "#/$defs/valueType"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "valueType": {
+      "type": "string",
+      "pattern": "^(bool|i64|fixed64|strref|ref<[a-z][a-z0-9-]*>|list<[a-z0-9<>-]+>|[A-Z][A-Za-z0-9]*)$",
+      "description": "Scalar, typed reference, list, or a NOMINAL RECORD named in the module `types` section (capitalised, e.g. Pos, Filter — structurally identical to the intrinsic table declaration)."
+    },
+    "instruction": {
+      "description": "One register instruction. The op set is closed: no float ops, no address arithmetic, only structural control flow. `loop` REQUIRES a budget register check; a loop without one fails the schema, not just the verifier. `call.intrinsic` indexes the module's requires list.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "op"
+      ],
+      "properties": {
+        "op": {
+          "enum": [
+            "const",
+            "move",
+            "list.get",
+            "list.set",
+            "list.len",
+            "list.append",
+            "record.get",
+            "record.set",
+            "add.i64",
+            "sub.i64",
+            "mul.i64",
+            "div.i64",
+            "add.fx",
+            "sub.fx",
+            "mul.fx",
+            "div.fx",
+            "eq",
+            "lt",
+            "le",
+            "and",
+            "or",
+            "not",
+            "br",
+            "br_if",
+            "loop",
+            "ret",
+            "call",
+            "call.intrinsic",
+            "result.ok",
+            "result.err",
+            "result.unwrap-or-branch"
+          ]
+        },
+        "dst": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "a": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "b": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "value": {},
+        "type": {
+          "$ref": "#/$defs/valueType"
+        },
+        "target": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "budget": {
+          "description": "loop only: the mandatory per-iteration budget check against the composition-supplied instruction budget.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "onExhausted"
+          ],
+          "properties": {
+            "onExhausted": {
+              "enum": [
+                "typed-error"
+              ]
+            }
+          }
+        },
+        "function": {
+          "type": "string"
+        },
+        "intrinsicIndex": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "source": {
+          "description": "Optional source map entry: the Luau projection line this instruction lowers, for receipts and diagnostics.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "file",
+            "line"
+          ],
+          "properties": {
+            "file": {
+              "type": "string"
+            },
+            "line": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "loop"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "budget",
+              "target"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "call.intrinsic"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "intrinsicIndex",
+              "args"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "call"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "function",
+              "args"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "const": "const"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "dst",
+              "type",
+              "value"
+            ]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "op": {
+                "enum": [
+                  "br",
+                  "br_if"
+                ]
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "target"
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

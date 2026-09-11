@@ -1,0 +1,28 @@
+{
+  "$comment": "Valid fixture: a save of the phase-1 spike kernel at tick 5000 — REAL module digest and REAL state hash (the resumed hash the spike verified). Sections are how a product save would carry it: typed and versioned, not a memory dump.",
+  "kind": "uv.save",
+  "schemaVersion": 1,
+  "subject": {
+    "kind": "standalone-kernel"
+  },
+  "kernel": {
+    "moduleDigest": "sha256:4fa6915851f466938e4c81458e1d63871f6b60f2f1144b2df918ff85b38d4797"
+  },
+  "tick": 5000,
+  "stateHash": "39597ece41959704",
+  "sections": [
+    {
+      "subsystem": "entities",
+      "version": 1,
+      "byteLength": 2560,
+      "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "subsystem": "rng",
+      "version": 1,
+      "byteLength": 32,
+      "digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+    }
+  ],
+  "envelopeHash": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+}

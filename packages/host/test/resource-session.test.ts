@@ -34,6 +34,7 @@ import type {
   CompanionOrigin,
   CompanionOriginEntry,
 } from '../src/input-resolution.js'
+import { createNamespaceCompanionOrigin } from '../src/namespace-origin.js'
 
 const SESSION_REVISION = revisionId('provider-token:resource-session-test')
 
@@ -53,6 +54,7 @@ function fakeOrigin(
     readonly scopes?: readonly InputSearchScope[]
     readonly caseSensitivity?: CompanionCaseSensitivity
     readonly failRelease?: boolean
+    readonly honorPrefix?: boolean
   } = {},
 ): FakeOrigin {
   const listing: CompanionOriginEntry[] = entries.map(entry =>
@@ -69,7 +71,13 @@ function fakeOrigin(
     async *enumerate(_scope, enumerationOptions) {
       counts.enumerations += 1
       for (const entry of listing) {
-        if (!entry.logicalId.startsWith(enumerationOptions.prefix)) continue
+        const fold = (value: string) =>
+          options.caseSensitivity === 'insensitive' ? value.toLowerCase() : value
+        if (
+          options.honorPrefix !== false &&
+          !fold(entry.logicalId).startsWith(fold(enumerationOptions.prefix))
+        )
+          continue
         counts.entriesServed += 1
         yield entry
       }
@@ -143,17 +151,22 @@ describe('resource session — resolution', () => {
     }
   })
 
-  it('narrows enumeration by the directory prefix of the logical id', async () => {
+  it('locates one exact resource within budget despite thousands of adjacent entries', async () => {
     const origin = fakeOrigin([
+      ...Array.from({ length: 5000 }, (_, index) => `textures/a-${index}.dds`),
       'other/a.dds',
       'other/b.dds',
       'textures/hull.dds',
       'textures/turret.dds',
     ])
-    const session = createResourceSession({ origin, revision: SESSION_REVISION })
+    const session = createResourceSession({
+      origin,
+      revision: SESSION_REVISION,
+      limits: { maxEntries: 1 },
+    })
     try {
-      await session.resolve(requirement('r1', 'textures/hull.dds'))
-      // the two `other/` entries are never served: a big namespace stays a bounded search
+      expect((await session.resolve(requirement('r1', 'textures/hull.dds'))).state).toBe('resolved')
+      // Neither adjacent directory entries nor other roots consume this exact lookup's budget.
       expect(origin.counts.entriesServed).toBe(1)
     } finally {
       await session.dispose()
@@ -322,7 +335,9 @@ describe('resource session — confinement and allowlist', () => {
 
 describe('resource session — budgets and cycles', () => {
   it('stops at the entry budget instead of scanning a namespace whole', async () => {
-    const origin = fakeOrigin(['textures/a.dds', 'textures/b.dds', 'textures/c.dds'])
+    const origin = fakeOrigin(['textures/a.dds', 'textures/b.dds', 'textures/c.dds'], {
+      honorPrefix: false,
+    })
     const session = createResourceSession({
       origin,
       revision: SESSION_REVISION,
@@ -686,6 +701,248 @@ describe('resource session — provenance cannot be rewritten by its reader', ()
 })
 
 describe('resource session — concurrency and teardown', () => {
+  it('checks current authorization even for a cached resource', async () => {
+    const origin = fakeOrigin(['texture.dds'])
+    let authorized = true
+    const session = createResourceSession({
+      origin,
+      revision: SESSION_REVISION,
+      isAuthorized: () => authorized,
+    })
+    try {
+      const first = await session.resolve(requirement('first', 'texture.dds'))
+      if (first.state !== 'resolved') throw new Error('initial grant should resolve')
+      await first.lease.release()
+      authorized = false
+      expect(await session.resolve(requirement('revoked', 'texture.dds'))).toMatchObject({
+        state: 'unresolved',
+        reason: 'permission-missing',
+      })
+      expect(origin.counts.opens).toBe(1)
+    } finally {
+      await session.dispose()
+    }
+  })
+
+  it('stops namespace paging at its entry budget before the backend collects the whole prefix', async () => {
+    let pages = 0
+    const origin = createNamespaceCompanionOrigin({
+      primaryLogicalId: 'model.m3',
+      containerRevision: SESSION_REVISION,
+      pageLimit: 2,
+      namespace: {
+        async list(_prefix, page) {
+          pages++
+          const offset = Number(page.cursor ?? 0)
+          return {
+            items: Array.from({ length: 2 }, (_, i) => ({
+              id: `${offset + i}`,
+              path: `t${offset + i}.dds`,
+              name: `t${offset + i}.dds`,
+              kind: 'file' as const,
+              revision: SESSION_REVISION,
+              size: 1n,
+            })),
+            nextCursor: String(offset + 2),
+          }
+        },
+        async openEntry() {
+          throw new Error('budget refusal must precede open')
+        },
+      },
+      async extract() {
+        throw new Error('budget refusal must precede extract')
+      },
+    })
+    const session = createResourceSession({
+      origin,
+      revision: SESSION_REVISION,
+      limits: { maxEntries: 3 },
+    })
+    try {
+      expect(await session.resolve(requirement('missing', 'absent.dds'))).toMatchObject({
+        state: 'unresolved',
+        reason: 'budget-exceeded',
+      })
+      expect(pages).toBe(2)
+    } finally {
+      await session.dispose()
+    }
+  })
+
+  it('refuses a repeated empty namespace cursor with a named budget outcome', async () => {
+    let pages = 0
+    const origin = createNamespaceCompanionOrigin({
+      primaryLogicalId: 'model.m3',
+      containerRevision: SESSION_REVISION,
+      namespace: {
+        async list() {
+          pages++
+          return { items: [], nextCursor: 'same' }
+        },
+        async openEntry() {
+          throw new Error('not found')
+        },
+      },
+      async extract() {
+        throw new Error('not found')
+      },
+    })
+    const session = createResourceSession({ origin, revision: SESSION_REVISION })
+    try {
+      expect(await session.resolve(requirement('missing', 'absent.dds'))).toMatchObject({
+        state: 'unresolved',
+        reason: 'budget-exceeded',
+      })
+      expect(pages).toBe(2)
+    } finally {
+      await session.dispose()
+    }
+  })
+
+  it('reserves resource slots before awaiting origin opens', async () => {
+    const backing = fakeOrigin(['texture.dds'])
+    const origin: CompanionOrigin = {
+      ...backing,
+      async open(id, signal) {
+        await Promise.resolve()
+        return backing.open(id, signal)
+      },
+    }
+    const session = createResourceSession({
+      origin,
+      revision: SESSION_REVISION,
+      limits: { maxResources: 2 },
+    })
+    try {
+      const results = await Promise.all(
+        Array.from({ length: 8 }, (_, i) => session.resolve(requirement(`r${i}`, 'texture.dds'))),
+      )
+      expect(results.filter(item => item.state === 'resolved')).toHaveLength(2)
+      expect(results.filter(item => unresolvedReason(item) === 'budget-exceeded')).toHaveLength(6)
+      expect(backing.counts.opens).toBe(2)
+      expect(backing.outstanding()).toBe(2)
+    } finally {
+      await session.dispose()
+      expect(backing.outstanding()).toBe(0)
+    }
+  })
+
+  it('releases a late open after caller cancellation and returns its reserved slot', async () => {
+    const backing = fakeOrigin(['texture.dds'])
+    const controller = new AbortController()
+    let cancel = true
+    const origin: CompanionOrigin = {
+      ...backing,
+      async open(id) {
+        const lease = await backing.open(id)
+        if (cancel) controller.abort()
+        return lease
+      },
+    }
+    const session = createResourceSession({
+      origin,
+      revision: SESSION_REVISION,
+      limits: { maxResources: 1 },
+    })
+    try {
+      await expect(
+        session.resolve(requirement('cancel', 'texture.dds'), controller.signal),
+      ).rejects.toBeDefined()
+      expect(backing.outstanding()).toBe(0)
+      cancel = false
+      expect((await session.resolve(requirement('retry', 'texture.dds'))).state).toBe('resolved')
+    } finally {
+      await session.dispose()
+      expect(backing.outstanding()).toBe(0)
+    }
+  })
+
+  it('does not reuse hits or misses across different ordered scopes', async () => {
+    const backing = fakeOrigin(['mount/a.dds', 'container/a.dds'])
+    const origin: CompanionOrigin = {
+      ...backing,
+      async *enumerate(scope) {
+        if (scope === 'current-mount') yield { logicalId: 'mount/a.dds' }
+        if (scope === 'enclosing-container') {
+          yield { logicalId: 'container/a.dds' }
+          yield { logicalId: 'container/b.dds' }
+        }
+      },
+    }
+    const session = createResourceSession({ origin, revision: SESSION_REVISION })
+    try {
+      const mount = await session.resolve(requirement('mount', 'a.dds'))
+      const container = await session.resolve(
+        requirement('container', 'a.dds', { scopes: ['enclosing-container'] }),
+      )
+      if (mount.state !== 'resolved' || container.state !== 'resolved')
+        throw new Error('expected both scopes')
+      expect(mount.lease.value.ref.id).toContain('/mount/a.dds')
+      expect(container.lease.value.ref.id).toContain('/container/a.dds')
+      expect(container.provenance.cached).toBe(false)
+      expect(unresolvedReason(await session.resolve(requirement('miss', 'b.dds')))).toBe(
+        'not-found',
+      )
+      const found = await session.resolve(
+        requirement('other-scope', 'b.dds', { scopes: ['enclosing-container'] }),
+      )
+      expect(found.state).toBe('resolved')
+      const first = await session.resolve(
+        requirement('first', 'a.dds', { scopes: ['current-mount', 'enclosing-container'] }),
+      )
+      const reverse = await session.resolve(
+        requirement('reverse', 'a.dds', { scopes: ['enclosing-container', 'current-mount'] }),
+      )
+      if (first.state !== 'resolved' || reverse.state !== 'resolved')
+        throw new Error('expected precedence')
+      expect(first.lease.value.ref.id).not.toBe(reverse.lease.value.ref.id)
+    } finally {
+      await session.dispose()
+    }
+  })
+
+  it('pins first-observed revisions when requested and releases changed content', async () => {
+    const backing = fakeOrigin(['texture.dds'])
+    let revision = 1
+    const origin: CompanionOrigin = {
+      ...backing,
+      async open(id) {
+        const lease = await backing.open(id)
+        return {
+          ...lease,
+          value: { ...lease.value, revision: revisionId(`provider-token:r${revision}`) },
+        }
+      },
+    }
+    const session = createResourceSession({
+      origin,
+      revision: SESSION_REVISION,
+      revisionPolicy: 'pin',
+    })
+    try {
+      const first = await session.resolve(requirement('first', 'texture.dds'))
+      if (first.state !== 'resolved') throw new Error('expected initial content')
+      await first.lease.release()
+      revision++
+      const changed = await session.resolve(requirement('changed', 'texture.dds'))
+      expect(changed).toMatchObject({ state: 'unresolved', reason: 'source-revision-changed' })
+      expect(backing.outstanding()).toBe(0)
+      const fresh = createResourceSession({
+        origin,
+        revision: SESSION_REVISION,
+        revisionPolicy: 'pin',
+      })
+      try {
+        expect((await fresh.resolve(requirement('fresh', 'texture.dds'))).state).toBe('resolved')
+      } finally {
+        await fresh.dispose()
+      }
+    } finally {
+      await session.dispose()
+    }
+  })
+
   it('keeps two sessions over one origin independent in cache, budget and leases', async () => {
     const origin = fakeOrigin(['textures/a.dds', 'textures/b.dds'])
     const left = createResourceSession({ origin, revision: SESSION_REVISION, sessionId: 'left' })

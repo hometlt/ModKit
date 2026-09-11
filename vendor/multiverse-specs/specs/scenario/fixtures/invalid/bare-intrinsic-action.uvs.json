@@ -1,0 +1,104 @@
+{
+  "$comment": "INVALID: an unversioned intrinsic action cannot be checked against the table (intrinsic-actions-versioned).",
+  "uv": {
+    "format": "UVS",
+    "version": "1.0"
+  },
+  "namespace": "example-vendor",
+  "charts": [
+    {
+      "name": "intro-objective",
+      "initialState": "waiting",
+      "variables": [
+        {
+          "name": "reinforced",
+          "type": "bool",
+          "initial": false
+        }
+      ],
+      "states": [
+        {
+          "name": "waiting",
+          "on": [
+            {
+              "event": "timer.fired",
+              "condition": {
+                "kind": "cmp",
+                "op": "ge",
+                "args": [
+                  {
+                    "kind": "call",
+                    "intrinsic": "player.resource@1",
+                    "args": [
+                      {
+                        "kind": "const",
+                        "value": "example-vendor/player/one"
+                      },
+                      {
+                        "kind": "const",
+                        "value": "supply"
+                      }
+                    ]
+                  },
+                  {
+                    "kind": "const",
+                    "value": 10
+                  }
+                ]
+              },
+              "actions": [
+                {
+                  "kind": "intrinsic",
+                  "intrinsic": "scenario.objective-add@1",
+                  "args": [
+                    {
+                      "kind": "const",
+                      "value": "hold-the-line"
+                    }
+                  ]
+                },
+                {
+                  "kind": "set-var",
+                  "name": "reinforced",
+                  "value": {
+                    "kind": "const",
+                    "value": true
+                  }
+                },
+                {
+                  "kind": "refusal",
+                  "origin": {
+                    "language": "galaxy",
+                    "source": "SoundPlay(SoundLink(\"UI_IntroSting\", -1), PlayerGroupAll(), 100.0, 0.0);"
+                  },
+                  "reason": "audio cue natives are not mapped in intrinsic table v1"
+                }
+              ],
+              "goto": "active"
+            }
+          ]
+        },
+        {
+          "name": "active",
+          "on": [
+            {
+              "event": "entity.died",
+              "actions": [
+                {
+                  "kind": "intrinsic",
+                  "intrinsic": "scenario.objective-complete",
+                  "args": [
+                    {
+                      "kind": "const",
+                      "value": "hold-the-line"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -18,6 +18,11 @@ export {
   type FileEditingBackendOptions,
 } from './file-editing-backend.js'
 export {
+  createFilePayloadStore,
+  type FilePayloadStore,
+  type FilePayloadStoreOptions,
+} from './file-payload-store.js'
+export {
   createNodeSubjectServices,
   type NodeSubjectServices,
   type NodeSubjectServicesOptions,

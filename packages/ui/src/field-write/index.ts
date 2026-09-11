@@ -22,6 +22,7 @@ import type {
   JsonValue,
   OperationSession,
   SubjectCandidateProvider,
+  SubjectEditTargetResult,
 } from '@modkit/sdk'
 import {
   invokeRefusalMessage,
@@ -47,6 +48,29 @@ export interface FieldWriteRoute {
   /** Where an operation's edit plan goes. Absent means this surface cannot finish a write. */
   readonly commit?: CommitCoordinator
   readonly authorization?: EditAuthorizationPort
+}
+
+/** Stable, bounded text for the host-selected destination of one semantic field. */
+export function fieldEditTargetText(target: SubjectEditTargetResult): string {
+  if (target.state === 'resolved') return target.destination.label
+  if (target.state === 'selection-required') {
+    const choices = target.candidates.map(item => `${item.rootId} → ${item.path}`).join('; ')
+    return choices.length === 0 ? target.reason : `${target.reason}: ${choices}`
+  }
+  return target.reason
+}
+
+/** Draw the same destination state in cards, tables and trees without format-specific routing. */
+export function mountFieldEditTarget(
+  container: HTMLElement,
+  target: SubjectEditTargetResult | undefined,
+): HTMLElement | undefined {
+  if (target === undefined) return undefined
+  const node = element(container, 'small', { part: 'field.target' })
+  node.dataset['editTargetState'] = target.state
+  node.setAttribute('role', 'status')
+  setViewerText(node, fieldEditTargetText(target), 2048)
+  return node
 }
 
 export interface InlineFieldOptions {

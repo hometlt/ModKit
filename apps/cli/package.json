@@ -20,6 +20,7 @@
     "dist"
   ],
   "dependencies": {
+    "@modkit/codec-kit": "workspace:*",
     "@modkit/core": "workspace:*",
     "@modkit/scene": "workspace:*",
     "@modkit/sdk": "workspace:*",

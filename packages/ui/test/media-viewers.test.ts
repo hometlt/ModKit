@@ -60,10 +60,10 @@ describe('format-neutral media viewer models', () => {
             }
           : { items: [{ id: 'mesh-b', primitiveIds: ['points'] }] }
       },
-      async primitive(_id, request) {
+      async primitive(id, request) {
         requestedBytes = request.maxBytes
         return {
-          id: 'triangle',
+          id,
           topology: 'triangles',
           positions: new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0]),
           indices: new Uint32Array([0, 1, 2]),

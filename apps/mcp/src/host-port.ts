@@ -56,6 +56,7 @@ export interface McpDiscoveryResult {
 
 /** Minimal host-injected seam; all authority remains in the public Modkit host. */
 export interface ModkitMcpHostPort {
+  readonly outputArtifacts?: boolean
   readonly inventory: Inventory
   readonly knowledge: KnowledgeCatalog
   readonly roots: readonly string[]
@@ -187,7 +188,7 @@ const canonicalDirectories = async (
     ),
   )
 
-/** Compose the production read-only host from explicit, canonical allowlists. */
+/** Compose the production proposal-capable host from explicit, canonical allowlists. */
 export async function createHostMcpPort(
   configuration: ModkitMcpConfiguration,
   onDiagnostic?: (diagnostic: Diagnostic) => void,
@@ -201,6 +202,9 @@ export async function createHostMcpPort(
     extensions: [],
     userExtensions: extensions,
     roots,
+    // MCP exposes edit-plan calculation but no prepare/commit endpoint. Supplying the same bounded
+    // roots here lets mutating codec operations produce plans while the transport remains non-writing.
+    writableRoots: roots,
     intent: 'inspect',
     policy: workerBackendPolicy({
       resourceLimits: {
@@ -228,6 +232,7 @@ export async function createHostMcpPort(
   const discoveryIdByCoordinate = new Map<string, string>()
   const advertisedGameIds = installationGameIds(modkit.services.inventory)
   const port: ModkitMcpHostPort = {
+    ...(configuration.outputArtifacts === true ? { outputArtifacts: true } : {}),
     inventory: modkit.services.inventory,
     knowledge,
     roots,
@@ -393,7 +398,10 @@ export async function createHostMcpPort(
               path: basename(canonical),
               intent: 'inspect',
               target: modkit.services.target,
-              grant: { id: `modkit-mcp-directory:${randomUUID()}`, classes: ['read-source'] },
+              grant: {
+                id: `modkit-mcp-directory:${randomUUID()}`,
+                classes: ['read-source', 'write-source'],
+              },
               budget: mapPreviewBudget,
               executionBackends: modkit.services.executionBackends,
               ...(modkit.services.serviceDefinitions === undefined
@@ -431,7 +439,7 @@ export async function createHostMcpPort(
           services: modkit.services,
           grant: {
             id: 'modkit-mcp-map-preview',
-            classes: ['read-source', 'filesystem-read', 'process-launch'],
+            classes: ['read-source', 'write-source', 'filesystem-read', 'process-launch'],
           },
           budgets: mapPreviewBudget,
           original: originalSession,

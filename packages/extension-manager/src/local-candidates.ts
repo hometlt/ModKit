@@ -253,14 +253,21 @@ function contributionMetadata(value: unknown, path: string) {
   })
 }
 
-function contributionPatternParts(pattern: string): Readonly<{ directory: string; name: string }> {
-  const slash = pattern.lastIndexOf('/')
-  const directory = slash === -1 ? '' : pattern.slice(0, slash)
-  const name = slash === -1 ? pattern : pattern.slice(slash + 1)
-  if (directory.includes('*') || directory.includes('?')) {
+interface ContributionPatternParts {
+  readonly directory: string
+  readonly directorySegments: readonly string[]
+  readonly wildcardDirectoryIndex?: number
+  readonly name: string
+}
+
+function contributionPatternParts(pattern: string): Readonly<ContributionPatternParts> {
+  const segments = pattern.split('/').filter(segment => segment !== '' && segment !== '.')
+  const name = segments.pop() ?? ''
+  const wildcardIndexes = segments.flatMap((segment, index) => segment === '*' ? [index] : [])
+  if (segments.some(segment => segment.includes('?') || (segment.includes('*') && segment !== '*')) || wildcardIndexes.length > 1) {
     fail(
       'extension-manager/contribution-pattern-unsupported',
-      `contribution manifest pattern «${pattern}» may not wildcard directories`,
+      `contribution manifest pattern «${pattern}» supports at most one whole-directory wildcard segment`,
       { path: pattern },
     )
   }
@@ -271,7 +278,36 @@ function contributionPatternParts(pattern: string): Readonly<{ directory: string
       { path: pattern },
     )
   }
-  return Object.freeze({ directory, name })
+  const result: ContributionPatternParts = { directory: segments.join('/'), directorySegments: Object.freeze(segments), name }
+  if (wildcardIndexes[0] !== undefined) return Object.freeze({ ...result, wildcardDirectoryIndex: wildcardIndexes[0] })
+  return Object.freeze(result)
+}
+
+function confinedDirectory(root: string, lexical: string, pattern: string): string {
+  if (!inside(root, lexical) || !existsSync(lexical)) {
+    fail('extension-manager/contribution-path-missing', `contribution manifest directory for «${pattern}» is missing`, { path: lexical })
+  }
+  const realDirectory = realpathSync(lexical)
+  if (!inside(root, realDirectory) || !statSync(realDirectory).isDirectory()) {
+    fail('extension-manager/contribution-path-invalid', `contribution manifest directory for «${pattern}» is not confined`, { path: realDirectory })
+  }
+  return realDirectory
+}
+
+async function localPatternDirectories(root: string, pattern: string, parts: Readonly<ContributionPatternParts>): Promise<readonly string[]> {
+  if (parts.wildcardDirectoryIndex === undefined) return [confinedDirectory(root, resolve(root, ...parts.directorySegments), pattern)]
+  const before = parts.directorySegments.slice(0, parts.wildcardDirectoryIndex)
+  const after = parts.directorySegments.slice(parts.wildcardDirectoryIndex + 1)
+  const parent = confinedDirectory(root, resolve(root, ...before), pattern)
+  const entries = await readdir(parent, { withFileTypes: true })
+  const directories: string[] = []
+  for (const entry of entries) {
+    if (!entry.isDirectory() && !entry.isSymbolicLink()) continue
+    const lexical = resolve(parent, entry.name, ...after)
+    if (!existsSync(lexical)) continue
+    directories.push(confinedDirectory(root, lexical, pattern))
+  }
+  return directories.sort()
 }
 
 async function localContributionPaths(
@@ -281,55 +317,27 @@ async function localContributionPaths(
   const paths = new Map<string, string>()
   for (const pattern of patterns) {
     const parts = contributionPatternParts(pattern)
-    const directoryPath = resolve(root, ...parts.directory.split('/').filter(Boolean))
-    if (!inside(root, directoryPath) || !existsSync(directoryPath)) {
-      fail(
-        'extension-manager/contribution-path-missing',
-        `contribution manifest directory for «${pattern}» is missing`,
-        { path: directoryPath },
-      )
-    }
-    const realDirectory = realpathSync(directoryPath)
-    if (!inside(root, realDirectory) || !statSync(realDirectory).isDirectory()) {
-      fail(
-        'extension-manager/contribution-path-invalid',
-        `contribution manifest directory for «${pattern}» is not confined`,
-        { path: realDirectory },
-      )
-    }
-    if (parts.name === '*.json') {
-      const entries = await readdir(realDirectory, { withFileTypes: true })
-      for (const entry of entries) {
-        if (!entry.name.endsWith('.json')) continue
-        if (!entry.isFile()) {
-          fail(
-            'extension-manager/contribution-node-refused',
-            'contribution manifests must be regular files',
-            { path: join(realDirectory, entry.name) },
-          )
+    const directories = await localPatternDirectories(root, pattern, parts)
+    for (const realDirectory of directories) {
+      if (parts.name === '*.json') {
+        const entries = await readdir(realDirectory, { withFileTypes: true })
+        for (const entry of entries) {
+          if (!entry.name.endsWith('.json')) continue
+          if (!entry.isFile()) fail('extension-manager/contribution-node-refused', 'contribution manifests must be regular files', { path: join(realDirectory, entry.name) })
+          const path = realpathSync(join(realDirectory, entry.name))
+          if (!inside(root, path)) fail('extension-manager/path-escape', 'contribution manifest escapes its extension', { path })
+          paths.set(path, relative(root, path).split(sep).join('/'))
         }
-        const path = realpathSync(join(realDirectory, entry.name))
-        if (!inside(root, path)) {
-          fail('extension-manager/path-escape', 'contribution manifest escapes its extension', {
-            path,
-          })
+      } else {
+        const lexical = join(realDirectory, parts.name)
+        if (!existsSync(lexical)) {
+          if (parts.wildcardDirectoryIndex !== undefined) continue
+          fail('extension-manager/contribution-path-missing', 'contribution manifest is missing', { path: lexical })
         }
+        const path = realpathSync(lexical)
+        if (!inside(root, path)) fail('extension-manager/path-escape', 'contribution manifest escapes its extension', { path })
         paths.set(path, relative(root, path).split(sep).join('/'))
       }
-    } else {
-      const lexical = join(realDirectory, parts.name)
-      if (!existsSync(lexical)) {
-        fail('extension-manager/contribution-path-missing', 'contribution manifest is missing', {
-          path: lexical,
-        })
-      }
-      const path = realpathSync(lexical)
-      if (!inside(root, path)) {
-        fail('extension-manager/path-escape', 'contribution manifest escapes its extension', {
-          path,
-        })
-      }
-      paths.set(path, relative(root, path).split(sep).join('/'))
     }
   }
   return [...paths.entries()].sort((left, right) => left[1].localeCompare(right[1]))
@@ -343,6 +351,17 @@ function embeddedContributionNames(
   const available = Object.keys(files)
   for (const pattern of patterns) {
     const parts = contributionPatternParts(pattern)
+    if (parts.wildcardDirectoryIndex !== undefined) {
+      for (const name of available) {
+        const normalized = safeRelativePath(name, 'embedded contribution path')
+        const segments = normalized.split('/')
+        const patternSegments = [...parts.directorySegments, parts.name]
+        if (segments.length !== patternSegments.length) continue
+        const matches = patternSegments.every((segment, index) => segment === '*' || (segment === '*.json' ? segments[index]!.endsWith('.json') : segment === segments[index]))
+        if (matches) names.add(normalized)
+      }
+      continue
+    }
     if (parts.name === '*.json') {
       const prefix = parts.directory === '' ? '' : `${parts.directory}/`
       for (const name of available) {

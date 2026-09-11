@@ -47,6 +47,7 @@ export const FRAGMENT_LAYER_SLOTS: readonly StandardLayerSlot[] = [
   'height',
   'lightMap',
   'ao',
+  'teamColorMask',
   'alpha1',
   'alpha2',
 ]
@@ -75,6 +76,7 @@ export interface StandardMaterialDefines {
   /** Enabled fragment layers only, in FRAGMENT_LAYER_SLOTS order. */
   layers: StandardLayerDefines[]
   normalMapFormat: NormalMapFormat
+  normalMapSpace: 'tangent' | 'object'
   specMode: 0 | 1
   unshaded: boolean
   doubleLambert: boolean
@@ -117,6 +119,7 @@ const TEXTURE_FALLBACK_PRIORITY: readonly StandardLayerSlot[] = [
   'envi',
   'enviMask',
   'height',
+  'teamColorMask',
 ]
 
 /** UV source → explicit uv set index, or 'sphere' for the spherical-env sources (1.4). */
@@ -204,6 +207,7 @@ export function buildMaterialDefines(
   return {
     layers,
     normalMapFormat: options.normalMapFormat ?? material.normalMapFormat ?? 'dxt5nm',
+    normalMapSpace: material.normalMapSpace ?? 'tangent',
     specMode: material.specMode,
     unshaded: material.unshaded,
     doubleLambert: material.doubleLambert,
@@ -235,7 +239,7 @@ export function canonicalDefineKey(defines: StandardMaterialDefines): string {
     .join('|')
   return (
     `layers[${layerKeys}]` +
-    `;n=${defines.normalMapFormat};spec=${defines.specMode}` +
+    `;n=${defines.normalMapFormat}.${defines.normalMapSpace};spec=${defines.specMode}` +
     `;${defines.unshaded ? 'U' : ''}${defines.doubleLambert ? 'D' : ''}${defines.clampOutput ? 'C' : ''}` +
     `${defines.usesVertexColor ? 'vc' : ''}${defines.usesVertexAlpha ? 'va' : ''}${defines.alphaTest ? 'at' : ''}` +
     `;uv=${defines.uvSetCount};${defines.gpuSkinning ? 'skin' : ''}${defines.hardwareInstancing ? 'inst' : ''}${defines.bakedPoseInstancing ? 'baked' : ''}`
@@ -245,7 +249,7 @@ export function canonicalDefineKey(defines: StandardMaterialDefines): string {
 // ── Blend table (1.10) ────────────────────────────────────────────────────────
 
 export type StandardBlendName =
-  'opaque' | 'alpha-test' | 'blend' | 'additive' | 'add-alpha' | 'modulate' | 'modulate2x'
+  'opaque' | 'alpha-test' | 'blend' | 'premultiplied' | 'additive' | 'add-alpha' | 'modulate' | 'modulate2x'
 
 /**
  * MAT_.blend_mode → render-state name. Names match `WebGlBlendMode` in
@@ -268,6 +272,8 @@ export function standardBlendModeName(
       return 'modulate'
     case 5:
       return 'modulate2x'
+    case 6:
+      return 'premultiplied'
     default:
       return alphaTestThreshold > 0 ? 'alpha-test' : 'opaque'
   }
@@ -737,6 +743,18 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
   if (layers.alpha1) alpha *= computeLayerColorCpu(layers.alpha1, teamColor)[3]
   if (layers.alpha2) alpha *= computeLayerColorCpu(layers.alpha2, teamColor)[3]
   final[3] = alpha * (input.materialAlpha ?? 1)
+
+  // Common masked team-colour operation. Unlike M3's per-layer teamColorMode, the red-channel
+  // mask performs grain merge after lighting.
+  if (layers.teamColorMask) {
+    const mask = computeLayerColorCpu(layers.teamColorMask, teamColor)[0]
+    final = [
+      final[0] + (teamColor[0] - 0.5) * mask,
+      final[1] + (teamColor[1] - 0.5) * mask,
+      final[2] + (teamColor[2] - 0.5) * mask,
+      final[3],
+    ]
+  }
 
   if (input.vertexColor) {
     const usesColor = input.usesVertexColor ?? true
@@ -1279,6 +1297,10 @@ export function buildStandardFragmentSource(
   if (layerBySlot.has('alpha1')) body.push('  alpha *= computeLayer_alpha1().a;')
   if (layerBySlot.has('alpha2')) body.push('  alpha *= computeLayer_alpha2().a;')
   body.push('  final.a = alpha * u_materialAlpha;')
+  if (layerBySlot.has('teamColorMask')) {
+    body.push('  float teamColorMask = computeLayer_teamColorMask().r;')
+    body.push('  final.rgb += (u_teamColor - vec3(0.5)) * teamColorMask;')
+  }
   if (defines.usesVertexColor) body.push('  final.rgb *= v_vertexColor.rgb;')
   if (defines.usesVertexAlpha) body.push('  final.a *= v_vertexColor.a;')
   if (defines.clampOutput) body.push('  final = clamp(final, 0.0, 1.0);')

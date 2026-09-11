@@ -17,6 +17,7 @@ import type {
   Page,
   SubjectFact,
   SubjectFactsSource,
+  SubjectEditTargetResult,
   ViewerModule,
 } from '@modkit/sdk'
 import { createAccordion, accordionField } from '../primitives/accordion.js'
@@ -33,6 +34,7 @@ import {
 import { type UiLocalizer, type UiMessageKey } from '../localization/index.js'
 import { CARD_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
+import { mountFieldEditTarget } from '../field-write/index.js'
 
 export interface CardRef {
   readonly label: string
@@ -138,6 +140,7 @@ export interface CardField {
   readonly title?: string
   /** Exact codec-owned address for lazily resolving field help. */
   readonly knowledgeTarget?: KnowledgeTarget
+  readonly editTarget?: SubjectEditTargetResult
 }
 
 export interface CardGridCell {
@@ -384,6 +387,7 @@ function factField(fact: SubjectFact, subjectKind: string, localizer: UiLocalize
     ...(provenance.length === 0 ? {} : { badge: provenance[0] }),
     ...(provenance.length <= 1 ? {} : { title: provenance.join(' · ') }),
     ...(fact.knowledgeTarget === undefined ? {} : { knowledgeTarget: fact.knowledgeTarget }),
+    ...(fact.editTarget === undefined ? {} : { editTarget: fact.editTarget }),
   }
 }
 
@@ -772,6 +776,7 @@ function renderFields(
       setPart(badge, 'card.chip')
       row.append(badge)
     }
+    mountFieldEditTarget(row, field.editTarget)
     if (inspectKnowledge !== undefined) {
       const inspect = () => inspectKnowledge(field.knowledgeTarget)
       row.addEventListener('focus', inspect)

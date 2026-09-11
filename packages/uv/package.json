@@ -5,6 +5,10 @@
   "type": "module",
   "description": "Built-in universal visual materialization for UVM and UVT.",
   "exports": {
+    "./model/key-times": {
+      "types": "./dist/model/key-times.d.ts",
+      "default": "./dist/model/key-times.js"
+    },
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
@@ -16,6 +20,14 @@
     "./model/materializer": {
       "types": "./dist/model/materializer.d.ts",
       "default": "./dist/model/materializer.js"
+    },
+    "./model/container": {
+      "types": "./dist/model/container.d.ts",
+      "default": "./dist/model/container.js"
+    },
+    "./model/format-residual": {
+      "types": "./dist/model/format-residual.d.ts",
+      "default": "./dist/model/format-residual.js"
     },
     "./model/provider": {
       "types": "./dist/model/provider.d.ts",
@@ -41,14 +53,33 @@
       "types": "./dist/world/index.d.ts",
       "default": "./dist/world/index.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./model/accessor": {
+      "types": "./dist/model/accessor.d.ts",
+      "default": "./dist/model/accessor.js"
+    },
+    "./model/accessor-write": {
+      "types": "./dist/model/accessor-write.d.ts",
+      "default": "./dist/model/accessor-write.js"
+    },
+    "./model/animation-clips": {
+      "types": "./dist/model/animation-clips.d.ts",
+      "default": "./dist/model/animation-clips.js"
+    },
+    "./model/validation": {
+      "types": "./dist/model/validation/index.d.ts",
+      "default": "./dist/model/validation/index.js"
+    }
   },
   "files": [
     "contributions",
     "dist",
+    "MK2-RIG-KERNELS.json",
+    "MK2-CONTAINER-KERNELS.json",
     "README.md"
   ],
   "dependencies": {
+    "@modkit/codec-kit": "workspace:*",
     "@modkit/host": "workspace:*",
     "@modkit/sdk": "workspace:*"
   },

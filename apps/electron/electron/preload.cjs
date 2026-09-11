@@ -69,6 +69,10 @@ contextBridge.exposeInMainWorld('modkitSettings', {
   write: text => ipcRenderer.invoke('modkit.settings.write', text),
 })
 
+contextBridge.exposeInMainWorld('modkitContentSources', {
+  call: (method, args) => ipcRenderer.invoke('modkit.content-sources', { method, args }),
+})
+
 /*
  * Managing extensions and codecs.
  *

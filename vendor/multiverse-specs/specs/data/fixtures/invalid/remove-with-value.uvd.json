@@ -1,0 +1,29 @@
+{
+  "$comment": "INVALID: remove with a value is an ambiguous instruction (remove-is-valueless).",
+  "uv": {
+    "format": "UVD",
+    "version": "1.0"
+  },
+  "namespace": "example-mod",
+  "role": "overlay",
+  "overlays": [
+    {
+      "target": "example-vendor/unit/trooper",
+      "op": "set",
+      "field": "health",
+      "value": 120000
+    },
+    {
+      "target": "example-vendor/unit/trooper",
+      "op": "append",
+      "field": "tags",
+      "value": "buffed"
+    },
+    {
+      "target": "example-vendor/unit/elite-trooper",
+      "op": "remove",
+      "field": "displayTint",
+      "value": 5
+    }
+  ]
+}

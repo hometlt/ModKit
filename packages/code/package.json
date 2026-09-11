@@ -29,7 +29,11 @@
       "types": "./dist/worker.d.ts",
       "default": "./dist/worker.js"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./semantic-tokens": {
+      "types": "./dist/semantic-tokens.d.ts",
+      "default": "./dist/semantic-tokens.js"
+    }
   },
   "files": [
     "contributions",

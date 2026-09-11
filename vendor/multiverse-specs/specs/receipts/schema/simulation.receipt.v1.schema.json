@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/receipts/1.0/simulation.receipt.schema.json",
+  "title": "SimulationReceipt",
+  "description": "One deterministic run of a composed world: the kernel identity, the initial parameters, checkpoint state hashes, and the save/restore invariant N = K + dump + restore + (N-K). State hashes are the kernel's own integer state hashes (hex, no floats existed to hash); the receipt chains to its CompositionReceipt by compositionHash. Checkpoint tick monotonicity is a verifier check.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["kind", "schemaVersion", "kernel", "subject", "init", "checkpoints", "invariants", "verdict"],
+  "properties": {
+    "$comment": { "type": "string" },
+    "kind": { "const": "uv.receipt/simulation" },
+    "schemaVersion": { "const": 1 },
+    "kernel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["moduleDigest", "host"],
+      "properties": {
+        "moduleDigest": {
+          "description": "Digest of the canonical wasm binary. One binary, one semantics — the ADR-RUNTIME-001 premise this field pins.",
+          "$ref": "#/$defs/digest"
+        },
+        "host": {
+          "description": "Execution host class, no machine identity: node | browser | electron | wasmtime.",
+          "enum": ["node", "browser", "electron", "wasmtime"]
+        }
+      }
+    },
+    "subject": {
+      "description": "What ticked: a composed world (chained by compositionHash) or a standalone kernel run (spikes, benchmarks — honest about having composed nothing). A fake compositionHash would be worse than no chain.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["composition", "standalone-kernel"] },
+        "compositionHash": { "$ref": "#/$defs/digest" }
+      },
+      "allOf": [
+        { "if": { "properties": { "kind": { "const": "composition" } } }, "then": { "required": ["compositionHash"] } },
+        { "if": { "properties": { "kind": { "const": "standalone-kernel" } } }, "then": { "not": { "required": ["compositionHash"] } } }
+      ]
+    },
+    "init": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["seed", "ticks"],
+      "properties": {
+        "seed": { "type": "string", "pattern": "^[0-9]+$" },
+        "ticks": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "checkpoints": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["tick", "stateHash"],
+        "properties": {
+          "tick": { "type": "integer", "minimum": 0 },
+          "stateHash": { "type": "string", "pattern": "^[0-9a-f]{16}$" }
+        }
+      }
+    },
+    "invariants": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["saveRestore"],
+      "properties": {
+        "saveRestore": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["dumpAtTick", "resumedStateHash", "finalMatches"],
+          "properties": {
+            "dumpAtTick": { "type": "integer", "minimum": 1 },
+            "resumedStateHash": { "type": "string", "pattern": "^[0-9a-f]{16}$" },
+            "finalMatches": { "type": "boolean" }
+          }
+        },
+        "instanceIsolation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["divergedAtTick"],
+          "properties": {
+            "divergedAtTick": { "type": ["integer", "null"] }
+          }
+        }
+      }
+    },
+    "inputJournalDigest": {
+      "description": "Digest of the input journal for replays; absent for input-free runs.",
+      "$ref": "#/$defs/digest"
+    },
+    "verdict": { "enum": ["deterministic", "diverged"] }
+  },
+  "$defs": {
+    "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+  }
+}

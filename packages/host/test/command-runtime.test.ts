@@ -65,8 +65,16 @@ describe('the command runtime answers rather than throws', () => {
         operationIds: ['container.extract'],
         dataSourceContracts: ['common.view/namespace-entry-source'],
       },
-      convert: { operationIds: ['export.convert', 'export.raw'] },
-      preview: { operationIds: ['view.thumbnail', 'view.render'] },
+      convert: {
+        operationIds: [
+          'export.convert',
+          'export.raw',
+          'model.export-uvm',
+          'model.export-native',
+          'model.write',
+        ],
+      },
+      preview: { operationIds: ['view.thumbnail', 'view.render', 'model.render'] },
     })
     for (const target of Object.values(SUBJECT_COMMAND_TARGETS)) {
       expect(target.hostCallers).toEqual([

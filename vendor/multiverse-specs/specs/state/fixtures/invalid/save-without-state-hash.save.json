@@ -1,0 +1,27 @@
+{
+  "$comment": "INVALID: a save without the kernel state hash cannot prove its own restore (save-carries-state-hash).",
+  "kind": "uv.save",
+  "schemaVersion": 1,
+  "subject": {
+    "kind": "standalone-kernel"
+  },
+  "kernel": {
+    "moduleDigest": "sha256:4fa6915851f466938e4c81458e1d63871f6b60f2f1144b2df918ff85b38d4797"
+  },
+  "tick": 5000,
+  "sections": [
+    {
+      "subsystem": "entities",
+      "version": 1,
+      "byteLength": 2560,
+      "digest": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "subsystem": "rng",
+      "version": 1,
+      "byteLength": 32,
+      "digest": "sha256:2222222222222222222222222222222222222222222222222222222222222222"
+    }
+  ],
+  "envelopeHash": "sha256:eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+}

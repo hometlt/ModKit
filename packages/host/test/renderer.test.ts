@@ -221,10 +221,22 @@ describe('standard scene renderer contract and software provider', () => {
       })
       const first = await encodeRgbaPng(frame)
       const second = await encodeRgbaPng(frame)
+      // At a 32x32 viewport these vertices land at (4,28), (28,28), (16,4).
+      // Check an analytic coverage mask independently of the renderer before accepting the PNG hash.
+      const expected = new Uint8Array(32 * 32 * 4)
+      for (let y = 0; y < 32; y++)
+        for (let x = 0; x < 32; x++) {
+          const sampleX = x + 0.5,
+            sampleY = y + 0.5
+          const inside =
+            sampleY >= 4 && sampleY < 28 && sampleX > 18 - sampleY / 2 && sampleX < 14 + sampleY / 2
+          expected.set(inside ? [26, 77, 255, 255] : [5, 8, 10, 255], (y * 32 + x) * 4)
+        }
+      expect(frame.rgba).toEqual(expected)
       expect(second).toEqual(first)
       expect(Array.from(first.subarray(0, 8))).toEqual([137, 80, 78, 71, 13, 10, 26, 10])
       expect(createHash('sha256').update(first).digest('hex')).toBe(
-        '794eddf238b7062203d8be5e2d9fd9391e13ea1889cc6ad7e8486295822d840b',
+        '21b706903104271072d0537a44b7f56c5a54ad17cd98dae60e251cbbc223e054',
       )
     } finally {
       await resolution.release()

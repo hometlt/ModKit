@@ -1,0 +1,107 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/uvc/1.0/uvc.campaign.schema.json",
+  "title": "UVC campaign manifest",
+  "description": "The campaign manifest carried inside a UVP package of kind campaign. Entries form a directed graph of map packages; unlock conditions are pure expressions over declared carryover variables ONLY (no intrinsic calls: campaign gating reads what missions banked, nothing else); carryover is the typed boundary of persistence — everything outside it dies with its mission's world.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["uv", "entries", "carryover"],
+  "properties": {
+    "$comment": { "type": "string" },
+    "uv": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["format", "version"],
+      "properties": {
+        "format": { "const": "UVC" },
+        "version": { "const": "1.0" }
+      }
+    },
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "package"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+          "package": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "range"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*(\\.[a-z0-9][a-z0-9-]*)*/[a-z0-9][a-z0-9-]*$" },
+              "range": { "type": "string", "pattern": "^[~^]?(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$" }
+            }
+          },
+          "unlock": { "$ref": "#/$defs/carryoverExpr" },
+          "title": {
+            "description": "Localization key, never inline prose.",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "sharedLayers": {
+      "description": "Packages composed into every entry's run, in explicit order — the campaign's own rules and data.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "range", "order"],
+        "properties": {
+          "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*(\\.[a-z0-9][a-z0-9-]*)*/[a-z0-9][a-z0-9-]*$" },
+          "range": { "type": "string", "pattern": "^[~^]?(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)$" },
+          "order": { "type": "integer", "minimum": 0 }
+        }
+      }
+    },
+    "carryover": {
+      "description": "The persistence boundary. Deterministic types only; world references cannot cross missions.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "type", "initial"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z][a-zA-Z0-9]*$" },
+          "type": { "enum": ["bool", "i64", "fixed64", "strref", "enum", "list"] },
+          "values": { "type": "array", "minItems": 1, "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" } },
+          "itemType": { "enum": ["bool", "i64", "fixed64", "strref", "enum"] },
+          "initial": {}
+        },
+        "allOf": [
+          { "if": { "properties": { "type": { "const": "enum" } } }, "then": { "required": ["values"] } },
+          { "if": { "properties": { "type": { "const": "list" } } }, "then": { "required": ["itemType"] } }
+        ]
+      }
+    },
+    "campaignChart": {
+      "description": "Optional UVS document driving progression at campaign.* event scope, named by digest.",
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    }
+  },
+  "$defs": {
+    "carryoverExpr": {
+      "description": "Pure expression over carryover variables: const/var/and/or/not/cmp. Deliberately NO call kind — an unlock that queries the world is a design smell the schema refuses.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": { "enum": ["const", "var", "and", "or", "not", "cmp"] },
+        "value": {},
+        "name": { "type": "string" },
+        "args": { "type": "array", "items": { "$ref": "#/$defs/carryoverExpr" } },
+        "op": { "enum": ["eq", "ne", "lt", "le", "gt", "ge"] }
+      },
+      "allOf": [
+        { "if": { "properties": { "kind": { "const": "const" } } }, "then": { "required": ["value"] } },
+        { "if": { "properties": { "kind": { "const": "var" } } }, "then": { "required": ["name"] } },
+        { "if": { "properties": { "kind": { "const": "cmp" } } }, "then": { "required": ["op", "args"] } },
+        { "if": { "properties": { "kind": { "enum": ["and", "or", "not"] } } }, "then": { "required": ["args"] } }
+      ]
+    }
+  }
+}

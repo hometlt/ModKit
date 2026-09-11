@@ -1,3 +1,12 @@
+import { readSimpleEffectColors } from './effect-colors.js'
+import { PREVIEW_LIGHT_GLSL, bindPreviewLighting, readPreviewLighting } from './preview-lighting.js'
+import {
+  bindSimpleEffectTexture,
+  readSimpleEffect,
+  applySimpleEffectState,
+  simpleEffectSolid,
+} from './simple-effect.js'
+import { applyWebGlDepthBias } from './depth-bias.js'
 import type { SceneRendererShadingModel } from '@modkit/sdk/renderer'
 import type {
   SceneRenderRequest,
@@ -9,6 +18,11 @@ import type {
   SceneRendererDiagnostic,
 } from '@modkit/sdk/renderer'
 import { SCENE_RENDERER_CONTRACT } from '@modkit/sdk/renderer'
+import { materialAlpha, straightenAlpha } from './alpha.js'
+import { prepareSceneMaterialPrograms } from './materials.js'
+import { sceneMaterialDraws } from './material-draws.js'
+import { materialWebGlDraws } from './material-webgl.js'
+import { sceneTextureBytes } from '../textures/cube.js'
 
 const RENDERER_ID = 'modkit.browser-webgl'
 const MAX_DIMENSION = 4_096
@@ -40,6 +54,8 @@ const VERTEX_SHADER = `#version 300 es
 in vec3 position;
 in vec3 normal;
 in vec2 uv;
+in vec4 effectColor;
+out vec4 vertexEffectColor;
 uniform mat4 transform;
 uniform mat4 model;
 out vec3 worldNormal;
@@ -49,6 +65,7 @@ void main() {
   worldNormal = mat3(model) * normal;
   worldPosition = (model * vec4(position, 1.0)).xyz;
   texCoord = uv;
+  vertexEffectColor = effectColor;
   gl_Position = transform * vec4(position, 1.0);
 }`
 
@@ -57,18 +74,38 @@ precision highp float;
 in vec3 worldNormal;
 in vec3 worldPosition;
 in vec2 texCoord;
+in vec4 vertexEffectColor;
 uniform vec4 color;
+uniform vec4 instanceTint;
 uniform vec4 lightColor;
 uniform vec3 lightDirection;
 uniform float ambient;
 uniform float shaded;
 uniform float textured;
 uniform float hasNormals;
+uniform float coverageMode;
+uniform float alphaCutoff;
+uniform float screenUvEnabled;
+uniform vec2 screenUvViewport;
+uniform vec2 screenUvOffset;
+uniform vec2 screenUvTiling;
+uniform float screenUvAngle;
+uniform float screenUvThreshold;
 uniform sampler2D baseColorMap;
+${PREVIEW_LIGHT_GLSL}
 out vec4 outColor;
 void main() {
   vec4 base = color;
-  if (textured > 0.5) base *= texture(baseColorMap, texCoord);
+  if (coverageMode > 2.5) base *= vertexEffectColor;
+  vec2 sampleUv = texCoord;
+  if (coverageMode > 2.5 && screenUvEnabled > 0.5 &&
+      (screenUvThreshold <= 0.0 || max(screenUvViewport.x, screenUvViewport.y) >= screenUvThreshold)) {
+    vec2 centered = gl_FragCoord.xy / max(screenUvViewport, vec2(1.0)) - vec2(0.5);
+    float cosine = cos(screenUvAngle);
+    float sine = sin(screenUvAngle);
+    sampleUv = (mat2(cosine, -sine, sine, cosine) * centered + vec2(0.5)) * screenUvTiling + screenUvOffset;
+  }
+  if (textured > 0.5) base *= texture(baseColorMap, sampleUv);
   if (shaded > 0.5) {
     /*
      * Derivatives of the world position stand in for a normal the geometry did not publish, which
@@ -80,10 +117,21 @@ void main() {
     vec3 surface = hasNormals > 0.5
       ? normalize(worldNormal)
       : normalize(cross(dFdx(worldPosition), dFdy(worldPosition)));
-    float lambert = min(1.0, ambient + (1.0 - ambient) * abs(dot(surface, lightDirection)));
-    base.rgb *= lambert * lightColor.rgb;
+    if (previewLightingEnabled == 1) base.rgb *= previewLighting(surface, worldPosition);
+    else {
+      float lambert = min(1.0, ambient + (1.0 - ambient) * abs(dot(surface, lightDirection)));
+      base.rgb *= lambert * lightColor.rgb;
+    }
   }
-  outColor = base;
+  base *= instanceTint;
+  if (coverageMode > 2.5) {
+    if (alphaCutoff > 0.0 && base.a < alphaCutoff) discard;
+    outColor = coverageMode > 3.5 ? vec4(base.rgb * base.a, base.a) : base;
+    return;
+  }
+  if (coverageMode > 0.5 && coverageMode < 1.5 && base.a < alphaCutoff) discard;
+  if (coverageMode < 1.5) base.a = 1.0;
+  outColor = vec4(base.rgb * base.a, base.a);
 }`
 
 function programFor(gl: WebGL2RenderingContext) {
@@ -154,8 +202,8 @@ function uploadTextures(
   gl: WebGL2RenderingContext,
   textures: readonly SceneRendererTexture[] | undefined,
   diagnostics: SceneRendererDiagnostic[],
+  uploaded: Map<string, WebGLTexture>,
 ) {
-  const uploaded = new Map<string, WebGLTexture>()
   for (const texture of textures ?? []) {
     if (
       typeof texture?.id !== 'string' ||
@@ -165,9 +213,7 @@ function uploadTextures(
       texture.width <= 0 ||
       texture.height <= 0 ||
       texture.width > MAX_DIMENSION ||
-      texture.height > MAX_DIMENSION ||
-      !(texture.rgba instanceof Uint8Array) ||
-      texture.rgba.length !== texture.width * texture.height * 4
+      texture.height > MAX_DIMENSION
     ) {
       diagnostics.push({
         severity: 'warning',
@@ -176,25 +222,44 @@ function uploadTextures(
       })
       continue
     }
+    try {
+      sceneTextureBytes(texture)
+    } catch (error) {
+      if (!(error instanceof TypeError)) throw error
+      diagnostics.push({
+        severity: 'warning',
+        code: 'modkit.browser-webgl/texture-invalid',
+        message: `browser renderer skipped texture ${texture.id}: ${error.message}`,
+      })
+      continue
+    }
     const handle = gl.createTexture()
     if (handle === null) throw new TypeError('WebGL could not allocate a texture')
-    gl.bindTexture(gl.TEXTURE_2D, handle)
-    gl.texImage2D(
-      gl.TEXTURE_2D,
-      0,
-      gl.RGBA,
-      texture.width,
-      texture.height,
-      0,
-      gl.RGBA,
-      gl.UNSIGNED_BYTE,
-      texture.rgba,
-    )
+    const previous = uploaded.get(texture.id)
+    if (previous !== undefined) gl.deleteTexture(previous)
+    uploaded.set(texture.id, handle)
+    const cube = texture.dimension === 'cube'
+    const target = cube ? gl.TEXTURE_CUBE_MAP : gl.TEXTURE_2D
+    gl.bindTexture(target, handle)
+    const faceBytes = texture.width * texture.height * 4
+    for (let face = 0; face < (cube ? 6 : 1); face++)
+      gl.texImage2D(
+        cube ? gl.TEXTURE_CUBE_MAP_POSITIVE_X + face : target,
+        0,
+        gl.RGBA,
+        texture.width,
+        texture.height,
+        0,
+        gl.RGBA,
+        gl.UNSIGNED_BYTE,
+        cube ? texture.rgba.subarray(face * faceBytes, (face + 1) * faceBytes) : texture.rgba,
+      )
     const wrap = (mode: string | undefined) => (mode === 'clamp' ? gl.CLAMP_TO_EDGE : gl.REPEAT)
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrap(texture.wrapU))
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrap(texture.wrapV))
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+    gl.texParameteri(target, gl.TEXTURE_WRAP_S, cube ? gl.CLAMP_TO_EDGE : wrap(texture.wrapU))
+    gl.texParameteri(target, gl.TEXTURE_WRAP_T, cube ? gl.CLAMP_TO_EDGE : wrap(texture.wrapV))
+    if (cube) gl.texParameteri(target, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE)
+    gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+    gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
     uploaded.set(texture.id, handle)
   }
   return uploaded
@@ -253,6 +318,12 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
   if (typeof OffscreenCanvas !== 'function') {
     throw new TypeError('OffscreenCanvas is unavailable in this browser worker')
   }
+  const defaultAlpha = materialAlpha()
+  const alphas = new Map(
+    (request.scene.materials ?? [])
+      .map(bindSimpleEffectTexture)
+      .map(material => [material.id, materialAlpha(material)]),
+  )
   const canvas = new OffscreenCanvas(width, height)
   const gl = canvas.getContext('webgl2', {
     alpha: true,
@@ -265,6 +336,7 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
   const position = gl.getAttribLocation(program, 'position')
   const normal = gl.getAttribLocation(program, 'normal')
   const uv = gl.getAttribLocation(program, 'uv')
+  const effectColor = gl.getAttribLocation(program, 'effectColor')
   const transform = gl.getUniformLocation(program, 'transform')
   const color = gl.getUniformLocation(program, 'color')
   const uniform = (name: string) => gl.getUniformLocation(program, name)
@@ -276,174 +348,304 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
   const texturedUniform = uniform('textured')
   const hasNormalsUniform = uniform('hasNormals')
   const baseColorMap = uniform('baseColorMap')
+  const coverageMode = uniform('coverageMode')
+  const alphaCutoff = uniform('alphaCutoff')
+  const screenUvEnabled = uniform('screenUvEnabled'),
+    screenUvViewport = uniform('screenUvViewport'),
+    screenUvOffset = uniform('screenUvOffset'),
+    screenUvTiling = uniform('screenUvTiling'),
+    screenUvAngle = uniform('screenUvAngle'),
+    screenUvThreshold = uniform('screenUvThreshold')
   if (position < 0 || transform === null || color === null || modelUniform === null) {
     gl.deleteProgram(program)
     throw new TypeError('WebGL renderer uniforms are unavailable')
   }
   const diagnostics: SceneRendererDiagnostic[] = []
-  const textures = uploadTextures(gl, request.scene.textures, diagnostics)
-  const materials = new Map(
-    (request.scene.materials ?? []).map(material => [
-      material.id,
-      Object.freeze({
-        baseColor: material.baseColor,
-        shading: material.shading ?? 'unlit',
-        texture:
-          material.baseColorTexture === undefined
-            ? undefined
-            : textures.get(material.baseColorTexture),
-      }),
-    ]),
-  )
-  for (const material of request.scene.materials ?? []) {
-    if (material.baseColorTexture !== undefined && !textures.has(material.baseColorTexture)) {
-      diagnostics.push({
-        severity: 'warning',
-        code: 'modkit.browser-webgl/texture-missing',
-        message: `material ${material.id} names texture ${material.baseColorTexture}, which the scene did not carry`,
-      })
-    }
-  }
-  const light = normalizedLight(request.scene.light)
-  const clear: SceneRendererColor = request.clearColor ?? [0, 0, 0, 0]
-  gl.viewport(0, 0, width, height)
-  gl.clearColor(clear[0], clear[1], clear[2], clear[3])
-  gl.clearDepth(1)
-  gl.enable(gl.DEPTH_TEST)
-  gl.depthFunc(gl.LEQUAL)
-  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
-  gl.useProgram(program)
-  if (light !== undefined) {
-    if (lightColor !== null) gl.uniform4fv(lightColor, light.color)
-    if (lightDirection !== null) gl.uniform3fv(lightDirection, light.direction)
-    if (ambient !== null) gl.uniform1f(ambient, light.ambient)
-  }
-  if (baseColorMap !== null) gl.uniform1i(baseColorMap, 0)
-  let triangles = 0
-  for (const primitive of request.scene.primitives) {
-    request.signal?.throwIfAborted()
-    const mode = topology(gl, primitive.topology)
-    if (mode === undefined) {
-      diagnostics.push({
-        severity: 'warning',
-        code: 'modkit.browser-webgl/unsupported-topology',
-        message: `browser renderer skipped ${primitive.topology}`,
-        primitiveId: primitive.id,
-      })
-      continue
-    }
-    const vertexCount = primitive.positions.length / 3
-    const vertexBuffer = gl.createBuffer()
-    if (vertexBuffer === null) throw new TypeError('WebGL could not allocate a vertex buffer')
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
-    gl.bufferData(gl.ARRAY_BUFFER, primitive.positions, gl.STATIC_DRAW)
-    gl.enableVertexAttribArray(position)
-    gl.vertexAttribPointer(position, 3, gl.FLOAT, false, 0, 0)
-    const surface = materials.get(primitive.materialId as string)
-    const shaded = light !== undefined && surface?.shading === 'lambert'
-    const normalBuffer =
-      normal < 0 ||
-      !shaded ||
-      !(primitive.normals instanceof Float32Array) ||
-      primitive.normals.length < primitive.positions.length
-        ? undefined
-        : attributeBuffer(gl, normal, primitive.normals, 3)
-    const textured = surface?.texture !== undefined
-    const uvBuffer =
-      uv < 0 ||
-      !textured ||
-      !(primitive.textureCoordinates instanceof Float32Array) ||
-      primitive.textureCoordinates.length < vertexCount * 2
-        ? undefined
-        : attributeBuffer(gl, uv, primitive.textureCoordinates, 2)
-    /*
-     * A disabled attribute keeps whatever generic value the context last held, so both are given
-     * an explicit constant when their buffer is absent. Without this a primitive drawn after a
-     * textured one samples the previous model's UVs.
-     */
-    if (normalBuffer === undefined && normal >= 0) {
-      gl.disableVertexAttribArray(normal)
-      gl.vertexAttrib3f(normal, 0, 0, 1)
-    }
-    if (uvBuffer === undefined && uv >= 0) {
-      gl.disableVertexAttribArray(uv)
-      gl.vertexAttrib2f(uv, 0, 0)
-    }
-    const model = primitive.transform
-    gl.uniformMatrix4fv(
-      transform,
-      false,
-      model === undefined
-        ? request.camera.viewProjection
-        : multiply(request.camera.viewProjection, model),
+  const textures = new Map<string, WebGLTexture>()
+  const gameDraws = materialWebGlDraws(gl, textures)
+  try {
+    uploadTextures(gl, request.scene.textures, diagnostics, textures)
+    const materialPrograms = prepareSceneMaterialPrograms(
+      request.scene.materials ?? [],
+      new Map(
+        (request.scene.textures ?? [])
+          .filter(texture => textures.has(texture.id))
+          .map(texture => [texture.id, texture]),
+      ),
+      request.scene.materialContext,
+      diagnostics,
+      request.signal,
     )
-    gl.uniformMatrix4fv(modelUniform, false, model ?? IDENTITY)
-    gl.uniform4fv(color, (surface?.baseColor ?? [0.78, 0.8, 0.84, 1]) as number[])
-    if (shadedUniform !== null) gl.uniform1f(shadedUniform, shaded ? 1 : 0)
-    if (hasNormalsUniform !== null) {
-      gl.uniform1f(hasNormalsUniform, normalBuffer === undefined ? 0 : 1)
+    const cubeIds = new Set(
+      (request.scene.textures ?? [])
+        .filter(texture => texture.dimension === 'cube')
+        .map(texture => texture.id),
+    )
+    const materials = new Map(
+      (request.scene.materials ?? []).map(bindSimpleEffectTexture).map(material => [
+        material.id,
+        Object.freeze({
+          baseColor: material.baseColor,
+          simpleEffect: readSimpleEffect(material.simpleEffect),
+          sourceTexture: (request.scene.textures ?? []).find(
+            texture => texture.id === material.baseColorTexture,
+          ),
+          shading: material.shading ?? 'unlit',
+          texture:
+            material.baseColorTexture === undefined || cubeIds.has(material.baseColorTexture)
+              ? undefined
+              : textures.get(material.baseColorTexture),
+        }),
+      ]),
+    )
+    for (const material of (request.scene.materials ?? []).map(bindSimpleEffectTexture)) {
+      if (material.baseColorTexture !== undefined && cubeIds.has(material.baseColorTexture))
+        diagnostics.push({
+          severity: 'warning',
+          code: 'common.scene/base-color-texture-dimension',
+          message: `Material ${material.id}: base-color UV sampling requires a 2D texture.`,
+        })
+      if (material.baseColorTexture !== undefined && !textures.has(material.baseColorTexture)) {
+        diagnostics.push({
+          severity: 'warning',
+          code: 'modkit.browser-webgl/texture-missing',
+          message: `material ${material.id} names texture ${material.baseColorTexture}, which the scene did not carry`,
+        })
+      }
     }
-    const sampling = textured && uvBuffer !== undefined
-    if (texturedUniform !== null) gl.uniform1f(texturedUniform, sampling ? 1 : 0)
-    if (sampling) {
-      gl.activeTexture(gl.TEXTURE0)
-      gl.bindTexture(
-        gl.TEXTURE_2D,
-        (
-          surface as Readonly<{
-            baseColor: SceneRendererColor
-            shading: SceneRendererShadingModel
-            texture: WebGLTexture | undefined
-          }>
-        ).texture as WebGLTexture,
+    const light = normalizedLight(request.scene.light)
+    const preview = readPreviewLighting(request.scene.lights, request.scene.ambientLight)
+    const clear: SceneRendererColor = request.clearColor ?? [0, 0, 0, 0]
+    gl.viewport(0, 0, width, height)
+    gl.clearColor(clear[0] * clear[3], clear[1] * clear[3], clear[2] * clear[3], clear[3])
+    gl.clearDepth(1)
+    gl.enable(gl.DEPTH_TEST)
+    gl.depthFunc(gl.LEQUAL)
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
+    gl.useProgram(program)
+    bindPreviewLighting(gl, program, preview)
+    if (light !== undefined) {
+      if (lightColor !== null) gl.uniform4fv(lightColor, light.color)
+      if (lightDirection !== null) gl.uniform3fv(lightDirection, light.direction)
+      if (ambient !== null) gl.uniform1f(ambient, light.ambient)
+    }
+    if (baseColorMap !== null) gl.uniform1i(baseColorMap, 0)
+    let triangles = 0
+    for (const draw of sceneMaterialDraws(
+      request.scene.primitives,
+      request.scene.materials ?? [],
+      materialPrograms,
+      request.camera.viewProjection,
+      diagnostics,
+      clear[3],
+    )) {
+      const primitive = draw.primitive
+      request.signal?.throwIfAborted()
+      applyWebGlDepthBias(gl, primitive.depthBias)
+      if (draw.program !== undefined) {
+        triangles += gameDraws.draw(draw, request.camera, request.scene.light)
+        continue
+      }
+      gl.useProgram(program)
+      const mode = topology(gl, primitive.topology)
+      if (mode === undefined) {
+        diagnostics.push({
+          severity: 'warning',
+          code: 'modkit.browser-webgl/unsupported-topology',
+          message: `browser renderer skipped ${primitive.topology}`,
+          primitiveId: primitive.id,
+        })
+        continue
+      }
+      const effectColors =
+        materials.get(primitive.materialId ?? '')?.simpleEffect === undefined
+          ? undefined
+          : readSimpleEffectColors(primitive)
+      const vertexCount = primitive.positions.length / 3
+      const vertexBuffer = gl.createBuffer()
+      if (vertexBuffer === null) throw new TypeError('WebGL could not allocate a vertex buffer')
+      gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer)
+      gl.bufferData(gl.ARRAY_BUFFER, primitive.positions, gl.STATIC_DRAW)
+      gl.enableVertexAttribArray(position)
+      gl.vertexAttribPointer(position, 3, gl.FLOAT, false, 0, 0)
+      const surface = materials.get(primitive.materialId as string)
+      const alpha = alphas.get(primitive.materialId ?? '') ?? defaultAlpha
+      const effect = surface?.simpleEffect
+      const screenUv = effect?.screenUv
+      if (screenUvEnabled !== null) gl.uniform1f(screenUvEnabled, screenUv === undefined ? 0 : 1)
+      if (screenUv !== undefined) {
+        if (screenUvViewport !== null) gl.uniform2f(screenUvViewport, width, height)
+        if (screenUvOffset !== null) gl.uniform2f(screenUvOffset, ...screenUv.offset)
+        if (screenUvTiling !== null) gl.uniform2f(screenUvTiling, ...screenUv.tiling)
+        if (screenUvAngle !== null) gl.uniform1f(screenUvAngle, screenUv.angle)
+        if (screenUvThreshold !== null) gl.uniform1f(screenUvThreshold, screenUv.threshold)
+      }
+      gl.enable(gl.DEPTH_TEST)
+      gl.disable(gl.CULL_FACE)
+      if (coverageMode !== null)
+        gl.uniform1f(coverageMode, alpha.mode === 'opaque' ? 0 : alpha.mode === 'mask' ? 1 : 2)
+      if (alphaCutoff !== null) gl.uniform1f(alphaCutoff, alpha.cutoff)
+      gl.depthMask(alpha.mode !== 'blend')
+      if (alpha.mode === 'blend') {
+        gl.enable(gl.BLEND)
+        gl.blendEquation(gl.FUNC_ADD)
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
+      } else gl.disable(gl.BLEND)
+      if (effect !== undefined) {
+        applySimpleEffectState(gl, effect)
+        if (coverageMode !== null) gl.uniform1f(coverageMode, simpleEffectSolid(effect) ? 4 : 3)
+        if (alphaCutoff !== null)
+          gl.uniform1f(alphaCutoff, effect.alphaCutoff > 1 ? 2 : effect.alphaCutoff)
+      }
+      const colorBuffer =
+        effectColor < 0 || effectColors === undefined
+          ? undefined
+          : attributeBuffer(gl, effectColor, effectColors, 4)
+      if (colorBuffer === undefined && effectColor >= 0) {
+        gl.disableVertexAttribArray(effectColor)
+        gl.vertexAttrib4f(effectColor, 1, 1, 1, 1)
+      }
+      const shaded =
+        effect === undefined &&
+        (light !== undefined || preview !== undefined) &&
+        surface?.shading === 'lambert'
+      const normalBuffer =
+        normal < 0 ||
+        !shaded ||
+        !(primitive.normals instanceof Float32Array) ||
+        primitive.normals.length < primitive.positions.length
+          ? undefined
+          : attributeBuffer(gl, normal, primitive.normals, 3)
+      const textured = surface?.texture !== undefined
+      const uvBuffer =
+        uv < 0 ||
+        !textured ||
+        !(primitive.textureCoordinates instanceof Float32Array) ||
+        primitive.textureCoordinates.length < vertexCount * 2
+          ? undefined
+          : attributeBuffer(gl, uv, primitive.textureCoordinates, 2)
+      /*
+       * A disabled attribute keeps whatever generic value the context last held, so both are given
+       * an explicit constant when their buffer is absent. Without this a primitive drawn after a
+       * textured one samples the previous model's UVs.
+       */
+      if (normalBuffer === undefined && normal >= 0) {
+        gl.disableVertexAttribArray(normal)
+        gl.vertexAttrib3f(normal, 0, 0, 1)
+      }
+      if (uvBuffer === undefined && uv >= 0) {
+        gl.disableVertexAttribArray(uv)
+        gl.vertexAttrib2f(uv, 0, 0)
+      }
+      const model = primitive.transform
+      gl.uniformMatrix4fv(
+        transform,
+        false,
+        model === undefined
+          ? request.camera.viewProjection
+          : multiply(request.camera.viewProjection, model),
       )
+      gl.uniformMatrix4fv(modelUniform, false, model ?? IDENTITY)
+      gl.uniform4fv(color, (surface?.baseColor ?? [0.78, 0.8, 0.84, 1]) as number[])
+      gl.uniform4fv(
+        gl.getUniformLocation(program, 'instanceTint'),
+        primitiveTint(primitive) as number[],
+      )
+      if (shadedUniform !== null) gl.uniform1f(shadedUniform, shaded ? 1 : 0)
+      if (hasNormalsUniform !== null) {
+        gl.uniform1f(hasNormalsUniform, normalBuffer === undefined ? 0 : 1)
+      }
+      const sampling = textured && (uvBuffer !== undefined || screenUv !== undefined)
+      if (texturedUniform !== null) gl.uniform1f(texturedUniform, sampling ? 1 : 0)
+      if (sampling) {
+        gl.activeTexture(gl.TEXTURE0)
+        gl.bindTexture(
+          gl.TEXTURE_2D,
+          (
+            surface as Readonly<{
+              baseColor: SceneRendererColor
+              shading: SceneRendererShadingModel
+              texture: WebGLTexture | undefined
+            }>
+          ).texture as WebGLTexture,
+        )
+      }
+      if (sampling) {
+        gl.texParameteri(
+          gl.TEXTURE_2D,
+          gl.TEXTURE_WRAP_S,
+          surface?.sourceTexture?.wrapU === 'clamp' ? gl.CLAMP_TO_EDGE : gl.REPEAT,
+        )
+        gl.texParameteri(
+          gl.TEXTURE_2D,
+          gl.TEXTURE_WRAP_T,
+          surface?.sourceTexture?.wrapV === 'clamp' ? gl.CLAMP_TO_EDGE : gl.REPEAT,
+        )
+      }
+      if (sampling && effect !== undefined) {
+        gl.texParameteri(
+          gl.TEXTURE_2D,
+          gl.TEXTURE_WRAP_S,
+          effect.wrapU === 'repeat' ? gl.REPEAT : gl.CLAMP_TO_EDGE,
+        )
+        gl.texParameteri(
+          gl.TEXTURE_2D,
+          gl.TEXTURE_WRAP_T,
+          effect.wrapV === 'repeat' ? gl.REPEAT : gl.CLAMP_TO_EDGE,
+        )
+      }
+      let count = vertexCount
+      let indexBuffer
+      if (primitive.indices !== undefined) {
+        indexBuffer = gl.createBuffer()
+        if (indexBuffer === null) throw new TypeError('WebGL could not allocate an index buffer')
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
+        gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, primitive.indices, gl.STATIC_DRAW)
+        count = primitive.indices.length
+        gl.drawElements(mode, count, gl.UNSIGNED_INT, 0)
+      } else {
+        gl.drawArrays(mode, 0, count)
+      }
+      triangles +=
+        primitive.topology === 'triangles' ? Math.floor(count / 3) : Math.max(0, count - 2)
+      gl.deleteBuffer(indexBuffer as WebGLBuffer | null)
+      gl.deleteBuffer(colorBuffer as WebGLBuffer | null)
+      gl.deleteBuffer(normalBuffer as WebGLBuffer | null)
+      gl.deleteBuffer(uvBuffer as WebGLBuffer | null)
+      gl.deleteBuffer(vertexBuffer)
     }
-    let count = vertexCount
-    let indexBuffer
-    if (primitive.indices !== undefined) {
-      indexBuffer = gl.createBuffer()
-      if (indexBuffer === null) throw new TypeError('WebGL could not allocate an index buffer')
-      gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer)
-      gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, primitive.indices, gl.STATIC_DRAW)
-      count = primitive.indices.length
-      gl.drawElements(mode, count, gl.UNSIGNED_INT, 0)
-    } else {
-      gl.drawArrays(mode, 0, count)
+    const bottomUp = new Uint8Array(width * height * 4)
+    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, bottomUp)
+    const rgba = flipRows(bottomUp, width, height)
+    straightenAlpha(rgba)
+    let fragments = 0
+    for (let offset = 0; offset < rgba.length; offset += 4) {
+      if (
+        rgba[offset] !== Math.round(clear[0] * 255) ||
+        rgba[offset + 1] !== Math.round(clear[1] * 255) ||
+        rgba[offset + 2] !== Math.round(clear[2] * 255) ||
+        rgba[offset + 3] !== Math.round(clear[3] * 255)
+      ) {
+        fragments += 1
+      }
     }
-    triangles += primitive.topology === 'triangles' ? Math.floor(count / 3) : Math.max(0, count - 2)
-    gl.deleteBuffer(indexBuffer as WebGLBuffer | null)
-    gl.deleteBuffer(normalBuffer as WebGLBuffer | null)
-    gl.deleteBuffer(uvBuffer as WebGLBuffer | null)
-    gl.deleteBuffer(vertexBuffer)
+    return Object.freeze({
+      outputKind: 'rgba8',
+      width,
+      height,
+      rgba,
+      diagnostics: Object.freeze(diagnostics),
+      statistics: Object.freeze({
+        primitives: request.scene.primitives.length,
+        triangles,
+        fragments,
+      }),
+    })
+  } finally {
+    gameDraws.release()
+    for (const texture of textures.values()) gl.deleteTexture(texture)
+    gl.deleteProgram(program)
   }
-  const bottomUp = new Uint8Array(width * height * 4)
-  gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, bottomUp)
-  for (const texture of textures.values()) gl.deleteTexture(texture)
-  gl.deleteProgram(program)
-  const rgba = flipRows(bottomUp, width, height)
-  let fragments = 0
-  for (let offset = 0; offset < rgba.length; offset += 4) {
-    if (
-      rgba[offset] !== Math.round(clear[0] * 255) ||
-      rgba[offset + 1] !== Math.round(clear[1] * 255) ||
-      rgba[offset + 2] !== Math.round(clear[2] * 255) ||
-      rgba[offset + 3] !== Math.round(clear[3] * 255)
-    ) {
-      fragments += 1
-    }
-  }
-  return Object.freeze({
-    outputKind: 'rgba8',
-    width,
-    height,
-    rgba,
-    diagnostics: Object.freeze(diagnostics),
-    statistics: Object.freeze({
-      primitives: request.scene.primitives.length,
-      triangles,
-      fragments,
-    }),
-  })
 }
 
 export const abiVersion = 1
@@ -466,3 +668,4 @@ export function createProvider(selection: { readonly contract: string; readonly 
     release: async () => undefined,
   })
 }
+import { primitiveTint } from './tint.js'

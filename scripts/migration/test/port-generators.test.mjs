@@ -11,7 +11,7 @@ import {
   applyReceipt,
   validateOracleEvidence,
 } from '../lib/port-generators.mjs'
-import { discoverPublications, initialState, hash, stable } from '../lib/port-state.mjs'
+import { discoverPublications, initialState, hash, stable, readEvidence } from '../lib/port-state.mjs'
 import { MK2_PIN, digestManifest } from '../lib/legacy-oracle.mjs'
 
 const requirements = [
@@ -268,4 +268,63 @@ test('evidence application preserves input and accepts only executed, published 
     }),
     /no requirement proofs/u,
   )
+})
+
+test('configured harness preserves results, verifies migrated state and refuses overwriting inputs', async t => {
+  const root = await temporary(t)
+  const harness = path.join(root, 'parity.mjs')
+  await writeFile(harness, scaffoldHarness({ codec:'sample', requirements, libraryUrl:new URL('../lib/port-generators.mjs', import.meta.url).href }))
+  await writeFile(path.join(root, 'old.mjs'), 'export const transform = value => ({ bytes: Uint8Array.of(value), points: Array.from({length:32}, (_,index) => ({position:[value,index,0]})) })\n')
+  await writeFile(path.join(root, 'new.mjs'), `import {writeFile} from 'node:fs/promises'
+export async function prepareMigrated() { return {
+  module: { transform: value => ({ bytes: Uint8Array.of(value), points: Array.from({length:32}, (_,index) => ({position:[value,index,0]})) }) }, evidence: { route:'fixture host' },
+  verify: () => writeFile(new URL('verified.txt',import.meta.url),'verified'),
+  release: () => writeFile(new URL('released.txt',import.meta.url),'released')
+} }`)
+  await writeFile(path.join(root, 'corpus.json'), stable({kind:'synthetic',cases}))
+  const config = {schemaVersion:1,legacy:'old.mjs',migrated:'new.mjs',corpus:'corpus.json',operation:'transform',receipt:'receipt.json',outputs:'case outputs.json'}
+  const configPath = path.join(root,'case config.json')
+  await writeFile(configPath,stable(config))
+  const run = (...extra) => spawnSync(process.execPath,[harness,'--config',configPath,...extra],{encoding:'utf8'})
+  const result = run()
+  assert.equal(result.status,0,result.stderr)
+  const receipt = JSON.parse(await readFile(path.join(root,'receipt.json')))
+  const outputBytes = await readFile(path.join(root,'case outputs.json'))
+  assert.equal(hash(outputBytes),receipt.outputs.sha256)
+  const parsedOutputs = JSON.parse(outputBytes)
+  assert.equal(outputBytes.toString('utf8'), JSON.stringify(parsedOutputs) + '\n')
+  assert.ok(outputBytes.length < Buffer.byteLength(stable(parsedOutputs)) / 2,
+    'canonical case output should avoid indentation amplification')
+  assert.deepEqual(JSON.parse(await readEvidence(root, receipt.outputs)), parsedOutputs)
+  await writeFile(path.join(root, 'case outputs.json'), Buffer.concat([outputBytes, Buffer.from(' ')]))
+  await assert.rejects(readEvidence(root, receipt.outputs), /evidence digest changed/u)
+  await writeFile(path.join(root, 'case outputs.json'), outputBytes)
+  assert.equal(receipt.outputs.path,'case outputs.json')
+  assert.equal(receipt.migrated.route,'fixture host')
+  assert.equal(JSON.parse(outputBytes).cases[0].legacy.value.value.bytes.$type,'Uint8Array')
+  assert.equal(await readFile(path.join(root,'verified.txt'),'utf8'),'verified')
+  assert.equal(await readFile(path.join(root,'released.txt'),'utf8'),'released')
+  assert.notEqual(run('--operation','transform').status,0)
+  const inputBefore = await readFile(path.join(root,'old.mjs'),'utf8')
+  await writeFile(configPath,stable({...config,outputs:'old.mjs'}))
+  assert.notEqual(run().status,0)
+  assert.equal(await readFile(path.join(root,'old.mjs'),'utf8'),inputBefore)
+  await writeFile(configPath,stable({...config,extraIgnoredFlag:true}))
+  assert.notEqual(run().status,0)
+})
+
+test('configured parity refuses a corpus mutation during adapter execution', async t => {
+  const root = await temporary(t)
+  const harness = path.join(root,'parity.mjs')
+  await writeFile(harness,scaffoldHarness({codec:'sample',requirements,libraryUrl:new URL('../lib/port-generators.mjs',import.meta.url).href}))
+  await writeFile(path.join(root,'old.mjs'),'export const transform = value => value\n')
+  await writeFile(path.join(root,'new.mjs'),`import {writeFile} from 'node:fs/promises'
+export const transform = async value => { await writeFile(new URL('corpus.json',import.meta.url),'{}'); return value }`)
+  await writeFile(path.join(root,'corpus.json'),stable({kind:'synthetic',cases}))
+  const configPath = path.join(root,'config.json')
+  await writeFile(configPath,stable({schemaVersion:1,legacy:'old.mjs',migrated:'new.mjs',corpus:'corpus.json',operation:'transform',receipt:'receipt.json'}))
+  const result = spawnSync(process.execPath,[harness,'--config',configPath],{encoding:'utf8'})
+  assert.notEqual(result.status,0)
+  assert.match(result.stderr,/input changed during execution/u)
+  await assert.rejects(readFile(path.join(root,'receipt.json')), {code:'ENOENT'})
 })

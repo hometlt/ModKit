@@ -1586,9 +1586,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/m3/portable-d-6186aafbd65787ac8be882ad69b21b21ae65cf246b93c01b834f51fc29550fb6/acceptance.candidate4-receipt.json",
+          "sha256": "6186aafbd65787ac8be882ad69b21b21ae65cf246b93c01b834f51fc29550fb6"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/011d6e369f8c2eed",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
@@ -1601,19 +1606,34 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/m3/fixed-c1-3e743aab6e28297e2bd0e6bd434489a0f0cae51f8b6be19de86f4b17b06b4326/acceptance.candidate1-receipt.json",
+          "sha256": "3e743aab6e28297e2bd0e6bd434489a0f0cae51f8b6be19de86f4b17b06b4326"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/2676d4dd33b49574",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/m3/standalone-b1-ff99a70b1acea558ea782acb3d091ff9f42a66bf5c9b1da714d21cdb84b56142/b1-acceptance.candidate1-receipt.json",
+          "sha256": "ff99a70b1acea558ea782acb3d091ff9f42a66bf5c9b1da714d21cdb84b56142"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/26e692a10da6f8a4",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/m3/effects-a4-e934d854c911bea1a0be6c56d26642367a8dcdff249341b352bc03a39ff61a25/acceptance.candidate1-receipt.json",
+          "sha256": "e934d854c911bea1a0be6c56d26642367a8dcdff249341b352bc03a39ff61a25"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/346084db443ea408",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
@@ -1626,34 +1646,64 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/m3/metadata-a6-917ee87d64b3f09da63dda718c21d5f8c77ac40ed5440900da3f802e43b0525a/metadata.candidate-receipt.json",
+          "sha256": "917ee87d64b3f09da63dda718c21d5f8c77ac40ed5440900da3f802e43b0525a"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/4a8b314c6bed3147",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/m3/semantic/animations.receipt.4498a8b6806fb2c318240c62dc235bc252d73ad72b43976e77236b59ed7a729c.json",
+          "sha256": "4498a8b6806fb2c318240c62dc235bc252d73ad72b43976e77236b59ed7a729c"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/556e38aab03a4849",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/m3/history-c3-8591c2525d109f731cd5632995119ea721d4e35b6f1720da2fbd4517a03eb5f7/acceptance.candidate1-receipt.json",
+          "sha256": "8591c2525d109f731cd5632995119ea721d4e35b6f1720da2fbd4517a03eb5f7"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/5e78c065d5fcb2ff",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/m3/binding-b2-bae8ee5ef79b6eadc5f958cd6f8436b29626ea203cd8c9b08c95ff08d4b4f782/acceptance-four.candidate1-receipt.json",
+          "sha256": "bae8ee5ef79b6eadc5f958cd6f8436b29626ea203cd8c9b08c95ff08d4b4f782"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/672bfac87be00c0f",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/m3/configuration-a5-82f41405cb6dde104fd8d2c02a60e6ecf50e44f434260e20ad3d833efd9fbba3/acceptance.candidate2-receipt.json",
+          "sha256": "82f41405cb6dde104fd8d2c02a60e6ecf50e44f434260e20ad3d833efd9fbba3"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/99206020ab1ce4e9",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/m3/semantic/materials.receipt.7049472717014e35c493bb9f2a1485e1043c955c8e177f419eb824d26599cbaa.json",
+          "sha256": "7049472717014e35c493bb9f2a1485e1043c955c8e177f419eb824d26599cbaa"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/a1c083966b255d42",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
@@ -1676,14 +1726,24 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/m3/structure-c2-c85836649bf717646d91299701b7104b6f815e58ceb5e57bba4d3dd8000d0981/acceptance.candidate1-receipt.json",
+          "sha256": "c85836649bf717646d91299701b7104b6f815e58ceb5e57bba4d3dd8000d0981"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/b98cc5d4cc8ca98e",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/m3/codec-a7-4028b732cce1f21f7849ef9a61be7c6f08de88608ac04ea0e62f57dbcf151e79/acceptance.candidate1-receipt.json",
+          "sha256": "4028b732cce1f21f7849ef9a61be7c6f08de88608ac04ea0e62f57dbcf151e79"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/bc50fe9d083c47a8",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
@@ -1696,9 +1756,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/m3/geometry-a1-19535b259fecb5758f271987e57d51567b2006441d7f4dab82882905a04e33b2/acceptance.candidate2-receipt.json",
+          "sha256": "19535b259fecb5758f271987e57d51567b2006441d7f4dab82882905a04e33b2"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/feature/efef1db50fad69fb",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
@@ -1721,9 +1786,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "artifacts/legacy-parity-sc2/m3/render-e-c6fda40d0fc8e99cac30679186cafa6a77fc61987423c805fd57b281f05cbd14/render.candidate2-receipt.json",
+          "sha256": "c6fda40d0fc8e99cac30679186cafa6a77fc61987423c805fd57b281f05cbd14"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/m3/operation/model.render",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [

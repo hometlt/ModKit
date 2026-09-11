@@ -47,10 +47,18 @@ The seed carries the material slice 11C0 owns normatively:
 | Coordinates and units (model + world)  | [`foundation/SPEC_UV_COORDINATES.md`](foundation/SPEC_UV_COORDINATES.md)     |
 | UVM specification, extensions, conversion | [`model/`](model/)                                                        |
 | UVT profile, schema and fixtures        | [`texture/`](texture/)                                                       |
-| UVW candidate profile, schema, fixtures | [`world/`](world/)                                                           |
+| UVW profile 1.0 (space-graph envelope) + superseded candidate | [`world/`](world/)                             |
+| UVP package manifest, composition contract | [`package/`](package/)                                                  |
+| UVD definitions: kind-schemas, inheritance, overlays, provenance | [`data/`](data/)                                 |
+| UVS scenarios: charts, pure conditions, refusals | [`scenario/`](scenario/)                                        |
+| UVB behavior bytecode + frozen canonical binary | [`behavior/`](behavior/)                                          |
+| UVC campaign manifest                  | [`campaign/`](campaign/)                                                     |
+| Intrinsic table and event vocabulary as data | [`runtime/`](runtime/)                                               |
+| Receipts: Lowering / Composition / Simulation | [`receipts/`](receipts/)                                            |
+| World state, saves, replays            | [`state/`](state/)                                                           |
 | UVM JSON Schemas                       | [`model/schema/`](model/schema/)                                             |
 | UVM canonical fixtures                 | [`model/fixtures/`](model/fixtures/)                                         |
-| Semantic scope registry + `model-interchange-v1` | [`semantic-scopes/`](semantic-scopes/)                             |
+| Semantic scope registry + `model-interchange-v1` + `runtime-interchange-v1` (candidate) | [`semantic-scopes/`](semantic-scopes/) |
 | Executable conformance vectors         | [`conformance/`](conformance/)                                               |
 | Reference implementations              | [`tools/`](tools/)                                                           |
 
@@ -66,12 +74,14 @@ The registry reserves names and boundaries. It does not claim twelve implemented
 | ID      | Extension                        | Scope                                                                        | Physical base                          | In this seed |
 | ------- | -------------------------------- | ---------------------------------------------------------------------------- | -------------------------------------- | ------------ |
 | **UVM** | `.uvm.glb` / `.uvm.gltf`         | Models, skeletons, animation, materials, effects, collision, sockets          | glTF 2.0 profile                       | yes          |
-| **UVW** | `.uvw`                           | Terrain, objects, entities, navigation, players, resources                    | JSON world manifest + standard payloads | block 22     |
-| **UVD** | `.uvd` (directory/JSON)          | Definitions, components, overlays, inheritance, provenance                    | canonical JSON                         | block 22     |
-| **UVS** | `.uvs`                           | Objectives, triggers, waves, AI refs, dialogue, campaigns                     | canonical JSON + bounded logic IR      | block 22     |
-| **UVR** | `.uvr`                           | Mechanic/provider composition, slots, ordering, composition lock inputs        | canonical JSON (stub)                  | block 22     |
-| **UVP** | `.uvp`                           | Data-only game/mod/campaign/asset/localization packages                        | ZIP/directory profile (stub)           | block 22     |
-| **UVE** | `.uve`                           | Immutable extension release artifact (the only UV format with executable payloads) | deterministic ZIP + signature profile (stub) | block 22 |
+| **UVW** | `.uvw.json`                      | Graph of spaces (heightfield admitted; tile-grid/node-graph/volume reserved) + reserved connections | canonical JSON | profile 1.0 |
+| **UVD** | `.uvd.json`                      | Definitions: kind-schemas, single inheritance, overlays, provenance; no floats in gameplay | canonical JSON | candidate |
+| **UVS** | `.uvs.json`                      | Reactive charts: events, pure conditions, bounded actions, refusals with originals | canonical JSON | candidate |
+| **UVB** | `.uvb` (+ `.uvbt` text)          | Register bytecode, closed op set (no floats), verified before the first tick   | frozen canonical binary; text = canonical JSON | candidate |
+| **UVC** | `.uvc.json`                      | Campaign graph, shared layers, typed carryover boundary                        | canonical JSON                         | candidate |
+| ~~UVR~~ | —                                | superseded 2026-09-01: composition and ordering are UVP ranks/order; rules are UVB/UVS with declared effects | — | folded into UVP |
+| **UVP** | `.uvp` (directory or archive)    | Game base / mod / map / campaign / library packages with ranked dependencies and requirements | manifest = canonical JSON; container-neutral hashes | candidate |
+| ~~UVE~~ | —                                | superseded 2026-09-01: capability rights are `requires.capabilities` of UVP; signing/install is the Modkit Extension Manager chain | — | folded into UVP + Extension Manager |
 | **UVT** | `.uvt.ktx2` (+`.uvt.json`)       | Runtime textures/atlases/arrays/cubemaps/animated images                       | KTX 2.0 profile                        | yes          |
 | **UVA** | `.uva` / `.uva.mka`              | Audio assets, stems, loops, cues, spatial metadata                            | Matroska audio profile (stub)          | block 22     |
 | **UVV** | `.uvv` / `.uvv.mkv`              | Video + audio/subtitle/metadata tracks, chapters, game events                  | Matroska profile (stub)                | block 22     |
@@ -105,17 +115,22 @@ Maturity and support are independent axes
 | Format                       | Reserved | Full draft | Schema  | Fixtures                                    | Executable validator            | Reader | Writer | Stable |
 | ---------------------------- | -------- | ---------- | ------- | ------------------------------------------- | ------------------------------- | ------ | ------ | ------ |
 | UVM                          | yes      | yes        | partial | 3 canonical core fixtures + 1 spec example  | yes, for the core profile        | core   | reference GLB packer only | no |
-| UVW                          | yes      | yes        | yes     | one example                                 | no                              | no     | no     | no     |
-| UVD                          | yes      | yes        | no      | no                                          | no                              | no     | no     | no     |
-| UVS                          | yes      | yes        | yes     | one example                                 | no                              | no     | no     | no     |
+| UVW (profile 1.0)            | yes      | yes        | yes     | 2 profile + 2 candidate fixtures + 3 invalid | schema assertions (ajv)         | Modkit candidate writer until wave 4 | no | no |
+| UVD                          | yes      | yes        | yes     | 3 + 5 invalid                               | schema assertions + `uv-composition.mjs` resolution vectors | reference | no | no |
+| UVP                          | yes      | yes        | yes     | 2 + 4 invalid                               | schema assertions + `uv-composition.mjs` composition vectors | reference | no | no |
+| UVB                          | yes      | yes        | yes     | 1 + 3 invalid                               | schema assertions + `uvb-binary.mjs` bijection, pinned digest | reference codec | reference codec | binary frozen |
+| UVC                          | yes      | yes        | yes     | 1 + 3 invalid                               | schema assertions                | no     | no     | no     |
+| receipts, state (save/replay) | yes     | yes        | yes     | 4 + 4 invalid, 2 + 3 invalid                | schema assertions                | no     | no     | no     |
+| UVS                          | yes      | yes        | yes     | 1 + 2 invalid                               | schema assertions                | no     | no     | no     |
 | UVT                          | yes      | conversion-grade | yes | 3 sidecar fixtures                    | yes, profile rules + schema      | no     | no     | no     |
-| UVE, UVP, UVR, UVA, UVV, UVF, UVG | yes | stub    | no      | no                                          | no                              | no     | no     | no     |
+| UVA, UVV, UVF, UVG           | yes      | stub       | no      | no                                          | no                              | no     | no     | no     |
 | UVI, UVY                     | candidate| no         | no      | no                                          | no                              | no     | no     | no     |
 
-The UVW/UVD/UVS/stub rows are carried forward unchanged from the pre-seed evidence matrix dated
-2026-08-17; their schemas, examples and drafts still live in the pre-seed material and move here
-with block 22. The UVM row is the only one this seed changes, and it changes it for material that
-is in this repository and executed by `uv-conformance`.
+Rows updated 2026-09-01 by the Multiverse design lane: every family above with a schema has its
+fixtures executed by `conformance/schema-assertions.json` (69 assertions with an ajv 2020 engine)
+and, where a reference tool exists, by executable vectors in `uv-conformance.mjs` (69 vectors).
+"reference" reader/writer means the dependency-free tool in `tools/`, not a product codec.
+UVA/UVV/UVF/UVG remain stubs. Admission ladder of the runtime families: `semantic-scopes/runtime-interchange-v1.json`.
 
 ## Semantic scopes
 
@@ -124,7 +139,8 @@ is in this repository and executed by `uv-conformance`.
 | `model-interchange-v1`      | registered | the model plane a live projection and a reopened UVM artifact must reproduce exactly |
 | `texture-interchange-v1`    | candidate  | the texture plane a live raster projection and a reopened UVT projection must reproduce; admission-only, because two of its four facets have no live publisher |
 | `world-interchange-v1`      | reserved   | id only; block 12 prepares the candidate, block 18 freezes it              |
-| `definition-interchange-v1` | reserved   | id only; block 23                                                          |
+| `definition-interchange-v1` | reserved   | id only; block 23 decides whether it becomes a definitions-only exchange or folds into runtime-interchange-v1 |
+| `runtime-interchange-v1`    | candidate  | the runtime plane an adapter and the kernel agree on: composed UVD + UVS + UVB in UVP through one intrinsic table; admission ladder in the descriptor |
 
 See [`semantic-scopes/SPEC_SEMANTIC_SCOPE_DESCRIPTOR.md`](semantic-scopes/SPEC_SEMANTIC_SCOPE_DESCRIPTOR.md).
 

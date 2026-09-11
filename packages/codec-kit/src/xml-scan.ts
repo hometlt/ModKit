@@ -1,11 +1,15 @@
 /**
  * A position-aware, lenient XML scanner — the shared one.
  *
- * Ported unchanged from MK2's `sc2-data/src/language/xml-scan.ts`, which is where it was written and
- * proven. It lives here rather than inside one codec because four SC2 formats are XML and each had
- * grown its own scanner: sc2-data's, sc2-layout's, sc2-triggers' and, most recently, a regex-based
- * one inside sc2-bank. Four scanners of the same grammar disagree eventually, and the disagreement
- * shows up as a diagnostic that fires in one editor and not another.
+ * Ported from MK2's `sc2-data/src/language/xml-scan.ts`, which is where it was written and proven.
+ * It lives here rather than inside one codec because several XML formats had each grown their own
+ * scanner, and scanners of the same grammar disagree eventually — the disagreement shows up as a
+ * diagnostic that fires in one editor and not another. sc2-bank, sc2-style, sc2-data and
+ * sc2-strings read through this one.
+ *
+ * One reader stayed separate and should: sc2-layout's is a validating, bounded, cancellable parser
+ * that reports coded diagnostics, which is a different job from recovering silently. It shares the
+ * entity layer below rather than the walk, which is the part the two actually had to agree on.
  *
  * Two properties matter and are why a general XML parser is not used here.
  *
@@ -16,9 +20,80 @@
  * It never throws. It runs on documents that are mid-edit, and a parser that refuses malformed input
  * reports nothing at exactly the moment help is worth most.
  *
- * It is deliberately not a general XML parser: text content, entities and namespaces are ignored,
- * because the SC2 formats do not use them in ways that change what an editor must show.
+ * It is deliberately not a general XML parser: text content and namespaces are ignored, because the
+ * formats it serves do not use them in ways that change what an editor must show. Entities in
+ * attribute values are *not* ignored — see `decodeXmlEntities` below for why.
  */
+
+/**
+ * Turn `&quot;`, `&#65;` and `&#x41;` back into the characters they stand for.
+ *
+ * The scanner used to hand back attribute values verbatim, on the reasoning that the formats do not
+ * use entities. They do: a sweep of 400 game files found 59 attributes carrying one, most of them
+ * quoted speech inside conversation text. A checker comparing such a value against a name, or a
+ * table showing it to a reader, was working with `&quot;Objective&quot;` where the document means
+ * `"Objective"` — so the string it reported was never the string the game sees.
+ *
+ * An entity this does not recognise is left exactly as written. A lenient scanner's job is to keep
+ * going; replacing an unknown `&foo;` with a guess would corrupt the one document that needs it.
+ */
+export function decodeXmlEntities(source: string): string {
+  // Fast path: most values have no '&' at all, and this runs over every attribute of every file.
+  if (!source.includes('&')) return source
+  return source.replace(/&(?:#(x[0-9A-Fa-f]+|[0-9]+)|([A-Za-z][A-Za-z0-9]*));/gu, (raw, numeric, named) => {
+    if (numeric !== undefined) {
+      const hex = numeric[0]?.toLowerCase() === 'x'
+      const codePoint = Number.parseInt(hex ? numeric.slice(1) : numeric, hex ? 16 : 10)
+      return Number.isSafeInteger(codePoint) && codePoint >= 0 && codePoint <= 0x10ffff
+        ? String.fromCodePoint(codePoint)
+        : raw
+    }
+    return NAMED_ENTITIES[(named as string).toLowerCase()] ?? raw
+  })
+}
+
+/**
+ * The five entities XML defines itself.
+ *
+ * Deliberately not the HTML set: an XML document that writes `&nbsp;` without declaring it is
+ * malformed, and silently accepting it here would hide that from whoever has to fix the file.
+ */
+const NAMED_ENTITIES: Record<string, string> = Object.freeze({
+  amp: '&',
+  apos: "'",
+  gt: '>',
+  lt: '<',
+  quot: '"',
+})
+
+/**
+ * Escape a string so it can be written as XML element text.
+ *
+ * The inverse of `decodeXmlEntities`, and here for the same reason the decoder is: five writers
+ * across the codecs had each written this by hand and no two agreed. One escaped `>` and another
+ * did not; one handled both quote characters and another one. None of the differences produced a
+ * malformed document — they produced documents that differ byte for byte from each other for the
+ * same input, which is what makes a round-trip claim impossible to keep.
+ *
+ * `>` is escaped although XML only requires it inside `]]>`. Every writer that existed did so, and
+ * a reader diffing two files should not have to know which one was written by which.
+ */
+export function encodeXmlText(value: string): string {
+  return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+}
+
+/**
+ * Escape a string for use inside an attribute's quotes.
+ *
+ * `quote` says which delimiter the writer uses, because only that one has to be escaped. `'both'`
+ * is for a writer that would rather its output be safe under either delimiter than depend on its
+ * own formatting staying the same.
+ */
+export function encodeXmlAttribute(value: string, quote: '"' | "'" | 'both' = '"'): string {
+  const escaped = encodeXmlText(value)
+  if (quote === 'both') return escaped.replaceAll('"', '&quot;').replaceAll("'", '&apos;')
+  return quote === '"' ? escaped.replaceAll('"', '&quot;') : escaped.replaceAll("'", '&apos;')
+}
 
 export interface ScannedAttr {
   name: string
@@ -26,7 +101,14 @@ export interface ScannedAttr {
   nameStart: number
   /** Offset just past the attribute name. */
   nameEnd: number
-  /** Attribute value with surrounding quotes stripped. */
+  /**
+   * Attribute value with surrounding quotes stripped and entities decoded — what the document
+   * means, which is what a checker should compare and a viewer should show.
+   *
+   * This is no longer the same string as the source span. Anything that edits the document, or
+   * measures a byte offset inside the value, must slice the source text by `valueStart`/`valueEnd`
+   * instead: those still say where the value is, entities and all.
+   */
   value: string
   /** Offset of the first character of the value (inside the quotes). */
   valueStart: number
@@ -116,7 +198,7 @@ function readTag(
             name,
             nameStart,
             nameEnd,
-            value: text.slice(valueStart, valueEnd),
+            value: decodeXmlEntities(text.slice(valueStart, valueEnd)),
             valueStart,
             valueEnd,
           })

@@ -45,6 +45,7 @@ import {
   serviceProviderFidelityEvidenceRecord,
 } from '../editing-evidence.js'
 import { createFileEditingBackend } from './file-editing-backend.js'
+import { createFilePayloadStore } from './file-payload-store.js'
 import {
   loadExtensionRoots,
   type ExtensionRootFailure,
@@ -245,6 +246,7 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
    */
   const editingBackend =
     writableRoots.length === 0 ? undefined : createFileEditingBackend({ roots: writableRoots })
+  const payloads = editingBackend === undefined ? undefined : createFilePayloadStore()
   const evidence = createEvidenceRegistry()
   const writer = createRawWriter()
   const grant: PermissionGrant = {
@@ -254,6 +256,7 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
 
   /** Sessions this facade opened that are not closed yet; `close()` sweeps them. */
   const liveSessions = new Set<AssetSession>()
+  const liveEditings = new Set<SubjectEditing>()
   const lastOpened: { value: Parameters<typeof createSubjectEditing>[0]['opened'] | undefined } = {
     value: undefined,
   }
@@ -289,9 +292,11 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
       let releaseWriter: (() => Promise<void>) | undefined
       if (
         editingBackend !== undefined &&
+        payloads !== undefined &&
         opened !== undefined &&
         inside(writableRoots, resolve(path))
       ) {
+        const editingPayloads = payloads
         /*
          * The format's own writer first, the raw byte splicer as the stated fallback. The
          * difference is what `propose` refuses: a raw writer accepts a whole-source replace that
@@ -321,6 +326,9 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
             opened,
             grant,
             backendFor: () => editingBackend,
+            payloads: editingPayloads,
+            verifyStagedPayload: (ref, verifySignal) =>
+              editingPayloads.verify(ref, verifySignal),
             /*
              * Evidence policy of this facade: the raw writer's by-construction record, plus a
              * vouching rule for facet-resolved writers claiming byte-identical round trip with
@@ -365,13 +373,16 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
         }
       }
       liveSessions.add(session)
+      if (editing !== undefined) liveEditings.add(editing)
       return Object.freeze({
         snapshot: result.snapshot,
         session,
         ...(editing === undefined ? {} : { editing }),
         close: async () => {
           liveSessions.delete(session)
+          if (editing !== undefined) liveEditings.delete(editing)
           await releaseWriter?.()
+          await editing?.dispose()
           await session.dispose()
         },
       })
@@ -380,8 +391,15 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
     async close(): Promise<void> {
       // dispose whatever the caller forgot; worker leases end with their sessions
       const open = [...liveSessions]
+      const editings = [...liveEditings]
       liveSessions.clear()
-      await Promise.allSettled(open.map(session => session.dispose()))
+      liveEditings.clear()
+      await Promise.allSettled([
+        ...open.map(session => session.dispose()),
+        ...editings.map(editing => editing.dispose()),
+      ])
+      await editingBackend?.dispose()
+      await payloads?.dispose()
     },
   })
 }

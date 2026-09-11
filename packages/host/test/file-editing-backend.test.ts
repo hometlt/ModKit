@@ -3,12 +3,13 @@
  * replace via temp + rename, create without overwrite, delete, rename, pre-image rollback,
  * root confinement and non-file sources refused.
  */
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
 import { canonicalJsonStringify } from '@modkit/core'
+import { fileSystemRevisionToken } from '@modkit/vfs/providers/file'
 import {
   revisionId,
   type AssetRevision,
@@ -16,6 +17,7 @@ import {
   type SubjectEditTarget,
 } from '@modkit/sdk'
 import { createFileEditingBackend, openFileArtifactSource } from '@modkit/host/node'
+import { containerEntryRevision } from '../src/namespace-origin.js'
 
 const scratch = mkdtempSync(join(tmpdir(), 'x3-file-backend-'))
 const outside = mkdtempSync(join(tmpdir(), 'x3-file-backend-outside-'))
@@ -55,6 +57,55 @@ async function pinned(path: string) {
 const inline = (bytes: Uint8Array) => ({ kind: 'inline' as const, bytes })
 
 describe('file editing backend', () => {
+  it('writes a revision-pinned VFS entry only inside its physical directory namespace', async () => {
+    const directory = join(scratch, 'nested.SC2Map')
+    mkdirSync(directory)
+    const path = join(directory, 'entry.bin')
+    writeFileSync(path, Uint8Array.from([1, 2, 3]))
+    const root = pathToFileURL(directory).href
+    const ref = {
+      id: `${root}?vfs-path=entry.bin`,
+      uri: `${root}?vfs-path=entry.bin`,
+      parentIds: [root] as [string],
+    }
+    const entryRevision = containerEntryRevision(
+      revisionId(await fileSystemRevisionToken(directory)),
+      'entry.bin',
+      3,
+    )
+    const revision: AssetRevision = {
+      bindings: { content: entryRevision },
+      compositionFingerprint: canonicalJsonStringify({
+        topology: 'single',
+        bindingId: 'content',
+        source: { id: ref.id, uri: ref.uri },
+        revision: entryRevision,
+      }),
+    }
+    const target: SubjectEditTarget = {
+      targetId: 'content',
+      subjectUri: ref.uri,
+      ownerSource: ref,
+      semanticPath: [],
+      expectedRevision: revision,
+    }
+    const backend = createFileEditingBackend({ roots: [scratch] })
+    expect(canonicalJsonStringify(await backend.currentRevision(target))).toBe(
+      canonicalJsonStringify(revision),
+    )
+    const applied = await backend.apply(
+      { operation: 'replace', targetId: 'content', source: ref, payload: inline(Uint8Array.from([4, 5, 6])) },
+      { transactionId: 'nested-vfs', payloads, expectedRevision: revision },
+    )
+    expect([...readFileSync(path)]).toEqual([4, 5, 6])
+    expect(canonicalJsonStringify(applied.after)).not.toBe(canonicalJsonStringify(revision))
+    const escaped = { ...ref, id: `${root}?vfs-path=..%2Fescape.bin`, uri: `${root}?vfs-path=..%2Fescape.bin` }
+    await expect(backend.currentRevision({ ...target, ownerSource: escaped })).rejects.toMatchObject({
+      code: 'x3.host/edit-source-not-file',
+    })
+    await backend.dispose()
+  })
+
   it('reports the live revision in the S7 vocabulary and refuses a conditional write that lost', async () => {
     const path = join(scratch, 'a.bin')
     writeFileSync(path, Uint8Array.from([1, 2, 3, 4, 5, 6, 7, 8]))

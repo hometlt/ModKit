@@ -1,0 +1,36 @@
+{
+  "$comment": "INVALID: a simulation receipt without the save/restore invariant proves ticking, not determinism (save-restore-mandatory).",
+  "kind": "uv.receipt/simulation",
+  "schemaVersion": 1,
+  "kernel": {
+    "moduleDigest": "sha256:4fa6915851f466938e4c81458e1d63871f6b60f2f1144b2df918ff85b38d4797",
+    "host": "node"
+  },
+  "subject": {
+    "kind": "standalone-kernel"
+  },
+  "init": {
+    "seed": "12345",
+    "ticks": 10000
+  },
+  "checkpoints": [
+    {
+      "tick": 0,
+      "stateHash": "72d226cf250e006a"
+    },
+    {
+      "tick": 5000,
+      "stateHash": "39597ece41959704"
+    },
+    {
+      "tick": 10000,
+      "stateHash": "ac2046e535a90e5f"
+    }
+  ],
+  "invariants": {
+    "instanceIsolation": {
+      "divergedAtTick": null
+    }
+  },
+  "verdict": "deterministic"
+}

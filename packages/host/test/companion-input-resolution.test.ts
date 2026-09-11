@@ -86,6 +86,7 @@ interface FakeOriginOptions {
   readonly onEntry?: (logicalId: string, index: number) => void
   /** Called before each open — the seam for "abort in the middle of open". */
   readonly onOpen?: (logicalId: string, index: number) => void
+  readonly honorPrefix?: boolean
 }
 
 function fakeOrigin(options: FakeOriginOptions): {
@@ -116,6 +117,7 @@ function fakeOrigin(options: FakeOriginOptions): {
       if (!scopes.includes(scope)) return
       let index = 0
       for (const logicalId of options.entries) {
+        if (options.honorPrefix === true && !logicalId.startsWith(enumeration.prefix)) continue
         // exactly what the real backends do: cancellation is the host's own error, not a raw one
         throwIfAborted(signal)
         counters.entries += 1
@@ -134,7 +136,7 @@ function fakeOrigin(options: FakeOriginOptions): {
       const source: ArtifactByteSource = {
         kind: 'bytes',
         ref: { id: uri, uri },
-        revision: revisionId(`content-hash.sha256:${logicalId}`),
+        revision: revisionId(`provider-token:${encodeURIComponent(logicalId)}`),
         size: BigInt(bytes.byteLength),
         async read(offset, length) {
           return bytes.slice(Number(offset), Number(offset) + length)
@@ -719,6 +721,60 @@ describe('companion input resolution — names and patterns', () => {
       ),
     )
     expect(counters.prefixes).toEqual([expected])
+  })
+
+  it('resolves several exact paths within a two-entry budget despite thousands of adjacent resources', async () => {
+    const paths = ['assets/textures/a.dds', 'assets/textures/b.dds']
+    const { origin, counters } = fakeOrigin({
+      entries: [
+        ...Array.from({ length: 5000 }, (_, index) => `assets/textures/noise-${index}.dds`),
+        ...paths,
+      ],
+      honorPrefix: true,
+      caseSensitivity: 'insensitive',
+    })
+    const resolve = companionResolver(origin, { limits: { maxEntries: 2 } })
+    const input = await resolve(
+      context(
+        bundlePlan([
+          requirement({
+            id: 'skin',
+            role: 'texture',
+            patterns: [...paths, 'ASSETS/TEXTURES/A.DDS'],
+            cardinality: 'one-or-more',
+            required: true,
+          }),
+        ]),
+        byteSource('primary.vxl'),
+      ),
+    )
+    expect(input.bindingsFor('skin').map(item => item.bindingId)).toEqual(
+      paths.map(path => `skin#${path}`),
+    )
+    expect(counters.prefixes).toEqual(paths)
+    expect(counters.entries).toBe(2)
+  })
+
+  it('still enforces the entry budget when an origin ignores exact-path hints', async () => {
+    const { origin } = fakeOrigin({ entries: ['noise-1.dds', 'noise-2.dds', 'assets/a.dds'] })
+    const resolve = companionResolver(origin, { limits: { maxEntries: 2 } })
+    expect(
+      await codeOf(() =>
+        resolve(
+          context(
+            bundlePlan([
+              requirement({
+                id: 'skin',
+                role: 'texture',
+                patterns: ['assets/a.dds', 'assets/b.dds'],
+                cardinality: 'many',
+              }),
+            ]),
+            byteSource('primary.vxl'),
+          ),
+        ),
+      ),
+    ).toBe(COMPANION_BUDGET_EXCEEDED)
   })
 
   it('refuses a requirement that declares no patterns at all', async () => {

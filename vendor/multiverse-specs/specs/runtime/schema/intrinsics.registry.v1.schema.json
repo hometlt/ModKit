@@ -1,0 +1,223 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.org/runtime/1.0/intrinsics.registry.schema.json",
+  "title": "Intrinsic table registry",
+  "$comment": "The machine-readable form of the intrinsic table: the verifier, the luau->uvb compiler and composition consume THIS file, never prose. Additions are minor amendments of runtime-interchange-v1; signature or semantics changes are major. Design rationale: ../../design/DRAFT_INTRINSIC_TABLE_V1.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "scope",
+    "types",
+    "intrinsics"
+  ],
+  "properties": {
+    "$comment": {
+      "type": "string"
+    },
+    "schemaVersion": {
+      "const": "intrinsic-registry-1"
+    },
+    "scope": {
+      "const": "runtime-interchange-v1"
+    },
+    "types": {
+      "$comment": "Auxiliary record types intrinsic signatures may name (Pos, Filter, ...). Declarative records: no closures exist anywhere in this plane.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "fields"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Za-z0-9]*$"
+          },
+          "fields": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "type"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-zA-Z0-9]*$"
+                },
+                "type": {
+                  "$ref": "#/$defs/valueType"
+                },
+                "optional": {
+                  "type": "boolean",
+                  "default": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "intrinsics": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "version",
+          "params",
+          "returns",
+          "reads",
+          "writes",
+          "capability"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*(\\.[a-z][a-z0-9-]*)+$"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "params": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "name",
+                "type"
+              ],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-zA-Z0-9]*$"
+                },
+                "type": {
+                  "$ref": "#/$defs/valueType"
+                },
+                "optional": {
+                  "type": "boolean",
+                  "default": false
+                }
+              }
+            }
+          },
+          "returns": {
+            "$ref": "#/$defs/returnType"
+          },
+          "reads": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/stateArea"
+            }
+          },
+          "writes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/$defs/stateArea"
+            }
+          },
+          "capability": {
+            "enum": [
+              "read",
+              "mutate",
+              "present",
+              "control",
+              "space-mutate"
+            ]
+          },
+          "determinism": {
+            "$comment": "Present when ordering or tie-breaking rules apply (list order by id, nearest ties by id, bounded budgets).",
+            "type": "string"
+          },
+          "note": {
+            "type": "string"
+          },
+          "status": {
+            "$comment": "active: the kernel implements it in v1. reserved: the name is registered for a named amendment; binding it refuses until the amendment lands. Same discipline as the event registry.",
+            "enum": [
+              "active",
+              "reserved"
+            ],
+            "default": "active"
+          },
+          "amendment": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]*$"
+          }
+        },
+        "allOf": [
+          {
+            "$comment": "read/present intrinsics never write state; the scheduler and the UVS purity check stand on this.",
+            "if": {
+              "properties": {
+                "capability": {
+                  "enum": [
+                    "read",
+                    "present"
+                  ]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "writes": {
+                  "maxItems": 0
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "reserved"
+                }
+              },
+              "required": [
+                "status"
+              ]
+            },
+            "then": {
+              "required": [
+                "amendment"
+              ]
+            }
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "valueType": {
+      "type": "string",
+      "pattern": "^(bool|i64|fixed64|strref|value|ref<[a-z][a-z0-9-]*>|list<[A-Za-z0-9<>-]+>|[A-Z][A-Za-z0-9]*)$"
+    },
+    "returnType": {
+      "type": "string",
+      "pattern": "^(void|bool|i64|fixed64|strref|value|ref<[a-z][a-z0-9-]*>\\??|list<[A-Za-z0-9<>-]+>|result<[A-Za-z0-9<>-]+>|[A-Z][A-Za-z0-9]*)$"
+    },
+    "stateArea": {
+      "enum": [
+        "entities",
+        "defs",
+        "orders",
+        "space",
+        "players",
+        "timers",
+        "rng",
+        "scenario"
+      ]
+    }
+  }
+}

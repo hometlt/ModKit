@@ -22,6 +22,8 @@
  */
 
 import type {
+  ModelResourcePort,
+  ModelResourceAsset,
   ArtifactByteSource,
   ArtifactNamespaceSource,
   AssetNamespace,
@@ -33,10 +35,12 @@ import type {
   DerivedAssetInput,
   NamespaceAssetInput,
   OperationSession,
+  RasterResourcePort,
   ServiceProviderModule,
   SingleAssetInput,
 } from '@modkit/sdk'
 import type { CapabilitySurface, MethodSurface } from './surface.js'
+import type { WireLogicalResourcePort, WireLogicalResourceResolution } from './logical-resources.js'
 
 // ---------------------------------------------------------------------------------------------
 // compile-time pin against the runtime ABI
@@ -84,6 +88,17 @@ export const ABI_ASSET_INPUT = { contract: 'x3.abi/asset-input', major: 1 } as c
 export const ABI_DIAGNOSTIC_SINK = { contract: 'x3.abi/diagnostic-sink', major: 1 } as const
 /** `ContributionContext.contracts`: the leased provider's surface is named by the request itself. */
 export const ABI_CONTRACT_RESOLVER = { contract: 'x3.abi/contract-resolver', major: 1 } as const
+export const ABI_RASTER_RESOURCES = { contract: 'x3.abi/raster-resources', major: 1 } as const
+export const ABI_MODEL_RESOURCES = { contract: 'x3.abi/model-resources', major: 1 } as const
+export const ABI_MODEL_RESOURCE_ASSET = {
+  contract: 'x3.abi/model-resource-asset',
+  major: 1,
+} as const
+export const ABI_LOGICAL_RESOURCES = { contract: 'x3.abi/logical-resources', major: 1 } as const
+export const ABI_LOGICAL_RESOURCE_RESOLUTION = {
+  contract: 'x3.abi/logical-resource-resolution',
+  major: 1,
+} as const
 
 const sig = { signal: 'last' } as const
 
@@ -180,6 +195,7 @@ const assetNamespaceSurface = {
   ...ABI_ASSET_NAMESPACE,
   methods: {
     list: { kind: 'iterable', ...sig },
+    readPreamble: { kind: 'value', optional: true, ...sig },
     open: { kind: 'lease', result: ABI_ARTIFACT_SOURCE, wrapper: 'lease', ...sig },
   },
 } as const satisfies AbiSurfaceOf<AssetNamespace>
@@ -275,6 +291,43 @@ const diagnosticSinkSurface = {
   },
 } as const satisfies AbiSurfaceOf<DiagnosticSink>
 
+const rasterResourcesSurface = {
+  ...ABI_RASTER_RESOURCES,
+  methods: { read: { kind: 'value', ...sig } },
+} as const satisfies AbiSurfaceOf<RasterResourcePort>
+
+const modelAcquire = {
+  kind: 'lease',
+  result: ABI_MODEL_RESOURCE_ASSET,
+  wrapper: 'lease',
+  ...sig,
+} as const
+const modelResourcesSurface = {
+  ...ABI_MODEL_RESOURCES,
+  methods: { acquire: modelAcquire },
+} as const satisfies AbiSurfaceOf<ModelResourcePort>
+const modelResourceAssetSurface = {
+  ...ABI_MODEL_RESOURCE_ASSET,
+  fields: ['result'],
+  methods: { acquire: modelAcquire, readRaster: { kind: 'value', ...sig } },
+} as const satisfies AbiSurfaceOf<ModelResourceAsset>
+
+const logicalResourcesSurface = {
+  ...ABI_LOGICAL_RESOURCES,
+  methods: {
+    discover: { kind: 'value', ...sig },
+    readBatch: { kind: 'value', ...sig },
+    resolve: { kind: 'lease', result: ABI_LOGICAL_RESOURCE_RESOLUTION, wrapper: 'lease', ...sig },
+    provenance: { kind: 'value', ...sig },
+  },
+} as const satisfies AbiSurfaceOf<WireLogicalResourcePort>
+
+const logicalResourceResolutionSurface = {
+  ...ABI_LOGICAL_RESOURCE_RESOLUTION,
+  fields: ['result'],
+  methods: { openSource: { kind: 'lease', result: ABI_ARTIFACT_SOURCE, wrapper: 'lease', ...sig } },
+} as const satisfies AbiSurfaceOf<WireLogicalResourceResolution>
+
 /** Every runtime-ABI surface a host endpoint registers next to the data-source surfaces. */
 export const RUNTIME_ABI_SURFACES: readonly CapabilitySurface[] = Object.freeze([
   codecModuleSurface,
@@ -287,4 +340,9 @@ export const RUNTIME_ABI_SURFACES: readonly CapabilitySurface[] = Object.freeze(
   assetInputSurface,
   diagnosticSinkSurface,
   contractResolverSurface,
+  rasterResourcesSurface,
+  modelResourcesSurface,
+  modelResourceAssetSurface,
+  logicalResourcesSurface,
+  logicalResourceResolutionSurface,
 ])

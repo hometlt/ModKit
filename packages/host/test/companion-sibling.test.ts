@@ -10,9 +10,9 @@
  * carried on with an invented animation would pass a weaker test than this one.
  */
 
-import { cp, mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
@@ -24,6 +24,7 @@ import {
 } from '@modkit/host'
 import {
   createFileEditingBackend,
+  createFilesystemInputResolver,
   createPathSubjectOpener,
   loadExtensionDirectory,
   openFileArtifactSource,
@@ -56,7 +57,11 @@ const temporaries: string[] = []
 afterEach(async () => {
   while (temporaries.length > 0) {
     const directory = temporaries.pop()
-    if (directory !== undefined) await rm(directory, { recursive: true, force: true })
+    if (directory !== undefined) {
+      if (dirname(resolve(directory)) !== resolve(tmpdir()))
+        throw new Error('test cleanup target is outside its temporary root')
+      await rm(directory, { recursive: true, force: true })
+    }
   }
 })
 
@@ -93,6 +98,38 @@ async function fixtureServices(): Promise<SubjectServices> {
   })
 }
 
+it('filesystem exact-prefix enumeration excludes unrelated siblings and honors declared case matching', async () => {
+  const directory = await workingCopy({ companion: true })
+  await mkdir(join(directory, 'Assets'))
+  await Promise.all(
+    Array.from({ length: 70 }, (_, index) =>
+      writeFile(join(directory, 'Assets', `Texture-${index}.DDS`), Uint8Array.of(index)),
+    ),
+  )
+  const create = (caseSensitivity: 'sensitive' | 'insensitive') =>
+    createFilesystemCompanionOrigin({
+      primaryPath: join(directory, 'sample.vxl'),
+      roots: [directory],
+      caseSensitivity,
+    })
+  const insensitive = create('insensitive')
+  for (let index = 0; index < 70; index++) {
+    const found: string[] = []
+    for await (const entry of insensitive.enumerate('sibling-directory', {
+      prefix: `Assets/texture-${index}.dds`,
+    }))
+      found.push(entry.logicalId)
+    expect(found).toEqual([`Assets/Texture-${index}.DDS`])
+  }
+  const sensitive = create('sensitive'),
+    absent: string[] = []
+  for await (const entry of sensitive.enumerate('sibling-directory', {
+    prefix: 'Assets/texture-0.dds',
+  }))
+    absent.push(entry.logicalId)
+  expect(absent).toEqual([])
+})
+
 interface DescriptorShape {
   readonly origin: {
     readonly kind: string
@@ -111,6 +148,72 @@ interface DescriptorShape {
 }
 
 describe('sibling companion resolution, end to end through the Node path opener', () => {
+  it('resolves post-open resources through the same origin, pins content and closes with its subject', async () => {
+    const directory = await workingCopy({ companion: true })
+    const path = join(directory, 'sample.vxl')
+    await mkdir(join(directory, 'textures'))
+    const texture = join(directory, 'textures', 'late.dds')
+    await writeFile(texture, new Uint8Array([1, 2, 3, 4]))
+    const subjects = await fixtureServices()
+    const result = await subjects.open({
+      source: await openFileArtifactSource(path),
+      path,
+      intent: 'full',
+      grant: { id: 'post-open-test', classes: ['read-source'] },
+      budget,
+      resolveInput: createFilesystemInputResolver({
+        primaryPath: path,
+        roots: [directory],
+        inventory: subjects.inventory,
+      }),
+      resourceLimits: { maxResources: 1 },
+    })
+    if (result.state !== 'opened' || result.resources === undefined)
+      throw new Error('resource origin was not retained')
+    const resources = result.resources
+    const requirement = {
+      id: 'late',
+      logicalId: 'textures/late.dds',
+      role: 'texture' as const,
+      scopes: ['sibling-directory'] as const,
+    }
+    try {
+      expect(resources.revision).toBe(result.session.revision)
+      expect(resources.provenance()).toEqual([])
+      const first = await resources.resolve(requirement)
+      if (first.state !== 'resolved' || first.lease.value.kind !== 'bytes')
+        throw new Error('late texture missing')
+      expect(await first.lease.value.read(0n, 4)).toEqual(new Uint8Array([1, 2, 3, 4]))
+      expect(await resources.resolve({ ...requirement, id: 'over-limit' })).toMatchObject({
+        state: 'unresolved',
+        reason: 'budget-exceeded',
+      })
+      await first.lease.release()
+      await writeFile(texture, new Uint8Array([5, 6, 7, 8, 9]))
+      expect(await resources.resolve({ ...requirement, id: 'changed' })).toMatchObject({
+        state: 'unresolved',
+        reason: 'source-revision-changed',
+      })
+      expect(
+        await resources.resolve({ ...requirement, id: 'traversal', logicalId: '../outside.dds' }),
+      ).toMatchObject({ state: 'unresolved', reason: 'path-refused' })
+      // A cached location is not permission to follow a replacement path.
+      await rm(texture)
+      await mkdir(texture)
+      expect(await resources.resolve({ ...requirement, id: 'replaced-path' })).toMatchObject({
+        state: 'unresolved',
+        reason: 'path-refused',
+      })
+    } finally {
+      await result.session.dispose()
+    }
+    expect(resources.state()).toBe('disposed')
+    expect(await resources.resolve(requirement)).toMatchObject({
+      state: 'unresolved',
+      reason: 'session-disposed',
+    })
+  })
+
   it('binds the HVA beside the VXL and hands it to the codec only as a binding', async () => {
     const directory = await workingCopy({ companion: true })
     const open = createPathSubjectOpener({

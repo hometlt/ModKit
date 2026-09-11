@@ -98,10 +98,10 @@ describe('the browser opens a container member as a subject', () => {
     const entryRef = await (listing.value as NamespaceEntrySource).openEntry(entry.id)
     const target = serializeSubjectRef(rootSubject({ id: entryRef.value.uri }))
     await entryRef.release()
-    await listing.release()
+    // The preview session owns its data source leases.
     const navigation = archive.subjectNavigation
     if (navigation === undefined) throw new Error('the embed session published no navigation port')
-    await expect(navigation.open(target)).resolves.toEqual({ state: 'opened' })
+    await expect(navigation.open({ scope: navigation.scope, target })).resolves.toEqual({ state: 'opened' })
     if (child === undefined) throw new Error('the embed navigation owner received no child session')
     // A subject of its own: it has its own selection and its own exact serialized reference.
     const descriptor = child.opened.descriptor
@@ -112,7 +112,6 @@ describe('the browser opens a container member as a subject', () => {
     await child.dispose()
     const again = await archive.dataSource('common.view/namespace-entry-source', 1)
     await expect((again.value as NamespaceEntrySource).list('', { limit: 4 })).resolves.toBeTruthy()
-    await again.release()
     await archive.dispose()
 
     proves({

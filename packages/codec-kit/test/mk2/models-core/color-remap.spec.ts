@@ -28,6 +28,16 @@ describe('renderer-neutral material color remaps', () => {
     ).toEqual([0.25, 0.25, 0.25, 0.4])
   })
 
+  it('supports grain merge without changing authored alpha', () => {
+    expect(
+      applyRenderMaterialColorRemap(
+        [0.25, 0.5, 0.75, 0.4],
+        { target: 'team-color', operation: 'grain-merge' },
+        [1, 0.5, 0],
+      ),
+    ).toEqual([0.75, 0.5, 0.25, 0.4])
+  })
+
   it('leaves non-remapped colors unchanged and clamps invalid channels', () => {
     expect(applyRenderMaterialColorRemap([2, -1, 0.5, Number.NaN], undefined, [0, 1, 0])).toEqual([
       1, 0, 0.5, 0,

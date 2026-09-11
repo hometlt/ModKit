@@ -13,6 +13,22 @@ const uri = (scheme: string, fsPath = '', text?: string): UriLike => ({
 })
 
 describe('open target', () => {
+  it('opens a connected source file by its complete URI', () => {
+    const text = 'modkit-source://battlenet/public%3Aus/377020%401--Mod.SC2Mod/DocumentInfo'
+    expect(describeOpenTarget(uri('modkit-source', 'ignored', text))).toEqual({ state: 'accepted', path: text, kind: 'source-entry' })
+  })
+  it.each([
+    'modkit-source://battlenet/public%3Aus',
+    'modkit-source://battlenet/public%3Aus/',
+    'modkit-source://battlenet/public%3Aus/a?ST=example',
+    'modkit-source://battlenet/public%3Aus/a#fragment',
+    'modkit-source://other/public%3Aus/a',
+    'modkit-source://user@battlenet/public%3Aus/a',
+    'modkit-source://battlenet/public%3Aus/../a',
+    'modkit-source://battlenet/public%3Aus/%2e%2e/a',
+  ])('refuses a malformed or non-file source URI: %s', text => {
+    expect(describeOpenTarget(uri('modkit-source', '', text)).state).toBe('refused')
+  })
   it('accepts a file URI and hands back the path the opener will confine', () => {
     const target = describeOpenTarget(uri('file', '/work/mod/assets/unit.dds'))
     expect(target).toEqual({ state: 'accepted', path: '/work/mod/assets/unit.dds', kind: 'file' })

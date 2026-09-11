@@ -77,6 +77,7 @@ import {
 } from '@modkit/host/node'
 
 import { STAGE_ORDER } from './view-policy.js'
+import { contentSourceOpener, type ContentSourceReader } from './content-source-open.js'
 
 const VSCODE_BUILTIN_MODULES = /* @__PURE__ */ linkedExtensionInputs([sceneModule, uvModule])
 
@@ -585,6 +586,7 @@ export async function createVsCodeSubjectHost(
 // serving one webview
 
 export interface VsCodeServeOptions {
+  readonly readContentSource?: ContentSourceReader
   readonly channel: WebviewChannel
   /** Endpoint identity; the page must connect with the same pair. */
   readonly session: string
@@ -757,6 +759,7 @@ export interface VsCodeServed {
  * a command run from the palette must not require an open editor.
  */
 export function createVsCodeCommandOpener(options: {
+  readonly readContentSource?: ContentSourceReader
   readonly services: NodeSubjectServices
   readonly roots: () => readonly string[]
   readonly containers?: ContainerRegistry
@@ -764,6 +767,10 @@ export function createVsCodeCommandOpener(options: {
   readonly onStream?: (event: FileArtifactStreamTelemetry) => void
 }): SubjectOpener {
   return async (requested, signal) => {
+    if (requested.startsWith('modkit-source:')) {
+      if (!options.readContentSource) throw new Error('Content source provider is unavailable')
+      return contentSourceOpener(options.services, options.readContentSource)(requested, signal)
+    }
     if (isContainerUriText(requested)) {
       if (options.containers === undefined) {
         throw new TypeError('this window did not compose container browsing')
@@ -905,6 +912,16 @@ function serveVsCode(
 
   const openSubject: SubjectOpener = async (requested, signal) => {
     const generation = beginsSubjectOpen()
+    if (requested.startsWith('modkit-source:')) {
+      if (!options.readContentSource) throw new Error('Content source provider is unavailable')
+      const answer = await contentSourceOpener(services, options.readContentSource)(requested, signal)
+      publishSubjectDiagnostics(requested, answer.snapshot.diagnostics)
+      if (answer.snapshot.state === 'opened') {
+        retainCandidateSession(generation, await answer.session?.descriptor(), answer.session)
+        options.onSubjectOpened?.({ path: requested, ...answer.snapshot.selected })
+      }
+      return answer
+    }
     const mapSelection = parseVsCodeMapPreviewSelectionRequest(requested)
     const subjectRequested = mapSelection?.path ?? requested
     /*
@@ -1342,6 +1359,10 @@ function serveVsCode(
           ? listContainer(options.containers, request.path ?? '')
           : listDirectory(roots, request.path)
       case 'read':
+        if (request.path.startsWith('modkit-source:')) {
+          if (!options.readContentSource) throw new Error('Content source provider is unavailable')
+          return options.readContentSource(request.path, request.maxBytes)
+        }
         return isContainerUriText(request.path)
           ? readContainerEntry(options.containers, request.path, request.maxBytes)
           : readEntry(roots, request.path, request.maxBytes)
@@ -1740,7 +1761,7 @@ const describe = (error: unknown): string =>
  * as a relative directory name.
  */
 export function subjectKey(path: string): string {
-  return isContainerUriText(path) ? path : resolve(path)
+  return isContainerUriText(path) || path.startsWith('modkit-source:') ? path : resolve(path)
 }
 
 /**
@@ -1764,6 +1785,7 @@ export function ownedWireBytes(view: Uint8Array): Uint8Array {
  * The URI keeps the absolute path (it has to address something), the label does not.
  */
 export function subjectLabel(path: string): string {
+  if (path.startsWith('modkit-source:')) return decodeURIComponent(new URL(path).pathname).split('/').at(-1) ?? 'Source file'
   const location = parseContainerUriText(path)
   if (location === undefined) return basename(path)
   return `${basename(location.container)} › ${location.entry}`

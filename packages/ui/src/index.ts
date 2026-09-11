@@ -142,6 +142,8 @@ export {
 } from './spans/index.js'
 export {
   mountInlineField,
+  mountFieldEditTarget,
+  fieldEditTargetText,
   fieldWriteRefusal,
   type FieldWriteRefusal,
   type FieldWriteTarget,
@@ -244,6 +246,19 @@ export {
   type SearchFieldOptions,
   type SearchFieldState,
 } from './primitives/search-field.js'
+export {
+  createToolbar,
+  type ToolbarAction,
+  type ToolbarChip,
+  type ToolbarHandle,
+  type ToolbarItem,
+  type ToolbarLabel,
+  type ToolbarSearch,
+  type ToolbarSeparator,
+  type ToolbarSpacer,
+  type ToolbarSpec,
+  type ToolbarToggle,
+} from './toolbar/index.js'
 export {
   createWorkbench,
   type Workbench,
