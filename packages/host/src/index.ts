@@ -391,7 +391,9 @@ export type {
   HostLogicalResourceDiscoveryPolicy,
 } from './logical-resources.js'
 export {
+  analyzeReadOnlyContentDependencies,
   createReadOnlyContentDependencyWorkspace,
+  type AnalyzeReadOnlyContentDependenciesRequest,
   type ReadOnlyContentDependencyWorkspace,
   type ReadOnlyContentDependencyWorkspaceOptions,
 } from './content-dependencies.js'

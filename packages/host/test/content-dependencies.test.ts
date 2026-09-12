@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { ContentDependencyResolution, ContentSources } from '@modkit/vfs/content-sources'
-import { createReadOnlyContentDependencyWorkspace } from '../src/content-dependencies.js'
+import {
+  analyzeReadOnlyContentDependencies,
+  createReadOnlyContentDependencyWorkspace,
+} from '../src/content-dependencies.js'
 
 const encoder = new TextEncoder()
 const files = new Map([
@@ -96,5 +99,36 @@ describe('read-only content dependency workspace', () => {
     } finally {
       await prepared.dispose()
     }
+  })
+
+  it('returns a typed outcome when dependency resolution is unavailable or incomplete', async () => {
+    const common = {
+      services: {} as never,
+      grant: {} as never,
+      budgets: {} as never,
+      dependencies: { schemaVersion: 1 as const, gameId: 'example/game', complete: true, dependencies: [] },
+      workspaceId: 'replay:test',
+      locales: ['enUS'],
+      queries: [],
+      limits: { maxRequirements: 1, maxDocumentBytes: 1, maxTextBytes: 1,
+        maxEntities: 1, maxDepth: 1, maxPageSize: 1 },
+    }
+    await expect(analyzeReadOnlyContentDependencies({
+      ...common,
+      contentSources: contentSources(),
+    })).resolves.toMatchObject({ state: 'unresolved', diagnostics: [{
+      code: 'x3.host/content-dependency-resolver-unavailable',
+    }] })
+    await expect(analyzeReadOnlyContentDependencies({
+      ...common,
+      contentSources: {
+        ...contentSources(),
+        async resolveDependencies() {
+          return { ...resolution, complete: false, mounts: [], diagnostics: [{
+            severity: 'error', code: 'example/missing', message: 'missing dependency',
+          }] }
+        },
+      },
+    })).resolves.toMatchObject({ state: 'unresolved', diagnostics: [{ code: 'example/missing' }] })
   })
 })
