@@ -347,6 +347,8 @@ export interface CommitCoordinator {
     transactionId: string,
     options: { readonly grant: GrantSnapshot; readonly signal?: AbortSignal },
   ): Promise<CommitResult>
+  /** Drop one undo/redo entry and release payloads retained only by that history entry. */
+  discardHistory(transactionId: string): Promise<boolean>
 }
 
 export interface WriterRequirement {

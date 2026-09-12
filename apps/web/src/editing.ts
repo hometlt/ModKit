@@ -586,6 +586,7 @@ export function createWebEditingArm(options: WebEditingArmOptions): WebEditingAr
           localizer.text('web.edit.action.redo'),
         )
       },
+      discardHistory: transactionId => base.commit.discardHistory(transactionId),
     }
 
     /*

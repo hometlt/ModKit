@@ -148,6 +148,7 @@ describe('host-owned file payload store', () => {
     writeFileSync(path, Uint8Array.of(1))
     const { ref, revision, target } = await pinned(path)
     const payloads = createFilePayloadStore({ directory: join(scratch, 'payloads-auto') })
+    const backend = createFileEditingBackend({ roots: [scratch] })
     const authored: AssetEditPlan = {
       planId: 'auto-stage-plan',
       targets: [target],
@@ -198,7 +199,7 @@ describe('host-owned file payload store', () => {
     const editing = createSubjectEditing({
       opened,
       grant,
-      backendFor: () => undefined,
+      backendFor: () => backend,
       evidenceFor: () => evidence,
       payloads,
       verifyStagedPayload: (candidate, signal) => payloads.verify(candidate, signal),
@@ -222,9 +223,26 @@ describe('host-owned file payload store', () => {
       throw new Error('operation payload was not staged')
     expect(await payloads.verify(operationEdit.payload.ref)).toBe(true)
 
-    await editing.dispose()
+    const prepared = await editing.coordinator.prepare(writerPlan, {
+      grant: editing.grantSnapshot,
+    })
+    expect(prepared.state).toBe('ready')
+    if (prepared.state !== 'ready') throw new Error('writer plan did not prepare')
+    const committed = await editing.coordinator.commit(prepared.prepared, {
+      grant: editing.grantSnapshot,
+    })
+    expect(committed.state).toBe('committed')
+    if (committed.state !== 'committed') throw new Error('writer plan did not commit')
+
+    expect(await editing.coordinator.discardHistory(committed.receipt.transactionId)).toBe(true)
+    expect(await editing.coordinator.discardHistory(committed.receipt.transactionId)).toBe(false)
+    expect(editing.session?.state()).toBe('live')
     expect(await payloads.verify(writerEdit.payload.ref)).toBe(false)
+    expect(await payloads.verify(operationEdit.payload.ref)).toBe(true)
+
+    await editing.dispose()
     expect(await payloads.verify(operationEdit.payload.ref)).toBe(false)
+    await backend.dispose()
     await payloads.dispose()
   })
 

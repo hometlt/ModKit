@@ -95,6 +95,8 @@ export interface HostCommitCoordinatorOptions {
     ref: StagedPayloadRef,
     signal?: AbortSignal,
   ) => boolean | Promise<boolean>
+  /** Release a staged payload after its last undo/redo history owner is discarded. */
+  readonly releaseStagedPayload?: (ref: StagedPayloadRef) => void | Promise<void>
   readonly createRecovery?: (preparedId: string, planDigest: string) => Promise<RecoveryRef>
   readonly confirmationMatches?: (token: string, plan: AssetEditPlan) => boolean
   readonly now?: () => string
@@ -635,6 +637,18 @@ async function payloadsAvailable(
     }
   }
   return true
+}
+
+function stagedPayloadRefs(plan: AssetEditPlan): readonly StagedPayloadRef[] {
+  const refs: StagedPayloadRef[] = []
+  for (const edit of plan.edits) {
+    if ('payload' in edit && edit.payload.kind === 'staged') refs.push(edit.payload.ref)
+  }
+  return refs
+}
+
+function stagedPayloadKey(ref: StagedPayloadRef): string {
+  return `${ref.storeId}:${ref.handleId}`
 }
 
 function invalidPlan(plan: AssetEditPlan): boolean {
@@ -1321,7 +1335,23 @@ export function createCommitCoordinator(options: HostCommitCoordinatorOptions): 
     return result
   }
 
-  return Object.freeze({ prepare, commit, undo, redo })
+  const discardHistory: CommitCoordinator['discardHistory'] = async transactionId => {
+    const item = history.get(transactionId)
+    if (item === undefined) return false
+    history.delete(transactionId)
+    if (options.releaseStagedPayload !== undefined) {
+      const retained = new Set(
+        [...history.values()].flatMap(entry => stagedPayloadRefs(entry.plan).map(stagedPayloadKey)),
+      )
+      const releasable = stagedPayloadRefs(item.plan).filter(
+        ref => !retained.has(stagedPayloadKey(ref)),
+      )
+      await Promise.allSettled(releasable.map(ref => options.releaseStagedPayload?.(ref)))
+    }
+    return true
+  }
+
+  return Object.freeze({ prepare, commit, undo, redo, discardHistory })
 }
 
 export function createEditSession(options: {

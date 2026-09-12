@@ -390,6 +390,12 @@ export function createSubjectEditing(options: SubjectEditingOptions): SubjectEdi
   const staging = isStagingStore(payloads) ? payloads : undefined
   const maximumInline = options.maxInlinePayloadBytes ?? DEFAULT_INLINE_PAYLOAD_BYTES
   const ownedStaged = new Map<string, StagedPayloadRef>()
+  const releaseOwnedStaged = async (ref: StagedPayloadRef) => {
+    if (staging === undefined) return
+    const key = `${ref.storeId}:${ref.handleId}`
+    if (!ownedStaged.delete(key)) return
+    await staging.release(ref)
+  }
   const stagePlan = (plan: AssetEditPlan, signal?: AbortSignal) =>
     stageOversizedPlan(plan, staging, maximumInline, ownedStaged, signal)
   const coordinator = createCommitCoordinator({
@@ -405,6 +411,7 @@ export function createSubjectEditing(options: SubjectEditingOptions): SubjectEdi
     ...(options.verifyStagedPayload === undefined
       ? {}
       : { verifyStagedPayload: options.verifyStagedPayload }),
+    ...(staging === undefined ? {} : { releaseStagedPayload: releaseOwnedStaged }),
     ...(options.createRecovery === undefined ? {} : { createRecovery: options.createRecovery }),
     ...(options.confirmationMatches === undefined
       ? {}
