@@ -4555,6 +4555,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
                       ? new vscode.SnippetString(item.insertText)
                       : item.insertText
                 }
+                if (item.replacementRange !== undefined)
+                  native.range = rangeOf(item.replacementRange)
                 if (item.sortText !== undefined) native.sortText = item.sortText
                 return native
               }),

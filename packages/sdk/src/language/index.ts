@@ -119,6 +119,8 @@ export interface LanguageCompletionItem {
   readonly documentation?: string
   readonly insertText?: string
   readonly insertTextFormat?: 'plain-text' | 'snippet'
+  /** Document range replaced when this item is accepted. Defaults to the editor's current word. */
+  readonly replacementRange?: LanguageRange
   readonly sortText?: string
 }
 

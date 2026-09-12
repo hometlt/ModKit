@@ -242,7 +242,10 @@ export function bridgeLanguageProvider(
               label: plain.label,
               kind: COMPLETION_KIND[plain.kind] ?? monaco.languages.CompletionItemKind.Text,
               insertText: plain.insertText ?? plain.label,
-              range,
+              range:
+                plain.replacementRange === undefined
+                  ? range
+                  : toMonacoRange(plain.replacementRange),
               ...(plain.detail === undefined ? {} : { detail: plain.detail }),
               ...(plain.documentation === undefined ? {} : { documentation: plain.documentation }),
               ...(plain.sortText === undefined ? {} : { sortText: plain.sortText }),

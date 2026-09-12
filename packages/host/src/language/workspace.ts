@@ -544,7 +544,10 @@ function validSubjectFilter(value: unknown): value is SubjectFilter {
   )
 }
 
-const validCompletionItem = (item: Readonly<Record<string, unknown>>): boolean =>
+const validCompletionItem = (
+  item: Readonly<Record<string, unknown>>,
+  lengths: readonly number[],
+): boolean =>
   typeof item['label'] === 'string' &&
   item['label'].length > 0 &&
   typeof item['kind'] === 'string' &&
@@ -555,6 +558,8 @@ const validCompletionItem = (item: Readonly<Record<string, unknown>>): boolean =
   (item['insertTextFormat'] === undefined ||
     item['insertTextFormat'] === 'plain-text' ||
     item['insertTextFormat'] === 'snippet') &&
+  (item['replacementRange'] === undefined ||
+    validRange(item['replacementRange'] as LanguageRange, lengths)) &&
   (item['sortText'] === undefined || typeof item['sortText'] === 'string')
 
 function validateProviderCompletionList(
@@ -563,6 +568,7 @@ function validateProviderCompletionList(
 ): LanguageProviderCompletionList {
   const list = recordOf(value)
   const items = list?.['items']
+  const lengths = lineLengths(request.document.text)
   if (
     list === undefined ||
     !Array.isArray(items) ||
@@ -571,7 +577,7 @@ function validateProviderCompletionList(
     !items.every(item => {
       const record = recordOf(item)
       if (record === undefined) return false
-      if (record['kind'] !== 'subject-ref') return validCompletionItem(record)
+      if (record['kind'] !== 'subject-ref') return validCompletionItem(record, lengths)
       return (
         Object.keys(record).every(
           key => key === 'kind' || key === 'subjectKind' || key === 'filter',
@@ -595,6 +601,7 @@ function validateCompletionList(
   request: LanguageFeatureRequest,
 ): LanguageCompletionList {
   const list = value as LanguageCompletionList
+  const lengths = lineLengths(request.document.text)
   if (
     typeof list !== 'object' ||
     list === null ||
@@ -603,7 +610,7 @@ function validateCompletionList(
     typeof list.isIncomplete !== 'boolean' ||
     !list.items.every(item => {
       const record = recordOf(item)
-      return record !== undefined && validCompletionItem(record)
+      return record !== undefined && validCompletionItem(record, lengths)
     })
   ) {
     invalidFeature(

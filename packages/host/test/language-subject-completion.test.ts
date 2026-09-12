@@ -70,6 +70,16 @@ const provider: LanguageProvider = {
     Promise.resolve({
       items: [
         {
+          label: 'expanded',
+          kind: 'snippet',
+          insertText: '<Expanded>$0</Expanded>',
+          insertTextFormat: 'snippet',
+          replacementRange: {
+            start: { line: 0, character: 0 },
+            end: { line: 0, character: 1 },
+          },
+        },
+        {
           kind: 'subject-ref',
           subjectKind: 'unit',
           filter: { excludeTags: ['default'] },
@@ -249,7 +259,16 @@ describe('language subject completion lifecycle', () => {
     })
     try {
       const result = await workspace.completion(completionRequest())
-      expect(result?.items.map(item => item.insertText)).toEqual(['unit/Alpha'])
+      expect(result?.items).toEqual([
+        expect.objectContaining({
+          label: 'expanded',
+          replacementRange: {
+            start: { line: 0, character: 0 },
+            end: { line: 0, character: 1 },
+          },
+        }),
+        expect.objectContaining({ insertText: 'unit/Alpha' }),
+      ])
       expect(releases).toBe(1)
     } finally {
       await workspace.shutdown()
