@@ -379,6 +379,8 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
   const pending = new Map<string, AssetSession>()
   /** Attached sessions remain addressable only until their exact RPC lease is released. */
   const live = new Map<string, AssetSession>()
+  /** Plans returned by codec operations, before their previews cross the RPC boundary. */
+  const operationPlans = new Map<string, Map<string, AssetEditPlan>>()
   const maximumLiveSessions = 1_024
 
   const canonicalSubject = (value: unknown): SubjectRef | undefined => {
@@ -430,14 +432,49 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
       live.set(sessionId as string, session)
       // the handle owns the session from here: releaseVia dispose (or cascade) releases the lease
       let disposed = false
-      return {
-        value: session,
-        release: async () => {
-          if (disposed) return
-          disposed = true
-          if (live.get(sessionId as string) === session) live.delete(sessionId as string)
-          await session.dispose()
+      const dispose = async () => {
+        if (disposed) return
+        disposed = true
+        operationPlans.delete(sessionId as string)
+        if (live.get(sessionId as string) === session) live.delete(sessionId as string)
+        await session.dispose()
+      }
+      const served: AssetSession = {
+        revision: session.revision,
+        state: () => session.state(),
+        descriptor: () => session.descriptor(),
+        dataSource: (contract, major) => session.dataSource(contract, major),
+        events: signal => session.events(signal),
+        dispose,
+        operations: () => {
+          const operations = session.operations()
+          return {
+            dispose: () => operations.dispose(),
+            invoke: async (handlerId, input, invokeOptions) => {
+              const result = await operations.invoke(handlerId, input, invokeOptions)
+              if (!disposed && result.state === 'ok' && result.output.kind === 'edit-plan') {
+                const editing = options.editing?.(sessionId as string)
+                if (editing !== undefined) {
+                  const plan = editing.planFromOperation(result.output)
+                  if (typeof plan.planId !== 'string' || plan.planId.length === 0) {
+                    throw new TypeError('the operation returned an edit plan without an identity')
+                  }
+                  const plans =
+                    operationPlans.get(sessionId as string) ?? new Map<string, AssetEditPlan>()
+                  if (plans.has(plan.planId))
+                    throw new TypeError('duplicate operation edit plan identity')
+                  plans.set(plan.planId, structuredClone(plan))
+                  operationPlans.set(sessionId as string, plans)
+                }
+              }
+              return result
+            },
+          }
         },
+      }
+      return {
+        value: served,
+        release: dispose,
       }
     },
     navigate: async (
@@ -532,14 +569,22 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
             kind: 'edit-plan',
             plan: plan as AssetEditPlan,
           })
-          const issued = issuedPlans.get(clientPreview.planId)
+          const operationIssued = operationPlans.get(sessionId as string)
+          if (issuedPlans.has(clientPreview.planId) && operationIssued?.has(clientPreview.planId)) {
+            throw new TypeError('ambiguous edit plan identity')
+          }
+          const issued =
+            issuedPlans.get(clientPreview.planId) ?? operationIssued?.get(clientPreview.planId)
           if (issued === undefined) {
-            throw new TypeError('unknown edit plan (already prepared, or never issued by this arm)')
+            throw new TypeError(
+              'unknown edit plan (already prepared, or never issued by this subject)',
+            )
           }
           issuedPlans.delete(clientPreview.planId)
+          operationIssued?.delete(clientPreview.planId)
           /*
            * The client copy is a preview. Only its id comes back as a selector; all executable
-           * bytes and metadata come from the exact writer result retained by this arm. The
+           * bytes and metadata come from the exact writer or operation result retained here. The
            * subject/revision validation therefore runs over that host-owned plan as well.
            */
           const validated = editing.planFromOperation({
@@ -631,6 +676,7 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
       pending.clear()
       const attached = [...live.values()]
       live.clear()
+      operationPlans.clear()
       await Promise.allSettled([...orphans, ...attached].map(session => session.dispose()))
     },
   }

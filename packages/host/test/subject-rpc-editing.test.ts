@@ -79,7 +79,10 @@ afterEach(async () => {
  * A serving side that opens subjects and decides, per session, whether it can write them: the
  * shape Electron main has (a file backend, the host's raw writer, an evidence policy).
  */
-async function servingPair(options: { readonly editable: boolean }): Promise<{
+async function servingPair(options: {
+  readonly editable: boolean
+  readonly operationPlan?: boolean
+}): Promise<{
   client: SubjectRpcClient
   path: string
 }> {
@@ -120,6 +123,44 @@ async function servingPair(options: { readonly editable: boolean }): Promise<{
           }),
         )
       }
+      if (
+        options.operationPlan &&
+        result.snapshot.state === 'opened' &&
+        result.session !== undefined
+      ) {
+        const editing = editingBySession.get(result.snapshot.sessionId)!
+        const session = new Proxy(
+          { ...result.session },
+          {
+            get(target, property) {
+              if (property === 'operations')
+                return () => ({
+                  async invoke() {
+                    const target = editing.targets[0]!
+                    const plan = await editing.session!.plan({
+                      targets: editing.targets,
+                      edits: [
+                        {
+                          operation: 'replace',
+                          targetId: target.targetId,
+                          source: target.ownerSource,
+                          range: { kind: 'utf16', offset: 9, length: 6 },
+                          payload: { kind: 'text', text: 'Edited' },
+                        },
+                      ],
+                      provenance: { actor: 'user' },
+                    })
+                    return { state: 'ok', output: { kind: 'edit-plan', plan }, diagnostics: [] }
+                  },
+                  async dispose() {},
+                })
+              const value = Reflect.get(target, property)
+              return typeof value === 'function' ? value.bind(target) : value
+            },
+          },
+        )
+        return { ...result, session }
+      }
       return result
     },
     editing: sessionId => editingBySession.get(sessionId),
@@ -140,6 +181,35 @@ async function servingPair(options: { readonly editable: boolean }): Promise<{
 }
 
 describe('editing over the subject RPC (S14)', () => {
+  it('commits an operation plan using its host-owned bytes and consumes it once', async () => {
+    const { client, path } = await servingPair({ editable: true, operationPlan: true })
+    const opened = await client.open(path)
+    if (opened.state !== 'opened') throw new Error('open failed')
+    const operations = await opened.session.operations()
+    const result = await operations.invoke('fixture.rename', {})
+    if (result.state !== 'ok' || result.output.kind !== 'edit-plan')
+      throw new Error('no operation plan')
+    // The operation can run before an editing arm is acquired, as in an edit form.
+    const arm = await client.edit(opened.snapshot.sessionId)
+    const tampered = {
+      ...result.output.plan,
+      edits: result.output.plan.edits.map(edit =>
+        edit.operation === 'replace'
+          ? { ...edit, payload: { kind: 'text' as const, text: 'Injected' } }
+          : edit,
+      ),
+    }
+    const prepared = await arm.prepare(tampered)
+    expect(prepared.state).toBe('ready')
+    if (prepared.state !== 'ready') throw new Error('prepare failed')
+    expect((await arm.commit(prepared.preparedId)).state).toBe('committed')
+    expect(readFileSync(path, 'utf8')).toBe('{"name":"Edited","items":[1,2,3]}')
+    await expect(arm.prepare(result.output.plan)).rejects.toThrow(/unknown edit plan/u)
+    await operations.dispose()
+    await arm.dispose()
+    await opened.session.dispose()
+  }, 60_000)
+
   it('a consumer with no grant proposes, plans, prepares and commits — the file changes and the ids are single-use', async () => {
     const { client, path } = await servingPair({ editable: true })
     const opened = await client.open(path)
