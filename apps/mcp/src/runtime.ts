@@ -18,7 +18,7 @@ import type {
   SubjectFactsSource,
   SubjectSelectorSource,
 } from '@modkit/sdk'
-import type { McpOpenedSubject, ModkitMcpHostPort } from './host-port.js'
+import type { McpLanguageRequest, McpOpenedSubject, ModkitMcpHostPort } from './host-port.js'
 import {
   MCP_MAX_CURSOR_LENGTH,
   MCP_MAX_OPEN_HANDLES,
@@ -451,6 +451,7 @@ export class ModkitMcpRuntime {
           'invoke-readonly',
           'knowledge-search',
           'knowledge-resolve',
+          ...(this.host.language === undefined ? [] : ['language']),
           ...(this.host.discoverInstallations === undefined ||
           this.host.openDiscovered === undefined
             ? []
@@ -1742,6 +1743,27 @@ export class ModkitMcpRuntime {
             : [],
         data: result,
       })
+    })
+  }
+
+  async language(request: McpLanguageRequest, signal: AbortSignal): Promise<McpEnvelope> {
+    if (this.host.language === undefined) {
+      throw new McpOperationError(
+        'x3.mcp/language-unavailable',
+        'This host does not publish language analysis.',
+      )
+    }
+    const result = await this.host.language(request, signal)
+    return envelope({
+      snapshotId: result.snapshotId,
+      completeness: 'partial',
+      diagnostics: result.diagnostics,
+      data: {
+        workspaceIncomplete: true,
+        primaryUri: result.primaryUri,
+        feature: result.feature,
+        result: result.result ?? null,
+      },
     })
   }
   async subjectIsolation(

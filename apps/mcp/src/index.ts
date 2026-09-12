@@ -6,7 +6,14 @@ export {
   parseModkitMcpConfiguration,
   type ModkitMcpConfiguration,
 } from './config.js'
-export { createHostMcpPort, type McpOpenedSubject, type ModkitMcpHostPort } from './host-port.js'
+export {
+  createHostMcpPort,
+  type McpLanguageFeature,
+  type McpLanguageRequest,
+  type McpLanguageResult,
+  type McpOpenedSubject,
+  type ModkitMcpHostPort,
+} from './host-port.js'
 export {
   createModkitMcpServer,
   encodeKnowledgeResourceTarget,

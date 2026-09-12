@@ -6,7 +6,7 @@ import {
   type KnowledgeTarget,
 } from '@modkit/sdk'
 import { z } from 'zod'
-import type { ModkitMcpHostPort } from './host-port.js'
+import type { McpLanguageRequest, ModkitMcpHostPort } from './host-port.js'
 import {
   ModkitMcpRuntime,
   McpOperationError,
@@ -43,6 +43,58 @@ const envelopeSchema = z
 const cursorSchema = z.string().max(MCP_MAX_CURSOR_LENGTH).optional()
 const limitSchema = z.number().int().min(1).max(MCP_MAX_PAGE_ITEMS).default(20)
 const handleSchema = z.string().min(1).max(128)
+const languagePositionSchema = z
+  .object({ line: z.number().int().min(0), character: z.number().int().min(0) })
+  .strict()
+const languageRangeSchema = z
+  .object({ start: languagePositionSchema, end: languagePositionSchema })
+  .strict()
+const languageInput = z
+  .object({
+    documents: z
+      .array(
+        z
+          .object({
+            path: z.string().min(1).max(4_096),
+            languageId: z.string().min(1).max(128),
+            documentKind: z.string().min(1).max(128).optional(),
+          })
+          .strict(),
+      )
+      .min(1)
+      .max(32),
+    primaryIndex: z.number().int().min(0).max(31).default(0),
+    feature: z.enum([
+      'analyze', 'completion', 'hover', 'signature-help', 'definition', 'references',
+      'prepare-rename', 'rename', 'formatting', 'document-colors', 'color-presentations',
+      'document-symbols', 'workspace-symbols', 'diagnostics',
+    ]),
+    position: languagePositionSchema.optional(),
+    includeDeclaration: z.boolean().optional(),
+    newName: z.string().min(1).max(256).optional(),
+    query: z.string().max(512).optional(),
+    formatting: z
+      .object({
+        tabSize: z.number().int().min(1).max(8),
+        insertSpaces: z.boolean(),
+        finalNewline: z.boolean().optional(),
+      })
+      .strict()
+      .optional(),
+    color: z
+      .object({
+        red: z.number().min(0).max(1),
+        green: z.number().min(0).max(1),
+        blue: z.number().min(0).max(1),
+        alpha: z.number().min(0).max(1),
+      })
+      .strict()
+      .optional(),
+    range: languageRangeSchema.optional(),
+    maxResults: z.number().int().min(1).max(10_000).default(1_000),
+    maxEdits: z.number().int().min(1).max(50_000).default(10_000),
+  })
+  .strict()
 
 const schemaCoordinate = z
   .object({
@@ -431,6 +483,19 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
       annotations: { ...readOnlyAnnotations, idempotentHint: true },
     },
     () => safeTool(() => runtime.capabilities()),
+  )
+  server.registerTool(
+    'modkit.language',
+    {
+      title: 'Analyze source code',
+      description:
+        'Run one protocol-neutral language feature over up to 32 explicitly listed files inside configured roots. The workspace is always reported incomplete, so complete-workspace rename is refused safely.',
+      inputSchema: languageInput,
+      outputSchema: envelopeSchema,
+      annotations: { ...readOnlyAnnotations, idempotentHint: true },
+    },
+    (request, context) =>
+      safeTool(() => runtime.language(request as McpLanguageRequest, context.mcpReq.signal)),
   )
   server.registerTool(
     'modkit.discover_installations',

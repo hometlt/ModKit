@@ -534,6 +534,7 @@ function fakeHost(
     readonly lateAbortController?: AbortController
     readonly withSelection?: boolean
     readonly withDiscovery?: boolean
+    readonly withLanguage?: boolean
     readonly ignoreFactsAbort?: boolean
   } = {},
 ) {
@@ -542,6 +543,7 @@ function fakeHost(
   const operationAborts: string[] = []
   let streamReleases = 0
   const selectionInvocations: string[] = []
+  const languageInvocations: unknown[] = []
   const host: ModkitMcpHostPort = {
     inventory,
     knowledge: fakeKnowledge(),
@@ -549,6 +551,21 @@ function fakeHost(
     extensionCoordinates: ['fixture/extension'],
     executionProfiles: ['worker-brokered'],
     supportedExtensions: ['fixture'],
+    ...(options.withLanguage
+      ? {
+          async language(request: unknown, signal?: AbortSignal) {
+            signal?.throwIfAborted()
+            languageInvocations.push(request)
+            return {
+              snapshotId: 'language-v1',
+              diagnostics: [],
+              primaryUri: 'file:///C:/allowed/fixture.galaxy',
+              feature: 'hover' as const,
+              result: { markdown: 'Fixture hover' },
+            }
+          },
+        }
+      : {}),
     ...(options.withDiscovery
       ? {
           async discoverInstallations() {
@@ -631,6 +648,7 @@ function fakeHost(
     operationAborts: () => operationAborts,
     streamReleases: () => streamReleases,
     selectionInvocations: () => selectionInvocations,
+    languageInvocations: () => languageInvocations,
   }
 }
 
@@ -704,6 +722,7 @@ describe('read-only MCP v2 adapter', () => {
     expect(tools.tools.map(tool => tool.name)).toEqual([
       'modkit.inventory',
       'modkit.capabilities',
+      'modkit.language',
       'modkit.discover_installations',
       'modkit.open_discovered',
       'modkit.open_subject',
@@ -745,6 +764,39 @@ describe('read-only MCP v2 adapter', () => {
       'modkit://subject/{handle}/preview',
       'modkit://knowledge/{target}/{locale}',
       'modkit://schema/{target}/{locale}',
+    ])
+  })
+
+  it('runs a bounded language feature over explicitly listed files', async () => {
+    const fake = fakeHost({ withLanguage: true })
+    const { client } = await connected(fake.host)
+    const result = structured(
+      await client.callTool({
+        name: 'modkit.language',
+        arguments: {
+          documents: [{ path: 'C:\\allowed\\fixture.galaxy', languageId: 'galaxy' }],
+          primaryIndex: 0,
+          feature: 'hover',
+          position: { line: 0, character: 1 },
+          maxResults: 20,
+          maxEdits: 100,
+        },
+      }),
+    )
+    expect(result).toMatchObject({
+      snapshotId: 'language-v1',
+      completeness: 'partial',
+      data: {
+        workspaceIncomplete: true,
+        feature: 'hover',
+        result: { markdown: 'Fixture hover' },
+      },
+    })
+    expect(fake.languageInvocations()).toEqual([
+      expect.objectContaining({
+        feature: 'hover',
+        position: { line: 0, character: 1 },
+      }),
     ])
   })
 

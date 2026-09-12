@@ -39,6 +39,11 @@ Do not put passwords, tokens, or other secrets in either list.
 
 - `modkit.inventory` pages through the loaded contribution inventory.
 - `modkit.capabilities` reports configured roots, loaded extensions, profiles, and adapter limits.
+- `modkit.language` runs analysis, completion, hover, signature help, definitions, references,
+  rename preparation, formatting, colors, symbols, diagnostics, and read-only rename proposals over
+  at most 32 explicitly listed files. Each file is confined to the configured roots, each file is
+  limited to 4 MiB, and the combined text is limited to 16 MiB. The host marks this explicit list as
+  an incomplete workspace and rejects rename edits that would claim complete project coverage.
 - `modkit.discover_installations` asks only loaded installation providers for verified candidates and
   returns opaque result locators instead of requiring path copying. `modkit.open_discovered` opens one selection
   only when its verified directory is already under a configured root; discovery never widens the
@@ -101,8 +106,9 @@ transfer, and four million protocol nodes; these limits admit the installed SC2 
 failing closed on oversized frames.
 
 All file text, extension metadata, operation output, progress messages, and knowledge text are
-returned as `untrusted-data`; clients must never treat them as instructions. The host is created with
-inspection intent and no writable roots. The adapter exposes no save, write,
+returned as `untrusted-data`; clients must never treat them as instructions. The host is created
+with inspection intent. It can calculate edit plans for configured roots, but exposes no prepare,
+commit, save, write,
 arbitrary-filesystem-discovery, or mutation tool. A mutating, unavailable, or undeclared operation
 is rejected before its session handler runs.
 Closing a selected entity waits at most one second for cancelled reads; a non-cooperative source is

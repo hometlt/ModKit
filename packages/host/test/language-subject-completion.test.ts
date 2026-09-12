@@ -91,6 +91,25 @@ const provider: LanguageProvider = {
       isIncomplete: false,
     })
   },
+  rename: request =>
+    Promise.resolve({
+      isComplete: true,
+      documentChanges: [
+        {
+          uri: request.document.uri,
+          documentVersion: request.document.version,
+          edits: [
+            {
+              range: {
+                start: { line: 0, character: 0 },
+                end: { line: 0, character: 5 },
+              },
+              newText: request.newName,
+            },
+          ],
+        },
+      ],
+    }),
 }
 
 const fixture = defineLinkedExtension({
@@ -261,6 +280,24 @@ describe('language subject completion lifecycle', () => {
     try {
       await workspace.completion(completionRequest())
       expect(observedWorkspaceIncomplete).toBe(true)
+    } finally {
+      await workspace.shutdown()
+    }
+  })
+
+  it('refuses a provider rename result for a caller-bounded workspace', async () => {
+    const workspace = await openWorkspace(
+      { open: async () => ({ value: candidateProvider, release: async () => undefined }) },
+      true,
+    )
+    try {
+      await expect(
+        workspace.rename({
+          ...completionRequest(),
+          newName: 'renamed',
+          maxEdits: 10,
+        }),
+      ).resolves.toBeUndefined()
     } finally {
       await workspace.shutdown()
     }

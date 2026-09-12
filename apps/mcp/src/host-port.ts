@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { stat, realpath } from 'node:fs/promises'
-import { basename, isAbsolute, relative, resolve } from 'node:path'
+import { readFile, stat, realpath } from 'node:fs/promises'
+import { basename, extname, isAbsolute, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { Diagnostic } from '@modkit/core'
 import {
@@ -11,6 +11,7 @@ import {
   type Inventory,
 } from '@modkit/host'
 import { discoverGameInstallations } from '@modkit/host/games'
+import { createLanguageWorkspace } from '@modkit/host/language'
 import {
   createModkit,
   createNodeMapPreviewResourcePlanResolver,
@@ -54,6 +55,61 @@ export interface McpDiscoveryResult {
   readonly diagnostics: readonly Diagnostic[]
 }
 
+export type McpLanguageFeature =
+  | 'analyze'
+  | 'completion'
+  | 'hover'
+  | 'signature-help'
+  | 'definition'
+  | 'references'
+  | 'prepare-rename'
+  | 'rename'
+  | 'formatting'
+  | 'document-colors'
+  | 'color-presentations'
+  | 'document-symbols'
+  | 'workspace-symbols'
+  | 'diagnostics'
+
+export interface McpLanguageRequest {
+  readonly documents: readonly {
+    readonly path: string
+    readonly languageId: string
+    readonly documentKind?: string
+  }[]
+  readonly primaryIndex: number
+  readonly feature: McpLanguageFeature
+  readonly position?: { readonly line: number; readonly character: number }
+  readonly includeDeclaration?: boolean
+  readonly newName?: string
+  readonly query?: string
+  readonly formatting?: {
+    readonly tabSize: number
+    readonly insertSpaces: boolean
+    readonly finalNewline?: boolean
+  }
+  readonly color?: {
+    readonly red: number
+    readonly green: number
+    readonly blue: number
+    readonly alpha: number
+  }
+  readonly range?: {
+    readonly start: { readonly line: number; readonly character: number }
+    readonly end: { readonly line: number; readonly character: number }
+  }
+  readonly maxResults: number
+  readonly maxEdits: number
+}
+
+export interface McpLanguageResult {
+  readonly snapshotId: string
+  readonly diagnostics: readonly Diagnostic[]
+  readonly primaryUri: string
+  readonly feature: McpLanguageFeature
+  readonly result: unknown
+}
+
 /** Minimal host-injected seam; all authority remains in the public Modkit host. */
 export interface ModkitMcpHostPort {
   readonly outputArtifacts?: boolean
@@ -69,6 +125,7 @@ export interface ModkitMcpHostPort {
     signal?: AbortSignal,
   ): Promise<McpDiscoveryResult>
   openDiscovered?(selectionId: string, signal?: AbortSignal): Promise<McpOpenedSubject>
+  language?(request: McpLanguageRequest, signal?: AbortSignal): Promise<McpLanguageResult>
   open(path: string, signal?: AbortSignal, selectionId?: string): Promise<McpOpenedSubject>
   close(): Promise<void>
 }
@@ -239,6 +296,174 @@ export async function createHostMcpPort(
     extensionCoordinates: modkit.extensionCoordinates,
     executionProfiles: modkit.services.executionProfiles,
     supportedExtensions: modkit.services.supportedExtensions,
+    async language(request: McpLanguageRequest, signal?: AbortSignal): Promise<McpLanguageResult> {
+      signal?.throwIfAborted()
+      if (request.documents.length === 0 || request.documents.length > 32) {
+        throw new TypeError('language request needs between 1 and 32 documents')
+      }
+      if (
+        !Number.isSafeInteger(request.primaryIndex) ||
+        request.primaryIndex < 0 ||
+        request.primaryIndex >= request.documents.length
+      ) {
+        throw new TypeError('language primaryIndex is outside documents')
+      }
+      const openedDocuments: {
+        readonly uri: string
+        readonly languageId: string
+        readonly documentKind?: string
+        readonly extension?: string
+        readonly text: string
+      }[] = []
+      const seen = new Set<string>()
+      let totalBytes = 0
+      for (const document of request.documents) {
+        signal?.throwIfAborted()
+        if (!isAbsolute(document.path)) {
+          throw new TypeError('language document path must be absolute')
+        }
+        const canonical = await realpath(resolve(document.path))
+        if (!inside(roots, canonical)) {
+          throw new TypeError('language document path is outside configured roots')
+        }
+        if (seen.has(canonical)) throw new TypeError('language document path is duplicated')
+        seen.add(canonical)
+        const details = await stat(canonical)
+        if (!details.isFile() || details.size > 4_194_304) {
+          throw new TypeError('language documents must be files no larger than 4 MiB')
+        }
+        const bytes = await readFile(canonical)
+        if (bytes.byteLength > 4_194_304) {
+          throw new TypeError('language documents must be files no larger than 4 MiB')
+        }
+        totalBytes += bytes.byteLength
+        if (totalBytes > 16_777_216) throw new TypeError('language workspace exceeds 16 MiB')
+        const suffix = extname(canonical).replace(/^\./u, '').toLowerCase()
+        openedDocuments.push({
+          uri: pathToFileURL(canonical).href,
+          languageId: document.languageId,
+          ...(document.documentKind === undefined ? {} : { documentKind: document.documentKind }),
+          ...(suffix.length === 0 ? {} : { extension: suffix }),
+          text: new TextDecoder('utf-8', { fatal: true }).decode(bytes),
+        })
+      }
+      const workspace = createLanguageWorkspace({
+        services: modkit.services,
+        grant: { id: `modkit-mcp-language:${randomUUID()}`, classes: ['read-source'] },
+        budgets: mapPreviewBudget,
+        workspaceIncomplete: true,
+      })
+      const diagnostics: Diagnostic[] = []
+      try {
+        await workspace.initialize()
+        const analyses = []
+        for (const document of openedDocuments) {
+          const analysis = await workspace.open({
+            languageId: document.languageId,
+            ...(document.documentKind === undefined ? {} : { documentKind: document.documentKind }),
+            ...(document.extension === undefined ? {} : { extension: document.extension }),
+            document: {
+              uri: document.uri,
+              languageId: document.languageId,
+              version: 1,
+              text: document.text,
+            },
+            ...(signal === undefined ? {} : { signal }),
+          })
+          diagnostics.push(...analysis.hostDiagnostics)
+          analyses.push(analysis)
+        }
+        const primary = openedDocuments[request.primaryIndex]!
+        const common = {
+          uri: primary.uri,
+          documentVersion: 1,
+          maxResults: request.maxResults,
+          maxDocuments: openedDocuments.length,
+          ...(signal === undefined ? {} : { signal }),
+        }
+        const positioned = () => {
+          if (request.position === undefined)
+            throw new TypeError(`${request.feature} needs position`)
+          return { ...common, position: request.position }
+        }
+        let result: unknown
+        switch (request.feature) {
+          case 'analyze':
+            result = analyses[request.primaryIndex]
+            break
+          case 'completion':
+            result = await workspace.completion(positioned())
+            break
+          case 'hover':
+            result = await workspace.hover(positioned())
+            break
+          case 'signature-help':
+            result = await workspace.signatureHelp(positioned())
+            break
+          case 'definition':
+            result = await workspace.definition(positioned())
+            break
+          case 'references':
+            result = await workspace.references({
+              ...positioned(),
+              ...(request.includeDeclaration === undefined
+                ? {}
+                : { includeDeclaration: request.includeDeclaration }),
+            })
+            break
+          case 'prepare-rename':
+            result = await workspace.prepareRename(positioned())
+            break
+          case 'rename':
+            if (request.newName === undefined) throw new TypeError('rename needs newName')
+            result = await workspace.rename({
+              ...positioned(),
+              newName: request.newName,
+              maxEdits: request.maxEdits,
+            })
+            break
+          case 'formatting':
+            if (request.formatting === undefined) throw new TypeError('formatting needs options')
+            result = await workspace.formatting({ ...common, options: request.formatting })
+            break
+          case 'document-colors':
+            result = await workspace.documentColors(common)
+            break
+          case 'color-presentations':
+            if (request.color === undefined || request.range === undefined) {
+              throw new TypeError('color-presentations needs color and range')
+            }
+            result = await workspace.colorPresentations({
+              ...common,
+              color: request.color,
+              range: request.range,
+            })
+            break
+          case 'document-symbols':
+            result = await workspace.documentSymbols(common)
+            break
+          case 'workspace-symbols':
+            result = await workspace.workspaceSymbols({ ...common, query: request.query ?? '' })
+            break
+          case 'diagnostics':
+            result = await workspace.diagnostics(common)
+            break
+        }
+        const digest = createHash('sha256')
+        for (const document of openedDocuments) {
+          digest.update(document.uri).update('\0').update(document.text).update('\0')
+        }
+        return Object.freeze({
+          snapshotId: `language-v1:${digest.digest('hex')}`,
+          diagnostics: Object.freeze(diagnostics),
+          primaryUri: primary.uri,
+          feature: request.feature,
+          result,
+        })
+      } finally {
+        await workspace.shutdown()
+      }
+    },
     async discoverInstallations(
       requestedGameId: string | undefined,
       maxCandidates: number,

@@ -1158,6 +1158,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     maxEdits: number,
   ): LanguageWorkspaceEdit | undefined => {
     if (value === undefined) return undefined
+    if (request.workspaceIncomplete) return undefined
     const edit = value as LanguageWorkspaceEdit
     let editCount = 0
     const seen = new Set<string>()
