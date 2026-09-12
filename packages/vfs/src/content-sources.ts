@@ -35,6 +35,29 @@ export interface ContentSourceEntry {
 export interface ContentSourceEntryAction {
   readonly id: 'download' | 'clear-cache' | 'delete-publication'
 }
+export interface ContentDependencyRequest {
+  readonly schemaVersion: 1
+  readonly gameId: string
+  readonly complete: boolean
+  readonly dependencies: readonly unknown[]
+}
+export interface ContentDependencyMount {
+  readonly dependencyId: string
+  readonly order: number
+  readonly sourceId: string
+  readonly sourcePath: string
+  readonly displayName: string
+  readonly kind: string
+  readonly fingerprint?: string
+}
+export interface ContentDependencyResolution {
+  readonly schemaVersion: 1
+  readonly gameId: string
+  readonly complete: boolean
+  readonly mounts: readonly ContentDependencyMount[]
+  readonly dependencies: readonly unknown[]
+  readonly diagnostics: readonly unknown[]
+}
 /** All identifiers are opaque. Hosts may not turn source paths into local filesystem paths. */
 export interface ContentSources {
   snapshot(): Promise<ContentSourceSnapshot>
@@ -53,12 +76,14 @@ export interface ContentSources {
   download?(sourceId: string, path: string): Promise<unknown>
   clearCache?(sourceId: string, path: string): Promise<unknown>
   prepareDeletePublication?(sourceId: string, path: string): Promise<unknown>
+  /** Resolve a codec-discovered dependency set to ordered, read-only roots owned by this source. */
+  resolveDependencies?(request: ContentDependencyRequest): Promise<ContentDependencyResolution>
   dispose(): void | Promise<void>
 }
 
 export const CONTENT_SOURCE_METHODS = ['snapshot', 'connect', 'disconnect', 'search', 'add',
   'remove', 'refresh', 'list', 'read', 'preparePublish', 'publish', 'deletionCandidates', 'deletePublication',
-  'download', 'clearCache', 'prepareDeletePublication'] as const
+  'download', 'clearCache', 'prepareDeletePublication', 'resolveDependencies'] as const
 export type ContentSourceMethod = typeof CONTENT_SOURCE_METHODS[number]
 
 /** Validate the small IPC surface before invoking a trusted host-owned provider. */
@@ -109,6 +134,21 @@ export async function callContentSources(
     case 'prepareDeletePublication': {
       if (!source.prepareDeletePublication) throw new Error('Publication deletion is not configured')
       return source.prepareDeletePublication(string(0), path(1))
+    }
+    case 'resolveDependencies': {
+      if (!source.resolveDependencies) throw new Error('Dependency resolution is not configured')
+      const value: unknown = args[0]
+      if (
+        typeof value !== 'object' || value === null || Array.isArray(value) ||
+        (value as { schemaVersion?: unknown }).schemaVersion !== 1 ||
+        typeof (value as { gameId?: unknown }).gameId !== 'string' ||
+        !(value as { gameId: string }).gameId ||
+        (value as { gameId: string }).gameId.length > 256 ||
+        typeof (value as { complete?: unknown }).complete !== 'boolean' ||
+        !Array.isArray((value as { dependencies?: unknown }).dependencies) ||
+        (value as { dependencies: unknown[] }).dependencies.length > 256
+      ) throw new TypeError('Invalid content dependency request')
+      return source.resolveDependencies(value as ContentDependencyRequest)
     }
     case 'list': return source.list(string(0), path(1))
     case 'read': {

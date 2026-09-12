@@ -13,9 +13,27 @@ describe('desktop source IPC boundary', () => {
     await expect(callContentSources(source, 'publish', ['review'])).rejects.toThrow('not configured')
     await expect(callContentSources(source, 'deletePublication', ['review'])).rejects.toThrow('not configured')
     await expect(callContentSources(source, 'preparePublish', ['connection', 'archive', 'manifest'])).rejects.toThrow('not configured')
+    await expect(callContentSources(source, 'resolveDependencies', [{ schemaVersion: 1, gameId: 'test', complete: true, dependencies: [] }])).rejects.toThrow('not configured')
     await expect(callContentSources(source, 'read', ['public:us', 'x', 64 * 1024 * 1024 + 1])).rejects.toThrow('limit')
     await expect(callContentSources(source, 'read', ['public:us', 'x\0', 1])).rejects.toThrow('identifier')
     expect(await callContentSources(source, 'read', ['public:us', 'x', 1])).toEqual(new Uint8Array([1]))
+  })
+  it('forwards a bounded dependency set only to an explicitly configured resolver', async () => {
+    const request = { schemaVersion: 1 as const, gameId: 'example/game', complete: true, dependencies: [] }
+    const configured = {
+      ...source,
+      async resolveDependencies(value: typeof request) {
+        expect(value).toBe(request)
+        return { schemaVersion: 1 as const, gameId: value.gameId, complete: true,
+          mounts: [], dependencies: [], diagnostics: [] }
+      },
+    } as unknown as ContentSources
+    await expect(callContentSources(configured, 'resolveDependencies', [request])).resolves.toMatchObject({
+      schemaVersion: 1, gameId: 'example/game', complete: true,
+    })
+    await expect(callContentSources(configured, 'resolveDependencies', [
+      { ...request, dependencies: new Array(257).fill({}) },
+    ])).rejects.toThrow('Invalid content dependency request')
   })
   it('loads an existing read-only provider without optional mutation methods', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'modkit-source-contract-'))
