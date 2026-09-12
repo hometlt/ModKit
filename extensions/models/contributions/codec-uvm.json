@@ -43,7 +43,7 @@
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "full", "export"],
     "match": {
-      "extensions": ["uvm.glb", "uvm.gltf"],
+      "extensions": ["uvm", "uvm.glb", "uvm.gltf", "glb", "gltf"],
       "mediaTypes": ["model/gltf-binary; profile=uvm-1.0"]
     },
     "probe": {

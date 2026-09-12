@@ -471,64 +471,72 @@ describe('host-owned subject opening pipeline', () => {
     expect(execution.releases()).toBe(2)
   })
 
-  it('opens a real UVM artifact through inventory, ticket, bounded probe and session', async () => {
-    const encoded = (await readFile(uvmFixture, 'utf8')).replace(/\s+/gu, '')
-    const source = byteSource(new Uint8Array(Buffer.from(encoded, 'base64')), 'triangle.uvm.glb')
-    const result = await openSubject({
-      inventory: await bundledInventory(modelsDir),
-      source,
-      path: 'triangle.uvm.glb',
-      mediaType: 'model/gltf-binary; profile=uvm-1.0',
-      intent: 'full',
-      target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
-      grant: { id: 'subject-open', classes: ['read-source'] },
-      budget,
-    })
+  it.each([
+    { fileName: 'triangle.uvm.glb', mediaType: 'model/gltf-binary; profile=uvm-1.0' },
+    { fileName: 'triangle.uvm' },
+  ])(
+    'opens a real UVM artifact named $fileName through inventory, ticket, bounded probe and session',
+    async ({ fileName, mediaType }) => {
+      const encoded = (await readFile(uvmFixture, 'utf8')).replace(/\s+/gu, '')
+      const source = byteSource(new Uint8Array(Buffer.from(encoded, 'base64')), fileName)
+      const result = await openSubject({
+        inventory: await bundledInventory(modelsDir),
+        source,
+        path: fileName,
+        ...(mediaType === undefined ? {} : { mediaType }),
+        intent: 'full',
+        target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+        grant: { id: 'subject-open', classes: ['read-source'] },
+        budget,
+      })
 
-    if (result.state !== 'opened') {
-      throw new TypeError(`unexpected ${result.reason}: ${JSON.stringify(result)}`)
-    }
-    expect(result.state).toBe('opened')
-    expect(result.selected).toEqual({
-      extensionId: 'modkit/models',
-      contributionId: 'modkit/model-uvm',
-      variantId: 'trusted-node',
-      offerId: 'uvm-scene',
-      confidence: 0.995,
-    })
-    expect(result.descriptor).toMatchObject({
-      schemaVersion: 2,
-      interpretation: 'codec',
-      subjectUri: source.ref.uri,
-      revision: source.revision,
-      identity: { codecId: 'modkit/model-uvm', formatId: 'uvm' },
-    })
-    expect(result.candidates).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          contributionId: 'modkit/model-uvm',
-          variantId: 'portable',
-          state: 'rejected',
-        }),
-        expect.objectContaining({
-          contributionId: 'modkit/model-uvm',
-          variantId: 'trusted-node',
-          state: 'selected',
-          confidence: 0.995,
-        }),
-      ]),
-    )
-    expect(parsePolicyLock(result.lockText).entries).toEqual([])
-    expect(parseCodecDetectionSelection(result.detectionSelectionText).selected).toMatchObject({
-      contributionId: 'modkit/model-uvm',
-      variantId: 'trusted-node',
-      offerId: 'uvm-scene',
-    })
-    expect(result.diagnostics).toEqual(
-      expect.arrayContaining([expect.objectContaining({ code: 'x3.host/full-process-authority' })]),
-    )
-    await result.session.dispose()
-  })
+      if (result.state !== 'opened') {
+        throw new TypeError(`unexpected ${result.reason}: ${JSON.stringify(result)}`)
+      }
+      expect(result.state).toBe('opened')
+      expect(result.selected).toEqual({
+        extensionId: 'modkit/models',
+        contributionId: 'modkit/model-uvm',
+        variantId: 'trusted-node',
+        offerId: 'uvm-scene',
+        confidence: 0.995,
+      })
+      expect(result.descriptor).toMatchObject({
+        schemaVersion: 2,
+        interpretation: 'codec',
+        subjectUri: source.ref.uri,
+        revision: source.revision,
+        identity: { codecId: 'modkit/model-uvm', formatId: 'uvm' },
+      })
+      expect(result.candidates).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            contributionId: 'modkit/model-uvm',
+            variantId: 'portable',
+            state: 'rejected',
+          }),
+          expect.objectContaining({
+            contributionId: 'modkit/model-uvm',
+            variantId: 'trusted-node',
+            state: 'selected',
+            confidence: 0.995,
+          }),
+        ]),
+      )
+      expect(parsePolicyLock(result.lockText).entries).toEqual([])
+      expect(parseCodecDetectionSelection(result.detectionSelectionText).selected).toMatchObject({
+        contributionId: 'modkit/model-uvm',
+        variantId: 'trusted-node',
+        offerId: 'uvm-scene',
+      })
+      expect(result.diagnostics).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ code: 'x3.host/full-process-authority' }),
+        ]),
+      )
+      await result.session.dispose()
+    },
+  )
 
   it('returns a validated unresolved descriptor and an explicit text/hex fallback', async () => {
     const source = byteSource(new TextEncoder().encode('plain but unknown\n'), 'unknown.bin')

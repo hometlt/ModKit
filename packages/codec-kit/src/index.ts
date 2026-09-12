@@ -246,6 +246,7 @@ export {
   replaceBytes,
   type EditPlanFromInputOptions,
 } from './editing.js'
+export { applyJsonEdit, type JsonEdit } from './json-edit.js'
 
 export interface DefineWriterOptions {
   readonly providerId: string

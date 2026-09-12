@@ -45,6 +45,10 @@
       "types": "./dist/json-snapshot.d.ts",
       "default": "./dist/json-snapshot.js"
     },
+    "./json-edit": {
+      "types": "./dist/json-edit.d.ts",
+      "default": "./dist/json-edit.js"
+    },
     "./tree/json": {
       "types": "./dist/tree/json-tree.d.ts",
       "default": "./dist/tree/json-tree.js"
