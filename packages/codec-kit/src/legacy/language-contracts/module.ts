@@ -205,6 +205,10 @@ export interface LanguageModule {
     p: lsp.SignatureHelpParams,
     t: lsp.CancellationToken,
   ): Promise<lsp.SignatureHelp | null | undefined>
+  formatting?(
+    p: lsp.DocumentFormattingParams,
+    t: lsp.CancellationToken,
+  ): Promise<lsp.TextEdit[] | null | undefined>
   documentColor?(
     p: lsp.DocumentColorParams,
     t: lsp.CancellationToken,
