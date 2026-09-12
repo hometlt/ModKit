@@ -483,6 +483,7 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
         throw new TypeError('this subject is not editable in this host')
       }
       // ids, not authority: the grant snapshot and the prepared commit never leave this side
+      const issuedPlans = new Map<string, AssetEditPlan>()
       const prepared = new Map<string, Parameters<typeof editing.coordinator.commit>[0]>()
       let sequence = 0
       const arm = {
@@ -509,23 +510,41 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
             throw new TypeError('this subject has no writer, so a change cannot be planned')
           }
           void signal
-          return editing.session.plan(change as ChangeSet)
+          const plan = await editing.session.plan(change as ChangeSet)
+          if (typeof plan.planId !== 'string' || plan.planId.length === 0) {
+            throw new TypeError('the writer returned an edit plan without an identity')
+          }
+          if (issuedPlans.has(plan.planId)) {
+            throw new TypeError('the writer returned a duplicate edit plan identity')
+          }
+          // Keep a distinct structured value even for in-process/test transports that may return
+          // value results without an intervening platform structured-clone boundary.
+          issuedPlans.set(plan.planId, structuredClone(plan))
+          return plan
         },
         prepare: async (
           plan: unknown,
           signal?: AbortSignal,
         ): Promise<SubjectEditingPrepareResult> => {
+          // Preserve the named subject/revision refusal for malformed cross-subject previews.
+          // This validation grants no authority: its bytes are never sent to the coordinator.
+          const clientPreview = editing.planFromOperation({
+            kind: 'edit-plan',
+            plan: plan as AssetEditPlan,
+          })
+          const issued = issuedPlans.get(clientPreview.planId)
+          if (issued === undefined) {
+            throw new TypeError('unknown edit plan (already prepared, or never issued by this arm)')
+          }
+          issuedPlans.delete(clientPreview.planId)
           /*
-           * Every plan that crosses this boundary is validated against *this* subject at *its*
-           * open revision before the coordinator sees it — `planFromOperation` is exactly that
-           * check, and a plan the arm's own `plan()` produced passes it trivially. Without this,
-           * a consumer could hand `prepare` any plan and the refusal came back as a grant-scope
-           * side effect (`permission-missing`) rather than the named
-           * `x3.host/edit-plan-subject-mismatch`.
+           * The client copy is a preview. Only its id comes back as a selector; all executable
+           * bytes and metadata come from the exact writer result retained by this arm. The
+           * subject/revision validation therefore runs over that host-owned plan as well.
            */
           const validated = editing.planFromOperation({
             kind: 'edit-plan',
-            plan: plan as AssetEditPlan,
+            plan: issued,
           })
           const result = await editing.coordinator.prepare(validated, {
             grant: editing.grantSnapshot,
@@ -559,6 +578,7 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
           return { state: result.state, receipt: result.receipt }
         },
         dispose: async (): Promise<void> => {
+          issuedPlans.clear()
           prepared.clear()
           await editing.session?.dispose()
         },

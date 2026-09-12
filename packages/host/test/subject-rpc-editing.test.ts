@@ -171,7 +171,18 @@ describe('editing over the subject RPC (S14)', () => {
     const plan = await arm.plan(change)
     expect(plan.fidelity).toEqual({ roundTrip: 'byte-identical', preservesUnknownData: true })
 
-    const prepared = await arm.prepare(plan)
+    // The plan crossing the RPC boundary is a preview. Changing its payload cannot change the
+    // exact host-owned writer result selected by planId.
+    const tampered = {
+      ...plan,
+      edits: plan.edits.map(edit =>
+        edit.operation === 'replace'
+          ? { ...edit, payload: { kind: 'text' as const, text: 'Injected' } }
+          : edit,
+      ),
+    }
+
+    const prepared = await arm.prepare(tampered)
     expect(prepared.state).toBe('ready')
     if (prepared.state !== 'ready') throw new Error('prepare failed')
     // an id, not a prepared commit: nothing crossing the wire carries authority
@@ -184,6 +195,7 @@ describe('editing over the subject RPC (S14)', () => {
 
     // the id is spent: a replay cannot commit the same prepared write twice
     await expect(arm.commit(prepared.preparedId)).rejects.toThrow(/unknown prepared commit/u)
+    await expect(arm.prepare(plan)).rejects.toThrow(/unknown edit plan/u)
     await arm.dispose()
     await opened.session.dispose()
   }, 60_000)
