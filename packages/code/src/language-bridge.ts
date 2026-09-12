@@ -46,6 +46,10 @@ export interface LanguageBridgeOptions {
   readonly maxResults?: number
   readonly maxDocuments?: number
   readonly subjects?: SubjectCompletionResolver
+  /** Characters that ask Monaco to request the provider's signature help automatically. */
+  readonly signatureHelpTriggerCharacters?: readonly string[]
+  /** Trigger characters used while an existing signature-help popup is active. */
+  readonly signatureHelpRetriggerCharacters?: readonly string[]
   /**
    * Monaco language ids to register under, when they differ from the ones the provider declares.
    *
@@ -86,6 +90,11 @@ export interface LanguageBridgeOptions {
    */
   readonly includePrimaryInWorkspace?: boolean
   /**
+   * Whether the supplied workspace snapshot is partial. Defaults to `true`, so rename and other
+   * complete-snapshot operations refuse until the embedding host explicitly proves completeness.
+   */
+  readonly workspaceIncomplete?: boolean | (() => boolean)
+  /**
    * Neighbouring documents to put in the workspace snapshot with every request.
    *
    * The contract has always carried this and no host ever filled it, which quietly capped what the
@@ -115,6 +124,13 @@ function toMonacoRange(range: LanguageRange): monaco.IRange {
     startColumn: range.start.character + 1,
     endLineNumber: range.end.line + 1,
     endColumn: range.end.character + 1,
+  }
+}
+
+function toMonacoLocation(location: { readonly uri: string; readonly range: LanguageRange }) {
+  return {
+    uri: monaco.Uri.parse(location.uri),
+    range: toMonacoRange(location.range),
   }
 }
 
@@ -194,7 +210,10 @@ export function bridgeLanguageProvider(
       document,
       workspaceDocuments:
         options.includePrimaryInWorkspace === true ? [document, ...neighbours] : neighbours,
-      workspaceIncomplete: true,
+      workspaceIncomplete:
+        typeof options.workspaceIncomplete === 'function'
+          ? options.workspaceIncomplete()
+          : (options.workspaceIncomplete ?? true),
       maxResults,
       // A cap below the snapshot size would make the provider ignore documents the host chose to
       // send, which reads as a missing neighbour rather than a deliberate limit.
@@ -368,10 +387,150 @@ export function bridgeLanguageProvider(
             ...request(model, token),
             position: { line: position.lineNumber - 1, character: position.column - 1 },
           })
-          return list.locations.map((location): monaco.languages.Location => ({
-            uri: monaco.Uri.parse(location.uri),
-            range: toMonacoRange(location.range),
+          return list.locations.map(toMonacoLocation)
+        },
+      }),
+    )
+  }
+
+  if (provider.references !== undefined) {
+    const references = provider.references.bind(provider)
+    disposables.push(
+      monaco.languages.registerReferenceProvider(selector, {
+        async provideReferences(model, position, context, token) {
+          if (!claims(model)) return []
+          const list = await references({
+            ...request(model, token),
+            position: { line: position.lineNumber - 1, character: position.column - 1 },
+            includeDeclaration: context.includeDeclaration,
+          })
+          return list.locations.map(toMonacoLocation)
+        },
+      }),
+    )
+  }
+
+  if (provider.rename !== undefined) {
+    const rename = provider.rename.bind(provider)
+    const prepareRename = provider.prepareRename?.bind(provider)
+    disposables.push(
+      monaco.languages.registerRenameProvider(selector, {
+        async provideRenameEdits(model, position, newName, token) {
+          if (!claims(model)) return { edits: [], rejectReason: 'Document is not claimed' }
+          const edit = await rename({
+            ...request(model, token),
+            position: { line: position.lineNumber - 1, character: position.column - 1 },
+            newName,
+            maxEdits: maxResults,
+          })
+          if (edit === undefined) {
+            return { edits: [], rejectReason: 'Rename is unavailable for this workspace snapshot' }
+          }
+          return {
+            edits: edit.documentChanges.flatMap(change =>
+              change.edits.map(item => ({
+                resource: monaco.Uri.parse(change.uri),
+                versionId: change.documentVersion,
+                textEdit: { range: toMonacoRange(item.range), text: item.newText },
+              })),
+            ),
+          }
+        },
+        ...(prepareRename === undefined
+          ? {}
+          : {
+              async resolveRenameLocation(model, position, token) {
+                if (!claims(model)) {
+                  return {
+                    range: new monaco.Range(
+                      position.lineNumber,
+                      position.column,
+                      position.lineNumber,
+                      position.column,
+                    ),
+                    text: '',
+                    rejectReason: 'Document is not claimed',
+                  }
+                }
+                const prepared = await prepareRename({
+                  ...request(model, token),
+                  position: { line: position.lineNumber - 1, character: position.column - 1 },
+                })
+                if (prepared === undefined) {
+                  return {
+                    range: new monaco.Range(
+                      position.lineNumber,
+                      position.column,
+                      position.lineNumber,
+                      position.column,
+                    ),
+                    text: '',
+                    rejectReason: 'Rename is unavailable at this position',
+                  }
+                }
+                return { range: toMonacoRange(prepared.range), text: prepared.placeholder }
+              },
+            }),
+      }),
+    )
+  }
+
+  if (provider.formatting !== undefined) {
+    const formatting = provider.formatting.bind(provider)
+    disposables.push(
+      monaco.languages.registerDocumentFormattingEditProvider(selector, {
+        async provideDocumentFormattingEdits(model, formattingOptions, token) {
+          if (!claims(model)) return []
+          const list = await formatting({
+            ...request(model, token),
+            options: {
+              tabSize: formattingOptions.tabSize,
+              insertSpaces: formattingOptions.insertSpaces,
+            },
+          })
+          return list.edits.map(item => ({
+            range: toMonacoRange(item.range),
+            text: item.newText,
           }))
+        },
+      }),
+    )
+  }
+
+  if (provider.signatureHelp !== undefined) {
+    const signatureHelp = provider.signatureHelp.bind(provider)
+    disposables.push(
+      monaco.languages.registerSignatureHelpProvider(selector, {
+        signatureHelpTriggerCharacters: [...(options.signatureHelpTriggerCharacters ?? ['(', ','])],
+        signatureHelpRetriggerCharacters: [
+          ...(options.signatureHelpRetriggerCharacters ?? [',']),
+        ],
+        async provideSignatureHelp(model, position, token) {
+          if (!claims(model)) return undefined
+          const result = await signatureHelp({
+            ...request(model, token),
+            position: { line: position.lineNumber - 1, character: position.column - 1 },
+          })
+          if (result === undefined) return undefined
+          return {
+            value: {
+              signatures: result.signatures.map(signature => ({
+                label: signature.label,
+                ...(signature.documentation === undefined
+                  ? {}
+                  : { documentation: signature.documentation }),
+                parameters: signature.parameters.map(parameter => ({
+                  label: parameter.label,
+                  ...(parameter.documentation === undefined
+                    ? {}
+                    : { documentation: parameter.documentation }),
+                })),
+              })),
+              activeSignature: result.activeSignature,
+              activeParameter: result.activeParameter,
+            },
+            dispose() {},
+          }
         },
       }),
     )
