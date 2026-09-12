@@ -56,6 +56,10 @@ describe('read-only content dependency workspace', () => {
       expect(prepared.workspace.loadOrder.map(root => root.displayName)).toEqual(['Base', 'Override'])
       expect(prepared.workspace.logicalRoots?.map(root => root.displayName)).toEqual(['Override', 'Base'])
       expect(prepared.workspace.activeRootId).toBe('content-dependency:override')
+      expect(prepared.workspace.loadOrder.map(root => root.sourcePath)).toEqual([
+        'content-dependencies/0', 'content-dependencies/1',
+      ])
+      expect(JSON.stringify(prepared.workspace)).not.toContain('cache/base')
       const units = await prepared.resources.resolve({
         id: 'units', logicalId: 'content-dependencies/1/Base.SC2Data/GameData/Units.xml', role: 'buffer',
         scopes: ['workspace-dependency-layer'],
