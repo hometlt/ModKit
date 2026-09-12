@@ -20,7 +20,7 @@ import {
   createLanguageWorkspace,
   type LanguageHostServices,
   type LanguageWorkspaceDocumentRequest,
-} from '@modkit/host/language'
+} from '../src/language/index.js'
 
 const REALM = 'org.modkit.test/subject-completion-host'
 const DOCUMENT_URI = 'file:///workspace/fixture.lang'
@@ -62,12 +62,15 @@ const analysisFor = (document: LanguageDocument): LanguageAnalysis => ({
   symbols: [],
 })
 
+let observedWorkspaceIncomplete: boolean | undefined
+
 const provider: LanguageProvider = {
   contract: LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
   languageIds: ['fixture-language'],
   analyze: request => Promise.resolve(analysisFor(request.document)),
-  completion: () =>
-    Promise.resolve({
+  completion: request => {
+    observedWorkspaceIncomplete = request.workspaceIncomplete
+    return Promise.resolve({
       items: [
         {
           label: 'expanded',
@@ -86,7 +89,8 @@ const provider: LanguageProvider = {
         },
       ],
       isIncomplete: false,
-    }),
+    })
+  },
 }
 
 const fixture = defineLinkedExtension({
@@ -188,12 +192,16 @@ const candidateProvider: SubjectCandidateProvider = {
   }),
 }
 
-async function openWorkspace(subjectCandidates: SubjectCandidateProviderSource) {
+async function openWorkspace(
+  subjectCandidates: SubjectCandidateProviderSource,
+  workspaceIncomplete: boolean | (() => boolean) = false,
+) {
   const workspace = createLanguageWorkspace({
     services,
     grant: { id: 'subject-completion-test', classes: [] },
     budgets,
     subjectCandidates,
+    workspaceIncomplete,
   })
   await workspace.initialize()
   const opened = await workspace.open(languageRequest(1))
@@ -244,6 +252,20 @@ const completionRequest = () => ({
 })
 
 describe('language subject completion lifecycle', () => {
+  it('marks a caller-bounded workspace incomplete even when every open document fits', async () => {
+    observedWorkspaceIncomplete = undefined
+    const workspace = await openWorkspace(
+      { open: async () => ({ value: candidateProvider, release: async () => undefined }) },
+      true,
+    )
+    try {
+      await workspace.completion(completionRequest())
+      expect(observedWorkspaceIncomplete).toBe(true)
+    } finally {
+      await workspace.shutdown()
+    }
+  })
+
   it('expands through a URI-scoped provider and releases its request lease', async () => {
     let releases = 0
     const workspace = await openWorkspace({

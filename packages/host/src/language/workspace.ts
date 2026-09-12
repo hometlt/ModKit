@@ -207,6 +207,8 @@ export interface LanguageWorkspaceOptions {
   readonly budgets: ResourceBudget
   /** URI-scoped selector source shared with subject-ref field editors. */
   readonly subjectCandidates?: SubjectCandidateProviderSource
+  /** True when the caller knows that documents outside this bounded workspace are omitted. */
+  readonly workspaceIncomplete?: boolean | (() => boolean)
 }
 
 export interface LanguageWorkspaceDocumentRequest extends LanguageProviderRequestFacet {
@@ -1097,7 +1099,11 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     const providerRequest = Object.freeze({
       document: entry.document,
       workspaceDocuments: Object.freeze(selected.map(candidate => candidate.document)),
-      workspaceIncomplete: candidates.length > selected.length,
+      workspaceIncomplete:
+        candidates.length > selected.length ||
+        (typeof options.workspaceIncomplete === 'function'
+          ? options.workspaceIncomplete()
+          : options.workspaceIncomplete === true),
       maxResults,
       maxDocuments,
       ...additions,
