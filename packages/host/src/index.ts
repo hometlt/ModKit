@@ -155,6 +155,13 @@ export {
   type WorkspaceNamespaceLogicalRoot,
 } from './namespace-origin.js'
 export {
+  analyzeOperationContentDependencies,
+  readOperationContentDependencies,
+  type AnalyzeOperationContentDependenciesRequest,
+  type ReadOperationContentDependenciesRequest,
+  type ReadOperationContentDependenciesResult,
+} from './content-dependency-operations.js'
+export {
   createBundledServiceDefinitionRegistry,
   createSubjectServices,
   registerServiceDefinitionsOrThrow,
