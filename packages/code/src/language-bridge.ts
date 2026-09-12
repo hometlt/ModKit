@@ -311,6 +311,50 @@ export function bridgeLanguageProvider(
     )
   }
 
+  if (provider.documentColors !== undefined && provider.colorPresentations !== undefined) {
+    const documentColors = provider.documentColors.bind(provider)
+    const colorPresentations = provider.colorPresentations.bind(provider)
+    disposables.push(
+      monaco.languages.registerColorProvider(selector, {
+        async provideDocumentColors(model, token) {
+          if (!claims(model)) return []
+          const list = await documentColors(request(model, token))
+          return list.colors.map(item => ({
+            range: toMonacoRange(item.range),
+            color: item.color,
+          }))
+        },
+        async provideColorPresentations(model, colorInfo, token) {
+          if (!claims(model)) return []
+          const list = await colorPresentations({
+            ...request(model, token),
+            color: colorInfo.color,
+            range: {
+              start: {
+                line: colorInfo.range.startLineNumber - 1,
+                character: colorInfo.range.startColumn - 1,
+              },
+              end: {
+                line: colorInfo.range.endLineNumber - 1,
+                character: colorInfo.range.endColumn - 1,
+              },
+            },
+          })
+          return list.presentations.map(item => ({
+            label: item.label,
+            ...(item.textEdit === undefined
+              ? {}
+              : {
+                  textEdit: {
+                    range: toMonacoRange(item.textEdit.range),
+                    text: item.textEdit.newText,
+                  },
+                }),
+          }))
+        },
+      }),
+    )
+  }
   if (provider.definition !== undefined) {
     const definition = provider.definition.bind(provider)
     disposables.push(

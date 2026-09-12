@@ -4466,6 +4466,69 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           }
         },
       }),
+      vscode.languages.registerColorProvider(languageSelector, {
+        async provideDocumentColors(document, token) {
+          const cancellation = signalFor(token)
+          try {
+            const result = await languageController.documentColors(
+              languageDocument(document),
+              cancellation.signal,
+            )
+            return result?.colors.map(
+              item =>
+                new vscode.ColorInformation(
+                  rangeOf(item.range),
+                  new vscode.Color(
+                    item.color.red,
+                    item.color.green,
+                    item.color.blue,
+                    item.color.alpha,
+                  ),
+                ),
+            )
+          } catch (error) {
+            if (token.isCancellationRequested) return undefined
+            log(
+              `[language] document colours failed: ${error instanceof Error ? error.message : String(error)}`,
+            )
+            return undefined
+          } finally {
+            cancellation.dispose()
+          }
+        },
+        async provideColorPresentations(color, context, token) {
+          const cancellation = signalFor(token)
+          try {
+            const result = await languageController.colorPresentations(
+              languageDocument(context.document),
+              { red: color.red, green: color.green, blue: color.blue, alpha: color.alpha },
+              {
+                start: { line: context.range.start.line, character: context.range.start.character },
+                end: { line: context.range.end.line, character: context.range.end.character },
+              },
+              cancellation.signal,
+            )
+            return result?.presentations.map(item => {
+              const presentation = new vscode.ColorPresentation(item.label)
+              if (item.textEdit !== undefined) {
+                presentation.textEdit = vscode.TextEdit.replace(
+                  rangeOf(item.textEdit.range),
+                  item.textEdit.newText,
+                )
+              }
+              return presentation
+            })
+          } catch (error) {
+            if (token.isCancellationRequested) return undefined
+            log(
+              `[language] colour presentation failed: ${error instanceof Error ? error.message : String(error)}`,
+            )
+            return undefined
+          } finally {
+            cancellation.dispose()
+          }
+        },
+      }),
       vscode.languages.registerCompletionItemProvider(languageSelector, {
         async provideCompletionItems(document, position, token) {
           const cancellation = signalFor(token)

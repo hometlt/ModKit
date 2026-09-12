@@ -19,6 +19,9 @@ import {
   LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
   type LanguageAnalysis,
   type LanguageAnalysisRequest,
+  type LanguageColor,
+  type LanguageColorList,
+  type LanguageColorPresentationList,
   type LanguageCompletionList,
   type LanguageProviderCompletionList,
   type LanguageDiagnosticList,
@@ -250,6 +253,11 @@ export interface LanguageWorkspaceFormattingRequest extends LanguageWorkspaceFea
   readonly options: LanguageFormattingOptions
 }
 
+export interface LanguageWorkspaceColorPresentationRequest extends LanguageWorkspaceFeatureRequest {
+  readonly color: LanguageColor
+  readonly range: LanguageRange
+}
+
 export interface LanguageWorkspaceSymbolsRequest extends LanguageWorkspaceFeatureRequest {
   readonly query: string
 }
@@ -272,6 +280,10 @@ export interface LanguageWorkspace {
   ): Promise<LanguageRenamePreparation | undefined>
   rename(request: LanguageWorkspaceRenameRequest): Promise<LanguageWorkspaceEdit | undefined>
   formatting(request: LanguageWorkspaceFormattingRequest): Promise<LanguageTextEditList | undefined>
+  documentColors(request: LanguageWorkspaceFeatureRequest): Promise<LanguageColorList | undefined>
+  colorPresentations(
+    request: LanguageWorkspaceColorPresentationRequest,
+  ): Promise<LanguageColorPresentationList | undefined>
   documentSymbols(
     request: LanguageWorkspaceFeatureRequest,
   ): Promise<LanguageDocumentSymbolList | undefined>
@@ -844,6 +856,56 @@ function validateDiagnosticList(
   return list
 }
 
+function validColor(value: LanguageColor | undefined): boolean {
+  return (
+    value !== undefined &&
+    [value.red, value.green, value.blue, value.alpha].every(
+      channel => typeof channel === 'number' && Number.isFinite(channel) && channel >= 0 && channel <= 1,
+    )
+  )
+}
+
+function validateColorList(value: unknown, request: LanguageFeatureRequest): LanguageColorList {
+  const list = value as LanguageColorList
+  const lengths = lineLengths(request.document.text)
+  if (
+    typeof list !== 'object' ||
+    list === null ||
+    !Array.isArray(list.colors) ||
+    list.colors.length > request.maxResults ||
+    typeof list.isIncomplete !== 'boolean' ||
+    !list.colors.every(item => validRange(item.range, lengths) && validColor(item.color))
+  ) {
+    invalidFeature('language provider returned invalid or unbounded document colours', request.document.uri)
+  }
+  return list
+}
+
+function validateColorPresentations(
+  value: unknown,
+  request: LanguageFeatureRequest,
+): LanguageColorPresentationList {
+  const list = value as LanguageColorPresentationList
+  const lengths = lineLengths(request.document.text)
+  if (
+    typeof list !== 'object' ||
+    list === null ||
+    !Array.isArray(list.presentations) ||
+    list.presentations.length > request.maxResults ||
+    typeof list.isIncomplete !== 'boolean' ||
+    !list.presentations.every(
+      item =>
+        typeof item.label === 'string' &&
+        item.label.length > 0 &&
+        (item.textEdit === undefined ||
+          (typeof item.textEdit.newText === 'string' && validRange(item.textEdit.range, lengths))),
+    )
+  ) {
+    invalidFeature('language provider returned invalid or unbounded colour presentations', request.document.uri)
+  }
+  return list
+}
+
 function validateAnalysis(value: unknown, document: LanguageDocument): LanguageAnalysis {
   const lengths = lineLengths(document.text)
   let valid = false
@@ -1399,11 +1461,12 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     rename(request: LanguageWorkspaceRenameRequest): Promise<LanguageWorkspaceEdit | undefined> {
       if (
         typeof request.newName !== 'string' ||
+        request.newName.length === 0 ||
         request.newName.length > 256 ||
-        !/^[A-Za-z_]\w*$/u.test(request.newName)
+        /[\u0000-\u001f\u007f]/u.test(request.newName)
       ) {
         return Promise.reject(
-          workspaceError(LANGUAGE_FEATURE_INVALID, 'rename needs a valid language identifier', {
+          workspaceError(LANGUAGE_FEATURE_INVALID, 'rename needs a non-empty bounded name without control characters', {
             uri: request.uri,
           }),
         )
@@ -1461,6 +1524,42 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         (provider, feature) => provider.formatting?.({ ...feature, options: providerOptions }),
         validateTextEditList,
         { options: providerOptions },
+      )
+    },
+
+    documentColors(request: LanguageWorkspaceFeatureRequest): Promise<LanguageColorList | undefined> {
+      return invokeFeature(
+        request,
+        false,
+        (provider, feature) => provider.documentColors?.(feature),
+        validateColorList,
+      )
+    },
+
+    colorPresentations(
+      request: LanguageWorkspaceColorPresentationRequest,
+    ): Promise<LanguageColorPresentationList | undefined> {
+      const entry = requireFeatureEntry(request, false)
+      if (!validColor(request.color) || !validRange(request.range, lineLengths(entry.document.text))) {
+        return Promise.reject(
+          workspaceError(
+            LANGUAGE_FEATURE_INVALID,
+            'colour presentation needs normalized RGBA channels and a valid document range',
+            { uri: request.uri },
+          ),
+        )
+      }
+      const color = Object.freeze({ ...request.color })
+      const range = Object.freeze({
+        start: Object.freeze({ ...request.range.start }),
+        end: Object.freeze({ ...request.range.end }),
+      })
+      return invokeFeature(
+        request,
+        false,
+        (provider, feature) => provider.colorPresentations?.({ ...feature, color, range }),
+        validateColorPresentations,
+        { color, range },
       )
     },
 

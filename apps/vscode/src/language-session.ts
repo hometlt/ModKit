@@ -14,6 +14,9 @@ import {
   type Diagnostic,
 } from '@modkit/core'
 import type {
+  LanguageColor,
+  LanguageColorList,
+  LanguageColorPresentationList,
   LanguageDiagnostic,
   LanguageDiagnosticList,
   LanguageCompletionList,
@@ -166,6 +169,16 @@ export interface LanguageSessionController {
     formatting: LanguageFormattingOptions,
     signal?: AbortSignal,
   ): Promise<LanguageTextEditList | undefined>
+  documentColors(
+    document: EditorLanguageDocument,
+    signal?: AbortSignal,
+  ): Promise<LanguageColorList | undefined>
+  colorPresentations(
+    document: EditorLanguageDocument,
+    color: LanguageColor,
+    range: LanguageRange,
+    signal?: AbortSignal,
+  ): Promise<LanguageColorPresentationList | undefined>
   workspaceSymbols(
     query: string,
     signal?: AbortSignal,
@@ -719,6 +732,40 @@ export function createLanguageSessionController(
         uri: document.uri,
         documentVersion: document.version,
         options: formatting,
+        maxResults: EDITOR_MAX_RESULTS,
+        maxDocuments: EDITOR_MAX_DOCUMENTS,
+        ...(signal === undefined ? {} : { signal }),
+      })
+    },
+
+    async documentColors(
+      document: EditorLanguageDocument,
+      signal?: AbortSignal,
+    ): Promise<LanguageColorList | undefined> {
+      const result = await ensure(document, signal)
+      if (result === undefined) return undefined
+      return options.workspace.documentColors({
+        uri: document.uri,
+        documentVersion: document.version,
+        maxResults: EDITOR_MAX_RESULTS,
+        maxDocuments: EDITOR_MAX_DOCUMENTS,
+        ...(signal === undefined ? {} : { signal }),
+      })
+    },
+
+    async colorPresentations(
+      document: EditorLanguageDocument,
+      color: LanguageColor,
+      range: LanguageRange,
+      signal?: AbortSignal,
+    ): Promise<LanguageColorPresentationList | undefined> {
+      const result = await ensure(document, signal)
+      if (result === undefined) return undefined
+      return options.workspace.colorPresentations({
+        uri: document.uri,
+        documentVersion: document.version,
+        color,
+        range,
         maxResults: EDITOR_MAX_RESULTS,
         maxDocuments: EDITOR_MAX_DOCUMENTS,
         ...(signal === undefined ? {} : { signal }),

@@ -111,6 +111,12 @@ function fakeWorkspace(
     async formatting() {
       return undefined
     },
+    async documentColors() {
+      return undefined
+    },
+    async colorPresentations() {
+      return undefined
+    },
     async documentSymbols() {
       return undefined
     },
@@ -135,6 +141,50 @@ afterEach(() => {
 })
 
 describe('VS Code-free language session controller', () => {
+  it('forwards document colours and presentations through the neutral workspace', async () => {
+    const workspace = fakeWorkspace()
+    const colors = vi.spyOn(workspace, 'documentColors').mockResolvedValue({
+      colors: [
+        {
+          range: { start: { line: 0, character: 0 }, end: { line: 0, character: 6 } },
+          color: { red: 1, green: 0.5, blue: 0, alpha: 1 },
+        },
+      ],
+      isIncomplete: false,
+    })
+    const presentations = vi.spyOn(workspace, 'colorPresentations').mockResolvedValue({
+      presentations: [{ label: 'FF8000' }],
+      isIncomplete: false,
+    })
+    const controller = createLanguageSessionController({
+      workspace,
+      routes: [ROUTE],
+      debounceMs: 0,
+      publishDiagnostics: () => undefined,
+    })
+    const document = editorDocument(1, 'FF8000')
+    await controller.initialize()
+    controller.open(document)
+    await expect(controller.documentColors(document)).resolves.toMatchObject({
+      colors: [expect.objectContaining({ color: { red: 1, green: 0.5, blue: 0, alpha: 1 } })],
+    })
+    await expect(
+      controller.colorPresentations(
+        document,
+        { red: 1, green: 0.5, blue: 0, alpha: 1 },
+        { start: { line: 0, character: 0 }, end: { line: 0, character: 6 } },
+      ),
+    ).resolves.toMatchObject({ presentations: [{ label: 'FF8000' }] })
+    expect(colors).toHaveBeenCalledWith(expect.objectContaining({ documentVersion: 1 }))
+    expect(presentations).toHaveBeenCalledWith(
+      expect.objectContaining({
+        color: { red: 1, green: 0.5, blue: 0, alpha: 1 },
+        range: { start: { line: 0, character: 0 }, end: { line: 0, character: 6 } },
+      }),
+    )
+    await controller.shutdown()
+  })
+
   it('debounces and coalesces full snapshots by URI and version', async () => {
     vi.useFakeTimers()
     const workspace = fakeWorkspace()

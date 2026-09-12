@@ -152,6 +152,35 @@ export interface LanguageHover {
   readonly provenance?: string
 }
 
+/** RGBA channels in the normalized 0..1 range used by editor colour APIs. */
+export interface LanguageColor {
+  readonly red: number
+  readonly green: number
+  readonly blue: number
+  readonly alpha: number
+}
+
+export interface LanguageColorInformation {
+  readonly range: LanguageRange
+  readonly color: LanguageColor
+}
+
+export interface LanguageColorList {
+  readonly colors: readonly LanguageColorInformation[]
+  readonly isIncomplete: boolean
+}
+
+export interface LanguageColorPresentation {
+  readonly label: string
+  /** Optional exact replacement for `range`; omission lets the editor insert `label`. */
+  readonly textEdit?: LanguageTextEdit
+}
+
+export interface LanguageColorPresentationList {
+  readonly presentations: readonly LanguageColorPresentation[]
+  readonly isIncomplete: boolean
+}
+
 export interface LanguageSignatureParameter {
   readonly label: string
   readonly documentation?: string
@@ -268,6 +297,11 @@ export interface LanguageFormattingRequest extends LanguageFeatureRequest {
   readonly options: LanguageFormattingOptions
 }
 
+export interface LanguageColorPresentationRequest extends LanguageFeatureRequest {
+  readonly color: LanguageColor
+  readonly range: LanguageRange
+}
+
 /** Activated provider surface. It is deliberately independent of any LSP transport package. */
 export interface LanguageProvider {
   readonly contract: typeof LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT
@@ -290,6 +324,10 @@ export interface LanguageProvider {
   prepareRename?(request: LanguagePositionRequest): Promise<LanguageRenamePreparation | undefined>
   rename?(request: LanguageRenameRequest): Promise<LanguageWorkspaceEdit | undefined>
   formatting?(request: LanguageFormattingRequest): Promise<LanguageTextEditList>
+  documentColors?(request: LanguageFeatureRequest): Promise<LanguageColorList>
+  colorPresentations?(
+    request: LanguageColorPresentationRequest,
+  ): Promise<LanguageColorPresentationList>
   documentSymbols?(request: LanguageFeatureRequest): Promise<LanguageDocumentSymbolList>
   workspaceSymbols?(request: LanguageWorkspaceSymbolsRequest): Promise<LanguageWorkspaceSymbolList>
   diagnostics?(request: LanguageFeatureRequest): Promise<LanguageDiagnosticList>
