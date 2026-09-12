@@ -14,7 +14,7 @@ import {
   type VfsNode,
   type VfsProvider,
 } from '@modkit/vfs'
-import { createFileVfsProvider } from '@modkit/vfs/providers/file'
+import { createFileVfsProvider, fileSystemRevisionToken } from '@modkit/vfs/providers/file'
 import { createBrowserFileVfsProvider } from '@modkit/vfs/providers/browser-file'
 import { createHttpVfsProvider, type HttpFetch } from '@modkit/vfs/providers/http'
 import { createMemoryVfsProvider } from '@modkit/vfs/providers/memory'
@@ -90,6 +90,20 @@ describe('provider-neutral VFS core', () => {
 })
 
 describe('file VFS provider', () => {
+  it('uses one exact stable revision token for mounts and later conflict checks', async () => {
+    const temporary = await mkdtemp(join(tmpdir(), 'modkit-x3-vfs-revision-'))
+    temporaryRoots.push(temporary)
+    await writeFile(join(temporary, 'entry.bin'), new Uint8Array([1, 2, 3]))
+    const provider = createFileVfsProvider()
+    const mount = await provider.open(pathToFileURL(temporary).href, {
+      limits: DEFAULT_VFS_LIMITS,
+    })
+    const first = await fileSystemRevisionToken(temporary)
+    expect(first).toBe(mount.revision)
+    expect(await fileSystemRevisionToken(temporary)).toBe(first)
+    await mount.dispose()
+  })
+
   it('opens a temporary directory through the product provider and refuses root escape', async () => {
     const temporary = await mkdtemp(join(tmpdir(), 'modkit-x3-vfs-'))
     temporaryRoots.push(temporary)

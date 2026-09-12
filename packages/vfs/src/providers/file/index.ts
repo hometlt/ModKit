@@ -1,3 +1,4 @@
+import type { BigIntStats } from 'node:fs'
 import { open, readdir, realpath, stat } from 'node:fs/promises'
 import { isAbsolute, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
@@ -29,12 +30,12 @@ interface FileSnapshot {
   readonly mtimeNs: bigint
 }
 
-function snapshotOf(info: Awaited<ReturnType<typeof stat>>): FileSnapshot {
+function snapshotOf(info: BigIntStats): FileSnapshot {
   return {
-    dev: BigInt(info.dev),
-    ino: BigInt(info.ino),
-    size: BigInt(info.size),
-    mtimeNs: BigInt(Math.trunc(Number(info.mtimeMs) * 1_000_000)),
+    dev: info.dev,
+    ino: info.ino,
+    size: info.size,
+    mtimeNs: info.mtimeNs,
   }
 }
 
@@ -103,7 +104,7 @@ class FileRandomAccessSource implements RandomAccessSource {
     assertReadRangeLimit(this.id, length, this.limits)
     const reservation = this.readBudget.reserve(length, this.id)
     try {
-      const current = snapshotOf(await stat(this.path))
+      const current = snapshotOf(await stat(this.path, { bigint: true }))
       if (!sameSnapshot(this.snapshot, current)) {
         throw new ModkitError({
           code: 'x3.vfs/file-revision-changed',
@@ -209,7 +210,7 @@ class FileMount implements VfsMount {
     this.assertLive()
     const resolved = await this.resolvePath(path, false)
     if (resolved === undefined) return undefined
-    const info = await stat(resolved)
+    const info = await stat(resolved, { bigint: true })
     const snapshot = snapshotOf(info)
     if (info.isFile() && snapshot.size > this.limits.maxFileBytes)
       throw fileSizeLimitError(path, snapshot.size, this.limits.maxFileBytes)
@@ -227,7 +228,7 @@ class FileMount implements VfsMount {
     throwIfAborted(signal)
     this.assertLive()
     const directory = await this.resolvePath(path, true)
-    const info = await stat(directory)
+    const info = await stat(directory, { bigint: true })
     if (!info.isDirectory()) {
       throw new ModkitError({
         code: 'x3.vfs/not-a-directory',
@@ -249,7 +250,7 @@ class FileMount implements VfsMount {
       throwIfAborted(signal)
       const child = normalizedParent === '' ? entry.name : `${normalizedParent}/${entry.name}`
       const resolved = await this.resolvePath(child, true)
-      const childInfo = await stat(resolved)
+      const childInfo = await stat(resolved, { bigint: true })
       const snapshot = snapshotOf(childInfo)
       if (childInfo.isFile() && snapshot.size > this.limits.maxFileBytes)
         throw fileSizeLimitError(child, snapshot.size, this.limits.maxFileBytes)
@@ -270,7 +271,7 @@ class FileMount implements VfsMount {
     throwIfAborted(signal)
     this.assertLive()
     const resolved = await this.resolvePath(path, true)
-    const info = await stat(resolved)
+    const info = await stat(resolved, { bigint: true })
     if (!info.isFile()) {
       throw new ModkitError({
         code: 'x3.vfs/not-a-file',
@@ -370,7 +371,7 @@ export class FileVfsProvider implements VfsProvider {
         cause,
       })
     }
-    const info = await stat(rootPath)
+    const info = await stat(rootPath, { bigint: true })
     if (!info.isFile() && !info.isDirectory()) {
       throw new ModkitError({
         code: 'x3.vfs/file-root-type-refused',
@@ -396,19 +397,13 @@ export function createFileVfsProvider(options: FileVfsProviderOptions = {}): Fil
  * A namespace subject's revision comes from a mount, and whoever later re-reads that revision to
  * check for a conflict has to compute it *the same way* — otherwise the check compares two
  * spellings of the same state and reports a conflict that never happened. Block 12 slice 12-3 hit
- * exactly that: the host's file editing backend read `stat(..., { bigint: true })` while this
- * provider reads plain `stat`, and on Windows, where inode indices exceed 2^53, the two disagreed
- * on every directory. Exporting the minting function makes the agreement structural instead of a
- * formula copied into a second file and left to drift.
- *
- * Note for whoever owns precision here: `snapshotOf` loses bits by design of the plain `stat` path
- * (`ino` through `Number`, `mtimeNs` through `mtimeMs * 1e6`). Two genuinely different states can
- * therefore share a token, which understates conflicts. Widening it is a separate change — it
- * moves every mount revision string — and is deliberately not done here.
+ * exactly that when the host and VFS used different stat precision. All file-provider snapshots
+ * now use Node's bigint stats, including the native `mtimeNs`, so an unchanged path has one stable
+ * token and no inode or timestamp bits are rounded away on Windows.
  */
 export async function fileSystemRevisionToken(path: string): Promise<string> {
   try {
-    return fileRevision(snapshotOf(await stat(path)))
+    return fileRevision(snapshotOf(await stat(path, { bigint: true })))
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return 'provider-token:absent'
     throw error
