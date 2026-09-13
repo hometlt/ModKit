@@ -251,6 +251,33 @@ describe('game-neutral data catalog resolution', () => {
     ])
   })
 
+  it('optionally tracks the winning source of patched and inherited top-level fields', () => {
+    const snapshot = resolveDataCatalog({
+      workspaceId: 'field-provenance',
+      gameId: 'example/game',
+      analyzerId: 'example/analyzer',
+      schemas,
+      patches: [
+        patch('Infantry', 0, { Life: 40, Tags: ['biological'] }),
+        patch('Infantry', 1, { Tags: ['armored'] }),
+        patch('Marine', 2, { Abilities: [{ slot: '0', value: 'move' }] }, 'Infantry'),
+        patch('Marine', 3, { Abilities: [{ slot: '0', value: 'attack' }] }),
+      ],
+      queries: [{ namespace: 'Unit', entityId: 'Marine' }],
+      includeWorkspaceFacets: true,
+      includeFieldSources: true,
+      maxEntities: 16,
+      maxDepth: 8,
+    })
+
+    expect(snapshot.entities[0]?.fieldSources).toEqual({
+      Life: expect.objectContaining({ documentIndex: 0 }),
+      Tags: expect.objectContaining({ documentIndex: 1 }),
+      Abilities: expect.objectContaining({ documentIndex: 3 }),
+    })
+    expect(Object.isFrozen(snapshot.entities[0]?.fieldSources)).toBe(true)
+  })
+
   it('keeps exact numeric and named selectors in indexed typed-link relation paths', () => {
     const source = { rootId: 'workspace', path: 'UnitData.xml', documentIndex: 0 }
     const snapshot = resolveDataCatalog({

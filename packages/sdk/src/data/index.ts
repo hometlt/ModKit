@@ -148,6 +148,8 @@ export interface DataResolvedEntity {
   /** Root parent first and the queried entity last. */
   readonly inheritanceChain: readonly DataEntityRef[]
   readonly fields: Readonly<Record<string, JsonValue>>
+  /** Winning source for each resolved top-level field, including inherited fields when requested. */
+  readonly fieldSources?: Readonly<Record<string, DataEntitySource>>
   readonly sources: readonly DataEntitySource[]
   readonly complete: boolean
 }
@@ -222,6 +224,8 @@ export interface DataCatalogResolutionInput {
   readonly projectionReceipt?: ProjectionReceipt
   /** Additive resolved-workspace result; false preserves catalog-analysis@1 result behavior. */
   readonly includeWorkspaceFacets?: boolean
+  /** Additive provenance for consumers that resolve field-owned assets against workspace roots. */
+  readonly includeFieldSources?: boolean
   readonly maxEntities: number
   readonly maxDepth: number
 }
@@ -232,6 +236,7 @@ interface WorkingEntity {
   typeId: string
   parentEntityId?: string
   fields: Record<string, JsonValue>
+  readonly fieldSources: Record<string, DataEntitySource>
   readonly sources: DataEntitySource[]
 }
 
@@ -501,6 +506,7 @@ export function resolveDataCatalog(input: DataCatalogResolutionInput): DataCatal
         typeId: patch.typeId,
         ...(patch.parentEntityId === undefined ? {} : { parentEntityId: patch.parentEntityId }),
         fields: {},
+        fieldSources: {},
         sources: [],
       }
       entities.set(key, current)
@@ -519,7 +525,10 @@ export function resolveDataCatalog(input: DataCatalogResolutionInput): DataCatal
     if (patch.parentEntityId !== undefined) current.parentEntityId = patch.parentEntityId
     current.sources.push(patch.source)
     for (const fieldId of Object.keys(patch.fields)) {
-      if (typeFields.has(fieldId)) continue
+      if (typeFields.has(fieldId)) {
+        current.fieldSources[fieldId] = patch.source
+        continue
+      }
       const diagnosticKey = `${patch.typeId}\u0000${fieldId}`
       if (unknownFields.has(diagnosticKey)) continue
       unknownFields.add(diagnosticKey)
@@ -576,6 +585,7 @@ export function resolveDataCatalog(input: DataCatalogResolutionInput): DataCatal
 
     let complete = true
     let fields: Record<string, JsonValue> = {}
+    let fieldSources: Record<string, DataEntitySource> = {}
     let inheritanceChain: DataEntityRef[] = []
     let sources: DataEntitySource[] = []
     if (current.parentEntityId !== undefined) {
@@ -597,11 +607,20 @@ export function resolveDataCatalog(input: DataCatalogResolutionInput): DataCatal
         fields = Object.fromEntries(
           Object.entries(parent.fields).map(([fieldId, value]) => [fieldId, cloneJson(value)]),
         )
+        fieldSources = Object.fromEntries(
+          Object.entries(parent.fieldSources ?? {}).map(([fieldId, source]) => [
+            fieldId,
+            immutableSource(source),
+          ]),
+        )
         inheritanceChain = [...parent.inheritanceChain]
         sources = [...parent.sources]
       }
     }
     fields = mergeFields(fields, current.fields, fieldsByType.get(current.typeId) ?? new Map())
+    for (const [fieldId, source] of Object.entries(current.fieldSources)) {
+      fieldSources[fieldId] = source
+    }
     inheritanceChain.push(ref)
     sources.push(...current.sources)
     const resolved: DataResolvedEntity = Object.freeze({
@@ -615,6 +634,18 @@ export function resolveDataCatalog(input: DataCatalogResolutionInput): DataCatal
           Object.entries(fields).map(([fieldId, value]) => [fieldId, immutableJson(value)]),
         ),
       ),
+      ...(input.includeFieldSources === true
+        ? {
+            fieldSources: Object.freeze(
+              Object.fromEntries(
+                Object.entries(fieldSources).map(([fieldId, source]) => [
+                  fieldId,
+                  immutableSource(source),
+                ]),
+              ),
+            ),
+          }
+        : {}),
       sources: Object.freeze(sources.map(immutableSource)),
       complete,
     })

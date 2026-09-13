@@ -160,6 +160,19 @@ export interface ModkitMcpHostPort {
   close(): Promise<void>
 }
 
+export const MCP_MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY = Object.freeze({
+  locales: Object.freeze(['enUS']),
+  limits: Object.freeze({
+    // Match the desktop/web adapters: six retail roots already need more than 64 reads.
+    maxRequirements: 512,
+    maxDocumentBytes: 16_777_216,
+    maxTextBytes: 268_435_456,
+    maxEntities: 100_000,
+    maxDepth: 128,
+    maxPageSize: 1_000,
+  }),
+})
+
 const mapPreviewLimits = Object.freeze({
   maxCandidates: 64,
   maxSubjectEntries: 4_096,
@@ -179,17 +192,7 @@ const mapPreviewLimits = Object.freeze({
     maxPageSize: 1_000,
     maxDiagnostics: 1_000,
   }),
-  catalogEnrichment: Object.freeze({
-    locales: Object.freeze(['enUS']),
-    limits: Object.freeze({
-      maxRequirements: 64,
-      maxDocumentBytes: 16_777_216,
-      maxTextBytes: 268_435_456,
-      maxEntities: 100_000,
-      maxDepth: 128,
-      maxPageSize: 1_000,
-    }),
-  }),
+  catalogEnrichment: MCP_MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY,
 })
 
 const mapPreviewBudget = Object.freeze({
