@@ -11,9 +11,11 @@ export interface RasterSubresource {
   readonly slice: number
 }
 
-/** Omitted coordinates select zero. `face: 'all'` acquires all faces in one codec lease. */
-export type RasterResourceSelection = Partial<Omit<RasterSubresource, 'face'>> & {
+/** Omitted coordinates select zero. `face: 'all'` acquires all faces in one codec lease.
+ * `mipLevel: 'fit'` selects the most detailed available mip that fits the request byte budget. */
+export type RasterResourceSelection = Partial<Omit<RasterSubresource, 'face' | 'mipLevel'>> & {
   readonly face?: number | 'all'
+  readonly mipLevel?: number | 'fit'
 }
 
 /** Read selected image surfaces through the host's ordinary codec inventory.

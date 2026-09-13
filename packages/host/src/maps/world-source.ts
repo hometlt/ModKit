@@ -1595,6 +1595,10 @@ export function createCandidateWorldSceneLease(
               const textureReferences = publishedResources.filter(
                 reference => reference.role === 'texture',
               )
+              const sharedTextureBytes = Math.max(
+                1,
+                Math.floor(maxTextureTotalBytes / Math.max(1, textureReferences.length)),
+              )
               let textureBytes = 0
               for (const reference of textureReferences) {
                 const remaining = maxTextureTotalBytes - textureBytes
@@ -1609,7 +1613,11 @@ export function createCandidateWorldSceneLease(
                   continue
                 }
                 const logicalId = childResourceLogicalId(modelRequirement.logicalId, reference.id)
-                const cacheKey = `${logicalId}\u0000${String(maxTextureBytes)}`
+                const previewTextureBytes = Math.max(
+                  1,
+                  Math.min(maxTextureBytes, remaining, sharedTextureBytes),
+                )
+                const cacheKey = `${logicalId}\u0000${String(previewTextureBytes)}`
                 let pending = modelTextureCache.get(cacheKey)
                 if (pending === undefined) {
                   pending = (async () => {
@@ -1623,18 +1631,30 @@ export function createCandidateWorldSceneLease(
                           scopes: modelRequirement.scopes,
                           parentResourceId: modelRequirement.id,
                         },
-                        maxBytes: maxTextureBytes,
+                        maxBytes: previewTextureBytes,
+                        selection: { mipLevel: 'fit' },
                       },
                       signal,
                     )
-                    if (raster.state !== 'decoded') {
-                      return Object.freeze({ diagnostics: Object.freeze([...raster.diagnostics]) })
-                    }
+                    if (raster.state !== 'decoded')
+                      return Object.freeze({
+                        diagnostics: Object.freeze([...raster.diagnostics]),
+                      })
                     const texture = worldTexture(reference.id, raster)
+                    const mipLevel = raster.subresource?.mipLevel ?? 0
                     return Object.freeze({
                       ...(texture === undefined ? {} : { texture }),
                       diagnostics: Object.freeze([
                         ...raster.diagnostics,
+                        ...(mipLevel === 0
+                          ? []
+                          : [
+                              diagnostic(
+                                'information',
+                                'x3.host/world-model-texture-preview-mip-selected',
+                                `model texture ${reference.id} uses preview mip ${String(mipLevel)} to stay within its decoded byte budget`,
+                              ),
+                            ]),
                         ...(texture === undefined
                           ? [
                               diagnostic(

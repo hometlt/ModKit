@@ -251,9 +251,24 @@ describe('common world source native visual facets', () => {
             async acquire() {
               throw new Error('not used')
             },
-            async readRaster(request: { requirement: { logicalId: string } }) {
+            async readRaster(request: {
+              requirement: { logicalId: string }
+              selection?: { mipLevel?: number | 'fit' }
+            }) {
               rasterReads += 1
               acquiredTextureLogicalId = request.requirement.logicalId
+              if (request.selection?.mipLevel !== 'fit') {
+                return {
+                  state: 'unresolved',
+                  diagnostics: [
+                    {
+                      severity: 'warning',
+                      code: 'test/unexpected-preview-mip',
+                      message: `unexpected preview mip ${String(request.selection.mipLevel)}`,
+                    },
+                  ],
+                }
+              }
               return {
                 state: 'decoded',
                 info: {
@@ -262,7 +277,7 @@ describe('common world source native visual facets', () => {
                   depth: 1,
                   layers: 1,
                   faces: 1,
-                  mipLevels: 1,
+                  mipLevels: 2,
                   frames: 1,
                   channels: 4,
                   bitDepth: 8,
@@ -278,6 +293,7 @@ describe('common world source native visual facets', () => {
                   pixelFormat: 'rgba8',
                   pixels: Uint8Array.of(12, 34, 56, 255),
                 },
+                subresource: { frame: 0, mipLevel: 1, layer: 0, face: 0, slice: 0 },
                 diagnostics: [],
               }
             },
@@ -399,6 +415,11 @@ describe('common world source native visual facets', () => {
           },
         ],
         primitives: [{ id: 'triangle' }],
+        diagnostics: [
+          {
+            code: 'x3.host/world-model-texture-preview-mip-selected',
+          },
+        ],
         complete: true,
       })
       expect(acquiredLogicalId).toBe('base.assets/Assets/Marine.m3')

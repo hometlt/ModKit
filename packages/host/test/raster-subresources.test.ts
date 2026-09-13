@@ -167,6 +167,40 @@ it('selects one face while default reads retain the first-surface response', asy
   expect(f.counts).toEqual({ opened: 2, disposed: 2 })
 })
 
+it('selects the most detailed mip that fits without reopening the raster source', async () => {
+  const f = fixture()
+  const result = await f.port.read({
+    kind: 'embedded',
+    bytes: f.bytes,
+    maxBytes: 16,
+    selection: { mipLevel: 'fit' },
+  })
+  if (result.state !== 'decoded') throw new Error(JSON.stringify(result))
+  expect(result.subresource).toEqual({ frame: 0, layer: 0, face: 0, mipLevel: 1, slice: 0 })
+  expect(result.region).toMatchObject({ width: 2, height: 2, rowStride: 8 })
+  expect(result.region.pixels).toEqual(f.surfaces[0]?.[1])
+  expect(f.counts).toEqual({ opened: 1, disposed: 1 })
+  expect(f.rasterCounts).toEqual({ leases: 1, released: 1, faces: [0] })
+  expect(f.state.reservedBytes).toBe(0)
+})
+
+it('refuses fit selection when no available mip satisfies the shared surface budget', async () => {
+  const f = fixture()
+  const result = await f.port.read({
+    kind: 'embedded',
+    bytes: f.bytes,
+    maxBytes: 95,
+    selection: { face: 'all', mipLevel: 'fit' },
+  })
+  expect(result).toMatchObject({
+    state: 'unresolved',
+    diagnostics: [{ code: 'x3.host/resource-budget-exceeded' }],
+  })
+  expect(f.counts).toEqual({ opened: 1, disposed: 1 })
+  expect(f.rasterCounts).toEqual({ leases: 1, released: 1, faces: [] })
+  expect(f.state.reservedBytes).toBe(0)
+})
+
 it.each([{ face: 6 }, { mipLevel: 2 }, { frame: 1 }, { layer: 1 }, { slice: 1 }])(
   'refuses an absent selected subresource %j and releases its codec',
   async selection => {
