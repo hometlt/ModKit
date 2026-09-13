@@ -13,7 +13,9 @@ export function materialWebGlDraws(
   textures: ReadonlyMap<string, WebGLTexture>,
 ) {
   const programs = new Map<StandardMaterialProgram, WebGlMaterialProgram>()
+  let programCompilations = 0
   return {
+    programCompilations: () => programCompilations,
     release() {
       for (const lease of programs.values()) lease.release()
       programs.clear()
@@ -27,7 +29,8 @@ export function materialWebGlDraws(
       if (source === undefined || material === undefined)
         throw new TypeError('missing GPU material')
       const environmentEnabled = source.environment !== undefined
-      const worldShading = source.normalBlendPolicy !== undefined || source.normalMapSpace === 'object'
+      const worldShading =
+        source.normalBlendPolicy !== undefined || source.normalMapSpace === 'object'
       const eyePosition = snapshotEyePosition(camera.eyePosition)
       if (requiresEnvironmentEye(source) && eyePosition === undefined)
         throw new TypeError('explicit reflection environment requires eyePosition')
@@ -95,6 +98,7 @@ export function materialWebGlDraws(
           bound,
           { filters },
         )
+        programCompilations += 1
         programs.set(source, lease)
       }
       const buffers: WebGLBuffer[] = [],
@@ -215,12 +219,7 @@ export function materialWebGlDraws(
               )
               break
             case 'premultiplied':
-              gl.blendFuncSeparate(
-                gl.ONE,
-                gl.ONE_MINUS_SRC_ALPHA,
-                gl.ONE,
-                gl.ONE_MINUS_SRC_ALPHA,
-              )
+              gl.blendFuncSeparate(gl.ONE, gl.ONE_MINUS_SRC_ALPHA, gl.ONE, gl.ONE_MINUS_SRC_ALPHA)
               break
             case 'additive':
               gl.blendFuncSeparate(gl.ONE, gl.ONE, gl.ZERO, gl.ONE)

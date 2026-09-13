@@ -500,6 +500,104 @@ describe('common world WebGL plan', () => {
     assert.equal(plan.texturedTriangles[0].normalTexture?.id, 'surface-normal.png')
   })
 
+  it('routes opaque game materials through the standalone material compiler with instance team color', () => {
+    const materialLayer = {
+      slot: 'diffuse',
+      texturePath: 'team.dds',
+      constantColor: { value: [1, 1, 1, 1] },
+      uvSource: 0,
+      channels: 0,
+      op: 6,
+      teamColorMode: 1,
+      invert: false,
+      clampResult: true,
+      wrapX: true,
+      wrapY: true,
+    }
+    const plan = createWorldWebGlPlan({
+      items: [
+        {
+          facet: 'objects',
+          id: 'team-object',
+          layerId: 'objects',
+          coordinateSpaceId: 'uvw',
+          kind: 'unit',
+          objectId: 7,
+          player: 3,
+          position: { x: 0, y: 0, z: 0 },
+          uvwPosition: { x: 4, y: 2, z: 6 },
+          resourceId: 'team-model',
+        },
+      ],
+      teamColors: new Map([[3, [0.1, 0.7, 0.9]]]),
+      models: new Map([
+        [
+          'team-model',
+          {
+            state: 'converted',
+            sourceKey: 'team-model',
+            diagnostics: [],
+            complete: true,
+            meshes: [],
+            primitives: [
+              {
+                id: 'triangle',
+                topology: 'triangles',
+                materialId: 'surface',
+                positions: Float32Array.from([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+                textureCoordinates: Float32Array.from([0, 0, 1, 0, 0, 1]),
+              },
+            ],
+            materials: [
+              {
+                id: 'surface',
+                layers: [{ slot: 'diffuse', resourceId: 'team.dds', uvSource: 0 }],
+                shader: {
+                  id: 'modkit.render-material.v1',
+                  parameters: {
+                    renderModel: {
+                      version: 1,
+                      standard: {
+                        layers: { diffuse: materialLayer },
+                        blendMode: 0,
+                        priority: 0,
+                        specularity: 10,
+                        specMult: 1,
+                        emisMult: 1,
+                        specMode: 0,
+                        alphaTestThreshold: 0,
+                        twoSided: false,
+                        unshaded: true,
+                        doubleLambert: false,
+                        clampOutput: false,
+                        usesVertexColor: false,
+                        usesVertexAlpha: false,
+                      },
+                    },
+                  },
+                },
+              },
+            ],
+            textures: [
+              {
+                id: 'team.dds',
+                width: 1,
+                height: 1,
+                rgba: Uint8Array.of(40, 80, 120, 128),
+              },
+            ],
+          },
+        ],
+      ]),
+    })
+    assert.equal(plan.modelMaterialScenes.length, 1)
+    assert.equal(plan.texturedTriangles.length, 0)
+    assert.equal(plan.modelMaterialShadowTriangles.positions.length, 9)
+    const scene = plan.modelMaterialScenes[0]
+    assert.deepEqual(scene.programs.get('surface').passes[0].uniforms.u_teamColor, [0.1, 0.7, 0.9])
+    assert.deepEqual(Array.from(scene.primitives[0].transform.slice(12, 15)), [4, 2, 6])
+  })
+
   it('keeps alpha cutoffs and common/native shadow policy on opaque textured materials', () => {
     const item = (objectId, resourceId) => ({
       facet: 'objects',
@@ -570,10 +668,7 @@ describe('common world WebGL plan', () => {
       ]),
     })
     assert.equal(plan.transparentTexturedTriangles.length, 0)
-    assert.deepEqual(
-      plan.texturedTriangles.map(batch => batch.alphaCutoff).sort(),
-      [0.4, 0.6],
-    )
+    assert.deepEqual(plan.texturedTriangles.map(batch => batch.alphaCutoff).sort(), [0.4, 0.6])
     assert.deepEqual(
       plan.texturedTriangles.map(batch => [batch.castShadows, batch.receiveShadows]),
       [

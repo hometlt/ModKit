@@ -35,10 +35,7 @@ const browserModelPath =
 const browserModelDigest = 'fb7680019ca7ec88aeb37591a7477c2555dd674d57f0c7486736ccb11919a436'
 const evidenceDirectory = join(repoRoot, '..', 'artifacts')
 const evidencePath = join(evidenceDirectory, 'sc2-cradle-world-webgl-real.png')
-const performanceEvidencePath = join(
-  evidenceDirectory,
-  'sc2-cradle-world-webgl-performance.json',
-)
+const performanceEvidencePath = join(evidenceDirectory, 'sc2-cradle-world-webgl-performance.json')
 const chromeCandidates = [
   process.env['CHROME_PATH'],
   'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
@@ -85,12 +82,14 @@ async function exportInstalledBrowserM3(): Promise<{
   if (installation === undefined) throw new Error('installed SC2 browser proof requires CASC')
   const inventory = await buildInventory(
     await Promise.all(
-      [join(blizzardRoot, 'casc'), join(blizzardRoot, 'models'), join(repoRoot, 'extensions/images')].map(
-        async directory => ({
-          ...(await loadExtensionDirectory(directory)),
-          execution: { origin: 'bundled' as const, allowTrustedInProcess: true },
-        }),
-      ),
+      [
+        join(blizzardRoot, 'casc'),
+        join(blizzardRoot, 'models'),
+        join(repoRoot, 'extensions/images'),
+      ].map(async directory => ({
+        ...(await loadExtensionDirectory(directory)),
+        execution: { origin: 'bundled' as const, allowTrustedInProcess: true },
+      })),
     ),
     createHostContributionContractRegistry(),
   )
@@ -557,7 +556,8 @@ describe.skipIf(!existsSync(mapRoot))('installed SC2 map in a real browser WebGL
     expect(evidence.changedPixels).toBeGreaterThan(25_000)
     expect(evidence.performance).toMatchObject({
       frames: 7,
-      programCompilations: 2,
+      // Two world programs plus two opaque M3 material programs for each of the two sampled plans.
+      programCompilations: 6,
       shadowTargetAllocations: 1,
       shadowTargetReuses: 6,
       worldPlanBuilds: 2,
