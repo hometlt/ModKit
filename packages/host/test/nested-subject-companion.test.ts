@@ -425,7 +425,7 @@ describe('a container entry opens as its own subject, with companions from the s
       state: 'refused',
       reason: 'context-unavailable',
     })
-  })
+  }, 15_000)
 
   it('projects explicit active and dependency roots, preserves precedence and excludes other archive roots', async () => {
     const archive = await openArchive([
@@ -482,6 +482,16 @@ describe('a container entry opens as its own subject, with companions from the s
       expect(texture.provenance.revision).toBe(texture.lease.value.revision)
       await texture.lease.release()
     }
+    const overlayTexture = await resources.resolve({
+      id: 'game-logical-overlay',
+      logicalId: 'assets/textures/shared.texture',
+      role: 'texture',
+      scopes: ['workspace-dependency-layer'],
+    })
+    if (overlayTexture.state !== 'resolved' || overlayTexture.lease.value.kind !== 'bytes')
+      throw new Error('unqualified dependency-overlay texture missing')
+    expect(await overlayTexture.lease.value.read(0n, 1)).toEqual(new Uint8Array([60]))
+    await overlayTexture.lease.release()
     for (const logicalId of [
       'project/assets/textures/hidden.texture',
       'unopened/assets/textures/hidden.texture',

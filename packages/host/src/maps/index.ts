@@ -72,14 +72,14 @@ import type {
   SubjectSelectorSource,
 } from '@modkit/sdk'
 import type { ExecutionBackendRegistry } from '../execution/backend.js'
-import type { CompanionOrigin } from '../input-resolution.js'
+import { createCompanionInputResolver, type CompanionOrigin } from '../input-resolution.js'
 import type { Inventory } from '../inventory.js'
 import { createWorkspaceNamespaceCompanionOrigin } from '../namespace-origin.js'
 import { createResourceSession } from '../resource-session.js'
 import { createHostServiceResolver } from '../service-leases.js'
 import { assembleSubjectDescriptor, createAssetSession } from '../session.js'
 import { createSubjectModelResources } from '../model-resources.js'
-import { openSubject } from '../subject-open.js'
+import { openSubject, type SubjectInputResolver } from '../subject-open.js'
 import {
   createSubjectRasterResources,
   type SubjectRasterResourceState,
@@ -676,6 +676,8 @@ export interface AnalyzeResolvedMapWorkspaceRequest {
   readonly budgets: ResourceBudget
   readonly workspace: ModWorkspaceLock
   readonly resources: ResourceSessionPort
+  /** Resolves bundle companions (for example M3A) from the same dependency overlay. */
+  readonly inputResolver?: SubjectInputResolver
   readonly catalog?: DataCatalogSnapshot
   readonly limits: ResolvedMapWorkspaceLimits
   readonly signal?: AbortSignal
@@ -771,7 +773,9 @@ function validateWorkspacePlan(
       !nonEmptyString(requirement.requirementId) ||
       !nonEmptyString(requirement.kind) ||
       typeof requirement.required !== 'boolean' ||
-      (requirement.scope !== undefined && requirement.scope !== 'map-root' && requirement.scope !== 'workspace') ||
+      (requirement.scope !== undefined &&
+        requirement.scope !== 'map-root' &&
+        requirement.scope !== 'workspace') ||
       path !== requirement.path ||
       path.startsWith('/') ||
       /^[A-Za-z]:/u.test(path) ||
@@ -1058,6 +1062,7 @@ export async function analyzeResolvedMapWorkspace(
             ? {}
             : { serviceDefinitions: request.services.serviceDefinitions }),
           resourceSession: request.resources,
+          ...(request.inputResolver === undefined ? {} : { resolveInput: request.inputResolver }),
           ...(signal === undefined ? {} : { signal }),
         }),
     })
@@ -1086,6 +1091,7 @@ export async function analyzeResolvedMapWorkspace(
             ? {}
             : { serviceDefinitions: request.services.serviceDefinitions }),
           resourceSession: request.resources,
+          ...(request.inputResolver === undefined ? {} : { resolveInput: request.inputResolver }),
           ...(signal === undefined ? {} : { signal }),
         }),
     })
@@ -2706,6 +2712,7 @@ export async function coordinateMapPreviewAssetSession(
       origin: resourceResolution.origin,
       revision: resourceResolution.revision,
     })
+    const inputResolver = createCompanionInputResolver(resourceResolution.origin)
     const enrichment = await enrichMapPreviewCatalog(request, workspace, resources)
     const opened = await openMapPreviewAssetSession({
       services: request.services,
@@ -2713,6 +2720,7 @@ export async function coordinateMapPreviewAssetSession(
       budgets: request.budgets,
       workspace,
       resources,
+      inputResolver,
       subjectUri: descriptor.subjectUri,
       ...(enrichment.catalog === undefined ? {} : { catalog: enrichment.catalog }),
       ...(enrichment.sources === undefined ? {} : { catalogSources: enrichment.sources }),

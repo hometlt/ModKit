@@ -131,7 +131,7 @@ function fixture(
           },
         } as unknown as OpenSubjectResult
       }
-      if (path === 'Child.m3.uvm') {
+      if (path === 'Child.uvm') {
         expect(openedSource.ref.id).toBe('child#model.export-uvm')
         expect(openedSource.revision).toContain('model.export-uvm')
         expect(await openedSource.read(0n, 8)).toEqual(Uint8Array.of(1, 2, 3))
@@ -270,9 +270,14 @@ function fixture(
                   value: {
                     async sockets() {
                       return {
-                        items: [{
-                          id: 'weapon', nodeId: 'root', role: 'weapon', sourceName: 'Ref_Weapon',
-                        }],
+                        items: [
+                          {
+                            id: 'weapon',
+                            nodeId: 'root',
+                            role: 'weapon',
+                            sourceName: 'Ref_Weapon',
+                          },
+                        ],
                       }
                     },
                   },

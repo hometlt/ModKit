@@ -188,10 +188,23 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
         const source = resolution.lease.value
         if (source.kind !== 'bytes') throw new TypeError('model resource needs a byte source')
         const sourceIdentityKey = `${source.ref.id}@${source.revision}`
-        if (options.ancestors.includes(sourceIdentityKey)) throw new TypeError('model resource cycle')
+        if (options.ancestors.includes(sourceIdentityKey))
+          throw new TypeError('model resource cycle')
         if (!available()) throw new TypeError('model resource authority expired')
         const opened = await options.open(source, resolution.provenance.logicalId, signal)
-        if (opened.state !== 'opened') throw new TypeError('no model codec opened the resource')
+        if (opened.state !== 'opened') {
+          const details = [
+            ...opened.diagnostics,
+            ...opened.candidates.flatMap(candidate => candidate.diagnostics),
+          ]
+            .map(item => `${item.code}: ${item.message}`)
+            .join('; ')
+          throw new TypeError(
+            details.length === 0
+              ? 'no model codec opened the resource'
+              : `no model codec opened the resource (${details})`,
+          )
+        }
         releases.push(() => opened.session.dispose())
         const operation = opened.descriptor.operations.find(
           item =>
@@ -207,16 +220,14 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
           'schemaVersion=1',
           `metersPerSourceUnit=${units === undefined ? 'source-unit' : String(units)}`,
         ].join('|')
-        const converted = await opened.session
-          .operations()
-          .invoke(
-            operation.handlerId,
-            {
-              schemaVersion: 1,
-              ...(units === undefined ? {} : { metersPerSourceUnit: units }),
-            },
-            signal === undefined ? {} : { signal },
-          )
+        const converted = await opened.session.operations().invoke(
+          operation.handlerId,
+          {
+            schemaVersion: 1,
+            ...(units === undefined ? {} : { metersPerSourceUnit: units }),
+          },
+          signal === undefined ? {} : { signal },
+        )
         signal?.throwIfAborted()
         if (!available()) throw new TypeError('model resource authority expired')
         if (
@@ -236,13 +247,24 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
         let sceneDiagnostic: ReturnType<typeof diagnostic> | undefined
         let sceneResources = opened.resources
         try {
+          const uvmPath = resolution.provenance.logicalId.replace(/(?:\.[^./]+)?$/u, '.uvm')
           const uvmOpened = await options.open(
             uvmArtifactSource(source, uvmBytes, sourceKey),
-            `${resolution.provenance.logicalId}.uvm`,
+            uvmPath,
             signal,
           )
           if (uvmOpened.state !== 'opened') {
-            throw new TypeError('the exported UVM could not be reopened by a UVM codec')
+            const details = [
+              ...uvmOpened.diagnostics,
+              ...uvmOpened.candidates.flatMap(candidate => candidate.diagnostics),
+            ]
+              .map(item => `${item.code}: ${item.message}`)
+              .join('; ')
+            throw new TypeError(
+              details.length === 0
+                ? 'the exported UVM could not be reopened by a UVM codec'
+                : `the exported UVM could not be reopened by a UVM codec (${details})`,
+            )
           }
           releases.push(() => uvmOpened.session.dispose())
           sceneResources = uvmOpened.resources ?? sceneResources
@@ -258,24 +280,15 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
               .map(item => item.contract),
           )
           if (advertised.has('common.view/model-skeleton-source')) {
-            skeleton = await uvmOpened.session.dataSource(
-              'common.view/model-skeleton-source',
-              1,
-            )
+            skeleton = await uvmOpened.session.dataSource('common.view/model-skeleton-source', 1)
             releases.push(() => skeleton!.release())
           }
           if (advertised.has('common.view/model-animation-source')) {
-            animations = await uvmOpened.session.dataSource(
-              'common.view/model-animation-source',
-              1,
-            )
+            animations = await uvmOpened.session.dataSource('common.view/model-animation-source', 1)
             releases.push(() => animations!.release())
           }
           if (advertised.has('common.view/model-material-source')) {
-            materials = await uvmOpened.session.dataSource(
-              'common.view/model-material-source',
-              1,
-            )
+            materials = await uvmOpened.session.dataSource('common.view/model-material-source', 1)
             releases.push(() => materials!.release())
           }
           if (advertised.has('common.view/model-resource-refs-source')) {
@@ -286,10 +299,7 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
             releases.push(() => resourceReferences!.release())
           }
           if (advertised.has('common.view/model-socket-source')) {
-            sockets = await uvmOpened.session.dataSource(
-              'common.view/model-socket-source',
-              1,
-            )
+            sockets = await uvmOpened.session.dataSource('common.view/model-socket-source', 1)
             releases.push(() => sockets!.release())
           }
         } catch (error) {

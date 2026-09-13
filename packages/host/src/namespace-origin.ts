@@ -469,12 +469,25 @@ export function createCompositeWorkspaceNamespaceCompanionOrigin(
   const joinPrefix = (prefix: string, suffix: string): string =>
     prefix === '' ? suffix : suffix === '' ? prefix : `${prefix}/${suffix}`
 
+  const isQualifiedRequest = (logicalId: string): boolean =>
+    roots.some(root => {
+      if (root.logicalPrefix === '') return false
+      return (
+        fold(logicalId) === fold(root.logicalPrefix) ||
+        fold(logicalId).startsWith(fold(`${root.logicalPrefix}/`))
+      )
+    })
+
   const relativeRequest = (
     root: { readonly logicalPrefix: string },
     logicalId: string,
   ): string | undefined => {
     if (logicalId === '') return ''
     if (root.logicalPrefix === '') return logicalId
+    // A game-logical path (for example Assets/Textures/X.dds) is an overlay lookup, not a
+    // request for the catalog root that happened to declare it. Probe every root in precedence
+    // order. Explicitly qualified paths retain exact-root semantics.
+    if (!isQualifiedRequest(logicalId)) return logicalId
     if (fold(logicalId) === fold(root.logicalPrefix)) return ''
     const prefix = `${root.logicalPrefix}/`
     return fold(logicalId).startsWith(fold(prefix)) ? logicalId.slice(prefix.length) : undefined
@@ -502,6 +515,17 @@ export function createCompositeWorkspaceNamespaceCompanionOrigin(
     return logicalId
   }
 
+  const relativeEntryPath = (
+    root: (typeof roots)[number],
+    entry: NamespaceEntry,
+  ): string | undefined => {
+    if (entry.kind !== 'file') return undefined
+    const prefix = root.pathPrefix === '' ? '' : `${root.pathPrefix}/`
+    if (prefix !== '' && !fold(entry.path).startsWith(fold(prefix))) return undefined
+    const relative = prefix === '' ? entry.path : entry.path.slice(prefix.length)
+    return relative === '' ? undefined : relative
+  }
+
   const find = async (
     logicalId: string,
     signal?: AbortSignal,
@@ -509,12 +533,19 @@ export function createCompositeWorkspaceNamespaceCompanionOrigin(
     const key = fold(logicalId)
     const cached = byLogicalId.get(key)
     if (cached !== undefined) return cached
+    const qualified = isQualifiedRequest(logicalId)
     for (const root of roots) {
       const relative = relativeRequest(root, logicalId)
       if (relative === undefined) continue
       for await (const entry of pages(root, joinPrefix(root.pathPrefix, relative), signal)) {
         const remembered = remember(root, entry)
-        if (remembered !== undefined && fold(remembered) === key) return byLogicalId.get(key)
+        if (remembered === undefined) continue
+        const exposed = qualified ? remembered : relativeEntryPath(root, entry)
+        if (exposed !== undefined && fold(exposed) === key) {
+          const bound = byLogicalId.get(fold(remembered))
+          if (bound !== undefined) byLogicalId.set(key, bound)
+          return bound
+        }
       }
     }
     return undefined
@@ -531,13 +562,18 @@ export function createCompositeWorkspaceNamespaceCompanionOrigin(
     ): AsyncIterable<CompanionOriginEntry> {
       if (scope !== 'workspace-dependency-layer') return
       const yielded = new Set<string>()
+      const qualified = isQualifiedRequest(enumeration.prefix)
       for (const root of roots) {
         const relative = relativeRequest(root, enumeration.prefix)
         if (relative === undefined) continue
         for await (const entry of pages(root, joinPrefix(root.pathPrefix, relative), signal)) {
           throwIfAborted(signal)
-          const logicalId = remember(root, entry)
+          const remembered = remember(root, entry)
+          if (remembered === undefined) continue
+          const logicalId = qualified ? remembered : relativeEntryPath(root, entry)
           if (logicalId === undefined || yielded.has(fold(logicalId))) continue
+          const bound = byLogicalId.get(fold(remembered))
+          if (bound !== undefined) byLogicalId.set(fold(logicalId), bound)
           yielded.add(fold(logicalId))
           yield Object.freeze({
             logicalId,
