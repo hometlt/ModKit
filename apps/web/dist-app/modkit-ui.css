@@ -1722,6 +1722,13 @@
     display: none;
   }
 
+  [data-mk-part='field.target'] {
+    display: block;
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-sm);
+    margin-inline-start: var(--mk-space-2);
+  }
+
   /* ---------------------------------------------------------------- table */
   [data-mk-part='table'] {
     width: 100%;

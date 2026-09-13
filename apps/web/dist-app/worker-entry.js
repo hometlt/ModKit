@@ -5,12 +5,14 @@ import {
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
   protocolLimits
-} from "./chunks/chunk-V3SJMNU5.js";
-import "./chunks/chunk-3JQHXTSW.js";
+} from "./chunks/chunk-PHI3IBXS.js";
+import "./chunks/chunk-3VS5UF7D.js";
+import "./chunks/chunk-GGIVOOBZ.js";
+import "./chunks/chunk-YYQ3QKXM.js";
+import "./chunks/chunk-YRQVWMJF.js";
 import {
   ModkitError
-} from "./chunks/chunk-S5ITZJYV.js";
-import "./chunks/chunk-YRQVWMJF.js";
+} from "./chunks/chunk-6CZX3ZS4.js";
 import "./chunks/chunk-CQ52GEHY.js";
 
 // packages/host/dist/execution/frame-json.js

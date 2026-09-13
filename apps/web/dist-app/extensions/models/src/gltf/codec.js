@@ -1,11 +1,24 @@
 import {
   createInspectionCodec,
+  createModelResourceRefsSource,
   createModelSceneSource,
-  createTreeDataSource,
+  editPlanFromInput,
+  replaceBytes,
 } from '@modkit/codec-kit'
+import { applyJsonEdit } from '@modkit/codec-kit/json-edit'
+import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
+import { createJsonTreeSource } from '@modkit/codec-kit/tree/json'
+import { sha256Hex } from '@modkit/codec-kit/crypto/digest'
 import { decodeEmbeddedGltfBuffers, decodeGltfGeometry } from './geometry.js'
 
 const decoder = new TextDecoder('utf-8', { fatal: true })
+const SUPPORTED_REQUIRED_EXTENSIONS = new Set(['KHR_materials_unlit'])
+const RESOURCE_SCOPES = Object.freeze([
+  'sibling-directory',
+  'current-mount',
+  'enclosing-container',
+  'workspace-dependency-layer',
+])
 
 function looksLikeGltf(bytes) {
   if (
@@ -44,15 +57,28 @@ function parseGlb(bytes, budget) {
   let offset = 12
   let jsonBytes
   const binaryChunks = []
+  const unknownChunks = []
+  let chunkIndex = 0
   while (offset < bytes.byteLength) {
     const length = u32(bytes, offset)
     const type = u32(bytes, offset + 4)
     const end = offset + 8 + length
     if (length % 4 !== 0 || end > bytes.byteLength) throw new TypeError('GLB chunk is invalid')
     const payload = bytes.subarray(offset + 8, end)
-    if (type === 0x4e4f534a && jsonBytes === undefined) jsonBytes = payload
-    else if (type === 0x004e4942) binaryChunks.push(payload)
+    if (chunkIndex === 0 && type !== 0x4e4f534a) {
+      throw new TypeError('GLB JSON chunk must be first')
+    }
+    if (type === 0x4e4f534a) {
+      if (jsonBytes !== undefined) throw new TypeError('GLB contains multiple JSON chunks')
+      jsonBytes = payload
+    } else if (type === 0x004e4942) {
+      if (binaryChunks.length > 0) throw new TypeError('GLB contains multiple BIN chunks')
+      binaryChunks.push(payload)
+    } else {
+      unknownChunks.push(type)
+    }
     offset = end
+    chunkIndex += 1
   }
   if (jsonBytes === undefined) throw new TypeError('GLB JSON chunk is missing')
   const parsed = parseGltf(decoder.decode(jsonBytes).trimEnd(), budget)
@@ -93,6 +119,7 @@ function parseGlb(bytes, budget) {
       externalUris: Object.freeze(externalUris),
       bytes: decodedBytes,
     }),
+    unknownChunks: Object.freeze(unknownChunks),
   })
 }
 
@@ -144,6 +171,15 @@ function parseGltf(text, budget) {
   if (typeof version !== 'string' || !/^2(?:\.\d+)?$/u.test(version)) {
     throw new TypeError('only glTF 2.x documents are supported')
   }
+  const requiredExtensions = array(document, 'extensionsRequired')
+  for (const extension of requiredExtensions) {
+    if (typeof extension !== 'string') {
+      throw new TypeError('glTF extensionsRequired entries must be strings')
+    }
+    if (!SUPPORTED_REQUIRED_EXTENSIONS.has(extension)) {
+      throw new TypeError(`glTF required extension ${extension} is unsupported`)
+    }
+  }
   const nodes = array(document, 'nodes')
   for (const node of nodes) {
     if (node === null || typeof node !== 'object' || Array.isArray(node))
@@ -163,16 +199,237 @@ function parseGltf(text, budget) {
   })
 }
 
-function category(label, values, kind) {
-  return {
-    kind: 'collection',
-    label,
-    preview: `${values.length}`,
-    children: values.map((value, index) => ({
-      kind,
-      label: typeof value?.name === 'string' ? value.name : `${kind} ${index}`,
-      preview: typeof value?.uri === 'string' ? value.uri : undefined,
-    })),
+async function resolveExternalGltfBuffers(document, decoded, context) {
+  const buffers = array(document, 'buffers')
+  const pending = []
+  for (const [index, buffer] of buffers.entries()) {
+    if (
+      decoded.buffers[index] === undefined &&
+      typeof buffer?.uri === 'string' &&
+      !buffer.uri.startsWith('data:') &&
+      Number.isSafeInteger(buffer.byteLength) &&
+      buffer.byteLength >= 0
+    ) {
+      pending.push({ index, uri: buffer.uri, byteLength: buffer.byteLength })
+    }
+  }
+  if (pending.length === 0 || context.logicalResources === undefined) return decoded
+  const maximum =
+    context.budget.maxInputBytes < BigInt(context.budget.maxScalarBytes)
+      ? context.budget.maxInputBytes
+      : BigInt(context.budget.maxScalarBytes)
+  const batch = await context.logicalResources.readBatch(
+    {
+      items: pending.map(item => ({
+        requirement: {
+          id: `gltf-buffer-${item.index}`,
+          logicalId: item.uri,
+          role: 'buffer',
+          scopes: RESOURCE_SCOPES,
+        },
+        size: BigInt(item.byteLength),
+      })),
+      concurrency: Math.min(4, pending.length),
+      readTimeoutMs: 8_000,
+      totalTimeoutMs: 10_000,
+      maxBytes: maximum,
+    },
+    context.signal,
+  )
+  if (batch.state !== 'complete') return decoded
+  const resolvedBuffers = [...decoded.buffers]
+  let decodedBytes = decoded.bytes
+  const unresolved = new Set(decoded.externalUris)
+  for (const [position, item] of pending.entries()) {
+    const outcome = batch.items[position]
+    if (outcome?.state !== 'read') continue
+    if (outcome.bytes.byteLength < item.byteLength) {
+      throw new RangeError(`glTF external buffer ${item.index} is shorter than byteLength`)
+    }
+    resolvedBuffers[item.index] = outcome.bytes.subarray(0, item.byteLength)
+    decodedBytes += item.byteLength
+    if (decodedBytes > context.budget.maxScalarBytes) {
+      throw new RangeError('glTF buffers exceed maxScalarBytes budget')
+    }
+    unresolved.delete(item.uri)
+  }
+  return Object.freeze({
+    buffers: Object.freeze(resolvedBuffers),
+    externalUris: Object.freeze([...unresolved]),
+    bytes: decodedBytes,
+  })
+}
+
+const GLTF_EDIT_OPERATIONS = Object.freeze([
+  Object.freeze({
+    id: 'edit.field',
+    handlerId: 'set-gltf-field',
+    mutatesSource: true,
+    requiredPermissions: Object.freeze(['read-source', 'write-source']),
+    outputKinds: Object.freeze(['edit-plan']),
+  }),
+  Object.freeze({
+    id: 'model.edit',
+    handlerId: 'edit-gltf-document',
+    mutatesSource: true,
+    requiredPermissions: Object.freeze(['read-source', 'write-source']),
+    outputKinds: Object.freeze(['edit-plan']),
+  }),
+])
+
+function editObject(value, label) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value))
+    throw new TypeError(`${label} must be an object`)
+  return value
+}
+
+function jsonPointer(path) {
+  return '/' + path.map(key => key.replace(/~/gu, '~0').replace(/\//gu, '~1')).join('/')
+}
+
+function fieldEdits(input, budget, signal) {
+  const request = editObject(
+    snapshotJson(
+      input,
+      {
+        maxBytes: budget.maxScalarBytes,
+        maxNodes: budget.maxNodes,
+        maxDepth: budget.maxDepth + 2,
+      },
+      signal,
+    ),
+    'glTF field request',
+  )
+  const path = request.path
+  if (
+    !Array.isArray(path) ||
+    path.length === 0 ||
+    !path.every(key => typeof key === 'string') ||
+    request.groupId !== 'tree' ||
+    request.key !== path.at(-1) ||
+    !Object.hasOwn(request, 'value') ||
+    Object.keys(request).some(key => !['groupId', 'key', 'path', 'value'].includes(key))
+  )
+    throw new TypeError('glTF field write requires a complete tree semantic path and value')
+  return [{ op: 'replace', path: jsonPointer(path), value: request.value }]
+}
+
+function documentEdits(input, budget, signal) {
+  const request = editObject(
+    snapshotJson(
+      input,
+      {
+        maxBytes: budget.maxScalarBytes,
+        maxNodes: budget.maxNodes,
+        maxDepth: budget.maxDepth + 3,
+      },
+      signal,
+    ),
+    'glTF edit request',
+  )
+  if (
+    Object.keys(request).some(key => key !== 'json') ||
+    !Array.isArray(request.json) ||
+    request.json.length === 0
+  )
+    throw new TypeError('glTF model.edit requires a nonempty json edit array')
+  if (request.json.length > 4096) throw new RangeError('glTF edit batch exceeds maxEdits')
+  return request.json.map(raw => {
+    const edit = editObject(raw, 'glTF JSON edit')
+    if (
+      typeof edit.path !== 'string' ||
+      !['add', 'replace', 'remove'].includes(edit.op) ||
+      Object.keys(edit).some(key => !['op', 'path', 'value'].includes(key)) ||
+      (edit.op === 'remove' ? Object.hasOwn(edit, 'value') : !Object.hasOwn(edit, 'value'))
+    )
+      throw new TypeError('invalid glTF JSON edit')
+    return edit.op === 'remove'
+      ? { op: edit.op, path: edit.path }
+      : { op: edit.op, path: edit.path, value: edit.value }
+  })
+}
+
+function padded(bytes, value) {
+  const result = new Uint8Array(Math.ceil(bytes.length / 4) * 4)
+  result.fill(value)
+  result.set(bytes)
+  return result
+}
+
+function encodeEditedGltf(source, binary, document, budget) {
+  const json = new TextEncoder().encode(`${JSON.stringify(document, null, 2)}\n`)
+  if (json.byteLength > budget.maxScalarBytes || BigInt(json.byteLength) > budget.maxInputBytes)
+    throw new RangeError('edited glTF JSON exceeds budget')
+  if (!binary) return json
+  const jsonChunk = padded(json, 0x20)
+  const chunks = []
+  let offset = 12
+  let replaced = false
+  while (offset < source.byteLength) {
+    const length = u32(source, offset)
+    const type = u32(source, offset + 4)
+    const end = offset + 8 + length
+    if (length % 4 !== 0 || end > source.byteLength) throw new TypeError('GLB chunk is invalid')
+    const payload = !replaced && type === 0x4e4f534a ? jsonChunk : source.slice(offset + 8, end)
+    if (!replaced && type === 0x4e4f534a) replaced = true
+    chunks.push({ type, payload })
+    offset = end
+  }
+  if (!replaced) throw new TypeError('GLB JSON chunk is missing')
+  const length = 12 + chunks.reduce((total, chunk) => total + 8 + chunk.payload.byteLength, 0)
+  if (BigInt(length) > budget.maxInputBytes) throw new RangeError('edited GLB exceeds budget')
+  const result = new Uint8Array(length)
+  const view = new DataView(result.buffer)
+  view.setUint32(0, 0x46546c67, true)
+  view.setUint32(4, 2, true)
+  view.setUint32(8, length, true)
+  offset = 12
+  for (const chunk of chunks) {
+    view.setUint32(offset, chunk.payload.byteLength, true)
+    view.setUint32(offset + 4, chunk.type, true)
+    result.set(chunk.payload, offset + 8)
+    offset += 8 + chunk.payload.byteLength
+  }
+  return result
+}
+
+function editHandler(source, parsed, context, editsFromInput) {
+  return async (input, operationContext = {}) => {
+    const signal = operationContext.signal
+    signal?.throwIfAborted()
+    const base = editPlanFromInput(context.input, {
+      planId: `gltf-edit:${context.input.revisions.revision}`,
+      edits: [],
+      fidelity: {
+        roundTrip: 'semantic',
+        preservesUnknownData: true,
+        notes: [
+          'JSON values and all non-JSON GLB chunks are retained; JSON whitespace is normalized',
+        ],
+      },
+    })
+    const edits = editsFromInput(input, context.budget, signal)
+    let document = parsed.document
+    for (const edit of edits) document = applyJsonEdit(document, edit, context.budget.maxDepth)
+    const candidate = encodeEditedGltf(source, parsed.binary, document, context.budget)
+    parseGltfBytes(candidate, context.budget)
+    const digest = await sha256Hex(candidate)
+    signal?.throwIfAborted()
+    const target = base.targets[0]
+    return {
+      kind: 'edit-plan',
+      plan: Object.freeze({
+        ...base,
+        planId: `${base.planId}:${digest}`,
+        edits: Object.freeze([
+          Object.freeze({
+            ...replaceBytes(0, source.length, candidate, 'Edit glTF document'),
+            targetId: target.targetId,
+            source: target.ownerSource,
+          }),
+        ]),
+      }),
+    }
   }
 }
 
@@ -560,6 +817,7 @@ function createSubjectFactsSource(document, context) {
 
 const definition = Object.freeze({
   id: 'modkit/model-gltf',
+  operations: GLTF_EDIT_OPERATIONS,
   format: Object.freeze({ id: 'gltf', label: 'glTF 2.x', mediaType: 'model/gltf+json' }),
   async detect(bytes) {
     const match = looksLikeGltf(bytes)
@@ -581,11 +839,23 @@ const definition = Object.freeze({
     const skins = array(document, 'skins')
     const buffers = array(document, 'buffers')
     const images = array(document, 'images')
+    const externalImages = images.flatMap(image =>
+      typeof image?.uri === 'string' && !image.uri.startsWith('data:')
+        ? [
+            Object.freeze({
+              id: image.uri,
+              role: 'texture',
+              provenance: 'reference-only',
+            }),
+          ]
+        : [],
+    )
     const primitiveCount = meshes.reduce(
       (total, mesh) => total + (Array.isArray(mesh?.primitives) ? mesh.primitives.length : 0),
       0,
     )
-    const decoded = gltf.decoded ?? decodeEmbeddedGltfBuffers(document, context.budget)
+    const embedded = gltf.decoded ?? decodeEmbeddedGltfBuffers(document, context.budget)
+    const decoded = await resolveExternalGltfBuffers(document, embedded, context)
     const geometry =
       decoded.externalUris.length === 0
         ? decodeGltfGeometry(document, decoded.buffers, context.budget, decoded.bytes)
@@ -626,17 +896,15 @@ const definition = Object.freeze({
     })
     const relations = createRelationGraphSource(document, String(context.primary.revision))
     const subjectFacts = createSubjectFactsSource(document, context)
-    const tree = createTreeDataSource({
-      kind: 'model',
-      label: 'glTF',
-      preview: `${nodes.length} nodes, ${meshes.length} meshes`,
-      children: [
-        category('Scenes', scenes, 'scene'),
-        category('Nodes', nodes, 'node'),
-        category('Meshes', meshes, 'mesh'),
-        category('Materials', materials, 'material'),
-        category('Animations', animations, 'animation'),
-      ],
+    const tree = createJsonTreeSource(document, {
+      label: 'glTF 2.x native document',
+      budget: {
+        maxBytes: context.budget.maxScalarBytes,
+        maxNodes: context.budget.maxNodes,
+        maxDepth: context.budget.maxDepth,
+      },
+      ...(context.input.originKind === 'single' ? { write: { operation: 'edit.field' } } : {}),
+      ...(context.signal === undefined ? {} : { signal: context.signal }),
     })
     return {
       summary: {
@@ -654,6 +922,7 @@ const definition = Object.freeze({
         buffers: buffers.length,
         images: images.length,
         externalUris: gltf.externalUris,
+        unknownGlbChunks: gltf.unknownChunks ?? [],
       },
       metadata: [
         {
@@ -671,6 +940,7 @@ const definition = Object.freeze({
             { key: 'animations', value: animations.length },
             { key: 'skins', value: skins.length },
             { key: 'externalResources', value: gltf.externalUris.length },
+            { key: 'unknownGlbChunks', value: gltf.unknownChunks?.length ?? 0 },
           ],
         },
       ],
@@ -714,9 +984,20 @@ const definition = Object.freeze({
         'common.view/model-scene-source': model,
         'common.view/relation-graph-source': relations,
         'common.view/subject-facts-source': subjectFacts,
+        ...(externalImages.length === 0
+          ? {}
+          : {
+              'common.view/model-resource-refs-source': createModelResourceRefsSource({
+                references: externalImages,
+              }),
+            }),
+      },
+      handlers: {
+        'set-gltf-field': editHandler(bytes, gltf, context, fieldEdits),
+        'edit-gltf-document': editHandler(bytes, gltf, context, documentEdits),
       },
       unsupportedFeatures: [
-        ...(gltf.externalUris.length > 0 ? ['external-resource-resolution'] : []),
+        ...(decoded.externalUris.length > 0 ? ['external-buffer-resolution'] : []),
         ...(geometry === undefined ? ['decoded-geometry'] : []),
         'sparse-accessors',
         'draco-compression',

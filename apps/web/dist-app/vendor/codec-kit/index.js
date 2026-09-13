@@ -2,18 +2,20 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../chunks/chunk-J5QGUWNB.js";
-import "../../chunks/chunk-V3SJMNU5.js";
+} from "../../chunks/chunk-GKYVVDGF.js";
+import "../../chunks/chunk-PHI3IBXS.js";
 import {
   revisionId,
   toPortableProjectionReceipt
-} from "../../chunks/chunk-3JQHXTSW.js";
+} from "../../chunks/chunk-3VS5UF7D.js";
+import "../../chunks/chunk-GGIVOOBZ.js";
+import "../../chunks/chunk-YYQ3QKXM.js";
+import "../../chunks/chunk-YRQVWMJF.js";
 import {
   ModkitError,
   canonicalJsonStringify,
   diagnostic
-} from "../../chunks/chunk-S5ITZJYV.js";
-import "../../chunks/chunk-YRQVWMJF.js";
+} from "../../chunks/chunk-6CZX3ZS4.js";
 import "../../chunks/chunk-CQ52GEHY.js";
 
 // packages/codec-kit/src/paging.ts
@@ -777,6 +779,62 @@ function replaceBytes(offset, length, bytes, label) {
   });
 }
 
+// packages/codec-kit/src/json-edit.ts
+function required(value) {
+  if (value === void 0) throw new TypeError("JSON Pointer target does not exist");
+  return value;
+}
+function applyJsonEdit(root, edit, maxDepth) {
+  if (edit.op !== "add" && edit.op !== "replace" && edit.op !== "remove")
+    throw new TypeError("unsupported JSON edit");
+  if (edit.path !== "" && !edit.path.startsWith("/")) throw new TypeError("invalid JSON Pointer");
+  const tokens = edit.path === "" ? [] : edit.path.slice(1).split("/", maxDepth + 1).map((token) => {
+    if (/~(?:[^01]|$)/u.test(token)) throw new TypeError("invalid JSON Pointer escape");
+    return token.replace(/~1/gu, "/").replace(/~0/gu, "~");
+  });
+  if (tokens.length > maxDepth) throw new RangeError("JSON Pointer exceeds maxDepth");
+  const visit = (value, depth) => {
+    if (depth === tokens.length) {
+      if (edit.op === "remove") throw new TypeError("cannot remove the JSON document root");
+      return edit.value;
+    }
+    const key = required(tokens[depth]);
+    const last = depth === tokens.length - 1;
+    if (Array.isArray(value)) {
+      if (!(last && edit.op === "add" && key === "-") && !/^(0|[1-9][0-9]*)$/u.test(key))
+        throw new TypeError("invalid JSON Pointer array index");
+      const index = key === "-" ? value.length : Number(key);
+      const inserting = last && edit.op === "add";
+      if (!Number.isSafeInteger(index) || index < 0 || index >= value.length + (inserting ? 1 : 0))
+        throw new RangeError("JSON Pointer array index is out of bounds");
+      const result2 = [...value];
+      if (last && edit.op === "remove") result2.splice(index, 1);
+      else if (inserting) result2.splice(index, 0, edit.value);
+      else result2[index] = visit(required(result2[index]), depth + 1);
+      return Object.freeze(result2);
+    }
+    if (value === null || typeof value !== "object")
+      throw new TypeError("JSON Pointer traverses a scalar");
+    const object = value;
+    if (!Object.hasOwn(object, key) && !(last && edit.op === "add"))
+      throw new TypeError("JSON Pointer target does not exist");
+    const entries = Object.entries(object).filter(
+      ([name]) => !(last && edit.op === "remove" && name === key)
+    );
+    if (!(last && edit.op === "remove")) {
+      const replacement = last && edit.op === "add" ? edit.value : visit(required(object[key]), depth + 1);
+      const index = entries.findIndex(([name]) => name === key);
+      if (index < 0) entries.push([key, replacement]);
+      else entries[index] = [key, replacement];
+    }
+    return Object.freeze(Object.fromEntries(entries));
+  };
+  const result = visit(root, 0);
+  if (result === null || typeof result !== "object" || Array.isArray(result))
+    throw new TypeError("JSON document root must remain an object");
+  return result;
+}
+
 // packages/codec-kit/src/model/materials.ts
 var DEFAULT_MODEL_MATERIAL_BUDGET = Object.freeze({
   maxDepth: 64,
@@ -800,6 +858,17 @@ var strings = (value, label) => {
 var optionalFields = (value, label) => {
   for (const key of ["name", "libraryId", "type", "blendMode"]) {
     if (value[key] !== void 0) text(value[key], `${label}.${key}`);
+  }
+  if (value["alphaMode"] !== void 0 && value["alphaMode"] !== "opaque" && value["alphaMode"] !== "mask" && value["alphaMode"] !== "blend") {
+    throw new TypeError(`${label}.alphaMode must be opaque, mask or blend`);
+  }
+  if (value["alphaCutoff"] !== void 0 && (typeof value["alphaCutoff"] !== "number" || !Number.isFinite(value["alphaCutoff"]) || value["alphaCutoff"] < 0)) {
+    throw new TypeError(`${label}.alphaCutoff must be finite and nonnegative`);
+  }
+  for (const key of ["castShadows", "receiveShadows"]) {
+    if (value[key] !== void 0 && typeof value[key] !== "boolean") {
+      throw new TypeError(`${label}.${key} must be a boolean`);
+    }
   }
   for (const key of ["priority", "uvSource", "colorChannels", "nativeFlags"]) {
     if (value[key] !== void 0 && typeof value[key] !== "number") throw new TypeError(`${label}.${key} must be a number`);
@@ -1258,6 +1327,88 @@ function createReferenceIndex(options = {}) {
   };
 }
 
+// packages/codec-kit/src/graph-isolation.ts
+function requiredId(value, label) {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new TypeError(`${label} must be a non-empty string`);
+  }
+  return value;
+}
+function analyzeGraphIsolation(request) {
+  if (request.schemaVersion !== 1) throw new TypeError("graph isolation requires schemaVersion 1");
+  const ownerId = requiredId(request.ownerId, "ownerId");
+  const targetId = requiredId(request.targetId, "targetId");
+  if (!Number.isSafeInteger(request.maxEdges) || request.maxEdges <= 0) {
+    throw new TypeError("maxEdges must be a positive safe integer");
+  }
+  if (request.edges.length > request.maxEdges) {
+    throw new RangeError(`graph isolation edge limit exceeded (${request.maxEdges})`);
+  }
+  if (!request.complete) {
+    return Object.freeze({
+      schemaVersion: 1,
+      state: "unavailable",
+      ownerId,
+      targetId,
+      reason: "relation graph is incomplete; another referrer may be missing"
+    });
+  }
+  const selected = request.selectedEdgeIds === void 0 ? void 0 : new Set(request.selectedEdgeIds);
+  if (selected?.size !== request.selectedEdgeIds?.length) {
+    throw new TypeError("selectedEdgeIds must not contain duplicates");
+  }
+  const ids = /* @__PURE__ */ new Set();
+  const incoming = /* @__PURE__ */ new Map();
+  const rewritableOwnerEdges = [];
+  for (const edge of request.edges) {
+    requiredId(edge.id, "edge.id");
+    requiredId(edge.from, "edge.from");
+    requiredId(edge.to, "edge.to");
+    requiredId(edge.relation, "edge.relation");
+    if (ids.has(edge.id)) throw new TypeError(`duplicate graph edge id: ${edge.id}`);
+    ids.add(edge.id);
+    if (edge.to !== targetId) continue;
+    const edgeIds = incoming.get(edge.from) ?? [];
+    edgeIds.push(edge.id);
+    incoming.set(edge.from, edgeIds);
+    if (edge.from === ownerId && edge.rewritable && (selected === void 0 || selected.has(edge.id))) {
+      rewritableOwnerEdges.push(edge.id);
+    }
+  }
+  if (selected !== void 0) {
+    for (const edgeId of selected) {
+      if (!ids.has(edgeId)) throw new RangeError(`selected graph edge does not exist: ${edgeId}`);
+    }
+  }
+  if (rewritableOwnerEdges.length === 0) {
+    return Object.freeze({
+      schemaVersion: 1,
+      state: "unavailable",
+      ownerId,
+      targetId,
+      reason: `${ownerId} has no selected rewritable edge to ${targetId}`
+    });
+  }
+  const referrers = Object.freeze(
+    [...incoming.entries()].sort(([left], [right]) => left.localeCompare(right)).map(
+      ([nodeId, edgeIds]) => Object.freeze({ nodeId, edgeIds: Object.freeze([...edgeIds].sort()) })
+    )
+  );
+  const otherReferrerIds = Object.freeze(
+    referrers.map((referrer) => referrer.nodeId).filter((nodeId) => nodeId !== ownerId)
+  );
+  return Object.freeze({
+    schemaVersion: 1,
+    state: "ready",
+    ownerId,
+    targetId,
+    shared: otherReferrerIds.length > 0,
+    referrers,
+    otherReferrerIds,
+    rewireEdgeIds: Object.freeze([...rewritableOwnerEdges].sort())
+  });
+}
+
 // packages/codec-kit/src/subject-facts.ts
 function abort(signal) {
   if (signal?.aborted) throw new DOMException("operation cancelled", "AbortError");
@@ -1526,13 +1677,19 @@ ${item.node.preview ?? ""}`.toLocaleLowerCase();
     }
   });
 }
-function createTransportSource(snapshot) {
+function createTransportSource(snapshot, options = {}) {
+  const updateIntervalMs = options.updateIntervalMs ?? 50;
+  if (!Number.isSafeInteger(updateIntervalMs) || updateIntervalMs <= 0) {
+    throw new RangeError("transport updateIntervalMs must be a positive safe integer");
+  }
   let current = {
     ...snapshot,
     tracks: snapshot.tracks.map((track) => ({ ...track })),
     controls: { ...snapshot.controls }
   };
   const listeners = /* @__PURE__ */ new Set();
+  let timer;
+  let previousTick = 0;
   const owned = () => Object.freeze({
     ...current,
     tracks: Object.freeze(current.tracks.map((track) => Object.freeze({ ...track }))),
@@ -1541,6 +1698,31 @@ function createTransportSource(snapshot) {
   const publish = () => {
     const event = Object.freeze({ kind: "snapshot", snapshot: owned() });
     for (const listener of listeners) listener(event);
+  };
+  const stopClock = () => {
+    if (timer !== void 0) globalThis.clearInterval(timer);
+    timer = void 0;
+  };
+  const startClock = () => {
+    if (options.wallClock !== true || timer !== void 0 || current.state !== "playing" || listeners.size === 0 || typeof current.durationMs !== "number")
+      return;
+    previousTick = Date.now();
+    timer = globalThis.setInterval(() => {
+      const now = Date.now();
+      const elapsed = now - previousTick;
+      previousTick = now;
+      const positionMs = Math.min(
+        current.durationMs,
+        current.positionMs + elapsed * current.rate
+      );
+      current = {
+        ...current,
+        positionMs,
+        state: positionMs >= current.durationMs ? "ended" : current.state
+      };
+      publish();
+      if (current.state === "ended") stopClock();
+    }, updateIntervalMs);
   };
   return Object.freeze({
     async snapshot(signal) {
@@ -1557,6 +1739,7 @@ function createTransportSource(snapshot) {
       };
       const abort2 = () => wake?.();
       listeners.add(listener);
+      startClock();
       signal?.addEventListener("abort", abort2, { once: true });
       try {
         while (!signal?.aborted) {
@@ -1567,12 +1750,17 @@ function createTransportSource(snapshot) {
         }
       } finally {
         listeners.delete(listener);
+        if (listeners.size === 0) stopClock();
         signal?.removeEventListener("abort", abort2);
       }
     },
     control(kind, input = {}) {
       if (kind === "playPause") {
-        current = { ...current, state: current.state === "playing" ? "paused" : "playing" };
+        current = {
+          ...current,
+          positionMs: current.state === "ended" ? 0 : current.positionMs,
+          state: current.state === "playing" ? "paused" : "playing"
+        };
       } else if (kind === "seek") {
         const positionMs = input?.["positionMs"];
         if (!Number.isFinite(positionMs) || positionMs < 0)
@@ -1596,6 +1784,8 @@ function createTransportSource(snapshot) {
         throw new RangeError(`unknown transport control: ${kind}`);
       }
       publish();
+      if (current.state === "playing") startClock();
+      else stopClock();
     }
   });
 }
@@ -2291,6 +2481,8 @@ export {
   INSPECTION_OPERATIONS,
   PROJECTION_RECEIPT_METADATA_ID,
   TRANSPORT_OPERATIONS,
+  analyzeGraphIsolation,
+  applyJsonEdit,
   assetRevisionFromInput,
   attrAt,
   createAudioMediaSource,

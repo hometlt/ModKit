@@ -20,7 +20,7 @@ import {
   uint64,
   uniqueSortedUtf8,
   versionRangeTargetsMajor
-} from "./chunk-S5ITZJYV.js";
+} from "./chunk-6CZX3ZS4.js";
 
 // packages/sdk/dist/schemas/patterns.js
 var DOTTED_PATTERN = "^[a-z0-9]+(?:-[a-z0-9]+)*(?:\\.[a-z0-9]+(?:-[a-z0-9]+)*)*$";
@@ -2667,7 +2667,7 @@ deepFreeze(subjectDescriptorV2InferenceSchema);
 // packages/sdk/dist/manifest/validate.js
 var platformValidatorsPromise;
 function platformValidators() {
-  platformValidatorsPromise ??= import("./validators.generated-6ZF5QJXG.js").then((module) => module.PRECOMPILED_SCHEMA_VALIDATORS);
+  platformValidatorsPromise ??= import("./validators.generated-Y4DUUWE3.js").then((module) => module.PRECOMPILED_SCHEMA_VALIDATORS);
   return platformValidatorsPromise;
 }
 function toPath(error) {
@@ -4290,10 +4290,6 @@ function foreignServiceContractId(contract) {
   return contract;
 }
 
-// packages/sdk/dist/model-encoding.js
-var NATIVE_MODEL_ENCODER_CONTRACT = "common.model/native-encoder";
-var NATIVE_MODEL_ENCODER_MATCHER_PROFILE = "modkit/native-model-encoder-matcher";
-
 // packages/sdk/dist/language/index.js
 var LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT = "common.language/document-analysis";
 var LANGUAGE_DOCUMENT_MATCHER_PROFILE = "modkit/language-document-matcher";
@@ -4314,10 +4310,6 @@ var RUNTIME_SESSION_V2_MEMBERS = Object.freeze([
   "restore",
   "stateHash"
 ]);
-
-// packages/sdk/dist/renderer/index.js
-var SCENE_RENDERER_CONTRACT = "common.render/scene-3d";
-var SCENE_RENDERER_MATCHER_PROFILE = "modkit/scene-renderer-matcher";
 
 // packages/sdk/dist/games/index.js
 var GAME_INSTALLATION_DISCOVERY_CONTRACT = "common.game/installation-discovery";
@@ -4627,6 +4619,16 @@ function relationScalarValues(value2) {
   return record["value"] === void 0 ? [] : relationScalarValues(record["value"]);
 }
 function visitRelationField(value2, field2, path, visit) {
+  if (Array.isArray(value2) && (field2.cardinality === "indexed" || field2.cardinality === "append")) {
+    value2.forEach((item, ordinal) => {
+      const record = recordOf(item);
+      const indexKey = field2.indexKey ?? "index";
+      const explicitIndex = field2.cardinality === "indexed" ? record?.[indexKey] : void 0;
+      const selector = typeof explicitIndex === "string" || typeof explicitIndex === "number" ? String(explicitIndex) : String(ordinal);
+      visitRelationField(item, { ...field2, cardinality: "scalar" }, `${path}.${selector}`, visit);
+    });
+    return;
+  }
   if (field2.linkNamespace !== void 0 && field2.linkNamespace !== "") {
     for (const entityId of relationScalarValues(value2)) {
       if (entityId.length > 0)
@@ -5578,6 +5580,7 @@ var transportSourceSurface = {
 var namespaceEntrySourceSurface = {
   methods: {
     list: cancellableValue,
+    readPreamble: { kind: "value", optional: true, ...sig },
     search: { kind: "value", optional: true, ...sig },
     /** `Lease<AssetSourceRef>`: the ref crosses by copy, the lease is a release-only handle. */
     openEntry: { kind: "leased-value", ...sig }
@@ -5622,7 +5625,9 @@ var modelSceneSourceSurface = {
 var worldSceneSourceSurface = {
   methods: {
     info: cancellableValue,
-    page: cancellableValue
+    page: cancellableValue,
+    model: { kind: "value", optional: true, ...sig },
+    texture: { kind: "value", optional: true, ...sig }
   }
 };
 var modelResourceRefsSourceSurface = {
@@ -5703,7 +5708,10 @@ var subjectSelectorSourceSurface = {
       result: { contract: contractId("common.view/subject-calculations-source"), major: 1 },
       wrapper: "lease",
       ...sig
-    }
+    },
+    editTarget: { ...cancellableValue, optional: true },
+    isolation: { ...cancellableValue, optional: true },
+    isolationPlan: { ...cancellableValue, optional: true }
   }
 };
 var STANDARD_DATA_SOURCE_SURFACES = deepFreeze({
@@ -6559,8 +6567,6 @@ export {
   createContributionContractRegistry,
   A1_SPEC_SCHEMA_ENTRIES,
   foreignServiceContractId,
-  NATIVE_MODEL_ENCODER_CONTRACT,
-  NATIVE_MODEL_ENCODER_MATCHER_PROFILE,
   LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
   LANGUAGE_DOCUMENT_MATCHER_PROFILE,
   TRANSLATION_CONTRACT,
@@ -6568,8 +6574,6 @@ export {
   RUNTIME_SESSION_CONTRACT,
   RUNTIME_PROVIDER_MATCHER_PROFILE,
   RUNTIME_SESSION_V2_MEMBERS,
-  SCENE_RENDERER_CONTRACT,
-  SCENE_RENDERER_MATCHER_PROFILE,
   GAME_INSTALLATION_DISCOVERY_CONTRACT,
   GAME_LAUNCH_PLAN_CONTRACT,
   GAME_INSTALLATION_MATCHER_PROFILE,

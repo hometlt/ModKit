@@ -238,7 +238,8 @@ concurrent decoded-byte reservation across the subject. Nested image codecs rece
 raster-acquisition port. This capability crosses the ordinary worker ABI; Node worker tests compare
 external DDS and embedded PNG output with independently supplied RGBA texels.
 
-The base-color route draws glTF base color without PBR lighting. The separate game-material route is
+The base-color route draws glTF base color, including perspective-correct `COLOR_0` modulation,
+without PBR lighting. The separate game-material route is
 described below. Further glTF material channels and effect simulation remain named
 limitations with diagnostics. Image acquisition does not establish native shader
 equivalence, mip/filter selection or support for image-source extensions. Camera fitting and complete UI/MCP/browser workflows remain separate

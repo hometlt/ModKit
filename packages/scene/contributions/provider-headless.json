@@ -11,7 +11,7 @@
       "variantId": "trusted-node",
       "entrypoint": "./dist/render/headless.js",
       "target": {
-        "environments": ["node", "node-worker"]
+        "environments": ["node"]
       },
       "executionProfile": "trusted-in-process",
       "requestedPermissionClasses": []

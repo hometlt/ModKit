@@ -1,119 +1,33 @@
 import {
+  PROJECTION_RECEIPT_METADATA_ID,
+  pageStart
+} from "../../../../chunks/chunk-P62TCZHN.js";
+import "../../../../chunks/chunk-W5HVUYW4.js";
+import "../../../../chunks/chunk-4IC3253U.js";
+import "../../../../chunks/chunk-4FJ6AE2N.js";
+import "../../../../chunks/chunk-L5WKTLBK.js";
+import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource
-} from "../../../../chunks/chunk-J5QGUWNB.js";
-import "../../../../chunks/chunk-V3SJMNU5.js";
+} from "../../../../chunks/chunk-GKYVVDGF.js";
+import "../../../../chunks/chunk-PHI3IBXS.js";
 import {
   revisionId,
   toPortableProjectionReceipt
-} from "../../../../chunks/chunk-3JQHXTSW.js";
+} from "../../../../chunks/chunk-3VS5UF7D.js";
+import "../../../../chunks/chunk-GGIVOOBZ.js";
+import "../../../../chunks/chunk-YYQ3QKXM.js";
+import "../../../../chunks/chunk-YRQVWMJF.js";
+import {
+  snapshotJson
+} from "../../../../chunks/chunk-3YDGNEY2.js";
 import {
   ModkitError,
   canonicalJsonStringify,
   diagnostic
-} from "../../../../chunks/chunk-S5ITZJYV.js";
-import "../../../../chunks/chunk-YRQVWMJF.js";
+} from "../../../../chunks/chunk-6CZX3ZS4.js";
 import "../../../../chunks/chunk-CQ52GEHY.js";
-
-// packages/codec-kit/dist/paging.js
-function pageStart(cursor) {
-  if (cursor === void 0)
-    return 0;
-  if (!/^(?:0|[1-9][0-9]*)$/u.test(cursor))
-    throw new TypeError("invalid page cursor");
-  const value = Number(cursor);
-  if (!Number.isSafeInteger(value))
-    throw new TypeError("page cursor exceeds safe integer range");
-  return value;
-}
-
-// packages/codec-kit/dist/json-snapshot.js
-function utf8ByteLength(text) {
-  let bytes = 0;
-  for (let index = 0; index < text.length; index++) {
-    const code = text.charCodeAt(index);
-    if (code < 128)
-      bytes++;
-    else if (code < 2048)
-      bytes += 2;
-    else if (code >= 55296 && code <= 56319 && text.charCodeAt(index + 1) >= 56320 && text.charCodeAt(index + 1) <= 57343) {
-      bytes += 4;
-      index++;
-    } else
-      bytes += 3;
-  }
-  return bytes;
-}
-function snapshotJson(value, budget, signal) {
-  for (const limit of [budget?.maxDepth, budget?.maxNodes, budget?.maxBytes]) {
-    if (!Number.isSafeInteger(limit) || limit < 0)
-      throw new TypeError("invalid JSON snapshot budget");
-  }
-  const ancestors = /* @__PURE__ */ new Set();
-  let nodes = 0;
-  let bytes = 0;
-  const charge = (count) => {
-    bytes += count;
-    if (bytes > budget.maxBytes)
-      throw new RangeError("JSON snapshot exceeds maxBytes");
-  };
-  const copy = (entry, depth) => {
-    if (signal?.aborted)
-      throw new DOMException("operation cancelled", "AbortError");
-    if (depth > budget.maxDepth)
-      throw new RangeError("JSON snapshot exceeds maxDepth");
-    if (++nodes > budget.maxNodes)
-      throw new RangeError("JSON snapshot exceeds maxNodes");
-    if (entry === null || typeof entry === "boolean") {
-      charge(entry === false ? 5 : 4);
-      return entry;
-    }
-    if (typeof entry === "string") {
-      charge(utf8ByteLength(JSON.stringify(entry)));
-      return entry;
-    }
-    if (typeof entry === "number" && Number.isFinite(entry)) {
-      charge(JSON.stringify(entry).length);
-      return entry;
-    }
-    if (typeof entry !== "object" || entry === null)
-      throw new TypeError("non-JSON snapshot value");
-    const prototype = Object.getPrototypeOf(entry);
-    if (!Array.isArray(entry) && prototype !== null && prototype !== Object.prototype) {
-      throw new TypeError("JSON snapshot requires plain objects");
-    }
-    if (ancestors.has(entry))
-      throw new TypeError("cyclic JSON snapshot");
-    ancestors.add(entry);
-    try {
-      charge(2);
-      if (Array.isArray(entry)) {
-        const result2 = [];
-        for (let index = 0; index < entry.length; index++) {
-          if (index > 0)
-            charge(1);
-          result2.push(copy(entry[index], depth + 1));
-        }
-        return Object.freeze(result2);
-      }
-      const result = [];
-      const entries = Object.entries(entry);
-      if (budget.sortKeys)
-        entries.sort(([left], [right]) => left < right ? -1 : left > right ? 1 : 0);
-      for (const [key, item] of entries) {
-        if (item === void 0)
-          continue;
-        charge(utf8ByteLength(JSON.stringify(key)) + 1 + (result.length > 0 ? 1 : 0));
-        result.push([key, copy(item, depth + 1)]);
-      }
-      return Object.freeze(Object.fromEntries(result));
-    } finally {
-      ancestors.delete(entry);
-    }
-  };
-  return copy(value, 0);
-}
 
 // packages/codec-kit/dist/deferred-session.js
 function deferAssetSession(revision, initialize, budget, openingSignal) {
@@ -257,23 +171,6 @@ function deferAssetSession(revision, initialize, budget, openingSignal) {
   });
 }
 
-// packages/codec-kit/dist/projection.js
-var PROJECTION_RECEIPT_METADATA_ID = "uv-projection-receipt";
-
-// packages/codec-kit/dist/model/animation.js
-var DEFAULT_MODEL_ANIMATION_BUDGET = Object.freeze({
-  maxDepth: 64,
-  maxNodes: 1e6,
-  maxBytes: 134217728
-});
-
-// packages/codec-kit/dist/model/skeleton.js
-var DEFAULT_MODEL_SKELETON_BUDGET = Object.freeze({
-  maxDepth: 64,
-  maxNodes: 1e6,
-  maxBytes: 134217728
-});
-
 // packages/codec-kit/dist/editing.js
 function assetRevisionFromInput(input) {
   if (input.originKind !== "single" || input.revisions.topology !== "single") {
@@ -316,13 +213,6 @@ function editPlanFromInput(input, { planId, edits, fidelity, guarantee = "atomic
     diagnostics: Object.freeze([...diagnostics])
   });
 }
-
-// packages/codec-kit/dist/model/materials.js
-var DEFAULT_MODEL_MATERIAL_BUDGET = Object.freeze({
-  maxDepth: 64,
-  maxNodes: 1e6,
-  maxBytes: 134217728
-});
 
 // packages/codec-kit/dist/xml-scan.js
 var NAMED_ENTITIES = Object.freeze({

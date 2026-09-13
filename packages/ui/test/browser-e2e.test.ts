@@ -3659,7 +3659,7 @@ describe('13C real-browser viewer host', () => {
    * test double of it.
    */
   const mountModelStage = async (
-    mode: 'resolved' | 'refused' | 'animated' | 'animated-slow',
+    mode: 'resolved' | 'refused' | 'textured' | 'animated' | 'animated-slow',
   ): Promise<void> => {
     await page.evaluate(async selection => {
       const globals = globalThis as unknown as {
@@ -3673,6 +3673,7 @@ describe('13C real-browser viewer host', () => {
       const typed = globals.modkit.ui as unknown as typeof import('@modkit/ui')
       const root = document.querySelector('#app') as HTMLElement
       const animated = selection.startsWith('animated')
+      const textured = selection === 'textured'
       let inFlight = 0
       let maximumInFlight = 0
       let completedFrames = 0
@@ -3746,6 +3747,7 @@ describe('13C real-browser viewer host', () => {
             topology: 'triangles' as const,
             positions: new Float32Array([-1, -1, 0, 1, -1, 0, 1, 1, 0, -1, 1, 0]),
             normals: new Float32Array([0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1]),
+            ...(textured ? { texcoords0: new Float32Array([0, 0, 1, 0, 1, 1, 0, 1]) } : {}),
             indices: new Uint32Array([0, 1, 2, 0, 2, 3]),
             materialId: 'plate-material',
             ...(!animated
@@ -3797,6 +3799,35 @@ describe('13C real-browser viewer host', () => {
         'common.view/model-scene-source': scene,
         'common.view/model-skeleton-source': skeleton,
       }
+      if (textured) {
+        values['common.view/model-resource-refs-source'] = {
+          async info() {
+            return { references: 1, bound: 0, truncated: false }
+          },
+          async references() {
+            return {
+              items: [
+                { id: 'fixture.png', role: 'texture', provenance: 'reference-only' as const },
+              ],
+            }
+          },
+        }
+        values['common.view/model-material-source'] = {
+          async info() {
+            return { materials: 1 }
+          },
+          async materials() {
+            return {
+              items: [
+                {
+                  id: 'plate-material',
+                  layers: [{ slot: 'diffuse', resourceId: 'fixture.png', uvSource: 0 }],
+                },
+              ],
+            }
+          },
+        }
+      }
       if (animated)
         values['common.view/model-animation-source'] = {
           async info() {
@@ -3841,17 +3872,40 @@ describe('13C real-browser viewer host', () => {
           major: 1,
         })),
       }
-      const mount = await typed.createModelViewer({ renderer: port as never }).mount({
-        container: root,
-        descriptor: { revision: 'content-hash.sha256:render', operations: [], diagnostics: [] },
-        slot,
-        sources: {
-          async get(binding: { contract: string }) {
-            return { value: values[binding.contract], async release() {} }
+      const mount = await typed
+        .createModelViewer({
+          renderer: port as never,
+          ...(textured
+            ? {
+                async textures() {
+                  return new Map([
+                    [
+                      'fixture.png',
+                      {
+                        id: 'fixture-texture',
+                        width: 2,
+                        height: 2,
+                        rgba: new Uint8Array([
+                          255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 0, 255,
+                        ]),
+                      },
+                    ],
+                  ])
+                },
+              }
+            : {}),
+        })
+        .mount({
+          container: root,
+          descriptor: { revision: 'content-hash.sha256:render', operations: [], diagnostics: [] },
+          slot,
+          sources: {
+            async get(binding: { contract: string }) {
+              return { value: values[binding.contract], async release() {} }
+            },
           },
-        },
-        operations: { async dispose() {} },
-      } as never)
+          operations: { async dispose() {} },
+        } as never)
       ;(globalThis as unknown as Record<string, unknown>)['renderFixture'] = {
         mount,
         maximumInFlight: () => maximumInFlight,
@@ -3884,6 +3938,7 @@ describe('13C real-browser viewer host', () => {
         status: canvas.getAttribute('data-model-renderer-status'),
         diagnostic: canvas.getAttribute('data-model-renderer-diagnostic'),
         skeleton: canvas.getAttribute('data-model-skeleton'),
+        textures: canvas.getAttribute('data-model-textures'),
         width: canvas.width,
         height: canvas.height,
         opaquePixels,
@@ -3922,6 +3977,41 @@ describe('13C real-browser viewer host', () => {
       skeleton: '2',
     })
     expect(evidence['opaquePixels']).toBeGreaterThan(0)
+    await page.evaluate(async () => {
+      await (
+        globalThis as unknown as { renderFixture: { mount: { unmount(): Promise<void> } } }
+      ).renderFixture.mount.unmount()
+    })
+  })
+
+  it('hands host-decoded model textures to the resolved WebGL2 provider', async () => {
+    await reset()
+    await mountModelStage('textured')
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('[data-mk-part="model.canvas"]')
+          ?.getAttribute('data-model-textures') === '1',
+    )
+    await page.waitForFunction(() => {
+      const canvas = document.querySelector(
+        '[data-mk-part="model.canvas"]',
+      ) as HTMLCanvasElement | null
+      if (canvas === null) return false
+      const pixels = canvas.getContext('2d')?.getImageData(0, 0, canvas.width, canvas.height).data
+      if (pixels === undefined) return false
+      for (let offset = 0; offset < pixels.length; offset += 4) {
+        if ((pixels[offset + 3] ?? 0) !== 0 && (pixels[offset] ?? 0) !== (pixels[offset + 1] ?? 0))
+          return true
+      }
+      return false
+    })
+    expect(await modelCanvasEvidence()).toMatchObject({
+      renderer: 'webgl2',
+      rendererId: 'modkit.browser-webgl',
+      status: 'resolved',
+      textures: '1',
+    })
     await page.evaluate(async () => {
       await (
         globalThis as unknown as { renderFixture: { mount: { unmount(): Promise<void> } } }

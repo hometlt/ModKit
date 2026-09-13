@@ -37,6 +37,8 @@ import {
   type OperationSession,
   type PresentationSlot,
   type SceneRendererPort,
+  type ModelResourceRef,
+  type SceneRendererTexture,
   type ViewerModule,
   type ViewerMount,
 } from '@modkit/sdk'
@@ -94,6 +96,12 @@ export interface WebViewContext {
    * viewer holds none of those. Omitted, the stage draws its 2D wireframe and says so.
    */
   readonly renderer?: SceneRendererPort
+  /** Host-decoded model textures, keyed by the logical ids published by the model. */
+  readonly textures?: (
+    descriptor: AnyDescriptor,
+    references: readonly ModelResourceRef[],
+    signal?: AbortSignal,
+  ) => Promise<ReadonlyMap<string, SceneRendererTexture>>
   operationsFor(descriptor: AnyDescriptor): OperationSession | undefined
   /**
    * Open one member of this container as a subject of its own (block 13 slice B).
@@ -504,6 +512,7 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
         // A GPU frame where this page can resolve a provider, the 2D wireframe where it cannot —
         // the stage decides on the answer, not on the presence of the option.
         ...(context.renderer === undefined ? {} : { renderer: context.renderer }),
+        ...(context.textures === undefined ? {} : { textures: context.textures }),
       }),
       // optional, never a selection rule: a codec publishing none of these still gets the stage
       optionalContracts: MODEL_FACET_CONTRACTS,

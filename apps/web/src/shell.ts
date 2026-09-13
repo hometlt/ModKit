@@ -35,6 +35,7 @@ import {
   type OperationSession,
   type PermissionGrant,
   type PresentationPlan,
+  type RasterResourcePort,
 } from '@modkit/sdk'
 import {
   nestedSubjectServices,
@@ -58,6 +59,7 @@ import {
   type PreviewResolver,
 } from '@modkit/ui/explorer'
 import { createSettingsUi, readAppThemeChoices, type SettingsDocument } from '@modkit/ui/settings'
+import { resolveModelViewerTextures } from '@modkit/ui/model'
 import { element, setPart, setState, setViewerText } from '@modkit/ui/viewer'
 import type { UiMessageKey } from '@modkit/ui/localization'
 
@@ -507,6 +509,8 @@ async function boot(): Promise<void> {
    * child's companions resolve inside the same archive. Bytes could never carry that.
    */
   const assetSessions = new Map<string, AssetSession>()
+  /** Bounded image decoding owned by each open subject; model viewers receive only copied RGBA. */
+  const rasterResources = new Map<string, RasterResourcePort>()
   /**
    * Subjects already opened by the nested route, waiting for their tab to mount.
    *
@@ -767,6 +771,12 @@ async function boot(): Promise<void> {
     localizer,
     renderer: services.renderer,
     operationsFor: descriptor => operationSessions.get(descriptorKey(descriptor)),
+    textures: (descriptor, references, signal) => {
+      const raster = rasterResources.get(descriptorKey(descriptor))
+      return raster === undefined
+        ? Promise.resolve(new Map())
+        : resolveModelViewerTextures(raster, references, signal)
+    },
     /*
      * The web half of `block9/archive-entry-as-subject` (block 13 slice B).
      *
@@ -987,6 +997,7 @@ async function boot(): Promise<void> {
       operationSessions.set(key, operations)
       // Kept beside the operations arm so a container member can be opened as a subject of its own.
       assetSessions.set(key, result.session)
+      if (result.rasterResources !== undefined) rasterResources.set(key, result.rasterResources)
       openedEntries.set(entry.id, entry)
       entryOfDescriptor.set(key, entry.id)
       /*
@@ -1036,6 +1047,7 @@ async function boot(): Promise<void> {
         async dispose() {
           operationSessions.delete(key)
           assetSessions.delete(key)
+          rasterResources.delete(key)
           selectedRoutes.delete(key)
           entryOfDescriptor.delete(key)
           inspected.delete(entry.id)

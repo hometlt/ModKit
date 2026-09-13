@@ -1,7 +1,7 @@
 import type { SceneRendererPrimitive } from '@modkit/sdk/renderer'
 
-/** Existing renderer COLOR_0 correspondence for the simple effect pass. The caller owns the
- * immutable scene snapshot. Validate before GPU allocation or per-fragment interpolation. */
+/** Renderer COLOR_0 correspondence shared by ordinary glTF and simple-effect passes. The caller
+ * owns the immutable scene snapshot. Validate before GPU allocation or per-fragment interpolation. */
 export function readSimpleEffectColors(
   primitive: SceneRendererPrimitive,
 ): Float32Array | undefined {

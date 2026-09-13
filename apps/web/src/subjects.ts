@@ -164,11 +164,21 @@ export function catalogCoordinates(catalog: WebExtensionCatalog): readonly strin
  */
 export const WEB_WORKER_MODULE_MAP: Readonly<Record<string, string>> = Object.freeze({
   '@modkit/codec-kit': 'vendor/codec-kit/index.js',
+  '@modkit/codec-kit/crypto/digest': 'vendor/codec-kit/crypto/digest.js',
+  '@modkit/codec-kit/json-edit': 'vendor/codec-kit/json-edit.js',
+  '@modkit/codec-kit/json-snapshot': 'vendor/codec-kit/json-snapshot.js',
   '@modkit/codec-kit/text': 'vendor/codec-kit/text/index.js',
+  '@modkit/codec-kit/tree/json': 'vendor/codec-kit/tree/json.js',
   '@modkit/core': 'vendor/core/index.js',
   '@modkit/host': 'vendor/host/index.js',
+  '@modkit/scene/uvm': 'vendor/scene/uvm/index.js',
+  '@modkit/scene/uvm/inspection': 'vendor/scene/uvm/inspection.js',
+  '@modkit/scene/uvm/render': 'vendor/scene/uvm/render.js',
   '@modkit/sdk': 'vendor/sdk/index.js',
+  '@modkit/sdk/model-encoding': 'vendor/sdk/model-encoding.js',
   '@modkit/sdk/templates': 'vendor/sdk/templates/index.js',
+  '@modkit/uv/model/container': 'vendor/uv/model/container.js',
+  '@modkit/uv/model/validation': 'vendor/uv/model/validation.js',
   '@rgrove/parse-xml': 'vendor/parse-xml/index.js',
   'modkit-extension-archives/formats/zip/codec':
     'vendor/modkit-extension-archives/formats/zip/codec.js',

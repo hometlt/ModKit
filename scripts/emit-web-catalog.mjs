@@ -36,7 +36,9 @@ export declare const WEB_EXTENSION_CATALOG: WebExtensionCatalog
 export const WEB_WORKER_VENDORED = Object.freeze([
   '@modkit/codec-kit',
   '@modkit/core',
+  '@modkit/scene',
   '@modkit/sdk',
+  '@modkit/uv',
   '@rgrove/parse-xml',
   'smol-toml',
   'yaml',

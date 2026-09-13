@@ -22,6 +22,7 @@ import type {
   SceneRendererColor,
   SceneRendererDirectionalLight,
   SceneRendererMaterial,
+  SceneRendererMaterialContext,
   SceneRendererTexture,
   SceneRendererPrimitive,
 } from '@modkit/sdk'
@@ -143,6 +144,8 @@ const dot = (left: Vector3, right: Vector3): number =>
 export interface CameraPlacement {
   readonly eye: Vector3
   readonly framing: ModelFraming
+  /** Column-major world-to-view matrix consumed by material lighting and Fresnel. */
+  readonly viewMatrix: Float32Array
   /** Column-major 4x4, exactly what `SceneRendererCamera.viewProjection` is defined to be. */
   readonly viewProjection: Float32Array
 }
@@ -201,7 +204,7 @@ export function modelCamera(
   projection[11] = -1
   projection[14] = (2 * far * near) / (near - far)
 
-  return { eye, framing, viewProjection: multiply4x4(projection, view) }
+  return { eye, framing, viewMatrix: view, viewProjection: multiply4x4(projection, view) }
 }
 
 /** Column-major 4x4 product, `left * right`, in the layout every provider already reads. */
@@ -351,11 +354,25 @@ export function sceneMaterials(
     const resourceId = baseColorResourceOf(ref)
     const texture = resourceId === undefined ? undefined : textures.get(resourceId)
     if (texture !== undefined) used.set(texture.id, texture)
+    const bindings: { resourceId: string; textureId: string }[] = []
+    const boundResources = new Set<string>()
+    for (const layer of ref.layers ?? []) {
+      if (layer.resourceId === undefined || boundResources.has(layer.resourceId)) continue
+      const layerTexture = textures.get(layer.resourceId)
+      if (layerTexture === undefined) continue
+      boundResources.add(layer.resourceId)
+      used.set(layerTexture.id, layerTexture)
+      bindings.push({ resourceId: layer.resourceId, textureId: layerTexture.id })
+    }
     return Object.freeze({
       id: ref.id,
       baseColor: texture === undefined ? materialColorFor(ref.id) : MODEL_DEFAULT_BASE_COLOR,
       ...(texture === undefined ? {} : { baseColorTexture: texture.id }),
       shading: shaded ? ('lambert' as const) : ('unlit' as const),
+      ...(ref.alphaMode === undefined ? {} : { alphaMode: ref.alphaMode }),
+      ...(ref.alphaCutoff === undefined ? {} : { alphaCutoff: ref.alphaCutoff }),
+      ...(ref.shader === undefined ? {} : { shader: ref.shader }),
+      ...(bindings.length === 0 ? {} : { textureBindings: Object.freeze(bindings) }),
     })
   })
   return Object.freeze({
@@ -376,6 +393,7 @@ export interface ModelSceneRequestOptions {
   readonly textures?: readonly SceneRendererTexture[]
   readonly clearColor?: SceneRendererColor
   readonly light?: SceneRendererDirectionalLight
+  readonly materialContext?: SceneRendererMaterialContext
   readonly signal?: AbortSignal
 }
 
@@ -393,8 +411,15 @@ export function modelSceneRequest(options: ModelSceneRequestOptions): SceneRende
         ? {}
         : { textures: options.textures }),
       ...(options.light === undefined ? {} : { light: options.light }),
+      ...(options.materialContext === undefined
+        ? {}
+        : { materialContext: options.materialContext }),
     },
-    camera: { viewProjection: options.camera.viewProjection },
+    camera: {
+      viewProjection: options.camera.viewProjection,
+      viewMatrix: options.camera.viewMatrix,
+      eyePosition: options.camera.eye,
+    },
     viewport: options.viewport,
     ...(options.clearColor === undefined ? {} : { clearColor: options.clearColor }),
     outputKind: 'rgba8',
@@ -418,9 +443,7 @@ export function skeletonJoints(bindings: readonly ModelBoneBinding[]): readonly 
   const hierarchyIds = [
     ...new Set(
       bindings.flatMap(binding =>
-        typeof binding.hierarchyId === 'string' && binding.hierarchyId
-          ? [binding.hierarchyId]
-          : [],
+        typeof binding.hierarchyId === 'string' && binding.hierarchyId ? [binding.hierarchyId] : [],
       ),
     ),
   ]

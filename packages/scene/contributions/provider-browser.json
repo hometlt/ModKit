@@ -25,15 +25,6 @@
       },
       "executionProfile": "trusted-in-process",
       "requestedPermissionClasses": []
-    },
-    {
-      "variantId": "browser-worker",
-      "entrypoint": "./dist/render/browser.js",
-      "target": {
-        "environments": ["browser-worker"]
-      },
-      "executionProfile": "worker-brokered",
-      "requestedPermissionClasses": []
     }
   ],
   "spec": {

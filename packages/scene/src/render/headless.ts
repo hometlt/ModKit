@@ -359,7 +359,7 @@ function rasterizeTriangle(
       let red = base[0]
       let green = base[1]
       let blue = base[2]
-      if (effect !== undefined && colors !== undefined) {
+      if (colors !== undefined) {
         const a = firstWeight * first.invW,
           b = secondWeight * second.invW,
           c = thirdWeight * third.invW,
@@ -737,8 +737,7 @@ function renderPrimitive(context: RasterContext, primitive: SceneRendererPrimiti
     primitive.materialId === undefined
       ? DEFAULT_SURFACE
       : (context.materials.get(primitive.materialId) ?? DEFAULT_SURFACE)
-  const colorBuffer =
-    surface.simpleEffect === undefined ? undefined : readSimpleEffectColors(primitive)
+  const colorBuffer = readSimpleEffectColors(primitive)
   const uvBuffer =
     surface.texture === undefined || !(primitive.textureCoordinates instanceof Float32Array)
       ? undefined

@@ -67,6 +67,7 @@ import {
   requestWriteAccess,
   resolveCommonPresentationPlan,
   resolveFormatWriter,
+  resolveModelViewerTextures,
   resolveModuleMap,
   revisionId,
   safeViewerText,
@@ -80,7 +81,7 @@ import {
   subjectFactsSourceFromWire,
   webExtensionSubjectCardBundle,
   withEnglishUiFallback
-} from "./chunks/chunk-TZJEGHI3.js";
+} from "./chunks/chunk-QBFLB2HN.js";
 import {
   init_define_MODKIT_EMBED_EXTENSION_ORIGINS
 } from "./chunks/chunk-BLWUC7LO.js";
@@ -731,9 +732,9 @@ var COORDINATOR_LIMITS = Object.freeze({
   maxDepth: 16,
   catalogEnrichment: MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY,
   limits: Object.freeze({
-    maxRequirements: 8,
-    maxDocumentBytes: 1e6,
-    maxTotalBytes: 4e6,
+    maxRequirements: 16,
+    maxDocumentBytes: 33554432,
+    maxTotalBytes: 67108864,
     maxObjects: 1e5,
     maxRegions: 1e4,
     maxTerrainCells: 1e5,
@@ -2572,6 +2573,7 @@ async function boot() {
   const say = (message) => setViewerText(statusLine, message, 400);
   const operationSessions = /* @__PURE__ */ new Map();
   const assetSessions = /* @__PURE__ */ new Map();
+  const rasterResources = /* @__PURE__ */ new Map();
   const pendingNested = /* @__PURE__ */ new Map();
   const selectedRoutes = /* @__PURE__ */ new Map();
   let activeFormatSmokeCase;
@@ -2741,6 +2743,10 @@ async function boot() {
     localizer,
     renderer: services.renderer,
     operationsFor: (descriptor) => operationSessions.get(descriptorKey(descriptor)),
+    textures: (descriptor, references, signal) => {
+      const raster = rasterResources.get(descriptorKey(descriptor));
+      return raster === void 0 ? Promise.resolve(/* @__PURE__ */ new Map()) : resolveModelViewerTextures(raster, references, signal);
+    },
     /*
      * The web half of `block9/archive-entry-as-subject` (block 13 slice B).
      *
@@ -2909,6 +2915,7 @@ async function boot() {
       }
       operationSessions.set(key, operations);
       assetSessions.set(key, result.session);
+      if (result.rasterResources !== void 0) rasterResources.set(key, result.rasterResources);
       openedEntries.set(entry.id, entry);
       entryOfDescriptor.set(key, entry.id);
       let releaseWriter;
@@ -2952,6 +2959,7 @@ async function boot() {
         async dispose() {
           operationSessions.delete(key);
           assetSessions.delete(key);
+          rasterResources.delete(key);
           selectedRoutes.delete(key);
           entryOfDescriptor.delete(key);
           inspected.delete(entry.id);

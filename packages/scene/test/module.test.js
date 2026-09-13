@@ -16,7 +16,8 @@ describe('built-in scene module', () => {
     const headless = [...sceneModule.input.documents.values()].find(
       manifest => manifest.id === 'modkit/headless-renderer',
     )
-    assert.deepEqual(headless.runtimeVariants[0].target.environments, ['node', 'node-worker'])
+    assert.deepEqual(headless.runtimeVariants[0].target.environments, ['node'])
+    assert.deepEqual(headless.runtimeVariants.map(variant => variant.variantId), ['trusted-node'])
     const browser = [...sceneModule.input.documents.values()].find(
       manifest => manifest.id === 'modkit/browser-webgl-renderer',
     )

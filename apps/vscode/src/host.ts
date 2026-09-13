@@ -914,7 +914,10 @@ function serveVsCode(
     const generation = beginsSubjectOpen()
     if (requested.startsWith('modkit-source:')) {
       if (!options.readContentSource) throw new Error('Content source provider is unavailable')
-      const answer = await contentSourceOpener(services, options.readContentSource)(requested, signal)
+      const answer = await contentSourceOpener(services, options.readContentSource)(
+        requested,
+        signal,
+      )
       publishSubjectDiagnostics(requested, answer.snapshot.diagnostics)
       if (answer.snapshot.state === 'opened') {
         retainCandidateSession(generation, await answer.session?.descriptor(), answer.session)
@@ -1190,7 +1193,10 @@ function serveVsCode(
         message: `${basename(subjectRequested)} opened without an editing arm: ${describe(error)}`,
       })
     }
-    return answer
+    return {
+      ...answer,
+      ...(opened?.rasterResources === undefined ? {} : { rasterResources: opened.rasterResources }),
+    }
   }
 
   const exposure = exposeSubjectRpc({
@@ -1248,6 +1254,9 @@ function serveVsCode(
             ? baseSnapshot
             : { ...baseSnapshot, presentation: presentation.plan },
         session: nested.result.session,
+        ...(nested.result.rasterResources === undefined
+          ? {}
+          : { rasterResources: nested.result.rasterResources }),
       }
     },
     editing: sessionId => editingBySession.get(sessionId),
@@ -1785,7 +1794,8 @@ export function ownedWireBytes(view: Uint8Array): Uint8Array {
  * The URI keeps the absolute path (it has to address something), the label does not.
  */
 export function subjectLabel(path: string): string {
-  if (path.startsWith('modkit-source:')) return decodeURIComponent(new URL(path).pathname).split('/').at(-1) ?? 'Source file'
+  if (path.startsWith('modkit-source:'))
+    return decodeURIComponent(new URL(path).pathname).split('/').at(-1) ?? 'Source file'
   const location = parseContainerUriText(path)
   if (location === undefined) return basename(path)
   return `${basename(location.container)} › ${location.entry}`

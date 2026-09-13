@@ -23,6 +23,9 @@ import type {
   CommitReceipt,
   OperationSession,
   PresentationPlan,
+  RasterResourcePort,
+  RasterResourceRequest,
+  RasterResourceResult,
   SourceConflict,
   SubjectEditTarget,
   ValidationResult,
@@ -68,6 +71,8 @@ const subjectServicesSurface: CapabilitySurface = {
     navigate: { kind: 'value', signal: 'last', arity: 2 },
     /** `edit(sessionId)` → the editing arm, when this host can write this subject. */
     edit: { kind: 'lease', result: SUBJECT_EDITING, wrapper: 'bare' },
+    /** Decode one bounded image through the attached subject's confined resource origin. */
+    readRaster: { kind: 'value', signal: 'last', arity: 2 },
   },
 }
 
@@ -306,7 +311,11 @@ export type SubjectEditingCommitResult =
 export type SubjectOpener = (
   path: string,
   signal?: AbortSignal,
-) => Promise<{ readonly snapshot: SubjectOpenSnapshot; readonly session?: AssetSession }>
+) => Promise<{
+  readonly snapshot: SubjectOpenSnapshot
+  readonly session?: AssetSession
+  readonly rasterResources?: RasterResourcePort
+}>
 
 export interface SubjectNavigationOpenRequest {
   readonly sourceSessionId: string
@@ -320,7 +329,12 @@ export type SubjectNavigator = (
   request: SubjectNavigationOpenRequest,
   signal?: AbortSignal,
 ) => Promise<
-  { readonly snapshot: SubjectOpenSnapshot; readonly session?: AssetSession } | undefined
+  | {
+      readonly snapshot: SubjectOpenSnapshot
+      readonly session?: AssetSession
+      readonly rasterResources?: RasterResourcePort
+    }
+  | undefined
 >
 
 export type SubjectNavigationSnapshot =
@@ -376,9 +390,13 @@ export interface SubjectRpcExposure {
 export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcExposure {
   const moduleUrl = options.moduleUrl ?? SUBJECT_SERVICES_URL
   /** Opened sessions the consumer has not attached yet, keyed by the snapshot's sessionId. */
-  const pending = new Map<string, AssetSession>()
+  interface ServedSubject {
+    readonly session: AssetSession
+    readonly rasterResources?: RasterResourcePort
+  }
+  const pending = new Map<string, ServedSubject>()
   /** Attached sessions remain addressable only until their exact RPC lease is released. */
-  const live = new Map<string, AssetSession>()
+  const live = new Map<string, ServedSubject>()
   /** Plans returned by codec operations, before their previews cross the RPC boundary. */
   const operationPlans = new Map<string, Map<string, AssetEditPlan>>()
   const maximumLiveSessions = 1_024
@@ -396,12 +414,16 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
   const registerPending = async (
     snapshot: SubjectOpenedSnapshot,
     session: AssetSession,
+    rasterResources?: RasterResourcePort,
   ): Promise<boolean> => {
     if (pending.has(snapshot.sessionId) || live.has(snapshot.sessionId)) {
       await session.dispose()
       return false
     }
-    pending.set(snapshot.sessionId, session)
+    pending.set(snapshot.sessionId, {
+      session,
+      ...(rasterResources === undefined ? {} : { rasterResources }),
+    })
     return true
   }
   const services = {
@@ -414,31 +436,32 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
         if (result.session === undefined) {
           throw new TypeError('an opened snapshot must carry its session')
         }
-        if (!(await registerPending(result.snapshot, result.session))) {
+        if (!(await registerPending(result.snapshot, result.session, result.rasterResources))) {
           throw new TypeError('subject session id collides with an existing session')
         }
       }
       return result.snapshot
     },
     attach: async (sessionId: unknown) => {
-      const session = typeof sessionId === 'string' ? pending.get(sessionId) : undefined
-      if (session === undefined) {
+      const subject = typeof sessionId === 'string' ? pending.get(sessionId) : undefined
+      if (subject === undefined) {
         throw new TypeError('subject session is unavailable (already attached or never opened)')
       }
       if (live.size >= maximumLiveSessions) {
         throw new TypeError('subject live-session registry is full')
       }
       pending.delete(sessionId as string)
-      live.set(sessionId as string, session)
+      live.set(sessionId as string, subject)
       // the handle owns the session from here: releaseVia dispose (or cascade) releases the lease
       let disposed = false
       const dispose = async () => {
         if (disposed) return
         disposed = true
         operationPlans.delete(sessionId as string)
-        if (live.get(sessionId as string) === session) live.delete(sessionId as string)
-        await session.dispose()
+        if (live.get(sessionId as string) === subject) live.delete(sessionId as string)
+        await subject.session.dispose()
       }
+      const session = subject.session
       const served: AssetSession = {
         revision: session.revision,
         state: () => session.state(),
@@ -489,13 +512,21 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
       if (parent === undefined) return { state: 'rejected', reason: 'session-unavailable' }
       const target = canonicalSubject(targetValue)
       if (target === undefined) return { state: 'rejected', reason: 'invalid-subject' }
-      const descriptor = await parent.descriptor()
+      const descriptor = await parent.session.descriptor()
       const current = canonicalSubject(descriptor.subjectUri)
       if (current === undefined) return { state: 'rejected', reason: 'session-unavailable' }
       if (current.workspace !== target.workspace) {
         return { state: 'rejected', reason: 'workspace-mismatch' }
       }
-      const opened = await options.navigate?.({ sourceSessionId, parent, current, target }, signal)
+      const opened = await options.navigate?.(
+        {
+          sourceSessionId,
+          parent: parent.session,
+          current,
+          target,
+        },
+        signal,
+      )
       if (opened?.snapshot.state !== 'opened' || opened.session === undefined) {
         await opened?.session?.dispose()
         return { state: 'rejected', reason: 'target-unavailable' }
@@ -509,10 +540,22 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
           )} != ${serializeSubjectRef(target)})`,
         )
       }
-      if (!(await registerPending(opened.snapshot, opened.session))) {
+      if (!(await registerPending(opened.snapshot, opened.session, opened.rasterResources))) {
         return { state: 'rejected', reason: 'collision' }
       }
       return { state: 'opened', snapshot: opened.snapshot }
+    },
+    readRaster: async (
+      sessionId: unknown,
+      request: unknown,
+      signal?: AbortSignal,
+    ): Promise<RasterResourceResult> => {
+      const raster =
+        typeof sessionId === 'string' ? live.get(sessionId)?.rasterResources : undefined
+      if (raster === undefined) {
+        throw new TypeError('this subject has no raster resource origin')
+      }
+      return raster.read(request as RasterResourceRequest, signal)
     },
     edit: async (sessionId: unknown) => {
       const editing = typeof sessionId === 'string' ? options.editing?.(sessionId) : undefined
@@ -677,7 +720,7 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
       const attached = [...live.values()]
       live.clear()
       operationPlans.clear()
-      await Promise.allSettled([...orphans, ...attached].map(session => session.dispose()))
+      await Promise.allSettled([...orphans, ...attached].map(subject => subject.session.dispose()))
     },
   }
 }
@@ -701,6 +744,11 @@ export interface SubjectPreviewSession {
    * grant, so a mutating operation is refused there, not here.
    */
   operations(): Promise<OperationSession>
+  /** Decode a logical model texture without granting the consumer path or codec authority. */
+  readRasterResource?(
+    request: RasterResourceRequest,
+    signal?: AbortSignal,
+  ): Promise<RasterResourceResult>
   /** Minted from this exact attached RPC session when the app owns an open-target handler. */
   readonly subjectNavigation?: ViewerSubjectNavigation
   dispose(): Promise<void>
@@ -773,6 +821,11 @@ interface ServicesProxy {
     signal?: AbortSignal,
   ): Promise<SubjectNavigationSnapshot>
   edit(sessionId: string): Promise<SubjectEditingArm>
+  readRaster(
+    sessionId: string,
+    request: RasterResourceRequest,
+    signal?: AbortSignal,
+  ): Promise<RasterResourceResult>
 }
 
 export async function connectSubjectRpc(
@@ -866,6 +919,8 @@ export async function connectSubjectRpc(
       descriptor: async () => snapshot.descriptor,
       dataSource: (contract, major) => proxy.dataSource(contract, major),
       operations: () => proxy.operations(),
+      readRasterResource: (request, signal) =>
+        services.readRaster(snapshot.sessionId, request, signal),
       async dispose() {
         if (disposed) return
         disposed = true

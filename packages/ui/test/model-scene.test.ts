@@ -19,6 +19,7 @@ import {
   modelRendererBackend,
   modelSceneRequest,
   projectPoint,
+  resolveModelViewerTextures,
   sceneMaterials,
   skeletonJoints,
 } from '@modkit/ui/model'
@@ -170,6 +171,58 @@ describe('model stage materials', () => {
     expect(surfaces.textures).toEqual([texture])
     expect(surfaces.materials[0]?.baseColorTexture).toBe('texture:hull.dds')
   })
+
+  it('forwards game-material shaders, coverage, and every resolved layer binding', () => {
+    const shader = {
+      id: 'modkit.render-material.v1',
+      parameters: { renderModel: { version: 1 } },
+    } as const
+    const diffuse = {
+      id: 'texture:diffuse',
+      width: 1,
+      height: 1,
+      rgba: Uint8Array.of(255, 255, 255, 255),
+    }
+    const normal = {
+      id: 'texture:normal',
+      width: 1,
+      height: 1,
+      rgba: Uint8Array.of(128, 128, 255, 255),
+    }
+    const surfaces = sceneMaterials(
+      [
+        {
+          id: 'hull',
+          alphaMode: 'mask',
+          alphaCutoff: 0.25,
+          shader,
+          layers: [
+            { slot: 'diffuse', resourceId: 'hull.dds' },
+            { slot: 'normal', resourceId: 'hull_normal.dds' },
+            { slot: 'normalBlend1Mask', resourceId: 'hull_normal.dds' },
+            { slot: 'emissive', resourceId: 'missing.dds' },
+          ],
+        },
+      ],
+      new Map([
+        ['hull.dds', diffuse],
+        ['hull_normal.dds', normal],
+      ]),
+      true,
+    )
+
+    expect(surfaces.materials[0]).toMatchObject({
+      id: 'hull',
+      alphaMode: 'mask',
+      alphaCutoff: 0.25,
+      shader,
+      textureBindings: [
+        { resourceId: 'hull.dds', textureId: 'texture:diffuse' },
+        { resourceId: 'hull_normal.dds', textureId: 'texture:normal' },
+      ],
+    })
+    expect(surfaces.textures).toEqual([diffuse, normal])
+  })
 })
 
 describe('model stage skeleton', () => {
@@ -253,6 +306,26 @@ describe('model stage backend names', () => {
 })
 
 describe('the stage request drawn by the shipped headless provider', () => {
+  it('carries the material clock and complete camera frame to the provider', () => {
+    const camera = modelCamera(framePrimitive(cube()), createOrbitController().basis(), 1, viewport)
+    const request = modelSceneRequest({
+      primitive: cube(),
+      camera,
+      viewport,
+      materialContext: { time: 1.25, sequenceTime: 0.75, sequenceIndex: 4 },
+    })
+    expect(request.camera).toEqual({
+      viewProjection: camera.viewProjection,
+      viewMatrix: camera.viewMatrix,
+      eyePosition: camera.eye,
+    })
+    expect(request.scene.materialContext).toEqual({
+      time: 1.25,
+      sequenceTime: 0.75,
+      sequenceIndex: 4,
+    })
+  })
+
   it('shades a mesh, so a lit face and a face turned away are different colours', async () => {
     const renderHeadless = await headless()
     const primitive = cube('hull')
@@ -369,5 +442,82 @@ describe('the stage request drawn by the shipped headless provider', () => {
     )
     expect(frame.diagnostics.map(item => item.code)).toContain('modkit.headless/texture-missing')
     expect(frame.statistics.fragments).toBeGreaterThan(0)
+  })
+
+  it('resolves logical texture ids through the host raster port and strips row padding', async () => {
+    const requests: unknown[] = []
+    const textures = await resolveModelViewerTextures(
+      {
+        async read(request) {
+          requests.push(request)
+          return {
+            state: 'decoded-surfaces',
+            info: {
+              width: 2,
+              height: 2,
+              depth: 1,
+              layers: 1,
+              faces: 1,
+              mipLevels: 1,
+              frames: 1,
+              channels: 4,
+              bitDepth: 8,
+              colorSpace: 'srgb',
+              alphaMode: 'straight',
+              orientation: 'top-left',
+              decodedAccess: true,
+              channelLayout: 'rgba',
+              compression: 'bc3',
+            },
+            surfaces: [
+              {
+                subresource: { frame: 0, mipLevel: 0, layer: 0, face: 0, slice: 0 },
+                region: {
+                  x: 0,
+                  y: 0,
+                  width: 2,
+                  height: 2,
+                  rowStride: 12,
+                  pixelFormat: 'rgba8',
+                  pixels: new Uint8Array([
+                    1, 2, 3, 4, 5, 6, 7, 8, 99, 99, 99, 99, 9, 10, 11, 12, 13, 14, 15, 16,
+                  ]),
+                },
+              },
+            ],
+            diagnostics: [],
+          }
+        },
+      },
+      [
+        { id: 'Marine.dds', role: 'texture', provenance: 'companion' },
+        { id: 'Marine.dds', role: 'texture', provenance: 'companion' },
+        { id: 'Walk.m3a', role: 'animation', provenance: 'companion' },
+      ],
+    )
+
+    expect(requests).toHaveLength(1)
+    expect(requests[0]).toMatchObject({
+      kind: 'logical',
+      requirement: {
+        logicalId: 'Marine.dds',
+        role: 'texture',
+        scopes: [
+          'sibling-directory',
+          'workspace-dependency-layer',
+          'current-mount',
+          'enclosing-container',
+        ],
+      },
+      selection: { face: 'all' },
+    })
+    expect(textures.get('Marine.dds')).toEqual({
+      id: 'model-texture-0',
+      width: 2,
+      height: 2,
+      rgba: new Uint8Array([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]),
+      channelLayout: 'rgba',
+      compression: 'bc3',
+    })
   })
 })

@@ -117,48 +117,70 @@ class FakeWorker implements BrowserWorkerLike {
 /** Node module map: bare specifiers → file: URLs of the real sources / built packages. */
 const nodeModuleMap = {
   '@modkit/codec-kit': pathToFileURL(
-    join(repositoryRoot, 'packages', 'codec-kit', 'src', 'index.js'),
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'index.js'),
+  ).href,
+  '@modkit/codec-kit/crypto/digest': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'crypto', 'digest.js'),
+  ).href,
+  '@modkit/codec-kit/json-edit': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'json-edit.js'),
+  ).href,
+  '@modkit/codec-kit/json-snapshot': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'json-snapshot.js'),
   ).href,
   '@modkit/codec-kit/text': pathToFileURL(
-    join(repositoryRoot, 'packages', 'codec-kit', 'src', 'text', 'index.js'),
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'text', 'index.js'),
+  ).href,
+  '@modkit/codec-kit/tree/json': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'tree', 'json-tree.js'),
   ).href,
   '@modkit/core': pathToFileURL(join(repositoryRoot, 'packages', 'core', 'dist', 'index.js')).href,
+  '@modkit/scene/uvm': pathToFileURL(
+    join(repositoryRoot, 'packages', 'scene', 'dist', 'uvm', 'index.js'),
+  ).href,
+  '@modkit/scene/uvm/inspection': pathToFileURL(
+    join(repositoryRoot, 'packages', 'scene', 'dist', 'uvm', 'inspection.js'),
+  ).href,
+  '@modkit/scene/uvm/render': pathToFileURL(
+    join(repositoryRoot, 'packages', 'scene', 'dist', 'uvm', 'render.js'),
+  ).href,
   '@modkit/sdk': pathToFileURL(join(repositoryRoot, 'packages', 'sdk', 'dist', 'index.js')).href,
+  '@modkit/sdk/model-encoding': pathToFileURL(
+    join(repositoryRoot, 'packages', 'sdk', 'dist', 'model-encoding.js'),
+  ).href,
+  '@modkit/uv/model/container': pathToFileURL(
+    join(repositoryRoot, 'packages', 'uv', 'dist', 'model', 'container.js'),
+  ).href,
+  '@modkit/uv/model/validation': pathToFileURL(
+    join(repositoryRoot, 'packages', 'uv', 'dist', 'model', 'validation', 'index.js'),
+  ).href,
   '@rgrove/parse-xml': pathToFileURL(dataRequire.resolve('@rgrove/parse-xml')).href,
   'smol-toml': pathToFileURL(dataRequire.resolve('smol-toml')).href,
   yaml: pathToFileURL(dataRequire.resolve('yaml')).href,
 }
 
-function textSource(name: string, text: string): ArtifactByteSource {
-  const bytes = new TextEncoder().encode(text)
+function byteSource(name: string, bytes: Uint8Array): ArtifactByteSource {
+  const owned = Uint8Array.from(bytes)
   return {
     kind: 'bytes',
     ref: { id: `memory://web/${name}`, uri: `memory://web/${name}` },
-    revision: revisionId(`content-hash.sha256:${createHash('sha256').update(bytes).digest('hex')}`),
-    size: BigInt(bytes.byteLength),
+    revision: revisionId(`content-hash.sha256:${createHash('sha256').update(owned).digest('hex')}`),
+    size: BigInt(owned.byteLength),
     async read(offset, length) {
-      return bytes.slice(Number(offset), Number(offset) + length)
+      return owned.slice(Number(offset), Number(offset) + length)
     },
     async *stream() {
-      yield bytes
+      yield owned
     },
   }
 }
 
+function textSource(name: string, text: string): ArtifactByteSource {
+  return byteSource(name, new TextEncoder().encode(text))
+}
+
 function fileSource(path: string, name: string): ArtifactByteSource {
-  const bytes = new Uint8Array(readFileSync(path))
-  return {
-    kind: 'bytes',
-    ref: { id: `memory://web/${name}`, uri: `memory://web/${name}` },
-    revision: revisionId(`content-hash.sha256:${name}`),
-    size: BigInt(bytes.byteLength),
-    async read(offset, length) {
-      return bytes.slice(Number(offset), Number(offset) + length)
-    },
-    async *stream() {
-      yield bytes
-    },
-  }
+  return byteSource(name, new Uint8Array(readFileSync(path)))
 }
 
 /** One actual FileSystemHandle-shaped authority over a disk snapshot for command tests. */
@@ -273,7 +295,7 @@ describe('PWA product path — catalog → composition → worker-brokered open'
       grant: { id: 'pwa-open', classes: ['read-source'] },
       budget,
     })
-    expect(result.state).toBe('opened')
+    expect(result.state, JSON.stringify(result)).toBe('opened')
     if (result.state !== 'opened') throw new Error(result.reason)
     expect(result.selected).toMatchObject({
       contributionId: 'modkit/image-png',
@@ -373,7 +395,7 @@ describe('PWA product path — catalog → composition → worker-brokered open'
         grant: { id: 'pwa-data-open', classes: ['read-source'] },
         budget,
       })
-      expect(result.state, path).toBe('opened')
+      expect(result.state, `${path}: ${JSON.stringify(result)}`).toBe('opened')
       if (result.state !== 'opened') throw new Error(`${path}: ${result.reason}`)
       expect(result.selected.contributionId).toBe(codecId)
       expect(await result.session.operations().invoke('parse', {})).toMatchObject({ state: 'ok' })
@@ -381,6 +403,67 @@ describe('PWA product path — catalog → composition → worker-brokered open'
     }
     await services.dispose()
   }, 60_000)
+
+  it('ships and opens the common UVM model extension with its UV and Scene worker dependencies', async () => {
+    expect(catalog.extensions.some(entry => entry.name === 'models')).toBe(true)
+    expect(catalog.excluded.some(entry => entry.name === 'models')).toBe(false)
+    const services = await createWebSubjectServices({
+      baseUrl: ORIGIN,
+      catalog,
+      identity,
+      probe,
+      dom: {
+        fetch: diskOrigin().fetch,
+        subtle: webcrypto.subtle as never,
+        Blob: FakeBlob as never,
+        objectUrls,
+        Worker: FakeWorker,
+        MessageChannel: MessageChannel as never,
+      },
+      moduleMap: nodeModuleMap,
+    })
+    const fixture = Buffer.from(
+      readFileSync(
+        join(
+          repositoryRoot,
+          'packages',
+          'testkit',
+          'test',
+          'fixtures',
+          'uvm',
+          'm3-triangle.uvm.glb.b64',
+        ),
+        'utf8',
+      ).trim(),
+      'base64',
+    )
+    const result = await services.open({
+      source: byteSource('triangle.uvm', fixture),
+      path: 'triangle.uvm',
+      intent: 'full',
+      grant: { id: 'pwa-model-open', classes: ['read-source'] },
+      budget,
+    })
+    expect(result.state, JSON.stringify(result)).toBe('opened')
+    if (result.state !== 'opened') throw new Error(result.reason)
+    expect(result.selected).toMatchObject({
+      contributionId: 'modkit/model-uvm',
+      variantId: 'portable',
+    })
+    expect(result.descriptor.dataSources).toContainEqual({
+      contract: 'common.view/model-scene-source',
+      major: 1,
+    })
+    const scene = await result.session.dataSource('common.view/model-scene-source', 1)
+    expect(await (scene.value as { info(): Promise<{ primitives: number }> }).info()).toMatchObject(
+      {
+        primitives: 1,
+      },
+    )
+    await scene.release()
+    await result.session.dispose()
+    await services.dispose()
+  }, 30_000)
 
   it('a served artifact that drifted from the attestation is refused at load, not silently run', async () => {
     const site = diskOrigin()

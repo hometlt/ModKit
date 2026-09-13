@@ -4,7 +4,7 @@ import {
   createStandardSurfaceRegistry,
   framePortFromMessagePort,
   protocolLimits
-} from "./chunk-V3SJMNU5.js";
+} from "./chunk-PHI3IBXS.js";
 import {
   A1_SPEC_SCHEMA_ENTRIES,
   CODEC_CONTRIBUTION_CONTRACT,
@@ -30,8 +30,6 @@ import {
   MAP_SEMANTIC_MATCHER_PROFILE,
   MOD_WORKSPACE_COMPOSITION_CONTRACT,
   MOD_WORKSPACE_MATCHER_PROFILE,
-  NATIVE_MODEL_ENCODER_CONTRACT,
-  NATIVE_MODEL_ENCODER_MATCHER_PROFILE,
   PERMISSION_CLASSES,
   RESOLVED_DATA_WORKSPACE_CONTRACT,
   RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE,
@@ -39,8 +37,6 @@ import {
   RUNTIME_PROVIDER_CONTRACT,
   RUNTIME_PROVIDER_MATCHER_PROFILE,
   RUNTIME_SESSION_CONTRACT,
-  SCENE_RENDERER_CONTRACT,
-  SCENE_RENDERER_MATCHER_PROFILE,
   SERVICE_PROVIDER_CONTRIBUTION_CONTRACT,
   SUBJECT_KIND_DEFINITION_CONTRIBUTION_CONTRACT,
   TRAIT_DEFINITION_CONTRIBUTION_CONTRACT,
@@ -82,7 +78,15 @@ import {
   validateSubjectDescriptorV2,
   writerOfferSatisfies,
   writerSelectionKey
-} from "./chunk-3JQHXTSW.js";
+} from "./chunk-3VS5UF7D.js";
+import {
+  SCENE_RENDERER_CONTRACT,
+  SCENE_RENDERER_MATCHER_PROFILE
+} from "./chunk-GGIVOOBZ.js";
+import {
+  NATIVE_MODEL_ENCODER_CONTRACT,
+  NATIVE_MODEL_ENCODER_MATCHER_PROFILE
+} from "./chunk-YYQ3QKXM.js";
 import {
   CONTAINER_EXTRACT_OPERATION_ID,
   ModkitError,
@@ -102,7 +106,7 @@ import {
   satisfiesRange,
   throwIfAborted,
   uint64
-} from "./chunk-S5ITZJYV.js";
+} from "./chunk-6CZX3ZS4.js";
 import {
   __export
 } from "./chunk-CQ52GEHY.js";
@@ -6041,6 +6045,27 @@ async function createContainerNamespaceComposition(options) {
       ensureLive(signal);
       const assetNamespace = Object.freeze({
         revision,
+        ...prefix === "" && namespace.readPreamble !== void 0 ? {
+          async readPreamble(maxBytes, preambleSignal) {
+            ensureLive(preambleSignal);
+            if (!Number.isSafeInteger(maxBytes) || maxBytes < 0) {
+              throw new ModkitError({
+                code: "x3.host/container-preamble-bound-invalid",
+                message: "container preamble maxBytes must be a non-negative safe integer"
+              });
+            }
+            const limit = Math.min(maxBytes, options.budget.maxScalarBytes);
+            const value = await namespace.readPreamble(limit, preambleSignal);
+            ensureLive(preambleSignal);
+            if (!(value instanceof Uint8Array) || value.byteLength > limit) {
+              throw new ModkitError({
+                code: "x3.host/container-preamble-invalid",
+                message: "container returned an invalid or over-budget preamble"
+              });
+            }
+            return value;
+          }
+        } : {},
         async *list(requestedPrefix, listSignal) {
           ensureLive(listSignal);
           const relativePrefix = normalizePath(requestedPrefix, true);
@@ -6323,8 +6348,74 @@ async function createContainerNamespaceComposition(options) {
 }
 
 // packages/host/dist/model-resources.js
+function uvmArtifactSource(source, bytes, conversionKey) {
+  const owned = bytes.slice();
+  const size = BigInt(owned.byteLength);
+  const range = (offset, length) => {
+    if (offset < 0n || length < 0n || offset > size) {
+      throw new RangeError("UVM artifact reads require a non-negative range inside the source");
+    }
+    const end = offset + length;
+    return owned.slice(Number(offset), Number(end > size ? size : end));
+  };
+  return Object.freeze({
+    kind: "bytes",
+    ref: Object.freeze({
+      id: `${source.ref.id}#model.export-uvm`,
+      uri: `memory+uvm:${encodeURIComponent(source.ref.uri)}`
+    }),
+    revision: revisionIdFromRef({
+      kind: "provider-token",
+      value: conversionKey
+    }),
+    size,
+    async read(offset, length, signal) {
+      signal?.throwIfAborted();
+      if (!Number.isSafeInteger(length) || length < 0) {
+        throw new RangeError("UVM artifact read length must be a non-negative safe integer");
+      }
+      return range(offset, BigInt(length));
+    },
+    async *stream(requested, signal) {
+      signal?.throwIfAborted();
+      const offset = requested?.offset ?? 0n;
+      const length = requested?.length ?? size - offset;
+      yield range(offset, length);
+    }
+  });
+}
 function createSubjectModelResources(options) {
   const outstanding = /* @__PURE__ */ new Set();
+  const reservationWaiters = /* @__PURE__ */ new Set();
+  let reservedByModels = 0;
+  const wakeReservationWaiters = () => {
+    for (const wake of [...reservationWaiters])
+      wake();
+  };
+  const reserve = async (maxBytes, signal) => {
+    if (maxBytes > options.budget.maxScalarBytes)
+      return false;
+    while (options.state.reservedBytes + maxBytes > options.budget.maxScalarBytes) {
+      signal?.throwIfAborted();
+      if (!available() || reservedByModels === 0)
+        return false;
+      await new Promise((resolve) => {
+        const wake = () => {
+          reservationWaiters.delete(wake);
+          signal?.removeEventListener("abort", wake);
+          resolve();
+        };
+        reservationWaiters.add(wake);
+        signal?.addEventListener("abort", wake, { once: true });
+      });
+    }
+    signal?.throwIfAborted();
+    if (!available())
+      return false;
+    options.state.reservedBytes += maxBytes;
+    reservedByModels += maxBytes;
+    return true;
+  };
   options.own(async () => {
     const results = await Promise.allSettled([...outstanding].map((release) => release()));
     const failed2 = results.find((result) => result.status === "rejected");
@@ -6357,12 +6448,17 @@ function createSubjectModelResources(options) {
       if (options.ancestors.length >= Math.min(8, options.budget.maxDepth))
         return refuse3("Nested models exceed the depth limit.");
       const maxBytes = request?.maxBytes, units = request?.metersPerSourceUnit;
-      if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0 || options.state.reservedBytes + maxBytes > options.budget.maxScalarBytes || !Number.isFinite(units) || units <= 0)
-        return refuse3("Invalid model conversion units or byte budget.");
+      if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0)
+        return refuse3("Model conversion maxBytes must be a positive safe integer.");
+      if (maxBytes > options.budget.maxScalarBytes)
+        return refuse3(`Model conversion requires ${String(maxBytes)} bytes, exceeding the ${String(options.budget.maxScalarBytes)} byte subject limit.`);
+      if (units !== void 0 && (!Number.isFinite(units) || units <= 0))
+        return refuse3("Model conversion metersPerSourceUnit must be positive and finite.");
       const resources = options.state.resources;
       if (resources === void 0)
         return refuse3("The subject has no model resource origin.");
-      options.state.reservedBytes += maxBytes;
+      if (!await reserve(maxBytes, signal))
+        return refuse3(`Model conversion requires ${String(maxBytes)} bytes with ${String(options.state.reservedBytes)} bytes already reserved, exceeding the ${String(options.budget.maxScalarBytes)} byte subject limit.`);
       const releases = [];
       let released = false;
       const release = async () => {
@@ -6381,6 +6477,8 @@ function createSubjectModelResources(options) {
           }
         } finally {
           options.state.reservedBytes -= maxBytes;
+          reservedByModels -= maxBytes;
+          wakeReservationWaiters();
         }
         if (failure2 !== void 0)
           throw failure2;
@@ -6395,8 +6493,8 @@ function createSubjectModelResources(options) {
         const source = resolution.lease.value;
         if (source.kind !== "bytes")
           throw new TypeError("model resource needs a byte source");
-        const sourceKey = `${source.ref.id}@${source.revision}`;
-        if (options.ancestors.includes(sourceKey))
+        const sourceIdentityKey = `${source.ref.id}@${source.revision}`;
+        if (options.ancestors.includes(sourceIdentityKey))
           throw new TypeError("model resource cycle");
         if (!available())
           throw new TypeError("model resource authority expired");
@@ -6407,22 +6505,80 @@ function createSubjectModelResources(options) {
         const operation = opened.descriptor.operations.find((item) => item.id === "model.export-uvm" && item.state === "available" && !item.mutatesSource);
         if (operation === void 0)
           throw new TypeError("the resource does not publish model.export-uvm");
-        const converted = await opened.session.operations().invoke(operation.handlerId, { schemaVersion: 1, metersPerSourceUnit: units }, signal === void 0 ? {} : { signal });
+        const sourceKey = [
+          source.ref.id,
+          opened.descriptor.revision,
+          operation.id,
+          operation.handlerId,
+          "schemaVersion=1",
+          `metersPerSourceUnit=${units === void 0 ? "source-unit" : String(units)}`
+        ].join("|");
+        const converted = await opened.session.operations().invoke(operation.handlerId, {
+          schemaVersion: 1,
+          ...units === void 0 ? {} : { metersPerSourceUnit: units }
+        }, signal === void 0 ? {} : { signal });
         signal?.throwIfAborted();
         if (!available())
           throw new TypeError("model resource authority expired");
         if (converted.state !== "ok" || converted.output.kind !== "bytes" || !(converted.output.value instanceof Uint8Array) || converted.output.value.length > maxBytes)
           throw new RangeError("model resource conversion did not return bounded UVM bytes");
+        const uvmBytes = converted.output.value.slice();
+        let scene;
+        let skeleton;
+        let animations;
+        let materials;
+        let resourceReferences;
+        let sockets;
+        let sceneDiagnostic;
+        let sceneResources = opened.resources;
+        try {
+          const uvmOpened = await options.open(uvmArtifactSource(source, uvmBytes, sourceKey), `${resolution.provenance.logicalId}.uvm`, signal);
+          if (uvmOpened.state !== "opened") {
+            throw new TypeError("the exported UVM could not be reopened by a UVM codec");
+          }
+          releases.push(() => uvmOpened.session.dispose());
+          sceneResources = uvmOpened.resources ?? sceneResources;
+          const acquiredScene = await uvmOpened.session.dataSource("common.view/model-scene-source", 1);
+          scene = acquiredScene;
+          releases.push(() => acquiredScene.release());
+          const advertised = new Set((uvmOpened.descriptor.dataSources ?? []).filter((item) => item.major === 1).map((item) => item.contract));
+          if (advertised.has("common.view/model-skeleton-source")) {
+            skeleton = await uvmOpened.session.dataSource("common.view/model-skeleton-source", 1);
+            releases.push(() => skeleton.release());
+          }
+          if (advertised.has("common.view/model-animation-source")) {
+            animations = await uvmOpened.session.dataSource("common.view/model-animation-source", 1);
+            releases.push(() => animations.release());
+          }
+          if (advertised.has("common.view/model-material-source")) {
+            materials = await uvmOpened.session.dataSource("common.view/model-material-source", 1);
+            releases.push(() => materials.release());
+          }
+          if (advertised.has("common.view/model-resource-refs-source")) {
+            resourceReferences = await uvmOpened.session.dataSource("common.view/model-resource-refs-source", 1);
+            releases.push(() => resourceReferences.release());
+          }
+          if (advertised.has("common.view/model-socket-source")) {
+            sockets = await uvmOpened.session.dataSource("common.view/model-socket-source", 1);
+            releases.push(() => sockets.release());
+          }
+        } catch (error3) {
+          sceneDiagnostic = diagnostic("warning", "x3.host/model-resource-uvm-scene-unavailable", error3 instanceof Error ? `The exported UVM has no renderable scene: ${error3.message}` : "The exported UVM has no renderable scene.");
+        }
         const result = {
           state: "converted",
-          bytes: converted.output.value.slice(),
+          bytes: uvmBytes.slice(),
           sourceKey,
-          diagnostics: [...opened.diagnostics, ...converted.diagnostics]
+          diagnostics: [
+            ...opened.diagnostics,
+            ...converted.diagnostics,
+            ...sceneDiagnostic === void 0 ? [] : [sceneDiagnostic]
+          ]
         };
         const childState = {
           live: true,
           reservedBytes: result.bytes.byteLength,
-          ...opened.resources === void 0 ? {} : { resources: opened.resources }
+          ...sceneResources === void 0 ? {} : { resources: sceneResources }
         };
         releases.push(async () => {
           childState.live = false;
@@ -6432,7 +6588,7 @@ function createSubjectModelResources(options) {
           state: childState,
           budget: { ...options.budget, maxScalarBytes: maxBytes },
           isAuthorized: () => !released && available(),
-          ancestors: [...options.ancestors, sourceKey],
+          ancestors: [...options.ancestors, sourceIdentityKey],
           own: (dispose) => {
             releases.push(dispose);
           }
@@ -6443,7 +6599,27 @@ function createSubjectModelResources(options) {
           open: (bytes, hint, abort) => options.open(bytes, hint.path ?? "", abort)
         });
         outstanding.add(release);
-        return { value: { result, acquire: models.acquire, readRaster: rasters.read }, release };
+        return {
+          value: {
+            result,
+            acquire: models.acquire,
+            readRaster: rasters.read,
+            ...scene === void 0 ? {} : {
+              sceneInfo: scene.value.info.bind(scene.value),
+              nodes: scene.value.nodes.bind(scene.value),
+              meshes: scene.value.meshes.bind(scene.value),
+              ...scene.value.primitive === void 0 ? {} : { primitive: scene.value.primitive.bind(scene.value) },
+              ...skeleton === void 0 ? {} : { skeletonBindings: skeleton.value.bindings.bind(skeleton.value) },
+              ...animations === void 0 ? {} : { animationClips: animations.value.clips.bind(animations.value) },
+              ...materials === void 0 ? {} : { materials: materials.value.materials.bind(materials.value) },
+              ...resourceReferences === void 0 ? {} : {
+                resourceReferences: resourceReferences.value.references.bind(resourceReferences.value)
+              },
+              ...sockets === void 0 ? {} : { sockets: sockets.value.sockets.bind(sockets.value) }
+            }
+          },
+          release
+        };
       } catch (error3) {
         await release();
         if (signal?.aborted)
@@ -7630,10 +7806,30 @@ async function openSubjectDirect(options, route = {}) {
       best.rasterState.live = false;
     });
     openedSession = void 0;
+    const rasterResources = options.provideRasterResources === false ? void 0 : createSubjectRasterResources({
+      state: best.rasterState,
+      budget: best.effectiveBudget,
+      isAuthorized: () => grantValidity(best.effectiveGrant).state === "valid" && best.effectiveGrant.classes.includes("read-source"),
+      open: (source, hint, signal) => openSubject({
+        inventory: options.inventory,
+        source,
+        ...hint,
+        target: options.target,
+        intent: "full",
+        grant: { ...best.effectiveGrant, classes: ["read-source"] },
+        budget: best.effectiveBudget,
+        executionBackends,
+        provideRasterResources: false,
+        ...options.serviceDefinitions === void 0 ? {} : { serviceDefinitions: options.serviceDefinitions },
+        ...options.policy === void 0 ? {} : { policy: options.policy },
+        ...signal === void 0 ? {} : { signal }
+      })
+    });
     return Object.freeze({
       state: "opened",
       session: managedSession,
       ...postOpenResources === void 0 ? {} : { resources: postOpenResources },
+      ...rasterResources === void 0 ? {} : { rasterResources },
       descriptor,
       ticket: best.ticket,
       detectionSelectionText,
@@ -8922,6 +9118,17 @@ async function payloadsAvailable(plan, options, signal) {
   }
   return true;
 }
+function stagedPayloadRefs(plan) {
+  const refs = [];
+  for (const edit of plan.edits) {
+    if ("payload" in edit && edit.payload.kind === "staged")
+      refs.push(edit.payload.ref);
+  }
+  return refs;
+}
+function stagedPayloadKey(ref) {
+  return `${ref.storeId}:${ref.handleId}`;
+}
 function invalidPlan(plan) {
   if (!isRecord2(plan) || !hasExactKeys(plan, ["planId", "targets", "edits", "semantics", "fidelity", "diagnostics"]) || !isNonBlank2(plan.planId) || !Array.isArray(plan.targets) || plan.targets.length === 0 || !Array.isArray(plan.edits) || plan.edits.length === 0 || !Array.isArray(plan.diagnostics) || !isRecord2(plan.semantics) || !hasExactKeys(plan.semantics, ["mutationMode", "minimumGuarantee"]) || !["export-only", "mutate"].includes(plan.semantics.mutationMode) || !["atomic", "transactional", "recoverable", "best-effort"].includes(plan.semantics.minimumGuarantee) || !isRecord2(plan.fidelity) || !hasExactKeys(plan.fidelity, ["roundTrip", "preservesUnknownData", "notes"]) || !["byte-identical", "semantic", "lossy", "none"].includes(plan.fidelity.roundTrip) || typeof plan.fidelity.preservesUnknownData !== "boolean" || plan.fidelity.notes !== void 0 && (!Array.isArray(plan.fidelity.notes) || !plan.fidelity.notes.every(isNonBlank2)) || plan.fidelity.roundTrip === "byte-identical" && plan.fidelity.preservesUnknownData !== true || (plan.fidelity.roundTrip === "lossy" || plan.fidelity.roundTrip === "none") && plan.fidelity.preservesUnknownData !== false) {
     return true;
@@ -9432,7 +9639,19 @@ function createCommitCoordinator(options) {
       history.set(transactionId, { ...item, replayed: true });
     return result;
   };
-  return Object.freeze({ prepare, commit, undo, redo });
+  const discardHistory = async (transactionId) => {
+    const item = history.get(transactionId);
+    if (item === void 0)
+      return false;
+    history.delete(transactionId);
+    if (options.releaseStagedPayload !== void 0) {
+      const retained = new Set([...history.values()].flatMap((entry2) => stagedPayloadRefs(entry2.plan).map(stagedPayloadKey)));
+      const releasable = stagedPayloadRefs(item.plan).filter((ref) => !retained.has(stagedPayloadKey(ref)));
+      await Promise.allSettled(releasable.map((ref) => options.releaseStagedPayload?.(ref)));
+    }
+    return true;
+  };
+  return Object.freeze({ prepare, commit, undo, redo, discardHistory });
 }
 function createEditSession(options) {
   let state = "live";
@@ -9461,9 +9680,10 @@ function createEditSession(options) {
       }
       return result;
     },
-    async plan(change) {
+    async plan(change, signal) {
       ensureLive();
-      return snapshot(await plan(snapshot(change)));
+      const authored = snapshot(await plan(snapshot(change), signal));
+      return snapshot(options.transformPlan === void 0 ? authored : await options.transformPlan(authored, signal));
     },
     markStale() {
       if (state !== "disposed")
@@ -9630,6 +9850,33 @@ var NO_STAGED_PAYLOADS = Object.freeze({
   }
 });
 var DEFAULT_INLINE_PAYLOAD_BYTES = 16 * 1024 * 1024;
+function isStagingStore(store) {
+  const candidate = store;
+  return typeof candidate.stage === "function" && typeof candidate.verify === "function" && typeof candidate.release === "function";
+}
+async function stageOversizedPlan(plan, store, maximum, owned, signal) {
+  if (store === void 0)
+    return plan;
+  const created = [];
+  try {
+    const edits = await Promise.all(plan.edits.map(async (edit) => {
+      if (!("payload" in edit) || edit.payload.kind === "staged")
+        return edit;
+      const bytes = edit.payload.kind === "text" ? new TextEncoder().encode(edit.payload.text) : edit.payload.bytes;
+      if (bytes.byteLength <= maximum)
+        return edit;
+      const ref = await store.stage(bytes, {}, signal);
+      created.push(ref);
+      return Object.freeze({ ...edit, payload: Object.freeze({ kind: "staged", ref }) });
+    }));
+    for (const ref of created)
+      owned.set(`${ref.storeId}:${ref.handleId}`, ref);
+    return created.length === 0 ? plan : Object.freeze({ ...plan, edits: Object.freeze(edits) });
+  } catch (error3) {
+    await Promise.allSettled(created.map((ref) => store.release(ref)));
+    throw error3;
+  }
+}
 var defaultDigest = (value) => canonicalJsonStringify(JSON.parse(JSON.stringify(value)));
 function createSubjectEditing(options) {
   const descriptor = options.opened.descriptor;
@@ -9641,8 +9888,21 @@ function createSubjectEditing(options) {
     sourceIds: targets.filter((target) => descriptor.origin.kind !== "bundle" || descriptor.origin.bindings.find((binding) => binding.id === target.targetId)?.ownership === "owned").map((target) => target.ownerSource.id)
   });
   const issued = /* @__PURE__ */ new Set([grantSnapshot.snapshotId]);
+  const payloads = options.payloads ?? NO_STAGED_PAYLOADS;
+  const staging = isStagingStore(payloads) ? payloads : void 0;
+  const maximumInline = options.maxInlinePayloadBytes ?? DEFAULT_INLINE_PAYLOAD_BYTES;
+  const ownedStaged = /* @__PURE__ */ new Map();
+  const releaseOwnedStaged = async (ref) => {
+    if (staging === void 0)
+      return;
+    const key2 = `${ref.storeId}:${ref.handleId}`;
+    if (!ownedStaged.delete(key2))
+      return;
+    await staging.release(ref);
+  };
+  const stagePlan = (plan, signal) => stageOversizedPlan(plan, staging, maximumInline, ownedStaged, signal);
   const coordinator = createCommitCoordinator({
-    payloads: options.payloads ?? NO_STAGED_PAYLOADS,
+    payloads,
     backendFor: options.backendFor,
     evidenceFor: options.evidenceFor,
     ...options.expectedWriter === void 0 ? {} : { expectedWriter: options.expectedWriter },
@@ -9650,13 +9910,14 @@ function createSubjectEditing(options) {
     isGrantValid: options.isGrantValid ?? ((grant) => issued.has(grant.snapshotId)),
     digest: options.digest ?? defaultDigest,
     ...options.verifyStagedPayload === void 0 ? {} : { verifyStagedPayload: options.verifyStagedPayload },
+    ...staging === void 0 ? {} : { releaseStagedPayload: releaseOwnedStaged },
     ...options.createRecovery === void 0 ? {} : { createRecovery: options.createRecovery },
     ...options.confirmationMatches === void 0 ? {} : { confirmationMatches: options.confirmationMatches },
     ...options.now === void 0 ? {} : { now: options.now },
     ...options.nextId === void 0 ? {} : { nextId: options.nextId },
-    maxInlinePayloadBytes: options.maxInlinePayloadBytes ?? DEFAULT_INLINE_PAYLOAD_BYTES
+    maxInlinePayloadBytes: maximumInline
   });
-  const session = options.writer === void 0 ? void 0 : createEditSession({ revision, targets, writer: options.writer });
+  const session = options.writer === void 0 ? void 0 : createEditSession({ revision, targets, writer: options.writer, transformPlan: stagePlan });
   const authorization = Object.freeze({
     async request() {
       return { grant: grantSnapshot };
@@ -9665,7 +9926,7 @@ function createSubjectEditing(options) {
   const editorPorts = session === void 0 ? void 0 : Object.freeze({
     edit: session,
     commit: coordinator,
-    payloads: options.payloads ?? NO_STAGED_PAYLOADS,
+    payloads,
     authorization
   });
   const editing = {
@@ -9677,6 +9938,14 @@ function createSubjectEditing(options) {
     ...editorPorts === void 0 ? {} : { editorPorts },
     planFromOperation(output) {
       return editPlanFromOperationForDescriptor(descriptor, output);
+    },
+    stagePlan,
+    async dispose() {
+      await session?.dispose();
+      const refs = [...ownedStaged.values()];
+      ownedStaged.clear();
+      if (staging !== void 0)
+        await Promise.allSettled(refs.map((ref) => staging.release(ref)));
     }
   };
   return Object.freeze(editing);
@@ -10090,6 +10359,1743 @@ function sessionHoldingContainer(session, release) {
   });
 }
 
+// packages/host/dist/data/index.js
+var STANDARD_DATA_OWNER = "modkit/data";
+var OFFER_KEYS = /* @__PURE__ */ new Set(["gameIds"]);
+var REQUEST_KEYS = /* @__PURE__ */ new Set(["gameId"]);
+function recordOf2(value) {
+  return typeof value === "object" && value !== null && !Array.isArray(value) ? value : void 0;
+}
+function nonEmptyString(value) {
+  return typeof value === "string" && value.trim().length > 0;
+}
+function stringList(value) {
+  if (!Array.isArray(value) || value.length === 0 || !value.every(nonEmptyString))
+    return void 0;
+  const strings = value;
+  return new Set(strings).size === strings.length ? strings : void 0;
+}
+function parseOffer(value) {
+  const record2 = recordOf2(value);
+  if (record2 === void 0 || Object.keys(record2).some((key2) => !OFFER_KEYS.has(key2))) {
+    return void 0;
+  }
+  const gameIds = stringList(record2["gameIds"]);
+  return gameIds === void 0 ? void 0 : { gameIds };
+}
+function parseRequest(value) {
+  const record2 = recordOf2(value);
+  if (record2 === void 0 || Object.keys(record2).some((key2) => !REQUEST_KEYS.has(key2))) {
+    return void 0;
+  }
+  return nonEmptyString(record2["gameId"]) ? { gameId: record2["gameId"] } : void 0;
+}
+function matchDataCatalogFacets(context) {
+  const offer = parseOffer(context.offerFacet);
+  const request = parseRequest(context.requestFacet);
+  if (offer === void 0 || request === void 0) {
+    return {
+      state: "invalid",
+      diagnostics: [
+        diagnostic("error", "x3.host/data-catalog-facet-invalid", `${context.contract}@${context.major}: data catalog routes must be well formed`)
+      ]
+    };
+  }
+  return offer.gameIds.includes(request.gameId) ? { state: "match", selectionKey: `game=${request.gameId}` } : { state: "no-match" };
+}
+var DATA_CATALOG_MATCHER = Object.freeze({
+  profile: contractId(DATA_CATALOG_MATCHER_PROFILE),
+  major: 1,
+  match: matchDataCatalogFacets
+});
+var RESOLVED_DATA_WORKSPACE_MATCHER = Object.freeze({
+  profile: contractId(RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE),
+  major: 1,
+  match: matchDataCatalogFacets
+});
+var DATA_CATALOG_CONTRACT_DEFINITION = Object.freeze({
+  schemaVersion: 1,
+  kind: "service",
+  contract: DATA_CATALOG_ANALYSIS_CONTRACT,
+  major: 1,
+  offerFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/data-catalog-offer.v1.schema.json"
+    })
+  }),
+  requestFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/data-catalog-request.v1.schema.json"
+    })
+  }),
+  matching: Object.freeze({ profile: DATA_CATALOG_MATCHER_PROFILE, major: 1 }),
+  conformanceProfile: "common.data/catalog-analysis-v1",
+  surface: Object.freeze({
+    fields: Object.freeze(["contract", "analyzerId", "gameIds"]),
+    methods: Object.freeze({
+      analyze: Object.freeze({
+        kind: "value",
+        signal: Object.freeze({ arg: 0, key: "signal" }),
+        limits: Object.freeze({ maxBytes: 16777216, maxStringLength: 4194304 })
+      })
+    })
+  })
+});
+var RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION = Object.freeze({
+  schemaVersion: 1,
+  kind: "service",
+  contract: RESOLVED_DATA_WORKSPACE_CONTRACT,
+  major: 1,
+  offerFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/data-catalog-offer.v1.schema.json"
+    })
+  }),
+  requestFacet: Object.freeze({
+    presence: "required",
+    schema: Object.freeze({
+      $ref: "https://schemas.modkit.org/x3/data-catalog-request.v1.schema.json"
+    })
+  }),
+  matching: Object.freeze({ profile: RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE, major: 1 }),
+  conformanceProfile: "common.data/resolved-workspace-v1",
+  surface: Object.freeze({
+    fields: Object.freeze(["contract", "providerId", "gameIds"]),
+    methods: Object.freeze({
+      plan: Object.freeze({
+        kind: "value",
+        signal: Object.freeze({ arg: 0, key: "signal" }),
+        limits: Object.freeze({ maxBytes: 4194304, maxStringLength: 1048576 })
+      }),
+      analyze: Object.freeze({
+        kind: "value",
+        signal: Object.freeze({ arg: 0, key: "signal" }),
+        limits: Object.freeze({ maxBytes: 16777216, maxStringLength: 4194304 })
+      }),
+      openSchemaTree: Object.freeze({
+        kind: "lease",
+        wrapper: "lease",
+        result: Object.freeze({ contract: "common.view/tree-data-source", major: 1 }),
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      }),
+      openDefinitionTable: Object.freeze({
+        kind: "lease",
+        wrapper: "lease",
+        result: Object.freeze({ contract: "common.view/table-data-source", major: 1 }),
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      }),
+      openLocalizationTable: Object.freeze({
+        kind: "lease",
+        wrapper: "lease",
+        result: Object.freeze({ contract: "common.view/table-data-source", major: 1 }),
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      }),
+      openRelations: Object.freeze({
+        kind: "lease",
+        wrapper: "lease",
+        result: Object.freeze({ contract: "common.view/relation-graph-source", major: 1 }),
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      }),
+      openSubjectFacts: Object.freeze({
+        kind: "lease",
+        optional: true,
+        wrapper: "lease",
+        result: Object.freeze({ contract: "common.view/subject-facts-source", major: 1 }),
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      }),
+      openSubjectCalculations: Object.freeze({
+        kind: "lease",
+        optional: true,
+        wrapper: "lease",
+        result: Object.freeze({
+          contract: "common.view/subject-calculations-source",
+          major: 1
+        }),
+        signal: Object.freeze({ arg: 0, key: "signal" })
+      })
+    })
+  })
+});
+function registerStandardDataDefinitions(definitions) {
+  const registered = [DATA_CATALOG_CONTRACT_DEFINITION, RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION];
+  return definitions.replaceOwnerInventory(STANDARD_DATA_OWNER, registered.map((definition) => ({
+    definition,
+    provenance: {
+      ownerExtensionId: STANDARD_DATA_OWNER,
+      extensionVersion: "1.0.0",
+      inventoryRecordId: `host:${definition.contract}@${definition.major}`,
+      manifestDigest: `host:${definition.contract}@${definition.major}`,
+      artifactDigest: "host:standard-data-definitions",
+      artifactRoot: "host:",
+      manifestPath: "host:standard-data-definitions"
+    }
+  })));
+}
+function isDataCatalogAnalysis(value) {
+  const record2 = recordOf2(value);
+  return record2?.["contract"] === DATA_CATALOG_ANALYSIS_CONTRACT && nonEmptyString(record2["analyzerId"]) && stringList(record2["gameIds"]) !== void 0 && typeof record2["analyze"] === "function";
+}
+async function resolveDataCatalogAnalysis(request) {
+  const definitions = request.services.serviceDefinitions;
+  if (definitions === void 0) {
+    return {
+      state: "unresolved",
+      diagnostics: [
+        diagnostic("information", "x3.host/data-catalog-unavailable", "this host registered no service-contract definitions, so catalogs cannot be analyzed")
+      ]
+    };
+  }
+  const resolver = createHostServiceResolver({
+    inventory: request.services.inventory,
+    target: request.services.target,
+    executionBackends: request.services.executionBackends,
+    definitions,
+    grant: request.grant,
+    budgets: request.budgets,
+    ...request.signal === void 0 ? {} : { signal: request.signal }
+  });
+  try {
+    const lease2 = await resolver.port.resolve({
+      contract: DATA_CATALOG_ANALYSIS_CONTRACT,
+      major: 1,
+      facet: { gameId: request.gameId },
+      ...request.signal === void 0 ? {} : { signal: request.signal }
+    });
+    if (!isDataCatalogAnalysis(lease2.value) || !lease2.value.gameIds.includes(request.gameId)) {
+      await resolver.release();
+      return {
+        state: "unresolved",
+        diagnostics: [
+          ...resolver.diagnostics,
+          diagnostic("error", "x3.host/data-catalog-invalid", `the selected provider does not implement ${DATA_CATALOG_ANALYSIS_CONTRACT}@1 for ${request.gameId}`)
+        ]
+      };
+    }
+    return Object.freeze({
+      state: "resolved",
+      analysis: lease2.value,
+      diagnostics: Object.freeze([
+        ...resolver.diagnostics,
+        diagnostic("information", "x3.host/data-catalog-selected", `selected ${lease2.value.analyzerId} for ${request.gameId}`)
+      ]),
+      release: () => resolver.release()
+    });
+  } catch (error3) {
+    await resolver.release();
+    return {
+      state: "unresolved",
+      diagnostics: [
+        ...resolver.diagnostics,
+        diagnostic("information", "x3.host/data-catalog-unresolved", `no data catalog provider resolved for ${request.gameId} (${error3 instanceof Error ? error3.message : String(error3)})`)
+      ]
+    };
+  }
+}
+function isResolvedDataWorkspace(value) {
+  const record2 = recordOf2(value);
+  return record2?.["contract"] === RESOLVED_DATA_WORKSPACE_CONTRACT && nonEmptyString(record2["providerId"]) && stringList(record2["gameIds"]) !== void 0 && typeof record2["plan"] === "function" && typeof record2["analyze"] === "function" && typeof record2["openSchemaTree"] === "function" && typeof record2["openDefinitionTable"] === "function" && typeof record2["openLocalizationTable"] === "function" && typeof record2["openRelations"] === "function" && (record2["resolveEditTarget"] === void 0 || typeof record2["resolveEditTarget"] === "function") && (record2["planEdit"] === void 0 || typeof record2["planEdit"] === "function") && (record2["analyzeIsolation"] === void 0 || typeof record2["analyzeIsolation"] === "function") && (record2["planIsolation"] === void 0 || typeof record2["planIsolation"] === "function");
+}
+async function resolveResolvedDataWorkspace(request) {
+  const definitions = request.services.serviceDefinitions;
+  if (definitions === void 0) {
+    return {
+      state: "unresolved",
+      diagnostics: [
+        diagnostic("information", "x3.host/resolved-data-workspace-unavailable", "this host registered no service-contract definitions, so workspace data cannot resolve")
+      ]
+    };
+  }
+  const resolver = createHostServiceResolver({
+    inventory: request.services.inventory,
+    target: request.services.target,
+    executionBackends: request.services.executionBackends,
+    definitions,
+    grant: request.grant,
+    budgets: request.budgets,
+    ...request.signal === void 0 ? {} : { signal: request.signal }
+  });
+  try {
+    const lease2 = await resolver.port.resolve({
+      contract: RESOLVED_DATA_WORKSPACE_CONTRACT,
+      major: 1,
+      facet: { gameId: request.gameId },
+      ...request.signal === void 0 ? {} : { signal: request.signal }
+    });
+    if (!isResolvedDataWorkspace(lease2.value) || !lease2.value.gameIds.includes(request.gameId)) {
+      await resolver.release();
+      return {
+        state: "unresolved",
+        diagnostics: [
+          ...resolver.diagnostics,
+          diagnostic("error", "x3.host/resolved-data-workspace-invalid", `the selected provider does not implement ${RESOLVED_DATA_WORKSPACE_CONTRACT}@1 for ${request.gameId}`)
+        ]
+      };
+    }
+    return Object.freeze({
+      state: "resolved",
+      workspace: lease2.value,
+      diagnostics: Object.freeze([
+        ...resolver.diagnostics,
+        diagnostic("information", "x3.host/resolved-data-workspace-selected", `selected ${lease2.value.providerId} for ${request.gameId}`)
+      ]),
+      release: () => resolver.release()
+    });
+  } catch (error3) {
+    await resolver.release();
+    return {
+      state: "unresolved",
+      diagnostics: [
+        ...resolver.diagnostics,
+        diagnostic("information", "x3.host/resolved-data-workspace-unresolved", `no resolved data workspace provider resolved for ${request.gameId} (${error3 instanceof Error ? error3.message : String(error3)})`)
+      ]
+    };
+  }
+}
+function createResolvedDataSubjectSelectorLease(analyzed, inputLimits) {
+  if (analyzed.openSubjectFacts === void 0 || analyzed.openSubjectCalculations === void 0) {
+    return void 0;
+  }
+  const openSubjectFacts = analyzed.openSubjectFacts;
+  const openSubjectCalculations = analyzed.openSubjectCalculations;
+  const resolveSubjectEditTarget = analyzed.resolveEditTarget;
+  const analyzeSubjectIsolation = analyzed.analyzeIsolation;
+  const planSubjectIsolation = analyzed.planIsolation;
+  const limits = Object.freeze({
+    maxPageSize: positiveBound(inputLimits.maxPageSize, "maxPageSize"),
+    maxEntities: positiveBound(inputLimits.maxEntities, "maxEntities"),
+    maxRelations: positiveBound(inputLimits.maxRelations, "maxRelations"),
+    maxCalculations: positiveBound(inputLimits.maxCalculations, "maxCalculations")
+  });
+  const snapshot2 = analyzed.snapshot;
+  const localized = new Map(snapshot2.localizedStrings.map((item) => [item.key, item.value]));
+  const entitiesById = new Map(snapshot2.definitions.map((entity) => [`${entity.namespace}/${entity.entityId}`, entity]));
+  const subjects = Object.freeze(snapshot2.definitions.map((entity) => {
+    const authoredName = entity.fields["Name"];
+    const label = typeof authoredName === "string" ? localized.get(authoredName) ?? entity.entityId : entity.entityId;
+    const metadata = inputLimits.candidateMetadata?.(entity);
+    if (metadata?.tags !== void 0 && (!Array.isArray(metadata.tags) || metadata.tags.some((tag) => typeof tag !== "string" || tag.length === 0) || new Set(metadata.tags).size !== metadata.tags.length)) {
+      throw new TypeError("subject selector metadata contains invalid tags");
+    }
+    if (metadata?.asset !== void 0 && (typeof metadata.asset !== "object" || metadata.asset === null || typeof metadata.asset.formatId !== "string" || metadata.asset.formatId.length === 0 || !Array.isArray(metadata.asset.traits) || metadata.asset.traits.some((trait) => typeof trait !== "string" || trait.length === 0) || new Set(metadata.asset.traits).size !== metadata.asset.traits.length)) {
+      throw new TypeError("subject selector metadata contains an invalid asset description");
+    }
+    return Object.freeze({
+      subjectId: `${entity.namespace}/${entity.entityId}`,
+      label,
+      kind: entity.namespace,
+      type: entity.typeId,
+      ...metadata?.tags === void 0 ? {} : { tags: Object.freeze([...metadata.tags]) },
+      ...metadata?.asset === void 0 ? {} : {
+        asset: Object.freeze({
+          formatId: metadata.asset.formatId,
+          traits: Object.freeze([...metadata.asset.traits])
+        })
+      }
+    });
+  }).sort((left, right) => left.subjectId.localeCompare(right.subjectId)));
+  const byId = new Map(subjects.map((item) => [item.subjectId, item]));
+  let live = true;
+  const assertLive = (signal) => {
+    signal?.throwIfAborted();
+    if (!live)
+      throw new Error("resolved data subject selector lease has been released");
+  };
+  const page = (request, signal) => {
+    assertLive(signal);
+    if (!Number.isSafeInteger(request.limit) || request.limit < 1 || request.limit > limits.maxPageSize) {
+      throw new RangeError(`subject selector limit must be between 1 and ${limits.maxPageSize}`);
+    }
+    const text = request.text?.trim().toLocaleLowerCase("en-US");
+    const filterText = request.filter?.text?.trim().toLocaleLowerCase("en-US");
+    const sameTypeAs = request.filter?.sameTypeAs === void 0 ? void 0 : byId.get(request.filter.sameTypeAs);
+    if (request.filter?.sameTypeAs !== void 0 && sameTypeAs === void 0) {
+      throw new RangeError(`subject selector sameTypeAs anchor not found: ${request.filter.sameTypeAs}`);
+    }
+    const predicateId = request.filter?.predicate?.id;
+    const predicate = predicateId === void 0 ? void 0 : inputLimits.predicates?.[predicateId];
+    if (predicateId !== void 0 && predicate === void 0) {
+      throw new RangeError(`subject selector predicate is unavailable: ${predicateId}`);
+    }
+    const matchesText = (subject, needle) => needle === void 0 || needle.length === 0 || subject.subjectId.toLocaleLowerCase("en-US").includes(needle) || subject.label.toLocaleLowerCase("en-US").includes(needle);
+    const acceptsAsset = (subject) => {
+      if (request.asset === void 0)
+        return subject.asset === void 0;
+      const asset = subject.asset;
+      if (asset === void 0)
+        return false;
+      return (request.asset.formatIds === void 0 || request.asset.formatIds.includes(asset.formatId)) && (request.asset.traits === void 0 || request.asset.traits.every((trait) => asset.traits.includes(trait)));
+    };
+    const filtered = subjects.filter((subject) => {
+      const tags = subject.tags ?? [];
+      const entity = entitiesById.get(subject.subjectId);
+      return acceptsAsset(subject) && (request.kind === void 0 || subject.kind === request.kind) && (request.type === void 0 || subject.type === request.type) && (request.filter?.type === void 0 || subject.type === request.filter.type) && (sameTypeAs === void 0 || subject.type === sameTypeAs.type) && matchesText(subject, text) && matchesText(subject, filterText) && (request.filter?.requireTags === void 0 || request.filter.requireTags.every((tag) => tags.includes(tag))) && (request.filter?.excludeTags === void 0 || request.filter.excludeTags.every((tag) => !tags.includes(tag))) && (predicate === void 0 || entity !== void 0 && predicate({
+        subject,
+        entity,
+        ...sameTypeAs === void 0 ? {} : { sameTypeAs },
+        ...request.filter?.predicate?.params === void 0 ? {} : { params: request.filter.predicate.params }
+      }) === true);
+    });
+    const offset = request.cursor === void 0 ? 0 : Number(request.cursor.replace(/^subject:/u, ""));
+    if (!Number.isSafeInteger(offset) || offset < 0 || offset > filtered.length || request.cursor !== void 0 && request.cursor !== `subject:${offset}`) {
+      throw new RangeError("subject selector cursor is invalid or stale");
+    }
+    const end = Math.min(filtered.length, offset + request.limit);
+    return Object.freeze({
+      items: Object.freeze(filtered.slice(offset, end)),
+      ...end < filtered.length ? { nextCursor: `subject:${end}` } : {}
+    });
+  };
+  const selected = (subjectId, signal) => {
+    assertLive(signal);
+    const subject = byId.get(subjectId);
+    if (subject === void 0)
+      throw new RangeError(`resolved data subject not found: ${subjectId}`);
+    return subject;
+  };
+  const documentRef = (value) => Object.freeze({
+    rootId: value.rootId,
+    path: value.path,
+    ...value.revision === void 0 ? {} : { revision: value.revision }
+  });
+  const resolveTarget = resolveSubjectEditTarget === void 0 ? void 0 : async (request, signal) => {
+    const subject = selected(request.subjectId, signal);
+    try {
+      const result = await resolveSubjectEditTarget({
+        subject: {
+          namespace: subject.kind,
+          entityId: subject.subjectId.slice(subject.kind.length + 1)
+        },
+        fieldPath: request.fieldPath,
+        ...request.targetDocument === void 0 ? {} : { targetDocument: request.targetDocument },
+        ...signal === void 0 ? {} : { signal }
+      });
+      if (result.state === "selection-required") {
+        return Object.freeze({
+          state: "selection-required",
+          snapshotId: result.snapshotId,
+          workspaceId: result.workspaceId,
+          selectedRootId: result.selectedRootId,
+          subjectId: request.subjectId,
+          fieldPath: Object.freeze([...result.fieldPath]),
+          candidates: Object.freeze(result.candidates.map(documentRef)),
+          reason: result.reason
+        });
+      }
+      return Object.freeze({
+        state: "resolved",
+        snapshotId: result.snapshotId,
+        workspaceId: result.workspaceId,
+        selectedRootId: result.selectedRootId,
+        subjectId: request.subjectId,
+        fieldPath: Object.freeze([...result.fieldPath]),
+        action: result.action,
+        destination: Object.freeze({
+          ...documentRef(result.target),
+          ...result.writeTarget
+        }),
+        candidates: Object.freeze(result.candidates.map(documentRef)),
+        ...result.lastDeclaration === void 0 ? {} : { lastDeclaration: documentRef(result.lastDeclaration) },
+        ...result.effectiveFieldSource === void 0 ? {} : { effectiveFieldSource: documentRef(result.effectiveFieldSource) },
+        selectionReason: result.selectionReason,
+        guards: Object.freeze(result.guards.map(documentRef))
+      });
+    } catch (error3) {
+      if (signal?.aborted)
+        throw error3;
+      return Object.freeze({
+        state: "unavailable",
+        snapshotId: snapshot2.snapshotId,
+        subjectId: request.subjectId,
+        fieldPath: Object.freeze([...request.fieldPath]),
+        reason: error3 instanceof Error ? error3.message : String(error3)
+      });
+    }
+  };
+  const resolveIsolation = analyzeSubjectIsolation === void 0 ? void 0 : async (request, signal) => {
+    const owner = selected(request.ownerSubjectId, signal);
+    const target = selected(request.targetSubjectId, signal);
+    const subjectId = (subject) => ({
+      namespace: subject.kind,
+      entityId: subject.subjectId.slice(subject.kind.length + 1)
+    });
+    const result = await analyzeSubjectIsolation({
+      schemaVersion: 1,
+      owner: subjectId(owner),
+      target: subjectId(target),
+      ownerFieldPath: request.ownerFieldPath,
+      maxEdges: request.maxEdges,
+      ...request.always === void 0 ? {} : { always: request.always },
+      ...signal === void 0 ? {} : { signal }
+    });
+    const toSubjectId = (value) => `${value.namespace}/${value.entityId}`;
+    if (result.state === "unavailable") {
+      return Object.freeze({
+        schemaVersion: 1,
+        state: "unavailable",
+        snapshotId: snapshot2.snapshotId,
+        ownerSubjectId: request.ownerSubjectId,
+        targetSubjectId: request.targetSubjectId,
+        ownerFieldPath: Object.freeze([...result.ownerFieldPath]),
+        cloneRequired: false,
+        reason: result.reason
+      });
+    }
+    return Object.freeze({
+      schemaVersion: 1,
+      state: "ready",
+      snapshotId: snapshot2.snapshotId,
+      ownerSubjectId: request.ownerSubjectId,
+      targetSubjectId: request.targetSubjectId,
+      ownerFieldPath: Object.freeze([...result.ownerFieldPath]),
+      shared: result.shared,
+      cloneRequired: result.cloneRequired,
+      referrers: Object.freeze(result.referrers.map((referrer) => Object.freeze({
+        subjectId: toSubjectId(referrer.subject),
+        fieldPaths: Object.freeze(referrer.fieldPaths.map((path) => Object.freeze([...path])))
+      }))),
+      otherReferrerIds: Object.freeze(result.otherReferrers.map(toSubjectId)),
+      rewireFieldPaths: Object.freeze(result.rewireFieldPaths.map((path) => Object.freeze([...path])))
+    });
+  };
+  const resolveIsolationPlan = planSubjectIsolation === void 0 ? void 0 : async (request, signal) => {
+    const owner = selected(request.ownerSubjectId, signal);
+    const target = selected(request.targetSubjectId, signal);
+    const clonePrefix = `${target.kind}/`;
+    if (!request.cloneSubjectId.startsWith(clonePrefix) || request.cloneSubjectId.length === clonePrefix.length) {
+      throw new TypeError(`cloneSubjectId must use namespace ${target.kind}`);
+    }
+    const entityRef = (subject) => ({
+      namespace: subject.kind,
+      entityId: subject.subjectId.slice(subject.kind.length + 1)
+    });
+    const result = await planSubjectIsolation({
+      schemaVersion: 1,
+      owner: entityRef(owner),
+      target: entityRef(target),
+      ownerFieldPath: request.ownerFieldPath,
+      maxEdges: request.maxEdges,
+      ...request.always === void 0 ? {} : { always: request.always },
+      cloneEntityId: request.cloneSubjectId.slice(clonePrefix.length),
+      ...request.ownerTargetDocument === void 0 ? {} : { ownerTargetDocument: request.ownerTargetDocument },
+      ...request.cloneTargetDocument === void 0 ? {} : { cloneTargetDocument: request.cloneTargetDocument },
+      ...signal === void 0 ? {} : { signal }
+    });
+    if (result.state === "unavailable") {
+      return Object.freeze({
+        schemaVersion: 1,
+        state: "unavailable",
+        snapshotId: snapshot2.snapshotId,
+        ownerSubjectId: request.ownerSubjectId,
+        targetSubjectId: request.targetSubjectId,
+        ownerFieldPath: Object.freeze([...result.ownerFieldPath]),
+        cloneRequired: false,
+        reason: result.reason
+      });
+    }
+    if (result.state === "selection-required") {
+      return Object.freeze({
+        schemaVersion: 1,
+        state: "selection-required",
+        snapshotId: result.snapshotId,
+        ownerSubjectId: request.ownerSubjectId,
+        targetSubjectId: request.targetSubjectId,
+        cloneSubjectId: request.cloneSubjectId,
+        purpose: result.purpose,
+        candidates: Object.freeze(result.candidates.map(documentRef)),
+        reason: result.reason
+      });
+    }
+    const toSubjectId = (value) => `${value.namespace}/${value.entityId}`;
+    const analysis = Object.freeze({
+      schemaVersion: 1,
+      state: "ready",
+      snapshotId: result.snapshotId,
+      ownerSubjectId: request.ownerSubjectId,
+      targetSubjectId: request.targetSubjectId,
+      ownerFieldPath: Object.freeze([...result.analysis.ownerFieldPath]),
+      shared: result.analysis.shared,
+      cloneRequired: result.analysis.cloneRequired,
+      referrers: Object.freeze(result.analysis.referrers.map((referrer) => Object.freeze({
+        subjectId: toSubjectId(referrer.subject),
+        fieldPaths: Object.freeze(referrer.fieldPaths.map((path) => Object.freeze([...path])))
+      }))),
+      otherReferrerIds: Object.freeze(result.analysis.otherReferrers.map(toSubjectId)),
+      rewireFieldPaths: Object.freeze(result.analysis.rewireFieldPaths.map((path) => Object.freeze([...path])))
+    });
+    return Object.freeze({
+      schemaVersion: 1,
+      state: "planned",
+      snapshotId: result.snapshotId,
+      previewSnapshotId: result.previewSnapshotId,
+      ownerSubjectId: request.ownerSubjectId,
+      targetSubjectId: request.targetSubjectId,
+      cloneSubjectId: request.cloneSubjectId,
+      analysis,
+      replacements: Object.freeze(result.replacements.map((replacement) => Object.freeze({
+        purpose: replacement.purpose,
+        destination: Object.freeze({
+          ...documentRef(replacement.target),
+          ...replacement.writeTarget
+        }),
+        replacementBytes: new TextEncoder().encode(replacement.replacementText).byteLength
+      }))),
+      diagnostics: Object.freeze(result.diagnostics.map((item) => Object.freeze({
+        severity: item.severity,
+        code: item.code,
+        message: item.message
+      })))
+    });
+  };
+  const source = Object.freeze({
+    async summary(signal) {
+      assertLive(signal);
+      return Object.freeze({
+        snapshotId: snapshot2.snapshotId,
+        totalSubjects: subjects.length,
+        completeness: snapshot2.complete ? "complete" : "partial",
+        ...snapshot2.complete ? {} : { reason: "the resolved data workspace is incomplete" }
+      });
+    },
+    subjects: async (request, signal) => page(request, signal),
+    ...resolveIsolation === void 0 ? {} : { isolation: resolveIsolation },
+    ...resolveIsolationPlan === void 0 ? {} : { isolationPlan: resolveIsolationPlan },
+    async openFacts(subjectId, signal) {
+      const subject = selected(subjectId, signal);
+      const lease2 = await openSubjectFacts({
+        subject: {
+          namespace: subject.kind,
+          entityId: subject.subjectId.slice(subject.kind.length + 1)
+        },
+        ...limits,
+        ...signal === void 0 ? {} : { signal }
+      });
+      if (resolveTarget === void 0)
+        return lease2;
+      const facts = lease2.value;
+      const entityId = subject.subjectId.slice(subject.kind.length + 1);
+      const fieldPathOf = (fact2) => fact2.provenance.map((item) => item.semanticPath).find((path) => path !== void 0 && path.length > 2 && path[0] === subject.kind && path[1] === entityId)?.slice(2);
+      const projected = Object.freeze({
+        summary: (nestedSignal) => facts.summary(nestedSignal),
+        groups: (pageRequest, nestedSignal) => facts.groups(pageRequest, nestedSignal),
+        async facts(groupId, pageRequest, nestedSignal) {
+          const result = await facts.facts(groupId, pageRequest, nestedSignal);
+          const items = await Promise.all(result.items.map(async (fact2) => {
+            const fieldPath = fieldPathOf(fact2);
+            if (fieldPath === void 0 || fieldPath.length === 0)
+              return fact2;
+            const editTarget = await resolveTarget({ subjectId: subject.subjectId, fieldPath }, nestedSignal);
+            return Object.freeze({ ...fact2, editTarget });
+          }));
+          return Object.freeze({
+            ...result,
+            items: Object.freeze(items)
+          });
+        },
+        relations: (pageRequest, nestedSignal) => facts.relations(pageRequest, nestedSignal)
+      });
+      return Object.freeze({
+        value: projected,
+        release: () => lease2.release()
+      });
+    },
+    async openCalculations(subjectId, signal) {
+      const subject = selected(subjectId, signal);
+      return openSubjectCalculations({
+        subject: {
+          namespace: subject.kind,
+          entityId: subject.subjectId.slice(subject.kind.length + 1)
+        },
+        maxPageSize: limits.maxPageSize,
+        maxEntities: limits.maxEntities,
+        maxCalculations: limits.maxCalculations,
+        ...signal === void 0 ? {} : { signal }
+      });
+    },
+    ...resolveTarget === void 0 ? {} : {
+      editTarget: resolveTarget
+    }
+  });
+  return Object.freeze({
+    value: source,
+    release() {
+      live = false;
+      return Promise.resolve();
+    }
+  });
+}
+function positiveBound(value, label) {
+  if (!Number.isSafeInteger(value) || value <= 0) {
+    throw new TypeError(`${label} must be a positive safe integer`);
+  }
+  return value;
+}
+function confinedPath(value, label) {
+  if (value.includes("\0") || /^[a-z]:[\\/]/iu.test(value) || /^[\\/]/u.test(value) || /^[a-z][a-z0-9+.-]*:/iu.test(value)) {
+    throw new TypeError(`${label} must be a confined logical path`);
+  }
+  const parts = [];
+  for (const part of value.replace(/\\/gu, "/").split("/")) {
+    if (part === "" || part === ".")
+      continue;
+    if (part === "..")
+      throw new TypeError(`${label} must not escape its workspace root`);
+    parts.push(part);
+  }
+  if (parts.length === 0)
+    throw new TypeError(`${label} must name a logical path`);
+  return parts.join("/");
+}
+function comparableLocale(value) {
+  return value.replace(/[-_]/gu, "").toLocaleLowerCase();
+}
+function validateWorkspacePlan(plan, workspace, locales, maximum) {
+  if (plan.schemaVersion !== 1 || plan.workspaceId !== workspace.workspaceId || plan.gameId !== workspace.gameId || !Array.isArray(plan.requirements) || plan.requirements.length > maximum) {
+    throw new TypeError("resolved data provider returned an invalid or mismatched workspace plan");
+  }
+  const roots = new Map(workspace.loadOrder.map((root, index) => [root.rootId, { root, index }]));
+  const logical = new Map((workspace.logicalRoots ?? [...workspace.loadOrder].reverse()).map((root, index) => [
+    root.rootId,
+    index
+  ]));
+  const localeRanks = new Map(locales.map((locale, index) => [comparableLocale(locale), index]));
+  const requirementIds = /* @__PURE__ */ new Set();
+  let catalogRank = -1;
+  let localizationRank = -1;
+  let localizationStarted = false;
+  for (const requirement of plan.requirements) {
+    if (requirement.required !== void 0 && typeof requirement.required !== "boolean") {
+      throw new TypeError(`workspace data requirement ${requirement.requirementId} has invalid required flag`);
+    }
+    if (requirementIds.has(requirement.requirementId)) {
+      throw new TypeError(`workspace data requirement ${requirement.requirementId} is duplicated`);
+    }
+    requirementIds.add(requirement.requirementId);
+    const root = roots.get(requirement.rootId);
+    if (root === void 0) {
+      throw new TypeError(`workspace data requirement ${requirement.requirementId} names unknown root`);
+    }
+    const rootPath = confinedPath(root.root.sourcePath, `${requirement.requirementId}.root`);
+    const path = confinedPath(requirement.path, `${requirement.requirementId}.path`);
+    const foldedRoot = rootPath.toLocaleLowerCase();
+    const foldedPath = path.toLocaleLowerCase();
+    if (foldedPath !== foldedRoot && !foldedPath.startsWith(`${foldedRoot}/`)) {
+      throw new TypeError(`workspace data requirement ${requirement.requirementId} escapes its root`);
+    }
+    if (requirement.kind === "catalog") {
+      if (localizationStarted) {
+        throw new TypeError("catalog requirements must precede localization requirements");
+      }
+      if (root.index < catalogRank) {
+        throw new TypeError("catalog requirements are not in dependency-first loadOrder");
+      }
+      catalogRank = root.index;
+      continue;
+    }
+    if (requirement.kind !== "localization" || requirement.locale === void 0) {
+      throw new TypeError(`workspace data requirement ${requirement.requirementId} has invalid kind`);
+    }
+    localizationStarted = true;
+    const localeRank = localeRanks.get(comparableLocale(requirement.locale));
+    const rootRank = logical.get(requirement.rootId);
+    if (localeRank === void 0 || rootRank === void 0) {
+      throw new TypeError(`workspace localization requirement ${requirement.requirementId} is invalid`);
+    }
+    const rank = localeRank * workspace.loadOrder.length + rootRank;
+    if (rank < localizationRank) {
+      throw new TypeError("localization requirements are not locale-first and winner-first");
+    }
+    localizationRank = rank;
+  }
+}
+async function readResourceText(resources, requirement, maxDocumentBytes, signal) {
+  const resolved = await resources.resolve({
+    id: requirement.requirementId,
+    logicalId: requirement.path,
+    role: "buffer",
+    scopes: ["current-mount", "enclosing-container", "workspace-dependency-layer"]
+  }, signal);
+  if (resolved.state === "unresolved") {
+    return { state: "unresolved", diagnostic: resolved.diagnostic };
+  }
+  try {
+    const source = resolved.lease.value;
+    if (source.kind !== "bytes") {
+      return {
+        state: "unresolved",
+        diagnostic: diagnostic("warning", "x3.host/resolved-data-resource-not-bytes", `${requirement.path} resolved to a namespace instead of bytes`)
+      };
+    }
+    if (source.size !== void 0 && source.size > BigInt(maxDocumentBytes)) {
+      return {
+        state: "unresolved",
+        diagnostic: diagnostic("warning", "x3.host/resolved-data-document-budget-exceeded", `${requirement.path} exceeds maxDocumentBytes ${maxDocumentBytes}`)
+      };
+    }
+    const chunks = [];
+    let bytes = 0;
+    for await (const chunk of source.stream(void 0, signal)) {
+      bytes += chunk.byteLength;
+      if (bytes > maxDocumentBytes) {
+        return {
+          state: "unresolved",
+          diagnostic: diagnostic("warning", "x3.host/resolved-data-document-budget-exceeded", `${requirement.path} exceeds maxDocumentBytes ${maxDocumentBytes}`)
+        };
+      }
+      chunks.push(chunk);
+    }
+    const content = new Uint8Array(bytes);
+    let offset = 0;
+    for (const chunk of chunks) {
+      content.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return {
+      state: "resolved",
+      text: new TextDecoder("utf-8", { fatal: false }).decode(content),
+      revision: resolved.revision,
+      source: Object.freeze({ ...source.ref })
+    };
+  } finally {
+    await resolved.lease.release();
+  }
+}
+function directDataDocumentTarget(rootId, path, source, revision) {
+  const expectedRevision = Object.freeze({
+    bindings: Object.freeze({ [source.id]: revision }),
+    compositionFingerprint: canonicalJsonStringify({
+      topology: "single",
+      bindingId: source.id,
+      source: { id: source.id, uri: source.uri },
+      revision
+    })
+  });
+  return Object.freeze({
+    rootId,
+    path,
+    target: Object.freeze({
+      targetId: source.id,
+      subjectUri: source.uri,
+      ownerSource: source,
+      semanticPath: Object.freeze([]),
+      expectedRevision
+    })
+  });
+}
+function sameLogicalDocument(left, right) {
+  const key2 = (value) => value.replace(/\\/gu, "/").replace(/^\/+|\/+$/gu, "").toLowerCase();
+  return left.rootId === right.rootId && key2(left.path) === key2(right.path);
+}
+function pathInsideWritableRoot(path, root) {
+  const normalize3 = (value) => value.replace(/\\/gu, "/").replace(/^\/+|\/+$/gu, "").split("/");
+  const pathParts = normalize3(path);
+  const rootParts = normalize3(root.sourcePath);
+  if (rootParts.length === 0 || pathParts.length <= rootParts.length || rootParts.some((part, index) => part.toLowerCase() !== pathParts[index]?.toLowerCase())) {
+    throw new TypeError(`edit path ${path} is outside writable root ${root.sourcePath}`);
+  }
+  const relative = pathParts.slice(rootParts.length);
+  if (relative.some((part) => part === "" || part === "." || part === "..")) {
+    throw new TypeError(`edit path ${path} is not confined inside ${root.sourcePath}`);
+  }
+  return relative.join("/");
+}
+function bindResolvedDataEditDestination(resolved, documents, writableRoots) {
+  const binding = resolved.target.mode === "replace" ? documents.find((document) => sameLogicalDocument(document, resolved.target))?.target : writableRoots.find((root) => root.rootId === resolved.selectedRootId)?.target;
+  if (binding === void 0) {
+    throw new TypeError(resolved.target.mode === "replace" ? "resolved edit target has no host document binding" : `active mod ${resolved.selectedRootId} has no writable namespace binding`);
+  }
+  return Object.freeze({
+    rootId: resolved.target.rootId,
+    path: resolved.target.path,
+    mode: resolved.target.mode,
+    label: `Write: ${resolved.target.rootId} \u2192 ${resolved.target.path}`,
+    targetId: binding.targetId,
+    subjectUri: binding.subjectUri
+  });
+}
+function bindDataDocumentDestination(target, selectedRootId, documents, writableRoots) {
+  const binding = target.mode === "replace" ? documents.find((document) => sameLogicalDocument(document, target))?.target : writableRoots.find((root) => root.rootId === selectedRootId)?.target;
+  if (binding === void 0) {
+    throw new TypeError(target.mode === "replace" ? "resolved isolation target has no host document binding" : `active mod ${selectedRootId} has no writable namespace binding`);
+  }
+  return Object.freeze({
+    rootId: target.rootId,
+    path: target.path,
+    mode: target.mode,
+    label: `Write: ${target.rootId} \u2192 ${target.path}`,
+    targetId: binding.targetId,
+    subjectUri: binding.subjectUri
+  });
+}
+function editChangeFromDataEditProposal(proposal, documentTargets, writableRoots) {
+  const resolved = proposal.target;
+  const guarded = [];
+  const targetIds = /* @__PURE__ */ new Set();
+  for (const guard of resolved.guards) {
+    const binding = documentTargets.find((candidate) => sameLogicalDocument(candidate, guard));
+    if (binding === void 0 || guard.revision === void 0) {
+      throw new TypeError(`no host document binding exists for guarded ${guard.rootId}/${guard.path}`);
+    }
+    const revisions = Object.values(binding.target.expectedRevision.bindings);
+    if (revisions.length !== 1 || revisions[0] !== guard.revision) {
+      throw new TypeError(`host document binding revision changed for ${guard.rootId}/${guard.path}`);
+    }
+    if (!targetIds.has(binding.target.targetId)) {
+      targetIds.add(binding.target.targetId);
+      guarded.push(binding.target);
+    }
+  }
+  let editTarget;
+  let edit;
+  if (resolved.target.mode === "replace") {
+    const binding = documentTargets.find((candidate) => sameLogicalDocument(candidate, resolved.target));
+    if (binding === void 0 || !targetIds.has(binding.target.targetId)) {
+      throw new TypeError("resolved replacement target is not one of the guarded host documents");
+    }
+    editTarget = binding.target;
+    edit = Object.freeze({
+      operation: "replace",
+      targetId: editTarget.targetId,
+      source: editTarget.ownerSource,
+      payload: Object.freeze({ kind: "text", text: proposal.replacementText }),
+      label: `edit SC2 data ${resolved.subject.namespace}/${resolved.subject.entityId}`
+    });
+  } else {
+    const root = writableRoots.find((candidate) => candidate.rootId === resolved.selectedRootId);
+    if (root === void 0 || root.target.expectedRevision.namespaceRevision === void 0) {
+      throw new TypeError(`active mod ${resolved.selectedRootId} has no writable namespace binding`);
+    }
+    editTarget = root.target;
+    if (!targetIds.has(editTarget.targetId)) {
+      targetIds.add(editTarget.targetId);
+      guarded.push(editTarget);
+    }
+    edit = Object.freeze({
+      operation: "create",
+      targetId: editTarget.targetId,
+      source: editTarget.ownerSource,
+      newPath: pathInsideWritableRoot(resolved.target.path, root),
+      payload: Object.freeze({ kind: "text", text: proposal.replacementText }),
+      label: `declare SC2 data ${resolved.subject.namespace}/${resolved.subject.entityId}`
+    });
+  }
+  return Object.freeze({
+    targets: Object.freeze(guarded),
+    edits: Object.freeze([edit]),
+    semanticIntent: Object.freeze({
+      kind: "sc2-authored-text-save-v1",
+      formatId: "sc2-data",
+      sourceComplete: true,
+      unknownDataPolicy: "preserve-from-complete-snapshot",
+      workspaceId: resolved.workspaceId,
+      snapshotId: resolved.snapshotId,
+      selectedRootId: resolved.selectedRootId,
+      targetPath: resolved.target.path,
+      editIntent: proposal.intent,
+      previewSnapshotId: proposal.previewSnapshotId
+    }),
+    provenance: Object.freeze({ actor: "user", note: "resolved SC2 data field edit" })
+  });
+}
+function isolationChangeFromDataGraphProposal(proposal, documentTargets, writableRoots) {
+  const guarded = [];
+  const guardedIds = /* @__PURE__ */ new Set();
+  for (const guard of proposal.guards) {
+    const binding = documentTargets.find((candidate) => sameLogicalDocument(candidate, guard));
+    if (binding === void 0 || guard.revision === void 0) {
+      throw new TypeError(`no host document binding exists for guarded ${guard.rootId}/${guard.path}`);
+    }
+    const revisions = Object.values(binding.target.expectedRevision.bindings);
+    if (revisions.length !== 1 || revisions[0] !== guard.revision) {
+      throw new TypeError(`host document binding revision changed for ${guard.rootId}/${guard.path}`);
+    }
+    if (!guardedIds.has(binding.target.targetId)) {
+      guardedIds.add(binding.target.targetId);
+      guarded.push(binding.target);
+    }
+  }
+  const paths = /* @__PURE__ */ new Set();
+  const edits = [];
+  for (const replacement of proposal.replacements) {
+    if (replacement.target.rootId !== proposal.selectedRootId) {
+      throw new TypeError("isolation replacement escaped the selected writable mod");
+    }
+    const pathIdentity = `${replacement.target.rootId}\0${replacement.target.path.toLowerCase()}`;
+    if (paths.has(pathIdentity))
+      throw new TypeError("isolation proposal contains duplicate targets");
+    paths.add(pathIdentity);
+    if (replacement.target.mode === "replace") {
+      const binding = documentTargets.find((candidate) => sameLogicalDocument(candidate, replacement.target));
+      if (binding === void 0 || !guardedIds.has(binding.target.targetId)) {
+        throw new TypeError("isolation replacement target is not a guarded host document");
+      }
+      edits.push(Object.freeze({
+        operation: "replace",
+        targetId: binding.target.targetId,
+        source: binding.target.ownerSource,
+        payload: Object.freeze({ kind: "text", text: replacement.replacementText }),
+        label: `${replacement.purpose} SC2 data object`
+      }));
+      continue;
+    }
+    const root = writableRoots.find((candidate) => candidate.rootId === proposal.selectedRootId);
+    if (root === void 0 || root.target.expectedRevision.namespaceRevision === void 0) {
+      throw new TypeError(`active mod ${proposal.selectedRootId} has no writable namespace binding`);
+    }
+    if (!guardedIds.has(root.target.targetId)) {
+      guardedIds.add(root.target.targetId);
+      guarded.push(root.target);
+    }
+    edits.push(Object.freeze({
+      operation: "create",
+      targetId: root.target.targetId,
+      source: root.target.ownerSource,
+      newPath: pathInsideWritableRoot(replacement.target.path, root),
+      payload: Object.freeze({ kind: "text", text: replacement.replacementText }),
+      label: `${replacement.purpose} SC2 data object`
+    }));
+  }
+  if (edits.length === 0)
+    throw new TypeError("isolation proposal contains no replacements");
+  return Object.freeze({
+    targets: Object.freeze(guarded),
+    edits: Object.freeze(edits),
+    semanticIntent: Object.freeze({
+      kind: "sc2-data-isolation-v1",
+      formatId: "sc2-data",
+      sourceComplete: true,
+      unknownDataPolicy: "preserve-from-complete-snapshot",
+      workspaceId: proposal.workspaceId,
+      snapshotId: proposal.snapshotId,
+      selectedRootId: proposal.selectedRootId,
+      clone: Object.freeze({ ...proposal.clone }),
+      owner: Object.freeze({ ...proposal.analysis.owner }),
+      target: Object.freeze({ ...proposal.analysis.target }),
+      ownerFieldPath: Object.freeze([...proposal.analysis.ownerFieldPath]),
+      previewSnapshotId: proposal.previewSnapshotId
+    }),
+    provenance: Object.freeze({ actor: "user", note: "resolved SC2 data clone and rewire" })
+  });
+}
+async function analyzeResolvedDataWorkspace(request) {
+  const limits = {
+    maxRequirements: positiveBound(request.limits.maxRequirements, "maxRequirements"),
+    maxDocumentBytes: positiveBound(request.limits.maxDocumentBytes, "maxDocumentBytes"),
+    maxTextBytes: positiveBound(request.limits.maxTextBytes, "maxTextBytes"),
+    maxEntities: positiveBound(request.limits.maxEntities, "maxEntities"),
+    maxDepth: positiveBound(request.limits.maxDepth, "maxDepth"),
+    maxPageSize: positiveBound(request.limits.maxPageSize, "maxPageSize")
+  };
+  if (request.resources.state() !== "live") {
+    return {
+      state: "unresolved",
+      diagnostics: [
+        diagnostic("warning", "x3.host/resolved-data-resource-session-disposed", "workspace data requires a live revision-pinned ResourceSessionPort")
+      ]
+    };
+  }
+  const resolution = await resolveResolvedDataWorkspace({
+    services: request.services,
+    gameId: request.workspace.gameId,
+    grant: request.grant,
+    budgets: request.budgets,
+    ...request.signal === void 0 ? {} : { signal: request.signal }
+  });
+  if (resolution.state === "unresolved")
+    return resolution;
+  const diagnostics = [...resolution.diagnostics];
+  const opened = [];
+  try {
+    const plan = await resolution.workspace.plan({
+      workspace: request.workspace,
+      locales: request.locales,
+      maxRequirements: limits.maxRequirements,
+      ...request.signal === void 0 ? {} : { signal: request.signal }
+    });
+    validateWorkspacePlan(plan, request.workspace, request.locales, limits.maxRequirements);
+    const writableRoots = Object.freeze([...request.writableRoots ?? []]);
+    const writableRootIds = /* @__PURE__ */ new Set();
+    for (const writable of writableRoots) {
+      const workspaceRoot = request.workspace.loadOrder.find((root) => root.rootId === writable.rootId);
+      if (workspaceRoot === void 0 || writableRootIds.has(writable.rootId) || !sameLogicalDocument({ rootId: writable.rootId, path: writable.sourcePath }, { rootId: workspaceRoot.rootId, path: workspaceRoot.sourcePath }) || writable.target.expectedRevision.namespaceRevision === void 0) {
+        throw new TypeError(`writable root ${writable.rootId} is not this workspace namespace`);
+      }
+      writableRootIds.add(writable.rootId);
+    }
+    diagnostics.push(...plan.diagnostics.map((item) => diagnostic(item.severity, item.code, item.message, void 0, {
+      analyzerId: plan.analyzerId
+    })));
+    if (!plan.complete) {
+      await resolution.release();
+      return {
+        state: "unresolved",
+        diagnostics: Object.freeze(diagnostics)
+      };
+    }
+    let textBytes = 0;
+    const documents = [];
+    const localizationDocuments = [];
+    const documentTargets = [];
+    const unresolvedRequirementIds = [];
+    const revisions = [];
+    for (const requirement of plan.requirements) {
+      request.signal?.throwIfAborted();
+      const loaded = await readResourceText(request.resources, requirement, limits.maxDocumentBytes, request.signal);
+      if (loaded.state === "unresolved") {
+        if (requirement.required !== false) {
+          diagnostics.push(loaded.diagnostic);
+          unresolvedRequirementIds.push(requirement.requirementId);
+        }
+        continue;
+      }
+      textBytes += new TextEncoder().encode(loaded.text).byteLength;
+      if (textBytes > limits.maxTextBytes) {
+        throw new TypeError(`workspace data exceeds maxTextBytes ${limits.maxTextBytes}`);
+      }
+      revisions.push(`${requirement.requirementId}@${String(loaded.revision)}`);
+      const document = {
+        rootId: requirement.rootId,
+        path: requirement.path,
+        text: loaded.text,
+        revision: loaded.revision
+      };
+      if (requirement.kind === "catalog") {
+        documents.push(document);
+        documentTargets.push(directDataDocumentTarget(requirement.rootId, requirement.path, loaded.source, loaded.revision));
+      } else
+        localizationDocuments.push({ ...document, locale: requirement.locale });
+    }
+    if (documents.length === 0) {
+      await resolution.release();
+      return {
+        state: "unresolved",
+        diagnostics: Object.freeze([
+          ...diagnostics,
+          diagnostic("warning", "x3.host/resolved-data-catalog-unavailable", "no planned catalog document resolved through the resource session")
+        ])
+      };
+    }
+    if (request.resources.state() !== "live") {
+      throw new Error("resource session was disposed while workspace data was loading");
+    }
+    const snapshot2 = await resolution.workspace.analyze({
+      workspaceId: request.workspace.workspaceId,
+      gameId: request.workspace.gameId,
+      documents,
+      localizationDocuments,
+      locales: request.locales,
+      localizationKeys: request.localizationKeys ?? [],
+      queries: request.queries,
+      plannedDocumentCount: documents.length + localizationDocuments.length + unresolvedRequirementIds.length,
+      unresolvedRequirementIds,
+      snapshotId: `${String(request.resources.revision)}:${revisions.join("|")}`,
+      maxDocuments: limits.maxRequirements,
+      maxTextBytes: limits.maxTextBytes,
+      maxEntities: limits.maxEntities,
+      maxDepth: limits.maxDepth,
+      ...request.signal === void 0 ? {} : { signal: request.signal }
+    });
+    if (request.resources.state() !== "live") {
+      throw new Error("resource session was disposed while workspace data was analyzed");
+    }
+    const facetRequest = {
+      snapshotId: snapshot2.snapshotId,
+      maxPageSize: limits.maxPageSize,
+      ...request.signal === void 0 ? {} : { signal: request.signal }
+    };
+    const schemaTree = await resolution.workspace.openSchemaTree(facetRequest);
+    opened.push(schemaTree);
+    const definitions = await resolution.workspace.openDefinitionTable(facetRequest);
+    opened.push(definitions);
+    const localization = await resolution.workspace.openLocalizationTable(facetRequest);
+    opened.push(localization);
+    const relations = await resolution.workspace.openRelations(facetRequest);
+    opened.push(relations);
+    let released = false;
+    const openSubjectFacts = resolution.workspace.openSubjectFacts;
+    const openSubjectCalculations = resolution.workspace.openSubjectCalculations;
+    const resolveEditTarget = resolution.workspace.resolveEditTarget;
+    const planEdit = resolution.workspace.planEdit;
+    const analyzeIsolation = resolution.workspace.analyzeIsolation;
+    const planIsolation = resolution.workspace.planIsolation;
+    const activeRootId = request.workspace.activeRootId;
+    const writableRootIdList = Object.freeze([...writableRootIds]);
+    return Object.freeze({
+      state: "resolved",
+      snapshot: snapshot2,
+      plan,
+      facets: Object.freeze({ schemaTree, definitions, localization, relations }),
+      ...openSubjectFacts === void 0 ? {} : {
+        async openSubjectFacts(request2) {
+          if (released)
+            throw new Error("resolved data workspace analysis is released");
+          const lease2 = await openSubjectFacts.call(resolution.workspace, {
+            ...request2,
+            snapshotId: snapshot2.snapshotId
+          });
+          if (released) {
+            await lease2.release();
+            throw new Error("resolved data workspace analysis was released while opening facts");
+          }
+          opened.push(lease2);
+          return lease2;
+        }
+      },
+      ...openSubjectCalculations === void 0 ? {} : {
+        async openSubjectCalculations(request2) {
+          if (released)
+            throw new Error("resolved data workspace analysis is released");
+          const lease2 = await openSubjectCalculations.call(resolution.workspace, {
+            ...request2,
+            snapshotId: snapshot2.snapshotId
+          });
+          if (released) {
+            await lease2.release();
+            throw new Error("resolved data workspace analysis was released while opening calculations");
+          }
+          opened.push(lease2);
+          return lease2;
+        }
+      },
+      ...resolveEditTarget === void 0 ? {} : {
+        async resolveEditTarget(request2) {
+          if (released)
+            throw new Error("resolved data workspace analysis is released");
+          const result = await resolveEditTarget.call(resolution.workspace, {
+            ...request2,
+            snapshotId: snapshot2.snapshotId,
+            selectedRootId: activeRootId,
+            writableRootIds: writableRootIdList
+          });
+          if (released) {
+            throw new Error("resolved data workspace analysis was released while resolving an edit target");
+          }
+          return result.state === "resolved" ? Object.freeze({
+            ...result,
+            writeTarget: bindResolvedDataEditDestination(result, documentTargets, writableRoots)
+          }) : result;
+        }
+      },
+      ...planEdit === void 0 ? {} : {
+        async planEdit(request2) {
+          if (released)
+            throw new Error("resolved data workspace analysis is released");
+          const result = await planEdit.call(resolution.workspace, {
+            ...request2,
+            snapshotId: snapshot2.snapshotId,
+            selectedRootId: activeRootId,
+            writableRootIds: writableRootIdList
+          });
+          if (released) {
+            throw new Error("resolved data workspace analysis was released while planning an edit");
+          }
+          return result;
+        }
+      },
+      ...planEdit === void 0 ? {} : {
+        async buildEditChange(request2) {
+          if (released)
+            throw new Error("resolved data workspace analysis is released");
+          const result = await planEdit.call(resolution.workspace, {
+            ...request2,
+            snapshotId: snapshot2.snapshotId,
+            selectedRootId: activeRootId,
+            writableRootIds: writableRootIdList
+          });
+          if (released) {
+            throw new Error("resolved data workspace analysis was released while planning an asset edit");
+          }
+          if ("state" in result) {
+            throw new TypeError(result.reason);
+          }
+          return editChangeFromDataEditProposal(result, documentTargets, writableRoots);
+        }
+      },
+      ...analyzeIsolation === void 0 ? {} : {
+        async analyzeIsolation(request2) {
+          if (released)
+            throw new Error("resolved data workspace analysis is released");
+          const result = await analyzeIsolation.call(resolution.workspace, {
+            ...request2,
+            snapshotId: snapshot2.snapshotId
+          });
+          if (released) {
+            throw new Error("resolved data workspace analysis was released while analyzing isolation");
+          }
+          return result;
+        }
+      },
+      ...planIsolation === void 0 ? {} : {
+        async planIsolation(request2) {
+          if (released)
+            throw new Error("resolved data workspace analysis is released");
+          const result = await planIsolation.call(resolution.workspace, {
+            ...request2,
+            schemaVersion: 1,
+            snapshotId: snapshot2.snapshotId,
+            selectedRootId: activeRootId,
+            writableRootIds: writableRootIdList
+          });
+          if (released)
+            throw new Error("resolved data workspace analysis was released while planning isolation");
+          return result.state === "planned" ? Object.freeze({
+            ...result,
+            replacements: Object.freeze(result.replacements.map((replacement) => Object.freeze({
+              ...replacement,
+              writeTarget: bindDataDocumentDestination(replacement.target, result.selectedRootId, documentTargets, writableRoots)
+            })))
+          }) : result;
+        },
+        async buildIsolationChange(request2) {
+          if (released)
+            throw new Error("resolved data workspace analysis is released");
+          const result = await planIsolation.call(resolution.workspace, {
+            ...request2,
+            schemaVersion: 1,
+            snapshotId: snapshot2.snapshotId,
+            selectedRootId: activeRootId,
+            writableRootIds: writableRootIdList
+          });
+          if (released)
+            throw new Error("resolved data workspace analysis was released while planning isolation");
+          if (result.state !== "planned")
+            throw new TypeError(result.reason);
+          return isolationChangeFromDataGraphProposal(result, documentTargets, writableRoots);
+        }
+      },
+      diagnostics: Object.freeze(diagnostics),
+      async release() {
+        if (released)
+          return;
+        released = true;
+        const results = await Promise.allSettled([
+          ...[...opened].reverse().map((lease2) => lease2.release()),
+          resolution.release()
+        ]);
+        const failure2 = results.find((result) => result.status === "rejected");
+        if (failure2?.status === "rejected")
+          throw failure2.reason;
+      }
+    });
+  } catch (error3) {
+    await Promise.allSettled([...opened].reverse().map((lease2) => lease2.release()));
+    await resolution.release();
+    if (request.signal?.aborted)
+      throw error3;
+    return {
+      state: "unresolved",
+      diagnostics: Object.freeze([
+        ...diagnostics,
+        diagnostic("warning", "x3.host/resolved-data-workspace-failed", error3 instanceof Error ? error3.message : String(error3))
+      ])
+    };
+  }
+}
+
+// packages/host/dist/content-dependencies.js
+var DEPENDENCY_SCOPE = Object.freeze(["workspace-dependency-layer"]);
+function nonEmpty(value, name) {
+  if (typeof value !== "string" || value.length === 0 || value.length > 4096 || value.includes("\0")) {
+    throw new TypeError(`${name} must be a bounded non-empty string`);
+  }
+  return value;
+}
+function normalizeOpaquePath(value) {
+  return value === "" ? "" : normalizeCompanionLogicalId(value);
+}
+function joinPath(prefix, path) {
+  return prefix === "" ? path : path === "" ? prefix : `${prefix}/${path}`;
+}
+function relativeEntry(mount, entry2) {
+  const path = normalizeOpaquePath(entry2.path);
+  if (mount.sourcePath === "")
+    return path;
+  const prefix = `${mount.sourcePath}/`;
+  return path.startsWith(prefix) ? path.slice(prefix.length) : void 0;
+}
+function entryRevision(mount) {
+  return mount.fingerprint !== void 0 && isRevisionId(mount.fingerprint) ? revisionId(mount.fingerprint) : revisionIdFromRef({
+    kind: "provider-token",
+    value: `${mount.sourceId}\0${mount.sourcePath}\0${mount.dependencyId}`
+  });
+}
+function validateMounts(resolution) {
+  if (resolution.schemaVersion !== 1 || !nonEmpty(resolution.gameId, "gameId")) {
+    throw new TypeError("invalid content dependency resolution");
+  }
+  if (!Array.isArray(resolution.mounts) || resolution.mounts.length === 0 || resolution.mounts.length > 256) {
+    throw new TypeError("content dependency workspace requires 1..256 resolved mounts");
+  }
+  const ids = /* @__PURE__ */ new Set();
+  const roots = resolution.mounts.map((mount, index) => {
+    const dependencyId = nonEmpty(mount.dependencyId, `mount ${index} dependencyId`);
+    if (ids.has(dependencyId) || !Number.isSafeInteger(mount.order) || mount.order < 0) {
+      throw new TypeError(`invalid content dependency mount ${index}`);
+    }
+    ids.add(dependencyId);
+    return Object.freeze({
+      ...mount,
+      dependencyId,
+      sourceId: nonEmpty(mount.sourceId, `mount ${index} sourceId`),
+      sourcePath: normalizeOpaquePath(mount.sourcePath),
+      displayName: nonEmpty(mount.displayName, `mount ${index} displayName`),
+      kind: nonEmpty(mount.kind, `mount ${index} kind`),
+      rootId: `content-dependency:${dependencyId}`,
+      logicalPrefix: "",
+      revision: entryRevision(mount)
+    });
+  });
+  roots.sort((left, right) => left.order - right.order);
+  return Object.freeze(roots.map((root, index) => Object.freeze({
+    ...root,
+    logicalPrefix: `content-dependencies/${index}`
+  })));
+}
+function workspaceDiagnostic(value) {
+  const item = value !== null && typeof value === "object" && !Array.isArray(value) ? value : void 0;
+  const severity = item?.["severity"];
+  return Object.freeze({
+    severity: severity === "error" || severity === "warning" || severity === "information" ? severity : "warning",
+    code: typeof item?.["code"] === "string" && item["code"] ? item["code"] : "x3.host/content-dependency-diagnostic",
+    message: typeof item?.["message"] === "string" && item["message"] ? item["message"] : "content dependency provider returned an unstructured diagnostic"
+  });
+}
+function contentDiagnostics(values) {
+  return Object.freeze(values.map((value) => {
+    const item = workspaceDiagnostic(value);
+    return diagnostic(item.severity, item.code, item.message);
+  }));
+}
+function createContentDependencyOrigin(contentSources, mounts, maximumEntryBytes) {
+  const overlay = Object.freeze([...mounts].reverse());
+  const locations = /* @__PURE__ */ new Map();
+  const fold2 = (value) => value.toLowerCase();
+  const relativeRequest = (mount, logicalId) => {
+    if (logicalId === "")
+      return "";
+    if (fold2(logicalId) === fold2(mount.logicalPrefix))
+      return "";
+    const prefix = `${mount.logicalPrefix}/`;
+    return fold2(logicalId).startsWith(fold2(prefix)) ? logicalId.slice(prefix.length) : void 0;
+  };
+  const findEntries = async (mount, logicalPrefix, signal) => {
+    throwIfAborted(signal);
+    const relativePrefix = relativeRequest(mount, logicalPrefix);
+    if (relativePrefix === void 0)
+      return Object.freeze([]);
+    const parent = relativePrefix.slice(0, relativePrefix.lastIndexOf("/") + 1).replace(/\/$/u, "");
+    let entries;
+    try {
+      entries = await contentSources.list(mount.sourceId, joinPath(mount.sourcePath, parent));
+    } catch {
+      return Object.freeze([]);
+    }
+    const output = [];
+    for (const entry2 of entries) {
+      throwIfAborted(signal);
+      if (entry2.directory)
+        continue;
+      const relative = relativeEntry(mount, entry2);
+      if (relative === void 0 || !fold2(relative).startsWith(fold2(relativePrefix)))
+        continue;
+      const logicalId = joinPath(mount.logicalPrefix, relative);
+      locations.set(fold2(logicalId), mount);
+      output.push(Object.freeze({
+        logicalId,
+        ...entry2.size === void 0 ? {} : { size: BigInt(entry2.size) }
+      }));
+    }
+    return Object.freeze(output);
+  };
+  return Object.freeze({
+    primaryLogicalId: "__content_dependency_workspace__",
+    caseSensitivity: "insensitive",
+    scopes: DEPENDENCY_SCOPE,
+    async *enumerate(scope, enumeration, signal) {
+      if (scope !== "workspace-dependency-layer")
+        return;
+      const prefix = enumeration.prefix === "" ? "" : normalizeCompanionLogicalId(enumeration.prefix);
+      const emitted = /* @__PURE__ */ new Set();
+      for (const mount of overlay) {
+        const rootScoped = relativeRequest(mount, prefix) !== void 0;
+        const query = rootScoped ? prefix : joinPath(mount.logicalPrefix, prefix);
+        for (const entry2 of await findEntries(mount, query, signal)) {
+          const key2 = fold2(entry2.logicalId);
+          if (emitted.has(key2))
+            continue;
+          emitted.add(key2);
+          yield entry2;
+        }
+      }
+    },
+    async open(logicalId, signal) {
+      throwIfAborted(signal);
+      const normalized = normalizeCompanionLogicalId(logicalId);
+      let mount = locations.get(fold2(normalized));
+      if (mount === void 0) {
+        for (const candidate of overlay) {
+          if ((await findEntries(candidate, normalized, signal)).some((entry2) => fold2(entry2.logicalId) === fold2(normalized))) {
+            mount = candidate;
+            break;
+          }
+        }
+      }
+      if (mount === void 0)
+        throw new RangeError(`content dependency has no entry ${normalized}`);
+      const relative = relativeRequest(mount, normalized);
+      if (relative === void 0 || relative === "")
+        throw new RangeError(`content dependency has no file ${normalized}`);
+      const bytes = await contentSources.read(mount.sourceId, joinPath(mount.sourcePath, relative), maximumEntryBytes);
+      const uri = `content-source://${encodeURIComponent(mount.sourceId)}/${normalized.split("/").map(encodeURIComponent).join("/")}`;
+      const source = Object.freeze({
+        kind: "bytes",
+        ref: Object.freeze({ id: `${mount.rootId}:${normalized}`, uri }),
+        revision: mount.revision,
+        size: BigInt(bytes.byteLength),
+        async read(offset, length, readSignal) {
+          throwIfAborted(readSignal);
+          if (offset < 0n || offset > BigInt(bytes.byteLength) || !Number.isSafeInteger(length) || length < 0) {
+            throw new RangeError("invalid content dependency byte range");
+          }
+          const start = Number(offset);
+          return bytes.slice(start, Math.min(bytes.byteLength, start + length));
+        },
+        async *stream(range, streamSignal) {
+          throwIfAborted(streamSignal);
+          const start = range === void 0 ? 0 : Number(range.offset);
+          const end = range?.length === void 0 ? bytes.byteLength : Math.min(bytes.byteLength, start + Number(range.length));
+          if (!Number.isSafeInteger(start) || !Number.isSafeInteger(end) || start < 0 || end < start) {
+            throw new RangeError("invalid content dependency stream range");
+          }
+          for (let offset = start; offset < end; offset += 64 * 1024) {
+            throwIfAborted(streamSignal);
+            yield bytes.slice(offset, Math.min(end, offset + 64 * 1024));
+          }
+        }
+      });
+      return Object.freeze({ value: source, release: async () => void 0 });
+    }
+  });
+}
+function createReadOnlyContentDependencyWorkspace(options) {
+  throwIfAborted(options.signal);
+  const maximumEntryBytes = options.maximumEntryBytes ?? 64 * 1024 * 1024;
+  if (!Number.isSafeInteger(maximumEntryBytes) || maximumEntryBytes <= 0) {
+    throw new TypeError("maximumEntryBytes must be a positive safe integer");
+  }
+  const mounts = validateMounts(options.resolution);
+  const roots = Object.freeze(mounts.map((mount) => Object.freeze({
+    rootId: mount.rootId,
+    sourceId: mount.sourceId,
+    sourcePath: mount.logicalPrefix,
+    displayName: mount.displayName,
+    kind: mount.kind,
+    ...mount.fingerprint === void 0 ? {} : { fingerprint: mount.fingerprint },
+    dependencies: Object.freeze([])
+  })));
+  const active = roots.at(-1);
+  const sources = [...new Set(roots.map((root) => root.sourceId))].map((sourceId) => Object.freeze({
+    sourceId,
+    kind: "content-source",
+    location: `content-source:${sourceId}`
+  }));
+  const workspace = Object.freeze({
+    schemaVersion: 1,
+    workspaceId: nonEmpty(options.workspaceId, "workspaceId"),
+    gameId: options.resolution.gameId,
+    // This is the read-only overlay head required by ModWorkspaceLock; no writable root is granted.
+    activeRootId: active.rootId,
+    sources: Object.freeze(sources),
+    loadOrder: roots,
+    dependencyOrder: Object.freeze(roots.slice(0, -1)),
+    logicalRoots: Object.freeze([...roots].reverse()),
+    diagnostics: Object.freeze(options.resolution.diagnostics.map(workspaceDiagnostic)),
+    complete: options.resolution.complete
+  });
+  const sessionRevision = revisionIdFromRef({
+    kind: "provider-token",
+    value: mounts.map((mount) => `${mount.rootId}@${mount.revision}`).join("|")
+  });
+  const resources = createResourceSession({
+    origin: createContentDependencyOrigin(options.contentSources, mounts, maximumEntryBytes),
+    revision: sessionRevision,
+    revisionPolicy: "pin",
+    ...options.resourceLimits === void 0 ? {} : { limits: options.resourceLimits }
+  });
+  return Object.freeze({
+    workspace,
+    resources,
+    dispose: () => resources.dispose()
+  });
+}
+async function analyzeReadOnlyContentDependencies(options) {
+  throwIfAborted(options.signal);
+  const resolve = options.contentSources.resolveDependencies;
+  if (resolve === void 0) {
+    return Object.freeze({
+      state: "unresolved",
+      diagnostics: Object.freeze([diagnostic("information", "x3.host/content-dependency-resolver-unavailable", "the configured content source cannot resolve this dependency set")])
+    });
+  }
+  let resolution;
+  try {
+    resolution = await resolve.call(options.contentSources, options.dependencies);
+  } catch (error3) {
+    options.signal?.throwIfAborted();
+    return Object.freeze({
+      state: "unresolved",
+      diagnostics: Object.freeze([diagnostic("warning", "x3.host/content-dependency-resolution-failed", error3 instanceof Error ? error3.message : String(error3))])
+    });
+  }
+  const dependencyDiagnostics = contentDiagnostics(resolution.diagnostics);
+  if (!resolution.complete || resolution.mounts.length === 0) {
+    return Object.freeze({
+      state: "unresolved",
+      diagnostics: dependencyDiagnostics.length > 0 ? dependencyDiagnostics : Object.freeze([diagnostic("warning", "x3.host/content-dependency-workspace-incomplete", "the content dependency set did not resolve to a complete workspace")])
+    });
+  }
+  let prepared;
+  try {
+    prepared = createReadOnlyContentDependencyWorkspace({
+      contentSources: options.contentSources,
+      resolution,
+      workspaceId: options.workspaceId,
+      ...options.maximumEntryBytes === void 0 ? {} : { maximumEntryBytes: options.maximumEntryBytes },
+      ...options.resourceLimits === void 0 ? {} : { resourceLimits: options.resourceLimits },
+      ...options.signal === void 0 ? {} : { signal: options.signal }
+    });
+  } catch (error3) {
+    options.signal?.throwIfAborted();
+    return Object.freeze({
+      state: "unresolved",
+      diagnostics: Object.freeze([
+        ...dependencyDiagnostics,
+        diagnostic("warning", "x3.host/content-dependency-workspace-invalid", error3 instanceof Error ? error3.message : String(error3))
+      ])
+    });
+  }
+  const analysis = await analyzeResolvedDataWorkspace({
+    services: options.services,
+    grant: options.grant,
+    budgets: options.budgets,
+    workspace: prepared.workspace,
+    resources: prepared.resources,
+    locales: options.locales,
+    queries: options.queries,
+    ...options.localizationKeys === void 0 ? {} : { localizationKeys: options.localizationKeys },
+    limits: options.limits,
+    ...options.signal === void 0 ? {} : { signal: options.signal }
+  });
+  if (analysis.state === "unresolved") {
+    await prepared.dispose();
+    return Object.freeze({
+      state: "unresolved",
+      diagnostics: Object.freeze([...dependencyDiagnostics, ...analysis.diagnostics])
+    });
+  }
+  let released = false;
+  return Object.freeze({
+    ...analysis,
+    diagnostics: Object.freeze([...dependencyDiagnostics, ...analysis.diagnostics]),
+    async release() {
+      if (released)
+        return;
+      released = true;
+      const results = await Promise.allSettled([analysis.release(), prepared.dispose()]);
+      const failure2 = results.find((result) => result.status === "rejected");
+      if (failure2?.status === "rejected")
+        throw failure2.reason;
+    }
+  });
+}
+
+// packages/host/dist/content-dependency-operations.js
+var DEFAULT_DEPENDENCY_OPERATION = "content.resolve-dependencies";
+function dependencyRequest(value) {
+  if (value === null || typeof value !== "object" || Array.isArray(value))
+    return void 0;
+  const record2 = value;
+  if (record2["schemaVersion"] !== 1 || typeof record2["gameId"] !== "string" || record2["gameId"].length === 0 || record2["gameId"].length > 256 || typeof record2["complete"] !== "boolean" || !Array.isArray(record2["dependencies"]) || record2["dependencies"].length > 256) {
+    return void 0;
+  }
+  return value;
+}
+async function readOperationContentDependencies(request) {
+  request.signal?.throwIfAborted();
+  const operationId = request.operationId ?? DEFAULT_DEPENDENCY_OPERATION;
+  const declaration = request.descriptor.operations.find((operation) => operation.id === operationId);
+  if (declaration === void 0 || declaration.state !== "available") {
+    return Object.freeze({
+      state: "unresolved",
+      diagnostics: Object.freeze([diagnostic("information", "x3.host/content-dependency-operation-unavailable", declaration?.reason ?? `the subject does not provide ${operationId}`)])
+    });
+  }
+  const result = await request.operations.invoke(declaration.handlerId, {}, request.signal === void 0 ? void 0 : { signal: request.signal });
+  if (result.state !== "ok") {
+    return Object.freeze({
+      state: "unresolved",
+      diagnostics: Object.freeze([
+        ...result.diagnostics,
+        diagnostic("warning", "x3.host/content-dependency-operation-rejected", `${operationId} was rejected: ${result.reason}`)
+      ])
+    });
+  }
+  const dependencies = result.output.kind === "json" ? dependencyRequest(result.output.value) : void 0;
+  if (dependencies === void 0) {
+    return Object.freeze({
+      state: "unresolved",
+      diagnostics: Object.freeze([
+        ...result.diagnostics,
+        diagnostic("warning", "x3.host/content-dependency-operation-invalid", `${operationId} did not return a bounded schemaVersion 1 dependency request`)
+      ])
+    });
+  }
+  return Object.freeze({
+    state: "resolved",
+    dependencies,
+    diagnostics: Object.freeze([...result.diagnostics])
+  });
+}
+async function analyzeOperationContentDependencies(request) {
+  const discovered = await readOperationContentDependencies(request);
+  if (discovered.state === "unresolved")
+    return discovered;
+  const analyzed = await analyzeReadOnlyContentDependencies({
+    contentSources: request.contentSources,
+    dependencies: discovered.dependencies,
+    workspaceId: request.workspaceId,
+    services: request.services,
+    grant: request.grant,
+    budgets: request.budgets,
+    locales: request.locales,
+    queries: request.queries,
+    ...request.localizationKeys === void 0 ? {} : { localizationKeys: request.localizationKeys },
+    limits: request.limits,
+    ...request.maximumEntryBytes === void 0 ? {} : { maximumEntryBytes: request.maximumEntryBytes },
+    ...request.resourceLimits === void 0 ? {} : { resourceLimits: request.resourceLimits },
+    ...request.signal === void 0 ? {} : { signal: request.signal }
+  });
+  if (analyzed.state === "unresolved") {
+    return Object.freeze({
+      state: "unresolved",
+      diagnostics: Object.freeze([...discovered.diagnostics, ...analyzed.diagnostics])
+    });
+  }
+  let released = false;
+  return Object.freeze({
+    ...analyzed,
+    diagnostics: Object.freeze([...discovered.diagnostics, ...analyzed.diagnostics]),
+    async release() {
+      if (released)
+        return;
+      released = true;
+      await analyzed.release();
+    }
+  });
+}
+
 // packages/host/dist/service-definitions.js
 var FACETLESS_SERVICE_MATCHER_PROFILE = contractId("modkit/facetless-matcher");
 var facetlessMatcher = Object.freeze({
@@ -10327,7 +12333,7 @@ async function registerServiceContractDefinitionsFromInventory(inventory, regist
 // packages/host/dist/editing-definitions.js
 var STANDARD_EDITING_OWNER = "modkit/editing";
 var REQUIREMENT_KEYS = ["formatId", "representationId", "mutationMode", "minimumRoundTrip"];
-var OFFER_KEYS = [...REQUIREMENT_KEYS, "providerId", "fidelityEvidenceId"];
+var OFFER_KEYS2 = [...REQUIREMENT_KEYS, "providerId", "fidelityEvidenceId"];
 var MUTATION_MODES = /* @__PURE__ */ new Set(["export-only", "mutate"]);
 var ROUND_TRIPS = /* @__PURE__ */ new Set(["byte-identical", "semantic", "lossy", "none"]);
 function facetOf(value, keys) {
@@ -10349,7 +12355,7 @@ function facetOf(value, keys) {
 }
 function matchWriterFacets(context) {
   const request = facetOf(context.requestFacet, REQUIREMENT_KEYS);
-  const offer = facetOf(context.offerFacet, OFFER_KEYS);
+  const offer = facetOf(context.offerFacet, OFFER_KEYS2);
   if (request === void 0 || offer === void 0) {
     return {
       state: "invalid",
@@ -10499,7 +12505,7 @@ var COMPLETION_KINDS = /* @__PURE__ */ new Set([
   "text",
   "type"
 ]);
-function recordOf2(value) {
+function recordOf3(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? value : void 0;
 }
 function nonBlankStrings(value) {
@@ -10510,7 +12516,7 @@ function nonBlankStrings(value) {
   return new Set(strings).size === strings.length ? strings : void 0;
 }
 function languageOfferFacet(value) {
-  const record2 = recordOf2(value);
+  const record2 = recordOf3(value);
   if (record2 === void 0 || Object.keys(record2).some((key2) => !ROUTE_KEYS.has(key2))) {
     throw new TypeError("language provider offer facet must contain only route fields");
   }
@@ -10641,25 +12647,26 @@ function validJsonValue(value, seen = /* @__PURE__ */ new Set()) {
 }
 var validFilterStrings = (value) => Array.isArray(value) && value.every((item) => typeof item === "string" && item.length > 0) && new Set(value).size === value.length;
 function validSubjectFilter(value) {
-  const filter = recordOf2(value);
+  const filter = recordOf3(value);
   if (filter === void 0 || Object.keys(filter).some((key2) => !["type", "sameTypeAs", "text", "requireTags", "excludeTags", "predicate"].includes(key2)) || filter["type"] !== void 0 && (typeof filter["type"] !== "string" || filter["type"].length === 0) || filter["sameTypeAs"] !== void 0 && (typeof filter["sameTypeAs"] !== "string" || filter["sameTypeAs"].length === 0) || filter["text"] !== void 0 && typeof filter["text"] !== "string" || filter["requireTags"] !== void 0 && !validFilterStrings(filter["requireTags"]) || filter["excludeTags"] !== void 0 && !validFilterStrings(filter["excludeTags"])) {
     return false;
   }
   if (filter["predicate"] === void 0)
     return true;
-  const predicate = recordOf2(filter["predicate"]);
+  const predicate = recordOf3(filter["predicate"]);
   return predicate !== void 0 && Object.keys(predicate).every((key2) => key2 === "id" || key2 === "params") && typeof predicate["id"] === "string" && predicate["id"].length > 0 && (predicate["params"] === void 0 || validJsonValue(predicate["params"]));
 }
-var validCompletionItem = (item) => typeof item["label"] === "string" && item["label"].length > 0 && typeof item["kind"] === "string" && COMPLETION_KINDS.has(item["kind"]) && (item["detail"] === void 0 || typeof item["detail"] === "string") && (item["documentation"] === void 0 || typeof item["documentation"] === "string") && (item["insertText"] === void 0 || typeof item["insertText"] === "string") && (item["insertTextFormat"] === void 0 || item["insertTextFormat"] === "plain-text" || item["insertTextFormat"] === "snippet") && (item["sortText"] === void 0 || typeof item["sortText"] === "string");
+var validCompletionItem = (item, lengths) => typeof item["label"] === "string" && item["label"].length > 0 && typeof item["kind"] === "string" && COMPLETION_KINDS.has(item["kind"]) && (item["detail"] === void 0 || typeof item["detail"] === "string") && (item["documentation"] === void 0 || typeof item["documentation"] === "string") && (item["insertText"] === void 0 || typeof item["insertText"] === "string") && (item["insertTextFormat"] === void 0 || item["insertTextFormat"] === "plain-text" || item["insertTextFormat"] === "snippet") && (item["replacementRange"] === void 0 || validRange(item["replacementRange"], lengths)) && (item["sortText"] === void 0 || typeof item["sortText"] === "string");
 function validateProviderCompletionList(value, request) {
-  const list = recordOf2(value);
+  const list = recordOf3(value);
   const items = list?.["items"];
+  const lengths = lineLengths(request.document.text);
   if (list === void 0 || !Array.isArray(items) || items.length > request.maxResults || typeof list["isIncomplete"] !== "boolean" || !items.every((item) => {
-    const record2 = recordOf2(item);
+    const record2 = recordOf3(item);
     if (record2 === void 0)
       return false;
     if (record2["kind"] !== "subject-ref")
-      return validCompletionItem(record2);
+      return validCompletionItem(record2, lengths);
     return Object.keys(record2).every((key2) => key2 === "kind" || key2 === "subjectKind" || key2 === "filter") && typeof record2["subjectKind"] === "string" && record2["subjectKind"].length > 0 && (record2["filter"] === void 0 || validSubjectFilter(record2["filter"]));
   })) {
     invalidFeature("language provider returned an invalid or unbounded completion list", request.document.uri);
@@ -10668,9 +12675,10 @@ function validateProviderCompletionList(value, request) {
 }
 function validateCompletionList(value, request) {
   const list = value;
+  const lengths = lineLengths(request.document.text);
   if (typeof list !== "object" || list === null || !Array.isArray(list.items) || list.items.length > request.maxResults || typeof list.isIncomplete !== "boolean" || !list.items.every((item) => {
-    const record2 = recordOf2(item);
-    return record2 !== void 0 && validCompletionItem(record2);
+    const record2 = recordOf3(item);
+    return record2 !== void 0 && validCompletionItem(record2, lengths);
   })) {
     invalidFeature("language provider returned an invalid or unbounded completion list", request.document.uri);
   }
@@ -10756,6 +12764,25 @@ function validateDiagnosticList(value, request) {
   const lengths = lineLengths(request.document.text);
   if (typeof list !== "object" || list === null || !Array.isArray(list.diagnostics) || list.diagnostics.length > request.maxResults || typeof list.isIncomplete !== "boolean" || !list.diagnostics.every((item) => validRange(item.range, lengths) && typeof item.message === "string" && ["error", "warning", "information", "hint"].includes(item.severity) && (item.code === void 0 || typeof item.code === "string") && (item.source === void 0 || typeof item.source === "string"))) {
     invalidFeature("language provider returned invalid or unbounded diagnostics", request.document.uri);
+  }
+  return list;
+}
+function validColor(value) {
+  return value !== void 0 && [value.red, value.green, value.blue, value.alpha].every((channel) => typeof channel === "number" && Number.isFinite(channel) && channel >= 0 && channel <= 1);
+}
+function validateColorList(value, request) {
+  const list = value;
+  const lengths = lineLengths(request.document.text);
+  if (typeof list !== "object" || list === null || !Array.isArray(list.colors) || list.colors.length > request.maxResults || typeof list.isIncomplete !== "boolean" || !list.colors.every((item) => validRange(item.range, lengths) && validColor(item.color))) {
+    invalidFeature("language provider returned invalid or unbounded document colours", request.document.uri);
+  }
+  return list;
+}
+function validateColorPresentations(value, request) {
+  const list = value;
+  const lengths = lineLengths(request.document.text);
+  if (typeof list !== "object" || list === null || !Array.isArray(list.presentations) || list.presentations.length > request.maxResults || typeof list.isIncomplete !== "boolean" || !list.presentations.every((item) => typeof item.label === "string" && item.label.length > 0 && (item.textEdit === void 0 || typeof item.textEdit.newText === "string" && validRange(item.textEdit.range, lengths)))) {
+    invalidFeature("language provider returned invalid or unbounded colour presentations", request.document.uri);
   }
   return list;
 }
@@ -10866,7 +12893,7 @@ function createLanguageWorkspace(options) {
     const providerRequest = Object.freeze({
       document: entry2.document,
       workspaceDocuments: Object.freeze(selected.map((candidate) => candidate.document)),
-      workspaceIncomplete: candidates.length > selected.length,
+      workspaceIncomplete: candidates.length > selected.length || (typeof options.workspaceIncomplete === "function" ? options.workspaceIncomplete() : options.workspaceIncomplete === true),
       maxResults,
       maxDocuments,
       ...additions,
@@ -10906,6 +12933,8 @@ function createLanguageWorkspace(options) {
   };
   const validateWorkspaceEdit = (value, request, maxEdits) => {
     if (value === void 0)
+      return void 0;
+    if (request.workspaceIncomplete)
       return void 0;
     const edit = value;
     let editCount = 0;
@@ -11105,8 +13134,8 @@ function createLanguageWorkspace(options) {
       return invokeFeature(request, true, (provider, feature) => provider.prepareRename?.({ ...feature, position: request.position }), validatePreparation, { position: request.position });
     },
     rename(request) {
-      if (typeof request.newName !== "string" || request.newName.length > 256 || !/^[A-Za-z_]\w*$/u.test(request.newName)) {
-        return Promise.reject(workspaceError(LANGUAGE_FEATURE_INVALID, "rename needs a valid language identifier", {
+      if (typeof request.newName !== "string" || request.newName.length === 0 || request.newName.length > 256 || /[\u0000-\u001f\u007f]/u.test(request.newName)) {
+        return Promise.reject(workspaceError(LANGUAGE_FEATURE_INVALID, "rename needs a non-empty bounded name without control characters", {
           uri: request.uri
         }));
       }
@@ -11129,6 +13158,21 @@ function createLanguageWorkspace(options) {
         ...formatting.finalNewline === void 0 ? {} : { finalNewline: formatting.finalNewline }
       });
       return invokeFeature(request, false, (provider, feature) => provider.formatting?.({ ...feature, options: providerOptions }), validateTextEditList, { options: providerOptions });
+    },
+    documentColors(request) {
+      return invokeFeature(request, false, (provider, feature) => provider.documentColors?.(feature), validateColorList);
+    },
+    colorPresentations(request) {
+      const entry2 = requireFeatureEntry(request, false);
+      if (!validColor(request.color) || !validRange(request.range, lineLengths(entry2.document.text))) {
+        return Promise.reject(workspaceError(LANGUAGE_FEATURE_INVALID, "colour presentation needs normalized RGBA channels and a valid document range", { uri: request.uri }));
+      }
+      const color = Object.freeze({ ...request.color });
+      const range = Object.freeze({
+        start: Object.freeze({ ...request.range.start }),
+        end: Object.freeze({ ...request.range.end })
+      });
+      return invokeFeature(request, false, (provider, feature) => provider.colorPresentations?.({ ...feature, color, range }), validateColorPresentations, { color, range });
     },
     documentSymbols(request) {
       return invokeFeature(request, false, (provider, feature) => provider.documentSymbols?.(feature), validateDocumentSymbols);
@@ -11180,12 +13224,12 @@ function createLanguageWorkspace(options) {
 
 // packages/host/dist/language/index.js
 var STANDARD_LANGUAGE_OWNER = "modkit/language";
-var OFFER_KEYS2 = /* @__PURE__ */ new Set(["languageIds", "documentKinds", "extensions"]);
-var REQUEST_KEYS = /* @__PURE__ */ new Set(["languageId", "documentKind", "extension"]);
-function recordOf3(value) {
+var OFFER_KEYS3 = /* @__PURE__ */ new Set(["languageIds", "documentKinds", "extensions"]);
+var REQUEST_KEYS2 = /* @__PURE__ */ new Set(["languageId", "documentKind", "extension"]);
+function recordOf4(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? value : void 0;
 }
-function stringList(value) {
+function stringList2(value) {
   if (!Array.isArray(value) || value.length === 0)
     return void 0;
   if (!value.every((item) => typeof item === "string" && item.trim().length > 0))
@@ -11193,17 +13237,17 @@ function stringList(value) {
   const strings = value;
   return new Set(strings).size === strings.length ? strings : void 0;
 }
-function parseOffer(value) {
-  const record2 = recordOf3(value);
-  if (record2 === void 0 || Object.keys(record2).some((key2) => !OFFER_KEYS2.has(key2)))
+function parseOffer2(value) {
+  const record2 = recordOf4(value);
+  if (record2 === void 0 || Object.keys(record2).some((key2) => !OFFER_KEYS3.has(key2)))
     return void 0;
-  const languageIds = stringList(record2["languageIds"]);
+  const languageIds = stringList2(record2["languageIds"]);
   if (languageIds === void 0)
     return void 0;
   const rawKinds = record2["documentKinds"];
   const rawExtensions = record2["extensions"];
-  const documentKinds = rawKinds === void 0 ? void 0 : stringList(rawKinds);
-  const extensions = rawExtensions === void 0 ? void 0 : stringList(rawExtensions);
+  const documentKinds = rawKinds === void 0 ? void 0 : stringList2(rawKinds);
+  const extensions = rawExtensions === void 0 ? void 0 : stringList2(rawExtensions);
   if (rawKinds !== void 0 && documentKinds === void 0 || rawExtensions !== void 0 && extensions === void 0) {
     return void 0;
   }
@@ -11213,9 +13257,9 @@ function parseOffer(value) {
     ...extensions === void 0 ? {} : { extensions }
   };
 }
-function parseRequest(value) {
-  const record2 = recordOf3(value);
-  if (record2 === void 0 || Object.keys(record2).some((key2) => !REQUEST_KEYS.has(key2)))
+function parseRequest2(value) {
+  const record2 = recordOf4(value);
+  if (record2 === void 0 || Object.keys(record2).some((key2) => !REQUEST_KEYS2.has(key2)))
     return void 0;
   const languageId = record2["languageId"];
   const documentKind = record2["documentKind"];
@@ -11236,8 +13280,8 @@ function parseRequest(value) {
 }
 var normalizedExtension2 = (value) => value.replace(/^\./u, "").toLowerCase();
 function matchLanguageFacets(context) {
-  const offer = parseOffer(context.offerFacet);
-  const request = parseRequest(context.requestFacet);
+  const offer = parseOffer2(context.offerFacet);
+  const request = parseRequest2(context.requestFacet);
   if (offer === void 0 || request === void 0) {
     return {
       state: "invalid",
@@ -11371,7 +13415,7 @@ function registerStandardLanguageDefinitions(definitions) {
   ]);
 }
 function isLanguageProvider(value) {
-  const record2 = recordOf3(value);
+  const record2 = recordOf4(value);
   const workspaceLanguageIds = record2?.["workspaceLanguageIds"];
   return record2?.["contract"] === LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT && Array.isArray(record2["languageIds"]) && record2["languageIds"].every((item) => typeof item === "string") && (workspaceLanguageIds === void 0 || Array.isArray(workspaceLanguageIds) && workspaceLanguageIds.length > 0 && workspaceLanguageIds.length <= 16 && workspaceLanguageIds.every((item) => typeof item === "string" && item.trim().length > 0) && new Set(workspaceLanguageIds).size === workspaceLanguageIds.length) && typeof record2["analyze"] === "function";
 }
@@ -11458,41 +13502,41 @@ async function resolveLanguageProvider(request) {
 
 // packages/host/dist/runtime/index.js
 var STANDARD_RUNTIME_OWNER = "modkit/runtime";
-var OFFER_KEYS3 = /* @__PURE__ */ new Set(["runtimeIds"]);
-var REQUEST_KEYS2 = /* @__PURE__ */ new Set(["runtimeId"]);
+var OFFER_KEYS4 = /* @__PURE__ */ new Set(["runtimeIds"]);
+var REQUEST_KEYS3 = /* @__PURE__ */ new Set(["runtimeId"]);
 var BUDGET_KEYS = /* @__PURE__ */ new Set(["maxWallTimeMs", "maxTicks", "maxMemoryBytes"]);
-function recordOf4(value) {
+function recordOf5(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? value : void 0;
 }
-function nonEmptyString(value) {
+function nonEmptyString2(value) {
   return typeof value === "string" && value.trim().length > 0;
 }
 function nonNegativeSafeInteger(value) {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
-function stringList2(value) {
-  if (!Array.isArray(value) || value.length === 0 || !value.every(nonEmptyString))
+function stringList3(value) {
+  if (!Array.isArray(value) || value.length === 0 || !value.every(nonEmptyString2))
     return void 0;
   const strings = value;
   return new Set(strings).size === strings.length ? strings : void 0;
 }
-function parseOffer2(value) {
-  const record2 = recordOf4(value);
-  if (record2 === void 0 || Object.keys(record2).some((key2) => !OFFER_KEYS3.has(key2)))
+function parseOffer3(value) {
+  const record2 = recordOf5(value);
+  if (record2 === void 0 || Object.keys(record2).some((key2) => !OFFER_KEYS4.has(key2)))
     return void 0;
-  const runtimeIds = stringList2(record2["runtimeIds"]);
+  const runtimeIds = stringList3(record2["runtimeIds"]);
   return runtimeIds === void 0 ? void 0 : { runtimeIds };
 }
-function parseRequest2(value) {
-  const record2 = recordOf4(value);
-  if (record2 === void 0 || Object.keys(record2).some((key2) => !REQUEST_KEYS2.has(key2)))
+function parseRequest3(value) {
+  const record2 = recordOf5(value);
+  if (record2 === void 0 || Object.keys(record2).some((key2) => !REQUEST_KEYS3.has(key2)))
     return void 0;
   const runtimeId = record2["runtimeId"];
-  return nonEmptyString(runtimeId) ? { runtimeId } : void 0;
+  return nonEmptyString2(runtimeId) ? { runtimeId } : void 0;
 }
 function matchRuntimeFacets(context) {
-  const offer = parseOffer2(context.offerFacet);
-  const request = parseRequest2(context.requestFacet);
+  const offer = parseOffer3(context.offerFacet);
+  const request = parseRequest3(context.requestFacet);
   if (offer === void 0 || request === void 0) {
     return {
       state: "invalid",
@@ -11575,26 +13619,26 @@ function registerStandardRuntimeDefinitions(definitions) {
   })));
 }
 function isRuntimeBudget(value) {
-  const record2 = recordOf4(value);
+  const record2 = recordOf5(value);
   return record2 !== void 0 && Object.keys(record2).length === BUDGET_KEYS.size && Object.keys(record2).every((key2) => BUDGET_KEYS.has(key2)) && nonNegativeSafeInteger(record2["maxWallTimeMs"]) && nonNegativeSafeInteger(record2["maxTicks"]) && nonNegativeSafeInteger(record2["maxMemoryBytes"]);
 }
 function sameBudget(left, right) {
   return left.maxWallTimeMs === right.maxWallTimeMs && left.maxTicks === right.maxTicks && left.maxMemoryBytes === right.maxMemoryBytes;
 }
 function isRuntimeProvider(value) {
-  const record2 = recordOf4(value);
-  return record2?.["contract"] === RUNTIME_PROVIDER_CONTRACT && nonEmptyString(record2["providerId"]) && stringList2(record2["runtimeIds"]) !== void 0 && typeof record2["createSession"] === "function";
+  const record2 = recordOf5(value);
+  return record2?.["contract"] === RUNTIME_PROVIDER_CONTRACT && nonEmptyString2(record2["providerId"]) && stringList3(record2["runtimeIds"]) !== void 0 && typeof record2["createSession"] === "function";
 }
 function isRuntimeSession(value) {
-  const record2 = recordOf4(value);
-  return record2?.["contract"] === RUNTIME_SESSION_CONTRACT && nonEmptyString(record2["sessionId"]) && nonEmptyString(record2["providerId"]) && isRuntimeBudget(record2["budget"]) && typeof record2["execute"] === "function" && typeof record2["status"] === "function";
+  const record2 = recordOf5(value);
+  return record2?.["contract"] === RUNTIME_SESSION_CONTRACT && nonEmptyString2(record2["sessionId"]) && nonEmptyString2(record2["providerId"]) && isRuntimeBudget(record2["budget"]) && typeof record2["execute"] === "function" && typeof record2["status"] === "function";
 }
 function isRuntimeSessionLease(value) {
-  const record2 = recordOf4(value);
+  const record2 = recordOf5(value);
   return isRuntimeSession(record2?.["value"]) && typeof record2?.["release"] === "function";
 }
 async function releaseUnknownLease(value) {
-  const release = recordOf4(value)?.["release"];
+  const release = recordOf5(value)?.["release"];
   if (typeof release === "function")
     await release.call(value);
 }
@@ -11603,7 +13647,7 @@ async function unresolvedAfterRelease(resolver, diagnostics) {
   return { state: "unresolved", diagnostics };
 }
 async function openRuntimeSession(request) {
-  if (!nonEmptyString(request.runtimeId) || !nonEmptyString(request.sessionId)) {
+  if (!nonEmptyString2(request.runtimeId) || !nonEmptyString2(request.sessionId)) {
     return {
       state: "unresolved",
       diagnostics: [
@@ -11717,17 +13761,17 @@ async function openRuntimeSession(request) {
 
 // packages/host/dist/renderer/index.js
 var STANDARD_RENDERER_OWNER = "modkit/renderer";
-var OFFER_KEYS4 = /* @__PURE__ */ new Set(["rendererIds", "outputKinds"]);
-var REQUEST_KEYS3 = /* @__PURE__ */ new Set(["rendererId", "outputKind"]);
+var OFFER_KEYS5 = /* @__PURE__ */ new Set(["rendererIds", "outputKinds"]);
+var REQUEST_KEYS4 = /* @__PURE__ */ new Set(["rendererId", "outputKind"]);
 var OUTPUT_KINDS = /* @__PURE__ */ new Set(["rgba8"]);
-function recordOf5(value) {
+function recordOf6(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? value : void 0;
 }
-function nonEmptyString2(value) {
+function nonEmptyString3(value) {
   return typeof value === "string" && value.trim().length > 0;
 }
-function stringList3(value) {
-  if (!Array.isArray(value) || value.length === 0 || !value.every(nonEmptyString2))
+function stringList4(value) {
+  if (!Array.isArray(value) || value.length === 0 || !value.every(nonEmptyString3))
     return void 0;
   const strings = value;
   return new Set(strings).size === strings.length ? strings : void 0;
@@ -11744,21 +13788,21 @@ function outputKindList(value) {
   });
   return outputKinds.length === value.length && new Set(outputKinds).size === outputKinds.length ? outputKinds : void 0;
 }
-function parseOffer3(value) {
-  const record2 = recordOf5(value);
-  if (record2 === void 0 || Object.keys(record2).some((key2) => !OFFER_KEYS4.has(key2)))
+function parseOffer4(value) {
+  const record2 = recordOf6(value);
+  if (record2 === void 0 || Object.keys(record2).some((key2) => !OFFER_KEYS5.has(key2)))
     return void 0;
-  const rendererIds = stringList3(record2["rendererIds"]);
+  const rendererIds = stringList4(record2["rendererIds"]);
   const outputKinds = outputKindList(record2["outputKinds"]);
   return rendererIds === void 0 || outputKinds === void 0 ? void 0 : { rendererIds, outputKinds };
 }
-function parseRequest3(value) {
-  const record2 = recordOf5(value);
-  if (record2 === void 0 || Object.keys(record2).some((key2) => !REQUEST_KEYS3.has(key2)))
+function parseRequest4(value) {
+  const record2 = recordOf6(value);
+  if (record2 === void 0 || Object.keys(record2).some((key2) => !REQUEST_KEYS4.has(key2)))
     return void 0;
   const rendererId = record2["rendererId"];
   const parsedOutput = outputKind(record2["outputKind"]);
-  if (parsedOutput === void 0 || rendererId !== void 0 && !nonEmptyString2(rendererId)) {
+  if (parsedOutput === void 0 || rendererId !== void 0 && !nonEmptyString3(rendererId)) {
     return void 0;
   }
   return {
@@ -11767,8 +13811,8 @@ function parseRequest3(value) {
   };
 }
 function matchRendererFacets(context) {
-  const offer = parseOffer3(context.offerFacet);
-  const request = parseRequest3(context.requestFacet);
+  const offer = parseOffer4(context.offerFacet);
+  const request = parseRequest4(context.requestFacet);
   if (offer === void 0 || request === void 0) {
     return {
       state: "invalid",
@@ -11839,8 +13883,8 @@ function registerStandardRendererDefinitions(definitions) {
   ]);
 }
 function isSceneRenderer(value) {
-  const record2 = recordOf5(value);
-  return record2?.["contract"] === SCENE_RENDERER_CONTRACT && nonEmptyString2(record2["rendererId"]) && outputKindList(record2["outputKinds"]) !== void 0 && typeof record2["render"] === "function";
+  const record2 = recordOf6(value);
+  return record2?.["contract"] === SCENE_RENDERER_CONTRACT && nonEmptyString3(record2["rendererId"]) && outputKindList(record2["outputKinds"]) !== void 0 && typeof record2["render"] === "function";
 }
 async function resolveSceneRenderer(request) {
   const definitions = request.services.serviceDefinitions;
@@ -11935,7 +13979,7 @@ async function selectSceneRenderer(request) {
       ]
     };
   }
-  const offer = parseOffer3(result.selected.resolvedContract.facet);
+  const offer = parseOffer4(result.selected.resolvedContract.facet);
   if (offer === void 0) {
     return {
       state: "unselected",
@@ -11995,26 +14039,26 @@ function createSceneRendererPort(options) {
 
 // packages/host/dist/model-encoding.js
 var STANDARD_MODEL_ENCODING_OWNER = "modkit/model-encoding";
-var recordOf6 = (value) => typeof value === "object" && value !== null && !Array.isArray(value) ? value : void 0;
-var nonEmptyString3 = (value) => typeof value === "string" && value.trim().length > 0;
-function parseOffer4(value) {
-  const record2 = recordOf6(value);
+var recordOf7 = (value) => typeof value === "object" && value !== null && !Array.isArray(value) ? value : void 0;
+var nonEmptyString4 = (value) => typeof value === "string" && value.trim().length > 0;
+function parseOffer5(value) {
+  const record2 = recordOf7(value);
   if (record2 === void 0 || Object.keys(record2).some((key2) => key2 !== "formatIds"))
     return void 0;
   const values = record2["formatIds"];
-  if (!Array.isArray(values) || values.length === 0 || !values.every(nonEmptyString3) || new Set(values).size !== values.length)
+  if (!Array.isArray(values) || values.length === 0 || !values.every(nonEmptyString4) || new Set(values).size !== values.length)
     return void 0;
   return { formatIds: values };
 }
-function parseRequest4(value) {
-  const record2 = recordOf6(value);
-  if (record2 === void 0 || Object.keys(record2).some((key2) => key2 !== "formatId") || !nonEmptyString3(record2["formatId"]))
+function parseRequest5(value) {
+  const record2 = recordOf7(value);
+  if (record2 === void 0 || Object.keys(record2).some((key2) => key2 !== "formatId") || !nonEmptyString4(record2["formatId"]))
     return void 0;
   return { formatId: record2["formatId"] };
 }
 function matchNativeModelEncoder(context) {
-  const offer = parseOffer4(context.offerFacet);
-  const request = parseRequest4(context.requestFacet);
+  const offer = parseOffer5(context.offerFacet);
+  const request = parseRequest5(context.requestFacet);
   if (offer === void 0 || request === void 0) {
     return {
       state: "invalid",
@@ -12079,8 +14123,8 @@ function registerStandardModelEncodingDefinitions(definitions) {
 
 // packages/host/dist/games/index.js
 var STANDARD_GAMES_OWNER = "modkit/games";
-var OFFER_KEYS5 = /* @__PURE__ */ new Set(["gameIds"]);
-var REQUEST_KEYS4 = /* @__PURE__ */ new Set(["gameId"]);
+var OFFER_KEYS6 = /* @__PURE__ */ new Set(["gameIds"]);
+var REQUEST_KEYS5 = /* @__PURE__ */ new Set(["gameId"]);
 var ORIGINS = /* @__PURE__ */ new Set([
   "configured-path",
   "default-directory",
@@ -12088,14 +14132,14 @@ var ORIGINS = /* @__PURE__ */ new Set([
   "steam",
   "epic"
 ]);
-function recordOf7(value) {
+function recordOf8(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? value : void 0;
 }
-function nonEmptyString4(value) {
+function nonEmptyString5(value) {
   return typeof value === "string" && value.trim().length > 0;
 }
-function stringList4(value) {
-  if (!Array.isArray(value) || value.length === 0 || !value.every(nonEmptyString4))
+function stringList5(value) {
+  if (!Array.isArray(value) || value.length === 0 || !value.every(nonEmptyString5))
     return void 0;
   const strings = value;
   return new Set(strings).size === strings.length ? strings : void 0;
@@ -12106,23 +14150,23 @@ function originList(value) {
   const origins = value.flatMap((item) => typeof item === "string" && ORIGINS.has(item) ? [item] : []);
   return origins.length === value.length && new Set(origins).size === origins.length ? origins : void 0;
 }
-function parseOffer5(value) {
-  const record2 = recordOf7(value);
-  if (record2 === void 0 || Object.keys(record2).some((key2) => !OFFER_KEYS5.has(key2)))
+function parseOffer6(value) {
+  const record2 = recordOf8(value);
+  if (record2 === void 0 || Object.keys(record2).some((key2) => !OFFER_KEYS6.has(key2)))
     return void 0;
-  const gameIds = stringList4(record2["gameIds"]);
+  const gameIds = stringList5(record2["gameIds"]);
   return gameIds === void 0 ? void 0 : { gameIds };
 }
-function parseRequest5(value) {
-  const record2 = recordOf7(value);
-  if (record2 === void 0 || Object.keys(record2).some((key2) => !REQUEST_KEYS4.has(key2))) {
+function parseRequest6(value) {
+  const record2 = recordOf8(value);
+  if (record2 === void 0 || Object.keys(record2).some((key2) => !REQUEST_KEYS5.has(key2))) {
     return void 0;
   }
-  return nonEmptyString4(record2["gameId"]) ? { gameId: record2["gameId"] } : void 0;
+  return nonEmptyString5(record2["gameId"]) ? { gameId: record2["gameId"] } : void 0;
 }
 function matchGameInstallationFacets(context) {
-  const offer = parseOffer5(context.offerFacet);
-  const request = parseRequest5(context.requestFacet);
+  const offer = parseOffer6(context.offerFacet);
+  const request = parseRequest6(context.requestFacet);
   if (offer === void 0 || request === void 0) {
     return {
       state: "invalid",
@@ -12211,35 +14255,35 @@ function registerStandardGameDefinitions(definitions) {
   })));
 }
 function isGameInstallationDiscovery(value) {
-  const record2 = recordOf7(value);
-  return record2?.["contract"] === GAME_INSTALLATION_DISCOVERY_CONTRACT && nonEmptyString4(record2["discoveryId"]) && stringList4(record2["gameIds"]) !== void 0 && originList(record2["origins"]) !== void 0 && typeof record2["discover"] === "function";
+  const record2 = recordOf8(value);
+  return record2?.["contract"] === GAME_INSTALLATION_DISCOVERY_CONTRACT && nonEmptyString5(record2["discoveryId"]) && stringList5(record2["gameIds"]) !== void 0 && originList(record2["origins"]) !== void 0 && typeof record2["discover"] === "function";
 }
 function validEvidence(value) {
-  const record2 = recordOf7(value);
-  return record2 !== void 0 && nonEmptyString4(record2["kind"]) && nonEmptyString4(record2["path"]) && typeof record2["found"] === "boolean" && (record2["detail"] === void 0 || typeof record2["detail"] === "string");
+  const record2 = recordOf8(value);
+  return record2 !== void 0 && nonEmptyString5(record2["kind"]) && nonEmptyString5(record2["path"]) && typeof record2["found"] === "boolean" && (record2["detail"] === void 0 || typeof record2["detail"] === "string");
 }
 function validProbe(value) {
-  const record2 = recordOf7(value);
-  const candidate = recordOf7(record2?.["candidate"]);
-  return record2 !== void 0 && candidate !== void 0 && typeof candidate["origin"] === "string" && ORIGINS.has(candidate["origin"]) && nonEmptyString4(candidate["displayName"]) && nonEmptyString4(candidate["path"]) && typeof record2["confirmed"] === "boolean" && nonEmptyString4(record2["normalizedPath"]) && Array.isArray(record2["evidence"]) && record2["evidence"].every(validEvidence);
+  const record2 = recordOf8(value);
+  const candidate = recordOf8(record2?.["candidate"]);
+  return record2 !== void 0 && candidate !== void 0 && typeof candidate["origin"] === "string" && ORIGINS.has(candidate["origin"]) && nonEmptyString5(candidate["displayName"]) && nonEmptyString5(candidate["path"]) && typeof record2["confirmed"] === "boolean" && nonEmptyString5(record2["normalizedPath"]) && Array.isArray(record2["evidence"]) && record2["evidence"].every(validEvidence);
 }
 function validInstallation(value, gameId) {
-  const record2 = recordOf7(value);
-  return record2 !== void 0 && record2["gameId"] === gameId && nonEmptyString4(record2["displayName"]) && nonEmptyString4(record2["installPath"]) && nonEmptyString4(record2["normalizedPath"]) && originList(record2["origins"]) !== void 0 && Array.isArray(record2["evidence"]) && record2["evidence"].every(validEvidence);
+  const record2 = recordOf8(value);
+  return record2 !== void 0 && record2["gameId"] === gameId && nonEmptyString5(record2["displayName"]) && nonEmptyString5(record2["installPath"]) && nonEmptyString5(record2["normalizedPath"]) && originList(record2["origins"]) !== void 0 && Array.isArray(record2["evidence"]) && record2["evidence"].every(validEvidence);
 }
 function validDiscoveryDiagnostic(value) {
-  const record2 = recordOf7(value);
-  return record2 !== void 0 && ["error", "warning", "information"].includes(String(record2["severity"])) && nonEmptyString4(record2["code"]) && nonEmptyString4(record2["message"]);
+  const record2 = recordOf8(value);
+  return record2 !== void 0 && ["error", "warning", "information"].includes(String(record2["severity"])) && nonEmptyString5(record2["code"]) && nonEmptyString5(record2["message"]);
 }
 function isGameInstallationDiscoveryResult(value, gameId) {
-  const record2 = recordOf7(value);
+  const record2 = recordOf8(value);
   const probes = record2?.["probes"];
   const installations = record2?.["installations"];
-  return record2 !== void 0 && record2["gameId"] === gameId && typeof record2["complete"] === "boolean" && Array.isArray(probes) && probes.every(validProbe) && Array.isArray(installations) && installations.every((item) => validInstallation(item, gameId)) && new Set(installations.map((item) => String(recordOf7(item)?.["normalizedPath"] ?? ""))).size === installations.length && installations.every((item) => {
-    const installation = recordOf7(item);
+  return record2 !== void 0 && record2["gameId"] === gameId && typeof record2["complete"] === "boolean" && Array.isArray(probes) && probes.every(validProbe) && Array.isArray(installations) && installations.every((item) => validInstallation(item, gameId)) && new Set(installations.map((item) => String(recordOf8(item)?.["normalizedPath"] ?? ""))).size === installations.length && installations.every((item) => {
+    const installation = recordOf8(item);
     return probes.some((probe) => {
-      const candidate = recordOf7(recordOf7(probe)?.["candidate"]);
-      return recordOf7(probe)?.["confirmed"] === true && recordOf7(probe)?.["normalizedPath"] === installation?.["normalizedPath"] && candidate?.["path"] === installation?.["installPath"];
+      const candidate = recordOf8(recordOf8(probe)?.["candidate"]);
+      return recordOf8(probe)?.["confirmed"] === true && recordOf8(probe)?.["normalizedPath"] === installation?.["normalizedPath"] && candidate?.["path"] === installation?.["installPath"];
     });
   }) && Array.isArray(record2["diagnostics"]) && record2["diagnostics"].every(validDiscoveryDiagnostic);
 }
@@ -12329,11 +14373,11 @@ async function discoverGameInstallations(request) {
   }
 }
 function isGameLaunchPlanner(value) {
-  const record2 = recordOf7(value);
-  return record2?.["contract"] === GAME_LAUNCH_PLAN_CONTRACT && nonEmptyString4(record2["plannerId"]) && stringList4(record2["gameIds"]) !== void 0 && typeof record2["plan"] === "function";
+  const record2 = recordOf8(value);
+  return record2?.["contract"] === GAME_LAUNCH_PLAN_CONTRACT && nonEmptyString5(record2["plannerId"]) && stringList5(record2["gameIds"]) !== void 0 && typeof record2["plan"] === "function";
 }
 function validRelativeProcessPath(value, allowDot) {
-  if (!nonEmptyString4(value) || value.includes("\0"))
+  if (!nonEmptyString5(value) || value.includes("\0"))
     return false;
   const normalized = value.replace(/\\/gu, "/");
   if (normalized.startsWith("/") || /^[a-z]:/iu.test(normalized))
@@ -12349,11 +14393,11 @@ function validConfirmedInstallation(value, gameId) {
   return validInstallation(value, gameId) && installPath === normalizedPath2 && value.evidence.length > 0 && value.evidence.every((item) => item.found);
 }
 function validGameLaunchPlan(value, request) {
-  const record2 = recordOf7(value);
-  const resource = recordOf7(record2?.["resource"]);
+  const record2 = recordOf8(value);
+  const resource = recordOf8(record2?.["resource"]);
   const argumentsValue = record2?.["arguments"];
   const argumentIndex = record2?.["resourceArgumentIndex"];
-  return record2 !== void 0 && record2["schemaVersion"] === 1 && nonEmptyString4(record2["planId"]) && record2["gameId"] === request.gameId && record2["installationRoot"] === request.installation.normalizedPath && resource?.["kind"] === request.resource.kind && resource["path"] === request.resource.path.trim() && validRelativeProcessPath(record2["executableRelativePath"], false) && validRelativeProcessPath(record2["workingDirectoryRelativePath"], true) && Array.isArray(argumentsValue) && argumentsValue.length > 0 && argumentsValue.length <= 64 && argumentsValue.every((argument) => typeof argument === "string" && argument.length <= 32767 && !argument.includes("\0")) && Number.isSafeInteger(argumentIndex) && argumentIndex >= 0 && argumentIndex < argumentsValue.length && argumentsValue[argumentIndex] === resource["path"] && record2["mode"] === "detached" && record2["stdio"] === "ignore";
+  return record2 !== void 0 && record2["schemaVersion"] === 1 && nonEmptyString5(record2["planId"]) && record2["gameId"] === request.gameId && record2["installationRoot"] === request.installation.normalizedPath && resource?.["kind"] === request.resource.kind && resource["path"] === request.resource.path.trim() && validRelativeProcessPath(record2["executableRelativePath"], false) && validRelativeProcessPath(record2["workingDirectoryRelativePath"], true) && Array.isArray(argumentsValue) && argumentsValue.length > 0 && argumentsValue.length <= 64 && argumentsValue.every((argument) => typeof argument === "string" && argument.length <= 32767 && !argument.includes("\0")) && Number.isSafeInteger(argumentIndex) && argumentIndex >= 0 && argumentIndex < argumentsValue.length && argumentsValue[argumentIndex] === resource["path"] && record2["mode"] === "detached" && record2["stdio"] === "ignore";
 }
 async function resolveGameLaunchPlanner(request) {
   const definitions = request.services.serviceDefinitions;
@@ -12414,7 +14458,7 @@ async function resolveGameLaunchPlanner(request) {
   }
 }
 async function planGameLaunch(request) {
-  if (!validConfirmedInstallation(request.installation, request.gameId) || request.resource.kind !== "map" || !nonEmptyString4(request.resource.path) || request.resource.path.includes("\0")) {
+  if (!validConfirmedInstallation(request.installation, request.gameId) || request.resource.kind !== "map" || !nonEmptyString5(request.resource.path) || request.resource.path.includes("\0")) {
     return Object.freeze({
       state: "unresolved",
       diagnostics: Object.freeze([
@@ -12454,38 +14498,38 @@ async function planGameLaunch(request) {
 
 // packages/host/dist/mods/index.js
 var STANDARD_MODS_OWNER = "modkit/mods";
-var OFFER_KEYS6 = /* @__PURE__ */ new Set(["gameIds"]);
-var REQUEST_KEYS5 = /* @__PURE__ */ new Set(["gameId"]);
-function recordOf8(value) {
+var OFFER_KEYS7 = /* @__PURE__ */ new Set(["gameIds"]);
+var REQUEST_KEYS6 = /* @__PURE__ */ new Set(["gameId"]);
+function recordOf9(value) {
   return typeof value === "object" && value !== null && !Array.isArray(value) ? value : void 0;
 }
-function nonEmptyString5(value) {
+function nonEmptyString6(value) {
   return typeof value === "string" && value.trim().length > 0;
 }
-function stringList5(value) {
-  if (!Array.isArray(value) || value.length === 0 || !value.every(nonEmptyString5))
+function stringList6(value) {
+  if (!Array.isArray(value) || value.length === 0 || !value.every(nonEmptyString6))
     return void 0;
   const strings = value;
   return new Set(strings).size === strings.length ? strings : void 0;
 }
-function parseOffer6(value) {
-  const record2 = recordOf8(value);
-  if (record2 === void 0 || Object.keys(record2).some((key2) => !OFFER_KEYS6.has(key2))) {
+function parseOffer7(value) {
+  const record2 = recordOf9(value);
+  if (record2 === void 0 || Object.keys(record2).some((key2) => !OFFER_KEYS7.has(key2))) {
     return void 0;
   }
-  const gameIds = stringList5(record2["gameIds"]);
+  const gameIds = stringList6(record2["gameIds"]);
   return gameIds === void 0 ? void 0 : { gameIds };
 }
-function parseRequest6(value) {
-  const record2 = recordOf8(value);
-  if (record2 === void 0 || Object.keys(record2).some((key2) => !REQUEST_KEYS5.has(key2))) {
+function parseRequest7(value) {
+  const record2 = recordOf9(value);
+  if (record2 === void 0 || Object.keys(record2).some((key2) => !REQUEST_KEYS6.has(key2))) {
     return void 0;
   }
-  return nonEmptyString5(record2["gameId"]) ? { gameId: record2["gameId"] } : void 0;
+  return nonEmptyString6(record2["gameId"]) ? { gameId: record2["gameId"] } : void 0;
 }
 function matchModWorkspaceFacets(context) {
-  const offer = parseOffer6(context.offerFacet);
-  const request = parseRequest6(context.requestFacet);
+  const offer = parseOffer7(context.offerFacet);
+  const request = parseRequest7(context.requestFacet);
   if (offer === void 0 || request === void 0) {
     return {
       state: "invalid",
@@ -12549,8 +14593,8 @@ function registerStandardModDefinitions(definitions) {
   ]);
 }
 function isModWorkspaceComposition(value) {
-  const record2 = recordOf8(value);
-  return record2?.["contract"] === MOD_WORKSPACE_COMPOSITION_CONTRACT && nonEmptyString5(record2["compositionId"]) && stringList5(record2["gameIds"]) !== void 0 && typeof record2["compose"] === "function";
+  const record2 = recordOf9(value);
+  return record2?.["contract"] === MOD_WORKSPACE_COMPOSITION_CONTRACT && nonEmptyString6(record2["compositionId"]) && stringList6(record2["gameIds"]) !== void 0 && typeof record2["compose"] === "function";
 }
 async function resolveModWorkspaceComposition(request) {
   const definitions = request.services.serviceDefinitions;
@@ -12609,770 +14653,6 @@ async function resolveModWorkspaceComposition(request) {
   }
 }
 
-// packages/host/dist/data/index.js
-var STANDARD_DATA_OWNER = "modkit/data";
-var OFFER_KEYS7 = /* @__PURE__ */ new Set(["gameIds"]);
-var REQUEST_KEYS6 = /* @__PURE__ */ new Set(["gameId"]);
-function recordOf9(value) {
-  return typeof value === "object" && value !== null && !Array.isArray(value) ? value : void 0;
-}
-function nonEmptyString6(value) {
-  return typeof value === "string" && value.trim().length > 0;
-}
-function stringList6(value) {
-  if (!Array.isArray(value) || value.length === 0 || !value.every(nonEmptyString6))
-    return void 0;
-  const strings = value;
-  return new Set(strings).size === strings.length ? strings : void 0;
-}
-function parseOffer7(value) {
-  const record2 = recordOf9(value);
-  if (record2 === void 0 || Object.keys(record2).some((key2) => !OFFER_KEYS7.has(key2))) {
-    return void 0;
-  }
-  const gameIds = stringList6(record2["gameIds"]);
-  return gameIds === void 0 ? void 0 : { gameIds };
-}
-function parseRequest7(value) {
-  const record2 = recordOf9(value);
-  if (record2 === void 0 || Object.keys(record2).some((key2) => !REQUEST_KEYS6.has(key2))) {
-    return void 0;
-  }
-  return nonEmptyString6(record2["gameId"]) ? { gameId: record2["gameId"] } : void 0;
-}
-function matchDataCatalogFacets(context) {
-  const offer = parseOffer7(context.offerFacet);
-  const request = parseRequest7(context.requestFacet);
-  if (offer === void 0 || request === void 0) {
-    return {
-      state: "invalid",
-      diagnostics: [
-        diagnostic("error", "x3.host/data-catalog-facet-invalid", `${context.contract}@${context.major}: data catalog routes must be well formed`)
-      ]
-    };
-  }
-  return offer.gameIds.includes(request.gameId) ? { state: "match", selectionKey: `game=${request.gameId}` } : { state: "no-match" };
-}
-var DATA_CATALOG_MATCHER = Object.freeze({
-  profile: contractId(DATA_CATALOG_MATCHER_PROFILE),
-  major: 1,
-  match: matchDataCatalogFacets
-});
-var RESOLVED_DATA_WORKSPACE_MATCHER = Object.freeze({
-  profile: contractId(RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE),
-  major: 1,
-  match: matchDataCatalogFacets
-});
-var DATA_CATALOG_CONTRACT_DEFINITION = Object.freeze({
-  schemaVersion: 1,
-  kind: "service",
-  contract: DATA_CATALOG_ANALYSIS_CONTRACT,
-  major: 1,
-  offerFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/data-catalog-offer.v1.schema.json"
-    })
-  }),
-  requestFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/data-catalog-request.v1.schema.json"
-    })
-  }),
-  matching: Object.freeze({ profile: DATA_CATALOG_MATCHER_PROFILE, major: 1 }),
-  conformanceProfile: "common.data/catalog-analysis-v1",
-  surface: Object.freeze({
-    fields: Object.freeze(["contract", "analyzerId", "gameIds"]),
-    methods: Object.freeze({
-      analyze: Object.freeze({
-        kind: "value",
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 16777216, maxStringLength: 4194304 })
-      })
-    })
-  })
-});
-var RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION = Object.freeze({
-  schemaVersion: 1,
-  kind: "service",
-  contract: RESOLVED_DATA_WORKSPACE_CONTRACT,
-  major: 1,
-  offerFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/data-catalog-offer.v1.schema.json"
-    })
-  }),
-  requestFacet: Object.freeze({
-    presence: "required",
-    schema: Object.freeze({
-      $ref: "https://schemas.modkit.org/x3/data-catalog-request.v1.schema.json"
-    })
-  }),
-  matching: Object.freeze({ profile: RESOLVED_DATA_WORKSPACE_MATCHER_PROFILE, major: 1 }),
-  conformanceProfile: "common.data/resolved-workspace-v1",
-  surface: Object.freeze({
-    fields: Object.freeze(["contract", "providerId", "gameIds"]),
-    methods: Object.freeze({
-      plan: Object.freeze({
-        kind: "value",
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 4194304, maxStringLength: 1048576 })
-      }),
-      analyze: Object.freeze({
-        kind: "value",
-        signal: Object.freeze({ arg: 0, key: "signal" }),
-        limits: Object.freeze({ maxBytes: 16777216, maxStringLength: 4194304 })
-      }),
-      openSchemaTree: Object.freeze({
-        kind: "lease",
-        wrapper: "lease",
-        result: Object.freeze({ contract: "common.view/tree-data-source", major: 1 }),
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      }),
-      openDefinitionTable: Object.freeze({
-        kind: "lease",
-        wrapper: "lease",
-        result: Object.freeze({ contract: "common.view/table-data-source", major: 1 }),
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      }),
-      openLocalizationTable: Object.freeze({
-        kind: "lease",
-        wrapper: "lease",
-        result: Object.freeze({ contract: "common.view/table-data-source", major: 1 }),
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      }),
-      openRelations: Object.freeze({
-        kind: "lease",
-        wrapper: "lease",
-        result: Object.freeze({ contract: "common.view/relation-graph-source", major: 1 }),
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      }),
-      openSubjectFacts: Object.freeze({
-        kind: "lease",
-        optional: true,
-        wrapper: "lease",
-        result: Object.freeze({ contract: "common.view/subject-facts-source", major: 1 }),
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      }),
-      openSubjectCalculations: Object.freeze({
-        kind: "lease",
-        optional: true,
-        wrapper: "lease",
-        result: Object.freeze({
-          contract: "common.view/subject-calculations-source",
-          major: 1
-        }),
-        signal: Object.freeze({ arg: 0, key: "signal" })
-      })
-    })
-  })
-});
-function registerStandardDataDefinitions(definitions) {
-  const registered = [DATA_CATALOG_CONTRACT_DEFINITION, RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION];
-  return definitions.replaceOwnerInventory(STANDARD_DATA_OWNER, registered.map((definition) => ({
-    definition,
-    provenance: {
-      ownerExtensionId: STANDARD_DATA_OWNER,
-      extensionVersion: "1.0.0",
-      inventoryRecordId: `host:${definition.contract}@${definition.major}`,
-      manifestDigest: `host:${definition.contract}@${definition.major}`,
-      artifactDigest: "host:standard-data-definitions",
-      artifactRoot: "host:",
-      manifestPath: "host:standard-data-definitions"
-    }
-  })));
-}
-function isDataCatalogAnalysis(value) {
-  const record2 = recordOf9(value);
-  return record2?.["contract"] === DATA_CATALOG_ANALYSIS_CONTRACT && nonEmptyString6(record2["analyzerId"]) && stringList6(record2["gameIds"]) !== void 0 && typeof record2["analyze"] === "function";
-}
-async function resolveDataCatalogAnalysis(request) {
-  const definitions = request.services.serviceDefinitions;
-  if (definitions === void 0) {
-    return {
-      state: "unresolved",
-      diagnostics: [
-        diagnostic("information", "x3.host/data-catalog-unavailable", "this host registered no service-contract definitions, so catalogs cannot be analyzed")
-      ]
-    };
-  }
-  const resolver = createHostServiceResolver({
-    inventory: request.services.inventory,
-    target: request.services.target,
-    executionBackends: request.services.executionBackends,
-    definitions,
-    grant: request.grant,
-    budgets: request.budgets,
-    ...request.signal === void 0 ? {} : { signal: request.signal }
-  });
-  try {
-    const lease2 = await resolver.port.resolve({
-      contract: DATA_CATALOG_ANALYSIS_CONTRACT,
-      major: 1,
-      facet: { gameId: request.gameId },
-      ...request.signal === void 0 ? {} : { signal: request.signal }
-    });
-    if (!isDataCatalogAnalysis(lease2.value) || !lease2.value.gameIds.includes(request.gameId)) {
-      await resolver.release();
-      return {
-        state: "unresolved",
-        diagnostics: [
-          ...resolver.diagnostics,
-          diagnostic("error", "x3.host/data-catalog-invalid", `the selected provider does not implement ${DATA_CATALOG_ANALYSIS_CONTRACT}@1 for ${request.gameId}`)
-        ]
-      };
-    }
-    return Object.freeze({
-      state: "resolved",
-      analysis: lease2.value,
-      diagnostics: Object.freeze([
-        ...resolver.diagnostics,
-        diagnostic("information", "x3.host/data-catalog-selected", `selected ${lease2.value.analyzerId} for ${request.gameId}`)
-      ]),
-      release: () => resolver.release()
-    });
-  } catch (error3) {
-    await resolver.release();
-    return {
-      state: "unresolved",
-      diagnostics: [
-        ...resolver.diagnostics,
-        diagnostic("information", "x3.host/data-catalog-unresolved", `no data catalog provider resolved for ${request.gameId} (${error3 instanceof Error ? error3.message : String(error3)})`)
-      ]
-    };
-  }
-}
-function isResolvedDataWorkspace(value) {
-  const record2 = recordOf9(value);
-  return record2?.["contract"] === RESOLVED_DATA_WORKSPACE_CONTRACT && nonEmptyString6(record2["providerId"]) && stringList6(record2["gameIds"]) !== void 0 && typeof record2["plan"] === "function" && typeof record2["analyze"] === "function" && typeof record2["openSchemaTree"] === "function" && typeof record2["openDefinitionTable"] === "function" && typeof record2["openLocalizationTable"] === "function" && typeof record2["openRelations"] === "function";
-}
-async function resolveResolvedDataWorkspace(request) {
-  const definitions = request.services.serviceDefinitions;
-  if (definitions === void 0) {
-    return {
-      state: "unresolved",
-      diagnostics: [
-        diagnostic("information", "x3.host/resolved-data-workspace-unavailable", "this host registered no service-contract definitions, so workspace data cannot resolve")
-      ]
-    };
-  }
-  const resolver = createHostServiceResolver({
-    inventory: request.services.inventory,
-    target: request.services.target,
-    executionBackends: request.services.executionBackends,
-    definitions,
-    grant: request.grant,
-    budgets: request.budgets,
-    ...request.signal === void 0 ? {} : { signal: request.signal }
-  });
-  try {
-    const lease2 = await resolver.port.resolve({
-      contract: RESOLVED_DATA_WORKSPACE_CONTRACT,
-      major: 1,
-      facet: { gameId: request.gameId },
-      ...request.signal === void 0 ? {} : { signal: request.signal }
-    });
-    if (!isResolvedDataWorkspace(lease2.value) || !lease2.value.gameIds.includes(request.gameId)) {
-      await resolver.release();
-      return {
-        state: "unresolved",
-        diagnostics: [
-          ...resolver.diagnostics,
-          diagnostic("error", "x3.host/resolved-data-workspace-invalid", `the selected provider does not implement ${RESOLVED_DATA_WORKSPACE_CONTRACT}@1 for ${request.gameId}`)
-        ]
-      };
-    }
-    return Object.freeze({
-      state: "resolved",
-      workspace: lease2.value,
-      diagnostics: Object.freeze([
-        ...resolver.diagnostics,
-        diagnostic("information", "x3.host/resolved-data-workspace-selected", `selected ${lease2.value.providerId} for ${request.gameId}`)
-      ]),
-      release: () => resolver.release()
-    });
-  } catch (error3) {
-    await resolver.release();
-    return {
-      state: "unresolved",
-      diagnostics: [
-        ...resolver.diagnostics,
-        diagnostic("information", "x3.host/resolved-data-workspace-unresolved", `no resolved data workspace provider resolved for ${request.gameId} (${error3 instanceof Error ? error3.message : String(error3)})`)
-      ]
-    };
-  }
-}
-function createResolvedDataSubjectSelectorLease(analyzed, inputLimits) {
-  if (analyzed.openSubjectFacts === void 0 || analyzed.openSubjectCalculations === void 0) {
-    return void 0;
-  }
-  const openSubjectFacts = analyzed.openSubjectFacts;
-  const openSubjectCalculations = analyzed.openSubjectCalculations;
-  const limits = Object.freeze({
-    maxPageSize: positiveBound(inputLimits.maxPageSize, "maxPageSize"),
-    maxEntities: positiveBound(inputLimits.maxEntities, "maxEntities"),
-    maxRelations: positiveBound(inputLimits.maxRelations, "maxRelations"),
-    maxCalculations: positiveBound(inputLimits.maxCalculations, "maxCalculations")
-  });
-  const snapshot2 = analyzed.snapshot;
-  const localized = new Map(snapshot2.localizedStrings.map((item) => [item.key, item.value]));
-  const entitiesById = new Map(snapshot2.definitions.map((entity) => [`${entity.namespace}/${entity.entityId}`, entity]));
-  const subjects = Object.freeze(snapshot2.definitions.map((entity) => {
-    const authoredName = entity.fields["Name"];
-    const label = typeof authoredName === "string" ? localized.get(authoredName) ?? entity.entityId : entity.entityId;
-    const metadata = inputLimits.candidateMetadata?.(entity);
-    if (metadata?.tags !== void 0 && (!Array.isArray(metadata.tags) || metadata.tags.some((tag) => typeof tag !== "string" || tag.length === 0) || new Set(metadata.tags).size !== metadata.tags.length)) {
-      throw new TypeError("subject selector metadata contains invalid tags");
-    }
-    if (metadata?.asset !== void 0 && (typeof metadata.asset !== "object" || metadata.asset === null || typeof metadata.asset.formatId !== "string" || metadata.asset.formatId.length === 0 || !Array.isArray(metadata.asset.traits) || metadata.asset.traits.some((trait) => typeof trait !== "string" || trait.length === 0) || new Set(metadata.asset.traits).size !== metadata.asset.traits.length)) {
-      throw new TypeError("subject selector metadata contains an invalid asset description");
-    }
-    return Object.freeze({
-      subjectId: `${entity.namespace}/${entity.entityId}`,
-      label,
-      kind: entity.namespace,
-      type: entity.typeId,
-      ...metadata?.tags === void 0 ? {} : { tags: Object.freeze([...metadata.tags]) },
-      ...metadata?.asset === void 0 ? {} : {
-        asset: Object.freeze({
-          formatId: metadata.asset.formatId,
-          traits: Object.freeze([...metadata.asset.traits])
-        })
-      }
-    });
-  }).sort((left, right) => left.subjectId.localeCompare(right.subjectId)));
-  const byId = new Map(subjects.map((item) => [item.subjectId, item]));
-  let live = true;
-  const assertLive = (signal) => {
-    signal?.throwIfAborted();
-    if (!live)
-      throw new Error("resolved data subject selector lease has been released");
-  };
-  const page = (request, signal) => {
-    assertLive(signal);
-    if (!Number.isSafeInteger(request.limit) || request.limit < 1 || request.limit > limits.maxPageSize) {
-      throw new RangeError(`subject selector limit must be between 1 and ${limits.maxPageSize}`);
-    }
-    const text = request.text?.trim().toLocaleLowerCase("en-US");
-    const filterText = request.filter?.text?.trim().toLocaleLowerCase("en-US");
-    const sameTypeAs = request.filter?.sameTypeAs === void 0 ? void 0 : byId.get(request.filter.sameTypeAs);
-    if (request.filter?.sameTypeAs !== void 0 && sameTypeAs === void 0) {
-      throw new RangeError(`subject selector sameTypeAs anchor not found: ${request.filter.sameTypeAs}`);
-    }
-    const predicateId = request.filter?.predicate?.id;
-    const predicate = predicateId === void 0 ? void 0 : inputLimits.predicates?.[predicateId];
-    if (predicateId !== void 0 && predicate === void 0) {
-      throw new RangeError(`subject selector predicate is unavailable: ${predicateId}`);
-    }
-    const matchesText = (subject, needle) => needle === void 0 || needle.length === 0 || subject.subjectId.toLocaleLowerCase("en-US").includes(needle) || subject.label.toLocaleLowerCase("en-US").includes(needle);
-    const acceptsAsset = (subject) => {
-      if (request.asset === void 0)
-        return subject.asset === void 0;
-      const asset = subject.asset;
-      if (asset === void 0)
-        return false;
-      return (request.asset.formatIds === void 0 || request.asset.formatIds.includes(asset.formatId)) && (request.asset.traits === void 0 || request.asset.traits.every((trait) => asset.traits.includes(trait)));
-    };
-    const filtered = subjects.filter((subject) => {
-      const tags = subject.tags ?? [];
-      const entity = entitiesById.get(subject.subjectId);
-      return acceptsAsset(subject) && (request.kind === void 0 || subject.kind === request.kind) && (request.type === void 0 || subject.type === request.type) && (request.filter?.type === void 0 || subject.type === request.filter.type) && (sameTypeAs === void 0 || subject.type === sameTypeAs.type) && matchesText(subject, text) && matchesText(subject, filterText) && (request.filter?.requireTags === void 0 || request.filter.requireTags.every((tag) => tags.includes(tag))) && (request.filter?.excludeTags === void 0 || request.filter.excludeTags.every((tag) => !tags.includes(tag))) && (predicate === void 0 || entity !== void 0 && predicate({
-        subject,
-        entity,
-        ...sameTypeAs === void 0 ? {} : { sameTypeAs },
-        ...request.filter?.predicate?.params === void 0 ? {} : { params: request.filter.predicate.params }
-      }) === true);
-    });
-    const offset = request.cursor === void 0 ? 0 : Number(request.cursor.replace(/^subject:/u, ""));
-    if (!Number.isSafeInteger(offset) || offset < 0 || offset > filtered.length || request.cursor !== void 0 && request.cursor !== `subject:${offset}`) {
-      throw new RangeError("subject selector cursor is invalid or stale");
-    }
-    const end = Math.min(filtered.length, offset + request.limit);
-    return Object.freeze({
-      items: Object.freeze(filtered.slice(offset, end)),
-      ...end < filtered.length ? { nextCursor: `subject:${end}` } : {}
-    });
-  };
-  const selected = (subjectId, signal) => {
-    assertLive(signal);
-    const subject = byId.get(subjectId);
-    if (subject === void 0)
-      throw new RangeError(`resolved data subject not found: ${subjectId}`);
-    return subject;
-  };
-  const source = Object.freeze({
-    async summary(signal) {
-      assertLive(signal);
-      return Object.freeze({
-        snapshotId: snapshot2.snapshotId,
-        totalSubjects: subjects.length,
-        completeness: snapshot2.complete ? "complete" : "partial",
-        ...snapshot2.complete ? {} : { reason: "the resolved data workspace is incomplete" }
-      });
-    },
-    subjects: async (request, signal) => page(request, signal),
-    async openFacts(subjectId, signal) {
-      const subject = selected(subjectId, signal);
-      return openSubjectFacts({
-        subject: {
-          namespace: subject.kind,
-          entityId: subject.subjectId.slice(subject.kind.length + 1)
-        },
-        ...limits,
-        ...signal === void 0 ? {} : { signal }
-      });
-    },
-    async openCalculations(subjectId, signal) {
-      const subject = selected(subjectId, signal);
-      return openSubjectCalculations({
-        subject: {
-          namespace: subject.kind,
-          entityId: subject.subjectId.slice(subject.kind.length + 1)
-        },
-        maxPageSize: limits.maxPageSize,
-        maxEntities: limits.maxEntities,
-        maxCalculations: limits.maxCalculations,
-        ...signal === void 0 ? {} : { signal }
-      });
-    }
-  });
-  return Object.freeze({
-    value: source,
-    release() {
-      live = false;
-      return Promise.resolve();
-    }
-  });
-}
-function positiveBound(value, label) {
-  if (!Number.isSafeInteger(value) || value <= 0) {
-    throw new TypeError(`${label} must be a positive safe integer`);
-  }
-  return value;
-}
-function confinedPath(value, label) {
-  if (value.includes("\0") || /^[a-z]:[\\/]/iu.test(value) || /^[\\/]/u.test(value) || /^[a-z][a-z0-9+.-]*:/iu.test(value)) {
-    throw new TypeError(`${label} must be a confined logical path`);
-  }
-  const parts = [];
-  for (const part of value.replace(/\\/gu, "/").split("/")) {
-    if (part === "" || part === ".")
-      continue;
-    if (part === "..")
-      throw new TypeError(`${label} must not escape its workspace root`);
-    parts.push(part);
-  }
-  if (parts.length === 0)
-    throw new TypeError(`${label} must name a logical path`);
-  return parts.join("/");
-}
-function comparableLocale(value) {
-  return value.replace(/[-_]/gu, "").toLocaleLowerCase();
-}
-function validateWorkspacePlan(plan, workspace, locales, maximum) {
-  if (plan.schemaVersion !== 1 || plan.workspaceId !== workspace.workspaceId || plan.gameId !== workspace.gameId || !Array.isArray(plan.requirements) || plan.requirements.length > maximum) {
-    throw new TypeError("resolved data provider returned an invalid or mismatched workspace plan");
-  }
-  const roots = new Map(workspace.loadOrder.map((root, index) => [root.rootId, { root, index }]));
-  const logical = new Map((workspace.logicalRoots ?? [...workspace.loadOrder].reverse()).map((root, index) => [
-    root.rootId,
-    index
-  ]));
-  const localeRanks = new Map(locales.map((locale, index) => [comparableLocale(locale), index]));
-  const requirementIds = /* @__PURE__ */ new Set();
-  let catalogRank = -1;
-  let localizationRank = -1;
-  let localizationStarted = false;
-  for (const requirement of plan.requirements) {
-    if (requirement.required !== void 0 && typeof requirement.required !== "boolean") {
-      throw new TypeError(`workspace data requirement ${requirement.requirementId} has invalid required flag`);
-    }
-    if (requirementIds.has(requirement.requirementId)) {
-      throw new TypeError(`workspace data requirement ${requirement.requirementId} is duplicated`);
-    }
-    requirementIds.add(requirement.requirementId);
-    const root = roots.get(requirement.rootId);
-    if (root === void 0) {
-      throw new TypeError(`workspace data requirement ${requirement.requirementId} names unknown root`);
-    }
-    const rootPath = confinedPath(root.root.sourcePath, `${requirement.requirementId}.root`);
-    const path = confinedPath(requirement.path, `${requirement.requirementId}.path`);
-    const foldedRoot = rootPath.toLocaleLowerCase();
-    const foldedPath = path.toLocaleLowerCase();
-    if (foldedPath !== foldedRoot && !foldedPath.startsWith(`${foldedRoot}/`)) {
-      throw new TypeError(`workspace data requirement ${requirement.requirementId} escapes its root`);
-    }
-    if (requirement.kind === "catalog") {
-      if (localizationStarted) {
-        throw new TypeError("catalog requirements must precede localization requirements");
-      }
-      if (root.index < catalogRank) {
-        throw new TypeError("catalog requirements are not in dependency-first loadOrder");
-      }
-      catalogRank = root.index;
-      continue;
-    }
-    if (requirement.kind !== "localization" || requirement.locale === void 0) {
-      throw new TypeError(`workspace data requirement ${requirement.requirementId} has invalid kind`);
-    }
-    localizationStarted = true;
-    const localeRank = localeRanks.get(comparableLocale(requirement.locale));
-    const rootRank = logical.get(requirement.rootId);
-    if (localeRank === void 0 || rootRank === void 0) {
-      throw new TypeError(`workspace localization requirement ${requirement.requirementId} is invalid`);
-    }
-    const rank = localeRank * workspace.loadOrder.length + rootRank;
-    if (rank < localizationRank) {
-      throw new TypeError("localization requirements are not locale-first and winner-first");
-    }
-    localizationRank = rank;
-  }
-}
-async function readResourceText(resources, requirement, maxDocumentBytes, signal) {
-  const resolved = await resources.resolve({
-    id: requirement.requirementId,
-    logicalId: requirement.path,
-    role: "buffer",
-    scopes: ["current-mount", "enclosing-container", "workspace-dependency-layer"]
-  }, signal);
-  if (resolved.state === "unresolved") {
-    return { state: "unresolved", diagnostic: resolved.diagnostic };
-  }
-  try {
-    const source = resolved.lease.value;
-    if (source.kind !== "bytes") {
-      return {
-        state: "unresolved",
-        diagnostic: diagnostic("warning", "x3.host/resolved-data-resource-not-bytes", `${requirement.path} resolved to a namespace instead of bytes`)
-      };
-    }
-    if (source.size !== void 0 && source.size > BigInt(maxDocumentBytes)) {
-      return {
-        state: "unresolved",
-        diagnostic: diagnostic("warning", "x3.host/resolved-data-document-budget-exceeded", `${requirement.path} exceeds maxDocumentBytes ${maxDocumentBytes}`)
-      };
-    }
-    const chunks = [];
-    let bytes = 0;
-    for await (const chunk of source.stream(void 0, signal)) {
-      bytes += chunk.byteLength;
-      if (bytes > maxDocumentBytes) {
-        return {
-          state: "unresolved",
-          diagnostic: diagnostic("warning", "x3.host/resolved-data-document-budget-exceeded", `${requirement.path} exceeds maxDocumentBytes ${maxDocumentBytes}`)
-        };
-      }
-      chunks.push(chunk);
-    }
-    const content = new Uint8Array(bytes);
-    let offset = 0;
-    for (const chunk of chunks) {
-      content.set(chunk, offset);
-      offset += chunk.byteLength;
-    }
-    return {
-      state: "resolved",
-      text: new TextDecoder("utf-8", { fatal: false }).decode(content),
-      revision: resolved.revision
-    };
-  } finally {
-    await resolved.lease.release();
-  }
-}
-async function analyzeResolvedDataWorkspace(request) {
-  const limits = {
-    maxRequirements: positiveBound(request.limits.maxRequirements, "maxRequirements"),
-    maxDocumentBytes: positiveBound(request.limits.maxDocumentBytes, "maxDocumentBytes"),
-    maxTextBytes: positiveBound(request.limits.maxTextBytes, "maxTextBytes"),
-    maxEntities: positiveBound(request.limits.maxEntities, "maxEntities"),
-    maxDepth: positiveBound(request.limits.maxDepth, "maxDepth"),
-    maxPageSize: positiveBound(request.limits.maxPageSize, "maxPageSize")
-  };
-  if (request.resources.state() !== "live") {
-    return {
-      state: "unresolved",
-      diagnostics: [
-        diagnostic("warning", "x3.host/resolved-data-resource-session-disposed", "workspace data requires a live revision-pinned ResourceSessionPort")
-      ]
-    };
-  }
-  const resolution = await resolveResolvedDataWorkspace({
-    services: request.services,
-    gameId: request.workspace.gameId,
-    grant: request.grant,
-    budgets: request.budgets,
-    ...request.signal === void 0 ? {} : { signal: request.signal }
-  });
-  if (resolution.state === "unresolved")
-    return resolution;
-  const diagnostics = [...resolution.diagnostics];
-  const opened = [];
-  try {
-    const plan = await resolution.workspace.plan({
-      workspace: request.workspace,
-      locales: request.locales,
-      maxRequirements: limits.maxRequirements,
-      ...request.signal === void 0 ? {} : { signal: request.signal }
-    });
-    validateWorkspacePlan(plan, request.workspace, request.locales, limits.maxRequirements);
-    diagnostics.push(...plan.diagnostics.map((item) => diagnostic(item.severity, item.code, item.message, void 0, {
-      analyzerId: plan.analyzerId
-    })));
-    if (!plan.complete) {
-      await resolution.release();
-      return {
-        state: "unresolved",
-        diagnostics: Object.freeze(diagnostics)
-      };
-    }
-    let textBytes = 0;
-    const documents = [];
-    const localizationDocuments = [];
-    const unresolvedRequirementIds = [];
-    const revisions = [];
-    for (const requirement of plan.requirements) {
-      request.signal?.throwIfAborted();
-      const loaded = await readResourceText(request.resources, requirement, limits.maxDocumentBytes, request.signal);
-      if (loaded.state === "unresolved") {
-        if (requirement.required !== false) {
-          diagnostics.push(loaded.diagnostic);
-          unresolvedRequirementIds.push(requirement.requirementId);
-        }
-        continue;
-      }
-      textBytes += new TextEncoder().encode(loaded.text).byteLength;
-      if (textBytes > limits.maxTextBytes) {
-        throw new TypeError(`workspace data exceeds maxTextBytes ${limits.maxTextBytes}`);
-      }
-      revisions.push(`${requirement.requirementId}@${String(loaded.revision)}`);
-      const document = {
-        rootId: requirement.rootId,
-        path: requirement.path,
-        text: loaded.text,
-        revision: loaded.revision
-      };
-      if (requirement.kind === "catalog")
-        documents.push(document);
-      else
-        localizationDocuments.push({ ...document, locale: requirement.locale });
-    }
-    if (documents.length === 0) {
-      await resolution.release();
-      return {
-        state: "unresolved",
-        diagnostics: Object.freeze([
-          ...diagnostics,
-          diagnostic("warning", "x3.host/resolved-data-catalog-unavailable", "no planned catalog document resolved through the resource session")
-        ])
-      };
-    }
-    if (request.resources.state() !== "live") {
-      throw new Error("resource session was disposed while workspace data was loading");
-    }
-    const snapshot2 = await resolution.workspace.analyze({
-      workspaceId: request.workspace.workspaceId,
-      gameId: request.workspace.gameId,
-      documents,
-      localizationDocuments,
-      locales: request.locales,
-      localizationKeys: request.localizationKeys ?? [],
-      queries: request.queries,
-      plannedDocumentCount: documents.length + localizationDocuments.length + unresolvedRequirementIds.length,
-      unresolvedRequirementIds,
-      snapshotId: `${String(request.resources.revision)}:${revisions.join("|")}`,
-      maxDocuments: limits.maxRequirements,
-      maxTextBytes: limits.maxTextBytes,
-      maxEntities: limits.maxEntities,
-      maxDepth: limits.maxDepth,
-      ...request.signal === void 0 ? {} : { signal: request.signal }
-    });
-    if (request.resources.state() !== "live") {
-      throw new Error("resource session was disposed while workspace data was analyzed");
-    }
-    const facetRequest = {
-      snapshotId: snapshot2.snapshotId,
-      maxPageSize: limits.maxPageSize,
-      ...request.signal === void 0 ? {} : { signal: request.signal }
-    };
-    const schemaTree = await resolution.workspace.openSchemaTree(facetRequest);
-    opened.push(schemaTree);
-    const definitions = await resolution.workspace.openDefinitionTable(facetRequest);
-    opened.push(definitions);
-    const localization = await resolution.workspace.openLocalizationTable(facetRequest);
-    opened.push(localization);
-    const relations = await resolution.workspace.openRelations(facetRequest);
-    opened.push(relations);
-    let released = false;
-    const openSubjectFacts = resolution.workspace.openSubjectFacts;
-    const openSubjectCalculations = resolution.workspace.openSubjectCalculations;
-    return Object.freeze({
-      state: "resolved",
-      snapshot: snapshot2,
-      plan,
-      facets: Object.freeze({ schemaTree, definitions, localization, relations }),
-      ...openSubjectFacts === void 0 ? {} : {
-        async openSubjectFacts(request2) {
-          if (released)
-            throw new Error("resolved data workspace analysis is released");
-          const lease2 = await openSubjectFacts.call(resolution.workspace, {
-            ...request2,
-            snapshotId: snapshot2.snapshotId
-          });
-          if (released) {
-            await lease2.release();
-            throw new Error("resolved data workspace analysis was released while opening facts");
-          }
-          opened.push(lease2);
-          return lease2;
-        }
-      },
-      ...openSubjectCalculations === void 0 ? {} : {
-        async openSubjectCalculations(request2) {
-          if (released)
-            throw new Error("resolved data workspace analysis is released");
-          const lease2 = await openSubjectCalculations.call(resolution.workspace, {
-            ...request2,
-            snapshotId: snapshot2.snapshotId
-          });
-          if (released) {
-            await lease2.release();
-            throw new Error("resolved data workspace analysis was released while opening calculations");
-          }
-          opened.push(lease2);
-          return lease2;
-        }
-      },
-      diagnostics: Object.freeze(diagnostics),
-      async release() {
-        if (released)
-          return;
-        released = true;
-        const results = await Promise.allSettled([
-          ...[...opened].reverse().map((lease2) => lease2.release()),
-          resolution.release()
-        ]);
-        const failure2 = results.find((result) => result.status === "rejected");
-        if (failure2?.status === "rejected")
-          throw failure2.reason;
-      }
-    });
-  } catch (error3) {
-    await Promise.allSettled([...opened].reverse().map((lease2) => lease2.release()));
-    await resolution.release();
-    if (request.signal?.aborted)
-      throw error3;
-    return {
-      state: "unresolved",
-      diagnostics: Object.freeze([
-        ...diagnostics,
-        diagnostic("warning", "x3.host/resolved-data-workspace-failed", error3 instanceof Error ? error3.message : String(error3))
-      ])
-    };
-  }
-}
-
 // packages/host/dist/maps/world-source.js
 function positiveLimit(value, maximum) {
   if (!Number.isSafeInteger(value) || value <= 0 || value > maximum) {
@@ -13380,11 +14660,59 @@ function positiveLimit(value, maximum) {
   }
   return value;
 }
+function worldTexture(id, result) {
+  if (result.info.orientation === "unknown")
+    return void 0;
+  const { region } = result;
+  const rowBytes = region.width * 4;
+  const rgba = new Uint8Array(rowBytes * region.height);
+  for (let y = 0; y < region.height; y += 1) {
+    const sourceY = result.info.orientation === "bottom-left" ? region.height - 1 - y : y;
+    rgba.set(region.pixels.subarray(sourceY * region.rowStride, sourceY * region.rowStride + rowBytes), y * rowBytes);
+  }
+  return Object.freeze({
+    id,
+    width: region.width,
+    height: region.height,
+    rgba,
+    ...result.info.channelLayout === void 0 ? {} : { channelLayout: result.info.channelLayout },
+    ...result.info.compression === void 0 ? {} : { compression: result.info.compression },
+    wrapU: "repeat",
+    wrapV: "repeat"
+  });
+}
 function resourceId(namespace, entityId) {
   return `resource:${encodeURIComponent(namespace)}/${encodeURIComponent(entityId)}`;
 }
+function modelResourceId(requirementId) {
+  return `model-resource:${encodeURIComponent(requirementId)}`;
+}
 function layerId(snapshotId, kind) {
   return `${snapshotId}:layer:${kind}`;
+}
+function layerContentRevision(items) {
+  const text = JSON.stringify(items, (key2, value) => key2 === "id" || key2 === "layerId" ? void 0 : value);
+  let hash = 2166136261;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return `fnv1a32:${(hash >>> 0).toString(16).padStart(8, "0")}:${items.length}`;
+}
+function terrainMaterialContentRevision(items, rasters) {
+  const text = JSON.stringify([items, rasters.map(({ rgba: _rgba, ...metadata }) => metadata)], (key2, value) => key2 === "id" || key2 === "layerId" ? void 0 : value);
+  let hash = 2166136261;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  for (const raster of rasters) {
+    for (const value of raster.rgba ?? []) {
+      hash ^= value;
+      hash = Math.imul(hash, 16777619);
+    }
+  }
+  return `fnv1a32:${(hash >>> 0).toString(16).padStart(8, "0")}:${items.length}:${rasters.length}`;
 }
 function canonicalQuery(request) {
   const bounds = request.bounds;
@@ -13482,6 +14810,73 @@ function canonicalPosition(position, transform) {
   };
   return Object.freeze({ x: axis("x"), y: axis("y"), z: axis("z") });
 }
+function canonicalObjectRotation(rotation, nativeUnit) {
+  let radians;
+  if (rotation === void 0)
+    radians = 0;
+  else if (nativeUnit === "radians")
+    radians = rotation;
+  else if (nativeUnit === "degrees")
+    radians = rotation * Math.PI / 180;
+  else if (nativeUnit === "uint16-turn")
+    radians = rotation * Math.PI * 2 / 65536;
+  else
+    return void 0;
+  if (!Number.isFinite(radians))
+    return void 0;
+  const half = radians / 2;
+  const y = Math.sin(half);
+  const w = Math.cos(half);
+  return Object.freeze([0, y === 0 ? 0 : y, 0, w === 0 ? 0 : w]);
+}
+function canonicalObjectScale(scale, transform) {
+  const source = scale ?? { x: 1, y: 1, z: 1 };
+  return Object.freeze({
+    x: source[transform.axes.x.sourceAxis],
+    y: source[transform.axes.y.sourceAxis],
+    z: source[transform.axes.z.sourceAxis]
+  });
+}
+function canonicalRegionShape(shape, transform) {
+  const point = (value) => {
+    const canonical = canonicalPosition({ x: value.x, y: value.y, z: 0 }, transform);
+    return Object.freeze({ x: canonical.x, y: canonical.z });
+  };
+  const horizontalScaleX = Math.abs(transform.axes.x.scale);
+  const horizontalScaleZ = Math.abs(transform.axes.z.scale);
+  if (shape.center !== void 0 && shape.radius !== void 0) {
+    if (horizontalScaleX !== horizontalScaleZ)
+      return void 0;
+    return Object.freeze({
+      ...shape,
+      center: point(shape.center),
+      radius: shape.radius * horizontalScaleX
+    });
+  }
+  if (shape.minimum !== void 0 && shape.maximum !== void 0) {
+    const corners = [
+      point(shape.minimum),
+      point({ x: shape.minimum.x, y: shape.maximum.y }),
+      point(shape.maximum),
+      point({ x: shape.maximum.x, y: shape.minimum.y })
+    ];
+    return Object.freeze({
+      ...shape,
+      minimum: Object.freeze({
+        x: Math.min(...corners.map((corner) => corner.x)),
+        y: Math.min(...corners.map((corner) => corner.y))
+      }),
+      maximum: Object.freeze({
+        x: Math.max(...corners.map((corner) => corner.x)),
+        y: Math.max(...corners.map((corner) => corner.y))
+      })
+    });
+  }
+  if (shape.points !== void 0) {
+    return Object.freeze({ ...shape, points: Object.freeze(shape.points.map(point)) });
+  }
+  return void 0;
+}
 function admittedTerrainTransform(snapshot2, terrain, exact) {
   const transform = snapshot2.terrainTransform;
   if (transform === void 0 || terrain === void 0 || !exact)
@@ -13547,19 +14942,28 @@ function admittedWorldCanonicalTransform(snapshot2, terrainTransform) {
   }
   return ["x", "y", "z"].every((axis) => transform.bounds.minimum[axis] === minimum[axis] && transform.bounds.maximum[axis] === maximum[axis]) ? transform : void 0;
 }
-function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
+function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize, modelResources, releaseModelResources, rasterResources) {
   positiveLimit(maxPageSize, Number.MAX_SAFE_INTEGER);
   const semantic = snapshot2.semantic;
   const terrainLayerId = layerId(snapshot2.snapshotId, "terrain");
+  const terrainMaterialLayerId = layerId(snapshot2.snapshotId, "terrain-materials");
+  const waterLayerId = layerId(snapshot2.snapshotId, "water");
+  const cliffLayerId = layerId(snapshot2.snapshotId, "cliffs");
   const objectLayerId = layerId(snapshot2.snapshotId, "objects");
   const regionLayerId = layerId(snapshot2.snapshotId, "regions");
   const resourceLayerId = layerId(snapshot2.snapshotId, "resources");
   const navigationLayerId = layerId(snapshot2.snapshotId, "navigation");
+  const gatewayLayerId = layerId(snapshot2.snapshotId, "gateways");
   const terrainSummary = semantic.terrain;
   const terrainExact = hasExactTerrainGrid(terrainSummary);
   const terrainTransform = admittedTerrainTransform(snapshot2, terrainSummary, terrainExact);
   const uvwTransform = admittedWorldCanonicalTransform(snapshot2, terrainTransform);
   const terrainLod = terrainExact ? "exact" : "sampled";
+  const terrainMaterialExact = snapshot2.terrainMaterials?.exact === true && (uvwTransform === void 0 || snapshot2.terrainMaterials.width === uvwTransform.heightfield.columns && snapshot2.terrainMaterials.height === uvwTransform.heightfield.rows);
+  const terrainWeightRasterExact = (snapshot2.terrainMaterials?.weightRasters?.length ?? 0) > 0 && snapshot2.terrainMaterials.weightRasters.every((raster) => Number.isSafeInteger(raster.width) && raster.width > 0 && Number.isSafeInteger(raster.height) && raster.height > 0 && raster.materialIds.length > 0 && raster.materialIds.length <= 4 && raster.rgba?.byteLength === raster.width * raster.height * 4);
+  const terrainMaterialLod = terrainMaterialExact ? "exact" : "sampled";
+  const cliffExact = snapshot2.cliffs?.exact === true && (uvwTransform === void 0 || snapshot2.cliffs.width <= uvwTransform.heightfield.columns && snapshot2.cliffs.height <= uvwTransform.heightfield.rows);
+  const cliffLod = cliffExact ? "exact" : "sampled";
   const objectIdentities = /* @__PURE__ */ new Set();
   const semanticObjects = semantic.objects.filter((item) => {
     if (objectIdentities.has(item.objectId))
@@ -13590,50 +14994,135 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
       ...mapNativePosition === void 0 || uvwTransform === void 0 ? {} : { uvwPosition: canonicalPosition(mapNativePosition, uvwTransform) }
     });
   }));
+  const terrainByGrid = new Map(terrain.flatMap((item) => item.facet === "terrain" ? [[`${String(item.x)}:${String(item.y)}`, item]] : []));
+  const terrainMaterials = Object.freeze((snapshot2.terrainMaterials?.samples ?? []).map((item) => {
+    const terrainItem = terrainByGrid.get(`${String(item.x)}:${String(item.y)}`);
+    const materialId = snapshot2.terrainMaterials?.materials?.find((material) => material.sourceIndex === item.textureIndex)?.materialId ?? `material-${String(item.textureIndex)}`;
+    return Object.freeze({
+      facet: "terrain-materials",
+      id: `${terrainMaterialLayerId}:sample:${String(item.x)}:${String(item.y)}`,
+      layerId: terrainMaterialLayerId,
+      coordinateSpaceId: "height-grid",
+      lod: terrainMaterialLod,
+      ...item,
+      weights: item.weights ?? Object.freeze([Object.freeze({ materialId, weight: 1 })]),
+      ...terrainItem?.facet === "terrain" && terrainItem.uvwPosition !== void 0 ? { uvwPosition: terrainItem.uvwPosition } : {}
+    });
+  }));
+  const water = Object.freeze((snapshot2.water?.zones ?? []).map((item) => {
+    const canonicalCorners = item.elevation === void 0 || uvwTransform === void 0 ? void 0 : [item.minimum.x, item.maximum.x].flatMap((x) => [item.minimum.y, item.maximum.y].map((y) => canonicalPosition({ x, y, z: item.elevation }, uvwTransform)));
+    return Object.freeze({
+      facet: "water",
+      id: `${waterLayerId}:zone:${String(item.zoneId)}`,
+      layerId: waterLayerId,
+      coordinateSpaceId: "map-native",
+      ...item,
+      ...canonicalCorners === void 0 ? {} : {
+        uvwMinimum: Object.freeze({
+          x: Math.min(...canonicalCorners.map((corner) => corner.x)),
+          z: Math.min(...canonicalCorners.map((corner) => corner.z))
+        }),
+        uvwMaximum: Object.freeze({
+          x: Math.max(...canonicalCorners.map((corner) => corner.x)),
+          z: Math.max(...canonicalCorners.map((corner) => corner.z))
+        }),
+        uvwElevation: canonicalCorners[0].y
+      }
+    });
+  }));
+  const unresolvedWaterElevationCount = water.filter((item) => item.facet === "water" && item.elevation === void 0).length;
+  const cliffs = Object.freeze((snapshot2.cliffs?.samples ?? []).map((item) => {
+    const terrainItem = terrainByGrid.get(`${String(item.x)}:${String(item.y)}`);
+    return Object.freeze({
+      facet: "cliffs",
+      id: `${cliffLayerId}:sample:${String(item.x)}:${String(item.y)}`,
+      layerId: cliffLayerId,
+      coordinateSpaceId: "height-grid",
+      lod: cliffLod,
+      ...item,
+      ...terrainItem?.facet === "terrain" && terrainItem.uvwPosition !== void 0 ? { uvwPosition: terrainItem.uvwPosition } : {}
+    });
+  }));
   const objects = Object.freeze(semanticObjects.map((item) => {
     const id = `${objectLayerId}:object:${String(item.objectId)}`;
     const ref = item.catalog?.ref;
+    const uvwRotation = canonicalObjectRotation(item.rotation, item.nativeRotationUnit);
+    const compoundResourceIds = (item.modelResources ?? []).map((requirement) => modelResourceId(requirement.id));
+    const modelComponents = item.modelComponents?.map((component) => Object.freeze({
+      ...component,
+      resourceId: modelResourceId(component.resourceId)
+    }));
     return Object.freeze({
       facet: "objects",
       id,
       layerId: objectLayerId,
       coordinateSpaceId: "map-native",
       ...item,
-      ...ref === void 0 ? {} : { resourceId: resourceId(ref.namespace, ref.entityId) }
+      ...uvwTransform === void 0 || item.sourcePositionDimensions === 2 ? {} : {
+        uvwPosition: canonicalPosition(item.position, uvwTransform),
+        ...uvwRotation === void 0 ? {} : { uvwRotation },
+        uvwScale: canonicalObjectScale(item.scale, uvwTransform)
+      },
+      ...ref === void 0 ? {} : { resourceId: resourceId(ref.namespace, ref.entityId) },
+      ...compoundResourceIds.length === 0 ? {} : { resourceIds: Object.freeze(compoundResourceIds) },
+      ...modelComponents === void 0 ? {} : { modelComponents: Object.freeze(modelComponents) }
     });
   }));
-  const regions = Object.freeze(semanticRegions.map((item) => Object.freeze({
-    facet: "regions",
-    id: `${regionLayerId}:region:${String(item.regionId)}`,
-    layerId: regionLayerId,
-    coordinateSpaceId: "map-native",
-    regionId: item.regionId,
-    name: item.name,
-    ...item.color === void 0 ? {} : { color: item.color },
-    shapes: Object.freeze(item.shapes.map(regionShape))
-  })));
+  const regions = Object.freeze(semanticRegions.map((item) => {
+    const shapes = Object.freeze(item.shapes.map(regionShape));
+    const uvwShapes = uvwTransform === void 0 ? void 0 : shapes.map((shape) => canonicalRegionShape(shape, uvwTransform));
+    return Object.freeze({
+      facet: "regions",
+      id: `${regionLayerId}:region:${String(item.regionId)}`,
+      layerId: regionLayerId,
+      coordinateSpaceId: "map-native",
+      regionId: item.regionId,
+      name: item.name,
+      ...item.color === void 0 ? {} : { color: item.color },
+      shapes,
+      ...uvwShapes === void 0 || uvwShapes.some((shape) => shape === void 0) ? {} : { uvwShapes: Object.freeze(uvwShapes) }
+    });
+  }));
+  const incompleteRegionGeometryCount = regions.filter((item) => item.facet === "regions" && item.uvwShapes === void 0).length;
   const resourceJoins = /* @__PURE__ */ new Map();
   for (const item of objects) {
-    if (item.facet !== "objects" || item.catalog === void 0)
+    if (item.facet !== "objects")
       continue;
-    const key2 = resourceId(item.catalog.ref.namespace, item.catalog.ref.entityId);
-    const current = resourceJoins.get(key2) ?? {
-      namespace: item.catalog.ref.namespace,
-      entityId: item.catalog.ref.entityId,
-      resolved: item.catalog.entity !== void 0,
-      objectIds: []
-    };
-    current.resolved ||= item.catalog.entity !== void 0;
-    current.objectIds.push(item.id);
-    resourceJoins.set(key2, current);
+    if (item.catalog !== void 0) {
+      const key2 = resourceId(item.catalog.ref.namespace, item.catalog.ref.entityId);
+      const current = resourceJoins.get(key2) ?? {
+        namespace: item.catalog.ref.namespace,
+        entityId: item.catalog.ref.entityId,
+        resolved: item.catalog.entity !== void 0,
+        objectIds: [],
+        ...item.modelResource === void 0 ? {} : { modelResource: item.modelResource }
+      };
+      current.resolved ||= item.catalog.entity !== void 0;
+      if (current.modelResource === void 0 && item.modelResource !== void 0) {
+        current.modelResource = item.modelResource;
+      }
+      current.objectIds.push(item.id);
+      resourceJoins.set(key2, current);
+    }
+    for (const modelResource of item.modelResources ?? []) {
+      const key2 = modelResourceId(modelResource.id);
+      const current = resourceJoins.get(key2) ?? {
+        resolved: true,
+        objectIds: [],
+        modelResource
+      };
+      current.objectIds.push(item.id);
+      resourceJoins.set(key2, current);
+    }
   }
   const resources = Object.freeze([...resourceJoins.entries()].sort(([left], [right]) => left.localeCompare(right)).map(([id, item]) => Object.freeze({
     facet: "resources",
     id,
     layerId: resourceLayerId,
-    namespace: item.namespace,
-    entityId: item.entityId,
+    ...item.namespace === void 0 ? {} : { namespace: item.namespace },
+    ...item.entityId === void 0 ? {} : { entityId: item.entityId },
     resolved: item.resolved,
+    ...item.modelResource === void 0 ? {} : { modelResource: item.modelResource },
     objectIds: Object.freeze([...item.objectIds])
   })));
   const navigation = Object.freeze((snapshot2.navigation?.samples ?? []).map((item) => Object.freeze({
@@ -13644,6 +15133,53 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
     lod: "sampled",
     ...item
   })));
+  const gateways = Object.freeze((snapshot2.gateways?.segments ?? []).map((item) => {
+    const uvwStart = uvwTransform === void 0 ? void 0 : canonicalPosition({ x: item.x1, y: item.y1, z: 0 }, uvwTransform);
+    const uvwEnd = uvwTransform === void 0 ? void 0 : canonicalPosition({ x: item.x2, y: item.y2, z: 0 }, uvwTransform);
+    return Object.freeze({
+      facet: "gateways",
+      ...item,
+      id: `${gatewayLayerId}:${item.id}`,
+      layerId: gatewayLayerId,
+      coordinateSpaceId: "map-native",
+      ...uvwStart === void 0 || uvwEnd === void 0 ? {} : { uvwStart, uvwEnd }
+    });
+  }));
+  const contentRevisions = Object.freeze({
+    terrain: layerContentRevision(terrain),
+    "terrain-materials": terrainMaterialContentRevision(terrainMaterials, snapshot2.terrainMaterials?.weightRasters ?? []),
+    water: layerContentRevision(water),
+    cliffs: layerContentRevision(cliffs),
+    objects: layerContentRevision(objects),
+    regions: layerContentRevision(regions),
+    resources: layerContentRevision(resources),
+    navigation: layerContentRevision(navigation),
+    gateways: layerContentRevision(gateways)
+  });
+  const commonTerrainMaterials = Object.freeze(snapshot2.terrainMaterials?.materials ?? (snapshot2.terrainMaterials?.textureNames ?? []).map((label, sourceIndex) => Object.freeze({ materialId: `material-${String(sourceIndex)}`, label, sourceIndex })));
+  const commonWaterMaterials = Object.freeze(snapshot2.water?.materials ?? []);
+  const commonTerrainWeightRasters = Object.freeze((snapshot2.terrainMaterials?.weightRasters ?? []).map((raster) => Object.freeze({
+    resourceId: raster.resourceId,
+    width: raster.width,
+    height: raster.height,
+    materialIds: raster.materialIds,
+    encoding: raster.encoding,
+    normalization: raster.normalization
+  })));
+  const terrainWeightTextures = new Map((snapshot2.terrainMaterials?.weightRasters ?? []).flatMap((raster) => raster.rgba === void 0 ? [] : [
+    [
+      raster.resourceId,
+      Object.freeze({
+        id: raster.resourceId,
+        width: raster.width,
+        height: raster.height,
+        rgba: raster.rgba.slice(),
+        wrapU: "clamp",
+        wrapV: "clamp",
+        filter: "linear"
+      })
+    ]
+  ]));
   const facets = Object.freeze([
     Object.freeze({
       facet: "terrain",
@@ -13651,8 +15187,42 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
       state: terrainSummary === void 0 ? "unavailable" : terrainExact ? "available" : "partial",
       itemCount: semantic.terrain?.cellCount ?? 0,
       lods: Object.freeze(terrainSummary === void 0 ? [] : terrainExact ? ["exact"] : ["summary", "sampled"]),
+      contentRevision: contentRevisions.terrain,
       ...terrainSummary === void 0 ? { reason: "authoritative semantic snapshot contains no terrain height grid" } : terrainExact ? {} : {
         reason: "candidate exposes bounded deterministic samples, not the full native grid"
+      }
+    }),
+    Object.freeze({
+      facet: "terrain-materials",
+      layerId: terrainMaterialLayerId,
+      state: snapshot2.terrainMaterials === void 0 ? "unavailable" : terrainMaterialExact || terrainWeightRasterExact ? "available" : "partial",
+      itemCount: snapshot2.terrainMaterials?.cellCount ?? 0,
+      lods: Object.freeze(snapshot2.terrainMaterials === void 0 ? [] : terrainMaterialExact ? ["exact"] : terrainWeightRasterExact ? ["raster-exact", "sampled"] : ["summary", "sampled"]),
+      contentRevision: contentRevisions["terrain-materials"],
+      ...snapshot2.terrainMaterials === void 0 ? { reason: "publisher reported terrain materials unavailable" } : terrainMaterialExact || terrainWeightRasterExact ? {} : {
+        reason: "publisher exposes bounded material samples without a grid matching the admitted UVW heightfield"
+      }
+    }),
+    Object.freeze({
+      facet: "water",
+      layerId: waterLayerId,
+      state: snapshot2.water === void 0 ? "unavailable" : unresolvedWaterElevationCount === 0 && snapshot2.water.exact !== false ? "available" : "partial",
+      itemCount: snapshot2.water?.zones.length ?? 0,
+      lods: Object.freeze(snapshot2.water === void 0 ? [] : ["exact"]),
+      contentRevision: contentRevisions.water,
+      ...snapshot2.water === void 0 ? { reason: "publisher reported water unavailable" } : unresolvedWaterElevationCount > 0 ? {
+        reason: `${String(unresolvedWaterElevationCount)} native water zone elevations remain unresolved`
+      } : snapshot2.water.exact === false ? { reason: "native water geometry exceeds the common constant-elevation zone profile" } : {}
+    }),
+    Object.freeze({
+      facet: "cliffs",
+      layerId: cliffLayerId,
+      state: snapshot2.cliffs === void 0 ? "unavailable" : cliffExact ? "available" : "partial",
+      itemCount: snapshot2.cliffs?.cellCount ?? 0,
+      lods: Object.freeze(snapshot2.cliffs === void 0 ? [] : cliffExact ? ["exact"] : ["sampled"]),
+      contentRevision: contentRevisions.cliffs,
+      ...snapshot2.cliffs === void 0 ? { reason: "publisher reported synchronized cliff levels unavailable" } : cliffExact ? {} : {
+        reason: "publisher cliff grid is sampled or does not match the admitted UVW heightfield grid"
       }
     }),
     Object.freeze({
@@ -13661,6 +15231,7 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
       state: semanticObjects.length === 0 ? "unavailable" : duplicateObjectCount > 0 || incompleteObjectPositionCount > 0 ? "partial" : "available",
       itemCount: semanticObjects.length,
       lods: Object.freeze(["exact"]),
+      contentRevision: contentRevisions.objects,
       ...semanticObjects.length === 0 ? { reason: "semantic snapshot contains no objects" } : duplicateObjectCount > 0 || incompleteObjectPositionCount > 0 ? {
         reason: [
           ...duplicateObjectCount > 0 ? [`${duplicateObjectCount} duplicate object identities were omitted`] : [],
@@ -13673,10 +15244,18 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
     Object.freeze({
       facet: "regions",
       layerId: regionLayerId,
-      state: semanticRegions.length === 0 ? "unavailable" : duplicateRegionCount > 0 ? "partial" : "available",
+      state: semanticRegions.length === 0 ? "unavailable" : duplicateRegionCount > 0 || incompleteRegionGeometryCount > 0 ? "partial" : "available",
       itemCount: semanticRegions.length,
       lods: Object.freeze(["exact"]),
-      ...semanticRegions.length === 0 ? { reason: "semantic snapshot contains no regions" } : duplicateRegionCount > 0 ? { reason: `${duplicateRegionCount} duplicate region identities were omitted` } : {}
+      contentRevision: contentRevisions.regions,
+      ...semanticRegions.length === 0 ? { reason: "semantic snapshot contains no regions" } : duplicateRegionCount > 0 || incompleteRegionGeometryCount > 0 ? {
+        reason: [
+          ...duplicateRegionCount > 0 ? [`${duplicateRegionCount} duplicate region identities were omitted`] : [],
+          ...incompleteRegionGeometryCount > 0 ? [
+            `${incompleteRegionGeometryCount} regions contain shapes without canonical UVW geometry`
+          ] : []
+        ].join("; ")
+      } : {}
     }),
     Object.freeze({
       facet: "resources",
@@ -13684,6 +15263,7 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
       state: resources.length === 0 ? "unavailable" : "available",
       itemCount: resources.length,
       lods: Object.freeze(["exact"]),
+      contentRevision: contentRevisions.resources,
       ...resources.length === 0 ? { reason: "no placed object publishes a catalog resource reference" } : {}
     }),
     Object.freeze({
@@ -13692,7 +15272,17 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
       state: snapshot2.navigation === void 0 ? "unavailable" : "partial",
       itemCount: snapshot2.navigation?.cellCount ?? 0,
       lods: Object.freeze(snapshot2.navigation === void 0 ? [] : ["summary", "sampled"]),
+      contentRevision: contentRevisions.navigation,
       ...snapshot2.navigation === void 0 ? { reason: "publisher reported navigation unavailable" } : { reason: "native flags are sampled and their bit semantics remain publisher-defined" }
+    }),
+    Object.freeze({
+      facet: "gateways",
+      layerId: gatewayLayerId,
+      state: snapshot2.gateways === void 0 ? "unavailable" : snapshot2.gateways.exact && uvwTransform !== void 0 ? "available" : "partial",
+      itemCount: snapshot2.gateways?.segments.length ?? 0,
+      lods: Object.freeze(snapshot2.gateways === void 0 ? [] : ["exact"]),
+      contentRevision: contentRevisions.gateways,
+      ...snapshot2.gateways === void 0 ? { reason: "publisher reported gateways unavailable" } : snapshot2.gateways.exact && uvwTransform !== void 0 ? {} : { reason: "gateway endpoints lack an exact canonical transform" }
     })
   ]);
   const layers = Object.freeze(facets.map((item) => Object.freeze({
@@ -13702,15 +15292,38 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
     kind: item.facet,
     state: item.state,
     itemCount: item.itemCount,
-    lods: item.lods
+    lods: item.lods,
+    ...item.contentRevision === void 0 ? {} : { contentRevision: item.contentRevision },
+    ...uvwTransform !== void 0 && (item.facet === "terrain" || item.facet === "terrain-materials" || item.facet === "cliffs") && item.state === "available" && (item.lods.includes("exact") || item.facet === "terrain-materials" && item.lods.includes("raster-exact")) ? {
+      grid: Object.freeze({
+        columns: item.facet === "cliffs" ? snapshot2.cliffs.width : uvwTransform.heightfield.columns,
+        rows: item.facet === "cliffs" ? snapshot2.cliffs.height : uvwTransform.heightfield.rows,
+        cellSize: uvwTransform.heightfield.cellSize,
+        origin: item.facet === "cliffs" && uvwTransform.heightfield.sourceRowOrder === "reverse" && snapshot2.cliffs.height < uvwTransform.heightfield.rows ? Object.freeze([
+          uvwTransform.heightfield.origin[0],
+          uvwTransform.heightfield.origin[1],
+          uvwTransform.heightfield.origin[2] + uvwTransform.heightfield.cellSize
+        ]) : uvwTransform.heightfield.origin,
+        coordinateSpaceId: "uvw-canonical"
+      })
+    } : {},
+    ...item.facet === "terrain-materials" && commonTerrainMaterials.length > 0 ? {
+      materials: commonTerrainMaterials,
+      ...commonTerrainWeightRasters.length === 0 ? {} : { weightRasters: commonTerrainWeightRasters }
+    } : {},
+    ...item.facet === "water" && commonWaterMaterials.length > 0 ? { waterMaterials: commonWaterMaterials } : {}
   })));
   const byFacet = /* @__PURE__ */ new Map([
     ["layers", layers],
     ["terrain", terrain],
+    ["terrain-materials", terrainMaterials],
+    ["water", water],
+    ["cliffs", cliffs],
     ["objects", objects],
     ["regions", regions],
     ["resources", resources],
-    ["navigation", navigation]
+    ["navigation", navigation],
+    ["gateways", gateways]
   ]);
   const info = Object.freeze({
     contract: snapshot2.worldCandidate.contract,
@@ -13822,6 +15435,21 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
           state: "unknown",
           reason: "navigation grid has no vertical axis"
         })
+      }),
+      Object.freeze({
+        facet: "gateways",
+        coordinateSpaceId: uvwTransform === void 0 ? "map-native" : "uvw-canonical",
+        x: gateways.length === 0 ? Object.freeze({ state: "unknown", reason: "gateway bounds unavailable" }) : Object.freeze({
+          state: "known",
+          minimum: Math.min(...gateways.flatMap((item) => item.facet === "gateways" ? [item.uvwStart?.x ?? item.x1, item.uvwEnd?.x ?? item.x2] : [])),
+          maximum: Math.max(...gateways.flatMap((item) => item.facet === "gateways" ? [item.uvwStart?.x ?? item.x1, item.uvwEnd?.x ?? item.x2] : []))
+        }),
+        y: Object.freeze({ state: "unknown", reason: "gateways have no vertical extent" }),
+        z: gateways.length === 0 ? Object.freeze({ state: "unknown", reason: "gateway bounds unavailable" }) : Object.freeze({
+          state: "known",
+          minimum: Math.min(...gateways.flatMap((item) => item.facet === "gateways" ? [item.uvwStart?.z ?? item.y1, item.uvwEnd?.z ?? item.y2] : [])),
+          maximum: Math.max(...gateways.flatMap((item) => item.facet === "gateways" ? [item.uvwStart?.z ?? item.y1, item.uvwEnd?.z ?? item.y2] : []))
+        })
       })
     ]),
     ...terrainTransform === void 0 ? {} : { terrainTransform },
@@ -13829,8 +15457,9 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
     facets,
     provenance: Object.freeze(provenance.map((item) => Object.freeze({ ...item }))),
     unknownFacets: snapshot2.worldCandidate.unknownFacets,
+    ...snapshot2.worldCandidate.edit === void 0 ? {} : { edit: snapshot2.worldCandidate.edit },
     lossPolicy: "explicit-partial",
-    complete: snapshot2.complete && duplicateObjectCount === 0 && duplicateRegionCount === 0 && incompleteObjectPositionCount === 0
+    complete: snapshot2.complete && duplicateObjectCount === 0 && duplicateRegionCount === 0 && incompleteRegionGeometryCount === 0 && incompleteObjectPositionCount === 0
   });
   let live = true;
   const assertLive = (signal) => {
@@ -13865,7 +15494,7 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
         if (request.layerId !== facetState?.layerId) {
           throw new TypeError(`world facet ${request.facet} requires its exact layerId`);
         }
-        const expectedLod = request.facet === "terrain" ? terrainLod : request.facet === "navigation" ? "sampled" : void 0;
+        const expectedLod = request.facet === "terrain" ? terrainLod : request.facet === "terrain-materials" ? terrainMaterialLod : request.facet === "cliffs" ? cliffLod : request.facet === "navigation" ? "sampled" : void 0;
         if (expectedLod !== void 0 && request.lod !== expectedLod) {
           return Promise.resolve(Object.freeze({
             snapshotId: snapshot2.snapshotId,
@@ -13899,7 +15528,17 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
         if (item.facet === "objects") {
           return item.position.x >= bounds.minimumX && item.position.x <= bounds.maximumX && item.position.y >= bounds.minimumY && item.position.y <= bounds.maximumY;
         }
-        if (item.facet !== "terrain" && item.facet !== "navigation")
+        if (item.facet === "water") {
+          return !(item.maximum.x < bounds.minimumX || item.minimum.x > bounds.maximumX || item.maximum.y < bounds.minimumY || item.minimum.y > bounds.maximumY);
+        }
+        if (item.facet === "gateways") {
+          const startX = item.uvwStart?.x ?? item.x1;
+          const startY = item.uvwStart?.z ?? item.y1;
+          const endX = item.uvwEnd?.x ?? item.x2;
+          const endY = item.uvwEnd?.z ?? item.y2;
+          return !(Math.max(startX, endX) < bounds.minimumX || Math.min(startX, endX) > bounds.maximumX || Math.max(startY, endY) < bounds.minimumY || Math.min(startY, endY) > bounds.maximumY);
+        }
+        if (item.facet !== "terrain" && item.facet !== "terrain-materials" && item.facet !== "cliffs" && item.facet !== "navigation")
           return false;
         if (item.facet === "terrain" && item.mapNativePosition !== void 0) {
           return item.mapNativePosition.x >= bounds.minimumX && item.mapNativePosition.x <= bounds.maximumX && item.mapNativePosition.y >= bounds.minimumY && item.mapNativePosition.y <= bounds.maximumY;
@@ -13907,13 +15546,204 @@ function createCandidateWorldSceneLease(snapshot2, provenance, maxPageSize) {
         return item.x >= bounds.minimumX && item.x <= bounds.maximumX && item.y >= bounds.minimumY && item.y <= bounds.maximumY;
       });
       return Promise.resolve(pageItems(bounded, request, snapshot2.snapshotId, maxPageSize));
+    },
+    ...modelResources === void 0 ? {} : {
+      async model(requestedResourceId, request, signal) {
+        assertLive(signal);
+        const maxNodes = request.maxNodes ?? request.maxMeshes;
+        const maxResources = request.maxResources ?? maxNodes;
+        const maxTextureBytes = request.maxTextureBytes ?? Math.min(16 * 1024 * 1024, request.maxBytes);
+        const maxTextureTotalBytes = request.maxTextureTotalBytes ?? Math.min(32 * 1024 * 1024, request.maxBytes);
+        positiveLimit(maxNodes, maxPageSize);
+        positiveLimit(request.maxMeshes, maxPageSize);
+        positiveLimit(request.maxPrimitives, maxPageSize);
+        positiveLimit(request.maxPrimitiveBytes, request.maxBytes);
+        positiveLimit(maxResources, maxPageSize);
+        positiveLimit(maxTextureBytes, request.maxBytes);
+        positiveLimit(maxTextureTotalBytes, request.maxBytes);
+        const item = resources.find((candidate) => candidate.facet === "resources" && candidate.id === requestedResourceId);
+        if (item?.facet !== "resources" || item.modelResource === void 0) {
+          return Object.freeze({
+            state: "unresolved",
+            diagnostics: Object.freeze([
+              diagnostic("warning", "x3.host/world-model-resource-unavailable", `world resource ${requestedResourceId} has no resolved logical model requirement`)
+            ])
+          });
+        }
+        const metersPerSourceUnit = request.metersPerSourceUnit ?? snapshot2.semantic.modelMetersPerSourceUnit;
+        const lease2 = await modelResources.acquire({
+          maxBytes: request.maxBytes,
+          ...metersPerSourceUnit === void 0 ? {} : { metersPerSourceUnit },
+          requirement: item.modelResource
+        }, signal);
+        try {
+          const result = lease2.value.result;
+          if (result.state === "unresolved") {
+            return Object.freeze({
+              ...result,
+              diagnostics: Object.freeze([...result.diagnostics])
+            });
+          }
+          if (lease2.value.meshes === void 0 || lease2.value.primitive === void 0) {
+            return Object.freeze({
+              state: "unresolved",
+              diagnostics: Object.freeze([
+                ...result.diagnostics,
+                diagnostic("warning", "x3.host/world-model-scene-unavailable", `model ${item.modelResource.logicalId} has no common scene geometry facet`)
+              ])
+            });
+          }
+          const meshPage = await lease2.value.meshes({ limit: request.maxMeshes }, signal);
+          const nodePage = lease2.value.nodes === void 0 ? void 0 : await lease2.value.nodes({ limit: maxNodes }, signal);
+          const [skeletonPage, animationPage, materialPage, resourcePage, socketPage] = await Promise.all([
+            lease2.value.skeletonBindings?.({ limit: maxNodes }, signal),
+            lease2.value.animationClips?.({ limit: maxNodes }, signal),
+            lease2.value.materials?.({ limit: maxNodes }, signal),
+            lease2.value.resourceReferences?.({ limit: maxResources }, signal),
+            lease2.value.sockets?.({ limit: maxNodes }, signal)
+          ]);
+          const allPrimitiveIds = meshPage.items.flatMap((mesh) => mesh.primitiveIds);
+          const primitiveIds = allPrimitiveIds.slice(0, request.maxPrimitives);
+          const primitives = await Promise.all(primitiveIds.map((primitiveId) => lease2.value.primitive(primitiveId, { maxBytes: request.maxPrimitiveBytes }, signal)));
+          const textureDiagnostics = [];
+          const textures = [];
+          const textureReferences = resourcePage?.items.filter((reference) => reference.role === "texture") ?? [];
+          let textureBytes = 0;
+          for (const reference of textureReferences) {
+            const remaining = maxTextureTotalBytes - textureBytes;
+            if (remaining <= 0) {
+              textureDiagnostics.push(diagnostic("warning", "x3.host/world-model-texture-budget-exhausted", `model texture budget omitted ${reference.id}`));
+              continue;
+            }
+            const raster = await lease2.value.readRaster({
+              kind: "logical",
+              requirement: {
+                id: `world-texture:${encodeURIComponent(reference.id)}`,
+                logicalId: reference.id,
+                role: reference.role,
+                scopes: item.modelResource.scopes,
+                parentResourceId: item.modelResource.id
+              },
+              maxBytes: Math.min(maxTextureBytes, remaining)
+            }, signal);
+            textureDiagnostics.push(...raster.diagnostics);
+            if (raster.state !== "decoded")
+              continue;
+            const texture = worldTexture(reference.id, raster);
+            if (texture === void 0) {
+              textureDiagnostics.push(diagnostic("warning", "x3.host/world-model-texture-orientation-unknown", `model texture ${reference.id} has no proven top/bottom row orientation`));
+              continue;
+            }
+            if (texture.rgba.byteLength > remaining) {
+              textureDiagnostics.push(diagnostic("warning", "x3.host/world-model-texture-budget-exhausted", `decoded model texture ${reference.id} exceeds the aggregate texture budget`));
+              continue;
+            }
+            textureBytes += texture.rgba.byteLength;
+            textures.push(texture);
+          }
+          return Object.freeze({
+            state: "converted",
+            sourceKey: result.sourceKey,
+            uvmBytes: result.bytes.slice(),
+            ...nodePage === void 0 ? {} : { nodes: Object.freeze([...nodePage.items]) },
+            ...skeletonPage === void 0 ? {} : { skeleton: Object.freeze([...skeletonPage.items]) },
+            ...animationPage === void 0 ? {} : { animations: Object.freeze([...animationPage.items]) },
+            ...materialPage === void 0 ? {} : { materials: Object.freeze([...materialPage.items]) },
+            ...resourcePage === void 0 ? {} : { resources: Object.freeze([...resourcePage.items]) },
+            ...socketPage === void 0 ? {} : { sockets: Object.freeze([...socketPage.items]) },
+            ...resourcePage === void 0 ? {} : { textures: Object.freeze(textures) },
+            meshes: Object.freeze([...meshPage.items]),
+            primitives: Object.freeze(primitives),
+            diagnostics: Object.freeze([...result.diagnostics, ...textureDiagnostics]),
+            complete: meshPage.nextCursor === void 0 && nodePage?.nextCursor === void 0 && skeletonPage?.nextCursor === void 0 && animationPage?.nextCursor === void 0 && materialPage?.nextCursor === void 0 && resourcePage?.nextCursor === void 0 && socketPage?.nextCursor === void 0 && textureReferences.length === textures.length && allPrimitiveIds.length <= request.maxPrimitives
+          });
+        } finally {
+          await lease2.release();
+        }
+      }
+    },
+    ...rasterResources === void 0 && terrainWeightTextures.size === 0 ? {} : {
+      async texture(requestedResourceId, request, signal) {
+        assertLive(signal);
+        positiveLimit(request.maxBytes, Number.MAX_SAFE_INTEGER);
+        const weightTexture = terrainWeightTextures.get(requestedResourceId);
+        if (weightTexture !== void 0) {
+          if (weightTexture.rgba.byteLength > request.maxBytes) {
+            return Object.freeze({
+              state: "unresolved",
+              diagnostics: Object.freeze([
+                diagnostic("warning", "x3.host/world-terrain-weight-raster-budget-exceeded", `terrain weight raster ${requestedResourceId} exceeds maxBytes`)
+              ])
+            });
+          }
+          return Object.freeze({
+            state: "decoded",
+            texture: weightTexture,
+            diagnostics: Object.freeze([])
+          });
+        }
+        if (rasterResources === void 0) {
+          return Object.freeze({
+            state: "unresolved",
+            diagnostics: Object.freeze([
+              diagnostic("warning", "x3.host/world-terrain-raster-port-unavailable", `terrain resource ${requestedResourceId} requires a raster resource port`)
+            ])
+          });
+        }
+        const requirement = [
+          ...commonTerrainMaterials.flatMap((candidate) => [
+            ...candidate.baseColorResourceId === requestedResourceId && candidate.baseColorResource !== void 0 ? [candidate.baseColorResource] : [],
+            ...candidate.normalResourceId === requestedResourceId && candidate.normalResource !== void 0 ? [candidate.normalResource] : [],
+            ...candidate.specularResourceId === requestedResourceId && candidate.specularResource !== void 0 ? [candidate.specularResource] : []
+          ]),
+          ...commonWaterMaterials.flatMap((candidate) => [
+            ...candidate.baseColorResourceId === requestedResourceId && candidate.baseColorResource !== void 0 ? [candidate.baseColorResource] : [],
+            ...candidate.secondaryColorResourceId === requestedResourceId && candidate.secondaryColorResource !== void 0 ? [candidate.secondaryColorResource] : [],
+            ...candidate.causticsResourceId === requestedResourceId && candidate.causticsResource !== void 0 ? [candidate.causticsResource] : []
+          ])
+        ][0];
+        if (requirement === void 0) {
+          return Object.freeze({
+            state: "unresolved",
+            diagnostics: Object.freeze([
+              diagnostic("warning", "x3.host/world-texture-resource-unavailable", `world resource ${requestedResourceId} has no scoped logical requirement`)
+            ])
+          });
+        }
+        const raster = await rasterResources.read({
+          kind: "logical",
+          requirement,
+          maxBytes: request.maxBytes
+        }, signal);
+        if (raster.state !== "decoded") {
+          return Object.freeze({
+            state: "unresolved",
+            diagnostics: Object.freeze([...raster.diagnostics])
+          });
+        }
+        const texture = worldTexture(requestedResourceId, raster);
+        if (texture === void 0) {
+          return Object.freeze({
+            state: "unresolved",
+            diagnostics: Object.freeze([
+              ...raster.diagnostics,
+              diagnostic("warning", "x3.host/world-terrain-texture-orientation-unknown", `terrain texture ${requestedResourceId} has no proven row orientation`)
+            ])
+          });
+        }
+        return Object.freeze({
+          state: "decoded",
+          texture,
+          diagnostics: Object.freeze([...raster.diagnostics])
+        });
+      }
     }
   });
   return Object.freeze({
     value: source,
-    release() {
+    async release() {
       live = false;
-      return Promise.resolve();
+      await releaseModelResources?.();
     }
   });
 }
@@ -14350,7 +16180,9 @@ function validateWorkspacePlan2(plan, workspace, maxRequirements) {
   const paths = /* @__PURE__ */ new Set();
   for (const requirement of plan.requirements) {
     const path = requirement.path.replaceAll("\\", "/");
-    if (!nonEmptyString7(requirement.requirementId) || !nonEmptyString7(requirement.kind) || typeof requirement.required !== "boolean" || path !== requirement.path || !path.startsWith(prefix) || path.slice(prefix.length).includes("/") || path.split("/").some((segment) => segment === "." || segment === "..") || ids.has(requirement.requirementId) || paths.has(path.toLowerCase())) {
+    const segments = path.split("/");
+    const mapRootScoped = requirement.scope === void 0 || requirement.scope === "map-root";
+    if (!nonEmptyString7(requirement.requirementId) || !nonEmptyString7(requirement.kind) || typeof requirement.required !== "boolean" || requirement.scope !== void 0 && requirement.scope !== "map-root" && requirement.scope !== "workspace" || path !== requirement.path || path.startsWith("/") || /^[A-Za-z]:/u.test(path) || segments.some((segment) => segment === "" || segment === "." || segment === "..") || mapRootScoped && (!path.startsWith(prefix) || path.slice(prefix.length).includes("/")) || ids.has(requirement.requirementId) || paths.has(path.toLowerCase())) {
       throw new TypeError("workspace map plan contains a duplicate, non-confined or invalid read");
     }
     ids.add(requirement.requirementId);
@@ -14527,7 +16359,60 @@ async function analyzeResolvedMapWorkspace(request) {
     if (request.resources.state() !== "live") {
       throw new Error("resource session was disposed while workspace map was analyzed");
     }
-    const world = createCandidateWorldSceneLease(snapshot2, request.resources.provenance().slice(provenanceOffset), limits.maxPageSize);
+    const modelState = {
+      live: true,
+      reservedBytes: 0,
+      resources: request.resources
+    };
+    const modelReleases = [];
+    const modelResources = createSubjectModelResources({
+      state: modelState,
+      budget: request.budgets,
+      isAuthorized: () => modelState.live && request.grant.classes.includes("read-source"),
+      ancestors: [`map:${request.workspace.workspaceId}@${request.resources.revision}`],
+      own: (release) => modelReleases.push(release),
+      open: (source, path, signal) => openSubject({
+        inventory: request.services.inventory,
+        source,
+        path,
+        target: request.services.target,
+        intent: "full",
+        grant: { ...request.grant, classes: ["read-source"] },
+        budget: request.budgets,
+        executionBackends: request.services.executionBackends,
+        ...request.services.serviceDefinitions === void 0 ? {} : { serviceDefinitions: request.services.serviceDefinitions },
+        resourceSession: request.resources,
+        ...signal === void 0 ? {} : { signal }
+      })
+    });
+    const releaseModelResources = async () => {
+      if (!modelState.live)
+        return;
+      modelState.live = false;
+      const outcomes = await Promise.allSettled(modelReleases.map((release) => release()));
+      const failure2 = outcomes.find((outcome) => outcome.status === "rejected");
+      if (failure2?.status === "rejected")
+        throw failure2.reason;
+    };
+    const rasterResources = createSubjectRasterResources({
+      state: modelState,
+      budget: request.budgets,
+      isAuthorized: () => modelState.live && request.grant.classes.includes("read-source"),
+      open: (source, hint, signal) => openSubject({
+        inventory: request.services.inventory,
+        source,
+        path: hint.path ?? "",
+        target: request.services.target,
+        intent: "full",
+        grant: { ...request.grant, classes: ["read-source"] },
+        budget: request.budgets,
+        executionBackends: request.services.executionBackends,
+        ...request.services.serviceDefinitions === void 0 ? {} : { serviceDefinitions: request.services.serviceDefinitions },
+        resourceSession: request.resources,
+        ...signal === void 0 ? {} : { signal }
+      })
+    });
+    const world = createCandidateWorldSceneLease(snapshot2, request.resources.provenance().slice(provenanceOffset), limits.maxPageSize, modelResources, releaseModelResources, rasterResources);
     let released = false;
     return Object.freeze({
       state: "resolved",
@@ -14591,6 +16476,22 @@ function borrowCommonWorldScene(candidate) {
       const page = await candidate.page(request, signal);
       assertLive(signal);
       return page;
+    },
+    ...candidate.model === void 0 ? {} : {
+      async model(resourceId2, request, signal) {
+        assertLive(signal);
+        const result = await candidate.model(resourceId2, request, signal);
+        assertLive(signal);
+        return result;
+      }
+    },
+    ...candidate.texture === void 0 ? {} : {
+      async texture(resourceId2, request, signal) {
+        assertLive(signal);
+        const result = await candidate.texture(resourceId2, request, signal);
+        assertLive(signal);
+        return result;
+      }
     }
   });
   return Object.freeze({
@@ -15785,7 +17686,9 @@ var subjectServicesSurface = {
     /** `navigate(sessionId, target)` resolves a target from that exact live parent session. */
     navigate: { kind: "value", signal: "last", arity: 2 },
     /** `edit(sessionId)` → the editing arm, when this host can write this subject. */
-    edit: { kind: "lease", result: SUBJECT_EDITING, wrapper: "bare" }
+    edit: { kind: "lease", result: SUBJECT_EDITING, wrapper: "bare" },
+    /** Decode one bounded image through the attached subject's confined resource origin. */
+    readRaster: { kind: "value", signal: "last", arity: 2 }
   }
 };
 var subjectEditingSurface = {
@@ -15854,6 +17757,7 @@ function exposeSubjectRpc(options) {
   const moduleUrl = options.moduleUrl ?? SUBJECT_SERVICES_URL;
   const pending = /* @__PURE__ */ new Map();
   const live = /* @__PURE__ */ new Map();
+  const operationPlans = /* @__PURE__ */ new Map();
   const maximumLiveSessions = 1024;
   const canonicalSubject2 = (value) => {
     if (typeof value !== "string" || value.length === 0 || value.length > 16384)
@@ -15865,12 +17769,15 @@ function exposeSubjectRpc(options) {
       return void 0;
     }
   };
-  const registerPending = async (snapshot2, session) => {
+  const registerPending = async (snapshot2, session, rasterResources) => {
     if (pending.has(snapshot2.sessionId) || live.has(snapshot2.sessionId)) {
       await session.dispose();
       return false;
     }
-    pending.set(snapshot2.sessionId, session);
+    pending.set(snapshot2.sessionId, {
+      session,
+      ...rasterResources === void 0 ? {} : { rasterResources }
+    });
     return true;
   };
   const services = {
@@ -15883,33 +17790,68 @@ function exposeSubjectRpc(options) {
         if (result.session === void 0) {
           throw new TypeError("an opened snapshot must carry its session");
         }
-        if (!await registerPending(result.snapshot, result.session)) {
+        if (!await registerPending(result.snapshot, result.session, result.rasterResources)) {
           throw new TypeError("subject session id collides with an existing session");
         }
       }
       return result.snapshot;
     },
     attach: async (sessionId) => {
-      const session = typeof sessionId === "string" ? pending.get(sessionId) : void 0;
-      if (session === void 0) {
+      const subject = typeof sessionId === "string" ? pending.get(sessionId) : void 0;
+      if (subject === void 0) {
         throw new TypeError("subject session is unavailable (already attached or never opened)");
       }
       if (live.size >= maximumLiveSessions) {
         throw new TypeError("subject live-session registry is full");
       }
       pending.delete(sessionId);
-      live.set(sessionId, session);
+      live.set(sessionId, subject);
       let disposed = false;
-      return {
-        value: session,
-        release: async () => {
-          if (disposed)
-            return;
-          disposed = true;
-          if (live.get(sessionId) === session)
-            live.delete(sessionId);
-          await session.dispose();
+      const dispose = async () => {
+        if (disposed)
+          return;
+        disposed = true;
+        operationPlans.delete(sessionId);
+        if (live.get(sessionId) === subject)
+          live.delete(sessionId);
+        await subject.session.dispose();
+      };
+      const session = subject.session;
+      const served = {
+        revision: session.revision,
+        state: () => session.state(),
+        descriptor: () => session.descriptor(),
+        dataSource: (contract, major) => session.dataSource(contract, major),
+        events: (signal) => session.events(signal),
+        dispose,
+        operations: () => {
+          const operations = session.operations();
+          return {
+            dispose: () => operations.dispose(),
+            invoke: async (handlerId, input, invokeOptions) => {
+              const result = await operations.invoke(handlerId, input, invokeOptions);
+              if (!disposed && result.state === "ok" && result.output.kind === "edit-plan") {
+                const editing = options.editing?.(sessionId);
+                if (editing !== void 0) {
+                  const plan = editing.planFromOperation(result.output);
+                  if (typeof plan.planId !== "string" || plan.planId.length === 0) {
+                    throw new TypeError("the operation returned an edit plan without an identity");
+                  }
+                  const plans = operationPlans.get(sessionId) ?? /* @__PURE__ */ new Map();
+                  if (plans.has(plan.planId))
+                    throw new TypeError("duplicate operation edit plan identity");
+                  plans.set(plan.planId, structuredClone(plan));
+                  operationPlans.set(sessionId, plans);
+                }
+              }
+              return result;
+            }
+          };
         }
+      };
+      return {
+        value: served,
+        release: dispose
       };
     },
     navigate: async (sourceSessionId, targetValue, signal) => {
@@ -15922,14 +17864,19 @@ function exposeSubjectRpc(options) {
       const target = canonicalSubject2(targetValue);
       if (target === void 0)
         return { state: "rejected", reason: "invalid-subject" };
-      const descriptor = await parent.descriptor();
+      const descriptor = await parent.session.descriptor();
       const current = canonicalSubject2(descriptor.subjectUri);
       if (current === void 0)
         return { state: "rejected", reason: "session-unavailable" };
       if (current.workspace !== target.workspace) {
         return { state: "rejected", reason: "workspace-mismatch" };
       }
-      const opened = await options.navigate?.({ sourceSessionId, parent, current, target }, signal);
+      const opened = await options.navigate?.({
+        sourceSessionId,
+        parent: parent.session,
+        current,
+        target
+      }, signal);
       if (opened?.snapshot.state !== "opened" || opened.session === void 0) {
         await opened?.session?.dispose();
         return { state: "rejected", reason: "target-unavailable" };
@@ -15939,16 +17886,24 @@ function exposeSubjectRpc(options) {
         await opened.session.dispose();
         throw new TypeError(`subject navigation policy opened a different target (${String(opened.snapshot.descriptor["subjectUri"])} != ${serializeSubjectRef(target)})`);
       }
-      if (!await registerPending(opened.snapshot, opened.session)) {
+      if (!await registerPending(opened.snapshot, opened.session, opened.rasterResources)) {
         return { state: "rejected", reason: "collision" };
       }
       return { state: "opened", snapshot: opened.snapshot };
+    },
+    readRaster: async (sessionId, request, signal) => {
+      const raster = typeof sessionId === "string" ? live.get(sessionId)?.rasterResources : void 0;
+      if (raster === void 0) {
+        throw new TypeError("this subject has no raster resource origin");
+      }
+      return raster.read(request, signal);
     },
     edit: async (sessionId) => {
       const editing = typeof sessionId === "string" ? options.editing?.(sessionId) : void 0;
       if (editing === void 0) {
         throw new TypeError("this subject is not editable in this host");
       }
+      const issuedPlans = /* @__PURE__ */ new Map();
       const prepared = /* @__PURE__ */ new Map();
       let sequence = 0;
       const arm = {
@@ -15969,12 +17924,34 @@ function exposeSubjectRpc(options) {
             throw new TypeError("this subject has no writer, so a change cannot be planned");
           }
           void signal;
-          return editing.session.plan(change);
+          const plan = await editing.session.plan(change);
+          if (typeof plan.planId !== "string" || plan.planId.length === 0) {
+            throw new TypeError("the writer returned an edit plan without an identity");
+          }
+          if (issuedPlans.has(plan.planId)) {
+            throw new TypeError("the writer returned a duplicate edit plan identity");
+          }
+          issuedPlans.set(plan.planId, structuredClone(plan));
+          return plan;
         },
         prepare: async (plan, signal) => {
-          const validated = editing.planFromOperation({
+          const clientPreview = editing.planFromOperation({
             kind: "edit-plan",
             plan
+          });
+          const operationIssued = operationPlans.get(sessionId);
+          if (issuedPlans.has(clientPreview.planId) && operationIssued?.has(clientPreview.planId)) {
+            throw new TypeError("ambiguous edit plan identity");
+          }
+          const issued = issuedPlans.get(clientPreview.planId) ?? operationIssued?.get(clientPreview.planId);
+          if (issued === void 0) {
+            throw new TypeError("unknown edit plan (already prepared, or never issued by this subject)");
+          }
+          issuedPlans.delete(clientPreview.planId);
+          operationIssued?.delete(clientPreview.planId);
+          const validated = editing.planFromOperation({
+            kind: "edit-plan",
+            plan: issued
           });
           const result = await editing.coordinator.prepare(validated, {
             grant: editing.grantSnapshot,
@@ -16006,6 +17983,7 @@ function exposeSubjectRpc(options) {
           return { state: result.state, receipt: result.receipt };
         },
         dispose: async () => {
+          issuedPlans.clear();
           prepared.clear();
           await editing.session?.dispose();
         }
@@ -16057,7 +18035,8 @@ function exposeSubjectRpc(options) {
       pending.clear();
       const attached = [...live.values()];
       live.clear();
-      await Promise.allSettled([...orphans, ...attached].map((session) => session.dispose()));
+      operationPlans.clear();
+      await Promise.allSettled([...orphans, ...attached].map((subject) => subject.session.dispose()));
     }
   };
 }
@@ -16135,6 +18114,7 @@ async function connectSubjectRpc(options) {
       descriptor: async () => snapshot2.descriptor,
       dataSource: (contract, major) => proxy.dataSource(contract, major),
       operations: () => proxy.operations(),
+      readRasterResource: (request, signal) => services.readRaster(snapshot2.sessionId, request, signal),
       async dispose() {
         if (disposed)
           return;
@@ -17341,9 +19321,17 @@ var COMMON_PRESENTATION_CATALOG = Object.freeze([
         })
       ])
     }),
+    optionalBindings: Object.freeze([
+      Object.freeze({
+        bindingId: "world-optional-1",
+        contract: "common.view/transport-source",
+        major: 1
+      })
+    ]),
     spec: Object.freeze({
       kind: "stage",
       consumesDataSources: [{ contract: "common.view/world-scene-source", major: 1 }],
+      optionalDataSources: [{ contract: "common.view/transport-source", major: 1 }],
       priority: 380,
       singletonGroup: "center-stage"
     })
@@ -19441,7 +21429,7 @@ __export(json_provider_exports, {
   provides: () => provides
 });
 
-// ../modkit-extensions-warzone/node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/scanner.js
+// node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/scanner.js
 function createScanner(text, ignoreTrivia = false) {
   const len = text.length;
   let pos = 0, value = "", tokenOffset = 0, token = 16, lineNumber = 0, lineStartOffset = 0, tokenLineStartOffset = 0, prevTokenLineStartOffset = 0, scanError = 0;
@@ -19862,7 +21850,7 @@ var CharacterCodes;
   CharacterCodes2[CharacterCodes2["tab"] = 9] = "tab";
 })(CharacterCodes || (CharacterCodes = {}));
 
-// ../modkit-extensions-warzone/node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/string-intern.js
+// node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/string-intern.js
 var cachedSpaces = new Array(20).fill(0).map((_, index) => {
   return " ".repeat(index);
 });
@@ -19892,7 +21880,7 @@ var cachedBreakLinesWithSpaces = {
   }
 };
 
-// ../modkit-extensions-warzone/node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/parser.js
+// node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/impl/parser.js
 var ParseOptions;
 (function(ParseOptions2) {
   ParseOptions2.DEFAULT = {
@@ -20283,7 +22271,7 @@ function getNodeType(value) {
   }
 }
 
-// ../modkit-extensions-warzone/node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/main.js
+// node_modules/.pnpm/jsonc-parser@3.3.1/node_modules/jsonc-parser/lib/esm/main.js
 var ScanError;
 (function(ScanError2) {
   ScanError2[ScanError2["None"] = 0] = "None";
@@ -21436,6 +23424,22 @@ export {
   NESTED_SUBJECT_REF_UNAVAILABLE,
   openNestedSubjectRef,
   openNestedSubject,
+  STANDARD_DATA_OWNER,
+  DATA_CATALOG_MATCHER,
+  RESOLVED_DATA_WORKSPACE_MATCHER,
+  DATA_CATALOG_CONTRACT_DEFINITION,
+  RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION,
+  registerStandardDataDefinitions,
+  resolveDataCatalogAnalysis,
+  resolveResolvedDataWorkspace,
+  createResolvedDataSubjectSelectorLease,
+  editChangeFromDataEditProposal,
+  isolationChangeFromDataGraphProposal,
+  analyzeResolvedDataWorkspace,
+  createReadOnlyContentDependencyWorkspace,
+  analyzeReadOnlyContentDependencies,
+  readOperationContentDependencies,
+  analyzeOperationContentDependencies,
   FACETLESS_SERVICE_MATCHER_PROFILE,
   createServiceFacetMatcherProfileRegistry,
   createServiceContractDefinitionRegistry,
@@ -21499,16 +23503,6 @@ export {
   MOD_WORKSPACE_CONTRACT_DEFINITION,
   registerStandardModDefinitions,
   resolveModWorkspaceComposition,
-  STANDARD_DATA_OWNER,
-  DATA_CATALOG_MATCHER,
-  RESOLVED_DATA_WORKSPACE_MATCHER,
-  DATA_CATALOG_CONTRACT_DEFINITION,
-  RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION,
-  registerStandardDataDefinitions,
-  resolveDataCatalogAnalysis,
-  resolveResolvedDataWorkspace,
-  createResolvedDataSubjectSelectorLease,
-  analyzeResolvedDataWorkspace,
   createCandidateWorldSceneLease,
   STANDARD_MAPS_OWNER,
   MAP_SEMANTIC_MATCHER,

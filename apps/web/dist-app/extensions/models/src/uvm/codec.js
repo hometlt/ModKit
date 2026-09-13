@@ -404,7 +404,7 @@ const definition = Object.freeze({
       view.getUint32(16, true) === JSON_CHUNK &&
       20 + view.getUint32(12, true) > bytes.byteLength &&
       20 + view.getUint32(12, true) <= view.getUint32(8, true) &&
-      /\.uvm\.glb(?:[?#]|$)/iu.test(uri)
+      /\.uvm(?:\.glb)?(?:[?#]|$)/iu.test(uri)
     return match
       ? { confidence: 0.995, kind: 'structure', note: 'uvm-core-1.0' }
       : namedPartialGlb

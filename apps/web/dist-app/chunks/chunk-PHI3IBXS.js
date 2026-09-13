@@ -2,14 +2,14 @@ import {
   AUXILIARY_DATA_SOURCE_SURFACES,
   STANDARD_DATA_SOURCE_SURFACES,
   STANDARD_EDITING_SURFACES
-} from "./chunk-3JQHXTSW.js";
+} from "./chunk-3VS5UF7D.js";
 import {
   ModkitError,
   OperationCancelledError,
   isModkitError,
   isQualifiedId,
   isSegment
-} from "./chunk-S5ITZJYV.js";
+} from "./chunk-6CZX3ZS4.js";
 
 // packages/host/dist/execution/message-port.js
 function framePortFromMessagePort(port, options = {}) {
@@ -2968,6 +2968,7 @@ var assetNamespaceSurface = {
   ...ABI_ASSET_NAMESPACE,
   methods: {
     list: { kind: "iterable", ...sig },
+    readPreamble: { kind: "value", optional: true, ...sig },
     open: { kind: "lease", result: ABI_ARTIFACT_SOURCE, wrapper: "lease", ...sig }
   }
 };
@@ -3057,7 +3058,19 @@ var modelResourcesSurface = {
 var modelResourceAssetSurface = {
   ...ABI_MODEL_RESOURCE_ASSET,
   fields: ["result"],
-  methods: { acquire: modelAcquire, readRaster: { kind: "value", ...sig } }
+  methods: {
+    acquire: modelAcquire,
+    readRaster: { kind: "value", ...sig },
+    sceneInfo: { kind: "value", optional: true, ...sig },
+    nodes: { kind: "value", optional: true, ...sig },
+    meshes: { kind: "value", optional: true, ...sig },
+    primitive: { kind: "value", optional: true, ...sig },
+    skeletonBindings: { kind: "value", optional: true, ...sig },
+    animationClips: { kind: "value", optional: true, ...sig },
+    materials: { kind: "value", optional: true, ...sig },
+    resourceReferences: { kind: "value", optional: true, ...sig },
+    sockets: { kind: "value", optional: true, ...sig }
+  }
 };
 var logicalResourcesSurface = {
   ...ABI_LOGICAL_RESOURCES,

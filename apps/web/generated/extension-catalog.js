@@ -5470,7 +5470,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:c5f1c036b70833f3f5425039db0101a41885a9d7c9b3c7f87fef677e5498028e',
+        artifactDigest: 'sha256:7b30d28c7977f00a2b5620b514155838265dfb7155406c00d6ab1c606fc8be25',
         fileDigests: {
           'README.md': 'sha256:352cfa63649efc3de2228881a13fadd2b2de56758ea86175c2c6e0da62f19152',
           'contributions/codec-markdown.json':
@@ -5492,7 +5492,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/markdown/codec.js':
             'sha256:105e29d32a63e33b337f6d861e5e6e79a38c21f3872138ae0e904693a931e085',
           'src/odf/document.js':
-            'sha256:37234992daf502132b28d7dd864e5a166ea7c405a4beff9f2e11762de72d39d2',
+            'sha256:3d6f44078c59b6ce9caf86aff417ba8b413b8beeef00b74aeef34a28ad186122',
           'src/odf/inspection.js':
             'sha256:f10f64f0fe7858f1175c8523733072116dcb070ef328ac60e906de98700d02d6',
           'src/odf/package.js':
@@ -5509,7 +5509,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:c047d1a7193eaef9307452f4cb3aa84bc9800e270993a5d02c53eca4582134f5',
         },
         inventoryRecordId:
-          'artifact:sha256:c5f1c036b70833f3f5425039db0101a41885a9d7c9b3c7f87fef677e5498028e',
+          'artifact:sha256:7b30d28c7977f00a2b5620b514155838265dfb7155406c00d6ab1c606fc8be25',
       },
       artifactRoot: 'extensions/documents/',
       containers: {
@@ -6541,7 +6541,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:b06849f267e9a43bb145e7f5ceeaf839dacee3b54e698622a066566f075c27fc',
+        artifactDigest: 'sha256:042a067caad052634ef1bf7f674114ec95fbaa91c60848a535ed38ca224f4c6c',
         fileDigests: {
           'MIGRATION-NOTES-common-images.json':
             'sha256:44c30ea45aaceceff66d53f72e5e0d0ec8efb1a7f2afbc2f9913849720632e93',
@@ -6559,7 +6559,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-cur.json':
             'sha256:ca83a2ee185f99c30030382692eb875a4a7301aeb0d072a4bbf109f787d17bdf',
           'contributions/codec-dds.json':
-            'sha256:f500c919ceb5328c6dd24b82f0df025a42d6dff3a5df5975a3df769ada77f65e',
+            'sha256:cc28d5738fe1a8905cfefee06f74cab13b1fa1e28e4a3e0ef0634a6d7763c692',
           'contributions/codec-exr.json':
             'sha256:377eb43959c01dff23c3117a6a1263a9797e91503b79e65a718d049336e6cca7',
           'contributions/codec-gif.json':
@@ -6612,7 +6612,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/dds/bptc.js':
             'sha256:f3a0636b0f5dde9b7f7ccc2e6874425bfef0f5e86f6a1801a8032885f61a39b4',
           'src/dds/codec.js':
-            'sha256:eb6e45ace449513b0b12d021baba82597808f9c746dcc85e9606f6e634d6f5f4',
+            'sha256:230094f7e1b74e54bd48c994ba23c036c37fb9517fdd8224b618da6c40de7d93',
           'src/dds/compressed.js':
             'sha256:af63c9438834ec0618e5ce3a207d45195cc603dcf4376c7964dfd3e939f7823e',
           'src/dds/encode.js':
@@ -6649,7 +6649,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/pkm/etc.js':
             'sha256:99c4f4ab06d944e71e0993f671e3af6904c37bb5eb2bc0a65fdf1e6de265db7f',
           'src/png/codec.js':
-            'sha256:5d35aa5d47999b7ce541fa6b12f4da4b0acee79ab8391c200e0189d281f71ab7',
+            'sha256:cf0629439171a7da1a94a985e83194443b85831a572bb6e9097e84a41ef4ac4a',
           'src/pvr/codec.js':
             'sha256:3c02b42c1d6963dcb8e38a8bbfcc49ccf9b115118180835d59eb4ada15de7fea',
           'src/tga/codec.js':
@@ -6671,9 +6671,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'test/codec-session.ts':
             'sha256:fa6bcdf1bc58315268af02ca9b02076ec655a28bee8a327cf6664f1f0ea163e6',
           'test/dds-subresources.test.ts':
-            'sha256:5d6311bef32d04f6a4a241efe7af0b1d7effa58414eae9db5406a746f9a60e25',
+            'sha256:750f3d6d06f89dd4c020851ba4919fb8335e8caf48dea682ce63eb0286cb8c9a',
+          'test/dds-transform.test.ts':
+            'sha256:4e2c7879e873f7de7255f4c9710fdbdc2ef9dedb74bfd812f48be6fdec17c082',
           'test/eac-r11-decode.test.ts':
             'sha256:2a0d83d3152224ce7ea530605bb9441912aa9be68b3b4ec60d1e51cb0e5beed4',
+          'test/png-palette-decode.test.ts':
+            'sha256:a91dff0a852807126efb31df8f4f7401a0eab4dcf9a36ba55081bd580ac5ac14',
           'vendor/texture2ddecoder/LICENSE':
             'sha256:49e3169a509b9a5311fe50957a334e9e1975164f27da6004358c22e91e10747c',
           'vendor/texture2ddecoder/README.md':
@@ -6684,7 +6688,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:8b819b0622cce57f809b369081bdd6eca09d1c1793da7f82192db39229356c1d',
         },
         inventoryRecordId:
-          'artifact:sha256:b06849f267e9a43bb145e7f5ceeaf839dacee3b54e698622a066566f075c27fc',
+          'artifact:sha256:042a067caad052634ef1bf7f674114ec95fbaa91c60848a535ed38ca224f4c6c',
       },
       artifactRoot: 'extensions/images/',
       containers: {
@@ -6766,7 +6770,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-dds.json',
-          'sha256:f500c919ceb5328c6dd24b82f0df025a42d6dff3a5df5975a3df769ada77f65e',
+          'sha256:cc28d5738fe1a8905cfefee06f74cab13b1fa1e28e4a3e0ef0634a6d7763c692',
         ],
         [
           'contributions/codec-exr.json',
@@ -7620,12 +7624,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               'Writing is a separate contribution: modkit/dds-encoder-writer (common.edit/writer@1) encodes RGBA8 pixels as rgba8, dxt1, dxt3 or dxt5.',
               'The compressed-texture view of a DDS (GPU blocks handed over undecoded, with block geometry, colour space, alpha mode and per-subresource byte ranges) is implemented in src/dds/compressed.js but is not published: MK3 has no common.view contract for compressed textures yet.',
               'Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global signature sniffing.',
+              'edit.content applies one named pixel transform (resize, normal-map, combine-normal-specular, rounded-alpha, button-icon, color-key) and re-encodes the whole surface: mip levels, array layers and cube faces past the first are not carried over.',
             ],
             runtimeVariants: [
               {
                 entrypoint: './src/dds/codec.js',
                 executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: ['read-source'],
+                requestedPermissionClasses: ['read-source', 'write-source'],
                 target: {
                   environments: ['node'],
                 },
@@ -7634,7 +7639,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               {
                 entrypoint: './src/dds/codec.js',
                 executionProfile: 'worker-brokered',
-                requestedPermissionClasses: ['read-source'],
+                requestedPermissionClasses: ['read-source', 'write-source'],
                 target: {
                   environments: ['browser-worker', 'node-worker'],
                 },
@@ -7692,6 +7697,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                   mutatesSource: false,
                   outputKinds: ['bytes'],
                   requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'transform',
+                  id: 'edit.content',
+                  mutatesSource: true,
+                  outputKinds: ['edit-plan'],
+                  requiredPermissions: ['read-source', 'write-source'],
                 },
               ],
               probe: {
@@ -9989,7 +10001,9 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'test/astc-void-extent.test.ts',
         'test/codec-session.ts',
         'test/dds-subresources.test.ts',
+        'test/dds-transform.test.ts',
         'test/eac-r11-decode.test.ts',
+        'test/png-palette-decode.test.ts',
         'vendor/texture2ddecoder/LICENSE',
         'vendor/texture2ddecoder/README.md',
         'vendor/texture2ddecoder/texture2ddecoder.js',
@@ -10000,15 +10014,15 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:0fbf0fab122104ae4b475a517b6cb161ae350ebd13ce6194a4d795468c3e72de',
+        artifactDigest: 'sha256:11154e06ea1ac131aefc5d5b43cbb3ac81b28238e2a8df9aae039995ce12e0ce',
         fileDigests: {
           'MIGRATION-NOTES-common-models.json':
             'sha256:99f5fd00c6f523fa5591fe3d91906d7ba9f87b6ed7023f02ac6cc26bf1abd646',
-          'README.md': 'sha256:374aacfaaaf4e281eebc68565ee39df3cb599444fce71074cc1b1a55d247f5b9',
+          'README.md': 'sha256:75155a6c4960c9ccc0a0a79906ed7bd62d321d52fedbe8ae6e73a1f6e7801f10',
           'contributions/codec-dae.json':
             'sha256:e72029d8f187c7191e22d239420e1fcc3999c197b515c31ebd8d8c94336ab2f2',
           'contributions/codec-gltf.json':
-            'sha256:8a6fa00ccb0ff57d9b24be2bcf44185c7f2a6d7789a48de402f09c031294ead5',
+            'sha256:46eeddde6bb9587cf86aec84535e5d57d95ccfc54daca880019ba45224e37526',
           'contributions/codec-obj.json':
             'sha256:8c49a9686735ba3939e62f3cdbc5d5897dddba11145ed11bd9a34af4bc0204b7',
           'contributions/codec-ply.json':
@@ -10016,12 +10030,12 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-stl.json':
             'sha256:ee73ac012b1a4470e56369d978996f718a7cbdf06f269af7044fa28df5debd2f',
           'contributions/codec-uvm.json':
-            'sha256:6125a14ba68ba33bc914ec23acb3ec34ba145dd7132c2f09e029161990555148',
-          'package.json': 'sha256:b142db0fff205e72e2c57443dedec176f95f658736964bbd2a43d69800746589',
+            'sha256:abd89dd1a84c2d514f0ad693cd639784cdc2283f8e8b9ea07d2ceeefdb3fbf39',
+          'package.json': 'sha256:241bb55d53aa0042a55ed93af63e8e045b29f0b0514ebad130d56a0993e9e34d',
           'src/dae/codec.js':
             'sha256:6c04b5a15fc45122d40ce01b5d1653c713de747c5a07695c5bb710b77262343f',
           'src/gltf/codec.js':
-            'sha256:b1b7de01049dfbce3abc9075ed80e889d7d470dd3c376a23dde86f612a6f471b',
+            'sha256:48dcfca162921210e51db0366c2909c77a1d376284bc4e7f66e1a961c6a5e2bf',
           'src/gltf/geometry.js':
             'sha256:23ce3e293fed2446a7ee67683469644f19e3f5f27ac73ac12c04b8ac8bb24347',
           'src/index.js': 'sha256:80f55312f768fe6d50596fe51a929c3334fd08828785b47774af6e6445e87dc8',
@@ -10034,16 +10048,18 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/stl/codec.js':
             'sha256:5c74085a052421bf16206674a3d67a639904f03f4af924c6235e8e719b4f2691',
           'src/uvm/codec.js':
-            'sha256:2f780e18a76e6e76c93486292b640b96f09a42cacb222a32990b116a3a9dcc01',
+            'sha256:eacaf86780266f449f43442dc5b3edf93087040ff9cc46f3c0e165fd356c4cfa',
         },
         inventoryRecordId:
-          'artifact:sha256:0fbf0fab122104ae4b475a517b6cb161ae350ebd13ce6194a4d795468c3e72de',
+          'artifact:sha256:11154e06ea1ac131aefc5d5b43cbb3ac81b28238e2a8df9aae039995ce12e0ce',
       },
       artifactRoot: 'extensions/models/',
       containers: {
         packageJson: {
           dependencies: {
             '@modkit/codec-kit': 'workspace:*',
+            '@modkit/scene': 'workspace:*',
+            '@modkit/uv': 'workspace:*',
           },
           description: 'Isolated MK3 model codecs.',
           exports: {
@@ -10094,7 +10110,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-gltf.json',
-          'sha256:8a6fa00ccb0ff57d9b24be2bcf44185c7f2a6d7789a48de402f09c031294ead5',
+          'sha256:46eeddde6bb9587cf86aec84535e5d57d95ccfc54daca880019ba45224e37526',
         ],
         [
           'contributions/codec-obj.json',
@@ -10110,7 +10126,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-uvm.json',
-          'sha256:6125a14ba68ba33bc914ec23acb3ec34ba145dd7132c2f09e029161990555148',
+          'sha256:abd89dd1a84c2d514f0ad693cd639784cdc2283f8e8b9ea07d2ceeefdb3fbf39',
         ],
       ],
       documents: [
@@ -10245,7 +10261,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               {
                 entrypoint: './src/gltf/codec.js',
                 executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: ['read-source'],
+                requestedPermissionClasses: ['read-source', 'write-source'],
                 target: {
                   environments: ['node'],
                 },
@@ -10254,7 +10270,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               {
                 entrypoint: './src/gltf/codec.js',
                 executionProfile: 'worker-brokered',
-                requestedPermissionClasses: ['read-source'],
+                requestedPermissionClasses: ['read-source', 'write-source'],
                 target: {
                   environments: ['browser-worker', 'node-worker'],
                 },
@@ -10319,6 +10335,20 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                   mutatesSource: false,
                   outputKinds: ['bytes'],
                   requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'set-gltf-field',
+                  id: 'edit.field',
+                  mutatesSource: true,
+                  outputKinds: ['edit-plan'],
+                  requiredPermissions: ['read-source', 'write-source'],
+                },
+                {
+                  handlerId: 'edit-gltf-document',
+                  id: 'model.edit',
+                  mutatesSource: true,
+                  outputKinds: ['edit-plan'],
+                  requiredPermissions: ['read-source', 'write-source'],
                 },
               ],
               probe: {
@@ -10814,11 +10844,15 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             },
             displayName: 'Universal Verse Model 1.0',
             id: 'modkit/model-uvm',
+            limitations: [
+              'model.render acquires common.render/scene-3d through the host and returns PNG with operation diagnostics. It supports explicit camera, scene and animation selection, glTF base color, vertex-color modulation, animated UV transforms, first-surface textures through ordinary host image codecs, and collision overlays. Native game shaders, full PBR, source mip/filter choice, multi-surface image selection, cube environment frames and effect simulation remain incomplete; the operation does not claim complete visual fidelity.',
+              'model.export-native resolves common.model/native-encoder by formatId. The UVM codec owns target selection and validation but contains no M3, PIE or other native-format implementation.',
+            ],
             runtimeVariants: [
               {
                 entrypoint: './src/uvm/codec.js',
                 executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: ['read-source'],
+                requestedPermissionClasses: ['read-source', 'write-source'],
                 target: {
                   environments: ['node'],
                 },
@@ -10827,7 +10861,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               {
                 entrypoint: './src/uvm/codec.js',
                 executionProfile: 'worker-brokered',
-                requestedPermissionClasses: ['read-source'],
+                requestedPermissionClasses: ['read-source', 'write-source'],
                 target: {
                   environments: ['browser-worker', 'node-worker'],
                 },
@@ -10844,6 +10878,23 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 maxNodes: 10000000,
                 maxScalarBytes: 268435456,
               },
+              fidelityEvidence: [
+                {
+                  claim: {
+                    preservesUnknownData: true,
+                    roundTrip: 'semantic',
+                  },
+                  conformanceProfile: 'modkit/codec-contribution-v1',
+                  corpusDigest: 'none:proof-suite',
+                  corpusId: 'modkit/packages/host/test/uvm-edits.test.ts',
+                  evidenceId: 'uvm-json-document-edits-v1',
+                  formatId: 'uvm',
+                  inputClass: 'validated-uvm-embedded-glb',
+                  optionsFingerprint: 'options:json-edits-preserve-binary',
+                  provenAt: '2026-09-07T00:00:00Z',
+                  representationId: 'uvm-scene',
+                },
+              ],
               formatRefs: [
                 {
                   formatId: 'uvm',
@@ -10855,11 +10906,32 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 claimed: 2,
               },
               match: {
-                extensions: ['uvm.glb', 'uvm.gltf'],
+                extensions: ['uvm', 'uvm.glb', 'uvm.gltf', 'glb', 'gltf'],
                 mediaTypes: ['model/gltf-binary; profile=uvm-1.0'],
               },
               openIntents: ['probe', 'inspect', 'full', 'export'],
               operations: [
+                {
+                  handlerId: 'export-uvm-native',
+                  id: 'model.export-native',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'attach-uvm-animation',
+                  id: 'model.attach-animation',
+                  mutatesSource: true,
+                  outputKinds: ['edit-plan'],
+                  requiredPermissions: ['read-source', 'write-source'],
+                },
+                {
+                  handlerId: 'render-uvm-scene',
+                  id: 'model.render',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
                 {
                   handlerId: 'inspect',
                   id: 'view.inspect',
@@ -10880,6 +10952,20 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                   mutatesSource: false,
                   outputKinds: ['bytes'],
                   requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'set-uvm-field',
+                  id: 'edit.field',
+                  mutatesSource: true,
+                  outputKinds: ['edit-plan'],
+                  requiredPermissions: ['read-source', 'write-source'],
+                },
+                {
+                  handlerId: 'edit-uvm-document',
+                  id: 'model.edit',
+                  mutatesSource: true,
+                  outputKinds: ['edit-plan'],
+                  requiredPermissions: ['read-source', 'write-source'],
                 },
               ],
               probe: {
@@ -10907,6 +10993,14 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 },
                 {
                   contract: 'common.view/model-socket-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/model-skeleton-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/model-animation-source',
                   major: 1,
                 },
                 {

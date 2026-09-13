@@ -157,7 +157,15 @@ beforeAll(async () => {
     model({ uri: `data:image/png;base64,${Buffer.from(png).toString('base64')}` }),
   )
   try {
-    await warm.session.operations().invoke('render-uvm-scene', request)
+    await warm.session
+      .operations()
+      .invoke('render-uvm-scene', request)
+      .catch(error => {
+        throw new Error(
+          `warming the UVM raster worker route failed: ${error instanceof Error ? error.message : String(error)}`,
+          { cause: error },
+        )
+      })
   } finally {
     await warm.session.dispose()
   }
@@ -642,6 +650,47 @@ it.each(['dds', 'png'] as const)(
     }
   },
 )
+
+it('publishes the opened subject raster port used by remote model viewers', async () => {
+  const imagePath = join(scratch, `viewer-tex-${sequence}.png`)
+  writeFileSync(imagePath, png)
+  const { opened } = await fixture(model({ uri: basename(imagePath) }))
+  const port = opened.rasterResources
+  if (port === undefined) throw new Error('opened subject has no raster resource port')
+  try {
+    const decoded = await port.read({
+      kind: 'logical',
+      requirement: {
+        id: 'viewer-diffuse',
+        logicalId: basename(imagePath),
+        role: 'texture',
+        scopes: ['sibling-directory'],
+      },
+      maxBytes: 16,
+    })
+    if (decoded.state !== 'decoded') throw new Error(JSON.stringify(decoded.diagnostics))
+    expect(decoded.region.pixels).toEqual(rgba)
+    expect(decoded.provenance).toMatchObject({
+      requirementId: 'viewer-diffuse',
+      logicalId: basename(imagePath),
+      state: 'resolved',
+    })
+  } finally {
+    await opened.session.dispose()
+  }
+  const late = await port.read({
+    kind: 'logical',
+    requirement: {
+      id: 'late',
+      logicalId: basename(imagePath),
+      role: 'texture',
+      scopes: ['sibling-directory'],
+    },
+    maxBytes: 16,
+  })
+  expect(late.state).toBe('unresolved')
+  expect(late.diagnostics.map(item => item.code)).toContain('x3.host/raster-context-unavailable')
+})
 
 it.each(['bufferView', 'data-uri'] as const)(
   'decodes embedded PNG from %s through the same host image codec',

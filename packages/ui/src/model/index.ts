@@ -8,6 +8,7 @@ import type {
   ModelResourceRef,
   ModelSceneSource,
   ModelSocketRef,
+  RasterResourcePort,
   SceneRenderer,
   SceneRendererPrimitive,
   SceneRendererPort,
@@ -60,7 +61,8 @@ export function modelAnimationPlaybackDuration(clip: ModelAnimationClip | undefi
       channel.wrapSeconds !== undefined &&
       channel.repeatCount !== undefined &&
       channel.repeatCount > 0
-    ) duration = Math.max(duration, channel.wrapSeconds * channel.repeatCount)
+    )
+      duration = Math.max(duration, channel.wrapSeconds * channel.repeatCount)
   }
   return duration
 }
@@ -480,9 +482,111 @@ export interface ModelViewerOptions {
    * the model is shaded but untextured — stated as `data-model-textures="0"` rather than implied.
    */
   readonly textures?: (
+    descriptor: import('@modkit/sdk').AnyDescriptor,
     references: readonly ModelResourceRef[],
     signal?: AbortSignal,
   ) => Promise<ReadonlyMap<string, SceneRendererTexture>>
+}
+
+/**
+ * Resolve the texture references a model published through a subject-bound raster port.
+ *
+ * The viewer never turns a logical id into a URI. The host owns lookup and image codec selection;
+ * this helper only validates and repacks the bounded RGBA surfaces it receives.
+ */
+export async function resolveModelViewerTextures(
+  port: RasterResourcePort,
+  references: readonly ModelResourceRef[],
+  signal?: AbortSignal,
+): Promise<ReadonlyMap<string, SceneRendererTexture>> {
+  const maximumBytes = 64 * 1024 * 1024
+  let remaining = maximumBytes
+  let index = 0
+  const textures = new Map<string, SceneRendererTexture>()
+  for (const reference of references) {
+    signal?.throwIfAborted()
+    if (reference.role !== 'texture' || textures.has(reference.id) || remaining <= 0) continue
+    const textureId = `model-texture-${index++}`
+    const result = await port.read(
+      {
+        kind: 'logical',
+        requirement: {
+          id: textureId,
+          logicalId: reference.id,
+          role: 'texture',
+          scopes: [
+            'sibling-directory',
+            'workspace-dependency-layer',
+            'current-mount',
+            'enclosing-container',
+          ],
+        },
+        maxBytes: remaining,
+        selection: { face: 'all' },
+      },
+      signal,
+    )
+    signal?.throwIfAborted()
+    if (result.state === 'unresolved') continue
+    const faces = result.info.faces ?? 1
+    if (faces !== 1 && faces !== 6) continue
+    if (faces === 6 && result.info.width !== result.info.height) continue
+    const surfaces =
+      result.state === 'decoded-surfaces'
+        ? result.surfaces
+        : [
+            {
+              subresource: { frame: 0, mipLevel: 0, layer: 0, face: 0, slice: 0 },
+              region: result.region,
+            },
+          ]
+    const faceBytes = result.info.width * result.info.height * 4
+    const byteLength = faceBytes * faces
+    if (surfaces.length !== faces || byteLength > remaining) continue
+    const rgba = new Uint8Array(byteLength)
+    let valid = true
+    for (const [face, surface] of surfaces.entries()) {
+      const selected = surface.subresource
+      const region = surface.region
+      if (
+        selected.face !== face ||
+        selected.frame !== 0 ||
+        selected.mipLevel !== 0 ||
+        selected.layer !== 0 ||
+        selected.slice !== 0 ||
+        region.width !== result.info.width ||
+        region.height !== result.info.height ||
+        region.pixelFormat !== 'rgba8' ||
+        region.rowStride < region.width * 4 ||
+        region.rowStride * (region.height - 1) + region.width * 4 > region.pixels.length
+      ) {
+        valid = false
+        break
+      }
+      for (let row = 0; row < region.height; row += 1) {
+        const sourceOffset = row * region.rowStride
+        const targetOffset = face * faceBytes + row * region.width * 4
+        rgba.set(
+          region.pixels.subarray(sourceOffset, sourceOffset + region.width * 4),
+          targetOffset,
+        )
+      }
+    }
+    if (!valid) continue
+    remaining -= byteLength
+    textures.set(reference.id, {
+      id: textureId,
+      width: result.info.width,
+      height: result.info.height,
+      rgba,
+      ...(faces === 6 ? { dimension: 'cube' as const } : {}),
+      ...(result.info.channelLayout === undefined
+        ? {}
+        : { channelLayout: result.info.channelLayout }),
+      ...(result.info.compression === undefined ? {} : { compression: result.info.compression }),
+    })
+  }
+  return textures
 }
 
 export function createModelViewer(options: ModelViewerOptions = {}): ViewerModule {
@@ -643,6 +747,7 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
           let player = createModelSceneSampler(projection, { signal: scope.signal })
           let scene = player.sample(0, scope.signal)
           let selectedPrimitive: string | undefined
+          let activeClip: ModelAnimationClip | undefined
           let timeSeconds = 0
           const restFraming = framePrimitives(scene.primitives)
           const playbackStatus = element(stage, 'output', { part: 'model.playback-status' })
@@ -657,7 +762,7 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
           let texels: ReadonlyMap<string, SceneRendererTexture> = new Map()
           if (options.textures !== undefined && provider !== undefined && resourceRefs.length > 0) {
             texels = await options
-              .textures(resourceRefs, scope.signal)
+              .textures(args.descriptor, resourceRefs, scope.signal)
               .catch(() => new Map<string, SceneRendererTexture>())
           }
           const surfaces = sceneMaterials(materialRefs, texels, true)
@@ -740,6 +845,13 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
                     textures: surfaces.textures,
                     clearColor: [0, 0, 0, 0],
                     light: MODEL_KEY_LIGHT,
+                    materialContext: {
+                      time: drawnTime,
+                      sequenceTime: drawnTime,
+                      ...(activeClip?.sequenceIndex === undefined
+                        ? {}
+                        : { sequenceIndex: activeClip.sequenceIndex }),
+                    },
                     signal: scope.signal,
                   }),
                 )
@@ -918,10 +1030,12 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
                 stop()
                 try {
                   const clip = clips.find(item => item.id === selector.value)
-                  player = createModelSceneSampler(projection, {
+                  const nextPlayer = createModelSceneSampler(projection, {
                     signal: scope.signal,
                     ...(clip === undefined ? {} : { clip }),
                   })
+                  player = nextPlayer
+                  activeClip = clip
                   duration = modelAnimationPlaybackDuration(clip)
                   timeSeconds = 0
                   generation++

@@ -16,6 +16,7 @@ import {
 import type { AnyDescriptor, AssetEditPlan, SceneRendererPort, ViewerModule } from '@modkit/sdk'
 import type { ImageExportFile, ImageExportOutcome } from '@modkit/ui/image'
 import type { UiLocalizer } from '@modkit/ui/localization'
+import type { ModelViewerOptions } from '@modkit/ui/model'
 import {
   mountFieldEditor,
   type FieldEditorControlV1,
@@ -58,6 +59,8 @@ export interface EditPanelOptions {
    * own 2D wireframe — which is a supported tier, not a failure.
    */
   readonly renderer?: SceneRendererPort
+  /** Subject-bound model texture decoding; the page receives pixels, never resource authority. */
+  readonly textures?: ModelViewerOptions['textures']
 }
 
 const asRecord = (descriptor: AnyDescriptor): Record<string, unknown> =>

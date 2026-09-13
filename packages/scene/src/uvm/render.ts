@@ -201,7 +201,9 @@ async function prepareUvmRender(
   })
   const modelStates = readUvmModelStates(document, budget.maxScalarBytes, signal)
   const selectedModelState =
-    modelState === 'base' ? undefined : modelStates.find(candidate => candidate.state === modelState)
+    modelState === 'base'
+      ? undefined
+      : modelStates.find(candidate => candidate.state === modelState)
   const textureDeclarations = array(document, 'textures')
   const hasNestedModels =
     selectedModelState !== undefined ||
@@ -211,9 +213,7 @@ async function prepareUvmRender(
         (field(emitter, 'modelPaths') as unknown[]).length > 0,
     )
   const nestedBudget =
-    options.modelResources !== undefined && hasNestedModels
-      ? Math.floor(available / 4)
-      : 0
+    options.modelResources !== undefined && hasNestedModels ? Math.floor(available / 4) : 0
   const sceneAvailable = available - nestedBudget
   const rasterBudget =
     rasterResources === undefined ||
@@ -290,10 +290,11 @@ async function prepareUvmRender(
   const poseSamples = readUvmPoseSamples(input['poseSamples'], rig.clips)
   const visible = new Map<string, boolean>(
     readUvmPrimitiveVisibility(document, signal).map(
-      item => [
-        'node' in item ? `node-${item.node}` : `mesh-${item.mesh}-primitive-${item.primitive}`,
-        item.value > 0,
-      ] as const,
+      item =>
+        [
+          'node' in item ? `node-${item.node}` : `mesh-${item.mesh}-primitive-${item.primitive}`,
+          item.value > 0,
+        ] as const,
     ),
   )
   const visibilityChannels = clip?.channels.filter(channel => channel.kind === 'visibility') ?? []
@@ -525,16 +526,6 @@ async function prepareUvmRender(
       (channel === 0 ? primitive.textureCoordinates : undefined)
     if (materialUv.has(primitive.materialId ?? '') && uv === undefined)
       throw new TypeError(`primitive ${primitive.id} lacks TEXCOORD_${channel}`)
-    if (
-      primitive.colors !== undefined &&
-      !materials.some(
-        material => material.id === primitive.materialId && material.shader !== undefined,
-      )
-    )
-      warn(
-        'common.uvm/vertex-color-unrendered',
-        `Primitive ${primitive.id} vertex colors are preserved; modulation is not yet wired to this scene renderer route.`,
-      )
     return uv === undefined ? primitive : { ...primitive, textureCoordinates: uv }
   })
   let modelParticles: readonly ModelParticleInstance[] = []

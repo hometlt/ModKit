@@ -54,8 +54,8 @@ const VERTEX_SHADER = `#version 300 es
 in vec3 position;
 in vec3 normal;
 in vec2 uv;
-in vec4 effectColor;
-out vec4 vertexEffectColor;
+in vec4 vertexColor;
+out vec4 interpolatedVertexColor;
 uniform mat4 transform;
 uniform mat4 model;
 out vec3 worldNormal;
@@ -65,7 +65,7 @@ void main() {
   worldNormal = mat3(model) * normal;
   worldPosition = (model * vec4(position, 1.0)).xyz;
   texCoord = uv;
-  vertexEffectColor = effectColor;
+  interpolatedVertexColor = vertexColor;
   gl_Position = transform * vec4(position, 1.0);
 }`
 
@@ -74,7 +74,7 @@ precision highp float;
 in vec3 worldNormal;
 in vec3 worldPosition;
 in vec2 texCoord;
-in vec4 vertexEffectColor;
+in vec4 interpolatedVertexColor;
 uniform vec4 color;
 uniform vec4 instanceTint;
 uniform vec4 lightColor;
@@ -96,7 +96,7 @@ ${PREVIEW_LIGHT_GLSL}
 out vec4 outColor;
 void main() {
   vec4 base = color;
-  if (coverageMode > 2.5) base *= vertexEffectColor;
+  base *= interpolatedVertexColor;
   vec2 sampleUv = texCoord;
   if (coverageMode > 2.5 && screenUvEnabled > 0.5 &&
       (screenUvThreshold <= 0.0 || max(screenUvViewport.x, screenUvViewport.y) >= screenUvThreshold)) {
@@ -336,7 +336,7 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
   const position = gl.getAttribLocation(program, 'position')
   const normal = gl.getAttribLocation(program, 'normal')
   const uv = gl.getAttribLocation(program, 'uv')
-  const effectColor = gl.getAttribLocation(program, 'effectColor')
+  const vertexColor = gl.getAttribLocation(program, 'vertexColor')
   const transform = gl.getUniformLocation(program, 'transform')
   const color = gl.getUniformLocation(program, 'color')
   const uniform = (name: string) => gl.getUniformLocation(program, name)
@@ -457,10 +457,7 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
         })
         continue
       }
-      const effectColors =
-        materials.get(primitive.materialId ?? '')?.simpleEffect === undefined
-          ? undefined
-          : readSimpleEffectColors(primitive)
+      const vertexColors = readSimpleEffectColors(primitive)
       const vertexCount = primitive.positions.length / 3
       const vertexBuffer = gl.createBuffer()
       if (vertexBuffer === null) throw new TypeError('WebGL could not allocate a vertex buffer')
@@ -498,12 +495,12 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
           gl.uniform1f(alphaCutoff, effect.alphaCutoff > 1 ? 2 : effect.alphaCutoff)
       }
       const colorBuffer =
-        effectColor < 0 || effectColors === undefined
+        vertexColor < 0 || vertexColors === undefined
           ? undefined
-          : attributeBuffer(gl, effectColor, effectColors, 4)
-      if (colorBuffer === undefined && effectColor >= 0) {
-        gl.disableVertexAttribArray(effectColor)
-        gl.vertexAttrib4f(effectColor, 1, 1, 1, 1)
+          : attributeBuffer(gl, vertexColor, vertexColors, 4)
+      if (colorBuffer === undefined && vertexColor >= 0) {
+        gl.disableVertexAttribArray(vertexColor)
+        gl.vertexAttrib4f(vertexColor, 1, 1, 1, 1)
       }
       const shaded =
         effect === undefined &&

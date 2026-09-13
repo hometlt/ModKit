@@ -40,6 +40,7 @@ import {
   type ProviderOffer,
   type ProviderPolicyLockEntry,
   type ProviderRequest,
+  type RasterResourcePort,
   type ResourceBudget,
   type ResourceSessionPort,
   type RuntimeTarget,
@@ -151,6 +152,13 @@ export interface OpenedSubject {
    * disposed with session. A codec receives only its input, never this origin or port.
    */
   readonly resources?: ResourceSessionPort
+  /**
+   * Subject-bound image decoding over the same confined post-open origin.
+   *
+   * This is intentionally narrower than `resources`: consumers can ask for a logical image and
+   * receive bounded pixels, but they never select a codec or manufacture a filesystem path.
+   */
+  readonly rasterResources?: RasterResourcePort
   readonly descriptor: AnyDescriptor
   readonly ticket: ActivationTicket
   /** Codec detection provenance is not a provider-policy lock entry. */
@@ -1789,10 +1797,38 @@ async function openSubjectDirect(
       best.rasterState.live = false
     })
     openedSession = undefined
+    const rasterResources =
+      options.provideRasterResources === false
+        ? undefined
+        : createSubjectRasterResources({
+            state: best.rasterState,
+            budget: best.effectiveBudget,
+            isAuthorized: () =>
+              grantValidity(best.effectiveGrant).state === 'valid' &&
+              best.effectiveGrant.classes.includes('read-source'),
+            open: (source, hint, signal) =>
+              openSubject({
+                inventory: options.inventory,
+                source,
+                ...hint,
+                target: options.target,
+                intent: 'full',
+                grant: { ...best.effectiveGrant, classes: ['read-source'] },
+                budget: best.effectiveBudget,
+                executionBackends,
+                provideRasterResources: false,
+                ...(options.serviceDefinitions === undefined
+                  ? {}
+                  : { serviceDefinitions: options.serviceDefinitions }),
+                ...(options.policy === undefined ? {} : { policy: options.policy }),
+                ...(signal === undefined ? {} : { signal }),
+              }),
+          })
     return Object.freeze({
       state: 'opened' as const,
       session: managedSession,
       ...(postOpenResources === undefined ? {} : { resources: postOpenResources }),
+      ...(rasterResources === undefined ? {} : { rasterResources }),
       descriptor,
       ticket: best.ticket,
       detectionSelectionText,

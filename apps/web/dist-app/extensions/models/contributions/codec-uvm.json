@@ -7,7 +7,7 @@
   "id": "modkit/model-uvm",
   "displayName": "Universal Verse Model 1.0",
   "limitations": [
-    "model.render acquires common.render/scene-3d through the host and returns PNG with operation diagnostics. It supports explicit camera, scene and animation selection, glTF base color, first-surface textures through ordinary host image codecs, and collision overlays. Native game shaders, full PBR, mip/filter selection, image-source extensions, vertex-color modulation, texture transforms and effect simulation remain incomplete; the operation does not claim complete visual fidelity.",
+    "model.render acquires common.render/scene-3d through the host and returns PNG with operation diagnostics. It supports explicit camera, scene and animation selection, glTF base color, vertex-color modulation, animated UV transforms, first-surface textures through ordinary host image codecs, and collision overlays. Native game shaders, full PBR, source mip/filter choice, multi-surface image selection, cube environment frames and effect simulation remain incomplete; the operation does not claim complete visual fidelity.",
     "model.export-native resolves common.model/native-encoder by formatId. The UVM codec owns target selection and validation but contains no M3, PIE or other native-format implementation."
   ],
   "runtimeVariants": [
@@ -43,7 +43,7 @@
     "artifactStages": ["authored", "compiled", "runtime"],
     "openIntents": ["probe", "inspect", "full", "export"],
     "match": {
-      "extensions": ["uvm.glb", "uvm.gltf"],
+      "extensions": ["uvm", "uvm.glb", "uvm.gltf", "glb", "gltf"],
       "mediaTypes": ["model/gltf-binary; profile=uvm-1.0"]
     },
     "probe": {

@@ -169,4 +169,106 @@ describe('subject RPC navigation', () => {
     await first.session.dispose()
     expect(firstDisposed).toBe(1)
   })
+
+  it('serves bounded raster pixels only while the exact subject session is attached', async () => {
+    const channel = new MessageChannel()
+    const requests: unknown[] = []
+    const exposure = exposeSubjectRpc({
+      port: channel.port1 as never,
+      listener: 'event-target',
+      session: 'raster-rpc',
+      open: async () => ({
+        snapshot: snapshot('raster-session', parentRef),
+        session: session(parentRef, () => undefined),
+        rasterResources: {
+          async read(request) {
+            requests.push(request)
+            return {
+              state: 'decoded',
+              info: {
+                width: 1,
+                height: 1,
+                depth: 1,
+                layers: 1,
+                faces: 1,
+                mipLevels: 1,
+                frames: 1,
+                channels: 4,
+                bitDepth: 8,
+                colorSpace: 'srgb',
+                alphaMode: 'straight',
+                orientation: 'top-left',
+                decodedAccess: true,
+              },
+              region: {
+                x: 0,
+                y: 0,
+                width: 1,
+                height: 1,
+                rowStride: 4,
+                pixelFormat: 'rgba8',
+                pixels: new Uint8Array([12, 34, 56, 255]),
+              },
+              provenance: {
+                requirementId: 'diffuse',
+                logicalId: 'Assets/Marine_Diffuse.dds',
+                role: 'texture',
+                state: 'resolved',
+                revision: 'content-hash.sha256:texture',
+                bytes: 4n,
+                cached: false,
+                scopes: ['workspace-dependency-layer'],
+              },
+              diagnostics: [],
+            }
+          },
+        },
+      }),
+    })
+    const client = await connectSubjectRpc({
+      port: channel.port2 as never,
+      listener: 'event-target',
+      session: 'raster-rpc',
+    })
+    closers.push(
+      () => client.close('test finished'),
+      () => exposure.close('test finished'),
+      async () => {
+        channel.port1.close()
+        channel.port2.close()
+      },
+    )
+
+    const opened = await client.open('model.m3')
+    if (opened.state !== 'opened') throw new Error('model did not open')
+    const result = await opened.session.readRasterResource?.({
+      kind: 'logical',
+      requirement: {
+        id: 'diffuse',
+        logicalId: 'Assets/Marine_Diffuse.dds',
+        role: 'texture',
+        scopes: ['workspace-dependency-layer'],
+      },
+      maxBytes: 4,
+    })
+    expect(result?.state).toBe('decoded')
+    if (result?.state !== 'decoded') throw new Error('texture was not decoded')
+    expect([...result.region.pixels]).toEqual([12, 34, 56, 255])
+    expect(result.provenance?.bytes).toBe(4n)
+    expect(requests).toHaveLength(1)
+
+    await opened.session.dispose()
+    await expect(
+      opened.session.readRasterResource?.({
+        kind: 'logical',
+        requirement: {
+          id: 'late',
+          logicalId: 'late.dds',
+          role: 'texture',
+          scopes: ['sibling-directory'],
+        },
+        maxBytes: 4,
+      }),
+    ).rejects.toThrow(/no raster resource origin/u)
+  })
 })

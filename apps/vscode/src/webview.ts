@@ -23,6 +23,7 @@ import {
   type PreviewResolver,
 } from '@modkit/ui/explorer'
 import { createWorkbench } from '@modkit/ui/workbench'
+import { resolveModelViewerTextures } from '@modkit/ui/model'
 import type { UiCatalogDocument, UiLocale, UiLocalizer } from '@modkit/ui/localization'
 import {
   createSubjectCard,
@@ -345,6 +346,16 @@ async function mount(
          * model stage reports rather than hides.
          */
         ...(rendererPort === undefined ? {} : { renderer: rendererPort }),
+        async textures(descriptor, references, signal) {
+          const record = recordForDescriptor(descriptor as unknown as Record<string, unknown>)
+          const readRaster = record?.session.readRasterResource
+          if (readRaster === undefined) return new Map()
+          return resolveModelViewerTextures(
+            { read: (request, abort) => readRaster(request, abort) },
+            references,
+            signal,
+          )
+        },
         portsFor(descriptor) {
           const record = recordForDescriptor(descriptor)
           return record === undefined ? undefined : openPorts.get(record.entry.id)

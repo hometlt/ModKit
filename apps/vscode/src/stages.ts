@@ -82,6 +82,7 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       module: createModelViewer({
         localizer: context.localizer,
         ...(context.renderer === undefined ? {} : { renderer: context.renderer }),
+        ...(context.textures === undefined ? {} : { textures: context.textures }),
       }),
     },
     {

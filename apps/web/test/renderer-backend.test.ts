@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { chromium, type Browser } from 'playwright-core'
+import { build } from 'esbuild'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   revisionId,
@@ -16,7 +17,7 @@ import {
 } from '@modkit/sdk'
 
 const repoRoot = join(import.meta.dirname, '..', '..', '..')
-const browserModule = join(repoRoot, 'packages', 'scene', 'src', 'render', 'browser.js')
+const browserModule = join(repoRoot, 'packages', 'scene', 'dist', 'render', 'browser.js')
 const fixtureRoot = join(repoRoot, 'packages', 'testkit', 'test', 'fixtures', 'mk2-synthetic')
 const chromeCandidates = [
   process.env['CHROME_PATH'],
@@ -141,18 +142,21 @@ async function decodedFixture(fixture: (typeof modelFixtures)[number]) {
 }
 
 beforeAll(async () => {
-  const source = (await readFile(browserModule, 'utf8')).replace(
-    "'@modkit/sdk/renderer'",
-    "'./sdk-renderer.js'",
-  )
+  const bundled = await build({
+    entryPoints: [browserModule],
+    bundle: true,
+    format: 'esm',
+    platform: 'browser',
+    target: ['chrome120'],
+    write: false,
+    logLevel: 'silent',
+  })
+  const source = bundled.outputFiles[0]?.text
+  if (source === undefined) throw new Error('browser renderer bundle produced no JavaScript')
   server = createServer((request, response) => {
     response.setHeader('content-type', 'text/javascript; charset=utf-8')
     if (request.url === '/browser.js') {
       response.end(source)
-      return
-    }
-    if (request.url === '/sdk-renderer.js') {
-      response.end("export const SCENE_RENDERER_CONTRACT = 'common.render/scene-3d'")
       return
     }
     if (request.url === '/worker.js') {

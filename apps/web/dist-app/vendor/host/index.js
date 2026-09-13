@@ -85,6 +85,8 @@ import {
   WRITER_FACET_MATCHER,
   activateContribution,
   activateServiceProvider,
+  analyzeOperationContentDependencies,
+  analyzeReadOnlyContentDependencies,
   analyzeResolvedDataWorkspace,
   analyzeResolvedMapWorkspace,
   artifactByteSourceFromRandomAccess,
@@ -126,6 +128,7 @@ import {
   createLazyTableDataSource,
   createPresentationPlanValidator,
   createRawWriter,
+  createReadOnlyContentDependencyWorkspace,
   createResolvedDataSubjectSelectorLease,
   createSceneRendererPort,
   createScopedViewerSubjectNavigation,
@@ -148,6 +151,7 @@ import {
   describeSubjectCommandContracts,
   descriptorSubjectRef,
   discoverGameInstallations,
+  editChangeFromDataEditProposal,
   evaluateViewerApplicability,
   evaluateViewerContribution,
   executeCommandRequest,
@@ -158,6 +162,7 @@ import {
   inventoryHasErrors,
   invokeContainerPack,
   isDetectionUntieRule,
+  isolationChangeFromDataGraphProposal,
   languageProviderRoutes,
   linkedExtensionInputs,
   linkedInProcessBackend,
@@ -175,6 +180,7 @@ import {
   parsePolicyLock,
   planGameLaunch,
   presentationSemanticHash,
+  readOperationContentDependencies,
   registerServiceContractDefinitionsFromInventory,
   registerServiceDefinitionsOrThrow,
   registerStandardDataDefinitions,
@@ -220,11 +226,13 @@ import {
   switchPresentationStage,
   unavailable,
   withNativeTextModules
-} from "../../chunks/chunk-J5QGUWNB.js";
-import "../../chunks/chunk-V3SJMNU5.js";
-import "../../chunks/chunk-3JQHXTSW.js";
-import "../../chunks/chunk-S5ITZJYV.js";
+} from "../../chunks/chunk-GKYVVDGF.js";
+import "../../chunks/chunk-PHI3IBXS.js";
+import "../../chunks/chunk-3VS5UF7D.js";
+import "../../chunks/chunk-GGIVOOBZ.js";
+import "../../chunks/chunk-YYQ3QKXM.js";
 import "../../chunks/chunk-YRQVWMJF.js";
+import "../../chunks/chunk-6CZX3ZS4.js";
 import "../../chunks/chunk-CQ52GEHY.js";
 export {
   COMMAND_CANCELLED,
@@ -313,6 +321,8 @@ export {
   WRITER_FACET_MATCHER,
   activateContribution,
   activateServiceProvider,
+  analyzeOperationContentDependencies,
+  analyzeReadOnlyContentDependencies,
   analyzeResolvedDataWorkspace,
   analyzeResolvedMapWorkspace,
   artifactByteSourceFromRandomAccess,
@@ -357,6 +367,7 @@ export {
   createLazyTableDataSource,
   createPresentationPlanValidator,
   createRawWriter,
+  createReadOnlyContentDependencyWorkspace,
   createResolvedDataSubjectSelectorLease,
   createSceneRendererPort,
   createScopedViewerSubjectNavigation,
@@ -379,6 +390,7 @@ export {
   describeSubjectCommandContracts,
   descriptorSubjectRef,
   discoverGameInstallations,
+  editChangeFromDataEditProposal,
   evaluateViewerApplicability,
   evaluateViewerContribution,
   executeCommandRequest,
@@ -388,6 +400,7 @@ export {
   inventoryHasErrors,
   invokeContainerPack,
   isDetectionUntieRule,
+  isolationChangeFromDataGraphProposal,
   languageProviderRoutes,
   linkedExtensionInputs,
   linkedInProcessBackend,
@@ -404,6 +417,7 @@ export {
   parsePolicyLock,
   planGameLaunch,
   presentationSemanticHash,
+  readOperationContentDependencies,
   registerServiceContractDefinitionsFromInventory,
   registerServiceDefinitionsOrThrow,
   registerStandardDataDefinitions,
