@@ -172,6 +172,19 @@ describe('common world source native visual facets', () => {
       async acquire(request: { requirement: { logicalId: string }; metersPerSourceUnit?: number }) {
         acquiredLogicalId = request.requirement.logicalId
         acquiredMetersPerSourceUnit = request.metersPerSourceUnit
+        if (request.requirement.logicalId === 'Parts/Tool.pie') {
+          return {
+            value: {
+              result: {
+                state: 'converted' as const,
+                bytes: new Uint8Array([9, 8, 7]),
+                sourceKey: 'geometry-less-tool',
+                diagnostics: [],
+              },
+            },
+            async release() {},
+          }
+        }
         return {
           value: {
             result: {
@@ -364,6 +377,25 @@ describe('common world source native visual facets', () => {
           item => item.facet === 'resources' && item.modelResource?.logicalId.startsWith('Parts/'),
         ),
       ).toHaveLength(2)
+      const geometryLessResource = resourcePage.items.find(
+        item => item.facet === 'resources' && item.modelResource?.logicalId === 'Parts/Tool.pie',
+      )
+      expect(
+        await lease.value.model?.(geometryLessResource!.id, {
+          maxBytes: 1024,
+          maxMeshes: 8,
+          maxPrimitives: 8,
+          maxPrimitiveBytes: 1024,
+        }),
+      ).toMatchObject({
+        state: 'converted',
+        sourceKey: 'geometry-less-tool',
+        uvmBytes: new Uint8Array([9, 8, 7]),
+        meshes: [],
+        primitives: [],
+        diagnostics: [{ code: 'x3.host/world-model-render-facets-unavailable' }],
+        complete: false,
+      })
       const objectLayer = info.facets.find(item => item.facet === 'objects')!
       const objectPage = await lease.value.page({
         facet: 'objects',

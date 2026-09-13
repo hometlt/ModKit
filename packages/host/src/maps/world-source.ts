@@ -1536,15 +1536,20 @@ export function createCandidateWorldSceneLease(
               }
               if (lease.value.meshes === undefined || lease.value.primitive === undefined) {
                 return Object.freeze({
-                  state: 'unresolved' as const,
+                  state: 'converted' as const,
+                  sourceKey: result.sourceKey,
+                  uvmBytes: result.bytes.slice(),
+                  meshes: Object.freeze([]),
+                  primitives: Object.freeze([]),
                   diagnostics: Object.freeze([
                     ...result.diagnostics,
                     diagnostic(
-                      'warning',
-                      'x3.host/world-model-scene-unavailable',
-                      `model ${modelRequirement.logicalId} has no common scene geometry facet`,
+                      'information',
+                      'x3.host/world-model-render-facets-unavailable',
+                      `model ${modelRequirement.logicalId} converted successfully but publishes no common geometry; optional effects, lights or decals require their own admitted world facets`,
                     ),
                   ]),
+                  complete: false,
                 })
               }
               const meshPage = await lease.value.meshes({ limit: request.maxMeshes }, signal)
