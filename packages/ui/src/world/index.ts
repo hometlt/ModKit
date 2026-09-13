@@ -277,7 +277,10 @@ export async function inspectCandidateWorld(
     1,
     Math.min(32 * 1024 * 1024, Math.floor(perModelBytes / 2)),
   )
-  const maxTextureBytes = Math.max(1, Math.min(16 * 1024 * 1024, maxTextureTotalBytes))
+  const maxTextureBytes = Math.max(
+    1,
+    Math.min(16 * 1024 * 1024, Math.floor(perModelBytes / 2), maxTextureTotalBytes),
+  )
   const modelRequestKey = JSON.stringify({
     maxModels,
     maxModelBytes,

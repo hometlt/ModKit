@@ -75,6 +75,18 @@ function fixture(
       }
     },
   } as unknown as ResourceSessionPort
+  const syntheticUvmResources = {
+    async resolve(requirement: { logicalId: string }) {
+      return {
+        state: 'unresolved',
+        diagnostic: {
+          severity: 'warning',
+          code: 'test/synthetic-uvm-resource-unavailable',
+          message: `synthetic UVM origin cannot resolve ${requirement.logicalId}`,
+        },
+      }
+    },
+  } as unknown as ResourceSessionPort
   const state = { live: true, reservedBytes: 0, resources }
   const port = createSubjectModelResources({
     state,
@@ -141,7 +153,7 @@ function fixture(
         return {
           state: 'opened',
           diagnostics: [],
-          resources,
+          resources: settings.uvmFacets ? syntheticUvmResources : resources,
           descriptor: {
             operations: [],
             ...(settings.uvmFacets

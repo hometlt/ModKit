@@ -267,7 +267,11 @@ export function createSubjectModelResources(options: Options): ModelResourcePort
             )
           }
           releases.push(() => uvmOpened.session.dispose())
-          sceneResources = uvmOpened.resources ?? sceneResources
+          // The reopened UVM is an in-memory projection of the native model. Its subject-local
+          // resource origin can resolve the synthetic .uvm itself, but it does not own the M3's
+          // game-logical DDS/M3A companions. Keep the native model overlay when one was captured;
+          // only fall back to the UVM origin for a codec that supplied no native resource port.
+          sceneResources = sceneResources ?? uvmOpened.resources
           const acquiredScene = await uvmOpened.session.dataSource(
             'common.view/model-scene-source',
             1,

@@ -34,6 +34,15 @@ function positiveLimit(value: number, maximum: number): number {
   return value
 }
 
+function childResourceLogicalId(parentLogicalId: string, childLogicalId: string): string {
+  const childRoot = childLogicalId.split('/')[0]
+  if (childRoot === undefined || childRoot.length === 0) return childLogicalId
+  const parent = parentLogicalId.split('/')
+  const sharedRoot = parent.findIndex(segment => segment.toLowerCase() === childRoot.toLowerCase())
+  if (sharedRoot <= 0) return childLogicalId
+  return [...parent.slice(0, sharedRoot), childLogicalId].join('/')
+}
+
 function worldTexture(
   id: string,
   result: Extract<RasterResourceResult, { readonly state: 'decoded' }>,
@@ -490,6 +499,15 @@ export function createCandidateWorldSceneLease(
   rasterResources?: RasterResourcePort,
 ): Lease<CandidateWorldSceneSource> {
   positiveLimit(maxPageSize, Number.MAX_SAFE_INTEGER)
+  const modelTextureCache = new Map<
+    string,
+    Promise<
+      Readonly<{
+        texture?: SceneRendererTexture
+        diagnostics: readonly ReturnType<typeof diagnostic>[]
+      }>
+    >
+  >()
   const semantic = snapshot.semantic
   const terrainLayerId = layerId(snapshot.snapshotId, 'terrain')
   const terrainMaterialLayerId = layerId(snapshot.snapshotId, 'terrain-materials')
@@ -1497,13 +1515,14 @@ export function createCandidateWorldSceneLease(
                 ]),
               })
             }
+            const modelRequirement = item.modelResource
             const metersPerSourceUnit =
               request.metersPerSourceUnit ?? snapshot.semantic.modelMetersPerSourceUnit
             const lease = await modelResources.acquire(
               {
                 maxBytes: request.maxBytes,
                 ...(metersPerSourceUnit === undefined ? {} : { metersPerSourceUnit }),
-                requirement: item.modelResource,
+                requirement: modelRequirement,
               },
               signal,
             )
@@ -1523,7 +1542,7 @@ export function createCandidateWorldSceneLease(
                     diagnostic(
                       'warning',
                       'x3.host/world-model-scene-unavailable',
-                      `model ${item.modelResource.logicalId} has no common scene geometry facet`,
+                      `model ${modelRequirement.logicalId} has no common scene geometry facet`,
                     ),
                   ]),
                 })
@@ -1554,8 +1573,28 @@ export function createCandidateWorldSceneLease(
               )
               const textureDiagnostics: ReturnType<typeof diagnostic>[] = []
               const textures: SceneRendererTexture[] = []
-              const textureReferences =
-                resourcePage?.items.filter(reference => reference.role === 'texture') ?? []
+              const publishedResources = [...(resourcePage?.items ?? [])]
+              const resourceIds = new Set(publishedResources.map(reference => reference.id))
+              // Material layers are authoritative render dependencies even when an intermediate
+              // UVM/resource-refs facet omitted the redundant reference list. Acquire their
+              // logical textures and publish the derived reference instead of silently falling
+              // back to hashed material colours.
+              for (const material of materialPage?.items ?? []) {
+                for (const layer of material.layers ?? []) {
+                  if (layer.resourceId === undefined || resourceIds.has(layer.resourceId)) continue
+                  resourceIds.add(layer.resourceId)
+                  publishedResources.push(
+                    Object.freeze({
+                      id: layer.resourceId,
+                      role: 'texture' as const,
+                      provenance: 'reference-only' as const,
+                    }),
+                  )
+                }
+              }
+              const textureReferences = publishedResources.filter(
+                reference => reference.role === 'texture',
+              )
               let textureBytes = 0
               for (const reference of textureReferences) {
                 const remaining = maxTextureTotalBytes - textureBytes
@@ -1569,33 +1608,51 @@ export function createCandidateWorldSceneLease(
                   )
                   continue
                 }
-                const raster = await lease.value.readRaster(
-                  {
-                    kind: 'logical',
-                    requirement: {
-                      id: `world-texture:${encodeURIComponent(reference.id)}`,
-                      logicalId: reference.id,
-                      role: reference.role,
-                      scopes: item.modelResource.scopes,
-                      parentResourceId: item.modelResource.id,
-                    },
-                    maxBytes: Math.min(maxTextureBytes, remaining),
-                  },
-                  signal,
-                )
-                textureDiagnostics.push(...raster.diagnostics)
-                if (raster.state !== 'decoded') continue
-                const texture = worldTexture(reference.id, raster)
-                if (texture === undefined) {
-                  textureDiagnostics.push(
-                    diagnostic(
-                      'warning',
-                      'x3.host/world-model-texture-orientation-unknown',
-                      `model texture ${reference.id} has no proven top/bottom row orientation`,
-                    ),
-                  )
-                  continue
+                const logicalId = childResourceLogicalId(modelRequirement.logicalId, reference.id)
+                const cacheKey = `${logicalId}\u0000${String(maxTextureBytes)}`
+                let pending = modelTextureCache.get(cacheKey)
+                if (pending === undefined) {
+                  pending = (async () => {
+                    const raster = await lease.value.readRaster(
+                      {
+                        kind: 'logical',
+                        requirement: {
+                          id: `world-texture:${encodeURIComponent(logicalId)}`,
+                          logicalId,
+                          role: reference.role,
+                          scopes: modelRequirement.scopes,
+                          parentResourceId: modelRequirement.id,
+                        },
+                        maxBytes: maxTextureBytes,
+                      },
+                      signal,
+                    )
+                    if (raster.state !== 'decoded') {
+                      return Object.freeze({ diagnostics: Object.freeze([...raster.diagnostics]) })
+                    }
+                    const texture = worldTexture(reference.id, raster)
+                    return Object.freeze({
+                      ...(texture === undefined ? {} : { texture }),
+                      diagnostics: Object.freeze([
+                        ...raster.diagnostics,
+                        ...(texture === undefined
+                          ? [
+                              diagnostic(
+                                'warning',
+                                'x3.host/world-model-texture-orientation-unknown',
+                                `model texture ${reference.id} has no proven top/bottom row orientation`,
+                              ),
+                            ]
+                          : []),
+                      ]),
+                    })
+                  })()
+                  modelTextureCache.set(cacheKey, pending)
                 }
+                const loaded = await pending
+                textureDiagnostics.push(...loaded.diagnostics)
+                const texture = loaded.texture
+                if (texture === undefined) continue
                 if (texture.rgba.byteLength > remaining) {
                   textureDiagnostics.push(
                     diagnostic(
@@ -1623,13 +1680,13 @@ export function createCandidateWorldSceneLease(
                 ...(materialPage === undefined
                   ? {}
                   : { materials: Object.freeze([...materialPage.items]) }),
-                ...(resourcePage === undefined
+                ...(publishedResources.length === 0
                   ? {}
-                  : { resources: Object.freeze([...resourcePage.items]) }),
+                  : { resources: Object.freeze(publishedResources) }),
                 ...(socketPage === undefined
                   ? {}
                   : { sockets: Object.freeze([...socketPage.items]) }),
-                ...(resourcePage === undefined ? {} : { textures: Object.freeze(textures) }),
+                ...(publishedResources.length === 0 ? {} : { textures: Object.freeze(textures) }),
                 meshes: Object.freeze([...meshPage.items]),
                 primitives: Object.freeze(primitives),
                 diagnostics: Object.freeze([...result.diagnostics, ...textureDiagnostics]),
