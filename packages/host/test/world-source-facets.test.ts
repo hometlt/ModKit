@@ -163,6 +163,61 @@ const snapshot: ResolvedMapWorkspaceSnapshot = {
 }
 
 describe('common world source native visual facets', () => {
+  it('keeps layer and item identities compact while cursors remain snapshot-bound', async () => {
+    const longSnapshotId = `snapshot-${'dependency-revision/'.repeat(1_024)}`
+    const longSnapshot = { ...snapshot, snapshotId: longSnapshotId }
+    const longLease = createCandidateWorldSceneLease(longSnapshot, [], 32)
+    const nextLease = createCandidateWorldSceneLease(
+      { ...snapshot, snapshotId: 'snapshot-next' },
+      [],
+      32,
+    )
+    try {
+      const info = await longLease.value.info()
+      const terrainLayer = info.facets.find(item => item.facet === 'terrain')
+      expect(terrainLayer).toBeDefined()
+      if (terrainLayer === undefined) throw new Error('terrain layer is unavailable')
+      expect(terrainLayer.layerId).toBe('main/terrain')
+
+      const layers = await longLease.value.page({ facet: 'layers', limit: 32 })
+      expect(layers.items.every(item => item.id.length < 64 && item.layerId.length < 64)).toBe(true)
+
+      const first = await longLease.value.page({
+        facet: 'terrain',
+        layerId: terrainLayer.layerId,
+        lod: 'exact',
+        limit: 1,
+      })
+      expect(first.items[0]).toMatchObject({
+        id: 'main/terrain:sample:0:0',
+        layerId: 'main/terrain',
+      })
+      expect(first.nextCursor).toBeDefined()
+
+      const second = await longLease.value.page({
+        facet: 'terrain',
+        layerId: terrainLayer.layerId,
+        lod: 'exact',
+        limit: 1,
+        cursor: first.nextCursor,
+      })
+      expect(second.items[0]).toMatchObject({ id: 'main/terrain:sample:1:0' })
+
+      await expect(
+        nextLease.value.page({
+          facet: 'terrain',
+          layerId: terrainLayer.layerId,
+          lod: 'exact',
+          limit: 1,
+          cursor: first.nextCursor,
+        }),
+      ).rejects.toThrow('world cursor belongs to another or stale source snapshot')
+    } finally {
+      await longLease.release()
+      await nextLease.release()
+    }
+  })
+
   it('materializes and pages terrain materials, water and cliffs without publisher branching', async () => {
     let acquiredLogicalId: string | undefined
     let acquiredMetersPerSourceUnit: number | undefined

@@ -80,8 +80,8 @@ function modelResourceId(requirementId: string): string {
   return `model-resource:${encodeURIComponent(requirementId)}`
 }
 
-function layerId(snapshotId: string, kind: WorldSceneLayerKind): string {
-  return `${snapshotId}:layer:${kind}`
+function layerId(kind: WorldSceneLayerKind): string {
+  return `main/${kind}`
 }
 
 function layerContentRevision(items: readonly WorldSceneItem[]): string {
@@ -509,15 +509,15 @@ export function createCandidateWorldSceneLease(
     >
   >()
   const semantic = snapshot.semantic
-  const terrainLayerId = layerId(snapshot.snapshotId, 'terrain')
-  const terrainMaterialLayerId = layerId(snapshot.snapshotId, 'terrain-materials')
-  const waterLayerId = layerId(snapshot.snapshotId, 'water')
-  const cliffLayerId = layerId(snapshot.snapshotId, 'cliffs')
-  const objectLayerId = layerId(snapshot.snapshotId, 'objects')
-  const regionLayerId = layerId(snapshot.snapshotId, 'regions')
-  const resourceLayerId = layerId(snapshot.snapshotId, 'resources')
-  const navigationLayerId = layerId(snapshot.snapshotId, 'navigation')
-  const gatewayLayerId = layerId(snapshot.snapshotId, 'gateways')
+  const terrainLayerId = layerId('terrain')
+  const terrainMaterialLayerId = layerId('terrain-materials')
+  const waterLayerId = layerId('water')
+  const cliffLayerId = layerId('cliffs')
+  const objectLayerId = layerId('objects')
+  const regionLayerId = layerId('regions')
+  const resourceLayerId = layerId('resources')
+  const navigationLayerId = layerId('navigation')
+  const gatewayLayerId = layerId('gateways')
   const terrainSummary = semantic.terrain
   const terrainExact = hasExactTerrainGrid(terrainSummary)
   const terrainTransform = admittedTerrainTransform(snapshot, terrainSummary, terrainExact)
