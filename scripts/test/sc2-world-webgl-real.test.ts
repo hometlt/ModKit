@@ -35,6 +35,10 @@ const browserModelPath =
 const browserModelDigest = 'fb7680019ca7ec88aeb37591a7477c2555dd674d57f0c7486736ccb11919a436'
 const evidenceDirectory = join(repoRoot, '..', 'artifacts')
 const evidencePath = join(evidenceDirectory, 'sc2-cradle-world-webgl-real.png')
+const modelParityEvidencePath = join(
+  evidenceDirectory,
+  'sc2-installed-m3-standalone-world-parity.png',
+)
 const performanceEvidencePath = join(evidenceDirectory, 'sc2-cradle-world-webgl-performance.json')
 const chromeCandidates = [
   process.env['CHROME_PATH'],
@@ -344,9 +348,12 @@ describe.skipIf(!existsSync(mapRoot))('installed SC2 map in a real browser WebGL
       stdin: {
         contents: `
           import {
+            createWorldWebGlCameraFrame,
+            createWorldWebGlPlan,
             createWorldWebGlRenderer,
             DEFAULT_WORLD_WEBGL_CAMERA,
           } from './packages/scene/src/world/webgl.ts';
+          import { renderBrowser } from './packages/scene/src/render/browser.ts';
           import { createEmbeddedUvmWorldModelDecoder } from './packages/scene/src/world/embedded-uvm.ts';
           const canvas = document.querySelector('canvas');
           const payload = await fetch('/world.json').then(response => response.json());
@@ -441,7 +448,97 @@ describe.skipIf(!existsSync(mapRoot))('installed SC2 map in a real browser WebGL
           for (let offset = 0; offset < pixels.length; offset += 4) {
             if (pixels[offset] !== 9 || pixels[offset + 1] !== 14 || pixels[offset + 2] !== 19) changedPixels++;
           }
+
+          const parityObjectId = 900001;
+          const parityTime = 0.125;
+          const parityInput = {
+            items: [{
+              facet: 'objects', id: 'installed-m3-parity', layerId: 'objects',
+              coordinateSpaceId: 'uvw', kind: 'unit', objectId: parityObjectId,
+              position: { x: 0, y: 0, z: 0 }, uvwPosition: { x: 0, y: 0, z: 0 },
+              resourceId: payload.browserModelResourceId,
+            }],
+            models: new Map([[payload.browserModelResourceId, browserModel]]),
+            animationTimes: new Map([[parityObjectId, parityTime]]),
+            shadows: false,
+          };
+          const parityPlan = createWorldWebGlPlan(parityInput);
+          const parityMaterialScene = parityPlan.modelMaterialScenes[0];
+          if (parityMaterialScene === undefined)
+            throw new Error('installed M3 did not produce a common material parity scene');
+          const parityCamera = createWorldWebGlCameraFrame(parityPlan, 720, 480);
+          const parityLight = {
+            direction: parityPlan.light.direction,
+            color: [...parityPlan.light.color, 1],
+            ambient: parityPlan.light.ambientIntensity,
+          };
+          const standalone = await renderBrowser({
+            outputKind: 'rgba8', viewport: { width: 720, height: 480 },
+            clearColor: [0.035, 0.055, 0.075, 1], camera: parityCamera,
+            scene: {
+              primitives: parityMaterialScene.primitives,
+              materials: parityMaterialScene.materials,
+              textures: parityMaterialScene.textures,
+              materialContext: { time: parityTime, sequenceTime: parityTime },
+              light: parityLight,
+            },
+          });
+          const parityContainer = document.createElement('div');
+          parityContainer.id = 'model-parity';
+          parityContainer.className = 'parity';
+          const panel = (title, child) => {
+            const wrapper = document.createElement('section');
+            const heading = document.createElement('h2');
+            heading.textContent = title;
+            wrapper.append(heading, child);
+            parityContainer.append(wrapper);
+          };
+          const standaloneCanvas = document.createElement('canvas');
+          standaloneCanvas.width = 720; standaloneCanvas.height = 480;
+          standaloneCanvas.getContext('2d').putImageData(
+            new ImageData(new Uint8ClampedArray(standalone.rgba), 720, 480), 0, 0,
+          );
+          const worldCanvas = document.createElement('canvas');
+          const parityRenderer = createWorldWebGlRenderer(worldCanvas);
+          if (parityRenderer === undefined) throw new Error('parity WebGL2 is unavailable');
+          parityRenderer.draw(parityInput);
+          const parityGl = worldCanvas.getContext('webgl2');
+          parityGl.finish();
+          const worldBottomUp = new Uint8Array(720 * 480 * 4);
+          parityGl.readPixels(0, 0, 720, 480, parityGl.RGBA, parityGl.UNSIGNED_BYTE, worldBottomUp);
+          const worldTopDown = new Uint8Array(worldBottomUp.length);
+          for (let y = 0; y < 480; y++)
+            worldTopDown.set(worldBottomUp.subarray(y * 720 * 4, (y + 1) * 720 * 4), (479 - y) * 720 * 4);
+          let differingPixels = 0, absoluteDelta = 0, maxChannelDelta = 0;
+          const diffPixels = new Uint8ClampedArray(worldTopDown.length);
+          for (let offset = 0; offset < worldTopDown.length; offset += 4) {
+            let pixelDiffers = false, pixelDelta = 0;
+            for (let channel = 0; channel < 4; channel++) {
+              const delta = Math.abs(worldTopDown[offset + channel] - standalone.rgba[offset + channel]);
+              absoluteDelta += delta;
+              maxChannelDelta = Math.max(maxChannelDelta, delta);
+              pixelDelta = Math.max(pixelDelta, delta);
+              if (delta > 2) pixelDiffers = true;
+            }
+            if (pixelDiffers) differingPixels++;
+            diffPixels[offset] = Math.min(255, pixelDelta * 4);
+            diffPixels[offset + 1] = 0;
+            diffPixels[offset + 2] = Math.min(255, pixelDelta * 2);
+            diffPixels[offset + 3] = 255;
+          }
+          panel('Standalone browser renderer — installed M3 @ 0.125 s', standaloneCanvas);
+          panel('World material route — same M3 / camera / light / time', worldCanvas);
+          const diffCanvas = document.createElement('canvas');
+          diffCanvas.width = 720; diffCanvas.height = 480;
+          diffCanvas.getContext('2d').putImageData(new ImageData(diffPixels, 720, 480), 0, 0);
+          panel('Absolute pixel difference ×4 (black = identical)', diffCanvas);
+          document.body.append(parityContainer);
+          const standaloneWorldParity = {
+            width: 720, height: 480, differingPixels, maxChannelDelta,
+            meanAbsoluteChannelDelta: absoluteDelta / worldTopDown.length,
+          };
           renderer.dispose();
+          parityRenderer.dispose();
           const afterDispose = renderer.stats();
           globalThis.sc2WorldEvidence = {
             stats,
@@ -449,6 +546,7 @@ describe.skipIf(!existsSync(mapRoot))('installed SC2 map in a real browser WebGL
             afterDispose,
             terrainVertices: stats.terrainTriangles * 3,
             changedPixels,
+            standaloneWorldParity,
             version: gl.getParameter(gl.VERSION),
             browserModel: {
               primitives: browserModel.primitives.length,
@@ -477,7 +575,11 @@ describe.skipIf(!existsSync(mapRoot))('installed SC2 map in a real browser WebGL
     const application = bundled.outputFiles[0]?.contents
     if (application === undefined) throw new Error('real SC2 WebGL browser bundle was not emitted')
     const html = `<!doctype html><html><head><meta charset="utf-8"><style>
-      html,body{margin:0;background:#091019}canvas{display:block;width:960px;height:720px}
+      html,body{margin:0;background:#091019;color:#dbe7f3;font:16px system-ui}
+      body>canvas{display:block;width:960px;height:720px}
+      .parity{display:grid;grid-template-columns:720px;gap:12px;padding:12px;background:#091019}
+      .parity section{margin:0}.parity h2{font-size:15px;font-weight:500;margin:0 0 8px}
+      .parity canvas{display:block;width:720px;height:480px}
       </style></head><body><canvas></canvas><script type="module" src="/app.js"></script></body></html>`
     server = createServer((request, response) => {
       if (request.url === '/app.js') {
@@ -524,6 +626,13 @@ describe.skipIf(!existsSync(mapRoot))('installed SC2 map in a real browser WebGL
               afterDispose: Record<string, number | boolean>
               terrainVertices: number
               changedPixels: number
+              standaloneWorldParity: {
+                width: number
+                height: number
+                differingPixels: number
+                maxChannelDelta: number
+                meanAbsoluteChannelDelta: number
+              }
               version: string
               browserModel: {
                 primitives: number
@@ -554,6 +663,9 @@ describe.skipIf(!existsSync(mapRoot))('installed SC2 map in a real browser WebGL
     )
     expect(evidence.stats.shadowMapSize).toBe(1_024)
     expect(evidence.changedPixels).toBeGreaterThan(25_000)
+    expect(evidence.standaloneWorldParity).toMatchObject({ width: 720, height: 480 })
+    expect(evidence.standaloneWorldParity.differingPixels).toBeLessThan(15_000)
+    expect(evidence.standaloneWorldParity.meanAbsoluteChannelDelta).toBeLessThan(2)
     expect(evidence.performance).toMatchObject({
       frames: 7,
       // Two world programs plus four solid/transparent M3 programs for each sampled plan.
@@ -585,6 +697,7 @@ describe.skipIf(!existsSync(mapRoot))('installed SC2 map in a real browser WebGL
     expect(Number(evidence.afterDispose['geometryDisposals'])).toBeGreaterThan(0)
     mkdirSync(evidenceDirectory, { recursive: true })
     await page.screenshot({ path: evidencePath })
+    await page.locator('#model-parity').screenshot({ path: modelParityEvidencePath })
     writeFileSync(
       performanceEvidencePath,
       `${JSON.stringify(
@@ -598,6 +711,7 @@ describe.skipIf(!existsSync(mapRoot))('installed SC2 map in a real browser WebGL
           viewport: { width: 720, height: 480 },
           backend: evidence.version,
           world: evidence.stats,
+          standaloneWorldParity: evidence.standaloneWorldParity,
           load: loadPerformance,
           renderer: evidence.performance,
           afterDispose: evidence.afterDispose,

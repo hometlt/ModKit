@@ -3,6 +3,7 @@ import { describe, it } from 'node:test'
 
 import {
   DEFAULT_WORLD_WEBGL_CAMERA,
+  createWorldWebGlCameraFrame,
   createWorldWebGlTransparentDrawPlan,
   createWorldWebGlPlan,
   orbitWorldWebGlCamera,
@@ -1304,6 +1305,15 @@ describe('common world WebGL plan', () => {
     const orbit = orbitWorldWebGlCamera(DEFAULT_WORLD_WEBGL_CAMERA, { x: 20, y: -10 })
     const zoom = zoomWorldWebGlCamera(orbit, -120)
     const pan = panWorldWebGlCamera(input, zoom, { x: 12, y: -7, viewportHeight: 480 })
+    const frame = createWorldWebGlCameraFrame(createWorldWebGlPlan(input), 720, 480, pan)
+    assert.equal(frame.viewProjection.length, 16)
+    assert.equal(frame.viewMatrix.length, 16)
+    assert.ok(frame.viewProjection.every(Number.isFinite))
+    assert.ok(frame.eyePosition.every(Number.isFinite))
+    assert.throws(
+      () => createWorldWebGlCameraFrame(createWorldWebGlPlan(input), 0, 480, pan),
+      /viewport/u,
+    )
     assert.notEqual(pan.azimuth, DEFAULT_WORLD_WEBGL_CAMERA.azimuth)
     assert.ok(pan.zoom > 1)
     assert.notDeepEqual(pan.target, [0, 0, 0])

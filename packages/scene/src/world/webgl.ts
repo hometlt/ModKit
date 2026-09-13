@@ -50,6 +50,12 @@ export interface WorldWebGlCamera {
   readonly target: readonly [number, number, number]
 }
 
+export interface WorldWebGlCameraFrame {
+  readonly viewProjection: Float32Array
+  readonly viewMatrix: Float32Array
+  readonly eyePosition: readonly [number, number, number]
+}
+
 export const DEFAULT_WORLD_WEBGL_CAMERA: WorldWebGlCamera = Object.freeze({
   azimuth: Math.PI / 4,
   elevation: 0.52,
@@ -3417,6 +3423,25 @@ function cameraFor(
   return Object.freeze({ camera, radius })
 }
 
+/** Returns the exact camera frame consumed by world material draws for parity and host overlays. */
+export function createWorldWebGlCameraFrame(
+  plan: WorldWebGlPlan,
+  width: number,
+  height: number,
+  requested?: WorldWebGlCamera,
+): WorldWebGlCameraFrame {
+  if (!Number.isSafeInteger(width) || width <= 0 || !Number.isSafeInteger(height) || height <= 0)
+    throw new TypeError('world WebGL camera viewport must contain positive safe integers')
+  const { camera } = cameraFor(plan, width, height, requested)
+  return Object.freeze({
+    viewProjection: Float32Array.from(
+      camera.projectionMatrix.clone().multiply(camera.matrixWorldInverse).elements,
+    ),
+    viewMatrix: Float32Array.from(camera.matrixWorldInverse.elements),
+    eyePosition: Object.freeze([camera.position.x, camera.position.y, camera.position.z] as const),
+  })
+}
+
 export function panWorldWebGlCamera(
   input: WorldWebGlInput,
   source: WorldWebGlCamera,
@@ -3571,13 +3596,9 @@ function drawWorldWebGlWithResources(
     gl.uniform1i(gl.getUniformLocation(program, 'normalMap'), 5)
     gl.uniform1i(gl.getUniformLocation(program, 'secondaryColorMap'), 6)
     gl.uniform1i(gl.getUniformLocation(program, 'shadowMap'), 7)
-    const { camera } = cameraFor(plan, canvas.width, canvas.height, input.camera)
-    const viewProjection = camera.projectionMatrix.clone().multiply(camera.matrixWorldInverse)
-    gl.uniformMatrix4fv(
-      gl.getUniformLocation(program, 'viewProjection'),
-      false,
-      viewProjection.elements,
-    )
+    const sceneCamera = createWorldWebGlCameraFrame(plan, canvas.width, canvas.height, input.camera)
+    const viewProjection = sceneCamera.viewProjection
+    gl.uniformMatrix4fv(gl.getUniformLocation(program, 'viewProjection'), false, viewProjection)
     gl.uniform3fv(
       gl.getUniformLocation(program, 'ambientColor'),
       Float32Array.from(plan.light.ambient),
@@ -3631,11 +3652,6 @@ function drawWorldWebGlWithResources(
     }
     gl.uniform1f(gl.getUniformLocation(program, 'shadowReceiver'), 1)
     for (const item of plan.splatTriangles) drawSplatBatch(resources, program, item)
-    const sceneCamera = {
-      viewProjection: Float32Array.from(viewProjection.elements),
-      viewMatrix: Float32Array.from(camera.matrixWorldInverse.elements),
-      eyePosition: [camera.position.x, camera.position.y, camera.position.z] as const,
-    }
     const sceneLight = {
       direction: plan.light.direction,
       color: [...plan.light.color, 1] as const,
