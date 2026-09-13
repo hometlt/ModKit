@@ -17,7 +17,7 @@ import type {
 } from '@modkit/sdk'
 import { createModelSceneSampler } from '../model/index.js'
 import { materialWebGlDraws } from '../render/material-webgl.js'
-import { sceneMaterialDraws } from '../render/material-draws.js'
+import { materialIsSolid, sceneMaterialDraws } from '../render/material-draws.js'
 import { prepareSceneMaterialPrograms, type SceneMaterialPrograms } from '../render/materials.js'
 
 export interface WorldWebGlInput {
@@ -215,10 +215,8 @@ export interface WorldWebGlPlan {
   readonly opaqueTriangles: WorldWebGlBatch
   /** Opaque model triangles separated only when a material disables casting or receiving. */
   readonly shadowControlledOpaqueTriangles: readonly WorldWebGlShadowControlledBatch[]
-  /** Opaque native/UVM materials rendered by the same compiler as the standalone model viewer. */
+  /** Solid native/UVM materials rendered by the same compiler as the standalone model viewer. */
   readonly modelMaterialScenes: readonly WorldWebGlModelMaterialScene[]
-  /** Position-only copy used solely by the world shadow pass for shared-material objects. */
-  readonly modelMaterialShadowTriangles: WorldWebGlBatch
   readonly texturedTriangles: readonly WorldWebGlTexturedBatch[]
   readonly transparentTexturedTriangles: readonly WorldWebGlTransparentTexturedBatch[]
   /** Exact per-cell normalized blends for up to eight decoded terrain material layers. */
@@ -251,6 +249,7 @@ export interface WorldWebGlPlan {
 
 export interface WorldWebGlModelMaterialScene {
   readonly primitives: readonly SceneRendererPrimitive[]
+  readonly shadowPrimitives: readonly SceneRendererPrimitive[]
   readonly materials: readonly SceneRendererMaterial[]
   readonly programs: ReadonlyMap<string, SceneMaterialPrograms>
   readonly textures: readonly SceneRendererTexture[]
@@ -831,8 +830,8 @@ function finitePlan(plan: readonly MutableBatch[]) {
 /** Builds a renderer-ready, game-neutral 3D scene without requiring a browser or GPU. */
 export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
   const opaque = batch()
-  const modelMaterialShadow = batch()
   const modelMaterialScenes: WorldWebGlModelMaterialScene[] = []
+  let modelMaterialShadowTriangles = 0
   const shadowControlledOpaque = new Map<
     string,
     MutableBatch & { readonly castShadows: boolean; readonly receiveShadows: boolean }
@@ -1383,31 +1382,30 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
         programs = new Map()
       }
       const materialPrimitives: SceneRendererPrimitive[] = []
+      const materialShadowPrimitives: SceneRendererPrimitive[] = []
       const instanceTransform = multiplyComponentTransforms(
         worldObjectTransform(item, translation),
         componentTransform,
       )
       for (const primitive of primitives) {
         const material = result.materials?.find(candidate => candidate.id === primitive.materialId)
+        const shadowPolicy = modelMaterialShadowPolicy(material)
         const prepared = programs.get(primitive.materialId ?? '')
-        // Alpha-tested passes still need their material sampler in the shadow program. Until that
-        // program is shared too, retain the exact existing cutout route instead of casting boxes.
-        const sharedMaterial =
-          prepared !== undefined && prepared.passes.every(program => program.blend === 'opaque')
+        const sharedMaterial = prepared !== undefined && prepared.passes.every(materialIsSolid)
         if (sharedMaterial) {
           const primitiveTransform = 'transform' in primitive ? primitive.transform : undefined
-          materialPrimitives.push(
-            Object.freeze({
-              ...primitive,
-              transform: multiplyComponentTransforms(
-                instanceTransform,
-                primitiveTransform ?? IDENTITY_COMPONENT_TRANSFORM,
-              ),
-              ...(item.objectId === input.selectedObjectId
-                ? { tint: [1, 0.82, 0.12, 1] as const }
-                : {}),
-            }),
-          )
+          const instancePrimitive = Object.freeze({
+            ...primitive,
+            transform: multiplyComponentTransforms(
+              instanceTransform,
+              primitiveTransform ?? IDENTITY_COMPONENT_TRANSFORM,
+            ),
+            ...(item.objectId === input.selectedObjectId
+              ? { tint: [1, 0.82, 0.12, 1] as const }
+              : {}),
+          })
+          materialPrimitives.push(instancePrimitive)
+          if (shadowPolicy.castShadows) materialShadowPrimitives.push(instancePrimitive)
         }
         const layer = material?.layers?.find(candidate =>
           BASE_COLOR_SLOTS.has(materialSlot(candidate.slot)),
@@ -1421,7 +1419,6 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
             : result.textures?.find(candidate => candidate.id === layer.resourceId)
         const requestedUv = layer?.uvSource ?? 0
         const coverage = modelMaterialCoverage(material)
-        const shadowPolicy = modelMaterialShadowPolicy(material)
         const blendMode =
           coverage.mode !== 'blend'
             ? undefined
@@ -1457,8 +1454,7 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
             readonly [number, number, number],
           ]
           if (sharedMaterial) {
-            if (shadowPolicy.castShadows)
-              pushTriangle(modelMaterialShadow, vertices[0], vertices[1], vertices[2], [1, 1, 1, 1])
+            if (shadowPolicy.castShadows) modelMaterialShadowTriangles += 1
           } else if (
             texture !== undefined &&
             textureCoordinates !== undefined &&
@@ -1517,6 +1513,7 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
         modelMaterialScenes.push(
           Object.freeze({
             primitives: Object.freeze(materialPrimitives),
+            shadowPrimitives: Object.freeze(materialShadowPrimitives),
             materials: scene.materials,
             programs,
             textures: scene.textures,
@@ -1597,7 +1594,6 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
   if (
     !finitePlan([
       opaque,
-      modelMaterialShadow,
       transparent,
       lines,
       points,
@@ -1607,6 +1603,9 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
     ])
   )
     throw new TypeError('world WebGL plan contains a non-finite coordinate')
+  for (const item of objectPickMeshes)
+    if (!item.triangles.every(Number.isFinite))
+      throw new TypeError('world WebGL plan contains a non-finite model coordinate')
   for (const item of textured.values())
     if (!item.textureCoordinates.every(Number.isFinite))
       throw new TypeError('world WebGL plan contains a non-finite texture coordinate')
@@ -1623,9 +1622,8 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
     )
       throw new TypeError('world WebGL splat plan contains a non-finite texture value')
   }
-  const positions = [
+  const positionSets: readonly (readonly number[] | Float32Array)[] = [
     opaque,
-    modelMaterialShadow,
     transparent,
     lines,
     points,
@@ -1633,16 +1631,20 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
     ...textured.values(),
     ...transparentTextured.values(),
     ...splat.values(),
-  ].flatMap(item => item.positions)
+  ].map(item => item.positions)
   const minimum: [number, number, number] = [Infinity, Infinity, Infinity]
   const maximum: [number, number, number] = [-Infinity, -Infinity, -Infinity]
-  for (let offset = 0; offset < positions.length; offset += 3) {
-    for (const axis of [0, 1, 2] as const) {
-      minimum[axis] = Math.min(minimum[axis], positions[offset + axis]!)
-      maximum[axis] = Math.max(maximum[axis], positions[offset + axis]!)
+  let hasPositions = false
+  for (const positions of [...positionSets, ...objectPickMeshes.map(item => item.triangles)]) {
+    if (positions.length > 0) hasPositions = true
+    for (let offset = 0; offset < positions.length; offset += 3) {
+      for (const axis of [0, 1, 2] as const) {
+        minimum[axis] = Math.min(minimum[axis], positions[offset + axis]!)
+        maximum[axis] = Math.max(maximum[axis], positions[offset + axis]!)
+      }
     }
   }
-  if (positions.length === 0) {
+  if (!hasPositions) {
     minimum.fill(-0.5)
     maximum.fill(0.5)
   }
@@ -1652,8 +1654,8 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
   const direction: readonly [number, number, number] = directional?.direction ?? [-0.45, -1, -0.35]
   const lightColor: readonly [number, number, number] = directional?.color ?? [1, 0.97, 0.9]
   const shadowCasterTriangles =
+    modelMaterialShadowTriangles +
     (opaque.positions.length +
-      modelMaterialShadow.positions.length +
       [...shadowControlledOpaque.values()].reduce(
         (sum, item) => sum + (item.castShadows ? item.positions.length : 0),
         0,
@@ -1663,11 +1665,10 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
         0,
       ) +
       [...splat.values()].reduce((sum, item) => sum + item.positions.length, 0)) /
-    9
+      9
   return Object.freeze({
     opaqueTriangles: frozenBatch(opaque),
     modelMaterialScenes: Object.freeze(modelMaterialScenes),
-    modelMaterialShadowTriangles: frozenBatch(modelMaterialShadow),
     shadowControlledOpaqueTriangles: Object.freeze(
       [...shadowControlledOpaque.values()].map(item =>
         Object.freeze({
@@ -2377,7 +2378,6 @@ function retainedWorldPlanBytes(plan: WorldWebGlPlan | undefined): number {
     retain(value.colors)
   }
   retainBatch(plan.opaqueTriangles)
-  retainBatch(plan.modelMaterialShadowTriangles)
   for (const scene of plan.modelMaterialScenes) {
     for (const primitive of scene.primitives) {
       retain(primitive.positions)
@@ -2591,6 +2591,22 @@ function drawShadowTextured(
   drawBatch(resources, program, source, gl.TRIANGLES)
 }
 
+function prepareWorldMaterialResources(
+  resources: WorldWebGlOwnedResources,
+  plan: WorldWebGlPlan,
+): void {
+  if (resources.materialPlan !== plan) {
+    resources.retiredMaterialProgramCompilations += resources.materialDraws.programCompilations()
+    resources.materialDraws.release()
+    resources.materialTextureHandles.clear()
+    resources.materialDraws = materialWebGlDraws(resources.gl, resources.materialTextureHandles)
+    resources.materialPlan = plan
+  }
+  for (const scene of plan.modelMaterialScenes)
+    for (const texture of scene.textures)
+      resources.materialTextureHandles.set(texture.id, bindTexture2d(resources, texture, 0))
+}
+
 function renderWorldShadowMap(
   gl: WebGL2RenderingContext,
   plan: WorldWebGlPlan,
@@ -2688,7 +2704,6 @@ function renderWorldShadowMap(
     bindSentinelTexture2d(resources, 0)
     gl.uniform1i(gl.getUniformLocation(program, 'baseColorMap'), 0)
     drawShadowPositions(resources, program, plan.opaqueTriangles.positions)
-    drawShadowPositions(resources, program, plan.modelMaterialShadowTriangles.positions)
     for (const item of plan.shadowControlledOpaqueTriangles) {
       if (item.castShadows) drawShadowPositions(resources, program, item.positions)
     }
@@ -2698,6 +2713,46 @@ function renderWorldShadowMap(
       else drawShadowPositions(resources, program, item.positions)
     }
     for (const item of plan.splatTriangles) drawShadowPositions(resources, program, item.positions)
+    if (plan.modelMaterialScenes.some(scene => scene.shadowPrimitives.length > 0)) {
+      const sceneCamera = {
+        viewProjection,
+        viewMatrix: Float32Array.from(lightCamera.matrixWorldInverse.elements),
+        eyePosition: [
+          lightCamera.position.x,
+          lightCamera.position.y,
+          lightCamera.position.z,
+        ] as const,
+      }
+      const sceneLight = {
+        direction: plan.light.direction,
+        color: [...plan.light.color, 1] as const,
+        ambient: plan.light.ambientIntensity,
+      }
+      for (const scene of plan.modelMaterialScenes)
+        for (const draw of sceneMaterialDraws(
+          scene.shadowPrimitives,
+          scene.materials,
+          scene.programs,
+          viewProjection,
+          [],
+          1,
+        )) {
+          if (draw.program === undefined) continue
+          resources.materialDraws.draw(
+            {
+              ...draw,
+              primitive: {
+                ...draw.primitive,
+                depthBias: { slopeScale: 1.1, units: 4 },
+              },
+              depthOnly: true,
+            },
+            sceneCamera,
+            sceneLight,
+          )
+        }
+      gl.colorMask(false, false, false, false)
+    }
     assertNoWebGlError(gl, 'shadow-map pass')
     gl.disable(gl.POLYGON_OFFSET_FILL)
     gl.colorMask(true, true, true, true)
@@ -3403,6 +3458,7 @@ function drawWorldWebGlWithResources(
         gpuQueryStarted = true
       }
     }
+    prepareWorldMaterialResources(resources, plan)
     shadow = renderWorldShadowMap(gl, plan, input, resources)
     gl.viewport(0, 0, canvas.width, canvas.height)
     gl.clearColor(0.035, 0.055, 0.075, 1)
@@ -3481,17 +3537,7 @@ function drawWorldWebGlWithResources(
     }
     gl.uniform1f(gl.getUniformLocation(program, 'shadowReceiver'), 1)
     for (const item of plan.splatTriangles) drawSplatBatch(resources, program, item)
-    if (resources.materialPlan !== plan) {
-      resources.retiredMaterialProgramCompilations += resources.materialDraws.programCompilations()
-      resources.materialDraws.release()
-      resources.materialTextureHandles.clear()
-      resources.materialDraws = materialWebGlDraws(gl, resources.materialTextureHandles)
-      resources.materialPlan = plan
-    }
     if (plan.modelMaterialScenes.length > 0) {
-      for (const scene of plan.modelMaterialScenes)
-        for (const texture of scene.textures)
-          resources.materialTextureHandles.set(texture.id, bindTexture2d(resources, texture, 0))
       const sceneCamera = {
         viewProjection: Float32Array.from(viewProjection.elements),
         viewMatrix: Float32Array.from(camera.matrixWorldInverse.elements),

@@ -500,7 +500,7 @@ describe('common world WebGL plan', () => {
     assert.equal(plan.texturedTriangles[0].normalTexture?.id, 'surface-normal.png')
   })
 
-  it('routes opaque game materials through the standalone material compiler with instance team color', () => {
+  it('routes alpha-tested game materials and shadows through the standalone compiler with team color', () => {
     const materialLayer = {
       slot: 'diffuse',
       texturePath: 'team.dds',
@@ -565,7 +565,7 @@ describe('common world WebGL plan', () => {
                         specMult: 1,
                         emisMult: 1,
                         specMode: 0,
-                        alphaTestThreshold: 0,
+                        alphaTestThreshold: 0.5,
                         twoSided: false,
                         unshaded: true,
                         doubleLambert: false,
@@ -592,8 +592,9 @@ describe('common world WebGL plan', () => {
     })
     assert.equal(plan.modelMaterialScenes.length, 1)
     assert.equal(plan.texturedTriangles.length, 0)
-    assert.equal(plan.modelMaterialShadowTriangles.positions.length, 9)
     const scene = plan.modelMaterialScenes[0]
+    assert.equal(scene.shadowPrimitives.length, 1)
+    assert.equal(scene.programs.get('surface').passes[0].blend, 'alpha-test')
     assert.deepEqual(scene.programs.get('surface').passes[0].uniforms.u_teamColor, [0.1, 0.7, 0.9])
     assert.deepEqual(Array.from(scene.primitives[0].transform.slice(12, 15)), [4, 2, 6])
   })
