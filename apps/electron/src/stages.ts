@@ -14,6 +14,8 @@
 import type { PreviewStage } from '@modkit/ui'
 import type { UiLocalizer } from '@modkit/ui/localization'
 import type { OperationSession } from '@modkit/sdk'
+import type { SceneRendererPort } from '@modkit/sdk'
+import { createModelViewer, type ModelViewerOptions } from '@modkit/ui/model'
 
 import {
   createPreviewStages,
@@ -27,12 +29,29 @@ import { APP_STAGE_POLICY, orderStages, readOnlyStages } from './view-policy.js'
 
 export interface ElectronStageOptions {
   readonly localizer?: UiLocalizer
+  /** Browser-realm scene provider used by the model stage. */
+  readonly renderer?: SceneRendererPort
+  /** Subject-bound decoded textures used by the model stage. */
+  readonly textures?: ModelViewerOptions['textures']
   /** Operation session for the subject a stage was mounted for, when the host has one. */
   operationsFor(descriptor: Record<string, unknown>): Promise<OperationSession | undefined>
   /** Include the pixel editor only for a subject whose PNG/RGBA8 writer resolved in main. */
   readonly imageEditing?: boolean
   /** Reopen a PNG after the semantic encoder commits its new bytes. */
   readonly onImageCommitted?: (descriptor: Record<string, unknown>) => Promise<boolean>
+}
+
+const configuredStage = (stage: PreviewStage, options: ElectronStageOptions): PreviewStage => {
+  const localized = localizedLabel(stage, options.localizer)
+  if (localized.id !== 'model') return localized
+  return {
+    ...localized,
+    module: createModelViewer({
+      ...(options.localizer === undefined ? {} : { localizer: options.localizer }),
+      ...(options.renderer === undefined ? {} : { renderer: options.renderer }),
+      ...(options.textures === undefined ? {} : { textures: options.textures }),
+    }),
+  }
 }
 
 const VIEW_KEYS: Readonly<Record<string, string>> = Object.freeze({
@@ -88,7 +107,7 @@ export function createElectronStages(options: ElectronStageOptions): readonly Pr
   const generated =
     options.localizer === undefined ? PREVIEW_STAGES : createPreviewStages(options.localizer)
   return orderStages<PreviewStage>([
-    ...generated.map(stage => localizedLabel(stage, options.localizer)),
+    ...generated.map(stage => configuredStage(stage, options)),
     appStage(
       'archive',
       createArchiveStage({
@@ -128,7 +147,7 @@ export function createElectronReadOnlyStages(
       : createPreviewStagesReadonly(options.localizer)
   const generated = readOnlyStages(editableGenerated, readonlyGenerated)
   return orderStages<PreviewStage>([
-    ...generated.map(stage => localizedLabel(stage, options.localizer)),
+    ...generated.map(stage => configuredStage(stage, options)),
     appStage(
       'archive',
       createArchiveStage({

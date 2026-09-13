@@ -62,6 +62,8 @@ import {
 import { createRendererEditorPorts, type RendererEditorPorts } from './editor-ports.js'
 import { createInspectorDock, type InspectorSubject } from './inspector.js'
 import { createElectronReadOnlyStages, createElectronStages } from './stages.js'
+import { createElectronRendererPort } from './renderer-port.js'
+import { resolveModelViewerTextures } from '@modkit/ui/model'
 import { preferredStage, selfTestCodecLine, selfTestLine } from './view-policy.js'
 import { continueElectronMapPreviewSelection } from './map-preview-selection.js'
 import { createElectronLocalizer } from './localization.js'
@@ -75,7 +77,11 @@ import {
   type ElectronFormatSmokeRouteStep,
 } from './format-smoke-acceptance.js'
 import { findExactNamespaceFile } from './namespace-index.js'
-import { chooseContentSource, createSourceDialogs, type SourceRoot } from '@modkit/ui/content-sources'
+import {
+  chooseContentSource,
+  createSourceDialogs,
+  type SourceRoot,
+} from '@modkit/ui/content-sources'
 import { namespaceFileAccess } from './content-source-access.js'
 import type { NamespaceEntrySource } from '@modkit/sdk'
 
@@ -443,17 +449,42 @@ async function boot(): Promise<void> {
     return record.operations
   }
 
-  const stages = createElectronStages({ operationsFor, localizer })
+  const rendererPort = createElectronRendererPort()
+  const modelStageOptions = {
+    renderer: rendererPort,
+    async textures(
+      descriptor: import('@modkit/sdk').AnyDescriptor,
+      references: Parameters<typeof resolveModelViewerTextures>[1],
+      signal?: AbortSignal,
+    ) {
+      const record = subjectsByDescriptor.get(
+        descriptorKey(descriptor as unknown as Record<string, unknown>),
+      )
+      const readRaster = record?.session.readRasterResource
+      if (readRaster === undefined) return new Map()
+      return resolveModelViewerTextures(
+        { read: (request, abort) => readRaster(request, abort) },
+        references,
+        signal,
+      )
+    },
+  } as const
+  const stages = createElectronStages({ operationsFor, localizer, ...modelStageOptions })
   const imageEditingStages = createElectronStages({
     operationsFor,
     localizer,
+    ...modelStageOptions,
     imageEditing: true,
     onImageCommitted: async descriptor => {
       const record = subjectsByDescriptor.get(descriptorKey(descriptor))
       return record === undefined ? false : reopenSubject(record.path)
     },
   })
-  const readOnlyStages = createElectronReadOnlyStages({ operationsFor, localizer })
+  const readOnlyStages = createElectronReadOnlyStages({
+    operationsFor,
+    localizer,
+    ...modelStageOptions,
+  })
 
   /**
    * Everything one opened subject needs before a stage list can even be chosen.
@@ -951,45 +982,86 @@ async function boot(): Promise<void> {
     },
   })
 
-  const sourceBridge = (globalThis as unknown as { modkitContentSources?: {
-    call(method: string, args: readonly unknown[]): Promise<unknown>
-  } }).modkitContentSources
+  const sourceBridge = (
+    globalThis as unknown as {
+      modkitContentSources?: {
+        call(method: string, args: readonly unknown[]): Promise<unknown>
+      }
+    }
+  ).modkitContentSources
   async function readRemoteSource(uriText: string, maxBytes: number): Promise<Uint8Array> {
     if (!sourceBridge) throw new Error('Content source bridge is unavailable')
     const uri = new URL(uriText)
     const [id, ...parts] = decodeURIComponent(uri.pathname).slice(1).split('/')
-    const bytes = await sourceBridge.call('read', [id, parts.join('/'), maxBytes]) as Uint8Array
+    const bytes = (await sourceBridge.call('read', [id, parts.join('/'), maxBytes])) as Uint8Array
     return new Uint8Array(bytes)
   }
   function remoteAccess(root: SourceRoot): FileAccess {
-    const uri = (path: string) => `modkit-source://battlenet/${encodeURIComponent(root.id)}/${path.split('/').map(encodeURIComponent).join('/')}`
-    const russian = document.documentElement.lang.startsWith('ru') || navigator.language.startsWith('ru')
+    const uri = (path: string) =>
+      `modkit-source://battlenet/${encodeURIComponent(root.id)}/${path.split('/').map(encodeURIComponent).join('/')}`
+    const russian =
+      document.documentElement.lang.startsWith('ru') || navigator.language.startsWith('ru')
     const action = (id: 'download' | 'clear-cache' | 'delete-publication') => {
-      const text = id === 'download' ? (russian ? 'Загрузить' : 'Download')
-        : id === 'clear-cache' ? (russian ? 'Очистить кэш' : 'Clear cache')
-          : (russian ? 'Удалить' : 'Delete')
-      const title = id === 'download' ? (russian ? 'Загрузить мод в локальный кэш' : 'Download this mod to the local cache')
-        : id === 'clear-cache' ? (russian ? 'Удалить локальную кэшированную копию' : 'Remove the local cached copy')
-          : (russian ? 'Удалить публикацию из Battle.net' : 'Delete this publication from Battle.net')
-      const confirm = id === 'delete-publication'
-        ? (russian ? 'Удалить эту публикацию из Battle.net? Локальные кэшированные копии могут остаться.'
-          : 'Delete this publication from Battle.net? Local cached copies may remain.')
-        : undefined
+      const text =
+        id === 'download'
+          ? russian
+            ? 'Загрузить'
+            : 'Download'
+          : id === 'clear-cache'
+            ? russian
+              ? 'Очистить кэш'
+              : 'Clear cache'
+            : russian
+              ? 'Удалить'
+              : 'Delete'
+      const title =
+        id === 'download'
+          ? russian
+            ? 'Загрузить мод в локальный кэш'
+            : 'Download this mod to the local cache'
+          : id === 'clear-cache'
+            ? russian
+              ? 'Удалить локальную кэшированную копию'
+              : 'Remove the local cached copy'
+            : russian
+              ? 'Удалить публикацию из Battle.net'
+              : 'Delete this publication from Battle.net'
+      const confirm =
+        id === 'delete-publication'
+          ? russian
+            ? 'Удалить эту публикацию из Battle.net? Локальные кэшированные копии могут остаться.'
+            : 'Delete this publication from Battle.net? Local cached copies may remain.'
+          : undefined
       return { id, label: text, title, ...(confirm === undefined ? {} : { confirm }) }
     }
-    return { label: root.label,
+    return {
+      label: root.label,
       async list(entryId) {
         if (!sourceBridge) throw new Error('Content source bridge is unavailable')
-        const path = entryId ? decodeURIComponent(new URL(entryId).pathname).slice(1).split('/').slice(1).join('/') : ''
-        const entries = await sourceBridge.call('list', [root.id, path]) as readonly {
-          path: string; name: string; directory: boolean; size?: number
+        const path = entryId
+          ? decodeURIComponent(new URL(entryId).pathname).slice(1).split('/').slice(1).join('/')
+          : ''
+        const entries = (await sourceBridge.call('list', [root.id, path])) as readonly {
+          path: string
+          name: string
+          directory: boolean
+          size?: number
           actions?: readonly { id: 'download' | 'clear-cache' | 'delete-publication' }[]
         }[]
-        return entries.map(item => ({ id: uri(item.path), name: item.name, directory: item.directory,
+        return entries.map(item => ({
+          id: uri(item.path),
+          name: item.name,
+          directory: item.directory,
           ...(item.size === undefined ? {} : { size: item.size }),
-          ...(item.actions === undefined ? {} : { actions: item.actions.map(item => action(item.id)) }) }))
+          ...(item.actions === undefined
+            ? {}
+            : { actions: item.actions.map(item => action(item.id)) }),
+        }))
       },
-      read: (id, maximum) => id.startsWith('modkit-source:') ? readRemoteSource(id, maximum) : accessFor('').read(id, maximum),
+      read: (id, maximum) =>
+        id.startsWith('modkit-source:')
+          ? readRemoteSource(id, maximum)
+          : accessFor('').read(id, maximum),
       async runAction(entryId, actionId) {
         if (!sourceBridge) throw new Error('Content source bridge is unavailable')
         const parsed = new URL(entryId)
@@ -998,8 +1070,12 @@ async function boot(): Promise<void> {
         const path = parts.join('/')
         if (!sourceId || !path) throw new Error('Select a published mod or map')
         if (actionId === 'delete-publication') {
-          const review = await sourceBridge.call('prepareDeletePublication', [sourceId, path]) as { id?: unknown }
-          if (typeof review.id !== 'string') throw new Error('The publication could not be verified for deletion')
+          const review = (await sourceBridge.call('prepareDeletePublication', [
+            sourceId,
+            path,
+          ])) as { id?: unknown }
+          if (typeof review.id !== 'string')
+            throw new Error('The publication could not be verified for deletion')
           await sourceBridge.call('deletePublication', [review.id])
         } else if (actionId === 'download') await sourceBridge.call('download', [sourceId, path])
         else if (actionId === 'clear-cache') await sourceBridge.call('clearCache', [sourceId, path])
@@ -1010,49 +1086,82 @@ async function boot(): Promise<void> {
   if (sourceBridge) {
     const button = document.createElement('button')
     button.type = 'button'
-    const russian = document.documentElement.lang.startsWith('ru') || navigator.language.startsWith('ru')
+    const russian =
+      document.documentElement.lang.startsWith('ru') || navigator.language.startsWith('ru')
     button.textContent = russian ? 'Источники…' : 'Sources…'
     const dialogs = createSourceDialogs(document)
     button.addEventListener('click', () => {
       button.disabled = true
-      void chooseContentSource({ ...dialogs, russian,
+      void chooseContentSource({
+        ...dialogs,
+        russian,
         call: (method, args) => sourceBridge.call(method, args),
-        async open(root) { access = remoteAccess(root); await explorer.setAccess(access) },
+        async open(root) {
+          access = remoteAccess(root)
+          await explorer.setAccess(access)
+        },
         async openLocal() {
-          const picked = await broker.request('dialog.open-directory', { requestId: crypto.randomUUID() }) as { canceled: boolean; root?: string }
+          const picked = (await broker.request('dialog.open-directory', {
+            requestId: crypto.randomUUID(),
+          })) as { canceled: boolean; root?: string }
           if (picked.canceled || !picked.root) return
           const opened = await subjectClient.open(picked.root)
           if (opened.state !== 'opened') {
-            access = accessFor(picked.root); await explorer.setAccess(access); return
+            access = accessFor(picked.root)
+            await explorer.setAccess(access)
+            return
           }
           let lease: Awaited<ReturnType<typeof opened.session.dataSource>> | undefined
           try {
             lease = await opened.session.dataSource('common.view/namespace-entry-source', 1)
             const source = lease.value as NamespaceEntrySource
             const operations = await opened.session.operations()
-            const offers = opened.snapshot.descriptor['operations'] as readonly { id?: string; state?: string; handlerId?: string }[] | undefined
-            const handler = offers?.find(item => item.id === 'container.extract' && item.state === 'available')?.handlerId
+            const offers = opened.snapshot.descriptor['operations'] as
+              readonly { id?: string; state?: string; handlerId?: string }[] | undefined
+            const handler = offers?.find(
+              item => item.id === 'container.extract' && item.state === 'available',
+            )?.handlerId
             if (!handler) throw new Error('This folder has no readable archive namespace')
-            const next = namespaceFileAccess({ label: basename(picked.root), parentSessionId: opened.snapshot.sessionId,
-              source, async read(entryId, _maximum, signal) {
+            const next = namespaceFileAccess({
+              label: basename(picked.root),
+              parentSessionId: opened.snapshot.sessionId,
+              source,
+              async read(entryId, _maximum, signal) {
                 signal?.throwIfAborted()
                 const result = await operations.invoke(handler, { entryId } as never)
-                if (result.state !== 'ok' || result.output.kind !== 'bytes') throw new Error('Cannot extract this namespace entry')
+                if (result.state !== 'ok' || result.output.kind !== 'bytes')
+                  throw new Error('Cannot extract this namespace entry')
                 return result.output.value
-              } })
+              },
+            })
             await explorer.setAccess(next)
             access = next
-            localSourceAccess.set(`modkit-container:${encodeURIComponent(opened.snapshot.sessionId)}?entryId=`, next)
+            localSourceAccess.set(
+              `modkit-container:${encodeURIComponent(opened.snapshot.sessionId)}?entryId=`,
+              next,
+            )
             const retainedLease = lease
-            window.addEventListener('beforeunload', () => {
-              void (retainedLease as { release?: () => Promise<void> })?.release?.(); void opened.session.dispose()
-            }, { once: true })
+            window.addEventListener(
+              'beforeunload',
+              () => {
+                void (retainedLease as { release?: () => Promise<void> })?.release?.()
+                void opened.session.dispose()
+              },
+              { once: true },
+            )
           } catch (error) {
-            await (lease as { release?: () => Promise<void> })?.release?.(); await opened.session.dispose(); throw error
+            await (lease as { release?: () => Promise<void> })?.release?.()
+            await opened.session.dispose()
+            throw error
           }
         },
-      }).catch(error => setFooter('', error instanceof Error ? error.message : 'Content source failed', true))
-        .finally(() => { button.disabled = false })
+      })
+        .catch(error =>
+          setFooter('', error instanceof Error ? error.message : 'Content source failed', true),
+        )
+        .finally(() => {
+          button.disabled = false
+        })
     })
     explorer.root.querySelector('[data-mk-part="explorer.sidebar"]')?.prepend(button)
   }

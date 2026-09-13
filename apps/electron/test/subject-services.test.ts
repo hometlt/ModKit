@@ -39,7 +39,8 @@ describe('Electron host-owned subject services', () => {
         extension => `${extension.manifest.publisher}/${extension.manifest.id}`,
       ),
     ).toEqual(['modkit/code', 'modkit/core-native-text', 'modkit/scene', 'modkit/uv'])
-    expect(services.supportedExtensions).toEqual(['json', 'jsonc', 'txt'])
+    // Core also owns the source-free world interchange routed through the same worker profile.
+    expect(services.supportedExtensions).toEqual(['json', 'jsonc', 'txt', 'uvw', 'uvw.json'])
     expect(services.executionProfiles).toEqual(['trusted-in-process', 'worker-brokered'])
     expect(services.application.workers.profile.realmId).toBe(ELECTRON_WORKER_REALM)
     expect(services.application.workers.target.environment).toBe('node-worker')
@@ -78,7 +79,7 @@ describe('Electron host-owned subject services', () => {
       },
       { sourceBytes: BigInt(new TextEncoder().encode('{"ready":true}').byteLength) },
     )
-    expect(presentation).toMatchObject({ activeStage: 'code', alternateStages: ['tree'] })
+    expect(presentation).toMatchObject({ activeStage: 'code', alternateStages: ['card'] })
     const tree = await result.session.dataSource('common.view/tree-data-source', 1)
     await expect(tree.value.root()).resolves.toMatchObject({ id: 'root', hasChildren: true })
     await tree.release()

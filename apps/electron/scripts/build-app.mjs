@@ -239,9 +239,10 @@ execFileSync(process.execPath, [typescriptCli, '--project', join(appRoot, 'tscon
 rmSync(dist, { recursive: true, force: true })
 mkdirSync(dist, { recursive: true })
 
+const rendererOutput = join(dist, 'renderer.js')
 const rendererBuild = await build({
   entryPoints: [join(appRoot, 'src', 'renderer.ts')],
-  outfile: join(dist, 'renderer.js'),
+  outfile: rendererOutput,
   bundle: true,
   format: 'esm',
   platform: 'browser',
@@ -253,6 +254,14 @@ const rendererBuild = await build({
   metafile: true,
   logLevel: 'warning',
 })
+// Some upstream source comments contain indentation tabs after spaces. Keep the reproducible,
+// checked-in bundle free of line-end whitespace without reformatting third-party code.
+writeFileSync(
+  rendererOutput,
+  readFileSync(rendererOutput, 'utf8')
+    .replace(/[ \t]+(?=\r?$)/gmu, '')
+    .replace(/^[ \t]+/gmu, indent => indent.replaceAll('\t', '  ')),
+)
 
 const codecInputs = Object.keys(rendererBuild.metafile.inputs).filter(input =>
   /(?:^|\/)extensions\/.*\/src\/(?:codecs|families|formats)\//u.test(input.replaceAll('\\', '/')),

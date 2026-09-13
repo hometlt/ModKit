@@ -650,6 +650,9 @@ async function createWindow() {
         diagnostics: [...nested.result.diagnostics, ...diagnostics],
       },
       session: trackSession(sessionId, nested.result.session, selectedRoute),
+      ...(nested.result.rasterResources === undefined
+        ? {}
+        : { rasterResources: nested.result.rasterResources }),
     }
   }
 
@@ -1006,6 +1009,9 @@ async function createWindow() {
         diagnostics: [...opened.diagnostics, ...editingDiagnostics],
       },
       session: trackSession(sessionId, opened.session, selectedRoute),
+      ...(opened.rasterResources === undefined
+        ? {}
+        : { rasterResources: opened.rasterResources }),
     }
   }
 

@@ -78,6 +78,11 @@ describe('Electron composition security', () => {
     expect(preloadSource).toContain("list: () => ipcRenderer.invoke('modkit.command.list')")
     expect(preloadSource).toContain("run: request => ipcRenderer.invoke('modkit.command.run'")
   })
+
+  it('retains subject-bound raster decoding for root and nested model sessions', () => {
+    expect(mainSource).toContain('{ rasterResources: opened.rasterResources }')
+    expect(mainSource).toContain('{ rasterResources: nested.result.rasterResources }')
+  })
 })
 
 const SEPARATOR = String.fromCharCode(92)

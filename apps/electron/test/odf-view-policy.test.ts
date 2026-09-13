@@ -160,8 +160,9 @@ describe('block 11 exit gate: the ODF quartet reaches its viewer by contract, no
     )
 
     expect(opened.selected.contributionId).toBe('modkit/odt')
-    expect(plan).toMatchObject({ activeStage: 'code', alternateStages: ['tree'] })
-    expect(plan.slots.map(slot => slot.slotId)).toEqual(['code', 'tree'])
+    // The plan keeps one center-stage candidate; the picker independently exposes the tree below.
+    expect(plan).toMatchObject({ activeStage: 'code', alternateStages: ['card'] })
+    expect(plan.slots.map(slot => slot.slotId)).toEqual(['code', 'card'])
     await opened.session.dispose()
   }, 120_000)
 
