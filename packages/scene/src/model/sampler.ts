@@ -22,6 +22,7 @@ import {
   createModelPoseBlendSampler,
   snapshotModelSkeleton,
 } from '@modkit/codec-kit/model/skeleton'
+import { createModelAnimationSampler } from '@modkit/codec-kit/model/animation'
 import type { ModelBonePoseSample, ModelPoseBlendSample } from '@modkit/codec-kit/model/skeleton'
 import { createModelSkinDeformer } from '@modkit/codec-kit/model/skinning'
 import { modelPrimitiveByteLength } from '@modkit/codec-kit/model/geometry'
@@ -218,13 +219,17 @@ export function createModelSceneSampler(
   const poseBlendBytes = poseSamples === undefined ? 0 : Math.floor(maxBytes / 2)
   const poseSamplers = new Map<string, ReturnType<typeof createModelPoseSampler>>()
   const hierarchyFrames = new Map<string, Float32Array>()
-  const bindingByNode = new Map(
-    bindings.flatMap(bone => (bone.nodeId ? [[bone.nodeId, bone] as const] : [])),
-  )
+  const bindingsByNode = new Map<string, ModelBoneBinding[]>()
+  for (const bone of bindings)
+    if (bone.nodeId) {
+      const entries = bindingsByNode.get(bone.nodeId) ?? []
+      entries.push(bone)
+      bindingsByNode.set(bone.nodeId, entries)
+    }
   const nodePoses = projection.nodePoses ?? []
   const poseNodeIds = new Set(nodePoses.map(node => node.nodeId))
   for (const id of poseNodeIds)
-    if (!nodes.has(id) || bindingByNode.has(id))
+    if (!nodes.has(id) || bindingsByNode.has(id))
       throw new TypeError('scene node pose is absent or overlaps a skin binding')
   if (poseSamples !== undefined) {
     if (hierarchyBindings.size === 0 && nodePoses.length === 0)
@@ -233,7 +238,7 @@ export function createModelSceneSampler(
       for (const channel of sample.clip.channels)
         if (
           ['translation', 'rotation', 'scale'].includes(channel.kind) &&
-          !bindingByNode.has(channel.target) &&
+          !bindingsByNode.has(channel.target) &&
           !poseNodeIds.has(channel.target)
         )
           throw new TypeError('pose sample target has no explicit bone binding')
@@ -257,13 +262,17 @@ export function createModelSceneSampler(
   const trs =
     clip?.channels.filter(channel => ['translation', 'rotation', 'scale'].includes(channel.kind)) ??
     []
-  if ((clip?.channels.length ?? 0) > trs.length || (clip?.unsupportedChannels ?? 0) > 0)
+  const visibility = clip?.channels.filter(channel => channel.kind === 'visibility') ?? []
+  if (
+    (clip?.channels.length ?? 0) > trs.length + visibility.length ||
+    (clip?.unsupportedChannels ?? 0) > 0
+  )
     report(
       'animation-channels-unrendered',
-      'Some animation channels are not bone TRS; their effects are not rendered.',
+      'Some animation channels are not bone TRS or primitive visibility; their effects are not rendered.',
     )
   for (const channel of trs)
-    if (!bindingByNode.has(channel.target) && !poseNodeIds.has(channel.target))
+    if (!bindingsByNode.has(channel.target) && !poseNodeIds.has(channel.target))
       report(
         'animation-target-unrendered',
         `Animation target ${channel.target} has no explicit bone binding.`,
@@ -283,18 +292,24 @@ export function createModelSceneSampler(
             throw new TypeError('skin roots need the same external frame')
           frame = rootFrame
           while (parent !== undefined) {
-            if (bindingByNode.has(parent))
+            if (bindingsByNode.get(parent)?.some(item => item.hierarchyId === hierarchyId))
               throw new TypeError('skin root has an external bone ancestor')
             parent = parents.get(parent)
           }
         } else {
-          while (parent !== undefined && !bindingByNode.has(parent)) {
+          while (
+            parent !== undefined &&
+            !bindingsByNode.get(parent)?.some(item => item.hierarchyId === hierarchyId)
+          ) {
             const node = nodes.get(parent)
             if (node === undefined || !node.transform.every((value, i) => value === IDENTITY[i]))
               throw new TypeError('transformed node between bones needs pose rebasing')
             parent = parents.get(parent)
           }
-          const parentBinding = parent === undefined ? undefined : bindingByNode.get(parent)
+          const parentBinding =
+            parent === undefined
+              ? undefined
+              : bindingsByNode.get(parent)?.find(item => item.hierarchyId === hierarchyId)
           if (
             parentBinding?.hierarchyId !== hierarchyId ||
             parentBinding.boneIndex !== bone.parentBoneIndex
@@ -412,6 +427,28 @@ export function createModelSceneSampler(
       )
     }
   }
+  let visibilitySampler: ReturnType<typeof createModelAnimationSampler> | undefined
+  if (visibility.length > 0) {
+    for (const channel of visibility)
+      if (!primitiveIds.has(channel.target))
+        report(
+          'animation-target-unrendered',
+          `Visibility target ${channel.target} is not an exact scene primitive id.`,
+        )
+    try {
+      visibilitySampler = createModelAnimationSampler(
+        { ...present(clip, 'visibility clip'), channels: visibility },
+        { ...budget, maxBytes: Math.floor(maxBytes / 4) },
+        signal,
+      )
+    } catch (error) {
+      if (signal?.aborted || error instanceof RangeError) throw error
+      report(
+        'visibility-unavailable',
+        `Primitive visibility is not sampleable: ${error instanceof Error ? error.message : String(error)}`,
+      )
+    }
+  }
   return Object.freeze({
     diagnostics: Object.freeze(diagnostics),
     sample(timeSeconds: number, requestSignal?: AbortSignal) {
@@ -419,6 +456,10 @@ export function createModelSceneSampler(
       if (requestSignal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
       const poses = new Map<string, readonly ModelBonePoseSample[]>()
       const animatedWorlds = new Map<string, Float32Array>()
+      const hiddenPrimitives = new Set<string>()
+      for (const value of visibilitySampler?.sample(timeSeconds, requestSignal) ?? [])
+        if (primitiveIds.has(value.target) && (value.value[0] ?? 0) <= 0)
+          hiddenPrimitives.add(value.target)
       const localPoses = nodeSampler?.sample(timeSeconds, requestSignal)
       const faceBillboards = new Map(
         billboards.flatMap(item => item.mode === 'face-camera' ? [[item.nodeId, item] as const] : []),
@@ -491,6 +532,7 @@ export function createModelSceneSampler(
         }
       const primitives: SceneRendererPrimitive[] = []
       for (const primitive of projection.primitives) {
+        if (hiddenPrimitives.has(primitive.id)) continue
         const deformer = deformers.get(primitive)
         if (deformer !== undefined) {
           // Bone world × inverse bind produces geometry in the hierarchy's authored frame.

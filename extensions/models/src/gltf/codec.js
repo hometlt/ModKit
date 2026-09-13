@@ -1,5 +1,6 @@
 import {
   createInspectionCodec,
+  createModelResourceRefsSource,
   createModelSceneSource,
   editPlanFromInput,
   replaceBytes,
@@ -11,6 +12,13 @@ import { sha256Hex } from '@modkit/codec-kit/crypto/digest'
 import { decodeEmbeddedGltfBuffers, decodeGltfGeometry } from './geometry.js'
 
 const decoder = new TextDecoder('utf-8', { fatal: true })
+const SUPPORTED_REQUIRED_EXTENSIONS = new Set(['KHR_materials_unlit'])
+const RESOURCE_SCOPES = Object.freeze([
+  'sibling-directory',
+  'current-mount',
+  'enclosing-container',
+  'workspace-dependency-layer',
+])
 
 function looksLikeGltf(bytes) {
   if (
@@ -49,15 +57,28 @@ function parseGlb(bytes, budget) {
   let offset = 12
   let jsonBytes
   const binaryChunks = []
+  const unknownChunks = []
+  let chunkIndex = 0
   while (offset < bytes.byteLength) {
     const length = u32(bytes, offset)
     const type = u32(bytes, offset + 4)
     const end = offset + 8 + length
     if (length % 4 !== 0 || end > bytes.byteLength) throw new TypeError('GLB chunk is invalid')
     const payload = bytes.subarray(offset + 8, end)
-    if (type === 0x4e4f534a && jsonBytes === undefined) jsonBytes = payload
-    else if (type === 0x004e4942) binaryChunks.push(payload)
+    if (chunkIndex === 0 && type !== 0x4e4f534a) {
+      throw new TypeError('GLB JSON chunk must be first')
+    }
+    if (type === 0x4e4f534a) {
+      if (jsonBytes !== undefined) throw new TypeError('GLB contains multiple JSON chunks')
+      jsonBytes = payload
+    } else if (type === 0x004e4942) {
+      if (binaryChunks.length > 0) throw new TypeError('GLB contains multiple BIN chunks')
+      binaryChunks.push(payload)
+    } else {
+      unknownChunks.push(type)
+    }
     offset = end
+    chunkIndex += 1
   }
   if (jsonBytes === undefined) throw new TypeError('GLB JSON chunk is missing')
   const parsed = parseGltf(decoder.decode(jsonBytes).trimEnd(), budget)
@@ -98,6 +119,7 @@ function parseGlb(bytes, budget) {
       externalUris: Object.freeze(externalUris),
       bytes: decodedBytes,
     }),
+    unknownChunks: Object.freeze(unknownChunks),
   })
 }
 
@@ -149,6 +171,15 @@ function parseGltf(text, budget) {
   if (typeof version !== 'string' || !/^2(?:\.\d+)?$/u.test(version)) {
     throw new TypeError('only glTF 2.x documents are supported')
   }
+  const requiredExtensions = array(document, 'extensionsRequired')
+  for (const extension of requiredExtensions) {
+    if (typeof extension !== 'string') {
+      throw new TypeError('glTF extensionsRequired entries must be strings')
+    }
+    if (!SUPPORTED_REQUIRED_EXTENSIONS.has(extension)) {
+      throw new TypeError(`glTF required extension ${extension} is unsupported`)
+    }
+  }
   const nodes = array(document, 'nodes')
   for (const node of nodes) {
     if (node === null || typeof node !== 'object' || Array.isArray(node))
@@ -165,6 +196,67 @@ function parseGltf(text, budget) {
     document,
     nodes: boundedJson(document, budget),
     externalUris: Object.freeze(externalUris),
+  })
+}
+
+async function resolveExternalGltfBuffers(document, decoded, context) {
+  const buffers = array(document, 'buffers')
+  const pending = []
+  for (const [index, buffer] of buffers.entries()) {
+    if (
+      decoded.buffers[index] === undefined &&
+      typeof buffer?.uri === 'string' &&
+      !buffer.uri.startsWith('data:') &&
+      Number.isSafeInteger(buffer.byteLength) &&
+      buffer.byteLength >= 0
+    ) {
+      pending.push({ index, uri: buffer.uri, byteLength: buffer.byteLength })
+    }
+  }
+  if (pending.length === 0 || context.logicalResources === undefined) return decoded
+  const maximum =
+    context.budget.maxInputBytes < BigInt(context.budget.maxScalarBytes)
+      ? context.budget.maxInputBytes
+      : BigInt(context.budget.maxScalarBytes)
+  const batch = await context.logicalResources.readBatch(
+    {
+      items: pending.map(item => ({
+        requirement: {
+          id: `gltf-buffer-${item.index}`,
+          logicalId: item.uri,
+          role: 'buffer',
+          scopes: RESOURCE_SCOPES,
+        },
+        size: BigInt(item.byteLength),
+      })),
+      concurrency: Math.min(4, pending.length),
+      readTimeoutMs: 8_000,
+      totalTimeoutMs: 10_000,
+      maxBytes: maximum,
+    },
+    context.signal,
+  )
+  if (batch.state !== 'complete') return decoded
+  const resolvedBuffers = [...decoded.buffers]
+  let decodedBytes = decoded.bytes
+  const unresolved = new Set(decoded.externalUris)
+  for (const [position, item] of pending.entries()) {
+    const outcome = batch.items[position]
+    if (outcome?.state !== 'read') continue
+    if (outcome.bytes.byteLength < item.byteLength) {
+      throw new RangeError(`glTF external buffer ${item.index} is shorter than byteLength`)
+    }
+    resolvedBuffers[item.index] = outcome.bytes.subarray(0, item.byteLength)
+    decodedBytes += item.byteLength
+    if (decodedBytes > context.budget.maxScalarBytes) {
+      throw new RangeError('glTF buffers exceed maxScalarBytes budget')
+    }
+    unresolved.delete(item.uri)
+  }
+  return Object.freeze({
+    buffers: Object.freeze(resolvedBuffers),
+    externalUris: Object.freeze([...unresolved]),
+    bytes: decodedBytes,
   })
 }
 
@@ -747,11 +839,23 @@ const definition = Object.freeze({
     const skins = array(document, 'skins')
     const buffers = array(document, 'buffers')
     const images = array(document, 'images')
+    const externalImages = images.flatMap(image =>
+      typeof image?.uri === 'string' && !image.uri.startsWith('data:')
+        ? [
+            Object.freeze({
+              id: image.uri,
+              role: 'texture',
+              provenance: 'reference-only',
+            }),
+          ]
+        : [],
+    )
     const primitiveCount = meshes.reduce(
       (total, mesh) => total + (Array.isArray(mesh?.primitives) ? mesh.primitives.length : 0),
       0,
     )
-    const decoded = gltf.decoded ?? decodeEmbeddedGltfBuffers(document, context.budget)
+    const embedded = gltf.decoded ?? decodeEmbeddedGltfBuffers(document, context.budget)
+    const decoded = await resolveExternalGltfBuffers(document, embedded, context)
     const geometry =
       decoded.externalUris.length === 0
         ? decodeGltfGeometry(document, decoded.buffers, context.budget, decoded.bytes)
@@ -818,6 +922,7 @@ const definition = Object.freeze({
         buffers: buffers.length,
         images: images.length,
         externalUris: gltf.externalUris,
+        unknownGlbChunks: gltf.unknownChunks ?? [],
       },
       metadata: [
         {
@@ -835,6 +940,7 @@ const definition = Object.freeze({
             { key: 'animations', value: animations.length },
             { key: 'skins', value: skins.length },
             { key: 'externalResources', value: gltf.externalUris.length },
+            { key: 'unknownGlbChunks', value: gltf.unknownChunks?.length ?? 0 },
           ],
         },
       ],
@@ -878,13 +984,20 @@ const definition = Object.freeze({
         'common.view/model-scene-source': model,
         'common.view/relation-graph-source': relations,
         'common.view/subject-facts-source': subjectFacts,
+        ...(externalImages.length === 0
+          ? {}
+          : {
+              'common.view/model-resource-refs-source': createModelResourceRefsSource({
+                references: externalImages,
+              }),
+            }),
       },
       handlers: {
         'set-gltf-field': editHandler(bytes, gltf, context, fieldEdits),
         'edit-gltf-document': editHandler(bytes, gltf, context, documentEdits),
       },
       unsupportedFeatures: [
-        ...(gltf.externalUris.length > 0 ? ['external-resource-resolution'] : []),
+        ...(decoded.externalUris.length > 0 ? ['external-buffer-resolution'] : []),
         ...(geometry === undefined ? ['decoded-geometry'] : []),
         'sparse-accessors',
         'draco-compression',

@@ -11,16 +11,7 @@
       "variantId": "trusted-node",
       "entrypoint": "./dist/render/headless.js",
       "target": {
-        "environments": ["node"]
-      },
-      "executionProfile": "trusted-in-process",
-      "requestedPermissionClasses": []
-    },
-    {
-      "variantId": "trusted-portable",
-      "entrypoint": "./dist/render/headless.js",
-      "target": {
-        "environments": ["browser-worker", "node-worker"]
+        "environments": ["node", "node-worker"]
       },
       "executionProfile": "trusted-in-process",
       "requestedPermissionClasses": []

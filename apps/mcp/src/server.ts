@@ -91,8 +91,8 @@ const languageInput = z
       .strict()
       .optional(),
     range: languageRangeSchema.optional(),
-    maxResults: z.number().int().min(1).max(10_000).default(1_000),
-    maxEdits: z.number().int().min(1).max(50_000).default(10_000),
+    maxResults: z.number().int().min(1).max(2_048).default(1_000),
+    maxEdits: z.number().int().min(1).max(4_096).default(1_024),
   })
   .strict()
 

@@ -18,8 +18,26 @@ import type { UvmModelParticleDraw } from './effect-particles.js'
 import type { UvmRenderOptions, PreparedUvmRender } from './render.js'
 
 export type ModelParticleInstance = UvmModelParticleDraw & { readonly transform: readonly number[] }
-const multiply = (a: ArrayLike<number>, b: ArrayLike<number>) =>
+const multiplyAffine = (a: ArrayLike<number>, b: ArrayLike<number>) =>
   Float32Array.from(multiplyMaterialFrames(Array.from(a), Array.from(b)))
+
+/** Column-major product for camera projection chains. Unlike material frames, the left operand
+ * may be projective; inputs and the float32 result are still bounded before publication. */
+const multiplyMatrix4 = (a: ArrayLike<number>, b: ArrayLike<number>) => {
+  if (a.length !== 16 || b.length !== 16)
+    throw new TypeError('model particle camera matrices must contain 16 components')
+  const output = new Float32Array(16)
+  for (let column = 0; column < 4; column++)
+    for (let row = 0; row < 4; row++) {
+      let value = 0
+      for (let index = 0; index < 4; index++)
+        value += (a[index * 4 + row] ?? Number.NaN) * (b[column * 4 + index] ?? Number.NaN)
+      if (!Number.isFinite(value) || !Number.isFinite(Math.fround(value)))
+        throw new RangeError('model particle camera matrix exceeds float32')
+      output[column * 4 + row] = value
+    }
+  return output
+}
 
 /** Pinned callback basis/size in simulation coordinates, followed by its common world frame. */
 export function modelParticleMatrix(instance: ModelParticleInstance): Float32Array {
@@ -55,7 +73,7 @@ export function modelParticleMatrix(instance: ModelParticleInstance): Float32Arr
       1,
     ])
   }
-  const matrix = multiply(instance.transform, local)
+  const matrix = multiplyAffine(instance.transform, local)
   if (!matrix.every(Number.isFinite))
     throw new RangeError('model particle matrix exceeds finite range')
   return matrix
@@ -170,10 +188,10 @@ export async function composeModelParticles(
           : undefined)
       const matrix = modelParticleMatrix(instance)
       const camera = {
-        viewProjection: Array.from(multiply(parent.camera.viewProjection, matrix)),
+        viewProjection: Array.from(multiplyMatrix4(parent.camera.viewProjection, matrix)),
         ...(parent.camera.viewMatrix === undefined
           ? {}
-          : { viewMatrix: Array.from(multiply(parent.camera.viewMatrix, matrix)) }),
+          : { viewMatrix: Array.from(multiplyAffine(parent.camera.viewMatrix, matrix)) }),
       }
       const eye = parent.camera.eyePosition
       const childEye =
@@ -248,7 +266,7 @@ export async function composeModelParticles(
           ...(primitive.materialId === undefined
             ? {}
             : { materialId: materialId(primitive.materialId) }),
-          transform: multiply(matrix, primitive.transform ?? IDENTITY_MATERIAL_FRAME),
+          transform: multiplyAffine(matrix, primitive.transform ?? IDENTITY_MATERIAL_FRAME),
           tint: instance.color.map(
             (component, axis) => component * (primitive.tint?.[axis] ?? 1),
           ) as [number, number, number, number],

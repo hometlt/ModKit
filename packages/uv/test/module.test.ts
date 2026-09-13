@@ -12,7 +12,9 @@ describe('@modkit/uv built-in module', () => {
     expect(uvModule.input.source).toBe('builtin:modkit/uv')
     expect(uvModule.excluded).toEqual([])
 
-    const identifiers = [...uvModule.input.documents.values()].map(document => document.id).sort()
+    const identifiers = [...uvModule.input.documents.values()]
+      .map(document => (document as { readonly id: string }).id)
+      .sort()
     expect(identifiers).toEqual([
       'modkit/uv-model-materializer-contract',
       'modkit/uv-texture-materializer-contract',
@@ -20,8 +22,9 @@ describe('@modkit/uv built-in module', () => {
       'modkit/uvm-writer',
       'modkit/uvt-materializer',
       'modkit/uvt-writer',
+      'modkit/world-uvw',
     ])
-    expect(uvModule.moduleEntries).toHaveLength(4)
+    expect(uvModule.moduleEntries).toHaveLength(5)
   })
 
   it('keeps the public package entry and focused subpaths on the same implementations', () => {

@@ -7,7 +7,10 @@
   "additionalProperties": false,
   "required": ["uv", "spaces", "connections"],
   "properties": {
-    "$comment": { "description": "Free commentary; never semantic.", "type": "string" },
+    "$comment": {
+      "description": "Free commentary; never semantic.",
+      "type": "string"
+    },
     "uv": {
       "type": "object",
       "additionalProperties": false,
@@ -37,7 +40,9 @@
       "required": ["id", "topology"],
       "properties": {
         "id": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
-        "topology": { "enum": ["heightfield", "tile-grid", "node-graph", "volume"] },
+        "topology": {
+          "enum": ["heightfield", "tile-grid", "node-graph", "volume"]
+        },
         "label": { "type": "string" }
       },
       "oneOf": [{ "$ref": "#/$defs/heightfieldSpace" }]
@@ -83,7 +88,10 @@
       },
       "allOf": [
         {
-          "if": { "properties": { "unit": { "const": "source-unit" } }, "required": ["unit"] },
+          "if": {
+            "properties": { "unit": { "const": "source-unit" } },
+            "required": ["unit"]
+          },
           "then": {
             "required": ["sourceUnit"],
             "not": { "required": ["metersPerUnit"] }
@@ -103,31 +111,47 @@
       "properties": {
         "id": { "type": "string", "minLength": 1 },
         "kind": {
-          "$comment": "heightfield is defined; the rest are reserved names, unchanged from the candidate.",
+          "$comment": "Profile-v1 layer families. Every non-heightfield body carries schemaVersion 1.",
           "enum": [
             "heightfield",
-            "grid",
-            "mesh",
-            "raster",
-            "vector",
+            "terrain-materials",
+            "cliffs",
+            "water",
             "objects",
+            "resources",
             "regions",
-            "navigation"
+            "navigation",
+            "gateways",
+            "lighting"
           ]
         },
         "label": { "type": "string" }
       },
-      "allOf": [
-        {
-          "if": { "properties": { "kind": { "const": "heightfield" } }, "required": ["kind"] },
-          "then": { "$ref": "#/$defs/heightfieldLayer" }
-        }
+      "oneOf": [
+        { "$ref": "#/$defs/heightfieldLayer" },
+        { "$ref": "#/$defs/terrainMaterialsLayer" },
+        { "$ref": "#/$defs/cliffsLayer" },
+        { "$ref": "#/$defs/waterLayer" },
+        { "$ref": "#/$defs/objectsLayer" },
+        { "$ref": "#/$defs/resourcesLayer" },
+        { "$ref": "#/$defs/regionsLayer" },
+        { "$ref": "#/$defs/navigationLayer" },
+        { "$ref": "#/$defs/gatewaysLayer" },
+        { "$ref": "#/$defs/lightingLayer" }
       ]
     },
     "heightfieldLayer": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["id", "kind", "columns", "rows", "cellSize", "origin", "samples"],
+      "required": [
+        "id",
+        "kind",
+        "columns",
+        "rows",
+        "cellSize",
+        "origin",
+        "samples"
+      ],
       "properties": {
         "id": { "type": "string", "minLength": 1 },
         "kind": { "const": "heightfield" },
@@ -146,6 +170,509 @@
             "minItems": 2,
             "items": { "type": "number" }
           }
+        }
+      }
+    },
+    "vec2": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": { "type": "number" }
+    },
+    "vec4": {
+      "type": "array",
+      "minItems": 4,
+      "maxItems": 4,
+      "items": { "type": "number" }
+    },
+    "uvScale": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "anyOf": [
+          { "type": "number", "exclusiveMaximum": 0 },
+          { "type": "number", "exclusiveMinimum": 0 }
+        ]
+      }
+    },
+    "localId": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$" },
+    "numberGrid": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "array",
+        "minItems": 1,
+        "items": { "type": "number" }
+      }
+    },
+    "integerGrid": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "array",
+        "minItems": 1,
+        "items": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "booleanGrid": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "array",
+        "minItems": 1,
+        "items": { "type": "boolean" }
+      }
+    },
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "uri"],
+      "properties": {
+        "id": { "$ref": "#/$defs/localId" },
+        "kind": { "enum": ["uvm", "media"] },
+        "uri": { "type": "string", "minLength": 1 },
+        "digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      }
+    },
+    "resourcesLayer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "id", "kind", "resources"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "id": { "$ref": "#/$defs/localId" },
+        "kind": { "const": "resources" },
+        "label": { "type": "string" },
+        "resources": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/resource" }
+        }
+      }
+    },
+    "uvTransform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["offset", "scale", "rotation"],
+      "properties": {
+        "offset": { "$ref": "#/$defs/vec2" },
+        "scale": { "$ref": "#/$defs/uvScale" },
+        "rotation": { "type": "number" }
+      }
+    },
+    "terrainMaterial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "properties": {
+        "id": { "$ref": "#/$defs/localId" },
+        "label": { "type": "string" },
+        "classification": { "type": "string" },
+        "sourceIndex": { "type": "integer", "minimum": 0 },
+        "baseColorResourceId": { "$ref": "#/$defs/localId" },
+        "normalResourceId": { "$ref": "#/$defs/localId" },
+        "specularResourceId": { "$ref": "#/$defs/localId" },
+        "uvTransform": { "$ref": "#/$defs/uvTransform" }
+      }
+    },
+    "materialWeight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["materialId", "weight"],
+      "properties": {
+        "materialId": { "$ref": "#/$defs/localId" },
+        "weight": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 }
+      }
+    },
+    "materialWeightGrid": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "array",
+        "minItems": 2,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["weights"],
+          "properties": {
+            "weights": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "$ref": "#/$defs/materialWeight" }
+            },
+            "uvTransform": { "$ref": "#/$defs/uvTransform" }
+          }
+        }
+      }
+    },
+    "terrainWeightRaster": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "resourceId",
+        "width",
+        "height",
+        "materialIds",
+        "encoding",
+        "normalization"
+      ],
+      "properties": {
+        "resourceId": { "$ref": "#/$defs/localId" },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "materialIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/localId" }
+        },
+        "encoding": { "const": "rgba8-unorm" },
+        "normalization": { "const": "sum" }
+      }
+    },
+    "terrainMaterialsLayer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "id",
+        "kind",
+        "columns",
+        "rows",
+        "cellSize",
+        "origin",
+        "materials"
+      ],
+      "anyOf": [{ "required": ["samples"] }, { "required": ["weightRasters"] }],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "id": { "$ref": "#/$defs/localId" },
+        "kind": { "const": "terrain-materials" },
+        "label": { "type": "string" },
+        "columns": { "type": "integer", "minimum": 2 },
+        "rows": { "type": "integer", "minimum": 2 },
+        "cellSize": { "type": "number", "exclusiveMinimum": 0 },
+        "origin": { "$ref": "#/$defs/vec3" },
+        "materials": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/terrainMaterial" }
+        },
+        "samples": { "$ref": "#/$defs/materialWeightGrid" },
+        "weightRasters": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 2,
+          "items": { "$ref": "#/$defs/terrainWeightRaster" }
+        }
+      }
+    },
+    "cliffsLayer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "id",
+        "kind",
+        "columns",
+        "rows",
+        "cellSize",
+        "origin",
+        "levels",
+        "authored"
+      ],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "id": { "$ref": "#/$defs/localId" },
+        "kind": { "const": "cliffs" },
+        "label": { "type": "string" },
+        "columns": { "type": "integer", "minimum": 2 },
+        "rows": { "type": "integer", "minimum": 2 },
+        "cellSize": { "type": "number", "exclusiveMinimum": 0 },
+        "origin": { "$ref": "#/$defs/vec3" },
+        "levels": { "$ref": "#/$defs/integerGrid" },
+        "authored": { "$ref": "#/$defs/booleanGrid" }
+      }
+    },
+    "waterZone": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "minimum", "maximum", "elevation"],
+      "properties": {
+        "id": { "$ref": "#/$defs/localId" },
+        "minimum": { "$ref": "#/$defs/vec2" },
+        "maximum": { "$ref": "#/$defs/vec2" },
+        "elevation": { "type": "number" },
+        "materialId": { "$ref": "#/$defs/localId" }
+      }
+    },
+    "waterMaterial": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "color"],
+      "properties": {
+        "id": { "$ref": "#/$defs/localId" },
+        "label": { "type": "string" },
+        "classification": { "enum": ["water", "lava"] },
+        "shorelineMode": { "enum": ["terrain-clipped", "zone"] },
+        "color": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": { "type": "number", "minimum": 0, "maximum": 1 }
+        },
+        "baseColorResourceId": { "$ref": "#/$defs/localId" },
+        "secondaryColorResourceId": { "$ref": "#/$defs/localId" },
+        "uvScale": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {
+            "anyOf": [
+              { "type": "number", "exclusiveMaximum": 0 },
+              { "type": "number", "exclusiveMinimum": 0 }
+            ]
+          }
+        },
+        "scroll": { "$ref": "#/$defs/vec4" },
+        "colorFalloff": { "type": "number", "minimum": 0 },
+        "specularity": { "type": "number", "minimum": 0 },
+        "specularScale": { "type": "number", "minimum": 0 },
+        "reflectivityPower": { "type": "number", "exclusiveMinimum": 0 },
+        "causticsResourceId": { "$ref": "#/$defs/localId" },
+        "causticsScale": { "$ref": "#/$defs/uvScale" },
+        "causticsFramesPerSecond": { "type": "number", "minimum": 0 },
+        "receiveShadows": { "type": "boolean" }
+      }
+    },
+    "waterLayer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "id", "kind", "zones"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "id": { "$ref": "#/$defs/localId" },
+        "kind": { "const": "water" },
+        "label": { "type": "string" },
+        "materials": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/waterMaterial" }
+        },
+        "zones": { "type": "array", "items": { "$ref": "#/$defs/waterZone" } }
+      }
+    },
+    "modelComponent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "resourceId"],
+      "dependentRequired": {
+        "parentId": ["parentSocketId"],
+        "parentSocketId": ["parentId"]
+      },
+      "properties": {
+        "id": { "$ref": "#/$defs/localId" },
+        "resourceId": { "$ref": "#/$defs/localId" },
+        "parentId": { "$ref": "#/$defs/localId" },
+        "parentSocketId": { "$ref": "#/$defs/localId" },
+        "rotation": { "$ref": "#/$defs/vec4" }
+      }
+    },
+    "objectInstance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "objectKind",
+        "position",
+        "rotation",
+        "scale",
+        "resourceIds"
+      ],
+      "properties": {
+        "id": { "$ref": "#/$defs/localId" },
+        "objectKind": {
+          "enum": ["unit", "structure", "feature", "doodad", "point", "camera"]
+        },
+        "position": { "$ref": "#/$defs/vec3" },
+        "rotation": { "$ref": "#/$defs/vec4" },
+        "scale": { "$ref": "#/$defs/vec3" },
+        "resourceIds": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/localId" },
+          "uniqueItems": true
+        },
+        "modelComponents": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/modelComponent" }
+        },
+        "typeId": { "type": "string" },
+        "player": { "type": "integer" },
+        "variation": { "type": "integer", "minimum": 0 },
+        "name": { "type": "string" }
+      }
+    },
+    "objectsLayer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "id", "kind", "instances"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "id": { "$ref": "#/$defs/localId" },
+        "kind": { "const": "objects" },
+        "label": { "type": "string" },
+        "instances": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/objectInstance" }
+        }
+      }
+    },
+    "regionShape": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "center", "radius"],
+          "properties": {
+            "kind": { "const": "circle" },
+            "center": { "$ref": "#/$defs/vec2" },
+            "radius": { "type": "number", "exclusiveMinimum": 0 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "minimum", "maximum"],
+          "properties": {
+            "kind": { "const": "rectangle" },
+            "minimum": { "$ref": "#/$defs/vec2" },
+            "maximum": { "$ref": "#/$defs/vec2" }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "points"],
+          "properties": {
+            "kind": { "const": "polygon" },
+            "points": {
+              "type": "array",
+              "minItems": 3,
+              "items": { "$ref": "#/$defs/vec2" }
+            }
+          }
+        }
+      ]
+    },
+    "region": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "shapes"],
+      "properties": {
+        "id": { "$ref": "#/$defs/localId" },
+        "name": { "type": "string" },
+        "color": { "type": "string" },
+        "shapes": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/regionShape" }
+        }
+      }
+    },
+    "regionsLayer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "id", "kind", "regions"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "id": { "$ref": "#/$defs/localId" },
+        "kind": { "const": "regions" },
+        "label": { "type": "string" },
+        "regions": { "type": "array", "items": { "$ref": "#/$defs/region" } }
+      }
+    },
+    "navigationLayer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "id",
+        "kind",
+        "columns",
+        "rows",
+        "cellSize",
+        "origin",
+        "samples"
+      ],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "id": { "$ref": "#/$defs/localId" },
+        "kind": { "const": "navigation" },
+        "label": { "type": "string" },
+        "columns": { "type": "integer", "minimum": 1 },
+        "rows": { "type": "integer", "minimum": 1 },
+        "cellSize": { "type": "number", "exclusiveMinimum": 0 },
+        "origin": { "$ref": "#/$defs/vec3" },
+        "samples": { "$ref": "#/$defs/integerGrid" }
+      }
+    },
+    "gatewaySegment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "start", "end"],
+      "properties": {
+        "id": { "$ref": "#/$defs/localId" },
+        "start": { "$ref": "#/$defs/vec2" },
+        "end": { "$ref": "#/$defs/vec2" }
+      }
+    },
+    "gatewaysLayer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "id", "kind", "segments"],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "id": { "$ref": "#/$defs/localId" },
+        "kind": { "const": "gateways" },
+        "label": { "type": "string" },
+        "segments": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/gatewaySegment" }
+        }
+      }
+    },
+    "directionalLight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "direction", "color", "intensity"],
+      "properties": {
+        "id": { "$ref": "#/$defs/localId" },
+        "direction": { "$ref": "#/$defs/vec3" },
+        "color": { "$ref": "#/$defs/vec3" },
+        "intensity": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
+    "lightingLayer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "id",
+        "kind",
+        "ambientColor",
+        "ambientIntensity",
+        "directional"
+      ],
+      "properties": {
+        "schemaVersion": { "const": 1 },
+        "id": { "$ref": "#/$defs/localId" },
+        "kind": { "const": "lighting" },
+        "label": { "type": "string" },
+        "ambientColor": { "$ref": "#/$defs/vec3" },
+        "ambientIntensity": { "type": "number", "minimum": 0 },
+        "directional": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/directionalLight" }
         }
       }
     }

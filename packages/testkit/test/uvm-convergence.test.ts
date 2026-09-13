@@ -1069,6 +1069,8 @@ describe('UVM convergence through A-2 inventory and A-3 sessions', () => {
       {
         id: 'material-2',
         name: '',
+        alphaMode: 'mask' as const,
+        alphaCutoff: 0.375,
         shader: { id: 'example/custom.v3', parameters: { tint: [1, 0.5, 0] } },
       },
     ]
@@ -1091,6 +1093,10 @@ describe('UVM convergence through A-2 inventory and A-3 sessions', () => {
     const tools = await loadUvTools(repoRoot)
     tools.uvmCore.assertUvmCore(written.document)
     expect(written.document.materials).toHaveLength(3)
+    expect(required(required(written.document.materials)[2])).toMatchObject({
+      alphaMode: 'MASK',
+      alphaCutoff: 0.375,
+    })
     expect(written.document.extensionsUsed).toContain('UV_game_material')
     const reverseKeys = (value: unknown): unknown =>
       Array.isArray(value)

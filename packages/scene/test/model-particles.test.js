@@ -242,6 +242,51 @@ test('actual UVM child composition acquires once, samples ages, applies tint and
   )
 })
 
+test('nested model composition preserves a projective camera chain', async () => {
+  const bytes = child()
+  const models = {
+    async acquire() {
+      return {
+        value: {
+          result: { state: 'converted', bytes, sourceKey: 'child', diagnostics: [] },
+          acquire: models.acquire,
+          async readRaster() {
+            throw new Error('unexpected raster acquisition')
+          },
+        },
+        async release() {},
+      }
+    },
+  }
+  let captured
+  const contracts = {
+    async resolve() {
+      return {
+        value: {
+          async render(input) {
+            captured = input
+            return renderHeadless(input)
+          },
+        },
+        async release() {},
+      }
+    },
+  }
+  const perspective = [
+    1.8304877281188965, 0, 0, 0,
+    0, 1.1208505174682905e-16, -1.0100502967834473, -1,
+    0, -1.8304877281188965, -6.184774584542817e-17, -6.123234262925839e-17,
+    0, 0, -0.2010050266981125, 0,
+  ]
+  await renderUvm(
+    parent(),
+    { ...request, camera: { viewProjection: perspective, viewMatrix: identity } },
+    { budget, contracts, modelResources: models },
+  )
+  assert.deepEqual(captured.camera.viewProjection, Float32Array.from(perspective))
+  assert(captured.scene.primitives.some(x => x.id.startsWith('model-particle-')))
+})
+
 test('nested conversion refusal retains quads and cancellation releases already acquired resources', async () => {
   const controller = new AbortController()
   let released = 0

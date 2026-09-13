@@ -69,3 +69,29 @@ test('rigid node blending uses the same hierarchy and signed historical offset a
   invalid.nodePoses[0].nodeId = 'missing'
   assert.throws(() => createModelSceneSampler(invalid, { clip }), /absent or overlaps/)
 })
+test('primitive visibility channels hide only their exact portable target at the sampled time', () => {
+  const source = {
+    nodes: [{ ...node('root', []), meshIds: ['mesh'] }],
+    meshes: [{ id: 'mesh', primitiveIds: ['visible', 'animated'] }],
+    primitives: ['visible', 'animated'].map(id => ({
+      id,
+      topology: 'triangles',
+      positions: Float32Array.from([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+    })),
+  }
+  const visibility = {
+    id: 'visibility', name: 'visibility', kind: 'animation', provenance: 'direct', frames: 2,
+    channels: [{
+      target: 'animated', kind: 'visibility', firstFrame: 0, lastFrame: 1,
+      interpolation: 'step',
+      samples: [
+        { frame: 0, timeSeconds: 0, value: [1] },
+        { frame: 1, timeSeconds: 1, value: [0] },
+      ],
+    }],
+  }
+  const sampler = createModelSceneSampler(source, { clip: visibility })
+  assert.deepEqual(sampler.sample(0).primitives.map(item => item.id), ['visible', 'animated'])
+  assert.deepEqual(sampler.sample(1).primitives.map(item => item.id), ['visible'])
+  assert.deepEqual(sampler.sample(1).diagnostics, [])
+})

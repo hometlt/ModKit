@@ -18,6 +18,15 @@
       "requestedPermissionClasses": []
     },
     {
+      "variantId": "trusted-browser-worker",
+      "entrypoint": "./dist/render/browser.js",
+      "target": {
+        "environments": ["browser-worker"]
+      },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    },
+    {
       "variantId": "browser-worker",
       "entrypoint": "./dist/render/browser.js",
       "target": {

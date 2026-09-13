@@ -162,16 +162,36 @@ function decodeMaterialRefs(document: JsonObject): readonly ModelMaterialRef[] {
       if (metadata['version'] !== 1)
         throw new TypeError(`material ${index} has unsupported Modkit metadata version`)
       fields = object(metadata['fields'], `material ${index} Modkit fields`)
-      for (const key of ['id', 'name', 'shader', 'contracts']) {
+      for (const key of ['id', 'name', 'shader', 'contracts', 'alphaMode', 'alphaCutoff']) {
         if (Object.hasOwn(fields, key))
           throw new TypeError(`material ${index} metadata shadows ${key}`)
       }
+    }
+    const storedAlphaMode = material['alphaMode']
+    const alphaMode =
+      storedAlphaMode === undefined
+        ? undefined
+        : storedAlphaMode === 'MASK'
+          ? ('mask' as const)
+          : storedAlphaMode === 'BLEND'
+            ? ('blend' as const)
+            : ('opaque' as const)
+    const alphaCutoff = material['alphaCutoff']
+    if (
+      alphaCutoff !== undefined &&
+      (typeof alphaCutoff !== 'number' || !Number.isFinite(alphaCutoff) || alphaCutoff < 0)
+    ) {
+      throw new TypeError(`material ${index} alphaCutoff must be finite and nonnegative`)
     }
     return Object.freeze({
       ...fields,
       // the identity the artifact binding fixes, so a primitive and its material can be joined
       id: `material-${index}`,
       ...(typeof material['name'] === 'string' ? { name: material['name'] } : {}),
+      ...(alphaMode === undefined ? {} : { alphaMode }),
+      ...(alphaMode !== 'mask'
+        ? {}
+        : { alphaCutoff: typeof alphaCutoff === 'number' ? alphaCutoff : 0.5 }),
       ...(contracts.length === 0 ? {} : { contracts: Object.freeze(contracts) }),
       ...(field(material['extensions'], 'UV_game_material') === undefined
         ? {}

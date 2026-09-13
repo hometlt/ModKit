@@ -285,6 +285,14 @@ export interface ModelMaterialRef {
   readonly type?: string
   /** Publisher-native blend operation name when known. */
   readonly blendMode?: string
+  /** Common coverage mode when the publisher can state it without interpreting a native shader. */
+  readonly alphaMode?: 'opaque' | 'mask' | 'blend'
+  /** Nonnegative cutoff used only by `alphaMode: mask`; default is 0.5. */
+  readonly alphaCutoff?: number
+  /** False when this material must not contribute to a world shadow depth pass. */
+  readonly castShadows?: boolean
+  /** False when direct lighting on this material must ignore the world shadow map. */
+  readonly receiveShadows?: boolean
   readonly priority?: number
   readonly nativeFlags?: number
   readonly flagNames?: readonly string[]

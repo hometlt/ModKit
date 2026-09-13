@@ -2,6 +2,7 @@ import type { JsonObject, SceneRendererLight } from '@modkit/sdk'
 import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
 import { readPreviewLighting } from '../render/preview-lighting.js'
 import { array, field, object, safeIndex } from './values.js'
+import { sampleUvmSceneProperties } from './scene-properties.js'
 
 /** Native-free static/animated source frame join. Direction/position/distance units enter
  * the renderer together; nonuniform frames refuse rather than guessing a light radius. */
@@ -9,7 +10,13 @@ export function readUvmSceneLights(
   document: JsonObject,
   transforms: ReadonlyMap<string, Float32Array>,
   activeNodes: ReadonlySet<string>,
-  options: { maxBytes: number; maxNodes: number; signal?: AbortSignal },
+  options: {
+    maxBytes: number
+    maxNodes: number
+    time?: number
+    sequenceIndex?: number
+    signal?: AbortSignal
+  },
 ) {
   const source = field(document['extensions'], 'UV_scene_lights')
   if (source === undefined) return undefined
@@ -30,8 +37,55 @@ export function readUvmSceneLights(
     id = `node-${node}`
   const sourceLights = ext['lights']
   if (!Array.isArray(sourceLights)) throw new TypeError('scene lights list absent')
+  const sampledLights = sourceLights.map((candidate, index) => {
+    const light = object(candidate, `scene light ${index}`)
+    const animation = light['sequenceAnimation']
+    if (animation === undefined) return light
+    const defaults = object(light['animationDefaults'], 'scene light animation defaults')
+    if (
+      Object.keys(defaults).some(
+        key =>
+          ![
+            'color',
+            'intensity',
+            'attenuationStart',
+            'decayExponent',
+            'innerConeAngle',
+            'outerConeAngle',
+          ].includes(key),
+      )
+    )
+      throw new TypeError('invalid scene light animation defaults')
+    const sampled = sampleUvmSceneProperties(
+      animation,
+      defaults as Readonly<Record<string, number | readonly number[]>>,
+      {
+        time: options.time ?? 0,
+        ...(options.sequenceIndex === undefined ? {} : { sequenceIndex: options.sequenceIndex }),
+        maxKeys: options.maxNodes,
+        ...(options.signal === undefined ? {} : { signal: options.signal }),
+      },
+    )
+    const baseColor = sampled['color']
+    const intensity = sampled['intensity']
+    if (
+      !Array.isArray(baseColor) ||
+      baseColor.length !== 3 ||
+      baseColor.some(value => typeof value !== 'number' || !Number.isFinite(value)) ||
+      typeof intensity !== 'number' ||
+      !Number.isFinite(intensity) ||
+      intensity < 0
+    )
+      throw new TypeError('invalid sampled scene light color/intensity')
+    const { animationDefaults: _defaults, sequenceAnimation: _animation, ...staticLight } = light
+    return {
+      ...staticLight,
+      ...sampled,
+      color: baseColor.map(value => value * intensity),
+    }
+  })
   const rig = readPreviewLighting(
-    sourceLights as unknown as readonly SceneRendererLight[],
+    sampledLights as unknown as readonly SceneRendererLight[],
     ext['ambient'] as readonly [number, number, number] | undefined,
   )
   if (rig === undefined) throw new TypeError('scene lights absent')

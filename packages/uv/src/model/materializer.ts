@@ -67,6 +67,8 @@ export interface DocumentAccessor extends UvmJsonObject {
 export interface UvmMaterial {
   pbrMetallicRoughness: { metallicFactor: number; roughnessFactor: number }
   name?: string
+  alphaMode?: 'OPAQUE' | 'MASK' | 'BLEND'
+  alphaCutoff?: number
   extensions?: {
     UV_game_material: {
       shader: string
@@ -603,8 +605,12 @@ export function materializeUvmCore(
   for (const definition of definitions ?? []) {
     const index = materialIndexById.get(definition.id)!
     const target = materials[index]!
-    const { id: _id, name, shader, contracts, ...fields } = definition
+    const { id: _id, name, shader, contracts, alphaMode, alphaCutoff, ...fields } = definition
     if (name !== undefined) target.name = name
+    if (alphaMode !== undefined)
+      target.alphaMode =
+        alphaMode === 'opaque' ? 'OPAQUE' : alphaMode === 'mask' ? 'MASK' : 'BLEND'
+    if (alphaCutoff !== undefined) target.alphaCutoff = alphaCutoff
     if (Object.keys(fields).length > 0)
       target.extras = { modkit: { material: { version: 1, fields } } }
     const artifactContracts: string[] = []
@@ -646,16 +652,18 @@ export function materializeUvmCore(
       fail('resourceClosure.mode must be logical or content-qualified')
     }
     for (const entry of closure.entries ?? []) {
-      if (entry?.role !== 'image') continue
+      if (entry?.role !== 'image' && entry?.role !== 'texture') continue
       if (typeof entry.logicalId !== 'string' || entry.logicalId === '') {
-        fail('every image resource-closure entry needs a non-empty logicalId')
+        fail('every image/texture resource-closure entry needs a non-empty logicalId')
       }
       resourceImages.push({
         uri: entry.logicalId,
         ...(typeof entry.mediaHint === 'string' ? { mimeType: entry.mediaHint } : {}),
       })
     }
-    const uncarried = (closure.entries ?? []).filter(entry => entry?.role !== 'image')
+    const uncarried = (closure.entries ?? []).filter(
+      entry => entry?.role !== 'image' && entry?.role !== 'texture',
+    )
     if (uncarried.length > 0) {
       lostFacetIds.push('uv.model/resource-closure@1')
       note(

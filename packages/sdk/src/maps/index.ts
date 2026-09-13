@@ -1,12 +1,27 @@
 /** Protocol-neutral contracts for bounded semantic map opening. */
 
+import type { Diagnostic } from '@modkit/core'
 import type { DataCatalogSnapshot, DataEntityRef, DataResolvedEntity } from '../data/index.js'
 import type { ProjectionBasis } from '../asset-capabilities/uv-projection.js'
 import type { ModWorkspaceGraphInput, ModWorkspaceLock } from '../mods/index.js'
-import type { ResourceProvenanceRecord } from '../resource-session.js'
+import type { LogicalResourceRequirement, ResourceProvenanceRecord } from '../resource-session.js'
 import type { ServiceProviderModule } from '../runtime-abi.js'
 import type { JsonValue } from '../asset-capabilities/types.js'
 import type { NamespaceEntrySearchQuery } from '../asset-capabilities/data-sources.js'
+import type { ModelResourceRequest, ModelResourceResult } from '../model-resources.js'
+import type {
+  ModelMesh,
+  ModelNode,
+  ModelPrimitive,
+} from '../asset-capabilities/media-data-sources.js'
+import type {
+  ModelAnimationClip,
+  ModelBoneBinding,
+  ModelMaterialRef,
+  ModelResourceRef,
+  ModelSocketRef,
+} from '../asset-capabilities/model-facet-sources.js'
+import type { SceneRendererTexture } from '../renderer/index.js'
 
 /** Standard service coordinate for game-specific semantic map opening. */
 export const MAP_SEMANTIC_ANALYSIS_CONTRACT = 'common.map/semantic-analysis' as const
@@ -234,7 +249,15 @@ export interface MapSemanticAnalysisRequest {
 }
 
 export type MapSemanticDocumentKind =
-  'objects' | 'regions' | 'terrain-height' | 'terrain-native-parameters' | 'navigation'
+  | 'objects'
+  | 'regions'
+  | 'terrain-height'
+  | 'terrain-native-parameters'
+  | 'terrain-resource-index'
+  | 'navigation'
+  | 'gateways'
+
+export type MapSemanticDocumentScope = 'map-root' | 'workspace'
 
 /** One provider-authored logical read; the host resolves it through ResourceSessionPort. */
 export interface MapSemanticDocumentRequirement {
@@ -242,6 +265,8 @@ export interface MapSemanticDocumentRequirement {
   readonly path: string
   readonly kind: MapSemanticDocumentKind
   readonly required: boolean
+  /** Defaults to `map-root`; `workspace` admits a confined dependency-layer logical path. */
+  readonly scope?: MapSemanticDocumentScope
 }
 
 export interface ResolvedMapWorkspacePlanRequest {
@@ -275,6 +300,18 @@ export interface MapCatalogBinding {
   readonly entity?: DataResolvedEntity
 }
 
+/** One persistent model instance in a compound placed object. `resourceId` joins the object's
+ * scoped model requirements before world publication and the world resources facet afterwards. */
+export interface MapModelComponentPlacement {
+  readonly id: string
+  readonly resourceId: string
+  /** Both attachment fields are present together. Roots omit both. */
+  readonly parentId?: string
+  readonly parentSocketId?: string
+  /** Optional local rotation applied after the parent socket transform. */
+  readonly rotation?: readonly [number, number, number, number]
+}
+
 export interface MapPlacedObject {
   readonly kind: MapObjectKind
   readonly objectId: number
@@ -294,6 +331,13 @@ export interface MapPlacedObject {
   readonly modules?: number
   readonly name?: string
   readonly catalog?: MapCatalogBinding
+  /** Host-resolved model asset discovered from the resolved game catalog, never an ambient path. */
+  readonly modelResource?: LogicalResourceRequirement
+  /** Ordered component models for compound objects. Each requirement remains independently scoped;
+   * consumers must not collapse a droid/attachment composition to one guessed path. */
+  readonly modelResources?: readonly LogicalResourceRequirement[]
+  /** Explicit composition for repeated/attached component instances. Array order is not semantic. */
+  readonly modelComponents?: readonly MapModelComponentPlacement[]
 }
 
 export interface MapRegionShape {
@@ -333,6 +377,140 @@ export interface MapTerrainSummary {
   readonly cliffCellCount?: number
   readonly trailingBytes: number
   readonly samples: readonly MapTerrainSample[]
+}
+
+/** Dominant authored terrain material at one terrain cell. */
+export interface MapTerrainMaterialSample {
+  readonly x: number
+  readonly y: number
+  readonly textureIndex: number
+  readonly textureName?: string
+  /** Exact normalized blend weights when the publisher exposes the authored splat data. */
+  readonly weights?: readonly Readonly<{ readonly materialId: string; readonly weight: number }>[]
+  /** Per-sample UV orientation/tiling; needed for formats with rotated or flipped terrain tiles. */
+  readonly uvTransform?: Readonly<{
+    readonly offset: readonly [number, number]
+    readonly scale: readonly [number, number]
+    readonly rotation: number
+  }>
+}
+
+export interface MapTerrainMaterialDefinition {
+  readonly materialId: string
+  readonly label?: string
+  /** Portable semantic classification when the publisher can prove one (for example TER_WATER). */
+  readonly classification?: string
+  readonly sourceIndex?: number
+  readonly baseColorResourceId?: string
+  /** Host-resolvable source texture. The id remains the portable UVW join key. */
+  readonly baseColorResource?: LogicalResourceRequirement
+  readonly normalResourceId?: string
+  readonly normalResource?: LogicalResourceRequirement
+  readonly specularResourceId?: string
+  readonly specularResource?: LogicalResourceRequirement
+  readonly uvTransform?: Readonly<{
+    readonly offset: readonly [number, number]
+    readonly scale: readonly [number, number]
+    readonly rotation: number
+  }>
+}
+
+/** GPU-ready exact authored blend raster. Channels name materials in RGBA order. */
+export interface MapTerrainWeightRaster {
+  readonly resourceId: string
+  readonly width: number
+  readonly height: number
+  readonly materialIds: readonly string[]
+  readonly encoding: 'rgba8-unorm'
+  readonly normalization: 'sum'
+  /** Publisher-owned decoded bytes; omitted from layer catalogs and serialized UVW metadata. */
+  readonly rgba?: Uint8Array
+}
+
+/** Bounded material grid resolved from a publisher's native terrain-layer documents. */
+export interface MapTerrainMaterialSummary {
+  readonly version: number
+  readonly width: number
+  readonly height: number
+  /** Whether samples are a dominant-cell classification or the normalized authored blend. */
+  readonly weightEncoding?: 'dominant-only' | 'normalized-exact'
+  readonly maskResolution?: Readonly<{
+    readonly width: number
+    readonly height: number
+    readonly layers: number
+  }>
+  readonly cellCount: number
+  readonly textureNames: readonly string[]
+  readonly materials?: readonly MapTerrainMaterialDefinition[]
+  /** Exact high-resolution weights independent of the bounded sample preview. */
+  readonly weightRasters?: readonly MapTerrainWeightRaster[]
+  readonly samples: readonly MapTerrainMaterialSample[]
+  readonly exact: boolean
+}
+
+export interface MapWaterZone {
+  readonly zoneId: number
+  readonly templateId: string
+  readonly minimum: Readonly<{ x: number; y: number }>
+  readonly maximum: Readonly<{ x: number; y: number }>
+  /** Undefined until the publisher resolves a water template or authored vertical coordinate. */
+  readonly elevation?: number
+  /** Stable join into MapWaterSummary.materials when visual parameters resolved. */
+  readonly materialId?: string
+}
+
+/** Portable initial visual state for one water/lava surface material. Native gameplay physics
+ * and shoreline object spawning remain outside this spatial render contract. */
+export interface MapWaterMaterialDefinition {
+  readonly materialId: string
+  readonly label?: string
+  readonly classification?: 'water' | 'lava'
+  /** Whether ground intersections clip the surface or the authored zone is authoritative. */
+  readonly shorelineMode?: 'terrain-clipped' | 'zone'
+  readonly color: readonly [number, number, number, number]
+  readonly baseColorResourceId?: string
+  readonly baseColorResource?: LogicalResourceRequirement
+  /** Optional second surface sample. When absent, the base image is sampled twice. */
+  readonly secondaryColorResourceId?: string
+  readonly secondaryColorResource?: LogicalResourceRequirement
+  /** Two world-space UV scale pairs for dual scrolling surface samples. */
+  readonly uvScale?: readonly [number, number, number, number]
+  /** Two authored UV velocity pairs in units per second. */
+  readonly scroll?: readonly [number, number, number, number]
+  readonly colorFalloff?: number
+  readonly specularity?: number
+  readonly specularScale?: number
+  readonly reflectivityPower?: number
+  readonly causticsResourceId?: string
+  readonly causticsResource?: LogicalResourceRequirement
+  readonly causticsScale?: readonly [number, number]
+  readonly causticsFramesPerSecond?: number
+  readonly receiveShadows?: boolean
+}
+
+export interface MapWaterSummary {
+  readonly version: number
+  readonly zones: readonly MapWaterZone[]
+  readonly materials?: readonly MapWaterMaterialDefinition[]
+  /** False when the common constant-elevation zone shape cannot encode every native water tile. */
+  readonly exact?: boolean
+}
+
+export interface MapCliffSample {
+  readonly x: number
+  readonly y: number
+  readonly level: number
+  readonly authored: boolean
+}
+
+/** Native synchronized cliff levels. Geometry remains explicit publisher-candidate data. */
+export interface MapCliffSummary {
+  readonly version: number
+  readonly width: number
+  readonly height: number
+  readonly cellCount: number
+  readonly samples: readonly MapCliffSample[]
+  readonly exact: boolean
 }
 
 interface MapTerrainNativeTransformBase {
@@ -459,6 +637,20 @@ export interface MapNavigationSummary {
   readonly samples: readonly MapNavigationSample[]
 }
 
+export interface MapGatewaySegment {
+  readonly id: string
+  readonly x1: number
+  readonly y1: number
+  readonly x2: number
+  readonly y2: number
+}
+
+/** Exact publisher-native navigation gateway segments. */
+export interface MapGatewaySummary {
+  readonly exact: boolean
+  readonly segments: readonly MapGatewaySegment[]
+}
+
 export interface MapWorldCandidateDescriptor {
   /** Publisher-qualified candidate coordinate. This is deliberately not an admitted common ID. */
   readonly contract: string
@@ -481,6 +673,11 @@ export interface MapWorldCandidateDescriptor {
     readonly reason?: string
   }>[]
   readonly unknownFacets: readonly string[]
+  /** Exact native edit route; viewers still submit an intent and never write documents directly. */
+  readonly edit?: Readonly<{
+    readonly operationId: string
+    readonly moveObjectKind: 'object.update'
+  }>
 }
 
 export type MapSemanticDiagnosticSeverity = 'error' | 'warning' | 'information'
@@ -502,6 +699,8 @@ export interface MapSemanticSnapshot {
   readonly mapId: string
   readonly analyzerId: string
   readonly documentPaths: readonly string[]
+  /** Provider-authored conversion scale for native model resources placed in this map world. */
+  readonly modelMetersPerSourceUnit?: number
   readonly terrain?: MapTerrainSummary
   readonly regions: readonly MapRegion[]
   readonly objects: readonly MapPlacedObject[]
@@ -529,6 +728,10 @@ export interface ResolvedMapWorkspaceSnapshot {
   readonly snapshotId: string
   readonly semantic: MapSemanticSnapshot
   readonly navigation?: MapNavigationSummary
+  readonly gateways?: MapGatewaySummary
+  readonly terrainMaterials?: MapTerrainMaterialSummary
+  readonly water?: MapWaterSummary
+  readonly cliffs?: MapCliffSummary
   readonly terrainTransform?: MapTerrainNativeTransform
   readonly uvwTransform?: MapWorldCanonicalTransform
   readonly worldCandidate: MapWorldCandidateDescriptor
@@ -539,7 +742,17 @@ export interface ResolvedMapWorkspaceSnapshot {
 }
 
 export type WorldSceneFacet =
-  'layers' | 'terrain' | 'objects' | 'regions' | 'resources' | 'navigation'
+  | 'layers'
+  | 'terrain'
+  | 'terrain-materials'
+  | 'water'
+  | 'cliffs'
+  | 'objects'
+  | 'regions'
+  | 'resources'
+  | 'navigation'
+  | 'gateways'
+  | 'lighting'
 export type WorldSceneLayerKind = Exclude<WorldSceneFacet, 'layers'>
 
 export type WorldSceneAxisExtent =
@@ -560,6 +773,8 @@ export interface WorldSceneFacetState {
   readonly state: 'available' | 'unavailable' | 'partial'
   readonly itemCount: number
   readonly lods: readonly string[]
+  /** Publisher-independent content identity used to retain unchanged heavy layers across snapshots. */
+  readonly contentRevision?: string
   readonly reason?: string
 }
 
@@ -578,6 +793,21 @@ interface WorldSceneInfoBase {
   readonly unknownFacets: readonly string[]
   readonly lossPolicy: 'explicit-partial'
   readonly complete: boolean
+  readonly edit?: MapWorldCandidateDescriptor['edit']
+  /** Present only when the source was decoded from an already-canonical standalone UVW artifact. */
+  readonly canonicalArtifact?: Readonly<{
+    readonly format: 'UVW'
+    readonly version: '1.0'
+    readonly spaces: readonly Readonly<{
+      readonly id: string
+      readonly label?: string
+      readonly basis: ProjectionBasis
+      readonly bounds: Readonly<{
+        readonly min: readonly [number, number, number]
+        readonly max: readonly [number, number, number]
+      }>
+    }>[]
+  }>
 }
 
 /** Publisher-qualified identity retained during the candidate/common dual-publish transition. */
@@ -595,9 +825,29 @@ export interface WorldSceneLayerItem {
   readonly id: string
   readonly layerId: string
   readonly kind: WorldSceneLayerKind
+  readonly label?: string
   readonly state: WorldSceneFacetState['state']
   readonly itemCount: number
   readonly lods: readonly string[]
+  readonly contentRevision?: string
+  /** Original UVW-local identity when this source was reopened from a UVW artifact. */
+  readonly spaceId?: string
+  readonly localLayerId?: string
+  /** Exact grid layout for grid-backed facets; absent when the publisher has not proved it. */
+  readonly grid?: Readonly<{
+    readonly columns: number
+    readonly rows: number
+    readonly cellSize: number
+    readonly origin: readonly [number, number, number]
+    readonly coordinateSpaceId: string
+    readonly noDataValue?: number
+  }>
+  /** Material catalog used by terrain-material samples in this layer. */
+  readonly materials?: readonly MapTerrainMaterialDefinition[]
+  /** Initial render materials used only by water zones in this layer. */
+  readonly waterMaterials?: readonly MapWaterMaterialDefinition[]
+  /** Exact packageable blend rasters; pixel bytes remain behind WorldSceneSource.texture(). */
+  readonly weightRasters?: readonly MapTerrainWeightRaster[]
 }
 
 export interface WorldSceneTerrainItem extends MapTerrainSample {
@@ -621,7 +871,45 @@ export interface WorldSceneNavigationItem extends MapNavigationSample {
   readonly id: string
   readonly layerId: string
   readonly coordinateSpaceId: string
-  readonly lod: 'sampled'
+  readonly lod: 'sampled' | 'exact'
+  readonly uvwPosition?: MapPosition
+}
+
+export interface WorldSceneGatewayItem extends MapGatewaySegment {
+  readonly facet: 'gateways'
+  readonly layerId: string
+  readonly coordinateSpaceId: string
+  readonly uvwStart?: MapPosition
+  readonly uvwEnd?: MapPosition
+}
+
+export interface WorldSceneTerrainMaterialItem extends MapTerrainMaterialSample {
+  readonly facet: 'terrain-materials'
+  readonly id: string
+  readonly layerId: string
+  readonly coordinateSpaceId: 'height-grid'
+  readonly lod: 'sampled' | 'exact'
+  readonly uvwPosition?: MapPosition
+}
+
+export interface WorldSceneWaterItem extends MapWaterZone {
+  readonly facet: 'water'
+  readonly id: string
+  readonly layerId: string
+  readonly coordinateSpaceId: string
+  readonly uvwMinimum?: Readonly<{ readonly x: number; readonly z: number }>
+  readonly uvwMaximum?: Readonly<{ readonly x: number; readonly z: number }>
+  readonly uvwElevation?: number
+  readonly materialId?: string
+}
+
+export interface WorldSceneCliffItem extends MapCliffSample {
+  readonly facet: 'cliffs'
+  readonly id: string
+  readonly layerId: string
+  readonly coordinateSpaceId: 'height-grid'
+  readonly lod: 'sampled' | 'exact'
+  readonly uvwPosition?: MapPosition
 }
 
 export interface WorldSceneObjectItem extends MapPlacedObject {
@@ -631,12 +919,19 @@ export interface WorldSceneObjectItem extends MapPlacedObject {
   readonly coordinateSpaceId: string
   /** Stable join into the resources facet when this object names a catalog entity. */
   readonly resourceId?: string
+  readonly resourceIds?: readonly string[]
+  readonly uvwPosition?: MapPosition
+  readonly uvwRotation?: readonly [number, number, number, number]
+  readonly uvwScale?: MapPosition
 }
 
 export interface WorldSceneRegionShape {
   readonly kind: string
   readonly center?: Readonly<{ x: number; y: number }>
   readonly radius?: number
+  readonly minimum?: Readonly<{ x: number; y: number }>
+  readonly maximum?: Readonly<{ x: number; y: number }>
+  readonly points?: readonly Readonly<{ x: number; y: number }>[]
   readonly rawParameters: Readonly<Record<string, string>>
 }
 
@@ -649,26 +944,53 @@ export interface WorldSceneRegionItem {
   readonly name: string
   readonly color?: string
   readonly shapes: readonly WorldSceneRegionShape[]
+  /** Region geometry transformed into the UVW horizontal x/z plane. */
+  readonly uvwShapes?: readonly WorldSceneRegionShape[]
 }
 
 export interface WorldSceneResourceItem {
   readonly facet: 'resources'
   readonly id: string
   readonly layerId: string
-  readonly namespace: string
-  readonly entityId: string
+  readonly namespace?: string
+  readonly entityId?: string
   readonly resolved: boolean
+  readonly kind?: 'uvm' | 'media'
+  readonly uri?: string
+  readonly digest?: `sha256:${string}`
+  /** Standard logical resource request for the model shared by the joined object instances. */
+  readonly modelResource?: LogicalResourceRequirement
   /** Exact reverse join to every placed object that references this resource. */
   readonly objectIds: readonly string[]
+}
+
+export interface WorldSceneLightingItem {
+  readonly facet: 'lighting'
+  readonly id: string
+  readonly layerId: string
+  readonly coordinateSpaceId: string
+  readonly ambientColor: readonly [number, number, number]
+  readonly ambientIntensity: number
+  readonly directional: readonly Readonly<{
+    readonly id: string
+    readonly direction: readonly [number, number, number]
+    readonly color: readonly [number, number, number]
+    readonly intensity: number
+  }>[]
 }
 
 export type WorldSceneItem =
   | WorldSceneLayerItem
   | WorldSceneTerrainItem
+  | WorldSceneTerrainMaterialItem
+  | WorldSceneWaterItem
+  | WorldSceneCliffItem
   | WorldSceneNavigationItem
+  | WorldSceneGatewayItem
   | WorldSceneObjectItem
   | WorldSceneRegionItem
   | WorldSceneResourceItem
+  | WorldSceneLightingItem
 
 export interface WorldScenePageRequest {
   /** Unknown facet names produce a named unsupported page, not a silently empty success. */
@@ -684,6 +1006,52 @@ export interface WorldScenePageRequest {
     maximumY: number
   }>
 }
+
+export interface WorldSceneModelRequest extends Omit<ModelResourceRequest, 'requirement'> {
+  readonly maxNodes?: number
+  readonly maxMeshes: number
+  readonly maxPrimitives: number
+  readonly maxPrimitiveBytes: number
+  readonly maxResources?: number
+  readonly maxTextureBytes?: number
+  readonly maxTextureTotalBytes?: number
+}
+
+export interface WorldSceneTextureRequest {
+  readonly maxBytes: number
+}
+
+export type WorldSceneTextureResult =
+  | Readonly<{
+      state: 'decoded'
+      texture: SceneRendererTexture
+      diagnostics: readonly Diagnostic[]
+    }>
+  | Readonly<{
+      state: 'unresolved'
+      diagnostics: readonly Diagnostic[]
+    }>
+
+export type WorldSceneModelResult =
+  | Readonly<{
+      state: 'converted'
+      sourceKey: string
+      /** Independently reopened UVM artifact owned by this result; portable packagers must use
+       * these bytes rather than reconstructing geometry from the native session. */
+      readonly uvmBytes?: Uint8Array
+      readonly nodes?: readonly ModelNode[]
+      readonly skeleton?: readonly ModelBoneBinding[]
+      readonly animations?: readonly ModelAnimationClip[]
+      readonly materials?: readonly ModelMaterialRef[]
+      readonly resources?: readonly ModelResourceRef[]
+      readonly sockets?: readonly ModelSocketRef[]
+      readonly textures?: readonly SceneRendererTexture[]
+      meshes: readonly ModelMesh[]
+      primitives: readonly ModelPrimitive[]
+      diagnostics: ModelResourceResult['diagnostics']
+      complete: boolean
+    }>
+  | Extract<ModelResourceResult, { readonly state: 'unresolved' }>
 
 export interface WorldScenePage {
   readonly snapshotId: string
@@ -706,6 +1074,18 @@ export interface CandidateWorldSceneSource {
   readonly snapshotId: string
   info(signal?: AbortSignal): Promise<CandidateWorldSceneInfo>
   page(request: WorldScenePageRequest, signal?: AbortSignal): Promise<WorldScenePage>
+  /** Lazily converts one joined native model through the standard host model-resource route. */
+  model?(
+    resourceId: string,
+    request: WorldSceneModelRequest,
+    signal?: AbortSignal,
+  ): Promise<WorldSceneModelResult>
+  /** Lazily decodes one declared terrain material raster through the ordinary host codec route. */
+  texture?(
+    resourceId: string,
+    request: WorldSceneTextureRequest,
+    signal?: AbortSignal,
+  ): Promise<WorldSceneTextureResult>
 }
 
 /**
@@ -720,6 +1100,17 @@ export interface WorldSceneSource {
   readonly snapshotId: string
   info(signal?: AbortSignal): Promise<WorldSceneInfo>
   page(request: WorldScenePageRequest, signal?: AbortSignal): Promise<WorldScenePage>
+  /** Optional while publisher-candidate sources migrate; absence means explicit placeholders. */
+  model?(
+    resourceId: string,
+    request: WorldSceneModelRequest,
+    signal?: AbortSignal,
+  ): Promise<WorldSceneModelResult>
+  texture?(
+    resourceId: string,
+    request: WorldSceneTextureRequest,
+    signal?: AbortSignal,
+  ): Promise<WorldSceneTextureResult>
 }
 
 /** Activated game-specific semantic map analyzer. */

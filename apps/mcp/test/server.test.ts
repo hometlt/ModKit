@@ -800,6 +800,31 @@ describe('read-only MCP v2 adapter', () => {
     ])
   })
 
+  it('keeps language limits inside the host contract', async () => {
+    const fake = fakeHost({ withLanguage: true })
+    const { client } = await connected(fake.host)
+    await client.callTool({
+      name: 'modkit.language',
+      arguments: {
+        documents: [{ path: 'C:\\allowed\\fixture.galaxy', languageId: 'galaxy' }],
+        feature: 'analyze',
+      },
+    })
+    expect(fake.languageInvocations()).toEqual([
+      expect.objectContaining({ maxResults: 1_000, maxEdits: 1_024 }),
+    ])
+
+    const rejected = await client.callTool({
+      name: 'modkit.language',
+      arguments: {
+        documents: [{ path: 'C:\\allowed\\fixture.galaxy', languageId: 'galaxy' }],
+        feature: 'analyze',
+        maxEdits: 4_097,
+      },
+    })
+    expect(rejected.isError).toBe(true)
+  })
+
   it('opens, inspects and closes an opaque handle', async () => {
     const fake = fakeHost()
     const { client } = await connected(fake.host)

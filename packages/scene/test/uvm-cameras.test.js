@@ -43,6 +43,44 @@ it('selects glTF perspective by node and returns full owned projection/view/eye'
   frame.fill(0)
   assert.equal(actual.viewMatrix[12], -3)
 })
+it('samples portable camera projection tracks from the selected sequence clock', () => {
+  const sequenceTrack = (from, to) => [{
+    sequenceIndex: 7,
+    track: {
+      lineType: 1,
+      globalSeqId: null,
+      keys: [{ frame: 0, vector: [from] }, { frame: 1, vector: [to] }],
+    },
+  }]
+  const animated = structuredClone(doc)
+  animated.cameras[0].extensions = {
+    UV_scene_camera: {
+      version: 1,
+      sequenceAnimation: {
+        yfov: sequenceTrack(Math.PI / 2, Math.PI / 3),
+        znear: sequenceTrack(1, 2),
+        zfar: sequenceTrack(9, 18),
+      },
+    },
+  }
+  const start = resolveUvmCamera(
+    animated,
+    { node: 0 },
+    { ...options, time: 0, sequenceIndex: 7 },
+  )
+  const end = resolveUvmCamera(
+    animated,
+    { node: 0 },
+    { ...options, time: 1, sequenceIndex: 7 },
+  )
+  assert.notDeepEqual([...end.viewProjection], [...start.viewProjection])
+  assert.ok(Math.abs(end.viewProjection[0] - Math.sqrt(3) / 2) < 1e-6)
+  close(
+    resolveUvmCamera(animated, { node: 0 }, { ...options, time: 1, sequenceIndex: 8 })
+      .viewProjection,
+    start.viewProjection,
+  )
+})
 it('uses authored aspect, ignores positive camera scale and selects orthographic projection', () => {
   const scaled = Float32Array.from(identity)
   scaled[0] = 2

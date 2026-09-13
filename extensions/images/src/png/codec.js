@@ -83,6 +83,18 @@ function parsePng(bytes, maxChunks) {
   if (channels === undefined || ![1, 2, 4, 8, 16].includes(bitDepth)) {
     throw new TypeError('PNG color type or bit depth is invalid')
   }
+  const palette = chunks.find(chunk => chunk.type === 'PLTE')
+  const transparency = chunks.find(chunk => chunk.type === 'tRNS')
+  if (
+    colorType === 3 &&
+    (palette === undefined ||
+      palette.length === 0 ||
+      palette.length % 3 !== 0 ||
+      palette.length > 3 * (1 << bitDepth) ||
+      (transparency !== undefined && transparency.length > palette.length / 3))
+  ) {
+    throw new TypeError('indexed PNG palette or transparency table is invalid')
+  }
   const animation = chunks.find(chunk => chunk.type === 'acTL')
   const frames = animation?.length === 8 ? u32(bytes, animation.dataOffset) : 1
   return Object.freeze({
@@ -142,7 +154,11 @@ async function decodeRgba8(bytes, png, signal) {
     )
     compressedOffset += chunk.length
   }
-  const rowBytes = png.width * png.channels
+  const indexed = png.colorType === 3
+  const rowBytes = indexed
+    ? Math.ceil((png.width * png.bitDepth) / 8)
+    : png.width * png.channels
+  const filterBytesPerPixel = indexed ? 1 : png.channels
   const expectedBytes = (rowBytes + 1) * png.height
   if (!Number.isSafeInteger(expectedBytes)) throw new RangeError('PNG decoded size is unsafe')
   const raw = await inflateBounded(compressed, expectedBytes, signal)
@@ -153,9 +169,9 @@ async function decodeRgba8(bytes, png, signal) {
     const rowOut = unfiltered.subarray(y * rowBytes, (y + 1) * rowBytes)
     const previous = y > 0 ? unfiltered.subarray((y - 1) * rowBytes, y * rowBytes) : undefined
     for (let x = 0; x < rowBytes; x += 1) {
-      const a = x >= png.channels ? (rowOut[x - png.channels] ?? 0) : 0
+      const a = x >= filterBytesPerPixel ? (rowOut[x - filterBytesPerPixel] ?? 0) : 0
       const b = previous?.[x] ?? 0
-      const c = x >= png.channels ? (previous?.[x - png.channels] ?? 0) : 0
+      const c = x >= filterBytesPerPixel ? (previous?.[x - filterBytesPerPixel] ?? 0) : 0
       const input = rowIn[x] ?? 0
       const value =
         filter === 0
@@ -174,6 +190,40 @@ async function decodeRgba8(bytes, png, signal) {
     }
   }
   const rgba = new Uint8Array(png.width * png.height * 4)
+  if (indexed) {
+    const paletteChunk = png.chunks.find(chunk => chunk.type === 'PLTE')
+    if (paletteChunk === undefined) throw new TypeError('indexed PNG palette is missing')
+    const palette = bytes.subarray(
+      paletteChunk.dataOffset,
+      paletteChunk.dataOffset + paletteChunk.length,
+    )
+    const transparencyChunk = png.chunks.find(chunk => chunk.type === 'tRNS')
+    const transparency = transparencyChunk === undefined
+      ? undefined
+      : bytes.subarray(
+          transparencyChunk.dataOffset,
+          transparencyChunk.dataOffset + transparencyChunk.length,
+        )
+    const mask = (1 << png.bitDepth) - 1
+    for (let y = 0; y < png.height; y += 1) {
+      const rowStart = y * rowBytes
+      for (let x = 0; x < png.width; x += 1) {
+        const bitOffset = x * png.bitDepth
+        const packed = unfiltered[rowStart + Math.floor(bitOffset / 8)] ?? 0
+        const paletteIndex = (packed >>> (8 - png.bitDepth - (bitOffset % 8))) & mask
+        const paletteOffset = paletteIndex * 3
+        if (paletteOffset + 2 >= palette.length) {
+          throw new TypeError(`indexed PNG pixel refers to absent palette entry ${paletteIndex}`)
+        }
+        const output = (y * png.width + x) * 4
+        rgba[output] = palette[paletteOffset] ?? 0
+        rgba[output + 1] = palette[paletteOffset + 1] ?? 0
+        rgba[output + 2] = palette[paletteOffset + 2] ?? 0
+        rgba[output + 3] = transparency?.[paletteIndex] ?? 255
+      }
+    }
+    return rgba
+  }
   for (
     let pixel = 0, input = 0;
     pixel < png.width * png.height;
@@ -414,15 +464,20 @@ const definition = Object.freeze({
   },
   async inspect(bytes, context) {
     const png = parsePng(bytes, context.budget.maxNodes)
-    const hasAlpha = png.colorType === 4 || png.colorType === 6
+    const hasAlpha =
+      png.colorType === 4 || png.colorType === 6 ||
+      (png.colorType === 3 && png.chunks.some(chunk => chunk.type === 'tRNS'))
     const hasPalette = png.colorType === 3
-    const decodedAccess =
-      context.intent !== 'thumbnail' &&
+    const decodedDirect =
       png.bitDepth === 8 &&
       [0, 2, 4, 6].includes(png.colorType) &&
+      !png.chunks.some(chunk => chunk.type === 'tRNS')
+    const decodedPalette = hasPalette && [1, 2, 4, 8].includes(png.bitDepth)
+    const decodedAccess =
+      context.intent !== 'thumbnail' &&
+      (decodedDirect || decodedPalette) &&
       png.interlace === 0 &&
       png.chunks.some(chunk => chunk.type === 'IDAT') &&
-      !png.chunks.some(chunk => chunk.type === 'tRNS') &&
       png.width * png.height * 4 <= context.budget.maxScalarBytes &&
       typeof DecompressionStream === 'function'
     const raster = createRasterImageSource(

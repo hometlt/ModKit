@@ -177,6 +177,10 @@ node selection are mutually exclusive. `poseSamples:[{clipId,time,weight,additiv
 through shared pose math; the primary clip still owns material, effect and visibility tracks.
 Ordinary animated nodes do not require a skin, and matrix intermediary nodes retain their frames.
 `UV_node_billboard` constraints and `UV_scene_lights` are common scene data, not native extras.
+`UV_scene_camera` schema 1 may attach sparse per-sequence `yfov`, `znear` and `zfar` tracks to a
+perspective camera. Lights may carry the same bounded sequence-track vocabulary for color,
+intensity, attenuation, decay and spot-cone fields. Both use the selected clip's stable
+`sequenceIndex` and the render time; a sequence without a track retains the static value.
 Billboard schema 1 retains the inverse-camera bone rule with ordered basis rotations. Schema 2
 defines a rigid position-facing node: local `+Y` faces `camera.eyePosition`, `rotationAxes`
 selects cylindrical `z` or spherical `xz` motion, and `pivot` is a local three-vector.

@@ -3,16 +3,16 @@
   "schemaVersion": "multiverse-specs-pin-1",
   "source": {
     "repository": "multiverse (sibling repository)",
-    "commit": "f2f7f4824e53a321afb7924d9a92a0be36988146",
-    "subject": "Define UVM animation catalogs, material targets and visibility bindings",
-    "committedOn": "2026-09-08T17:40:58+04:00"
+    "commit": "ce9fe321ff710ccb4bff9c39d905dce38c7e3c9a",
+    "subject": "docs(uvm): define cross-format model metadata",
+    "committedOn": "2026-09-12T13:45:23+04:00"
   },
   "generator": "scripts/specs-pin.mjs",
   "generatedFrom": "git objects, not the sibling working tree",
   "prefix": "specs/",
   "counts": {
     "files": 140,
-    "bytes": 921295
+    "bytes": 924373
   },
   "files": [
     {
@@ -257,23 +257,23 @@
     },
     {
       "path": "specs/model/SPEC_UVM.md",
-      "bytes": 73588,
-      "digest": "sha256:d48261405a3530671c7819c751cae1bc110074d778694091bca44e75effa1e34"
+      "bytes": 73329,
+      "digest": "sha256:8495f13d6ab0d4cc05948e0608c866efc8d7050e891f0d964bbeeba8a662860e"
     },
     {
       "path": "specs/model/SPEC_UVM_CONVERSION.md",
-      "bytes": 19161,
-      "digest": "sha256:c2f395c04e305de8f639d8330c1b89c1531f9143d8112c1f0de1b803fa43e0bd"
+      "bytes": 19286,
+      "digest": "sha256:1ba3a5d75cbe5396ca0114191b65e6767faef068fff00b2f59806b32c095e86a"
     },
     {
       "path": "specs/model/SPEC_UVM_EXTENSIONS.md",
-      "bytes": 51211,
-      "digest": "sha256:5c0ec469fb01873af50a81583920618fce7bbbd41284eb930390f9610b758df2"
+      "bytes": 50054,
+      "digest": "sha256:82a477a56d6e230a2ef648d73892b11a6c6998f2ff5da47eb558e1e3de22192a"
     },
     {
       "path": "specs/model/examples/siege_tank.uvm.gltf",
-      "bytes": 17129,
-      "digest": "sha256:e4dd9a6a1451f5653c987bfa134ed454f2b42a66d7c6ce5dd6215f8af2c85f3b"
+      "bytes": 21798,
+      "digest": "sha256:493470b8c6d42cb3eeae8ad32798261af38b16f6f99159715aea397e55d045ff"
     },
     {
       "path": "specs/model/fixtures/uvm-core-rig.uvm.gltf",
@@ -292,8 +292,8 @@
     },
     {
       "path": "specs/model/schema/uvm.animation.schema.json",
-      "bytes": 14939,
-      "digest": "sha256:5b19016f0fb4515da04c79b927e36d6ab3969a55d5ee2972fa156ab30b292bd2"
+      "bytes": 16691,
+      "digest": "sha256:2bacb81a3ede67759799763d2268c81fb876427beb83bb82e8faa61cc39a1022"
     },
     {
       "path": "specs/model/schema/uvm.asset.schema.json",
@@ -337,8 +337,8 @@
     },
     {
       "path": "specs/model/schema/uvm.provenance.schema.json",
-      "bytes": 6578,
-      "digest": "sha256:25f49f0c2fa286c5cf648c5f5c30ad51394ca58fa2d4f817e6eab066d5ad5e29"
+      "bytes": 4526,
+      "digest": "sha256:df711a42e4d5a09ec012b7e86e7a5e1becd8d2da946c701705e9961c995ab03d"
     },
     {
       "path": "specs/model/schema/uvm.socket.schema.json",

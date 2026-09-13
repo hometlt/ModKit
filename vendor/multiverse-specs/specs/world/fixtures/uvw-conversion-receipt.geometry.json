@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "source": { "family": "uvw", "format": "UVW", "version": "1.0" },
+  "target": {
+    "gameId": "wz2100project/warzone-2100",
+    "artifactKind": "wz-archive"
+  },
+  "requestedProfile": "geometry",
+  "achievedProfile": "geometry",
+  "status": "converted",
+  "losses": [
+    {
+      "feature": "layers.gameplay",
+      "reason": "UVW carries spatial world state, not scenario logic",
+      "replacement": "omitted",
+      "measurement": {
+        "kind": "not-applicable",
+        "reason": "gameplay behavior has no spatial numeric error"
+      }
+    }
+  ],
+  "refusals": [],
+  "verification": {
+    "archiveReopened": true,
+    "targetLoaded": false
+  }
+}

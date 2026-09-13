@@ -37,9 +37,9 @@ const COORDINATOR_LIMITS = Object.freeze({
   maxDepth: 16,
   catalogEnrichment: MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY,
   limits: Object.freeze({
-    maxRequirements: 8,
-    maxDocumentBytes: 1_000_000,
-    maxTotalBytes: 4_000_000,
+    maxRequirements: 16,
+    maxDocumentBytes: 33_554_432,
+    maxTotalBytes: 67_108_864,
     maxObjects: 100_000,
     maxRegions: 10_000,
     maxTerrainCells: 100_000,

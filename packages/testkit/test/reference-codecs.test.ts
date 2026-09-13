@@ -649,9 +649,17 @@ describe('reference codec specification stress suite', () => {
     const subjectFacts = factsLease.value as SubjectFactsSource
     const factSummary = await subjectFacts.summary()
     expect(factSummary).toMatchObject({
-      groupCount: 3,
+      groupCount: 6,
       identity: { kind: 'file', type: 'glTF 2.x' },
     })
+    expect((await subjectFacts.groups({ limit: 20 })).items.map(group => group.id)).toEqual([
+      'asset',
+      'contents',
+      'resources',
+      'identity',
+      'traits',
+      'gltf-document',
+    ])
     const cardSections = await loadSubjectCardSections(subjectFacts)
     expect(cardSections[0]).toMatchObject({ kind: 'header', title: 'sample.gltf' })
     expect(cardSections).toContainEqual(expect.objectContaining({ kind: 'fields', id: 'contents' }))

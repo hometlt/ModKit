@@ -309,7 +309,19 @@ const modelResourcesSurface = {
 const modelResourceAssetSurface = {
   ...ABI_MODEL_RESOURCE_ASSET,
   fields: ['result'],
-  methods: { acquire: modelAcquire, readRaster: { kind: 'value', ...sig } },
+  methods: {
+    acquire: modelAcquire,
+    readRaster: { kind: 'value', ...sig },
+    sceneInfo: { kind: 'value', optional: true, ...sig },
+    nodes: { kind: 'value', optional: true, ...sig },
+    meshes: { kind: 'value', optional: true, ...sig },
+    primitive: { kind: 'value', optional: true, ...sig },
+    skeletonBindings: { kind: 'value', optional: true, ...sig },
+    animationClips: { kind: 'value', optional: true, ...sig },
+    materials: { kind: 'value', optional: true, ...sig },
+    resourceReferences: { kind: 'value', optional: true, ...sig },
+    sockets: { kind: 'value', optional: true, ...sig },
+  },
 } as const satisfies AbiSurfaceOf<ModelResourceAsset>
 
 const logicalResourcesSurface = {

@@ -24,6 +24,27 @@ const optionalFields = (value: RecordValue, label: string): void => {
   for (const key of ['name', 'libraryId', 'type', 'blendMode']) {
     if (value[key] !== undefined) text(value[key], `${label}.${key}`)
   }
+  if (
+    value['alphaMode'] !== undefined &&
+    value['alphaMode'] !== 'opaque' &&
+    value['alphaMode'] !== 'mask' &&
+    value['alphaMode'] !== 'blend'
+  ) {
+    throw new TypeError(`${label}.alphaMode must be opaque, mask or blend`)
+  }
+  if (
+    value['alphaCutoff'] !== undefined &&
+    (typeof value['alphaCutoff'] !== 'number' ||
+      !Number.isFinite(value['alphaCutoff']) ||
+      value['alphaCutoff'] < 0)
+  ) {
+    throw new TypeError(`${label}.alphaCutoff must be finite and nonnegative`)
+  }
+  for (const key of ['castShadows', 'receiveShadows']) {
+    if (value[key] !== undefined && typeof value[key] !== 'boolean') {
+      throw new TypeError(`${label}.${key} must be a boolean`)
+    }
+  }
   for (const key of ['priority', 'uvSource', 'colorChannels', 'nativeFlags']) {
     if (value[key] !== undefined && typeof value[key] !== 'number') throw new TypeError(`${label}.${key} must be a number`)
   }

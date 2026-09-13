@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
-import { readFile, stat, realpath } from 'node:fs/promises'
+import { open, realpath, stat } from 'node:fs/promises'
 import { basename, extname, isAbsolute, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import type { Diagnostic } from '@modkit/core'
@@ -36,6 +36,36 @@ export interface McpOpenedSubject {
   }[]
   select?(selectionId: string, signal?: AbortSignal): Promise<McpOpenedSubject>
   close(): Promise<void>
+}
+
+const MCP_LANGUAGE_MAX_DOCUMENT_BYTES = 4_194_304
+
+async function readBoundedLanguageFile(
+  path: string,
+  signal?: AbortSignal,
+): Promise<Uint8Array> {
+  signal?.throwIfAborted()
+  const handle = await open(path, 'r')
+  try {
+    const details = await handle.stat()
+    if (!details.isFile() || details.size > MCP_LANGUAGE_MAX_DOCUMENT_BYTES) {
+      throw new TypeError('language documents must be files no larger than 4 MiB')
+    }
+    const bytes = new Uint8Array(MCP_LANGUAGE_MAX_DOCUMENT_BYTES + 1)
+    let offset = 0
+    while (offset < bytes.byteLength) {
+      signal?.throwIfAborted()
+      const read = await handle.read(bytes, offset, bytes.byteLength - offset, offset)
+      if (read.bytesRead === 0) break
+      offset += read.bytesRead
+    }
+    if (offset > MCP_LANGUAGE_MAX_DOCUMENT_BYTES) {
+      throw new TypeError('language documents must be files no larger than 4 MiB')
+    }
+    return bytes.slice(0, offset)
+  } finally {
+    await handle.close()
+  }
 }
 
 export interface McpDiscoveredSubject {
@@ -139,8 +169,8 @@ const mapPreviewLimits = Object.freeze({
   limits: Object.freeze({
     maxDocuments: 16,
     maxRequirements: 16,
-    maxDocumentBytes: 16_777_216,
-    maxTotalBytes: 33_554_432,
+    maxDocumentBytes: 33_554_432,
+    maxTotalBytes: 67_108_864,
     maxObjects: 100_000,
     maxRegions: 10_000,
     maxTerrainCells: 100_000,
@@ -328,14 +358,7 @@ export async function createHostMcpPort(
         }
         if (seen.has(canonical)) throw new TypeError('language document path is duplicated')
         seen.add(canonical)
-        const details = await stat(canonical)
-        if (!details.isFile() || details.size > 4_194_304) {
-          throw new TypeError('language documents must be files no larger than 4 MiB')
-        }
-        const bytes = await readFile(canonical)
-        if (bytes.byteLength > 4_194_304) {
-          throw new TypeError('language documents must be files no larger than 4 MiB')
-        }
+        const bytes = await readBoundedLanguageFile(canonical, signal)
         totalBytes += bytes.byteLength
         if (totalBytes > 16_777_216) throw new TypeError('language workspace exceeds 16 MiB')
         const suffix = extname(canonical).replace(/^\./u, '').toLowerCase()

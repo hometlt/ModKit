@@ -48,7 +48,13 @@ export const PREVIEW_STAGES = Object.freeze([
   { id: 'video', label: 'Video', contract: 'common.view/video-media-source', module: videoViewer },
   { id: 'image', label: 'Image', contract: 'common.view/raster-image-source', module: imageViewer },
   { id: 'audio', label: 'Audio', contract: 'common.view/audio-media-source', module: audioViewer },
-  { id: 'world', label: 'World', contract: 'common.view/world-scene-source', module: worldViewer },
+  {
+    id: 'world',
+    label: 'World',
+    contract: 'common.view/world-scene-source',
+    module: worldViewer,
+    optionalContracts: ['common.view/transport-source'],
+  },
   {
     id: 'model',
     label: 'Model',
@@ -117,7 +123,13 @@ export const PREVIEW_STAGES_READONLY = Object.freeze([
   { id: 'video', label: 'Video', contract: 'common.view/video-media-source', module: videoViewer },
   { id: 'image', label: 'Image', contract: 'common.view/raster-image-source', module: imageViewer },
   { id: 'audio', label: 'Audio', contract: 'common.view/audio-media-source', module: audioViewer },
-  { id: 'world', label: 'World', contract: 'common.view/world-scene-source', module: worldViewer },
+  {
+    id: 'world',
+    label: 'World',
+    contract: 'common.view/world-scene-source',
+    module: worldViewer,
+    optionalContracts: ['common.view/transport-source'],
+  },
   {
     id: 'model',
     label: 'Model',
@@ -206,6 +218,7 @@ export function createPreviewStages(localizer) {
       label: 'World',
       contract: 'common.view/world-scene-source',
       module: createWorldViewer({ localizer }),
+      optionalContracts: ['common.view/transport-source'],
     },
     {
       id: 'model',
@@ -312,6 +325,7 @@ export function createPreviewStagesReadonly(localizer) {
       label: 'World',
       contract: 'common.view/world-scene-source',
       module: createWorldViewer({ localizer }),
+      optionalContracts: ['common.view/transport-source'],
     },
     {
       id: 'model',

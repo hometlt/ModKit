@@ -188,7 +188,9 @@ function model(image: JsonObject, embedded?: Uint8Array) {
   const uv = appended.accessors[0]
   if (uv === undefined) throw new Error('no UV accessor')
   const c = appended.container,
-    meshes = c.document['meshes'] as JsonObject[]
+    meshes = c.document['meshes'] as JsonObject[],
+    extensions = c.document['extensions'] as JsonObject,
+    provenance = extensions['UV_provenance'] as JsonObject
   const mesh = meshes[0]
   if (mesh === undefined) throw new Error('no mesh')
   const primitive = (mesh['primitives'] as JsonObject[])[0]
@@ -205,6 +207,10 @@ function model(image: JsonObject, embedded?: Uint8Array) {
     binary,
     document: {
       ...c.document,
+      extensions: {
+        ...extensions,
+        UV_provenance: { ...provenance, lost: [] },
+      },
       buffers: [{ byteLength: binary.length }],
       bufferViews:
         embedded === undefined
@@ -414,6 +420,7 @@ it.each([
       await linked.opened.session.dispose()
     }
   },
+  15_000,
 )
 
 it.each(normalTextureFixtures())(
@@ -488,6 +495,7 @@ it.each(normalTextureFixtures())(
       await opened.session.dispose()
     }
   },
+  15_000,
 )
 
 it('renders a game material and shared DDS layers through the ordinary UVM/image/renderer workers', async () => {

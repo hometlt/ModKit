@@ -26,6 +26,7 @@ import type {
   SceneRendererPrimitive,
 } from '@modkit/sdk'
 import { createModelSceneSampler } from '@modkit/scene/model'
+import { createModelSkeletonNodes } from '@modkit/codec-kit/model/skeleton'
 
 import type { OrbitBasis } from './orbit.js'
 
@@ -414,10 +415,31 @@ export interface SkeletonJoint {
 
 /** Joint positions use only explicit local TRS and parent bindings. Legacy restMatrix stays descriptive. */
 export function skeletonJoints(bindings: readonly ModelBoneBinding[]): readonly SkeletonJoint[] {
-  return createModelSceneSampler({
-    nodes: [],
-    meshes: [],
-    primitives: [],
-    skeleton: bindings,
-  }).sample(0).joints
+  const hierarchyIds = [
+    ...new Set(
+      bindings.flatMap(binding =>
+        typeof binding.hierarchyId === 'string' && binding.hierarchyId
+          ? [binding.hierarchyId]
+          : [],
+      ),
+    ),
+  ]
+  const joints: SkeletonJoint[] = []
+  for (const hierarchyId of hierarchyIds) {
+    const hierarchy = bindings.filter(binding => binding.hierarchyId === hierarchyId)
+    const offset = joints.length
+    const sampled = createModelSceneSampler({
+      nodes: createModelSkeletonNodes(hierarchy, hierarchyId),
+      meshes: [],
+      primitives: [],
+      skeleton: hierarchy,
+    }).sample(0).joints
+    joints.push(
+      ...sampled.map(joint => ({
+        ...joint,
+        ...(joint.parent === undefined ? {} : { parent: joint.parent + offset }),
+      })),
+    )
+  }
+  return Object.freeze(joints)
 }

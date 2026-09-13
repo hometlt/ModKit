@@ -13,5 +13,16 @@ describe('built-in scene module', () => {
     )
     assert.deepEqual(sceneModule.excluded, [])
     assert.equal(new Set(sceneModule.moduleEntries.map(([entrypoint]) => entrypoint)).size, 2)
+    const headless = [...sceneModule.input.documents.values()].find(
+      manifest => manifest.id === 'modkit/headless-renderer',
+    )
+    assert.deepEqual(headless.runtimeVariants[0].target.environments, ['node', 'node-worker'])
+    const browser = [...sceneModule.input.documents.values()].find(
+      manifest => manifest.id === 'modkit/browser-webgl-renderer',
+    )
+    assert.deepEqual(
+      browser.runtimeVariants.map(variant => variant.variantId),
+      ['trusted-browser-main', 'trusted-browser-worker'],
+    )
   })
 })

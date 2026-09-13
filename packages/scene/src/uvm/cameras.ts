@@ -8,7 +8,8 @@ import {
 } from 'three'
 import type { JsonObject, SceneRendererCamera } from '@modkit/sdk'
 import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
-import { array, object, safeIndex } from './values.js'
+import { array, field, object, safeIndex } from './values.js'
+import { sampleUvmSceneProperties } from './scene-properties.js'
 
 type Vec3 = readonly [number, number, number]
 function numbers(value: unknown, count: number, label: string): number[] {
@@ -82,6 +83,9 @@ export interface UvmCameraOptions {
   readonly activeNodes: ReadonlySet<string>
   readonly maxBytes: number
   readonly maxNodes: number
+  /** Selected common clip clock for portable camera-property animation. */
+  readonly time?: number
+  readonly sequenceIndex?: number
   readonly signal?: AbortSignal
 }
 
@@ -170,7 +174,33 @@ export function resolveUvmCamera(
   const view = new Matrix4().compose(position, rotation, new Vector3(1, 1, 1)).invert()
   let projection: Matrix4
   if (camera['type'] === 'perspective') {
-    const perspective = object(camera['perspective'], 'perspective camera')
+    let perspective = object(camera['perspective'], 'perspective camera')
+    const animation = field(field(camera['extensions'], 'UV_scene_camera'), 'sequenceAnimation')
+    if (animation !== undefined) {
+      const extension = object(field(camera['extensions'], 'UV_scene_camera'), 'scene camera')
+      if (
+        extension['version'] !== 1 ||
+        Object.keys(extension).some(key => !['version', 'sequenceAnimation'].includes(key))
+      )
+        throw new TypeError('invalid UV_scene_camera')
+      const sampled = sampleUvmSceneProperties(
+        animation,
+        {
+          yfov: positive(perspective['yfov'], 'camera yfov'),
+          znear: positive(perspective['znear'], 'camera znear'),
+          ...(perspective['zfar'] === undefined
+            ? {}
+            : { zfar: positive(perspective['zfar'], 'camera zfar') }),
+        },
+        {
+          time: options.time ?? 0,
+          ...(options.sequenceIndex === undefined ? {} : { sequenceIndex: options.sequenceIndex }),
+          maxKeys: options.maxNodes,
+          ...(options.signal === undefined ? {} : { signal: options.signal }),
+        },
+      )
+      perspective = { ...perspective, ...sampled }
+    }
     const fov = positive(perspective['yfov'], 'camera yfov'),
       near = positive(perspective['znear'], 'camera znear')
     if (!(fov < Math.PI)) throw new TypeError('camera yfov must be below PI')

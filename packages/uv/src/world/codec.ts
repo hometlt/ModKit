@@ -1,0 +1,400 @@
+import {
+  createInspectionCodec,
+  createTreeDataSource,
+  editPlanFromInput,
+  replaceBytes,
+  type InspectionContext,
+} from '@modkit/codec-kit'
+import { sha256Hex } from '@modkit/codec-kit/crypto/digest'
+import { applyJsonEdit, type JsonEdit } from '@modkit/codec-kit/json-edit'
+import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
+import { operationId } from '@modkit/core'
+import type { JsonObject, JsonValue } from '@modkit/sdk'
+import { WORLD_SCENE_SOURCE_CONTRACT } from '@modkit/sdk/maps'
+
+import {
+  canonicalizeUvwProfile,
+  createUvwWorldSceneSource,
+  parseUvwProfile,
+  serializeUvwProfile,
+} from './index.js'
+
+const decoder = new TextDecoder('utf-8', { fatal: false })
+
+function looksLikeUvw(bytes: Uint8Array): boolean {
+  const text = decoder.decode(bytes)
+  return (
+    /"format"\s*:\s*"UVW"/u.test(text) &&
+    /"version"\s*:\s*"1\.0"/u.test(text) &&
+    /"status"\s*:\s*"profile"/u.test(text) &&
+    /"spaces"\s*:/u.test(text)
+  )
+}
+
+function editObject(value: unknown, label: string): Record<string, unknown> {
+  if (value === null || typeof value !== 'object' || Array.isArray(value))
+    throw new TypeError(`${label} must be an object`)
+  return value as Record<string, unknown>
+}
+
+function jsonPointer(path: readonly string[]): string {
+  return `/${path.map(key => key.replace(/~/gu, '~0').replace(/\//gu, '~1')).join('/')}`
+}
+
+function fieldEdits(input: unknown, context: InspectionContext) {
+  const request = editObject(
+    snapshotJson(
+      input,
+      {
+        maxBytes: context.budget.maxScalarBytes,
+        maxNodes: context.budget.maxNodes,
+        maxDepth: context.budget.maxDepth + 2,
+      },
+      context.signal,
+    ),
+    'UVW field request',
+  )
+  const path = request['path']
+  if (
+    !Array.isArray(path) ||
+    path.length === 0 ||
+    !path.every(key => typeof key === 'string') ||
+    request['groupId'] !== 'tree' ||
+    request['key'] !== path.at(-1) ||
+    !Object.hasOwn(request, 'value') ||
+    Object.keys(request).some(key => !['groupId', 'key', 'path', 'value'].includes(key))
+  )
+    throw new TypeError('UVW field write requires a complete tree semantic path and value')
+  return Object.freeze([
+    Object.freeze({
+      op: 'replace' as const,
+      path: jsonPointer(path),
+      value: request['value'] as JsonValue,
+    }),
+  ])
+}
+
+function genericDocumentEdits(request: Record<string, unknown>) {
+  const json = request['json']
+  if (Object.keys(request).some(key => key !== 'json') || !Array.isArray(json) || json.length === 0)
+    throw new TypeError('UVW world.edit requires a nonempty json edit array')
+  if (json.length > 4_096) throw new RangeError('UVW edit batch exceeds maxEdits')
+  return Object.freeze(
+    json.map(raw => {
+      const edit = editObject(raw, 'UVW JSON edit')
+      if (
+        typeof edit['path'] !== 'string' ||
+        !['add', 'replace', 'remove'].includes(String(edit['op'])) ||
+        Object.keys(edit).some(key => !['op', 'path', 'value'].includes(key)) ||
+        (edit['op'] === 'remove' ? Object.hasOwn(edit, 'value') : !Object.hasOwn(edit, 'value'))
+      )
+        throw new TypeError('invalid UVW JSON edit')
+      return edit['op'] === 'remove'
+        ? Object.freeze({ op: 'remove' as const, path: edit['path'] })
+        : Object.freeze({
+            op: edit['op'] as 'add' | 'replace',
+            path: edit['path'],
+            value: edit['value'] as JsonValue,
+          })
+    }),
+  )
+}
+
+function worldObjectEdits(
+  request: Record<string, unknown>,
+  document: ReturnType<typeof parseUvwProfile>,
+  context: InspectionContext,
+) {
+  if (Object.keys(request).some(key => !['expectedSourceRevision', 'edits'].includes(key)))
+    throw new TypeError('UVW object edit contains an unknown field')
+  if (request['expectedSourceRevision'] !== context.input.revisions.revision)
+    throw new TypeError('stale UVW source revision')
+  const edits = request['edits']
+  if (!Array.isArray(edits) || edits.length === 0)
+    throw new TypeError('UVW object edit requires a nonempty edits array')
+  if (edits.length > 4_096) throw new RangeError('UVW edit batch exceeds maxEdits')
+
+  const canonical = canonicalizeUvwProfile(document)
+  const canonicalObjectLayers = canonical.spaces.flatMap(space =>
+    space.layers
+      .filter(layer => layer.kind === 'objects')
+      .map(layer => Object.freeze({ spaceId: space.id, layer })),
+  )
+  if (canonicalObjectLayers.length !== 1)
+    throw new TypeError('UVW object editing requires exactly one objects layer')
+  const canonicalLayer = canonicalObjectLayers[0]
+  if (canonicalLayer === undefined) throw new TypeError('UVW objects layer is missing')
+
+  const spaceIndex = document.spaces.findIndex(space => space.id === canonicalLayer.spaceId)
+  const sourceSpace = document.spaces[spaceIndex]
+  if (sourceSpace === undefined) throw new TypeError('UVW object space is missing')
+  const layerIndex = sourceSpace.layers.findIndex(layer => layer.id === canonicalLayer.layer.id)
+  const sourceLayer = sourceSpace.layers[layerIndex]
+  if (sourceLayer?.kind !== 'objects') throw new TypeError('UVW objects layer is missing')
+
+  return Object.freeze(
+    edits.map(raw => {
+      const edit = editObject(raw, 'UVW object edit')
+      if (
+        Object.keys(edit).some(key => !['kind', 'objectId', 'patch'].includes(key)) ||
+        edit['kind'] !== 'object.update' ||
+        !Number.isSafeInteger(edit['objectId']) ||
+        Number(edit['objectId']) < 0
+      )
+        throw new TypeError('invalid UVW object.update edit')
+      const objectId = Number(edit['objectId'])
+      const canonicalInstance = canonicalLayer.layer.instances[objectId]
+      if (canonicalInstance === undefined) throw new RangeError('UVW objectId is out of range')
+      const patch = editObject(edit['patch'], 'UVW object patch')
+      if (Object.keys(patch).some(key => key !== 'position') || !Object.hasOwn(patch, 'position'))
+        throw new TypeError('UVW object.update currently requires exactly a position patch')
+      const position = editObject(patch['position'], 'UVW object position')
+      if (
+        Object.keys(position).some(key => !['x', 'y', 'z'].includes(key)) ||
+        !['x', 'y', 'z'].every(key => Object.hasOwn(position, key)) ||
+        ![position['x'], position['y'], position['z']].every(
+          value => typeof value === 'number' && Number.isFinite(value),
+        )
+      )
+        throw new TypeError('UVW object position must contain finite x, y and z values')
+      const instanceIndex = sourceLayer.instances.findIndex(
+        instance => instance.id === canonicalInstance.id,
+      )
+      if (instanceIndex < 0) throw new TypeError('UVW object identity is missing from source')
+      return Object.freeze({
+        op: 'replace' as const,
+        path: jsonPointer([
+          'spaces',
+          String(spaceIndex),
+          'layers',
+          String(layerIndex),
+          'instances',
+          String(instanceIndex),
+          'position',
+        ]),
+        value: Object.freeze([
+          position['x'] as number,
+          position['y'] as number,
+          position['z'] as number,
+        ]),
+      })
+    }),
+  )
+}
+
+function documentEdits(
+  input: unknown,
+  context: InspectionContext,
+  document: ReturnType<typeof parseUvwProfile>,
+) {
+  const request = editObject(
+    snapshotJson(
+      input,
+      {
+        maxBytes: context.budget.maxScalarBytes,
+        maxNodes: context.budget.maxNodes,
+        maxDepth: context.budget.maxDepth + 3,
+      },
+      context.signal,
+    ),
+    'UVW edit request',
+  )
+  return Object.hasOwn(request, 'json')
+    ? genericDocumentEdits(request)
+    : worldObjectEdits(request, document, context)
+}
+
+function editHandler(
+  source: Uint8Array,
+  document: ReturnType<typeof parseUvwProfile>,
+  context: InspectionContext,
+  editsFromInput: (input: unknown, context: InspectionContext) => readonly JsonEdit[],
+) {
+  return async (input: unknown, operationContext: { signal?: AbortSignal } = {}) => {
+    const signal = operationContext.signal ?? context.signal
+    signal?.throwIfAborted()
+    const base = editPlanFromInput(context.input, {
+      planId: `uvw-edit:${context.input.revisions.revision}`,
+      edits: [],
+      fidelity: {
+        roundTrip: 'semantic',
+        preservesUnknownData: true,
+        notes: ['UVW is revalidated and serialized in required canonical order'],
+      },
+    })
+    const edits = editsFromInput(input, { ...context, signal })
+    let candidate = document as unknown as JsonObject
+    for (const edit of edits) candidate = applyJsonEdit(candidate, edit, context.budget.maxDepth)
+    const bytes = serializeUvwProfile(candidate as unknown as ReturnType<typeof parseUvwProfile>, {
+      maxBytes: context.budget.maxScalarBytes,
+      maxDepth: context.budget.maxDepth,
+      maxNodes: context.budget.maxNodes,
+      maxSamples: Math.floor(context.budget.maxScalarBytes / 8),
+      ...(signal === undefined ? {} : { signal }),
+    })
+    const digest = await sha256Hex(bytes)
+    signal?.throwIfAborted()
+    const target = base.targets[0]
+    if (target === undefined) throw new TypeError('UVW edit target is missing')
+    return {
+      kind: 'edit-plan' as const,
+      plan: Object.freeze({
+        ...base,
+        planId: `${base.planId}:${digest}`,
+        edits: Object.freeze([
+          Object.freeze({
+            ...replaceBytes(0, source.byteLength, bytes, 'Edit canonical UVW document'),
+            targetId: target.targetId,
+            source: target.ownerSource,
+          }),
+        ]),
+      }),
+    }
+  }
+}
+
+const definition = Object.freeze({
+  id: 'modkit/world-uvw',
+  operations: Object.freeze([
+    Object.freeze({
+      id: operationId('edit.field', { contributionId: 'modkit/world-uvw' }),
+      handlerId: 'set-uvw-field',
+      mutatesSource: true,
+      requiredPermissions: Object.freeze(['read-source', 'write-source'] as const),
+      outputKinds: Object.freeze(['edit-plan'] as const),
+    }),
+    Object.freeze({
+      id: operationId('edit.structure', { contributionId: 'modkit/world-uvw' }),
+      handlerId: 'edit-uvw-document',
+      mutatesSource: true,
+      requiredPermissions: Object.freeze(['read-source', 'write-source'] as const),
+      outputKinds: Object.freeze(['edit-plan'] as const),
+    }),
+    Object.freeze({
+      id: operationId('map.export-uvw', { contributionId: 'modkit/world-uvw' }),
+      handlerId: 'export-canonical-uvw',
+      mutatesSource: false,
+      requiredPermissions: Object.freeze(['read-source'] as const),
+      outputKinds: Object.freeze(['bytes'] as const),
+    }),
+  ]),
+  format: Object.freeze({
+    id: 'uvw',
+    label: 'Universal Verse World 1.0',
+    mediaType: 'application/vnd.modkit.uvw+json; profile=uvw-1.0',
+  }),
+  async detect(bytes: Uint8Array, uri: string) {
+    const structure = looksLikeUvw(bytes)
+    const named = /\.uvw(?:\.json)?(?:[?#]|$)/iu.test(uri)
+    return structure
+      ? { confidence: named ? 0.995 : 0.985, kind: 'structure' as const, note: 'uvw-profile-1.0' }
+      : named
+        ? { confidence: 0.45, kind: 'extension' as const, note: 'uvw-named-profile-marker-missing' }
+        : { confidence: 0.01, kind: 'structure' as const, note: 'uvw-profile-marker-missing' }
+  },
+  async inspect(bytes: Uint8Array, context: InspectionContext) {
+    const maxSamples = Math.floor(context.budget.maxScalarBytes / 8)
+    const document = parseUvwProfile(bytes, {
+      maxBytes: bytes.byteLength,
+      maxDepth: context.budget.maxDepth,
+      maxNodes: context.budget.maxNodes,
+      maxSamples,
+      ...(context.signal === undefined ? {} : { signal: context.signal }),
+    })
+    const layerCount = document.spaces.reduce((sum, space) => sum + space.layers.length, 0)
+    const sampleCount = document.spaces.reduce(
+      (sum, space) =>
+        sum +
+        space.layers.reduce(
+          (layerSum, layer) =>
+            layerSum + ('columns' in layer && 'rows' in layer ? layer.columns * layer.rows : 0),
+          0,
+        ),
+      0,
+    )
+    const source = createUvwWorldSceneSource(document, {
+      snapshotId: context.input.revisions.revision,
+      mapId: context.primary.source.id,
+      maxPageSize: Math.max(1, Math.min(65_536, context.budget.maxNodes)),
+      ...(context.rasterResources === undefined
+        ? {}
+        : { rasterResources: context.rasterResources }),
+    })
+    const tree = createTreeDataSource({
+      kind: 'world',
+      label: 'UVW world',
+      preview: `${String(document.spaces.length)} spaces, ${String(layerCount)} layers`,
+      children: document.spaces.map(space => ({
+        kind: 'space',
+        label: space.label ?? space.id,
+        preview: `${space.topology}, ${space.basis.unit}`,
+        children: space.layers.map(layer => ({
+          kind: layer.kind,
+          label: layer.label ?? layer.id,
+          preview:
+            'columns' in layer && 'rows' in layer && 'cellSize' in layer
+              ? `${String(layer.columns)} × ${String(layer.rows)}, cell ${String(layer.cellSize)}`
+              : layer.kind,
+        })),
+      })),
+    })
+    return {
+      summary: {
+        format: 'uvw',
+        version: '1.0',
+        profile: 'heightfield',
+        spaces: document.spaces.length,
+        layers: layerCount,
+        samples: sampleCount,
+      },
+      metadata: [
+        {
+          id: 'uvw-profile',
+          label: 'UVW profile',
+          entries: [
+            { key: 'version', value: '1.0' },
+            { key: 'spaces', value: document.spaces.length },
+            { key: 'layers', value: layerCount },
+            { key: 'samples', value: sampleCount },
+          ],
+        },
+      ],
+      traits: [
+        {
+          id: 'structure.hierarchy',
+          parameters: { spaces: document.spaces.length, layers: layerCount },
+        },
+      ],
+      text: true,
+      dataSources: {
+        [WORLD_SCENE_SOURCE_CONTRACT]: source,
+        'common.view/tree-data-source': tree,
+      },
+      handlers: {
+        'set-uvw-field': editHandler(bytes, document, context, fieldEdits),
+        'edit-uvw-document': editHandler(bytes, document, context, (input, operationContext) =>
+          documentEdits(input, operationContext, document),
+        ),
+        'export-canonical-uvw': async () => ({
+          kind: 'bytes' as const,
+          value: serializeUvwProfile(document, {
+            maxBytes: bytes.byteLength * 2 + 1_024,
+            maxDepth: context.budget.maxDepth,
+            maxNodes: context.budget.maxNodes,
+            maxSamples,
+            ...(context.signal === undefined ? {} : { signal: context.signal }),
+          }),
+        }),
+      },
+      maxDecodedBytes: bytes.byteLength + sampleCount * 8,
+      unsupportedFeatures: [
+        'UVW 1.0 connections are reserved',
+        'UVW 1.0 non-heightfield topology remains reserved',
+      ],
+    }
+  },
+})
+
+export const abiVersion = 1
+export const createCodec = (context: Parameters<typeof createInspectionCodec>[1]) =>
+  createInspectionCodec(definition, context)

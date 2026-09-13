@@ -93,6 +93,68 @@ test('UVM light frame transforms positions and distance units together and refus
     /uniform/,
   )
 })
+test('UVM light color, intensity, attenuation and cone follow the selected sequence clock', () => {
+  const track = (from, to) => [
+    {
+      sequenceIndex: 3,
+      track: {
+        lineType: 1,
+        globalSeqId: null,
+        keys: [
+          { frame: 0, vector: from },
+          { frame: 1, vector: to },
+        ],
+      },
+    },
+  ]
+  const animated = {
+    ...point,
+    type: 'spot',
+    direction: [0, 0, -1],
+    color: [0.5, 1, 1.5],
+    animationDefaults: {
+      color: [0.25, 0.5, 0.75],
+      intensity: 2,
+      attenuationStart: 1,
+      decayExponent: 2,
+      innerConeAngle: 0.2,
+      outerConeAngle: 0.6,
+    },
+    sequenceAnimation: {
+      color: track([0.25, 0.5, 0.75], [1, 0, 0]),
+      intensity: track([2], [0.5]),
+      attenuationStart: track([1], [2]),
+      decayExponent: track([2], [1]),
+      innerConeAngle: track([0.2], [0.3]),
+      outerConeAngle: track([0.6], [0.8]),
+    },
+  }
+  const document = {
+    asset: { version: '2.0' },
+    nodes: [{}],
+    extensions: { UV_scene_lights: { version: 1, spaceNode: 0, lights: [animated] } },
+  }
+  const matrix = identity.slice()
+  matrix[0] = matrix[5] = matrix[10] = 2
+  const result = readUvmSceneLights(
+    document,
+    new Map([['node-0', matrix]]),
+    new Set(['node-0']),
+    { maxBytes: 100000, maxNodes: 1000, time: 1, sequenceIndex: 3 },
+  )
+  assert.deepEqual(result.lights[0], {
+    ...point,
+    type: 'spot',
+    direction: [0, 0, -1],
+    position: [0, 0, 4],
+    color: [0.5, 0, 0],
+    attenuationStart: 4,
+    attenuationEnd: 8,
+    decayExponent: 1,
+    innerConeAngle: Math.fround(0.3),
+    outerConeAngle: Math.fround(0.8),
+  })
+})
 test('actual CPU preview renderer consumes directional lights without requiring the old single light', async () => {
   const frame = await renderHeadless({
     outputKind: 'rgba8',

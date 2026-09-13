@@ -1,17 +1,27 @@
 /** Generic structural adapter from authoritative map semantics to a paged publisher candidate. */
 
+import { diagnostic } from '@modkit/core'
 import type {
   CandidateWorldSceneInfo,
   CandidateWorldSceneSource,
   Lease,
+  MapTerrainMaterialDefinition,
   MapTerrainNativeTransform,
   MapTerrainSample,
+  MapTerrainWeightRaster,
   MapWorldCanonicalTransform,
+  ModelResourcePort,
+  RasterResourcePort,
+  RasterResourceResult,
   ResolvedMapWorkspaceSnapshot,
   ResourceProvenanceRecord,
+  SceneRendererTexture,
   WorldSceneFacetState,
   WorldSceneItem,
   WorldSceneLayerKind,
+  WorldSceneModelRequest,
+  WorldSceneTextureRequest,
+  WorldSceneObjectItem,
   WorldScenePage,
   WorldScenePageRequest,
   WorldSceneRegionShape,
@@ -24,12 +34,79 @@ function positiveLimit(value: number, maximum: number): number {
   return value
 }
 
+function worldTexture(
+  id: string,
+  result: Extract<RasterResourceResult, { readonly state: 'decoded' }>,
+): SceneRendererTexture | undefined {
+  if (result.info.orientation === 'unknown') return undefined
+  const { region } = result
+  const rowBytes = region.width * 4
+  const rgba = new Uint8Array(rowBytes * region.height)
+  for (let y = 0; y < region.height; y += 1) {
+    const sourceY = result.info.orientation === 'bottom-left' ? region.height - 1 - y : y
+    rgba.set(
+      region.pixels.subarray(sourceY * region.rowStride, sourceY * region.rowStride + rowBytes),
+      y * rowBytes,
+    )
+  }
+  return Object.freeze({
+    id,
+    width: region.width,
+    height: region.height,
+    rgba,
+    ...(result.info.channelLayout === undefined
+      ? {}
+      : { channelLayout: result.info.channelLayout }),
+    ...(result.info.compression === undefined ? {} : { compression: result.info.compression }),
+    wrapU: 'repeat',
+    wrapV: 'repeat',
+  })
+}
+
 function resourceId(namespace: string, entityId: string): string {
   return `resource:${encodeURIComponent(namespace)}/${encodeURIComponent(entityId)}`
 }
 
+function modelResourceId(requirementId: string): string {
+  return `model-resource:${encodeURIComponent(requirementId)}`
+}
+
 function layerId(snapshotId: string, kind: WorldSceneLayerKind): string {
   return `${snapshotId}:layer:${kind}`
+}
+
+function layerContentRevision(items: readonly WorldSceneItem[]): string {
+  const text = JSON.stringify(items, (key, value) =>
+    key === 'id' || key === 'layerId' ? undefined : value,
+  )
+  let hash = 0x811c9dc5
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index)
+    hash = Math.imul(hash, 0x01000193)
+  }
+  return `fnv1a32:${(hash >>> 0).toString(16).padStart(8, '0')}:${items.length}`
+}
+
+function terrainMaterialContentRevision(
+  items: readonly WorldSceneItem[],
+  rasters: readonly MapTerrainWeightRaster[],
+): string {
+  const text = JSON.stringify(
+    [items, rasters.map(({ rgba: _rgba, ...metadata }) => metadata)],
+    (key, value) => (key === 'id' || key === 'layerId' ? undefined : value),
+  )
+  let hash = 0x811c9dc5
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index)
+    hash = Math.imul(hash, 0x01000193)
+  }
+  for (const raster of rasters) {
+    for (const value of raster.rgba ?? []) {
+      hash ^= value
+      hash = Math.imul(hash, 0x01000193)
+    }
+  }
+  return `fnv1a32:${(hash >>> 0).toString(16).padStart(8, '0')}:${items.length}:${rasters.length}`
 }
 
 function canonicalQuery(request: WorldScenePageRequest): string {
@@ -172,6 +249,78 @@ function canonicalPosition(
     return value === 0 ? 0 : value
   }
   return Object.freeze({ x: axis('x'), y: axis('y'), z: axis('z') })
+}
+
+function canonicalObjectRotation(
+  rotation: number | undefined,
+  nativeUnit: string | undefined,
+): readonly [number, number, number, number] | undefined {
+  let radians: number
+  if (rotation === undefined) radians = 0
+  else if (nativeUnit === 'radians') radians = rotation
+  else if (nativeUnit === 'degrees') radians = (rotation * Math.PI) / 180
+  else if (nativeUnit === 'uint16-turn') radians = (rotation * Math.PI * 2) / 65_536
+  else return undefined
+  if (!Number.isFinite(radians)) return undefined
+  const half = radians / 2
+  const y = Math.sin(half)
+  const w = Math.cos(half)
+  return Object.freeze([0, y === 0 ? 0 : y, 0, w === 0 ? 0 : w])
+}
+
+function canonicalObjectScale(
+  scale: Readonly<{ x: number; y: number; z: number }> | undefined,
+  transform: MapWorldCanonicalTransform,
+): Readonly<{ x: number; y: number; z: number }> {
+  const source = scale ?? { x: 1, y: 1, z: 1 }
+  return Object.freeze({
+    x: source[transform.axes.x.sourceAxis],
+    y: source[transform.axes.y.sourceAxis],
+    z: source[transform.axes.z.sourceAxis],
+  })
+}
+
+function canonicalRegionShape(
+  shape: WorldSceneRegionShape,
+  transform: MapWorldCanonicalTransform,
+): WorldSceneRegionShape | undefined {
+  const point = (value: Readonly<{ x: number; y: number }>) => {
+    const canonical = canonicalPosition({ x: value.x, y: value.y, z: 0 }, transform)
+    return Object.freeze({ x: canonical.x, y: canonical.z })
+  }
+  const horizontalScaleX = Math.abs(transform.axes.x.scale)
+  const horizontalScaleZ = Math.abs(transform.axes.z.scale)
+  if (shape.center !== undefined && shape.radius !== undefined) {
+    if (horizontalScaleX !== horizontalScaleZ) return undefined
+    return Object.freeze({
+      ...shape,
+      center: point(shape.center),
+      radius: shape.radius * horizontalScaleX,
+    })
+  }
+  if (shape.minimum !== undefined && shape.maximum !== undefined) {
+    const corners = [
+      point(shape.minimum),
+      point({ x: shape.minimum.x, y: shape.maximum.y }),
+      point(shape.maximum),
+      point({ x: shape.maximum.x, y: shape.minimum.y }),
+    ]
+    return Object.freeze({
+      ...shape,
+      minimum: Object.freeze({
+        x: Math.min(...corners.map(corner => corner.x)),
+        y: Math.min(...corners.map(corner => corner.y)),
+      }),
+      maximum: Object.freeze({
+        x: Math.max(...corners.map(corner => corner.x)),
+        y: Math.max(...corners.map(corner => corner.y)),
+      }),
+    })
+  }
+  if (shape.points !== undefined) {
+    return Object.freeze({ ...shape, points: Object.freeze(shape.points.map(point)) })
+  }
+  return undefined
 }
 
 function admittedTerrainTransform(
@@ -336,19 +485,50 @@ export function createCandidateWorldSceneLease(
   snapshot: ResolvedMapWorkspaceSnapshot,
   provenance: readonly ResourceProvenanceRecord[],
   maxPageSize: number,
+  modelResources?: ModelResourcePort,
+  releaseModelResources?: () => Promise<void>,
+  rasterResources?: RasterResourcePort,
 ): Lease<CandidateWorldSceneSource> {
   positiveLimit(maxPageSize, Number.MAX_SAFE_INTEGER)
   const semantic = snapshot.semantic
   const terrainLayerId = layerId(snapshot.snapshotId, 'terrain')
+  const terrainMaterialLayerId = layerId(snapshot.snapshotId, 'terrain-materials')
+  const waterLayerId = layerId(snapshot.snapshotId, 'water')
+  const cliffLayerId = layerId(snapshot.snapshotId, 'cliffs')
   const objectLayerId = layerId(snapshot.snapshotId, 'objects')
   const regionLayerId = layerId(snapshot.snapshotId, 'regions')
   const resourceLayerId = layerId(snapshot.snapshotId, 'resources')
   const navigationLayerId = layerId(snapshot.snapshotId, 'navigation')
+  const gatewayLayerId = layerId(snapshot.snapshotId, 'gateways')
   const terrainSummary = semantic.terrain
   const terrainExact = hasExactTerrainGrid(terrainSummary)
   const terrainTransform = admittedTerrainTransform(snapshot, terrainSummary, terrainExact)
   const uvwTransform = admittedWorldCanonicalTransform(snapshot, terrainTransform)
   const terrainLod = terrainExact ? ('exact' as const) : ('sampled' as const)
+  const terrainMaterialExact =
+    snapshot.terrainMaterials?.exact === true &&
+    (uvwTransform === undefined ||
+      (snapshot.terrainMaterials.width === uvwTransform.heightfield.columns &&
+        snapshot.terrainMaterials.height === uvwTransform.heightfield.rows))
+  const terrainWeightRasterExact =
+    (snapshot.terrainMaterials?.weightRasters?.length ?? 0) > 0 &&
+    snapshot.terrainMaterials!.weightRasters!.every(
+      raster =>
+        Number.isSafeInteger(raster.width) &&
+        raster.width > 0 &&
+        Number.isSafeInteger(raster.height) &&
+        raster.height > 0 &&
+        raster.materialIds.length > 0 &&
+        raster.materialIds.length <= 4 &&
+        raster.rgba?.byteLength === raster.width * raster.height * 4,
+    )
+  const terrainMaterialLod = terrainMaterialExact ? ('exact' as const) : ('sampled' as const)
+  const cliffExact =
+    snapshot.cliffs?.exact === true &&
+    (uvwTransform === undefined ||
+      (snapshot.cliffs.width <= uvwTransform.heightfield.columns &&
+        snapshot.cliffs.height <= uvwTransform.heightfield.rows))
+  const cliffLod = cliffExact ? ('exact' as const) : ('sampled' as const)
   const objectIdentities = new Set<number>()
   const semanticObjects = semantic.objects.filter(item => {
     if (objectIdentities.has(item.objectId)) return false
@@ -387,23 +567,128 @@ export function createCandidateWorldSceneLease(
       })
     }),
   )
+  const terrainByGrid = new Map(
+    terrain.flatMap(item =>
+      item.facet === 'terrain' ? [[`${String(item.x)}:${String(item.y)}`, item]] : [],
+    ),
+  )
+  const terrainMaterials: readonly WorldSceneItem[] = Object.freeze(
+    (snapshot.terrainMaterials?.samples ?? []).map(item => {
+      const terrainItem = terrainByGrid.get(`${String(item.x)}:${String(item.y)}`)
+      const materialId =
+        snapshot.terrainMaterials?.materials?.find(
+          material => material.sourceIndex === item.textureIndex,
+        )?.materialId ?? `material-${String(item.textureIndex)}`
+      return Object.freeze({
+        facet: 'terrain-materials' as const,
+        id: `${terrainMaterialLayerId}:sample:${String(item.x)}:${String(item.y)}`,
+        layerId: terrainMaterialLayerId,
+        coordinateSpaceId: 'height-grid' as const,
+        lod: terrainMaterialLod,
+        ...item,
+        weights: item.weights ?? Object.freeze([Object.freeze({ materialId, weight: 1 })]),
+        ...(terrainItem?.facet === 'terrain' && terrainItem.uvwPosition !== undefined
+          ? { uvwPosition: terrainItem.uvwPosition }
+          : {}),
+      })
+    }),
+  )
+  const water: readonly WorldSceneItem[] = Object.freeze(
+    (snapshot.water?.zones ?? []).map(item => {
+      const canonicalCorners =
+        item.elevation === undefined || uvwTransform === undefined
+          ? undefined
+          : [item.minimum.x, item.maximum.x].flatMap(x =>
+              [item.minimum.y, item.maximum.y].map(y =>
+                canonicalPosition({ x, y, z: item.elevation as number }, uvwTransform),
+              ),
+            )
+      return Object.freeze({
+        facet: 'water' as const,
+        id: `${waterLayerId}:zone:${String(item.zoneId)}`,
+        layerId: waterLayerId,
+        coordinateSpaceId: 'map-native' as const,
+        ...item,
+        ...(canonicalCorners === undefined
+          ? {}
+          : {
+              uvwMinimum: Object.freeze({
+                x: Math.min(...canonicalCorners.map(corner => corner.x)),
+                z: Math.min(...canonicalCorners.map(corner => corner.z)),
+              }),
+              uvwMaximum: Object.freeze({
+                x: Math.max(...canonicalCorners.map(corner => corner.x)),
+                z: Math.max(...canonicalCorners.map(corner => corner.z)),
+              }),
+              uvwElevation: canonicalCorners[0]!.y,
+            }),
+      })
+    }),
+  )
+  const unresolvedWaterElevationCount = water.filter(
+    item => item.facet === 'water' && item.elevation === undefined,
+  ).length
+  const cliffs: readonly WorldSceneItem[] = Object.freeze(
+    (snapshot.cliffs?.samples ?? []).map(item => {
+      const terrainItem = terrainByGrid.get(`${String(item.x)}:${String(item.y)}`)
+      return Object.freeze({
+        facet: 'cliffs' as const,
+        id: `${cliffLayerId}:sample:${String(item.x)}:${String(item.y)}`,
+        layerId: cliffLayerId,
+        coordinateSpaceId: 'height-grid' as const,
+        lod: cliffLod,
+        ...item,
+        ...(terrainItem?.facet === 'terrain' && terrainItem.uvwPosition !== undefined
+          ? { uvwPosition: terrainItem.uvwPosition }
+          : {}),
+      })
+    }),
+  )
   const objects: readonly WorldSceneItem[] = Object.freeze(
     semanticObjects.map(item => {
       const id = `${objectLayerId}:object:${String(item.objectId)}`
       const ref = item.catalog?.ref
+      const uvwRotation = canonicalObjectRotation(item.rotation, item.nativeRotationUnit)
+      const compoundResourceIds = (item.modelResources ?? []).map(requirement =>
+        modelResourceId(requirement.id),
+      )
+      const modelComponents = item.modelComponents?.map(component =>
+        Object.freeze({
+          ...component,
+          resourceId: modelResourceId(component.resourceId),
+        }),
+      )
       return Object.freeze({
         facet: 'objects' as const,
         id,
         layerId: objectLayerId,
         coordinateSpaceId: 'map-native',
         ...item,
+        ...(uvwTransform === undefined || item.sourcePositionDimensions === 2
+          ? {}
+          : {
+              uvwPosition: canonicalPosition(item.position, uvwTransform),
+              ...(uvwRotation === undefined ? {} : { uvwRotation }),
+              uvwScale: canonicalObjectScale(item.scale, uvwTransform),
+            }),
         ...(ref === undefined ? {} : { resourceId: resourceId(ref.namespace, ref.entityId) }),
+        ...(compoundResourceIds.length === 0
+          ? {}
+          : { resourceIds: Object.freeze(compoundResourceIds) }),
+        ...(modelComponents === undefined
+          ? {}
+          : { modelComponents: Object.freeze(modelComponents) }),
       })
     }),
   )
   const regions: readonly WorldSceneItem[] = Object.freeze(
-    semanticRegions.map(item =>
-      Object.freeze({
+    semanticRegions.map(item => {
+      const shapes = Object.freeze(item.shapes.map(regionShape))
+      const uvwShapes =
+        uvwTransform === undefined
+          ? undefined
+          : shapes.map(shape => canonicalRegionShape(shape, uvwTransform))
+      return Object.freeze({
         facet: 'regions' as const,
         id: `${regionLayerId}:region:${String(item.regionId)}`,
         layerId: regionLayerId,
@@ -411,26 +696,54 @@ export function createCandidateWorldSceneLease(
         regionId: item.regionId,
         name: item.name,
         ...(item.color === undefined ? {} : { color: item.color }),
-        shapes: Object.freeze(item.shapes.map(regionShape)),
-      }),
-    ),
+        shapes,
+        ...(uvwShapes === undefined || uvwShapes.some(shape => shape === undefined)
+          ? {}
+          : { uvwShapes: Object.freeze(uvwShapes as WorldSceneRegionShape[]) }),
+      })
+    }),
   )
+  const incompleteRegionGeometryCount = regions.filter(
+    item => item.facet === 'regions' && item.uvwShapes === undefined,
+  ).length
   const resourceJoins = new Map<
     string,
-    { namespace: string; entityId: string; resolved: boolean; objectIds: string[] }
+    {
+      namespace?: string
+      entityId?: string
+      resolved: boolean
+      objectIds: string[]
+      modelResource?: NonNullable<WorldSceneObjectItem['modelResource']>
+    }
   >()
   for (const item of objects) {
-    if (item.facet !== 'objects' || item.catalog === undefined) continue
-    const key = resourceId(item.catalog.ref.namespace, item.catalog.ref.entityId)
-    const current = resourceJoins.get(key) ?? {
-      namespace: item.catalog.ref.namespace,
-      entityId: item.catalog.ref.entityId,
-      resolved: item.catalog.entity !== undefined,
-      objectIds: [],
+    if (item.facet !== 'objects') continue
+    if (item.catalog !== undefined) {
+      const key = resourceId(item.catalog.ref.namespace, item.catalog.ref.entityId)
+      const current = resourceJoins.get(key) ?? {
+        namespace: item.catalog.ref.namespace,
+        entityId: item.catalog.ref.entityId,
+        resolved: item.catalog.entity !== undefined,
+        objectIds: [],
+        ...(item.modelResource === undefined ? {} : { modelResource: item.modelResource }),
+      }
+      current.resolved ||= item.catalog.entity !== undefined
+      if (current.modelResource === undefined && item.modelResource !== undefined) {
+        current.modelResource = item.modelResource
+      }
+      current.objectIds.push(item.id)
+      resourceJoins.set(key, current)
     }
-    current.resolved ||= item.catalog.entity !== undefined
-    current.objectIds.push(item.id)
-    resourceJoins.set(key, current)
+    for (const modelResource of item.modelResources ?? []) {
+      const key = modelResourceId(modelResource.id)
+      const current = resourceJoins.get(key) ?? {
+        resolved: true,
+        objectIds: [],
+        modelResource,
+      }
+      current.objectIds.push(item.id)
+      resourceJoins.set(key, current)
+    }
   }
   const resources: readonly WorldSceneItem[] = Object.freeze(
     [...resourceJoins.entries()]
@@ -440,9 +753,10 @@ export function createCandidateWorldSceneLease(
           facet: 'resources' as const,
           id,
           layerId: resourceLayerId,
-          namespace: item.namespace,
-          entityId: item.entityId,
+          ...(item.namespace === undefined ? {} : { namespace: item.namespace }),
+          ...(item.entityId === undefined ? {} : { entityId: item.entityId }),
           resolved: item.resolved,
+          ...(item.modelResource === undefined ? {} : { modelResource: item.modelResource }),
           objectIds: Object.freeze([...item.objectIds]),
         }),
       ),
@@ -457,6 +771,79 @@ export function createCandidateWorldSceneLease(
         lod: 'sampled' as const,
         ...item,
       }),
+    ),
+  )
+  const gateways: readonly WorldSceneItem[] = Object.freeze(
+    (snapshot.gateways?.segments ?? []).map(item => {
+      const uvwStart =
+        uvwTransform === undefined
+          ? undefined
+          : canonicalPosition({ x: item.x1, y: item.y1, z: 0 }, uvwTransform)
+      const uvwEnd =
+        uvwTransform === undefined
+          ? undefined
+          : canonicalPosition({ x: item.x2, y: item.y2, z: 0 }, uvwTransform)
+      return Object.freeze({
+        facet: 'gateways' as const,
+        ...item,
+        id: `${gatewayLayerId}:${item.id}`,
+        layerId: gatewayLayerId,
+        coordinateSpaceId: 'map-native',
+        ...(uvwStart === undefined || uvwEnd === undefined ? {} : { uvwStart, uvwEnd }),
+      })
+    }),
+  )
+  const contentRevisions = Object.freeze({
+    terrain: layerContentRevision(terrain),
+    'terrain-materials': terrainMaterialContentRevision(
+      terrainMaterials,
+      snapshot.terrainMaterials?.weightRasters ?? [],
+    ),
+    water: layerContentRevision(water),
+    cliffs: layerContentRevision(cliffs),
+    objects: layerContentRevision(objects),
+    regions: layerContentRevision(regions),
+    resources: layerContentRevision(resources),
+    navigation: layerContentRevision(navigation),
+    gateways: layerContentRevision(gateways),
+  })
+  const commonTerrainMaterials: readonly MapTerrainMaterialDefinition[] = Object.freeze(
+    snapshot.terrainMaterials?.materials ??
+      (snapshot.terrainMaterials?.textureNames ?? []).map((label, sourceIndex) =>
+        Object.freeze({ materialId: `material-${String(sourceIndex)}`, label, sourceIndex }),
+      ),
+  )
+  const commonWaterMaterials = Object.freeze(snapshot.water?.materials ?? [])
+  const commonTerrainWeightRasters = Object.freeze(
+    (snapshot.terrainMaterials?.weightRasters ?? []).map(raster =>
+      Object.freeze({
+        resourceId: raster.resourceId,
+        width: raster.width,
+        height: raster.height,
+        materialIds: raster.materialIds,
+        encoding: raster.encoding,
+        normalization: raster.normalization,
+      }),
+    ),
+  )
+  const terrainWeightTextures = new Map(
+    (snapshot.terrainMaterials?.weightRasters ?? []).flatMap(raster =>
+      raster.rgba === undefined
+        ? []
+        : [
+            [
+              raster.resourceId,
+              Object.freeze({
+                id: raster.resourceId,
+                width: raster.width,
+                height: raster.height,
+                rgba: raster.rgba.slice(),
+                wrapU: 'clamp' as const,
+                wrapV: 'clamp' as const,
+                filter: 'linear' as const,
+              }),
+            ] as const,
+          ],
     ),
   )
 
@@ -474,12 +861,87 @@ export function createCandidateWorldSceneLease(
       lods: Object.freeze(
         terrainSummary === undefined ? [] : terrainExact ? ['exact'] : ['summary', 'sampled'],
       ),
+      contentRevision: contentRevisions.terrain,
       ...(terrainSummary === undefined
         ? { reason: 'authoritative semantic snapshot contains no terrain height grid' }
         : terrainExact
           ? {}
           : {
               reason: 'candidate exposes bounded deterministic samples, not the full native grid',
+            }),
+    }),
+    Object.freeze({
+      facet: 'terrain-materials' as const,
+      layerId: terrainMaterialLayerId,
+      state:
+        snapshot.terrainMaterials === undefined
+          ? ('unavailable' as const)
+          : terrainMaterialExact || terrainWeightRasterExact
+            ? ('available' as const)
+            : ('partial' as const),
+      itemCount: snapshot.terrainMaterials?.cellCount ?? 0,
+      lods: Object.freeze(
+        snapshot.terrainMaterials === undefined
+          ? []
+          : terrainMaterialExact
+            ? ['exact']
+            : terrainWeightRasterExact
+              ? ['raster-exact', 'sampled']
+              : ['summary', 'sampled'],
+      ),
+      contentRevision: contentRevisions['terrain-materials'],
+      ...(snapshot.terrainMaterials === undefined
+        ? { reason: 'publisher reported terrain materials unavailable' }
+        : terrainMaterialExact || terrainWeightRasterExact
+          ? {}
+          : {
+              reason:
+                'publisher exposes bounded material samples without a grid matching the admitted UVW heightfield',
+            }),
+    }),
+    Object.freeze({
+      facet: 'water' as const,
+      layerId: waterLayerId,
+      state:
+        snapshot.water === undefined
+          ? ('unavailable' as const)
+          : unresolvedWaterElevationCount === 0 && snapshot.water.exact !== false
+            ? ('available' as const)
+            : ('partial' as const),
+      itemCount: snapshot.water?.zones.length ?? 0,
+      lods: Object.freeze(snapshot.water === undefined ? [] : ['exact']),
+      contentRevision: contentRevisions.water,
+      ...(snapshot.water === undefined
+        ? { reason: 'publisher reported water unavailable' }
+        : unresolvedWaterElevationCount > 0
+          ? {
+              reason: `${String(unresolvedWaterElevationCount)} native water zone elevations remain unresolved`,
+            }
+          : snapshot.water.exact === false
+            ? { reason: 'native water geometry exceeds the common constant-elevation zone profile' }
+            : {}),
+    }),
+    Object.freeze({
+      facet: 'cliffs' as const,
+      layerId: cliffLayerId,
+      state:
+        snapshot.cliffs === undefined
+          ? ('unavailable' as const)
+          : cliffExact
+            ? ('available' as const)
+            : ('partial' as const),
+      itemCount: snapshot.cliffs?.cellCount ?? 0,
+      lods: Object.freeze(
+        snapshot.cliffs === undefined ? [] : cliffExact ? ['exact'] : ['sampled'],
+      ),
+      contentRevision: contentRevisions.cliffs,
+      ...(snapshot.cliffs === undefined
+        ? { reason: 'publisher reported synchronized cliff levels unavailable' }
+        : cliffExact
+          ? {}
+          : {
+              reason:
+                'publisher cliff grid is sampled or does not match the admitted UVW heightfield grid',
             }),
     }),
     Object.freeze({
@@ -493,6 +955,7 @@ export function createCandidateWorldSceneLease(
             : ('available' as const),
       itemCount: semanticObjects.length,
       lods: Object.freeze(['exact']),
+      contentRevision: contentRevisions.objects,
       ...(semanticObjects.length === 0
         ? { reason: 'semantic snapshot contains no objects' }
         : duplicateObjectCount > 0 || incompleteObjectPositionCount > 0
@@ -516,15 +979,27 @@ export function createCandidateWorldSceneLease(
       state:
         semanticRegions.length === 0
           ? ('unavailable' as const)
-          : duplicateRegionCount > 0
+          : duplicateRegionCount > 0 || incompleteRegionGeometryCount > 0
             ? ('partial' as const)
             : ('available' as const),
       itemCount: semanticRegions.length,
       lods: Object.freeze(['exact']),
+      contentRevision: contentRevisions.regions,
       ...(semanticRegions.length === 0
         ? { reason: 'semantic snapshot contains no regions' }
-        : duplicateRegionCount > 0
-          ? { reason: `${duplicateRegionCount} duplicate region identities were omitted` }
+        : duplicateRegionCount > 0 || incompleteRegionGeometryCount > 0
+          ? {
+              reason: [
+                ...(duplicateRegionCount > 0
+                  ? [`${duplicateRegionCount} duplicate region identities were omitted`]
+                  : []),
+                ...(incompleteRegionGeometryCount > 0
+                  ? [
+                      `${incompleteRegionGeometryCount} regions contain shapes without canonical UVW geometry`,
+                    ]
+                  : []),
+              ].join('; '),
+            }
           : {}),
     }),
     Object.freeze({
@@ -533,6 +1008,7 @@ export function createCandidateWorldSceneLease(
       state: resources.length === 0 ? ('unavailable' as const) : ('available' as const),
       itemCount: resources.length,
       lods: Object.freeze(['exact']),
+      contentRevision: contentRevisions.resources,
       ...(resources.length === 0
         ? { reason: 'no placed object publishes a catalog resource reference' }
         : {}),
@@ -543,9 +1019,28 @@ export function createCandidateWorldSceneLease(
       state: snapshot.navigation === undefined ? ('unavailable' as const) : ('partial' as const),
       itemCount: snapshot.navigation?.cellCount ?? 0,
       lods: Object.freeze(snapshot.navigation === undefined ? [] : ['summary', 'sampled']),
+      contentRevision: contentRevisions.navigation,
       ...(snapshot.navigation === undefined
         ? { reason: 'publisher reported navigation unavailable' }
         : { reason: 'native flags are sampled and their bit semantics remain publisher-defined' }),
+    }),
+    Object.freeze({
+      facet: 'gateways' as const,
+      layerId: gatewayLayerId,
+      state:
+        snapshot.gateways === undefined
+          ? ('unavailable' as const)
+          : snapshot.gateways.exact && uvwTransform !== undefined
+            ? ('available' as const)
+            : ('partial' as const),
+      itemCount: snapshot.gateways?.segments.length ?? 0,
+      lods: Object.freeze(snapshot.gateways === undefined ? [] : ['exact']),
+      contentRevision: contentRevisions.gateways,
+      ...(snapshot.gateways === undefined
+        ? { reason: 'publisher reported gateways unavailable' }
+        : snapshot.gateways.exact && uvwTransform !== undefined
+          ? {}
+          : { reason: 'gateway endpoints lack an exact canonical transform' }),
     }),
   ])
   const layers: readonly WorldSceneItem[] = Object.freeze(
@@ -558,16 +1053,62 @@ export function createCandidateWorldSceneLease(
         state: item.state,
         itemCount: item.itemCount,
         lods: item.lods,
+        ...(item.contentRevision === undefined ? {} : { contentRevision: item.contentRevision }),
+        ...(uvwTransform !== undefined &&
+        (item.facet === 'terrain' ||
+          item.facet === 'terrain-materials' ||
+          item.facet === 'cliffs') &&
+        item.state === 'available' &&
+        (item.lods.includes('exact') ||
+          (item.facet === 'terrain-materials' && item.lods.includes('raster-exact')))
+          ? {
+              grid: Object.freeze({
+                columns:
+                  item.facet === 'cliffs'
+                    ? snapshot.cliffs!.width
+                    : uvwTransform.heightfield.columns,
+                rows:
+                  item.facet === 'cliffs' ? snapshot.cliffs!.height : uvwTransform.heightfield.rows,
+                cellSize: uvwTransform.heightfield.cellSize,
+                origin:
+                  item.facet === 'cliffs' &&
+                  uvwTransform.heightfield.sourceRowOrder === 'reverse' &&
+                  snapshot.cliffs!.height < uvwTransform.heightfield.rows
+                    ? Object.freeze([
+                        uvwTransform.heightfield.origin[0],
+                        uvwTransform.heightfield.origin[1],
+                        uvwTransform.heightfield.origin[2] + uvwTransform.heightfield.cellSize,
+                      ] as const)
+                    : uvwTransform.heightfield.origin,
+                coordinateSpaceId: 'uvw-canonical',
+              }),
+            }
+          : {}),
+        ...(item.facet === 'terrain-materials' && commonTerrainMaterials.length > 0
+          ? {
+              materials: commonTerrainMaterials,
+              ...(commonTerrainWeightRasters.length === 0
+                ? {}
+                : { weightRasters: commonTerrainWeightRasters }),
+            }
+          : {}),
+        ...(item.facet === 'water' && commonWaterMaterials.length > 0
+          ? { waterMaterials: commonWaterMaterials }
+          : {}),
       }),
     ),
   )
   const byFacet = new Map<string, readonly WorldSceneItem[]>([
     ['layers', layers],
     ['terrain', terrain],
+    ['terrain-materials', terrainMaterials],
+    ['water', water],
+    ['cliffs', cliffs],
     ['objects', objects],
     ['regions', regions],
     ['resources', resources],
     ['navigation', navigation],
+    ['gateways', gateways],
   ])
   const info: CandidateWorldSceneInfo = Object.freeze({
     contract: snapshot.worldCandidate.contract,
@@ -721,17 +1262,64 @@ export function createCandidateWorldSceneLease(
           reason: 'navigation grid has no vertical axis',
         }),
       }),
+      Object.freeze({
+        facet: 'gateways' as const,
+        coordinateSpaceId: uvwTransform === undefined ? 'map-native' : 'uvw-canonical',
+        x:
+          gateways.length === 0
+            ? Object.freeze({ state: 'unknown' as const, reason: 'gateway bounds unavailable' })
+            : Object.freeze({
+                state: 'known' as const,
+                minimum: Math.min(
+                  ...gateways.flatMap(item =>
+                    item.facet === 'gateways'
+                      ? [item.uvwStart?.x ?? item.x1, item.uvwEnd?.x ?? item.x2]
+                      : [],
+                  ),
+                ),
+                maximum: Math.max(
+                  ...gateways.flatMap(item =>
+                    item.facet === 'gateways'
+                      ? [item.uvwStart?.x ?? item.x1, item.uvwEnd?.x ?? item.x2]
+                      : [],
+                  ),
+                ),
+              }),
+        y: Object.freeze({ state: 'unknown' as const, reason: 'gateways have no vertical extent' }),
+        z:
+          gateways.length === 0
+            ? Object.freeze({ state: 'unknown' as const, reason: 'gateway bounds unavailable' })
+            : Object.freeze({
+                state: 'known' as const,
+                minimum: Math.min(
+                  ...gateways.flatMap(item =>
+                    item.facet === 'gateways'
+                      ? [item.uvwStart?.z ?? item.y1, item.uvwEnd?.z ?? item.y2]
+                      : [],
+                  ),
+                ),
+                maximum: Math.max(
+                  ...gateways.flatMap(item =>
+                    item.facet === 'gateways'
+                      ? [item.uvwStart?.z ?? item.y1, item.uvwEnd?.z ?? item.y2]
+                      : [],
+                  ),
+                ),
+              }),
+      }),
     ]),
     ...(terrainTransform === undefined ? {} : { terrainTransform }),
     ...(uvwTransform === undefined ? {} : { uvwTransform }),
     facets,
     provenance: Object.freeze(provenance.map(item => Object.freeze({ ...item }))),
     unknownFacets: snapshot.worldCandidate.unknownFacets,
+    ...(snapshot.worldCandidate.edit === undefined ? {} : { edit: snapshot.worldCandidate.edit }),
     lossPolicy: 'explicit-partial',
     complete:
       snapshot.complete &&
       duplicateObjectCount === 0 &&
       duplicateRegionCount === 0 &&
+      incompleteRegionGeometryCount === 0 &&
       incompleteObjectPositionCount === 0,
   })
   let live = true
@@ -771,9 +1359,13 @@ export function createCandidateWorldSceneLease(
         const expectedLod =
           request.facet === 'terrain'
             ? terrainLod
-            : request.facet === 'navigation'
-              ? 'sampled'
-              : undefined
+            : request.facet === 'terrain-materials'
+              ? terrainMaterialLod
+              : request.facet === 'cliffs'
+                ? cliffLod
+                : request.facet === 'navigation'
+                  ? 'sampled'
+                  : undefined
         if (expectedLod !== undefined && request.lod !== expectedLod) {
           return Promise.resolve(
             Object.freeze({
@@ -824,7 +1416,33 @@ export function createCandidateWorldSceneLease(
                   item.position.y <= bounds.maximumY
                 )
               }
-              if (item.facet !== 'terrain' && item.facet !== 'navigation') return false
+              if (item.facet === 'water') {
+                return !(
+                  item.maximum.x < bounds.minimumX ||
+                  item.minimum.x > bounds.maximumX ||
+                  item.maximum.y < bounds.minimumY ||
+                  item.minimum.y > bounds.maximumY
+                )
+              }
+              if (item.facet === 'gateways') {
+                const startX = item.uvwStart?.x ?? item.x1
+                const startY = item.uvwStart?.z ?? item.y1
+                const endX = item.uvwEnd?.x ?? item.x2
+                const endY = item.uvwEnd?.z ?? item.y2
+                return !(
+                  Math.max(startX, endX) < bounds.minimumX ||
+                  Math.min(startX, endX) > bounds.maximumX ||
+                  Math.max(startY, endY) < bounds.minimumY ||
+                  Math.min(startY, endY) > bounds.maximumY
+                )
+              }
+              if (
+                item.facet !== 'terrain' &&
+                item.facet !== 'terrain-materials' &&
+                item.facet !== 'cliffs' &&
+                item.facet !== 'navigation'
+              )
+                return false
               if (item.facet === 'terrain' && item.mapNativePosition !== undefined) {
                 return (
                   item.mapNativePosition.x >= bounds.minimumX &&
@@ -842,12 +1460,320 @@ export function createCandidateWorldSceneLease(
             })
       return Promise.resolve(pageItems(bounded, request, snapshot.snapshotId, maxPageSize))
     },
+    ...(modelResources === undefined
+      ? {}
+      : {
+          async model(
+            requestedResourceId: string,
+            request: WorldSceneModelRequest,
+            signal?: AbortSignal,
+          ) {
+            assertLive(signal)
+            const maxNodes = request.maxNodes ?? request.maxMeshes
+            const maxResources = request.maxResources ?? maxNodes
+            const maxTextureBytes =
+              request.maxTextureBytes ?? Math.min(16 * 1024 * 1024, request.maxBytes)
+            const maxTextureTotalBytes =
+              request.maxTextureTotalBytes ?? Math.min(32 * 1024 * 1024, request.maxBytes)
+            positiveLimit(maxNodes, maxPageSize)
+            positiveLimit(request.maxMeshes, maxPageSize)
+            positiveLimit(request.maxPrimitives, maxPageSize)
+            positiveLimit(request.maxPrimitiveBytes, request.maxBytes)
+            positiveLimit(maxResources, maxPageSize)
+            positiveLimit(maxTextureBytes, request.maxBytes)
+            positiveLimit(maxTextureTotalBytes, request.maxBytes)
+            const item = resources.find(
+              candidate => candidate.facet === 'resources' && candidate.id === requestedResourceId,
+            )
+            if (item?.facet !== 'resources' || item.modelResource === undefined) {
+              return Object.freeze({
+                state: 'unresolved' as const,
+                diagnostics: Object.freeze([
+                  diagnostic(
+                    'warning',
+                    'x3.host/world-model-resource-unavailable',
+                    `world resource ${requestedResourceId} has no resolved logical model requirement`,
+                  ),
+                ]),
+              })
+            }
+            const metersPerSourceUnit =
+              request.metersPerSourceUnit ?? snapshot.semantic.modelMetersPerSourceUnit
+            const lease = await modelResources.acquire(
+              {
+                maxBytes: request.maxBytes,
+                ...(metersPerSourceUnit === undefined ? {} : { metersPerSourceUnit }),
+                requirement: item.modelResource,
+              },
+              signal,
+            )
+            try {
+              const result = lease.value.result
+              if (result.state === 'unresolved') {
+                return Object.freeze({
+                  ...result,
+                  diagnostics: Object.freeze([...result.diagnostics]),
+                })
+              }
+              if (lease.value.meshes === undefined || lease.value.primitive === undefined) {
+                return Object.freeze({
+                  state: 'unresolved' as const,
+                  diagnostics: Object.freeze([
+                    ...result.diagnostics,
+                    diagnostic(
+                      'warning',
+                      'x3.host/world-model-scene-unavailable',
+                      `model ${item.modelResource.logicalId} has no common scene geometry facet`,
+                    ),
+                  ]),
+                })
+              }
+              const meshPage = await lease.value.meshes({ limit: request.maxMeshes }, signal)
+              const nodePage =
+                lease.value.nodes === undefined
+                  ? undefined
+                  : await lease.value.nodes({ limit: maxNodes }, signal)
+              const [skeletonPage, animationPage, materialPage, resourcePage, socketPage] =
+                await Promise.all([
+                  lease.value.skeletonBindings?.({ limit: maxNodes }, signal),
+                  lease.value.animationClips?.({ limit: maxNodes }, signal),
+                  lease.value.materials?.({ limit: maxNodes }, signal),
+                  lease.value.resourceReferences?.({ limit: maxResources }, signal),
+                  lease.value.sockets?.({ limit: maxNodes }, signal),
+                ])
+              const allPrimitiveIds = meshPage.items.flatMap(mesh => mesh.primitiveIds)
+              const primitiveIds = allPrimitiveIds.slice(0, request.maxPrimitives)
+              const primitives = await Promise.all(
+                primitiveIds.map(primitiveId =>
+                  lease.value.primitive!(
+                    primitiveId,
+                    { maxBytes: request.maxPrimitiveBytes },
+                    signal,
+                  ),
+                ),
+              )
+              const textureDiagnostics: ReturnType<typeof diagnostic>[] = []
+              const textures: SceneRendererTexture[] = []
+              const textureReferences =
+                resourcePage?.items.filter(reference => reference.role === 'texture') ?? []
+              let textureBytes = 0
+              for (const reference of textureReferences) {
+                const remaining = maxTextureTotalBytes - textureBytes
+                if (remaining <= 0) {
+                  textureDiagnostics.push(
+                    diagnostic(
+                      'warning',
+                      'x3.host/world-model-texture-budget-exhausted',
+                      `model texture budget omitted ${reference.id}`,
+                    ),
+                  )
+                  continue
+                }
+                const raster = await lease.value.readRaster(
+                  {
+                    kind: 'logical',
+                    requirement: {
+                      id: `world-texture:${encodeURIComponent(reference.id)}`,
+                      logicalId: reference.id,
+                      role: reference.role,
+                      scopes: item.modelResource.scopes,
+                      parentResourceId: item.modelResource.id,
+                    },
+                    maxBytes: Math.min(maxTextureBytes, remaining),
+                  },
+                  signal,
+                )
+                textureDiagnostics.push(...raster.diagnostics)
+                if (raster.state !== 'decoded') continue
+                const texture = worldTexture(reference.id, raster)
+                if (texture === undefined) {
+                  textureDiagnostics.push(
+                    diagnostic(
+                      'warning',
+                      'x3.host/world-model-texture-orientation-unknown',
+                      `model texture ${reference.id} has no proven top/bottom row orientation`,
+                    ),
+                  )
+                  continue
+                }
+                if (texture.rgba.byteLength > remaining) {
+                  textureDiagnostics.push(
+                    diagnostic(
+                      'warning',
+                      'x3.host/world-model-texture-budget-exhausted',
+                      `decoded model texture ${reference.id} exceeds the aggregate texture budget`,
+                    ),
+                  )
+                  continue
+                }
+                textureBytes += texture.rgba.byteLength
+                textures.push(texture)
+              }
+              return Object.freeze({
+                state: 'converted' as const,
+                sourceKey: result.sourceKey,
+                uvmBytes: result.bytes.slice(),
+                ...(nodePage === undefined ? {} : { nodes: Object.freeze([...nodePage.items]) }),
+                ...(skeletonPage === undefined
+                  ? {}
+                  : { skeleton: Object.freeze([...skeletonPage.items]) }),
+                ...(animationPage === undefined
+                  ? {}
+                  : { animations: Object.freeze([...animationPage.items]) }),
+                ...(materialPage === undefined
+                  ? {}
+                  : { materials: Object.freeze([...materialPage.items]) }),
+                ...(resourcePage === undefined
+                  ? {}
+                  : { resources: Object.freeze([...resourcePage.items]) }),
+                ...(socketPage === undefined
+                  ? {}
+                  : { sockets: Object.freeze([...socketPage.items]) }),
+                ...(resourcePage === undefined ? {} : { textures: Object.freeze(textures) }),
+                meshes: Object.freeze([...meshPage.items]),
+                primitives: Object.freeze(primitives),
+                diagnostics: Object.freeze([...result.diagnostics, ...textureDiagnostics]),
+                complete:
+                  meshPage.nextCursor === undefined &&
+                  nodePage?.nextCursor === undefined &&
+                  skeletonPage?.nextCursor === undefined &&
+                  animationPage?.nextCursor === undefined &&
+                  materialPage?.nextCursor === undefined &&
+                  resourcePage?.nextCursor === undefined &&
+                  socketPage?.nextCursor === undefined &&
+                  textureReferences.length === textures.length &&
+                  allPrimitiveIds.length <= request.maxPrimitives,
+              })
+            } finally {
+              await lease.release()
+            }
+          },
+        }),
+    ...(rasterResources === undefined && terrainWeightTextures.size === 0
+      ? {}
+      : {
+          async texture(
+            requestedResourceId: string,
+            request: WorldSceneTextureRequest,
+            signal?: AbortSignal,
+          ) {
+            assertLive(signal)
+            positiveLimit(request.maxBytes, Number.MAX_SAFE_INTEGER)
+            const weightTexture = terrainWeightTextures.get(requestedResourceId)
+            if (weightTexture !== undefined) {
+              if (weightTexture.rgba.byteLength > request.maxBytes) {
+                return Object.freeze({
+                  state: 'unresolved' as const,
+                  diagnostics: Object.freeze([
+                    diagnostic(
+                      'warning',
+                      'x3.host/world-terrain-weight-raster-budget-exceeded',
+                      `terrain weight raster ${requestedResourceId} exceeds maxBytes`,
+                    ),
+                  ]),
+                })
+              }
+              return Object.freeze({
+                state: 'decoded' as const,
+                texture: weightTexture,
+                diagnostics: Object.freeze([]),
+              })
+            }
+            if (rasterResources === undefined) {
+              return Object.freeze({
+                state: 'unresolved' as const,
+                diagnostics: Object.freeze([
+                  diagnostic(
+                    'warning',
+                    'x3.host/world-terrain-raster-port-unavailable',
+                    `terrain resource ${requestedResourceId} requires a raster resource port`,
+                  ),
+                ]),
+              })
+            }
+            const requirement = [
+              ...commonTerrainMaterials.flatMap(candidate => [
+                ...(candidate.baseColorResourceId === requestedResourceId &&
+                candidate.baseColorResource !== undefined
+                  ? [candidate.baseColorResource]
+                  : []),
+                ...(candidate.normalResourceId === requestedResourceId &&
+                candidate.normalResource !== undefined
+                  ? [candidate.normalResource]
+                  : []),
+                ...(candidate.specularResourceId === requestedResourceId &&
+                candidate.specularResource !== undefined
+                  ? [candidate.specularResource]
+                  : []),
+              ]),
+              ...commonWaterMaterials.flatMap(candidate => [
+                ...(candidate.baseColorResourceId === requestedResourceId &&
+                candidate.baseColorResource !== undefined
+                  ? [candidate.baseColorResource]
+                  : []),
+                ...(candidate.secondaryColorResourceId === requestedResourceId &&
+                candidate.secondaryColorResource !== undefined
+                  ? [candidate.secondaryColorResource]
+                  : []),
+                ...(candidate.causticsResourceId === requestedResourceId &&
+                candidate.causticsResource !== undefined
+                  ? [candidate.causticsResource]
+                  : []),
+              ]),
+            ][0]
+            if (requirement === undefined) {
+              return Object.freeze({
+                state: 'unresolved' as const,
+                diagnostics: Object.freeze([
+                  diagnostic(
+                    'warning',
+                    'x3.host/world-texture-resource-unavailable',
+                    `world resource ${requestedResourceId} has no scoped logical requirement`,
+                  ),
+                ]),
+              })
+            }
+            const raster = await rasterResources.read(
+              {
+                kind: 'logical',
+                requirement,
+                maxBytes: request.maxBytes,
+              },
+              signal,
+            )
+            if (raster.state !== 'decoded') {
+              return Object.freeze({
+                state: 'unresolved' as const,
+                diagnostics: Object.freeze([...raster.diagnostics]),
+              })
+            }
+            const texture = worldTexture(requestedResourceId, raster)
+            if (texture === undefined) {
+              return Object.freeze({
+                state: 'unresolved' as const,
+                diagnostics: Object.freeze([
+                  ...raster.diagnostics,
+                  diagnostic(
+                    'warning',
+                    'x3.host/world-terrain-texture-orientation-unknown',
+                    `terrain texture ${requestedResourceId} has no proven row orientation`,
+                  ),
+                ]),
+              })
+            }
+            return Object.freeze({
+              state: 'decoded' as const,
+              texture,
+              diagnostics: Object.freeze([...raster.diagnostics]),
+            })
+          },
+        }),
   })
   return Object.freeze({
     value: source,
-    release() {
+    async release() {
       live = false
-      return Promise.resolve()
+      await releaseModelResources?.()
     },
   })
 }

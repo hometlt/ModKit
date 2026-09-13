@@ -34,7 +34,10 @@ function render(value: unknown, indent: string, depth: number, path: string): st
   const closePad = indent.repeat(depth)
   if (Array.isArray(value)) {
     if (value.length === 0) return '[]'
-    const items = value.map((item, i) => pad + render(item, indent, depth + 1, `${path}[${i}]`))
+    const items = Array.from(
+      value,
+      (item, i) => pad + render(item, indent, depth + 1, `${path}[${i}]`),
+    )
     return `[\n${items.join(',\n')}\n${closePad}]`
   }
   const record = value as Record<string, unknown>

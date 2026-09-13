@@ -39,8 +39,10 @@ import {
   type ResolvedMapWorkspaceAnalysis,
   type ResolvedMapWorkspacePlan,
   type ResolvedMapWorkspaceSnapshot,
+  type WorldSceneModelRequest,
   type WorldScenePageRequest,
   type WorldSceneSource,
+  type WorldSceneTextureRequest,
 } from '@modkit/sdk/maps'
 import { resolveModWorkspaceGraph } from '@modkit/sdk'
 import type {
@@ -76,6 +78,12 @@ import { createWorkspaceNamespaceCompanionOrigin } from '../namespace-origin.js'
 import { createResourceSession } from '../resource-session.js'
 import { createHostServiceResolver } from '../service-leases.js'
 import { assembleSubjectDescriptor, createAssetSession } from '../session.js'
+import { createSubjectModelResources } from '../model-resources.js'
+import { openSubject } from '../subject-open.js'
+import {
+  createSubjectRasterResources,
+  type SubjectRasterResourceState,
+} from '../raster-resources.js'
 import {
   analyzeResolvedDataWorkspace,
   createResolvedDataSubjectSelectorLease,
@@ -757,14 +765,18 @@ function validateWorkspacePlan(
   const paths = new Set<string>()
   for (const requirement of plan.requirements) {
     const path = requirement.path.replaceAll('\\', '/')
+    const segments = path.split('/')
+    const mapRootScoped = requirement.scope === undefined || requirement.scope === 'map-root'
     if (
       !nonEmptyString(requirement.requirementId) ||
       !nonEmptyString(requirement.kind) ||
       typeof requirement.required !== 'boolean' ||
+      (requirement.scope !== undefined && requirement.scope !== 'map-root' && requirement.scope !== 'workspace') ||
       path !== requirement.path ||
-      !path.startsWith(prefix) ||
-      path.slice(prefix.length).includes('/') ||
-      path.split('/').some((segment: string) => segment === '.' || segment === '..') ||
+      path.startsWith('/') ||
+      /^[A-Za-z]:/u.test(path) ||
+      segments.some((segment: string) => segment === '' || segment === '.' || segment === '..') ||
+      (mapRootScoped && (!path.startsWith(prefix) || path.slice(prefix.length).includes('/'))) ||
       ids.has(requirement.requirementId) ||
       paths.has(path.toLowerCase())
     ) {
@@ -1020,10 +1032,70 @@ export async function analyzeResolvedMapWorkspace(
     if (request.resources.state() !== 'live') {
       throw new Error('resource session was disposed while workspace map was analyzed')
     }
+    const modelState: SubjectRasterResourceState = {
+      live: true,
+      reservedBytes: 0,
+      resources: request.resources,
+    }
+    const modelReleases: Array<() => Promise<void>> = []
+    const modelResources = createSubjectModelResources({
+      state: modelState,
+      budget: request.budgets,
+      isAuthorized: () => modelState.live && request.grant.classes.includes('read-source'),
+      ancestors: [`map:${request.workspace.workspaceId}@${request.resources.revision}`],
+      own: release => modelReleases.push(release),
+      open: (source, path, signal) =>
+        openSubject({
+          inventory: request.services.inventory,
+          source,
+          path,
+          target: request.services.target,
+          intent: 'full',
+          grant: { ...request.grant, classes: ['read-source'] },
+          budget: request.budgets,
+          executionBackends: request.services.executionBackends,
+          ...(request.services.serviceDefinitions === undefined
+            ? {}
+            : { serviceDefinitions: request.services.serviceDefinitions }),
+          resourceSession: request.resources,
+          ...(signal === undefined ? {} : { signal }),
+        }),
+    })
+    const releaseModelResources = async () => {
+      if (!modelState.live) return
+      modelState.live = false
+      const outcomes = await Promise.allSettled(modelReleases.map(release => release()))
+      const failure = outcomes.find(outcome => outcome.status === 'rejected')
+      if (failure?.status === 'rejected') throw failure.reason
+    }
+    const rasterResources = createSubjectRasterResources({
+      state: modelState,
+      budget: request.budgets,
+      isAuthorized: () => modelState.live && request.grant.classes.includes('read-source'),
+      open: (source, hint, signal) =>
+        openSubject({
+          inventory: request.services.inventory,
+          source,
+          path: hint.path ?? '',
+          target: request.services.target,
+          intent: 'full',
+          grant: { ...request.grant, classes: ['read-source'] },
+          budget: request.budgets,
+          executionBackends: request.services.executionBackends,
+          ...(request.services.serviceDefinitions === undefined
+            ? {}
+            : { serviceDefinitions: request.services.serviceDefinitions }),
+          resourceSession: request.resources,
+          ...(signal === undefined ? {} : { signal }),
+        }),
+    })
     const world = createCandidateWorldSceneLease(
       snapshot,
       request.resources.provenance().slice(provenanceOffset),
       limits.maxPageSize,
+      modelResources,
+      releaseModelResources,
+      rasterResources,
     )
     let released = false
     return Object.freeze({
@@ -1128,6 +1200,30 @@ function borrowCommonWorldScene(candidate: CandidateWorldSceneSource): Lease<Wor
       assertLive(signal)
       return page
     },
+    ...(candidate.model === undefined
+      ? {}
+      : {
+          async model(resourceId: string, request: WorldSceneModelRequest, signal?: AbortSignal) {
+            assertLive(signal)
+            const result = await candidate.model!(resourceId, request, signal)
+            assertLive(signal)
+            return result
+          },
+        }),
+    ...(candidate.texture === undefined
+      ? {}
+      : {
+          async texture(
+            resourceId: string,
+            request: WorldSceneTextureRequest,
+            signal?: AbortSignal,
+          ) {
+            assertLive(signal)
+            const result = await candidate.texture!(resourceId, request, signal)
+            assertLive(signal)
+            return result
+          },
+        }),
   })
   return Object.freeze({
     value: source,

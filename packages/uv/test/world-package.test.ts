@@ -1,0 +1,539 @@
+import { describe, expect, it } from 'vitest'
+
+import { isModkitError } from '@modkit/core'
+import type { RasterResourcePort } from '@modkit/sdk'
+import { materializeUvmCore } from '../src/model/materializer.js'
+import { readUvmContainer } from '../src/model/container.js'
+import { createEmbeddedUvmWorldModelDecoder } from '../../scene/src/world/embedded-uvm.js'
+
+import {
+  createUvwWorldSceneSource,
+  materializeWorldToUvpMap,
+  openUvpMapBundle,
+  type UvwProfileDocument,
+} from '../src/world/index.js'
+
+const rgba = Uint8Array.of(255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 0, 128)
+
+function decodeFixtureRaster(bytes: Uint8Array): Uint8Array {
+  if (bytes.byteLength === 1) return rgba.slice()
+  expect(new TextDecoder().decode(bytes.subarray(bytes.byteLength - 18))).toBe(
+    'TRUEVISION-XFILE.\0',
+  )
+  expect(bytes[2]).toBe(2)
+  expect(bytes[16]).toBe(32)
+  expect(bytes[17]).toBe(0x28)
+  const pixels = new Uint8Array(16)
+  for (let offset = 0; offset < pixels.byteLength; offset += 4) {
+    pixels[offset] = bytes[18 + offset + 2]!
+    pixels[offset + 1] = bytes[18 + offset + 1]!
+    pixels[offset + 2] = bytes[18 + offset]!
+    pixels[offset + 3] = bytes[18 + offset + 3]!
+  }
+  return pixels
+}
+
+const rasterResources: RasterResourcePort = {
+  async read(request) {
+    if (request.kind !== 'embedded') throw new Error('fixture accepts embedded bytes only')
+    return {
+      state: 'decoded',
+      diagnostics: [],
+      info: {
+        width: 2,
+        height: 2,
+        depth: 1,
+        layers: 1,
+        faces: 1,
+        mipLevels: 1,
+        frames: 1,
+        channels: 4,
+        bitDepth: 8,
+        colorSpace: 'srgb',
+        alphaMode: 'straight',
+        orientation: 'top-left',
+        decodedAccess: true,
+      },
+      region: {
+        width: 2,
+        height: 2,
+        rowStride: 8,
+        pixelFormat: 'rgba8',
+        pixels: decodeFixtureRaster(request.bytes),
+      },
+    }
+  },
+}
+
+const document: UvwProfileDocument = {
+  uv: { format: 'UVW', version: '1.0', status: 'profile' },
+  spaces: [
+    {
+      id: 'main',
+      topology: 'heightfield',
+      basis: { handedness: 'right', upAxis: 'y', forwardAxis: '+z', unit: 'meter' },
+      bounds: { min: [0, 0, 0], max: [1, 1, 1] },
+      layers: [
+        {
+          id: 'terrain',
+          kind: 'heightfield',
+          columns: 2,
+          rows: 2,
+          cellSize: 1,
+          origin: [0, 0, 0],
+          samples: [
+            [0, 1],
+            [1, 0],
+          ],
+        },
+        {
+          schemaVersion: 1,
+          id: 'materials',
+          kind: 'terrain-materials',
+          columns: 2,
+          rows: 2,
+          cellSize: 1,
+          origin: [0, 0, 0],
+          materials: [{ id: 'grass', baseColorResourceId: 'source-grass' }],
+          samples: [
+            [
+              { weights: [{ materialId: 'grass', weight: 1 }] },
+              { weights: [{ materialId: 'grass', weight: 1 }] },
+            ],
+            [
+              { weights: [{ materialId: 'grass', weight: 1 }] },
+              { weights: [{ materialId: 'grass', weight: 1 }] },
+            ],
+          ],
+        },
+        {
+          schemaVersion: 1,
+          id: 'resources',
+          kind: 'resources',
+          resources: [{ id: 'source-grass', kind: 'media', uri: 'source/grass.bin' }],
+        },
+      ],
+    },
+  ],
+  connections: [],
+}
+
+function source() {
+  return createUvwWorldSceneSource(document, {
+    snapshotId: 'source-snapshot',
+    embeddedResources: new Map([['uvw-resource:main/source-grass', { bytes: Uint8Array.of(1) }]]),
+    rasterResources,
+  })
+}
+
+function sourceWithWeightRaster() {
+  const rasterDocument: UvwProfileDocument = {
+    ...document,
+    spaces: document.spaces.map(space => ({
+      ...space,
+      layers: space.layers.map(layer => {
+        if (layer.kind === 'terrain-materials')
+          return {
+            ...layer,
+            samples: undefined,
+            weightRasters: [
+              {
+                resourceId: 'source-weights',
+                width: 2,
+                height: 2,
+                materialIds: ['grass'],
+                encoding: 'rgba8-unorm' as const,
+                normalization: 'sum' as const,
+              },
+            ],
+          }
+        if (layer.kind === 'resources')
+          return {
+            ...layer,
+            resources: [
+              ...layer.resources,
+              { id: 'source-weights', kind: 'media' as const, uri: 'source/weights.bin' },
+            ],
+          }
+        return layer
+      }),
+    })),
+  }
+  return createUvwWorldSceneSource(rasterDocument, {
+    snapshotId: 'source-weight-raster-snapshot',
+    embeddedResources: new Map([
+      ['uvw-resource:main/source-grass', { bytes: Uint8Array.of(1) }],
+      ['uvw-resource:main/source-weights', { bytes: Uint8Array.of(1) }],
+    ]),
+    rasterResources,
+  })
+}
+
+function sourceWithDualWaterTextures() {
+  const main = document.spaces[0]!
+  const resourceLayer = main.layers.find(layer => layer.kind === 'resources')!
+  if (resourceLayer.kind !== 'resources') throw new Error('fixture resource layer missing')
+  const waterDocument: UvwProfileDocument = {
+    ...document,
+    spaces: [
+      {
+        ...main,
+        layers: [
+          ...main.layers.filter(layer => layer !== resourceLayer),
+          {
+            schemaVersion: 1,
+            id: 'water',
+            kind: 'water',
+            materials: [
+              {
+                id: 'water-surface',
+                classification: 'water',
+                shorelineMode: 'zone',
+                color: [0.18, 0.33, 0.42, 0.45],
+                baseColorResourceId: 'source-water-primary',
+                secondaryColorResourceId: 'source-water-secondary',
+                uvScale: [1 / 512, 1 / 512, 1 / 640, 1 / 640],
+                scroll: [1 / 80, 1 / 40, 0, -1 / 40],
+                colorFalloff: 0,
+              },
+            ],
+            zones: [
+              {
+                id: 'pool',
+                minimum: [0, 0],
+                maximum: [1, 1],
+                elevation: 0.5,
+                materialId: 'water-surface',
+              },
+            ],
+          },
+          {
+            ...resourceLayer,
+            resources: [
+              ...resourceLayer.resources,
+              { id: 'source-water-primary', kind: 'media', uri: 'source/water-primary.bin' },
+              {
+                id: 'source-water-secondary',
+                kind: 'media',
+                uri: 'source/water-secondary.bin',
+              },
+            ],
+          },
+        ],
+      },
+    ],
+  }
+  return createUvwWorldSceneSource(waterDocument, {
+    snapshotId: 'dual-water-source-snapshot',
+    embeddedResources: new Map([
+      ['uvw-resource:main/source-grass', { bytes: Uint8Array.of(1) }],
+      ['uvw-resource:main/source-water-primary', { bytes: Uint8Array.of(1) }],
+      ['uvw-resource:main/source-water-secondary', { bytes: Uint8Array.of(1) }],
+    ]),
+    rasterResources,
+  })
+}
+
+const triangle = {
+  nodes: [
+    {
+      id: 'node-0',
+      childIds: [],
+      meshIds: ['mesh-0'],
+      transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+    },
+  ],
+  meshes: [{ id: 'mesh-0', primitiveIds: ['mesh-0-primitive-0'] }],
+  primitives: [
+    {
+      id: 'mesh-0-primitive-0',
+      topology: 'triangles' as const,
+      positions: Float32Array.of(0, 0, 0, 1, 0, 0, 0, 1, 0),
+      indices: Uint32Array.of(0, 1, 2),
+      textureCoordinates: Float32Array.of(0, 0, 1, 0, 0, 1),
+      materialId: 'material-0',
+    },
+  ],
+  materials: [{ id: 'material-0', simpleEffect: { textureResource: 'texture.dds' } }],
+}
+
+const modelBytes = materializeUvmCore(
+  {
+    info: {
+      scenes: 1,
+      nodes: 1,
+      meshes: 1,
+      primitives: 1,
+      materials: 1,
+      textures: 1,
+      animations: 0,
+      geometryAccess: 'decoded',
+    },
+    ...triangle,
+    resourceClosure: {
+      mode: 'content-qualified',
+      entries: [{ role: 'texture', logicalId: 'texture.dds', mediaHint: 'image/vnd-ms.dds' }],
+    },
+  },
+  {
+    scope: { scopeId: 'model-interchange-v1', version: '1.0.0' },
+    profile: 'UVM/core@1.0',
+    subjectRevision: 'provider-token:portable-model' as never,
+    options: { assetId: 'fixture/triangle', sourceFormat: 'fixture' },
+  },
+).bytes
+
+function sourceWithModel() {
+  const main = document.spaces[0]!
+  const resourceLayer = main.layers.find(layer => layer.kind === 'resources')!
+  if (resourceLayer.kind !== 'resources') throw new Error('fixture resource layer missing')
+  const modelDocument: UvwProfileDocument = {
+    ...document,
+    spaces: [
+      {
+        ...main,
+        layers: [
+          ...main.layers.filter(layer => layer !== resourceLayer),
+          {
+            schemaVersion: 1,
+            id: 'objects',
+            kind: 'objects',
+            instances: [
+              {
+                id: 'triangle',
+                objectKind: 'doodad',
+                position: [0.5, 0, 0.5],
+                rotation: [0, 0, 0, 1],
+                scale: [1, 1, 1],
+                resourceIds: ['source-model'],
+                modelComponents: [{ id: 'body', resourceId: 'source-model' }],
+              },
+            ],
+          },
+          {
+            ...resourceLayer,
+            resources: [
+              ...resourceLayer.resources,
+              { id: 'source-model', kind: 'uvm', uri: 'source/model.uvm.glb' },
+            ],
+          },
+        ],
+      },
+    ],
+  }
+  const base = createUvwWorldSceneSource(modelDocument, {
+    snapshotId: 'model-source-snapshot',
+    embeddedResources: new Map([['uvw-resource:main/source-grass', { bytes: Uint8Array.of(1) }]]),
+    rasterResources,
+  })
+  return Object.freeze({
+    ...base,
+    async model(resourceId: string) {
+      expect(resourceId).toBe('uvw-resource:main/source-model')
+      return {
+        state: 'converted' as const,
+        sourceKey: 'fixture-model-revision',
+        uvmBytes: modelBytes.slice(),
+        ...triangle,
+        resources: [
+          { id: 'texture.dds', role: 'texture' as const, provenance: 'companion' as const },
+        ],
+        textures: [{ id: 'texture.dds', width: 2, height: 2, rgba: rgba.slice() }],
+        diagnostics: [],
+        complete: true,
+      }
+    },
+  })
+}
+
+const options = {
+  packageId: 'test-vendor/portable-map',
+  packageVersion: '1.0.0',
+  title: 'Portable terrain map',
+  maxPageItems: 16,
+  maxTerrainItems: 16,
+  maxFacetItems: 64,
+  maxOutputBytes: 1024 * 1024,
+  maxTextureBytes: 1024,
+  maxMediaBytes: 1024 * 1024,
+}
+
+describe('portable UVP map bundle', () => {
+  it('packages both independent water texture channels and reopens them without the source', async () => {
+    const packed = await materializeWorldToUvpMap(sourceWithDualWaterTextures(), options)
+    expect(packed.state).toBe('materialized')
+    if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+    expect(packed.packagedTextureCount).toBe(3)
+    expect(packed.unpackagedWaterResourceIds).toEqual([])
+    expect([...packed.entries.keys()]).toEqual([
+      'uvp.manifest.json',
+      'world/main.uvw.json',
+      'media/terrain/terrain-media-0000.tga',
+      'media/water/water-media-0001.tga',
+      'media/water/water-media-0002.tga',
+    ])
+    const reopened = await openUvpMapBundle(
+      new Map([...packed.entries].map(([path, bytes]) => [path, bytes.slice()])),
+      { snapshotId: 'detached-dual-water', rasterResources },
+    )
+    const waterLayer = reopened.document.spaces[0]?.layers.find(layer => layer.kind === 'water')
+    if (waterLayer?.kind !== 'water') throw new Error('detached water layer missing')
+    expect(waterLayer.materials?.[0]).toMatchObject({
+      id: 'water-surface',
+      baseColorResourceId: 'water-media-0001',
+      secondaryColorResourceId: 'water-media-0002',
+    })
+    for (const resourceId of ['water-media-0001', 'water-media-0002']) {
+      const texture = await reopened.source.texture?.(`uvw-resource:main/${resourceId}`, {
+        maxBytes: 1024,
+      })
+      expect(texture?.state).toBe('decoded')
+      if (texture?.state === 'decoded') expect(texture.texture.rgba).toEqual(rgba)
+    }
+  })
+
+  it('packages and independently reopens exact RGBA terrain weight rasters', async () => {
+    const packed = await materializeWorldToUvpMap(sourceWithWeightRaster(), options)
+    expect(packed.state).toBe('materialized')
+    if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+    expect(packed.packagedTextureCount).toBe(2)
+    expect([...packed.entries.keys()]).toEqual([
+      'uvp.manifest.json',
+      'world/main.uvw.json',
+      'media/terrain/terrain-media-0000.tga',
+      'media/terrain/terrain-media-0001.tga',
+    ])
+    const reopened = await openUvpMapBundle(
+      new Map([...packed.entries].map(([path, bytes]) => [path, bytes.slice()])),
+      { snapshotId: 'detached-weight-raster', rasterResources },
+    )
+    const materialLayer = reopened.document.spaces[0]?.layers.find(
+      layer => layer.kind === 'terrain-materials',
+    )
+    expect(materialLayer?.samples).toBeUndefined()
+    expect(materialLayer?.weightRasters).toEqual([
+      {
+        resourceId: 'terrain-media-0001',
+        width: 2,
+        height: 2,
+        materialIds: ['grass'],
+        encoding: 'rgba8-unorm',
+        normalization: 'sum',
+      },
+    ])
+    const texture = await reopened.source.texture?.('uvw-resource:main/terrain-media-0001', {
+      maxBytes: 1024,
+    })
+    expect(texture?.state).toBe('decoded')
+    if (texture?.state === 'decoded') expect(texture.texture.rgba).toEqual(rgba)
+  })
+
+  it('materializes UVW plus owned texture bytes and reopens without the original source', async () => {
+    const packed = await materializeWorldToUvpMap(source(), options)
+    expect(packed.state).toBe('materialized')
+    if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+    expect(packed.packagedTextureCount).toBe(1)
+    expect([...packed.entries.keys()]).toEqual([
+      'uvp.manifest.json',
+      'world/main.uvw.json',
+      'media/terrain/terrain-media-0000.tga',
+    ])
+
+    const detached = new Map(
+      [...packed.entries].map(([path, bytes]) => [String(path), Uint8Array.from(bytes)]),
+    )
+    const reopened = await openUvpMapBundle(detached, {
+      snapshotId: 'detached-snapshot',
+      rasterResources,
+    })
+    const materialLayer = reopened.document.spaces[0]?.layers.find(
+      layer => layer.kind === 'terrain-materials',
+    )
+    expect(materialLayer?.materials[0]?.baseColorResourceId).toBe('terrain-media-0000')
+    expect(reopened.embeddedResources.size).toBe(1)
+    const texture = await reopened.source.texture?.('uvw-resource:main/terrain-media-0000', {
+      maxBytes: 1024,
+    })
+    expect(texture?.state).toBe('decoded')
+    if (texture?.state === 'decoded') expect(texture.texture.rgba).toEqual(rgba)
+  })
+
+  it('refuses tampered media and path escape manifests', async () => {
+    const packed = await materializeWorldToUvpMap(source(), options)
+    if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+    const tampered = new Map(packed.entries)
+    tampered.set('media/terrain/terrain-media-0000.tga', Uint8Array.of(0))
+    await expect(openUvpMapBundle(tampered, { snapshotId: 'tampered' })).rejects.toSatisfy(
+      error => isModkitError(error) && error.code === 'x3.uv/uvp-hash-mismatch',
+    )
+
+    const manifest = JSON.parse(new TextDecoder().decode(packed.manifestBytes)) as {
+      contents: { family: string; path: string; hash: string }[]
+    }
+    manifest.contents[0]!.path = '../world.uvw.json'
+    const escaped = new Map(packed.entries)
+    escaped.set('uvp.manifest.json', new TextEncoder().encode(JSON.stringify(manifest)))
+    await expect(openUvpMapBundle(escaped, { snapshotId: 'escaped' })).rejects.toSatisfy(
+      error => isModkitError(error) && error.code === 'x3.uv/uvp-path-invalid',
+    )
+  })
+
+  it('packages object UVM and its raster, then reopens a detached executable model route', async () => {
+    const sourceModel = sourceWithModel()
+    let requestedModelBytes: number | undefined
+    const packed = await materializeWorldToUvpMap(
+      {
+        ...sourceModel,
+        async model(resourceId, request, signal) {
+          requestedModelBytes = request.maxBytes
+          return sourceModel.model!(resourceId, request, signal)
+        },
+      },
+      options,
+    )
+    expect(packed.state).toBe('materialized')
+    if (packed.state !== 'materialized') throw new Error(JSON.stringify(packed.refusals))
+    expect(packed.packagedModelCount).toBe(1)
+    expect(requestedModelBytes).toBe(16 * 1024 * 1024)
+    expect(packed.packagedTextureCount).toBe(2)
+    expect([...packed.entries.keys()]).toEqual([
+      'uvp.manifest.json',
+      'world/main.uvw.json',
+      'models/object-model-0000.uvm.glb',
+      'media/terrain/terrain-media-0000.tga',
+      'media/models/object-model-0000-texture-0000.tga',
+    ])
+    const detached = new Map([...packed.entries].map(([path, bytes]) => [path, bytes.slice()]))
+    const packagedModel = detached.get('models/object-model-0000.uvm.glb')!
+    const container = readUvmContainer(packagedModel)
+    const images = container.document['images']
+    expect(Array.isArray(images)).toBe(true)
+    const image = (images as { uri?: string; name?: string }[])[0]!
+    expect(image.name).toBe('texture.dds')
+    expect(image.uri).toBe('media/models/object-model-0000-texture-0000.tga')
+    const reopened = await openUvpMapBundle(detached, {
+      snapshotId: 'detached-model-snapshot',
+      rasterResources,
+      modelDecoder: createEmbeddedUvmWorldModelDecoder(rasterResources),
+    })
+    const objectLayer = reopened.document.spaces[0]?.layers.find(layer => layer.kind === 'objects')
+    if (objectLayer?.kind !== 'objects') throw new Error('detached object layer missing')
+    expect(objectLayer.instances[0]?.resourceIds).toEqual(['object-model-0000'])
+    expect(objectLayer.instances[0]?.modelComponents).toEqual([
+      { id: 'body', resourceId: 'object-model-0000' },
+    ])
+    const model = await reopened.source.model?.('uvw-resource:main/object-model-0000', {
+      maxBytes: 1024 * 1024,
+      maxMeshes: 8,
+      maxPrimitives: 8,
+      maxPrimitiveBytes: 1024 * 1024,
+    })
+    expect(model?.state).toBe('converted')
+    if (model?.state !== 'converted') throw new Error('detached model did not decode')
+    expect(model.primitives).toHaveLength(1)
+    expect(model.animations).toHaveLength(0)
+    expect(model.materials).toHaveLength(1)
+    expect(model.textures?.[0]?.rgba).toEqual(rgba)
+    expect(model.complete).toBe(true)
+  })
+})

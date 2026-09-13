@@ -6,6 +6,7 @@
  * installed-game root, or nothing Modkit understands.
  */
 
+import type { BigIntStats } from 'node:fs'
 import { realpath, readdir, stat } from 'node:fs/promises'
 import { isAbsolute, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -57,8 +58,8 @@ function positiveLimit(value: number | undefined, fallback: number, name: string
   return selected
 }
 
-function directoryRevision(info: Awaited<ReturnType<typeof stat>>): string {
-  return `provider-token:${info.dev}-${info.ino}-${info.size}-${BigInt(Math.trunc(Number(info.mtimeMs) * 1_000_000))}`
+function directoryRevision(info: BigIntStats): string {
+  return `provider-token:${info.dev}-${info.ino}-${info.size}-${info.mtimeNs}`
 }
 
 function nestedRef(root: AssetSourceRef, path: string): AssetSourceRef {
@@ -72,7 +73,7 @@ export async function openDirectoryArtifactSource(
 ): Promise<ArtifactNamespaceSource> {
   throwIfAborted(options.signal)
   const root = await realpath(directory)
-  const rootInfo = await stat(root)
+  const rootInfo = await stat(root, { bigint: true })
   if (!rootInfo.isDirectory()) {
     throw new ModkitError({
       code: 'x3.host/source-not-a-directory',
@@ -195,7 +196,7 @@ export async function openDirectoryArtifactSource(
           async *list(listPrefix: string, listSignal?: AbortSignal) {
             throwIfAborted(listSignal)
             const requested = await resolveInside(join(prefix, listPrefix))
-            const info = await stat(requested.absolute)
+            const info = await stat(requested.absolute, { bigint: true })
             if (!info.isDirectory()) {
               throw new ModkitError({
                 code: 'x3.host/namespace-entry-not-directory',
@@ -212,7 +213,7 @@ export async function openDirectoryArtifactSource(
                 requested.path === '' ? entry.name : `${requested.path}/${entry.name}`,
               )
               const child = await resolveInside(childPath)
-              const childInfo = await stat(child.absolute)
+              const childInfo = await stat(child.absolute, { bigint: true })
               count(childPath)
               yield Object.freeze({
                 path: relativeTo(prefix, childPath),
@@ -224,7 +225,7 @@ export async function openDirectoryArtifactSource(
           async open(entryPath: string, openSignal?: AbortSignal): Promise<Lease<ArtifactSource>> {
             throwIfAborted(openSignal)
             const child = await resolveInside(join(prefix, entryPath))
-            const info = await stat(child.absolute)
+            const info = await stat(child.absolute, { bigint: true })
             count(child.path)
             const childRef = nestedRef(rootRef, child.path)
             if (info.isDirectory()) {

@@ -1,0 +1,108 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://modkitx.dev/specs/world/uvw.conversion.receipt.v1.schema.json",
+  "title": "UVW native conversion receipt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "source",
+    "target",
+    "requestedProfile",
+    "status",
+    "losses",
+    "refusals",
+    "verification"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["family", "format", "version"],
+      "properties": {
+        "family": { "const": "uvw" },
+        "format": { "const": "UVW" },
+        "version": { "const": "1.0" }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gameId", "artifactKind"],
+      "properties": {
+        "gameId": { "type": "string", "minLength": 1 },
+        "artifactKind": { "type": "string", "minLength": 1 }
+      }
+    },
+    "requestedProfile": {
+      "oneOf": [{ "$ref": "#/$defs/profile" }, { "type": "null" }]
+    },
+    "achievedProfile": { "$ref": "#/$defs/profile" },
+    "status": { "enum": ["converted", "refused"] },
+    "losses": { "type": "array", "items": { "$ref": "#/$defs/loss" } },
+    "refusals": { "type": "array", "items": { "$ref": "#/$defs/refusal" } },
+    "verification": { "type": "object" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "status": { "const": "converted" } } },
+      "then": { "required": ["achievedProfile"] },
+      "else": { "not": { "required": ["achievedProfile"] } }
+    }
+  ],
+  "$defs": {
+    "profile": {
+      "enum": [
+        "geometry",
+        "visual-world",
+        "native-authored-map",
+        "playable-scenario"
+      ]
+    },
+    "refusal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message"],
+      "properties": {
+        "code": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 }
+      }
+    },
+    "loss": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["feature", "reason", "replacement", "measurement"],
+      "properties": {
+        "feature": { "type": "string", "minLength": 1 },
+        "reason": { "type": "string", "minLength": 1 },
+        "replacement": { "type": "string", "minLength": 1 },
+        "measurement": { "$ref": "#/$defs/measurement" }
+      }
+    },
+    "measurement": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "value", "unit"],
+          "properties": {
+            "kind": { "const": "absolute-error" },
+            "value": { "type": "number", "minimum": 0 },
+            "unit": { "type": "string", "minLength": 1 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "reason"],
+          "properties": {
+            "kind": { "enum": ["not-applicable", "not-measured"] },
+            "reason": { "type": "string", "minLength": 1 }
+          }
+        }
+      ]
+    }
+  }
+}

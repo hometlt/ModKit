@@ -1,4 +1,8 @@
-/** Testkit-only admission probe for the candidate UVW base-heightfield path. */
+/**
+ * Legacy testkit-only admission probe retained for historical candidate vectors.
+ * Production callers use the browser-safe public API from `@modkit/uv/world`.
+ * @deprecated Use `materializeWorldToUvw` from `@modkit/uv/world`.
+ */
 
 import { createHash } from 'node:crypto'
 import { canonicalJsonStringify } from '@modkit/core'

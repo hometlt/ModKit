@@ -503,6 +503,9 @@ importers:
       '@modkit/ui':
         specifier: workspace:*
         version: link:../ui
+      '@modkit/uv':
+        specifier: workspace:*
+        version: link:../uv
       '@modkit/vfs':
         specifier: workspace:*
         version: link:../vfs
@@ -527,6 +530,9 @@ importers:
       '@modkit/codec-kit':
         specifier: workspace:*
         version: link:../codec-kit
+      '@modkit/core':
+        specifier: workspace:*
+        version: link:../core
       '@modkit/host':
         specifier: workspace:*
         version: link:../host

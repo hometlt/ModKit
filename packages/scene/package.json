@@ -20,6 +20,10 @@
       "types": "./dist/model/index.d.ts",
       "default": "./dist/model/index.js"
     },
+    "./world": {
+      "types": "./dist/world/index.d.ts",
+      "default": "./dist/world/index.js"
+    },
     "./materials": {
       "types": "./dist/materials/index.d.ts",
       "default": "./dist/materials/index.js"

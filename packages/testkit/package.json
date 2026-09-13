@@ -31,6 +31,7 @@
     "@modkit/core": "workspace:*",
     "@modkit/host": "workspace:*",
     "@modkit/sdk": "workspace:*",
+    "@modkit/uv": "workspace:*",
     "@modkit/vfs": "workspace:*"
   },
   "peerDependencies": {

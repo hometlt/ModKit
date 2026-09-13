@@ -80,6 +80,7 @@
   ],
   "dependencies": {
     "@modkit/codec-kit": "workspace:*",
+    "@modkit/core": "workspace:*",
     "@modkit/host": "workspace:*",
     "@modkit/sdk": "workspace:*"
   },

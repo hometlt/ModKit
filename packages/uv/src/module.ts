@@ -6,11 +6,13 @@ import modelMaterializerManifest from '../contributions/materializer-uvm.json' w
 import textureMaterializerManifest from '../contributions/materializer-uvt.json' with { type: 'json' }
 import modelWriterManifest from '../contributions/writer-uvm.json' with { type: 'json' }
 import textureWriterManifest from '../contributions/writer-uvt.json' with { type: 'json' }
+import worldCodecManifest from '../contributions/codec-uvw.json' with { type: 'json' }
 import packageJson from '../package.json' with { type: 'json' }
 import * as modelProvider from './model/provider.js'
 import * as modelWriter from './model/writer.js'
 import * as textureProvider from './texture/provider.js'
 import * as textureWriter from './texture/writer.js'
+import * as worldCodec from './world/codec.js'
 
 /**
  * Universal visual support compiled into a product composition.
@@ -31,11 +33,13 @@ export const uvModule = defineBuiltinModule({
     { path: 'contributions/materializer-uvt.json', manifest: textureMaterializerManifest },
     { path: 'contributions/writer-uvm.json', manifest: modelWriterManifest },
     { path: 'contributions/writer-uvt.json', manifest: textureWriterManifest },
+    { path: 'contributions/codec-uvw.json', manifest: worldCodecManifest },
   ],
   modules: {
     './dist/model/provider.js': modelProvider,
     './dist/model/writer.js': modelWriter,
     './dist/texture/provider.js': textureProvider,
     './dist/texture/writer.js': textureWriter,
+    './dist/world/codec.js': worldCodec,
   },
 })

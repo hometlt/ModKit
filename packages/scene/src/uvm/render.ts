@@ -351,6 +351,8 @@ async function prepareUvmRender(
     activeNodes,
     maxBytes: stageBytes,
     maxNodes: budget.maxNodes,
+    time,
+    ...(clip?.sequenceIndex === undefined ? {} : { sequenceIndex: clip.sequenceIndex }),
     ...(signal === undefined ? {} : { signal }),
   })
   const billboards = readUvmBillboards(document, stageBytes, signal)
@@ -392,6 +394,8 @@ async function prepareUvmRender(
   const sceneLights = readUvmSceneLights(document, sample.nodeTransforms, activeNodes, {
     maxBytes: stageBytes,
     maxNodes: budget.maxNodes,
+    time,
+    ...(clip?.sequenceIndex === undefined ? {} : { sequenceIndex: clip.sequenceIndex }),
     ...(signal === undefined ? {} : { signal }),
   })
   const diagnostics: SceneRendererDiagnostic[] = [...sample.diagnostics]

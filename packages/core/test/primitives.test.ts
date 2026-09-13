@@ -93,6 +93,7 @@ describe('canonical JSON (L6)', () => {
     expect(canonicalJsonStringify({ a: 1, b: undefined })).toBe(canonicalJsonStringify({ a: 1 }))
     expect(() => canonicalJsonStringify({ a: Number.NaN })).toThrow(ModkitError)
     expect(() => canonicalJsonStringify({ a: () => 1 })).toThrow(ModkitError)
+    expect(() => canonicalJsonStringify(Array(1))).toThrow(ModkitError)
   })
 })
 

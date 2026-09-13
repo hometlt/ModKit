@@ -113,9 +113,17 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
         }),
       ]),
     }),
+    optionalBindings: Object.freeze([
+      Object.freeze({
+        bindingId: 'world-optional-1',
+        contract: 'common.view/transport-source',
+        major: 1,
+      }),
+    ]),
     spec: Object.freeze({
       kind: 'stage',
       consumesDataSources: [{ contract: 'common.view/world-scene-source', major: 1 }],
+      optionalDataSources: [{ contract: 'common.view/transport-source', major: 1 }],
       priority: 380,
       singletonGroup: 'center-stage',
     }),

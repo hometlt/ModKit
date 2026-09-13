@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { openDirectoryArtifactSource, openPathArtifactSource } from '@modkit/host/node'
+import { fileSystemRevisionToken } from '@modkit/vfs/providers/file'
 
 const temporary: string[] = []
 
@@ -20,6 +21,12 @@ async function fixture(): Promise<string> {
 }
 
 describe('bounded filesystem directory artifact source', () => {
+  it('uses the exact filesystem provider revision dialect for directory edits', async () => {
+    const directory = await fixture()
+    const source = await openDirectoryArtifactSource(directory)
+    expect(source.revision).toBe(await fileSystemRevisionToken(directory))
+  })
+
   it('opens a loose directory as one namespace and keeps child reads confined', async () => {
     const directory = await fixture()
     const source = await openPathArtifactSource(directory, { maxEntries: 16, maxDepth: 8 })

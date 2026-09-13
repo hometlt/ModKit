@@ -1,0 +1,147 @@
+{
+  "schemaVersion": 1,
+  "contract": {
+    "id": "modkit/codec-contribution",
+    "major": 1
+  },
+  "id": "modkit/world-uvw",
+  "displayName": "Universal Verse World 1.0",
+  "limitations": [
+    "UVW 1.0 admits heightfield spaces only; connections and non-heightfield topologies remain reserved and fail explicitly."
+  ],
+  "runtimeVariants": [
+    {
+      "variantId": "trusted-node",
+      "entrypoint": "./dist/world/codec.js",
+      "target": {
+        "environments": ["node"]
+      },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": ["read-source", "write-source"]
+    },
+    {
+      "variantId": "portable",
+      "entrypoint": "./dist/world/codec.js",
+      "target": {
+        "environments": ["browser-worker", "node-worker"]
+      },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": ["read-source", "write-source"]
+    }
+  ],
+  "spec": {
+    "formatRefs": [
+      {
+        "formatId": "uvw",
+        "label": "Universal Verse World 1.0",
+        "mediaType": "application/vnd.modkit.uvw+json; profile=uvw-1.0"
+      }
+    ],
+    "roles": ["semantic"],
+    "sourceTopology": "single",
+    "artifactStages": ["authored", "compiled", "runtime"],
+    "openIntents": ["probe", "inspect", "full", "export"],
+    "match": {
+      "extensions": ["uvw", "uvw.json"],
+      "mediaTypes": ["application/vnd.modkit.uvw+json; profile=uvw-1.0"]
+    },
+    "probe": {
+      "kind": "bytes",
+      "ranges": [
+        {
+          "from": "start",
+          "length": 65536
+        }
+      ],
+      "maxBytes": 65536
+    },
+    "representations": [
+      {
+        "id": "uvw-world",
+        "contract": "common.view/world-scene-source",
+        "major": 1,
+        "stage": "runtime",
+        "lossy": false
+      }
+    ],
+    "publishesDataSources": [
+      {
+        "contract": "common.view/world-scene-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/tree-data-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/byte-range-source",
+        "major": 1
+      },
+      {
+        "contract": "common.view/text-data-source",
+        "major": 1
+      }
+    ],
+    "operations": [
+      {
+        "id": "view.inspect",
+        "handlerId": "inspect",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
+      },
+      {
+        "id": "asset.validate",
+        "handlerId": "validate",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
+      },
+      {
+        "id": "export.raw",
+        "handlerId": "export-raw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "map.export-uvw",
+        "handlerId": "export-canonical-uvw",
+        "mutatesSource": false,
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
+      },
+      {
+        "id": "edit.field",
+        "handlerId": "set-uvw-field",
+        "mutatesSource": true,
+        "requiredPermissions": ["read-source", "write-source"],
+        "outputKinds": ["edit-plan"]
+      },
+      {
+        "id": "edit.structure",
+        "handlerId": "edit-uvw-document",
+        "mutatesSource": true,
+        "requiredPermissions": ["read-source", "write-source"],
+        "outputKinds": ["edit-plan"]
+      }
+    ],
+    "traitDeclarations": [
+      {
+        "id": "structure.hierarchy",
+        "representation": "runtime",
+        "presence": "will-expose"
+      }
+    ],
+    "implementationTier": {
+      "claimed": 2
+    },
+    "budgets": {
+      "maxInputBytes": "67108864",
+      "maxDepth": 64,
+      "maxNodes": 1000000,
+      "maxScalarBytes": 134217728,
+      "maxDiagnostics": 1000
+    }
+  }
+}

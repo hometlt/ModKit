@@ -208,6 +208,8 @@ const worldSceneSourceSurface = {
   methods: {
     info: cancellableValue,
     page: cancellableValue,
+    model: { kind: 'value', optional: true, ...sig },
+    texture: { kind: 'value', optional: true, ...sig },
   },
 } as const satisfies SurfaceOf<WorldSceneSource>
 

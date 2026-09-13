@@ -107,7 +107,10 @@ export function projectUvmStaticModel(
     ],
     'document',
   )
-  for (const key of ['skins', 'animations', 'textures', 'images', 'samplers'])
+  // Texture/image/sampler arrays are the ordinary glTF fallback for generic viewers. Native
+  // exporters consume the authoritative UV_game_material resource ids, so validated fallback
+  // declarations may coexist without becoming native state or being silently interpreted.
+  for (const key of ['skins', 'animations'])
     empty(document[key], key)
   const extensions = object(document['extensions'] ?? {}, 'extensions')
   keys(

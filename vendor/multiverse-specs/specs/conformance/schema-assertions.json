@@ -294,6 +294,18 @@
       "expect": "valid"
     },
     {
+      "document": "world/fixtures/uvw-profile-renderable-world.uvw.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
+      "expect": "valid"
+    },
+    {
+      "document": "world/fixtures/uvw-conversion-receipt.geometry.json",
+      "pointer": "/",
+      "schemaId": "https://modkitx.dev/specs/world/uvw.conversion.receipt.v1.schema.json",
+      "expect": "valid"
+    },
+    {
       "document": "world/fixtures/invalid/connections-not-empty.uvw.json",
       "pointer": "/",
       "schemaId": "https://modkitx.dev/specs/world/uvw.profile.v1.schema.json",
