@@ -205,6 +205,12 @@ async function prepareUvmRender(
       ? undefined
       : modelStates.find(candidate => candidate.state === modelState)
   const textureDeclarations = array(document, 'textures')
+  const effectDeclarations = field(document['extensions'], 'UV_game_effects')
+  const hasEffectTextures = ['particles', 'ribbons'].some(kind =>
+    array(effectDeclarations, kind).some(
+      emitter => typeof field(emitter, 'texturePath') === 'string',
+    ),
+  )
   const hasNestedModels =
     selectedModelState !== undefined ||
     array(field(document['extensions'], 'UV_game_effects'), 'particles').some(
@@ -218,6 +224,7 @@ async function prepareUvmRender(
   const rasterBudget =
     rasterResources === undefined ||
     (textureDeclarations.length === 0 &&
+      !hasEffectTextures &&
       !array(document, 'materials').some(
         material => field(field(material, 'extensions'), 'UV_game_material') !== undefined,
       ))

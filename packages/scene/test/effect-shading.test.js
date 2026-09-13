@@ -185,6 +185,7 @@ test('particles and ribbons select common simple-effect state independently of n
         particles: [
           {
             ...emitter,
+            texturePath: 'particle.dds',
             orientationMode: 'billboard',
             emitShape: 'point',
             maxParticles: 16,
@@ -193,6 +194,7 @@ test('particles and ribbons select common simple-effect state independently of n
         ribbons: [
           {
             ...emitter,
+            texturePath: 'ribbon.dds',
             ribbonType: 'planar',
             heightAbove: 0.2,
             heightBelow: 0.2,
@@ -227,6 +229,10 @@ test('particles and ribbons select common simple-effect state independently of n
     const selected = frame.materials.find(value => value.id === primitive.materialId)
     assert.deepEqual(selected.baseColor, [1, 1, 1, 1])
     assert.equal(selected.simpleEffect.blend, 'blend')
+    assert.equal(
+      selected.simpleEffect.textureResource,
+      primitive.id.includes('ribbon') ? 'ribbon.dds' : 'particle.dds',
+    )
     assert.equal(selected.shader, base.shader)
     assert.deepEqual(
       primitive.colors,

@@ -410,6 +410,100 @@ it('renders actual common particles through the UVM scene resolver with determin
   assert.equal(JSON.stringify(input), before)
 })
 
+it('acquires and samples the texture selected by the particle emitter', async () => {
+  const input = document({
+    particles: [
+      {
+        ...emitter,
+        texturePath: 'effect.dds',
+        segmentColors: [
+          [1, 1, 1],
+          [1, 1, 1],
+          [1, 1, 1],
+        ],
+      },
+    ],
+  })
+  const bytes = writeUvmContainer({
+    format: 'glb',
+    document: input,
+    binary: new Uint8Array(),
+    extraChunks: [],
+  })
+  const resourceRequests = []
+  let renderedRequest
+  const frame = await renderUvm(
+    bytes,
+    {
+      schemaVersion: 1,
+      time: 0.25,
+      viewport: { width: 32, height: 32 },
+      camera: { viewProjection: [...identity], viewMatrix: [...identity] },
+    },
+    {
+      contracts: {
+        async resolve() {
+          return {
+            value: {
+              render(request) {
+                renderedRequest = request
+                return renderHeadless(request)
+              },
+            },
+            release: async () => {},
+          }
+        },
+      },
+      rasterResources: {
+        async read(request) {
+          resourceRequests.push(request)
+          return {
+            state: 'decoded',
+            diagnostics: [],
+            info: {
+              width: 1,
+              height: 1,
+              faces: 1,
+              orientation: 'top-left',
+              alphaMode: 'straight',
+            },
+            region: {
+              width: 1,
+              height: 1,
+              rowStride: 4,
+              pixelFormat: 'rgba8',
+              pixels: Uint8Array.of(0, 255, 0, 255),
+            },
+          }
+        },
+      },
+      budget: {
+        maxInputBytes: 8_388_608n,
+        maxScalarBytes: 8_388_608,
+        maxNodes: 10000,
+        maxDepth: 64,
+        maxDiagnostics: 100,
+      },
+    },
+  )
+  assert.equal(resourceRequests.length, 1)
+  assert.equal(resourceRequests[0].kind, 'logical')
+  assert.equal(resourceRequests[0].requirement.logicalId, 'effect.dds')
+  assert.deepEqual(
+    renderedRequest.scene.materials.find(value => value.id.includes('effect-particle'))
+      .textureBindings,
+    [{ resourceId: 'effect.dds', textureId: 'uvm-material-resource-0' }],
+  )
+  assert.ok(frame.statistics.fragments > 0)
+  assert.ok(
+    frame.rgba.some(
+      (green, index) =>
+        index % 4 === 1 && green > frame.rgba[index - 1] * 2 && green > frame.rgba[index + 1] * 2,
+    ),
+  )
+  assert.deepEqual(frame.diagnostics, [])
+})
+
 it('builds moving ribbon strips from historical emitter poses and uses the same headless renderer', async () => {
   const times = []
   const projected = createUvmEffectFrame(

@@ -334,6 +334,10 @@ export function createUvmEffectFrame(document: JsonObject, options: UvmEffectFra
           )
             throw new TypeError('model particle paths must be nonempty logical strings')
           output[key] = [...value]
+        } else if (key === 'texturePath') {
+          if (typeof value !== 'string' || value.trim() === '' || value.includes('\0'))
+            throw new TypeError(`${label}.texturePath must be a nonempty logical string`)
+          output[key] = value
         } else if (numeric.has(key)) {
           if (
             [
@@ -776,13 +780,20 @@ export function createUvmEffectFrame(document: JsonObject, options: UvmEffectFra
         signal,
       ),
       uv = emitter.screenSpaceUv
-    materials.push(
-      uv === undefined
+    const texturedMaterial =
+      emitter.texturePath === undefined
         ? material
         : {
             ...material,
+            simpleEffect: { ...material.simpleEffect, textureResource: emitter.texturePath },
+          }
+    materials.push(
+      uv === undefined
+        ? texturedMaterial
+        : {
+            ...texturedMaterial,
             simpleEffect: {
-              ...material.simpleEffect,
+              ...texturedMaterial.simpleEffect,
               screenUv: {
                 offset: uv.offset,
                 tiling: uv.tiling,
@@ -820,15 +831,21 @@ export function createUvmEffectFrame(document: JsonObject, options: UvmEffectFra
     const base = materialById.get(`material-${emitter.materialIndex}`)
     if (base === undefined) throw new TypeError('ribbon material absent')
     const id = `uvm-effect-ribbon-${ribbonOrdinals[geometry.emitter]}`
+    const material = projectorMaterial(
+      base,
+      id,
+      1,
+      options.maxNodes - emitterCount - meshNodes - primitives.length,
+      options.maxBytes - bytes,
+      signal,
+    )
     materials.push(
-      projectorMaterial(
-        base,
-        id,
-        1,
-        options.maxNodes - emitterCount - meshNodes - primitives.length,
-        options.maxBytes - bytes,
-        signal,
-      ),
+      emitter.texturePath === undefined
+        ? material
+        : {
+            ...material,
+            simpleEffect: { ...material.simpleEffect, textureResource: emitter.texturePath },
+          },
     )
     primitives.push({
       id,
