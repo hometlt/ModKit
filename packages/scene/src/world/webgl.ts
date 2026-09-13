@@ -17,7 +17,7 @@ import type {
 } from '@modkit/sdk'
 import { createModelSceneSampler } from '../model/index.js'
 import { materialWebGlDraws } from '../render/material-webgl.js'
-import { materialIsSolid, sceneMaterialDraws } from '../render/material-draws.js'
+import { materialIsSolid, sceneMaterialDraws, type MaterialDraw } from '../render/material-draws.js'
 import { prepareSceneMaterialPrograms, type SceneMaterialPrograms } from '../render/materials.js'
 
 export interface WorldWebGlInput {
@@ -215,7 +215,7 @@ export interface WorldWebGlPlan {
   readonly opaqueTriangles: WorldWebGlBatch
   /** Opaque model triangles separated only when a material disables casting or receiving. */
   readonly shadowControlledOpaqueTriangles: readonly WorldWebGlShadowControlledBatch[]
-  /** Solid native/UVM materials rendered by the same compiler as the standalone model viewer. */
+  /** Native/UVM materials rendered by the same compiler as the standalone model viewer. */
   readonly modelMaterialScenes: readonly WorldWebGlModelMaterialScene[]
   readonly texturedTriangles: readonly WorldWebGlTexturedBatch[]
   readonly transparentTexturedTriangles: readonly WorldWebGlTransparentTexturedBatch[]
@@ -1391,7 +1391,9 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
         const material = result.materials?.find(candidate => candidate.id === primitive.materialId)
         const shadowPolicy = modelMaterialShadowPolicy(material)
         const prepared = programs.get(primitive.materialId ?? '')
-        const sharedMaterial = prepared !== undefined && prepared.passes.every(materialIsSolid)
+        const sharedMaterial = prepared !== undefined && prepared.passes.length > 0
+        const castsSharedMaterialShadow =
+          sharedMaterial && shadowPolicy.castShadows && prepared.passes.some(materialIsSolid)
         if (sharedMaterial) {
           const primitiveTransform = 'transform' in primitive ? primitive.transform : undefined
           const instancePrimitive = Object.freeze({
@@ -1405,7 +1407,7 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
               : {}),
           })
           materialPrimitives.push(instancePrimitive)
-          if (shadowPolicy.castShadows) materialShadowPrimitives.push(instancePrimitive)
+          if (castsSharedMaterialShadow) materialShadowPrimitives.push(instancePrimitive)
         }
         const layer = material?.layers?.find(candidate =>
           BASE_COLOR_SLOTS.has(materialSlot(candidate.slot)),
@@ -1454,7 +1456,7 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
             readonly [number, number, number],
           ]
           if (sharedMaterial) {
-            if (shadowPolicy.castShadows) modelMaterialShadowTriangles += 1
+            if (castsSharedMaterialShadow) modelMaterialShadowTriangles += 1
           } else if (
             texture !== undefined &&
             textureCoordinates !== undefined &&
@@ -2737,7 +2739,7 @@ function renderWorldShadowMap(
           [],
           1,
         )) {
-          if (draw.program === undefined) continue
+          if (draw.program === undefined || !materialIsSolid(draw.program)) continue
           resources.materialDraws.draw(
             {
               ...draw,
@@ -3252,6 +3254,98 @@ export function createWorldWebGlTransparentDrawPlan(
   return Object.freeze(output)
 }
 
+type WorldWebGlCompositeTransparentDraw =
+  | Readonly<{ kind: 'world'; draw: WorldWebGlTransparentDraw }>
+  | Readonly<{
+      kind: 'material'
+      scene: WorldWebGlModelMaterialScene
+      draw: MaterialDraw & { readonly program: NonNullable<MaterialDraw['program']> }
+    }>
+
+function transparentProjectionDepth(
+  positions: Float32Array,
+  direction: readonly [number, number, number],
+  transform?: Float32Array,
+): number {
+  if (positions.length % 3 !== 0 || !positions.every(Number.isFinite))
+    throw new TypeError('world transparent primitive contains invalid positions')
+  const minimum = [Infinity, Infinity, Infinity]
+  const maximum = [-Infinity, -Infinity, -Infinity]
+  for (let offset = 0; offset < positions.length; offset += 3)
+    for (const axis of [0, 1, 2] as const) {
+      minimum[axis] = Math.min(minimum[axis]!, positions[offset + axis]!)
+      maximum[axis] = Math.max(maximum[axis]!, positions[offset + axis]!)
+    }
+  let point =
+    positions.length === 0
+      ? ([0, 0, 0] as const)
+      : (minimum.map((value, axis) => (value + maximum[axis]!) / 2) as [number, number, number])
+  if (transform !== undefined) {
+    if (transform.length !== 16 || !transform.every(Number.isFinite))
+      throw new TypeError('world transparent primitive contains an invalid transform')
+    const x = point[0],
+      y = point[1],
+      z = point[2]
+    const w = transform[3]! * x + transform[7]! * y + transform[11]! * z + transform[15]!
+    if (w === 0 || !Number.isFinite(w))
+      throw new TypeError('world transparent primitive transform has no finite projection')
+    point = [
+      (transform[0]! * x + transform[4]! * y + transform[8]! * z + transform[12]!) / w,
+      (transform[1]! * x + transform[5]! * y + transform[9]! * z + transform[13]!) / w,
+      (transform[2]! * x + transform[6]! * y + transform[10]! * z + transform[14]!) / w,
+    ]
+  }
+  const depth = point[0] * direction[0] + point[1] * direction[1] + point[2] * direction[2]
+  if (!Number.isFinite(depth)) throw new TypeError('world transparent depth exceeds finite range')
+  return depth
+}
+
+function createWorldWebGlCompositeTransparentDrawPlan(
+  plan: WorldWebGlPlan,
+  requested: WorldWebGlCamera | undefined,
+  materialDraws: readonly Readonly<{
+    scene: WorldWebGlModelMaterialScene
+    draw: MaterialDraw & { readonly program: NonNullable<MaterialDraw['program']> }
+  }>[],
+): readonly WorldWebGlCompositeTransparentDraw[] {
+  const view = cameraState(requested)
+  const horizontal = Math.cos(view.elevation)
+  const direction = [
+    Math.cos(view.azimuth) * horizontal,
+    Math.sin(view.elevation),
+    Math.sin(view.azimuth) * horizontal,
+  ] as const
+  const entries: Array<{
+    value: WorldWebGlCompositeTransparentDraw
+    priority: number
+    depth: number
+    ordinal: number
+  }> = []
+  for (const draw of createWorldWebGlTransparentDrawPlan(plan, requested))
+    entries.push({
+      value: Object.freeze({ kind: 'world', draw }),
+      priority: 0,
+      depth: transparentProjectionDepth(draw.batch.positions, direction),
+      ordinal: entries.length,
+    })
+  for (const entry of materialDraws)
+    entries.push({
+      value: Object.freeze({ kind: 'material', ...entry }),
+      priority: entry.draw.program.priority,
+      depth: transparentProjectionDepth(
+        entry.draw.primitive.positions,
+        direction,
+        entry.draw.primitive.transform,
+      ),
+      ordinal: entries.length,
+    })
+  entries.sort(
+    (left, right) =>
+      left.priority - right.priority || left.depth - right.depth || left.ordinal - right.ordinal,
+  )
+  return Object.freeze(entries.map(entry => entry.value))
+}
+
 export function orbitWorldWebGlCamera(
   source: WorldWebGlCamera,
   delta: Readonly<{ x: number; y: number }>,
@@ -3537,17 +3631,21 @@ function drawWorldWebGlWithResources(
     }
     gl.uniform1f(gl.getUniformLocation(program, 'shadowReceiver'), 1)
     for (const item of plan.splatTriangles) drawSplatBatch(resources, program, item)
+    const sceneCamera = {
+      viewProjection: Float32Array.from(viewProjection.elements),
+      viewMatrix: Float32Array.from(camera.matrixWorldInverse.elements),
+      eyePosition: [camera.position.x, camera.position.y, camera.position.z] as const,
+    }
+    const sceneLight = {
+      direction: plan.light.direction,
+      color: [...plan.light.color, 1] as const,
+      ambient: plan.light.ambientIntensity,
+    }
+    const materialSceneDraws: Array<{
+      scene: WorldWebGlModelMaterialScene
+      draw: MaterialDraw
+    }> = []
     if (plan.modelMaterialScenes.length > 0) {
-      const sceneCamera = {
-        viewProjection: Float32Array.from(viewProjection.elements),
-        viewMatrix: Float32Array.from(camera.matrixWorldInverse.elements),
-        eyePosition: [camera.position.x, camera.position.y, camera.position.z] as const,
-      }
-      const sceneLight = {
-        direction: plan.light.direction,
-        color: [...plan.light.color, 1] as const,
-        ambient: plan.light.ambientIntensity,
-      }
       for (const scene of plan.modelMaterialScenes)
         for (const draw of sceneMaterialDraws(
           scene.primitives,
@@ -3556,9 +3654,16 @@ function drawWorldWebGlWithResources(
           sceneCamera.viewProjection,
           [],
           1,
-        ))
-          resources.materialDraws.draw(draw, sceneCamera, sceneLight)
+        )) {
+          materialSceneDraws.push({ scene, draw })
+          if (
+            draw.depthOnly === true ||
+            (draw.program !== undefined && materialIsSolid(draw.program))
+          )
+            resources.materialDraws.draw(draw, sceneCamera, sceneLight)
+        }
       gl.useProgram(program)
+      gl.disable(gl.POLYGON_OFFSET_FILL)
     }
     assertNoWebGlError(gl, 'opaque pass')
     gl.uniform1f(gl.getUniformLocation(program, 'textured'), 0)
@@ -3573,7 +3678,29 @@ function drawWorldWebGlWithResources(
     gl.blendEquation(gl.FUNC_ADD)
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
     gl.depthMask(false)
-    for (const item of createWorldWebGlTransparentDrawPlan(plan, input.camera)) {
+    const transparentMaterialDraws = materialSceneDraws.flatMap(({ scene, draw }) =>
+      draw.depthOnly !== true && draw.program !== undefined && !materialIsSolid(draw.program)
+        ? [{ scene, draw: { ...draw, program: draw.program } }]
+        : [],
+    )
+    for (const entry of createWorldWebGlCompositeTransparentDrawPlan(
+      plan,
+      input.camera,
+      transparentMaterialDraws,
+    )) {
+      if (entry.kind === 'material') {
+        resources.materialDraws.draw(entry.draw, sceneCamera, sceneLight)
+        continue
+      }
+      const item = entry.draw
+      gl.useProgram(program)
+      gl.disable(gl.POLYGON_OFFSET_FILL)
+      if (shadow !== undefined) {
+        gl.activeTexture(gl.TEXTURE7)
+        gl.bindTexture(gl.TEXTURE_2D, shadow.texture)
+      }
+      gl.enable(gl.BLEND)
+      gl.depthMask(false)
       gl.blendFunc(gl.SRC_ALPHA, item.blendMode === 'additive' ? gl.ONE : gl.ONE_MINUS_SRC_ALPHA)
       gl.uniform1f(gl.getUniformLocation(program, 'shadowReceiver'), item.receiveShadows ? 1 : 0)
       if (item.kind === 'textured') {

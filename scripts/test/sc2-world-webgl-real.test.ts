@@ -556,8 +556,8 @@ describe.skipIf(!existsSync(mapRoot))('installed SC2 map in a real browser WebGL
     expect(evidence.changedPixels).toBeGreaterThan(25_000)
     expect(evidence.performance).toMatchObject({
       frames: 7,
-      // Two world programs plus two opaque M3 material programs for each of the two sampled plans.
-      programCompilations: 6,
+      // Two world programs plus four solid/transparent M3 programs for each sampled plan.
+      programCompilations: 10,
       shadowTargetAllocations: 1,
       shadowTargetReuses: 6,
       worldPlanBuilds: 2,

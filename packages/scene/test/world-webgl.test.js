@@ -715,6 +715,44 @@ describe('common world WebGL plan', () => {
           id: 'surface',
           blendMode,
           layers: [{ slot: 'diffuse', resourceId: 'surface.png', uvSource: 0 }],
+          shader: {
+            id: 'modkit.render-material.v1',
+            parameters: {
+              renderModel: {
+                version: 1,
+                standard: {
+                  layers: {
+                    diffuse: {
+                      slot: 'diffuse',
+                      texturePath: 'surface.png',
+                      constantColor: { value: [1, 1, 1, 1] },
+                      uvSource: 0,
+                      channels: 0,
+                      op: 6,
+                      teamColorMode: 0,
+                      invert: false,
+                      clampResult: true,
+                      wrapX: true,
+                      wrapY: true,
+                    },
+                  },
+                  blendMode: blendMode === 'blend' ? 1 : 2,
+                  priority: 0,
+                  specularity: 10,
+                  specMult: 1,
+                  emisMult: 1,
+                  specMode: 0,
+                  alphaTestThreshold: 0,
+                  twoSided: false,
+                  unshaded: true,
+                  doubleLambert: false,
+                  clampOutput: false,
+                  usesVertexColor: false,
+                  usesVertexAlpha: false,
+                },
+              },
+            },
+          },
         },
       ],
       textures: [
@@ -734,10 +772,12 @@ describe('common world WebGL plan', () => {
       ]),
     })
     assert.equal(plan.texturedTriangles.length, 0)
-    assert.deepEqual(plan.transparentTexturedTriangles.map(batch => batch.blendMode).sort(), [
-      'additive',
-      'blend',
-    ])
+    assert.equal(plan.transparentTexturedTriangles.length, 0)
+    assert.equal(plan.modelMaterialScenes.length, 2)
+    assert.deepEqual(
+      plan.modelMaterialScenes.map(scene => scene.programs.get('surface').passes[0].blend).sort(),
+      ['additive', 'blend'],
+    )
     assert.equal(plan.stats.modelTriangles, 2)
     assert.equal(plan.stats.shadowCasterTriangles, 0)
   })
