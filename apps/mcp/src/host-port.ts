@@ -11,7 +11,10 @@ import {
   type Inventory,
 } from '@modkit/host'
 import { discoverGameInstallations } from '@modkit/host/games'
-import { createLanguageWorkspace } from '@modkit/host/language'
+import {
+  createLanguageWorkspace,
+  type LanguageWorkspaceDocumentSource,
+} from '@modkit/host/language'
 import {
   createModkit,
   createNodeMapPreviewResourcePlanResolver,
@@ -40,10 +43,7 @@ export interface McpOpenedSubject {
 
 const MCP_LANGUAGE_MAX_DOCUMENT_BYTES = 4_194_304
 
-async function readBoundedLanguageFile(
-  path: string,
-  signal?: AbortSignal,
-): Promise<Uint8Array> {
+async function readBoundedLanguageFile(path: string, signal?: AbortSignal): Promise<Uint8Array> {
   signal?.throwIfAborted()
   const handle = await open(path, 'r')
   try {
@@ -279,9 +279,15 @@ const canonicalDirectories = async (
   )
 
 /** Compose the production proposal-capable host from explicit, canonical allowlists. */
+export interface HostMcpPortOptions {
+  /** Optional extension-owned, host-validated read-only language dependency source. */
+  readonly languageDocumentSource?: LanguageWorkspaceDocumentSource
+}
+
 export async function createHostMcpPort(
   configuration: ModkitMcpConfiguration,
   onDiagnostic?: (diagnostic: Diagnostic) => void,
+  options: HostMcpPortOptions = {},
 ): Promise<ModkitMcpHostPort> {
   const [roots, extensions] = await Promise.all([
     canonicalDirectories(configuration.roots, 'root'),
@@ -378,6 +384,9 @@ export async function createHostMcpPort(
         grant: { id: `modkit-mcp-language:${randomUUID()}`, classes: ['read-source'] },
         budgets: mapPreviewBudget,
         workspaceIncomplete: true,
+        ...(options.languageDocumentSource === undefined
+          ? {}
+          : { documentSource: options.languageDocumentSource }),
       })
       const diagnostics: Diagnostic[] = []
       try {
@@ -404,7 +413,9 @@ export async function createHostMcpPort(
           uri: primary.uri,
           documentVersion: 1,
           maxResults: request.maxResults,
-          maxDocuments: openedDocuments.length,
+          // Preserve capacity for an optional host-owned dependency source. Explicit documents
+          // remain primary and the language workspace enforces the same 32-document MCP bound.
+          maxDocuments: 32,
           ...(signal === undefined ? {} : { signal }),
         }
         const positioned = () => {
