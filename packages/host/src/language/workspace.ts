@@ -209,6 +209,35 @@ export interface LanguageWorkspaceOptions {
   readonly subjectCandidates?: SubjectCandidateProviderSource
   /** True when the caller knows that documents outside this bounded workspace are omitted. */
   readonly workspaceIncomplete?: boolean | (() => boolean)
+  /** Optional host-owned source of read-only dependency documents for semantic feature snapshots. */
+  readonly documentSource?: LanguageWorkspaceDocumentSource
+}
+
+export interface LanguageWorkspaceDocumentSourceRequest {
+  readonly document: LanguageDocument
+  readonly workspaceDocuments: readonly LanguageDocument[]
+  readonly workspaceLanguageIds: readonly string[]
+  /** Maximum number of additional documents the source may return. */
+  readonly maxDocuments: number
+  readonly signal: AbortSignal
+}
+
+export interface LanguageWorkspaceDocumentSourceResult {
+  readonly documents: readonly LanguageDocument[]
+  /** False when more matching dependency documents exist outside this bounded result. */
+  readonly isComplete: boolean
+}
+
+/**
+ * Supplies immutable semantic context that is not explicitly open in the editor.
+ *
+ * These documents may participate in lookup features, but are deliberately not writable through
+ * workspace edits. Their presence therefore makes rename incomplete at the host boundary.
+ */
+export interface LanguageWorkspaceDocumentSource {
+  snapshot(
+    request: LanguageWorkspaceDocumentSourceRequest,
+  ): Promise<LanguageWorkspaceDocumentSourceResult>
 }
 
 export interface LanguageWorkspaceDocumentRequest extends LanguageProviderRequestFacet {
@@ -869,7 +898,8 @@ function validColor(value: LanguageColor | undefined): boolean {
   return (
     value !== undefined &&
     [value.red, value.green, value.blue, value.alpha].every(
-      channel => typeof channel === 'number' && Number.isFinite(channel) && channel >= 0 && channel <= 1,
+      channel =>
+        typeof channel === 'number' && Number.isFinite(channel) && channel >= 0 && channel <= 1,
     )
   )
 }
@@ -885,7 +915,10 @@ function validateColorList(value: unknown, request: LanguageFeatureRequest): Lan
     typeof list.isIncomplete !== 'boolean' ||
     !list.colors.every(item => validRange(item.range, lengths) && validColor(item.color))
   ) {
-    invalidFeature('language provider returned invalid or unbounded document colours', request.document.uri)
+    invalidFeature(
+      'language provider returned invalid or unbounded document colours',
+      request.document.uri,
+    )
   }
   return list
 }
@@ -910,7 +943,10 @@ function validateColorPresentations(
           (typeof item.textEdit.newText === 'string' && validRange(item.textEdit.range, lengths))),
     )
   ) {
-    invalidFeature('language provider returned invalid or unbounded colour presentations', request.document.uri)
+    invalidFeature(
+      'language provider returned invalid or unbounded colour presentations',
+      request.document.uri,
+    )
   }
   return list
 }
@@ -1096,20 +1132,88 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     const controller = new AbortController()
     featureControllers.add(controller)
     const unlink = linkedSignal(controller, workspaceRequest.signal)
-    const providerRequest = Object.freeze({
-      document: entry.document,
-      workspaceDocuments: Object.freeze(selected.map(candidate => candidate.document)),
-      workspaceIncomplete:
-        candidates.length > selected.length ||
-        (typeof options.workspaceIncomplete === 'function'
-          ? options.workspaceIncomplete()
-          : options.workspaceIncomplete === true),
-      maxResults,
-      maxDocuments,
-      ...additions,
-      signal: controller.signal,
-    }) as LanguageFeatureRequest
     try {
+      const snapshotDocuments = selected.map(candidate => candidate.document)
+      let sourceIncomplete = false
+      let hasReadOnlyContext = false
+      if (options.documentSource !== undefined) {
+        let snapshot: LanguageWorkspaceDocumentSourceResult
+        try {
+          snapshot = await options.documentSource.snapshot(
+            Object.freeze({
+              document: entry.document,
+              workspaceDocuments: Object.freeze([...snapshotDocuments]),
+              workspaceLanguageIds: Object.freeze([...acceptedLanguageIds].sort(compareUtf8)),
+              maxDocuments: Math.max(0, maxDocuments - snapshotDocuments.length),
+              signal: controller.signal,
+            }),
+          )
+        } catch (error) {
+          if (isCancellation(error)) throw error
+          throwIfAborted(controller.signal)
+          throw workspaceError(
+            LANGUAGE_PROVIDER_FAILED,
+            `language workspace document source failed for ${entry.uri}@${entry.version}`,
+            {
+              uri: entry.uri,
+              version: String(entry.version),
+              error: error instanceof Error ? error.message : String(error),
+            },
+          )
+        }
+        throwIfAborted(controller.signal)
+        if (
+          typeof snapshot !== 'object' ||
+          snapshot === null ||
+          !Array.isArray(snapshot.documents) ||
+          snapshot.documents.length > Math.max(0, maxDocuments - snapshotDocuments.length) ||
+          typeof snapshot.isComplete !== 'boolean'
+        ) {
+          invalidFeature(
+            'language workspace document source returned an invalid snapshot',
+            entry.uri,
+          )
+        }
+        const seenUris = new Set(snapshotDocuments.map(document => document.uri))
+        for (const document of snapshot.documents) {
+          if (
+            typeof document !== 'object' ||
+            document === null ||
+            typeof document.uri !== 'string' ||
+            document.uri.trim().length === 0 ||
+            seenUris.has(document.uri) ||
+            typeof document.languageId !== 'string' ||
+            !acceptedLanguageIds.has(document.languageId) ||
+            !Number.isSafeInteger(document.version) ||
+            document.version < 0 ||
+            typeof document.text !== 'string'
+          ) {
+            invalidFeature(
+              'language workspace document source returned an invalid document',
+              entry.uri,
+            )
+          }
+          seenUris.add(document.uri)
+          snapshotDocuments.push(Object.freeze({ ...document }))
+        }
+        sourceIncomplete = !snapshot.isComplete
+        hasReadOnlyContext = snapshot.documents.length > 0
+      }
+      const providerRequest = Object.freeze({
+        document: entry.document,
+        workspaceDocuments: Object.freeze(snapshotDocuments),
+        workspaceIncomplete:
+          candidates.length > selected.length ||
+          sourceIncomplete ||
+          hasReadOnlyContext ||
+          (typeof options.workspaceIncomplete === 'function'
+            ? options.workspaceIncomplete()
+            : options.workspaceIncomplete === true),
+        maxResults,
+        maxDocuments,
+        ...additions,
+        signal: controller.signal,
+      }) as LanguageFeatureRequest
       const pending = call(entry.resolution.provider, providerRequest)
       if (pending === undefined) return undefined
       let candidate: unknown
@@ -1480,9 +1584,13 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         /[\u0000-\u001f\u007f]/u.test(request.newName)
       ) {
         return Promise.reject(
-          workspaceError(LANGUAGE_FEATURE_INVALID, 'rename needs a non-empty bounded name without control characters', {
-            uri: request.uri,
-          }),
+          workspaceError(
+            LANGUAGE_FEATURE_INVALID,
+            'rename needs a non-empty bounded name without control characters',
+            {
+              uri: request.uri,
+            },
+          ),
         )
       }
       const maxEdits = boundedInteger(
@@ -1541,7 +1649,9 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       )
     },
 
-    documentColors(request: LanguageWorkspaceFeatureRequest): Promise<LanguageColorList | undefined> {
+    documentColors(
+      request: LanguageWorkspaceFeatureRequest,
+    ): Promise<LanguageColorList | undefined> {
       return invokeFeature(
         request,
         false,
@@ -1554,7 +1664,10 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       request: LanguageWorkspaceColorPresentationRequest,
     ): Promise<LanguageColorPresentationList | undefined> {
       const entry = requireFeatureEntry(request, false)
-      if (!validColor(request.color) || !validRange(request.range, lineLengths(entry.document.text))) {
+      if (
+        !validColor(request.color) ||
+        !validRange(request.range, lineLengths(entry.document.text))
+      ) {
         return Promise.reject(
           workspaceError(
             LANGUAGE_FEATURE_INVALID,

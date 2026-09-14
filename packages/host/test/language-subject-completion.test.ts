@@ -19,6 +19,7 @@ import {
 import {
   createLanguageWorkspace,
   type LanguageHostServices,
+  type LanguageWorkspaceDocumentSource,
   type LanguageWorkspaceDocumentRequest,
 } from '../src/language/index.js'
 
@@ -63,6 +64,7 @@ const analysisFor = (document: LanguageDocument): LanguageAnalysis => ({
 })
 
 let observedWorkspaceIncomplete: boolean | undefined
+let observedWorkspaceDocuments: readonly string[] = []
 
 const provider: LanguageProvider = {
   contract: LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
@@ -70,6 +72,7 @@ const provider: LanguageProvider = {
   analyze: request => Promise.resolve(analysisFor(request.document)),
   completion: request => {
     observedWorkspaceIncomplete = request.workspaceIncomplete
+    observedWorkspaceDocuments = request.workspaceDocuments.map(document => document.uri)
     return Promise.resolve({
       items: [
         {
@@ -91,6 +94,19 @@ const provider: LanguageProvider = {
       isIncomplete: false,
     })
   },
+  definition: request =>
+    Promise.resolve({
+      locations: request.workspaceDocuments
+        .filter(document => document.uri.endsWith('/dependency.lang'))
+        .map(document => ({
+          uri: document.uri,
+          range: {
+            start: { line: 0, character: 0 },
+            end: { line: 0, character: Math.min(10, document.text.length) },
+          },
+        })),
+      isIncomplete: request.workspaceIncomplete,
+    }),
   rename: request =>
     Promise.resolve({
       isComplete: true,
@@ -214,6 +230,7 @@ const candidateProvider: SubjectCandidateProvider = {
 async function openWorkspace(
   subjectCandidates: SubjectCandidateProviderSource,
   workspaceIncomplete: boolean | (() => boolean) = false,
+  documentSource?: LanguageWorkspaceDocumentSource,
 ) {
   const workspace = createLanguageWorkspace({
     services,
@@ -221,6 +238,7 @@ async function openWorkspace(
     budgets,
     subjectCandidates,
     workspaceIncomplete,
+    ...(documentSource === undefined ? {} : { documentSource }),
   })
   await workspace.initialize()
   const opened = await workspace.open(languageRequest(1))
@@ -271,6 +289,73 @@ const completionRequest = () => ({
 })
 
 describe('language subject completion lifecycle', () => {
+  it('adds bounded read-only dependency documents to semantic feature snapshots', async () => {
+    observedWorkspaceIncomplete = undefined
+    observedWorkspaceDocuments = []
+    const workspace = await openWorkspace({ open: async () => undefined }, false, {
+      snapshot: async request => ({
+        documents:
+          request.maxDocuments > 0
+            ? [
+                {
+                  uri: 'file:///workspace/dependency.lang',
+                  languageId: 'fixture-language',
+                  version: 1,
+                  text: 'dependency',
+                },
+              ]
+            : [],
+        isComplete: true,
+      }),
+    })
+    try {
+      const result = await workspace.definition(completionRequest())
+      expect(result).toEqual({
+        locations: [
+          {
+            uri: 'file:///workspace/dependency.lang',
+            range: {
+              start: { line: 0, character: 0 },
+              end: { line: 0, character: 10 },
+            },
+          },
+        ],
+        isIncomplete: true,
+      })
+      await workspace.completion(completionRequest())
+      expect(observedWorkspaceDocuments).toEqual([
+        DOCUMENT_URI,
+        'file:///workspace/dependency.lang',
+      ])
+      expect(observedWorkspaceIncomplete).toBe(true)
+    } finally {
+      await workspace.shutdown()
+    }
+  })
+
+  it('does not allow rename to write through read-only dependency context', async () => {
+    const workspace = await openWorkspace({ open: async () => undefined }, false, {
+      snapshot: async () => ({
+        documents: [
+          {
+            uri: 'file:///workspace/dependency.lang',
+            languageId: 'fixture-language',
+            version: 1,
+            text: 'dependency',
+          },
+        ],
+        isComplete: true,
+      }),
+    })
+    try {
+      await expect(
+        workspace.rename({ ...completionRequest(), newName: 'renamed' }),
+      ).resolves.toBeUndefined()
+    } finally {
+      await workspace.shutdown()
+    }
+  })
+
   it('marks a caller-bounded workspace incomplete even when every open document fits', async () => {
     observedWorkspaceIncomplete = undefined
     const workspace = await openWorkspace(
