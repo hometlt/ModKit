@@ -223,8 +223,10 @@ describe('SC2 language and TriggerData operations through generic MCP', () => {
     }
   }, 180_000)
 
-  it('routes Data and Layout language plus native edit proposals without writing either file', async () => {
+  it('routes SC2 language actions plus Data and Layout native edit proposals without writing', async () => {
     for (const document of [
+      { path: galaxyPath, languageId: 'galaxy', documentKind: 'galaxy-source' },
+      { path: triggerPath, languageId: 'sc2-triggers', documentKind: 'sc2-triggers-source' },
       { path: dataPath, languageId: 'sc2-data', documentKind: 'sc2-data-source' },
       { path: layoutPath, languageId: 'sc2-layout', documentKind: 'sc2-layout-source' },
     ]) {
