@@ -718,6 +718,20 @@ export interface ResolvedMapWorkspaceAnalysisRequest extends MapSemanticAnalysis
   readonly maxDiagnostics: number
 }
 
+/** One resolved, renderer-neutral world-lighting environment for a map snapshot. */
+export interface MapWorldLightingSummary {
+  readonly coordinateSpaceId: string
+  readonly ambientColor: readonly [number, number, number]
+  readonly ambientIntensity: number
+  readonly directional: readonly Readonly<{
+    readonly id: string
+    /** Direction travelled by the light rays in `coordinateSpaceId`. */
+    readonly direction: readonly [number, number, number]
+    readonly color: readonly [number, number, number]
+    readonly intensity: number
+  }>[]
+}
+
 /** Additive result; `semantic` is the untouched authoritative semantic-analysis@1 snapshot. */
 export interface ResolvedMapWorkspaceSnapshot {
   readonly schemaVersion: 1
@@ -734,6 +748,7 @@ export interface ResolvedMapWorkspaceSnapshot {
   readonly cliffs?: MapCliffSummary
   readonly terrainTransform?: MapTerrainNativeTransform
   readonly uvwTransform?: MapWorldCanonicalTransform
+  readonly lighting?: MapWorldLightingSummary
   readonly worldCandidate: MapWorldCandidateDescriptor
   readonly unresolvedRequirementIds: readonly string[]
   readonly diagnostics: readonly MapSemanticDiagnostic[]

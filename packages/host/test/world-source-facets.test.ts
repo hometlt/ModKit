@@ -147,6 +147,19 @@ const snapshot: ResolvedMapWorkspaceSnapshot = {
       authored: index % 2 === 1,
     })),
   },
+  lighting: {
+    coordinateSpaceId: 'uvw-canonical',
+    ambientColor: [0.6, 0.48, 0.35],
+    ambientIntensity: 1,
+    directional: [
+      {
+        id: 'key',
+        direction: [0.36, -0.71, 0.59],
+        color: [1, 1, 1],
+        intensity: 1,
+      },
+    ],
+  },
   worldCandidate: {
     contract: 'example/world',
     major: 1,
@@ -388,9 +401,26 @@ describe('common world source native visual facets', () => {
         'resources',
         'navigation',
         'gateways',
+        'lighting',
       ])
       const layers = await lease.value.page({ facet: 'layers', limit: 32 })
-      expect(layers.items).toHaveLength(9)
+      expect(layers.items).toHaveLength(10)
+      const lightingLayer = info.facets.find(item => item.facet === 'lighting')!
+      expect(lightingLayer).toMatchObject({ state: 'available', itemCount: 1 })
+      const lighting = await lease.value.page({
+        facet: 'lighting',
+        layerId: lightingLayer.layerId,
+        limit: 32,
+      })
+      expect(lighting.items).toEqual([
+        expect.objectContaining({
+          facet: 'lighting',
+          coordinateSpaceId: 'uvw-canonical',
+          ambientColor: [0.6, 0.48, 0.35],
+          ambientIntensity: 1,
+          directional: [expect.objectContaining({ id: 'key', intensity: 1 })],
+        }),
+      ])
       const materialLayer = info.facets.find(item => item.facet === 'terrain-materials')!
       const materials = await lease.value.page({
         facet: 'terrain-materials',

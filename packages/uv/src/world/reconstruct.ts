@@ -654,6 +654,12 @@ async function reconstructLayer(
     if (items.length !== 1 || items[0]?.facet !== 'lighting')
       throw new TypeError('UVW canonical lighting layer must contain one environment')
     const environment = items[0]
+    const localDirectionalIds = environment.directional.map(light => localId(light.id, 'source'))
+    const preserveDirectionalIds = environment.directional.every(
+      (light, index) =>
+        localDirectionalIds[index] === light.id &&
+        (index === 0 || localDirectionalIds[index - 1]!.localeCompare(light.id) <= 0),
+    )
     return Object.freeze({
       schemaVersion: 1,
       id,
@@ -661,7 +667,19 @@ async function reconstructLayer(
       ...label,
       ambientColor: environment.ambientColor,
       ambientIntensity: environment.ambientIntensity,
-      directional: environment.directional,
+      directional: Object.freeze(
+        environment.directional.map((light, index) =>
+          Object.freeze({
+            ...light,
+            // UVW canonicalization sorts ids. Preserve the publisher's key/fill/back priority so
+            // renderers that consume the first directional light keep the intended key light.
+            // A canonical source already has valid sorted ids and must round-trip byte-for-byte.
+            id: preserveDirectionalIds
+              ? light.id
+              : `light-${String(index).padStart(4, '0')}-${localDirectionalIds[index]}`,
+          }),
+        ),
+      ),
     })
   }
   throw new TypeError(`UVW canonical layer facet ${layer.kind} is unsupported`)
@@ -752,6 +770,7 @@ export async function reconstructAdditionalExactLayers(
     'objects',
     'regions',
     'gateways',
+    'lighting',
   ])
   const candidates = info.facets.filter(
     facet =>

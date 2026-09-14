@@ -518,6 +518,7 @@ export function createCandidateWorldSceneLease(
   const resourceLayerId = layerId('resources')
   const navigationLayerId = layerId('navigation')
   const gatewayLayerId = layerId('gateways')
+  const lightingLayerId = layerId('lighting')
   const terrainSummary = semantic.terrain
   const terrainExact = hasExactTerrainGrid(terrainSummary)
   const terrainTransform = admittedTerrainTransform(snapshot, terrainSummary, terrainExact)
@@ -811,6 +812,21 @@ export function createCandidateWorldSceneLease(
       })
     }),
   )
+  const lighting: readonly WorldSceneItem[] = Object.freeze(
+    snapshot.lighting === undefined
+      ? []
+      : [
+          Object.freeze({
+            facet: 'lighting' as const,
+            id: `${lightingLayerId}:environment`,
+            layerId: lightingLayerId,
+            coordinateSpaceId: snapshot.lighting.coordinateSpaceId,
+            ambientColor: snapshot.lighting.ambientColor,
+            ambientIntensity: snapshot.lighting.ambientIntensity,
+            directional: snapshot.lighting.directional,
+          }),
+        ],
+  )
   const contentRevisions = Object.freeze({
     terrain: layerContentRevision(terrain),
     'terrain-materials': terrainMaterialContentRevision(
@@ -824,6 +840,7 @@ export function createCandidateWorldSceneLease(
     resources: layerContentRevision(resources),
     navigation: layerContentRevision(navigation),
     gateways: layerContentRevision(gateways),
+    lighting: layerContentRevision(lighting),
   })
   const commonTerrainMaterials: readonly MapTerrainMaterialDefinition[] = Object.freeze(
     snapshot.terrainMaterials?.materials ??
@@ -1060,6 +1077,17 @@ export function createCandidateWorldSceneLease(
           ? {}
           : { reason: 'gateway endpoints lack an exact canonical transform' }),
     }),
+    Object.freeze({
+      facet: 'lighting' as const,
+      layerId: lightingLayerId,
+      state: snapshot.lighting === undefined ? ('unavailable' as const) : ('available' as const),
+      itemCount: lighting.length,
+      lods: Object.freeze(snapshot.lighting === undefined ? [] : ['exact']),
+      contentRevision: contentRevisions.lighting,
+      ...(snapshot.lighting === undefined
+        ? { reason: 'publisher reported world lighting unavailable' }
+        : {}),
+    }),
   ])
   const layers: readonly WorldSceneItem[] = Object.freeze(
     facets.map(item =>
@@ -1127,6 +1155,7 @@ export function createCandidateWorldSceneLease(
     ['resources', resources],
     ['navigation', navigation],
     ['gateways', gateways],
+    ['lighting', lighting],
   ])
   const info: CandidateWorldSceneInfo = Object.freeze({
     contract: snapshot.worldCandidate.contract,
@@ -1398,7 +1427,10 @@ export function createCandidateWorldSceneLease(
       }
       if (
         request.bounds !== undefined &&
-        (request.facet === 'layers' || request.facet === 'regions' || request.facet === 'resources')
+        (request.facet === 'layers' ||
+          request.facet === 'regions' ||
+          request.facet === 'resources' ||
+          request.facet === 'lighting')
       ) {
         return Promise.resolve(
           Object.freeze({
