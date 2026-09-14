@@ -22,6 +22,7 @@
  * subject selector, so when no resolver is supplied those items are omitted rather than rendered
  * as unusable placeholders.
  */
+/// <reference path="./monaco-module.d.ts" />
 import type {
   LanguageCompletionItem,
   LanguageDiagnostic,
