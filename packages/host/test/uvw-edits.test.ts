@@ -346,8 +346,10 @@ describe('UVW codec edit → host commit/history', () => {
           return { grant: editing.grantSnapshot }
         },
       },
-      operationId: info.edit?.operationId,
-      moveObjectKind: info.edit?.moveObjectKind,
+      ...(info.edit?.operationId === undefined ? {} : { operationId: info.edit.operationId }),
+      ...(info.edit?.moveObjectKind === undefined
+        ? {}
+        : { moveObjectKind: info.edit.moveObjectKind }),
     })
     expect(committedState).toMatchObject({
       status: 'idle',
@@ -392,8 +394,10 @@ describe('UVW codec edit → host commit/history', () => {
           return { grant: editing.grantSnapshot }
         },
       },
-      operationId: info.edit?.operationId,
-      moveObjectKind: info.edit?.moveObjectKind,
+      ...(info.edit?.operationId === undefined ? {} : { operationId: info.edit.operationId }),
+      ...(info.edit?.moveObjectKind === undefined
+        ? {}
+        : { moveObjectKind: info.edit.moveObjectKind }),
     })
     expect(rejected.status).toBe('stale')
 

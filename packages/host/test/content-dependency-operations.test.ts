@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { operationId } from '@modkit/core'
 import type { AnyDescriptor, OperationSession } from '@modkit/sdk'
 import type { ContentSources } from '@modkit/vfs/content-sources'
 import {
@@ -14,16 +15,15 @@ const dependencySet = Object.freeze({
 })
 
 function descriptor(state: 'available' | 'disabled' = 'available'): Pick<AnyDescriptor, 'operations'> {
+  const operation = {
+    id: operationId('content.resolve-dependencies', { contributionId: 'test/content' }),
+    handlerId: 'resolve-dependencies',
+    mutatesSource: false,
+  } as const
   return {
-    operations: [{
-      id: 'content.resolve-dependencies',
-      handlerId: 'resolve-dependencies',
-      mutatesSource: false,
-      requiredPermissions: ['read-source'],
-      outputKinds: ['json'],
-      state,
-      ...(state === 'disabled' ? { reason: 'initialization data unavailable' } : {}),
-    }],
+    operations: [state === 'available'
+      ? { ...operation, state: 'available' }
+      : { ...operation, state: 'disabled', reason: 'initialization data unavailable' }],
   }
 }
 

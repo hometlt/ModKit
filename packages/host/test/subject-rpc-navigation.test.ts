@@ -214,7 +214,7 @@ describe('subject RPC navigation', () => {
                 logicalId: 'Assets/Marine_Diffuse.dds',
                 role: 'texture',
                 state: 'resolved',
-                revision: 'content-hash.sha256:texture',
+                revision: revisionId('content-hash.sha256:texture'),
                 bytes: 4n,
                 cached: false,
                 scopes: ['workspace-dependency-layer'],

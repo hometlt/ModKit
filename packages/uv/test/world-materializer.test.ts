@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import type {
   CandidateWorldSceneInfo,
   CandidateWorldSceneSource,
+  WorldScenePageRequest,
   WorldSceneItem,
 } from '@modkit/sdk/maps'
 import {
@@ -131,7 +132,7 @@ function source(pageSize: number, sourceInfo = info): CandidateWorldSceneSource 
     major: 1,
     snapshotId,
     info: () => Promise.resolve(sourceInfo),
-    page: request => {
+    page: (request: WorldScenePageRequest) => {
       const offset = request.cursor === undefined ? 0 : Number(request.cursor)
       const selected = items.slice(offset, offset + pageSize)
       const next = offset + selected.length
@@ -170,8 +171,9 @@ describe('production world to UVW materializer', () => {
   })
 
   it('refuses missing proof and incomplete exact grids by name', async () => {
+    const { uvwTransform: _omitted, ...infoWithoutTransform } = info
     const noTransform = await materializeWorldToUvw(
-      source(4, Object.freeze({ ...info, uvwTransform: undefined })),
+      source(4, Object.freeze(infoWithoutTransform)),
       options,
     )
     expect(noTransform.refusalCodes).toEqual(['canonical-transform-missing'])

@@ -883,6 +883,21 @@ describe('generic publisher-candidate world harness', () => {
           page: { snapshotId, facet: 'objects', state: 'available' as const, items: [object] },
         },
       ],
+      loadPerformance: {
+        coldStart: true,
+        infoMilliseconds: 0,
+        layerCatalogMilliseconds: 0,
+        layerAcquisitionMilliseconds: 0,
+        modelAcquisitionMilliseconds: 0,
+        terrainTextureAcquisitionMilliseconds: 0,
+        totalMilliseconds: 0,
+        layerPageRequests: 1,
+        reusedLayers: 0,
+        modelRequests: 0,
+        reusedModels: 0,
+        terrainTextureRequests: 0,
+        reusedTerrainTextures: 0,
+      },
     }
     expect(pickWorldObject(model, { x: 10.1, y: 20.1 }, 1)?.objectId).toBe(7)
     const selected = selectWorldObject(createWorldEditState('revision-1'), object)

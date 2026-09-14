@@ -97,6 +97,8 @@ describe('UVW host codec', () => {
 
     const session = await codec.open(inputFor(asset), 'full', budget)
     const descriptor = await session.descriptor()
+    expect(descriptor.interpretation).toBe('codec')
+    if (descriptor.interpretation !== 'codec') throw new Error('UVW codec did not resolve')
     expect(descriptor.identity).toMatchObject({ codecId: 'modkit/world-uvw', formatId: 'uvw' })
     expect(descriptor.operations.map(item => item.id)).toEqual(
       expect.arrayContaining(['edit.field', 'edit.structure', 'map.export-uvw']),

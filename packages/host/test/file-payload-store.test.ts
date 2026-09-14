@@ -212,6 +212,7 @@ describe('host-owned file payload store', () => {
       edits: [],
       provenance: { actor: 'user' },
     })
+    if (writerPlan === undefined) throw new Error('writer session did not produce a plan')
     const writerEdit = writerPlan?.edits[0]
     if (writerEdit?.operation !== 'replace' || writerEdit.payload.kind !== 'staged')
       throw new Error('writer payload was not staged')
@@ -268,7 +269,9 @@ describe('host-owned file payload store', () => {
       async apply() {
         throw new Error('seeded second-backend failure')
       },
-      rollback: secondBackend.rollback?.bind(secondBackend),
+      ...(secondBackend.rollback === undefined
+        ? {}
+        : { rollback: secondBackend.rollback.bind(secondBackend) }),
     }
     const grant = createGrantSnapshot({
       snapshotId: 'rollback-grant',

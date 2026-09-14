@@ -14,14 +14,12 @@ import {
   inspectCandidateWorld,
   type CandidateWorldViewerLoadPerformance,
 } from '../../packages/ui/src/world/index.js'
-import {
-  analyzeWarzoneMapWorkspace,
-} from '../../../modkit-extensions-warzone/src/map-provider.js'
+// @ts-expect-error The cross-repository JavaScript integration entry has no declaration artifact.
+import { analyzeWarzoneMapWorkspace } from '../../../modkit-extensions-warzone/src/map-provider.js'
+// @ts-expect-error The cross-repository JavaScript integration entry has no declaration artifact.
 import { discoverWarzone2100Installations } from '../../../modkit-extensions-warzone/src/provider.js'
-import {
-  extractZipArchiveEntry,
-  parseZipArchive,
-} from '../../extensions/archives/src/zip/codec.js'
+// @ts-expect-error The JavaScript archive fixture is exercised through its runtime API.
+import { extractZipArchiveEntry, parseZipArchive } from '../../extensions/archives/src/zip/codec.js'
 import { importPieToUvm } from '../../../modkit-extensions-warzone/src/warzone-pie/uvm/converter.js'
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
@@ -55,10 +53,10 @@ describe('installed Warzone map in a real browser WebGL2 context', () => {
       maxCandidates: 128,
     })
     const archivePath = discovery.installations[0]?.evidence.find(
-      item => item.kind === 'warzone-mp-archive' && item.found,
+      (item: { kind: string; found: boolean }) => item.kind === 'warzone-mp-archive' && item.found,
     )?.path
     const baseArchivePath = discovery.installations[0]?.evidence.find(
-      item => item.kind === 'warzone-base-archive' && item.found,
+      (item: { kind: string; found: boolean }) => item.kind === 'warzone-base-archive' && item.found,
     )?.path
     if (archivePath === undefined || !existsSync(archivePath))
       throw new Error('installed Warzone mp.wz was not discovered')
@@ -67,8 +65,8 @@ describe('installed Warzone map in a real browser WebGL2 context', () => {
     const archiveBytes = await readFile(archivePath)
     const archiveEntries = new Map(
       parseZipArchive(archiveBytes, 20_000)
-        .filter(entry => entry.kind === 'file')
-        .map(entry => [entry.name.toLowerCase(), entry]),
+        .filter((entry: { kind: string }) => entry.kind === 'file')
+        .map((entry: { name: string }) => [entry.name.toLowerCase(), entry]),
     )
     const workspaceDocuments = await Promise.all(
       documents.map(async name => {
@@ -80,7 +78,8 @@ describe('installed Warzone map in a real browser WebGL2 context', () => {
     )
     const baseArchiveBytes = await readFile(baseArchivePath)
     const browserModelEntry = parseZipArchive(baseArchiveBytes, 20_000).find(
-      entry => entry.kind === 'file' && entry.name.toLowerCase() === browserModelPath,
+      (entry: { kind: string; name: string }) =>
+        entry.kind === 'file' && entry.name.toLowerCase() === browserModelPath,
     )
     if (browserModelEntry === undefined)
       throw new Error(`${browserModelPath} is absent from installed base.wz`)

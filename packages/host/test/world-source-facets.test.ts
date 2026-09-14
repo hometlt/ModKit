@@ -206,13 +206,15 @@ describe('common world source native visual facets', () => {
         layerId: 'main/terrain',
       })
       expect(first.nextCursor).toBeDefined()
+      const cursor = first.nextCursor
+      if (cursor === undefined) throw new Error('terrain page did not return a continuation cursor')
 
       const second = await longLease.value.page({
         facet: 'terrain',
         layerId: terrainLayer.layerId,
         lod: 'exact',
         limit: 1,
-        cursor: first.nextCursor,
+        cursor,
       })
       expect(second.items[0]).toMatchObject({ id: 'main/terrain:sample:1:0' })
 
@@ -222,7 +224,7 @@ describe('common world source native visual facets', () => {
           layerId: terrainLayer.layerId,
           lod: 'exact',
           limit: 1,
-          cursor: first.nextCursor,
+          cursor,
         }),
       ).rejects.toThrow('world cursor belongs to another or stale source snapshot')
     } finally {
@@ -338,14 +340,15 @@ describe('common world source native visual facets', () => {
             }) {
               rasterReads += 1
               acquiredTextureLogicalId = request.requirement.logicalId
-              if (request.selection?.mipLevel !== 'fit') {
+              const mipLevel = request.selection?.mipLevel
+              if (mipLevel !== 'fit') {
                 return {
                   state: 'unresolved',
                   diagnostics: [
                     {
                       severity: 'warning',
                       code: 'test/unexpected-preview-mip',
-                      message: `unexpected preview mip ${String(request.selection.mipLevel)}`,
+                      message: `unexpected preview mip ${String(mipLevel)}`,
                     },
                   ],
                 }

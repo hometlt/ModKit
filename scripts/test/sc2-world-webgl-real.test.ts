@@ -24,7 +24,9 @@ import {
   inspectCandidateWorld,
   type CandidateWorldViewerLoadPerformance,
 } from '../../packages/ui/src/world/index.js'
+// @ts-expect-error The cross-repository JavaScript integration entry has no declaration artifact.
 import { analyzeStarcraft2MapWorkspace } from '../../../modkit-extensions-blizzard/starcraft2/modules/map/providers/semantic/runtime.js'
+// @ts-expect-error The cross-repository JavaScript integration entry has no declaration artifact.
 import { discoverStarcraft2Installations } from '../../../modkit-extensions-blizzard/starcraft2/modules/game/providers/installation/provider.js'
 
 const repoRoot = fileURLToPath(new URL('../..', import.meta.url))
@@ -658,8 +660,10 @@ describe.skipIf(!existsSync(mapRoot))('installed SC2 map in a real browser WebGL
     expect(evidence.browserModel.textures).toBeGreaterThan(0)
     expect(evidence.browserModel.complete).toBe(true)
     expect(evidence.browserModel.independentClocks).toEqual([0.125, 0.25])
+    const objectInstances = evidence.stats.objectInstances
+    if (objectInstances === undefined) throw new Error('world renderer omitted objectInstances')
     expect(evidence.stats.diagnosticPlaceholders).toBe(
-      evidence.stats.objectInstances - evidence.browserModel.independentClocks.length,
+      objectInstances - evidence.browserModel.independentClocks.length,
     )
     expect(evidence.stats.shadowMapSize).toBe(1_024)
     expect(evidence.changedPixels).toBeGreaterThan(25_000)

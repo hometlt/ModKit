@@ -65,7 +65,7 @@ describe('field edit target preview', () => {
       destination: {
         label: 'Write: C → C.SC2Mod/Base.SC2Data/GameData/UnitData.xml',
       },
-    } as SubjectEditTargetResult
+    } as unknown as SubjectEditTargetResult
     expect(fieldEditTargetText(target)).toBe(
       'Write: C → C.SC2Mod/Base.SC2Data/GameData/UnitData.xml',
     )
@@ -79,7 +79,7 @@ describe('field edit target preview', () => {
         { rootId: 'B', path: 'B.SC2Mod/Base.SC2Data/GameData/UnitData.xml' },
         { rootId: 'C', path: 'C.SC2Mod/Base.SC2Data/GameData/UnitData.xml' },
       ],
-    } as SubjectEditTargetResult
+    } as unknown as SubjectEditTargetResult
     expect(fieldEditTargetText(target)).toBe(
       'choose the authored document: B → B.SC2Mod/Base.SC2Data/GameData/UnitData.xml; C → C.SC2Mod/Base.SC2Data/GameData/UnitData.xml',
     )

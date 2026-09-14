@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createTransportSource } from '@modkit/codec-kit'
+import { operationId } from '@modkit/core'
 
 const snapshot = {
   state: 'paused' as const,
@@ -9,7 +10,10 @@ const snapshot = {
   seekable: true,
   live: false,
   tracks: [],
-  controls: { playPause: 'media.play-pause' as const, seek: 'media.seek' as const },
+  controls: {
+    playPause: operationId('media.play-pause', { contributionId: 'test/transport' }),
+    seek: operationId('media.seek', { contributionId: 'test/transport' }),
+  },
 }
 
 describe('transport controller', () => {

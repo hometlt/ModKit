@@ -132,10 +132,10 @@ function sourceWithWeightRaster() {
     spaces: document.spaces.map(space => ({
       ...space,
       layers: space.layers.map(layer => {
-        if (layer.kind === 'terrain-materials')
+        if (layer.kind === 'terrain-materials') {
+          const { samples: _samples, ...withoutSamples } = layer
           return {
-            ...layer,
-            samples: undefined,
+            ...withoutSamples,
             weightRasters: [
               {
                 resourceId: 'source-weights',
@@ -147,6 +147,7 @@ function sourceWithWeightRaster() {
               },
             ],
           }
+        }
         if (layer.kind === 'resources')
           return {
             ...layer,
@@ -484,9 +485,9 @@ describe('portable UVP map bundle', () => {
     const packed = await materializeWorldToUvpMap(
       {
         ...sourceModel,
-        async model(resourceId, request, signal) {
+        async model(resourceId, request) {
           requestedModelBytes = request.maxBytes
-          return sourceModel.model!(resourceId, request, signal)
+          return sourceModel.model!(resourceId)
         },
       },
       options,

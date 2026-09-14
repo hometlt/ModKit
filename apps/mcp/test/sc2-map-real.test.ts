@@ -21,7 +21,7 @@ afterAll(async () => { await Promise.allSettled([client?.close(), app?.dispose()
 describe('installed SC2 map through generic MCP', () => {
   it('inventories, opens and inspects the map codec', async () => {
     let cursor: string | undefined; let inventoried = false
-    do { const inventory = envelope(await client.callTool({ name: 'modkit.inventory', arguments: { limit: 20, ...(cursor === undefined ? {} : { cursor }) } })); inventoried ||= JSON.stringify(inventory.data).includes('blizzard/sc2-map'); cursor = inventory.nextCursor } while (!inventoried && cursor !== undefined)
+    do { const inventory = envelope(await client.callTool({ name: 'modkit.inventory', arguments: { limit: 20, ...(cursor === undefined ? {} : { cursor }) } })); inventoried ||= JSON.stringify(inventory.data).includes('blizzard/sc2-map'); cursor = inventory.nextCursor ?? undefined } while (!inventoried && cursor !== undefined)
     expect(inventoried).toBe(true)
     const opened = envelope(await client.callTool({ name: 'modkit.open_subject', arguments: { path: mapPath } })); const openData = opened.data as any; let handle = openData.handle as string
     if (Array.isArray(openData.selectionCandidates) && openData.selectionCandidates.length > 0) { const candidate = openData.selectionCandidates.find((item: any) => item.codecId === 'blizzard/sc2-map') ?? openData.selectionCandidates[0]; const selected = envelope(await client.callTool({ name: 'modkit.open_selection', arguments: { handle, selectionId: candidate.candidateId } })); handle = (selected.data as any).handle }

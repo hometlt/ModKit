@@ -54,6 +54,8 @@ describe('UVW 1.0 production document', () => {
 
     const withHole = parseUvwProfile(await fixture('uvw-profile-single-space.uvw.json'))
     const terrain = withHole.spaces[0]?.layers[0]
+    expect(terrain?.kind).toBe('heightfield')
+    if (terrain?.kind !== 'heightfield') throw new Error('fixture heightfield layer is missing')
     expect(terrain?.noDataValue).toBe(-9999)
     expect(terrain?.samples[2]?.[3]).toBe(terrain?.noDataValue)
   })
@@ -74,7 +76,14 @@ describe('UVW 1.0 production document', () => {
 
     expect(canonical.spaces.map(space => space.id)).toEqual(['a-space', 'z-space'])
     expect(canonical.spaces[0]?.layers.map(layer => layer.id)).toEqual(['cliffs', 'water'])
-    expect(canonical.spaces[0]?.layers[0]?.samples).toEqual(main.layers[0]?.samples)
+    const canonicalLayer = canonical.spaces[0]?.layers.find(layer => layer.kind === 'heightfield')
+    const mainLayer = main.layers.find(layer => layer.kind === 'heightfield')
+    expect(canonicalLayer?.kind).toBe('heightfield')
+    expect(mainLayer?.kind).toBe('heightfield')
+    if (canonicalLayer?.kind !== 'heightfield' || mainLayer?.kind !== 'heightfield') {
+      throw new Error('fixture heightfield layer is missing')
+    }
+    expect(canonicalLayer.samples).toEqual(mainLayer.samples)
   })
 
   it('rejects malformed profiles, reserved features and semantic grid errors', async () => {
@@ -156,18 +165,22 @@ describe('UVW 1.0 production document', () => {
     })
     expect(first.items).toHaveLength(8)
     expect(first.nextCursor).toBeDefined()
+    const firstCursor = first.nextCursor
+    if (firstCursor === undefined) throw new Error('first terrain page has no cursor')
     const second = await source.page({
       facet: 'terrain',
       layerId: layer.layerId,
       lod: 'exact',
-      cursor: first.nextCursor,
+      cursor: firstCursor,
       limit: 8,
     })
+    const secondCursor = second.nextCursor
+    if (secondCursor === undefined) throw new Error('second terrain page has no cursor')
     const third = await source.page({
       facet: 'terrain',
       layerId: layer.layerId,
       lod: 'exact',
-      cursor: second.nextCursor,
+      cursor: secondCursor,
       limit: 8,
     })
     const items = [...first.items, ...second.items, ...third.items]
@@ -267,7 +280,7 @@ describe('UVW 1.0 production document', () => {
     const grass = (resources['resources'] as Array<Record<string, unknown>>).find(
       resource => resource['id'] === 'grass-image',
     )!
-    const document = parseUvwProfile(serializeUvwProfile(base as UvwProfileDocument))
+    const document = parseUvwProfile(serializeUvwProfile(base as unknown as UvwProfileDocument))
     let reads = 0
     const source = createUvwWorldSceneSource(document, {
       snapshotId: 'embedded-texture-revision',
@@ -334,7 +347,7 @@ describe('UVW 1.0 production document', () => {
       { id: 'west-pass', start: [0, 1], end: [4, 1] },
       { id: 'east-pass', start: [4, 2], end: [4, 3] },
     ]
-    const document = parseUvwProfile(serializeUvwProfile(base as UvwProfileDocument))
+    const document = parseUvwProfile(serializeUvwProfile(base as unknown as UvwProfileDocument))
     const source = createUvwWorldSceneSource(document, { snapshotId: 'gateway-revision' })
     const layers = await source.page({ facet: 'layers', limit: 32 })
     const gatewayLayer = layers.items.find(
@@ -371,7 +384,7 @@ describe('UVW 1.0 production document', () => {
       },
       { id: 'body', resourceId: 'model-a' },
     ]
-    const bytes = serializeUvwProfile(base as UvwProfileDocument)
+    const bytes = serializeUvwProfile(base as unknown as UvwProfileDocument)
     const document = parseUvwProfile(bytes)
     const layer = document.spaces[0]!.layers.find(candidate => candidate.kind === 'objects')
     expect(layer?.kind).toBe('objects')

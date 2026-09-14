@@ -492,7 +492,7 @@ describe('the stage request drawn by the shipped headless provider', () => {
       [
         { id: 'Marine.dds', role: 'texture', provenance: 'companion' },
         { id: 'Marine.dds', role: 'texture', provenance: 'companion' },
-        { id: 'Walk.m3a', role: 'animation', provenance: 'companion' },
+        { id: 'Walk.m3a', role: 'sidecar', provenance: 'companion' },
       ],
     )
 
