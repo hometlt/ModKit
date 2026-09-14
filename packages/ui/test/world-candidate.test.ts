@@ -473,6 +473,7 @@ describe('generic publisher-candidate world harness', () => {
     let active = 0
     let maximumActive = 0
     const requestedBytes: number[] = []
+    const requestedIds: string[] = []
     const source: CandidateWorldSceneSource = {
       contract,
       major: 1,
@@ -493,7 +494,10 @@ describe('generic publisher-candidate world harness', () => {
             namespace: 'Model',
             entityId: id,
             resolved: true,
-            objectIds: [],
+            objectIds: Array.from(
+              { length: id === 'a' ? 1 : id === 'b' ? 3 : 2 },
+              (_, index) => `${id}:${String(index)}`,
+            ),
             modelResource: {
               id,
               logicalId: `${id}.m3`,
@@ -503,9 +507,10 @@ describe('generic publisher-candidate world harness', () => {
           })),
         }
       },
-      async model(_resourceId, request) {
+      async model(resourceId, request) {
         active += 1
         maximumActive = Math.max(maximumActive, active)
+        requestedIds.push(resourceId)
         requestedBytes.push(request.maxBytes)
         await Promise.resolve()
         active -= 1
@@ -526,10 +531,11 @@ describe('generic publisher-candidate world harness', () => {
       maxModelBytes: 100,
       maxConcurrentModelAcquisitions: 1,
     })
+    expect(requestedIds).toEqual(['b', 'c'])
     expect(requestedBytes).toEqual([50, 50])
     expect(maximumActive).toBe(1)
-    expect(bounded.models?.get('c')).toMatchObject({ state: 'unresolved' })
-    expect(bounded.models?.get('c')?.diagnostics[0]?.code).toBe(
+    expect(bounded.models?.get('a')).toMatchObject({ state: 'unresolved' })
+    expect(bounded.models?.get('a')?.diagnostics[0]?.code).toBe(
       'x3.ui/world-model-budget-exhausted',
     )
   })

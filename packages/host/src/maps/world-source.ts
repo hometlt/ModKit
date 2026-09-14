@@ -248,6 +248,38 @@ function terrainMapNativePosition(
   })
 }
 
+function terrainHeightAt(
+  position: Readonly<{ x: number; y: number }>,
+  terrain: NonNullable<ResolvedMapWorkspaceSnapshot['semantic']['terrain']> | undefined,
+  transform: MapTerrainNativeTransform | undefined,
+): number | undefined {
+  if (transform === undefined || terrain === undefined || !hasExactTerrainGrid(terrain))
+    return undefined
+  const gridX = (position.x - transform.heightMap.offset.x) / transform.heightMap.scale.x
+  const gridY = (position.y - transform.heightMap.offset.y) / transform.heightMap.scale.y
+  if (
+    !Number.isFinite(gridX) ||
+    !Number.isFinite(gridY) ||
+    gridX < 0 ||
+    gridY < 0 ||
+    gridX > terrain.width - 1 ||
+    gridY > terrain.height - 1
+  ) {
+    return undefined
+  }
+  const x0 = Math.floor(gridX)
+  const y0 = Math.floor(gridY)
+  const x1 = Math.min(x0 + 1, terrain.width - 1)
+  const y1 = Math.min(y0 + 1, terrain.height - 1)
+  const tx = gridX - x0
+  const ty = gridY - y0
+  const height = (x: number, y: number): number =>
+    terrainMapNativePosition(terrain.samples[y * terrain.width + x]!, transform).z
+  const lower = height(x0, y0) * (1 - tx) + height(x1, y0) * tx
+  const upper = height(x0, y1) * (1 - tx) + height(x1, y1) * tx
+  return lower * (1 - ty) + upper * ty
+}
+
 function canonicalPosition(
   position: Readonly<{ x: number; y: number; z: number }>,
   transform: MapWorldCanonicalTransform,
@@ -668,6 +700,17 @@ export function createCandidateWorldSceneLease(
       const id = `${objectLayerId}:object:${String(item.objectId)}`
       const ref = item.catalog?.ref
       const uvwRotation = canonicalObjectRotation(item.rotation, item.nativeRotationUnit)
+      const groundHeight = terrainHeightAt(item.position, semantic.terrain, terrainTransform)
+      const mapNativePresentationPosition =
+        groundHeight === undefined || item.heightReference === undefined || item.heightReference === 'absolute'
+          ? item.position
+          : Object.freeze({
+              ...item.position,
+              z:
+                item.heightReference === 'terrain-relative'
+                  ? groundHeight + item.position.z
+                  : groundHeight,
+            })
       const compoundResourceIds = (item.modelResources ?? []).map(requirement =>
         modelResourceId(requirement.id),
       )
@@ -683,10 +726,13 @@ export function createCandidateWorldSceneLease(
         layerId: objectLayerId,
         coordinateSpaceId: 'map-native',
         ...item,
+        ...(mapNativePresentationPosition === item.position
+          ? {}
+          : { mapNativePresentationPosition }),
         ...(uvwTransform === undefined || item.sourcePositionDimensions === 2
           ? {}
           : {
-              uvwPosition: canonicalPosition(item.position, uvwTransform),
+              uvwPosition: canonicalPosition(mapNativePresentationPosition, uvwTransform),
               ...(uvwRotation === undefined ? {} : { uvwRotation }),
               uvwScale: canonicalObjectScale(item.scale, uvwTransform),
             }),

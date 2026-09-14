@@ -21,6 +21,7 @@ import type {
   WorldSceneModelResult,
   WorldSceneObjectItem,
   WorldScenePage,
+  WorldSceneResourceItem,
   WorldSceneSource,
   WorldSceneTerrainItem,
 } from '@modkit/sdk/maps'
@@ -261,9 +262,15 @@ export async function inspectCandidateWorld(
   const layerAcquisitionMilliseconds = elapsedInspectionMilliseconds(layerAcquisitionStartedAt)
   const resourceItems = inspected
     .flatMap(item => item.page.items)
-    .filter(item => item.facet === 'resources' && item.modelResource !== undefined)
+    .filter(
+      (item): item is WorldSceneResourceItem =>
+        item.facet === 'resources' && item.modelResource !== undefined,
+    )
     .filter((item, index, all) => all.findIndex(candidate => candidate.id === item.id) === index)
-    .sort((left, right) => left.id.localeCompare(right.id))
+    .sort(
+      (left, right) =>
+        right.objectIds.length - left.objectIds.length || left.id.localeCompare(right.id),
+    )
   const models = new Map<string, WorldSceneModelResult>()
   const admittedResources = resourceItems.slice(0, maxModels)
   const perModelBytes = Math.max(
@@ -1138,6 +1145,8 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
       const stage = element(root, 'div', { part: 'model' })
       const readout = element(stage, 'output', { part: 'model.readout' })
       const canvas = element(stage, 'canvas', { part: 'model.canvas' }) as HTMLCanvasElement
+      canvas.width = 720
+      canvas.height = 480
       const editStatus = element(stage, 'output', { part: 'model.readout' })
       const saveMove = element(stage, 'button', { text: 'Save selected move' }) as HTMLButtonElement
       canvas.setAttribute('role', 'img')

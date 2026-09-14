@@ -322,11 +322,15 @@ export interface MapPlacedObject {
   readonly position: MapPosition
   /** Two means the publisher deliberately ignored any authored third component. */
   readonly sourcePositionDimensions?: 2 | 3
+  /** How the authored vertical component is interpreted when exact terrain is available. */
+  readonly heightReference?: 'absolute' | 'terrain-relative' | 'terrain-surface'
   readonly rotation?: number
   readonly nativeRotationUnit?: string
   readonly scale?: MapPosition
   readonly typeId?: string
   readonly player?: number
+  /** Explicit renderer-neutral RGB for source/team colour material channels. */
+  readonly presentationTeamColor?: readonly [number, number, number]
   readonly variation?: number
   readonly modules?: number
   readonly name?: string
@@ -935,6 +939,8 @@ export interface WorldSceneObjectItem extends MapPlacedObject {
   /** Stable join into the resources facet when this object names a catalog entity. */
   readonly resourceId?: string
   readonly resourceIds?: readonly string[]
+  /** Render-time map-native position after applying an explicit terrain height reference. */
+  readonly mapNativePresentationPosition?: MapPosition
   readonly uvwPosition?: MapPosition
   readonly uvwRotation?: readonly [number, number, number, number]
   readonly uvwScale?: MapPosition

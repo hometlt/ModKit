@@ -525,6 +525,7 @@ describe('common world WebGL plan', () => {
           kind: 'unit',
           objectId: 7,
           player: 3,
+          presentationTeamColor: [0.8, 0.8, 0.8],
           position: { x: 0, y: 0, z: 0 },
           uvwPosition: { x: 4, y: 2, z: 6 },
           resourceId: 'team-model',
@@ -596,7 +597,7 @@ describe('common world WebGL plan', () => {
     const scene = plan.modelMaterialScenes[0]
     assert.equal(scene.shadowPrimitives.length, 1)
     assert.equal(scene.programs.get('surface').passes[0].blend, 'alpha-test')
-    assert.deepEqual(scene.programs.get('surface').passes[0].uniforms.u_teamColor, [0.1, 0.7, 0.9])
+    assert.deepEqual(scene.programs.get('surface').passes[0].uniforms.u_teamColor, [0.8, 0.8, 0.8])
     assert.deepEqual(Array.from(scene.primitives[0].transform.slice(12, 15)), [4, 2, 6])
   })
 

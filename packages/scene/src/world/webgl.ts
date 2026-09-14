@@ -1371,7 +1371,9 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
       let programs: ReadonlyMap<string, SceneMaterialPrograms> = new Map()
       try {
         const time = input.animationTimes?.get(item.objectId) ?? 0
-        const teamColor = item.player === undefined ? undefined : input.teamColors?.get(item.player)
+        const teamColor =
+          item.presentationTeamColor ??
+          (item.player === undefined ? undefined : input.teamColors?.get(item.player))
         programs = prepareSceneMaterialPrograms(
           scene.materials,
           new Map(scene.textures.map(texture => [texture.id, texture])),
@@ -3562,8 +3564,6 @@ function drawWorldWebGlWithResources(
   harvestGpuTimer(resources)
   const startedAt = globalThis.performance?.now() ?? Date.now()
   const plan = retainedWorldPlan(input, resources)
-  canvas.width = 720
-  canvas.height = 480
   const program = resources.program
   let shadow: WorldShadowResources | undefined
   let gpuQuery: WebGLQuery | undefined
