@@ -240,7 +240,7 @@ describe('SC2 language and TriggerData operations through generic MCP', () => {
           },
         }),
       )
-      expect(result.completeness).not.toBe('invalid')
+      expect(result.completeness, JSON.stringify(result)).not.toBe('invalid')
       expect(JSON.stringify(result.data)).toContain('diagnostics')
 
       const formatting = envelope(
@@ -258,6 +258,40 @@ describe('SC2 language and TriggerData operations through generic MCP', () => {
       )
       expect(formatting.completeness).not.toBe('invalid')
       expect(JSON.stringify(formatting.data)).toContain('newText')
+
+      const beforeAction = await readFile(document.path, 'utf8')
+      const codeActions = envelope(
+        await client.callTool({
+          name: 'modkit.language',
+          arguments: {
+            documents: [document],
+            primaryIndex: 0,
+            feature: 'code-actions',
+            range: {
+              start: { line: 0, character: 0 },
+              end: { line: 0, character: beforeAction.length },
+            },
+            languageDiagnostics: [],
+            maxResults: 64,
+            maxEdits: 64,
+          },
+        }),
+      )
+      expect(codeActions.completeness).not.toBe('invalid')
+      expect(codeActions.data).toMatchObject({
+        feature: 'code-actions',
+        result: {
+          actions: [
+            {
+              title: 'Add final newline',
+              edit: {
+                documentChanges: [{ documentVersion: 1 }],
+              },
+            },
+          ],
+        },
+      })
+      expect(await readFile(document.path, 'utf8')).toBe(beforeAction)
     }
 
     const cases = [
