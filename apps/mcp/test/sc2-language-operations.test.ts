@@ -166,6 +166,20 @@ describe('SC2 language and TriggerData operations through generic MCP', () => {
       }))
       expect(result.completeness).not.toBe('invalid')
       expect(JSON.stringify(result.data)).toContain('diagnostics')
+
+      const formatting = envelope(await client.callTool({
+        name: 'modkit.language',
+        arguments: {
+          documents: [document],
+          primaryIndex: 0,
+          feature: 'formatting',
+          formatting: { tabSize: 2, insertSpaces: true, finalNewline: true },
+          maxResults: 64,
+          maxEdits: 64,
+        },
+      }))
+      expect(formatting.completeness).not.toBe('invalid')
+      expect(JSON.stringify(formatting.data)).toContain('newText')
     }
 
     const cases = [
