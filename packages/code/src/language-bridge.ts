@@ -24,6 +24,7 @@
  */
 /// <reference path="./monaco-module.d.ts" />
 import type {
+  LanguageCodeActionKind,
   LanguageCompletionItem,
   LanguageDiagnostic,
   LanguageDocument,
@@ -114,6 +115,24 @@ const SEVERITY: Readonly<Record<LanguageDiagnostic['severity'], monaco.MarkerSev
     information: monaco.MarkerSeverity.Info,
     hint: monaco.MarkerSeverity.Hint,
   })
+
+const diagnosticFromMarker = (marker: monaco.editor.IMarkerData): LanguageDiagnostic => ({
+  range: {
+    start: { line: marker.startLineNumber - 1, character: marker.startColumn - 1 },
+    end: { line: marker.endLineNumber - 1, character: marker.endColumn - 1 },
+  },
+  severity:
+    marker.severity === monaco.MarkerSeverity.Error
+      ? 'error'
+      : marker.severity === monaco.MarkerSeverity.Warning
+        ? 'warning'
+        : marker.severity === monaco.MarkerSeverity.Hint
+          ? 'hint'
+          : 'information',
+  message: marker.message,
+  ...(marker.code === undefined ? {} : { code: String(marker.code) }),
+  ...(marker.source === undefined ? {} : { source: marker.source }),
+})
 
 /**
  * The contract counts lines and characters from zero, Monaco from one. Getting this wrong shifts
@@ -495,6 +514,59 @@ export function bridgeLanguageProvider(
           }))
         },
       }),
+    )
+  }
+
+  if (provider.codeActions !== undefined) {
+    const codeActions = provider.codeActions.bind(provider)
+    disposables.push(
+      monaco.languages.registerCodeActionProvider(
+        selector,
+        {
+          async provideCodeActions(model, range, context, token) {
+            if (!claims(model)) return { actions: [], dispose() {} }
+            const diagnostics = context.markers.map(diagnosticFromMarker)
+            const list = await codeActions({
+              ...request(model, token),
+              range: {
+                start: { line: range.startLineNumber - 1, character: range.startColumn - 1 },
+                end: { line: range.endLineNumber - 1, character: range.endColumn - 1 },
+              },
+              diagnostics,
+              maxEdits: maxResults,
+            })
+            return {
+              actions: list.actions.map(action => {
+                const codes = new Set(action.diagnosticCodes ?? [])
+                return {
+                  title: action.title,
+                  ...(action.kind === undefined ? {} : { kind: action.kind as LanguageCodeActionKind }),
+                  ...(action.isPreferred === undefined ? {} : { isPreferred: action.isPreferred }),
+                  ...(action.disabledReason === undefined ? {} : { disabled: action.disabledReason }),
+                  ...(codes.size === 0
+                    ? {}
+                    : { diagnostics: context.markers.filter(marker => codes.has(String(marker.code))) }),
+                  ...(action.edit === undefined
+                    ? {}
+                    : {
+                        edit: {
+                          edits: action.edit.documentChanges.flatMap(change =>
+                            change.edits.map(item => ({
+                              resource: monaco.Uri.parse(change.uri),
+                              versionId: change.documentVersion,
+                              textEdit: { range: toMonacoRange(item.range), text: item.newText },
+                            })),
+                          ),
+                        },
+                      }),
+                }
+              }),
+              dispose() {},
+            }
+          },
+        },
+        { providedCodeActionKinds: ['quickfix', 'refactor', 'rewrite', 'source'] },
+      ),
     )
   }
 

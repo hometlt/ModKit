@@ -34,6 +34,7 @@ vi.mock('monaco-editor/editor/editor.main.js', () => {
       registerReferenceProvider: register('references'),
       registerRenameProvider: register('rename'),
       registerDocumentFormattingEditProvider: register('formatting'),
+      registerCodeActionProvider: register('codeActions'),
       registerSignatureHelpProvider: register('signatureHelp'),
       registerDocumentSymbolProvider: register('documentSymbols'),
     },
@@ -83,6 +84,22 @@ describe('Monaco language bridge', () => {
       activeSignature: 0,
       activeParameter: 0,
     }))
+    const codeActions = vi.fn(async request => ({
+      actions: [{
+        title: 'Replace value',
+        kind: 'quickfix' as const,
+        diagnosticCodes: ['fixture/value'],
+        edit: {
+          isComplete: true as const,
+          documentChanges: [{
+            uri: request.document.uri,
+            documentVersion: request.document.version,
+            edits: [{ range: request.range, newText: 'next' }],
+          }],
+        },
+      }],
+      isIncomplete: false,
+    }))
     const disposable = bridgeLanguageProvider(
       {
         contract: 'common.language/document-analysis',
@@ -93,6 +110,7 @@ describe('Monaco language bridge', () => {
         rename,
         formatting,
         signatureHelp,
+        codeActions,
       },
       { workspaceIncomplete: false },
     )
@@ -150,7 +168,34 @@ describe('Monaco language bridge', () => {
     })
     signatures.dispose()
 
+    const actionList = await harness.registered.get('codeActions').provideCodeActions(
+      model,
+      { startLineNumber: 1, startColumn: 6, endLineNumber: 1, endColumn: 11 },
+      {
+        markers: [{
+          startLineNumber: 1,
+          startColumn: 6,
+          endLineNumber: 1,
+          endColumn: 11,
+          message: 'fixture',
+          severity: 4,
+          code: 'fixture/value',
+        }],
+      },
+      token,
+    )
+    expect(codeActions).toHaveBeenCalledWith(expect.objectContaining({
+      range: { start: { line: 0, character: 5 }, end: { line: 0, character: 10 } },
+      diagnostics: [expect.objectContaining({ code: 'fixture/value', severity: 'warning' })],
+    }))
+    expect(actionList.actions[0]).toMatchObject({
+      title: 'Replace value',
+      kind: 'quickfix',
+      edit: { edits: [expect.objectContaining({ versionId: 7 })] },
+    })
+    actionList.dispose()
+
     disposable.dispose()
-    expect(harness.disposed).toHaveBeenCalledTimes(5)
+    expect(harness.disposed).toHaveBeenCalledTimes(6)
   })
 })

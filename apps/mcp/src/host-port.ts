@@ -95,6 +95,7 @@ export type McpLanguageFeature =
   | 'prepare-rename'
   | 'rename'
   | 'formatting'
+  | 'code-actions'
   | 'document-colors'
   | 'color-presentations'
   | 'document-symbols'
@@ -128,6 +129,16 @@ export interface McpLanguageRequest {
     readonly start: { readonly line: number; readonly character: number }
     readonly end: { readonly line: number; readonly character: number }
   }
+  readonly languageDiagnostics?: readonly {
+    readonly range: {
+      readonly start: { readonly line: number; readonly character: number }
+      readonly end: { readonly line: number; readonly character: number }
+    }
+    readonly severity: 'error' | 'warning' | 'information' | 'hint'
+    readonly message: string
+    readonly code?: string
+    readonly source?: string
+  }[]
   readonly maxResults: number
   readonly maxEdits: number
 }
@@ -462,6 +473,15 @@ export async function createHostMcpPort(
           case 'formatting':
             if (request.formatting === undefined) throw new TypeError('formatting needs options')
             result = await workspace.formatting({ ...common, options: request.formatting })
+            break
+          case 'code-actions':
+            if (request.range === undefined) throw new TypeError('code-actions needs range')
+            result = await workspace.codeActions({
+              ...common,
+              range: request.range,
+              diagnostics: request.languageDiagnostics ?? [],
+              maxEdits: request.maxEdits,
+            })
             break
           case 'document-colors':
             result = await workspace.documentColors(common)

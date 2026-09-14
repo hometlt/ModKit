@@ -19,11 +19,13 @@ import {
   LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
   type LanguageAnalysis,
   type LanguageAnalysisRequest,
+  type LanguageCodeActionList,
   type LanguageColor,
   type LanguageColorList,
   type LanguageColorPresentationList,
   type LanguageCompletionList,
   type LanguageProviderCompletionList,
+  type LanguageDiagnostic,
   type LanguageDiagnosticList,
   type LanguageDocument,
   type LanguageDocumentSymbolList,
@@ -114,6 +116,14 @@ const COMPLETION_KINDS = new Set([
   'snippet',
   'text',
   'type',
+])
+const CODE_ACTION_KINDS = new Set([
+  'quickfix',
+  'refactor',
+  'refactor.extract',
+  'refactor.inline',
+  'rewrite',
+  'source',
 ])
 
 function recordOf(value: unknown): Readonly<Record<string, unknown>> | undefined {
@@ -289,6 +299,12 @@ export interface LanguageWorkspaceColorPresentationRequest extends LanguageWorks
   readonly range: LanguageRange
 }
 
+export interface LanguageWorkspaceCodeActionsRequest extends LanguageWorkspaceFeatureRequest {
+  readonly range: LanguageRange
+  readonly diagnostics: readonly LanguageDiagnostic[]
+  readonly maxEdits?: number
+}
+
 export interface LanguageWorkspaceSymbolsRequest extends LanguageWorkspaceFeatureRequest {
   readonly query: string
 }
@@ -315,6 +331,9 @@ export interface LanguageWorkspace {
   colorPresentations(
     request: LanguageWorkspaceColorPresentationRequest,
   ): Promise<LanguageColorPresentationList | undefined>
+  codeActions(
+    request: LanguageWorkspaceCodeActionsRequest,
+  ): Promise<LanguageCodeActionList | undefined>
   documentSymbols(
     request: LanguageWorkspaceFeatureRequest,
   ): Promise<LanguageDocumentSymbolList | undefined>
@@ -1260,9 +1279,10 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     value: unknown,
     request: LanguageFeatureRequest,
     maxEdits: number,
+    allowPrimaryOnlyWhenIncomplete = false,
   ): LanguageWorkspaceEdit | undefined => {
     if (value === undefined) return undefined
-    if (request.workspaceIncomplete) return undefined
+    if (request.workspaceIncomplete && !allowPrimaryOnlyWhenIncomplete) return undefined
     const edit = value as LanguageWorkspaceEdit
     let editCount = 0
     const seen = new Set<string>()
@@ -1277,6 +1297,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         editCount += Array.isArray(change.edits) ? change.edits.length : maxEdits + 1
         if (
           open === undefined ||
+          (request.workspaceIncomplete && change.uri !== request.document.uri) ||
           seen.has(change.uri) ||
           change.documentVersion !== open.version ||
           !Array.isArray(change.edits) ||
@@ -1298,6 +1319,67 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       )
     }
     return edit
+  }
+
+  const validateCodeActionList = (
+    value: unknown,
+    request: LanguageFeatureRequest,
+    maxEdits: number,
+  ): LanguageCodeActionList => {
+    const list = value as LanguageCodeActionList
+    if (
+      typeof list !== 'object' ||
+      list === null ||
+      !Array.isArray(list.actions) ||
+      list.actions.length > request.maxResults ||
+      typeof list.isIncomplete !== 'boolean'
+    ) {
+      invalidFeature('language provider returned invalid or unbounded code actions', request.document.uri)
+    }
+    let editCount = 0
+    for (const value of list.actions) {
+      const action = recordOf(value)
+      if (action === undefined) {
+        invalidFeature('language provider returned an invalid code action', request.document.uri)
+      }
+      const diagnosticCodes = action['diagnosticCodes']
+      const validCodes =
+        diagnosticCodes === undefined ||
+        (Array.isArray(diagnosticCodes) &&
+          diagnosticCodes.length <= request.maxResults &&
+          diagnosticCodes.every(code => typeof code === 'string' && code.length > 0 && code.length <= 256))
+      const edit = action['edit'] as LanguageWorkspaceEdit | undefined
+      const disabledReason = action['disabledReason']
+      const hasEdit = edit !== undefined
+      const hasDisabledReason = disabledReason !== undefined
+      if (
+        typeof action['title'] !== 'string' ||
+        action['title'].length === 0 ||
+        action['title'].length > 512 ||
+        (action['kind'] !== undefined &&
+          (typeof action['kind'] !== 'string' || !CODE_ACTION_KINDS.has(action['kind']))) ||
+        (action['isPreferred'] !== undefined && typeof action['isPreferred'] !== 'boolean') ||
+        !validCodes ||
+        hasEdit === hasDisabledReason ||
+        (hasDisabledReason &&
+          (typeof disabledReason !== 'string' || disabledReason.length === 0 || disabledReason.length > 1_024))
+      ) {
+        invalidFeature('language provider returned an invalid code action', request.document.uri)
+      }
+      if (edit !== undefined) {
+        if (!Array.isArray(edit.documentChanges)) {
+          invalidFeature('language provider returned an invalid code-action edit', request.document.uri)
+        }
+        for (const change of edit.documentChanges) {
+          editCount += Array.isArray(change.edits) ? change.edits.length : maxEdits + 1
+        }
+        if (editCount > maxEdits) {
+          invalidFeature('language provider returned too many code-action edits', request.document.uri)
+        }
+        validateWorkspaceEdit(edit, request, maxEdits, true)
+      }
+    }
+    return list
   }
 
   const analyze = (
@@ -1687,6 +1769,56 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
         (provider, feature) => provider.colorPresentations?.({ ...feature, color, range }),
         validateColorPresentations,
         { color, range },
+      )
+    },
+
+    codeActions(
+      request: LanguageWorkspaceCodeActionsRequest,
+    ): Promise<LanguageCodeActionList | undefined> {
+      const entry = requireFeatureEntry(request, false)
+      const lengths = lineLengths(entry.document.text)
+      if (
+        !validRange(request.range, lengths) ||
+        !Array.isArray(request.diagnostics) ||
+        request.diagnostics.length > (request.maxResults ?? LANGUAGE_DEFAULT_MAX_RESULTS) ||
+        !request.diagnostics.every(item =>
+          validRange(item.range, lengths) &&
+          typeof item.message === 'string' &&
+          ['error', 'warning', 'information', 'hint'].includes(item.severity) &&
+          (item.code === undefined || typeof item.code === 'string') &&
+          (item.source === undefined || typeof item.source === 'string'),
+        )
+      ) {
+        return Promise.reject(
+          workspaceError(
+            LANGUAGE_FEATURE_INVALID,
+            'code actions need a valid range and bounded document diagnostics',
+            { uri: request.uri },
+          ),
+        )
+      }
+      const maxEdits = boundedInteger(
+        request.maxEdits,
+        LANGUAGE_DEFAULT_MAX_EDITS,
+        LANGUAGE_MAX_EDITS,
+        'maxEdits',
+      )
+      const range = Object.freeze({
+        start: Object.freeze({ ...request.range.start }),
+        end: Object.freeze({ ...request.range.end }),
+      })
+      const diagnostics = Object.freeze(request.diagnostics.map(item => Object.freeze({ ...item })))
+      return invokeFeature(
+        request,
+        false,
+        (provider, feature) => provider.codeActions?.({
+          ...feature,
+          range,
+          diagnostics,
+          maxEdits,
+        }),
+        (value, feature) => validateCodeActionList(value, feature, maxEdits),
+        { range, diagnostics, maxEdits },
       )
     },
 

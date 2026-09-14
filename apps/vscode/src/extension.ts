@@ -4344,6 +4344,39 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   }): vscode.Location =>
     new vscode.Location(vscode.Uri.parse(location.uri), rangeOf(location.range))
 
+  const languageDiagnosticSeverity = (
+    severity: vscode.DiagnosticSeverity,
+  ): 'error' | 'warning' | 'information' | 'hint' => {
+    switch (severity) {
+      case vscode.DiagnosticSeverity.Error:
+        return 'error'
+      case vscode.DiagnosticSeverity.Warning:
+        return 'warning'
+      case vscode.DiagnosticSeverity.Hint:
+        return 'hint'
+      default:
+        return 'information'
+    }
+  }
+
+  const diagnosticCode = (diagnostic: vscode.Diagnostic): string | undefined => {
+    if (diagnostic.code === undefined) return undefined
+    if (typeof diagnostic.code === 'object') return String(diagnostic.code.value)
+    return String(diagnostic.code)
+  }
+
+  const nativeCodeActionKind = (kind: string): vscode.CodeActionKind | undefined => {
+    switch (kind) {
+      case 'quickfix': return vscode.CodeActionKind.QuickFix
+      case 'refactor': return vscode.CodeActionKind.Refactor
+      case 'refactor.extract': return vscode.CodeActionKind.RefactorExtract
+      case 'refactor.inline': return vscode.CodeActionKind.RefactorInline
+      case 'rewrite': return vscode.CodeActionKind.RefactorRewrite
+      case 'source': return vscode.CodeActionKind.Source
+      default: return undefined
+    }
+  }
+
   const languageDocument = (document: vscode.TextDocument): EditorLanguageDocument => ({
     uri: document.uri.toString(),
     fileName: document.fileName,
@@ -4466,6 +4499,81 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           }
         },
       }),
+      vscode.languages.registerCodeActionsProvider(
+        languageSelector,
+        {
+          async provideCodeActions(document, range, context, token) {
+            const cancellation = signalFor(token)
+            try {
+              const diagnostics = context.diagnostics.map(item => {
+                const code = diagnosticCode(item)
+                return {
+                  range: {
+                    start: { line: item.range.start.line, character: item.range.start.character },
+                    end: { line: item.range.end.line, character: item.range.end.character },
+                  },
+                  severity: languageDiagnosticSeverity(item.severity),
+                  message: item.message,
+                  ...(code === undefined ? {} : { code }),
+                  ...(item.source === undefined ? {} : { source: item.source }),
+                }
+              })
+              const result = await languageController.codeActions(
+                languageDocument(document),
+                {
+                  start: { line: range.start.line, character: range.start.character },
+                  end: { line: range.end.line, character: range.end.character },
+                },
+                diagnostics,
+                cancellation.signal,
+              )
+              return result?.actions.map(item => {
+                const action = new vscode.CodeAction(item.title, nativeCodeActionKind(item.kind ?? ''))
+                if (item.isPreferred !== undefined) action.isPreferred = item.isPreferred
+                if (item.disabledReason !== undefined) action.disabled = { reason: item.disabledReason }
+                if (item.diagnosticCodes !== undefined) {
+                  const codes = new Set(item.diagnosticCodes)
+                  action.diagnostics = context.diagnostics.filter(candidate => {
+                    const code = diagnosticCode(candidate)
+                    return code !== undefined && codes.has(code)
+                  })
+                }
+                if (item.edit !== undefined) {
+                  const edit = new vscode.WorkspaceEdit()
+                  for (const change of item.edit.documentChanges) {
+                    edit.set(
+                      vscode.Uri.parse(change.uri),
+                      change.edits.map(candidate =>
+                        vscode.TextEdit.replace(rangeOf(candidate.range), candidate.newText),
+                      ),
+                    )
+                  }
+                  action.edit = edit
+                }
+                return action
+              })
+            } catch (error) {
+              if (token.isCancellationRequested) return undefined
+              log(
+                `[language] code actions failed: ${error instanceof Error ? error.message : String(error)}`,
+              )
+              return undefined
+            } finally {
+              cancellation.dispose()
+            }
+          },
+        },
+        {
+          providedCodeActionKinds: [
+            vscode.CodeActionKind.QuickFix,
+            vscode.CodeActionKind.Refactor,
+            vscode.CodeActionKind.RefactorExtract,
+            vscode.CodeActionKind.RefactorInline,
+            vscode.CodeActionKind.RefactorRewrite,
+            vscode.CodeActionKind.Source,
+          ],
+        },
+      ),
       vscode.languages.registerColorProvider(languageSelector, {
         async provideDocumentColors(document, token) {
           const cancellation = signalFor(token)

@@ -111,6 +111,9 @@ function fakeWorkspace(
     async formatting() {
       return undefined
     },
+    async codeActions() {
+      return undefined
+    },
     async documentColors() {
       return undefined
     },
@@ -156,6 +159,10 @@ describe('VS Code-free language session controller', () => {
       presentations: [{ label: 'FF8000' }],
       isIncomplete: false,
     })
+    const actions = vi.spyOn(workspace, 'codeActions').mockResolvedValue({
+      actions: [{ title: 'Replace colour', disabledReason: 'fixture only' }],
+      isIncomplete: false,
+    })
     const controller = createLanguageSessionController({
       workspace,
       routes: [ROUTE],
@@ -175,6 +182,15 @@ describe('VS Code-free language session controller', () => {
         { start: { line: 0, character: 0 }, end: { line: 0, character: 6 } },
       ),
     ).resolves.toMatchObject({ presentations: [{ label: 'FF8000' }] })
+    const actionRange = { start: { line: 0, character: 0 }, end: { line: 0, character: 6 } }
+    await expect(
+      controller.codeActions(document, actionRange, [{
+        range: actionRange,
+        severity: 'warning',
+        message: 'fixture colour',
+        code: 'fixture/colour',
+      }]),
+    ).resolves.toMatchObject({ actions: [{ title: 'Replace colour' }] })
     expect(colors).toHaveBeenCalledWith(expect.objectContaining({ documentVersion: 1 }))
     expect(presentations).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -182,6 +198,12 @@ describe('VS Code-free language session controller', () => {
         range: { start: { line: 0, character: 0 }, end: { line: 0, character: 6 } },
       }),
     )
+    expect(actions).toHaveBeenCalledWith(expect.objectContaining({
+      documentVersion: 1,
+      range: actionRange,
+      diagnostics: [expect.objectContaining({ code: 'fixture/colour' })],
+      maxEdits: 4_096,
+    }))
     await controller.shutdown()
   })
 

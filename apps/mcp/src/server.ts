@@ -49,6 +49,15 @@ const languagePositionSchema = z
 const languageRangeSchema = z
   .object({ start: languagePositionSchema, end: languagePositionSchema })
   .strict()
+const languageDiagnosticSchema = z
+  .object({
+    range: languageRangeSchema,
+    severity: z.enum(['error', 'warning', 'information', 'hint']),
+    message: z.string().max(4_096),
+    code: z.string().max(256).optional(),
+    source: z.string().max(256).optional(),
+  })
+  .strict()
 const languageInput = z
   .object({
     documents: z
@@ -67,7 +76,7 @@ const languageInput = z
     feature: z.enum([
       'analyze', 'completion', 'hover', 'signature-help', 'definition', 'references',
       'prepare-rename', 'rename', 'formatting', 'document-colors', 'color-presentations',
-      'document-symbols', 'workspace-symbols', 'diagnostics',
+      'code-actions', 'document-symbols', 'workspace-symbols', 'diagnostics',
     ]),
     position: languagePositionSchema.optional(),
     includeDeclaration: z.boolean().optional(),
@@ -91,6 +100,7 @@ const languageInput = z
       .strict()
       .optional(),
     range: languageRangeSchema.optional(),
+    languageDiagnostics: z.array(languageDiagnosticSchema).max(2_048).optional(),
     maxResults: z.number().int().min(1).max(2_048).default(1_000),
     maxEdits: z.number().int().min(1).max(4_096).default(1_024),
   })

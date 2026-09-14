@@ -14,6 +14,7 @@ import {
   type Diagnostic,
 } from '@modkit/core'
 import type {
+  LanguageCodeActionList,
   LanguageColor,
   LanguageColorList,
   LanguageColorPresentationList,
@@ -169,6 +170,12 @@ export interface LanguageSessionController {
     formatting: LanguageFormattingOptions,
     signal?: AbortSignal,
   ): Promise<LanguageTextEditList | undefined>
+  codeActions(
+    document: EditorLanguageDocument,
+    range: LanguageRange,
+    diagnostics: readonly LanguageDiagnostic[],
+    signal?: AbortSignal,
+  ): Promise<LanguageCodeActionList | undefined>
   documentColors(
     document: EditorLanguageDocument,
     signal?: AbortSignal,
@@ -734,6 +741,26 @@ export function createLanguageSessionController(
         options: formatting,
         maxResults: EDITOR_MAX_RESULTS,
         maxDocuments: EDITOR_MAX_DOCUMENTS,
+        ...(signal === undefined ? {} : { signal }),
+      })
+    },
+
+    async codeActions(
+      document: EditorLanguageDocument,
+      range: LanguageRange,
+      diagnostics: readonly LanguageDiagnostic[],
+      signal?: AbortSignal,
+    ): Promise<LanguageCodeActionList | undefined> {
+      const result = await ensure(document, signal)
+      if (result === undefined) return undefined
+      return options.workspace.codeActions({
+        uri: document.uri,
+        documentVersion: document.version,
+        range,
+        diagnostics,
+        maxResults: EDITOR_MAX_RESULTS,
+        maxDocuments: EDITOR_MAX_DOCUMENTS,
+        maxEdits: EDITOR_MAX_EDITS,
         ...(signal === undefined ? {} : { signal }),
       })
     },

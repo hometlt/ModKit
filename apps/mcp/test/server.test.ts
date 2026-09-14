@@ -14,6 +14,7 @@ import {
   encodeKnowledgeResourceTarget,
   parseModkitMcpConfiguration,
   type McpEnvelope,
+  type McpLanguageRequest,
   type McpOpenedSubject,
   type ModkitMcpHostPort,
 } from '../src/index.js'
@@ -553,15 +554,17 @@ function fakeHost(
     supportedExtensions: ['fixture'],
     ...(options.withLanguage
       ? {
-          async language(request: unknown, signal?: AbortSignal) {
+          async language(request: McpLanguageRequest, signal?: AbortSignal) {
             signal?.throwIfAborted()
             languageInvocations.push(request)
             return {
               snapshotId: 'language-v1',
               diagnostics: [],
               primaryUri: 'file:///C:/allowed/fixture.galaxy',
-              feature: 'hover' as const,
-              result: { markdown: 'Fixture hover' },
+              feature: request.feature,
+              result: request.feature === 'code-actions'
+                ? { actions: [], isIncomplete: false }
+                : { markdown: 'Fixture hover' },
             }
           },
         }
@@ -823,6 +826,39 @@ describe('read-only MCP v2 adapter', () => {
       },
     })
     expect(rejected.isError).toBe(true)
+  })
+
+  it('forwards bounded code-action context without applying edits', async () => {
+    const fake = fakeHost({ withLanguage: true })
+    const { client } = await connected(fake.host)
+    const range = { start: { line: 0, character: 0 }, end: { line: 0, character: 4 } }
+    const result = structured(await client.callTool({
+      name: 'modkit.language',
+      arguments: {
+        documents: [{ path: 'C:\\allowed\\fixture.galaxy', languageId: 'galaxy' }],
+        feature: 'code-actions',
+        range,
+        languageDiagnostics: [{
+          range,
+          severity: 'warning',
+          message: 'fixture warning',
+          code: 'fixture/warning',
+        }],
+        maxResults: 20,
+        maxEdits: 10,
+      },
+    }))
+    expect(result).toMatchObject({
+      completeness: 'partial',
+      data: { feature: 'code-actions', result: { actions: [] } },
+    })
+    expect(fake.languageInvocations()).toEqual([
+      expect.objectContaining({
+        feature: 'code-actions',
+        range,
+        languageDiagnostics: [expect.objectContaining({ code: 'fixture/warning' })],
+      }),
+    ])
   })
 
   it('opens, inspects and closes an opaque handle', async () => {

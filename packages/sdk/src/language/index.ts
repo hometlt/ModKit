@@ -242,6 +242,29 @@ export interface LanguageWorkspaceEdit {
   readonly isComplete: true
 }
 
+export type LanguageCodeActionKind =
+  | 'quickfix'
+  | 'refactor'
+  | 'refactor.extract'
+  | 'refactor.inline'
+  | 'rewrite'
+  | 'source'
+
+/** A bounded, command-free editor action. Mutations are exact-version workspace edits. */
+export interface LanguageCodeAction {
+  readonly title: string
+  readonly kind?: LanguageCodeActionKind
+  readonly isPreferred?: boolean
+  readonly diagnosticCodes?: readonly string[]
+  readonly edit?: LanguageWorkspaceEdit
+  readonly disabledReason?: string
+}
+
+export interface LanguageCodeActionList {
+  readonly actions: readonly LanguageCodeAction[]
+  readonly isIncomplete: boolean
+}
+
 export interface LanguageWorkspaceSymbol {
   readonly name: string
   readonly kind: LanguageSymbolKind
@@ -304,6 +327,12 @@ export interface LanguageColorPresentationRequest extends LanguageFeatureRequest
   readonly range: LanguageRange
 }
 
+export interface LanguageCodeActionsRequest extends LanguageFeatureRequest {
+  readonly range: LanguageRange
+  readonly diagnostics: readonly LanguageDiagnostic[]
+  readonly maxEdits: number
+}
+
 /** Activated provider surface. It is deliberately independent of any LSP transport package. */
 export interface LanguageProvider {
   readonly contract: typeof LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT
@@ -330,6 +359,7 @@ export interface LanguageProvider {
   colorPresentations?(
     request: LanguageColorPresentationRequest,
   ): Promise<LanguageColorPresentationList>
+  codeActions?(request: LanguageCodeActionsRequest): Promise<LanguageCodeActionList>
   documentSymbols?(request: LanguageFeatureRequest): Promise<LanguageDocumentSymbolList>
   workspaceSymbols?(request: LanguageWorkspaceSymbolsRequest): Promise<LanguageWorkspaceSymbolList>
   diagnostics?(request: LanguageFeatureRequest): Promise<LanguageDiagnosticList>

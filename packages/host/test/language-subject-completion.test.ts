@@ -126,6 +126,30 @@ const provider: LanguageProvider = {
         },
       ],
     }),
+  codeActions: request =>
+    Promise.resolve({
+      actions: [
+        {
+          title: 'Replace fixture token',
+          kind: 'quickfix',
+          isPreferred: true,
+          diagnosticCodes: request.diagnostics.flatMap(item =>
+            item.code === undefined ? [] : [item.code],
+          ),
+          edit: {
+            isComplete: true,
+            documentChanges: [
+              {
+                uri: request.document.uri,
+                documentVersion: request.document.version,
+                edits: [{ range: request.range, newText: 'fixed' }],
+              },
+            ],
+          },
+        },
+      ],
+      isIncomplete: false,
+    }),
 }
 
 const fixture = defineLinkedExtension({
@@ -351,6 +375,40 @@ describe('language subject completion lifecycle', () => {
       await expect(
         workspace.rename({ ...completionRequest(), newName: 'renamed' }),
       ).resolves.toBeUndefined()
+    } finally {
+      await workspace.shutdown()
+    }
+  })
+
+  it('allows a revision-bound local code action with read-only dependency context', async () => {
+    const workspace = await openWorkspace({ open: async () => undefined }, false, {
+      snapshot: async () => ({
+        documents: [{
+          uri: 'file:///workspace/dependency.lang',
+          languageId: 'fixture-language',
+          version: 1,
+          text: 'dependency',
+        }],
+        isComplete: true,
+      }),
+    })
+    try {
+      const range = { start: { line: 0, character: 0 }, end: { line: 0, character: 5 } }
+      await expect(workspace.codeActions({
+        ...completionRequest(),
+        range,
+        diagnostics: [{ range, severity: 'warning', message: 'fixture', code: 'fixture/token' }],
+        maxEdits: 4,
+      })).resolves.toEqual({
+        actions: [expect.objectContaining({
+          title: 'Replace fixture token',
+          diagnosticCodes: ['fixture/token'],
+          edit: expect.objectContaining({
+            documentChanges: [expect.objectContaining({ uri: DOCUMENT_URI, documentVersion: 1 })],
+          }),
+        })],
+        isIncomplete: false,
+      })
     } finally {
       await workspace.shutdown()
     }
