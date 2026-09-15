@@ -19,11 +19,13 @@ const sheetText = [
   '',
 ].join('\n')
 const catalogText = 'Unit/Name/Marine=<s val="Title">Marine</s> <s val="Title">!</s>\n'
+const layoutText = '<Desc>\n<Frame type="Label" name="L">\n<Style val="@@Title"/>\n</Frame>\n</Desc>\n'
 const coreRoot = resolve(import.meta.dirname, '..', '..', '..')
 const blizzard = resolve(coreRoot, '..', 'modkit-extensions-blizzard', 'starcraft2')
 let root: string
 let sheetPath: string
 let catalogPath: string
+let layoutPath: string
 let host: ModkitMcpHostPort
 let app: ReturnType<typeof createModkitMcpServer>
 let client: Client
@@ -35,9 +37,11 @@ beforeAll(async () => {
   root = await mkdtemp(join(tmpdir(), 'modkit-mcp-sc2-style-'))
   sheetPath = join(root, 'FontStyles.SC2Style')
   catalogPath = join(root, 'GameStrings.txt')
+  layoutPath = join(root, 'Title.SC2Layout')
   await Promise.all([
     writeFile(sheetPath, sheetText, 'utf8'),
     writeFile(catalogPath, catalogText, 'utf8'),
+    writeFile(layoutPath, layoutText, 'utf8'),
   ])
   host = await createHostMcpPort({ roots: [root], extensions: [blizzard] })
   app = createModkitMcpServer(host)
@@ -52,9 +56,10 @@ afterAll(async () => {
 }, 30_000)
 
 describe('installed SC2 Style language through MCP', () => {
-  it('activates the Style surfaces and follows a style into an open SC2 Strings catalog', async () => {
+  it('activates the Style surfaces and follows a style into open SC2 Strings and SC2Layout documents', async () => {
     const sheetUri = pathToFileURL(sheetPath).href
     const catalogUri = pathToFileURL(catalogPath).href
+    const layoutUri = pathToFileURL(layoutPath).href
     const opened = envelope(
       await client.callTool({
         name: 'modkit.language_session_open',
@@ -66,6 +71,12 @@ describe('installed SC2 Style language through MCP', () => {
               languageId: 'sc2-strings',
               documentKind: 'sc2-strings-catalog',
               version: 3,
+            },
+            {
+              path: layoutPath,
+              languageId: 'sc2-layout',
+              documentKind: 'sc2-layout-source',
+              version: 4,
             },
           ],
         },
@@ -92,6 +103,7 @@ describe('installed SC2 Style language through MCP', () => {
           ]),
         },
         { uri: catalogUri },
+        { uri: layoutUri },
       ],
     })
     const sessionHandle = (opened.data as { sessionHandle: string }).sessionHandle
@@ -110,7 +122,7 @@ describe('installed SC2 Style language through MCP', () => {
         position,
         includeDeclaration: false,
       })
-      // Both uses on the catalog line, as two exact spans; the incomplete session stays incomplete.
+      // Both catalog uses as exact spans, then the layout use past its @@; the session stays incomplete.
       expect(references.data, JSON.stringify(references)).toMatchObject({
         result: {
           locations: [
@@ -124,6 +136,13 @@ describe('installed SC2 Style language through MCP', () => {
             {
               uri: catalogUri,
               range: { start: { line: 0, character: catalogText.lastIndexOf('Title') } },
+            },
+            {
+              uri: layoutUri,
+              range: {
+                start: { line: 2, character: '<Style val="@@'.length },
+                end: { line: 2, character: '<Style val="@@Title'.length },
+              },
             },
           ],
           isIncomplete: true,
