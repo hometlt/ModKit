@@ -322,8 +322,18 @@ test(
       )
       assert.equal(oversizedOpen.params.version, 1)
 
-      send({ jsonrpc: '2.0', id: 8, method: 'shutdown', params: null })
-      await waitFor(message => message.id === 8, 'shutdown')
+      send({
+        jsonrpc: '2.0',
+        id: 8,
+        method: 'textDocument/documentSymbol',
+        params: { textDocument: { uri } },
+      })
+      const symbols = await waitFor(message => message.id === 8, 'analysis-backed symbols')
+      assert.equal(symbols.error, undefined, JSON.stringify(symbols.error))
+      assert.equal(symbols.result[0]?.name, 'fixture')
+
+      send({ jsonrpc: '2.0', id: 9, method: 'shutdown', params: null })
+      await waitFor(message => message.id === 9, 'shutdown')
       send({ jsonrpc: '2.0', method: 'exit', params: null })
       child.stdin.end()
       await new Promise((resolveExit, reject) => {

@@ -74,21 +74,6 @@ export function createProvider(selection) {
           isIncomplete: request.workspaceIncomplete,
         })
       },
-      async diagnostics(request) {
-        return Object.freeze({
-          diagnostics: request.document.text.includes('invalid')
-            ? [
-                {
-                  range: { start: { line: 0, character: 0 }, end: { line: 0, character: 7 } },
-                  severity: 'error',
-                  message: 'invalid fixture source',
-                  code: 'fixture/invalid',
-                },
-              ]
-            : [],
-          isIncomplete: request.workspaceIncomplete,
-        })
-      },
     }),
     release: async () => undefined,
   })

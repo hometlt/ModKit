@@ -158,6 +158,16 @@ describe('host-held MCP language session', () => {
       diagnostics: [{ code: 'fixture/invalid' }],
       isIncomplete: true,
     })
+    const symbols = await session.invoke({
+      primaryUri: uri,
+      feature: 'document-symbols',
+      maxResults: 20,
+      maxEdits: 20,
+    })
+    expect(symbols.result).toMatchObject({
+      symbols: [{ name: 'fixture', kind: 'function' }],
+      isIncomplete: true,
+    })
     await Promise.all([
       session.update({ uri, version: 9, text: 'queued-nine' }),
       session.update({ uri, version: 10, text: 'queued-ten' }),

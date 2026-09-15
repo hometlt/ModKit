@@ -1826,10 +1826,22 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     documentSymbols(
       request: LanguageWorkspaceFeatureRequest,
     ): Promise<LanguageDocumentSymbolList | undefined> {
+      const entry = requireFeatureEntry(request, false)
       return invokeFeature(
         request,
         false,
-        (provider, feature) => provider.documentSymbols?.(feature),
+        async (provider, feature) => {
+          if (provider.documentSymbols !== undefined) return provider.documentSymbols(feature)
+          const current =
+            entry.pending === undefined
+              ? entry.current
+              : await waitWithSignal(entry.pending, feature.signal)
+          if (current?.state !== 'resolved') return { symbols: [], isIncomplete: true }
+          return {
+            symbols: current.analysis.symbols,
+            isIncomplete: feature.workspaceIncomplete,
+          }
+        },
         validateDocumentSymbols,
       )
     },
@@ -1856,10 +1868,22 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
     diagnostics(
       request: LanguageWorkspaceFeatureRequest,
     ): Promise<LanguageDiagnosticList | undefined> {
+      const entry = requireFeatureEntry(request, false)
       return invokeFeature(
         request,
         false,
-        (provider, feature) => provider.diagnostics?.(feature),
+        async (provider, feature) => {
+          if (provider.diagnostics !== undefined) return provider.diagnostics(feature)
+          const current =
+            entry.pending === undefined
+              ? entry.current
+              : await waitWithSignal(entry.pending, feature.signal)
+          if (current?.state !== 'resolved') return { diagnostics: [], isIncomplete: true }
+          return {
+            diagnostics: current.analysis.diagnostics,
+            isIncomplete: feature.workspaceIncomplete,
+          }
+        },
         validateDiagnosticList,
       )
     },
