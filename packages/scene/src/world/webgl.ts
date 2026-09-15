@@ -19,6 +19,7 @@ import { createModelSceneSampler } from '../model/index.js'
 import { materialWebGlDraws } from '../render/material-webgl.js'
 import { materialIsSolid, sceneMaterialDraws, type MaterialDraw } from '../render/material-draws.js'
 import { prepareSceneMaterialPrograms, type SceneMaterialPrograms } from '../render/materials.js'
+import { applyTextureFilter } from '../render/texture-filtering.js'
 
 export interface WorldWebGlInput {
   readonly items: readonly WorldSceneItem[]
@@ -497,6 +498,14 @@ function pushSplatTriangle(
   }
 }
 
+/** Neutral stand-in for a splat layer whose base-color texture did not resolve. */
+const MISSING_TERRAIN_LAYER_TEXTURE: SceneRendererTexture = Object.freeze({
+  id: 'modkit.world/missing-terrain-layer',
+  width: 1,
+  height: 1,
+  rgba: Uint8Array.of(128, 128, 128, 255),
+})
+
 function transformedTerrainUv(
   uv: readonly [number, number],
   transform:
@@ -513,6 +522,21 @@ function transformedTerrainUv(
   const cosine = Math.cos(transform.rotation)
   const sine = Math.sin(transform.rotation)
   return [transform.offset[0] + x * cosine - y * sine, transform.offset[1] + x * sine + y * cosine]
+}
+
+/**
+ * Terrain UV at a cell corner. A sample transform is cell-local (tile rotation/flip); a material
+ * transform acts in continuous terrain cell units (world tiling), so repeats cross cell borders
+ * without seams. Integer cell offsets are invisible to repeat-wrapped tiles.
+ */
+function terrainSurfaceUv(
+  cell: Readonly<{ x: number; y: number }>,
+  local: readonly [number, number],
+  sampleTransform: Parameters<typeof transformedTerrainUv>[1],
+  materialTransform: Parameters<typeof transformedTerrainUv>[1],
+): readonly [number, number] {
+  const inCell = transformedTerrainUv(local, sampleTransform)
+  return transformedTerrainUv([cell.x + inCell[0], cell.y + inCell[1]], materialTransform)
 }
 
 function pushLine(
@@ -900,7 +924,6 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
     input.terrainWeightRasters!.length <= 2 &&
     rasterDefinitions.length <= 8 &&
     rasterDefinitions.every(definition => definition !== undefined) &&
-    rasterMaterialTextures.every(texture => texture !== undefined) &&
     rasterWeightTextures.every(
       (texture, index) =>
         texture !== undefined &&
@@ -911,7 +934,8 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
     terrainMaximumY > terrainMinimumY
       ? Object.freeze({
           definitions: rasterDefinitions as readonly MapTerrainMaterialDefinition[],
-          textures: rasterMaterialTextures as readonly SceneRendererTexture[],
+          // One unresolved layer must not drop per-pixel blending for the whole map.
+          textures: rasterMaterialTextures.map(texture => texture ?? MISSING_TERRAIN_LAYER_TEXTURE),
           normalTextures: rasterNormalTextures,
           weightTextures: rasterWeightTextures as readonly SceneRendererTexture[],
         })
@@ -945,10 +969,10 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
       }
       splat.set(key, target)
       const coordinates = exactRasterSplat.definitions.map(definition => {
-        const uvA = transformedTerrainUv([0, 0], definition.uvTransform)
-        const uvB = transformedTerrainUv([1, 0], definition.uvTransform)
-        const uvC = transformedTerrainUv([1, 1], definition.uvTransform)
-        const uvD = transformedTerrainUv([0, 1], definition.uvTransform)
+        const uvA = terrainSurfaceUv(item, [0, 0], undefined, definition.uvTransform)
+        const uvB = terrainSurfaceUv(item, [1, 0], undefined, definition.uvTransform)
+        const uvC = terrainSurfaceUv(item, [1, 1], undefined, definition.uvTransform)
+        const uvD = terrainSurfaceUv(item, [0, 1], undefined, definition.uvTransform)
         return { first: [uvA, uvC, uvB] as const, second: [uvA, uvD, uvC] as const }
       })
       const rasterUv = (x: number, y: number): readonly [number, number] => [
@@ -1049,10 +1073,7 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
       splat.set(key, target)
       const coordinates = resolvedSplat.map(layer => {
         const transform = (uv: readonly [number, number]) =>
-          transformedTerrainUv(
-            transformedTerrainUv(uv, layer.definition.uvTransform),
-            materialSample?.uvTransform,
-          )
+          terrainSurfaceUv(item, uv, materialSample?.uvTransform, layer.definition.uvTransform)
         const uvA = transform([0, 0])
         const uvB = transform([1, 0])
         const uvC = transform([1, 1])
@@ -1085,11 +1106,12 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
         ...(normalTexture === undefined ? {} : { normalTexture }),
       }
       textured.set(key, target)
-      const transform = materialSample?.uvTransform ?? material?.uvTransform
-      const uvA = transformedTerrainUv([0, 0], transform)
-      const uvB = transformedTerrainUv([1, 0], transform)
-      const uvC = transformedTerrainUv([1, 1], transform)
-      const uvD = transformedTerrainUv([0, 1], transform)
+      const uv = (local: readonly [number, number]) =>
+        terrainSurfaceUv(item, local, materialSample?.uvTransform, material?.uvTransform)
+      const uvA = uv([0, 0])
+      const uvB = uv([1, 0])
+      const uvC = uv([1, 1])
+      const uvD = uv([0, 1])
       pushTexturedTriangle(target, [a, c, b], [uvA, uvC, uvB], color)
       pushTexturedTriangle(target, [a, d, c], [uvA, uvD, uvC], color)
       terrainTexturedTriangles += 2
@@ -1380,6 +1402,7 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
           {
             time,
             sequenceTime: time,
+            sceneLighting: true,
             ...(teamColor === undefined ? {} : { teamColor }),
           },
           [],
@@ -1846,9 +1869,18 @@ vec2 terrainLayerUv(int layer, vec2 uv) {
   );
   return mix(fract(uv), clamp(uv, vec2(0.0), vec2(1.0)), clampMask);
 }
+vec4 terrainLayerSample(sampler2DArray maps, int layer, vec2 authoredUv) {
+  // Mip selection uses the continuous coordinates; gradients of fract(uv) would pick the smallest
+  // mip along every repeated-tile seam.
+  return textureGrad(
+    maps,
+    vec3(terrainLayerUv(layer, authoredUv), float(layer)),
+    dFdx(authoredUv),
+    dFdy(authoredUv)
+  );
+}
 vec3 terrainLayerNormal(vec3 baseNormal, int layer, vec2 authoredUv) {
   if (layerValue(terrainNormalMask0, terrainNormalMask1, layer) < 0.5) return baseNormal;
-  vec2 uv = terrainLayerUv(layer, authoredUv);
   vec3 positionDx = dFdx(worldPosition);
   vec3 positionDy = dFdy(worldPosition);
   // Derivatives use the continuous authored coordinates; differentiating fract(uv) would create
@@ -1859,7 +1891,7 @@ vec3 terrainLayerNormal(vec3 baseNormal, int layer, vec2 authoredUv) {
   if (abs(determinant) <= 0.000001) return baseNormal;
   vec3 tangent = normalize((positionDx * uvDy.y - positionDy * uvDx.y) / determinant);
   vec3 bitangent = normalize((-positionDx * uvDy.x + positionDy * uvDx.x) / determinant);
-  vec3 mappedNormal = texture(terrainNormalMaps, vec3(uv, float(layer))).xyz * 2.0 - 1.0;
+  vec3 mappedNormal = terrainLayerSample(terrainNormalMaps, layer, authoredUv).xyz * 2.0 - 1.0;
   return normalize(tangent * mappedNormal.x + bitangent * mappedNormal.y + baseNormal * mappedNormal.z);
 }
 float directionalShadow(vec3 resolvedNormal) {
@@ -1940,14 +1972,14 @@ void main() {
   }
   if (splatTextured > 0.5) {
     vec4 mixedSurface = vec4(0.0);
-    mixedSurface += texture(terrainMaps, vec3(terrainLayerUv(0, splatTextureCoordinates[0]), 0.0)) * resolvedSplatWeights0.x;
-    mixedSurface += texture(terrainMaps, vec3(terrainLayerUv(1, splatTextureCoordinates[1]), 1.0)) * resolvedSplatWeights0.y;
-    mixedSurface += texture(terrainMaps, vec3(terrainLayerUv(2, splatTextureCoordinates[2]), 2.0)) * resolvedSplatWeights0.z;
-    mixedSurface += texture(terrainMaps, vec3(terrainLayerUv(3, splatTextureCoordinates[3]), 3.0)) * resolvedSplatWeights0.w;
-    mixedSurface += texture(terrainMaps, vec3(terrainLayerUv(4, splatTextureCoordinates[4]), 4.0)) * resolvedSplatWeights1.x;
-    mixedSurface += texture(terrainMaps, vec3(terrainLayerUv(5, splatTextureCoordinates[5]), 5.0)) * resolvedSplatWeights1.y;
-    mixedSurface += texture(terrainMaps, vec3(terrainLayerUv(6, splatTextureCoordinates[6]), 6.0)) * resolvedSplatWeights1.z;
-    mixedSurface += texture(terrainMaps, vec3(terrainLayerUv(7, splatTextureCoordinates[7]), 7.0)) * resolvedSplatWeights1.w;
+    mixedSurface += terrainLayerSample(terrainMaps, 0, splatTextureCoordinates[0]) * resolvedSplatWeights0.x;
+    mixedSurface += terrainLayerSample(terrainMaps, 1, splatTextureCoordinates[1]) * resolvedSplatWeights0.y;
+    mixedSurface += terrainLayerSample(terrainMaps, 2, splatTextureCoordinates[2]) * resolvedSplatWeights0.z;
+    mixedSurface += terrainLayerSample(terrainMaps, 3, splatTextureCoordinates[3]) * resolvedSplatWeights0.w;
+    mixedSurface += terrainLayerSample(terrainMaps, 4, splatTextureCoordinates[4]) * resolvedSplatWeights1.x;
+    mixedSurface += terrainLayerSample(terrainMaps, 5, splatTextureCoordinates[5]) * resolvedSplatWeights1.y;
+    mixedSurface += terrainLayerSample(terrainMaps, 6, splatTextureCoordinates[6]) * resolvedSplatWeights1.z;
+    mixedSurface += terrainLayerSample(terrainMaps, 7, splatTextureCoordinates[7]) * resolvedSplatWeights1.w;
     surface *= mixedSurface;
   }
   if (alphaCutoff > 0.0 && surface.a < alphaCutoff) discard;
@@ -2222,9 +2254,7 @@ function bindTexture2d(
       const wrap = (value: string | undefined) => (value === 'clamp' ? gl.CLAMP_TO_EDGE : gl.REPEAT)
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrap(texture.wrapU))
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrap(texture.wrapV))
-      const filter = texture.filter === 'nearest' ? gl.NEAREST : gl.LINEAR
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, filter)
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, filter)
+      applyTextureFilter(gl, gl.TEXTURE_2D, texture.filter === 'nearest' ? 'nearest' : 'linear')
       resources.textures.set(texture, entry)
       resources.textureUploads += 1
     } catch (error) {
@@ -2472,7 +2502,7 @@ function createOwnedResources(gl: WebGL2RenderingContext): WorldWebGlOwnedResour
       textureArrays: new Map(),
       usedTextures: new Set(),
       materialTextureHandles,
-      materialDraws: materialWebGlDraws(gl, materialTextureHandles),
+      materialDraws: materialWebGlDraws(gl, materialTextureHandles, { mipmaps: true }),
       materialPlan: undefined,
       retiredMaterialProgramCompilations: 0,
       sentinelTexture: undefined,
@@ -2609,7 +2639,9 @@ function prepareWorldMaterialResources(
     resources.retiredMaterialProgramCompilations += resources.materialDraws.programCompilations()
     resources.materialDraws.release()
     resources.materialTextureHandles.clear()
-    resources.materialDraws = materialWebGlDraws(resources.gl, resources.materialTextureHandles)
+    resources.materialDraws = materialWebGlDraws(resources.gl, resources.materialTextureHandles, {
+      mipmaps: true,
+    })
     resources.materialPlan = plan
   }
   for (const scene of plan.modelMaterialScenes)
@@ -2733,11 +2765,7 @@ function renderWorldShadowMap(
           lightCamera.position.z,
         ] as const,
       }
-      const sceneLight = {
-        direction: plan.light.direction,
-        color: [...plan.light.color, 1] as const,
-        ambient: plan.light.ambientIntensity,
-      }
+      const sceneLight = worldMaterialLight(plan)
       for (const scene of plan.modelMaterialScenes)
         for (const draw of sceneMaterialDraws(
           scene.shadowPrimitives,
@@ -3005,13 +3033,13 @@ function drawSplatBatch(
           resized(texture, width, height),
         ),
       )
-      gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE)
-      gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
+      // Repeat is required for continuous terrain-space UVs; clamped layers clamp in the shader.
+      gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_S, gl.REPEAT)
+      gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_WRAP_T, gl.REPEAT)
       const nearest = textures.every(
         texture => texture === undefined || texture.filter === 'nearest',
       )
-      gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, nearest ? gl.NEAREST : gl.LINEAR)
-      gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, nearest ? gl.NEAREST : gl.LINEAR)
+      applyTextureFilter(gl, gl.TEXTURE_2D_ARRAY, nearest ? 'nearest' : 'linear')
       entry = Object.freeze({
         key,
         handle,
@@ -3425,6 +3453,21 @@ function cameraFor(
   return Object.freeze({ camera, radius })
 }
 
+/** Model material light: key color × intensity plus the authored ambient color, as terrain uses. */
+function worldMaterialLight(plan: WorldWebGlPlan) {
+  const { direction, color, intensity, ambient, ambientIntensity } = plan.light
+  return {
+    direction,
+    color: [color[0] * intensity, color[1] * intensity, color[2] * intensity, 1] as const,
+    ambient: ambientIntensity,
+    ambientColor: [
+      ambient[0] * ambientIntensity,
+      ambient[1] * ambientIntensity,
+      ambient[2] * ambientIntensity,
+    ] as const,
+  }
+}
+
 /** Returns the exact camera frame consumed by world material draws for parity and host overlays. */
 export function createWorldWebGlCameraFrame(
   plan: WorldWebGlPlan,
@@ -3652,11 +3695,7 @@ function drawWorldWebGlWithResources(
     }
     gl.uniform1f(gl.getUniformLocation(program, 'shadowReceiver'), 1)
     for (const item of plan.splatTriangles) drawSplatBatch(resources, program, item)
-    const sceneLight = {
-      direction: plan.light.direction,
-      color: [...plan.light.color, 1] as const,
-      ambient: plan.light.ambientIntensity,
-    }
+    const sceneLight = worldMaterialLight(plan)
     const materialSceneDraws: Array<{
       scene: WorldWebGlModelMaterialScene
       draw: MaterialDraw

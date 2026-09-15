@@ -57,6 +57,7 @@ export interface MaterialFrameOptions extends MaterialLighting {
   readonly normalMapFormats?: ReadonlyMap<string, NormalMapFormat>
   readonly textureDimensions?: ReadonlyMap<string, '2d' | 'cube'>
   readonly environment?: SceneRendererEnvironment
+  readonly sceneLighting?: boolean
 }
 
 export interface MaterialPixel extends MaterialLighting {
@@ -167,6 +168,7 @@ export function createStandardMaterialPrograms(
               sampler.worldToMaterial,
               textureDimensions,
               environment,
+              lighting.sceneLighting === true,
             ),
           ),
       )
@@ -182,14 +184,15 @@ function compilePass(
   worldToMaterial?: readonly number[],
   textureDimensions: ReadonlyMap<string, '2d' | 'cube'> = new Map(),
   environment?: SceneRendererEnvironment,
+  sceneLighting = false,
 ): StandardMaterialProgram {
   const { material, alpha } = pass
   const normalFormats = materialNormalFormats(material, bindings)
   const objectSpaceNormal = material.normalMapSpace === 'object'
-  const defines = buildMaterialDefines(
-    material,
-    normalFormats === undefined ? {} : { normalMapFormat: 'rgb8' },
-  )
+  const defines = buildMaterialDefines(material, {
+    ...(normalFormats === undefined ? {} : { normalMapFormat: 'rgb8' as const }),
+    ...(sceneLighting ? { sceneLighting: true } : {}),
+  })
   const uniforms: Record<string, number | readonly number[]> = {
     u_teamColor: lighting.teamColor,
     u_ambient: lighting.ambient,

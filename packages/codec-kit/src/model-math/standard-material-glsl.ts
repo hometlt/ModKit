@@ -97,6 +97,11 @@ export interface StandardMaterialDefines {
    * per-instance team color. Requires gpuSkinning + hardwareInstancing.
    */
   bakedPoseInstancing?: boolean
+  /**
+   * World scene lighting: diffuse × (ambient color + light color × lambert) and emissive on every
+   * face. The default viewer model adds a constant ambient and assumes a camera headlight.
+   */
+  sceneLighting?: boolean
 }
 
 const TEXTURE_FALLBACK_PRIORITY: readonly StandardLayerSlot[] = [
@@ -164,6 +169,7 @@ export function buildMaterialDefines(
     gpuSkinning?: boolean
     hardwareInstancing?: boolean
     bakedPoseInstancing?: boolean
+    sceneLighting?: boolean
   } = {},
 ): StandardMaterialDefines {
   const layers: StandardLayerDefines[] = []
@@ -223,6 +229,7 @@ export function buildMaterialDefines(
     options.hardwareInstancing === true
       ? { bakedPoseInstancing: true }
       : {}),
+    ...(options.sceneLighting === true ? { sceneLighting: true } : {}),
   }
 }
 
@@ -242,7 +249,8 @@ export function canonicalDefineKey(defines: StandardMaterialDefines): string {
     `;n=${defines.normalMapFormat}.${defines.normalMapSpace};spec=${defines.specMode}` +
     `;${defines.unshaded ? 'U' : ''}${defines.doubleLambert ? 'D' : ''}${defines.clampOutput ? 'C' : ''}` +
     `${defines.usesVertexColor ? 'vc' : ''}${defines.usesVertexAlpha ? 'va' : ''}${defines.alphaTest ? 'at' : ''}` +
-    `;uv=${defines.uvSetCount};${defines.gpuSkinning ? 'skin' : ''}${defines.hardwareInstancing ? 'inst' : ''}${defines.bakedPoseInstancing ? 'baked' : ''}`
+    `;uv=${defines.uvSetCount};${defines.gpuSkinning ? 'skin' : ''}${defines.hardwareInstancing ? 'inst' : ''}${defines.bakedPoseInstancing ? 'baked' : ''}` +
+    `${defines.sceneLighting ? ';scene' : ''}`
   )
 }
 
@@ -1117,6 +1125,10 @@ export function buildStandardFragmentSource(
     parts.push('uniform vec3 u_teamColor;')
   }
   parts.push('uniform vec4 u_ambient;')
+  if (defines.sceneLighting) {
+    parts.push('uniform vec3 u_sceneAmbientColor;')
+    parts.push('uniform vec3 u_sceneLightColor;')
+  }
   parts.push('uniform float u_specularity;')
   parts.push('uniform float u_specMult;')
   parts.push('uniform float u_emisMult;')
@@ -1135,7 +1147,7 @@ export function buildStandardFragmentSource(
 
   const body: string[] = []
   body.push('void main() {')
-  body.push('  vec4 final = u_ambient;')
+  body.push(defines.sceneLighting ? '  vec4 final = vec4(0.0);' : '  vec4 final = u_ambient;')
   if (layerBySlot.has('height')) {
     body.push('  float parallaxSample = computeLayer_height().r - 0.5;')
     body.push('  vec3 parallaxView = normalize(v_viewDir);')
@@ -1258,6 +1270,37 @@ export function buildStandardFragmentSource(
   if (defines.unshaded) {
     body.push('  vec3 shaded = color;')
     body.push(...environmentBlock('  ', 'shaded', '0.0', 'vec3(0.0)'))
+    body.push(...emissiveBlock('  ', 'shaded'))
+    body.push('  final.rgb += shaded;')
+  } else if (defines.sceneLighting) {
+    body.push(
+      defines.doubleLambert
+        ? '  float lambert = clamp(-1.0 + 2.0 * dot(normal, v_lightDir), 0.0, 1.0);'
+        : '  float lambert = max(dot(normal, v_lightDir), 0.0);',
+    )
+    const specular = layerBySlot.get('specular')
+    if (specular) {
+      body.push('  vec4 specColor = computeLayer_specular();')
+      body.push(
+        layerBySlot.has('gloss')
+          ? '  float gloss = max(computeLayer_gloss().r, 0.001);'
+          : '  float gloss = 1.0;',
+      )
+      body.push(
+        '  float specFactor = lambert > 0.0 ? pow(max(-dot(v_halfVec, normal), 0.0), max(u_specularity * gloss, 1.0)) * u_specMult : 0.0;',
+      )
+      body.push(
+        defines.specMode === 1
+          ? '  vec3 spec = vec3(specColor.a) * specFactor;'
+          : '  vec3 spec = specColor.rgb * specFactor;',
+      )
+    } else {
+      body.push('  vec3 spec = vec3(0.0);')
+    }
+    body.push(
+      '  vec3 shaded = color * (u_sceneAmbientColor + u_sceneLightColor * lambert) + spec * u_sceneLightColor * lambert;',
+    )
+    body.push(...environmentBlock('  ', 'shaded', 'lambert', 'spec'))
     body.push(...emissiveBlock('  ', 'shaded'))
     body.push('  final.rgb += shaded;')
   } else {

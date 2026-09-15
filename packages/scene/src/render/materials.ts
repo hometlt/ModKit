@@ -77,7 +77,9 @@ export function prepareSceneMaterialPrograms(
       const prepared = prepareSceneMaterialPrograms(
         [plain],
         textures,
-        instanceContext,
+        context?.sceneLighting === true && instanceContext.sceneLighting === undefined
+          ? { ...instanceContext, sceneLighting: true }
+          : instanceContext,
         diagnostics,
         signal,
       )
@@ -160,6 +162,7 @@ export function prepareSceneMaterialPrograms(
           ...(environment === undefined ? {} : { environment }),
           ...(context?.teamColor === undefined ? {} : { teamColor: context.teamColor }),
           ...(context?.ambient === undefined ? {} : { ambient: context.ambient }),
+          ...(context?.sceneLighting === true ? { sceneLighting: true } : {}),
         },
         signal,
       )

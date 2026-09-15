@@ -1,4 +1,5 @@
 import type { StandardMaterialProgram } from './standard-program.js'
+import { textureAnisotropy } from '../render/texture-filtering.js'
 
 /** A single leased shader program; uploaded texture objects remain owned by the caller. */
 export interface WebGlMaterialProgram {
@@ -29,6 +30,8 @@ export function createWebGlMaterialProgram(
   options: {
     readonly filter?: 'nearest' | 'linear'
     readonly filters?: ReadonlyMap<string, 'nearest' | 'linear'>
+    /** Linear textures carry a full mip chain; sample it with trilinear + anisotropic filtering. */
+    readonly mipmaps?: boolean
   } = {},
 ): WebGlMaterialProgram {
   if (options.filter !== undefined && options.filter !== 'nearest' && options.filter !== 'linear')
@@ -89,8 +92,16 @@ export function createWebGlMaterialProgram(
       )
       if (cube) gl.samplerParameteri(sampler, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE)
       const filter = filterMode === 'nearest' ? gl.NEAREST : gl.LINEAR
-      gl.samplerParameteri(sampler, gl.TEXTURE_MIN_FILTER, filter)
+      const mipmapped = options.mipmaps === true && filterMode !== 'nearest'
+      gl.samplerParameteri(
+        sampler,
+        gl.TEXTURE_MIN_FILTER,
+        mipmapped ? gl.LINEAR_MIPMAP_LINEAR : filter,
+      )
       gl.samplerParameteri(sampler, gl.TEXTURE_MAG_FILTER, filter)
+      const anisotropy = mipmapped ? textureAnisotropy(gl) : undefined
+      if (anisotropy !== undefined)
+        gl.samplerParameterf(sampler, anisotropy.parameter, anisotropy.value)
       return {
         texture,
         sampler,

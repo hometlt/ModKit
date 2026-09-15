@@ -22,6 +22,7 @@ import { materialAlpha, straightenAlpha } from './alpha.js'
 import { prepareSceneMaterialPrograms } from './materials.js'
 import { sceneMaterialDraws } from './material-draws.js'
 import { materialWebGlDraws } from './material-webgl.js'
+import { applyTextureFilter } from './texture-filtering.js'
 import { sceneTextureBytes } from '../textures/cube.js'
 
 const RENDERER_ID = 'modkit.browser-webgl'
@@ -258,8 +259,7 @@ function uploadTextures(
     gl.texParameteri(target, gl.TEXTURE_WRAP_S, cube ? gl.CLAMP_TO_EDGE : wrap(texture.wrapU))
     gl.texParameteri(target, gl.TEXTURE_WRAP_T, cube ? gl.CLAMP_TO_EDGE : wrap(texture.wrapV))
     if (cube) gl.texParameteri(target, gl.TEXTURE_WRAP_R, gl.CLAMP_TO_EDGE)
-    gl.texParameteri(target, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
-    gl.texParameteri(target, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
+    applyTextureFilter(gl, target, 'linear')
     uploaded.set(texture.id, handle)
   }
   return uploaded
@@ -362,7 +362,7 @@ export async function renderBrowser(request: SceneRenderRequest): Promise<SceneR
   }
   const diagnostics: SceneRendererDiagnostic[] = []
   const textures = new Map<string, WebGLTexture>()
-  const gameDraws = materialWebGlDraws(gl, textures)
+  const gameDraws = materialWebGlDraws(gl, textures, { mipmaps: true })
   try {
     uploadTextures(gl, request.scene.textures, diagnostics, textures)
     const materialPrograms = prepareSceneMaterialPrograms(

@@ -11,6 +11,8 @@ import { cubeNearestSamplerSource } from '../materials/cube-maps.js'
 export function materialWebGlDraws(
   gl: WebGL2RenderingContext,
   textures: ReadonlyMap<string, WebGLTexture>,
+  /** `mipmaps`: the caller uploaded every linear texture with a full mip chain. */
+  options: Readonly<{ mipmaps?: boolean }> = {},
 ) {
   const programs = new Map<StandardMaterialProgram, WebGlMaterialProgram>()
   let programCompilations = 0
@@ -23,7 +25,10 @@ export function materialWebGlDraws(
     draw(
       draw: MaterialDraw,
       camera: SceneRendererCamera,
-      light?: SceneRendererDirectionalLight,
+      light?: SceneRendererDirectionalLight & {
+        /** Scene lighting ambient color; defaults to the scalar `ambient` as gray. */
+        readonly ambientColor?: readonly [number, number, number]
+      },
     ): number {
       const { program: source, material, primitive } = draw
       if (source === undefined || material === undefined)
@@ -96,7 +101,7 @@ export function materialWebGlDraws(
             fragmentSource,
           },
           bound,
-          { filters },
+          { filters, ...(options.mipmaps === true ? { mipmaps: true } : {}) },
         )
         programCompilations += 1
         programs.set(source, lease)
@@ -171,6 +176,12 @@ export function materialWebGlDraws(
         gl.uniform3fv(uniform('u_lightDirection'), geometry.lightDirection)
         gl.uniform1f(uniform('u_orientation'), geometry.orientation)
         gl.uniform1f(uniform('u_orthographic'), geometry.orthographic ? 1 : 0)
+        if (source.defines.sceneLighting === true) {
+          const color = light?.color ?? [1, 1, 1, 1]
+          const ambient = light?.ambient ?? 0.25
+          gl.uniform3f(uniform('u_sceneLightColor'), color[0], color[1], color[2])
+          gl.uniform3fv(uniform('u_sceneAmbientColor'), light?.ambientColor ?? [ambient, ambient, ambient])
+        }
         if (environmentEnabled || worldShading) {
           if (
             geometry.environmentNormalMatrix === undefined ||

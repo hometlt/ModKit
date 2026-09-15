@@ -133,6 +133,11 @@ export interface SceneRendererMaterialContext {
   readonly teamColor?: readonly [number, number, number]
   readonly ambient?: SceneRendererColor
   readonly environment?: SceneRendererEnvironment
+  /**
+   * World scene lighting (fixed sun + ambient color) instead of the viewer's camera headlight model.
+   * The renderer supplies the scene ambient and light colors per draw.
+   */
+  readonly sceneLighting?: boolean
 }
 
 /**
