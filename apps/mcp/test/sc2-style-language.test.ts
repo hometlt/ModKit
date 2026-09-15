@@ -149,6 +149,23 @@ describe('installed SC2 Style language through MCP', () => {
         },
       })
 
+      // The catalog end: the Strings provider resolves `<s val="Title">` to the sheet declaration.
+      const fromCatalog = await feature({
+        primaryUri: catalogUri,
+        feature: 'definition',
+        position: { line: 0, character: catalogText.indexOf('Title') + 1 },
+      })
+      expect(fromCatalog.data, JSON.stringify(fromCatalog)).toMatchObject({
+        result: {
+          locations: [
+            {
+              uri: sheetUri,
+              range: { start: { line: 2, character: '<Style name="'.length } },
+            },
+          ],
+        },
+      })
+
       const renamed = await feature({ feature: 'rename', position, newName: 'Heading', maxEdits: 8 })
       expect(renamed.data, JSON.stringify(renamed)).toMatchObject({
         result: {
