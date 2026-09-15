@@ -355,6 +355,16 @@ test(
       assert.equal(symbols.error, undefined, JSON.stringify(symbols.error))
       assert.equal(symbols.result[0]?.name, 'fixture')
 
+      send({
+        jsonrpc: '2.0',
+        id: 11,
+        method: 'textDocument/semanticTokens/full',
+        params: { textDocument: { uri } },
+      })
+      const semanticTokens = await waitFor(message => message.id === 11, 'semantic tokens')
+      assert.equal(semanticTokens.error, undefined, JSON.stringify(semanticTokens.error))
+      assert.deepEqual(semanticTokens.result.data, [0, 0, 11, 2, 0, 1, 0, 4, 2, 0])
+
       send({ jsonrpc: '2.0', id: 9, method: 'shutdown', params: null })
       await waitFor(message => message.id === 9, 'shutdown')
       send({ jsonrpc: '2.0', method: 'exit', params: null })

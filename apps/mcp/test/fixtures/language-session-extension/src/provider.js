@@ -11,18 +11,32 @@ export function createProvider(selection) {
       languageIds: Object.freeze(['fixture-language']),
       async analyze(request) {
         const end = Math.min(7, request.document.text.length)
+        const lines = request.document.text.split(/\r\n|\r|\n/u)
         return Object.freeze({
           documentUri: request.document.uri,
           documentVersion: request.document.version,
           tokens: Object.freeze(
             end === 0
               ? []
-              : [
-                  {
-                    range: { start: { line: 0, character: 0 }, end: { line: 0, character: end } },
-                    kind: 'keyword',
-                  },
-                ],
+              : lines.length > 1
+                ? [
+                    {
+                      range: {
+                        start: { line: 0, character: 0 },
+                        end: { line: lines.length - 1, character: lines.at(-1).length },
+                      },
+                      kind: 'keyword',
+                    },
+                  ]
+                : [
+                    {
+                      range: {
+                        start: { line: 0, character: 0 },
+                        end: { line: 0, character: end },
+                      },
+                      kind: 'keyword',
+                    },
+                  ],
           ),
           diagnostics: Object.freeze(
             request.document.text.includes('invalid')

@@ -699,30 +699,39 @@ export function createModkitLanguageServer(
         await awaitReady(params.textDocument.uri)
         const current = await options.workspace.current(params.textDocument.uri, signal)
         if (current?.state !== 'resolved') return { data: [] } satisfies SemanticTokens
-        const tokens = [...current.analysis.tokens].sort(
-          (a, b) =>
-            a.range.start.line - b.range.start.line ||
-            a.range.start.character - b.range.start.character,
-        )
+        const document = acceptedDocuments.get(params.textDocument.uri)
+        if (document === undefined) return { data: [] } satisfies SemanticTokens
+        const lineLengths = document
+          .getText()
+          .split(/\r\n|\r|\n/u)
+          .map(line => line.length)
+        const tokens = current.analysis.tokens
+          .flatMap(token => {
+            const segments = []
+            for (let line = token.range.start.line; line <= token.range.end.line; line += 1) {
+              const start = line === token.range.start.line ? token.range.start.character : 0
+              const end =
+                line === token.range.end.line ? token.range.end.character : (lineLengths[line] ?? 0)
+              if (end > start) segments.push({ line, start, end, kind: token.kind })
+            }
+            return segments
+          })
+          .sort((a, b) => a.line - b.line || a.start - b.start || a.end - b.end)
         const data: number[] = []
         let previousLine = 0
         let previousCharacter = 0
         for (const token of tokens) {
-          if (token.range.start.line !== token.range.end.line) continue
-          const deltaLine = token.range.start.line - previousLine
-          const deltaStart =
-            deltaLine === 0
-              ? token.range.start.character - previousCharacter
-              : token.range.start.character
+          const deltaLine = token.line - previousLine
+          const deltaStart = deltaLine === 0 ? token.start - previousCharacter : token.start
           data.push(
             deltaLine,
             deltaStart,
-            token.range.end.character - token.range.start.character,
+            token.end - token.start,
             TOKEN_TYPES.indexOf(token.kind),
             0,
           )
-          previousLine = token.range.start.line
-          previousCharacter = token.range.start.character
+          previousLine = token.line
+          previousCharacter = token.start
         }
         return { data }
       }),
