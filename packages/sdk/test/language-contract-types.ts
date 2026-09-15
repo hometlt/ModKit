@@ -23,7 +23,7 @@ export const galaxyProviderContribution = {
       facet: {
         languageIds: ['galaxy'],
         documentKinds: ['galaxy-source'],
-        extensions: ['galaxy', 'ai'],
+        extensions: ['galaxy'],
       },
     },
   ],
