@@ -238,7 +238,7 @@ export interface LanguageTextDocumentEdit {
 
 export interface LanguageWorkspaceEdit {
   readonly documentChanges: readonly LanguageTextDocumentEdit[]
-  /** Rename is refused instead of returning this object when the workspace snapshot is partial. */
+  /** A partial workspace may return only an exact-version edit of its primary document. */
   readonly isComplete: true
 }
 

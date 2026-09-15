@@ -134,6 +134,21 @@ const provider: LanguageProvider = {
             },
           ],
         },
+        ...request.workspaceDocuments
+          .filter(document => document.uri !== request.document.uri)
+          .map(document => ({
+            uri: document.uri,
+            documentVersion: document.version,
+            edits: [
+              {
+                range: {
+                  start: { line: 0, character: 0 },
+                  end: { line: 0, character: Math.min(5, document.text.length) },
+                },
+                newText: request.newName,
+              },
+            ],
+          })),
       ],
     }),
   codeActions: request =>
@@ -384,7 +399,7 @@ describe('language subject completion lifecycle', () => {
     try {
       await expect(
         workspace.rename({ ...completionRequest(), newName: 'renamed' }),
-      ).resolves.toBeUndefined()
+      ).rejects.toThrow(/invalid or unbounded workspace edit/u)
     } finally {
       await workspace.shutdown()
     }
@@ -438,7 +453,7 @@ describe('language subject completion lifecycle', () => {
     }
   })
 
-  it('refuses a provider rename result for a caller-bounded workspace', async () => {
+  it('allows only a revision-bound primary rename for a caller-bounded workspace', async () => {
     const workspace = await openWorkspace(
       { open: async () => ({ value: candidateProvider, release: async () => undefined }) },
       true,
@@ -450,7 +465,10 @@ describe('language subject completion lifecycle', () => {
           newName: 'renamed',
           maxEdits: 10,
         }),
-      ).resolves.toBeUndefined()
+      ).resolves.toMatchObject({
+        isComplete: true,
+        documentChanges: [{ uri: DOCUMENT_URI, documentVersion: 1 }],
+      })
     } finally {
       await workspace.shutdown()
     }

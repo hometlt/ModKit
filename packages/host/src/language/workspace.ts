@@ -1760,7 +1760,7 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
             newName: request.newName,
             maxEdits,
           }),
-        (value, feature) => validateWorkspaceEdit(value, feature, maxEdits),
+        (value, feature) => validateWorkspaceEdit(value, feature, maxEdits, true),
         { position: request.position, newName: request.newName, maxEdits },
       )
     },
