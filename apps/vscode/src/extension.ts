@@ -65,7 +65,11 @@ import {
   type CommandInput,
   type CommandResult,
 } from '@modkit/host'
-import { createLanguageWorkspace, languageProviderRoutes } from '@modkit/host/language'
+import {
+  createLanguageWorkspace,
+  languageProviderRoutes,
+  type LanguageWorkspaceDocumentSource,
+} from '@modkit/host/language'
 import { discoverGameInstallations } from '@modkit/host/games'
 import { createNodeMapPreviewResourcePlanResolver, launchNodeGameResource } from '@modkit/host/node'
 import type { SubjectCandidateProviderSource, SubjectCandidateScope } from '@modkit/sdk'
@@ -4276,11 +4280,96 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     },
   })
 
+  const languageDocumentSource: LanguageWorkspaceDocumentSource = Object.freeze({
+    async snapshot(request: Parameters<LanguageWorkspaceDocumentSource['snapshot']>[0]) {
+      request.signal.throwIfAborted()
+      const accepted = new Set(request.workspaceLanguageIds)
+      const extensions = [
+        ...new Set(
+          languageRoutes.flatMap(route =>
+            accepted.has(route.languageId) && route.extension !== undefined
+              ? [route.extension]
+              : [],
+          ),
+        ),
+      ].sort()
+      if (extensions.length === 0 || request.maxDocuments === 0) {
+        return { documents: Object.freeze([]), isComplete: extensions.length === 0 }
+      }
+      const openUris = new Set(request.workspaceDocuments.map(document => document.uri))
+      const candidates = new Map<string, { readonly uri: vscode.Uri; readonly extension: string }>()
+      let isComplete = true
+      for (const extension of extensions) {
+        request.signal.throwIfAborted()
+        const remaining = request.maxDocuments - candidates.size
+        if (remaining <= 0) {
+          isComplete = false
+          break
+        }
+        const uris = await vscode.workspace.findFiles(
+          `**/*.${extension}`,
+          '**/{node_modules,.git}/**',
+          remaining + 1,
+        )
+        if (uris.length > remaining) isComplete = false
+        for (const uri of uris.slice(0, remaining)) {
+          if (openUris.has(uri.toString())) continue
+          candidates.set(uri.toString(), { uri, extension })
+        }
+      }
+      const documents = []
+      let totalTextBytes = 0
+      for (const candidate of [...candidates.values()]
+        .sort((left, right) => left.uri.toString().localeCompare(right.uri.toString()))
+        .slice(0, request.maxDocuments)) {
+        request.signal.throwIfAborted()
+        const document = await vscode.workspace.openTextDocument(candidate.uri)
+        const routedLanguageIds = [
+          ...new Set(
+            languageRoutes.flatMap(route =>
+              accepted.has(route.languageId) && route.extension === candidate.extension
+                ? [route.languageId]
+                : [],
+            ),
+          ),
+        ]
+        const languageId = accepted.has(document.languageId)
+          ? document.languageId
+          : routedLanguageIds.length === 1
+            ? routedLanguageIds[0]
+            : undefined
+        if (languageId === undefined) {
+          // `.xml` and `.txt` commonly have several SC2 meanings. Extension-only routing would
+          // inject the wrong semantic document, so leave the snapshot honestly incomplete.
+          isComplete = false
+          continue
+        }
+        const text = document.getText()
+        const bytes = new TextEncoder().encode(text).byteLength
+        if (bytes > 4_194_304 || totalTextBytes + bytes > 16_777_216) {
+          isComplete = false
+          continue
+        }
+        totalTextBytes += bytes
+        documents.push(
+          Object.freeze({
+            uri: candidate.uri.toString(),
+            languageId,
+            version: document.version,
+            text,
+          }),
+        )
+      }
+      return { documents: Object.freeze(documents), isComplete }
+    },
+  })
+
   const languageWorkspace = createLanguageWorkspace({
     services: host.services,
     grant: { id: 'modkit.app.vscode/language', classes: [] },
     budgets: LANGUAGE_ACTIVATION_BUDGET,
     subjectCandidates: languageSubjectCandidates,
+    documentSource: languageDocumentSource,
   })
 
   const rangeOf = (range: {
