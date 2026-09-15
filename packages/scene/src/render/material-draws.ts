@@ -17,6 +17,57 @@ export interface MaterialDraw {
 export const materialIsSolid = (program: StandardMaterialProgram) =>
   program.blend === 'opaque' || program.blend === 'alpha-test'
 
+type PreparedGeometry = Readonly<{
+  primitive: SceneRendererPrimitive
+  bytes: number
+  diagnostics: readonly SceneRendererDiagnostic[]
+}>
+
+/**
+ * Validation, normal expansion and tangent generation depend only on the immutable source primitive
+ * and the UV choice, so retained renderers reuse them across frames instead of repeating them per draw.
+ */
+const preparedGeometry = new WeakMap<SceneRendererPrimitive, Map<number | undefined, PreparedGeometry>>()
+
+function preparedMaterialGeometry(
+  source: SceneRendererPrimitive,
+  texCoord: number | undefined,
+  maxBytes: number,
+  diagnostics: SceneRendererDiagnostic[],
+): PreparedGeometry {
+  const cached = preparedGeometry.get(source)?.get(texCoord)
+  if (cached !== undefined && cached.bytes <= maxBytes) {
+    diagnostics.push(...cached.diagnostics)
+    return cached
+  }
+  const emitted: SceneRendererDiagnostic[] = []
+  const primitive = prepareMaterialGeometry(source, maxBytes, {
+    ...(texCoord === undefined ? {} : { texCoord }),
+    diagnostics: emitted,
+  })
+  diagnostics.push(...emitted)
+  const buffers = new Set<ArrayBufferLike>()
+  let bytes = 0
+  if (primitive !== source)
+    for (const buffer of [
+      primitive.positions,
+      primitive.normals,
+      primitive.tangents,
+      primitive.colors,
+      primitive.textureCoordinates,
+      ...(primitive.textureCoordinateSets ?? []).map(set => set.coordinates),
+    ])
+      if (buffer !== undefined && !buffers.has(buffer.buffer)) {
+        buffers.add(buffer.buffer)
+        bytes += buffer.byteLength
+      }
+  const result = Object.freeze({ primitive, bytes, diagnostics: Object.freeze(emitted) })
+  const choices = preparedGeometry.get(source) ?? new Map<number | undefined, PreparedGeometry>()
+  choices.set(texCoord, result)
+  preparedGeometry.set(source, choices)
+  return result
+}
+
 /** One draw schedule for both providers, including composite passes and requested depth prepasses. */
 export function sceneMaterialDraws(
   primitives: readonly SceneRendererPrimitive[],
@@ -45,10 +96,7 @@ export function sceneMaterialDraws(
     let choices = prepared.get(source)
     const cached = choices?.get(texCoord)
     if (cached !== undefined) return cached
-    const primitive = prepareMaterialGeometry(source, remaining, {
-      ...(texCoord === undefined ? {} : { texCoord }),
-      diagnostics,
-    })
+    const { primitive } = preparedMaterialGeometry(source, texCoord, remaining, diagnostics)
     if (primitive !== source)
       for (const buffer of [
         primitive.positions,

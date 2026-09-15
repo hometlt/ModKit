@@ -2502,7 +2502,7 @@ function createOwnedResources(gl: WebGL2RenderingContext): WorldWebGlOwnedResour
       textureArrays: new Map(),
       usedTextures: new Set(),
       materialTextureHandles,
-      materialDraws: materialWebGlDraws(gl, materialTextureHandles, { mipmaps: true }),
+      materialDraws: materialWebGlDraws(gl, materialTextureHandles, { mipmaps: true, checkEachDraw: false }),
       materialPlan: undefined,
       retiredMaterialProgramCompilations: 0,
       sentinelTexture: undefined,
@@ -2641,6 +2641,7 @@ function prepareWorldMaterialResources(
     resources.materialTextureHandles.clear()
     resources.materialDraws = materialWebGlDraws(resources.gl, resources.materialTextureHandles, {
       mipmaps: true,
+      checkEachDraw: false,
     })
     resources.materialPlan = plan
   }
@@ -3154,11 +3155,33 @@ function cameraState(value: WorldWebGlCamera | undefined): WorldWebGlCamera {
  * Runs retain their source material so adjacent triangles can share one WebGL draw call without
  * sacrificing ordering between water and textured blend/additive model surfaces.
  */
+/**
+ * Sorted transparent runs depend only on the plan and the view direction. Reusing them keeps the
+ * batches' identity, so their GPU geometry stays cached while the camera pans or zooms; rebuilding
+ * every frame uploaded tens of thousands of fresh runs per frame on Amphion.
+ */
+const transparentDrawPlans = new WeakMap<
+  WorldWebGlPlan,
+  Readonly<{ key: string; draws: readonly WorldWebGlTransparentDraw[] }>
+>()
+
 export function createWorldWebGlTransparentDrawPlan(
   plan: WorldWebGlPlan,
   requested?: WorldWebGlCamera,
 ): readonly WorldWebGlTransparentDraw[] {
   const view = cameraState(requested)
+  const key = `${String(view.azimuth)}:${String(view.elevation)}`
+  const cached = transparentDrawPlans.get(plan)
+  if (cached?.key === key) return cached.draws
+  const draws = sortedWorldWebGlTransparentDraws(plan, view)
+  transparentDrawPlans.set(plan, Object.freeze({ key, draws }))
+  return draws
+}
+
+function sortedWorldWebGlTransparentDraws(
+  plan: WorldWebGlPlan,
+  view: ReturnType<typeof cameraState>,
+): readonly WorldWebGlTransparentDraw[] {
   const horizontal = Math.cos(view.elevation)
   const direction = [
     Math.cos(view.azimuth) * horizontal,
@@ -3791,6 +3814,7 @@ function drawWorldWebGlWithResources(
     if (completed) {
       sweepGeometry(resources)
       sweepTextures(resources)
+      resources.materialDraws.sweep()
     } else {
       resources.usedGeometry.clear()
       resources.usedTextures.clear()

@@ -11,16 +11,47 @@ import { cubeNearestSamplerSource } from '../materials/cube-maps.js'
 export function materialWebGlDraws(
   gl: WebGL2RenderingContext,
   textures: ReadonlyMap<string, WebGLTexture>,
-  /** `mipmaps`: the caller uploaded every linear texture with a full mip chain. */
-  options: Readonly<{ mipmaps?: boolean }> = {},
+  /**
+   * `mipmaps`: the caller uploaded every linear texture with a full mip chain.
+   * `checkEachDraw: false`: the caller checks WebGL errors per pass; `getError` forces a GPU sync,
+   * which dominated frame time with tens of thousands of draws.
+   */
+  options: Readonly<{ mipmaps?: boolean; checkEachDraw?: boolean }> = {},
 ) {
   const programs = new Map<StandardMaterialProgram, WebGlMaterialProgram>()
   let programCompilations = 0
+  // Primitive arrays are immutable for the lifetime of a draw plan; keep their GPU copies across
+  // frames instead of re-uploading every attribute on every draw. `sweep()` drops arrays a frame
+  // did not touch, `release()` drops everything.
+  const retained = new Map<ArrayBufferView, { buffer: WebGLBuffer; used: boolean }>()
+  const retainedBuffer = (target: number, data: ArrayBufferView) => {
+    let entry = retained.get(data)
+    if (entry === undefined) {
+      const buffer = gl.createBuffer()
+      if (buffer === null) throw new TypeError('could not allocate material geometry')
+      gl.bindBuffer(target, buffer)
+      gl.bufferData(target, data, gl.STATIC_DRAW)
+      entry = { buffer, used: true }
+      retained.set(data, entry)
+    } else gl.bindBuffer(target, entry.buffer)
+    entry.used = true
+  }
   return {
     programCompilations: () => programCompilations,
     release() {
       for (const lease of programs.values()) lease.release()
       programs.clear()
+      for (const entry of retained.values()) gl.deleteBuffer(entry.buffer)
+      retained.clear()
+    },
+    sweep() {
+      for (const [data, entry] of retained) {
+        if (entry.used) entry.used = false
+        else {
+          gl.deleteBuffer(entry.buffer)
+          retained.delete(data)
+        }
+      }
     },
     draw(
       draw: MaterialDraw,
@@ -106,8 +137,7 @@ export function materialWebGlDraws(
         programCompilations += 1
         programs.set(source, lease)
       }
-      const buffers: WebGLBuffer[] = [],
-        vao = gl.createVertexArray()
+      const vao = gl.createVertexArray()
       if (vao === null) throw new TypeError('could not allocate material vertex array')
       gl.bindVertexArray(vao)
       try {
@@ -146,11 +176,7 @@ export function materialWebGlDraws(
             )
             return
           }
-          const buffer = gl.createBuffer()
-          if (buffer === null) throw new TypeError('could not allocate material attribute')
-          buffers.push(buffer)
-          gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
-          gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW)
+          retainedBuffer(gl.ARRAY_BUFFER, data)
           gl.enableVertexAttribArray(location)
           gl.vertexAttribPointer(location, size, gl.FLOAT, false, 0, 0)
         }
@@ -249,19 +275,16 @@ export function materialWebGlDraws(
         const count = primitive.indices?.length ?? primitive.positions.length / 3
         if (primitive.indices === undefined) gl.drawArrays(mode, 0, count)
         else {
-          const buffer = gl.createBuffer()
-          if (buffer === null) throw new TypeError('could not allocate material indices')
-          buffers.push(buffer)
-          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, buffer)
-          gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, primitive.indices, gl.STATIC_DRAW)
+          retainedBuffer(gl.ELEMENT_ARRAY_BUFFER, primitive.indices)
           gl.drawElements(mode, count, gl.UNSIGNED_INT, 0)
         }
-        const error = gl.getError()
-        if (error !== gl.NO_ERROR) throw new TypeError(`material WebGL draw failed (${error})`)
+        if (options.checkEachDraw !== false) {
+          const error = gl.getError()
+          if (error !== gl.NO_ERROR) throw new TypeError(`material WebGL draw failed (${error})`)
+        }
         return primitive.topology === 'triangles' ? Math.floor(count / 3) : Math.max(0, count - 2)
       } finally {
         for (let unit = 0; unit < source.textures.length; unit++) gl.bindSampler(unit, null)
-        for (const buffer of buffers) gl.deleteBuffer(buffer)
         gl.bindVertexArray(null)
         gl.deleteVertexArray(vao)
         gl.colorMask(true, true, true, true)

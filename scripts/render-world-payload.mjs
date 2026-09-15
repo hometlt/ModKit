@@ -24,6 +24,7 @@ const { values } = parseArgs({
     backend: { type: 'string', default: 'gpu' },
     time: { type: 'string', default: '0' },
     shadows: { type: 'string', default: '1' },
+    profile: { type: 'boolean', default: false },
   },
 })
 if (values.payload === undefined || values.out === undefined)
@@ -76,7 +77,7 @@ const bundled = await build({
           for (let frame = 0; frame < 2; frame += 1)
             stats = renderer.draw({ ...payload, camera, shadows, shadowMapSize: 2048, timeSeconds });
           gl.finish();
-          return { stats, milliseconds: performance.now() - started };
+          return { stats, renderer: renderer.stats(), milliseconds: performance.now() - started };
         },
       };
     `,
@@ -129,12 +130,34 @@ try {
   const glRenderer = await page.evaluate(() => globalThis.worldRenderer.glRenderer)
   mkdirSync(outDir, { recursive: true })
   const frames = []
-  for (const camera of cameras) {
+  const profiler = values.profile ? await page.context().newCDPSession(page) : undefined
+  if (profiler !== undefined) {
+    await profiler.send('Profiler.enable')
+    await profiler.send('Profiler.setSamplingInterval', { interval: 1000 })
+  }
+  for (const [index, camera] of cameras.entries()) {
     const { name, ...view } = camera
+    // Profile a warm frame: the first camera also pays plan build and uploads.
+    const profiling = profiler !== undefined && index === Math.min(1, cameras.length - 1)
+    if (profiling) await profiler.send('Profiler.start')
     const result = await page.evaluate(
       ([cameraView, timeSeconds, shadows]) => globalThis.worldRenderer.draw(cameraView, timeSeconds, shadows),
       [view, Number(values.time), values.shadows !== '0'],
     )
+    if (profiling) {
+      const { profile } = await profiler.send('Profiler.stop')
+      const self = new Map()
+      const byId = new Map(profile.nodes.map(node => [node.id, node]))
+      const interval = (profile.endTime - profile.startTime) / 1000 / Math.max(1, profile.samples.length)
+      for (const id of profile.samples) {
+        const frame = byId.get(id).callFrame
+        const key = `${frame.functionName || '(anonymous)'} ${frame.url.split('/').pop()}:${frame.lineNumber + 1}`
+        self.set(key, (self.get(key) ?? 0) + interval)
+      }
+      const top = [...self].sort((a, b) => b[1] - a[1]).slice(0, 25)
+      writeFileSync(join(outDir, 'profile-top.json'), `${JSON.stringify(top, null, 2)}\n`)
+      for (const [key, ms] of top.slice(0, 15)) console.info(`[profile] ${Math.round(ms)} ms  ${key}`)
+    }
     const path = join(outDir, `${name}.png`)
     await page.locator('canvas').screenshot({ path })
     frames.push({ name, camera: view, path, ...result })
