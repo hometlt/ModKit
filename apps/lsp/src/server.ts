@@ -181,6 +181,8 @@ export interface ModkitLanguageServerOptions {
   readonly workspace: LanguageWorkspace
   readonly roots: readonly string[]
   readonly maxDocuments: number
+  readonly maxDocumentBytes: number
+  readonly maxWorkspaceBytes: number
   readonly maxResults?: number
   readonly connection?: Connection
 }
@@ -210,9 +212,24 @@ export function createModkitLanguageServer(
   >()
   let diagnosticRevision = 0
   const maxResults = options.maxResults ?? 1_000
+  const encoder = new TextEncoder()
   let shutDown = false
 
-  const insideRoots = (uri: string): boolean => {
+  const allowedUri = (uri: string): boolean => {
+    let parsed: URL
+    try {
+      parsed = new URL(uri)
+    } catch {
+      return false
+    }
+    if (
+      ['modkit-source:', 'modkit-container:', 'content-source:', 'untitled:'].includes(
+        parsed.protocol,
+      )
+    ) {
+      return parsed.username === '' && parsed.password === ''
+    }
+    if (parsed.protocol !== 'file:') return false
     let path: string
     try {
       path = fileURLToPath(uri)
@@ -226,7 +243,7 @@ export function createModkitLanguageServer(
   }
   const route = (document: TextDocument): LanguageWorkspaceDocumentRequest => ({
     languageId: document.languageId,
-    extension: extname(fileURLToPath(document.uri)).replace(/^\./u, '').toLowerCase(),
+    extension: extname(new URL(document.uri).pathname).replace(/^\./u, '').toLowerCase(),
     document: {
       uri: document.uri,
       languageId: document.languageId,
@@ -286,8 +303,7 @@ export function createModkitLanguageServer(
       )
       return
     }
-    if (!insideRoots(document.uri)) {
-      acceptDocument(document)
+    if (!allowedUri(document.uri)) {
       setDiagnostics(document.uri, document.version, [
         {
           range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
@@ -295,6 +311,38 @@ export function createModkitLanguageServer(
           code: 'x3.lsp/outside-root',
           source: 'modkit-host',
           message: 'Document is outside the configured Modkit workspace roots.',
+        },
+      ])
+      return
+    }
+    const bytes = encoder.encode(document.getText()).byteLength
+    const otherBytes = [...acceptedDocuments.values()]
+      .filter(candidate => candidate.uri !== document.uri)
+      .reduce((total, candidate) => total + encoder.encode(candidate.getText()).byteLength, 0)
+    const limitDiagnostic =
+      bytes > options.maxDocumentBytes
+        ? {
+            code: 'x3.lsp/document-too-large',
+            message: `Document exceeds the configured ${options.maxDocumentBytes} byte limit.`,
+          }
+        : otherBytes + bytes > options.maxWorkspaceBytes
+          ? {
+              code: 'x3.lsp/workspace-too-large',
+              message: `Open documents exceed the configured ${options.maxWorkspaceBytes} byte limit.`,
+            }
+          : accepted === undefined && acceptedDocuments.size >= options.maxDocuments
+            ? {
+                code: 'x3.lsp/document-limit',
+                message: `At most ${options.maxDocuments} documents may be open at once.`,
+              }
+            : undefined
+    if (limitDiagnostic !== undefined) {
+      setDiagnostics(document.uri, accepted?.version ?? document.version, [
+        {
+          range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
+          severity: DiagnosticSeverity.Error,
+          source: 'modkit-host',
+          ...limitDiagnostic,
         },
       ])
       return

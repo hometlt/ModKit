@@ -18,10 +18,24 @@ test(
     const root = await mkdtemp(join(tmpdir(), 'modkit-lsp-pull-'))
     const source = join(root, 'Main.fixturelang')
     await writeFile(source, 'initial')
-    const child = spawn(process.execPath, [executable, '--root', root, '--extension', extension], {
-      cwd: resolve('.'),
-      stdio: ['pipe', 'pipe', 'pipe'],
-    })
+    const child = spawn(
+      process.execPath,
+      [
+        executable,
+        '--root',
+        root,
+        '--extension',
+        extension,
+        '--max-document-bytes',
+        '64',
+        '--max-workspace-bytes',
+        '128',
+      ],
+      {
+        cwd: resolve('.'),
+        stdio: ['pipe', 'pipe', 'pipe'],
+      },
+    )
     let buffer = Buffer.alloc(0)
     let stderr = ''
     const messages = []
@@ -187,8 +201,89 @@ test(
       const hover = await waitFor(message => message.id === 5, 'hover after stale change')
       assert.equal(hover.error, undefined, JSON.stringify(hover.error))
       assert.equal(hover.result.contents.value, 'version 4: \ufeffAΩBpadding\r\nline')
-      send({ jsonrpc: '2.0', id: 6, method: 'shutdown', params: null })
-      await waitFor(message => message.id === 6, 'shutdown')
+      send({
+        jsonrpc: '2.0',
+        method: 'textDocument/didChange',
+        params: {
+          textDocument: { uri, version: 5 },
+          contentChanges: [{ text: 'x'.repeat(65) }],
+        },
+      })
+      const oversizedChange = await waitFor(
+        message =>
+          message.method === 'textDocument/publishDiagnostics' &&
+          message.params?.uri === uri &&
+          message.params?.diagnostics?.[0]?.code === 'x3.lsp/document-too-large',
+        'oversized change diagnostics',
+      )
+      assert.equal(oversizedChange.params.version, 4)
+      send({
+        jsonrpc: '2.0',
+        id: 6,
+        method: 'textDocument/hover',
+        params: { textDocument: { uri }, position: { line: 0, character: 4 } },
+      })
+      const retainedHover = await waitFor(
+        message => message.id === 6,
+        'hover after rejected change',
+      )
+      assert.equal(retainedHover.error, undefined, JSON.stringify(retainedHover.error))
+      assert.equal(retainedHover.result.contents.value, 'version 4: \ufeffAΩBpadding\r\nline')
+
+      const virtualUri = 'content-source://fixture/dependency/Other.fixturelang'
+      send({
+        jsonrpc: '2.0',
+        method: 'textDocument/didOpen',
+        params: {
+          textDocument: {
+            uri: virtualUri,
+            languageId: 'fixture-language',
+            version: 1,
+            text: 'virtual',
+          },
+        },
+      })
+      await waitFor(
+        message =>
+          message.method === 'textDocument/publishDiagnostics' &&
+          message.params?.uri === virtualUri &&
+          message.params?.version === 1,
+        'virtual document diagnostics',
+      )
+      send({
+        jsonrpc: '2.0',
+        id: 7,
+        method: 'textDocument/hover',
+        params: { textDocument: { uri: virtualUri }, position: { line: 0, character: 0 } },
+      })
+      const virtualHover = await waitFor(message => message.id === 7, 'virtual document hover')
+      assert.equal(virtualHover.error, undefined, JSON.stringify(virtualHover.error))
+      assert.equal(virtualHover.result.contents.value, 'version 1: virtual')
+
+      const oversizedUri = 'untitled:Oversized.fixturelang'
+      send({
+        jsonrpc: '2.0',
+        method: 'textDocument/didOpen',
+        params: {
+          textDocument: {
+            uri: oversizedUri,
+            languageId: 'fixture-language',
+            version: 1,
+            text: 'x'.repeat(65),
+          },
+        },
+      })
+      const oversizedOpen = await waitFor(
+        message =>
+          message.method === 'textDocument/publishDiagnostics' &&
+          message.params?.uri === oversizedUri &&
+          message.params?.diagnostics?.[0]?.code === 'x3.lsp/document-too-large',
+        'oversized open diagnostics',
+      )
+      assert.equal(oversizedOpen.params.version, 1)
+
+      send({ jsonrpc: '2.0', id: 8, method: 'shutdown', params: null })
+      await waitFor(message => message.id === 8, 'shutdown')
       send({ jsonrpc: '2.0', method: 'exit', params: null })
       child.stdin.end()
       await new Promise((resolveExit, reject) => {

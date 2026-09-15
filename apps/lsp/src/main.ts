@@ -69,6 +69,8 @@ export async function runModkitLsp(argv: readonly string[]) {
     workspace,
     roots,
     maxDocuments: configuration.maxDocuments,
+    maxDocumentBytes: configuration.maxDocumentBytes,
+    maxWorkspaceBytes: configuration.maxWorkspaceBytes,
   })
   server.listen()
   let closed: Promise<void> | undefined
