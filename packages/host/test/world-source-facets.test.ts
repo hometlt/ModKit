@@ -176,6 +176,87 @@ const snapshot: ResolvedMapWorkspaceSnapshot = {
 }
 
 describe('common world source native visual facets', () => {
+  it('draws derived cliff pieces from the first resolving candidate with its yaw baked in', async () => {
+    const requirement = (logicalId: string) => ({
+      id: `cliff:${logicalId}`,
+      logicalId,
+      role: 'sidecar' as const,
+      scopes: ['current-mount' as const],
+    })
+    const acquired: string[] = []
+    const modelResources = {
+      async acquire(request: { requirement: { logicalId: string } }) {
+        acquired.push(request.requirement.logicalId)
+        if (request.requirement.logicalId === 'Cliffs/Set_ABBA_00.m3')
+          return { value: { result: { state: 'unresolved' as const, diagnostics: [] } }, async release() {} }
+        return {
+          value: {
+            result: { state: 'converted' as const, bytes: new Uint8Array([1]), sourceKey: 'cliff', diagnostics: [] },
+            async nodes() {
+              return {
+                items: [
+                  { id: 'root', childIds: [], meshIds: ['mesh'], transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 2, 0, 0, 1] },
+                ],
+              }
+            },
+            async meshes() {
+              return { items: [{ id: 'mesh', primitiveIds: ['triangle'] }] }
+            },
+            async primitive() {
+              return { id: 'triangle', topology: 'triangles' as const, positions: new Float32Array(9) }
+            },
+          },
+          async release() {},
+        }
+      },
+    }
+    const lease = createCandidateWorldSceneLease(
+      {
+        ...snapshot,
+        cliffs: {
+          ...snapshot.cliffs!,
+          pieceModels: [
+            {
+              id: 'Set:ABBA:0',
+              candidates: [
+                { requirement: requirement('Cliffs/Set_ABBA_00.m3'), yaw: 0 },
+                { requirement: requirement('Cliffs/Set_BBAA_00.m3'), yaw: Math.PI / 2 },
+              ],
+            },
+          ],
+          pieces: [{ id: '5', position: { x: 1, y: 1, z: 6 }, modelId: 'Set:ABBA:0' }],
+        },
+      },
+      [],
+      64,
+      modelResources as never,
+    )
+    try {
+      const info = await lease.value.info()
+      const objects = await lease.value.page({
+        facet: 'objects',
+        layerId: info.facets.find(item => item.facet === 'objects')!.layerId,
+        limit: 64,
+      })
+      const piece = objects.items.find(item => item.facet === 'objects' && item.derivedFrom === 'cliffs')
+      expect(piece).toMatchObject({ kind: 'doodad', resourceId: 'cliff-model:Set%3AABBA%3A0' })
+      const model = await lease.value.model?.(piece!.facet === 'objects' ? piece!.resourceId! : '', {
+        maxBytes: 1024,
+        maxMeshes: 8,
+        maxPrimitives: 8,
+        maxPrimitiveBytes: 1024,
+      })
+      expect(acquired).toEqual(['Cliffs/Set_ABBA_00.m3', 'Cliffs/Set_BBAA_00.m3'])
+      expect(model).toMatchObject({ state: 'converted' })
+      const transform = model?.state === 'converted' ? model.nodes?.[0]?.transform : undefined
+      // +Y quarter turn: X axis -> -Z, translation (2,0,0) -> (0,0,-2).
+      expect(transform?.slice(0, 3).map(value => Math.round(value) + 0)).toEqual([0, 0, -1])
+      expect(transform?.slice(12, 15).map(value => Math.round(value) + 0)).toEqual([0, 0, -2])
+    } finally {
+      await lease.release()
+    }
+  })
+
   it('splits a catalog resource per model when instances resolve different variations', async () => {
     const rock = (objectId: number, variation: number) => ({
       kind: 'doodad' as const,

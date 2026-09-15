@@ -530,7 +530,8 @@ async function reconstructLayer(
       kind: 'objects',
       ...label,
       instances: Object.freeze(
-        items.map(raw => {
+        // Presentation-only instances (authored cliff meshes) belong to their source facet.
+        items.flatMap(raw => ((raw as WorldSceneObjectItem).derivedFrom === undefined ? [raw] : [])).map(raw => {
           const item = raw as WorldSceneObjectItem
           if (
             item.facet !== 'objects' ||

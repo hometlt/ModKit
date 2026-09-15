@@ -35,7 +35,7 @@ const [width, height] = values.size.split('x').map(Number)
 if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height)) throw new TypeError('--size must be WxH')
 const camerasPath = values.cameras ?? join(payloadDir, 'cameras.json')
 const cameras = existsSync(camerasPath)
-  ? JSON.parse(readFileSync(camerasPath, 'utf8'))
+  ? JSON.parse(readFileSync(camerasPath, 'utf8').replace(/^﻿/u, ''))
   : [{ name: 'overview', azimuth: Math.PI / 4, elevation: 0.52, zoom: 1, target: [0, 0, 0] }]
 const executablePath = [
   process.env.CHROME_PATH,

@@ -1218,7 +1218,11 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
 
   let cliffEdges = 0
   let cliffTriangles = 0
-  const cliffs = input.items.filter(item => item.facet === 'cliffs')
+  // Authored cliff meshes replace the procedural skirts.
+  const authoredCliffMeshes = input.items.some(
+    item => item.facet === 'objects' && item.derivedFrom === 'cliffs',
+  )
+  const cliffs = authoredCliffMeshes ? [] : input.items.filter(item => item.facet === 'cliffs')
   const cliffByCell = new Map(cliffs.map(item => [`${item.x}:${item.y}`, item]))
   for (const item of cliffs) {
     for (const [dx, dy] of [

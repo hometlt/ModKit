@@ -507,6 +507,31 @@ export interface MapCliffSample {
   readonly authored: boolean
 }
 
+/** One ordered model choice for a cliff mesh piece; `yaw` rotates it about the vertical axis. */
+export interface MapCliffPieceCandidate {
+  readonly requirement: LogicalResourceRequirement
+  /** Radians, counter-clockwise in the map-native horizontal plane. */
+  readonly yaw: number
+}
+
+/**
+ * Publisher-resolved presentation model for authored cliff pieces. The host draws the first
+ * candidate that resolves; a publisher lists alternatives when only the game's asset set decides.
+ */
+export interface MapCliffPieceModel {
+  readonly id: string
+  readonly candidates: readonly MapCliffPieceCandidate[]
+}
+
+/** One authored cliff/ramp mesh placement derived from native cliff data. */
+export interface MapCliffPiece {
+  readonly id: string
+  /** Map-native position with absolute height. */
+  readonly position: MapPosition
+  readonly modelId: string
+  readonly ramp?: boolean
+}
+
 /** Native synchronized cliff levels. Geometry remains explicit publisher-candidate data. */
 export interface MapCliffSummary {
   readonly version: number
@@ -515,6 +540,9 @@ export interface MapCliffSummary {
   readonly cellCount: number
   readonly samples: readonly MapCliffSample[]
   readonly exact: boolean
+  /** Presentation-only cliff meshes; they are drawn with the world but never exported as objects. */
+  readonly pieceModels?: readonly MapCliffPieceModel[]
+  readonly pieces?: readonly MapCliffPiece[]
 }
 
 interface MapTerrainNativeTransformBase {
@@ -944,6 +972,8 @@ export interface WorldSceneObjectItem extends MapPlacedObject {
   readonly uvwPosition?: MapPosition
   readonly uvwRotation?: readonly [number, number, number, number]
   readonly uvwScale?: MapPosition
+  /** Presentation-only instance generated from another facet; never exported or edited as an object. */
+  readonly derivedFrom?: 'cliffs'
 }
 
 export interface WorldSceneRegionShape {
@@ -981,6 +1011,11 @@ export interface WorldSceneResourceItem {
   readonly digest?: `sha256:${string}`
   /** Standard logical resource request for the model shared by the joined object instances. */
   readonly modelResource?: LogicalResourceRequirement
+  /**
+   * Ordered alternatives when the publisher cannot know which asset exists; the host converts the
+   * first that resolves and bakes its yaw into the model. `modelResource` is the first candidate.
+   */
+  readonly modelCandidates?: readonly MapCliffPieceCandidate[]
   /** Exact reverse join to every placed object that references this resource. */
   readonly objectIds: readonly string[]
 }

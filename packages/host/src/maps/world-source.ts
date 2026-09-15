@@ -22,6 +22,7 @@ import type {
   WorldSceneModelRequest,
   WorldSceneTextureRequest,
   WorldSceneObjectItem,
+  WorldSceneResourceItem,
   WorldScenePage,
   WorldScenePageRequest,
   WorldSceneRegionShape,
@@ -307,6 +308,34 @@ function canonicalObjectRotation(
   const y = Math.sin(half)
   const w = Math.cos(half)
   return Object.freeze([0, y === 0 ? 0 : y, 0, w === 0 ? 0 : w])
+}
+
+/**
+ * Pre-rotates root nodes by a map-native yaw, matching `canonicalObjectRotation` (+Y in UVW).
+ * Used when the chosen model candidate is a rotated variant of the authored piece.
+ */
+function yawRootNodes<Node extends Readonly<{ id: string; childIds: readonly string[]; transform: readonly number[] }>>(
+  nodes: readonly Node[],
+  yaw: number,
+): readonly Node[] {
+  if (yaw === 0) return [...nodes]
+  const children = new Set(nodes.flatMap(node => node.childIds))
+  const c = Math.cos(yaw)
+  const s = Math.sin(yaw)
+  // Column-major rotation about +Y: rows [[c,0,s],[0,1,0],[-s,0,c]].
+  const rotate = (m: readonly number[]) => {
+    const out = [...m]
+    for (let column = 0; column < 4; column += 1) {
+      const x = m[column * 4]!
+      const z = m[column * 4 + 2]!
+      out[column * 4] = c * x + s * z
+      out[column * 4 + 2] = -s * x + c * z
+    }
+    return Object.freeze(out)
+  }
+  return nodes.map(node =>
+    children.has(node.id) ? node : Object.freeze({ ...node, transform: rotate(node.transform) }),
+  )
 }
 
 function canonicalObjectScale(
@@ -716,7 +745,7 @@ export function createCandidateWorldSceneLease(
       })
     }),
   )
-  const objects: readonly WorldSceneItem[] = Object.freeze(
+  const semanticObjectItems: readonly WorldSceneItem[] = Object.freeze(
     semanticObjects.map(item => {
       const id = `${objectLayerId}:object:${String(item.objectId)}`
       const ref = item.catalog?.ref
@@ -769,6 +798,44 @@ export function createCandidateWorldSceneLease(
       })
     }),
   )
+  // Authored cliff meshes are presentation instances of the cliffs facet: drawn and picked with the
+  // world, never exported or edited as placed objects.
+  const cliffPieceModels = new Map(
+    (snapshot.cliffs?.pieceModels ?? []).map(model => [model.id, model] as const),
+  )
+  const cliffModelResourceId = (modelId: string) => `cliff-model:${encodeURIComponent(modelId)}`
+  const cliffPieceObjects: readonly WorldSceneObjectItem[] = Object.freeze(
+    (snapshot.cliffs?.pieces ?? []).flatMap((piece, index) =>
+      cliffPieceModels.get(piece.modelId)?.candidates.length
+        ? [
+            Object.freeze({
+              facet: 'objects' as const,
+              id: `${objectLayerId}:cliff:${piece.id}`,
+              layerId: objectLayerId,
+              coordinateSpaceId: 'map-native',
+              kind: 'doodad' as const,
+              objectId: -(index + 1),
+              typeId: piece.modelId,
+              position: piece.position,
+              heightReference: 'absolute' as const,
+              derivedFrom: 'cliffs' as const,
+              ...(uvwTransform === undefined
+                ? {}
+                : {
+                    uvwPosition: canonicalPosition(piece.position, uvwTransform),
+                    uvwRotation: Object.freeze([0, 0, 0, 1] as const),
+                    uvwScale: canonicalObjectScale(undefined, uvwTransform),
+                  }),
+              resourceId: cliffModelResourceId(piece.modelId),
+            }),
+          ]
+        : [],
+    ),
+  )
+  const objects: readonly WorldSceneItem[] = Object.freeze([
+    ...semanticObjectItems,
+    ...cliffPieceObjects,
+  ])
   const regions: readonly WorldSceneItem[] = Object.freeze(
     semanticRegions.map(item => {
       const shapes = Object.freeze(item.shapes.map(regionShape))
@@ -802,8 +869,21 @@ export function createCandidateWorldSceneLease(
       resolved: boolean
       objectIds: string[]
       modelResource?: NonNullable<WorldSceneObjectItem['modelResource']>
+      modelCandidates?: WorldSceneResourceItem['modelCandidates']
     }
   >()
+  const cliffPieceObjectIds = new Map<string, string[]>()
+  for (const item of cliffPieceObjects)
+    cliffPieceObjectIds.set(item.typeId!, [...(cliffPieceObjectIds.get(item.typeId!) ?? []), item.id])
+  for (const [modelId, objectIds] of cliffPieceObjectIds) {
+    const model = cliffPieceModels.get(modelId)!
+    resourceJoins.set(cliffModelResourceId(modelId), {
+      resolved: true,
+      objectIds,
+      modelResource: model.candidates[0]!.requirement,
+      modelCandidates: model.candidates,
+    })
+  }
   for (const item of objects) {
     if (item.facet !== 'objects') continue
     if (item.catalog !== undefined) {
@@ -845,6 +925,7 @@ export function createCandidateWorldSceneLease(
           ...(item.entityId === undefined ? {} : { entityId: item.entityId }),
           resolved: item.resolved,
           ...(item.modelResource === undefined ? {} : { modelResource: item.modelResource }),
+          ...(item.modelCandidates === undefined ? {} : { modelCandidates: item.modelCandidates }),
           objectIds: Object.freeze([...item.objectIds]),
         }),
       ),
@@ -1616,17 +1697,30 @@ export function createCandidateWorldSceneLease(
                 ]),
               })
             }
-            const modelRequirement = item.modelResource
             const metersPerSourceUnit =
               request.metersPerSourceUnit ?? snapshot.semantic.modelMetersPerSourceUnit
-            const lease = await modelResources.acquire(
-              {
-                maxBytes: request.maxBytes,
-                ...(metersPerSourceUnit === undefined ? {} : { metersPerSourceUnit }),
-                requirement: modelRequirement,
-              },
-              signal,
-            )
+            const candidates = item.modelCandidates ?? [
+              Object.freeze({ requirement: item.modelResource, yaw: 0 }),
+            ]
+            let lease: Awaited<ReturnType<typeof modelResources.acquire>> | undefined
+            let chosen = candidates[0]!
+            for (const candidate of candidates) {
+              const attempt = await modelResources.acquire(
+                {
+                  maxBytes: request.maxBytes,
+                  ...(metersPerSourceUnit === undefined ? {} : { metersPerSourceUnit }),
+                  requirement: candidate.requirement,
+                },
+                signal,
+              )
+              chosen = candidate
+              lease = attempt
+              if (attempt.value.result.state !== 'unresolved' || candidate === candidates.at(-1))
+                break
+              await attempt.release()
+            }
+            const modelRequirement = chosen.requirement
+            if (lease === undefined) throw new TypeError('world model candidates are empty')
             try {
               const result = lease.value.result
               if (result.state === 'unresolved') {
@@ -1796,7 +1890,9 @@ export function createCandidateWorldSceneLease(
                 state: 'converted' as const,
                 sourceKey: result.sourceKey,
                 uvmBytes: result.bytes.slice(),
-                ...(nodePage === undefined ? {} : { nodes: Object.freeze([...nodePage.items]) }),
+                ...(nodePage === undefined
+                  ? {}
+                  : { nodes: Object.freeze(yawRootNodes(nodePage.items, chosen.yaw)) }),
                 ...(skeletonPage === undefined
                   ? {}
                   : { skeleton: Object.freeze([...skeletonPage.items]) }),
