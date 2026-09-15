@@ -3,6 +3,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import type { Diagnostic as HostDiagnostic } from '@modkit/core'
 import type {
   LanguageWorkspaceFeatureRequest,
+  LanguageWorkspaceCapabilitySet,
   LanguageWorkspacePositionRequest,
   LanguageWorkspaceAnalysisResult,
   LanguageWorkspaceDocumentRequest,
@@ -424,6 +425,7 @@ export function createModkitLanguageServer(
           interFileDependencies: true,
           workspaceDiagnostics: false,
         },
+        experimental: { modkitLanguageCapabilities: { version: 1 } },
       },
     } satisfies InitializeResult
   })
@@ -451,6 +453,21 @@ export function createModkitLanguageServer(
         items: [...snapshot.diagnostics],
       }
     }),
+  )
+  connection.onRequest(
+    'modkit/languageCapabilities',
+    (
+      params: { readonly textDocument?: { readonly uri?: string } },
+      token: CancellationToken,
+    ): Promise<LanguageWorkspaceCapabilitySet | null> =>
+      withSignal(token, async signal => {
+        const uri = params.textDocument?.uri
+        if (typeof uri !== 'string' || uri.length === 0) {
+          throw new TypeError('modkit/languageCapabilities needs a textDocument URI')
+        }
+        await awaitReady(uri)
+        return (await options.workspace.capabilities(uri, signal)) ?? null
+      }),
   )
   connection.onCompletion((params, token) =>
     withSignal(token, async signal => {

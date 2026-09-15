@@ -309,12 +309,41 @@ export interface LanguageWorkspaceSymbolsRequest extends LanguageWorkspaceFeatur
   readonly query: string
 }
 
+export type LanguageWorkspaceCapability =
+  | 'analyze'
+  | 'semantic-tokens'
+  | 'completion'
+  | 'hover'
+  | 'signature-help'
+  | 'definition'
+  | 'references'
+  | 'prepare-rename'
+  | 'rename'
+  | 'formatting'
+  | 'document-colors'
+  | 'color-presentations'
+  | 'code-actions'
+  | 'document-symbols'
+  | 'workspace-symbols'
+  | 'diagnostics'
+
+export interface LanguageWorkspaceCapabilitySet {
+  readonly uri: string
+  readonly documentVersion: number
+  readonly features: readonly LanguageWorkspaceCapability[]
+}
+
 export interface LanguageWorkspace {
   initialize(): Promise<void>
   open(request: LanguageWorkspaceDocumentRequest): Promise<LanguageWorkspaceAnalysisResult>
   change(request: LanguageWorkspaceDocumentRequest): Promise<LanguageWorkspaceAnalysisResult>
   /** Await the newest analysis already requested for this URI. */
   current(uri: string, signal?: AbortSignal): Promise<LanguageWorkspaceAnalysisResult | undefined>
+  /** Return the activated provider's exact feature surface for an open document. */
+  capabilities(
+    uri: string,
+    signal?: AbortSignal,
+  ): Promise<LanguageWorkspaceCapabilitySet | undefined>
   completion(request: LanguageWorkspacePositionRequest): Promise<LanguageCompletionList | undefined>
   hover(request: LanguageWorkspacePositionRequest): Promise<LanguageHover | undefined>
   signatureHelp(
@@ -1554,6 +1583,45 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       if (entry === undefined) return undefined
       if (entry.pending !== undefined) return waitWithSignal(entry.pending, signal)
       return entry.current
+    },
+
+    async capabilities(
+      uri: string,
+      signal?: AbortSignal,
+    ): Promise<LanguageWorkspaceCapabilitySet | undefined> {
+      requireReady()
+      const entry = documents.get(uri)
+      if (entry === undefined) return undefined
+      if (entry.pending !== undefined) await waitWithSignal(entry.pending, signal)
+      throwIfAborted(signal)
+      const provider = entry.resolution.provider
+      const optional: readonly [LanguageWorkspaceCapability, keyof LanguageProvider][] = [
+        ['completion', 'completion'],
+        ['hover', 'hover'],
+        ['signature-help', 'signatureHelp'],
+        ['definition', 'definition'],
+        ['references', 'references'],
+        ['prepare-rename', 'prepareRename'],
+        ['rename', 'rename'],
+        ['formatting', 'formatting'],
+        ['document-colors', 'documentColors'],
+        ['color-presentations', 'colorPresentations'],
+        ['code-actions', 'codeActions'],
+        ['workspace-symbols', 'workspaceSymbols'],
+      ]
+      return Object.freeze({
+        uri: entry.uri,
+        documentVersion: entry.version,
+        features: Object.freeze([
+          'analyze',
+          'semantic-tokens',
+          'document-symbols',
+          'diagnostics',
+          ...optional
+            .filter(([, property]) => typeof provider[property] === 'function')
+            .map(([feature]) => feature),
+        ] satisfies LanguageWorkspaceCapability[]),
+      })
     },
 
     completion(

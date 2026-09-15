@@ -65,7 +65,9 @@ The equivalent environment variables are `MODKIT_MCP_CONTENT_SOURCE_CONFIG` and
   Passing `dependencySubjectHandle` reads that subject's standard `content.resolve-dependencies`
   operation and projects the provider-resolved loose/MPQ/CASC closure as read-only
   `content-source://` workspace documents. Missing or partial closure is reported through
-  diagnostics and completeness.
+  diagnostics and completeness. Each opened document reports the exact activated `features`;
+  `analyze`, `semantic-tokens`, `diagnostics`, and `document-symbols` are the baseline analysis
+  surface, while optional provider methods are listed only when present.
 - `modkit.discover_installations` asks only loaded installation providers for verified candidates and
   returns opaque result locators instead of requiring path copying. `modkit.open_discovered` opens one selection
   only when its verified directory is already under a configured root; discovery never widens the

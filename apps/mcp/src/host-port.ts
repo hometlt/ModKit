@@ -24,6 +24,7 @@ import {
   languageProviderRoutes,
   type LanguageWorkspace,
   type LanguageWorkspaceAnalysisResult,
+  type LanguageWorkspaceCapability,
   type LanguageWorkspaceDocumentSource,
 } from '@modkit/host/language'
 import {
@@ -207,6 +208,7 @@ export interface McpLanguageSession {
     readonly languageId: string
     readonly documentKind?: string
     readonly version: number
+    readonly features: readonly LanguageWorkspaceCapability[]
   }[]
   readonly workspaceIncomplete: boolean
   readonly diagnostics: readonly Diagnostic[]
@@ -732,6 +734,7 @@ export async function createHostMcpPort(
       ...(documentSource === undefined ? {} : { documentSource }),
     })
     const analyses = new Map<string, LanguageWorkspaceAnalysisResult>()
+    const featuresByUri = new Map<string, readonly LanguageWorkspaceCapability[]>()
     let closed = false
     let operationTail: Promise<void> = Promise.resolve()
     let closePromise: Promise<void> | undefined
@@ -754,6 +757,11 @@ export async function createHostMcpPort(
           )
         }
         analyses.set(document.uri, analysis)
+        const capabilitySet = await workspace.capabilities(document.uri, signal)
+        if (capabilitySet === undefined) {
+          throw new TypeError(`language capabilities unavailable for ${document.uri}`)
+        }
+        featuresByUri.set(document.uri, capabilitySet.features)
       }
     } catch (error) {
       await workspace.shutdown()
@@ -815,6 +823,7 @@ export async function createHostMcpPort(
                 ? {}
                 : { documentKind: document.documentKind }),
               version: document.version,
+              features: featuresByUri.get(document.uri) ?? Object.freeze([]),
             }),
           ),
         )
@@ -882,6 +891,7 @@ export async function createHostMcpPort(
           await operationTail
           byUri.clear()
           analyses.clear()
+          featuresByUri.clear()
           await workspace.shutdown()
         })()
         return closePromise

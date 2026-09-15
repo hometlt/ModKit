@@ -103,6 +103,9 @@ test(
       const initialized = await waitFor(message => message.id === 1, 'initialize')
       assert.equal(initialized.error, undefined, JSON.stringify(initialized.error))
       assert.equal(initialized.result.capabilities.diagnosticProvider.identifier, 'modkit')
+      assert.deepEqual(initialized.result.capabilities.experimental, {
+        modkitLanguageCapabilities: { version: 1 },
+      })
       send({ jsonrpc: '2.0', method: 'initialized', params: {} })
       const watchedFilesRegistration = await waitFor(
         message => message.method === 'client/registerCapability',
@@ -129,6 +132,26 @@ test(
           message.method === 'textDocument/publishDiagnostics' && message.params?.version === 1,
         'initial push diagnostics',
       )
+      send({
+        jsonrpc: '2.0',
+        id: 10,
+        method: 'modkit/languageCapabilities',
+        params: { textDocument: { uri } },
+      })
+      const featureSurface = await waitFor(message => message.id === 10, 'feature surface')
+      assert.equal(featureSurface.error, undefined, JSON.stringify(featureSurface.error))
+      assert.deepEqual(featureSurface.result, {
+        uri,
+        documentVersion: 1,
+        features: [
+          'analyze',
+          'semantic-tokens',
+          'document-symbols',
+          'diagnostics',
+          'hover',
+          'definition',
+        ],
+      })
       send({
         jsonrpc: '2.0',
         id: 2,

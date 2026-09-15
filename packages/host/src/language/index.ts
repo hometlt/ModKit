@@ -427,6 +427,8 @@ export {
   type LanguageProviderRoute,
   type LanguageWorkspace,
   type LanguageWorkspaceAnalysisResult,
+  type LanguageWorkspaceCapability,
+  type LanguageWorkspaceCapabilitySet,
   type LanguageWorkspaceCodeActionsRequest,
   type LanguageWorkspaceColorPresentationRequest,
   type LanguageWorkspaceDocumentSource,

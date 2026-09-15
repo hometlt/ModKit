@@ -87,6 +87,9 @@ function fakeWorkspace(
     async current() {
       return current
     },
+    async capabilities() {
+      return undefined
+    },
     async completion() {
       return undefined
     },

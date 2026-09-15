@@ -127,6 +127,14 @@ describe('host-held MCP language session', () => {
         languageId: 'fixture-language',
         documentKind: 'fixture-source',
         version: 7,
+        features: [
+          'analyze',
+          'semantic-tokens',
+          'document-symbols',
+          'diagnostics',
+          'hover',
+          'definition',
+        ],
       },
     ])
     const hover = await session.invoke({
@@ -146,6 +154,14 @@ describe('host-held MCP language session', () => {
         languageId: 'fixture-language',
         documentKind: 'fixture-source',
         version: 8,
+        features: [
+          'analyze',
+          'semantic-tokens',
+          'document-symbols',
+          'diagnostics',
+          'hover',
+          'definition',
+        ],
       },
     ])
     const diagnostics = await session.invoke({
