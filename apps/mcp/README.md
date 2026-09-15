@@ -49,6 +49,11 @@ pnpm mcp:start -- `
 The equivalent environment variables are `MODKIT_MCP_CONTENT_SOURCE_CONFIG` and
 `MODKIT_MCP_CONTENT_SOURCE_STORAGE`. Provider module paths and credentials stay in the host.
 
+A provider may also implement `languageMounts()` for roots its game loads regardless of the open
+subject, such as StarCraft II Editor wizard folders. Every language session then projects those
+roots as read-only `content-source://` documents in the same way as a dependency closure; they never
+make a partial workspace complete.
+
 ## Read-only surface
 
 - `modkit.inventory` pages through the loaded contribution inventory.

@@ -78,12 +78,17 @@ export interface ContentSources {
   prepareDeletePublication?(sourceId: string, path: string): Promise<unknown>
   /** Resolve a codec-discovered dependency set to ordered, read-only roots owned by this source. */
   resolveDependencies?(request: ContentDependencyRequest): Promise<ContentDependencyResolution>
+  /**
+   * Read-only roots a game loads regardless of the open subject (for example editor add-on folders),
+   * as the same resolution shape a dependency closure uses so a host projects both identically.
+   */
+  languageMounts?(): Promise<ContentDependencyResolution> | ContentDependencyResolution
   dispose(): void | Promise<void>
 }
 
 export const CONTENT_SOURCE_METHODS = ['snapshot', 'connect', 'disconnect', 'search', 'add',
   'remove', 'refresh', 'list', 'read', 'preparePublish', 'publish', 'deletionCandidates', 'deletePublication',
-  'download', 'clearCache', 'prepareDeletePublication', 'resolveDependencies'] as const
+  'download', 'clearCache', 'prepareDeletePublication', 'resolveDependencies', 'languageMounts'] as const
 export type ContentSourceMethod = typeof CONTENT_SOURCE_METHODS[number]
 
 /** Validate the small IPC surface before invoking a trusted host-owned provider. */
@@ -134,6 +139,10 @@ export async function callContentSources(
     case 'prepareDeletePublication': {
       if (!source.prepareDeletePublication) throw new Error('Publication deletion is not configured')
       return source.prepareDeletePublication(string(0), path(1))
+    }
+    case 'languageMounts': {
+      if (!source.languageMounts) throw new Error('Language mounts are not configured')
+      return source.languageMounts()
     }
     case 'resolveDependencies': {
       if (!source.resolveDependencies) throw new Error('Dependency resolution is not configured')

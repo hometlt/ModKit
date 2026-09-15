@@ -718,7 +718,39 @@ export async function createHostMcpPort(
         }
       }
     }
-    const sources = [dependencySource, options.languageDocumentSource].filter(
+    /*
+     * Roots the configured provider loads regardless of the subject (editor add-on folders) join
+     * every session through the same read-only projection a dependency closure uses. They add
+     * documents only; they never make an otherwise partial workspace complete.
+     */
+    let standingSource: LanguageWorkspaceDocumentSource | undefined
+    if (contentSources?.languageMounts !== undefined) {
+      try {
+        const standing = await contentSources.languageMounts()
+        signal?.throwIfAborted()
+        dependencyDiagnostics.push(...contentDependencyDiagnostics(standing.diagnostics))
+        if (standing.mounts.length > 0) {
+          standingSource = createContentDependencyLanguageDocumentSource({
+            contentSources,
+            resolution: standing,
+            routes: languageProviderRoutes(modkit.services.inventory),
+            maxDocumentBytes: MCP_LANGUAGE_MAX_DOCUMENT_BYTES,
+            maxWorkspaceBytes: 16_777_216,
+            maxEntries: 16_384,
+          })
+        }
+      } catch (error) {
+        signal?.throwIfAborted()
+        dependencyDiagnostics.push(
+          diagnostic(
+            'warning',
+            'x3.mcp/content-language-mounts-failed',
+            error instanceof Error ? error.message : String(error),
+          ),
+        )
+      }
+    }
+    const sources = [dependencySource, standingSource, options.languageDocumentSource].filter(
       (source): source is LanguageWorkspaceDocumentSource => source !== undefined,
     )
     const documentSource = composedLanguageDocumentSource(sources, complete => {

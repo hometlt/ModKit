@@ -277,4 +277,79 @@ describe('host-held MCP language session', () => {
       await session.close()
     }
   })
+
+  /*
+   * A provider may name roots its game loads for every subject (editor add-on folders). They join a
+   * session without any subject context, read-only, and never turn it into a complete workspace.
+   */
+  it('joins provider-standing language mounts to a session without a subject', async () => {
+    const standingBytes = new TextEncoder().encode('standing')
+    const standingSources: ContentSources = {
+      ...contentSources,
+      async list(sourceId, path) {
+        return sourceId === 'standing-source' && path === ''
+          ? [{ path: 'Dependency.fixturelang', name: 'Dependency.fixturelang', directory: false }]
+          : []
+      },
+      async read(sourceId, path, maximum) {
+        if (sourceId !== 'standing-source' || path !== 'Dependency.fixturelang' || standingBytes.byteLength > maximum) {
+          throw new RangeError('standing document unavailable')
+        }
+        return standingBytes.slice()
+      },
+      languageMounts() {
+        return {
+          schemaVersion: 1,
+          gameId: 'fixture/game',
+          complete: true,
+          mounts: [
+            {
+              dependencyId: 'standing:0',
+              order: 0,
+              sourceId: 'standing-source',
+              sourcePath: '',
+              displayName: 'Standing folder',
+              kind: 'editor-add-ons',
+            },
+          ],
+          dependencies: [],
+          diagnostics: [],
+        }
+      },
+    }
+    const standingHost = await createHostMcpPort(
+      {
+        roots: [root],
+        extensions: [resolve(import.meta.dirname, 'fixtures', 'language-session-extension')],
+      },
+      undefined,
+      { contentSources: standingSources },
+    )
+    const uri = 'modkit-source://fixture/Scripts/Standalone.fixturelang'
+    try {
+      const session = await standingHost.openLanguageSession!({
+        documents: [
+          { uri, languageId: 'fixture-language', documentKind: 'fixture-source', version: 1, text: 'source' },
+        ],
+      })
+      try {
+        const definition = await session.invoke({
+          primaryUri: uri,
+          feature: 'definition',
+          position: { line: 0, character: 1 },
+          maxResults: 20,
+          maxEdits: 20,
+        })
+        expect(definition.result).toMatchObject({
+          isIncomplete: true,
+          locations: [{ uri: expect.stringMatching(/^content-source:\/\/standing-source\//u) }],
+        })
+        expect(session.workspaceIncomplete).toBe(true)
+      } finally {
+        await session.close()
+      }
+    } finally {
+      await standingHost.close()
+    }
+  }, 30_000)
 })
