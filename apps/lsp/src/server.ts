@@ -1,0 +1,623 @@
+import { extname, isAbsolute, relative } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import type { Diagnostic as HostDiagnostic } from '@modkit/core'
+import type {
+  LanguageWorkspaceFeatureRequest,
+  LanguageWorkspacePositionRequest,
+  LanguageWorkspaceAnalysisResult,
+  LanguageWorkspaceDocumentRequest,
+  LanguageWorkspaceRenameRequest,
+  LanguageWorkspaceReferencesRequest,
+  LanguageWorkspaceFormattingRequest,
+  LanguageWorkspaceColorPresentationRequest,
+  LanguageWorkspaceCodeActionsRequest,
+  LanguageWorkspaceSymbolsRequest,
+  LanguageWorkspace,
+} from '@modkit/host/language'
+import type {
+  LanguageCodeAction,
+  LanguageDiagnostic,
+  LanguageSymbol,
+  LanguageSymbolKind,
+  LanguageTokenKind,
+  LanguageWorkspaceEdit,
+} from '@modkit/sdk'
+import {
+  CodeActionKind,
+  CompletionItemKind,
+  DiagnosticSeverity,
+  DocumentSymbol,
+  InsertTextFormat,
+  ProposedFeatures,
+  SymbolKind,
+  TextDocumentSyncKind,
+  TextDocuments,
+  TextEdit,
+  createConnection,
+  type CancellationToken,
+  type CodeAction,
+  type ColorInformation,
+  type ColorPresentation,
+  type CompletionItem,
+  type Connection,
+  type Diagnostic,
+  type DocumentFormattingParams,
+  type InitializeResult,
+  type Location,
+  type Position,
+  type Range,
+  type SemanticTokens,
+  type SemanticTokensParams,
+  type SignatureHelp,
+  type WorkspaceEdit,
+  type WorkspaceSymbol,
+} from 'vscode-languageserver/node'
+import { TextDocument } from 'vscode-languageserver-textdocument'
+
+const TOKEN_TYPES: readonly LanguageTokenKind[] = Object.freeze([
+  'comment',
+  'function',
+  'keyword',
+  'number',
+  'operator',
+  'parameter',
+  'property',
+  'string',
+  'type',
+  'variable',
+])
+
+const symbolKinds: Readonly<Record<LanguageSymbolKind, SymbolKind>> = Object.freeze({
+  class: SymbolKind.Class,
+  constant: SymbolKind.Constant,
+  enum: SymbolKind.Enum,
+  field: SymbolKind.Field,
+  function: SymbolKind.Function,
+  interface: SymbolKind.Interface,
+  module: SymbolKind.Module,
+  namespace: SymbolKind.Namespace,
+  property: SymbolKind.Property,
+  struct: SymbolKind.Struct,
+  variable: SymbolKind.Variable,
+})
+
+const completionKinds: Readonly<Record<string, CompletionItemKind>> = Object.freeze({
+  class: CompletionItemKind.Class,
+  constant: CompletionItemKind.Constant,
+  enum: CompletionItemKind.Enum,
+  field: CompletionItemKind.Field,
+  function: CompletionItemKind.Function,
+  interface: CompletionItemKind.Interface,
+  module: CompletionItemKind.Module,
+  namespace: CompletionItemKind.Module,
+  property: CompletionItemKind.Property,
+  struct: CompletionItemKind.Struct,
+  variable: CompletionItemKind.Variable,
+  keyword: CompletionItemKind.Keyword,
+  parameter: CompletionItemKind.Variable,
+  snippet: CompletionItemKind.Snippet,
+  text: CompletionItemKind.Text,
+  type: CompletionItemKind.TypeParameter,
+})
+
+const severity = (value: LanguageDiagnostic['severity']): DiagnosticSeverity =>
+  ({
+    error: DiagnosticSeverity.Error,
+    warning: DiagnosticSeverity.Warning,
+    information: DiagnosticSeverity.Information,
+    hint: DiagnosticSeverity.Hint,
+  })[value]
+
+const diagnosticOf = (value: LanguageDiagnostic): Diagnostic => ({
+  range: value.range,
+  severity: severity(value.severity),
+  message: value.message,
+  ...(value.code === undefined ? {} : { code: value.code }),
+  ...(value.source === undefined ? {} : { source: value.source }),
+})
+
+const hostDiagnosticOf = (value: HostDiagnostic): Diagnostic => ({
+  range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
+  severity:
+    value.severity === 'error'
+      ? DiagnosticSeverity.Error
+      : value.severity === 'warning'
+        ? DiagnosticSeverity.Warning
+        : DiagnosticSeverity.Information,
+  message: value.message,
+  code: value.code,
+  source: 'modkit-host',
+})
+
+const documentSymbolOf = (value: LanguageSymbol): DocumentSymbol => ({
+  name: value.name,
+  kind: symbolKinds[value.kind],
+  range: value.range,
+  selectionRange: value.selectionRange,
+  ...(value.detail === undefined ? {} : { detail: value.detail }),
+  ...(value.children === undefined ? {} : { children: value.children.map(documentSymbolOf) }),
+})
+
+const workspaceEditOf = (value: LanguageWorkspaceEdit): WorkspaceEdit => ({
+  documentChanges: value.documentChanges.map(change => ({
+    textDocument: { uri: change.uri, version: change.documentVersion },
+    edits: change.edits.map(edit => TextEdit.replace(edit.range, edit.newText)),
+  })),
+})
+
+const codeActionOf = (value: LanguageCodeAction): CodeAction => ({
+  title: value.title,
+  ...(value.kind === undefined
+    ? {}
+    : { kind: value.kind === 'rewrite' ? CodeActionKind.RefactorRewrite : value.kind }),
+  ...(value.isPreferred === undefined ? {} : { isPreferred: value.isPreferred }),
+  ...(value.edit === undefined ? {} : { edit: workspaceEditOf(value.edit) }),
+  ...(value.disabledReason === undefined ? {} : { disabled: { reason: value.disabledReason } }),
+})
+
+const signalOf = (token: CancellationToken): { signal: AbortSignal; dispose(): void } => {
+  const controller = new AbortController()
+  if (token.isCancellationRequested) controller.abort('LSP request cancelled')
+  const subscription = token.onCancellationRequested(() =>
+    controller.abort('LSP request cancelled'),
+  )
+  return { signal: controller.signal, dispose: () => subscription.dispose() }
+}
+
+const withSignal = async <T>(
+  token: CancellationToken,
+  call: (signal: AbortSignal) => Promise<T>,
+): Promise<T> => {
+  const linked = signalOf(token)
+  try {
+    return await call(linked.signal)
+  } finally {
+    linked.dispose()
+  }
+}
+
+export interface ModkitLanguageServerOptions {
+  readonly workspace: LanguageWorkspace
+  readonly roots: readonly string[]
+  readonly maxDocuments: number
+  readonly maxResults?: number
+  readonly connection?: Connection
+}
+
+export interface RunningModkitLanguageServer {
+  readonly connection: Connection
+  listen(): void
+  close(): Promise<void>
+}
+
+export function createModkitLanguageServer(
+  options: ModkitLanguageServerOptions,
+): RunningModkitLanguageServer {
+  const connection =
+    options.connection ?? createConnection(ProposedFeatures.all, process.stdin, process.stdout)
+  const documents = new TextDocuments(TextDocument)
+  const pending = new Map<string, Promise<void>>()
+  const workspaceUris = new Set<string>()
+  const maxResults = options.maxResults ?? 1_000
+  let shutDown = false
+
+  const insideRoots = (uri: string): boolean => {
+    let path: string
+    try {
+      path = fileURLToPath(uri)
+    } catch {
+      return false
+    }
+    return options.roots.some(root => {
+      const rel = relative(root, path)
+      return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
+    })
+  }
+  const route = (document: TextDocument): LanguageWorkspaceDocumentRequest => ({
+    languageId: document.languageId,
+    extension: extname(fileURLToPath(document.uri)).replace(/^\./u, '').toLowerCase(),
+    document: {
+      uri: document.uri,
+      languageId: document.languageId,
+      version: document.version,
+      text: document.getText(),
+    },
+  })
+  const request = (uri: string, signal?: AbortSignal): LanguageWorkspaceFeatureRequest => {
+    const document = documents.get(uri)
+    if (document === undefined) throw new Error(`document ${uri} is not open`)
+    return {
+      uri,
+      documentVersion: document.version,
+      maxDocuments: options.maxDocuments,
+      maxResults,
+      ...(signal === undefined ? {} : { signal }),
+    }
+  }
+  const positionRequest = (
+    uri: string,
+    position: Position,
+    signal?: AbortSignal,
+  ): LanguageWorkspacePositionRequest => ({
+    ...request(uri, signal),
+    position,
+  })
+  const awaitReady = async (uri: string): Promise<void> => {
+    await pending.get(uri)
+  }
+  const publish = async (
+    document: TextDocument,
+    mode: 'open' | 'change' | 'refresh',
+  ): Promise<void> => {
+    if (!insideRoots(document.uri)) {
+      connection.sendDiagnostics({
+        uri: document.uri,
+        diagnostics: [
+          {
+            range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
+            severity: DiagnosticSeverity.Error,
+            code: 'x3.lsp/outside-root',
+            source: 'modkit-host',
+            message: 'Document is outside the configured Modkit workspace roots.',
+          },
+        ],
+      })
+      return
+    }
+    if (mode === 'refresh' && workspaceUris.delete(document.uri))
+      await options.workspace.close(document.uri)
+    const result =
+      mode === 'change' && workspaceUris.has(document.uri)
+        ? await options.workspace.change(route(document))
+        : await options.workspace.open(route(document))
+    if (result.state === 'unresolved') {
+      connection.sendDiagnostics({
+        uri: document.uri,
+        diagnostics: result.hostDiagnostics.map(hostDiagnosticOf),
+        version: document.version,
+      })
+      return
+    }
+    workspaceUris.add(document.uri)
+    const feature = await options.workspace.diagnostics(request(document.uri))
+    connection.sendDiagnostics({
+      uri: document.uri,
+      version: document.version,
+      diagnostics:
+        feature?.diagnostics.map(diagnosticOf) ?? result.analysis.diagnostics.map(diagnosticOf),
+    })
+  }
+  const schedule = (document: TextDocument, mode: 'open' | 'change' | 'refresh'): void => {
+    const previous = pending.get(document.uri)
+    const task = (async () => {
+      await previous
+      await publish(document, mode)
+    })()
+      .catch(error => {
+        connection.console.error(error instanceof Error ? error.message : String(error))
+      })
+      .finally(() => {
+        if (pending.get(document.uri) === task) pending.delete(document.uri)
+      })
+    pending.set(document.uri, task)
+  }
+
+  connection.onInitialize((): InitializeResult => ({
+    capabilities: {
+      textDocumentSync: {
+        openClose: true,
+        change: TextDocumentSyncKind.Incremental,
+        save: { includeText: true },
+      },
+      completionProvider: { triggerCharacters: ['.', ':', '"', "'"] },
+      hoverProvider: true,
+      signatureHelpProvider: { triggerCharacters: ['(', ','] },
+      definitionProvider: true,
+      referencesProvider: true,
+      renameProvider: { prepareProvider: true },
+      documentFormattingProvider: true,
+      colorProvider: true,
+      codeActionProvider: true,
+      documentSymbolProvider: true,
+      workspaceSymbolProvider: true,
+      semanticTokensProvider: {
+        legend: { tokenTypes: [...TOKEN_TYPES], tokenModifiers: [] },
+        full: true,
+      },
+    },
+  }))
+  connection.onCompletion((params, token) =>
+    withSignal(token, async signal => {
+      await awaitReady(params.textDocument.uri)
+      const value = await options.workspace.completion(
+        positionRequest(params.textDocument.uri, params.position, signal),
+      )
+      return value === undefined
+        ? null
+        : {
+            isIncomplete: value.isIncomplete,
+            items: value.items.map(
+              item =>
+                ({
+                  label: item.label,
+                  kind: completionKinds[item.kind] ?? CompletionItemKind.Text,
+                  ...(item.detail === undefined ? {} : { detail: item.detail }),
+                  ...(item.documentation === undefined
+                    ? {}
+                    : { documentation: { kind: 'markdown', value: item.documentation } }),
+                  ...(item.insertText === undefined ? {} : { insertText: item.insertText }),
+                  ...(item.insertTextFormat === undefined
+                    ? {}
+                    : {
+                        insertTextFormat:
+                          item.insertTextFormat === 'snippet'
+                            ? InsertTextFormat.Snippet
+                            : InsertTextFormat.PlainText,
+                      }),
+                  ...(item.replacementRange === undefined
+                    ? {}
+                    : {
+                        textEdit: TextEdit.replace(
+                          item.replacementRange,
+                          item.insertText ?? item.label,
+                        ),
+                      }),
+                  ...(item.sortText === undefined ? {} : { sortText: item.sortText }),
+                }) satisfies CompletionItem,
+            ),
+          }
+    }),
+  )
+  connection.onHover((params, token) =>
+    withSignal(token, async signal => {
+      await awaitReady(params.textDocument.uri)
+      const value = await options.workspace.hover(
+        positionRequest(params.textDocument.uri, params.position, signal),
+      )
+      return value === undefined
+        ? null
+        : {
+            contents: { kind: 'markdown', value: value.markdown },
+            ...(value.range === undefined ? {} : { range: value.range }),
+          }
+    }),
+  )
+  connection.onSignatureHelp((params, token) =>
+    withSignal(token, async signal => {
+      await awaitReady(params.textDocument.uri)
+      const value = await options.workspace.signatureHelp(
+        positionRequest(params.textDocument.uri, params.position, signal),
+      )
+      return value === undefined
+        ? null
+        : ({
+            signatures: value.signatures.map(signature => ({
+              label: signature.label,
+              ...(signature.documentation === undefined
+                ? {}
+                : { documentation: signature.documentation }),
+              parameters: signature.parameters.map(parameter => ({
+                label: parameter.label,
+                ...(parameter.documentation === undefined
+                  ? {}
+                  : { documentation: parameter.documentation }),
+              })),
+            })),
+            activeSignature: value.activeSignature,
+            activeParameter: value.activeParameter,
+          } satisfies SignatureHelp)
+    }),
+  )
+  connection.onDefinition((params, token) =>
+    withSignal(token, async signal => {
+      await awaitReady(params.textDocument.uri)
+      const value = await options.workspace.definition(
+        positionRequest(params.textDocument.uri, params.position, signal),
+      )
+      return (value?.locations as Location[] | undefined) ?? null
+    }),
+  )
+  connection.onReferences((params, token) =>
+    withSignal(token, async signal => {
+      await awaitReady(params.textDocument.uri)
+      const value = await options.workspace.references({
+        ...positionRequest(params.textDocument.uri, params.position, signal),
+        includeDeclaration: params.context.includeDeclaration,
+      } satisfies LanguageWorkspaceReferencesRequest)
+      return (value?.locations as Location[] | undefined) ?? null
+    }),
+  )
+  connection.onPrepareRename((params, token) =>
+    withSignal(token, async signal => {
+      await awaitReady(params.textDocument.uri)
+      return (
+        (await options.workspace.prepareRename(
+          positionRequest(params.textDocument.uri, params.position, signal),
+        )) ?? null
+      )
+    }),
+  )
+  connection.onRenameRequest((params, token) =>
+    withSignal(token, async signal => {
+      await awaitReady(params.textDocument.uri)
+      const value = await options.workspace.rename({
+        ...positionRequest(params.textDocument.uri, params.position, signal),
+        newName: params.newName,
+        maxEdits: maxResults,
+      } satisfies LanguageWorkspaceRenameRequest)
+      return value === undefined ? null : workspaceEditOf(value)
+    }),
+  )
+  connection.onDocumentFormatting((params: DocumentFormattingParams, token) =>
+    withSignal(token, async signal => {
+      await awaitReady(params.textDocument.uri)
+      const value = await options.workspace.formatting({
+        ...request(params.textDocument.uri, signal),
+        options: {
+          tabSize: params.options.tabSize,
+          insertSpaces: params.options.insertSpaces,
+          ...(params.options.insertFinalNewline === undefined
+            ? {}
+            : { finalNewline: params.options.insertFinalNewline }),
+        },
+      } satisfies LanguageWorkspaceFormattingRequest)
+      return value?.edits.map(edit => TextEdit.replace(edit.range, edit.newText)) ?? null
+    }),
+  )
+  connection.onDocumentColor((params, token) =>
+    withSignal(token, async signal => {
+      await awaitReady(params.textDocument.uri)
+      const value = await options.workspace.documentColors(request(params.textDocument.uri, signal))
+      return (value?.colors as ColorInformation[] | undefined) ?? []
+    }),
+  )
+  connection.onColorPresentation((params, token) =>
+    withSignal(token, async signal => {
+      await awaitReady(params.textDocument.uri)
+      const value = await options.workspace.colorPresentations({
+        ...request(params.textDocument.uri, signal),
+        color: params.color,
+        range: params.range,
+      } satisfies LanguageWorkspaceColorPresentationRequest)
+      return (
+        value?.presentations.map(
+          item =>
+            ({
+              label: item.label,
+              ...(item.textEdit === undefined
+                ? {}
+                : { textEdit: TextEdit.replace(item.textEdit.range, item.textEdit.newText) }),
+            }) satisfies ColorPresentation,
+        ) ?? []
+      )
+    }),
+  )
+  connection.onCodeAction((params, token) =>
+    withSignal(token, async signal => {
+      await awaitReady(params.textDocument.uri)
+      const diagnostics: LanguageDiagnostic[] = params.context.diagnostics.map(item => ({
+        range: item.range,
+        severity:
+          item.severity === DiagnosticSeverity.Error
+            ? 'error'
+            : item.severity === DiagnosticSeverity.Warning
+              ? 'warning'
+              : item.severity === DiagnosticSeverity.Hint
+                ? 'hint'
+                : 'information',
+        message: typeof item.message === 'string' ? item.message : item.message.value,
+        ...(item.code === undefined ? {} : { code: String(item.code) }),
+        ...(item.source === undefined ? {} : { source: item.source }),
+      }))
+      const value = await options.workspace.codeActions({
+        ...request(params.textDocument.uri, signal),
+        range: params.range,
+        diagnostics,
+        maxEdits: maxResults,
+      } satisfies LanguageWorkspaceCodeActionsRequest)
+      return value?.actions.map(codeActionOf) ?? []
+    }),
+  )
+  connection.onDocumentSymbol((params, token) =>
+    withSignal(token, async signal => {
+      await awaitReady(params.textDocument.uri)
+      const value = await options.workspace.documentSymbols(
+        request(params.textDocument.uri, signal),
+      )
+      return value?.symbols.map(documentSymbolOf) ?? []
+    }),
+  )
+  connection.onWorkspaceSymbol(async (params, token) =>
+    withSignal(token, async signal => {
+      const open = documents.all().sort((a, b) => a.uri.localeCompare(b.uri))[0]
+      if (open === undefined) return []
+      await awaitReady(open.uri)
+      const value = await options.workspace.workspaceSymbols({
+        ...request(open.uri, signal),
+        query: params.query,
+      } satisfies LanguageWorkspaceSymbolsRequest)
+      return (
+        value?.symbols.map(
+          item =>
+            ({
+              name: item.name,
+              kind: symbolKinds[item.kind],
+              location: item.location,
+              ...(item.containerName === undefined ? {} : { containerName: item.containerName }),
+            }) satisfies WorkspaceSymbol,
+        ) ?? []
+      )
+    }),
+  )
+  connection.onRequest(
+    'textDocument/semanticTokens/full',
+    (params: SemanticTokensParams, token: CancellationToken) =>
+      withSignal(token, async signal => {
+        await awaitReady(params.textDocument.uri)
+        const current = await options.workspace.current(params.textDocument.uri, signal)
+        if (current?.state !== 'resolved') return { data: [] } satisfies SemanticTokens
+        const tokens = [...current.analysis.tokens].sort(
+          (a, b) =>
+            a.range.start.line - b.range.start.line ||
+            a.range.start.character - b.range.start.character,
+        )
+        const data: number[] = []
+        let previousLine = 0
+        let previousCharacter = 0
+        for (const token of tokens) {
+          if (token.range.start.line !== token.range.end.line) continue
+          const deltaLine = token.range.start.line - previousLine
+          const deltaStart =
+            deltaLine === 0
+              ? token.range.start.character - previousCharacter
+              : token.range.start.character
+          data.push(
+            deltaLine,
+            deltaStart,
+            token.range.end.character - token.range.start.character,
+            TOKEN_TYPES.indexOf(token.kind),
+            0,
+          )
+          previousLine = token.range.start.line
+          previousCharacter = token.range.start.character
+        }
+        return { data }
+      }),
+  )
+
+  documents.onDidOpen(event => schedule(event.document, 'open'))
+  documents.onDidChangeContent(event => schedule(event.document, 'change'))
+  documents.onDidSave(event => schedule(event.document, 'refresh'))
+  connection.onDidChangeWatchedFiles(() => {
+    for (const document of documents.all()) schedule(document, 'refresh')
+  })
+  documents.onDidClose(event => {
+    const previous = pending.get(event.document.uri)
+    pending.delete(event.document.uri)
+    void (async () => {
+      await previous
+      if (workspaceUris.delete(event.document.uri))
+        await options.workspace.close(event.document.uri)
+    })().finally(() => connection.sendDiagnostics({ uri: event.document.uri, diagnostics: [] }))
+  })
+  connection.onShutdown(async () => {
+    shutDown = true
+    await options.workspace.shutdown()
+    return undefined
+  })
+  connection.onExit(() => {
+    if (!shutDown) process.exitCode = 1
+  })
+
+  return Object.freeze({
+    connection,
+    listen(): void {
+      documents.listen(connection)
+      connection.listen()
+    },
+    async close(): Promise<void> {
+      await options.workspace.shutdown()
+      connection.dispose()
+    },
+  })
+}

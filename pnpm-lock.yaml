@@ -133,6 +133,24 @@ importers:
         specifier: ^43.4.0
         version: 43.4.0
 
+  apps/lsp:
+    dependencies:
+      '@modkit/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@modkit/host':
+        specifier: workspace:*
+        version: link:../../packages/host
+      '@modkit/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      vscode-languageserver:
+        specifier: 10.0.1
+        version: 10.0.1
+      vscode-languageserver-textdocument:
+        specifier: 1.0.13
+        version: 1.0.13
+
   apps/mcp:
     dependencies:
       '@modelcontextprotocol/server':

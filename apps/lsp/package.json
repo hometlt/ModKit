@@ -1,0 +1,36 @@
+{
+  "name": "@modkit/modkit-lsp",
+  "version": "0.1.0",
+  "description": "Generic stdio LSP adapter for Modkit language contributions",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "modkit-lsp": "./dist/main.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "pnpm build && node --test test/*.test.mjs",
+    "test:installed": "pnpm build && node test/installed-smoke.mjs"
+  },
+  "dependencies": {
+    "@modkit/core": "workspace:*",
+    "@modkit/host": "workspace:*",
+    "@modkit/sdk": "workspace:*",
+    "vscode-languageserver": "10.0.1",
+    "vscode-languageserver-textdocument": "1.0.13"
+  }
+}
