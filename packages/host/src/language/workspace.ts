@@ -1139,7 +1139,8 @@ export function createLanguageWorkspace(options: LanguageWorkspaceOptions): Lang
       acceptedLanguageIds.add(entry.route.languageId)
     }
     const candidates = [...documents.values()]
-      // By default snapshots cross filename routes (Galaxy .galaxy/.ai) but not language ids.
+      // By default snapshots cross filename routes for one language id (for example several
+      // `.galaxy` files), but never cross into another language unless the provider opts in.
       // A provider may explicitly opt in to a small set of auxiliary language ids through its
       // registered surface field; maxDocuments and workspaceIncomplete remain host-owned.
       .filter(candidate => acceptedLanguageIds.has(candidate.route.languageId))
