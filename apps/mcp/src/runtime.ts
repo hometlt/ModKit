@@ -2,12 +2,15 @@ import { OutputArtifacts, OutputArtifactError, OUTPUT_ARTIFACT_POLICY } from './
 import { randomUUID } from 'node:crypto'
 import { describeInventoryContributions } from '@modkit/host'
 import type {
+  AssetEditPlan,
+  CommitReceipt,
   KnowledgeResolveQuery,
   KnowledgeSearchQuery,
   JsonValue,
   Lease,
   Page,
   PageRequest,
+  PreparedCommit,
   RelationGraphEdge,
   RelationGraphNode,
   SelectableSubject,
@@ -38,6 +41,8 @@ import {
 const MCP_MAX_PROGRESS_EVENTS = 50
 const MCP_GRAPH_SCAN_PAGE_SIZE = 50
 const MCP_MAX_GRAPH_SCAN_PAGES = 1_000
+const MCP_MAX_EDIT_PLANS = 64
+const MCP_EDIT_PLAN_TTL_MS = 15 * 60 * 1_000
 
 export class McpOperationError extends Error {
   constructor(
@@ -65,6 +70,21 @@ interface EntityHandleEntry {
   readonly calculations: Lease<SubjectCalculationsSource>
   readonly controller: AbortController
   readonly pending: Set<Promise<unknown>>
+}
+
+interface EditPlanEntry {
+  readonly id: string
+  readonly handleId: string
+  readonly operationId: string
+  readonly plan: AssetEditPlan
+  readonly expiresAt: number
+  prepared: PreparedCommit | undefined
+}
+
+interface EditHistoryEntry {
+  readonly handleId: string
+  readonly coordinator: NonNullable<McpOpenedSubject['editing']>['coordinator']
+  receipt: CommitReceipt
 }
 
 export interface SubjectsQuery {
@@ -143,9 +163,9 @@ export const operationFailure = (error: unknown): McpEnvelope => {
     (error instanceof DOMException && error.name === 'AbortError') ||
     (error instanceof Error && error.name === 'AbortError')
   ) {
-    return hostFailure('x3.mcp/cancelled', 'The read-only request was cancelled.')
+    return hostFailure('x3.mcp/cancelled', 'The request was cancelled.')
   }
-  return hostFailure('x3.mcp/host-operation-failed', 'The read-only host operation failed.')
+  return hostFailure('x3.mcp/host-operation-failed', 'The host operation failed.')
 }
 
 const boundedOpaqueCursor = (
@@ -330,6 +350,8 @@ const traversedEdges = (
 export class ModkitMcpRuntime {
   private readonly handles = new Map<string, HandleEntry>()
   private readonly entityHandles = new Map<string, EntityHandleEntry>()
+  private readonly editPlans = new Map<string, EditPlanEntry>()
+  private readonly editHistory = new Map<string, EditHistoryEntry>()
   private readonly outputs: OutputArtifacts
   private readonly cursorSecret = createCursorSecret()
   private readonly inventoryRows
@@ -428,7 +450,13 @@ export class ModkitMcpRuntime {
         ),
       ),
       data: {
-        readOnly: this.host.invokeServiceOperation === undefined,
+        readOnly:
+          this.host.editsEnabled !== true && this.host.invokeServiceOperation === undefined,
+        edits: {
+          enabled: this.host.editsEnabled === true,
+          maxRetainedPlans: MCP_MAX_EDIT_PLANS,
+          planTtlMs: MCP_EDIT_PLAN_TTL_MS,
+        },
         outputArtifacts: { enabled: this.host.outputArtifacts === true, ...OUTPUT_ARTIFACT_POLICY },
         roots: this.host.roots,
         extensionCoordinates: this.host.extensionCoordinates,
@@ -456,6 +484,13 @@ export class ModkitMcpRuntime {
           'relation-graph',
           'subject-calculations',
           'invoke-readonly',
+          'propose-edit',
+          'prepare-edit',
+          ...(this.host.editsEnabled === true
+            ? ['commit-edit', 'undo-edit', 'redo-edit']
+            : []),
+          'edit-history',
+          'discard-edit',
           ...(this.host.serviceOperations === undefined ? [] : ['service-operations']),
           ...(this.host.invokeServiceOperation === undefined ? [] : ['invoke-service-operation']),
           'knowledge-search',
@@ -675,6 +710,12 @@ export class ModkitMcpRuntime {
     }
     this.handles.delete(handle)
     this.outputs.closeOwner(handle)
+    const plans = [...this.editPlans.values()].filter(plan => plan.handleId === handle)
+    for (const plan of plans) this.editPlans.delete(plan.id)
+    await Promise.allSettled(plans.map(plan => entry.opened.editing?.releasePlan(plan.plan)))
+    for (const [transactionId, history] of this.editHistory) {
+      if (history.handleId === handle) this.editHistory.delete(transactionId)
+    }
     const children = [...this.entityHandles.values()]
       .filter(candidate => candidate.parentId === handle)
       .map(candidate => candidate.id)
@@ -1618,6 +1659,42 @@ export class ModkitMcpRuntime {
     })
   }
 
+  private async pruneExpiredEditPlans(): Promise<void> {
+    const now = Date.now()
+    const expired = [...this.editPlans.values()].filter(plan => plan.expiresAt <= now)
+    for (const plan of expired) this.editPlans.delete(plan.id)
+    await Promise.allSettled(
+      expired.map(async plan => {
+        await this.handles.get(plan.handleId)?.opened.editing?.releasePlan(plan.plan)
+      }),
+    )
+  }
+
+  private async retainedEditPlan(planHandle: string): Promise<{
+    readonly plan: EditPlanEntry
+    readonly handle: HandleEntry
+    readonly editing: NonNullable<McpOpenedSubject['editing']>
+  }> {
+    await this.pruneExpiredEditPlans()
+    const plan = this.editPlans.get(planHandle)
+    if (plan === undefined) {
+      throw new McpOperationError(
+        'x3.mcp/unknown-edit-plan',
+        'The edit plan is unknown, expired, committed or already discarded.',
+      )
+    }
+    const handle = this.handles.get(plan.handleId)
+    const editing = handle?.opened.editing
+    if (handle === undefined || editing === undefined) {
+      this.editPlans.delete(planHandle)
+      throw new McpOperationError(
+        'x3.mcp/editing-unavailable',
+        'The subject editing surface for this plan is no longer open.',
+      )
+    }
+    return { plan, handle, editing }
+  }
+
   /**
    * Ask a mutating operation what it *would* change, without changing it.
    *
@@ -1628,9 +1705,8 @@ export class ModkitMcpRuntime {
    * So this returns the plan.
    *
    * What the caller gets is exactly what would happen: which bytes, how many, with what label and
-   * what round-trip fidelity. What it does not get is a commit — that needs an authorization the
-   * host owns and a person to grant it, and routing it through here would be routing around the
-   * approval rather than asking for it.
+   * what round-trip fidelity. The raw plan stays in the host and can only cross the separate
+   * validate/commit policy boundary by its opaque handle.
    */
   async proposeEdit(
     handle: string,
@@ -1643,6 +1719,7 @@ export class ModkitMcpRuntime {
       if (session === undefined) {
         throw new McpOperationError('x3.mcp/no-session', 'No session exists.')
       }
+      const editing = entry.opened.editing
       const descriptor = await session.descriptor()
       scopedSignal.throwIfAborted()
       const operation = descriptor.operations.find(candidate => candidate.id === operationId)
@@ -1685,14 +1762,39 @@ export class ModkitMcpRuntime {
       const diagnostics: unknown[] = [...result.diagnostics]
       let completeness: McpCompleteness = result.state === 'ok' ? 'complete' : 'invalid'
       let plan: unknown
+      let planHandle: string | undefined
+      let planExpiresAt: number | undefined
 
       if (result.state === 'ok' && result.output.kind === 'edit-plan') {
+        await this.pruneExpiredEditPlans()
+        if (this.editPlans.size >= MCP_MAX_EDIT_PLANS) {
+          throw new McpOperationError(
+            'x3.mcp/edit-plan-limit',
+            `At most ${MCP_MAX_EDIT_PLANS} uncommitted edit plans may be retained.`,
+          )
+        }
+        const retainedPlan =
+          editing === undefined
+            ? (result.output.plan as AssetEditPlan)
+            : await editing.stagePlan(editing.planFromOperation(result.output), scopedSignal)
+        if (editing !== undefined) {
+          planHandle = randomUUID()
+          planExpiresAt = Date.now() + MCP_EDIT_PLAN_TTL_MS
+          this.editPlans.set(planHandle, {
+            id: planHandle,
+            handleId: entry.id,
+            operationId: operation.id,
+            plan: retainedPlan,
+            expiresAt: planExpiresAt,
+            prepared: undefined,
+          })
+        }
         /*
          * The plan is summarized rather than passed through. Its payloads are the replacement bytes,
          * which for a re-encoded texture is the whole file — an agent asking "what would change"
          * wants the shape of the change, and the bytes would blow the JSON bound and tell it nothing.
          */
-        const raw = result.output.plan as {
+        const raw = retainedPlan as unknown as {
           planId?: string
           fidelity?: unknown
           edits?: readonly {
@@ -1700,7 +1802,12 @@ export class ModkitMcpRuntime {
             label?: string
             targetId?: string
             range?: { offset?: unknown; length?: unknown }
-            payload?: { kind?: string; bytes?: { byteLength?: number } }
+            payload?: {
+              kind?: string
+              bytes?: { byteLength?: number }
+              text?: string
+              ref?: { byteLength?: number }
+            }
           }[]
         }
         plan = {
@@ -1716,13 +1823,19 @@ export class ModkitMcpRuntime {
             replacementBytes:
               edit.payload?.kind === 'inline'
                 ? (edit.payload.bytes?.byteLength ?? 0)
-                : undefined,
+                : edit.payload?.kind === 'text'
+                  ? new TextEncoder().encode(edit.payload.text ?? '').byteLength
+                  : edit.payload?.kind === 'staged'
+                    ? edit.payload.ref?.byteLength
+                    : undefined,
           })),
         }
         diagnostics.push({
           code: 'x3.mcp/edit-not-committed',
           message:
-            'The plan describes the change and was not applied. Committing needs the host authorization this adapter does not hold.',
+            planHandle === undefined
+              ? 'The plan describes the change and was not applied; this host exposes no retained editing surface.'
+              : 'The plan describes the change and was retained by the host. It has not been validated or committed.',
           severity: 'information',
         })
       } else if (result.state === 'ok') {
@@ -1758,6 +1871,10 @@ export class ModkitMcpRuntime {
           state: result.state,
           ...(result.state === 'rejected' ? { reason: result.reason } : {}),
           plan: projectedPlan.value,
+          ...(planHandle === undefined ? {} : { planHandle }),
+          ...(planExpiresAt === undefined
+            ? {}
+            : { expiresAt: new Date(planExpiresAt).toISOString() }),
           committed: false,
         },
       })
@@ -1847,6 +1964,162 @@ export class ModkitMcpRuntime {
         data: result,
       })
     })
+  }
+
+  async prepareEdit(
+    planHandle: string,
+    confirmationToken: string | undefined,
+    signal: AbortSignal,
+  ): Promise<McpEnvelope> {
+    const retained = await this.retainedEditPlan(planHandle)
+    signal.throwIfAborted()
+    const prepared = await retained.editing.coordinator.prepare(retained.plan.plan, {
+      grant: retained.editing.grantSnapshot,
+      ...(confirmationToken === undefined ? {} : { confirmationToken }),
+      signal,
+    })
+    if (prepared.state === 'ready') retained.plan.prepared = prepared.prepared
+    const result =
+      prepared.state === 'ready'
+        ? {
+            state: 'ready',
+            preparedId: prepared.prepared.preparedId,
+            planDigest: prepared.prepared.planDigest,
+            writeSet: prepared.prepared.writeSet,
+            authorization: prepared.prepared.authorization,
+            fidelity: prepared.prepared.fidelity,
+          }
+        : prepared
+    return envelope({
+      snapshotId: `edit-plan:${planHandle}`,
+      completeness: prepared.state === 'ready' ? 'complete' : 'invalid',
+      diagnostics: prepared.state === 'rejected' ? prepared.diagnostics : [],
+      data: { planHandle, ...result },
+    })
+  }
+
+  async commitEdit(planHandle: string, signal: AbortSignal): Promise<McpEnvelope> {
+    if (this.host.editsEnabled !== true) {
+      throw new McpOperationError(
+        'x3.mcp/edit-commit-disabled',
+        'This MCP host did not start with edit commits enabled.',
+      )
+    }
+    const retained = await this.retainedEditPlan(planHandle)
+    const prepared = retained.plan.prepared
+    if (prepared === undefined) {
+      throw new McpOperationError(
+        'x3.mcp/edit-not-prepared',
+        'Validate and prepare the retained plan before committing it.',
+      )
+    }
+    retained.plan.prepared = undefined
+    const result = await retained.editing.coordinator.commit(prepared, {
+      grant: retained.editing.grantSnapshot,
+      signal,
+    })
+    if (result.state !== 'not-applied') {
+      this.editPlans.delete(planHandle)
+      this.editHistory.set(result.receipt.transactionId, {
+        handleId: retained.handle.id,
+        coordinator: retained.editing.coordinator,
+        receipt: result.receipt,
+      })
+    }
+    return envelope({
+      snapshotId:
+        result.state === 'not-applied'
+          ? `edit-plan:${planHandle}`
+          : `transaction:${result.receipt.transactionId}`,
+      completeness:
+        result.state === 'committed'
+          ? 'complete'
+          : result.state === 'not-applied'
+            ? 'invalid'
+            : 'partial',
+      diagnostics: result.state === 'not-applied' ? result.diagnostics : [],
+      data: { planHandle, result },
+    })
+  }
+
+  editHistoryPage(limit: number): McpEnvelope {
+    const items = [...this.editHistory.values()]
+      .map(item => item.receipt)
+      .sort((left, right) => right.committedAt.localeCompare(left.committedAt))
+      .slice(0, limit)
+    return envelope({
+      snapshotId: `edit-history:${fingerprint(items.map(item => item.transactionId))}`,
+      completeness: items.length < this.editHistory.size ? 'capped' : 'complete',
+      data: { total: this.editHistory.size, items },
+    })
+  }
+
+  private async replayEdit(
+    action: 'undo' | 'redo',
+    transactionId: string,
+    signal: AbortSignal,
+  ): Promise<McpEnvelope> {
+    if (this.host.editsEnabled !== true) {
+      throw new McpOperationError(
+        'x3.mcp/edit-commit-disabled',
+        'This MCP host did not start with edit commits enabled.',
+      )
+    }
+    const history = this.editHistory.get(transactionId)
+    if (history === undefined || !this.handles.has(history.handleId)) {
+      throw new McpOperationError(
+        'x3.mcp/unknown-edit-transaction',
+        'The edit transaction is unknown or its subject handle is closed.',
+      )
+    }
+    const editing = this.handles.get(history.handleId)!.opened.editing!
+    const result = await history.coordinator[action](transactionId, {
+      grant: editing.grantSnapshot,
+      signal,
+    })
+    if (result.state !== 'not-applied') history.receipt = result.receipt
+    return envelope({
+      snapshotId: `transaction:${transactionId}:${action}`,
+      completeness: result.state === 'not-applied' ? 'invalid' : 'complete',
+      diagnostics: result.state === 'not-applied' ? result.diagnostics : [],
+      data: { transactionId, action, result },
+    })
+  }
+
+  undoEdit(transactionId: string, signal: AbortSignal): Promise<McpEnvelope> {
+    return this.replayEdit('undo', transactionId, signal)
+  }
+
+  redoEdit(transactionId: string, signal: AbortSignal): Promise<McpEnvelope> {
+    return this.replayEdit('redo', transactionId, signal)
+  }
+
+  async discardEdit(id: string, signal: AbortSignal): Promise<McpEnvelope> {
+    signal.throwIfAborted()
+    const plan = this.editPlans.get(id)
+    if (plan !== undefined) {
+      this.editPlans.delete(id)
+      await this.handles.get(plan.handleId)?.opened.editing?.releasePlan(plan.plan)
+      return envelope({
+        snapshotId: `edit-plan:${id}:discarded`,
+        completeness: 'complete',
+        data: { id, kind: 'plan', discarded: true },
+      })
+    }
+    const history = this.editHistory.get(id)
+    if (history !== undefined) {
+      const discarded = await history.coordinator.discardHistory(id)
+      if (discarded) this.editHistory.delete(id)
+      return envelope({
+        snapshotId: `transaction:${id}:discarded`,
+        completeness: discarded ? 'complete' : 'invalid',
+        data: { id, kind: 'history', discarded },
+      })
+    }
+    throw new McpOperationError(
+      'x3.mcp/unknown-edit-state',
+      'The edit plan or transaction is unknown or already discarded.',
+    )
   }
 
   async language(request: McpLanguageRequest, signal: AbortSignal): Promise<McpEnvelope> {

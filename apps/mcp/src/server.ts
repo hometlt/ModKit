@@ -281,6 +281,21 @@ const invokeReadonlyInput = z
 
 /** Same shape; the operation named here is a mutating one and the answer is a plan, not a write. */
 const proposeEditInput = invokeReadonlyInput.omit({ retainOutput: true, inputArtifact: true })
+const editPlanHandleSchema = z.string().uuid()
+const prepareEditInput = z
+  .object({
+    planHandle: editPlanHandleSchema,
+    confirmationToken: z.string().min(1).max(4_096).optional(),
+  })
+  .strict()
+const commitEditInput = z.object({ planHandle: editPlanHandleSchema }).strict()
+const editHistoryInput = z
+  .object({ limit: z.number().int().min(1).max(100).default(50) })
+  .strict()
+const editTransactionInput = z
+  .object({ transactionId: z.string().min(1).max(256) })
+  .strict()
+const discardEditInput = z.object({ id: z.string().min(1).max(256) }).strict()
 
 const factsInput = z.discriminatedUnion('view', [
   z.object({ handle: handleSchema, view: z.literal('summary') }).strict(),
@@ -844,7 +859,7 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
     {
       title: 'Propose an edit without applying it',
       description:
-        'Invoke a mutating operation for its edit plan and return what would change. Nothing is written: committing needs a host authorization this adapter does not hold.',
+        'Invoke a mutating operation for its edit plan and return what would change. Raw payloads remain in a bounded host-held plan; nothing is written.',
       inputSchema: proposeEditInput,
       outputSchema: envelopeSchema,
       /*
@@ -856,6 +871,96 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
     },
     ({ handle, operationId, input }, context) =>
       safeTool(() => runtime.proposeEdit(handle, operationId, input, context.mcpReq.signal)),
+  )
+  server.registerTool(
+    'modkit.prepare_edit',
+    {
+      title: 'Validate and prepare an edit plan',
+      description:
+        'Validate a retained host-side plan against current revisions, write scope, permissions, fidelity and payload availability. Nothing is written.',
+      inputSchema: prepareEditInput,
+      outputSchema: envelopeSchema,
+      annotations: { ...readOnlyAnnotations, idempotentHint: false },
+    },
+    ({ planHandle, confirmationToken }, context) =>
+      safeTool(() =>
+        runtime.prepareEdit(planHandle, confirmationToken, context.mcpReq.signal),
+      ),
+  )
+  server.registerTool(
+    'modkit.commit_edit',
+    {
+      title: 'Commit a prepared edit',
+      description:
+        'Commit one exact prepared host-side plan. The MCP process must be started with --allow-edits and the plan must still match current source revisions.',
+      inputSchema: commitEditInput,
+      outputSchema: envelopeSchema,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        openWorldHint: false,
+        idempotentHint: false,
+      },
+    },
+    ({ planHandle }, context) =>
+      safeTool(() => runtime.commitEdit(planHandle, context.mcpReq.signal)),
+  )
+  server.registerTool(
+    'modkit.edit_history',
+    {
+      title: 'List edit receipts',
+      description: 'List bounded commit receipts retained by this MCP process.',
+      inputSchema: editHistoryInput,
+      outputSchema: envelopeSchema,
+      annotations: { ...readOnlyAnnotations, idempotentHint: true },
+    },
+    ({ limit }) => safeTool(() => runtime.editHistoryPage(limit)),
+  )
+  server.registerTool(
+    'modkit.undo_edit',
+    {
+      title: 'Undo an edit transaction',
+      description: 'Undo one retained transaction through its host commit coordinator.',
+      inputSchema: editTransactionInput,
+      outputSchema: envelopeSchema,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        openWorldHint: false,
+        idempotentHint: false,
+      },
+    },
+    ({ transactionId }, context) =>
+      safeTool(() => runtime.undoEdit(transactionId, context.mcpReq.signal)),
+  )
+  server.registerTool(
+    'modkit.redo_edit',
+    {
+      title: 'Redo an edit transaction',
+      description: 'Redo one retained transaction through its host commit coordinator.',
+      inputSchema: editTransactionInput,
+      outputSchema: envelopeSchema,
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        openWorldHint: false,
+        idempotentHint: false,
+      },
+    },
+    ({ transactionId }, context) =>
+      safeTool(() => runtime.redoEdit(transactionId, context.mcpReq.signal)),
+  )
+  server.registerTool(
+    'modkit.discard_edit',
+    {
+      title: 'Discard an edit plan or history entry',
+      description:
+        'Release one uncommitted retained plan or discard one undo/redo history entry. Source bytes are unchanged.',
+      inputSchema: discardEditInput,
+      outputSchema: envelopeSchema,
+      annotations: { ...readOnlyAnnotations, idempotentHint: false },
+    },
+    ({ id }, context) => safeTool(() => runtime.discardEdit(id, context.mcpReq.signal)),
   )
   server.registerTool(
     'modkit.knowledge_search',

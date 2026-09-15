@@ -4,10 +4,13 @@ import { PERMISSION_CLASSES, type PermissionClass } from '@modkit/sdk'
 export const MODKIT_MCP_ROOTS_ENV = 'MODKIT_MCP_ROOTS'
 export const MODKIT_MCP_EXTENSIONS_ENV = 'MODKIT_MCP_EXTENSIONS'
 export const MODKIT_MCP_OPERATION_PERMISSIONS_ENV = 'MODKIT_MCP_OPERATION_PERMISSIONS'
+export const MODKIT_MCP_ALLOW_EDITS_ENV = 'MODKIT_MCP_ALLOW_EDITS'
 
 export interface ModkitMcpConfiguration {
   /** Allow bounded, temporary MCP output resources. No filesystem write authority. */
   readonly outputArtifacts?: boolean
+  /** Permit explicit prepare/commit/undo/redo tools inside the configured roots. */
+  readonly allowEdits?: boolean
   readonly roots: readonly string[]
   readonly extensions: readonly string[]
   readonly operationPermissions?: readonly PermissionClass[]
@@ -15,7 +18,7 @@ export interface ModkitMcpConfiguration {
   readonly trustExtensions?: boolean
 }
 
-const USAGE = `Usage: modkit-mcp --root <absolute-directory> --extension <absolute-directory> [--root ...] [--extension ...] [--output-artifacts] [--operation-permission <class> ...] [--allow-effectful-service-operations] [--trust-extensions]\n\nEnvironment fallback:\n  ${MODKIT_MCP_ROOTS_ENV}=<paths separated by ${JSON.stringify(delimiter)}>\n  ${MODKIT_MCP_EXTENSIONS_ENV}=<paths separated by ${JSON.stringify(delimiter)}>\n  ${MODKIT_MCP_OPERATION_PERMISSIONS_ENV}=<permission classes separated by ${JSON.stringify(delimiter)}>\n`
+const USAGE = `Usage: modkit-mcp --root <absolute-directory> --extension <absolute-directory> [--root ...] [--extension ...] [--output-artifacts] [--allow-edits] [--operation-permission <class> ...] [--allow-effectful-service-operations] [--trust-extensions]\n\nEnvironment fallback:\n  ${MODKIT_MCP_ROOTS_ENV}=<paths separated by ${JSON.stringify(delimiter)}>\n  ${MODKIT_MCP_EXTENSIONS_ENV}=<paths separated by ${JSON.stringify(delimiter)}>\n  ${MODKIT_MCP_OPERATION_PERMISSIONS_ENV}=<permission classes separated by ${JSON.stringify(delimiter)}>\n  ${MODKIT_MCP_ALLOW_EDITS_ENV}=true|false\n`
 
 export class ConfigurationError extends TypeError {
   readonly usage = USAGE
@@ -28,6 +31,14 @@ const envPaths = (value: string | undefined): readonly string[] =>
         .split(delimiter)
         .map(item => item.trim())
         .filter(Boolean)
+
+const envBoolean = (name: string, value: string | undefined): boolean => {
+  if (value === undefined || value.trim().length === 0) return false
+  const normalized = value.trim().toLowerCase()
+  if (normalized === 'true') return true
+  if (normalized === 'false') return false
+  throw new ConfigurationError(`${name} must be true or false`)
+}
 
 const uniqueAbsolute = (kind: string, values: readonly string[]): readonly string[] => {
   if (values.length === 0) {
@@ -53,12 +64,17 @@ export function parseModkitMcpConfiguration(
   const extensions: string[] = []
   const operationPermissions: string[] = []
   let outputArtifacts = false
+  let allowEdits = envBoolean(MODKIT_MCP_ALLOW_EDITS_ENV, env[MODKIT_MCP_ALLOW_EDITS_ENV])
   let allowEffectfulServiceOperations = false
   let trustExtensions = false
   for (let index = 0; index < argv.length; index += 1) {
     const option = argv[index]
     if (option === '--output-artifacts') {
       outputArtifacts = true
+      continue
+    }
+    if (option === '--allow-edits') {
+      allowEdits = true
       continue
     }
     if (option === '--allow-effectful-service-operations') {
@@ -97,6 +113,7 @@ export function parseModkitMcpConfiguration(
   }
   return Object.freeze({
     ...(outputArtifacts ? { outputArtifacts: true } : {}),
+    ...(allowEdits ? { allowEdits: true } : {}),
     roots: uniqueAbsolute('root', selectedRoots),
     extensions: uniqueAbsolute('extension', selectedExtensions),
     operationPermissions: Object.freeze([...new Set(selectedPermissions)].sort()) as readonly PermissionClass[],

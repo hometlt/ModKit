@@ -13,6 +13,7 @@ import {
   type Inventory,
   type ServiceOperationCatalog,
   type ServiceOperationInvocation,
+  type SubjectEditing,
 } from '@modkit/host'
 import { discoverGameInstallations } from '@modkit/host/games'
 import {
@@ -36,6 +37,8 @@ import type { ModkitMcpConfiguration } from './config.js'
 export interface McpOpenedSubject {
   readonly snapshot: ModkitOpened['snapshot']
   readonly session?: AssetSession
+  /** Host-owned editing authority; never serialized into MCP responses. */
+  readonly editing?: SubjectEditing
   readonly selectionCandidates?: readonly {
     readonly candidateId: string
     readonly displayName: string
@@ -158,6 +161,7 @@ export interface McpLanguageResult {
 /** Minimal host-injected seam; all authority remains in the public Modkit host. */
 export interface ModkitMcpHostPort {
   readonly outputArtifacts?: boolean
+  readonly editsEnabled?: boolean
   readonly inventory: Inventory
   readonly knowledge: KnowledgeCatalog
   readonly roots: readonly string[]
@@ -371,6 +375,7 @@ export async function createHostMcpPort(
   const operationServices = Object.freeze({ ...modkit.services, target: modkit.services.host.target })
   const port: ModkitMcpHostPort = {
     ...(configuration.outputArtifacts === true ? { outputArtifacts: true } : {}),
+    ...(configuration.allowEdits === true ? { editsEnabled: true } : {}),
     inventory: modkit.services.inventory,
     knowledge,
     roots,

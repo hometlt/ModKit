@@ -536,6 +536,8 @@ function fakeHost(
     readonly withSelection?: boolean
     readonly withDiscovery?: boolean
     readonly withLanguage?: boolean
+    readonly withEditing?: boolean
+    readonly editsEnabled?: boolean
     readonly ignoreFactsAbort?: boolean
   } = {},
 ) {
@@ -545,6 +547,7 @@ function fakeHost(
   let streamReleases = 0
   const selectionInvocations: string[] = []
   const languageInvocations: unknown[] = []
+  const editInvocations: string[] = []
   const host: ModkitMcpHostPort = {
     inventory,
     knowledge: fakeKnowledge(),
@@ -552,6 +555,7 @@ function fakeHost(
     extensionCoordinates: ['fixture/extension'],
     executionProfiles: ['worker-brokered'],
     supportedExtensions: ['fixture'],
+    ...(options.editsEnabled ? { editsEnabled: true } : {}),
     ...(options.withLanguage
       ? {
           async language(request: McpLanguageRequest, signal?: AbortSignal) {
@@ -617,9 +621,90 @@ function fakeHost(
       const close = async () => {
         closes += 1
       }
+      const receipt = (status: 'committed' | 'rolled-back') => ({
+        transactionId: 'fixture-transaction',
+        committedAt: '2026-09-15T00:00:00.000Z',
+        mutationMode: 'mutate',
+        commitGuarantee: 'atomic',
+        status,
+        undo: 'snapshot',
+        before: [],
+        after: [],
+        writes: [],
+        fidelity: {
+          roundTrip: 'byte-identical',
+          preservesUnknownData: true,
+          evidenceId: 'fixture/evidence',
+          corpusId: 'fixture/corpus',
+          corpusDigest: 'fixture',
+          conformanceProfile: 'common.edit/writer-v1',
+          writer: { providerId: 'fixture/writer', formatId: 'fixture', representationId: 'raw' },
+          optionsFingerprint: 'fixture',
+          inputClass: 'fixture',
+          provenAt: '2026-09-15T00:00:00.000Z',
+        },
+      })
+      const editing = options.withEditing
+        ? ({
+            revision: descriptor.revision,
+            targets: [],
+            grantSnapshot: { snapshotId: 'fixture-grant', permissions: [], sourceIds: [] },
+            coordinator: {
+              async prepare(plan: unknown) {
+                editInvocations.push('prepare')
+                return {
+                  state: 'ready',
+                  prepared: {
+                    preparedId: 'fixture-prepared',
+                    plan,
+                    planDigest: 'fixture-digest',
+                    writeSet: { entries: [], digest: 'fixture-write-set' },
+                    authorization: {
+                      requiredPermissions: [],
+                      granted: true,
+                      achievableGuarantee: 'atomic',
+                      missing: [],
+                      scopeSatisfied: true,
+                    },
+                    preparedRevisionFingerprint: 'fixture-revision',
+                    fidelity: receipt('committed').fidelity,
+                  },
+                }
+              },
+              async commit() {
+                editInvocations.push('commit')
+                return { state: 'committed', receipt: receipt('committed') }
+              },
+              async undo() {
+                editInvocations.push('undo')
+                return { state: 'rolled-back', receipt: receipt('rolled-back') }
+              },
+              async redo() {
+                editInvocations.push('redo')
+                return { state: 'committed', receipt: receipt('committed') }
+              },
+              async discardHistory() {
+                editInvocations.push('discard-history')
+                return true
+              },
+            },
+            planFromOperation(output: { plan: unknown }) {
+              return output.plan
+            },
+            async stagePlan(plan: unknown) {
+              editInvocations.push('stage')
+              return plan
+            },
+            async releasePlan() {
+              editInvocations.push('release-plan')
+            },
+            async dispose() {},
+          } as never)
+        : undefined
       return {
         snapshot,
         session: makeSession(),
+        ...(editing === undefined ? {} : { editing }),
         close,
         ...(options.withSelection
           ? {
@@ -652,6 +737,7 @@ function fakeHost(
     streamReleases: () => streamReleases,
     selectionInvocations: () => selectionInvocations,
     languageInvocations: () => languageInvocations,
+    editInvocations: () => editInvocations,
   }
 }
 
@@ -707,13 +793,20 @@ describe('MCP configuration', () => {
         '--operation-permission',
         'network',
         '--allow-effectful-service-operations',
+        '--allow-edits',
         '--trust-extensions',
       ],
       {},
     )
     expect(config.operationPermissions).toEqual(['network'])
     expect(config.allowEffectfulServiceOperations).toBe(true)
+    expect(config.allowEdits).toBe(true)
     expect(config.trustExtensions).toBe(true)
+    expect(() =>
+      parseModkitMcpConfiguration(['--root', 'C:\\one', '--extension', 'C:\\ext'], {
+        MODKIT_MCP_ALLOW_EDITS: 'sometimes',
+      }),
+    ).toThrow(/must be true or false/u)
     expect(() =>
       parseModkitMcpConfiguration(
         ['--root', 'C:\\one', '--extension', 'C:\\ext', '--operation-permission', 'root'],
@@ -773,18 +866,37 @@ describe('MCP v2 adapter', () => {
       'modkit.release_output',
       // Reads what a change would be and writes nothing; see propose_edit's own case below.
       'modkit.propose_edit',
+      'modkit.prepare_edit',
+      'modkit.commit_edit',
+      'modkit.edit_history',
+      'modkit.undo_edit',
+      'modkit.redo_edit',
+      'modkit.discard_edit',
       'modkit.knowledge_search',
       'modkit.knowledge_resolve',
     ])
     expect(
       tools.tools
-        .filter(tool => tool.name !== 'modkit.invoke_service_operation')
+        .filter(
+          tool =>
+            ![
+              'modkit.invoke_service_operation',
+              'modkit.commit_edit',
+              'modkit.undo_edit',
+              'modkit.redo_edit',
+            ].includes(tool.name),
+        )
         .every(tool => tool.annotations?.readOnlyHint === true),
     ).toBe(true)
     expect(
       tools.tools.find(tool => tool.name === 'modkit.invoke_service_operation')?.annotations,
     ).toMatchObject({ readOnlyHint: false, destructiveHint: true, openWorldHint: true })
-    expect(tools.tools.some(tool => /write|save/u.test(tool.name))).toBe(false)
+    for (const name of ['modkit.commit_edit', 'modkit.undo_edit', 'modkit.redo_edit']) {
+      expect(tools.tools.find(tool => tool.name === name)?.annotations).toMatchObject({
+        readOnlyHint: false,
+        destructiveHint: true,
+      })
+    }
     const resources = await client.listResources()
     expect(resources.resources.map(resource => resource.uri)).toEqual([
       'modkit://inventory',
@@ -1488,6 +1600,99 @@ describe('MCP v2 adapter', () => {
      */
     expect(edit?.['replacementBytes']).toBe(3)
     expect(result.diagnostics.some(item => item.code === 'x3.mcp/edit-not-committed')).toBe(true)
+  })
+
+  it('keeps edit authority server-side through prepare, commit, history, undo and redo', async () => {
+    const fake = fakeHost({ withEditing: true, editsEnabled: true })
+    const { client } = await connected(fake.host)
+    const opened = structured(
+      await client.callTool({
+        name: 'modkit.open_subject',
+        arguments: { path: 'C:\\allowed\\fixture' },
+      }),
+    )
+    const proposed = structured(
+      await client.callTool({
+        name: 'modkit.propose_edit',
+        arguments: { handle: handleFrom(opened), operationId: 'fixture/write', input: { value: 2 } },
+      }),
+    )
+    const planHandle = (proposed.data as { planHandle?: string }).planHandle
+    expect(planHandle).toMatch(/^[0-9a-f-]{36}$/u)
+    expect(JSON.stringify(proposed.data)).not.toContain('65,66,67')
+
+    const prepared = structured(
+      await client.callTool({
+        name: 'modkit.prepare_edit',
+        arguments: { planHandle },
+      }),
+    )
+    expect(prepared.data).toMatchObject({ state: 'ready', planDigest: 'fixture-digest' })
+
+    const committed = structured(
+      await client.callTool({
+        name: 'modkit.commit_edit',
+        arguments: { planHandle },
+      }),
+    )
+    expect(committed.data).toMatchObject({ result: { state: 'committed' } })
+    const history = structured(
+      await client.callTool({ name: 'modkit.edit_history', arguments: { limit: 10 } }),
+    )
+    expect(history.data).toMatchObject({
+      total: 1,
+      items: [{ transactionId: 'fixture-transaction', status: 'committed' }],
+    })
+    await client.callTool({
+      name: 'modkit.undo_edit',
+      arguments: { transactionId: 'fixture-transaction' },
+    })
+    await client.callTool({
+      name: 'modkit.redo_edit',
+      arguments: { transactionId: 'fixture-transaction' },
+    })
+    await client.callTool({
+      name: 'modkit.discard_edit',
+      arguments: { id: 'fixture-transaction' },
+    })
+    expect(fake.editInvocations()).toEqual([
+      'stage',
+      'prepare',
+      'commit',
+      'undo',
+      'redo',
+      'discard-history',
+    ])
+  })
+
+  it('validates a retained plan but refuses commit without the startup edit policy', async () => {
+    const fake = fakeHost({ withEditing: true })
+    const { client } = await connected(fake.host)
+    const opened = structured(
+      await client.callTool({
+        name: 'modkit.open_subject',
+        arguments: { path: 'C:\\allowed\\fixture' },
+      }),
+    )
+    const proposed = structured(
+      await client.callTool({
+        name: 'modkit.propose_edit',
+        arguments: { handle: handleFrom(opened), operationId: 'fixture/write', input: {} },
+      }),
+    )
+    const planHandle = (proposed.data as { planHandle: string }).planHandle
+    const prepared = await client.callTool({
+      name: 'modkit.prepare_edit',
+      arguments: { planHandle },
+    })
+    expect(prepared.isError).not.toBe(true)
+    const commit = await client.callTool({
+      name: 'modkit.commit_edit',
+      arguments: { planHandle },
+    })
+    expect(commit.isError).toBe(true)
+    expect(structured(commit).diagnostics[0]?.code).toBe('x3.mcp/edit-commit-disabled')
+    expect(fake.editInvocations()).toEqual(['stage', 'prepare'])
   })
 
   it('refuses a read-only operation sent to the proposal adapter', async () => {

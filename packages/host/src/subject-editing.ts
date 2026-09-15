@@ -312,6 +312,8 @@ export interface SubjectEditing {
   planFromOperation(output: OperationOutput): AssetEditPlan
   /** Stage oversized operation payloads through this editing owner's host store. */
   stagePlan(plan: AssetEditPlan, signal?: AbortSignal): Promise<AssetEditPlan>
+  /** Release staged payloads owned only by an uncommitted plan. */
+  releasePlan(plan: AssetEditPlan): Promise<void>
   /** Dispose the writer session and staged refs created by this editing owner. */
   dispose(): Promise<void>
 }
@@ -452,6 +454,12 @@ export function createSubjectEditing(options: SubjectEditingOptions): SubjectEdi
       return editPlanFromOperationForDescriptor(descriptor, output)
     },
     stagePlan,
+    async releasePlan(plan) {
+      const refs = plan.edits.flatMap(edit =>
+        'payload' in edit && edit.payload.kind === 'staged' ? [edit.payload.ref] : [],
+      )
+      await Promise.allSettled(refs.map(releaseOwnedStaged))
+    },
     async dispose() {
       await session?.dispose()
       const refs = [...ownedStaged.values()]
