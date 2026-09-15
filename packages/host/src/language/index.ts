@@ -117,9 +117,16 @@ function matchLanguageFacets(context: ServiceFacetMatchContext): ServiceFacetMat
     return { state: 'no-match' }
   }
   const requestExtension = request.extension
+  /*
+   * An offer that names no extensions is not constrained by one: it is selected by language id and
+   * document kind. This lets a provider for a single well-known file (an SC2 `BankList.xml`) route
+   * without claiming the `.xml` extension, which would make every other `.xml` ambiguous for
+   * extension-only workspace snapshots.
+   */
   if (
     requestExtension !== undefined &&
-    !offer.extensions?.some(
+    offer.extensions !== undefined &&
+    !offer.extensions.some(
       value => normalizedExtension(value) === normalizedExtension(requestExtension),
     )
   ) {
