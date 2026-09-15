@@ -94,7 +94,7 @@ try {
   assert.deepEqual(initialized.result.capabilities.diagnosticProvider, {
     identifier: 'modkit',
     interFileDependencies: true,
-    workspaceDiagnostics: false,
+    workspaceDiagnostics: true,
   })
   send({ jsonrpc: '2.0', method: 'initialized', params: {} })
   const uri = pathToFileURL(source).href

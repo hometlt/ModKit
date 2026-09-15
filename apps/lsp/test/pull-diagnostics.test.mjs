@@ -404,6 +404,55 @@ test(
         { start: 0, deleteCount: 10, data: [0, 0, 3, 2, 0] },
       ])
 
+      send({
+        jsonrpc: '2.0',
+        id: 14,
+        method: 'workspace/diagnostic',
+        params: { previousResultIds: [] },
+      })
+      const workspaceDiagnostics = await waitFor(
+        message => message.id === 14,
+        'workspace diagnostics',
+      )
+      assert.equal(
+        workspaceDiagnostics.error,
+        undefined,
+        JSON.stringify(workspaceDiagnostics.error),
+      )
+      assert.deepEqual(
+        workspaceDiagnostics.result.items.map(item => [item.uri, item.version, item.kind]),
+        [
+          [virtualUri, 1, 'full'],
+          [uri, 6, 'full'],
+        ],
+      )
+      assert.equal(
+        workspaceDiagnostics.result.items.some(item => item.uri === oversizedUri),
+        false,
+      )
+      send({
+        jsonrpc: '2.0',
+        id: 15,
+        method: 'workspace/diagnostic',
+        params: {
+          previousResultIds: workspaceDiagnostics.result.items.map(item => ({
+            uri: item.uri,
+            value: item.resultId,
+          })),
+        },
+      })
+      const unchangedWorkspace = await waitFor(
+        message => message.id === 15,
+        'unchanged workspace diagnostics',
+      )
+      assert.deepEqual(
+        unchangedWorkspace.result.items.map(item => [item.uri, item.version, item.kind]),
+        [
+          [virtualUri, 1, 'unchanged'],
+          [uri, 6, 'unchanged'],
+        ],
+      )
+
       send({ jsonrpc: '2.0', id: 9, method: 'shutdown', params: null })
       await waitFor(message => message.id === 9, 'shutdown')
       send({ jsonrpc: '2.0', method: 'exit', params: null })

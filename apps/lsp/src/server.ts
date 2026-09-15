@@ -55,6 +55,8 @@ import {
   type SemanticTokensParams,
   type SignatureHelp,
   type WorkspaceEdit,
+  type WorkspaceDiagnosticParams,
+  type WorkspaceDiagnosticReport,
   type WorkspaceSymbol,
 } from 'vscode-languageserver/node'
 import { TextDocument } from 'vscode-languageserver-textdocument'
@@ -489,7 +491,7 @@ export function createModkitLanguageServer(
         diagnosticProvider: {
           identifier: 'modkit',
           interFileDependencies: true,
-          workspaceDiagnostics: false,
+          workspaceDiagnostics: true,
         },
         experimental: { modkitLanguageCapabilities: { version: 1 } },
       },
@@ -519,6 +521,43 @@ export function createModkitLanguageServer(
         items: [...snapshot.diagnostics],
       }
     }),
+  )
+  connection.onRequest(
+    'workspace/diagnostic',
+    (
+      params: WorkspaceDiagnosticParams,
+      token: CancellationToken,
+    ): Promise<WorkspaceDiagnosticReport> =>
+      withSignal(token, async signal => {
+        const previous = new Map(params.previousResultIds.map(item => [item.uri, item.value]))
+        const items = []
+        for (const document of [...acceptedDocuments.values()].sort((a, b) =>
+          a.uri.localeCompare(b.uri),
+        )) {
+          signal.throwIfAborted()
+          await awaitReady(document.uri)
+          signal.throwIfAborted()
+          const snapshot = diagnosticSnapshots.get(document.uri)
+          if (snapshot === undefined) continue
+          if (previous.get(document.uri) === snapshot.resultId) {
+            items.push({
+              kind: 'unchanged' as const,
+              uri: document.uri,
+              version: document.version,
+              resultId: snapshot.resultId,
+            })
+          } else {
+            items.push({
+              kind: 'full' as const,
+              uri: document.uri,
+              version: document.version,
+              resultId: snapshot.resultId,
+              items: [...snapshot.diagnostics],
+            })
+          }
+        }
+        return { items }
+      }),
   )
   connection.onRequest(
     'modkit/languageCapabilities',
