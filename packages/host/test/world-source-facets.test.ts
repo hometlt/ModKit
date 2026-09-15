@@ -176,6 +176,61 @@ const snapshot: ResolvedMapWorkspaceSnapshot = {
 }
 
 describe('common world source native visual facets', () => {
+  it('splits a catalog resource per model when instances resolve different variations', async () => {
+    const rock = (objectId: number, variation: number) => ({
+      kind: 'doodad' as const,
+      objectId,
+      typeId: 'Rock',
+      position: { x: 0.5, y: 0.5, z: 0 },
+      catalog: { ref: { namespace: 'Actor', entityId: 'Rock' } },
+      modelResource: {
+        id: `model:rock:variation-0${String(variation)}`,
+        logicalId: `Assets/Rock_0${String(variation)}.m3`,
+        role: 'sidecar' as const,
+        scopes: ['current-mount' as const],
+      },
+    })
+    const lease = createCandidateWorldSceneLease(
+      {
+        ...snapshot,
+        semantic: {
+          ...snapshot.semantic,
+          objects: [...snapshot.semantic.objects, rock(20, 0), rock(21, 1), rock(22, 1)],
+        },
+      },
+      [],
+      64,
+    )
+    try {
+      const info = await lease.value.info()
+      const page = async (facet: 'objects' | 'resources') =>
+        (
+          await lease.value.page({
+            facet,
+            layerId: info.facets.find(item => item.facet === facet)!.layerId,
+            limit: 64,
+          })
+        ).items
+      const objects = new Map(
+        (await page('objects')).flatMap(item =>
+          item.facet === 'objects' ? [[item.objectId, item.resourceId]] : [],
+        ),
+      )
+      expect(objects.get(7)).toBe('resource:Unit/Marine')
+      expect(objects.get(20)).not.toBe(objects.get(21))
+      expect(objects.get(21)).toBe(objects.get(22))
+      const resources = new Map(
+        (await page('resources')).flatMap(item =>
+          item.facet === 'resources' ? [[item.id, item.modelResource?.logicalId]] : [],
+        ),
+      )
+      expect(resources.get(objects.get(20)!)).toBe('Assets/Rock_00.m3')
+      expect(resources.get(objects.get(21)!)).toBe('Assets/Rock_01.m3')
+    } finally {
+      await lease.release()
+    }
+  })
+
   it('keeps layer and item identities compact while cursors remain snapshot-bound', async () => {
     const longSnapshotId = `snapshot-${'dependency-revision/'.repeat(1_024)}`
     const longSnapshot = { ...snapshot, snapshotId: longSnapshotId }

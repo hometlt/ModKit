@@ -592,6 +592,27 @@ export function createCandidateWorldSceneLease(
     regionIdentities.add(item.regionId)
     return true
   })
+  // One resource per catalog entity, split per model requirement only when instances of that entity
+  // resolve different models (e.g. authored doodad variations); otherwise every instance would draw
+  // the first-seen model.
+  const catalogModelRequirements = new Map<string, Set<string>>()
+  for (const item of semanticObjects) {
+    if (item.catalog === undefined || item.modelResource === undefined) continue
+    const key = resourceId(item.catalog.ref.namespace, item.catalog.ref.entityId)
+    catalogModelRequirements.set(
+      key,
+      (catalogModelRequirements.get(key) ?? new Set<string>()).add(item.modelResource.id),
+    )
+  }
+  const objectResourceId = (
+    ref: Readonly<{ namespace: string; entityId: string }>,
+    modelResource: Readonly<{ id: string }> | undefined,
+  ): string => {
+    const base = resourceId(ref.namespace, ref.entityId)
+    return modelResource !== undefined && (catalogModelRequirements.get(base)?.size ?? 0) > 1
+      ? `${base}~${encodeURIComponent(modelResource.id)}`
+      : base
+  }
   const duplicateObjectCount = semantic.objects.length - semanticObjects.length
   const duplicateRegionCount = semantic.regions.length - semanticRegions.length
   const incompleteObjectPositionCount = semanticObjects.filter(
@@ -736,7 +757,9 @@ export function createCandidateWorldSceneLease(
               ...(uvwRotation === undefined ? {} : { uvwRotation }),
               uvwScale: canonicalObjectScale(item.scale, uvwTransform),
             }),
-        ...(ref === undefined ? {} : { resourceId: resourceId(ref.namespace, ref.entityId) }),
+        ...(ref === undefined
+          ? {}
+          : { resourceId: objectResourceId(ref, item.modelResource) }),
         ...(compoundResourceIds.length === 0
           ? {}
           : { resourceIds: Object.freeze(compoundResourceIds) }),
@@ -784,7 +807,7 @@ export function createCandidateWorldSceneLease(
   for (const item of objects) {
     if (item.facet !== 'objects') continue
     if (item.catalog !== undefined) {
-      const key = resourceId(item.catalog.ref.namespace, item.catalog.ref.entityId)
+      const key = objectResourceId(item.catalog.ref, item.modelResource)
       const current = resourceJoins.get(key) ?? {
         namespace: item.catalog.ref.namespace,
         entityId: item.catalog.ref.entityId,
