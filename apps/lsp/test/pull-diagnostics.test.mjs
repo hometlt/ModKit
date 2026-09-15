@@ -92,12 +92,30 @@ test(
         jsonrpc: '2.0',
         id: 1,
         method: 'initialize',
-        params: { processId: process.pid, rootUri: pathToFileURL(root).href, capabilities: {} },
+        params: {
+          processId: process.pid,
+          rootUri: pathToFileURL(root).href,
+          capabilities: {
+            workspace: { didChangeWatchedFiles: { dynamicRegistration: true } },
+          },
+        },
       })
       const initialized = await waitFor(message => message.id === 1, 'initialize')
       assert.equal(initialized.error, undefined, JSON.stringify(initialized.error))
       assert.equal(initialized.result.capabilities.diagnosticProvider.identifier, 'modkit')
       send({ jsonrpc: '2.0', method: 'initialized', params: {} })
+      const watchedFilesRegistration = await waitFor(
+        message => message.method === 'client/registerCapability',
+        'watched-files registration',
+      )
+      assert.deepEqual(
+        watchedFilesRegistration.params.registrations.map(registration => registration.method),
+        ['workspace/didChangeWatchedFiles'],
+      )
+      assert.deepEqual(watchedFilesRegistration.params.registrations[0].registerOptions.watchers, [
+        { globPattern: { baseUri: pathToFileURL(root).href, pattern: '**/*' } },
+      ])
+      send({ jsonrpc: '2.0', id: watchedFilesRegistration.id, result: null })
       const uri = pathToFileURL(source).href
       send({
         jsonrpc: '2.0',
@@ -259,6 +277,28 @@ test(
       const virtualHover = await waitFor(message => message.id === 7, 'virtual document hover')
       assert.equal(virtualHover.error, undefined, JSON.stringify(virtualHover.error))
       assert.equal(virtualHover.result.contents.value, 'version 1: virtual')
+
+      const virtualPushesBeforeWatch = messages.filter(
+        message =>
+          message.method === 'textDocument/publishDiagnostics' &&
+          message.params?.uri === virtualUri,
+      ).length
+      send({
+        jsonrpc: '2.0',
+        method: 'workspace/didChangeWatchedFiles',
+        params: { changes: [{ uri, type: 2 }] },
+      })
+      await waitFor(
+        message =>
+          message.method === 'textDocument/publishDiagnostics' &&
+          message.params?.uri === virtualUri &&
+          messages.filter(
+            candidate =>
+              candidate.method === 'textDocument/publishDiagnostics' &&
+              candidate.params?.uri === virtualUri,
+          ).length > virtualPushesBeforeWatch,
+        'virtual document refresh after watched-file change',
+      )
 
       const oversizedUri = 'untitled:Oversized.fixturelang'
       send({

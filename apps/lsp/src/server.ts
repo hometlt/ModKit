@@ -1,5 +1,5 @@
 import { extname, isAbsolute, relative } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import type { Diagnostic as HostDiagnostic } from '@modkit/core'
 import type {
   LanguageWorkspaceFeatureRequest,
@@ -26,6 +26,7 @@ import {
   CodeActionKind,
   CompletionItemKind,
   DiagnosticSeverity,
+  DidChangeWatchedFilesNotification,
   DocumentSymbol,
   InsertTextFormat,
   ProposedFeatures,
@@ -213,7 +214,28 @@ export function createModkitLanguageServer(
   let diagnosticRevision = 0
   const maxResults = options.maxResults ?? 1_000
   const encoder = new TextEncoder()
+  let supportsDynamicWatchedFiles = false
   let shutDown = false
+
+  const fileInsideRoots = (uri: string): boolean => {
+    let parsed: URL
+    try {
+      parsed = new URL(uri)
+    } catch {
+      return false
+    }
+    if (parsed.protocol !== 'file:') return false
+    let path: string
+    try {
+      path = fileURLToPath(uri)
+    } catch {
+      return false
+    }
+    return options.roots.some(root => {
+      const rel = relative(root, path)
+      return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
+    })
+  }
 
   const allowedUri = (uri: string): boolean => {
     let parsed: URL
@@ -229,17 +251,7 @@ export function createModkitLanguageServer(
     ) {
       return parsed.username === '' && parsed.password === ''
     }
-    if (parsed.protocol !== 'file:') return false
-    let path: string
-    try {
-      path = fileURLToPath(uri)
-    } catch {
-      return false
-    }
-    return options.roots.some(root => {
-      const rel = relative(root, path)
-      return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel))
-    })
+    return fileInsideRoots(uri)
   }
   const route = (document: TextDocument): LanguageWorkspaceDocumentRequest => ({
     languageId: document.languageId,
@@ -382,35 +394,47 @@ export function createModkitLanguageServer(
     pending.set(document.uri, task)
   }
 
-  connection.onInitialize((): InitializeResult => ({
-    capabilities: {
-      textDocumentSync: {
-        openClose: true,
-        change: TextDocumentSyncKind.Incremental,
-        save: { includeText: true },
+  connection.onInitialize(params => {
+    supportsDynamicWatchedFiles =
+      params.capabilities.workspace?.didChangeWatchedFiles?.dynamicRegistration === true
+    return {
+      capabilities: {
+        textDocumentSync: {
+          openClose: true,
+          change: TextDocumentSyncKind.Incremental,
+          save: { includeText: true },
+        },
+        completionProvider: { triggerCharacters: ['.', ':', '"', "'"] },
+        hoverProvider: true,
+        signatureHelpProvider: { triggerCharacters: ['(', ','] },
+        definitionProvider: true,
+        referencesProvider: true,
+        renameProvider: { prepareProvider: true },
+        documentFormattingProvider: true,
+        colorProvider: true,
+        codeActionProvider: true,
+        documentSymbolProvider: true,
+        workspaceSymbolProvider: true,
+        semanticTokensProvider: {
+          legend: { tokenTypes: [...TOKEN_TYPES], tokenModifiers: [] },
+          full: true,
+        },
+        diagnosticProvider: {
+          identifier: 'modkit',
+          interFileDependencies: true,
+          workspaceDiagnostics: false,
+        },
       },
-      completionProvider: { triggerCharacters: ['.', ':', '"', "'"] },
-      hoverProvider: true,
-      signatureHelpProvider: { triggerCharacters: ['(', ','] },
-      definitionProvider: true,
-      referencesProvider: true,
-      renameProvider: { prepareProvider: true },
-      documentFormattingProvider: true,
-      colorProvider: true,
-      codeActionProvider: true,
-      documentSymbolProvider: true,
-      workspaceSymbolProvider: true,
-      semanticTokensProvider: {
-        legend: { tokenTypes: [...TOKEN_TYPES], tokenModifiers: [] },
-        full: true,
-      },
-      diagnosticProvider: {
-        identifier: 'modkit',
-        interFileDependencies: true,
-        workspaceDiagnostics: false,
-      },
-    },
-  }))
+    } satisfies InitializeResult
+  })
+  connection.onInitialized(async () => {
+    if (!supportsDynamicWatchedFiles) return
+    await connection.client.register(DidChangeWatchedFilesNotification.type, {
+      watchers: options.roots.map(root => ({
+        globPattern: { baseUri: pathToFileURL(root).href, pattern: '**/*' },
+      })),
+    })
+  })
   connection.languages.diagnostics.on(async (params, token): Promise<DocumentDiagnosticReport> =>
     withSignal(token, async signal => {
       signal.throwIfAborted()
@@ -690,7 +714,8 @@ export function createModkitLanguageServer(
   documents.onDidOpen(event => schedule(event.document, 'open'))
   documents.onDidChangeContent(event => schedule(event.document, 'change'))
   documents.onDidSave(event => schedule(event.document, 'refresh'))
-  connection.onDidChangeWatchedFiles(() => {
+  connection.onDidChangeWatchedFiles(params => {
+    if (!params.changes.some(change => fileInsideRoots(change.uri))) return
     for (const document of documents.all()) schedule(document, 'refresh')
   })
   documents.onDidClose(event => {
