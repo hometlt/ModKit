@@ -91,6 +91,11 @@ try {
   const initialized = await waitFor(message => message.id === 1, 'initialize response')
   assert.equal(initialized.error, undefined, JSON.stringify(initialized.error))
   assert.equal(initialized.result.capabilities.semanticTokensProvider.full, true)
+  assert.deepEqual(initialized.result.capabilities.diagnosticProvider, {
+    identifier: 'modkit',
+    interFileDependencies: true,
+    workspaceDiagnostics: false,
+  })
   send({ jsonrpc: '2.0', method: 'initialized', params: {} })
   const uri = pathToFileURL(source).href
   send({
@@ -110,6 +115,16 @@ try {
     'bank diagnostics',
   )
   assert.ok(Array.isArray(diagnostics.params.diagnostics))
+  send({
+    jsonrpc: '2.0',
+    id: 5,
+    method: 'textDocument/diagnostic',
+    params: { textDocument: { uri } },
+  })
+  const pulled = await waitFor(message => message.id === 5, 'pull diagnostics')
+  assert.equal(pulled.error, undefined, JSON.stringify(pulled.error))
+  assert.equal(pulled.result.kind, 'full')
+  assert.ok(Array.isArray(pulled.result.items))
   send({
     jsonrpc: '2.0',
     id: 2,

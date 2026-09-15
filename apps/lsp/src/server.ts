@@ -41,6 +41,7 @@ import {
   type CompletionItem,
   type Connection,
   type Diagnostic,
+  type DocumentDiagnosticReport,
   type DocumentFormattingParams,
   type InitializeResult,
   type Location,
@@ -198,6 +199,15 @@ export function createModkitLanguageServer(
   const documents = new TextDocuments(TextDocument)
   const pending = new Map<string, Promise<void>>()
   const workspaceUris = new Set<string>()
+  const diagnosticSnapshots = new Map<
+    string,
+    {
+      readonly version: number
+      readonly resultId: string
+      readonly diagnostics: readonly Diagnostic[]
+    }
+  >()
+  let diagnosticRevision = 0
   const maxResults = options.maxResults ?? 1_000
   let shutDown = false
 
@@ -245,23 +255,33 @@ export function createModkitLanguageServer(
   const awaitReady = async (uri: string): Promise<void> => {
     await pending.get(uri)
   }
+  const setDiagnostics = (
+    uri: string,
+    version: number,
+    diagnostics: readonly Diagnostic[],
+  ): void => {
+    const resultId = `modkit-diagnostics-v1:${++diagnosticRevision}:${version}`
+    diagnosticSnapshots.set(uri, {
+      version,
+      resultId,
+      diagnostics: Object.freeze([...diagnostics]),
+    })
+    connection.sendDiagnostics({ uri, version, diagnostics: [...diagnostics] })
+  }
   const publish = async (
     document: TextDocument,
     mode: 'open' | 'change' | 'refresh',
   ): Promise<void> => {
     if (!insideRoots(document.uri)) {
-      connection.sendDiagnostics({
-        uri: document.uri,
-        diagnostics: [
-          {
-            range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
-            severity: DiagnosticSeverity.Error,
-            code: 'x3.lsp/outside-root',
-            source: 'modkit-host',
-            message: 'Document is outside the configured Modkit workspace roots.',
-          },
-        ],
-      })
+      setDiagnostics(document.uri, document.version, [
+        {
+          range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
+          severity: DiagnosticSeverity.Error,
+          code: 'x3.lsp/outside-root',
+          source: 'modkit-host',
+          message: 'Document is outside the configured Modkit workspace roots.',
+        },
+      ])
       return
     }
     if (mode === 'refresh' && workspaceUris.delete(document.uri))
@@ -271,21 +291,16 @@ export function createModkitLanguageServer(
         ? await options.workspace.change(route(document))
         : await options.workspace.open(route(document))
     if (result.state === 'unresolved') {
-      connection.sendDiagnostics({
-        uri: document.uri,
-        diagnostics: result.hostDiagnostics.map(hostDiagnosticOf),
-        version: document.version,
-      })
+      setDiagnostics(document.uri, document.version, result.hostDiagnostics.map(hostDiagnosticOf))
       return
     }
     workspaceUris.add(document.uri)
     const feature = await options.workspace.diagnostics(request(document.uri))
-    connection.sendDiagnostics({
-      uri: document.uri,
-      version: document.version,
-      diagnostics:
-        feature?.diagnostics.map(diagnosticOf) ?? result.analysis.diagnostics.map(diagnosticOf),
-    })
+    setDiagnostics(
+      document.uri,
+      document.version,
+      feature?.diagnostics.map(diagnosticOf) ?? result.analysis.diagnostics.map(diagnosticOf),
+    )
   }
   const schedule = (document: TextDocument, mode: 'open' | 'change' | 'refresh'): void => {
     const previous = pending.get(document.uri)
@@ -324,8 +339,30 @@ export function createModkitLanguageServer(
         legend: { tokenTypes: [...TOKEN_TYPES], tokenModifiers: [] },
         full: true,
       },
+      diagnosticProvider: {
+        identifier: 'modkit',
+        interFileDependencies: true,
+        workspaceDiagnostics: false,
+      },
     },
   }))
+  connection.languages.diagnostics.on(async (params, token): Promise<DocumentDiagnosticReport> =>
+    withSignal(token, async signal => {
+      signal.throwIfAborted()
+      await awaitReady(params.textDocument.uri)
+      signal.throwIfAborted()
+      const snapshot = diagnosticSnapshots.get(params.textDocument.uri)
+      if (snapshot === undefined) return { kind: 'full', items: [] }
+      if (params.previousResultId === snapshot.resultId) {
+        return { kind: 'unchanged', resultId: snapshot.resultId }
+      }
+      return {
+        kind: 'full',
+        resultId: snapshot.resultId,
+        items: [...snapshot.diagnostics],
+      }
+    }),
+  )
   connection.onCompletion((params, token) =>
     withSignal(token, async signal => {
       await awaitReady(params.textDocument.uri)
@@ -598,7 +635,10 @@ export function createModkitLanguageServer(
       await previous
       if (workspaceUris.delete(event.document.uri))
         await options.workspace.close(event.document.uri)
-    })().finally(() => connection.sendDiagnostics({ uri: event.document.uri, diagnostics: [] }))
+    })().finally(() => {
+      diagnosticSnapshots.delete(event.document.uri)
+      connection.sendDiagnostics({ uri: event.document.uri, diagnostics: [] })
+    })
   })
   connection.onShutdown(async () => {
     shutDown = true

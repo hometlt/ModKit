@@ -1,0 +1,155 @@
+import assert from 'node:assert/strict'
+import { spawn } from 'node:child_process'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import test from 'node:test'
+import { join, resolve } from 'node:path'
+
+const executable = fileURLToPath(new URL('../dist/main.js', import.meta.url))
+const extension = fileURLToPath(
+  new URL('../../mcp/test/fixtures/language-session-extension', import.meta.url),
+)
+
+test(
+  'installed LSP serves versioned full and unchanged pull diagnostics',
+  { timeout: 60_000 },
+  async () => {
+    const root = await mkdtemp(join(tmpdir(), 'modkit-lsp-pull-'))
+    const source = join(root, 'Main.fixturelang')
+    await writeFile(source, 'initial')
+    const child = spawn(process.execPath, [executable, '--root', root, '--extension', extension], {
+      cwd: resolve('.'),
+      stdio: ['pipe', 'pipe', 'pipe'],
+    })
+    let buffer = Buffer.alloc(0)
+    let stderr = ''
+    const messages = []
+    const waiters = []
+    const dispatch = message => {
+      messages.push(message)
+      for (const waiter of [...waiters]) {
+        if (!waiter.predicate(message)) continue
+        waiters.splice(waiters.indexOf(waiter), 1)
+        clearTimeout(waiter.timer)
+        waiter.resolve(message)
+      }
+    }
+    child.stdout.on('data', chunk => {
+      buffer = Buffer.concat([buffer, chunk])
+      while (true) {
+        const headerEnd = buffer.indexOf('\r\n\r\n')
+        if (headerEnd < 0) return
+        const match = /Content-Length: (\d+)/iu.exec(
+          buffer.subarray(0, headerEnd).toString('ascii'),
+        )
+        if (match === null) throw new Error('invalid LSP header')
+        const end = headerEnd + 4 + Number(match[1])
+        if (buffer.length < end) return
+        dispatch(JSON.parse(buffer.subarray(headerEnd + 4, end).toString('utf8')))
+        buffer = buffer.subarray(end)
+      }
+    })
+    child.stderr.on('data', chunk => {
+      stderr += chunk.toString('utf8')
+    })
+    const send = message => {
+      const body = Buffer.from(JSON.stringify(message))
+      child.stdin.write(`Content-Length: ${body.length}\r\n\r\n`)
+      child.stdin.write(body)
+    }
+    const waitFor = (predicate, label) => {
+      const existing = messages.find(predicate)
+      if (existing !== undefined) return Promise.resolve(existing)
+      return new Promise((resolveWait, reject) => {
+        const waiter = {
+          predicate,
+          resolve: resolveWait,
+          timer: setTimeout(() => {
+            waiters.splice(waiters.indexOf(waiter), 1)
+            reject(new Error(`timed out waiting for ${label}; stderr=${stderr}`))
+          }, 30_000),
+        }
+        waiters.push(waiter)
+      })
+    }
+    try {
+      send({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'initialize',
+        params: { processId: process.pid, rootUri: pathToFileURL(root).href, capabilities: {} },
+      })
+      const initialized = await waitFor(message => message.id === 1, 'initialize')
+      assert.equal(initialized.error, undefined, JSON.stringify(initialized.error))
+      assert.equal(initialized.result.capabilities.diagnosticProvider.identifier, 'modkit')
+      send({ jsonrpc: '2.0', method: 'initialized', params: {} })
+      const uri = pathToFileURL(source).href
+      send({
+        jsonrpc: '2.0',
+        method: 'textDocument/didOpen',
+        params: {
+          textDocument: { uri, languageId: 'fixture-language', version: 1, text: 'initial' },
+        },
+      })
+      await waitFor(
+        message =>
+          message.method === 'textDocument/publishDiagnostics' && message.params?.version === 1,
+        'initial push diagnostics',
+      )
+      send({
+        jsonrpc: '2.0',
+        id: 2,
+        method: 'textDocument/diagnostic',
+        params: { textDocument: { uri } },
+      })
+      const first = await waitFor(message => message.id === 2, 'full pull diagnostics')
+      assert.equal(first.result.kind, 'full')
+      assert.ok(typeof first.result.resultId === 'string')
+      assert.deepEqual(first.result.items, [])
+      send({
+        jsonrpc: '2.0',
+        id: 3,
+        method: 'textDocument/diagnostic',
+        params: { textDocument: { uri }, previousResultId: first.result.resultId },
+      })
+      const unchanged = await waitFor(message => message.id === 3, 'unchanged pull diagnostics')
+      assert.deepEqual(unchanged.result, { kind: 'unchanged', resultId: first.result.resultId })
+      send({
+        jsonrpc: '2.0',
+        method: 'textDocument/didChange',
+        params: {
+          textDocument: { uri, version: 2 },
+          contentChanges: [{ text: 'invalid' }],
+        },
+      })
+      await waitFor(
+        message =>
+          message.method === 'textDocument/publishDiagnostics' && message.params?.version === 2,
+        'changed push diagnostics',
+      )
+      send({
+        jsonrpc: '2.0',
+        id: 4,
+        method: 'textDocument/diagnostic',
+        params: { textDocument: { uri }, previousResultId: first.result.resultId },
+      })
+      const changed = await waitFor(message => message.id === 4, 'changed pull diagnostics')
+      assert.equal(changed.result.kind, 'full')
+      assert.notEqual(changed.result.resultId, first.result.resultId)
+      assert.equal(changed.result.items[0]?.code, 'fixture/invalid')
+      send({ jsonrpc: '2.0', id: 5, method: 'shutdown', params: null })
+      await waitFor(message => message.id === 5, 'shutdown')
+      send({ jsonrpc: '2.0', method: 'exit', params: null })
+      child.stdin.end()
+      await new Promise((resolveExit, reject) => {
+        child.once('exit', code =>
+          code === 0 ? resolveExit() : reject(new Error(`LSP exited ${code}; stderr=${stderr}`)),
+        )
+      })
+    } finally {
+      if (child.exitCode === null) child.kill()
+      await rm(root, { recursive: true, force: true })
+    }
+  },
+)
