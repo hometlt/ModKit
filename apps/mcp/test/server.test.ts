@@ -587,8 +587,14 @@ function fakeHost(
       ? {
           async openLanguageSession(
             request: import('../src/index.js').McpLanguageSessionOpenRequest,
+            _signal?: AbortSignal,
+            context?: import('../src/index.js').McpLanguageSessionContext,
           ) {
-            languageSessionInvocations.push({ kind: 'open', request })
+            languageSessionInvocations.push({
+              kind: 'open',
+              request,
+              dependencyBound: context !== undefined,
+            })
             const documents = request.documents.map((document, index) => ({
               uri: document.uri ?? `file:///C:/allowed/session-${index}.galaxy`,
               languageId: document.languageId,
@@ -871,6 +877,26 @@ describe('MCP configuration', () => {
       ),
     ).toThrow(/unknown operation permission/u)
   })
+
+  it('requires paired absolute content source configuration', () => {
+    const common = ['--root', 'C:\\one', '--extension', 'C:\\ext']
+    expect(() => parseModkitMcpConfiguration([
+      ...common,
+      '--content-source-config',
+      'C:\\config\\provider.json',
+    ], {})).toThrow(/supplied together/u)
+    const config = parseModkitMcpConfiguration([
+      ...common,
+      '--content-source-config',
+      'C:\\config\\provider.json',
+      '--content-source-storage',
+      'C:\\cache\\modkit',
+    ], {})
+    expect(config).toMatchObject({
+      contentSourceConfig: resolve('C:\\config\\provider.json'),
+      contentSourceStorage: resolve('C:\\cache\\modkit'),
+    })
+  })
 })
 
 describe('bounded protocol projection', () => {
@@ -1133,10 +1159,15 @@ describe('MCP v2 adapter', () => {
     const fake = fakeHost({ withLanguageSession: true })
     const { client } = await connected(fake.host)
     const uri = 'modkit-source://workspace/Scripts/Main.galaxy'
+    const subject = structured(await client.callTool({
+      name: 'modkit.open_subject',
+      arguments: { path: 'C:\\allowed\\fixture' },
+    }))
     const opened = structured(
       await client.callTool({
         name: 'modkit.language_session_open',
         arguments: {
+          dependencySubjectHandle: handleFrom(subject),
           documents: [{ uri, languageId: 'galaxy', version: 4, text: 'void main() {}' }],
         },
       }),
@@ -1174,7 +1205,7 @@ describe('MCP v2 adapter', () => {
     })
     expect(fake.languageSessionCloses()).toBe(1)
     expect(fake.languageSessionInvocations()).toEqual([
-      expect.objectContaining({ kind: 'open' }),
+      expect.objectContaining({ kind: 'open', dependencyBound: true }),
       expect.objectContaining({ kind: 'update', update: expect.objectContaining({ version: 5 }) }),
       expect.objectContaining({
         kind: 'feature',

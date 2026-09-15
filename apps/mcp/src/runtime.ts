@@ -24,6 +24,7 @@ import type {
 import type {
   McpLanguageRequest,
   McpLanguageSession,
+  McpLanguageSessionContext,
   McpLanguageSessionFeatureRequest,
   McpLanguageSessionOpenRequest,
   McpLanguageSessionUpdateRequest,
@@ -2156,6 +2157,7 @@ export class ModkitMcpRuntime {
   async openLanguageSession(
     request: McpLanguageSessionOpenRequest,
     signal: AbortSignal,
+    dependencySubjectHandle?: string,
   ): Promise<McpEnvelope> {
     signal.throwIfAborted()
     if (this.host.openLanguageSession === undefined) {
@@ -2164,36 +2166,52 @@ export class ModkitMcpRuntime {
         'This host does not publish persistent language sessions.',
       )
     }
-    if (this.languageSessions.size + this.languageSessionsOpening >= MCP_MAX_LANGUAGE_SESSIONS) {
-      throw new McpOperationError(
-        'x3.mcp/language-session-limit',
-        `At most ${MCP_MAX_LANGUAGE_SESSIONS} language sessions may be retained.`,
-      )
-    }
-    this.languageSessionsOpening += 1
-    try {
-      const session = await this.host.openLanguageSession(request, signal)
-      try {
-        signal.throwIfAborted()
-        const handle = randomUUID()
-        this.languageSessions.set(handle, session)
-        return envelope({
-          snapshotId: `language-session:${handle}`,
-          completeness: session.workspaceIncomplete ? 'partial' : 'complete',
-          diagnostics: session.diagnostics,
-          data: {
-            sessionHandle: handle,
-            workspaceIncomplete: session.workspaceIncomplete,
-            documents: session.documents,
-          },
-        })
-      } catch (error) {
-        await session.close()
-        throw error
+    const open = async (
+      scopedSignal: AbortSignal,
+      context?: McpLanguageSessionContext,
+    ): Promise<McpEnvelope> => {
+      if (this.languageSessions.size + this.languageSessionsOpening >= MCP_MAX_LANGUAGE_SESSIONS) {
+        throw new McpOperationError(
+          'x3.mcp/language-session-limit',
+          `At most ${MCP_MAX_LANGUAGE_SESSIONS} language sessions may be retained.`,
+        )
       }
-    } finally {
-      this.languageSessionsOpening -= 1
+      this.languageSessionsOpening += 1
+      try {
+        const session = await this.host.openLanguageSession!(request, scopedSignal, context)
+        try {
+          scopedSignal.throwIfAborted()
+          const handle = randomUUID()
+          this.languageSessions.set(handle, session)
+          return envelope({
+            snapshotId: `language-session:${handle}`,
+            completeness: session.workspaceIncomplete ? 'partial' : 'complete',
+            diagnostics: session.diagnostics,
+            data: {
+              sessionHandle: handle,
+              workspaceIncomplete: session.workspaceIncomplete,
+              documents: session.documents,
+            },
+          })
+        } catch (error) {
+          await session.close()
+          throw error
+        }
+      } finally {
+        this.languageSessionsOpening -= 1
+      }
     }
+    if (dependencySubjectHandle === undefined) return open(signal)
+    return this.withHandle(dependencySubjectHandle, signal, async (entry, scopedSignal) => {
+      const session = entry.opened.session
+      if (session === undefined) {
+        throw new McpOperationError('x3.mcp/no-session', 'No subject session exists.')
+      }
+      return open(scopedSignal, {
+        descriptor: await session.descriptor(),
+        operations: session.operations(),
+      })
+    })
   }
   async updateLanguageSession(
     handle: string,

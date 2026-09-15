@@ -141,7 +141,10 @@ const languageSessionDocument = z.union([
     .strict(),
 ])
 const languageSessionOpenInput = z
-  .object({ documents: z.array(languageSessionDocument).min(1).max(32) })
+  .object({
+    documents: z.array(languageSessionDocument).min(1).max(32),
+    dependencySubjectHandle: handleSchema.optional(),
+  })
   .strict()
 const languageSessionUpdateInput = z
   .object({
@@ -636,11 +639,12 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
       outputSchema: envelopeSchema,
       annotations: { ...readOnlyAnnotations, idempotentHint: false },
     },
-    (request, context) =>
+    ({ dependencySubjectHandle, documents }, context) =>
       safeTool(() =>
         runtime.openLanguageSession(
-          request as McpLanguageSessionOpenRequest,
+          { documents } as McpLanguageSessionOpenRequest,
           context.mcpReq.signal,
+          dependencySubjectHandle,
         ),
       ),
   )

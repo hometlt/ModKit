@@ -179,7 +179,7 @@ function workspaceDiagnostic(value: unknown): ModWorkspaceDiagnostic {
   })
 }
 
-function contentDiagnostics(values: readonly unknown[]): readonly Diagnostic[] {
+export function contentDependencyDiagnostics(values: readonly unknown[]): readonly Diagnostic[] {
   return Object.freeze(
     values.map(value => {
       const item = workspaceDiagnostic(value)
@@ -572,7 +572,7 @@ export async function analyzeReadOnlyContentDependencies(
       ]),
     })
   }
-  const dependencyDiagnostics = contentDiagnostics(resolution.diagnostics)
+  const dependencyDiagnostics = contentDependencyDiagnostics(resolution.diagnostics)
   if (!resolution.complete || resolution.mounts.length === 0) {
     return Object.freeze({
       state: 'unresolved',

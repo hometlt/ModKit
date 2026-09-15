@@ -1,6 +1,8 @@
 export {
   ConfigurationError,
   MODKIT_MCP_EXTENSIONS_ENV,
+  MODKIT_MCP_CONTENT_SOURCE_CONFIG_ENV,
+  MODKIT_MCP_CONTENT_SOURCE_STORAGE_ENV,
   MODKIT_MCP_ROOTS_ENV,
   MODKIT_MCP_OPERATION_PERMISSIONS_ENV,
   modkitMcpUsage,
@@ -13,6 +15,7 @@ export {
   type McpLanguageRequest,
   type McpLanguageResult,
   type McpLanguageSession,
+  type McpLanguageSessionContext,
   type McpLanguageSessionDocument,
   type McpLanguageSessionFeatureRequest,
   type McpLanguageSessionOpenRequest,

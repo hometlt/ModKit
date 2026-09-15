@@ -408,6 +408,7 @@ export type {
 export {
   analyzeReadOnlyContentDependencies,
   createContentDependencyLanguageDocumentSource,
+  contentDependencyDiagnostics,
   createReadOnlyContentDependencyWorkspace,
   type AnalyzeReadOnlyContentDependenciesRequest,
   type ContentDependencyLanguageDocumentSourceOptions,

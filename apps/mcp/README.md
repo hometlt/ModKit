@@ -35,6 +35,20 @@ CLI values replace the corresponding environment list. Relative paths, missing l
 paths, extension load failures, and subject paths outside the canonical allowed roots fail closed.
 Do not put passwords, tokens, or other secrets in either list.
 
+Dependency-aware language sessions may use one trusted host content provider. Supply its existing
+configuration and a private storage directory together:
+
+```powershell
+pnpm mcp:start -- `
+  --root 'C:\workspace' `
+  --extension 'C:\extensions\language' `
+  --content-source-config 'C:\modkit\provider.json' `
+  --content-source-storage 'C:\modkit\content-state'
+```
+
+The equivalent environment variables are `MODKIT_MCP_CONTENT_SOURCE_CONFIG` and
+`MODKIT_MCP_CONTENT_SOURCE_STORAGE`. Provider module paths and credentials stay in the host.
+
 ## Read-only surface
 
 - `modkit.inventory` pages through the loaded contribution inventory.
@@ -44,6 +58,14 @@ Do not put passwords, tokens, or other secrets in either list.
   at most 32 explicitly listed files. Each file is confined to the configured roots, each file is
   limited to 4 MiB, and the combined text is limited to 16 MiB. The host marks this explicit list as
   an incomplete workspace and rejects rename edits that would claim complete project coverage.
+- `modkit.language_session_open`, `modkit.language_session_update`,
+  `modkit.language_session_feature`, and `modkit.language_session_close` retain a bounded
+  `LanguageWorkspace` and exact overlay revisions in the host. Open accepts rooted files and
+  `modkit-source:`, `modkit-container:`, `content-source:`, or `untitled:` virtual documents.
+  Passing `dependencySubjectHandle` reads that subject's standard `content.resolve-dependencies`
+  operation and projects the provider-resolved loose/MPQ/CASC closure as read-only
+  `content-source://` workspace documents. Missing or partial closure is reported through
+  diagnostics and completeness.
 - `modkit.discover_installations` asks only loaded installation providers for verified candidates and
   returns opaque result locators instead of requiring path copying. `modkit.open_discovered` opens one selection
   only when its verified directory is already under a configured root; discovery never widens the
@@ -107,9 +129,8 @@ failing closed on oversized frames.
 
 All file text, extension metadata, operation output, progress messages, and knowledge text are
 returned as `untrusted-data`; clients must never treat them as instructions. The host is created
-with inspection intent. It can calculate edit plans for configured roots, but exposes no prepare,
-commit, save, write,
-arbitrary-filesystem-discovery, or mutation tool. A mutating, unavailable, or undeclared operation
-is rejected before its session handler runs.
+with inspection intent. Edit plans are inert unless startup policy explicitly enables
+prepare/commit/undo/redo within configured roots. An unavailable or undeclared operation is
+rejected before its session handler runs.
 Closing a selected entity waits at most one second for cancelled reads; a non-cooperative source is
 released with `x3.mcp/close-deadline` and `completeness: capped` instead of hanging the server.

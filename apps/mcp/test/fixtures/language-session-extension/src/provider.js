@@ -58,6 +58,22 @@ export function createProvider(selection) {
           markdown: `version ${request.document.version}: ${request.document.text}`,
         })
       },
+      async definition(request) {
+        return Object.freeze({
+          locations: Object.freeze(
+            request.workspaceDocuments
+              .filter(document => document.uri.endsWith('/Dependency.fixturelang'))
+              .map(document => ({
+                uri: document.uri,
+                range: {
+                  start: { line: 0, character: 0 },
+                  end: { line: 0, character: Math.min(10, document.text.length) },
+                },
+              })),
+          ),
+          isIncomplete: request.workspaceIncomplete,
+        })
+      },
       async diagnostics(request) {
         return Object.freeze({
           diagnostics: request.document.text.includes('invalid')

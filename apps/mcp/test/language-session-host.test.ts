@@ -2,17 +2,104 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createHostMcpPort, type ModkitMcpHostPort } from '../src/index.js'
+import type { ContentSources } from '@modkit/vfs/content-sources'
+import {
+  createHostMcpPort,
+  type McpLanguageSessionContext,
+  type ModkitMcpHostPort,
+} from '../src/index.js'
 
 let root: string
 let host: ModkitMcpHostPort
+const dependencyBytes = new TextEncoder().encode('dependency')
+
+const contentSources: ContentSources = {
+  async snapshot() {
+    return { label: 'test', regions: [], connections: [], roots: [] }
+  },
+  async connect() {},
+  async disconnect() {},
+  async search() {
+    return []
+  },
+  async add() {},
+  async remove() {},
+  async refresh() {},
+  async list(_sourceId, path) {
+    return path === 'root'
+      ? [{ path: 'root/Dependency.fixturelang', name: 'Dependency.fixturelang', directory: false }]
+      : []
+  },
+  async read(_sourceId, path, maximum) {
+    if (path !== 'root/Dependency.fixturelang' || dependencyBytes.byteLength > maximum) {
+      throw new RangeError('dependency unavailable')
+    }
+    return dependencyBytes.slice()
+  },
+  async resolveDependencies(request) {
+    return {
+      schemaVersion: 1,
+      gameId: request.gameId,
+      complete: true,
+      mounts: [
+        {
+          dependencyId: 'fixture',
+          order: 0,
+          sourceId: 'fixture-source',
+          sourcePath: 'root',
+          displayName: 'Fixture dependency',
+          kind: 'content-archive',
+          fingerprint: 'content-hash.sha256:fixture',
+        },
+      ],
+      dependencies: request.dependencies,
+      diagnostics: [],
+    }
+  },
+  async dispose() {},
+}
+
+const dependencyContext: McpLanguageSessionContext = {
+  descriptor: {
+    operations: [
+      {
+        id: 'content.resolve-dependencies',
+        handlerId: 'resolve-dependencies',
+        mutatesSource: false,
+        state: 'available',
+      },
+    ],
+  } as never,
+  operations: {
+    async invoke() {
+      return {
+        state: 'ok',
+        output: {
+          kind: 'json',
+          value: {
+            schemaVersion: 1,
+            gameId: 'fixture/game',
+            complete: true,
+            dependencies: [{ id: 'fixture' }],
+          },
+        },
+        diagnostics: [],
+      }
+    },
+    async dispose() {},
+  } as never,
+}
 
 beforeAll(async () => {
   root = await mkdtemp(join(tmpdir(), 'modkit-mcp-language-session-'))
-  host = await createHostMcpPort({
-    roots: [root],
-    extensions: [resolve(import.meta.dirname, 'fixtures', 'language-session-extension')],
-  })
+  host = await createHostMcpPort(
+    {
+      roots: [root],
+      extensions: [resolve(import.meta.dirname, 'fixtures', 'language-session-extension')],
+    },
+    undefined,
+    { contentSources },
+  )
 }, 30_000)
 
 afterAll(async () => {
@@ -126,5 +213,42 @@ describe('host-held MCP language session', () => {
         ],
       }),
     ).rejects.toThrow(/language provider unresolved/u)
+  })
+
+  it('projects a subject dependency closure into the retained language workspace', async () => {
+    const uri = 'modkit-source://fixture/Scripts/Main.fixturelang'
+    const session = await host.openLanguageSession!(
+      {
+        documents: [
+          {
+            uri,
+            languageId: 'fixture-language',
+            documentKind: 'fixture-source',
+            version: 1,
+            text: 'source',
+          },
+        ],
+      },
+      undefined,
+      dependencyContext,
+    )
+    try {
+      expect(session.workspaceIncomplete).toBe(true)
+      const definition = await session.invoke({
+        primaryUri: uri,
+        feature: 'definition',
+        position: { line: 0, character: 1 },
+        maxResults: 20,
+        maxEdits: 20,
+      })
+      expect(definition.result).toMatchObject({
+        // The closure is complete, but dependency documents are read-only for workspace edits.
+        isIncomplete: true,
+        locations: [{ uri: expect.stringMatching(/^content-source:\/\/fixture-source\//u) }],
+      })
+      expect(session.workspaceIncomplete).toBe(false)
+    } finally {
+      await session.close()
+    }
   })
 })

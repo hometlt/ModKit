@@ -5,6 +5,8 @@ export const MODKIT_MCP_ROOTS_ENV = 'MODKIT_MCP_ROOTS'
 export const MODKIT_MCP_EXTENSIONS_ENV = 'MODKIT_MCP_EXTENSIONS'
 export const MODKIT_MCP_OPERATION_PERMISSIONS_ENV = 'MODKIT_MCP_OPERATION_PERMISSIONS'
 export const MODKIT_MCP_ALLOW_EDITS_ENV = 'MODKIT_MCP_ALLOW_EDITS'
+export const MODKIT_MCP_CONTENT_SOURCE_CONFIG_ENV = 'MODKIT_MCP_CONTENT_SOURCE_CONFIG'
+export const MODKIT_MCP_CONTENT_SOURCE_STORAGE_ENV = 'MODKIT_MCP_CONTENT_SOURCE_STORAGE'
 
 export interface ModkitMcpConfiguration {
   /** Allow bounded, temporary MCP output resources. No filesystem write authority. */
@@ -16,9 +18,11 @@ export interface ModkitMcpConfiguration {
   readonly operationPermissions?: readonly PermissionClass[]
   readonly allowEffectfulServiceOperations?: boolean
   readonly trustExtensions?: boolean
+  readonly contentSourceConfig?: string
+  readonly contentSourceStorage?: string
 }
 
-const USAGE = `Usage: modkit-mcp --root <absolute-directory> --extension <absolute-directory> [--root ...] [--extension ...] [--output-artifacts] [--allow-edits] [--operation-permission <class> ...] [--allow-effectful-service-operations] [--trust-extensions]\n\nEnvironment fallback:\n  ${MODKIT_MCP_ROOTS_ENV}=<paths separated by ${JSON.stringify(delimiter)}>\n  ${MODKIT_MCP_EXTENSIONS_ENV}=<paths separated by ${JSON.stringify(delimiter)}>\n  ${MODKIT_MCP_OPERATION_PERMISSIONS_ENV}=<permission classes separated by ${JSON.stringify(delimiter)}>\n  ${MODKIT_MCP_ALLOW_EDITS_ENV}=true|false\n`
+const USAGE = `Usage: modkit-mcp --root <absolute-directory> --extension <absolute-directory> [--root ...] [--extension ...] [--output-artifacts] [--allow-edits] [--operation-permission <class> ...] [--allow-effectful-service-operations] [--trust-extensions] [--content-source-config <absolute-file> --content-source-storage <absolute-directory>]\n\nEnvironment fallback:\n  ${MODKIT_MCP_ROOTS_ENV}=<paths separated by ${JSON.stringify(delimiter)}>\n  ${MODKIT_MCP_EXTENSIONS_ENV}=<paths separated by ${JSON.stringify(delimiter)}>\n  ${MODKIT_MCP_OPERATION_PERMISSIONS_ENV}=<permission classes separated by ${JSON.stringify(delimiter)}>\n  ${MODKIT_MCP_ALLOW_EDITS_ENV}=true|false\n  ${MODKIT_MCP_CONTENT_SOURCE_CONFIG_ENV}=<absolute-file>\n  ${MODKIT_MCP_CONTENT_SOURCE_STORAGE_ENV}=<absolute-directory>\n`
 
 export class ConfigurationError extends TypeError {
   readonly usage = USAGE
@@ -67,6 +71,8 @@ export function parseModkitMcpConfiguration(
   let allowEdits = envBoolean(MODKIT_MCP_ALLOW_EDITS_ENV, env[MODKIT_MCP_ALLOW_EDITS_ENV])
   let allowEffectfulServiceOperations = false
   let trustExtensions = false
+  let contentSourceConfig: string | undefined
+  let contentSourceStorage: string | undefined
   for (let index = 0; index < argv.length; index += 1) {
     const option = argv[index]
     if (option === '--output-artifacts') {
@@ -86,7 +92,13 @@ export function parseModkitMcpConfiguration(
       continue
     }
     if (option === '--help' || option === '-h') throw new ConfigurationError('help requested')
-    if (option !== '--root' && option !== '--extension' && option !== '--operation-permission') {
+    if (
+      option !== '--root' &&
+      option !== '--extension' &&
+      option !== '--operation-permission' &&
+      option !== '--content-source-config' &&
+      option !== '--content-source-storage'
+    ) {
       throw new ConfigurationError(`unknown option: ${option ?? ''}`)
     }
     const value = argv[index + 1]
@@ -95,7 +107,9 @@ export function parseModkitMcpConfiguration(
     }
     if (option === '--root') roots.push(value)
     else if (option === '--extension') extensions.push(value)
-    else operationPermissions.push(value)
+    else if (option === '--operation-permission') operationPermissions.push(value)
+    else if (option === '--content-source-config') contentSourceConfig = value
+    else contentSourceStorage = value
     index += 1
   }
   const selectedRoots = roots.length > 0 ? roots : envPaths(env[MODKIT_MCP_ROOTS_ENV])
@@ -111,14 +125,33 @@ export function parseModkitMcpConfiguration(
       throw new ConfigurationError(`unknown operation permission class: ${permission}`)
     }
   }
+  contentSourceConfig ??= env[MODKIT_MCP_CONTENT_SOURCE_CONFIG_ENV]
+  contentSourceStorage ??= env[MODKIT_MCP_CONTENT_SOURCE_STORAGE_ENV]
+  if ((contentSourceConfig === undefined) !== (contentSourceStorage === undefined)) {
+    throw new ConfigurationError('content source config and storage must be supplied together')
+  }
+  if (contentSourceConfig !== undefined && !isAbsolute(contentSourceConfig)) {
+    throw new ConfigurationError('content source config must be an absolute path')
+  }
+  if (contentSourceStorage !== undefined && !isAbsolute(contentSourceStorage)) {
+    throw new ConfigurationError('content source storage must be an absolute path')
+  }
   return Object.freeze({
     ...(outputArtifacts ? { outputArtifacts: true } : {}),
     ...(allowEdits ? { allowEdits: true } : {}),
     roots: uniqueAbsolute('root', selectedRoots),
     extensions: uniqueAbsolute('extension', selectedExtensions),
-    operationPermissions: Object.freeze([...new Set(selectedPermissions)].sort()) as readonly PermissionClass[],
+    operationPermissions: Object.freeze(
+      [...new Set(selectedPermissions)].sort(),
+    ) as readonly PermissionClass[],
     allowEffectfulServiceOperations,
     trustExtensions,
+    ...(contentSourceConfig === undefined
+      ? {}
+      : {
+          contentSourceConfig: resolve(contentSourceConfig),
+          contentSourceStorage: resolve(contentSourceStorage!),
+        }),
   })
 }
 

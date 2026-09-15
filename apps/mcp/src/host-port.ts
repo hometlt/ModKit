@@ -2,12 +2,15 @@ import { createHash, randomUUID } from 'node:crypto'
 import { open, realpath, stat } from 'node:fs/promises'
 import { basename, extname, isAbsolute, relative, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
-import type { Diagnostic } from '@modkit/core'
+import { diagnostic, type Diagnostic } from '@modkit/core'
 import {
   artifactNamespaceSourceFromVfsMount,
+  contentDependencyDiagnostics,
+  createContentDependencyLanguageDocumentSource,
   createKnowledgeCatalog,
   discoverServiceOperations,
   invokeServiceOperation,
+  readOperationContentDependencies,
   openSubject,
   subjectOpenSnapshot,
   type Inventory,
@@ -18,6 +21,7 @@ import {
 import { discoverGameInstallations } from '@modkit/host/games'
 import {
   createLanguageWorkspace,
+  languageProviderRoutes,
   type LanguageWorkspace,
   type LanguageWorkspaceAnalysisResult,
   type LanguageWorkspaceDocumentSource,
@@ -31,8 +35,16 @@ import {
 import { sceneModule } from '@modkit/scene/module'
 import { uvModule } from '@modkit/uv/module'
 import { coordinateMapPreviewAssetSession } from '@modkit/host/maps'
-import type { AssetSession, JsonValue, KnowledgeCatalog } from '@modkit/sdk'
+import type {
+  AnyDescriptor,
+  AssetSession,
+  JsonValue,
+  KnowledgeCatalog,
+  OperationSession,
+} from '@modkit/sdk'
 import { VirtualFileSystem } from '@modkit/vfs'
+import type { ContentSources } from '@modkit/vfs/content-sources'
+import { loadContentSources } from '@modkit/vfs/content-sources/node'
 import { createFileVfsProvider } from '@modkit/vfs/providers/file'
 import type { ModkitMcpConfiguration } from './config.js'
 
@@ -173,6 +185,11 @@ export interface McpLanguageSessionOpenRequest {
   readonly documents: readonly McpLanguageSessionDocument[]
 }
 
+export interface McpLanguageSessionContext {
+  readonly descriptor: Pick<AnyDescriptor, 'operations'>
+  readonly operations: OperationSession
+}
+
 export type McpLanguageSessionFeatureRequest = Omit<
   McpLanguageRequest,
   'documents' | 'primaryIndex'
@@ -223,6 +240,7 @@ export interface ModkitMcpHostPort {
   openLanguageSession?(
     request: McpLanguageSessionOpenRequest,
     signal?: AbortSignal,
+    context?: McpLanguageSessionContext,
   ): Promise<McpLanguageSession>
   serviceOperations?(
     offset: number,
@@ -370,6 +388,8 @@ const canonicalDirectories = async (
 export interface HostMcpPortOptions {
   /** Optional extension-owned, host-validated read-only language dependency source. */
   readonly languageDocumentSource?: LanguageWorkspaceDocumentSource
+  /** Optional host-owned content provider. Ownership transfers to the returned MCP port. */
+  readonly contentSources?: ContentSources
 }
 
 export async function createHostMcpPort(
@@ -409,6 +429,22 @@ export async function createHostMcpPort(
     throw new TypeError(
       `${modkit.extensionFailures.length} explicitly configured extension root(s) failed to load`,
     )
+  }
+  let contentSources = options.contentSources
+  if (
+    contentSources === undefined &&
+    configuration.contentSourceConfig !== undefined &&
+    configuration.contentSourceStorage !== undefined
+  ) {
+    try {
+      contentSources = await loadContentSources(
+        configuration.contentSourceConfig,
+        configuration.contentSourceStorage,
+      )
+    } catch (error) {
+      await modkit.close()
+      throw error
+    }
   }
   const knowledge = createKnowledgeCatalog(modkit.services.inventory)
   const mapPreviewResources = createNodeMapPreviewResourcePlanResolver({
@@ -571,9 +607,43 @@ export async function createHostMcpPort(
         return workspace.diagnostics(common)
     }
   }
+  const composedLanguageDocumentSource = (
+    sources: readonly LanguageWorkspaceDocumentSource[],
+    noteCompleteness: (complete: boolean) => void,
+  ): LanguageWorkspaceDocumentSource | undefined => {
+    if (sources.length === 0) return undefined
+    return Object.freeze({
+      async snapshot(request: Parameters<LanguageWorkspaceDocumentSource['snapshot']>[0]) {
+        const documents = []
+        const seen = new Set(request.workspaceDocuments.map(document => document.uri))
+        let complete = true
+        for (const source of sources) {
+          const remaining = request.maxDocuments - documents.length
+          if (remaining <= 0) {
+            complete = false
+            break
+          }
+          const result = await source.snapshot({ ...request, maxDocuments: remaining })
+          complete = complete && result.isComplete
+          for (const document of result.documents) {
+            if (seen.has(document.uri)) continue
+            if (documents.length >= request.maxDocuments) {
+              complete = false
+              break
+            }
+            seen.add(document.uri)
+            documents.push(document)
+          }
+        }
+        noteCompleteness(complete)
+        return Object.freeze({ documents: Object.freeze(documents), isComplete: complete })
+      },
+    })
+  }
   const openLanguageSession = async (
     request: McpLanguageSessionOpenRequest,
     signal?: AbortSignal,
+    context?: McpLanguageSessionContext,
   ): Promise<McpLanguageSession> => {
     if (request.documents.length === 0 || request.documents.length > 32) {
       throw new TypeError('language session needs between 1 and 32 documents')
@@ -589,14 +659,77 @@ export async function createHostMcpPort(
       if (totalBytes > 16_777_216) throw new TypeError('language workspace exceeds 16 MiB')
       byUri.set(document.uri, document)
     }
+    const dependencyDiagnostics: Diagnostic[] = []
+    let dependencyResolutionComplete = false
+    let dependencySnapshotComplete = false
+    let dependencySource: LanguageWorkspaceDocumentSource | undefined
+    if (context !== undefined) {
+      const discovered = await readOperationContentDependencies({
+        descriptor: context.descriptor,
+        operations: context.operations,
+        ...(signal === undefined ? {} : { signal }),
+      })
+      dependencyDiagnostics.push(...discovered.diagnostics)
+      if (discovered.state === 'resolved') {
+        if (contentSources === undefined) {
+          dependencyDiagnostics.push(
+            diagnostic(
+              'information',
+              'x3.mcp/content-sources-unavailable',
+              'The MCP host has no configured content source for the subject dependency set.',
+            ),
+          )
+        } else if (contentSources.resolveDependencies === undefined) {
+          dependencyDiagnostics.push(
+            diagnostic(
+              'information',
+              'x3.mcp/content-dependency-resolver-unavailable',
+              'The configured content source cannot resolve subject dependencies.',
+            ),
+          )
+        } else {
+          try {
+            const resolution = await contentSources.resolveDependencies(discovered.dependencies)
+            signal?.throwIfAborted()
+            dependencyDiagnostics.push(...contentDependencyDiagnostics(resolution.diagnostics))
+            dependencyResolutionComplete = resolution.complete
+            if (resolution.mounts.length > 0) {
+              dependencySource = createContentDependencyLanguageDocumentSource({
+                contentSources,
+                resolution,
+                routes: languageProviderRoutes(modkit.services.inventory),
+                maxDocumentBytes: MCP_LANGUAGE_MAX_DOCUMENT_BYTES,
+                maxWorkspaceBytes: 16_777_216,
+                maxEntries: 16_384,
+              })
+            }
+          } catch (error) {
+            signal?.throwIfAborted()
+            dependencyDiagnostics.push(
+              diagnostic(
+                'warning',
+                'x3.mcp/content-dependency-resolution-failed',
+                error instanceof Error ? error.message : String(error),
+              ),
+            )
+          }
+        }
+      }
+    }
+    const sources = [dependencySource, options.languageDocumentSource].filter(
+      (source): source is LanguageWorkspaceDocumentSource => source !== undefined,
+    )
+    const documentSource = composedLanguageDocumentSource(sources, complete => {
+      dependencySnapshotComplete = complete
+    })
+    const workspaceIncomplete = () =>
+      context === undefined || !dependencyResolutionComplete || !dependencySnapshotComplete
     const workspace = createLanguageWorkspace({
       services: modkit.services,
       grant: { id: `modkit-mcp-language-session:${randomUUID()}`, classes: ['read-source'] },
       budgets: mapPreviewBudget,
-      workspaceIncomplete: true,
-      ...(options.languageDocumentSource === undefined
-        ? {}
-        : { documentSource: options.languageDocumentSource }),
+      workspaceIncomplete,
+      ...(documentSource === undefined ? {} : { documentSource }),
     })
     const analyses = new Map<string, LanguageWorkspaceAnalysisResult>()
     let closed = false
@@ -644,7 +777,10 @@ export async function createHostMcpPort(
       }
       return Object.freeze({
         snapshotId: `language-session-v1:${digest.digest('hex')}`,
-        diagnostics: Object.freeze([...analyses.values()].flatMap(item => item.hostDiagnostics)),
+        diagnostics: Object.freeze([
+          ...dependencyDiagnostics,
+          ...[...analyses.values()].flatMap(item => item.hostDiagnostics),
+        ]),
         primaryUri: document.uri,
         feature,
         result: value,
@@ -683,9 +819,14 @@ export async function createHostMcpPort(
           ),
         )
       },
-      workspaceIncomplete: true,
+      get workspaceIncomplete() {
+        return workspaceIncomplete()
+      },
       get diagnostics() {
-        return Object.freeze([...analyses.values()].flatMap(item => item.hostDiagnostics))
+        return Object.freeze([
+          ...dependencyDiagnostics,
+          ...[...analyses.values()].flatMap(item => item.hostDiagnostics),
+        ])
       },
       async update(
         update: McpLanguageSessionUpdateRequest,
@@ -1269,7 +1410,7 @@ export async function createHostMcpPort(
     async close(): Promise<void> {
       discoveredById.clear()
       discoveryIdByCoordinate.clear()
-      await modkit.close()
+      await Promise.all([modkit.close(), contentSources?.dispose()])
     },
   }
   return Object.freeze(port)
