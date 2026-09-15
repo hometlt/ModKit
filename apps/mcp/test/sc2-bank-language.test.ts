@@ -12,10 +12,12 @@ import {
 } from '../src/index.js'
 
 const text = '<?xml version="1.0"?><Bank><Section name="Stats"><Key name="Wins"/></Section></Bank>'
+const bankListText = '<BankList><Bank Name="Progress" Player="1"/></BankList>'
 const coreRoot = resolve(import.meta.dirname, '..', '..', '..')
 const blizzard = resolve(coreRoot, '..', 'modkit-extensions-blizzard', 'starcraft2')
 let root: string
 let path: string
+let bankListPath: string
 let host: ModkitMcpHostPort
 let app: ReturnType<typeof createModkitMcpServer>
 let client: Client
@@ -26,7 +28,8 @@ const envelope = (value: Awaited<ReturnType<Client['callTool']>>) =>
 beforeAll(async () => {
   root = await mkdtemp(join(tmpdir(), 'modkit-mcp-sc2-bank-'))
   path = join(root, 'Progress.SC2Bank')
-  await writeFile(path, text, 'utf8')
+  bankListPath = join(root, 'BankList.xml')
+  await Promise.all([writeFile(path, text, 'utf8'), writeFile(bankListPath, bankListText, 'utf8')])
   host = await createHostMcpPort({ roots: [root], extensions: [blizzard] })
   app = createModkitMcpServer(host)
   const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair()
@@ -98,6 +101,66 @@ describe('installed SC2 Bank language through MCP', () => {
           isComplete: true,
           documentChanges: [{ uri, documentVersion: 4, edits: [{ newText: 'Victories' }] }],
         },
+      })
+    } finally {
+      await client.callTool({
+        name: 'modkit.language_session_close',
+        arguments: { sessionHandle },
+      })
+    }
+  }, 180_000)
+
+  it('routes BankList.xml separately and navigates to an open SC2Bank', async () => {
+    const bankUri = pathToFileURL(path).href
+    const listUri = pathToFileURL(bankListPath).href
+    const opened = envelope(
+      await client.callTool({
+        name: 'modkit.language_session_open',
+        arguments: {
+          documents: [
+            {
+              path: bankListPath,
+              languageId: 'sc2-bank-list',
+              documentKind: 'sc2-bank-list-source',
+              version: 2,
+            },
+            { path, languageId: 'sc2-bank', documentKind: 'sc2-bank-source', version: 4 },
+          ],
+        },
+      }),
+    )
+    expect(opened.completeness, JSON.stringify(opened)).toBe('partial')
+    expect(opened.data).toMatchObject({
+      documents: [
+        {
+          uri: listUri,
+          features: expect.arrayContaining([
+            'semantic-tokens',
+            'diagnostics',
+            'document-symbols',
+            'completion',
+            'hover',
+            'definition',
+          ]),
+        },
+        { uri: bankUri },
+      ],
+    })
+    const sessionHandle = (opened.data as { sessionHandle: string }).sessionHandle
+    try {
+      const definition = envelope(
+        await client.callTool({
+          name: 'modkit.language_session_feature',
+          arguments: {
+            sessionHandle,
+            primaryUri: listUri,
+            feature: 'definition',
+            position: { line: 0, character: bankListText.indexOf('Progress') + 1 },
+          },
+        }),
+      )
+      expect(definition.data).toMatchObject({
+        result: { locations: [{ uri: bankUri }], isIncomplete: true },
       })
     } finally {
       await client.callTool({
