@@ -247,6 +247,7 @@ export {
   type EditPlanFromInputOptions,
 } from './editing.js'
 export { applyJsonEdit, type JsonEdit } from './json-edit.js'
+export { isJsonSerializable } from './json.js'
 
 export interface DefineWriterOptions {
   readonly providerId: string
