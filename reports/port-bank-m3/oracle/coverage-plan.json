@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "scope": "M2 port-ready oracle coverage; no feature or operation is marked adapted by this plan.",
+  "manifestOperations": [
+    { "legacyOperation": "view.inspect", "nativeOperation": "view.inspect", "handlerId": "inspect", "corpus": "corpus/view.inspect.json", "positiveCase": "pinned:endofdreams" },
+    { "legacyOperation": "asset.validate", "nativeOperation": "asset.validate", "handlerId": "validate", "corpus": "corpus/asset.validate.json", "positiveCase": "pinned:endofdreams" },
+    { "legacyOperation": "edit.content", "nativeOperation": "edit.content", "handlerId": "patch-value", "corpus": "corpus/edit.content.json", "positiveCase": "pinned:endofdreams" },
+    { "legacyOperation": "source.save-as", "nativeOperation": "source.save-as", "handlerId": "save-as", "corpus": "corpus/source.save-as.json", "positiveCase": "pinned:endofdreams" },
+    { "legacyOperation": "export.raw", "nativeOperation": "export.raw", "handlerId": "export-raw", "corpus": "corpus/export.raw.json", "positiveCase": "pinned:endofdreams" },
+    { "legacyOperation": "save.sign", "nativeOperation": "blizzard/sc2-bank.sign", "handlerId": "sign", "corpus": "corpus/save.sign.json", "positiveCase": "pinned:endofdreams" }
+  ],
+  "additionalPublicCoverage": [
+    { "area": "parse and typed coercion", "legacy": ["parseBank", "coerceBankValue", "makeBankValue"], "cases": ["synthetic:typed-custom-encoding", "pinned:endofdreams"], "native": "dist/sc2-bank/core.js" },
+    { "area": "custom child nodes", "legacy": ["parseBank", "serializeBank"], "cases": ["synthetic:typed-custom-encoding"], "native": "dist/sc2-bank/core.js" },
+    { "area": "validate taxonomy", "legacy": ["validateBank"], "cases": ["synthetic:invalid-typed"], "native": "asset.validate/validate" },
+    { "area": "patch/refusal/no-op", "legacy": ["patchBankValueXml"], "cases": ["synthetic:typed-custom-encoding", "synthetic:patch-unknown-key"], "native": "edit.content/patch-value" },
+    { "area": "signature and verification", "legacy": ["calculateBankSignature", "patchBankSignatureXml", "verifyBankSignature"], "cases": ["pinned:endofdreams", "synthetic:sign-without-info"], "native": ["blizzard/sc2-bank.sign/sign", "blizzard/sc2-bank.verify/verify"] },
+    { "area": "browser-safe core API", "legacy": ["core.ts", "SC2BankEditor", "BankList"], "cases": ["core.spec.ts", "bank-list.spec.ts", "editor.spec.ts"], "native": "public ./bank/core export surface" },
+    { "area": "Node helpers", "legacy": ["discoverBankFiles", "loadBankFile", "saveBankFile", "runBankCli"], "cases": ["path.spec.ts", "io.spec.ts", "cli.spec.ts"], "native": "public ./bank/node export surface" }
+  ],
+  "refusalRule": "A matching refusal is recorded but cannot be the sole successful evidence. Each manifest operation proof names pinned:endofdreams, an executable native handler, and the published contribution path."
+}

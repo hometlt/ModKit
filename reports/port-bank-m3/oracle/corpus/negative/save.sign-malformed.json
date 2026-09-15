@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "kind": "synthetic",
+  "codec": "sc2-bank",
+  "operation": "save.sign",
+  "purpose": "Explicit asymmetric malformed-XML audit. This corpus is never operation-proof evidence.",
+  "cases": [
+    {
+      "id": "synthetic:malformed",
+      "input": {
+        "xml": "<Bank><Section name=\"broken\"><Key name=\"K\"><Value int=\"1\"/></Key></Section>",
+        "path": "/synthetic/malformed.SC2Bank",
+        "signatureInfo": {
+          "bankName": "endofdreamsbank2",
+          "authorId": "2-S2-1-2355723",
+          "playerId": "2-S2-1-98765"
+        }
+      }
+    },
+    {
+      "id": "synthetic:sign-without-info",
+      "input": {
+        "xml": "<Bank><Section name=\"S\"><Key name=\"K\"><Value int=\"1\"/></Key></Section></Bank>",
+        "path": "/readonly/no-identity.SC2Bank",
+        "signatureInfo": null
+      }
+    }
+  ],
+  "proofs": []
+}

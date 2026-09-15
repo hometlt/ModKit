@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "auditedAt": "2026-09-04",
+  "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "legacyTests": {
+    "count": 12,
+    "files": [
+      "src/core/bank-list.spec.ts", "src/core/bank.spec.ts", "src/core/cli.spec.ts", "src/core/core.spec.ts", "src/core/editor.spec.ts", "src/core/io.spec.ts", "src/core/patcher.spec.ts", "src/core/path.spec.ts", "src/core/validate.spec.ts", "test/codec.test.ts", "test/round-trip.test.ts", "test/sc2-bank-manifest.test.ts"
+    ]
+  },
+  "dependency": {
+    "name": "fast-xml-parser",
+    "declared": "^4.3.5",
+    "resolved": "4.5.6",
+    "lockIntegrity": "sha512-Yd4vkROfJf8AuJrDIVMVmYfULKmIJszVsMv7Vo71aocsKgFxpdlpSHXSaInvyYfgw2PRuObQSW2GFpVMUjxu9A=="
+  },
+  "pinnedRealFixture": {
+    "path": "extensions/blizzard/starcraft-2/codecs/sc2-bank/src/core/fixtures/endofdreamsbank2.SC2Bank",
+    "gitBlob": "f7d7ddf8a79d855f1af43a3ed5b508fe43b1502a",
+    "byteLength": 696,
+    "sha256": "925126109547379dd4325d3fe1ff8690255f51566786805794f8c415fc69d9ee",
+    "signature": "B786E6B04930A2B9D6789019D9D7DAD476A3A9DB"
+  },
+  "searchedRoots": [
+    { "path": "C:/apps/StarCraft II", "sc2BankCount": 0 },
+    { "path": "C:/FILES/SC2Files/Mods", "sc2BankCount": 0 },
+    { "path": "C:/FILES/SC2Files/AllRaces", "sc2BankCount": 0 },
+    { "path": "C:/Users/Admin/Documents", "sc2BankCount": 38 }
+  ],
+  "realCorpus": {
+    "kind": "user-save-banks",
+    "scope": "All .SC2Bank files discovered below the explicit Documents StarCraft II Banks directory; bytes are not copied into this artifact tree.",
+    "sourceDirectory": "C:/Users/Admin/Documents/StarCraft II/Accounts/462903617/2-S2-1-7985305/Banks",
+    "files": [
+      ["CampaignPS.SC2Bank",267,"def9d21c34a22735d3ea50fecdc60dc458a515834e3b4ab1b160bc2f62162b34"],
+      ["NArchive.SC2Bank",3391,"c8a17744310f9144321e475ca36e31aff8cf7316325197eb29798fd4fba64994"],
+      ["NArmy.SC2Bank",1709,"73a99ccdb157e2677add2efa78cc7892215d5ccd94f4f93a15a9e3276cba430b"],
+      ["NCampaign.SC2Bank",91995,"407826a33f6051d23ec2168fc9789073a09bbba7afb953c95452e5e9719849cf"],
+      ["NStory.SC2Bank",1251,"b258ccc57ab58530dc47a6115da9c26b2c9efac92a2d20084ab3a37a781cb525"],
+      ["PArchive.SC2Bank",10268,"18a87ca2783e063d9f0e15a15e740d16805a29b25a14bb2bf1244f2eaab85905"],
+      ["PPrologue.SC2Bank",9163,"6f37fc8f1ea70a3cb962f1b70810a02255e1365caad3d10bf19b1cf3fe6eceff"],
+      ["PrologueArchive.SC2Bank",850,"3f395ad3259a7a846d1271944dc89bb60bdd875214fdce9c1ded33bf7fee1136"],
+      ["THanson01.SC2Bank",7689,"9b622799866e20f3fcde3afbf49c12dfba986f5bcdb5c784a9c033aee23a5245"],
+      ["THanson02.SC2Bank",20769,"61b02b04262a6d3372dcfe898a813ef3115a2fc839057003188ff527ec2597e8"],
+      ["THanson03A.SC2Bank",21548,"9844791299bab1ffb630de964009683af1c6535f85870cb4d4a3a87ddd2c0dca"],
+      ["THanson03B.SC2Bank",21548,"9844791299bab1ffb630de964009683af1c6535f85870cb4d4a3a87ddd2c0dca"],
+      ["THorner01.SC2Bank",11851,"88aef56df80471a6bfb89d3a2d31577dfe7edf8f1550ac9d15af3cb65f6cdd8d"],
+      ["THorner02.SC2Bank",12608,"fa1189dd4fca29af3020610ff3f5c6eb1cc197f5dad64919ff026e439ee8ccfa"],
+      ["THorner03.SC2Bank",13491,"ccf76c381c853c94d78bbc9bef6c32299874c6e4a4bd6c8dd0609877606cb670"],
+      ["THorner04.SC2Bank",14935,"d282b722e5112b9e65d62247f30307c2d43b24e2f3fdb60127c4efa0e1516fad"],
+      ["TRaynor01.SC2Bank",905,"3deb01797f761b27c911d48491a9d4800576a9fd79e68a7703fc2e26bc6ab0af"],
+      ["TRaynor02.SC2Bank",3459,"e36bb7835cfbc1a558711ecb20815d086fec4635673f36775f15d223cc91027d"],
+      ["TRaynor03.SC2Bank",6602,"3c7d7a049700996c551944cc6a9c57b6e9a5b0e73dac420a9943a31f6fd4ea32"],
+      ["TTosh01.SC2Bank",9423,"aa4201c13aa93ff36f8a0c63e3a17b78881863eaf251f0ff69ffd196f67aba56"],
+      ["TTosh02.SC2Bank",14186,"818cb49a55aaf344c4f236c5516e60818dcb724e3f49bd083c3e322a6c88513b"],
+      ["TTosh03A.SC2Bank",16999,"fdd618e01e7049553744639b2307c68849ef3e272900fc2507673df88e1667d6"],
+      ["TTosh03B.SC2Bank",16999,"fdd618e01e7049553744639b2307c68849ef3e272900fc2507673df88e1667d6"],
+      ["TTychus01.SC2Bank",10904,"35efec1c7301d087fa4a9eb24f9d58249ce0021c7ffa5f7bbd6171e0a7b3e7a6"],
+      ["TTychus02.SC2Bank",15544,"fb3eb8dbbdc786ed261c6d1d1373d9a51d8ea3ed628692739711f8cf0fb1a76b"],
+      ["TTychus03.SC2Bank",16460,"40c4f9cb9a1fae1a00e4146b315189bd00a12dff413d91b9cebb86039106cbb3"],
+      ["TTychus04.SC2Bank",19410,"f6eeed0262e890cfe9d981aa92752fe9b29f16767db892b52da92b10182b92cd"],
+      ["TTychus05.SC2Bank",20269,"4dd41b873edb9f5cd5f78fa1eb6a6f9d030aadd715533b09a3bbc4603819dcb9"],
+      ["TValerian01.SC2Bank",22637,"0b58df7a42cf5866855e5be938d58cfa02fd1edd4fb8ef3a7263b0952b8b77fe"],
+      ["TValerian02A.SC2Bank",23198,"4de466b183156586a51c875ff77ee52901362aafea747743a15ab8e0edaab37f"],
+      ["TValerian02B.SC2Bank",23198,"4de466b183156586a51c875ff77ee52901362aafea747743a15ab8e0edaab37f"],
+      ["TValerian03.SC2Bank",23359,"40870bc64ac524506ac074b097c527383cfae3bc21723658bfd8c663f617a36d"],
+      ["TZeratul01.SC2Bank",17568,"b1adb29e5d628b2639bc038b0b4b42347e3d0cdfff9ca4ea0e16087c2bd84873"],
+      ["TZeratul02.SC2Bank",18012,"6de579d27ffccce0a0dd07d26ae1b225ec212dceacbfa964df15e3db56150234"],
+      ["TZeratul03.SC2Bank",18488,"b59fccfc1e11888d31d0e80bca3f494066b394b08b7a7672540a53289878dd22"],
+      ["TZeratul04.SC2Bank",19209,"18fa197c5061653d942b1de64f595a3c308e470e0c69c05a50173c8a3eebff45"],
+      ["ZArchive.SC2Bank",61,"b82ec5dd929ce002137738a8d205e19b966464eec606efbb94c0ddca4835b30f"],
+      ["ZCampaignStats.SC2Bank",29710,"0470f015cd669a23ecc9a14b61952dc827637a8b633c77a4b226beaffce420d6"]
+    ]
+  }
+}
