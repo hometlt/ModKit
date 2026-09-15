@@ -61,7 +61,7 @@ beforeAll(async () => {
     ),
     writeFile(
       layoutPath,
-      '<?xml version="1.0"?><Desc><Frame type="Button" name="Close"><Shortcut val="@Button/Hotkey/Cancel"/></Frame></Desc>',
+      '<?xml version="1.0"?><Desc><Constant name="Accent" val="FF102030"/><Frame type="Button" name="Close"><Shortcut val="@Button/Hotkey/Cancel"/></Frame></Desc>',
       'utf8',
     ),
   ])
@@ -221,6 +221,60 @@ describe('SC2 language and TriggerData operations through generic MCP', () => {
     } finally {
       await client.callTool({ name: 'modkit.close_subject', arguments: { handle } })
     }
+  }, 180_000)
+
+  it('routes Layout colors and presentations through the generic MCP language tool', async () => {
+    const document = {
+      path: layoutPath,
+      languageId: 'sc2-layout',
+      documentKind: 'sc2-layout-source',
+    }
+    const colors = envelope(
+      await client.callTool({
+        name: 'modkit.language',
+        arguments: {
+          documents: [document],
+          primaryIndex: 0,
+          feature: 'document-colors',
+          maxResults: 16,
+          maxEdits: 16,
+        },
+      }),
+    )
+    expect(colors.completeness).not.toBe('invalid')
+    const colorResult = (colors.data as {
+      readonly result?: {
+        readonly colors?: readonly [{ readonly color: unknown; readonly range: unknown }]
+      }
+    }).result
+    expect(colorResult?.colors, JSON.stringify(colors)).toHaveLength(1)
+    expect(colorResult?.colors?.[0]).toMatchObject({
+      color: { red: 16 / 255, green: 32 / 255, blue: 48 / 255, alpha: 1 },
+    })
+
+    const selected = colorResult?.colors?.[0]
+    if (selected === undefined) throw new Error('Layout color result is missing')
+    const presentations = envelope(
+      await client.callTool({
+        name: 'modkit.language',
+        arguments: {
+          documents: [document],
+          primaryIndex: 0,
+          feature: 'color-presentations',
+          color: selected.color,
+          range: selected.range,
+          maxResults: 16,
+          maxEdits: 16,
+        },
+      }),
+    )
+    expect(presentations.completeness).not.toBe('invalid')
+    expect(presentations.data).toMatchObject({
+      result: {
+        presentations: [{ label: '255,16,32,48' }, { label: 'ff102030' }],
+        isIncomplete: false,
+      },
+    })
   }, 180_000)
 
   it('routes SC2 language actions plus Data and Layout native edit proposals without writing', async () => {

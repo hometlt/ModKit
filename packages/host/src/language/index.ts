@@ -210,6 +210,16 @@ export const LANGUAGE_DOCUMENT_CONTRACT_DEFINITION: ServiceContractDefinitionSpe
           optional: true,
           signal: Object.freeze({ arg: 0, key: 'signal' }),
         }),
+        documentColors: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+        colorPresentations: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
         codeActions: Object.freeze({
           kind: 'value',
           optional: true,

@@ -18,10 +18,20 @@ import {
 } from '@modkit/host'
 import {
   createLanguageWorkspace,
+  LANGUAGE_DOCUMENT_CONTRACT_DEFINITION,
   type LanguageHostServices,
   type LanguageWorkspaceDocumentSource,
   type LanguageWorkspaceDocumentRequest,
 } from '../src/language/index.js'
+
+describe('standard language execution surface', () => {
+  it('carries colour methods across in-process and worker boundaries', () => {
+    expect(LANGUAGE_DOCUMENT_CONTRACT_DEFINITION.surface?.methods).toMatchObject({
+      documentColors: { kind: 'value', optional: true },
+      colorPresentations: { kind: 'value', optional: true },
+    })
+  })
+})
 
 const REALM = 'org.modkit.test/subject-completion-host'
 const DOCUMENT_URI = 'file:///workspace/fixture.lang'
