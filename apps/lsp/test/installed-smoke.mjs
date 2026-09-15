@@ -159,6 +159,7 @@ try {
   const semantic = await waitFor(message => message.id === 3, 'semantic tokens')
   assert.equal(semantic.error, undefined, JSON.stringify(semantic.error))
   assert.ok(Array.isArray(semantic.result.data))
+  assert.ok(semantic.result.data.length >= 5, 'SC2 Bank must publish semantic tokens')
   const position = { line: 0, character: sourceText.indexOf('Test') + 1 }
   send({
     jsonrpc: '2.0',
