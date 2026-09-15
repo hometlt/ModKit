@@ -325,8 +325,9 @@ function isRemoved(value: JsonValue): boolean {
 function mergeIndexed(
   previous: JsonValue | undefined,
   incoming: JsonValue,
-  indexKey: string,
+  field: DataSchemaField,
 ): JsonValue {
+  const indexKey = field.indexKey ?? 'index'
   const result = Array.isArray(previous) ? previous.map(cloneJson) : []
   const additions = Array.isArray(incoming) ? incoming : [incoming]
   for (const item of additions) {
@@ -338,10 +339,62 @@ function mergeIndexed(
     } else if (found === -1) {
       result.push(cloneJson(item))
     } else {
-      result[found] = cloneJson(item)
+      // Overriding one slot keeps the subfields it does not mention, as the game does. The nested
+      // schema describes the slot's `value`, not the `{index, value}` wrapper around it.
+      const existing = recordOf(result[found]!)
+      const replacement = recordOf(item)
+      result[found] =
+        existing !== undefined &&
+        replacement !== undefined &&
+        'value' in existing &&
+        'value' in replacement
+          ? {
+              ...(mergeStructured(existing, item, undefined) as Record<string, JsonValue>),
+              value: mergeStructured(existing['value'], replacement['value']!, field.fields),
+            }
+          : mergeStructured(result[found], item, field.fields)
     }
   }
   return result
+}
+
+/**
+ * Child-wins merge of one structured value.
+ *
+ * Two records merge key by key, descending through the nested schema so a nested indexed or
+ * append field keeps its own rule; any other pair is replaced by the incoming value. A struct
+ * override that mentions one subfield therefore inherits the rest instead of erasing them.
+ */
+function mergeStructured(
+  previous: JsonValue | undefined,
+  incoming: JsonValue,
+  nestedFields: readonly DataSchemaField[] | undefined,
+): JsonValue {
+  const left = previous === undefined ? undefined : recordOf(previous)
+  const right = recordOf(incoming)
+  if (left === undefined || right === undefined) return cloneJson(incoming)
+  const nested = new Map((nestedFields ?? []).map(child => [child.fieldId, child]))
+  const merged: Record<string, JsonValue> = Object.fromEntries(
+    Object.entries(left).map(([key, value]) => [key, cloneJson(value)]),
+  )
+  for (const [key, value] of Object.entries(right)) {
+    const child = nested.get(key)
+    merged[key] =
+      child === undefined
+        ? mergeStructured(merged[key], value, undefined)
+        : mergeFieldValue(merged[key], value, child)
+  }
+  return merged
+}
+
+function mergeFieldValue(
+  previous: JsonValue | undefined,
+  incoming: JsonValue,
+  field: DataSchemaField,
+): JsonValue {
+  if (field.cardinality === 'append') return mergeAppend(previous, incoming)
+  if (field.cardinality === 'indexed') return mergeIndexed(previous, incoming, field)
+  return mergeStructured(previous, incoming, field.fields)
 }
 
 function schemaFields(
@@ -392,13 +445,7 @@ function mergeFields(
   for (const [fieldId, incoming] of Object.entries(patch)) {
     const field = fields.get(fieldId)
     if (field === undefined) continue
-    if (field.cardinality === 'append') {
-      merged[fieldId] = mergeAppend(merged[fieldId], incoming)
-    } else if (field.cardinality === 'indexed') {
-      merged[fieldId] = mergeIndexed(merged[fieldId], incoming, field.indexKey ?? 'index')
-    } else {
-      merged[fieldId] = cloneJson(incoming)
-    }
+    merged[fieldId] = mergeFieldValue(merged[fieldId], incoming, field)
   }
   return merged
 }

@@ -92,6 +92,110 @@ describe('game-neutral data catalog resolution', () => {
     expect(snapshot.entities[0]?.sources.map(item => item.documentIndex)).toEqual([0, 1, 2])
   })
 
+  /*
+   * A child that overrides one subfield of a struct, or one attribute of an indexed slot, inherits
+   * everything else — the engine's rule and MK2's `TypedCatalog`. Replacing the whole value made
+   * resolved facts, relations and cards silently lose the parent's subfields.
+   */
+  it('merges structured scalar values and indexed slots deeply through the nested schema', () => {
+    const nestedSchemas: readonly DataTypeSchema[] = [
+      {
+        typeId: 'Buff',
+        fields: [
+          {
+            fieldId: 'Modification',
+            cardinality: 'scalar',
+            fields: [
+              { fieldId: 'MoveSpeedMultiplier', cardinality: 'scalar' },
+              { fieldId: 'AttackSpeedMultiplier', cardinality: 'scalar' },
+              { fieldId: 'DamageDealtScaled', cardinality: 'indexed', indexKey: 'index' },
+            ],
+          },
+          {
+            fieldId: 'CmdButtonArray',
+            cardinality: 'indexed',
+            indexKey: 'index',
+            fields: [
+              { fieldId: 'DefaultButtonFace', cardinality: 'scalar' },
+              { fieldId: 'Requirements', cardinality: 'scalar' },
+              { fieldId: 'Flags', cardinality: 'indexed', indexKey: 'index' },
+            ],
+          },
+        ],
+      },
+    ]
+    const buff = (
+      entityId: string,
+      documentIndex: number,
+      fields: DataEntityPatch['fields'],
+      parentEntityId?: string,
+    ): DataEntityPatch => ({ ...patch(entityId, documentIndex, fields, parentEntityId), namespace: 'Buff', typeId: 'Buff' })
+    const snapshot = resolveDataCatalog({
+      workspaceId: 'deep-merge',
+      gameId: 'example/game',
+      analyzerId: 'example/analyzer',
+      schemas: nestedSchemas,
+      patches: [
+        buff('Base', 0, {
+          Modification: {
+            MoveSpeedMultiplier: 1.5,
+            DamageDealtScaled: [{ index: 'Melee', value: 0.5 }],
+          },
+          CmdButtonArray: [
+            {
+              index: 'Execute',
+              value: {
+                DefaultButtonFace: 'Face',
+                Requirements: 'Req',
+                Flags: [{ index: 'Hidden', value: 1 }],
+              },
+            },
+          ],
+        }),
+        buff(
+          'Child',
+          1,
+          {
+            Modification: {
+              AttackSpeedMultiplier: 2,
+              DamageDealtScaled: [{ index: 'Ranged', value: 0.25 }],
+            },
+            CmdButtonArray: [
+              { index: 'Execute', value: { DefaultButtonFace: 'Other', Flags: [{ index: 'Queued', value: 1 }] } },
+            ],
+          },
+          'Base',
+        ),
+      ],
+      queries: [{ namespace: 'Buff', entityId: 'Child' }],
+      maxEntities: 16,
+      maxDepth: 8,
+    })
+    expect(snapshot.entities[0]?.fields).toEqual({
+      Modification: {
+        MoveSpeedMultiplier: 1.5,
+        DamageDealtScaled: [
+          { index: 'Melee', value: 0.5 },
+          { index: 'Ranged', value: 0.25 },
+        ],
+        AttackSpeedMultiplier: 2,
+      },
+      CmdButtonArray: [
+        {
+          index: 'Execute',
+          value: {
+            DefaultButtonFace: 'Other',
+            Requirements: 'Req',
+            Flags: [
+              { index: 'Hidden', value: 1 },
+              { index: 'Queued', value: 1 },
+            ],
+          },
+        },
+      ],
+    })
+  })
+
   it('reports missing and cyclic entity parents as structured incomplete evidence', () => {
     const snapshot = resolveDataCatalog({
       workspaceId: 'invalid',
