@@ -246,6 +246,7 @@ export {
 export * from './language/index.js'
 export * from './knowledge/index.js'
 export * from './runtime/index.js'
+export * from './service-operations.js'
 export * from './renderer/index.js'
 export * from './model-encoding.js'
 export * from './games/index.js'

@@ -41,6 +41,10 @@ import {
 import { registerStandardEditingDefinitions, WRITER_FACET_MATCHER } from './editing-definitions.js'
 import { LANGUAGE_DOCUMENT_MATCHER, registerStandardLanguageDefinitions } from './language/index.js'
 import { RUNTIME_PROVIDER_MATCHER, registerStandardRuntimeDefinitions } from './runtime/index.js'
+import {
+  SERVICE_OPERATION_MATCHER,
+  registerStandardServiceOperationDefinitions,
+} from './service-operations.js'
 import { SCENE_RENDERER_MATCHER, registerStandardRendererDefinitions } from './renderer/index.js'
 import {
   NATIVE_MODEL_ENCODER_MATCHER,
@@ -248,6 +252,7 @@ export function createBundledServiceDefinitionRegistry(
       WRITER_FACET_MATCHER,
       LANGUAGE_DOCUMENT_MATCHER,
       RUNTIME_PROVIDER_MATCHER,
+      SERVICE_OPERATION_MATCHER,
       SCENE_RENDERER_MATCHER,
       NATIVE_MODEL_ENCODER_MATCHER,
       GAME_INSTALLATION_MATCHER,
@@ -277,6 +282,7 @@ export async function registerServiceDefinitionsOrThrow(
   const editing = await registerStandardEditingDefinitions(definitions)
   const language = await registerStandardLanguageDefinitions(definitions)
   const runtime = await registerStandardRuntimeDefinitions(definitions)
+  const serviceOperations = await registerStandardServiceOperationDefinitions(definitions)
   const renderer = await registerStandardRendererDefinitions(definitions)
   const modelEncoding = await registerStandardModelEncodingDefinitions(definitions)
   const games = await registerStandardGameDefinitions(definitions)
@@ -287,6 +293,7 @@ export async function registerServiceDefinitionsOrThrow(
     editing,
     language,
     runtime,
+    serviceOperations,
     renderer,
     modelEncoding,
     games,
