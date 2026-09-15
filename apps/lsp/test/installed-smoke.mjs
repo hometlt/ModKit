@@ -90,7 +90,7 @@ try {
   })
   const initialized = await waitFor(message => message.id === 1, 'initialize response')
   assert.equal(initialized.error, undefined, JSON.stringify(initialized.error))
-  assert.equal(initialized.result.capabilities.semanticTokensProvider.full, true)
+  assert.deepEqual(initialized.result.capabilities.semanticTokensProvider.full, { delta: true })
   assert.deepEqual(initialized.result.capabilities.diagnosticProvider, {
     identifier: 'modkit',
     interFileDependencies: true,

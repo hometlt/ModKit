@@ -364,6 +364,45 @@ test(
       const semanticTokens = await waitFor(message => message.id === 11, 'semantic tokens')
       assert.equal(semanticTokens.error, undefined, JSON.stringify(semanticTokens.error))
       assert.deepEqual(semanticTokens.result.data, [0, 0, 11, 2, 0, 1, 0, 4, 2, 0])
+      assert.equal(typeof semanticTokens.result.resultId, 'string')
+      send({
+        jsonrpc: '2.0',
+        id: 12,
+        method: 'textDocument/semanticTokens/full/delta',
+        params: { textDocument: { uri }, previousResultId: semanticTokens.result.resultId },
+      })
+      const unchangedTokens = await waitFor(message => message.id === 12, 'unchanged token delta')
+      assert.deepEqual(unchangedTokens.result, {
+        resultId: semanticTokens.result.resultId,
+        edits: [],
+      })
+
+      send({
+        jsonrpc: '2.0',
+        method: 'textDocument/didChange',
+        params: {
+          textDocument: { uri, version: 6 },
+          contentChanges: [{ text: 'abc' }],
+        },
+      })
+      await waitFor(
+        message =>
+          message.method === 'textDocument/publishDiagnostics' &&
+          message.params?.uri === uri &&
+          message.params?.version === 6,
+        'new token version diagnostics',
+      )
+      send({
+        jsonrpc: '2.0',
+        id: 13,
+        method: 'textDocument/semanticTokens/full/delta',
+        params: { textDocument: { uri }, previousResultId: semanticTokens.result.resultId },
+      })
+      const changedTokens = await waitFor(message => message.id === 13, 'changed token delta')
+      assert.notEqual(changedTokens.result.resultId, semanticTokens.result.resultId)
+      assert.deepEqual(changedTokens.result.edits, [
+        { start: 0, deleteCount: 10, data: [0, 0, 3, 2, 0] },
+      ])
 
       send({ jsonrpc: '2.0', id: 9, method: 'shutdown', params: null })
       await waitFor(message => message.id === 9, 'shutdown')

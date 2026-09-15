@@ -50,6 +50,8 @@ import {
   type Position,
   type Range,
   type SemanticTokens,
+  type SemanticTokensDelta,
+  type SemanticTokensDeltaParams,
   type SemanticTokensParams,
   type SignatureHelp,
   type WorkspaceEdit,
@@ -212,7 +214,12 @@ export function createModkitLanguageServer(
       readonly diagnostics: readonly Diagnostic[]
     }
   >()
+  const semanticTokenSnapshots = new Map<
+    string,
+    { readonly version: number; readonly resultId: string; readonly data: readonly number[] }
+  >()
   let diagnosticRevision = 0
+  let semanticTokenRevision = 0
   const maxResults = options.maxResults ?? 1_000
   const encoder = new TextEncoder()
   let supportsDynamicWatchedFiles = false
@@ -395,6 +402,65 @@ export function createModkitLanguageServer(
     pending.set(document.uri, task)
   }
 
+  const semanticTokensFor = async (
+    uri: string,
+    signal: AbortSignal,
+  ): Promise<SemanticTokens & { readonly resultId: string }> => {
+    await awaitReady(uri)
+    const current = await options.workspace.current(uri, signal)
+    const document = acceptedDocuments.get(uri)
+    const data: number[] = []
+    if (current?.state === 'resolved' && document !== undefined) {
+      const lineLengths = document
+        .getText()
+        .split(/\r\n|\r|\n/u)
+        .map(line => line.length)
+      const tokens = current.analysis.tokens
+        .flatMap(token => {
+          const segments = []
+          for (let line = token.range.start.line; line <= token.range.end.line; line += 1) {
+            const start = line === token.range.start.line ? token.range.start.character : 0
+            const end =
+              line === token.range.end.line ? token.range.end.character : (lineLengths[line] ?? 0)
+            if (end > start) segments.push({ line, start, end, kind: token.kind })
+          }
+          return segments
+        })
+        .sort((a, b) => a.line - b.line || a.start - b.start || a.end - b.end)
+      let previousLine = 0
+      let previousCharacter = 0
+      for (const token of tokens) {
+        const deltaLine = token.line - previousLine
+        const deltaStart = deltaLine === 0 ? token.start - previousCharacter : token.start
+        data.push(
+          deltaLine,
+          deltaStart,
+          token.end - token.start,
+          TOKEN_TYPES.indexOf(token.kind),
+          0,
+        )
+        previousLine = token.line
+        previousCharacter = token.start
+      }
+    }
+    const previous = semanticTokenSnapshots.get(uri)
+    if (
+      previous !== undefined &&
+      previous.version === document?.version &&
+      previous.data.length === data.length &&
+      previous.data.every((value, index) => value === data[index])
+    ) {
+      return { resultId: previous.resultId, data: [...previous.data] }
+    }
+    const snapshot = Object.freeze({
+      version: document?.version ?? 0,
+      resultId: `semantic-v1:${++semanticTokenRevision}`,
+      data: Object.freeze(data),
+    })
+    semanticTokenSnapshots.set(uri, snapshot)
+    return { resultId: snapshot.resultId, data: [...snapshot.data] }
+  }
+
   connection.onInitialize(params => {
     supportsDynamicWatchedFiles =
       params.capabilities.workspace?.didChangeWatchedFiles?.dynamicRegistration === true
@@ -418,7 +484,7 @@ export function createModkitLanguageServer(
         workspaceSymbolProvider: true,
         semanticTokensProvider: {
           legend: { tokenTypes: [...TOKEN_TYPES], tokenModifiers: [] },
-          full: true,
+          full: { delta: true },
         },
         diagnosticProvider: {
           identifier: 'modkit',
@@ -695,45 +761,28 @@ export function createModkitLanguageServer(
   connection.onRequest(
     'textDocument/semanticTokens/full',
     (params: SemanticTokensParams, token: CancellationToken) =>
-      withSignal(token, async signal => {
-        await awaitReady(params.textDocument.uri)
-        const current = await options.workspace.current(params.textDocument.uri, signal)
-        if (current?.state !== 'resolved') return { data: [] } satisfies SemanticTokens
-        const document = acceptedDocuments.get(params.textDocument.uri)
-        if (document === undefined) return { data: [] } satisfies SemanticTokens
-        const lineLengths = document
-          .getText()
-          .split(/\r\n|\r|\n/u)
-          .map(line => line.length)
-        const tokens = current.analysis.tokens
-          .flatMap(token => {
-            const segments = []
-            for (let line = token.range.start.line; line <= token.range.end.line; line += 1) {
-              const start = line === token.range.start.line ? token.range.start.character : 0
-              const end =
-                line === token.range.end.line ? token.range.end.character : (lineLengths[line] ?? 0)
-              if (end > start) segments.push({ line, start, end, kind: token.kind })
-            }
-            return segments
-          })
-          .sort((a, b) => a.line - b.line || a.start - b.start || a.end - b.end)
-        const data: number[] = []
-        let previousLine = 0
-        let previousCharacter = 0
-        for (const token of tokens) {
-          const deltaLine = token.line - previousLine
-          const deltaStart = deltaLine === 0 ? token.start - previousCharacter : token.start
-          data.push(
-            deltaLine,
-            deltaStart,
-            token.end - token.start,
-            TOKEN_TYPES.indexOf(token.kind),
-            0,
-          )
-          previousLine = token.line
-          previousCharacter = token.start
+      withSignal(token, signal => semanticTokensFor(params.textDocument.uri, signal)),
+  )
+  connection.onRequest(
+    'textDocument/semanticTokens/full/delta',
+    (params: SemanticTokensDeltaParams, token: CancellationToken) =>
+      withSignal(token, async (signal): Promise<SemanticTokens | SemanticTokensDelta> => {
+        const previous = semanticTokenSnapshots.get(params.textDocument.uri)
+        const current = await semanticTokensFor(params.textDocument.uri, signal)
+        if (params.previousResultId === current.resultId) {
+          return { resultId: current.resultId, edits: [] }
         }
-        return { data }
+        if (previous?.resultId !== params.previousResultId) return current
+        return {
+          resultId: current.resultId,
+          edits: [
+            {
+              start: 0,
+              deleteCount: previous.data.length,
+              ...(current.data.length === 0 ? {} : { data: current.data }),
+            },
+          ],
+        }
       }),
   )
 
@@ -754,6 +803,7 @@ export function createModkitLanguageServer(
     })().finally(() => {
       acceptedDocuments.delete(event.document.uri)
       diagnosticSnapshots.delete(event.document.uri)
+      semanticTokenSnapshots.delete(event.document.uri)
       connection.sendDiagnostics({ uri: event.document.uri, diagnostics: [] })
     })
   })
