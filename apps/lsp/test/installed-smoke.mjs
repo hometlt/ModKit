@@ -11,7 +11,8 @@ if (extension === undefined)
 
 const root = await mkdtemp(join(tmpdir(), 'modkit-lsp-installed-'))
 const source = join(root, 'Accounts.SC2Bank')
-await writeFile(source, '<?xml version="1.0" encoding="utf-8"?><Bank><Section name="Test"/></Bank>')
+const sourceText = '<?xml version="1.0" encoding="utf-8"?><Bank><Section name="Test"/></Bank>'
+await writeFile(source, sourceText)
 
 const executable = fileURLToPath(new URL('../dist/main.js', import.meta.url))
 const child = spawn(
@@ -106,7 +107,7 @@ try {
         uri,
         languageId: 'sc2-bank',
         version: 1,
-        text: await (await import('node:fs/promises')).readFile(source, 'utf8'),
+        text: sourceText,
       },
     },
   })
@@ -115,6 +116,17 @@ try {
     'bank diagnostics',
   )
   assert.ok(Array.isArray(diagnostics.params.diagnostics))
+  send({
+    jsonrpc: '2.0',
+    id: 6,
+    method: 'modkit/languageCapabilities',
+    params: { textDocument: { uri } },
+  })
+  const capabilities = await waitFor(message => message.id === 6, 'bank capabilities')
+  assert.equal(capabilities.error, undefined, JSON.stringify(capabilities.error))
+  for (const feature of ['definition', 'references', 'prepare-rename', 'rename']) {
+    assert.ok(capabilities.result.features.includes(feature), `missing bank feature ${feature}`)
+  }
   send({
     jsonrpc: '2.0',
     id: 5,
@@ -147,6 +159,25 @@ try {
   const semantic = await waitFor(message => message.id === 3, 'semantic tokens')
   assert.equal(semantic.error, undefined, JSON.stringify(semantic.error))
   assert.ok(Array.isArray(semantic.result.data))
+  const position = { line: 0, character: sourceText.indexOf('Test') + 1 }
+  send({
+    jsonrpc: '2.0',
+    id: 7,
+    method: 'textDocument/prepareRename',
+    params: { textDocument: { uri }, position },
+  })
+  const prepared = await waitFor(message => message.id === 7, 'prepare bank rename')
+  assert.equal(prepared.error, undefined, JSON.stringify(prepared.error))
+  assert.equal(prepared.result.placeholder, 'Test')
+  send({
+    jsonrpc: '2.0',
+    id: 8,
+    method: 'textDocument/rename',
+    params: { textDocument: { uri }, position, newName: 'Progress' },
+  })
+  const renamed = await waitFor(message => message.id === 8, 'bank rename')
+  assert.equal(renamed.error, undefined, JSON.stringify(renamed.error))
+  assert.equal(renamed.result.documentChanges[0].edits[0].newText, 'Progress')
   send({ jsonrpc: '2.0', id: 4, method: 'shutdown', params: null })
   await waitFor(message => message.id === 4, 'shutdown response')
   send({ jsonrpc: '2.0', method: 'exit', params: null })
