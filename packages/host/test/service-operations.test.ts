@@ -5,15 +5,41 @@ import {
   createBundledServiceDefinitionRegistry,
   createExecutionBackendRegistry,
   createHostComposition,
+  discoverServiceOperations,
   defineLinkedExtension,
   invokeServiceOperation,
   linkedExtensionInputs,
   linkedInProcessBackend,
   registerServiceDefinitionsOrThrow,
+  validateServiceOperationProvider,
+  validateServiceOperationResult,
   type HostComposition,
 } from '@modkit/host'
 
 const OPERATION_ID = 'modkit.test/echo'
+const operationDescriptor = Object.freeze({
+  schemaVersion: 1 as const,
+  id: OPERATION_ID,
+  title: 'Echo',
+  summary: 'Return the input.',
+  requiredPermissions: Object.freeze([]),
+  effects: 'none' as const,
+  inputSchema: Object.freeze({
+    type: 'object' as const,
+    properties: Object.freeze({
+      message: Object.freeze({ type: 'string' as const }),
+      oversizedOutput: Object.freeze({ type: 'boolean' as const }),
+      delay: Object.freeze({ type: 'boolean' as const }),
+    }),
+    additionalProperties: false,
+  }),
+  resultSchema: Object.freeze({ type: 'object' as const }),
+  budget: Object.freeze({
+    maxInputBytes: 1_024,
+    maxOutputBytes: 1_024,
+    maxWallTimeMs: 100,
+  }),
+})
 const providerModule = {
   abiVersion: 1,
   provides: Object.freeze([SERVICE_OPERATION_PROVIDER_CONTRACT]),
@@ -21,29 +47,34 @@ const providerModule = {
     return Object.freeze({
       value: Object.freeze({
         contract: SERVICE_OPERATION_PROVIDER_CONTRACT,
-        providerId: 'modkit.test/echo-provider',
-        operations: Object.freeze([
-          Object.freeze({
-            schemaVersion: 1 as const,
-            id: OPERATION_ID,
-            title: 'Echo',
-            summary: 'Return the input.',
-            requiredPermissions: Object.freeze([]),
-            effects: 'none' as const,
-            inputSchema: Object.freeze({ type: 'object' as const }),
-            resultSchema: Object.freeze({ type: 'object' as const }),
-            budget: Object.freeze({
-              maxInputBytes: 1_024,
-              maxOutputBytes: 1_024,
-              maxWallTimeMs: 1_000,
-            }),
-          }),
-        ]),
-        async invoke(request: { readonly operationId: string; readonly input: unknown }) {
+        providerId: 'modkit.test/service-operation-provider',
+        operations: Object.freeze([operationDescriptor]),
+        async invoke(request: {
+          readonly operationId: string
+          readonly input: unknown
+          readonly signal?: AbortSignal
+        }) {
+          if ((request.input as { delay?: unknown }).delay === true) {
+            await new Promise<void>((resolve, reject) => {
+              const timer = setTimeout(resolve, 1_000)
+              request.signal?.addEventListener(
+                'abort',
+                () => {
+                  clearTimeout(timer)
+                  reject(request.signal?.reason)
+                },
+                { once: true },
+              )
+            })
+          }
+          const value =
+            (request.input as { oversizedOutput?: unknown }).oversizedOutput === true
+              ? { message: 'x'.repeat(2_000) }
+              : request.input
           return Object.freeze({
             state: 'completed' as const,
             operationId: request.operationId,
-            value: request.input,
+            value,
             diagnostics: Object.freeze([]),
           })
         },
@@ -140,6 +171,73 @@ beforeAll(async () => {
 })
 
 describe('generic service operation provider', () => {
+  it('discovers inert and activatable operation catalog entries with bounded paging', async () => {
+    const common = {
+      services: { ...composition, serviceDefinitions: definitions },
+      grant: { id: 'service-operation-catalog-test', classes: [] },
+      budgets: {
+        maxInputBytes: 1_000_000n,
+        maxDepth: 64,
+        maxNodes: 100_000,
+        maxScalarBytes: 1_000_000,
+        maxDiagnostics: 100,
+      },
+      limit: 20,
+    } as const
+    await expect(discoverServiceOperations({ ...common, activate: false })).resolves.toMatchObject({
+      total: 1,
+      complete: true,
+      entries: [
+        {
+          operationId: OPERATION_ID,
+          state: 'eligible',
+          declaredProviderIds: ['modkit.test/service-operation-provider'],
+        },
+      ],
+    })
+    await expect(discoverServiceOperations(common)).resolves.toMatchObject({
+      entries: [
+        {
+          operationId: OPERATION_ID,
+          state: 'activatable',
+          selectedProviderId: 'modkit.test/service-operation-provider',
+          descriptor: { id: OPERATION_ID },
+        },
+      ],
+    })
+    await expect(discoverServiceOperations({ ...common, limit: 101 })).rejects.toThrow(
+      /offset\/limit/u,
+    )
+  })
+
+  it('validates provider descriptors and provider results at the host boundary', () => {
+    const provider = providerModule.createProvider().value
+    expect(validateServiceOperationProvider(provider, OPERATION_ID)).toMatchObject({ valid: true })
+    expect(
+      validateServiceOperationProvider({
+        ...provider,
+        operations: [operationDescriptor, operationDescriptor],
+      }),
+    ).toMatchObject({ valid: false })
+    expect(
+      validateServiceOperationResult(
+        { state: 'completed', operationId: 'modkit.test/wrong', value: {}, diagnostics: [] },
+        OPERATION_ID,
+        1_024,
+        10,
+      ),
+    ).toMatchObject({ valid: false })
+    expect(
+      validateServiceOperationResult(
+        { state: 'completed', operationId: OPERATION_ID, value: { message: 1 }, diagnostics: [] },
+        OPERATION_ID,
+        1_024,
+        10,
+        { type: 'object', properties: { message: { type: 'string' } } },
+      ),
+    ).toMatchObject({ valid: false, reason: expect.stringContaining('schema violation') })
+  })
+
   it('selects an exact operation and invokes the provider through the host resolver', async () => {
     const inventoryRows = composition.inventory.extensions.flatMap(item =>
         item.contributions.map(contribution => ({
@@ -176,6 +274,40 @@ describe('generic service operation provider', () => {
     })
   })
 
+  it('falls back across runtime realms only when the primary target is unresolved', async () => {
+    const browserTarget = { ...composition.target, environment: 'browser' as const }
+    const common = {
+      services: {
+        ...composition,
+        target: browserTarget,
+        serviceDefinitions: definitions,
+      },
+      alternateTargets: [composition.target],
+      grant: { id: 'service-operation-target-fallback-test', classes: [] },
+      budgets: {
+        maxInputBytes: 1_000_000n,
+        maxDepth: 64,
+        maxNodes: 100_000,
+        maxScalarBytes: 1_000_000,
+        maxDiagnostics: 100,
+      },
+    } as const
+
+    await expect(discoverServiceOperations({ ...common, limit: 20 })).resolves.toMatchObject({
+      entries: [{ operationId: OPERATION_ID, state: 'activatable' }],
+    })
+    await expect(
+      invokeServiceOperation({
+        ...common,
+        operationId: OPERATION_ID,
+        input: { message: 'alternate target' },
+      }),
+    ).resolves.toMatchObject({
+      state: 'invoked',
+      result: { state: 'completed', value: { message: 'alternate target' } },
+    })
+  })
+
   it('does not route an unadvertised operation to the provider', async () => {
     const result = await invokeServiceOperation({
       services: { ...composition, serviceDefinitions: definitions },
@@ -191,5 +323,55 @@ describe('generic service operation provider', () => {
       },
     })
     expect(result.state).toBe('unresolved')
+  })
+
+  it('enforces input, output and wall-time limits around an activated provider', async () => {
+    const invoke = (input: any) =>
+      invokeServiceOperation({
+        services: { ...composition, serviceDefinitions: definitions },
+        operationId: OPERATION_ID,
+        input,
+        grant: { id: 'service-operation-budget-test', classes: [] },
+        budgets: {
+          maxInputBytes: 1_000_000n,
+          maxDepth: 64,
+          maxNodes: 100_000,
+          maxScalarBytes: 1_000_000,
+          maxDiagnostics: 100,
+        },
+      })
+
+    const input = await invoke({ message: 'x'.repeat(2_000) })
+    expect(input).toMatchObject({
+      state: 'refused',
+      stage: 'input',
+      diagnostics: expect.arrayContaining([
+        expect.objectContaining({ code: 'x3.host/service-operation-input-invalid' }),
+      ]),
+    })
+    const inputSchema = await invoke({ unexpected: true })
+    expect(inputSchema).toMatchObject({
+      state: 'refused',
+      stage: 'input',
+      diagnostics: expect.arrayContaining([
+        expect.objectContaining({ code: 'x3.host/service-operation-input-schema-violation' }),
+      ]),
+    })
+    const output = await invoke({ oversizedOutput: true })
+    expect(output).toMatchObject({
+      state: 'failed',
+      stage: 'result',
+      diagnostics: expect.arrayContaining([
+        expect.objectContaining({ code: 'x3.host/service-operation-result-invalid' }),
+      ]),
+    })
+    const timeout = await invoke({ delay: true })
+    expect(timeout).toMatchObject({
+      state: 'failed',
+      stage: 'invoke',
+      diagnostics: expect.arrayContaining([
+        expect.objectContaining({ code: 'x3.host/service-operation-cancelled' }),
+      ]),
+    })
   })
 })

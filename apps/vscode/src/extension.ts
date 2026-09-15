@@ -58,8 +58,11 @@ import {
 } from './container-uri.js'
 import {
   commandSubjectsFrom,
-  createSubjectCommandRuntime,
+  createModkitCommandRuntime,
+  discoverServiceOperations,
+  invokeServiceOperation,
   loadLocalizationCatalogs,
+  type CommandInput,
   type CommandResult,
 } from '@modkit/host'
 import { createLanguageWorkspace, languageProviderRoutes } from '@modkit/host/language'
@@ -222,6 +225,15 @@ const GAME_DISCOVERY_BUDGET = Object.freeze({
   maxNodes: 100_000,
   maxScalarBytes: 1_000_000,
   maxDiagnostics: 100,
+})
+
+const SERVICE_OPERATION_BUDGET = Object.freeze({
+  maxInputBytes: 16_777_216n,
+  maxDepth: 128,
+  maxNodes: 1_000_000,
+  maxScalarBytes: 16_777_216,
+  maxDiagnostics: 1_000,
+  deadlineMs: 120_000,
 })
 
 const PACKAGE_INSTALL_GATE_COMMAND = '_modkit.acceptance.packageInstallGate'
@@ -5124,14 +5136,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
 
   // ---------------------------------------------------------------- shared command runtime
   /*
-   * The same six commands the CLI runs and Electron dispatches (block 13, works 4–6).
+   * The same subject and generic service commands the CLI and protocol adapters run.
    *
    * Nothing about them is written here: the descriptors, what each one does, and how a missing
    * operation is reported all live in `@modkit/host`. This is the editor-shaped half — a
    * palette entry, a progress notification, a cancellation token — and it is the only half that
    * should ever differ between the three applications.
    */
-  const commandRuntime = createSubjectCommandRuntime()
+  const commandRuntime = createModkitCommandRuntime()
   const commandOpener = commandSubjectsFrom(
     createVsCodeCommandOpener({
       readContentSource,
@@ -5146,6 +5158,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       },
     }),
   )
+  const serviceOperationServices = Object.freeze({
+    ...host.services,
+    target: host.services.host.target,
+  })
+  const serviceOperationGrant = Object.freeze({
+    id: 'modkit-vscode-service-operations',
+    classes: Object.freeze([]),
+  })
 
   const runtimeActionLabel = (action: string): string => {
     const keys: Readonly<Record<string, UiMessageKey>> = Object.freeze({
@@ -5289,9 +5309,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   /** Run one command with the editor's own progress and cancellation, and report it natively. */
   const runSharedCommand = async (request: {
     readonly command: string
-    readonly subject: string
+    readonly subject?: string
     readonly entry?: string
     readonly target?: string
+    readonly operationId?: string
+    readonly operationInput?: CommandInput[string]
   }): Promise<CommandResult> => {
     const descriptor = commandRuntime.get(request.command)
     const title = `Modkit: ${descriptor?.title ?? request.command}`
@@ -5309,12 +5331,40 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           return await commandRuntime.run(
             request.command,
             {
-              subject: request.subject,
+              ...(request.subject === undefined ? {} : { subject: request.subject }),
               ...(request.entry === undefined ? {} : { entry: request.entry }),
               ...(request.target === undefined ? {} : { target: request.target }),
+              ...(request.operationId === undefined ? {} : { operationId: request.operationId }),
+              ...(request.operationInput === undefined
+                ? {}
+                : { operationInput: request.operationInput }),
             },
             {
               openSubject: commandOpener,
+              serviceOperations: {
+                catalog: request =>
+                  discoverServiceOperations({
+                    services: serviceOperationServices,
+                    alternateTargets: [host.services.target],
+                    grant: serviceOperationGrant,
+                    budgets: SERVICE_OPERATION_BUDGET,
+                    offset: request.offset,
+                    limit: request.limit,
+                    activate: request.activate,
+                    ...(request.signal === undefined ? {} : { signal: request.signal }),
+                  }),
+                invoke: request =>
+                  invokeServiceOperation({
+                    services: serviceOperationServices,
+                    alternateTargets: [host.services.target],
+                    operationId: request.operationId,
+                    input: request.input,
+                    grant: serviceOperationGrant,
+                    budgets: SERVICE_OPERATION_BUDGET,
+                    allowedEffects: ['none'],
+                    ...(request.signal === undefined ? {} : { signal: request.signal }),
+                  }),
+              },
               signal: controller.signal,
               progress: step => progress.report({ message: step.message }),
             },
@@ -5331,13 +5381,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         code: item.code,
         message: item.message,
         severity: item.severity ?? 'information',
-        path: request.subject,
+        path: request.subject ?? `service:${request.operationId ?? request.command}`,
       })
     }
     if (result.state === 'ok') {
       void vscode.window.showInformationMessage(
         `${title}: ${localizer.text('vscode.command.completedOutput', {
-          subject: subjectLabel(request.subject),
+          subject:
+            request.subject === undefined
+              ? request.operationId ?? request.command
+              : subjectLabel(request.subject),
         })}`,
       )
     } else if (result.state === 'unavailable') {
@@ -6232,23 +6285,35 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
      */
     vscode.commands.registerCommand('modkit.runCommand', (argument: unknown) => {
       const request = argument as
-        { command?: string; subject?: string; entry?: string; target?: string } | undefined
+        {
+          command?: string
+          subject?: string
+          entry?: string
+          target?: string
+          operationId?: string
+          operationInput?: CommandInput[string]
+        } | undefined
       return (async (): Promise<CommandResult | undefined> => {
-        if (typeof request?.command === 'string' && typeof request.subject === 'string') {
+        const requestedDescriptor =
+          typeof request?.command === 'string' ? commandRuntime.get(request.command) : undefined
+        if (
+          requestedDescriptor !== undefined &&
+          (!requestedDescriptor.needsSubject || typeof request?.subject === 'string')
+        ) {
           return runSharedCommand({
-            command: request.command,
-            subject: request.subject,
-            ...(typeof request.entry === 'string' ? { entry: request.entry } : {}),
-            ...(typeof request.target === 'string' ? { target: request.target } : {}),
+            command: requestedDescriptor.id,
+            ...(typeof request?.subject === 'string' ? { subject: request.subject } : {}),
+            ...(typeof request?.entry === 'string' ? { entry: request.entry } : {}),
+            ...(typeof request?.target === 'string' ? { target: request.target } : {}),
+            ...(typeof request?.operationId === 'string'
+              ? { operationId: request.operationId }
+              : {}),
+            ...(request?.operationInput === undefined
+              ? {}
+              : { operationInput: request.operationInput }),
           })
         }
-        const subject = activeSubject ?? vscode.window.activeTextEditor?.document.uri.fsPath
-        if (subject === undefined) {
-          void vscode.window.showInformationMessage(
-            `Modkit: ${localizer.text('vscode.command.openFileFirst')}`,
-          )
-          return undefined
-        }
+        const paletteSubject = activeSubject ?? vscode.window.activeTextEditor?.document.uri.fsPath
         const picked = await vscode.window.showQuickPick(
           commandRuntime.descriptors.map(item => ({
             label: item.title,
@@ -6256,11 +6321,66 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             detail: item.summary,
           })),
           {
-            title: localizer.text('vscode.command.runOn', { subject: subjectLabel(subject) }),
+            title:
+              paletteSubject === undefined
+                ? 'Modkit: Run command'
+                : localizer.text('vscode.command.runOn', { subject: subjectLabel(paletteSubject) }),
             placeHolder: localizer.text('vscode.command.pick'),
           },
         )
         if (picked === undefined) return undefined
+        if (picked.description === 'service.operations') {
+          return runSharedCommand({ command: picked.description })
+        }
+        if (picked.description === 'service.invoke') {
+          const catalog = await discoverServiceOperations({
+            services: serviceOperationServices,
+            alternateTargets: [host.services.target],
+            grant: serviceOperationGrant,
+            budgets: SERVICE_OPERATION_BUDGET,
+            offset: 0,
+            limit: 100,
+            activate: false,
+          })
+          const operation = await vscode.window.showQuickPick(
+            catalog.entries.map(item => {
+              const detail = item.descriptor?.summary ?? item.diagnostics.at(-1)?.message
+              return {
+                label: item.operationId,
+                description: item.state,
+                ...(detail === undefined ? {} : { detail }),
+              }
+            }),
+            { title: 'Modkit: extension operation', placeHolder: 'Choose an operation ID' },
+          )
+          if (operation === undefined) return undefined
+          const authoredInput = await vscode.window.showInputBox({
+            title: `Modkit: ${operation.label}`,
+            prompt: 'JSON input',
+            value: '{}',
+            validateInput(value) {
+              try {
+                JSON.parse(value)
+                return undefined
+              } catch (error) {
+                return error instanceof Error ? error.message : String(error)
+              }
+            },
+          })
+          if (authoredInput === undefined) return undefined
+          return runSharedCommand({
+            command: picked.description,
+            operationId: operation.label,
+            operationInput: JSON.parse(authoredInput) as CommandInput[string],
+          })
+        }
+        const subject = paletteSubject
+        if (subject === undefined) {
+          void vscode.window.showInformationMessage(
+            `Modkit: ${localizer.text('vscode.command.openFileFirst')}`,
+          )
+          return undefined
+        }
         /*
          * `subject.extract` is the one of the six that needs a second word, and asking for it is
          * better than running it with an empty entry and reporting a refusal the user caused.

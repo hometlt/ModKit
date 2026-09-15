@@ -38,6 +38,10 @@ import {
 } from './profile.js'
 import { parseRunArguments, runCommand } from './commands.js'
 import { parseProjectValidationArguments, validateProject } from './project-validation.js'
+import {
+  parseServiceOperationArguments,
+  runServiceOperationCommand,
+} from './service-operations.js'
 
 export {
   createModkitCliComposition,
@@ -46,7 +50,7 @@ export {
 } from './profile.js'
 
 const USAGE =
-  'usage: modkit validate <dir> [--json] | modkit explain <fixture.json> [--json] | modkit host-profile [--json] | modkit create codec <dir> --id <qualified-id> | modkit open <file> --ext <dir> [--ext <dir>...] [--intent inspect|full] [--trust] [--json] | modkit commands [--json|--protocol-json] | modkit run <command> <file> --ext <dir> [--ext <dir>...] [--entry <path>] [--target <id>] [--operation <id>] [--input <json-file>] [--out <file>] [--trust] [--format text|json|protocol-json] | modkit project.validate <dir> --ext <dir> [--ext <dir>...] [--trust] [--format text|json|protocol-json]\n'
+  'usage: modkit validate <dir> [--json] | modkit explain <fixture.json> [--json] | modkit host-profile [--json] | modkit create codec <dir> --id <qualified-id> | modkit open <file> --ext <dir> [--ext <dir>...] [--intent inspect|full] [--trust] [--json] | modkit commands [--json|--protocol-json] | modkit operations --ext <dir> [--permission <class>...] [--trust] [--no-activate] [--format text|json|protocol-json] | modkit invoke <operation-id> --ext <dir> --input <json-file> [--permission <class>...] [--allow-effectful] [--trust] [--format text|json|protocol-json] | modkit run <command> <file> --ext <dir> [--ext <dir>...] [--entry <path>] [--target <id>] [--operation <id>] [--input <json-file>] [--out <file>] [--trust] [--format text|json|protocol-json] | modkit project.validate <dir> --ext <dir> [--ext <dir>...] [--trust] [--format text|json|protocol-json]\n'
 
 type CliOpenIntent = Exclude<OpenIntent, 'probe'>
 const OPEN_INTENTS: readonly CliOpenIntent[] = ['inspect', 'full']
@@ -330,6 +334,27 @@ async function main(argv: readonly string[]): Promise<number> {
           : `${rows.map(row => `${row.id}\t${row.summary}`).join('\n')}\n`,
     )
     return 0
+  }
+  if (command === 'operations' || command === 'invoke') {
+    const parsed = parseServiceOperationArguments(
+      command === 'operations' ? 'catalog' : 'invoke',
+      command === 'invoke' ? target : undefined,
+      command === 'operations' ? [target, ...rest].filter((item): item is string => item !== undefined) : rest,
+    )
+    if (parsed === undefined) {
+      process.stderr.write(USAGE)
+      return 2
+    }
+    const controller = new AbortController()
+    const abort = (): void => controller.abort()
+    process.once('SIGINT', abort)
+    process.once('SIGTERM', abort)
+    try {
+      return await runServiceOperationCommand(parsed, { signal: controller.signal })
+    } finally {
+      process.removeListener('SIGINT', abort)
+      process.removeListener('SIGTERM', abort)
+    }
   }
   if (command === 'run') {
     const parsed = parseRunArguments(target, rest[0], rest.slice(1))

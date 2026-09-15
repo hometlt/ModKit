@@ -6,7 +6,6 @@
  * has to infer meaning from terminal prose or copy a domain handler into its own adapter.
  */
 import type { JsonValue } from '@modkit/sdk'
-import type { SubjectCommandTarget } from './subject-command-targets.js'
 import type { CommandContext, CommandInput, CommandResult, CommandRuntime } from './runtime.js'
 
 export const COMMAND_PROTOCOL_SCHEMA_VERSION = 'modkit-command-protocol-1' as const
@@ -52,6 +51,13 @@ export interface CommandReceipt {
 
 const RESULT_STATES = Object.freeze(['ok', 'unavailable', 'failed'] as const)
 
+export interface CommandRoutingTarget {
+  readonly commandId: string
+  readonly operationIds: readonly string[]
+  readonly dataSourceContracts: readonly string[]
+  readonly hostCallers: readonly string[]
+}
+
 const immutableJson = (value: JsonValue): JsonValue => {
   if (Array.isArray(value)) return Object.freeze(value.map(item => immutableJson(item)))
   if (value !== null && typeof value === 'object') {
@@ -84,9 +90,9 @@ const snapshotResult = (result: CommandResult): CommandResult => {
 /** Describe the live runtime and its data-only routing bindings without importing any handler. */
 export function describeCommandContracts(
   runtime: CommandRuntime,
-  targets: readonly SubjectCommandTarget[],
+  targets: readonly CommandRoutingTarget[],
 ): CommandContractDocument {
-  const byId = new Map<string, SubjectCommandTarget>(
+  const byId = new Map<string, CommandRoutingTarget>(
     targets.map(target => [target.commandId, target]),
   )
   const commands = runtime.descriptors.map(descriptor => {

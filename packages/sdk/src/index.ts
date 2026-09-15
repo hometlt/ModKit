@@ -280,6 +280,8 @@ export type {
   RequirementScopeKind,
 } from './manifest/types.js'
 export {
+  snapshotJsonWireData,
+  snapshotJsonWireObject,
   validateWithSchema,
   type JsonSchemaEvaluationError,
   type PrecompiledSchemaValidator,

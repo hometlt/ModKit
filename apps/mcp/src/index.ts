@@ -2,6 +2,7 @@ export {
   ConfigurationError,
   MODKIT_MCP_EXTENSIONS_ENV,
   MODKIT_MCP_ROOTS_ENV,
+  MODKIT_MCP_OPERATION_PERMISSIONS_ENV,
   modkitMcpUsage,
   parseModkitMcpConfiguration,
   type ModkitMcpConfiguration,

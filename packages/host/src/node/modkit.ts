@@ -21,12 +21,10 @@
  * await modkit.close()
  * ```
  *
- * The security posture is fixed, not configurable, because a facade is where defaults become
- * policy: every extension executes worker-brokered (`allowTrustedInProcess` is not an option here —
- * a caller who needs in-process execution is making an artifact-level trust decision and should
- * compose `createNodeSubjectServices` directly, where that decision is visible); reads are confined
- * to `roots`; writes are confined to `writableRoots` by the editing backend itself, so a grant can
- * never out-promise the filesystem policy.
+ * Dynamic `extensions` and `userExtensions` execute worker-brokered. A product that must activate
+ * an explicitly trusted Node-only provider supplies that exact root through `trustedExtensions`;
+ * keeping it separate makes the full-process authority decision visible at composition. Reads are
+ * confined to `roots`; writes are confined to `writableRoots` by the editing backend itself.
  */
 
 import { randomUUID } from 'node:crypto'
@@ -74,6 +72,11 @@ export interface ModkitOptions {
   readonly modules?: readonly LinkedExtension[]
   /** Extension directories supplied by the *end user* of the caller's product (`installed`). */
   readonly userExtensions?: readonly (string | ExtensionRootRequest)[]
+  /**
+   * Exact dynamic roots this embedding explicitly vouches for as full-process code. This is a
+   * separate input so an installed extension can never gain trust by appearing in userExtensions.
+   */
+  readonly trustedExtensions?: readonly (string | ExtensionRootRequest)[]
   /** Absolute directories subjects may be opened from. Empty opens nothing, by design. */
   readonly roots: readonly string[]
   /**
@@ -185,15 +188,20 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
   // record beside the others, never an exception that takes the host down
   const linked = linkedExtensionInputs(options.modules ?? [])
   const bundled = await loadExtensionRoots(asRequests(options.extensions), { origin: 'bundled' })
+  const trusted = await loadExtensionRoots(asRequests(options.trustedExtensions ?? []), {
+    origin: 'bundled',
+    allowTrustedInProcess: true,
+    claimed: [...linked.coordinates, ...bundled.coordinates],
+  })
   const installed = await loadExtensionRoots(asRequests(options.userExtensions ?? []), {
     origin: 'installed',
-    claimed: [...linked.coordinates, ...bundled.coordinates],
+    claimed: [...linked.coordinates, ...bundled.coordinates, ...trusted.coordinates],
   })
 
   const services: NodeSubjectServices = await createNodeSubjectServices({
     topology: modkitTopology(),
     realms: { host: MODKIT_REALM, workers: MODKIT_WORKER_REALM },
-    extensions: [...linked.inputs, ...bundled.inputs, ...installed.inputs],
+    extensions: [...linked.inputs, ...bundled.inputs, ...trusted.inputs, ...installed.inputs],
     ...(options.policy === undefined ? {} : { policy: options.policy }),
     ...(linked.modules.size === 0 ? {} : { linkedModules: linked.modules }),
     ...(options.disabledContributions === undefined
@@ -273,10 +281,11 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
 
   return Object.freeze({
     services,
-    extensionFailures: Object.freeze([...bundled.failures, ...installed.failures]),
+    extensionFailures: Object.freeze([...bundled.failures, ...trusted.failures, ...installed.failures]),
     extensionCoordinates: Object.freeze([
       ...linked.coordinates,
       ...bundled.coordinates,
+      ...trusted.coordinates,
       ...installed.coordinates,
     ]),
 

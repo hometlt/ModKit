@@ -6,9 +6,13 @@ import type { Diagnostic } from '@modkit/core'
 import {
   artifactNamespaceSourceFromVfsMount,
   createKnowledgeCatalog,
+  discoverServiceOperations,
+  invokeServiceOperation,
   openSubject,
   subjectOpenSnapshot,
   type Inventory,
+  type ServiceOperationCatalog,
+  type ServiceOperationInvocation,
 } from '@modkit/host'
 import { discoverGameInstallations } from '@modkit/host/games'
 import {
@@ -24,7 +28,7 @@ import {
 import { sceneModule } from '@modkit/scene/module'
 import { uvModule } from '@modkit/uv/module'
 import { coordinateMapPreviewAssetSession } from '@modkit/host/maps'
-import type { AssetSession, KnowledgeCatalog } from '@modkit/sdk'
+import type { AssetSession, JsonValue, KnowledgeCatalog } from '@modkit/sdk'
 import { VirtualFileSystem } from '@modkit/vfs'
 import { createFileVfsProvider } from '@modkit/vfs/providers/file'
 import type { ModkitMcpConfiguration } from './config.js'
@@ -160,6 +164,8 @@ export interface ModkitMcpHostPort {
   readonly extensionCoordinates: readonly string[]
   readonly executionProfiles: readonly string[]
   readonly supportedExtensions: readonly string[]
+  readonly serviceOperationPermissions?: readonly string[]
+  readonly effectfulServiceOperations?: boolean
   discoverInstallations?(
     gameId: string | undefined,
     maxCandidates: number,
@@ -167,6 +173,17 @@ export interface ModkitMcpHostPort {
   ): Promise<McpDiscoveryResult>
   openDiscovered?(selectionId: string, signal?: AbortSignal): Promise<McpOpenedSubject>
   language?(request: McpLanguageRequest, signal?: AbortSignal): Promise<McpLanguageResult>
+  serviceOperations?(
+    offset: number,
+    limit: number,
+    activate: boolean,
+    signal?: AbortSignal,
+  ): Promise<ServiceOperationCatalog>
+  invokeServiceOperation?(
+    operationId: string,
+    input: JsonValue,
+    signal?: AbortSignal,
+  ): Promise<ServiceOperationInvocation>
   open(path: string, signal?: AbortSignal, selectionId?: string): Promise<McpOpenedSubject>
   close(): Promise<void>
 }
@@ -260,6 +277,15 @@ const discoveryBudget = Object.freeze({
   maxDiagnostics: 100,
 })
 
+const serviceOperationBudget = Object.freeze({
+  maxInputBytes: 1_048_576n,
+  maxDepth: 128,
+  maxNodes: 250_000,
+  maxScalarBytes: 1_048_576,
+  maxDiagnostics: 100,
+  deadlineMs: 1_800_000,
+})
+
 const MCP_MAX_DISCOVERY_GAME_IDS = 16
 const MCP_MAX_DISCOVERY_SELECTIONS = 128
 
@@ -307,7 +333,9 @@ export async function createHostMcpPort(
   const modkit = await createModkit({
     modules: [sceneModule, uvModule],
     extensions: [],
-    userExtensions: extensions,
+    ...(configuration.trustExtensions === true
+      ? { trustedExtensions: extensions }
+      : { userExtensions: extensions }),
     roots,
     // MCP exposes edit-plan calculation but no prepare/commit endpoint. Supplying the same bounded
     // roots here lets mutating codec operations produce plans while the transport remains non-writing.
@@ -338,6 +366,9 @@ export async function createHostMcpPort(
   const discoveredById = new Map<string, { readonly path: string }>()
   const discoveryIdByCoordinate = new Map<string, string>()
   const advertisedGameIds = installationGameIds(modkit.services.inventory)
+  // Generic service operations may own host state or external I/O and therefore advertise the
+  // Node host realm. Subject codecs keep using the worker-targeted lane in modkit.services.
+  const operationServices = Object.freeze({ ...modkit.services, target: modkit.services.host.target })
   const port: ModkitMcpHostPort = {
     ...(configuration.outputArtifacts === true ? { outputArtifacts: true } : {}),
     inventory: modkit.services.inventory,
@@ -346,6 +377,41 @@ export async function createHostMcpPort(
     extensionCoordinates: modkit.extensionCoordinates,
     executionProfiles: modkit.services.executionProfiles,
     supportedExtensions: modkit.services.supportedExtensions,
+    serviceOperationPermissions: Object.freeze([...(configuration.operationPermissions ?? [])]),
+    effectfulServiceOperations: configuration.allowEffectfulServiceOperations === true,
+    async serviceOperations(offset, limit, activate, signal) {
+      return discoverServiceOperations({
+        services: operationServices,
+        alternateTargets: [modkit.services.target],
+        grant: {
+          id: 'modkit-mcp-service-operation-catalog',
+          classes: configuration.operationPermissions ?? [],
+        },
+        budgets: serviceOperationBudget,
+        offset,
+        limit,
+        activate,
+        ...(signal === undefined ? {} : { signal }),
+      })
+    },
+    async invokeServiceOperation(operationId, input, signal) {
+      return invokeServiceOperation({
+        services: operationServices,
+        alternateTargets: [modkit.services.target],
+        operationId,
+        input,
+        grant: {
+          id: `modkit-mcp-service-operation:${randomUUID()}`,
+          classes: configuration.operationPermissions ?? [],
+        },
+        budgets: serviceOperationBudget,
+        allowedEffects:
+          configuration.allowEffectfulServiceOperations === true
+            ? ['none', 'host-state', 'external']
+            : ['none'],
+        ...(signal === undefined ? {} : { signal }),
+      })
+    },
     async language(request: McpLanguageRequest, signal?: AbortSignal): Promise<McpLanguageResult> {
       signal?.throwIfAborted()
       if (request.documents.length === 0 || request.documents.length > 32) {

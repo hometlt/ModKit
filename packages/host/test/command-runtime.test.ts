@@ -14,6 +14,7 @@ import {
   commandRequest,
   commandUnavailable,
   createCommandRuntime,
+  createModkitCommandRuntime,
   createSubjectCommandEndpoint,
   createSubjectCommandRuntime,
   commandSubjectsFrom,
@@ -25,6 +26,8 @@ import {
   COMMAND_UNKNOWN,
   SUBJECT_COMMANDS,
   SUBJECT_COMMAND_TARGETS,
+  SERVICE_OPERATION_INVOKE_COMMAND,
+  SERVICE_OPERATIONS_COMMAND,
   type CommandDescriptor,
   type CommandRequest,
   type CommandSubject,
@@ -35,6 +38,74 @@ const nowhere = async (): Promise<CommandSubject> => {
 }
 
 describe('the command runtime answers rather than throws', () => {
+  it('binds generic service-operation catalog and invocation through host capabilities', async () => {
+    const runtime = createModkitCommandRuntime()
+    expect(runtime.descriptors.map(item => item.id)).toEqual(
+      expect.arrayContaining([SERVICE_OPERATIONS_COMMAND, SERVICE_OPERATION_INVOKE_COMMAND]),
+    )
+    const descriptor = {
+      schemaVersion: 1 as const,
+      id: 'fixture.echo',
+      title: 'Echo',
+      summary: 'Echo input.',
+      requiredPermissions: [] as const,
+      effects: 'none' as const,
+      inputSchema: { type: 'object' },
+      resultSchema: { type: 'object' },
+      budget: { maxInputBytes: 1024, maxOutputBytes: 1024, maxWallTimeMs: 1000 },
+    }
+    const context = {
+      openSubject: nowhere,
+      serviceOperations: {
+        async catalog() {
+          return {
+            total: 1,
+            offset: 0,
+            complete: true,
+            entries: [
+              {
+                operationId: descriptor.id,
+                declaredProviderIds: ['fixture/provider'],
+                eligibleProviderIds: ['fixture/provider'],
+                state: 'activatable' as const,
+                selectedProviderId: 'fixture/provider',
+                descriptor,
+                diagnostics: [],
+              },
+            ],
+          }
+        },
+        async invoke(request: { readonly operationId: string; readonly input: unknown }) {
+          return {
+            state: 'invoked' as const,
+            descriptor,
+            result: {
+              state: 'completed' as const,
+              operationId: request.operationId,
+              value: request.input as Record<string, string>,
+              diagnostics: [],
+            },
+            diagnostics: [],
+          }
+        },
+      },
+    }
+    await expect(runtime.run(SERVICE_OPERATIONS_COMMAND, {}, context)).resolves.toMatchObject({
+      state: 'ok',
+      data: { total: 1, entries: [{ operationId: 'fixture.echo' }] },
+    })
+    await expect(
+      runtime.run(
+        SERVICE_OPERATION_INVOKE_COMMAND,
+        { operationId: 'fixture.echo', operationInput: { message: 'hello' } },
+        context,
+      ),
+    ).resolves.toMatchObject({
+      state: 'ok',
+      data: { result: { state: 'completed', value: { message: 'hello' } } },
+    })
+  })
+
   it('registers the six commands of block 13, sorted, each with a summary', () => {
     const runtime = createSubjectCommandRuntime()
     const expectedIds = [

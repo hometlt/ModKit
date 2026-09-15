@@ -166,6 +166,8 @@ export interface ProviderActivationFact {
   readonly offerId: string
   readonly runtimeVariant: string
   readonly executionProfile: ExecutionProfile
+  /** Gate-narrowed authority actually supplied to this provider instance. */
+  readonly effectiveGrant: PermissionGrant
 }
 
 /**
@@ -234,6 +236,7 @@ export function createHostServiceResolver(
             offerId: selection.offerId,
             runtimeVariant: result.selected.offer.runtimeVariant,
             executionProfile: activation.executionProfile,
+            effectiveGrant: activation.effectiveGrant,
           }),
         )
         return Object.freeze({ value: activation.lease.value, release: () => activation.release() })

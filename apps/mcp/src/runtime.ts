@@ -428,12 +428,19 @@ export class ModkitMcpRuntime {
         ),
       ),
       data: {
-        readOnly: true,
+        readOnly: this.host.invokeServiceOperation === undefined,
         outputArtifacts: { enabled: this.host.outputArtifacts === true, ...OUTPUT_ARTIFACT_POLICY },
         roots: this.host.roots,
         extensionCoordinates: this.host.extensionCoordinates,
         executionProfiles: this.host.executionProfiles,
         supportedExtensions: this.host.supportedExtensions,
+        serviceOperations: {
+          available:
+            this.host.serviceOperations !== undefined &&
+            this.host.invokeServiceOperation !== undefined,
+          permissions: this.host.serviceOperationPermissions ?? [],
+          effectful: this.host.effectfulServiceOperations === true,
+        },
         maxOpenHandles: MCP_MAX_OPEN_HANDLES,
         operations: [
           'inventory',
@@ -449,6 +456,8 @@ export class ModkitMcpRuntime {
           'relation-graph',
           'subject-calculations',
           'invoke-readonly',
+          ...(this.host.serviceOperations === undefined ? [] : ['service-operations']),
+          ...(this.host.invokeServiceOperation === undefined ? [] : ['invoke-service-operation']),
           'knowledge-search',
           'knowledge-resolve',
           ...(this.host.language === undefined ? [] : ['language']),
@@ -459,6 +468,100 @@ export class ModkitMcpRuntime {
         ],
       },
     })
+  }
+
+  async serviceOperations(
+    cursor: string | undefined,
+    limit: number,
+    activate: boolean,
+    signal: AbortSignal,
+  ): Promise<McpEnvelope> {
+    if (this.host.serviceOperations === undefined) {
+      throw new McpOperationError(
+        'x3.mcp/service-operations-unavailable',
+        'The host does not expose the service operation catalog.',
+      )
+    }
+    const snapshotId = `${this.inventorySnapshotId}:service-operations:${activate ? 'active' : 'inert'}`
+    let offset = 0
+    if (cursor !== undefined) {
+      const probe = await this.host.serviceOperations(0, 1, false, signal)
+      const decoded = readOffsetCursor(
+        this.cursorSecret,
+        cursor,
+        snapshotId,
+        'service-operations',
+        probe.total,
+      )
+      if (decoded === undefined) {
+        return hostFailure('x3.mcp/invalid-cursor', 'The service operation cursor is invalid or stale.')
+      }
+      offset = decoded
+    }
+    const catalog = await this.host.serviceOperations(offset, limit, activate, signal)
+    return envelope({
+      snapshotId,
+      ...(catalog.nextOffset === undefined
+        ? {}
+        : {
+            nextCursor: makeOffsetCursor(
+              this.cursorSecret,
+              snapshotId,
+              'service-operations',
+              catalog.nextOffset,
+            ),
+          }),
+      completeness: catalog.complete ? 'complete' : 'partial',
+      diagnostics: catalog.entries.flatMap(entry => entry.diagnostics),
+      data: { total: catalog.total, items: catalog.entries },
+    })
+  }
+
+  async invokeServiceOperation(
+    operationId: string,
+    input: JsonValue,
+    signal: AbortSignal,
+    retainOutput = false,
+  ): Promise<McpEnvelope> {
+    if (this.host.invokeServiceOperation === undefined) {
+      throw new McpOperationError(
+        'x3.mcp/service-operation-invoke-unavailable',
+        'The host does not expose service operation invocation.',
+      )
+    }
+    const reservation = retainOutput ? this.outputs.reserve('service-operations') : undefined
+    try {
+      const invocation = await this.host.invokeServiceOperation(operationId, input, signal)
+      const serialized = JSON.stringify(invocation)
+      const snapshotId = `service-operation-v1:${fingerprint([operationId, serialized])}`
+      if (reservation !== undefined && invocation.state === 'invoked') {
+        const artifact = this.outputs.commit(reservation, new TextEncoder().encode(serialized), {
+          sourceRevision: this.inventorySnapshotId,
+          operationId,
+        })
+        return envelope({
+          snapshotId,
+          completeness: 'complete',
+          diagnostics: invocation.diagnostics,
+          data: {
+            state: 'retained',
+            operationId,
+            invocationState: invocation.state,
+            outputArtifact: artifact,
+          },
+        })
+      }
+      if (reservation !== undefined) this.outputs.cancel(reservation)
+      return envelope({
+        snapshotId,
+        completeness: 'complete',
+        diagnostics: invocation.diagnostics,
+        data: invocation,
+      })
+    } catch (error) {
+      if (reservation !== undefined) this.outputs.cancel(reservation)
+      throw error
+    }
   }
 
   async discoverInstallations(

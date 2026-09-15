@@ -1,7 +1,7 @@
 {
   "name": "@modkit/modkit-mcp",
   "version": "0.1.0",
-  "description": "Thin read-only MCP v2 stdio adapter for public Modkit host and SDK operations",
+  "description": "Thin MCP v2 stdio adapter for public Modkit host and SDK operations",
   "license": "UNLICENSED",
   "private": true,
   "type": "module",

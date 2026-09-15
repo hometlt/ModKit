@@ -696,6 +696,31 @@ describe('MCP configuration', () => {
     expect(config.roots).toEqual([resolve('C:\\one'), resolve('C:\\two')])
     expect(config.extensions).toEqual([resolve('C:\\ext-a'), resolve('C:\\ext-b')])
   })
+
+  it('requires explicit permission and effect policy for effectful service operations', () => {
+    const config = parseModkitMcpConfiguration(
+      [
+        '--root',
+        'C:\\one',
+        '--extension',
+        'C:\\ext',
+        '--operation-permission',
+        'network',
+        '--allow-effectful-service-operations',
+        '--trust-extensions',
+      ],
+      {},
+    )
+    expect(config.operationPermissions).toEqual(['network'])
+    expect(config.allowEffectfulServiceOperations).toBe(true)
+    expect(config.trustExtensions).toBe(true)
+    expect(() =>
+      parseModkitMcpConfiguration(
+        ['--root', 'C:\\one', '--extension', 'C:\\ext', '--operation-permission', 'root'],
+        {},
+      ),
+    ).toThrow(/unknown operation permission/u)
+  })
 })
 
 describe('bounded protocol projection', () => {
@@ -718,13 +743,15 @@ describe('bounded protocol projection', () => {
   })
 })
 
-describe('read-only MCP v2 adapter', () => {
-  it('advertises only bounded read-only tools and resources', async () => {
+describe('MCP v2 adapter', () => {
+  it('advertises bounded inspection and explicitly effectful service-operation tools', async () => {
     const { client } = await connected(fakeHost().host)
     const tools = await client.listTools()
     expect(tools.tools.map(tool => tool.name)).toEqual([
       'modkit.inventory',
       'modkit.capabilities',
+      'modkit.service_operations',
+      'modkit.invoke_service_operation',
       'modkit.language',
       'modkit.discover_installations',
       'modkit.open_discovered',
@@ -749,7 +776,14 @@ describe('read-only MCP v2 adapter', () => {
       'modkit.knowledge_search',
       'modkit.knowledge_resolve',
     ])
-    expect(tools.tools.every(tool => tool.annotations?.readOnlyHint === true)).toBe(true)
+    expect(
+      tools.tools
+        .filter(tool => tool.name !== 'modkit.invoke_service_operation')
+        .every(tool => tool.annotations?.readOnlyHint === true),
+    ).toBe(true)
+    expect(
+      tools.tools.find(tool => tool.name === 'modkit.invoke_service_operation')?.annotations,
+    ).toMatchObject({ readOnlyHint: false, destructiveHint: true, openWorldHint: true })
     expect(tools.tools.some(tool => /write|save/u.test(tool.name))).toBe(false)
     const resources = await client.listResources()
     expect(resources.resources.map(resource => resource.uri)).toEqual([
@@ -768,6 +802,96 @@ describe('read-only MCP v2 adapter', () => {
       'modkit://knowledge/{target}/{locale}',
       'modkit://schema/{target}/{locale}',
     ])
+  })
+
+  it('projects the generic service-operation catalog and invocation without domain branches', async () => {
+    const descriptor = {
+      schemaVersion: 1 as const,
+      id: 'fixture.echo',
+      title: 'Echo',
+      summary: 'Return the input.',
+      requiredPermissions: [] as const,
+      effects: 'none' as const,
+      inputSchema: { type: 'object' },
+      resultSchema: { type: 'object' },
+      budget: { maxInputBytes: 1024, maxOutputBytes: 1024, maxWallTimeMs: 1000 },
+    }
+    const host: ModkitMcpHostPort = {
+      ...fakeHost().host,
+      outputArtifacts: true,
+      serviceOperationPermissions: [],
+      effectfulServiceOperations: false,
+      async serviceOperations(offset, limit, activate) {
+        expect({ offset, limit, activate }).toEqual({ offset: 0, limit: 20, activate: true })
+        return {
+          total: 1,
+          offset: 0,
+          complete: true,
+          entries: [
+            {
+              operationId: descriptor.id,
+              declaredProviderIds: ['fixture/provider'],
+              eligibleProviderIds: ['fixture/provider'],
+              state: 'activatable',
+              selectedProviderId: 'fixture/provider',
+              descriptor,
+              diagnostics: [],
+            },
+          ],
+        }
+      },
+      async invokeServiceOperation(operationId, input) {
+        return {
+          state: 'invoked',
+          descriptor,
+          result: { state: 'completed', operationId, value: input, diagnostics: [] },
+          diagnostics: [],
+        }
+      },
+    }
+    const { client } = await connected(host)
+    const catalog = structured(
+      await client.callTool({
+        name: 'modkit.service_operations',
+        arguments: { limit: 20, activate: true },
+      }),
+    )
+    expect(catalog.data).toMatchObject({
+      total: 1,
+      items: [{ operationId: 'fixture.echo', state: 'activatable', descriptor: { effects: 'none' } }],
+    })
+    const invoked = structured(
+      await client.callTool({
+        name: 'modkit.invoke_service_operation',
+        arguments: { operationId: 'fixture.echo', input: { message: 'hello' } },
+      }),
+    )
+    expect(invoked.data).toMatchObject({
+      state: 'invoked',
+      result: { state: 'completed', value: { message: 'hello' } },
+    })
+    const retained = structured(
+      await client.callTool({
+        name: 'modkit.invoke_service_operation',
+        arguments: {
+          operationId: 'fixture.echo',
+          input: { message: 'retained' },
+          retainOutput: true,
+        },
+      }),
+    )
+    const retainedData = retained.data as {
+      readonly state: string
+      readonly outputArtifact: { readonly id: string; readonly firstChunkUri: string }
+    }
+    expect(retainedData).toMatchObject({
+      state: 'retained',
+      outputArtifact: { operationId: 'fixture.echo' },
+    })
+    const manifest = await client.readResource({ uri: `modkit://output/${retainedData.outputArtifact.id}` })
+    expect(JSON.parse((manifest.contents[0] as { text: string }).text)).toMatchObject({
+      operationId: 'fixture.echo',
+    })
   })
 
   it('runs a bounded language feature over explicitly listed files', async () => {

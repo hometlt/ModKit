@@ -29,6 +29,10 @@
 import type { Diagnostic } from '@modkit/core'
 import type { AssetSession, JsonValue } from '@modkit/sdk'
 import type { SubjectOpenSnapshot } from '../subject-rpc.js'
+import type {
+  ServiceOperationCatalog,
+  ServiceOperationInvocation,
+} from '../service-operations.js'
 
 /** The run was asked to stop. Reported, never thrown past the runtime. */
 export const COMMAND_CANCELLED = 'x3.command/cancelled'
@@ -96,6 +100,20 @@ export interface CommandContext {
   readonly openSubject: CommandSubjectOpener
   /** Where produced bytes go. Absent means this host cannot write; commands say so structurally. */
   readonly writeOutput?: CommandOutputSink
+  /** Generic subject-independent extension operations, supplied by hosts that authorize them. */
+  readonly serviceOperations?: {
+    catalog(request: {
+      readonly offset: number
+      readonly limit: number
+      readonly activate: boolean
+      readonly signal?: AbortSignal
+    }): Promise<ServiceOperationCatalog>
+    invoke(request: {
+      readonly operationId: string
+      readonly input: JsonValue
+      readonly signal?: AbortSignal
+    }): Promise<ServiceOperationInvocation>
+  }
   readonly progress?: (progress: CommandProgress) => void
   readonly signal?: AbortSignal
 }
