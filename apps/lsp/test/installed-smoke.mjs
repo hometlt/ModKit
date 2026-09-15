@@ -18,6 +18,16 @@ const sheetText = '<StyleFile>\n<Style name="Title" textcolor="ffcc00"/>\n</Styl
 const catalog = join(root, 'GameStrings.txt')
 const catalogText = 'Unit/Name/Marine=<s val="Title">Marine</s>\n'
 await Promise.all([writeFile(sheet, sheetText), writeFile(catalog, catalogText)])
+const scene = join(root, 'Main.SC2Cutscene')
+const sceneText =
+  '<?xml version="1.0" encoding="utf-8"?>\n<CutsceneState cutsceneVersion="1.300000">\n' +
+  '  <CCutsceneNodeFolder guid="200" name="Includes" referenceFile="Other.SC2Cutscene" referenceGuid="300"/>\n' +
+  '</CutsceneState>\n'
+const otherScene = join(root, 'Other.SC2Cutscene')
+const otherSceneText =
+  '<?xml version="1.0" encoding="utf-8"?>\n<CutsceneState cutsceneVersion="1.300000">\n' +
+  '  <CCutsceneNodeCamera guid="300" name="Other Camera"/>\n</CutsceneState>\n'
+await Promise.all([writeFile(scene, sceneText), writeFile(otherScene, otherSceneText)])
 
 const executable = fileURLToPath(new URL('../dist/main.js', import.meta.url))
 const child = spawn(
@@ -248,6 +258,59 @@ try {
   assert.equal(styleTokens.error, undefined, JSON.stringify(styleTokens.error))
   assert.ok(styleTokens.result.data.length >= 5 * 5, 'SC2 Style must publish semantic tokens')
 
+  // SC2 Cutscene: the generic adapter replaces the removed module CLI, including an include jump.
+  const sceneUri = pathToFileURL(scene).href
+  const otherSceneUri = pathToFileURL(otherScene).href
+  for (const [documentUri, text] of [
+    [sceneUri, sceneText],
+    [otherSceneUri, otherSceneText],
+  ]) {
+    send({
+      jsonrpc: '2.0',
+      method: 'textDocument/didOpen',
+      params: { textDocument: { uri: documentUri, languageId: 'sc2-cutscene', version: 1, text } },
+    })
+  }
+  send({
+    jsonrpc: '2.0',
+    id: 13,
+    method: 'modkit/languageCapabilities',
+    params: { textDocument: { uri: sceneUri } },
+  })
+  const sceneCapabilities = await waitFor(message => message.id === 13, 'cutscene capabilities')
+  assert.equal(sceneCapabilities.error, undefined, JSON.stringify(sceneCapabilities.error))
+  for (const feature of ['definition', 'references', 'rename', 'semantic-tokens']) {
+    assert.ok(
+      sceneCapabilities.result.features.includes(feature),
+      `missing cutscene feature ${feature}`,
+    )
+  }
+  const referenceLine = sceneText.split('\n')[2]
+  send({
+    jsonrpc: '2.0',
+    id: 14,
+    method: 'textDocument/definition',
+    params: {
+      textDocument: { uri: sceneUri },
+      position: { line: 2, character: referenceLine.indexOf('referenceGuid="300"') + 'referenceGuid="'.length + 1 },
+    },
+  })
+  const sceneDefinition = await waitFor(message => message.id === 14, 'cutscene definition')
+  assert.equal(sceneDefinition.error, undefined, JSON.stringify(sceneDefinition.error))
+  const definitionUris = (Array.isArray(sceneDefinition.result) ? sceneDefinition.result : [sceneDefinition.result])
+    .filter(Boolean)
+    .map(location => location.uri ?? location.targetUri)
+  assert.deepEqual(definitionUris, [otherSceneUri], 'SC2 Cutscene referenceGuid must reach the included scene')
+  send({
+    jsonrpc: '2.0',
+    id: 15,
+    method: 'textDocument/semanticTokens/full',
+    params: { textDocument: { uri: sceneUri } },
+  })
+  const sceneTokens = await waitFor(message => message.id === 15, 'cutscene semantic tokens')
+  assert.equal(sceneTokens.error, undefined, JSON.stringify(sceneTokens.error))
+  assert.ok(sceneTokens.result.data.length >= 5, 'SC2 Cutscene must publish semantic tokens')
+
   send({ jsonrpc: '2.0', id: 4, method: 'shutdown', params: null })
   await waitFor(message => message.id === 4, 'shutdown response')
   send({ jsonrpc: '2.0', method: 'exit', params: null })
@@ -258,7 +321,7 @@ try {
     )
   })
   process.stdout.write(
-    `installed LSP smoke passed: sc2-bank, sc2-style; diagnostics=${diagnostics.params.diagnostics.length}; symbols=${symbols.result.length}; styleTokens=${styleTokens.result.data.length / 5}\n`,
+    `installed LSP smoke passed: sc2-bank, sc2-style, sc2-cutscene; diagnostics=${diagnostics.params.diagnostics.length}; symbols=${symbols.result.length}; styleTokens=${styleTokens.result.data.length / 5}\n`,
   )
 } finally {
   if (child.exitCode === null) child.kill()

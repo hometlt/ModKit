@@ -292,8 +292,15 @@ export function createModkitLanguageServer(
     ...request(uri, signal),
     position,
   })
+  /*
+   * LSP orders notifications before the requests that follow them, so a feature request must see
+   * every document the client has already opened or changed. Waiting only for the primary document
+   * answered a cross-file definition from a workspace that did not yet contain the other file — an
+   * empty result indistinguishable from "no definition".
+   */
   const awaitReady = async (uri: string): Promise<void> => {
     await pending.get(uri)
+    await Promise.all(pending.values())
   }
   const acceptDocument = (document: TextDocument): void => {
     acceptedDocuments.set(
