@@ -18,6 +18,7 @@
     "extensions/documents",
     "extensions/images",
     "extensions/models",
+    "extensions/translation",
     "extensions/vector",
     "extensions/video"
   ]

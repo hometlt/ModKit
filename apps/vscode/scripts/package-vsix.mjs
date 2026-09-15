@@ -25,6 +25,10 @@ import { managedPackagesDirectory, verifyVirtualOfflineRelease } from './offline
 
 const here = dirname(fileURLToPath(import.meta.url))
 const appRoot = resolve(here, '..')
+// The generated catalog names the Common roots this build ships; the gate checks exactly those.
+const bundledRoots = JSON.parse(
+  readFileSync(join(appRoot, 'generated', 'bundled-catalog.json'), 'utf8'),
+).roots.map(root => root.directory)
 const rawArguments = process.argv.slice(2)
 // pnpm 11 preserves the conventional `--` separator when forwarding script arguments. Accept the
 // same public command with or without that separator, but keep every other argument strict.
@@ -110,16 +114,7 @@ function verifyCandidate(candidate) {
   if (!entries.has('extension/dist-app/format-smoke.v1.json')) {
     throw new Error('VSIX candidate is missing the generated A8 format smoke inventory')
   }
-  for (const root of [
-    'archives',
-    'audio',
-    'data',
-    'documents',
-    'images',
-    'models',
-    'vector',
-    'video',
-  ]) {
+  for (const root of bundledRoots) {
     if (!entries.has(`extension/dist-app/extensions/${root}/package.json`)) {
       throw new Error(`VSIX candidate is missing bundled Common root ${root}`)
     }

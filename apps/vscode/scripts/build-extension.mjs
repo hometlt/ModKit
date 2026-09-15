@@ -293,7 +293,8 @@ function assertRuntimeImportsResolve(extensionsOutput) {
 }
 
 /**
- * Copy the eight generated Common roots and the exact runtime package closure they need.
+ * Copy the generated Common roots and the exact runtime package closure they need.
+ * `generated/bundled-catalog.json` is the authority for which roots ship; the build never hardcodes it.
  *
  * This intentionally does not copy any source `node_modules` directory. pnpm represents most
  * dependencies there as junctions, which are neither portable in a VSIX nor a production closure.
@@ -306,9 +307,9 @@ function copyBundledCodecRoots(output) {
     bundledCatalog.schemaVersion !== 1 ||
     !Array.isArray(bundledCatalog.roots) ||
     bundledCatalog.rootCount !== bundledCatalog.roots.length ||
-    bundledCatalog.rootCount !== 8
+    bundledCatalog.rootCount < 1
   ) {
-    throw new TypeError('VS Code bundled catalog must name exactly eight generated Common roots')
+    throw new TypeError('VS Code bundled catalog must name its generated Common roots and count them')
   }
   const roots = [...bundledCatalog.roots].sort((left, right) =>
     left.directory.localeCompare(right.directory),

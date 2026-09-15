@@ -24,7 +24,8 @@ engine floor matches the VS Code API types used to compile the extension.
 
 ## Bundled Common roots
 
-`generated/bundled-catalog.json` is the authority for the eight roots shipped by this app:
+`generated/bundled-catalog.json` is the authority for the roots shipped by this app; the build and the
+VSIX gate read it rather than a fixed list. Today it names nine:
 
 - `archives`
 - `audio`
@@ -32,6 +33,7 @@ engine floor matches the VS Code API types used to compile the extension.
 - `documents`
 - `images`
 - `models`
+- `translation`
 - `vector`
 - `video`
 
@@ -47,7 +49,7 @@ payloads without their nested `node_modules`. At minimum the closure must contai
 
 Before a build succeeds it recursively rejects links, verifies the exact root set, and checks every
 bare JavaScript import in the root/closure tree for a resolvable physical package. The final VSIX
-gate checks the unscoped release identity, all eight root manifests, and the required `@modkit`
+gate checks the unscoped release identity, every catalog root manifest, and the required `@modkit`
 package manifests.
 
 ## Determinism and installed acceptance

@@ -472,7 +472,8 @@
     "onView:modkit.extensions",
     "onView:modkit.host",
     "onFileSystem:modkit-container",
-    "onFileSystem:modkit-source"
+    "onFileSystem:modkit-source",
+    "onStartupFinished"
   ],
   "icon": "media/icon-128.png"
 }

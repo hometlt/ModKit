@@ -102,6 +102,12 @@ const activationEvents = [
     .flat()
     .map(row => `onView:${row.id}`),
   ...fileSystemSchemes.map(scheme => `onFileSystem:${scheme}`),
+  /*
+   * Language routes come from the configured extension directories at runtime, so no static
+   * `onLanguage` event can name them. Activate once startup has finished so opening an SC2 or other
+   * extension-routed document gets diagnostics, navigation and tokens without first opening a panel.
+   */
+  'onStartupFinished',
 ]
 
 if (check) {
