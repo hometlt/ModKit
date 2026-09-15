@@ -426,12 +426,18 @@ function fakeSession(
               kind: 'edit-plan',
               plan: {
                 planId: 'fixture-plan',
-                targets: [{
-                  targetId: 'content', subjectUri: 'fixture://subject',
-                  ownerSource: { id: 'fixture', uri: 'fixture://subject' }, semanticPath: [],
-                  expectedRevision: { bindings: { content: revisionId('provider-token:fixture') },
-                    compositionFingerprint: 'fixture' },
-                }],
+                targets: [
+                  {
+                    targetId: 'content',
+                    subjectUri: 'fixture://subject',
+                    ownerSource: { id: 'fixture', uri: 'fixture://subject' },
+                    semanticPath: [],
+                    expectedRevision: {
+                      bindings: { content: revisionId('provider-token:fixture') },
+                      compositionFingerprint: 'fixture',
+                    },
+                  },
+                ],
                 semantics: { mutationMode: 'mutate', minimumGuarantee: 'atomic' },
                 diagnostics: [],
                 fidelity: { roundTrip: 'byte-identical', preservesUnknownData: true },
@@ -536,6 +542,7 @@ function fakeHost(
     readonly withSelection?: boolean
     readonly withDiscovery?: boolean
     readonly withLanguage?: boolean
+    readonly withLanguageSession?: boolean
     readonly withEditing?: boolean
     readonly editsEnabled?: boolean
     readonly ignoreFactsAbort?: boolean
@@ -547,6 +554,8 @@ function fakeHost(
   let streamReleases = 0
   const selectionInvocations: string[] = []
   const languageInvocations: unknown[] = []
+  const languageSessionInvocations: unknown[] = []
+  let languageSessionCloses = 0
   const editInvocations: string[] = []
   const host: ModkitMcpHostPort = {
     inventory,
@@ -566,9 +575,55 @@ function fakeHost(
               diagnostics: [],
               primaryUri: 'file:///C:/allowed/fixture.galaxy',
               feature: request.feature,
-              result: request.feature === 'code-actions'
-                ? { actions: [], isIncomplete: false }
-                : { markdown: 'Fixture hover' },
+              result:
+                request.feature === 'code-actions'
+                  ? { actions: [], isIncomplete: false }
+                  : { markdown: 'Fixture hover' },
+            }
+          },
+        }
+      : {}),
+    ...(options.withLanguageSession
+      ? {
+          async openLanguageSession(
+            request: import('../src/index.js').McpLanguageSessionOpenRequest,
+          ) {
+            languageSessionInvocations.push({ kind: 'open', request })
+            const documents = request.documents.map((document, index) => ({
+              uri: document.uri ?? `file:///C:/allowed/session-${index}.galaxy`,
+              languageId: document.languageId,
+              ...(document.documentKind === undefined
+                ? {}
+                : { documentKind: document.documentKind }),
+              version: document.version ?? 1,
+            }))
+            return {
+              documents,
+              workspaceIncomplete: true,
+              diagnostics: [],
+              async update(update: import('../src/index.js').McpLanguageSessionUpdateRequest) {
+                languageSessionInvocations.push({ kind: 'update', update })
+                return {
+                  snapshotId: `session-v${update.version}`,
+                  diagnostics: [],
+                  primaryUri: update.uri,
+                  feature: 'analyze' as const,
+                  result: { documentVersion: update.version },
+                }
+              },
+              async invoke(feature: import('../src/index.js').McpLanguageSessionFeatureRequest) {
+                languageSessionInvocations.push({ kind: 'feature', feature })
+                return {
+                  snapshotId: 'session-feature-v1',
+                  diagnostics: [],
+                  primaryUri: feature.primaryUri,
+                  feature: feature.feature,
+                  result: { markdown: 'Session hover' },
+                }
+              },
+              async close() {
+                languageSessionCloses += 1
+              },
             }
           },
         }
@@ -737,6 +792,8 @@ function fakeHost(
     streamReleases: () => streamReleases,
     selectionInvocations: () => selectionInvocations,
     languageInvocations: () => languageInvocations,
+    languageSessionInvocations: () => languageSessionInvocations,
+    languageSessionCloses: () => languageSessionCloses,
     editInvocations: () => editInvocations,
   }
 }
@@ -846,6 +903,10 @@ describe('MCP v2 adapter', () => {
       'modkit.service_operations',
       'modkit.invoke_service_operation',
       'modkit.language',
+      'modkit.language_session_open',
+      'modkit.language_session_update',
+      'modkit.language_session_feature',
+      'modkit.language_session_close',
       'modkit.discover_installations',
       'modkit.open_discovered',
       'modkit.open_subject',
@@ -970,7 +1031,9 @@ describe('MCP v2 adapter', () => {
     )
     expect(catalog.data).toMatchObject({
       total: 1,
-      items: [{ operationId: 'fixture.echo', state: 'activatable', descriptor: { effects: 'none' } }],
+      items: [
+        { operationId: 'fixture.echo', state: 'activatable', descriptor: { effects: 'none' } },
+      ],
     })
     const invoked = structured(
       await client.callTool({
@@ -1000,7 +1063,9 @@ describe('MCP v2 adapter', () => {
       state: 'retained',
       outputArtifact: { operationId: 'fixture.echo' },
     })
-    const manifest = await client.readResource({ uri: `modkit://output/${retainedData.outputArtifact.id}` })
+    const manifest = await client.readResource({
+      uri: `modkit://output/${retainedData.outputArtifact.id}`,
+    })
     expect(JSON.parse((manifest.contents[0] as { text: string }).text)).toMatchObject({
       operationId: 'fixture.echo',
     })
@@ -1064,26 +1129,111 @@ describe('MCP v2 adapter', () => {
     expect(rejected.isError).toBe(true)
   })
 
+  it('retains a host-owned virtual language session across overlay and feature calls', async () => {
+    const fake = fakeHost({ withLanguageSession: true })
+    const { client } = await connected(fake.host)
+    const uri = 'modkit-source://workspace/Scripts/Main.galaxy'
+    const opened = structured(
+      await client.callTool({
+        name: 'modkit.language_session_open',
+        arguments: {
+          documents: [{ uri, languageId: 'galaxy', version: 4, text: 'void main() {}' }],
+        },
+      }),
+    )
+    const sessionHandle = (opened.data as { sessionHandle: string }).sessionHandle
+    expect(sessionHandle).toMatch(/^[0-9a-f-]{36}$/u)
+    expect(opened).toMatchObject({ completeness: 'partial', data: { workspaceIncomplete: true } })
+
+    const updated = structured(
+      await client.callTool({
+        name: 'modkit.language_session_update',
+        arguments: { sessionHandle, uri, version: 5, text: 'void main() { return; }' },
+      }),
+    )
+    expect(updated).toMatchObject({
+      snapshotId: 'session-v5',
+      data: { result: { documentVersion: 5 } },
+    })
+
+    const feature = structured(
+      await client.callTool({
+        name: 'modkit.language_session_feature',
+        arguments: {
+          sessionHandle,
+          primaryUri: uri,
+          feature: 'hover',
+          position: { line: 0, character: 5 },
+        },
+      }),
+    )
+    expect(feature).toMatchObject({ data: { result: { markdown: 'Session hover' } } })
+    await client.callTool({
+      name: 'modkit.language_session_close',
+      arguments: { sessionHandle },
+    })
+    expect(fake.languageSessionCloses()).toBe(1)
+    expect(fake.languageSessionInvocations()).toEqual([
+      expect.objectContaining({ kind: 'open' }),
+      expect.objectContaining({ kind: 'update', update: expect.objectContaining({ version: 5 }) }),
+      expect.objectContaining({
+        kind: 'feature',
+        feature: expect.objectContaining({ feature: 'hover' }),
+      }),
+    ])
+    const stale = await client.callTool({
+      name: 'modkit.language_session_feature',
+      arguments: { sessionHandle, primaryUri: uri, feature: 'diagnostics' },
+    })
+    expect(stale.isError).toBe(true)
+  })
+
+  it('closes retained language sessions when the runtime is disposed', async () => {
+    const fake = fakeHost({ withLanguageSession: true })
+    const runtime = new ModkitMcpRuntime(fake.host)
+    await runtime.openLanguageSession(
+      {
+        documents: [
+          {
+            uri: 'modkit-source://workspace/Scripts/Main.galaxy',
+            languageId: 'galaxy',
+            version: 1,
+            text: 'void main() {}',
+          },
+        ],
+      },
+      new AbortController().signal,
+    )
+
+    await runtime.dispose()
+
+    expect(fake.languageSessionCloses()).toBe(1)
+  })
+
   it('forwards bounded code-action context without applying edits', async () => {
     const fake = fakeHost({ withLanguage: true })
     const { client } = await connected(fake.host)
     const range = { start: { line: 0, character: 0 }, end: { line: 0, character: 4 } }
-    const result = structured(await client.callTool({
-      name: 'modkit.language',
-      arguments: {
-        documents: [{ path: 'C:\\allowed\\fixture.galaxy', languageId: 'galaxy' }],
-        feature: 'code-actions',
-        range,
-        languageDiagnostics: [{
+    const result = structured(
+      await client.callTool({
+        name: 'modkit.language',
+        arguments: {
+          documents: [{ path: 'C:\\allowed\\fixture.galaxy', languageId: 'galaxy' }],
+          feature: 'code-actions',
           range,
-          severity: 'warning',
-          message: 'fixture warning',
-          code: 'fixture/warning',
-        }],
-        maxResults: 20,
-        maxEdits: 10,
-      },
-    }))
+          languageDiagnostics: [
+            {
+              range,
+              severity: 'warning',
+              message: 'fixture warning',
+              code: 'fixture/warning',
+            },
+          ],
+          maxResults: 20,
+          maxEdits: 10,
+        },
+      }),
+    )
     expect(result).toMatchObject({
       completeness: 'partial',
       data: { feature: 'code-actions', result: { actions: [] } },
@@ -1582,7 +1732,11 @@ describe('MCP v2 adapter', () => {
     const result = structured(
       await client.callTool({
         name: 'modkit.propose_edit',
-        arguments: { handle: handleFrom(opened), operationId: 'fixture/write', input: { value: 1 } },
+        arguments: {
+          handle: handleFrom(opened),
+          operationId: 'fixture/write',
+          input: { value: 1 },
+        },
       }),
     )
     expect(result.completeness).toBe('complete')
@@ -1614,7 +1768,11 @@ describe('MCP v2 adapter', () => {
     const proposed = structured(
       await client.callTool({
         name: 'modkit.propose_edit',
-        arguments: { handle: handleFrom(opened), operationId: 'fixture/write', input: { value: 2 } },
+        arguments: {
+          handle: handleFrom(opened),
+          operationId: 'fixture/write',
+          input: { value: 2 },
+        },
       }),
     )
     const planHandle = (proposed.data as { planHandle?: string }).planHandle
@@ -1715,9 +1873,7 @@ describe('MCP v2 adapter', () => {
       arguments: { handle: handleFrom(opened), operationId: 'fixture/read', input: null },
     })
     expect(response.isError).toBe(true)
-    expect(structured(response).diagnostics[0]?.code).toBe(
-      'x3.mcp/non-mutating-operation-refused',
-    )
+    expect(structured(response).diagnostics[0]?.code).toBe('x3.mcp/non-mutating-operation-refused')
   })
 
   it('preserves a host operation rejection as bounded invalid data', async () => {

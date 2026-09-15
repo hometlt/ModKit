@@ -6,7 +6,13 @@ import {
   type KnowledgeTarget,
 } from '@modkit/sdk'
 import { z } from 'zod'
-import type { McpLanguageRequest, ModkitMcpHostPort } from './host-port.js'
+import type {
+  McpLanguageRequest,
+  McpLanguageSessionFeatureRequest,
+  McpLanguageSessionOpenRequest,
+  McpLanguageSessionUpdateRequest,
+  ModkitMcpHostPort,
+} from './host-port.js'
 import {
   ModkitMcpRuntime,
   McpOperationError,
@@ -74,9 +80,21 @@ const languageInput = z
       .max(32),
     primaryIndex: z.number().int().min(0).max(31).default(0),
     feature: z.enum([
-      'analyze', 'completion', 'hover', 'signature-help', 'definition', 'references',
-      'prepare-rename', 'rename', 'formatting', 'document-colors', 'color-presentations',
-      'code-actions', 'document-symbols', 'workspace-symbols', 'diagnostics',
+      'analyze',
+      'completion',
+      'hover',
+      'signature-help',
+      'definition',
+      'references',
+      'prepare-rename',
+      'rename',
+      'formatting',
+      'document-colors',
+      'color-presentations',
+      'code-actions',
+      'document-symbols',
+      'workspace-symbols',
+      'diagnostics',
     ]),
     position: languagePositionSchema.optional(),
     includeDeclaration: z.boolean().optional(),
@@ -105,6 +123,39 @@ const languageInput = z
     maxEdits: z.number().int().min(1).max(4_096).default(1_024),
   })
   .strict()
+
+const languageSessionDocumentBase = {
+  languageId: z.string().min(1).max(128),
+  documentKind: z.string().min(1).max(128).optional(),
+  text: z.string().max(4_194_304).optional(),
+  version: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER).optional(),
+}
+const languageSessionDocument = z.union([
+  z.object({ ...languageSessionDocumentBase, path: z.string().min(1).max(4_096) }).strict(),
+  z
+    .object({
+      ...languageSessionDocumentBase,
+      uri: z.string().url().min(1).max(8_192),
+      text: z.string().max(4_194_304),
+    })
+    .strict(),
+])
+const languageSessionOpenInput = z
+  .object({ documents: z.array(languageSessionDocument).min(1).max(32) })
+  .strict()
+const languageSessionUpdateInput = z
+  .object({
+    sessionHandle: handleSchema,
+    uri: z.string().min(1).max(8_192),
+    version: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
+    text: z.string().max(4_194_304),
+  })
+  .strict()
+const languageSessionFeatureInput = languageInput
+  .omit({ documents: true, primaryIndex: true })
+  .extend({ sessionHandle: handleSchema, primaryUri: z.string().min(1).max(8_192) })
+  .strict()
+const languageSessionCloseInput = z.object({ sessionHandle: handleSchema }).strict()
 
 const schemaCoordinate = z
   .object({
@@ -289,12 +340,8 @@ const prepareEditInput = z
   })
   .strict()
 const commitEditInput = z.object({ planHandle: editPlanHandleSchema }).strict()
-const editHistoryInput = z
-  .object({ limit: z.number().int().min(1).max(100).default(50) })
-  .strict()
-const editTransactionInput = z
-  .object({ transactionId: z.string().min(1).max(256) })
-  .strict()
+const editHistoryInput = z.object({ limit: z.number().int().min(1).max(100).default(50) }).strict()
+const editTransactionInput = z.object({ transactionId: z.string().min(1).max(256) }).strict()
 const discardEditInput = z.object({ id: z.string().min(1).max(256) }).strict()
 
 const factsInput = z.discriminatedUnion('view', [
@@ -580,6 +627,74 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
       safeTool(() => runtime.language(request as McpLanguageRequest, context.mcpReq.signal)),
   )
   server.registerTool(
+    'modkit.language_session_open',
+    {
+      title: 'Open a host-held language workspace',
+      description:
+        'Open up to 32 rooted files or bounded virtual source overlays in one retained language workspace. Source text and provider leases remain in the host.',
+      inputSchema: languageSessionOpenInput,
+      outputSchema: envelopeSchema,
+      annotations: { ...readOnlyAnnotations, idempotentHint: false },
+    },
+    (request, context) =>
+      safeTool(() =>
+        runtime.openLanguageSession(
+          request as McpLanguageSessionOpenRequest,
+          context.mcpReq.signal,
+        ),
+      ),
+  )
+  server.registerTool(
+    'modkit.language_session_update',
+    {
+      title: 'Update a language overlay',
+      description:
+        'Replace one host-held document overlay at a strictly newer version and return its new analysis. Files are not written.',
+      inputSchema: languageSessionUpdateInput,
+      outputSchema: envelopeSchema,
+      annotations: { ...readOnlyAnnotations, idempotentHint: false },
+    },
+    ({ sessionHandle, uri, version, text }, context) =>
+      safeTool(() =>
+        runtime.updateLanguageSession(
+          sessionHandle,
+          { uri, version, text } satisfies McpLanguageSessionUpdateRequest,
+          context.mcpReq.signal,
+        ),
+      ),
+  )
+  server.registerTool(
+    'modkit.language_session_feature',
+    {
+      title: 'Run a feature in a language workspace',
+      description:
+        'Run one protocol-neutral feature against an exact document version retained in a host-held language workspace.',
+      inputSchema: languageSessionFeatureInput,
+      outputSchema: envelopeSchema,
+      annotations: { ...readOnlyAnnotations, idempotentHint: true },
+    },
+    ({ sessionHandle, ...request }, context) =>
+      safeTool(() =>
+        runtime.languageSessionFeature(
+          sessionHandle,
+          request as McpLanguageSessionFeatureRequest,
+          context.mcpReq.signal,
+        ),
+      ),
+  )
+  server.registerTool(
+    'modkit.language_session_close',
+    {
+      title: 'Close a language workspace',
+      description: 'Release one host-held language workspace and all provider leases.',
+      inputSchema: languageSessionCloseInput,
+      outputSchema: envelopeSchema,
+      annotations: { ...readOnlyAnnotations, idempotentHint: false },
+    },
+    ({ sessionHandle }, context) =>
+      safeTool(() => runtime.closeLanguageSession(sessionHandle, context.mcpReq.signal)),
+  )
+  server.registerTool(
     'modkit.discover_installations',
     {
       title: 'Discover verified game installations',
@@ -774,12 +889,7 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
     },
     ({ handle, fieldPath, targetDocument }, context) =>
       safeTool(() =>
-        runtime.subjectEditTarget(
-          handle,
-          fieldPath,
-          targetDocument,
-          context.mcpReq.signal,
-        ),
+        runtime.subjectEditTarget(handle, fieldPath, targetDocument, context.mcpReq.signal),
       ),
   )
   server.registerTool(
@@ -883,9 +993,7 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
       annotations: { ...readOnlyAnnotations, idempotentHint: false },
     },
     ({ planHandle, confirmationToken }, context) =>
-      safeTool(() =>
-        runtime.prepareEdit(planHandle, confirmationToken, context.mcpReq.signal),
-      ),
+      safeTool(() => runtime.prepareEdit(planHandle, confirmationToken, context.mcpReq.signal)),
   )
   server.registerTool(
     'modkit.commit_edit',

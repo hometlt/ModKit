@@ -21,7 +21,15 @@ import type {
   SubjectFactsSource,
   SubjectSelectorSource,
 } from '@modkit/sdk'
-import type { McpLanguageRequest, McpOpenedSubject, ModkitMcpHostPort } from './host-port.js'
+import type {
+  McpLanguageRequest,
+  McpLanguageSession,
+  McpLanguageSessionFeatureRequest,
+  McpLanguageSessionOpenRequest,
+  McpLanguageSessionUpdateRequest,
+  McpOpenedSubject,
+  ModkitMcpHostPort,
+} from './host-port.js'
 import {
   MCP_MAX_CURSOR_LENGTH,
   MCP_MAX_OPEN_HANDLES,
@@ -43,6 +51,7 @@ const MCP_GRAPH_SCAN_PAGE_SIZE = 50
 const MCP_MAX_GRAPH_SCAN_PAGES = 1_000
 const MCP_MAX_EDIT_PLANS = 64
 const MCP_EDIT_PLAN_TTL_MS = 15 * 60 * 1_000
+const MCP_MAX_LANGUAGE_SESSIONS = 32
 
 export class McpOperationError extends Error {
   constructor(
@@ -352,6 +361,8 @@ export class ModkitMcpRuntime {
   private readonly entityHandles = new Map<string, EntityHandleEntry>()
   private readonly editPlans = new Map<string, EditPlanEntry>()
   private readonly editHistory = new Map<string, EditHistoryEntry>()
+  private readonly languageSessions = new Map<string, McpLanguageSession>()
+  private languageSessionsOpening = 0
   private readonly outputs: OutputArtifacts
   private readonly cursorSecret = createCursorSecret()
   private readonly inventoryRows
@@ -450,8 +461,7 @@ export class ModkitMcpRuntime {
         ),
       ),
       data: {
-        readOnly:
-          this.host.editsEnabled !== true && this.host.invokeServiceOperation === undefined,
+        readOnly: this.host.editsEnabled !== true && this.host.invokeServiceOperation === undefined,
         edits: {
           enabled: this.host.editsEnabled === true,
           maxRetainedPlans: MCP_MAX_EDIT_PLANS,
@@ -486,9 +496,7 @@ export class ModkitMcpRuntime {
           'invoke-readonly',
           'propose-edit',
           'prepare-edit',
-          ...(this.host.editsEnabled === true
-            ? ['commit-edit', 'undo-edit', 'redo-edit']
-            : []),
+          ...(this.host.editsEnabled === true ? ['commit-edit', 'undo-edit', 'redo-edit'] : []),
           'edit-history',
           'discard-edit',
           ...(this.host.serviceOperations === undefined ? [] : ['service-operations']),
@@ -529,7 +537,10 @@ export class ModkitMcpRuntime {
         probe.total,
       )
       if (decoded === undefined) {
-        return hostFailure('x3.mcp/invalid-cursor', 'The service operation cursor is invalid or stale.')
+        return hostFailure(
+          'x3.mcp/invalid-cursor',
+          'The service operation cursor is invalid or stale.',
+        )
       }
       offset = decoded
     }
@@ -2142,6 +2153,119 @@ export class ModkitMcpRuntime {
       },
     })
   }
+  async openLanguageSession(
+    request: McpLanguageSessionOpenRequest,
+    signal: AbortSignal,
+  ): Promise<McpEnvelope> {
+    signal.throwIfAborted()
+    if (this.host.openLanguageSession === undefined) {
+      throw new McpOperationError(
+        'x3.mcp/language-session-unavailable',
+        'This host does not publish persistent language sessions.',
+      )
+    }
+    if (this.languageSessions.size + this.languageSessionsOpening >= MCP_MAX_LANGUAGE_SESSIONS) {
+      throw new McpOperationError(
+        'x3.mcp/language-session-limit',
+        `At most ${MCP_MAX_LANGUAGE_SESSIONS} language sessions may be retained.`,
+      )
+    }
+    this.languageSessionsOpening += 1
+    try {
+      const session = await this.host.openLanguageSession(request, signal)
+      try {
+        signal.throwIfAborted()
+        const handle = randomUUID()
+        this.languageSessions.set(handle, session)
+        return envelope({
+          snapshotId: `language-session:${handle}`,
+          completeness: session.workspaceIncomplete ? 'partial' : 'complete',
+          diagnostics: session.diagnostics,
+          data: {
+            sessionHandle: handle,
+            workspaceIncomplete: session.workspaceIncomplete,
+            documents: session.documents,
+          },
+        })
+      } catch (error) {
+        await session.close()
+        throw error
+      }
+    } finally {
+      this.languageSessionsOpening -= 1
+    }
+  }
+  async updateLanguageSession(
+    handle: string,
+    request: McpLanguageSessionUpdateRequest,
+    signal: AbortSignal,
+  ): Promise<McpEnvelope> {
+    signal.throwIfAborted()
+    const session = this.languageSessions.get(handle)
+    if (session === undefined) {
+      throw new McpOperationError(
+        'x3.mcp/unknown-language-session',
+        'The language session is unknown or already closed.',
+      )
+    }
+    const result = await session.update(request, signal)
+    return envelope({
+      snapshotId: result.snapshotId,
+      completeness: session.workspaceIncomplete ? 'partial' : 'complete',
+      diagnostics: result.diagnostics,
+      data: {
+        sessionHandle: handle,
+        workspaceIncomplete: session.workspaceIncomplete,
+        primaryUri: result.primaryUri,
+        feature: result.feature,
+        result: result.result ?? null,
+      },
+    })
+  }
+  async languageSessionFeature(
+    handle: string,
+    request: McpLanguageSessionFeatureRequest,
+    signal: AbortSignal,
+  ): Promise<McpEnvelope> {
+    signal.throwIfAborted()
+    const session = this.languageSessions.get(handle)
+    if (session === undefined) {
+      throw new McpOperationError(
+        'x3.mcp/unknown-language-session',
+        'The language session is unknown or already closed.',
+      )
+    }
+    const result = await session.invoke(request, signal)
+    return envelope({
+      snapshotId: result.snapshotId,
+      completeness: session.workspaceIncomplete ? 'partial' : 'complete',
+      diagnostics: result.diagnostics,
+      data: {
+        sessionHandle: handle,
+        workspaceIncomplete: session.workspaceIncomplete,
+        primaryUri: result.primaryUri,
+        feature: result.feature,
+        result: result.result ?? null,
+      },
+    })
+  }
+  async closeLanguageSession(handle: string, signal: AbortSignal): Promise<McpEnvelope> {
+    signal.throwIfAborted()
+    const session = this.languageSessions.get(handle)
+    if (session === undefined) {
+      throw new McpOperationError(
+        'x3.mcp/unknown-language-session',
+        'The language session is unknown or already closed.',
+      )
+    }
+    this.languageSessions.delete(handle)
+    await session.close()
+    return envelope({
+      snapshotId: `language-session:${handle}:closed`,
+      completeness: 'complete',
+      data: { sessionHandle: handle, closed: true },
+    })
+  }
   async subjectIsolation(
     handle: string,
     targetSubjectId: string,
@@ -2268,6 +2392,9 @@ export class ModkitMcpRuntime {
     })
   }
   async dispose(): Promise<void> {
+    const languageSessions = [...this.languageSessions.values()]
+    this.languageSessions.clear()
+    await Promise.allSettled(languageSessions.map(session => session.close()))
     const handles = [...this.handles.keys()]
     await Promise.allSettled(handles.map(handle => this.close(handle)))
     this.outputs.dispose()

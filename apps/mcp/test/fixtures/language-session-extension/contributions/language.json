@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "modkit/service-provider-contribution", "major": 1 },
+  "id": "org.modkitx.test/language-session",
+  "displayName": "Language session fixture",
+  "runtimeVariants": [
+    {
+      "variantId": "worker",
+      "entrypoint": "./src/provider.js",
+      "target": { "environments": ["node-worker"] },
+      "executionProfile": "worker-brokered",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "provides": [
+      {
+        "offerId": "fixture-language-v1",
+        "contract": "common.language/document-analysis",
+        "major": 1,
+        "version": "1.0.0",
+        "facet": {
+          "languageIds": ["fixture-language"],
+          "documentKinds": ["fixture-source"],
+          "extensions": ["fixturelang"]
+        }
+      }
+    ],
+    "lifecycleScope": "session"
+  }
+}

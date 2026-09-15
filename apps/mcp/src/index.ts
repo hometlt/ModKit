@@ -12,6 +12,11 @@ export {
   type McpLanguageFeature,
   type McpLanguageRequest,
   type McpLanguageResult,
+  type McpLanguageSession,
+  type McpLanguageSessionDocument,
+  type McpLanguageSessionFeatureRequest,
+  type McpLanguageSessionOpenRequest,
+  type McpLanguageSessionUpdateRequest,
   type McpOpenedSubject,
   type ModkitMcpHostPort,
 } from './host-port.js'

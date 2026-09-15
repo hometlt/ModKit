@@ -1,0 +1,15 @@
+{
+  "name": "modkit-extension-language-session-fixture",
+  "version": "1.0.0",
+  "license": "UNLICENSED",
+  "private": true,
+  "type": "module",
+  "modkit": {
+    "schemaVersion": 1,
+    "publisher": "org.modkitx.test",
+    "id": "language-session-fixture",
+    "contributionManifests": [
+      "./contributions/language.json"
+    ]
+  }
+}

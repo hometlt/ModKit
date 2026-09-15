@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { open, realpath, stat } from 'node:fs/promises'
 import { basename, extname, isAbsolute, relative, resolve } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import type { Diagnostic } from '@modkit/core'
 import {
   artifactNamespaceSourceFromVfsMount,
@@ -18,6 +18,8 @@ import {
 import { discoverGameInstallations } from '@modkit/host/games'
 import {
   createLanguageWorkspace,
+  type LanguageWorkspace,
+  type LanguageWorkspaceAnalysisResult,
   type LanguageWorkspaceDocumentSource,
 } from '@modkit/host/language'
 import {
@@ -158,6 +160,47 @@ export interface McpLanguageResult {
   readonly result: unknown
 }
 
+export interface McpLanguageSessionDocument {
+  readonly path?: string
+  readonly uri?: string
+  readonly languageId: string
+  readonly documentKind?: string
+  readonly text?: string
+  readonly version?: number
+}
+
+export interface McpLanguageSessionOpenRequest {
+  readonly documents: readonly McpLanguageSessionDocument[]
+}
+
+export type McpLanguageSessionFeatureRequest = Omit<
+  McpLanguageRequest,
+  'documents' | 'primaryIndex'
+> & { readonly primaryUri: string }
+
+export interface McpLanguageSessionUpdateRequest {
+  readonly uri: string
+  readonly version: number
+  readonly text: string
+}
+
+export interface McpLanguageSession {
+  readonly documents: readonly {
+    readonly uri: string
+    readonly languageId: string
+    readonly documentKind?: string
+    readonly version: number
+  }[]
+  readonly workspaceIncomplete: boolean
+  readonly diagnostics: readonly Diagnostic[]
+  update(request: McpLanguageSessionUpdateRequest, signal?: AbortSignal): Promise<McpLanguageResult>
+  invoke(
+    request: McpLanguageSessionFeatureRequest,
+    signal?: AbortSignal,
+  ): Promise<McpLanguageResult>
+  close(): Promise<void>
+}
+
 /** Minimal host-injected seam; all authority remains in the public Modkit host. */
 export interface ModkitMcpHostPort {
   readonly outputArtifacts?: boolean
@@ -177,6 +220,10 @@ export interface ModkitMcpHostPort {
   ): Promise<McpDiscoveryResult>
   openDiscovered?(selectionId: string, signal?: AbortSignal): Promise<McpOpenedSubject>
   language?(request: McpLanguageRequest, signal?: AbortSignal): Promise<McpLanguageResult>
+  openLanguageSession?(
+    request: McpLanguageSessionOpenRequest,
+    signal?: AbortSignal,
+  ): Promise<McpLanguageSession>
   serviceOperations?(
     offset: number,
     limit: number,
@@ -370,9 +417,342 @@ export async function createHostMcpPort(
   const discoveredById = new Map<string, { readonly path: string }>()
   const discoveryIdByCoordinate = new Map<string, string>()
   const advertisedGameIds = installationGameIds(modkit.services.inventory)
+  interface SessionDocument {
+    readonly uri: string
+    readonly languageId: string
+    readonly documentKind?: string
+    readonly extension?: string
+    readonly version: number
+    readonly text: string
+  }
+  const sessionDocument = async (
+    input: McpLanguageSessionDocument,
+    signal?: AbortSignal,
+  ): Promise<SessionDocument> => {
+    signal?.throwIfAborted()
+    if ((input.path === undefined) === (input.uri === undefined)) {
+      throw new TypeError('language session document needs exactly one of path or uri')
+    }
+    let uri: string
+    let text: string
+    let extension = ''
+    if (input.path !== undefined) {
+      if (!isAbsolute(input.path)) throw new TypeError('language document path must be absolute')
+      const canonical = await realpath(resolve(input.path))
+      if (!inside(roots, canonical)) {
+        throw new TypeError('language document path is outside configured roots')
+      }
+      uri = pathToFileURL(canonical).href
+      extension = extname(canonical).replace(/^\./u, '').toLowerCase()
+      text =
+        input.text ??
+        new TextDecoder('utf-8', { fatal: true }).decode(
+          await readBoundedLanguageFile(canonical, signal),
+        )
+    } else {
+      const parsed = new URL(input.uri!)
+      if (parsed.protocol === 'file:') {
+        const canonical = await realpath(fileURLToPath(parsed))
+        if (!inside(roots, canonical)) {
+          throw new TypeError('language document URI is outside configured roots')
+        }
+        uri = pathToFileURL(canonical).href
+        extension = extname(canonical).replace(/^\./u, '').toLowerCase()
+        text =
+          input.text ??
+          new TextDecoder('utf-8', { fatal: true }).decode(
+            await readBoundedLanguageFile(canonical, signal),
+          )
+      } else {
+        if (
+          !['modkit-source:', 'modkit-container:', 'content-source:', 'untitled:'].includes(
+            parsed.protocol,
+          )
+        ) {
+          throw new TypeError('language virtual URI uses an unsupported scheme')
+        }
+        if (input.text === undefined) {
+          throw new TypeError('language virtual URI needs host-held source text')
+        }
+        uri = parsed.href
+        extension = extname(parsed.pathname).replace(/^\./u, '').toLowerCase()
+        text = input.text
+      }
+    }
+    const textBytes = new TextEncoder().encode(text).byteLength
+    if (textBytes > MCP_LANGUAGE_MAX_DOCUMENT_BYTES) {
+      throw new TypeError('language documents must be no larger than 4 MiB')
+    }
+    const version = input.version ?? 1
+    if (!Number.isSafeInteger(version) || version < 0) {
+      throw new TypeError('language document version must be a non-negative safe integer')
+    }
+    return Object.freeze({
+      uri,
+      languageId: input.languageId,
+      ...(input.documentKind === undefined ? {} : { documentKind: input.documentKind }),
+      ...(extension.length === 0 ? {} : { extension }),
+      version,
+      text,
+    })
+  }
+  const invokeLanguageFeature = async (
+    workspace: LanguageWorkspace,
+    document: SessionDocument,
+    request: Omit<McpLanguageSessionFeatureRequest, 'primaryUri'>,
+    analysis: LanguageWorkspaceAnalysisResult | undefined,
+    signal?: AbortSignal,
+  ): Promise<unknown> => {
+    const common = {
+      uri: document.uri,
+      documentVersion: document.version,
+      maxResults: request.maxResults,
+      maxDocuments: 32,
+      ...(signal === undefined ? {} : { signal }),
+    }
+    const positioned = () => {
+      if (request.position === undefined) throw new TypeError(`${request.feature} needs position`)
+      return { ...common, position: request.position }
+    }
+    switch (request.feature) {
+      case 'analyze':
+        return analysis ?? (await workspace.current(document.uri, signal))
+      case 'completion':
+        return workspace.completion(positioned())
+      case 'hover':
+        return workspace.hover(positioned())
+      case 'signature-help':
+        return workspace.signatureHelp(positioned())
+      case 'definition':
+        return workspace.definition(positioned())
+      case 'references':
+        return workspace.references({
+          ...positioned(),
+          ...(request.includeDeclaration === undefined
+            ? {}
+            : { includeDeclaration: request.includeDeclaration }),
+        })
+      case 'prepare-rename':
+        return workspace.prepareRename(positioned())
+      case 'rename':
+        if (request.newName === undefined) throw new TypeError('rename needs newName')
+        return workspace.rename({
+          ...positioned(),
+          newName: request.newName,
+          maxEdits: request.maxEdits,
+        })
+      case 'formatting':
+        if (request.formatting === undefined) throw new TypeError('formatting needs options')
+        return workspace.formatting({ ...common, options: request.formatting })
+      case 'code-actions':
+        if (request.range === undefined) throw new TypeError('code-actions needs range')
+        return workspace.codeActions({
+          ...common,
+          range: request.range,
+          diagnostics: request.languageDiagnostics ?? [],
+          maxEdits: request.maxEdits,
+        })
+      case 'document-colors':
+        return workspace.documentColors(common)
+      case 'color-presentations':
+        if (request.color === undefined || request.range === undefined) {
+          throw new TypeError('color-presentations needs color and range')
+        }
+        return workspace.colorPresentations({
+          ...common,
+          color: request.color,
+          range: request.range,
+        })
+      case 'document-symbols':
+        return workspace.documentSymbols(common)
+      case 'workspace-symbols':
+        return workspace.workspaceSymbols({ ...common, query: request.query ?? '' })
+      case 'diagnostics':
+        return workspace.diagnostics(common)
+    }
+  }
+  const openLanguageSession = async (
+    request: McpLanguageSessionOpenRequest,
+    signal?: AbortSignal,
+  ): Promise<McpLanguageSession> => {
+    if (request.documents.length === 0 || request.documents.length > 32) {
+      throw new TypeError('language session needs between 1 and 32 documents')
+    }
+    const documents = await Promise.all(
+      request.documents.map(document => sessionDocument(document, signal)),
+    )
+    const byUri = new Map<string, SessionDocument>()
+    let totalBytes = 0
+    for (const document of documents) {
+      if (byUri.has(document.uri)) throw new TypeError('language document URI is duplicated')
+      totalBytes += new TextEncoder().encode(document.text).byteLength
+      if (totalBytes > 16_777_216) throw new TypeError('language workspace exceeds 16 MiB')
+      byUri.set(document.uri, document)
+    }
+    const workspace = createLanguageWorkspace({
+      services: modkit.services,
+      grant: { id: `modkit-mcp-language-session:${randomUUID()}`, classes: ['read-source'] },
+      budgets: mapPreviewBudget,
+      workspaceIncomplete: true,
+      ...(options.languageDocumentSource === undefined
+        ? {}
+        : { documentSource: options.languageDocumentSource }),
+    })
+    const analyses = new Map<string, LanguageWorkspaceAnalysisResult>()
+    let closed = false
+    let operationTail: Promise<void> = Promise.resolve()
+    let closePromise: Promise<void> | undefined
+    try {
+      await workspace.initialize()
+      for (const document of documents) {
+        const analysis = await workspace.open({
+          languageId: document.languageId,
+          ...(document.documentKind === undefined ? {} : { documentKind: document.documentKind }),
+          ...(document.extension === undefined ? {} : { extension: document.extension }),
+          document,
+          ...(signal === undefined ? {} : { signal }),
+        })
+        if (analysis.state === 'unresolved') {
+          const detail = analysis.hostDiagnostics
+            .map(diagnostic => `${diagnostic.code}: ${diagnostic.message}`)
+            .join('; ')
+          throw new TypeError(
+            `language provider unresolved for ${document.uri}${detail.length === 0 ? '' : `: ${detail}`}`,
+          )
+        }
+        analyses.set(document.uri, analysis)
+      }
+    } catch (error) {
+      await workspace.shutdown()
+      throw error
+    }
+    const result = async (
+      document: SessionDocument,
+      feature: McpLanguageFeature,
+      value: unknown,
+    ): Promise<McpLanguageResult> => {
+      const digest = createHash('sha256')
+      for (const item of [...byUri.values()].sort((left, right) =>
+        left.uri.localeCompare(right.uri),
+      )) {
+        digest
+          .update(item.uri)
+          .update('\0')
+          .update(String(item.version))
+          .update('\0')
+          .update(item.text)
+      }
+      return Object.freeze({
+        snapshotId: `language-session-v1:${digest.digest('hex')}`,
+        diagnostics: Object.freeze([...analyses.values()].flatMap(item => item.hostDiagnostics)),
+        primaryUri: document.uri,
+        feature,
+        result: value,
+      })
+    }
+    const run = async <T>(operation: () => Promise<T>): Promise<T> => {
+      if (closed) throw new TypeError('language session is closed')
+      const predecessor = operationTail
+      let release!: () => void
+      operationTail = new Promise<void>(resolve => {
+        release = resolve
+      })
+      await predecessor
+      if (closed) {
+        release()
+        throw new TypeError('language session is closed')
+      }
+      try {
+        return await operation()
+      } finally {
+        release()
+      }
+    }
+    return Object.freeze({
+      get documents() {
+        return Object.freeze(
+          [...byUri.values()].map(document =>
+            Object.freeze({
+              uri: document.uri,
+              languageId: document.languageId,
+              ...(document.documentKind === undefined
+                ? {}
+                : { documentKind: document.documentKind }),
+              version: document.version,
+            }),
+          ),
+        )
+      },
+      workspaceIncomplete: true,
+      get diagnostics() {
+        return Object.freeze([...analyses.values()].flatMap(item => item.hostDiagnostics))
+      },
+      async update(
+        update: McpLanguageSessionUpdateRequest,
+        updateSignal?: AbortSignal,
+      ): Promise<McpLanguageResult> {
+        return run(async () => {
+          const current = byUri.get(update.uri)
+          if (current === undefined) throw new TypeError('language session document is unknown')
+          if (!Number.isSafeInteger(update.version) || update.version <= current.version) {
+            throw new TypeError('language overlay version must strictly increase')
+          }
+          const bytes = new TextEncoder().encode(update.text).byteLength
+          const otherBytes = [...byUri.values()]
+            .filter(document => document.uri !== update.uri)
+            .reduce((sum, document) => sum + new TextEncoder().encode(document.text).byteLength, 0)
+          if (bytes > MCP_LANGUAGE_MAX_DOCUMENT_BYTES || otherBytes + bytes > 16_777_216) {
+            throw new TypeError('language overlay exceeds session byte limits')
+          }
+          const next = Object.freeze({ ...current, version: update.version, text: update.text })
+          const analysis = await workspace.change({
+            languageId: next.languageId,
+            ...(next.documentKind === undefined ? {} : { documentKind: next.documentKind }),
+            ...(next.extension === undefined ? {} : { extension: next.extension }),
+            document: next,
+            ...(updateSignal === undefined ? {} : { signal: updateSignal }),
+          })
+          byUri.set(next.uri, next)
+          analyses.set(next.uri, analysis)
+          return result(next, 'analyze', analysis)
+        })
+      },
+      async invoke(
+        featureRequest: McpLanguageSessionFeatureRequest,
+        invokeSignal?: AbortSignal,
+      ): Promise<McpLanguageResult> {
+        return run(async () => {
+          const document = byUri.get(featureRequest.primaryUri)
+          if (document === undefined) throw new TypeError('language session primary URI is unknown')
+          const value = await invokeLanguageFeature(
+            workspace,
+            document,
+            featureRequest,
+            analyses.get(document.uri),
+            invokeSignal,
+          )
+          return result(document, featureRequest.feature, value)
+        })
+      },
+      async close() {
+        if (closePromise !== undefined) return closePromise
+        closed = true
+        closePromise = (async () => {
+          await operationTail
+          byUri.clear()
+          analyses.clear()
+          await workspace.shutdown()
+        })()
+        return closePromise
+      },
+    })
+  }
   // Generic service operations may own host state or external I/O and therefore advertise the
   // Node host realm. Subject codecs keep using the worker-targeted lane in modkit.services.
-  const operationServices = Object.freeze({ ...modkit.services, target: modkit.services.host.target })
+  const operationServices = Object.freeze({
+    ...modkit.services,
+    target: modkit.services.host.target,
+  })
   const port: ModkitMcpHostPort = {
     ...(configuration.outputArtifacts === true ? { outputArtifacts: true } : {}),
     ...(configuration.allowEdits === true ? { editsEnabled: true } : {}),
@@ -384,6 +764,7 @@ export async function createHostMcpPort(
     supportedExtensions: modkit.services.supportedExtensions,
     serviceOperationPermissions: Object.freeze([...(configuration.operationPermissions ?? [])]),
     effectfulServiceOperations: configuration.allowEffectfulServiceOperations === true,
+    openLanguageSession,
     async serviceOperations(offset, limit, activate, signal) {
       return discoverServiceOperations({
         services: operationServices,
