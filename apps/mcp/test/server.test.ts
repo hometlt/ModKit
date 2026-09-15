@@ -1636,6 +1636,12 @@ describe('MCP v2 adapter', () => {
       }),
     )
     expect(committed.data).toMatchObject({ result: { state: 'committed' } })
+    const replayedCommit = await client.callTool({
+      name: 'modkit.commit_edit',
+      arguments: { planHandle },
+    })
+    expect(replayedCommit.isError).toBe(true)
+    expect(structured(replayedCommit).diagnostics[0]?.code).toBe('x3.mcp/unknown-edit-plan')
     const history = structured(
       await client.callTool({ name: 'modkit.edit_history', arguments: { limit: 10 } }),
     )
