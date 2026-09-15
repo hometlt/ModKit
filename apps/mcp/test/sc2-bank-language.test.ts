@@ -64,6 +64,8 @@ describe('installed SC2 Bank language through MCP', () => {
             'references',
             'prepare-rename',
             'rename',
+            'formatting',
+            'code-actions',
           ]),
         },
       ],
