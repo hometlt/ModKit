@@ -407,8 +407,10 @@ export type {
 } from './logical-resources.js'
 export {
   analyzeReadOnlyContentDependencies,
+  createContentDependencyLanguageDocumentSource,
   createReadOnlyContentDependencyWorkspace,
   type AnalyzeReadOnlyContentDependenciesRequest,
+  type ContentDependencyLanguageDocumentSourceOptions,
   type ReadOnlyContentDependencyWorkspace,
   type ReadOnlyContentDependencyWorkspaceOptions,
 } from './content-dependencies.js'
