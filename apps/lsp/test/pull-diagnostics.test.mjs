@@ -138,8 +138,57 @@ test(
       assert.equal(changed.result.kind, 'full')
       assert.notEqual(changed.result.resultId, first.result.resultId)
       assert.equal(changed.result.items[0]?.code, 'fixture/invalid')
-      send({ jsonrpc: '2.0', id: 5, method: 'shutdown', params: null })
-      await waitFor(message => message.id === 5, 'shutdown')
+      const exact = '\ufeffA😀Bpadding\r\nline'
+      send({
+        jsonrpc: '2.0',
+        method: 'textDocument/didChange',
+        params: {
+          textDocument: { uri, version: 3 },
+          contentChanges: [{ text: exact }],
+        },
+      })
+      await waitFor(
+        message =>
+          message.method === 'textDocument/publishDiagnostics' && message.params?.version === 3,
+        'UTF-16 source diagnostics',
+      )
+      send({
+        jsonrpc: '2.0',
+        method: 'textDocument/didChange',
+        params: {
+          textDocument: { uri, version: 4 },
+          contentChanges: [
+            {
+              range: { start: { line: 0, character: 2 }, end: { line: 0, character: 4 } },
+              text: 'Ω',
+            },
+          ],
+        },
+      })
+      await waitFor(
+        message =>
+          message.method === 'textDocument/publishDiagnostics' && message.params?.version === 4,
+        'UTF-16 incremental diagnostics',
+      )
+      send({
+        jsonrpc: '2.0',
+        method: 'textDocument/didChange',
+        params: {
+          textDocument: { uri, version: 3 },
+          contentChanges: [{ text: 'stale' }],
+        },
+      })
+      send({
+        jsonrpc: '2.0',
+        id: 5,
+        method: 'textDocument/hover',
+        params: { textDocument: { uri }, position: { line: 0, character: 4 } },
+      })
+      const hover = await waitFor(message => message.id === 5, 'hover after stale change')
+      assert.equal(hover.error, undefined, JSON.stringify(hover.error))
+      assert.equal(hover.result.contents.value, 'version 4: \ufeffAΩBpadding\r\nline')
+      send({ jsonrpc: '2.0', id: 6, method: 'shutdown', params: null })
+      await waitFor(message => message.id === 6, 'shutdown')
       send({ jsonrpc: '2.0', method: 'exit', params: null })
       child.stdin.end()
       await new Promise((resolveExit, reject) => {

@@ -197,6 +197,7 @@ export function createModkitLanguageServer(
   const connection =
     options.connection ?? createConnection(ProposedFeatures.all, process.stdin, process.stdout)
   const documents = new TextDocuments(TextDocument)
+  const acceptedDocuments = new Map<string, TextDocument>()
   const pending = new Map<string, Promise<void>>()
   const workspaceUris = new Set<string>()
   const diagnosticSnapshots = new Map<
@@ -234,7 +235,7 @@ export function createModkitLanguageServer(
     },
   })
   const request = (uri: string, signal?: AbortSignal): LanguageWorkspaceFeatureRequest => {
-    const document = documents.get(uri)
+    const document = acceptedDocuments.get(uri)
     if (document === undefined) throw new Error(`document ${uri} is not open`)
     return {
       uri,
@@ -255,6 +256,12 @@ export function createModkitLanguageServer(
   const awaitReady = async (uri: string): Promise<void> => {
     await pending.get(uri)
   }
+  const acceptDocument = (document: TextDocument): void => {
+    acceptedDocuments.set(
+      document.uri,
+      TextDocument.create(document.uri, document.languageId, document.version, document.getText()),
+    )
+  }
   const setDiagnostics = (
     uri: string,
     version: number,
@@ -272,7 +279,15 @@ export function createModkitLanguageServer(
     document: TextDocument,
     mode: 'open' | 'change' | 'refresh',
   ): Promise<void> => {
+    const accepted = acceptedDocuments.get(document.uri)
+    if (mode === 'change' && accepted !== undefined && document.version <= accepted.version) {
+      connection.console.warn(
+        `ignored stale language change ${document.uri}@${document.version}; current version is ${accepted.version}`,
+      )
+      return
+    }
     if (!insideRoots(document.uri)) {
+      acceptDocument(document)
       setDiagnostics(document.uri, document.version, [
         {
           range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
@@ -291,9 +306,11 @@ export function createModkitLanguageServer(
         ? await options.workspace.change(route(document))
         : await options.workspace.open(route(document))
     if (result.state === 'unresolved') {
+      acceptDocument(document)
       setDiagnostics(document.uri, document.version, result.hostDiagnostics.map(hostDiagnosticOf))
       return
     }
+    acceptDocument(document)
     workspaceUris.add(document.uri)
     const feature = await options.workspace.diagnostics(request(document.uri))
     setDiagnostics(
@@ -566,7 +583,7 @@ export function createModkitLanguageServer(
   )
   connection.onWorkspaceSymbol(async (params, token) =>
     withSignal(token, async signal => {
-      const open = documents.all().sort((a, b) => a.uri.localeCompare(b.uri))[0]
+      const open = [...acceptedDocuments.values()].sort((a, b) => a.uri.localeCompare(b.uri))[0]
       if (open === undefined) return []
       await awaitReady(open.uri)
       const value = await options.workspace.workspaceSymbols({
@@ -636,6 +653,7 @@ export function createModkitLanguageServer(
       if (workspaceUris.delete(event.document.uri))
         await options.workspace.close(event.document.uri)
     })().finally(() => {
+      acceptedDocuments.delete(event.document.uri)
       diagnosticSnapshots.delete(event.document.uri)
       connection.sendDiagnostics({ uri: event.document.uri, diagnostics: [] })
     })
