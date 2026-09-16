@@ -87,7 +87,10 @@ describe('MK2 operation audit', () => {
           }
           const shape =
             result.state === 'completed' || result.state === 'ok'
-              ? JSON.stringify(result.value ?? (result as Record<string, unknown>).output ?? Object.keys(result)).slice(0, 220)
+              ? JSON.stringify(result.value ?? (result as Record<string, unknown>).output ?? Object.keys(result)).slice(
+                  0,
+                  operation.handlerId === 'game-template-preview' ? 1400 : 220,
+                )
               : `${result.reason ?? ''} ${(result.diagnostics ?? []).map(d => d.message).join('; ').slice(0, 100)}`
           console.log(`  ${label}/${operation.handlerId}: ${result.state} ${shape}`)
         } catch (error) {
