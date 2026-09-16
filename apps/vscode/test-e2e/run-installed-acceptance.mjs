@@ -2823,14 +2823,14 @@ function assertA7(a7) {
   ]) {
     if (!Array.isArray(a7?.[field])) throw new Error(`A7 receipt has no ${field} array`)
   }
-  if (a7.expectedRoots.length !== 8 || a7.loadedRoots.length !== 8) {
+  if (a7.expectedRoots.length !== 9 || a7.loadedRoots.length !== 9) {
     throw new Error(
-      `A7 expected/loaded roots are ${a7.expectedRoots.length}/${a7.loadedRoots.length}, not 8/8`,
+      `A7 expected/loaded roots are ${a7.expectedRoots.length}/${a7.loadedRoots.length}, not 9/9`,
     )
   }
-  if (a7.expectedContributions.length !== 87 || a7.loadedContributions.length !== 87) {
+  if (a7.expectedContributions.length !== 89 || a7.loadedContributions.length !== 89) {
     throw new Error(
-      `A7 expected/loaded contributions are ${a7.expectedContributions.length}/${a7.loadedContributions.length}, not 87/87`,
+      `A7 expected/loaded contributions are ${a7.expectedContributions.length}/${a7.loadedContributions.length}, not 89/89`,
     )
   }
   for (const field of [
