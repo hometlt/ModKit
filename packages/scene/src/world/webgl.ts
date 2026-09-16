@@ -1266,6 +1266,188 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
       terrainMinimumY + (dx * ey[0]! + dz * ey[1]!) / (ey[0]! * ey[0]! + ey[1]! * ey[1]!),
     ]
   }
+  /**
+   * How far the terrain's painted base height (`heightBase`, the raise/lower brush) lies from the
+   * map's standard height, in world units, at a world point. A terrain vertex's height is that base
+   * plus its cliff level's offset (`heightAdjustment`). Cliff meshes are authored at their level's
+   * standard height, and the engine moves every mesh vertex by this offset, so a cliff on a shore
+   * the map lowered by 3 stands 3 lower, with the ground around it. Amphion lowers a third of its
+   * vertices, most of the coast by 1.5 to 3; drawn at standard height, those rocks stood above the
+   * ground as black lumps.
+   *
+   * The standard base is the most common `heightBase` (untouched ground; on Amphion 19 400 of
+   * 31 329 vertices sit exactly there), and world units per base step come from two vertices of one
+   * cliff level with different bases.
+   * ponytail: the mode stands in for `standardHeight`, which this plan does not receive; pass it
+   * with the terrain transform if a map repaints most of its ground.
+   */
+  const baseHeight = (() => {
+    const counts = new Map<number, number>()
+    const spread = new Map<number, { low: WorldSceneTerrainItem; high: WorldSceneTerrainItem }>()
+    for (const item of terrain) {
+      counts.set(item.heightBase, (counts.get(item.heightBase) ?? 0) + 1)
+      const range = spread.get(item.heightAdjustment)
+      if (range === undefined) spread.set(item.heightAdjustment, { low: item, high: item })
+      else if (item.heightBase < range.low.heightBase) range.low = item
+      else if (item.heightBase > range.high.heightBase) range.high = item
+    }
+    let reference = 0
+    let referenceCount = -1
+    for (const [value, count] of counts)
+      if (count > referenceCount) {
+        reference = value
+        referenceCount = count
+      }
+    let step = 0
+    let widest = 0
+    for (const { low, high } of spread.values()) {
+      const width = high.heightBase - low.heightBase
+      if (width <= widest) continue
+      widest = width
+      step = (terrainPosition(high)[1] - terrainPosition(low)[1]) / width
+    }
+    return { reference, step }
+  })()
+  const vertexBaseOffset = (vertex: WorldSceneTerrainItem) =>
+    (vertex.heightBase - baseHeight.reference) * baseHeight.step
+  /**
+   * A cliff piece's primitives, stretched onto the painted base height of the ground they join. A
+   * wall spans two levels, and the ground at its foot and at its top can each be lowered or raised
+   * by a different amount, so the offset is chosen by HEIGHT, not by position: every mesh vertex
+   * takes the offset of the footprint's height-field vertices at the level just below it and the
+   * level just above it (the nearest of each), interpolated by where it sits between those two
+   * standard heights. The wall's foot follows the low ground and its cap the plateau. (Interpolating
+   * by position instead sank Amphion's plateau walls: their face stands between the two vertex rows,
+   * so the cap took half of the shore's drop and went under the plateau.)
+   *
+   * The move is made in the primitive's own space (the inverse of its world transform applied to a
+   * world-up offset), so the transform, normals and tangents stay as authored. Primitives that do not
+   * move are returned as-is and keep their shared GPU buffers.
+   */
+  const liftedCliffPrimitives = <P extends { readonly positions: Float32Array }>(
+    primitives: readonly P[],
+    instanceTransform: Float32Array,
+  ): readonly P[] => {
+    if (baseHeight.step === 0) return primitives
+    const prepared = primitives.map(primitive => {
+      const own =
+        'transform' in primitive && primitive.transform instanceof Float32Array
+          ? primitive.transform
+          : IDENTITY_COMPONENT_TRANSFORM
+      return { primitive, m: multiplyComponentTransforms(instanceTransform, own) }
+    })
+    // The footprint: every height-field vertex inside the piece's horizontal bounds, with its height
+    // as if its base were standard and its own base offset.
+    let minX = Infinity
+    let maxX = -Infinity
+    let minZ = Infinity
+    let maxZ = -Infinity
+    for (const { primitive, m } of prepared) {
+      const source = primitive.positions
+      for (let index = 0; index + 2 < source.length; index += 3) {
+        const x = source[index]!
+        const y = source[index + 1]!
+        const z = source[index + 2]!
+        const wx = m[0]! * x + m[4]! * y + m[8]! * z + m[12]!
+        const wz = m[2]! * x + m[6]! * y + m[10]! * z + m[14]!
+        minX = Math.min(minX, wx)
+        maxX = Math.max(maxX, wx)
+        minZ = Math.min(minZ, wz)
+        maxZ = Math.max(maxZ, wz)
+      }
+    }
+    if (!Number.isFinite(minX)) return primitives
+    const corners = [gridOf([minX, 0, minZ]), gridOf([maxX, 0, maxZ])]
+    const footprint: { x: number; z: number; standard: number; offset: number }[] = []
+    for (
+      let gy = Math.round(Math.min(corners[0]![1], corners[1]![1]));
+      gy <= Math.round(Math.max(corners[0]![1], corners[1]![1]));
+      gy += 1
+    )
+      for (
+        let gx = Math.round(Math.min(corners[0]![0], corners[1]![0]));
+        gx <= Math.round(Math.max(corners[0]![0], corners[1]![0]));
+        gx += 1
+      ) {
+        const vertex = terrainByCell.get(`${gx}:${gy}`)
+        if (vertex === undefined) continue
+        const at = terrainPosition(vertex)
+        const offset = vertexBaseOffset(vertex)
+        footprint.push({ x: at[0], z: at[2], standard: at[1] - offset, offset })
+      }
+    if (footprint.every(entry => entry.offset === 0)) return primitives
+    const LEVEL_TOLERANCE = 0.05
+    const nearest = (
+      candidates: readonly (typeof footprint)[number][],
+      x: number,
+      z: number,
+    ) => {
+      let best = candidates[0]!
+      let bestDistance = Infinity
+      for (const candidate of candidates) {
+        const distance = (candidate.x - x) ** 2 + (candidate.z - z) ** 2
+        if (distance < bestDistance) {
+          bestDistance = distance
+          best = candidate
+        }
+      }
+      return best
+    }
+    const offsetAt = (x: number, y: number, z: number) => {
+      let below: number | undefined
+      let above: number | undefined
+      for (const entry of footprint) {
+        if (entry.standard <= y + LEVEL_TOLERANCE && (below === undefined || entry.standard > below))
+          below = entry.standard
+        if (entry.standard >= y - LEVEL_TOLERANCE && (above === undefined || entry.standard < above))
+          above = entry.standard
+      }
+      const low = below ?? above!
+      const high = above ?? below!
+      const lowEntry = nearest(
+        footprint.filter(entry => Math.abs(entry.standard - low) <= LEVEL_TOLERANCE),
+        x,
+        z,
+      )
+      if (high - low <= LEVEL_TOLERANCE) return lowEntry.offset
+      const highEntry = nearest(
+        footprint.filter(entry => Math.abs(entry.standard - high) <= LEVEL_TOLERANCE),
+        x,
+        z,
+      )
+      const t = Math.min(1, Math.max(0, (y - low) / (high - low)))
+      return lowEntry.offset + (highEntry.offset - lowEntry.offset) * t
+    }
+    return prepared.map(({ primitive, m }) => {
+      const det =
+        m[0]! * (m[5]! * m[10]! - m[6]! * m[9]!) +
+        m[1]! * (m[6]! * m[8]! - m[4]! * m[10]!) +
+        m[2]! * (m[4]! * m[9]! - m[5]! * m[8]!)
+      if (Math.abs(det) < 1e-12) return primitive
+      // Column 1 of the inverse 3x3: the local vector that the transform maps onto world +Y.
+      const upX = (m[6]! * m[8]! - m[4]! * m[10]!) / det
+      const upY = (m[10]! * m[0]! - m[8]! * m[2]!) / det
+      const upZ = (m[2]! * m[4]! - m[0]! * m[6]!) / det
+      const source = primitive.positions
+      const positions = new Float32Array(source.length)
+      let moved = false
+      for (let index = 0; index + 2 < source.length; index += 3) {
+        const x = source[index]!
+        const y = source[index + 1]!
+        const z = source[index + 2]!
+        const offset = offsetAt(
+          m[0]! * x + m[4]! * y + m[8]! * z + m[12]!,
+          m[1]! * x + m[5]! * y + m[9]! * z + m[13]!,
+          m[2]! * x + m[6]! * y + m[10]! * z + m[14]!,
+        )
+        if (offset !== 0) moved = true
+        positions[index] = x + upX * offset
+        positions[index + 1] = y + upY * offset
+        positions[index + 2] = z + upZ * offset
+      }
+      return moved ? { ...primitive, positions } : primitive
+    })
+  }
   type CliffTriangle = readonly [
     readonly [number, number, number],
     readonly [number, number, number],
@@ -1331,7 +1513,10 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
       const ramp = /:ramp-[0-9]+$/u.test(item.id)
       const raw: CliffPlate[] = []
       const cover: CliffPlate[] = []
-      for (const primitive of sampled.primitives)
+      for (const primitive of liftedCliffPrimitives(
+        sampled.primitives,
+        worldObjectTransform(item, translation),
+      ))
         for (const triangle of primitiveTriangles(primitive)) {
           const vertices = triangle.map(index =>
             instanceVertex(transformedPrimitiveVertex(primitive, index), item, translation),
@@ -1356,34 +1541,6 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
           minZ = Math.min(minZ, vertex[2])
           maxZ = Math.max(maxZ, vertex[2])
         }
-      // The piece sits at its level's fixed height, but a map may let the ground dip below that
-      // (shorelines). The footprint's corners take the height field's own height, and the surface
-      // between them blends the difference, so the piece stays continuous with the ground around it.
-      const dips = (
-        [
-          [minX, minZ],
-          [maxX, minZ],
-          [maxX, maxZ],
-          [minX, maxZ],
-        ] as const
-      ).map(([cornerX, cornerZ]) => {
-        const grid = gridOf([cornerX, 0, cornerZ])
-        const sample = terrainByCell.get(`${Math.round(grid[0])}:${Math.round(grid[1])}`)
-        if (sample === undefined) return 0
-        const ground = terrainPosition(sample)[1]
-        const meshY = plateHeightAt(raw, cornerX, cornerZ, ground)
-        return meshY === undefined ? 0 : Math.min(0, ground - meshY)
-      })
-      const dip = (x: number, z: number) => {
-        const u = Math.min(1, Math.max(0, (x - minX) / Math.max(1e-6, maxX - minX)))
-        const v = Math.min(1, Math.max(0, (z - minZ) / Math.max(1e-6, maxZ - minZ)))
-        return (
-          (1 - u) * (1 - v) * dips[0]! +
-          u * (1 - v) * dips[1]! +
-          u * v * dips[2]! +
-          (1 - u) * v * dips[3]!
-        )
-      }
       // Inside its footprint the fill sits a hair under a made wall so its opaque cap wins, and a
       // hair OVER natural rock: SC2 blends a natural cliff's top into the terrain, so its up-facing
       // crest reads as ground and only the faces below read as rock. Ramp pieces sit a hair lower
@@ -1398,13 +1555,43 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
         Math.abs(z - minZ) < 0.02 ||
         Math.abs(z - maxZ) < 0.02
       const offset = ramp ? 0.02 : natural ? -0.01 : 0.01
-      const plates = raw.map(plate => ({
+      // A made wall's up-facing surface also includes its cap rail, which stands above the ground and
+      // is part of the wall, not terrain. Its edge vertices would sit exactly on the fill (see
+      // `onEdge`) and the terrain won the depth tie, painting the cap with ground texture. Only plates
+      // lying at the height of the ground around the piece (its floor and the plateau top) are fill.
+      const grounds: number[] = []
+      if (!ramp && !natural) {
+        const low = gridOf([minX, 0, minZ])
+        const high = gridOf([maxX, 0, maxZ])
+        for (
+          let gy = Math.round(Math.min(low[1], high[1]));
+          gy <= Math.round(Math.max(low[1], high[1]));
+          gy += 1
+        )
+          for (
+            let gx = Math.round(Math.min(low[0], high[0]));
+            gx <= Math.round(Math.max(low[0], high[0]));
+            gx += 1
+          ) {
+            const vertex = terrainByCell.get(`${gx}:${gy}`)
+            if (vertex !== undefined) grounds.push(terrainPosition(vertex)[1])
+          }
+      }
+      const fillSource =
+        grounds.length === 0
+          ? raw
+          : raw.filter(plate =>
+              plate.vertices.every(vertex =>
+                grounds.some(ground => Math.abs(ground - vertex[1]) < 0.05),
+              ),
+            )
+      const plates = fillSource.map(plate => ({
         normal: plate.normal,
         vertices: plate.vertices.map(
           vertex =>
             [
               vertex[0],
-              vertex[1] - (onEdge(vertex[0], vertex[2]) ? 0 : offset) + dip(vertex[0], vertex[2]),
+              vertex[1] - (onEdge(vertex[0], vertex[2]) ? 0 : offset),
               vertex[2],
             ] as const,
         ) as unknown as CliffTriangle,
@@ -2100,10 +2287,18 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
     for (const component of components) {
       const sampled = sampleFor(component.resourceId)
       if (sampled === undefined) continue
-      const { result, primitives } = sampled
+      const { result } = sampled
       resolved = true
       const componentTransform = componentTransforms.get(component.id)
       if (componentTransform === undefined) continue
+      // Cliff meshes follow the painted base height (see `baseOffsetAt`).
+      const primitives: typeof sampled.primitives =
+        item.derivedFrom === 'cliffs'
+          ? (liftedCliffPrimitives(
+              sampled.primitives,
+              multiplyComponentTransforms(worldObjectTransform(item, translation), componentTransform),
+            ) as typeof sampled.primitives)
+          : sampled.primitives
       let programs: ReadonlyMap<string, SceneMaterialPrograms> = new Map()
       const time = input.animationTimes?.get(item.objectId) ?? 0
       const teamColor =
