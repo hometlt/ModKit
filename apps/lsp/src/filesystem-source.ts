@@ -88,15 +88,24 @@ export function createFilesystemLanguageDocumentSource(
        * The snapshot is bounded by bytes, so order decides what survives the budget. Documents of
        * the request's own language come first: a layout resolves its templates against other
        * layouts, and losing them to unrelated scripts or catalogs that merely sort earlier turns a
-       * resolvable reference into a reported error.
+       * resolvable reference into a reported error. The rest are interleaved by language rather
+       * than sorted by path, so one large language cannot spend the remaining budget alone — in
+       * Blizzard's core mod the scripts alphabetically precede the layouts and are nine megabytes.
        */
       const primaryLanguage = request.document.languageId
-      const ranked = candidates.sort().sort((left, right) => {
-        const languageOf = (path: string): string | undefined =>
-          uniqueLanguageByExtension.get(extname(path).replace(/^\./u, '').toLowerCase())
-        const score = (path: string): number => (languageOf(path) === primaryLanguage ? 0 : 1)
-        return score(left) - score(right)
-      })
+      const languageOf = (path: string): string =>
+        uniqueLanguageByExtension.get(extname(path).replace(/^\./u, '').toLowerCase()) ?? ''
+      const byLanguage = new Map<string, string[]>()
+      for (const path of candidates.sort()) {
+        const language = languageOf(path)
+        byLanguage.set(language, [...(byLanguage.get(language) ?? []), path])
+      }
+      const ranked = byLanguage.get(primaryLanguage) ?? []
+      const others = [...byLanguage.entries()]
+        .filter(([language]) => language !== primaryLanguage)
+        .map(([, paths]) => paths)
+      for (let index = 0; others.some(paths => index < paths.length); index += 1)
+        for (const paths of others) if (index < paths.length) ranked.push(paths[index] as string)
       const documents = []
       let totalBytes = 0
       for (const path of ranked.slice(0, request.maxDocuments)) {
