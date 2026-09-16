@@ -263,10 +263,11 @@ describe('common world WebGL plan', () => {
     assert.equal(atZero.transparentTexturedTriangles.length, 1)
     assert.equal(atZero.transparentTexturedTriangles[0].receiveShadows, true)
     assert.ok(atZero.transparentTexturedTriangles[0].positions.length > 0)
+    // The ground rises with x and the surface sits at 0.5: water stops a hair (0.005) below it.
     assert.ok(
       Math.max(
         ...atZero.transparentTexturedTriangles[0].positions.filter((_, index) => index % 3 === 0),
-      ) <= 0.450001,
+      ) <= 0.495001,
     )
     const firstUv = Array.from(
       atZero.transparentTexturedTriangles[0].textureCoordinates.slice(0, 2),
@@ -857,12 +858,14 @@ describe('common world WebGL plan', () => {
       draws.map(draw => draw.receiveShadows),
       [false, true],
     )
-    assert.equal(draws[0].batch.positions.length / 9, 2)
-    assert.equal(draws[1].batch.positions.length / 9, 1)
+    assert.equal(draws[0].range.count / 3, 2)
+    assert.equal(draws[1].range.count / 3, 1)
     assert.equal(
-      draws.reduce((count, draw) => count + draw.batch.positions.length / 9, 0),
+      draws.reduce((count, draw) => count + draw.range.count / 3, 0),
       3,
     )
+    // Runs select sorted triangles of the source batch; its vertex buffers are not copied.
+    assert.equal(draws[1].batch.positions.length / 9, 1)
   })
 
   it('draws every resolved component resource of a compound object in one world instance', () => {
@@ -1055,7 +1058,7 @@ describe('common world WebGL plan', () => {
     assert.equal(plan.texturedTriangles.length, 1)
     assert.deepEqual(
       Array.from(plan.texturedTriangles[0].textureCoordinates),
-      [0, 0, -1, 1, -1, 0, 0, 0, 0, 1, -1, 1],
+      [0, 0, -1, 0, -1, 1, 0, 0, -1, 1, 0, 1],
     )
     assert.deepEqual(Array.from(plan.texturedTriangles[0].texture.rgba), [12, 80, 28, 255])
     assert.deepEqual(Array.from(plan.texturedTriangles[0].normalTexture.rgba), [128, 128, 255, 255])
@@ -1208,7 +1211,7 @@ describe('common world WebGL plan', () => {
     assert.deepEqual(Array.from(plan.splatTriangles[0].textureWeights0.slice(0, 4)), [0, 0, 0, 0])
     assert.deepEqual(
       Array.from(plan.splatTriangles[0].weightTextureCoordinates),
-      [0, 0, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1],
+      [0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1],
     )
   })
 
