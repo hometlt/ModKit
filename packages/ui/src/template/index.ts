@@ -1,6 +1,9 @@
 import {
   GAME_TEMPLATE_PREVIEW_OPERATION_ID,
+  gameTemplateTextRuns,
+  isGameTemplateDisplayItem,
   isGameTemplatePreviewResult,
+  type GameTemplateDisplayItem,
   type GameTemplatePreviewResult,
 } from '@modkit/sdk/templates'
 import type { JsonValue, ViewerModule } from '@modkit/sdk'
@@ -22,6 +25,101 @@ const MAXIMUM_TREE_TEXT = 200_000
 
 function jsonText(value: JsonValue, maximum = MAXIMUM_TREE_TEXT): string {
   return safeViewerText(JSON.stringify(value, null, 2), maximum)
+}
+
+const SVG_NS = 'http://www.w3.org/2000/svg'
+/** Below this the label would be unreadable anyway, and a template is full of one-pixel spacers. */
+const MINIMUM_LABEL_SIZE = 12
+
+function svg(document: Document, name: string, attributes: Readonly<Record<string, string>>) {
+  const node = document.createElementNS(SVG_NS, name)
+  for (const [key, value] of Object.entries(attributes)) node.setAttribute(key, value)
+  return node
+}
+
+/**
+ * The template as a picture: every item where the producer put it.
+ *
+ * Nothing here knows a game. A box is a rectangle, text is its resolved runs in the colours the
+ * producer already decided, and an image is the rectangle plus the asset's name — a viewer may not
+ * turn a logical asset id into a request, so an unresolved image says which asset it is waiting for
+ * instead of silently drawing nothing.
+ */
+export function drawTemplateItems(
+  document: Document,
+  host: HTMLElement,
+  items: readonly GameTemplateDisplayItem[],
+): void {
+  const bounds = items.reduce(
+    (box, item) => ({
+      minX: Math.min(box.minX, item.rect.x),
+      minY: Math.min(box.minY, item.rect.y),
+      maxX: Math.max(box.maxX, item.rect.x + item.rect.width),
+      maxY: Math.max(box.maxY, item.rect.y + item.rect.height),
+    }),
+    { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity },
+  )
+  const width = Math.max(1, bounds.maxX - bounds.minX)
+  const height = Math.max(1, bounds.maxY - bounds.minY)
+  const canvas = svg(document, 'svg', {
+    class: 'modkit-template__canvas',
+    viewBox: `${bounds.minX} ${bounds.minY} ${width} ${height}`,
+    preserveAspectRatio: 'xMidYMid meet',
+    role: 'img',
+  })
+  canvas.setAttribute('data-mk-part', 'viewer.canvas')
+  canvas.setAttribute('data-items', String(items.length))
+
+  for (const item of items) {
+    const group = svg(document, 'g', {
+      class: `modkit-template__node modkit-template__node--${item.kind}`,
+      'data-path': item.path.join('/'),
+      ...(item.visible === false ? { 'data-hidden': 'true' } : {}),
+    })
+    group.append(
+      svg(document, 'rect', {
+        x: String(item.rect.x),
+        y: String(item.rect.y),
+        width: String(Math.max(0, item.rect.width)),
+        height: String(Math.max(0, item.rect.height)),
+        rx: '2',
+      }),
+    )
+    const runs = gameTemplateTextRuns(item)
+    const fontSize = Math.max(MINIMUM_LABEL_SIZE, Math.min(24, item.rect.height * 0.6))
+    if (runs.length > 0 && item.rect.height >= MINIMUM_LABEL_SIZE) {
+      const text = svg(document, 'text', {
+        x: String(item.rect.x + 4),
+        y: String(item.rect.y + fontSize),
+        'font-size': String(fontSize),
+      })
+      for (const run of runs) {
+        const span = svg(document, 'tspan', {
+          ...(run.color === undefined ? {} : { fill: run.color }),
+          ...(run.bold === true ? { 'font-weight': 'bold' } : {}),
+          ...(run.italic === true ? { 'font-style': 'italic' } : {}),
+          ...(run.underline === true ? { 'text-decoration': 'underline' } : {}),
+        })
+        span.textContent = safeViewerText(run.text, 512)
+        text.append(span)
+      }
+      group.append(text)
+    } else if (item.asset !== undefined && item.rect.height >= MINIMUM_LABEL_SIZE) {
+      const label = svg(document, 'text', {
+        x: String(item.rect.x + 4),
+        y: String(item.rect.y + fontSize),
+        'font-size': String(fontSize),
+        class: 'modkit-template__asset',
+      })
+      label.textContent = safeViewerText(item.asset.split(/[\\\/]/u).at(-1) ?? item.asset, 128)
+      group.append(label)
+    }
+    const title = svg(document, 'title', {})
+    title.textContent = `${item.path.join('/')}${item.frameType === undefined ? '' : ` — ${item.frameType}`}`
+    group.append(title)
+    canvas.append(group)
+  }
+  host.append(canvas)
 }
 
 /** Render the common semantic template envelope without assuming one game's template format. */
@@ -60,22 +158,33 @@ export function renderGameTemplatePreview(
     }
   }
 
-  const items = element(host, 'ol', {
-    className: 'modkit-template__items',
-    part: 'tree.list',
-  }) as HTMLOListElement
-  const visible = preview.displayItems.slice(0, MAXIMUM_DISPLAY_ITEMS)
-  for (const item of visible) {
-    const row = document.createElement('li')
-    row.className = 'modkit-template__item'
-    row.setAttribute('data-mk-part', 'tree.item')
-    row.textContent = jsonText(item, 4_096)
-    items.append(row)
+  const drawable = preview.displayItems
+    .slice(0, MAXIMUM_DISPLAY_ITEMS)
+    .filter((item): item is GameTemplateDisplayItem & JsonValue => isGameTemplateDisplayItem(item))
+  const rest = preview.displayItems
+    .slice(0, MAXIMUM_DISPLAY_ITEMS)
+    .filter(item => !isGameTemplateDisplayItem(item))
+
+  if (drawable.length > 0) drawTemplateItems(document, host, drawable)
+
+  if (rest.length > 0 || drawable.length === 0) {
+    const items = element(host, 'ol', {
+      className: 'modkit-template__items',
+      part: 'tree.list',
+    }) as HTMLOListElement
+    for (const item of rest) {
+      const row = document.createElement('li')
+      row.className = 'modkit-template__item'
+      row.setAttribute('data-mk-part', 'tree.item')
+      row.textContent = jsonText(item, 4_096)
+      items.append(row)
+    }
+    if (preview.displayItems.length === 0) {
+      element(items, 'li', { text: localizer.text('viewer.noDisplayItems'), part: 'viewer.empty' })
+    }
   }
-  if (visible.length === 0) {
-    element(items, 'li', { text: localizer.text('viewer.noDisplayItems'), part: 'viewer.empty' })
-  } else if (visible.length < preview.displayItems.length) {
-    element(items, 'li', {
+  if (preview.displayItems.length > MAXIMUM_DISPLAY_ITEMS) {
+    element(host, 'p', {
       text: localizer.text('viewer.displayCapped', {
         maximum: MAXIMUM_DISPLAY_ITEMS,
         count: preview.displayItems.length,

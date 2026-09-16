@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createPathSubjectOpener } from '@modkit/host/node'
+import { isGameTemplateDisplayItem } from '@modkit/sdk/templates'
 import { createVsCodeSubjectHost } from '../src/host.js'
 
 const repo = resolve(fileURLToPath(new URL('../../..', import.meta.url)))
@@ -93,6 +94,16 @@ describe('MK2 operation audit', () => {
                 )
               : `${result.reason ?? ''} ${(result.diagnostics ?? []).map(d => d.message).join('; ').slice(0, 100)}`
           console.log(`  ${label}/${operation.handlerId}: ${result.state} ${shape}`)
+          if (operation.handlerId === 'game-template-preview' && result.state === 'ok') {
+            // What the producer emits is what the generic canvas draws; a game that drifts from the
+            // shape stops being drawable and starts being a JSON dump again.
+            const payload = (result.value ?? (result as Record<string, unknown>)['output']) as
+              | { value?: { displayItems?: readonly unknown[] } }
+              | undefined
+            const items = (payload?.value?.displayItems ?? []) as readonly unknown[]
+            expect(items.length).toBeGreaterThan(0)
+            expect(items.filter(item => !isGameTemplateDisplayItem(item))).toEqual([])
+          }
         } catch (error) {
           console.log(`  ${label}/${operation.handlerId}: THREW ${String(error).slice(0, 300)}`)
         }

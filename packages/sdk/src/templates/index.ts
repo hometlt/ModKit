@@ -39,6 +39,103 @@ export interface GameTemplatePreviewFidelity {
   readonly [key: string]: JsonValue
 }
 
+/** Where a display item sits, in the template's own coordinate space. */
+export interface GameTemplateRect {
+  readonly x: number
+  readonly y: number
+  readonly width: number
+  readonly height: number
+}
+
+/**
+ * One run of text with the appearance the producer already resolved.
+ *
+ * Resolved, not described: the producer knows the game's style sheet and its localization, the
+ * viewer does not and must never learn. A run carries a CSS colour or nothing.
+ */
+export interface GameTemplateTextRun {
+  readonly text: string
+  readonly color?: string
+  readonly bold?: boolean
+  readonly italic?: boolean
+  readonly underline?: boolean
+}
+
+/**
+ * One drawable thing a template resolved to.
+ *
+ * This is the whole reason `view.template` is not a StarCraft II operation: a box with a rectangle,
+ * text with its runs and an image with the asset it names are what every game's template resolves
+ * to, whatever the file format underneath. Anything a game cannot express this way still travels in
+ * `resolvedTree`, which stays opaque.
+ *
+ * `asset` is a logical id, never a URL: only the host may turn one into pixels, and a viewer that
+ * accepted a URL would be a way to make a page fetch whatever an extension named.
+ */
+export interface GameTemplateDisplayItem {
+  readonly kind: 'box' | 'text' | 'image'
+  /** Path inside the template, root first; also what a viewer labels the item with. */
+  readonly path: readonly string[]
+  readonly rect: GameTemplateRect
+  /** Absent means visible; `false` is a thing the template hides, which a viewer still shows faintly. */
+  readonly visible?: boolean
+  readonly text?: string | readonly GameTemplateTextRun[]
+  readonly asset?: string
+  /** The game's own name for what produced this item, for a viewer's label. */
+  readonly frameType?: string
+}
+
+const finite = (value: unknown): value is number =>
+  typeof value === 'number' && Number.isFinite(value)
+
+const optionalBoolean = (value: unknown): boolean =>
+  value === undefined || typeof value === 'boolean'
+
+function isTextRun(value: unknown): value is GameTemplateTextRun {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  const run = value as Record<string, unknown>
+  return (
+    typeof run['text'] === 'string' &&
+    (run['color'] === undefined || typeof run['color'] === 'string') &&
+    optionalBoolean(run['bold']) &&
+    optionalBoolean(run['italic']) &&
+    optionalBoolean(run['underline'])
+  )
+}
+
+/** Runtime guard: a viewer draws what conforms and reports the rest as data rather than guessing. */
+export function isGameTemplateDisplayItem(value: unknown): value is GameTemplateDisplayItem {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  const item = value as Record<string, unknown>
+  const rect = item['rect'] as Record<string, unknown> | undefined
+  const text = item['text']
+  return (
+    ['box', 'text', 'image'].includes(String(item['kind'])) &&
+    Array.isArray(item['path']) &&
+    item['path'].every(part => typeof part === 'string') &&
+    typeof rect === 'object' &&
+    rect !== null &&
+    finite(rect['x']) &&
+    finite(rect['y']) &&
+    finite(rect['width']) &&
+    finite(rect['height']) &&
+    optionalBoolean(item['visible']) &&
+    (text === undefined ||
+      typeof text === 'string' ||
+      (Array.isArray(text) && text.every(isTextRun))) &&
+    (item['asset'] === undefined || typeof item['asset'] === 'string') &&
+    (item['frameType'] === undefined || typeof item['frameType'] === 'string')
+  )
+}
+
+/** The runs a display item's text consists of; a plain string is one unstyled run. */
+export function gameTemplateTextRuns(
+  item: GameTemplateDisplayItem,
+): readonly GameTemplateTextRun[] {
+  if (item.text === undefined) return []
+  return typeof item.text === 'string' ? [{ text: item.text }] : item.text
+}
+
 /**
  * Common semantic envelope. `resolvedTree` and `displayItems` intentionally remain JSON data: each
  * game owns how a template is formed, while every consumer gets the same evidence boundary.

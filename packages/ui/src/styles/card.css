@@ -661,6 +661,39 @@
     overflow-wrap: anywhere;
   }
 
+  .modkit-template__canvas {
+    inline-size: 100%;
+    max-block-size: 32rem;
+    margin-block-end: var(--mk-space-3);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    background: var(--mk-color-canvas-bg);
+  }
+
+  .modkit-template__node rect {
+    fill: color-mix(in srgb, var(--mk-color-accent) 8%, transparent);
+    stroke: var(--mk-color-border);
+    stroke-width: 1;
+  }
+
+  .modkit-template__node--image rect {
+    stroke-dasharray: 4 3;
+  }
+
+  .modkit-template__node[data-hidden='true'] {
+    opacity: 0.35;
+  }
+
+  .modkit-template__node text {
+    fill: var(--mk-color-fg);
+    font-family: var(--mk-font-sans, inherit);
+  }
+
+  .modkit-template__asset {
+    fill: var(--mk-color-fg-muted);
+    font-style: italic;
+  }
+
   .modkit-template__details {
     margin-block: var(--mk-space-3);
   }

@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
   GAME_TEMPLATE_PREVIEW_OPERATION_ID,
+  gameTemplateTextRuns,
+  isGameTemplateDisplayItem,
   isGameTemplatePreviewResult,
 } from '../src/templates/index.js'
 
@@ -32,5 +34,37 @@ describe('game template preview contract', () => {
         fidelity: { comparison: 'pixel', unsupported: [] },
       }),
     ).toBe(false)
+  })
+})
+
+describe('game template display items', () => {
+  const box = { kind: 'box', path: ['Root'], rect: { x: 0, y: 0, width: 100, height: 40 } }
+
+  it('accepts what any game can express and refuses what a viewer could not draw', () => {
+    expect(isGameTemplateDisplayItem(box)).toBe(true)
+    expect(isGameTemplateDisplayItem({ ...box, kind: 'image', asset: 'Assets/Icon.dds' })).toBe(true)
+    expect(isGameTemplateDisplayItem({ ...box, kind: 'text', text: 'Hatchery' })).toBe(true)
+    expect(
+      isGameTemplateDisplayItem({
+        ...box,
+        kind: 'text',
+        text: [{ text: 'Nydus Canal', color: '#4aa3ff' }, { text: ' established' }],
+        visible: false,
+        frameType: 'Label',
+      }),
+    ).toBe(true)
+    // A rectangle is the one thing a viewer cannot do without.
+    expect(isGameTemplateDisplayItem({ ...box, rect: { x: 0, y: 0, width: 100 } })).toBe(false)
+    expect(isGameTemplateDisplayItem({ ...box, rect: { ...box.rect, x: Number.NaN } })).toBe(false)
+    expect(isGameTemplateDisplayItem({ ...box, kind: 'sprite' })).toBe(false)
+    expect(isGameTemplateDisplayItem({ ...box, path: ['Root', 2] })).toBe(false)
+    expect(isGameTemplateDisplayItem({ ...box, text: [{ color: '#fff' }] })).toBe(false)
+  })
+
+  it('reads a plain string as one unstyled run', () => {
+    expect(gameTemplateTextRuns({ ...box, kind: 'text', text: 'Lair' } as never)).toEqual([
+      { text: 'Lair' },
+    ])
+    expect(gameTemplateTextRuns(box as never)).toEqual([])
   })
 })
