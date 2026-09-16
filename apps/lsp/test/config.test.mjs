@@ -35,7 +35,7 @@ test('configuration deduplicates roots and enforces bounded snapshots', () => {
         '--extension',
         extension,
         '--max-documents',
-        '257',
+        '4097',
       ]),
     /cannot exceed/,
   )

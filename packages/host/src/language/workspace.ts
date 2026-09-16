@@ -76,7 +76,13 @@ export const LANGUAGE_FEATURE_INVALID = 'x3.host/language-feature-invalid'
 export const LANGUAGE_DEFAULT_MAX_RESULTS = 256
 export const LANGUAGE_MAX_RESULTS = 2_048
 export const LANGUAGE_DEFAULT_MAX_DOCUMENTS = 32
-export const LANGUAGE_MAX_DOCUMENTS = 64
+/*
+ * A real mod is the unit of meaning for these languages: Blizzard's core mod alone holds 110 GameData
+ * catalogs and 377 layouts, and a cross-file template or entity reference is unresolvable without
+ * them. The real bound on a snapshot is bytes, which every document source enforces (4 MiB per
+ * document, 16 MiB per snapshot); the count ceiling only has to stop an unbounded request.
+ */
+export const LANGUAGE_MAX_DOCUMENTS = 4_096
 export const LANGUAGE_DEFAULT_MAX_EDITS = 1_024
 export const LANGUAGE_MAX_EDITS = 4_096
 

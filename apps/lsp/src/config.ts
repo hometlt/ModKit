@@ -44,7 +44,8 @@ export function parseModkitLspConfiguration(argv: readonly string[]): ModkitLspC
   const roots: string[] = []
   const extensions: string[] = []
   let trustExtensions = false
-  let maxDocuments = 64
+  // Cover a whole mod by default; the byte budgets below stay the real bound.
+  let maxDocuments = 1_024
   let maxDocumentBytes = 4_194_304
   let maxWorkspaceBytes = 16_777_216
   for (let index = 0; index < argv.length; index += 1) {
@@ -79,7 +80,7 @@ export function parseModkitLspConfiguration(argv: readonly string[]): ModkitLspC
   }
   if (roots.length === 0) throw new ConfigurationError('at least one --root is required')
   if (extensions.length === 0) throw new ConfigurationError('at least one --extension is required')
-  if (maxDocuments > 256) throw new ConfigurationError('--max-documents cannot exceed 256')
+  if (maxDocuments > 4_096) throw new ConfigurationError('--max-documents cannot exceed 4096')
   if (maxDocumentBytes > maxWorkspaceBytes) {
     throw new ConfigurationError('--max-document-bytes cannot exceed --max-workspace-bytes')
   }

@@ -44,7 +44,11 @@ export function createFilesystemLanguageDocumentSource(
       if (uniqueLanguageByExtension.size === 0) {
         return { documents: Object.freeze([]), isComplete: languageIdsByExtension.size === 0 }
       }
-      const openUris = new Set(request.workspaceDocuments.map(document => document.uri))
+      // The document under the cursor is open too, and the host rejects a snapshot that repeats it.
+      const openUris = new Set([
+        request.document.uri,
+        ...request.workspaceDocuments.map(document => document.uri),
+      ])
       const candidates: string[] = []
       let visited = 0
       let complete = true
@@ -80,9 +84,22 @@ export function createFilesystemLanguageDocumentSource(
         }
       }
       for (const root of options.roots) await walk(root)
+      /*
+       * The snapshot is bounded by bytes, so order decides what survives the budget. Documents of
+       * the request's own language come first: a layout resolves its templates against other
+       * layouts, and losing them to unrelated scripts or catalogs that merely sort earlier turns a
+       * resolvable reference into a reported error.
+       */
+      const primaryLanguage = request.document.languageId
+      const ranked = candidates.sort().sort((left, right) => {
+        const languageOf = (path: string): string | undefined =>
+          uniqueLanguageByExtension.get(extname(path).replace(/^\./u, '').toLowerCase())
+        const score = (path: string): number => (languageOf(path) === primaryLanguage ? 0 : 1)
+        return score(left) - score(right)
+      })
       const documents = []
       let totalBytes = 0
-      for (const path of candidates.sort().slice(0, request.maxDocuments)) {
+      for (const path of ranked.slice(0, request.maxDocuments)) {
         request.signal.throwIfAborted()
         const info = await stat(path)
         if (
