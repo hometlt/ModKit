@@ -701,6 +701,10 @@ export {
   type ViewerSubjectNavigation,
   type ViewerSubjectNavigationRequest,
   type ViewerSubjectNavigationResult,
+  type ViewerWorkspaceDocument,
+  type ViewerWorkspaceDocuments,
+  type ViewerWorkspaceDocumentsRequest,
+  type ViewerWorkspaceDocumentsResult,
   type ViewerSubjectNavigationScope,
   type ViewerSources,
 } from './asset-capabilities/presentation.js'

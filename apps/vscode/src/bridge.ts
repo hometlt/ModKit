@@ -123,6 +123,12 @@ export type ShellRequest =
    * the honest path: `vscode.workspace.getConfiguration().update` exists only on the extension
    * side, and a page that could reach it would have become an extension host.
    */
+  | {
+      readonly op: 'workspace-documents'
+      readonly path?: string
+      readonly languageIds?: readonly string[]
+      readonly maxDocuments?: number
+    }
   | { readonly op: 'settings' }
   | { readonly op: 'set-contribution'; readonly id: string; readonly enabled: boolean }
   | { readonly op: 'set-contributions'; readonly ids: readonly string[]; readonly enabled: boolean }

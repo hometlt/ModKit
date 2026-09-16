@@ -1,12 +1,13 @@
 import {
   GAME_TEMPLATE_PREVIEW_OPERATION_ID,
+  GAME_TEMPLATE_WORKSPACE_INPUT,
   gameTemplateTextRuns,
   isGameTemplateDisplayItem,
   isGameTemplatePreviewResult,
   type GameTemplateDisplayItem,
   type GameTemplatePreviewResult,
 } from '@modkit/sdk/templates'
-import type { JsonValue, ViewerModule } from '@modkit/sdk'
+import type { JsonValue, ViewerModule, ViewerWorkspaceDocuments } from '@modkit/sdk'
 import {
   createSurface,
   createViewerMount,
@@ -217,6 +218,24 @@ export function renderGameTemplatePreview(
   }
 }
 
+/** The operation input, carrying the host's snapshot when this window has one. */
+async function templateInput(
+  workspace: ViewerWorkspaceDocuments | undefined,
+  signal: AbortSignal,
+): Promise<JsonValue> {
+  if (workspace === undefined) return {}
+  const snapshot = await workspace.read({ signal })
+  if (snapshot.documents.length === 0) return {}
+  return {
+    [GAME_TEMPLATE_WORKSPACE_INPUT]: snapshot.documents.map(document => ({
+      uri: document.uri,
+      languageId: document.languageId,
+      version: document.version,
+      text: document.text,
+    })),
+  } as JsonValue
+}
+
 /** Standard operation-backed stage shared by publisher-defined document templates. */
 export function createGameTemplateViewer(options: UiLocalizationOptions = {}): ViewerModule {
   const localizer = withEnglishUiFallback(options.localizer, TEMPLATE_FALLBACK_MESSAGES)
@@ -233,11 +252,16 @@ export function createGameTemplateViewer(options: UiLocalizationOptions = {}): V
           text: localizer.text('viewer.loadingTemplate'),
           part: 'viewer.status',
         })
+        /*
+         * A template names templates in other files. The host is the only side that may read them,
+         * so what it handed over goes to the operation; without the port the operation still runs
+         * and reports what it could not resolve, which is the honest half-answer.
+         */
         const result = await invokeOperation(
           descriptor,
           args.operations,
           GAME_TEMPLATE_PREVIEW_OPERATION_ID,
-          {},
+          await templateInput(args.workspaceDocuments, scope.signal),
           { signal: scope.signal },
         )
         if (scope.signal.aborted || revision !== renderRevision) return

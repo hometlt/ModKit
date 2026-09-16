@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createPathSubjectOpener } from '@modkit/host/node'
-import { isGameTemplateDisplayItem } from '@modkit/sdk/templates'
+import {
+  GAME_TEMPLATE_WORKSPACE_INPUT,
+  isGameTemplateDisplayItem,
+} from '@modkit/sdk/templates'
 import { createVsCodeSubjectHost } from '../src/host.js'
 
 const repo = resolve(fileURLToPath(new URL('../../..', import.meta.url)))
@@ -32,6 +35,30 @@ const INPUTS: Record<string, unknown> = {
   'edit-strings': { edits: [{ key: 'Abil/Name/Beacon', value: 'Beacon 2' }] },
   'rename-reference': { from: 'StandardTemplates/StandardSmallPanelTemplate', to: 'X' },
   'extract-subtree': { namespace: 'Abil', seeds: ['ReviveSelf'] },
+}
+
+const layoutRoot = resolve(game, 'base.sc2data/UI/Layout')
+
+/** Every layout of the mod, as the host would hand them over. */
+function layoutDocuments(): readonly {
+  uri: string
+  languageId: string
+  version: number
+  text: string
+}[] {
+  const walk = (directory: string): string[] =>
+    readdirSync(directory).flatMap(name => {
+      const full = resolve(directory, name)
+      return statSync(full).isDirectory() ? walk(full) : [full]
+    })
+  return walk(layoutRoot)
+    .filter(file => file.toLowerCase().endsWith('.sc2layout'))
+    .map(file => ({
+      uri: `file:///${file.replaceAll('\\', '/')}`,
+      languageId: 'sc2-layout',
+      version: 1,
+      text: readFileSync(file, 'utf8'),
+    }))
 }
 
 describe('MK2 operation audit', () => {
@@ -112,6 +139,32 @@ describe('MK2 operation audit', () => {
       await session.dispose()
       seen.set(label, operations.map(operation => operation.id))
     }
+    /*
+     * The same operation, once with the mod and once without: the snapshot the host now hands over
+     * is what turns «template was not found» into a resolved frame.
+     */
+    const layoutOpened = (await open(
+      resolve(game, 'base.sc2data/UI/Layout/Common/StandardDialog.SC2Layout'),
+    )) as { session?: { operations(): { invoke: Function; dispose(): Promise<void> } } }
+    const layoutOps = layoutOpened.session?.operations()
+    if (layoutOps !== undefined) {
+      const unresolved = async (input: unknown): Promise<number> => {
+        const result = (await layoutOps.invoke('game-template-preview', input as never)) as {
+          state: string
+          output?: { value?: { diagnostics?: readonly { code: string }[] } }
+        }
+        expect(result.state).toBe('ok')
+        const diagnostics = result.output?.value?.diagnostics ?? []
+        return diagnostics.filter(item => item.code === 'unresolved-template').length
+      }
+      const alone = await unresolved({})
+      const withMod = await unresolved({ [GAME_TEMPLATE_WORKSPACE_INPUT]: layoutDocuments() })
+      console.log(`template preview unresolved templates: alone=${alone} withMod=${withMod}`)
+      expect(alone).toBeGreaterThan(0)
+      expect(withMod).toBe(0)
+      await layoutOps.dispose()
+    }
+
     // Every MK2 command that became an operation is declared and available on its subject.
     expect(seen.get('sc2-data')).toEqual(
       expect.arrayContaining([

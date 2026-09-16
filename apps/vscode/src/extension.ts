@@ -5160,6 +5160,37 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             },
           }),
       confirmClose,
+      /*
+       * The same bounded snapshot the language features run on, for the operations that need it.
+       * A template names a template in another file and a localized value renders through the
+       * mod's style sheet; both are invoked on one open document and would otherwise report
+       * everything around them as missing.
+       */
+      async readWorkspaceDocuments(request) {
+        const uri = request.path === undefined ? undefined : vscode.Uri.file(request.path)
+        const open =
+          uri === undefined ? undefined : vscode.workspace.textDocuments.find(
+            item => item.uri.toString() === uri.toString(),
+          )
+        const languageIds =
+          request.languageIds ?? (open === undefined ? [] : [open.languageId])
+        if (languageIds.length === 0) return { documents: [], isComplete: false }
+        const primary = {
+          uri: uri?.toString() ?? '',
+          languageId: languageIds[0] as string,
+          version: open?.version ?? 1,
+          text: open?.getText() ?? '',
+        }
+        const controller = new AbortController()
+        const snapshot = await languageDocumentSource.snapshot({
+          document: primary,
+          workspaceDocuments: [primary],
+          workspaceLanguageIds: languageIds,
+          maxDocuments: Math.min(request.maxDocuments ?? 1_024, 1_024),
+          signal: controller.signal,
+        })
+        return { documents: snapshot.documents, isComplete: snapshot.isComplete }
+      },
       exportFiles: files => exportViewerFiles(files),
       configuration,
       mapPreviewResourcePlanResolver,

@@ -646,6 +646,27 @@ export interface VsCodeServeOptions {
     | { readonly state: 'written'; readonly names: readonly string[] }
     | { readonly state: 'refused'; readonly reason: string }
   >
+  /**
+   * The documents around an opened subject, for an operation that resolves across files.
+   *
+   * The page may not read a directory, and an operation invoked on one open file answers "not
+   * found" about templates and strings that are plainly in the next file. The extension host has
+   * the snapshot already — it is what the language features run on — so it answers here too, under
+   * its own bounds. Absent, the page's stages report what they could not resolve.
+   */
+  readonly readWorkspaceDocuments?: (request: {
+    readonly path?: string
+    readonly languageIds?: readonly string[]
+    readonly maxDocuments?: number
+  }) => Promise<{
+    readonly documents: readonly {
+      readonly uri: string
+      readonly languageId: string
+      readonly version: number
+      readonly text: string
+    }[]
+    readonly isComplete: boolean
+  }>
   /** Native custom-document dirty state, emitted only for the provider's opened path. */
   readonly onDocumentDirty?: (path: string, dirty: boolean) => void
   /** Route an in-page Save button through VS Code's native save command. */
@@ -1413,6 +1434,15 @@ function serveVsCode(
         return await options.exportFiles(
           files.map(file => ({ name: file.name, bytes: file.bytes })),
         )
+      }
+      case 'workspace-documents': {
+        if (options.readWorkspaceDocuments === undefined)
+          return { documents: [], isComplete: false }
+        return await options.readWorkspaceDocuments({
+          ...(request.path === undefined ? {} : { path: request.path }),
+          ...(request.languageIds === undefined ? {} : { languageIds: request.languageIds }),
+          ...(request.maxDocuments === undefined ? {} : { maxDocuments: request.maxDocuments }),
+        })
       }
       case 'settings':
         return settingsView()

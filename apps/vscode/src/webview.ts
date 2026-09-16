@@ -407,6 +407,26 @@ async function mount(
     ),
     fallback: createVsCodePreviewFallback(localizer),
 
+    /*
+     * What the extension host holds around the open file. The page may not read a directory, so it
+     * asks, and the extension host answers from the same bounded snapshot the language features
+     * use. A window without the bridge op simply gets nothing back, which a stage reports.
+     */
+    workspaceDocuments: {
+      async read(request) {
+        const answer = (await bridge.request({
+          op: 'workspace-documents',
+          ...(request?.languageIds === undefined ? {} : { languageIds: [...request.languageIds] }),
+          ...(request?.maxDocuments === undefined ? {} : { maxDocuments: request.maxDocuments }),
+          ...(snapshot.openPath === undefined ? {} : { path: snapshot.openPath }),
+        })) as { documents?: readonly unknown[]; isComplete?: boolean } | undefined
+        return {
+          documents: (answer?.documents ?? []) as never,
+          isComplete: answer?.isComplete === true,
+        }
+      },
+    },
+
     async openSession(entry) {
       const preopened = preopenedSubjects.get(entry.id)
       let result: SubjectClientOpenResult

@@ -4,6 +4,15 @@ import type { JsonValue } from '../asset-capabilities/types.js'
 export const GAME_TEMPLATE_PREVIEW_OPERATION_ID = 'view.template' as const
 export const GAME_TEMPLATE_PREVIEW_SCHEMA_VERSION = 1 as const
 
+/**
+ * Input property a caller fills with the documents around the subject.
+ *
+ * Named once here so a game's producer and a generic surface agree without either learning about
+ * the other: a template that names a template in another file resolves only when the caller passes
+ * what it has, and every producer reads the same key.
+ */
+export const GAME_TEMPLATE_WORKSPACE_INPUT = 'workspaceDocuments' as const
+
 export interface GameTemplateViewport {
   readonly width: number
   readonly height: number

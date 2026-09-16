@@ -219,6 +219,44 @@ export interface ViewerMount {
   unmount(): Promise<void>
 }
 
+/** One document beside the subject, exactly as the host holds it. */
+export interface ViewerWorkspaceDocument {
+  readonly uri: string
+  readonly languageId: string
+  readonly version: number
+  readonly text: string
+}
+
+export interface ViewerWorkspaceDocumentsRequest {
+  /** Restrict to these languages; omitted means the subject's own. */
+  readonly languageIds?: readonly string[]
+  readonly maxDocuments?: number
+  readonly signal?: AbortSignal
+}
+
+export interface ViewerWorkspaceDocumentsResult {
+  readonly documents: readonly ViewerWorkspaceDocument[]
+  /** False when the host's bounds cut the answer; a viewer says so rather than implying totality. */
+  readonly isComplete: boolean
+}
+
+/**
+ * Optional host-owned view of the documents that surround this subject.
+ *
+ * An operation that resolves across files — a template naming one that lives in another file, a
+ * localized string rendered through the mod's style sheet — is invoked on one open document and
+ * cannot reach the rest, so it answers "not found" about things that are plainly there. Language
+ * features have had a bounded snapshot for exactly this reason; this is the same thing for
+ * operations.
+ *
+ * The host owns the bound and the reading. A viewer asks and passes the answer to the operation it
+ * was already going to invoke; it never lists a directory, and a host that has no snapshot to give
+ * simply does not pass the port, which the viewer reports instead of pretending.
+ */
+export interface ViewerWorkspaceDocuments {
+  read(request?: ViewerWorkspaceDocumentsRequest): Promise<ViewerWorkspaceDocumentsResult>
+}
+
 export interface ViewerModule {
   readonly abiVersion: 1
   mount(args: {
@@ -231,6 +269,8 @@ export interface ViewerModule {
     readonly knowledge?: KnowledgeCatalog
     /** Optional host-owned route scoped to this exact mounted subject session. */
     readonly subjectNavigation?: ViewerSubjectNavigation
+    /** Optional bounded snapshot of the documents around this subject, for cross-file operations. */
+    readonly workspaceDocuments?: ViewerWorkspaceDocuments
     /**
      * Optional commit route for a viewer that publishes editable values.
      *

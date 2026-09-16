@@ -11,6 +11,7 @@
 import type {
   EditorModule,
   KnowledgeCatalog,
+  ViewerWorkspaceDocuments,
   OperationSession,
   PresentationPlan,
   ViewerModule,
@@ -70,6 +71,13 @@ export interface CodecPreviewOptions {
   readonly stages: readonly PreviewStage[]
   /** Optional host-owned read-only help catalog shared by every mounted stage. */
   readonly knowledge?: KnowledgeCatalog
+  /**
+   * Optional bounded snapshot of the documents around the opened subject.
+   *
+   * A stage whose operation resolves across files passes it on; without it that operation runs on
+   * the one open document and reports everything else as missing.
+   */
+  readonly workspaceDocuments?: ViewerWorkspaceDocuments
   /**
    * Extensions exposed by an external host-owned opener. These are registration hints only; the
    * opener still detects from inventory and bytes, and may reject a matching suffix.
@@ -314,6 +322,9 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
           } as never,
           operations: operations as never,
           ...(options.knowledge === undefined ? {} : { knowledge: options.knowledge }),
+          ...(options.workspaceDocuments === undefined
+            ? {}
+            : { workspaceDocuments: options.workspaceDocuments }),
           ...(session.subjectNavigation === undefined
             ? {}
             : { subjectNavigation: session.subjectNavigation }),
