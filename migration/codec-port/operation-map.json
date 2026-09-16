@@ -1317,21 +1317,21 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-blizzard/mpq/contributions/codec-mpq.json",
+      "contribution": "modkit-extensions-blizzard/mpq/codecs/container-mpq/codec.json",
       "handlerId": "extract-entry",
       "id": "legacy/codec-manifest/modkit/mpq/operation/archive.extract",
       "status": "adapted",
       "targetOperation": "container.extract"
     },
     {
-      "contribution": "modkit-extensions-blizzard/mpq/contributions/codec-mpq.json",
+      "contribution": "modkit-extensions-blizzard/mpq/codecs/container-mpq/codec.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/mpq/operation/archive.inspect",
       "status": "adapted",
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": "modkit-extensions-blizzard/mpq/contributions/codec-mpq.json",
+      "contribution": "modkit-extensions-blizzard/mpq/codecs/container-mpq/codec.json",
       "handlerId": "pack-container",
       "id": "legacy/codec-manifest/modkit/mpq/operation/archive.write",
       "status": "adapted",
@@ -1996,42 +1996,42 @@
       "targetOperation": null
     },
     {
-      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-bank.json",
+      "contribution": "modkit-extensions-blizzard/starcraft2/modules/banks/codecs/bank/codec.json",
       "handlerId": "validate",
       "id": "legacy/codec-manifest/modkit/sc2-bank/operation/asset.validate",
       "status": "adapted",
       "targetOperation": "asset.validate"
     },
     {
-      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-bank.json",
+      "contribution": "modkit-extensions-blizzard/starcraft2/modules/banks/codecs/bank/codec.json",
       "handlerId": "patch-value",
       "id": "legacy/codec-manifest/modkit/sc2-bank/operation/edit.content",
       "status": "adapted",
       "targetOperation": "edit.content"
     },
     {
-      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-bank.json",
+      "contribution": "modkit-extensions-blizzard/starcraft2/modules/banks/codecs/bank/codec.json",
       "handlerId": "export-raw",
       "id": "legacy/codec-manifest/modkit/sc2-bank/operation/export.raw",
       "status": "adapted",
       "targetOperation": "export.raw"
     },
     {
-      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-bank.json",
+      "contribution": "modkit-extensions-blizzard/starcraft2/modules/banks/codecs/bank/codec.json",
       "handlerId": "sign",
       "id": "legacy/codec-manifest/modkit/sc2-bank/operation/save.sign",
       "status": "adapted",
       "targetOperation": "blizzard/sc2-bank.sign"
     },
     {
-      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-bank.json",
+      "contribution": "modkit-extensions-blizzard/starcraft2/modules/banks/codecs/bank/codec.json",
       "handlerId": "save-as",
       "id": "legacy/codec-manifest/modkit/sc2-bank/operation/source.save-as",
       "status": "adapted",
       "targetOperation": "source.save-as"
     },
     {
-      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-bank.json",
+      "contribution": "modkit-extensions-blizzard/starcraft2/modules/banks/codecs/bank/codec.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/sc2-bank/operation/view.inspect",
       "status": "adapted",
