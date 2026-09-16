@@ -331,6 +331,8 @@ export interface MapPlacedObject {
   readonly player?: number
   /** Explicit renderer-neutral RGB for source/team colour material channels. */
   readonly presentationTeamColor?: readonly [number, number, number]
+  /** Renderer team-color intensity for this object (see `SceneRendererMaterialContext`); 0 = none. */
+  readonly presentationTeamColorIntensity?: number
   readonly variation?: number
   readonly modules?: number
   readonly name?: string
@@ -361,6 +363,12 @@ export interface MapTerrainSample {
   readonly y: number
   readonly heightBase: number
   readonly heightAdjustment: number
+  /**
+   * Adjustment to draw with where the publisher's cliff pieces model the wall and need the terrain
+   * step placed differently than the authored value. Presentation only: `heightAdjustment` stays
+   * the authored data for editing and export.
+   */
+  readonly presentationHeightAdjustment?: number
   readonly mask: number
 }
 
@@ -410,6 +418,12 @@ export interface MapTerrainMaterialDefinition {
   readonly baseColorResource?: LogicalResourceRequirement
   readonly normalResourceId?: string
   readonly normalResource?: LogicalResourceRequirement
+  /**
+   * How the normal texture's channels spell the tangent-space normal. `rgb` (the default) is the
+   * usual XYZ-in-RGB; `xy-in-alpha-green` takes X from alpha and Y from green and reconstructs Z,
+   * as DXN-swizzled maps do — the publisher knows this, the renderer cannot guess it.
+   */
+  readonly normalEncoding?: 'rgb' | 'xy-in-alpha-green'
   readonly specularResourceId?: string
   readonly specularResource?: LogicalResourceRequirement
   readonly uvTransform?: Readonly<{
@@ -521,6 +535,11 @@ export interface MapCliffPieceCandidate {
 export interface MapCliffPieceModel {
   readonly id: string
   readonly candidates: readonly MapCliffPieceCandidate[]
+  /**
+   * A cliff set may share one mesh family and skin it separately: the materials of this model
+   * replace the piece model's materials by index, with their own textures.
+   */
+  readonly materialModel?: LogicalResourceRequirement
 }
 
 /** One authored cliff/ramp mesh placement derived from native cliff data. */
@@ -1016,6 +1035,8 @@ export interface WorldSceneResourceItem {
    * first that resolves and bakes its yaw into the model. `modelResource` is the first candidate.
    */
   readonly modelCandidates?: readonly MapCliffPieceCandidate[]
+  /** Model whose materials replace the converted model's materials by index (see MapCliffPieceModel). */
+  readonly materialModel?: LogicalResourceRequirement
   /** Exact reverse join to every placed object that references this resource. */
   readonly objectIds: readonly string[]
 }

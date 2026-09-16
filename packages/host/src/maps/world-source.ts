@@ -16,6 +16,7 @@ import type {
   ResolvedMapWorkspaceSnapshot,
   ResourceProvenanceRecord,
   SceneRendererTexture,
+  ModelMaterialRef,
   WorldSceneFacetState,
   WorldSceneItem,
   WorldSceneLayerKind,
@@ -239,7 +240,8 @@ function terrainMapNativePosition(
       ? (sample.heightBase * transform.vertData.quantizeScale - transform.vertData.quantizeBias) *
           transform.heightMap.scale.z +
         transform.heightMap.offset.z +
-        (sample.heightAdjustment * transform.vertData.quantizeScale -
+        ((sample.presentationHeightAdjustment ?? sample.heightAdjustment) *
+          transform.vertData.quantizeScale -
           transform.vertData.quantizeBias)
       : sample.heightBase * transform.heightMap.scale.z + transform.heightMap.offset.z
   return Object.freeze({
@@ -560,6 +562,8 @@ export function createCandidateWorldSceneLease(
   rasterResources?: RasterResourcePort,
 ): Lease<CandidateWorldSceneSource> {
   positiveLimit(maxPageSize, Number.MAX_SAFE_INTEGER)
+  // One material model skins hundreds of piece models; convert it once per lease.
+  const materialModelCache = new Map<string, Promise<readonly ModelMaterialRef[] | undefined>>()
   const modelTextureCache = new Map<
     string,
     Promise<
@@ -819,6 +823,9 @@ export function createCandidateWorldSceneLease(
               position: piece.position,
               heightReference: 'absolute' as const,
               derivedFrom: 'cliffs' as const,
+              // Terrain is never player-owned: no team colour in its materials.
+              presentationTeamColor: Object.freeze([1, 1, 1] as const),
+              presentationTeamColorIntensity: 0,
               ...(uvwTransform === undefined
                 ? {}
                 : {
@@ -870,6 +877,7 @@ export function createCandidateWorldSceneLease(
       objectIds: string[]
       modelResource?: NonNullable<WorldSceneObjectItem['modelResource']>
       modelCandidates?: WorldSceneResourceItem['modelCandidates']
+      materialModel?: WorldSceneResourceItem['materialModel']
     }
   >()
   const cliffPieceObjectIds = new Map<string, string[]>()
@@ -882,6 +890,7 @@ export function createCandidateWorldSceneLease(
       objectIds,
       modelResource: model.candidates[0]!.requirement,
       modelCandidates: model.candidates,
+      ...(model.materialModel === undefined ? {} : { materialModel: model.materialModel }),
     })
   }
   for (const item of objects) {
@@ -926,6 +935,7 @@ export function createCandidateWorldSceneLease(
           resolved: item.resolved,
           ...(item.modelResource === undefined ? {} : { modelResource: item.modelResource }),
           ...(item.modelCandidates === undefined ? {} : { modelCandidates: item.modelCandidates }),
+          ...(item.materialModel === undefined ? {} : { materialModel: item.materialModel }),
           objectIds: Object.freeze([...item.objectIds]),
         }),
       ),
@@ -1760,6 +1770,50 @@ export function createCandidateWorldSceneLease(
                   lease.value.resourceReferences?.({ limit: maxResources }, signal),
                   lease.value.sockets?.({ limit: maxNodes }, signal),
                 ])
+              // A separately authored skin replaces the materials by index; the mesh's own texture
+              // references are then not dependencies of what is drawn.
+              let materials = materialPage?.items
+              let resourceItems = resourcePage?.items ?? []
+              const skinDiagnostics: ReturnType<typeof diagnostic>[] = []
+              if (item.materialModel !== undefined && materials !== undefined) {
+                const materialModel = item.materialModel
+                let pendingSkin = materialModelCache.get(materialModel.logicalId)
+                if (pendingSkin === undefined) {
+                  pendingSkin = (async () => {
+                    const skin = await modelResources.acquire(
+                      {
+                        maxBytes: request.maxBytes,
+                        ...(metersPerSourceUnit === undefined ? {} : { metersPerSourceUnit }),
+                        requirement: materialModel,
+                      },
+                      signal,
+                    )
+                    try {
+                      if (skin.value.result.state === 'unresolved') return undefined
+                      return (await skin.value.materials?.({ limit: maxNodes }, signal))?.items
+                    } finally {
+                      await skin.release()
+                    }
+                  })()
+                  materialModelCache.set(materialModel.logicalId, pendingSkin)
+                }
+                const skinItems = await pendingSkin
+                if (skinItems === undefined || skinItems.length === 0)
+                  skinDiagnostics.push(
+                    diagnostic(
+                      'warning',
+                      'x3.host/world-model-material-model-unavailable',
+                      `material model ${materialModel.logicalId} published no materials; ${modelRequirement.logicalId} keeps its own`,
+                    ),
+                  )
+                else {
+                  materials = materials.map((material, index) => {
+                    const replacement = skinItems[Math.min(index, skinItems.length - 1)]!
+                    return Object.freeze({ ...replacement, id: material.id })
+                  })
+                  resourceItems = []
+                }
+              }
               const allPrimitiveIds = meshPage.items.flatMap(mesh => mesh.primitiveIds)
               const primitiveIds = allPrimitiveIds.slice(0, request.maxPrimitives)
               const primitives = await Promise.all(
@@ -1773,13 +1827,13 @@ export function createCandidateWorldSceneLease(
               )
               const textureDiagnostics: ReturnType<typeof diagnostic>[] = []
               const textures: SceneRendererTexture[] = []
-              const publishedResources = [...(resourcePage?.items ?? [])]
+              const publishedResources = [...resourceItems]
               const resourceIds = new Set(publishedResources.map(reference => reference.id))
               // Material layers are authoritative render dependencies even when an intermediate
               // UVM/resource-refs facet omitted the redundant reference list. Acquire their
               // logical textures and publish the derived reference instead of silently falling
               // back to hashed material colours.
-              for (const material of materialPage?.items ?? []) {
+              for (const material of materials ?? []) {
                 for (const layer of material.layers ?? []) {
                   if (layer.resourceId === undefined || resourceIds.has(layer.resourceId)) continue
                   resourceIds.add(layer.resourceId)
@@ -1899,9 +1953,7 @@ export function createCandidateWorldSceneLease(
                 ...(animationPage === undefined
                   ? {}
                   : { animations: Object.freeze([...animationPage.items]) }),
-                ...(materialPage === undefined
-                  ? {}
-                  : { materials: Object.freeze([...materialPage.items]) }),
+                ...(materials === undefined ? {} : { materials: Object.freeze([...materials]) }),
                 ...(publishedResources.length === 0
                   ? {}
                   : { resources: Object.freeze(publishedResources) }),
@@ -1911,7 +1963,11 @@ export function createCandidateWorldSceneLease(
                 ...(publishedResources.length === 0 ? {} : { textures: Object.freeze(textures) }),
                 meshes: Object.freeze([...meshPage.items]),
                 primitives: Object.freeze(primitives),
-                diagnostics: Object.freeze([...result.diagnostics, ...textureDiagnostics]),
+                diagnostics: Object.freeze([
+                  ...result.diagnostics,
+                  ...skinDiagnostics,
+                  ...textureDiagnostics,
+                ]),
                 complete:
                   meshPage.nextCursor === undefined &&
                   nodePage?.nextCursor === undefined &&

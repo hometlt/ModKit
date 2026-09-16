@@ -51,14 +51,25 @@ const bundled = await build({
       const constructors = { Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array,
         Int32Array, Uint32Array, Float32Array, Float64Array, DataView };
       const binary = await fetch('/world.bin').then(response => response.arrayBuffer());
+      const revived = new Map();
       const revive = value => {
         if (Array.isArray(value)) return value.map(revive);
         if (value === null || typeof value !== 'object') return value;
         if ('$bigint' in value) return BigInt(value.$bigint);
         if ('$typed' in value) {
           const Constructor = constructors[value.$typed];
-          const bytes = binary.slice(value.offset, value.offset + value.byteLength);
-          return Constructor === DataView ? new DataView(bytes) : new Constructor(bytes);
+          // One object per offset keeps shared arrays shared; aligned payloads are viewed in place.
+          const shared = revived.get(value.offset);
+          if (shared !== undefined && shared.byteLength === value.byteLength && shared.constructor === Constructor) return shared;
+          const size = Constructor === DataView ? 1 : Constructor.BYTES_PER_ELEMENT;
+          const aligned = value.offset % size === 0;
+          const result = Constructor === DataView
+            ? new DataView(binary, value.offset, value.byteLength)
+            : aligned
+              ? new Constructor(binary, value.offset, value.byteLength / size)
+              : new Constructor(binary.slice(value.offset, value.offset + value.byteLength));
+          revived.set(value.offset, result);
+          return result;
         }
         if ('$map' in value) return new Map(value.$map.map(([key, item]) => [revive(key), revive(item)]));
         return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, revive(item)]));
@@ -155,8 +166,25 @@ try {
         self.set(key, (self.get(key) ?? 0) + interval)
       }
       const top = [...self].sort((a, b) => b[1] - a[1]).slice(0, 25)
-      writeFileSync(join(outDir, 'profile-top.json'), `${JSON.stringify(top, null, 2)}\n`)
+      // Inclusive time per JS function: which of our functions the GL self-time sits under.
+      const parent = new Map()
+      for (const node of profile.nodes) for (const child of node.children ?? []) parent.set(child, node.id)
+      const inclusive = new Map()
+      for (const id of profile.samples) {
+        const seen = new Set()
+        for (let current = id; current !== undefined; current = parent.get(current)) {
+          const frame = byId.get(current).callFrame
+          if (!frame.url.endsWith('app.js') || !frame.functionName) continue
+          const key = `${frame.functionName} app.js:${frame.lineNumber + 1}`
+          if (seen.has(key)) continue
+          seen.add(key)
+          inclusive.set(key, (inclusive.get(key) ?? 0) + interval)
+        }
+      }
+      const topInclusive = [...inclusive].sort((a, b) => b[1] - a[1]).slice(0, 25)
+      writeFileSync(join(outDir, 'profile-top.json'), `${JSON.stringify({ self: top, inclusive: topInclusive }, null, 2)}\n`)
       for (const [key, ms] of top.slice(0, 15)) console.info(`[profile] ${Math.round(ms)} ms  ${key}`)
+      for (const [key, ms] of topInclusive.slice(0, 20)) console.info(`[profile:inclusive] ${Math.round(ms)} ms  ${key}`)
     }
     const path = join(outDir, `${name}.png`)
     await page.locator('canvas').screenshot({ path })

@@ -69,6 +69,12 @@ export interface CandidateWorldViewerOptions {
   readonly maxModels?: number
   readonly maxModelBytes?: number
   readonly maxConcurrentModelAcquisitions?: number
+  /**
+   * Which model resources to acquire, by resource id. Everything else is reported unresolved
+   * without being opened — a viewer showing only the terrain and its cliffs need not pay for the
+   * map's doodad and unit models.
+   */
+  readonly modelResourceFilter?: (resourceId: string) => boolean
   readonly signal?: AbortSignal
   readonly previous?: CandidateWorldViewerModel
 }
@@ -272,7 +278,11 @@ export async function inspectCandidateWorld(
         right.objectIds.length - left.objectIds.length || left.id.localeCompare(right.id),
     )
   const models = new Map<string, WorldSceneModelResult>()
-  const admittedResources = resourceItems.slice(0, maxModels)
+  const requestedResources =
+    options.modelResourceFilter === undefined
+      ? resourceItems
+      : resourceItems.filter(item => options.modelResourceFilter!(item.id))
+  const admittedResources = requestedResources.slice(0, maxModels)
   const perModelBytes = Math.max(
     1,
     Math.min(
@@ -302,7 +312,10 @@ export async function inspectCandidateWorld(
     maxTextureTotalBytes,
     metersPerSourceUnit: undefined,
   })
-  for (const item of resourceItems.slice(maxModels)) {
+  for (const item of [
+    ...requestedResources.slice(maxModels),
+    ...resourceItems.filter(item => !requestedResources.includes(item)),
+  ]) {
     models.set(
       item.id,
       Object.freeze({

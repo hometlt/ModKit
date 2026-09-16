@@ -131,6 +131,11 @@ export interface SceneRendererMaterialContext {
   /** The selected index in the shader vocabulary's sequence table. */
   readonly sequenceIndex?: number
   readonly teamColor?: readonly [number, number, number]
+  /**
+   * Exponent on the texel alpha of diffuse team-color layers, default 1. 0 marks an object
+   * without team color (such layers keep their texel color). Only 0 and 1 are accepted.
+   */
+  readonly teamColorIntensity?: number
   readonly ambient?: SceneRendererColor
   readonly environment?: SceneRendererEnvironment
   /**

@@ -189,9 +189,22 @@ describe('common world source native visual facets', () => {
         acquired.push(request.requirement.logicalId)
         if (request.requirement.logicalId === 'Cliffs/Set_ABBA_00.m3')
           return { value: { result: { state: 'unresolved' as const, diagnostics: [] } }, async release() {} }
+        const skin = request.requirement.logicalId === 'Cliffs/Set_Material.m3'
         return {
           value: {
             result: { state: 'converted' as const, bytes: new Uint8Array([1]), sourceKey: 'cliff', diagnostics: [] },
+            async materials() {
+              return {
+                items: [
+                  skin
+                    ? { id: 'skin-material', name: 'Set skin', layers: [{ slot: 'diffuse', resourceId: 'Textures/Set.dds' }] }
+                    : { id: 'material-0', name: 'Mesh', layers: [{ slot: 'diffuse', resourceId: 'Textures/Family.dds' }] },
+                ],
+              }
+            },
+            async readRaster() {
+              return { state: 'unresolved' as const, diagnostics: [] }
+            },
             async nodes() {
               return {
                 items: [
@@ -218,6 +231,7 @@ describe('common world source native visual facets', () => {
           pieceModels: [
             {
               id: 'Set:ABBA:0',
+              materialModel: requirement('Cliffs/Set_Material.m3'),
               candidates: [
                 { requirement: requirement('Cliffs/Set_ABBA_00.m3'), yaw: 0 },
                 { requirement: requirement('Cliffs/Set_BBAA_00.m3'), yaw: Math.PI / 2 },
@@ -246,8 +260,16 @@ describe('common world source native visual facets', () => {
         maxPrimitives: 8,
         maxPrimitiveBytes: 1024,
       })
-      expect(acquired).toEqual(['Cliffs/Set_ABBA_00.m3', 'Cliffs/Set_BBAA_00.m3'])
+      expect(acquired).toEqual([
+        'Cliffs/Set_ABBA_00.m3',
+        'Cliffs/Set_BBAA_00.m3',
+        'Cliffs/Set_Material.m3',
+      ])
       expect(model).toMatchObject({ state: 'converted' })
+      // The cliff set's skin replaces the mesh family's material under the primitive's material id.
+      expect(model?.state === 'converted' ? model.materials : undefined).toMatchObject([
+        { id: 'material-0', name: 'Set skin', layers: [{ resourceId: 'Textures/Set.dds' }] },
+      ])
       const transform = model?.state === 'converted' ? model.nodes?.[0]?.transform : undefined
       // +Y quarter turn: X axis -> -Z, translation (2,0,0) -> (0,0,-2).
       expect(transform?.slice(0, 3).map(value => Math.round(value) + 0)).toEqual([0, 0, -1])
