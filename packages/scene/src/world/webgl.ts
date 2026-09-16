@@ -1384,15 +1384,20 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
           (1 - u) * v * dips[3]!
         )
       }
-      // Inside its footprint the fill sits a hair under the mesh so the opaque cap and rock win
-      // (ramp pieces a hair lower again, under the wall tiles they overlap); on the footprint's edge
-      // it meets the neighbouring height-field cell exactly, or a hairline crack shows.
+      // Inside its footprint the fill sits a hair under a made wall so its opaque cap wins, and a
+      // hair OVER natural rock: SC2 blends a natural cliff's top into the terrain, so its up-facing
+      // crest reads as ground and only the faces below read as rock. Ramp pieces sit a hair lower
+      // again, under the wall tiles they overlap. On the footprint's edge the fill meets the
+      // neighbouring height-field cell exactly, or a hairline crack shows.
+      // ponytail: natural rock is told apart by its mesh family name; every shipped natural set is
+      // `CliffNatural*`. Sample the mesh alpha instead if a set breaks the naming.
+      const natural = /:CliffNatural/u.test(item.typeId ?? '')
       const onEdge = (x: number, z: number) =>
         Math.abs(x - minX) < 0.02 ||
         Math.abs(x - maxX) < 0.02 ||
         Math.abs(z - minZ) < 0.02 ||
         Math.abs(z - maxZ) < 0.02
-      const offset = ramp ? 0.02 : 0.01
+      const offset = ramp ? 0.02 : natural ? -0.01 : 0.01
       const plates = raw.map(plate => ({
         normal: plate.normal,
         vertices: plate.vertices.map(
