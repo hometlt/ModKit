@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { existsSync } from 'node:fs'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createPathSubjectOpener } from '@modkit/host/node'
@@ -9,6 +9,26 @@ const repo = resolve(fileURLToPath(new URL('../../..', import.meta.url)))
 const blizzard = resolve(repo, '..', 'modkit-extensions-blizzard')
 const game = resolve(repo, '..', 'references', 'SC2GameData', 'mods', 'core.sc2mod')
 const fixtures = resolve(repo, 'packages', 'testkit', 'test', 'fixtures', 'mk2-synthetic')
+const looseMod = resolve(fixtures, '..', 'mk2-loose-mod')
+
+/** The smallest directory the loose-mod codec accepts: a component list plus the data it names. */
+function writeLooseMod(): void {
+  const root = resolve(looseMod, 'Probe.SC2Mod')
+  mkdirSync(resolve(root, 'Base.SC2Data', 'GameData'), { recursive: true })
+  mkdirSync(resolve(root, 'enUS.SC2Data', 'LocalizedData'), { recursive: true })
+  writeFileSync(
+    resolve(root, 'ComponentList.SC2Components'),
+    '<?xml version="1.0" encoding="utf-8"?>\n<Components>\n  <DataComponent Type="gada">Base.SC2Data/GameData</DataComponent>\n</Components>\n',
+  )
+  writeFileSync(
+    resolve(root, 'Base.SC2Data', 'GameData', 'UnitData.xml'),
+    '<?xml version="1.0" encoding="utf-8"?>\n<Catalog>\n  <CUnit id="Marine"><LifeMax value="45"/></CUnit>\n</Catalog>\n',
+  )
+  writeFileSync(
+    resolve(root, 'enUS.SC2Data', 'LocalizedData', 'GameStrings.txt'),
+    'Unit/Name/Marine=Marine\n',
+  )
+}
 
 const SUBJECTS: readonly (readonly [string, string])[] = [
   ['sc2-data', resolve(game, 'base.sc2data/GameData/AbilData.xml')],
@@ -20,6 +40,8 @@ const SUBJECTS: readonly (readonly [string, string])[] = [
   ['audio', resolve(fixtures, 'minimal.wav')],
   ['video', resolve(fixtures, 'minimal.webm')],
   ['archive', resolve(fixtures, 'minimal.SC2Mod')],
+  // A loose mod is the subject MK2's MOD tree was built on; the fixture is written by the test.
+  ['mod-directory', resolve(fixtures, '..', 'mk2-loose-mod', 'Probe.SC2Mod')],
 ]
 
 const CONTRACTS = [
@@ -37,13 +59,14 @@ const CONTRACTS = [
 describe('MK2 surface audit', () => {
   // The corpus is a real StarCraft II installation's data; without it there is nothing to audit.
   it.skipIf(!existsSync(game))('opens one subject of every kind and exercises its view sources', async () => {
+    writeLooseMod()
     const host = await createVsCodeSubjectHost({
       catalogCandidates: [resolve(repo, 'extensions')],
       configuredExtensions: [resolve(blizzard, 'starcraft2'), resolve(blizzard, 'mpq')],
     })
     const open = createPathSubjectOpener({
       subjects: host.services,
-      roots: [game, fixtures],
+      roots: [game, fixtures, looseMod],
       grant: { id: 'audit', classes: ['read-source'] },
       budget: {
         maxInputBytes: BigInt(512 * 1024 * 1024),
