@@ -333,6 +333,37 @@ async function mount(
     return wanted.length === 0 ? stages : wanted
   }
 
+/** What one template's icons may cost this page; a template names a few, not a mod's worth. */
+const TEMPLATE_IMAGE_BUDGET_BYTES = 32 * 1024 * 1024
+
+/**
+ * One decoded region as a PNG data URL.
+ *
+ * Rows are copied one at a time because a region's stride is its own business: a decoder may pad,
+ * and reading it as a tight buffer would shear the image.
+ */
+function encodeRegionAsPng(region: {
+  readonly width: number
+  readonly height: number
+  readonly rowStride: number
+  readonly pixelFormat: string
+  readonly pixels: Uint8Array
+}): string | undefined {
+  if (region.pixelFormat !== 'rgba8' || region.width <= 0 || region.height <= 0) return undefined
+  const canvas = document.createElement('canvas')
+  canvas.width = region.width
+  canvas.height = region.height
+  const context = canvas.getContext('2d')
+  if (context === null) return undefined
+  const image = context.createImageData(region.width, region.height)
+  for (let row = 0; row < region.height; row += 1) {
+    const from = row * region.rowStride
+    image.data.set(region.pixels.subarray(from, from + region.width * 4), row * region.width * 4)
+  }
+  context.putImageData(image, 0, 0)
+  return canvas.toDataURL('image/png')
+}
+
   const codecPreview = createCodecPreview({
     localizer,
     supported: snapshot.supportedExtensions,
@@ -355,6 +386,47 @@ async function mount(
             references,
             signal,
           )
+        },
+        /*
+         * The icons a template names, decoded through the same subject-bound raster port the model
+         * stage uses. The page receives pixels, never a path or a codec choice, and encodes them
+         * here because this is the side that has a canvas. An asset the host cannot resolve is left
+         * out, and the stage keeps naming it.
+         */
+        async templateImages(descriptor, assets, signal) {
+          const record = recordForDescriptor(descriptor as unknown as Record<string, unknown>)
+          const readRaster = record?.session.readRasterResource
+          if (readRaster === undefined) return new Map()
+          const images = new Map<string, string>()
+          let remaining = TEMPLATE_IMAGE_BUDGET_BYTES
+          let index = 0
+          for (const asset of assets) {
+            if (remaining <= 0 || signal?.aborted === true) break
+            const result = await readRaster(
+              {
+                kind: 'logical',
+                requirement: {
+                  id: `template-image-${index++}`,
+                  logicalId: asset,
+                  role: 'texture',
+                  scopes: [
+                    'sibling-directory',
+                    'workspace-dependency-layer',
+                    'current-mount',
+                    'enclosing-container',
+                  ],
+                },
+                maxBytes: remaining,
+              },
+              signal,
+            )
+            if (result.state !== 'decoded') continue
+            const url = encodeRegionAsPng(result.region)
+            if (url === undefined) continue
+            remaining -= result.region.pixels.byteLength
+            images.set(asset, url)
+          }
+          return images
         },
         portsFor(descriptor) {
           const record = recordForDescriptor(descriptor)

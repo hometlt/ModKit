@@ -59,6 +59,20 @@ const ITEMS: readonly GameTemplateDisplayItem[] = [
 ]
 
 describe('template canvas', () => {
+  it('draws a resolved asset and names an unresolved one', () => {
+    const { document, host } = stubDocument()
+    drawTemplateItems(
+      document,
+      host as unknown as HTMLElement,
+      ITEMS,
+      new Map([['Assets/Textures/btn-hatchery.dds', 'data:image/png;base64,AAA']]),
+    )
+    const images = find(host, 'image')
+    expect(images).toHaveLength(1)
+    expect(images[0]?.attributes['href']).toBe('data:image/png;base64,AAA')
+    expect(find(host, 'text').map(node => node.textContent)).not.toContain('btn-hatchery.dds')
+  })
+
   it('places every item and keeps the producer’s styling', () => {
     const { document, host } = stubDocument()
     drawTemplateItems(document, host as unknown as HTMLElement, ITEMS)

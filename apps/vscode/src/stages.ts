@@ -107,7 +107,11 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       id: 'template',
       label: context.localizer.text('stage.template'),
       operation: 'view.template',
-      module: createGameTemplateViewer({ localizer: context.localizer }),
+      module: createGameTemplateViewer({
+        localizer: context.localizer,
+        // Pixels for the assets a template names, when this window can decode them.
+        ...(context.templateImages === undefined ? {} : { images: context.templateImages }),
+      }),
     },
     {
       id: 'card',

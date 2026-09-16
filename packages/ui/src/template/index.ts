@@ -50,6 +50,7 @@ export function drawTemplateItems(
   document: Document,
   host: HTMLElement,
   items: readonly GameTemplateDisplayItem[],
+  images: ReadonlyMap<string, string> = new Map(),
 ): void {
   const bounds = items.reduce(
     (box, item) => ({
@@ -105,6 +106,17 @@ export function drawTemplateItems(
         text.append(span)
       }
       group.append(text)
+    } else if (item.asset !== undefined && images.has(item.asset)) {
+      group.append(
+        svg(document, 'image', {
+          href: images.get(item.asset) as string,
+          x: String(item.rect.x),
+          y: String(item.rect.y),
+          width: String(Math.max(0, item.rect.width)),
+          height: String(Math.max(0, item.rect.height)),
+          preserveAspectRatio: 'xMidYMid meet',
+        }),
+      )
     } else if (item.asset !== undefined && item.rect.height >= MINIMUM_LABEL_SIZE) {
       const label = svg(document, 'text', {
         x: String(item.rect.x + 4),
@@ -129,6 +141,7 @@ export function renderGameTemplatePreview(
   host: HTMLElement,
   preview: GameTemplatePreviewResult,
   localizer: UiLocalizer = withEnglishUiFallback(undefined, TEMPLATE_FALLBACK_MESSAGES),
+  images: ReadonlyMap<string, string> = new Map(),
 ): void {
   host.replaceChildren()
   host.dataset['templateKind'] = preview.templateKind
@@ -166,7 +179,7 @@ export function renderGameTemplatePreview(
     .slice(0, MAXIMUM_DISPLAY_ITEMS)
     .filter(item => !isGameTemplateDisplayItem(item))
 
-  if (drawable.length > 0) drawTemplateItems(document, host, drawable)
+  if (drawable.length > 0) drawTemplateItems(document, host, drawable, images)
 
   if (rest.length > 0 || drawable.length === 0) {
     const items = element(host, 'ol', {
@@ -236,8 +249,28 @@ async function templateInput(
   } as JsonValue
 }
 
+/**
+ * Pixels for the assets a template names, as data URLs.
+ *
+ * The host resolves the logical id — a viewer that turned one into a request would be a way to make
+ * a page fetch whatever an extension named — and whoever implements this is the side that already
+ * has both the host's raster port and a canvas to encode with. An asset that does not resolve is
+ * simply absent from the map, and the canvas keeps naming it.
+ */
+export interface GameTemplateImageResolver {
+  (
+    descriptor: unknown,
+    assets: readonly string[],
+    signal?: AbortSignal,
+  ): Promise<ReadonlyMap<string, string>>
+}
+
+export interface GameTemplateViewerOptions extends UiLocalizationOptions {
+  readonly images?: GameTemplateImageResolver
+}
+
 /** Standard operation-backed stage shared by publisher-defined document templates. */
-export function createGameTemplateViewer(options: UiLocalizationOptions = {}): ViewerModule {
+export function createGameTemplateViewer(options: GameTemplateViewerOptions = {}): ViewerModule {
   const localizer = withEnglishUiFallback(options.localizer, TEMPLATE_FALLBACK_MESSAGES)
   return defineViewerModule({
     abiVersion: 1,
@@ -276,7 +309,20 @@ export function createGameTemplateViewer(options: UiLocalizationOptions = {}): V
         if (result.output.kind !== 'json' || !isGameTemplatePreviewResult(result.output.value)) {
           throw new TypeError('view.template returned an invalid game-template-preview result')
         }
-        renderGameTemplatePreview(root.ownerDocument, root, result.output.value, localizer)
+        const preview = result.output.value
+        const assets = [
+          ...new Set(
+            preview.displayItems.flatMap(item =>
+              isGameTemplateDisplayItem(item) && item.asset !== undefined ? [item.asset] : [],
+            ),
+          ),
+        ]
+        const images =
+          options.images === undefined || assets.length === 0
+            ? new Map<string, string>()
+            : await options.images(descriptor, assets, scope.signal)
+        if (scope.signal.aborted || revision !== renderRevision) return
+        renderGameTemplatePreview(root.ownerDocument, root, preview, localizer, images)
         root.dataset['revision'] = descriptor.revision
       }
       try {

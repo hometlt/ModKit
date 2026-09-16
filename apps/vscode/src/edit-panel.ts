@@ -17,6 +17,7 @@ import type { AnyDescriptor, AssetEditPlan, SceneRendererPort, ViewerModule } fr
 import type { ImageExportFile, ImageExportOutcome } from '@modkit/ui/image'
 import type { UiLocalizer } from '@modkit/ui/localization'
 import type { ModelViewerOptions } from '@modkit/ui/model'
+import type { GameTemplateViewerOptions } from '@modkit/ui/template'
 import {
   mountFieldEditor,
   type FieldEditorControlV1,
@@ -61,6 +62,8 @@ export interface EditPanelOptions {
   readonly renderer?: SceneRendererPort
   /** Subject-bound model texture decoding; the page receives pixels, never resource authority. */
   readonly textures?: ModelViewerOptions['textures']
+  /** The same route for the assets a template names, already encoded for a canvas. */
+  readonly templateImages?: GameTemplateViewerOptions['images']
 }
 
 const asRecord = (descriptor: AnyDescriptor): Record<string, unknown> =>
