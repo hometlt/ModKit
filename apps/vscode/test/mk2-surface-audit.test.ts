@@ -86,8 +86,13 @@ describe('MK2 surface audit', () => {
         console.log(`${label}: OPEN FAILED ${String(error).slice(0, 160)}`)
         continue
       }
-      const snapshot = (result as { snapshot: Record<string, unknown> }).snapshot
-      const session = (result as { session?: { dataSource: Function; dispose: Function } }).session
+      const openResult = result as unknown as {
+        snapshot: Record<string, unknown>
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        session?: any
+      }
+      const snapshot = openResult.snapshot
+      const session = openResult.session
       if (session === undefined) {
         {
           const cands = (snapshot.candidates ?? []) as readonly { contributionId: string; state: string; diagnostics?: readonly { code: string; message: string }[] }[]
@@ -106,7 +111,9 @@ describe('MK2 surface audit', () => {
         const short = contract.replace('common.view/', '').replace('-source', '')
         try {
           const lease = await session.dataSource(contract, 1)
-          const api = lease.value as Record<string, Function>
+          // Each contract has its own surface; the audit only needs to call it, not type it.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const api = lease.value as any
           let detail = 'ok'
           if (contract.endsWith('table-data-source')) {
             const shape = await api.shape()

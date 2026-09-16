@@ -275,7 +275,9 @@ describe('generic service operation provider', () => {
   })
 
   it('falls back across runtime realms only when the primary target is unresolved', async () => {
-    const browserTarget = { ...composition.target, environment: 'browser' as const }
+    // A browser realm has no executable variant for this node-only provider, so the primary
+    // target is unresolved and the fallback is exercised; `browser` is not a runtime environment.
+    const browserTarget = { ...composition.target, environment: 'browser-main' as const }
     const common = {
       services: {
         ...composition,

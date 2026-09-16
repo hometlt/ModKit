@@ -65,6 +65,12 @@ async function open(path: string): Promise<{ envelope: McpEnvelope; data: Opened
   return { envelope: opened, data: (opened.data ?? {}) as Opened }
 }
 
+/** Provenance entries are JSON; only objects carry a contribution id. */
+const contributionOf = (item: unknown): string | undefined =>
+  typeof item === 'object' && item !== null && !Array.isArray(item)
+    ? ((item as Record<string, unknown>)['contributionId'] as string | undefined)
+    : undefined
+
 describe('installed SC2 Strings operations through MCP', () => {
   it('compares a locale against an SC2 catalog through the generic asset.compare operation', async () => {
     const opened = await open(catalogPath)
@@ -73,7 +79,7 @@ describe('installed SC2 Strings operations through MCP', () => {
     // A catalog path must offer the SC2 codec; silently using another handle would hide a routing loss.
     const offersStrings =
       opened.data.codecId === 'blizzard/sc2-strings' ||
-      opened.envelope.provenance.some(item => item.contributionId === 'blizzard/sc2-strings') ||
+      opened.envelope.provenance.some(item => contributionOf(item) === 'blizzard/sc2-strings') ||
       strings !== undefined
     expect(offersStrings, JSON.stringify(opened.envelope)).toBe(true)
     if (strings !== undefined && handle !== undefined) {
@@ -130,7 +136,7 @@ describe('installed SC2 Strings operations through MCP', () => {
     ]
     expect(offered, JSON.stringify(opened.envelope)).not.toContain('blizzard/sc2-strings')
     // It still opens — as generic text, which is what it is.
-    expect(opened.envelope.provenance.map(item => item.contributionId)).toContain('modkit/txt')
+    expect(opened.envelope.provenance.map(contributionOf)).toContain('modkit/txt')
     if (opened.data.handle !== undefined) {
       await client.callTool({ name: 'modkit.close_subject', arguments: { handle: opened.data.handle } })
     }

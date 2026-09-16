@@ -602,6 +602,8 @@ function fakeHost(
                 ? {}
                 : { documentKind: document.documentKind }),
               version: document.version ?? 1,
+              // A session document states what it can answer; the fake answers nothing extra.
+              features: [] as const,
             }))
             return {
               documents,

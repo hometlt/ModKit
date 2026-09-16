@@ -545,7 +545,16 @@ export async function createHostMcpPort(
       uri: document.uri,
       documentVersion: document.version,
       maxResults: request.maxResults,
-      maxDocuments: 32,
+      /*
+       * The bound on what the host may assemble, not on what the client sent.
+       *
+       * A session's explicit files stay capped at 32 and honestly incomplete — that cap is checked
+       * where the session opens. The snapshot the host builds also holds the dependency documents
+       * the mod resolver mounted, and a mod is hundreds of files: capping the assembly at 32 meant
+       * a template or a string key in the next file resolved nowhere, through the one route the
+       * plan sanctions for completeness.
+       */
+      maxDocuments: LANGUAGE_SNAPSHOT_DOCUMENTS,
       ...(signal === undefined ? {} : { signal }),
     }
     const positioned = () => {
@@ -642,6 +651,18 @@ export async function createHostMcpPort(
       },
     })
   }
+/**
+ * What a dependency-backed snapshot may weigh.
+ *
+ * StarCraft II's core mod alone is 25 MiB of layouts, scripts, catalogs and string catalogs, so a
+ * 16 MiB ceiling dropped whole languages out of a snapshot the resolver had already mounted — the
+ * same ceiling the editor and the LSP raised for the same reason.
+ */
+const MCP_LANGUAGE_MAX_WORKSPACE_BYTES = 67_108_864
+
+/** What the host may assemble for one language request, dependencies included. */
+const LANGUAGE_SNAPSHOT_DOCUMENTS = 1_024
+
   const openLanguageSession = async (
     request: McpLanguageSessionOpenRequest,
     signal?: AbortSignal,
@@ -701,7 +722,7 @@ export async function createHostMcpPort(
                 resolution,
                 routes: languageProviderRoutes(modkit.services.inventory),
                 maxDocumentBytes: MCP_LANGUAGE_MAX_DOCUMENT_BYTES,
-                maxWorkspaceBytes: 16_777_216,
+                maxWorkspaceBytes: MCP_LANGUAGE_MAX_WORKSPACE_BYTES,
                 maxEntries: 16_384,
               })
             }
@@ -735,7 +756,7 @@ export async function createHostMcpPort(
             resolution: standing,
             routes: languageProviderRoutes(modkit.services.inventory),
             maxDocumentBytes: MCP_LANGUAGE_MAX_DOCUMENT_BYTES,
-            maxWorkspaceBytes: 16_777_216,
+            maxWorkspaceBytes: MCP_LANGUAGE_MAX_WORKSPACE_BYTES,
             maxEntries: 16_384,
           })
         }

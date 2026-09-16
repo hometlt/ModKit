@@ -22,7 +22,12 @@ const context = { contract: TRANSLATION_CONTRACT, major: 1 } as const
 describe('standard machine-translation definition', () => {
   it('routes a named backend and holds a provider to the languages it lists', () => {
     const match = (offerFacet: unknown, requestFacet: unknown) =>
-      TRANSLATION_MATCHER.match({ ...context, offerFacet, requestFacet } as never).state
+      (
+        TRANSLATION_MATCHER.match(
+          { ...context, offerFacet, requestFacet } as never,
+          undefined,
+        ) as { readonly state: string }
+      ).state
     expect(match(offer, {})).toBe('match')
     expect(match(offer, undefined)).toBe('match')
     expect(match(offer, { backend: 'openai' })).toBe('match')
