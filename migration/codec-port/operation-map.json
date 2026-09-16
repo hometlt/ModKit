@@ -865,56 +865,56 @@
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-galaxy.json",
       "handlerId": "validate",
       "id": "legacy/codec-manifest/modkit/galaxy/operation/asset.validate",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "asset.validate"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-galaxy.json",
       "handlerId": "rename",
       "id": "legacy/codec-manifest/modkit/galaxy/operation/edit.structure",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "edit.structure"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-galaxy.json",
       "handlerId": "export-convert",
       "id": "legacy/codec-manifest/modkit/galaxy/operation/export.convert",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "export.convert"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-galaxy.json",
       "handlerId": "completion",
       "id": "legacy/codec-manifest/modkit/galaxy/operation/script.completion",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "script.completion"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-galaxy.json",
       "handlerId": "format",
       "id": "legacy/codec-manifest/modkit/galaxy/operation/script.format",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "script.format"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-galaxy.json",
       "handlerId": "references",
       "id": "legacy/codec-manifest/modkit/galaxy/operation/script.references",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "script.references"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-galaxy.json",
       "handlerId": "symbols",
       "id": "legacy/codec-manifest/modkit/galaxy/operation/script.symbols",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "script.symbols"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-galaxy.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/galaxy/operation/view.inspect",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "view.inspect"
     },
     {
@@ -1187,28 +1187,28 @@
       "contribution": "modkit-extensions-blizzard/models/contributions/codec-m3.json",
       "handlerId": "export-raw",
       "id": "legacy/codec-manifest/modkit/m3/operation/model.export",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "export.raw"
     },
     {
       "contribution": "modkit-extensions-blizzard/models/contributions/codec-m3.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/m3/operation/model.read",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "view.inspect"
     },
     {
       "contribution": "modkit-extensions-blizzard/models/contributions/codec-m3.json",
       "handlerId": "render-m3-scene",
       "id": "legacy/codec-manifest/modkit/m3/operation/model.render",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "model.render"
     },
     {
       "contribution": "modkit-extensions-blizzard/models/contributions/codec-m3.json",
       "handlerId": "model-write",
       "id": "legacy/codec-manifest/modkit/m3/operation/model.write",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "model.write"
     },
     {
@@ -2041,28 +2041,28 @@
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-data.json",
       "handlerId": "search",
       "id": "legacy/codec-manifest/modkit/sc2-data/operation/asset.search",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "asset.search"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-data.json",
       "handlerId": "validate",
       "id": "legacy/codec-manifest/modkit/sc2-data/operation/asset.validate",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "asset.validate"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-data.json",
       "handlerId": "rename-entity",
       "id": "legacy/codec-manifest/modkit/sc2-data/operation/edit.content",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "edit.content"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-data.json",
       "handlerId": "export-catalog",
       "id": "legacy/codec-manifest/modkit/sc2-data/operation/export.convert",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "export.convert"
     },
     {
@@ -2076,91 +2076,91 @@
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-data.json",
       "handlerId": "references",
       "id": "legacy/codec-manifest/modkit/sc2-data/operation/sc2-data.references",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "blizzard/sc2-data.references"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-data.json",
       "handlerId": "resolve-inheritance",
       "id": "legacy/codec-manifest/modkit/sc2-data/operation/sc2-data.resolve-inheritance",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "blizzard/sc2-data.resolve-inheritance"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-data.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/sc2-data/operation/view.inspect",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "view.inspect"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-document-metadata.json",
       "handlerId": "validate",
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/asset.validate",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "asset.validate"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-document-metadata.json",
       "handlerId": "replace-dependencies",
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/edit.content",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "edit.content"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-document-metadata.json",
       "handlerId": "export-convert",
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/export.convert",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "export.convert"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-document-metadata.json",
       "handlerId": "export-raw",
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/export.raw",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "export.raw"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-document-metadata.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/view.inspect",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "view.inspect"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-layout.json",
       "handlerId": "export-html",
       "id": "legacy/codec-manifest/modkit/sc2-layout/operation/export.convert",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "export.convert"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-layout.json",
       "handlerId": "export-raw",
       "id": "legacy/codec-manifest/modkit/sc2-layout/operation/export.raw",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "export.raw"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-layout.json",
       "handlerId": "parse",
       "id": "legacy/codec-manifest/modkit/sc2-layout/operation/sc2-layout.parse",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "blizzard/sc2-layout.parse"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-layout.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/sc2-layout/operation/view.inspect",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "view.inspect"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-layout.json",
       "handlerId": "render-structural",
       "id": "legacy/codec-manifest/modkit/sc2-layout/operation/view.render",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "view.render"
     },
     {
@@ -2370,28 +2370,28 @@
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-strings.json",
       "handlerId": "validate",
       "id": "legacy/codec-manifest/modkit/sc2-strings/operation/asset.validate",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "asset.validate"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-strings.json",
       "handlerId": "edit-strings",
       "id": "legacy/codec-manifest/modkit/sc2-strings/operation/edit.content",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "edit.content"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-strings.json",
       "handlerId": "export-convert",
       "id": "legacy/codec-manifest/modkit/sc2-strings/operation/export.convert",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "export.convert"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-strings.json",
       "handlerId": "references",
       "id": "legacy/codec-manifest/modkit/sc2-strings/operation/sc2-strings.references",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "blizzard/sc2-strings.references"
     },
     {
@@ -2405,49 +2405,49 @@
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-strings.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/sc2-strings/operation/view.inspect",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "view.inspect"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-triggers.json",
       "handlerId": "search",
       "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/asset.search",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "asset.search"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-triggers.json",
       "handlerId": "validate",
       "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/asset.validate",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "asset.validate"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-triggers.json",
       "handlerId": "export-convert",
       "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/export.convert",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "export.convert"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-triggers.json",
       "handlerId": "references",
       "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/script.references",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "script.references"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-triggers.json",
       "handlerId": "symbols",
       "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/script.symbols",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "script.symbols"
     },
     {
       "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-triggers.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/view.inspect",
-      "status": "adapted",
+      "status": "pending",
       "targetOperation": "view.inspect"
     },
     {
