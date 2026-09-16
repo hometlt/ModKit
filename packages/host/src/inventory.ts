@@ -442,7 +442,11 @@ export async function buildInventory(
   const key = (d: Diagnostic) => `${d.code}\u001f${(d.path ?? []).join('/')}\u001f${d.message}`
   diagnostics.sort((a, b) => compareUtf8(key(a), key(b)))
 
-  return { extensions, diagnostics }
+  // Frozen: consumers memoize projections (provider offers) by inventory identity.
+  return Object.freeze({
+    extensions: Object.freeze(extensions),
+    diagnostics: Object.freeze(diagnostics),
+  })
 }
 
 function validateProjectedFact(

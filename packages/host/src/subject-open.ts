@@ -371,6 +371,8 @@ function errorDiagnostic(code: string, message: string, error?: unknown): Diagno
     ...(error === undefined
       ? {}
       : { error: error instanceof Error ? error.message : String(error) }),
+    // Typed errors carry JSON context (e.g. descriptor validation findings); dropping it hides the cause.
+    ...(isModkitError(error) && error.context !== undefined ? { context: error.context } : {}),
   })
 }
 

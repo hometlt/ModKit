@@ -178,9 +178,18 @@ function parseProviderOffer(value: JsonValue): ProviderOffer {
   })
 }
 
-/** Deterministic production catalog. Malformed trusted projections fail closed. */
+const catalogs = new WeakMap<Inventory, readonly ProviderOffer[]>()
+
+/**
+ * Deterministic production catalog. Malformed trusted projections fail closed.
+ * An inventory is immutable once built, so its catalog is projected once: every subject open asks
+ * for it, and re-projecting (canonical JSON per offer, sorted by it) dominated nested model opens.
+ */
 export function offersFromInventory(inventory: Inventory): readonly ProviderOffer[] {
+  const cached = catalogs.get(inventory)
+  if (cached !== undefined) return cached
   const catalog: ProviderOffer[] = []
+  const fingerprints = new Map<ProviderOffer, string>()
   for (const extension of inventory.extensions) {
     for (const contribution of extension.contributions) {
       if (!contribution.activationEligible) continue
@@ -197,13 +206,16 @@ export function offersFromInventory(inventory: Inventory): readonly ProviderOffe
           record: privateRecord.publicRecord,
           offerFingerprint,
         })
+        fingerprints.set(offer, offerFingerprint)
         catalog.push(offer)
       }
     }
   }
-  return Object.freeze(
+  const sorted = Object.freeze(
     catalog.sort((left, right) =>
-      compareUtf8(canonicalJsonStringify(left), canonicalJsonStringify(right)),
+      compareUtf8(fingerprints.get(left) ?? '', fingerprints.get(right) ?? ''),
     ),
   )
+  catalogs.set(inventory, sorted)
+  return sorted
 }

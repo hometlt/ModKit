@@ -255,195 +255,162 @@ export function parseDds(bytes) {
   return info
 }
 
-/**
- * Expand a 565 endpoint to 8 bits per channel by bit replication.
- *
- * The high bits are repeated into the low bits, which is what D3D specifies and what the GPU does.
- * Rational rounding (v * 255 / 31) is off by one for some inputs, so it would put the viewer's
- * pixels a step away from both the hardware and the legacy decoder this codec is held against.
+/*
+ * Block decoders write straight into the output with per-call scratch palettes. The earlier
+ * per-pixel arrays and BigInt index unpacking made DDS decoding the largest CPU cost of loading a
+ * map's models; the arithmetic (565 bit replication, Math.round of the same interpolations) is
+ * unchanged, so the pixels are byte-identical.
  */
-function expand565(value) {
-  const red = (value >>> 11) & 0x1f
-  const green = (value >>> 5) & 0x3f
-  const blue = value & 0x1f
-  return [(red << 3) | (red >>> 2), (green << 2) | (green >>> 4), (blue << 3) | (blue >>> 2), 255]
-}
+/*
+ * 565 endpoints expand by bit replication (high bits repeated into low bits), as D3D specifies and the
+ * GPU does; rational rounding (v * 255 / 31) is off by one for some inputs.
+ */
+const COLOR_PALETTE = new Uint8Array(16)
+const ALPHA_PALETTE = new Uint8Array(8)
+const BLOCK_VALUES = new Uint8Array(16)
+const BLOCK_VALUES_SECOND = new Uint8Array(16)
 
-function colorPalette(first, second, allowTransparent) {
-  const a = expand565(first)
-  const b = expand565(second)
+function fillColorPalette(first, second, allowTransparent) {
+  const p = COLOR_PALETTE
+  const r0 = (first >>> 11) & 0x1f,
+    g0 = (first >>> 5) & 0x3f,
+    b0 = first & 0x1f
+  const r1 = (second >>> 11) & 0x1f,
+    g1 = (second >>> 5) & 0x3f,
+    b1 = second & 0x1f
+  p[0] = (r0 << 3) | (r0 >>> 2)
+  p[1] = (g0 << 2) | (g0 >>> 4)
+  p[2] = (b0 << 3) | (b0 >>> 2)
+  p[3] = 255
+  p[4] = (r1 << 3) | (r1 >>> 2)
+  p[5] = (g1 << 2) | (g1 >>> 4)
+  p[6] = (b1 << 3) | (b1 >>> 2)
+  p[7] = 255
   if (first > second || !allowTransparent) {
-    return [
-      a,
-      b,
-      [
-        Math.round((2 * a[0] + b[0]) / 3),
-        Math.round((2 * a[1] + b[1]) / 3),
-        Math.round((2 * a[2] + b[2]) / 3),
-        255,
-      ],
-      [
-        Math.round((a[0] + 2 * b[0]) / 3),
-        Math.round((a[1] + 2 * b[1]) / 3),
-        Math.round((a[2] + 2 * b[2]) / 3),
-        255,
-      ],
-    ]
-  }
-  return [
-    a,
-    b,
-    [
-      Math.round((a[0] + b[0]) / 2),
-      Math.round((a[1] + b[1]) / 2),
-      Math.round((a[2] + b[2]) / 2),
-      255,
-    ],
-    [0, 0, 0, 0],
-  ]
-}
-
-function alphaPalette(first, second) {
-  const values = [first, second]
-  if (first > second) {
-    for (let index = 1; index <= 6; index += 1) {
-      values.push(Math.round(((7 - index) * first + index * second) / 7))
+    for (let c = 0; c < 3; c += 1) {
+      p[8 + c] = Math.round((2 * p[c] + p[4 + c]) / 3)
+      p[12 + c] = Math.round((p[c] + 2 * p[4 + c]) / 3)
     }
+    p[11] = 255
+    p[15] = 255
   } else {
-    for (let index = 1; index <= 4; index += 1) {
-      values.push(Math.round(((5 - index) * first + index * second) / 5))
+    for (let c = 0; c < 3; c += 1) {
+      p[8 + c] = Math.round((p[c] + p[4 + c]) / 2)
+      p[12 + c] = 0
     }
-    values.push(0, 255)
-  }
-  return values
-}
-
-function writeBlockPixel(output, width, height, blockX, blockY, pixel, color) {
-  const x = blockX * 4 + (pixel & 3)
-  const y = blockY * 4 + (pixel >>> 2)
-  if (x >= width || y >= height) return
-  output.set(color, (y * width + x) * 4)
-}
-
-function decodeColorBlock(view, offset, output, surface, blockX, blockY, allowTransparent, alphas) {
-  const palette = colorPalette(
-    view.getUint16(offset, true),
-    view.getUint16(offset + 2, true),
-    allowTransparent,
-  )
-  const indices = view.getUint32(offset + 4, true)
-  for (let pixel = 0; pixel < 16; pixel += 1) {
-    const color = [...palette[(indices >>> (pixel * 2)) & 3]]
-    if (alphas !== undefined) color[3] = alphas[pixel]
-    writeBlockPixel(output, surface.width, surface.height, blockX, blockY, pixel, color)
+    p[11] = 255
+    p[15] = 0
   }
 }
 
-function dxt3Alphas(view, offset) {
-  const values = []
-  for (let pixel = 0; pixel < 16; pixel += 1) {
-    const packed = view.getUint8(offset + (pixel >>> 1))
-    const nibble = (packed >>> ((pixel & 1) * 4)) & 0xf
-    values.push(nibble * 17)
-  }
-  return values
-}
-
-function dxt5Alphas(view, offset) {
-  const palette = alphaPalette(view.getUint8(offset), view.getUint8(offset + 1))
-  let packed = 0n
-  for (let index = 0; index < 6; index += 1) {
-    packed |= BigInt(view.getUint8(offset + 2 + index)) << BigInt(index * 8)
-  }
-  return Array.from({ length: 16 }, (_, pixel) => {
-    const index = Number((packed >> BigInt(pixel * 3)) & 7n)
-    return palette[index]
-  })
-}
-
-/**
- * BC4/BC5 signed endpoint block.
- *
- * The endpoints are signed bytes reconstructed over [-1,1]; the rgba8 view they are projected into
- * is unsigned, so the reconstructed value is mapped through (v * 0.5 + 0.5). That projection is
- * lossy by construction — a signed-normalized channel has no exact rgba8 spelling.
- */
-function signedInterpolatedValues(view, offset) {
-  const toSigned = byte => Math.max(-127, byte >= 128 ? byte - 256 : byte) / 127
+/** Fill `target` with the 16 interpolated 8-bit values of one BC3-alpha/BC4 block. */
+function fillInterpolatedValues(view, offset, snorm, target) {
   const raw0 = view.getUint8(offset)
   const raw1 = view.getUint8(offset + 1)
-  const first = toSigned(raw0)
-  const second = toSigned(raw1)
-  const signedFirst = raw0 >= 128 ? raw0 - 256 : raw0
-  const signedSecond = raw1 >= 128 ? raw1 - 256 : raw1
-  const palette =
-    signedFirst > signedSecond
-      ? [
-          first,
-          second,
-          (6 * first + second) / 7,
-          (5 * first + 2 * second) / 7,
-          (4 * first + 3 * second) / 7,
-          (3 * first + 4 * second) / 7,
-          (2 * first + 5 * second) / 7,
-          (first + 6 * second) / 7,
-        ]
-      : [
-          first,
-          second,
-          (4 * first + second) / 5,
-          (3 * first + 2 * second) / 5,
-          (2 * first + 3 * second) / 5,
-          (first + 4 * second) / 5,
-          -1,
-          1,
-        ]
-  let packed = 0n
-  for (let index = 0; index < 6; index += 1) {
-    packed |= BigInt(view.getUint8(offset + 2 + index)) << BigInt(index * 8)
+  const palette = ALPHA_PALETTE
+  if (snorm) {
+    const toSigned = byte => Math.max(-127, byte >= 128 ? byte - 256 : byte) / 127
+    const first = toSigned(raw0)
+    const second = toSigned(raw1)
+    const signedFirst = raw0 >= 128 ? raw0 - 256 : raw0
+    const signedSecond = raw1 >= 128 ? raw1 - 256 : raw1
+    const values =
+      signedFirst > signedSecond
+        ? [
+            first,
+            second,
+            (6 * first + second) / 7,
+            (5 * first + 2 * second) / 7,
+            (4 * first + 3 * second) / 7,
+            (3 * first + 4 * second) / 7,
+            (2 * first + 5 * second) / 7,
+            (first + 6 * second) / 7,
+          ]
+        : [
+            first,
+            second,
+            (4 * first + second) / 5,
+            (3 * first + 2 * second) / 5,
+            (2 * first + 3 * second) / 5,
+            (first + 4 * second) / 5,
+            -1,
+            1,
+          ]
+    for (let index = 0; index < 8; index += 1)
+      palette[index] = Math.round((values[index] * 0.5 + 0.5) * 255)
+  } else {
+    palette[0] = raw0
+    palette[1] = raw1
+    if (raw0 > raw1) {
+      for (let index = 1; index <= 6; index += 1)
+        palette[index + 1] = Math.round(((7 - index) * raw0 + index * raw1) / 7)
+    } else {
+      for (let index = 1; index <= 4; index += 1)
+        palette[index + 1] = Math.round(((5 - index) * raw0 + index * raw1) / 5)
+      palette[6] = 0
+      palette[7] = 255
+    }
   }
-  return Array.from({ length: 16 }, (_, pixel) => {
-    const index = Number((packed >> BigInt(pixel * 3)) & 7n)
-    return Math.round((palette[index] * 0.5 + 0.5) * 255)
-  })
-}
-
-/** One interpolated 8-byte channel block, unsigned or signed. */
-function interpolatedValues(view, offset, snorm) {
-  return snorm ? signedInterpolatedValues(view, offset) : dxt5Alphas(view, offset)
-}
-
-/** BC4 (ATI1): a single interpolated channel replicated across RGB, alpha opaque. */
-function decodeBc4Block(view, offset, output, surface, blockX, blockY, snorm) {
-  const red = interpolatedValues(view, offset, snorm)
+  // 48 index bits in two 24-bit halves; 3-bit fields never straddle bit 24.
+  const low =
+    view.getUint8(offset + 2) | (view.getUint8(offset + 3) << 8) | (view.getUint8(offset + 4) << 16)
+  const high =
+    view.getUint8(offset + 5) | (view.getUint8(offset + 6) << 8) | (view.getUint8(offset + 7) << 16)
   for (let pixel = 0; pixel < 16; pixel += 1) {
-    const value = red[pixel]
-    writeBlockPixel(output, surface.width, surface.height, blockX, blockY, pixel, [
-      value,
-      value,
-      value,
-      255,
-    ])
+    const bit = pixel * 3
+    target[pixel] = palette[bit < 24 ? (low >>> bit) & 7 : (high >>> (bit - 24)) & 7]
   }
 }
 
-/**
- * BC5 (ATI2): two interpolated channels into red and green.
- *
- * Blue is left at zero rather than reconstructed. SC2 stores tangent-space normal maps here and the
- * third component is implied, but rebuilding it would be a rendering decision this codec does not
- * get to make — the viewer sees exactly the two channels the file stores.
- */
-function decodeBc5Block(view, offset, output, surface, blockX, blockY, snorm) {
-  const red = interpolatedValues(view, offset, snorm)
-  const green = interpolatedValues(view, offset + 8, snorm)
+function fillDxt3Alphas(view, offset, target) {
   for (let pixel = 0; pixel < 16; pixel += 1) {
-    writeBlockPixel(output, surface.width, surface.height, blockX, blockY, pixel, [
-      red[pixel],
-      green[pixel],
-      0,
-      255,
-    ])
+    const packed = view.getUint8(offset + (pixel >>> 1))
+    target[pixel] = ((packed >>> ((pixel & 1) * 4)) & 0xf) * 17
+  }
+}
+
+/** Walk a block-compressed surface, handing each block's byte offset and block coordinates on. */
+function decodeBlocks(view, surface, output, blockBytes, decodeBlock) {
+  const { width, height } = surface
+  const blocksX = Math.ceil(width / 4)
+  const blocksY = Math.ceil(height / 4)
+  let offset = surface.offset
+  for (let blockY = 0; blockY < blocksY; blockY += 1) {
+    for (let blockX = 0; blockX < blocksX; blockX += 1) {
+      decodeBlock(offset, blockX, blockY)
+      offset += blockBytes
+    }
+  }
+}
+
+function writeColorBlock(view, offset, output, surface, blockX, blockY, allowTransparent, alphas) {
+  fillColorPalette(view.getUint16(offset, true), view.getUint16(offset + 2, true), allowTransparent)
+  const indices = view.getUint32(offset + 4, true)
+  const { width, height } = surface
+  for (let pixel = 0; pixel < 16; pixel += 1) {
+    const x = blockX * 4 + (pixel & 3)
+    const y = blockY * 4 + (pixel >>> 2)
+    if (x >= width || y >= height) continue
+    const target = (y * width + x) * 4
+    const source = ((indices >>> (pixel * 2)) & 3) * 4
+    output[target] = COLOR_PALETTE[source]
+    output[target + 1] = COLOR_PALETTE[source + 1]
+    output[target + 2] = COLOR_PALETTE[source + 2]
+    output[target + 3] = alphas === undefined ? COLOR_PALETTE[source + 3] : alphas[pixel]
+  }
+}
+
+function writeChannelsBlock(output, surface, blockX, blockY, red, green, grey) {
+  const { width, height } = surface
+  for (let pixel = 0; pixel < 16; pixel += 1) {
+    const x = blockX * 4 + (pixel & 3)
+    const y = blockY * 4 + (pixel >>> 2)
+    if (x >= width || y >= height) continue
+    const target = (y * width + x) * 4
+    output[target] = red[pixel]
+    output[target + 1] = grey ? red[pixel] : green[pixel]
+    output[target + 2] = grey ? red[pixel] : 0
+    output[target + 3] = 255
   }
 }
 
@@ -510,43 +477,59 @@ async function decodeSurface(bytes, info, surface) {
   const view = viewOf(bytes)
   const blockBytes = blockBytesFor(info.format)
   if (blockBytes === 0) throw new TypeError(`DDS format ${info.format} is not supported`)
-  let offset = surface.offset
-  for (let blockY = 0; blockY < Math.ceil(surface.height / 4); blockY += 1) {
-    for (let blockX = 0; blockX < Math.ceil(surface.width / 4); blockX += 1) {
-      if (info.format === 'DXT1') {
-        decodeColorBlock(view, offset, output, surface, blockX, blockY, true)
-      } else if (info.format === 'DXT3') {
-        decodeColorBlock(
-          view,
-          offset + 8,
-          output,
-          surface,
-          blockX,
-          blockY,
-          false,
-          dxt3Alphas(view, offset),
-        )
-      } else if (info.format === 'DXT5') {
-        decodeColorBlock(
-          view,
-          offset + 8,
-          output,
-          surface,
-          blockX,
-          blockY,
-          false,
-          dxt5Alphas(view, offset),
-        )
-      } else if (info.format === 'BC4') {
-        decodeBc4Block(view, offset, output, surface, blockX, blockY, info.snorm)
-      } else if (info.format === 'BC5') {
-        decodeBc5Block(view, offset, output, surface, blockX, blockY, info.snorm)
-      } else {
-        throw new TypeError(`DDS format ${info.format} is not supported`)
-      }
-      offset += blockBytes
-    }
-  }
+  const decodeBlock =
+    info.format === 'DXT1'
+      ? (offset, blockX, blockY) =>
+          writeColorBlock(view, offset, output, surface, blockX, blockY, true)
+      : info.format === 'DXT3'
+        ? (offset, blockX, blockY) => {
+            fillDxt3Alphas(view, offset, BLOCK_VALUES)
+            writeColorBlock(view, offset + 8, output, surface, blockX, blockY, false, BLOCK_VALUES)
+          }
+        : info.format === 'DXT5'
+          ? (offset, blockX, blockY) => {
+              fillInterpolatedValues(view, offset, false, BLOCK_VALUES)
+              writeColorBlock(
+                view,
+                offset + 8,
+                output,
+                surface,
+                blockX,
+                blockY,
+                false,
+                BLOCK_VALUES,
+              )
+            }
+          : info.format === 'BC4'
+            ? (offset, blockX, blockY) => {
+                fillInterpolatedValues(view, offset, info.snorm, BLOCK_VALUES)
+                writeChannelsBlock(
+                  output,
+                  surface,
+                  blockX,
+                  blockY,
+                  BLOCK_VALUES,
+                  BLOCK_VALUES,
+                  true,
+                )
+              }
+            : info.format === 'BC5'
+              ? (offset, blockX, blockY) => {
+                  fillInterpolatedValues(view, offset, info.snorm, BLOCK_VALUES)
+                  fillInterpolatedValues(view, offset + 8, info.snorm, BLOCK_VALUES_SECOND)
+                  writeChannelsBlock(
+                    output,
+                    surface,
+                    blockX,
+                    blockY,
+                    BLOCK_VALUES,
+                    BLOCK_VALUES_SECOND,
+                    false,
+                  )
+                }
+              : undefined
+  if (decodeBlock === undefined) throw new TypeError(`DDS format ${info.format} is not supported`)
+  decodeBlocks(view, surface, output, blockBytes, decodeBlock)
   return output
 }
 

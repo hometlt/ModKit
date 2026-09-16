@@ -397,7 +397,8 @@ export function resolveProvider(
 }
 
 function sortRejected(rejected: RejectedCandidate[]): RejectedCandidate[] {
-  return [...rejected].sort((a, b) =>
-    compareUtf8(canonicalJsonStringify(a), canonicalJsonStringify(b)),
-  )
+  // One canonical key per candidate, not two per comparison.
+  const keyed = rejected.map(candidate => ({ candidate, key: canonicalJsonStringify(candidate) }))
+  keyed.sort((a, b) => compareUtf8(a.key, b.key))
+  return keyed.map(entry => entry.candidate)
 }

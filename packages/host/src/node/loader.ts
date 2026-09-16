@@ -6,7 +6,7 @@
  */
 
 import { createHash } from 'node:crypto'
-import { readdirSync, readFileSync, statSync } from 'node:fs'
+import { readdirSync, readFileSync, statSync, watch } from 'node:fs'
 import { join, relative, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { throwIfAborted } from '@modkit/core'
@@ -78,8 +78,52 @@ function artifactDigests(root: string): ArtifactDigests {
   return { artifactDigest: `sha256:${hash.digest('hex')}`, fileDigests: Object.freeze(fileDigests) }
 }
 
+const verifiedDigests = new Map<string, { readonly fingerprint: string; readonly digest: string }>()
+/** Roots whose recursive watcher reported no change since their fingerprint was taken. */
+const unchangedRoots = new Set<string>()
+const watchedRoots = new Set<string>()
+
+function watchArtifactRoot(root: string): void {
+  if (watchedRoots.has(root)) return
+  watchedRoots.add(root)
+  try {
+    const watcher = watch(root, { recursive: true, persistent: false }, () =>
+      unchangedRoots.delete(root),
+    )
+    watcher.on('error', () => {
+      unchangedRoots.delete(root)
+      watchedRoots.delete(root)
+      watcher.close()
+    })
+  } catch {
+    // No recursive watching here: every verification keeps taking the stat fingerprint.
+    watchedRoots.delete(root)
+  }
+}
+
+/**
+ * Current artifact digest, re-hashed only when a file was added, removed, resized or touched.
+ * Activation verifies the artifact on every codec open; hashing every file each time dominated
+ * model loading (a 4700-file extension costs ~0.5 s per open, many opens per model). A recursive
+ * watcher skips even the stat walk until something under the root changes.
+ */
 function artifactDigest(root: string): string {
-  return artifactDigests(root).artifactDigest
+  const cachedDigest = verifiedDigests.get(root)
+  if (cachedDigest !== undefined && unchangedRoots.has(root)) return cachedDigest.digest
+  watchArtifactRoot(root)
+  if (watchedRoots.has(root)) unchangedRoots.add(root)
+  const files = listArtifactFiles(root)
+  const fingerprint = createHash('sha256')
+  for (const path of files) {
+    const info = statSync(join(root, path), { bigint: true })
+    fingerprint.update(`${path}\u0000${String(info.size)}\u0000${String(info.mtimeNs)}\u0000`)
+  }
+  const key = fingerprint.digest('hex')
+  const cached = verifiedDigests.get(root)
+  if (cached?.fingerprint === key) return cached.digest
+  const digest = artifactDigests(root).artifactDigest
+  verifiedDigests.set(root, { fingerprint: key, digest })
+  return digest
 }
 
 function readJsonIfExists(path: string): unknown {
