@@ -274,6 +274,8 @@ const metadataEntrySchema = {
   properties: {
     key: nonEmptyString,
     value: jsonValueRef,
+    // One sentence about what the value is, when the value alone misleads.
+    note: { type: 'string' },
     type: { $ref: '#/$defs/fieldType' },
     unit: { type: 'string' },
     diagnosticIds: stringArray,

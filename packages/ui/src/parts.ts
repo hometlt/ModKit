@@ -131,6 +131,7 @@ export const PARTS = Object.freeze([
   'metadata.row',
   'metadata.label',
   'metadata.value',
+  'metadata.note',
   'properties',
   'properties.row',
   'properties.name',

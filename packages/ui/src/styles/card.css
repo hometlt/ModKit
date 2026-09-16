@@ -661,6 +661,13 @@
     overflow-wrap: anywhere;
   }
 
+  [data-mk-part='metadata.note'] {
+    display: block;
+    margin-block-start: var(--mk-space-1);
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-xs);
+  }
+
   .modkit-template__canvas {
     inline-size: 100%;
     max-block-size: 32rem;

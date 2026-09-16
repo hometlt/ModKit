@@ -330,6 +330,14 @@ export type AssetConstraintsWire = AssetConstraintsFor<UInt64StringWire>
 export interface MetadataEntryFor<Operation extends string, Span extends SourceSpanWire> {
   readonly key: string
   readonly value: JsonValue
+  /**
+   * One short sentence about what this value is, when the value alone misleads.
+   *
+   * A header field named «Header size» that is not an offset, two checksums that must agree, a
+   * reserved run that is expected to be zero: the codec is the only side that knows, and a reader
+   * looking at the number cannot tell. Kept to a sentence — a panel is not documentation.
+   */
+  readonly note?: string
   readonly type?: FieldType
   readonly unit?: string
   readonly diagnosticIds?: readonly string[]

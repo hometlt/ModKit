@@ -111,6 +111,9 @@ function renderMetadata(
         entry.editable === undefined
           ? String(entry.value)
           : (fieldWriteRefusal(descriptor, entry.editable, editing) ?? String(entry.value))
+      // What the codec knows and the number does not say.
+      if (entry.note !== undefined && entry.note.trim().length > 0)
+        element(value, 'small', { text: entry.note, part: 'metadata.note' })
     }
   }
 

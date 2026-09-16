@@ -2953,6 +2953,9 @@
                         }
                       ]
                     },
+                    "note": {
+                      "type": "string"
+                    },
                     "provenance": {
                       "items": {
                         "additionalProperties": false,
