@@ -181,11 +181,11 @@ function addContribution(target, extensionId, document, label) {
 function commonContributions(target, bundledCatalog) {
   if (
     bundledCatalog?.schemaVersion !== 1 ||
-    bundledCatalog.rootCount !== 8 ||
+    bundledCatalog.rootCount !== 9 ||
     !Array.isArray(bundledCatalog.roots) ||
-    bundledCatalog.roots.length !== 8
+    bundledCatalog.roots.length !== 9
   ) {
-    throw new TypeError('format smoke requires the exact eight-root Common bundled catalog')
+    throw new TypeError('format smoke requires the exact nine-root Common bundled catalog')
   }
   for (const root of bundledCatalog.roots) {
     if (
