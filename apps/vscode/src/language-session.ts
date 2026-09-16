@@ -202,7 +202,8 @@ export interface LanguageSessionController {
 }
 
 const EDITOR_MAX_RESULTS = 512
-const EDITOR_MAX_DOCUMENTS = 64
+// A mod is the unit these languages resolve against; the host's byte budget is the real bound.
+const EDITOR_MAX_DOCUMENTS = 1_024
 const EDITOR_MAX_EDITS = 4_096
 
 interface Selection {

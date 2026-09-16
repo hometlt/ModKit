@@ -392,7 +392,7 @@ describe('VS Code-free language session controller', () => {
       documentVersion: 4,
       position: { line: 0, character: 3 },
       maxResults: 512,
-      maxDocuments: 64,
+      maxDocuments: 1_024,
     })
     const formatting = vi.spyOn(workspace, 'formatting').mockResolvedValue({
       edits: [],
@@ -406,7 +406,7 @@ describe('VS Code-free language session controller', () => {
       documentVersion: 4,
       options: { tabSize: 2, insertSpaces: true },
       maxResults: 512,
-      maxDocuments: 64,
+      maxDocuments: 1_024,
     })
     await controller.shutdown()
   })

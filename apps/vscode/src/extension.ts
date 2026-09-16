@@ -4296,7 +4296,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       if (extensions.length === 0 || request.maxDocuments === 0) {
         return { documents: Object.freeze([]), isComplete: extensions.length === 0 }
       }
-      const openUris = new Set(request.workspaceDocuments.map(document => document.uri))
+      // The document under the cursor is open too, and the host rejects a snapshot that repeats it.
+      const openUris = new Set([
+        request.document.uri,
+        ...request.workspaceDocuments.map(document => document.uri),
+      ])
       const candidates = new Map<string, { readonly uri: vscode.Uri; readonly extension: string }>()
       let isComplete = true
       for (const extension of extensions) {
@@ -4317,11 +4321,32 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           candidates.set(uri.toString(), { uri, extension })
         }
       }
+      /*
+       * Order decides what survives the byte budget. Files of the edited document's own kind come
+       * first — a layout resolves its templates against other layouts — and the rest are interleaved
+       * by extension so one large kind cannot spend the remainder alone.
+       */
+      const primaryExtension = request.document.uri.split('.').at(-1)?.toLowerCase()
+      const byExtension = new Map<string, { readonly uri: vscode.Uri; readonly extension: string }[]>()
+      for (const candidate of [...candidates.values()].sort((left, right) =>
+        left.uri.toString().localeCompare(right.uri.toString()),
+      ))
+        byExtension.set(candidate.extension, [
+          ...(byExtension.get(candidate.extension) ?? []),
+          candidate,
+        ])
+      const ranked = [...(byExtension.get(primaryExtension ?? '') ?? [])]
+      const others = [...byExtension.entries()]
+        .filter(([extension]) => extension !== primaryExtension)
+        .map(([, list]) => list)
+      for (let index = 0; others.some(list => index < list.length); index += 1)
+        for (const list of others) {
+          const candidate = list[index]
+          if (candidate !== undefined) ranked.push(candidate)
+        }
       const documents = []
       let totalTextBytes = 0
-      for (const candidate of [...candidates.values()]
-        .sort((left, right) => left.uri.toString().localeCompare(right.uri.toString()))
-        .slice(0, request.maxDocuments)) {
+      for (const candidate of ranked.slice(0, request.maxDocuments)) {
         request.signal.throwIfAborted()
         const document = await vscode.workspace.openTextDocument(candidate.uri)
         const routedLanguageIds = [
@@ -4346,7 +4371,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         }
         const text = document.getText()
         const bytes = new TextEncoder().encode(text).byteLength
-        if (bytes > 4_194_304 || totalTextBytes + bytes > 16_777_216) {
+        if (bytes > 4_194_304 || totalTextBytes + bytes > 67_108_864) {
           isComplete = false
           continue
         }

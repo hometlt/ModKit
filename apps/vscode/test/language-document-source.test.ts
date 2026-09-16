@@ -11,7 +11,7 @@ describe('default language workspace composition', () => {
     expect(source).toContain('vscode.workspace.findFiles(')
     expect(source).toContain('vscode.workspace.openTextDocument(candidate.uri)')
     expect(source).toContain('routedLanguageIds.length === 1')
-    expect(source).toContain('bytes > 4_194_304 || totalTextBytes + bytes > 16_777_216')
+    expect(source).toContain('bytes > 4_194_304 || totalTextBytes + bytes > 67_108_864')
     expect(source).toContain('isComplete = false')
   })
 })
