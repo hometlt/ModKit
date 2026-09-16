@@ -401,3 +401,5 @@ export type LanguageProviderModule = ServiceProviderModule<
   typeof LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
   1
 >
+
+export * from './translation.js'

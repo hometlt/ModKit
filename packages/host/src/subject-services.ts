@@ -39,7 +39,11 @@ import {
   registerServiceContractDefinitionsFromInventory,
 } from './service-definitions.js'
 import { registerStandardEditingDefinitions, WRITER_FACET_MATCHER } from './editing-definitions.js'
-import { LANGUAGE_DOCUMENT_MATCHER, registerStandardLanguageDefinitions } from './language/index.js'
+import {
+  LANGUAGE_DOCUMENT_MATCHER,
+  TRANSLATION_MATCHER,
+  registerStandardLanguageDefinitions,
+} from './language/index.js'
 import { RUNTIME_PROVIDER_MATCHER, registerStandardRuntimeDefinitions } from './runtime/index.js'
 import {
   SERVICE_OPERATION_MATCHER,
@@ -251,6 +255,7 @@ export function createBundledServiceDefinitionRegistry(
     matcherProfiles: createServiceFacetMatcherProfileRegistry([
       WRITER_FACET_MATCHER,
       LANGUAGE_DOCUMENT_MATCHER,
+      TRANSLATION_MATCHER,
       RUNTIME_PROVIDER_MATCHER,
       SERVICE_OPERATION_MATCHER,
       SCENE_RENDERER_MATCHER,

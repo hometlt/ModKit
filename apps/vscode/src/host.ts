@@ -789,10 +789,18 @@ export function createVsCodeCommandOpener(options: {
   }
 }
 
-/** What every open in this window runs under; named so the container route cannot drift from it. */
+/**
+ * What every open in this window runs under; named so the container route cannot drift from it.
+ *
+ * `network` and `credentials` are here for the operations that cannot work without them — machine
+ * translation of a localization catalog is the one MK2 shipped. They are operation-scoped: the gate
+ * narrows every contribution to what its own manifest requests, so a codec that never asked for
+ * them never receives them, and an operation that needs them is reported disabled rather than
+ * failing at the click when this window is not allowed to reach the network.
+ */
 const DEFAULT_OPEN_GRANT: PermissionGrant = Object.freeze({
   id: 'vscode',
-  classes: Object.freeze(['read-source' as const]),
+  classes: Object.freeze(['read-source' as const, 'network' as const, 'credentials' as const]),
 })
 
 const DEFAULT_OPEN_BUDGET: ResourceBudget = Object.freeze({

@@ -10,9 +10,13 @@ import {
 import {
   LANGUAGE_DOCUMENT_ANALYSIS_CONTRACT,
   LANGUAGE_DOCUMENT_MATCHER_PROFILE,
+  TRANSLATION_CONTRACT,
+  TRANSLATION_MATCHER_PROFILE,
   type LanguageProvider,
   type LanguageProviderOfferFacet,
   type LanguageProviderRequestFacet,
+  type TranslationProviderOfferFacet,
+  type TranslationProviderRequestFacet,
 } from '@modkit/sdk/language'
 import type {
   DefinitionInventoryResult,
@@ -252,12 +256,127 @@ export const LANGUAGE_DOCUMENT_CONTRACT_DEFINITION: ServiceContractDefinitionSpe
   }) as ServiceContractDefinitionSpecV1Wire
 
 /** Register the platform definition before extension-owned definitions are inventoried. */
+const TRANSLATION_OFFER_KEYS = new Set(['backends', 'languages'])
+const TRANSLATION_REQUEST_KEYS = new Set(['backend', 'sourceLanguage', 'targetLanguage'])
+
+function parseTranslationOffer(value: unknown): TranslationProviderOfferFacet | undefined {
+  const record = recordOf(value)
+  if (record === undefined || Object.keys(record).some(key => !TRANSLATION_OFFER_KEYS.has(key)))
+    return undefined
+  const backends = stringList(record['backends'])
+  if (backends === undefined || backends.length === 0) return undefined
+  const languages = record['languages'] === undefined ? undefined : stringList(record['languages'])
+  if (record['languages'] !== undefined && languages === undefined) return undefined
+  return {
+    backends: backends as TranslationProviderOfferFacet['backends'],
+    ...(languages === undefined ? {} : { languages }),
+  }
+}
+
+function parseTranslationRequest(value: unknown): TranslationProviderRequestFacet | undefined {
+  if (value === undefined) return {}
+  const record = recordOf(value)
+  if (record === undefined || Object.keys(record).some(key => !TRANSLATION_REQUEST_KEYS.has(key)))
+    return undefined
+  for (const key of TRANSLATION_REQUEST_KEYS) {
+    const entry = record[key]
+    if (entry !== undefined && (typeof entry !== 'string' || entry.trim().length === 0))
+      return undefined
+  }
+  return record as TranslationProviderRequestFacet
+}
+
+/**
+ * A request names a backend, a language pair, or neither.
+ *
+ * A caller that names a backend gets that backend or nothing — silently translating through a
+ * different service is not a fallback, it is a different bill and a different privacy answer. A
+ * provider that lists its languages is held to them; one that lists none accepts any pair, which is
+ * what a general-purpose model does.
+ */
+function matchTranslationFacets(context: ServiceFacetMatchContext): ServiceFacetMatchResult {
+  const offer = parseTranslationOffer(context.offerFacet)
+  const request = parseTranslationRequest(context.requestFacet)
+  if (offer === undefined || request === undefined) {
+    return {
+      state: 'invalid',
+      diagnostics: [
+        diagnostic(
+          'error',
+          'x3.host/translation-facet-invalid',
+          `${context.contract}@${context.major}: translation request and offer routes must be well formed`,
+        ),
+      ],
+    }
+  }
+  if (request.backend !== undefined && !offer.backends.includes(request.backend))
+    return { state: 'no-match' }
+  const languages = offer.languages
+  if (languages !== undefined) {
+    for (const language of [request.sourceLanguage, request.targetLanguage]) {
+      if (language !== undefined && !languages.includes(language)) return { state: 'no-match' }
+    }
+  }
+  const route = [
+    request.backend === undefined ? 'backend=any' : `backend=${request.backend}`,
+    `from=${request.sourceLanguage ?? 'any'}`,
+    `to=${request.targetLanguage ?? 'any'}`,
+  ].join(';')
+  return { state: 'match', selectionKey: route }
+}
+
+/** Host-trusted deterministic router for machine-translation offers. */
+export const TRANSLATION_MATCHER: ServiceFacetMatcherProfile = Object.freeze({
+  profile: contractId(TRANSLATION_MATCHER_PROFILE),
+  major: 1,
+  match: matchTranslationFacets,
+})
+
+/**
+ * Standard machine-translation definition.
+ *
+ * Without it the contract exists only as a type: a codec that resolves it gets «arguments do not
+ * name a registered surface», because a service can cross an execution boundary only through a
+ * registered surface, and every codec in the editor, the CLI and the browser runs worker-brokered.
+ * StarCraft II's localization codec has carried a working translator behind that wall.
+ */
+export const TRANSLATION_CONTRACT_DEFINITION: ServiceContractDefinitionSpecV1Wire = Object.freeze({
+  schemaVersion: 1,
+  kind: 'service',
+  contract: TRANSLATION_CONTRACT,
+  major: 1,
+  offerFacet: Object.freeze({
+    presence: 'required',
+    schema: Object.freeze({
+      $ref: 'https://schemas.modkit.org/x3/translation-provider-offer.v1.schema.json',
+    }),
+  }),
+  requestFacet: Object.freeze({
+    presence: 'optional',
+    schema: Object.freeze({
+      $ref: 'https://schemas.modkit.org/x3/translation-provider-request.v1.schema.json',
+    }),
+  }),
+  matching: Object.freeze({ profile: TRANSLATION_MATCHER_PROFILE, major: 1 }),
+  conformanceProfile: 'common.language/translation-v1',
+  surface: Object.freeze({
+    fields: Object.freeze(['contract']),
+    methods: Object.freeze({
+      backends: Object.freeze({ kind: 'value' }),
+      translate: Object.freeze({
+        kind: 'value',
+        signal: Object.freeze({ arg: 0, key: 'signal' }),
+      }),
+    }),
+  }),
+}) as ServiceContractDefinitionSpecV1Wire
+
 export function registerStandardLanguageDefinitions(
   definitions: ServiceContractDefinitionRegistry,
 ): Promise<DefinitionInventoryResult> {
-  const definition = LANGUAGE_DOCUMENT_CONTRACT_DEFINITION
-  return definitions.replaceOwnerInventory(STANDARD_LANGUAGE_OWNER, [
-    {
+  return definitions.replaceOwnerInventory(
+    STANDARD_LANGUAGE_OWNER,
+    [LANGUAGE_DOCUMENT_CONTRACT_DEFINITION, TRANSLATION_CONTRACT_DEFINITION].map(definition => ({
       definition,
       provenance: {
         ownerExtensionId: STANDARD_LANGUAGE_OWNER,
@@ -268,8 +387,8 @@ export function registerStandardLanguageDefinitions(
         artifactRoot: 'host:',
         manifestPath: 'host:standard-language-definitions',
       },
-    },
-  ])
+    })),
+  )
 }
 
 export interface LanguageHostServices {

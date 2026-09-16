@@ -25,6 +25,9 @@ import type { ServiceProviderModule } from '../runtime-abi.js'
 /** Standard service coordinate for machine translation. */
 export const TRANSLATION_CONTRACT = 'common.language/translation' as const
 
+/** Host-trusted matcher that routes a request's backend and language pair to an offer. */
+export const TRANSLATION_MATCHER_PROFILE = 'modkit/translation-matcher' as const
+
 /**
  * What a backend is, named rather than free-form.
  *
