@@ -908,6 +908,63 @@ const BASE_COLOR_SLOTS = new Set(['diffuse', 'basecolor', 'albedo', 'color', 'co
 const NORMAL_SLOTS = new Set(['normal', 'normalmap', 'mapnormal', 'mapbump', 'bump'])
 const materialSlot = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/gu, '')
 
+type ShaderParameters = NonNullable<ModelMaterialRef['shader']>['parameters']
+type JsonRecord = { readonly [key: string]: ShaderParameters[string] }
+const record = (value: unknown): JsonRecord | undefined =>
+  value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? (value as JsonRecord)
+    : undefined
+
+/**
+ * Materials as this world presents them.
+ *
+ * A composite material (`renderModel.composite`, SC2 CMP_) layers standard passes and has no
+ * program of its own, so it drew opaque with whatever base texture it listed (Amphion's sewer water
+ * effect became a black plane). Its first pass is a standard material and stands in for it.
+ *
+ * A cliff piece's blend material uses alpha as a terrain blend mask, not transparency: its floor and
+ * top are alpha 0 and the terrain is drawn there, and rock edges fade into the ground. Drawn blended
+ * the rock read as translucent, so cliff pieces are drawn alpha-tested instead.
+ */
+function presentationMaterials(
+  item: WorldSceneObjectItem,
+  refs: readonly ModelMaterialRef[],
+): readonly ModelMaterialRef[] {
+  const cliff = item.derivedFrom === 'cliffs'
+  return refs.map(ref => {
+    const parameters = ref.shader?.parameters
+    const renderModel = record(parameters?.['renderModel'])
+    const passes = record(renderModel?.['composite'])?.['passes']
+    const firstPass = record(record(Array.isArray(passes) ? passes[0] : undefined)?.['material'])
+    let standard = record(renderModel?.['standard'])
+    let out = ref
+    if (firstPass !== undefined && ref.shader !== undefined) {
+      standard = firstPass
+      const blend = typeof firstPass['blendMode'] === 'number' ? firstPass['blendMode'] : 0
+      out = {
+        ...ref,
+        ...(blend === 0 ? {} : { alphaMode: 'blend' as const }),
+        shader: { ...ref.shader, parameters: { ...parameters, renderModel: { standard } } },
+      }
+    }
+    if (cliff && standard !== undefined && out.shader !== undefined) {
+      out = {
+        ...out,
+        alphaMode: 'mask' as const,
+        alphaCutoff: 0.5,
+        shader: {
+          ...out.shader,
+          parameters: {
+            ...out.shader.parameters,
+            renderModel: { standard: { ...standard, blendMode: 0, alphaTestThreshold: 0.5 } },
+          },
+        },
+      }
+    }
+    return out
+  })
+}
+
 function worldModelSceneMaterials(
   refs: readonly ModelMaterialRef[],
   textures: readonly SceneRendererTexture[],
@@ -2064,9 +2121,9 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
         item.presentationTeamColorIntensity ?? '',
       ].join('\u0000')
       const cachedMaterials = planPrograms.get(programKey)
+      const presented = presentationMaterials(item, result.materials ?? [])
       const scene =
-        cachedMaterials?.scene ??
-        worldModelSceneMaterials(result.materials ?? [], result.textures ?? [])
+        cachedMaterials?.scene ?? worldModelSceneMaterials(presented, result.textures ?? [])
       if (cachedMaterials !== undefined) programs = cachedMaterials.programs
       else {
         try {
@@ -2090,7 +2147,7 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
         componentTransform,
       )
       for (const primitive of primitives) {
-        const material = result.materials?.find(candidate => candidate.id === primitive.materialId)
+        const material = presented.find(candidate => candidate.id === primitive.materialId)
         const shadowPolicy = modelMaterialShadowPolicy(material)
         const prepared = programs.get(primitive.materialId ?? '')
         // A prepared material without color passes (distortion, terrain projection) draws nothing;
