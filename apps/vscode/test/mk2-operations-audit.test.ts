@@ -26,6 +26,10 @@ const INPUTS: Record<string, unknown> = {
   'resolve-fallback': { key: 'Abil/Name/Beacon', locales: [] },
   'compare-locales': { locales: [] },
   'filter-entities': { namespace: 'Abil' },
+  'edit-field': { namespace: 'Abil', id: 'ReviveSelf', field: 'Name', value: 'Revive' },
+  'rename-entity': { namespace: 'Abil', id: 'ReviveSelf', newId: 'ReviveSelf2' },
+  'edit-strings': { edits: [{ key: 'Abil/Name/Beacon', value: 'Beacon 2' }] },
+  'rename-reference': { from: 'StandardTemplates/StandardSmallPanelTemplate', to: 'X' },
   'extract-subtree': { namespace: 'Abil', seeds: ['ReviveSelf'] },
 }
 
@@ -72,7 +76,7 @@ describe('MK2 operation audit', () => {
       console.log(`${label} OPS ${operations.map(o => `${o.id}->${o.handlerId}(${o.state})`).join(' ')}`)
       const ops = session.operations()
       for (const operation of operations) {
-        if (operation.id.startsWith('export.') || operation.id.startsWith('edit.')) continue
+        if (operation.id.startsWith('export.')) continue
         const input = INPUTS[operation.handlerId] ?? {}
         try {
           const result = (await ops.invoke(operation.handlerId, input as never)) as {

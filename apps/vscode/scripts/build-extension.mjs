@@ -516,6 +516,14 @@ async function buildInto(output, syncManifest) {
         .flat()
         .map(view => `onView:${view.id}`),
       ...fileSystemSchemes.map(scheme => `onFileSystem:${scheme}`),
+      /*
+       * Language routes come from the configured extension directories at runtime, so no static
+       * `onLanguage` event can name them. Without this the editor starts the host only when a panel
+       * or a command asks for it, and opening an SC2 file gives no diagnostics, navigation or
+       * tokens. `generate-contributes.mjs` derives the same list; leaving it out here made every
+       * build undo that script's own check.
+       */
+      'onStartupFinished',
     ]
 
     if (JSON.stringify([manifest.contributes, manifest.activationEvents]) !== previous) {
