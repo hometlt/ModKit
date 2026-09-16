@@ -74,6 +74,12 @@ import { discoverGameInstallations } from '@modkit/host/games'
 import { createNodeMapPreviewResourcePlanResolver, launchNodeGameResource } from '@modkit/host/node'
 import type { SubjectCandidateProviderSource, SubjectCandidateScope } from '@modkit/sdk'
 import type { ContainerRegistry } from './containers.js'
+import {
+  createOperationOutputStore,
+  operationOutputName,
+  operationOutputText,
+  OPERATION_OUTPUT_SCHEME,
+} from './operation-output.js'
 import { CustomDocumentState } from './custom-document.js'
 import {
   createExtensionCardCatalog,
@@ -1607,8 +1613,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     delete: uri => { throw vscode.FileSystemError.NoPermissions(uri) },
     rename: uri => { throw vscode.FileSystemError.NoPermissions(uri) },
   }
+  const operationOutputs = createOperationOutputStore()
+  const operationOutputChanged = new vscode.EventEmitter<vscode.Uri>()
   context.subscriptions.push(sourceChanges,
     vscode.workspace.registerFileSystemProvider('modkit-source', sourceFileSystem, { isReadonly: true, isCaseSensitive: true }),
+    // Answers that are documents; the scheme carries no authority, only what this window produced.
+    vscode.workspace.registerTextDocumentContentProvider(OPERATION_OUTPUT_SCHEME, {
+      onDidChange: operationOutputChanged.event,
+      provideTextDocumentContent: uri => operationOutputs.read(uri.path) ?? '',
+    }),
+    operationOutputChanged,
     { dispose: () => { void contentSources?.then(source => source?.dispose()).catch(() => undefined) } },
     vscode.commands.registerCommand('modkit.contentSources', async () => {
       try {
@@ -5530,6 +5544,28 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       })
     }
     if (result.state === 'ok') {
+      /*
+       * An answer that is a document opens as one. A converted catalog or a merged declaration is
+       * read, not acknowledged, and a notification saying "completed" hides what was produced.
+       */
+      const output = operationOutputText(result.data)
+      if (output !== undefined) {
+        const name = operationOutputName(
+          request.operationId ?? request.command,
+          request.subject,
+          output.languageId,
+        )
+        const uri = vscode.Uri.from({
+          scheme: OPERATION_OUTPUT_SCHEME,
+          path: operationOutputs.publish(name, output.text),
+        })
+        operationOutputChanged.fire(uri)
+        const document = await vscode.workspace.openTextDocument(uri)
+        if (output.languageId !== undefined)
+          await vscode.languages.setTextDocumentLanguage(document, output.languageId)
+        await vscode.window.showTextDocument(document, { preview: true, preserveFocus: true })
+        return result
+      }
       void vscode.window.showInformationMessage(
         `${title}: ${localizer.text('vscode.command.completedOutput', {
           subject:

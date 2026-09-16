@@ -24,6 +24,7 @@ const FILES = [
 const INPUTS: Record<string, unknown> = {
   'entity-cards': { namespace: 'Abil', entityId: 'ReviveSelf' },
   'resolve-inheritance': { namespace: 'Abil', id: 'ReviveSelf' },
+  'resolved-view': { namespace: 'Abil', id: 'ReviveSelf' },
   references: { namespace: 'Abil', id: 'ReviveSelf' },
   translate: { key: 'Abil/Name/Beacon', sourceLanguage: 'en', targetLanguage: 'ru' },
   'render-markup': { key: 'Abil/Name/Beacon' },
@@ -170,6 +171,7 @@ describe('MK2 operation audit', () => {
       expect.arrayContaining([
         'blizzard/sc2-data.entity-cards',
         'blizzard/sc2-data.resolve-inheritance',
+        'blizzard/sc2-data.resolved-view',
         'blizzard/sc2-data.references',
         'asset.validate',
         'edit.field',
