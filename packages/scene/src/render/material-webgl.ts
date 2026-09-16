@@ -1,6 +1,11 @@
 import { applyWebGlDepthBias } from './depth-bias.js'
 import type { SceneRendererCamera, SceneRendererDirectionalLight } from '@modkit/sdk/renderer'
-import { createWebGlMaterialProgram, type WebGlMaterialProgram } from '../materials/webgl.js'
+import {
+  createWebGlMaterialProgram,
+  linkWebGlMaterialProgramsInParallel,
+  uniformLocation,
+  type WebGlMaterialProgram,
+} from '../materials/webgl.js'
 import type { StandardMaterialProgram } from '../materials/index.js'
 import { materialGeometry, sceneMaterialVertexSource } from './material-geometry.js'
 import { materialIsSolid, type MaterialDraw } from './material-draws.js'
@@ -19,6 +24,10 @@ export function materialWebGlDraws(
   options: Readonly<{ mipmaps?: boolean; checkEachDraw?: boolean }> = {},
 ) {
   const programs = new Map<StandardMaterialProgram, WebGlMaterialProgram>()
+  // Leases hold per-material uniforms and samplers; linked GL programs are shared by shader source.
+  const linked = new Map<string, WebGLProgram>()
+  const pendingPrograms = new Set<WebGLProgram>()
+  const usedPrograms = new Set<StandardMaterialProgram>()
   let programCompilations = 0
   // Primitive arrays are immutable for the lifetime of a draw plan; keep their GPU copies across
   // frames instead of re-uploading every attribute on every draw. `sweep()` drops arrays a frame
@@ -38,13 +47,34 @@ export function materialWebGlDraws(
   }
   return {
     programCompilations: () => programCompilations,
+    /** Link every program these draws still need in one parallel batch, before any of them draws. */
+    warm(draws: Iterable<MaterialDraw>): number {
+      const sources = new Map<string, Readonly<{ vertexSource: string; fragmentSource: string }>>()
+      for (const draw of draws) {
+        if (draw.program === undefined || draw.material === undefined) continue
+        if (programs.has(draw.program)) continue
+        const shaders = leaseShaderSources(draw.program, draw.material)
+        sources.set(`${shaders.vertexSource}\n//\n${shaders.fragmentSource}`, shaders)
+      }
+      return linkWebGlMaterialProgramsInParallel(gl, sources.values(), linked, pendingPrograms)
+    },
     release() {
       for (const lease of programs.values()) lease.release()
       programs.clear()
+      for (const program of linked.values()) gl.deleteProgram(program)
+      linked.clear()
+      pendingPrograms.clear()
       for (const entry of retained.values()) gl.deleteBuffer(entry.buffer)
       retained.clear()
     },
     sweep() {
+      // Per-frame materials (effects, playback-time uniforms) must not accumulate leases.
+      for (const [source, lease] of programs)
+        if (!usedPrograms.has(source)) {
+          lease.release()
+          programs.delete(source)
+        }
+      usedPrograms.clear()
       for (const [data, entry] of retained) {
         if (entry.used) entry.used = false
         else {
@@ -79,61 +109,22 @@ export function materialWebGlDraws(
               ? gl.TRIANGLE_FAN
               : undefined
       if (mode === undefined) return 0
+      usedPrograms.add(source)
       let lease = programs.get(source)
       if (lease === undefined) {
-        const bound = new Map<string, WebGLTexture>(),
-          filters = new Map<string, 'nearest' | 'linear'>()
+        const bound = new Map<string, WebGLTexture>()
         for (const [resource, texture] of material.textures) {
           const handle = textures.get(texture.id)
           if (handle === undefined) throw new TypeError(`GPU material texture missing: ${resource}`)
           bound.set(resource, handle)
-          filters.set(resource, texture.filter ?? 'linear')
         }
-        // Opaque passes replace the target but the public framebuffer still stores premultiplied RGB.
-        let fragment = source.fragmentSource
-        const samplers: string[] = []
-        const declarations: string[] = []
-        for (const binding of source.textures)
-          if (filters.get(binding.resourceId) === 'nearest') {
-            const name = `sceneSample_${binding.slot}`
-            const cube = binding.dimension === 'cube'
-            declarations.push(`vec4 ${name}(${cube ? 'vec3 direction' : 'vec2 uv'});`)
-            fragment = fragment.replaceAll(`texture(${binding.uniform},`, `${name}(`)
-            if (cube) samplers.push(cubeNearestSamplerSource(name, binding.uniform))
-            else
-              samplers.push(`vec4 ${name}(vec2 uv){
-            ivec2 size=textureSize(${binding.uniform},0);
-            vec2 addressed=vec2(${binding.wrapU === 'clamp' ? 'clamp(uv.x,0.0,1.0)' : 'fract(uv.x)'},${binding.wrapV === 'clamp' ? 'clamp(uv.y,0.0,1.0)' : 'fract(uv.y)'});
-            ivec2 pixel=clamp(ivec2(floor(addressed*vec2(size))),ivec2(0),size-1);
-            return texelFetch(${binding.uniform},pixel,0);
-          }`)
-          }
-        fragment = fragment.replace(/void main\s*\(\s*\)/, `${samplers.join('\n')}\nvoid main()`)
-        fragment = fragment.replace(
-          'precision highp float;',
-          `precision highp float;\n${declarations.join('\n')}`,
-        )
-        const fragmentSource =
-          fragment.replace(/void main\s*\(\s*\)/, 'void materialMain()') +
-          '\nuniform vec4 u_instanceTint;\nvoid main(){materialMain();materialColor*=u_instanceTint;' +
-          (materialIsSolid(source)
-            ? 'materialColor=clamp(materialColor,0.0,1.0);materialColor.rgb*=materialColor.a;'
-            : '') +
-          '}\n'
-        lease = createWebGlMaterialProgram(
-          gl,
-          {
-            ...source,
-            vertexSource: sceneMaterialVertexSource(
-              source.defines,
-              environmentEnabled,
-              worldShading,
-            ),
-            fragmentSource,
-          },
-          bound,
-          { filters, ...(options.mipmaps === true ? { mipmaps: true } : {}) },
-        )
+        const { vertexSource, fragmentSource, filters } = leaseShaderSources(source, material)
+        lease = createWebGlMaterialProgram(gl, { ...source, vertexSource, fragmentSource }, bound, {
+          filters,
+          programCache: linked,
+          pendingPrograms,
+          ...(options.mipmaps === true ? { mipmaps: true } : {}),
+        })
         programCompilations += 1
         programs.set(source, lease)
       }
@@ -143,7 +134,7 @@ export function materialWebGlDraws(
       try {
         lease.bind()
         gl.uniform4fv(
-          gl.getUniformLocation(lease.program, 'u_instanceTint'),
+          uniformLocation(gl, lease.program, 'u_instanceTint'),
           primitiveTint(primitive) as number[],
         )
         const program = lease.program,
@@ -192,7 +183,7 @@ export function materialWebGlDraws(
             2,
             [0, 0],
           )
-        const uniform = (name: string) => gl.getUniformLocation(program, name)
+        const uniform = (name: string) => uniformLocation(gl, program, name)
         gl.uniformMatrix4fv(uniform('u_model'), false, geometry.model)
         gl.uniformMatrix4fv(uniform('u_modelView'), false, geometry.modelView)
         gl.uniformMatrix4fv(uniform('u_materialWorld'), false, geometry.materialWorld)
@@ -206,7 +197,10 @@ export function materialWebGlDraws(
           const color = light?.color ?? [1, 1, 1, 1]
           const ambient = light?.ambient ?? 0.25
           gl.uniform3f(uniform('u_sceneLightColor'), color[0], color[1], color[2])
-          gl.uniform3fv(uniform('u_sceneAmbientColor'), light?.ambientColor ?? [ambient, ambient, ambient])
+          gl.uniform3fv(
+            uniform('u_sceneAmbientColor'),
+            light?.ambientColor ?? [ambient, ambient, ambient],
+          )
         }
         if (environmentEnabled || worldShading) {
           if (
@@ -294,3 +288,51 @@ export function materialWebGlDraws(
   }
 }
 import { primitiveTint } from './tint.js'
+
+/** Final GPU shader sources of a material lease: nearest-filtered samplers and the instance tint. */
+function leaseShaderSources(
+  source: StandardMaterialProgram,
+  material: NonNullable<MaterialDraw['material']>,
+) {
+  const filters = new Map<string, 'nearest' | 'linear'>()
+  for (const [resource, texture] of material.textures)
+    filters.set(resource, texture.filter ?? 'linear')
+  // Opaque passes replace the target but the public framebuffer still stores premultiplied RGB.
+  let fragment = source.fragmentSource
+  const samplers: string[] = []
+  const declarations: string[] = []
+  for (const binding of source.textures)
+    if (filters.get(binding.resourceId) === 'nearest') {
+      const name = `sceneSample_${binding.slot}`
+      const cube = binding.dimension === 'cube'
+      declarations.push(`vec4 ${name}(${cube ? 'vec3 direction' : 'vec2 uv'});`)
+      fragment = fragment.replaceAll(`texture(${binding.uniform},`, `${name}(`)
+      if (cube) samplers.push(cubeNearestSamplerSource(name, binding.uniform))
+      else
+        samplers.push(`vec4 ${name}(vec2 uv){
+            ivec2 size=textureSize(${binding.uniform},0);
+            vec2 addressed=vec2(${binding.wrapU === 'clamp' ? 'clamp(uv.x,0.0,1.0)' : 'fract(uv.x)'},${binding.wrapV === 'clamp' ? 'clamp(uv.y,0.0,1.0)' : 'fract(uv.y)'});
+            ivec2 pixel=clamp(ivec2(floor(addressed*vec2(size))),ivec2(0),size-1);
+            return texelFetch(${binding.uniform},pixel,0);
+          }`)
+    }
+  fragment = fragment.replace(/void main\s*\(\s*\)/, `${samplers.join('\n')}\nvoid main()`)
+  fragment = fragment.replace(
+    'precision highp float;',
+    `precision highp float;\n${declarations.join('\n')}`,
+  )
+  const fragmentSource =
+    fragment.replace(/void main\s*\(\s*\)/, 'void materialMain()') +
+    '\nuniform vec4 u_instanceTint;\nvoid main(){materialMain();materialColor*=u_instanceTint;' +
+    (materialIsSolid(source)
+      ? 'materialColor=clamp(materialColor,0.0,1.0);materialColor.rgb*=materialColor.a;'
+      : '') +
+    '}\n'
+  const worldShading = source.normalBlendPolicy !== undefined || source.normalMapSpace === 'object'
+  const vertexSource = sceneMaterialVertexSource(
+    source.defines,
+    source.environment !== undefined,
+    worldShading,
+  )
+  return { vertexSource, fragmentSource, filters }
+}

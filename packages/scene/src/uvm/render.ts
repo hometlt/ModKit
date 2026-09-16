@@ -54,7 +54,7 @@ export interface UvmRenderOptions {
 
 /** Read a UVM frame, then invoke the selected standard scene renderer. The request is inert JSON:
  * {schemaVersion:1, viewport:{width,height}, camera:{viewProjection:[16 numbers],viewMatrix?,eyePosition?},
- *  sceneIndex?, modelState?, clipId?, time?, poseSamples?:[{clipId,time,weight,additive?}], materialContext?:{teamColor?,ambient?,environment?}, collisions?, shadows?, clearColor?, rendererId?}.
+ *  sceneIndex?, modelState?, clipId?, time?, poseSamples?:[{clipId,time,weight,additive?}], materialContext?:{teamColor?,teamColorIntensity?,ambient?,environment?}, collisions?, shadows?, clearColor?, rendererId?}.
  * Native extras are never interpreted here. Unsupported material/effect rendering is reported.
  */
 export interface PreparedUvmRender {
@@ -127,11 +127,16 @@ async function prepareUvmRender(
   const materialInput = object(input['materialContext'] ?? {}, 'material context')
   const environment = snapshotEnvironment(materialInput['environment'])
   if (
-    Object.keys(materialInput).some(key => !['teamColor', 'ambient', 'environment'].includes(key))
+    Object.keys(materialInput).some(
+      key => !['teamColor', 'teamColorIntensity', 'ambient', 'environment'].includes(key),
+    )
   )
     throw new TypeError('invalid material context field')
   const team = materialInput['teamColor'],
+    teamIntensity = materialInput['teamColorIntensity'],
     ambient = materialInput['ambient']
+  if (teamIntensity !== undefined && teamIntensity !== 0 && teamIntensity !== 1)
+    throw new TypeError('team color intensity must be 0 or 1')
   if (team !== undefined && (!finiteArray(team, 3) || team.some(value => value < 0 || value > 1)))
     throw new TypeError('team color must contain three components in 0..1')
   if (
@@ -320,11 +325,16 @@ async function prepareUvmRender(
     (typeof sequence !== 'number' || !Number.isSafeInteger(sequence) || sequence < 0)
   )
     throw new TypeError('invalid material source sequence index')
+  // Preview lighting: ambient lights the diffuse color on every face (scene lighting), plus a key
+  // light from above and behind the viewer. The viewer-headlight model with 0.02 ambient left every
+  // face turned from the light black.
   const materialContext: SceneRendererMaterialContext = {
+    sceneLighting: true,
     time,
     sequenceTime: time,
     ...(sequence === undefined ? {} : { sequenceIndex: sequence }),
     ...(team === undefined ? {} : { teamColor: [team[0] ?? 0, team[1] ?? 0, team[2] ?? 0] }),
+    ...(teamIntensity === undefined ? {} : { teamColorIntensity: teamIntensity }),
     ...(ambient === undefined ? {} : { ambient: vector4(ambient) }),
     ...(environment === undefined ? {} : { environment }),
   }
@@ -751,6 +761,7 @@ async function prepareUvmRender(
     },
     scene: {
       ...(sceneLights ?? {}),
+      light: previewKeyLight(viewMatrix),
       primitives,
       materials: materials
         .filter(material => activeMaterials.has(material.id))
@@ -819,6 +830,23 @@ async function prepareUvmRender(
     },
     diagnostics: [...diagnostics, ...modelStateNested.diagnostics, ...nested.diagnostics],
     ...(rendererId === undefined ? {} : { rendererId }),
+  }
+}
+
+/** Surface-to-light key light: upper left, toward the viewer; world +Y up without a view matrix. */
+function previewKeyLight(viewMatrix: ArrayLike<number> | undefined) {
+  const local = [-0.35, 0.75, 0.55]
+  const direction =
+    viewMatrix === undefined
+      ? [0.35, 0.85, 0.4]
+      : // Inverse of the view rotation is its transpose (column-major rows become columns).
+        [0, 1, 2].map(axis =>
+          local.reduce((sum, value, row) => sum + value * (viewMatrix[axis * 4 + row] ?? 0), 0),
+        )
+  return {
+    direction: direction as [number, number, number],
+    ambient: 0.55,
+    color: [0.8, 0.8, 0.8, 1] as [number, number, number, number],
   }
 }
 

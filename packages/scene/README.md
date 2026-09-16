@@ -317,6 +317,11 @@ at repeat boundaries; linear filtering remains native. Material programs default
 providers. Game resources are acquired once per logical id through the ordinary subject raster port,
 including across workers; scene has no native texture loader or filesystem authority.
 
+`renderModel.presentation` is `surface` (default), `screen-distortion` or `terrain-projection`.
+The latter two have no color of their own (a heat-haze refraction, the terrain shown on the geometry);
+renderers without that pass draw nothing for them and acquire none of their textures, instead of
+approximating them as opaque surfaces.
+
 `renderModel.worldToMaterial` is an optional finite, invertible, affine column-major matrix.
 It projects world positions and inverse-transpose world normals into the material's source frame
 for generated world UVs. It does not move geometry or change lighting/camera coordinates.

@@ -243,4 +243,45 @@ test('particles and ribbons select common simple-effect state independently of n
     projectorMaterial(base, 'unchanged-projector', 0.5, 10000, 1048576).baseColor,
     [1, 1, 1, 0.5],
   )
+
+  // A program that samples the emitter texture keeps its full shading (alpha masks included):
+  // two-sided, and the per-sprite lifecycle color becomes the primitive tint.
+  const diffuse = {
+    slot: 'diffuse',
+    texturePath: 'particle.dds',
+    uvSource: 0,
+    channels: 0,
+    op: 2,
+    teamColorMode: 0,
+    invert: false,
+    clampResult: true,
+    wrapX: true,
+    wrapY: true,
+  }
+  const textured = {
+    ...base,
+    shader: {
+      ...base.shader,
+      parameters: {
+        renderModel: {
+          version: 1,
+          standard: { ...standard, twoSided: false, layers: { diffuse } },
+        },
+      },
+    },
+  }
+  const full = createUvmEffectFrame(document, {
+    time: 0.5,
+    viewMatrix: identity,
+    materials: [textured],
+    activeNodes: new Set(['node-0']),
+    nodeTransformsAt: () => new Map([['node-0', identity]]),
+    maxBytes: 8 * 1024 * 1024,
+    maxNodes: 10000,
+  })
+  const sprite = full.primitives.find(primitive => primitive.id.includes('particle'))
+  const program = full.materials.find(value => value.id === sprite.materialId)
+  assert.equal(program.simpleEffect, undefined)
+  assert.equal(program.shader.parameters.renderModel.standard.twoSided, true)
+  assert.deepEqual(sprite.tint, [0.5, 0.25, 1, 0.5])
 })

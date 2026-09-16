@@ -10,6 +10,7 @@ import type { JsonObject, SceneRendererCamera } from '@modkit/sdk'
 import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
 import { array, field, object, safeIndex } from './values.js'
 import { sampleUvmSceneProperties } from './scene-properties.js'
+import { snapshotEyePosition } from '../materials/environment.js'
 
 type Vec3 = readonly [number, number, number]
 function numbers(value: unknown, count: number, label: string): number[] {
@@ -124,10 +125,8 @@ export function resolveUvmCamera(
       request['viewMatrix'] === undefined
         ? undefined
         : Float32Array.from(numbers(request['viewMatrix'], 16, 'viewMatrix'))
-    const eye =
-      request['eyePosition'] === undefined
-        ? undefined
-        : numbers(request['eyePosition'], 3, 'eyePosition')
+    // Float32 overflow refuses here, before any raster acquisition.
+    const eye = snapshotEyePosition(request['eyePosition'])
     if (view !== undefined && (view[3] !== 0 || view[7] !== 0 || view[11] !== 0 || view[15] !== 1))
       throw new TypeError('camera viewMatrix must be affine')
     if (

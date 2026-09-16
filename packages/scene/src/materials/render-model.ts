@@ -47,9 +47,19 @@ function activeLayers(material: SceneStandardMaterial): StandardMaterialLayer[] 
   )
 }
 
+/**
+ * How a material contributes to the frame. `surface` (default) is an ordinary color pass.
+ * `screen-distortion` only refracts what is already drawn behind it (heat haze);
+ * `terrain-projection` shows the underlying terrain surface on the geometry. Neither has a color
+ * of its own, so a renderer without that pass draws nothing rather than an approximated surface.
+ */
+export type RenderMaterialPresentation = 'surface' | 'screen-distortion' | 'terrain-projection'
+const PRESENTATIONS: readonly string[] = ['surface', 'screen-distortion', 'terrain-projection']
+
 export interface RenderMaterialSampler {
   /** Stable, deduplicated logical resource ids, in authored pass/layer order. */
   readonly resources: readonly string[]
+  readonly presentation: RenderMaterialPresentation
   readonly worldToMaterial?: readonly number[]
   readonly usesWorldProjection: boolean
   sample(time: MaterialSampleTime, signal?: AbortSignal): readonly RenderMaterialPass[]
@@ -229,7 +239,8 @@ function validateStandard(value: unknown, path: string, signal?: AbortSignal) {
     material['normalMapSpace'] !== undefined &&
     material['normalMapSpace'] !== 'tangent' &&
     material['normalMapSpace'] !== 'object'
-  ) throw new TypeError(`${path}.normalMapSpace is unsupported`)
+  )
+    throw new TypeError(`${path}.normalMapSpace is unsupported`)
   if (material['normalMapTransform'] !== undefined)
     vector(material['normalMapTransform'], `${path}.normalMapTransform`, 9)
   if (material['normalMapSpace'] !== 'object' && material['normalMapTransform'] !== undefined)
@@ -241,7 +252,8 @@ function validateStandard(value: unknown, path: string, signal?: AbortSignal) {
       ['normalBlend1', 'normalBlend2', 'normalBlend1Mask', 'normalBlend2Mask'].some(
         slot => layers[slot] !== undefined,
       ))
-  ) throw new TypeError(`${path}.normalMapSpace object requires one primary normal layer`)
+  )
+    throw new TypeError(`${path}.normalMapSpace object requires one primary normal layer`)
   if (material['normalBlendPolicy'] !== undefined) {
     const policy = record(material['normalBlendPolicy'], `${path}.normalBlendPolicy`)
     if (
@@ -268,6 +280,12 @@ export function createRenderMaterialSampler(
   const params = record(snapshotJson(parameters, budget, signal), 'material params')
   const model = record(params['renderModel'], 'material params.renderModel')
   if (model['version'] !== 1) throw new TypeError('unsupported render material version')
+  const presentation = model['presentation'] ?? 'surface'
+  if (typeof presentation !== 'string' || !PRESENTATIONS.includes(presentation))
+    throw new TypeError('unsupported render material presentation')
+  // ponytail: no distortion or terrain-projection pass exists yet, so those materials sample to no
+  // color passes and acquire no textures; add the passes (and their resources) when a renderer draws them.
+  const colorless = presentation !== 'surface'
   const worldToMaterial =
     model['worldToMaterial'] === undefined ? undefined : materialFrame(model['worldToMaterial'])
   let priority: number | undefined
@@ -298,17 +316,22 @@ export function createRenderMaterialSampler(
       },
     ]
   }
-  const resources = Object.freeze([
-    ...new Set(
-      passes.flatMap(pass =>
-        activeLayers(pass.material).flatMap(layer =>
-          layer.texturePath === null ? [] : [layer.texturePath],
-        ),
-      ),
-    ),
-  ])
+  const resources = Object.freeze(
+    colorless
+      ? []
+      : [
+          ...new Set(
+            passes.flatMap(pass =>
+              activeLayers(pass.material).flatMap(layer =>
+                layer.texturePath === null ? [] : [layer.texturePath],
+              ),
+            ),
+          ),
+        ],
+  )
   return Object.freeze({
     resources,
+    presentation: presentation as RenderMaterialPresentation,
     ...(worldToMaterial === undefined ? {} : { worldToMaterial }),
     usesWorldProjection: passes.some(pass =>
       // Rebasing preserves authored coordinates even for a layer that may be enabled later.
@@ -327,6 +350,7 @@ export function createRenderMaterialSampler(
       if (time.sequenceIndex !== undefined)
         integer(time.sequenceIndex, 'material sequenceIndex', 0, 0xffffffff)
       sampleSignal?.throwIfAborted()
+      if (colorless) return Object.freeze([])
       return Object.freeze(
         passes.map((pass, index) => {
           sampleSignal?.throwIfAborted()

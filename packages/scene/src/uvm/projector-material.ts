@@ -4,6 +4,71 @@ import { createRenderMaterialSampler } from '../materials/render-model.js'
 import { object, array } from './values.js'
 import type { SimpleEffectState } from '../render/simple-effect.js'
 
+/**
+ * Material for camera-facing particles and ribbons. A render-material keeps its full program, as
+ * SC2's particle.fx shades sprites through PSMainShading: smoke opacity comes from the alpha1/alpha2
+ * masks, which the single-texture simple pass drops (hard square sprite edges). Sprites have no back
+ * side, so every pass is two-sided. Colorless presentations return undefined.
+ */
+export function effectSurfaceMaterial(
+  base: SceneRendererMaterial,
+  id: string,
+  maxNodes: number,
+  maxBytes: number,
+  texturePath?: string,
+  signal?: AbortSignal,
+): SceneRendererMaterial | undefined {
+  const simple = () => {
+    const material = projectorMaterial(base, id, 1, maxNodes, maxBytes, signal)
+    return (
+      material && {
+        ...material,
+        simpleEffect: {
+          ...material.simpleEffect,
+          doubleSided: true,
+          ...(texturePath === undefined ? {} : { textureResource: texturePath }),
+        },
+      }
+    )
+  }
+  if (base.shader?.id !== 'modkit.render-material.v1') return simple()
+  const sampler = createRenderMaterialSampler(
+    base.shader.parameters,
+    { maxNodes, maxDepth: 128, maxBytes },
+    signal,
+  )
+  if (sampler.presentation !== 'surface') return undefined
+  // An emitter texture the material program never samples keeps the single-texture pass.
+  if (texturePath !== undefined && !sampler.resources.includes(texturePath)) return simple()
+  const model = object(base.shader.parameters['renderModel'], 'render model')
+  const twoSided = (material: unknown) => ({ ...object(material, 'standard'), twoSided: true })
+  const renderModel = {
+    ...model,
+    ...(model['standard'] === undefined ? {} : { standard: twoSided(model['standard']) }),
+    ...(model['composite'] === undefined
+      ? {}
+      : {
+          composite: {
+            ...object(model['composite'], 'composite'),
+            passes: array(object(model['composite'], 'composite'), 'passes').map(pass => ({
+              ...object(pass, 'pass'),
+              material: twoSided(object(pass, 'pass')['material']),
+            })),
+          },
+        }),
+  }
+  const { simpleEffect, ...rest } = base as SceneRendererMaterial & {
+    simpleEffect?: unknown
+  }
+  void simpleEffect
+  return {
+    ...rest,
+    id,
+    doubleSided: true,
+    shader: { ...base.shader, parameters: { ...base.shader.parameters, renderModel } },
+  } as SceneRendererMaterial
+}
+
 /** Existing render-material vocabulary -> the simple live-effect pass. This is deliberately
  * independent of format: M3 already publishes the exact ordered legacy layer list here. */
 export function projectorMaterial(
@@ -13,7 +78,7 @@ export function projectorMaterial(
   maxNodes: number,
   maxBytes: number,
   signal?: AbortSignal,
-): SceneRendererMaterial & { readonly simpleEffect: SimpleEffectState } {
+): (SceneRendererMaterial & { readonly simpleEffect: SimpleEffectState }) | undefined {
   if (base.shader === undefined)
     return {
       ...base,
@@ -41,7 +106,14 @@ export function projectorMaterial(
     )
   // Own/validate before reading ordered layers; no animation is evaluated here. The pinned
   // live-effect renderer uses primary standard state and static legacy texture paths.
-  createRenderMaterialSampler(base.shader.parameters, { maxNodes, maxDepth: 128, maxBytes }, signal)
+  const sampler = createRenderMaterialSampler(
+    base.shader.parameters,
+    { maxNodes, maxDepth: 128, maxBytes },
+    signal,
+  )
+  // A distortion or terrain-projection effect has no color of its own; drawing its first layer
+  // (a normal map) as a textured sprite paints stripes. The caller skips the geometry.
+  if (sampler.presentation !== 'surface') return undefined
   const model = object(base.shader.parameters['renderModel'], 'render model')
   const standards =
     model['standard'] === undefined

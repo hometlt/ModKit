@@ -257,7 +257,14 @@ export function canonicalDefineKey(defines: StandardMaterialDefines): string {
 // ── Blend table (1.10) ────────────────────────────────────────────────────────
 
 export type StandardBlendName =
-  'opaque' | 'alpha-test' | 'blend' | 'premultiplied' | 'additive' | 'add-alpha' | 'modulate' | 'modulate2x'
+  | 'opaque'
+  | 'alpha-test'
+  | 'blend'
+  | 'premultiplied'
+  | 'additive'
+  | 'add-alpha'
+  | 'modulate'
+  | 'modulate2x'
 
 /**
  * MAT_.blend_mode → render-state name. Names match `WebGlBlendMode` in
@@ -450,6 +457,8 @@ export interface CpuPixelInput {
   /** Tangent-space half vector (reference convention: spec uses -dot(halfVec, normal)). */
   halfVec?: Vec3
   ambient?: Vec4
+  /** The `sceneLighting` define: color × (ambientColor + lightColor × lambert), no viewer ambient. */
+  sceneLighting?: { readonly ambientColor: Vec3; readonly lightColor: Vec3 }
   teamColor?: Vec3
   vertexColor?: Vec4
   usesVertexColor?: boolean
@@ -571,15 +580,14 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
       blendIndex === 1 ? 'normalBlend1Mask' : 'normalBlend2Mask'
     const detail = layers[detailSlot]
     if (!detail) continue
-    const mask = layers[maskSlot]
-      ? computeLayerColorCpu(layers[maskSlot]!, teamColor)
-      : ([1, 0, 0, 0] as const)
+    const maskLayer = layers[maskSlot]
+    const mask = maskLayer ? computeLayerColorCpu(maskLayer, teamColor) : ([1, 0, 0, 0] as const)
     const factorOffset = blendIndex === 1 ? 0 : 4
     const factor =
-      mask[0] * normalBlendFactors[factorOffset]! +
-      mask[1] * normalBlendFactors[factorOffset + 1]! +
-      mask[2] * normalBlendFactors[factorOffset + 2]! +
-      mask[3] * normalBlendFactors[factorOffset + 3]!
+      mask[0] * (normalBlendFactors[factorOffset] ?? 0) +
+      mask[1] * (normalBlendFactors[factorOffset + 1] ?? 0) +
+      mask[2] * (normalBlendFactors[factorOffset + 2] ?? 0) +
+      mask[3] * (normalBlendFactors[factorOffset + 3] ?? 0)
     normal = blendNormalCpu(
       normal,
       decodeNormalCpu(detail.texel, input.normalMapFormat ?? 'dxt5nm'),
@@ -705,11 +713,36 @@ export function composeStandardPixelCpu(input: CpuPixelInput): CpuPixelResult {
     return base
   }
 
-  let final: [number, number, number, number] = [ambient[0], ambient[1], ambient[2], ambient[3]]
+  const scene = input.sceneLighting
+  let final: [number, number, number, number] =
+    scene === undefined ? [ambient[0], ambient[1], ambient[2], ambient[3]] : [0, 0, 0, 0]
 
   if (input.unshaded) {
     // 0x10: skip lambert/spec entirely — color + emissive.
     const rgb = applyEmissive(applyEnvironment(color, 0, [0, 0, 0]))
+    final = [final[0] + rgb[0], final[1] + rgb[1], final[2] + rgb[2], final[3]]
+  } else if (scene !== undefined) {
+    // Mirrors the GLSL sceneLighting branch: ambient lights the diffuse color on every face.
+    const nl = dot3(normal, lightDir)
+    const lambert = input.doubleLambert ? clamp01(-1 + 2 * nl) : Math.max(nl, 0)
+    let spec: [number, number, number] = [0, 0, 0]
+    if (layers.specular && lambert > 0) {
+      const specColor = computeLayerColorCpu(layers.specular, teamColor)
+      const gloss = layers.gloss
+        ? Math.max(computeLayerColorCpu(layers.gloss, teamColor)[0], 0.001)
+        : 1
+      const factor =
+        Math.pow(Math.max(-dot3(halfVec, normal), 0), Math.max(input.specularity * gloss, 1)) *
+        input.specMult
+      spec =
+        input.specMode === 1
+          ? [specColor[3] * factor, specColor[3] * factor, specColor[3] * factor]
+          : [specColor[0] * factor, specColor[1] * factor, specColor[2] * factor]
+    }
+    const lit = (channel: 0 | 1 | 2) =>
+      color[channel] * (scene.ambientColor[channel] + scene.lightColor[channel] * lambert) +
+      spec[channel] * scene.lightColor[channel] * lambert
+    const rgb = applyEmissive(applyEnvironment([lit(0), lit(1), lit(2)], lambert, spec))
     final = [final[0] + rgb[0], final[1] + rgb[1], final[2] + rgb[2], final[3]]
   } else {
     const nl = dot3(normal, lightDir)

@@ -319,11 +319,8 @@ describe('Node game-installation map-preview resource resolver', () => {
     })) {
       logicalIds.push(entry.logicalId)
     }
-    expect(logicalIds).toEqual([
-      'multiplay/maps/demo/game.map',
-      'mp/multiplay/maps/demo/game.map',
-      'base/stats/templates.json',
-    ])
+    // An unqualified enumeration is the game-logical overlay (8de22be0); qualified ids still open.
+    expect(logicalIds).toEqual(['game.map', 'multiplay/maps/demo/game.map', 'stats/templates.json'])
     const source = await result.origin.open('base/stats/templates.json')
     if (source.value.kind !== 'bytes') throw new Error('template fixture did not open as bytes')
     expect(await source.value.read(0n, 16)).toEqual(new Uint8Array([4, 5]))

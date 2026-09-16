@@ -6,7 +6,7 @@ import {
 import { createUvmParticleGeometry, type UvmModelParticleDraw } from './effect-particles.js'
 import { createUvmRibbonGeometry } from './ribbon-geometry.js'
 import { bindUvmEffectLinks } from './effect-links.js'
-import { projectorMaterial } from './projector-material.js'
+import { effectSurfaceMaterial, projectorMaterial } from './projector-material.js'
 import { readEffectCollisionShapes } from './effect-collisions.js'
 import { readEffectProjectors } from './effect-projectors.js'
 import { captureCollisionSplats, type UvmCollisionSplat } from './collision-splats.js'
@@ -771,22 +771,49 @@ export function createUvmEffectFrame(document: JsonObject, options: UvmEffectFra
     const base = materialById.get(`material-${emitter.materialIndex}`)
     if (base === undefined) throw new TypeError('particle geometry material absent')
     const id = `uvm-effect-particle-${geometry.slot}`,
-      material = projectorMaterial(
+      material = effectSurfaceMaterial(
         base,
         id,
-        1,
         options.maxNodes - emitterCount - meshNodes - primitives.length,
         options.maxBytes - bytes,
+        emitter.texturePath,
         signal,
       ),
       uv = emitter.screenSpaceUv
-    const texturedMaterial =
-      emitter.texturePath === undefined
-        ? material
-        : {
-            ...material,
-            simpleEffect: { ...material.simpleEffect, textureResource: emitter.texturePath },
-          }
+    if (material === undefined) continue
+    const geometryPrimitive = {
+      id,
+      materialId: id,
+      topology: 'triangles' as const,
+      positions: geometry.positions,
+      indices: geometry.indices,
+      textureCoordinates: geometry.textureCoordinates,
+      colors: geometry.colors,
+      transform: Float32Array.from(toWorld),
+    }
+    if (material.simpleEffect === undefined) {
+      // Full material program: the sprite's lifecycle color and alpha are one per-sprite multiplier.
+      // ponytail: screen-space UV (screenSpaceUv) is only applied by the simple pass.
+      // ponytail: sprites carry one UV rectangle; mask layers authored on UV1-3 reuse it.
+      const c = geometry.colors
+      materials.push(material)
+      primitives.push({
+        ...geometryPrimitive,
+        textureCoordinateSets: [1, 2, 3].map(set => ({
+          set,
+          coordinates: geometry.textureCoordinates,
+        })),
+        tint: [c[0] ?? 1, c[1] ?? 1, c[2] ?? 1, c[3] ?? 1],
+      })
+      continue
+    }
+    const texturedMaterial = {
+      ...material,
+      simpleEffect: {
+        ...material.simpleEffect,
+        ...(emitter.texturePath === undefined ? {} : { textureResource: emitter.texturePath }),
+      },
+    }
     materials.push(
       uv === undefined
         ? texturedMaterial
@@ -803,16 +830,7 @@ export function createUvmEffectFrame(document: JsonObject, options: UvmEffectFra
             },
           },
     )
-    primitives.push({
-      id,
-      materialId: id,
-      topology: 'triangles',
-      positions: geometry.positions,
-      indices: geometry.indices,
-      textureCoordinates: geometry.textureCoordinates,
-      colors: geometry.colors,
-      transform: Float32Array.from(toWorld),
-    })
+    primitives.push(geometryPrimitive)
   }
   const ribbonGeometry = createUvmRibbonGeometry(simulation.ribbons, ribbons, {
     cameraPosition: cameraLocal,
@@ -839,14 +857,16 @@ export function createUvmEffectFrame(document: JsonObject, options: UvmEffectFra
       options.maxBytes - bytes,
       signal,
     )
-    materials.push(
-      emitter.texturePath === undefined
-        ? material
-        : {
-            ...material,
-            simpleEffect: { ...material.simpleEffect, textureResource: emitter.texturePath },
-          },
-    )
+    if (material === undefined) continue
+    // Ribbons are camera-facing strips too; see the particle note above.
+    materials.push({
+      ...material,
+      simpleEffect: {
+        ...material.simpleEffect,
+        doubleSided: true,
+        ...(emitter.texturePath === undefined ? {} : { textureResource: emitter.texturePath }),
+      },
+    })
     primitives.push({
       id,
       materialId: id,

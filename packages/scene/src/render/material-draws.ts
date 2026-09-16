@@ -27,7 +27,54 @@ type PreparedGeometry = Readonly<{
  * Validation, normal expansion and tangent generation depend only on the immutable source primitive
  * and the UV choice, so retained renderers reuse them across frames instead of repeating them per draw.
  */
-const preparedGeometry = new WeakMap<SceneRendererPrimitive, Map<number | undefined, PreparedGeometry>>()
+const preparedGeometry = new WeakMap<
+  ArrayBufferView,
+  Map<number | undefined, PreparedGeometry & { readonly source: SceneRendererPrimitive }>
+>()
+
+/** Placed instances of one model are distinct primitive objects over the same vertex arrays. */
+function sameGeometry(left: SceneRendererPrimitive, right: SceneRendererPrimitive) {
+  const sets = (primitive: SceneRendererPrimitive) => primitive.textureCoordinateSets ?? []
+  return (
+    left.topology === right.topology &&
+    left.positions === right.positions &&
+    left.indices === right.indices &&
+    left.normals === right.normals &&
+    left.tangents === right.tangents &&
+    left.colors === right.colors &&
+    left.textureCoordinates === right.textureCoordinates &&
+    sets(left).length === sets(right).length &&
+    sets(left).every(
+      (set, index) =>
+        set.set === sets(right)[index]?.set && set.coordinates === sets(right)[index]?.coordinates,
+    )
+  )
+}
+
+/** The cached vertex arrays with this instance's identity, transform, material and tint. */
+function rebindPrepared(
+  prepared: SceneRendererPrimitive,
+  cachedSource: SceneRendererPrimitive,
+  source: SceneRendererPrimitive,
+): SceneRendererPrimitive {
+  if (prepared === cachedSource) return source
+  const { indices, ...instance } = source
+  void indices
+  return {
+    ...instance,
+    topology: prepared.topology,
+    positions: prepared.positions,
+    ...(prepared.normals === undefined ? {} : { normals: prepared.normals }),
+    ...(prepared.tangents === undefined ? {} : { tangents: prepared.tangents }),
+    ...(prepared.colors === undefined ? {} : { colors: prepared.colors }),
+    ...(prepared.textureCoordinates === undefined
+      ? {}
+      : { textureCoordinates: prepared.textureCoordinates }),
+    ...(prepared.textureCoordinateSets === undefined
+      ? {}
+      : { textureCoordinateSets: prepared.textureCoordinateSets }),
+  }
+}
 
 function preparedMaterialGeometry(
   source: SceneRendererPrimitive,
@@ -35,10 +82,12 @@ function preparedMaterialGeometry(
   maxBytes: number,
   diagnostics: SceneRendererDiagnostic[],
 ): PreparedGeometry {
-  const cached = preparedGeometry.get(source)?.get(texCoord)
-  if (cached !== undefined && cached.bytes <= maxBytes) {
+  // Keyed by vertex arrays, not the primitive object: a map places the same model thousands of
+  // times, and per-instance tangent generation and GPU uploads made the first frame take minutes.
+  const cached = preparedGeometry.get(source.positions)?.get(texCoord)
+  if (cached !== undefined && cached.bytes <= maxBytes && sameGeometry(cached.source, source)) {
     diagnostics.push(...cached.diagnostics)
-    return cached
+    return { ...cached, primitive: rebindPrepared(cached.primitive, cached.source, source) }
   }
   const emitted: SceneRendererDiagnostic[] = []
   const primitive = prepareMaterialGeometry(source, maxBytes, {
@@ -62,9 +111,11 @@ function preparedMaterialGeometry(
         bytes += buffer.byteLength
       }
   const result = Object.freeze({ primitive, bytes, diagnostics: Object.freeze(emitted) })
-  const choices = preparedGeometry.get(source) ?? new Map<number | undefined, PreparedGeometry>()
-  choices.set(texCoord, result)
-  preparedGeometry.set(source, choices)
+  const choices =
+    preparedGeometry.get(source.positions) ??
+    new Map<number | undefined, PreparedGeometry & { readonly source: SceneRendererPrimitive }>()
+  choices.set(texCoord, Object.freeze({ ...result, source }))
+  preparedGeometry.set(source.positions, choices)
   return result
 }
 
@@ -217,15 +268,15 @@ export function blendMaterialPixel(
         ? source * a + dest * (1 - a)
         : mode === 'premultiplied'
           ? source + dest * (1 - a)
-        : mode === 'additive'
-          ? source + dest
-          : mode === 'add-alpha'
-            ? source * a + dest
-            : mode === 'modulate'
-              ? source * dest
-              : mode === 'modulate2x'
-                ? 2 * source * dest
-                : source * a
+          : mode === 'additive'
+            ? source + dest
+            : mode === 'add-alpha'
+              ? source * a + dest
+              : mode === 'modulate'
+                ? source * dest
+                : mode === 'modulate2x'
+                  ? 2 * source * dest
+                  : source * a
     frame[offset + channel] = Math.round(clamp(value) * 255)
   }
   if (materialIsSolid(program)) frame[offset + 3] = Math.round(a * 255)

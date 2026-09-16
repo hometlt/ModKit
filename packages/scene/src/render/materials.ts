@@ -163,6 +163,9 @@ export function prepareSceneMaterialPrograms(
           ...(context?.teamColor === undefined ? {} : { teamColor: context.teamColor }),
           ...(context?.ambient === undefined ? {} : { ambient: context.ambient }),
           ...(context?.sceneLighting === true ? { sceneLighting: true } : {}),
+          ...(context?.teamColorIntensity === undefined
+            ? {}
+            : { teamColorIntensity: context.teamColorIntensity }),
         },
         signal,
       )

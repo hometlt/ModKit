@@ -22,6 +22,54 @@ function shader(gl: WebGL2RenderingContext, type: number, source: string): WebGL
   return result
 }
 
+/**
+ * Compile and link programs without querying their status. Status queries block until the driver
+ * finishes, so issuing every link first lets ANGLE compile them in parallel; each program's status
+ * is checked when `createWebGlMaterialProgram` first leases it.
+ */
+export function linkWebGlMaterialProgramsInParallel(
+  gl: WebGL2RenderingContext,
+  sources: Iterable<Readonly<{ vertexSource: string; fragmentSource: string }>>,
+  programCache: Map<string, WebGLProgram>,
+  pendingPrograms: Set<WebGLProgram>,
+): number {
+  let linked = 0
+  for (const source of sources) {
+    const cacheKey = `${source.vertexSource}\u0000${source.fragmentSource}`
+    if (programCache.has(cacheKey)) continue
+    const program = gl.createProgram()
+    if (program === null) throw new TypeError('could not allocate a material program')
+    for (const [type, text] of [
+      [gl.VERTEX_SHADER, source.vertexSource],
+      [gl.FRAGMENT_SHADER, source.fragmentSource],
+    ] as const) {
+      const item = gl.createShader(type)
+      if (item === null) throw new TypeError('could not allocate a material shader')
+      gl.shaderSource(item, text)
+      gl.compileShader(item)
+      gl.attachShader(program, item)
+      // Flagged for deletion; the program keeps the shader alive until it is deleted.
+      gl.deleteShader(item)
+    }
+    gl.linkProgram(program)
+    programCache.set(cacheKey, program)
+    pendingPrograms.add(program)
+    linked += 1
+  }
+  return linked
+}
+
+const textureUnitLimits = new WeakMap<WebGL2RenderingContext, number>()
+const uniformLocations = new WeakMap<WebGLProgram, Map<string, WebGLUniformLocation | null>>()
+
+/** Cached getUniformLocation; locations never change for a linked program. */
+export function uniformLocation(gl: WebGL2RenderingContext, program: WebGLProgram, name: string) {
+  let locations = uniformLocations.get(program)
+  if (locations === undefined) uniformLocations.set(program, (locations = new Map()))
+  if (!locations.has(name)) locations.set(name, gl.getUniformLocation(program, name))
+  return locations.get(name) ?? null
+}
+
 /** Bind generated material programs to WebGL2, without native texture decoding or scene ownership. */
 export function createWebGlMaterialProgram(
   gl: WebGL2RenderingContext,
@@ -32,11 +80,23 @@ export function createWebGlMaterialProgram(
     readonly filters?: ReadonlyMap<string, 'nearest' | 'linear'>
     /** Linear textures carry a full mip chain; sample it with trilinear + anisotropic filtering. */
     readonly mipmaps?: boolean
+    /**
+     * Linked programs by shader source, owned (and deleted) by the caller. Programs regenerated for
+     * a new playback time differ only in uniforms; relinking them per frame dominated animated scenes.
+     */
+    readonly programCache?: Map<string, WebGLProgram>
+    /** Cached programs linked by `linkWebGlMaterialProgramsInParallel` whose status is still unchecked. */
+    readonly pendingPrograms?: Set<WebGLProgram>
   } = {},
 ): WebGlMaterialProgram {
   if (options.filter !== undefined && options.filter !== 'nearest' && options.filter !== 'linear')
     throw new TypeError('material texture filter must be nearest or linear')
-  const available: unknown = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS)
+  // getParameter and getUniformLocation synchronize with the GPU process; query once per context/program.
+  let available: unknown = textureUnitLimits.get(gl)
+  if (available === undefined) {
+    available = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS)
+    if (typeof available === 'number') textureUnitLimits.set(gl, available)
+  }
   if (typeof available !== 'number' || source.textures.length > available)
     throw new RangeError(
       `material needs ${source.textures.length} texture samplers; WebGL offers ${String(available)}`,
@@ -50,7 +110,9 @@ export function createWebGlMaterialProgram(
       throw new TypeError('material texture filter must be nearest or linear')
     return { binding, texture, filter }
   })
-  const program = gl.createProgram()
+  const cacheKey = `${source.vertexSource}\u0000${source.fragmentSource}`
+  const cached = options.programCache?.get(cacheKey)
+  const program = cached ?? gl.createProgram()
   if (program === null) throw new TypeError('could not allocate a material program')
   const shaders: WebGLShader[] = [],
     samplers: WebGLSampler[] = []
@@ -59,19 +121,32 @@ export function createWebGlMaterialProgram(
     if (!live) return
     live = false
     for (const sampler of samplers) gl.deleteSampler(sampler)
-    gl.deleteProgram(program)
+    if (options.programCache === undefined) gl.deleteProgram(program)
   }
   try {
-    shaders.push(shader(gl, gl.VERTEX_SHADER, source.vertexSource))
-    shaders.push(shader(gl, gl.FRAGMENT_SHADER, source.fragmentSource))
-    for (const item of shaders) gl.attachShader(program, item)
-    gl.linkProgram(program)
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS))
-      throw new TypeError(
-        `material shader link failed: ${gl.getProgramInfoLog(program) ?? 'unknown link error'}`,
-      )
+    if (cached !== undefined && options.pendingPrograms?.has(cached)) {
+      options.pendingPrograms.delete(cached)
+      if (!gl.getProgramParameter(cached, gl.LINK_STATUS)) {
+        const message = gl.getProgramInfoLog(cached) ?? 'unknown link error'
+        options.programCache?.delete(cacheKey)
+        gl.deleteProgram(cached)
+        throw new TypeError(`material shader link failed: ${message}`)
+      }
+    }
+    if (cached === undefined) {
+      shaders.push(shader(gl, gl.VERTEX_SHADER, source.vertexSource))
+      shaders.push(shader(gl, gl.FRAGMENT_SHADER, source.fragmentSource))
+      for (const item of shaders) gl.attachShader(program, item)
+      gl.linkProgram(program)
+      if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        const message = gl.getProgramInfoLog(program) ?? 'unknown link error'
+        gl.deleteProgram(program)
+        throw new TypeError(`material shader link failed: ${message}`)
+      }
+      options.programCache?.set(cacheKey, program)
+    }
     const values = Object.entries(source.uniforms).map(([name, value]) => ({
-      location: gl.getUniformLocation(program, name),
+      location: uniformLocation(gl, program, name),
       value: typeof value === 'number' ? value : Float32Array.from(value),
     }))
     const maps = bindings.map(({ binding, texture, filter: filterMode }) => {
@@ -106,7 +181,7 @@ export function createWebGlMaterialProgram(
         texture,
         sampler,
         target: cube ? gl.TEXTURE_CUBE_MAP : gl.TEXTURE_2D,
-        location: gl.getUniformLocation(program, binding.uniform),
+        location: uniformLocation(gl, program, binding.uniform),
       }
     })
     return Object.freeze({

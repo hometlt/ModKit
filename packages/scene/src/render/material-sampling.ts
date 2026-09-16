@@ -185,6 +185,7 @@ export function shadeMaterial(
   program: StandardMaterialProgram,
   textures: ReadonlyMap<string, SceneRendererTexture>,
   vertex: MaterialVertex,
+  sceneLighting?: { readonly ambientColor: Vec3; readonly lightColor: Vec3 },
 ) {
   const texels: Partial<Record<StandardLayerSlot, Vec4>> = {}
   let worldNormal: Vec3 | undefined
@@ -241,11 +242,12 @@ export function shadeMaterial(
     if (program.normalMapSpace === 'object') {
       const matrix = frame.objectNormalMatrix
       worldNormal = program.sampleNormal(pixel, {
-        tangent: [matrix[0]!, matrix[1]!, matrix[2]!],
-        bitangent: [matrix[3]!, matrix[4]!, matrix[5]!],
-        normal: [matrix[6]!, matrix[7]!, matrix[8]!],
+        tangent: [matrix[0] ?? 0, matrix[1] ?? 0, matrix[2] ?? 0],
+        bitangent: [matrix[3] ?? 0, matrix[4] ?? 0, matrix[5] ?? 0],
+        normal: [matrix[6] ?? 0, matrix[7] ?? 0, matrix[8] ?? 0],
       })
-    } else if (program.normalBlendPolicy !== undefined) worldNormal = program.sampleNormal(pixel, frame)
+    } else if (program.normalBlendPolicy !== undefined)
+      worldNormal = program.sampleNormal(pixel, frame)
     else {
       const n = program.sampleNormal(pixel)
       worldNormal = unit([
@@ -283,7 +285,8 @@ export function shadeMaterial(
   return program.shade({
     texels,
     normal: [0, 0, 1],
-    ...(program.normalBlendPolicy === undefined && program.normalMapSpace !== 'object' || worldNormal === undefined
+    ...((program.normalBlendPolicy === undefined && program.normalMapSpace !== 'object') ||
+    worldNormal === undefined
       ? {}
       : { shadingNormal: worldNormal }),
     lightDirection,
@@ -291,6 +294,7 @@ export function shadeMaterial(
     viewNormal: vertex.viewNormal,
     eyeToVertex: vertex.viewPosition,
     vertexColor: vertex.color,
+    ...(sceneLighting === undefined ? {} : { sceneLighting }),
   })
 }
 

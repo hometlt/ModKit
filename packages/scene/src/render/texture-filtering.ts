@@ -1,13 +1,31 @@
 /** Linear textures get a full mip chain plus anisotropy; without them minified terrain and props alias. */
 const MAX_ANISOTROPY = 8
 
+// getParameter synchronizes with the GPU process; it was called per texture and per sampler.
+const anisotropyByContext = new WeakMap<
+  WebGL2RenderingContext,
+  Readonly<{ parameter: number; value: number }> | null
+>()
+
 export function textureAnisotropy(
   gl: WebGL2RenderingContext,
 ): Readonly<{ parameter: number; value: number }> | undefined {
-  const extension = gl.getExtension('EXT_texture_filter_anisotropic')
-  if (extension === null) return undefined
-  const limit = Number(gl.getParameter(extension.MAX_TEXTURE_MAX_ANISOTROPY_EXT))
-  return { parameter: extension.TEXTURE_MAX_ANISOTROPY_EXT, value: Math.min(MAX_ANISOTROPY, limit) }
+  let cached = anisotropyByContext.get(gl)
+  if (cached === undefined) {
+    const extension = gl.getExtension('EXT_texture_filter_anisotropic')
+    cached =
+      extension === null
+        ? null
+        : Object.freeze({
+            parameter: extension.TEXTURE_MAX_ANISOTROPY_EXT,
+            value: Math.min(
+              MAX_ANISOTROPY,
+              Number(gl.getParameter(extension.MAX_TEXTURE_MAX_ANISOTROPY_EXT)),
+            ),
+          })
+    anisotropyByContext.set(gl, cached)
+  }
+  return cached ?? undefined
 }
 
 /** Call after the base level is uploaded and bound to `target`. */

@@ -1,6 +1,10 @@
 import type { JsonSnapshotBudget } from '@modkit/codec-kit/json-snapshot'
 import type { SceneRendererEnvironment } from '@modkit/sdk/renderer'
-import type { StandardLayerSlot, NormalMapFormat } from '@modkit/codec-kit/legacy/models/material'
+import type {
+  StandardLayerSlot,
+  StandardMaterialModel,
+  NormalMapFormat,
+} from '@modkit/codec-kit/legacy/models/material'
 import {
   buildMaterialDefines,
   buildStandardFragmentSource,
@@ -58,6 +62,25 @@ export interface MaterialFrameOptions extends MaterialLighting {
   readonly textureDimensions?: ReadonlyMap<string, '2d' | 'cube'>
   readonly environment?: SceneRendererEnvironment
   readonly sceneLighting?: boolean
+  /**
+   * Exponent on the texel alpha of diffuse team-color layers (`lerp(team, texel, a^intensity)`),
+   * default 1. 0 means the object carries no team color: those layers keep the texel color.
+   */
+  readonly teamColorIntensity?: number
+}
+
+/** `a^0 = 1`: a diffuse team-color layer resolves to its texel RGB with alpha 1. */
+function withoutDiffuseTeamColor(material: SceneStandardMaterial): SceneStandardMaterial {
+  if (!Object.values(material.layers).some(layer => layer.teamColorMode === 1)) return material
+  const layers: StandardMaterialModel['layers'] = {}
+  for (const [slot, layer] of Object.entries(material.layers))
+    layers[slot as StandardLayerSlot] =
+      layer.teamColorMode !== 1
+        ? layer
+        : // ponytail: RGBA → RGB restores the forced alpha of 1; AAAA/RRRR/GGGG/BBBB team-colored
+          // layers would keep their selected alpha. Add an explicit intensity uniform if one appears.
+          { ...layer, teamColorMode: 0, channels: layer.channels === 1 ? 0 : layer.channels }
+  return Object.freeze({ ...material, layers: Object.freeze(layers) })
 }
 
 export interface MaterialPixel extends MaterialLighting {
@@ -71,6 +94,8 @@ export interface MaterialPixel extends MaterialLighting {
   readonly viewNormal?: Vec3
   readonly eyeToVertex?: Vec3
   readonly vertexColor?: Vec4
+  /** Per-draw scene light colors for programs compiled with scene lighting. */
+  readonly sceneLighting?: { readonly ambientColor: Vec3; readonly lightColor: Vec3 }
 }
 
 export interface MaterialTextureBinding {
@@ -156,12 +181,18 @@ export function createStandardMaterialPrograms(
       for (const value of textureDimensions.values())
         if (value !== '2d' && value !== 'cube')
           throw new TypeError('invalid material texture dimension')
+      const intensity = lighting.teamColorIntensity ?? 1
+      // ponytail: only the two observed intensities; a fractional exponent needs a shader uniform.
+      if (intensity !== 0 && intensity !== 1)
+        throw new TypeError('team color intensity must be 0 or 1')
       return Object.freeze(
         sampler
           .sample(time, signal)
           .map(pass =>
             compilePass(
-              pass,
+              intensity === 0
+                ? { ...pass, material: withoutDiffuseTeamColor(pass.material) }
+                : pass,
               { teamColor, ambient },
               sources,
               normalFormats,
@@ -348,7 +379,11 @@ function compilePass(
       )
     const vertexSource =
       worldEnvironment || policy !== undefined || objectSpaceNormal
-        ? sceneMaterialVertexSource(defines, worldEnvironment, policy !== undefined || objectSpaceNormal)
+        ? sceneMaterialVertexSource(
+            defines,
+            worldEnvironment,
+            policy !== undefined || objectSpaceNormal,
+          )
         : '#version 300 es\nprecision highp float;\n' +
           buildStandardVertexSource(defines)
             .replaceAll('attribute ', 'in ')
@@ -379,7 +414,8 @@ function compilePass(
       : { tangentGeneration: material.tangentGeneration }),
     sampleNormal: (pixel: MaterialPixel = {}, basis?: MaterialNormalBasis) =>
       sampleNormal(material, lighting, pixel, normalFormats, basis),
-    shade: (pixel: MaterialPixel = {}) => shade(material, alpha, lighting, pixel, normalFormats),
+    shade: (pixel: MaterialPixel = {}) =>
+      shade(material, alpha, lighting, pixel, normalFormats, sceneLighting),
   })
 }
 
@@ -389,6 +425,7 @@ function shade(
   lighting: Required<MaterialLighting>,
   pixel: MaterialPixel,
   normalFormats?: NormalFormats,
+  sceneLighting = false,
 ): CpuPixelResult {
   const teamColor = pixel.teamColor ?? lighting.teamColor,
     ambient = pixel.ambient ?? lighting.ambient
@@ -431,6 +468,14 @@ function shade(
     layers,
     teamColor,
     ambient,
+    ...(sceneLighting
+      ? {
+          sceneLighting: pixel.sceneLighting ?? {
+            ambientColor: [ambient[0], ambient[1], ambient[2]],
+            lightColor: [1, 1, 1],
+          },
+        }
+      : {}),
     materialAlpha: alpha,
     specularity: material.specularity,
     specMult: material.specMult,

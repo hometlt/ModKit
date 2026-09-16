@@ -225,6 +225,16 @@ function faceNormal(first: Vertex, second: Vertex, third: Vertex) {
  * intended facing, and a one-sided term would render half of a real model black. `abs` costs the
  * ability to distinguish inside from outside, which this renderer never had anyway.
  */
+/** Same per-draw scene light colors as the WebGL material provider (light color, gray ambient). */
+function sceneLightColors(light: Light | undefined) {
+  return light === undefined
+    ? undefined
+    : {
+        ambientColor: [light.ambient, light.ambient, light.ambient] as Vec3,
+        lightColor: [light.color[0], light.color[1], light.color[2]] as Vec3,
+      }
+}
+
 function lambert(normal: Vec3, light: Light) {
   const cosine = Math.abs(
     normal[0] * light.direction[0] +
@@ -335,7 +345,12 @@ function rasterizeTriangle(
           weights[1] / sum,
           weights[2] / sum,
         ])
-        const shaded = shadeMaterial(draw.program, draw.material.textures, fragment)
+        const shaded = shadeMaterial(
+          draw.program,
+          draw.material.textures,
+          fragment,
+          sceneLightColors(context.light),
+        )
         if (!shaded.alphaTestPassed) continue
         if (draw.depthOnly || materialIsSolid(draw.program)) context.depth[pixel] = sampleDepth
         if (!draw.depthOnly) {

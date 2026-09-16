@@ -196,7 +196,7 @@ it('renders mesh-emitted particles through the common UVM resolver', async () =>
             return renderHeadless(request, context)
           },
         },
-        release: async () => {},
+        release: () => Promise.resolve(),
       }
     },
   }
@@ -230,7 +230,13 @@ it('renders mesh-emitted particles through the common UVM resolver', async () =>
     request,
     settings,
   )
-  assert.equal(culled.statistics.fragments, 0, 'the authored single-sided back face is culled')
+  // Camera-facing sprites have no back side: a one-sided base material (SC2 geyser steam) still
+  // draws its particles, as the game does.
+  assert.equal(
+    culled.statistics.fragments,
+    first.statistics.fragments,
+    'particles ignore the base material one-sided flag',
+  )
 })
 
 it('rejects malformed emission mesh accessors, indices and unusable triangle surfaces', () => {
@@ -450,7 +456,7 @@ it('acquires and samples the texture selected by the particle emitter', async ()
                 return renderHeadless(request)
               },
             },
-            release: async () => {},
+            release: () => Promise.resolve(),
           }
         },
       },

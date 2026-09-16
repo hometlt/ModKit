@@ -280,16 +280,16 @@ export function createUvmProjectorFrame(document: JsonObject, options: Options) 
     const id = `uvm-projector-${index}`
     // The pinned live-effect shader uses white vertex RGB and one alpha factor.
     // Keep the referenced material untouched; this is a separate simple effect draw.
-    materials.push(
-      projectorMaterial(
-        base,
-        id,
-        alpha,
-        options.maxNodes - work,
-        options.maxBytes - bytes,
-        options.signal,
-      ),
+    const material = projectorMaterial(
+      base,
+      id,
+      alpha,
+      options.maxNodes - work,
+      options.maxBytes - bytes,
+      options.signal,
     )
+    if (material === undefined) continue
+    materials.push(material)
     primitives.push({
       id,
       materialId: id,
@@ -340,16 +340,16 @@ export function createUvmProjectorFrame(document: JsonObject, options: Options) 
       bytes += geometry.byteLength
       if (geometry.indices.length === 0) continue
       const id = `uvm-projector-impact-${splat.slot}`
-      materials.push(
-        projectorMaterial(
-          base,
-          id,
-          splat.alpha,
-          options.maxNodes - work,
-          options.maxBytes - bytes,
-          options.signal,
-        ),
+      const material = projectorMaterial(
+        base,
+        id,
+        splat.alpha,
+        options.maxNodes - work,
+        options.maxBytes - bytes,
+        options.signal,
       )
+      if (material === undefined) continue
+      materials.push(material)
       primitives.push({
         id,
         materialId: id,
