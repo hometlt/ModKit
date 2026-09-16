@@ -115,7 +115,14 @@ describe('MK2 surface audit', () => {
           } else if (contract.endsWith('tree-data-source')) {
             const root = await api.root()
             const kids = await api.children(root, page)
-            detail = `root=${root.id} children=${kids.items?.length ?? 0}`
+            const first = kids.items?.[0]
+            const grandchildren =
+              first === undefined ? undefined : await api.children(first, page)
+            const facts = first === undefined ? undefined : await api.facts(first)
+            detail =
+              `root=${root.id} children=${kids.items?.length ?? 0}` +
+              ` first=${facts?.label ?? '-'}/${String(facts?.preview ?? '-').slice(0, 12)}` +
+              ` depth2=${grandchildren?.items?.length ?? 0}`
           } else if (contract.endsWith('subject-facts-source')) {
             const summary = await api.summary()
             const groups = await api.groups(page)
