@@ -1067,10 +1067,16 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
     {
       title: 'Discard an edit plan or history entry',
       description:
-        'Release one uncommitted retained plan or discard one undo/redo history entry. Source bytes are unchanged.',
+        'Release one uncommitted retained plan or discard one undo/redo history entry. Source bytes are unchanged, but a discarded history entry can no longer be undone.',
       inputSchema: discardEditInput,
       outputSchema: envelopeSchema,
-      annotations: { ...readOnlyAnnotations, idempotentHint: false },
+      // Dropping undo history is irreversible host state, so this is not a read-only tool.
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: true,
+        openWorldHint: false,
+        idempotentHint: false,
+      },
     },
     ({ id }, context) => safeTool(() => runtime.discardEdit(id, context.mcpReq.signal)),
   )

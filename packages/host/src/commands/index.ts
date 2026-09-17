@@ -15,6 +15,7 @@ import {
   SERVICE_OPERATION_COMMANDS,
   SERVICE_OPERATION_COMMAND_TARGETS,
 } from './service-operation-commands.js'
+import { SUBJECT_EDIT_COMMANDS, SUBJECT_EDIT_COMMAND_TARGETS } from './edit-commands.js'
 
 export * from './runtime.js'
 export * from './protocol.js'
@@ -28,6 +29,13 @@ export {
   SERVICE_OPERATIONS_COMMAND,
   SERVICE_OPERATION_INVOKE_COMMAND,
 } from './service-operation-commands.js'
+export {
+  SUBJECT_EDIT_COMMAND,
+  SUBJECT_EDIT_COMMANDS,
+  SUBJECT_EDIT_COMMAND_TARGETS,
+  SUBJECT_EDIT_OPERATION_IDS,
+  summarizeEditPlan,
+} from './edit-commands.js'
 
 /** The runtime every application in this repository composes. */
 export function createSubjectCommandRuntime(): CommandRuntime {
@@ -36,12 +44,17 @@ export function createSubjectCommandRuntime(): CommandRuntime {
 
 /** The complete common command runtime; products can add capabilities without adding handlers. */
 export function createModkitCommandRuntime(): CommandRuntime {
-  return createCommandRuntime([...SUBJECT_COMMANDS, ...SERVICE_OPERATION_COMMANDS])
+  return createCommandRuntime([
+    ...SUBJECT_COMMANDS,
+    ...SUBJECT_EDIT_COMMANDS,
+    ...SERVICE_OPERATION_COMMANDS,
+  ])
 }
 
 export function describeModkitCommandContracts(): CommandContractDocument {
   return describeCommandContracts(createModkitCommandRuntime(), [
     ...Object.values(SUBJECT_COMMAND_TARGETS),
+    ...SUBJECT_EDIT_COMMAND_TARGETS,
     ...SERVICE_OPERATION_COMMAND_TARGETS,
   ])
 }

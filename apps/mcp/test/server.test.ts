@@ -977,10 +977,16 @@ describe('MCP v2 adapter', () => {
         )
         .every(tool => tool.annotations?.readOnlyHint === true),
     ).toBe(true)
+              'modkit.discard_edit',
     expect(
       tools.tools.find(tool => tool.name === 'modkit.invoke_service_operation')?.annotations,
     ).toMatchObject({ readOnlyHint: false, destructiveHint: true, openWorldHint: true })
-    for (const name of ['modkit.commit_edit', 'modkit.undo_edit', 'modkit.redo_edit']) {
+    for (const name of [
+      'modkit.commit_edit',
+      'modkit.undo_edit',
+      'modkit.redo_edit',
+      'modkit.discard_edit',
+    ]) {
       expect(tools.tools.find(tool => tool.name === name)?.annotations).toMatchObject({
         readOnlyHint: false,
         destructiveHint: true,
@@ -1898,6 +1904,37 @@ describe('MCP v2 adapter', () => {
     const opened = structured(
       await client.callTool({
         name: 'modkit.open_subject',
+  it('expires a retained plan after its TTL and releases its staged payloads', async () => {
+    const fake = fakeHost({ withEditing: true, editsEnabled: true })
+    const { client } = await connected(fake.host)
+    const opened = structured(
+      await client.callTool({
+        name: 'modkit.open_subject',
+        arguments: { path: 'C:\\allowed\\fixture' },
+      }),
+    )
+    const proposed = structured(
+      await client.callTool({
+        name: 'modkit.propose_edit',
+        arguments: { handle: handleFrom(opened), operationId: 'fixture/write', input: {} },
+      }),
+    )
+    const { planHandle, expiresAt } = proposed.data as { planHandle: string; expiresAt: string }
+    const now = Date.now
+    Date.now = () => Date.parse(expiresAt) + 1
+    try {
+      const expired = await client.callTool({
+        name: 'modkit.prepare_edit',
+        arguments: { planHandle },
+      })
+      expect(expired.isError).toBe(true)
+      expect(structured(expired).diagnostics[0]?.code).toBe('x3.mcp/unknown-edit-plan')
+    } finally {
+      Date.now = now
+    }
+    expect(fake.editInvocations()).toEqual(['stage', 'release-plan'])
+  })
+
         arguments: { path: 'C:\allowed\fixture' },
       }),
     )

@@ -3,6 +3,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import type { Diagnostic as HostDiagnostic } from '@modkit/core'
 import type {
   LanguageWorkspaceFeatureRequest,
+  LanguageWorkspaceCapability,
   LanguageWorkspaceCapabilitySet,
   LanguageWorkspacePositionRequest,
   LanguageWorkspaceAnalysisResult,
@@ -30,7 +31,9 @@ import {
   DidChangeWatchedFilesNotification,
   DocumentSymbol,
   InsertTextFormat,
+  LSPErrorCodes,
   ProposedFeatures,
+  ResponseError,
   SymbolKind,
   TextDocumentSyncKind,
   TextDocuments,
@@ -178,6 +181,12 @@ const withSignal = async <T>(
   const linked = signalOf(token)
   try {
     return await call(linked.signal)
+  } catch (error) {
+    // LSP clients recognise a cancelled request only by its reserved code.
+    if (linked.signal.aborted) {
+      throw new ResponseError(LSPErrorCodes.RequestCancelled, 'request cancelled')
+    }
+    throw error
   } finally {
     linked.dispose()
   }
@@ -301,6 +310,32 @@ export function createModkitLanguageServer(
   const awaitReady = async (uri: string): Promise<void> => {
     await pending.get(uri)
     await Promise.all(pending.values())
+  }
+  /**
+   * A method the selected provider does not implement is an explicit error, never an empty
+   * success: an empty answer would claim "no references" where the truth is "not supported".
+   */
+  const requireFeature = async (
+    uri: string,
+    feature: LanguageWorkspaceCapability,
+    signal: AbortSignal,
+  ): Promise<void> => {
+    await awaitReady(uri)
+    const capabilities = await options.workspace.capabilities(uri, signal)
+    if (capabilities === undefined && acceptedDocuments.has(uri)) {
+      throw new ResponseError(
+        LSPErrorCodes.RequestFailed,
+        `no language provider resolved for ${uri}; see its diagnostics`,
+        { code: 'x3.lsp/provider-unresolved', feature },
+      )
+    }
+    if (capabilities !== undefined && !capabilities.features.includes(feature)) {
+      throw new ResponseError(
+        LSPErrorCodes.RequestFailed,
+        `the language provider for ${uri} does not support ${feature}`,
+        { code: 'x3.lsp/feature-unsupported', feature },
+      )
+    }
   }
   const acceptDocument = (document: TextDocument): void => {
     acceptedDocuments.set(
@@ -583,7 +618,7 @@ export function createModkitLanguageServer(
   )
   connection.onCompletion((params, token) =>
     withSignal(token, async signal => {
-      await awaitReady(params.textDocument.uri)
+      await requireFeature(params.textDocument.uri, 'completion', signal)
       const value = await options.workspace.completion(
         positionRequest(params.textDocument.uri, params.position, signal),
       )
@@ -625,7 +660,7 @@ export function createModkitLanguageServer(
   )
   connection.onHover((params, token) =>
     withSignal(token, async signal => {
-      await awaitReady(params.textDocument.uri)
+      await requireFeature(params.textDocument.uri, 'hover', signal)
       const value = await options.workspace.hover(
         positionRequest(params.textDocument.uri, params.position, signal),
       )
@@ -639,7 +674,7 @@ export function createModkitLanguageServer(
   )
   connection.onSignatureHelp((params, token) =>
     withSignal(token, async signal => {
-      await awaitReady(params.textDocument.uri)
+      await requireFeature(params.textDocument.uri, 'signature-help', signal)
       const value = await options.workspace.signatureHelp(
         positionRequest(params.textDocument.uri, params.position, signal),
       )
@@ -665,7 +700,7 @@ export function createModkitLanguageServer(
   )
   connection.onDefinition((params, token) =>
     withSignal(token, async signal => {
-      await awaitReady(params.textDocument.uri)
+      await requireFeature(params.textDocument.uri, 'definition', signal)
       const value = await options.workspace.definition(
         positionRequest(params.textDocument.uri, params.position, signal),
       )
@@ -674,7 +709,7 @@ export function createModkitLanguageServer(
   )
   connection.onReferences((params, token) =>
     withSignal(token, async signal => {
-      await awaitReady(params.textDocument.uri)
+      await requireFeature(params.textDocument.uri, 'references', signal)
       const value = await options.workspace.references({
         ...positionRequest(params.textDocument.uri, params.position, signal),
         includeDeclaration: params.context.includeDeclaration,
@@ -684,7 +719,7 @@ export function createModkitLanguageServer(
   )
   connection.onPrepareRename((params, token) =>
     withSignal(token, async signal => {
-      await awaitReady(params.textDocument.uri)
+      await requireFeature(params.textDocument.uri, 'prepare-rename', signal)
       return (
         (await options.workspace.prepareRename(
           positionRequest(params.textDocument.uri, params.position, signal),
@@ -694,7 +729,7 @@ export function createModkitLanguageServer(
   )
   connection.onRenameRequest((params, token) =>
     withSignal(token, async signal => {
-      await awaitReady(params.textDocument.uri)
+      await requireFeature(params.textDocument.uri, 'rename', signal)
       const value = await options.workspace.rename({
         ...positionRequest(params.textDocument.uri, params.position, signal),
         newName: params.newName,
@@ -705,7 +740,7 @@ export function createModkitLanguageServer(
   )
   connection.onDocumentFormatting((params: DocumentFormattingParams, token) =>
     withSignal(token, async signal => {
-      await awaitReady(params.textDocument.uri)
+      await requireFeature(params.textDocument.uri, 'formatting', signal)
       const value = await options.workspace.formatting({
         ...request(params.textDocument.uri, signal),
         options: {
@@ -721,14 +756,14 @@ export function createModkitLanguageServer(
   )
   connection.onDocumentColor((params, token) =>
     withSignal(token, async signal => {
-      await awaitReady(params.textDocument.uri)
+      await requireFeature(params.textDocument.uri, 'document-colors', signal)
       const value = await options.workspace.documentColors(request(params.textDocument.uri, signal))
       return (value?.colors as ColorInformation[] | undefined) ?? []
     }),
   )
   connection.onColorPresentation((params, token) =>
     withSignal(token, async signal => {
-      await awaitReady(params.textDocument.uri)
+      await requireFeature(params.textDocument.uri, 'color-presentations', signal)
       const value = await options.workspace.colorPresentations({
         ...request(params.textDocument.uri, signal),
         color: params.color,
@@ -749,7 +784,7 @@ export function createModkitLanguageServer(
   )
   connection.onCodeAction((params, token) =>
     withSignal(token, async signal => {
-      await awaitReady(params.textDocument.uri)
+      await requireFeature(params.textDocument.uri, 'code-actions', signal)
       const diagnostics: LanguageDiagnostic[] = params.context.diagnostics.map(item => ({
         range: item.range,
         severity:
@@ -784,24 +819,45 @@ export function createModkitLanguageServer(
   )
   connection.onWorkspaceSymbol(async (params, token) =>
     withSignal(token, async signal => {
-      const open = [...acceptedDocuments.values()].sort((a, b) => a.uri.localeCompare(b.uri))[0]
-      if (open === undefined) return []
-      await awaitReady(open.uri)
-      const value = await options.workspace.workspaceSymbols({
-        ...request(open.uri, signal),
-        query: params.query,
-      } satisfies LanguageWorkspaceSymbolsRequest)
-      return (
-        value?.symbols.map(
-          item =>
-            ({
-              name: item.name,
-              kind: symbolKinds[item.kind],
-              location: item.location,
-              ...(item.containerName === undefined ? {} : { containerName: item.containerName }),
-            }) satisfies WorkspaceSymbol,
-        ) ?? []
-      )
+      // One query per open language: each provider answers only for its own documents.
+      const byLanguage = new Map<string, string>()
+      for (const document of [...acceptedDocuments.values()].sort((a, b) =>
+        a.uri.localeCompare(b.uri),
+      )) {
+        if (!byLanguage.has(document.languageId)) byLanguage.set(document.languageId, document.uri)
+      }
+      const symbols: WorkspaceSymbol[] = []
+      const seen = new Set<string>()
+      let supported = byLanguage.size === 0
+      for (const uri of byLanguage.values()) {
+        await awaitReady(uri)
+        const capabilities = await options.workspace.capabilities(uri, signal)
+        if (capabilities?.features.includes('workspace-symbols') !== true) continue
+        supported = true
+        const value = await options.workspace.workspaceSymbols({
+          ...request(uri, signal),
+          query: params.query,
+        } satisfies LanguageWorkspaceSymbolsRequest)
+        for (const item of value?.symbols ?? []) {
+          const key = JSON.stringify([item.name, item.location])
+          if (seen.has(key) || symbols.length >= maxResults) continue
+          seen.add(key)
+          symbols.push({
+            name: item.name,
+            kind: symbolKinds[item.kind],
+            location: item.location,
+            ...(item.containerName === undefined ? {} : { containerName: item.containerName }),
+          })
+        }
+      }
+      if (!supported) {
+        throw new ResponseError(
+          LSPErrorCodes.RequestFailed,
+          'no open document has a language provider that supports workspace-symbols',
+          { code: 'x3.lsp/feature-unsupported', feature: 'workspace-symbols' },
+        )
+      }
+      return symbols
     }),
   )
   connection.onRequest(

@@ -44,7 +44,7 @@ const PREVIEW_COMMAND = SUBJECT_COMMAND_TARGETS.preview.commandId
 const THUMBNAIL = SUBJECT_COMMAND_TARGETS.preview.operationIds[0]
 
 /** The descriptor fields these commands read. Structural, so no codec type leaks in here. */
-interface DescriptorLike {
+export interface DescriptorLike {
   readonly revision?: unknown
   readonly identity?: { readonly formatId?: string; readonly formatLabel?: string }
   readonly traits?: readonly { readonly id: string; readonly state: string }[]
@@ -98,7 +98,7 @@ const publishedOperations = (descriptor: DescriptorLike): string =>
  * The unresolved case never reaches `body`: "no codec claimed this" is one answer with one shape,
  * and writing it once here is what stops six commands from phrasing it six ways.
  */
-async function withSubject(
+export async function withCommandSubject(
   command: string,
   context: CommandContext,
   ref: string,
@@ -135,7 +135,7 @@ async function withSubject(
 }
 
 /** Invoke one operation and normalise its answer into the command vocabulary. */
-async function invoke(
+export async function invokeSubjectOperation(
   command: string,
   context: CommandContext,
   session: AssetSession,
@@ -182,7 +182,7 @@ const openCommand: CommandDescriptor = {
   needsSubject: true,
   mutatesSource: false,
   async run(context, input) {
-    return withSubject(
+    return withCommandSubject(
       OPEN_COMMAND,
       context,
       String(input.subject),
@@ -222,7 +222,7 @@ const inspectCommand: CommandDescriptor = {
   needsSubject: true,
   mutatesSource: false,
   async run(context, input) {
-    return withSubject(
+    return withCommandSubject(
       INSPECT_COMMAND,
       context,
       String(input.subject),
@@ -268,7 +268,7 @@ const validateCommand: CommandDescriptor = {
   mutatesSource: false,
   operationId: VALIDATE,
   async run(context, input) {
-    return withSubject(
+    return withCommandSubject(
       VALIDATE_COMMAND,
       context,
       String(input.subject),
@@ -284,7 +284,7 @@ const validateCommand: CommandDescriptor = {
           )
         }
         context.progress?.({ step: 'validate', message: 'running the codec’s validation' })
-        const answer = await invoke(
+        const answer = await invokeSubjectOperation(
           VALIDATE_COMMAND,
           context,
           session,
@@ -348,7 +348,7 @@ const extractCommand: CommandDescriptor = {
     if (entry === '') {
       return failed(EXTRACT_COMMAND, 'x3.command/input-invalid', 'subject.extract needs an «entry»')
     }
-    return withSubject(
+    return withCommandSubject(
       EXTRACT_COMMAND,
       context,
       String(input.subject),
@@ -377,7 +377,7 @@ const extractCommand: CommandDescriptor = {
           )
         }
         context.progress?.({ step: 'extract', message: `extracting ${entry}` })
-        const answer = await invoke(
+        const answer = await invokeSubjectOperation(
           EXTRACT_COMMAND,
           context,
           session,
@@ -431,7 +431,7 @@ const convertCommand: CommandDescriptor = {
   mutatesSource: false,
   operationId: CONVERT,
   async run(context, input) {
-    return withSubject(
+    return withCommandSubject(
       CONVERT_COMMAND,
       context,
       String(input.subject),
@@ -466,7 +466,7 @@ const convertCommand: CommandDescriptor = {
                 : { target: input['target'] }
               : {}
             : input['operationInput']
-        const answer = await invoke(
+        const answer = await invokeSubjectOperation(
           CONVERT_COMMAND,
           context,
           session,
@@ -512,7 +512,7 @@ const previewCommand: CommandDescriptor = {
   mutatesSource: false,
   operationId: THUMBNAIL,
   async run(context, input) {
-    return withSubject(
+    return withCommandSubject(
       PREVIEW_COMMAND,
       context,
       String(input.subject),
@@ -546,7 +546,7 @@ const previewCommand: CommandDescriptor = {
           )
         }
         context.progress?.({ step: 'preview', message: 'rendering the preview' })
-        const answer = await invoke(
+        const answer = await invokeSubjectOperation(
           PREVIEW_COMMAND,
           context,
           session,

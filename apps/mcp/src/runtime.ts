@@ -1,6 +1,6 @@
 import { OutputArtifacts, OutputArtifactError, OUTPUT_ARTIFACT_POLICY } from './output-artifacts.js'
 import { randomUUID } from 'node:crypto'
-import { describeInventoryContributions } from '@modkit/host'
+import { describeInventoryContributions, summarizeEditPlan } from '@modkit/host'
 import type {
   AssetEditPlan,
   CommitReceipt,
@@ -1806,42 +1806,7 @@ export class ModkitMcpRuntime {
          * which for a re-encoded texture is the whole file — an agent asking "what would change"
          * wants the shape of the change, and the bytes would blow the JSON bound and tell it nothing.
          */
-        const raw = retainedPlan as unknown as {
-          planId?: string
-          fidelity?: unknown
-          edits?: readonly {
-            operation?: string
-            label?: string
-            targetId?: string
-            range?: { offset?: unknown; length?: unknown }
-            payload?: {
-              kind?: string
-              bytes?: { byteLength?: number }
-              text?: string
-              ref?: { byteLength?: number }
-            }
-          }[]
-        }
-        plan = {
-          planId: raw.planId,
-          fidelity: raw.fidelity,
-          edits: (raw.edits ?? []).map(edit => ({
-            operation: edit.operation,
-            label: edit.label,
-            targetId: edit.targetId,
-            ...(edit.range === undefined
-              ? {}
-              : { offset: String(edit.range.offset ?? 0), length: String(edit.range.length ?? 0) }),
-            replacementBytes:
-              edit.payload?.kind === 'inline'
-                ? (edit.payload.bytes?.byteLength ?? 0)
-                : edit.payload?.kind === 'text'
-                  ? new TextEncoder().encode(edit.payload.text ?? '').byteLength
-                  : edit.payload?.kind === 'staged'
-                    ? edit.payload.ref?.byteLength
-                    : undefined,
-          })),
-        }
+        plan = summarizeEditPlan(retainedPlan)
         diagnostics.push({
           code: 'x3.mcp/edit-not-committed',
           message:

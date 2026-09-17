@@ -143,6 +143,69 @@ describe('host-owned file payload store', () => {
     await payloads.dispose()
   }, 60_000)
 
+  it('refuses a staged payload tampered on disk or forged by digest, before and after prepare', async () => {
+    const path = join(scratch, 'tampered.bin')
+    writeFileSync(path, Uint8Array.of(7, 7, 7))
+    const { ref, target } = await pinned(path)
+    const directory = join(scratch, 'payloads-tampered')
+    const payloads = createFilePayloadStore({ directory })
+    const staged = await payloads.stage(Uint8Array.of(1, 2, 3, 4))
+    const backend = createFileEditingBackend({ roots: [scratch] })
+    const grant = createGrantSnapshot({
+      snapshotId: 'tamper-grant',
+      permissions: ['write-source'],
+      sourceIds: [ref.id],
+    })
+    const coordinator = createCommitCoordinator({
+      payloads,
+      backendFor: sourceId => (sourceId === ref.id ? backend : undefined),
+      evidenceFor: () => evidence,
+      isGrantValid: candidate => candidate.snapshotId === grant.snapshotId,
+      digest: () => 'tamper-plan-digest',
+      verifyStagedPayload: (candidate, signal) => payloads.verify(candidate, signal),
+    })
+    const planWith = (payloadRef: typeof staged): AssetEditPlan => ({
+      planId: 'tamper-plan',
+      targets: [target],
+      edits: [
+        {
+          operation: 'replace',
+          targetId: target.targetId,
+          source: ref,
+          payload: { kind: 'staged', ref: payloadRef },
+        },
+      ],
+      semantics: { mutationMode: 'mutate', minimumGuarantee: 'atomic' },
+      fidelity: { roundTrip: 'byte-identical', preservesUnknownData: true },
+      diagnostics: [],
+    })
+
+    // A ref whose digest a caller rewrote no longer names a stored payload.
+    const forged = { ...staged, digest: `sha256:${'0'.repeat(64)}` }
+    expect(await payloads.verify(forged)).toBe(false)
+    expect(await coordinator.prepare(planWith(forged), { grant })).toMatchObject({
+      state: 'rejected',
+      reason: 'payload-unavailable',
+    })
+
+    // Prepared against intact bytes, then the stored bytes change with the same length.
+    const prepared = await coordinator.prepare(planWith(staged), { grant })
+    expect(prepared.state).toBe('ready')
+    if (prepared.state !== 'ready') throw new Error('intact staged plan did not prepare')
+    writeFileSync(join(directory, `${staged.handleId}.payload`), Uint8Array.of(9, 9, 9, 9))
+    expect(await payloads.verify(staged)).toBe(false)
+    const committed = await coordinator.commit(prepared.prepared, { grant })
+    expect(committed.state).toBe('not-applied')
+    expect([...readFileSync(path)]).toEqual([7, 7, 7])
+    expect(await coordinator.prepare(planWith(staged), { grant })).toMatchObject({
+      state: 'rejected',
+      reason: 'payload-unavailable',
+    })
+
+    await backend.dispose()
+    await payloads.dispose()
+  })
+
   it('automatically stages oversized writer and operation plans and releases owned refs', async () => {
     const path = join(scratch, 'auto-stage.bin')
     writeFileSync(path, Uint8Array.of(1))

@@ -152,6 +152,20 @@ test(
           'definition',
         ],
       })
+      // A method the provider lacks is an explicit refusal, never an empty success.
+      send({
+        jsonrpc: '2.0',
+        id: 101,
+        method: 'textDocument/completion',
+        params: { textDocument: { uri }, position: { line: 0, character: 1 } },
+      })
+      const unsupported = await waitFor(message => message.id === 101, 'unsupported completion')
+      assert.equal(unsupported.result, undefined)
+      assert.equal(unsupported.error.code, -32803)
+      assert.deepEqual(unsupported.error.data, {
+        code: 'x3.lsp/feature-unsupported',
+        feature: 'completion',
+      })
       send({
         jsonrpc: '2.0',
         id: 2,

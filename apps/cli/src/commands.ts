@@ -20,21 +20,31 @@ import process from 'node:process'
 import {
   commandRequest,
   commandSubjectsFrom,
-  createSubjectCommandRuntime,
+  createCommandRuntime,
+  SUBJECT_COMMANDS,
+  SUBJECT_EDIT_COMMAND,
+  SUBJECT_EDIT_COMMANDS,
   executeCommandRequest,
   type CommandInput,
   type CommandReceipt,
   type CommandResult,
   type ExtensionInput,
 } from '@modkit/host'
-import { createPathSubjectOpener, loadExtensionDirectory } from '@modkit/host/node'
+import {
+  createModkit,
+  createPathSubjectOpener,
+  loadExtensionDirectory,
+  workerBackendPolicy,
+} from '@modkit/host/node'
+import { sceneModule } from '@modkit/scene/module'
+import { uvModule } from '@modkit/uv/module'
 import { createModkitCliSubjectServices } from './profile.js'
 import { snapshotJson } from '@modkit/codec-kit/json-snapshot'
 import type { JsonValue } from '@modkit/sdk'
 
 export const RUN_USAGE =
   'usage: modkit run <command> <file> --ext <dir> [--ext <dir>...] [--entry <path>] ' +
-  '[--target <id>] [--operation <id>] [--input <json-file>] [--out <file>] [--trust] [--format text|json|protocol-json]\n'
+  '[--target <id>] [--operation <id>] [--input <json-file>] [--commit] [--out <file>] [--trust] [--format text|json|protocol-json]\n'
 
 export type RunOutputFormat = 'text' | 'json' | 'protocol-json'
 
@@ -47,6 +57,8 @@ export interface RunArguments {
   readonly out?: string
   readonly operation?: string
   readonly inputFile?: string
+  /** `subject.edit` only: apply the plan through the host commit coordinator. */
+  readonly commit?: boolean
   readonly trust: boolean
   readonly format: RunOutputFormat
 }
@@ -74,6 +86,7 @@ export function parseRunArguments(
   let operation: string | undefined
   let inputFile: string | undefined
   let trust = false
+  let commit = false
   let format: RunOutputFormat = 'text'
   const value = (index: number): string | undefined => {
     const found = rest[index]
@@ -112,6 +125,7 @@ export function parseRunArguments(
       format = next
       index += 1
     } else if (argument === '--trust') trust = true
+    else if (argument === '--commit') commit = true
     else if (argument === '--json') format = 'json'
     else return undefined
   }
@@ -119,9 +133,11 @@ export function parseRunArguments(
   if (
     (operation !== undefined || inputFile !== undefined) &&
     command !== 'subject.convert' &&
-    command !== 'subject.preview'
+    command !== 'subject.preview' &&
+    command !== SUBJECT_EDIT_COMMAND
   )
     return undefined
+  if (commit && command !== SUBJECT_EDIT_COMMAND) return undefined
   return {
     command,
     file: target,
@@ -131,6 +147,7 @@ export function parseRunArguments(
     ...(out === undefined ? {} : { out }),
     ...(operation === undefined ? {} : { operation }),
     ...(inputFile === undefined ? {} : { inputFile }),
+    ...(commit ? { commit } : {}),
     trust,
     format,
   }
@@ -206,7 +223,7 @@ export async function runCommand(
 ): Promise<number> {
   const writeStdout = options.writeStdout ?? (text => void process.stdout.write(text))
   const writeStderr = options.writeStderr ?? (text => void process.stderr.write(text))
-  const runtime = createSubjectCommandRuntime()
+  const runtime = createCommandRuntime([...SUBJECT_COMMANDS, ...SUBJECT_EDIT_COMMANDS])
   if (runtime.get(arguments_.command) === undefined) {
     if (arguments_.format === 'protocol-json') {
       const receipt = await executeCommandRequest(
@@ -232,6 +249,18 @@ export async function runCommand(
       arguments_.inputFile === undefined
         ? undefined
         : await readOperationInput(arguments_.inputFile, options.signal)
+    const file = resolve(arguments_.file)
+    if (arguments_.command === SUBJECT_EDIT_COMMAND) {
+      return await runEditCommand(
+        arguments_,
+        file,
+        operationInput,
+        runtime,
+        writeStdout,
+        writeStderr,
+        options,
+      )
+    }
     const loaded = await Promise.all(
       arguments_.roots.map(root => loadExtensionDirectory(resolve(root))),
     )
@@ -240,7 +269,6 @@ export async function runCommand(
       execution: { origin: 'linked', allowTrustedInProcess: arguments_.trust },
     }))
     const services = await createModkitCliSubjectServices(extensions)
-    const file = resolve(arguments_.file)
     const opener = createPathSubjectOpener({
       subjects: services,
       // A named file is the CLI's whole grant: it opens what argv points at, and its companions
@@ -285,5 +313,79 @@ export async function runCommand(
   } catch (error) {
     writeStderr(`modkit run: ${(error as Error).message}\n`)
     return 2
+  }
+}
+
+/**
+ * `subject.edit` opens through the library facade, the one Node composition that owns an editing
+ * surface: the named file's directory is the only writable root, and only with `--commit`. The
+ * command itself is the shared host handler every other application runs.
+ */
+async function runEditCommand(
+  arguments_: RunArguments,
+  file: string,
+  operationInput: JsonValue | undefined,
+  runtime: ReturnType<typeof createCommandRuntime>,
+  writeStdout: (text: string) => void,
+  writeStderr: (text: string) => void,
+  options: RunCommandOptions,
+): Promise<number> {
+  const roots = arguments_.roots.map(root => resolve(root))
+  const directory = dirname(file)
+  const modkit = await createModkit({
+    modules: [sceneModule, uvModule],
+    extensions: [],
+    ...(arguments_.trust ? { trustedExtensions: roots } : { userExtensions: roots }),
+    roots: [directory],
+    // Mutating operations need write-source in the open grant even to be planned.
+    writableRoots: [directory],
+    intent: 'inspect',
+    // The facade's lab default is too small for large game extensions, which then claim nothing.
+    policy: workerBackendPolicy({
+      resourceLimits: { maxOldGenerationSizeMb: 2_048, maxYoungGenerationSizeMb: 256 },
+      loadDeadlineMs: 120_000,
+      defaultCallDeadlineMs: 120_000,
+    }),
+  })
+  try {
+    if (modkit.extensionFailures.length > 0) {
+      writeStderr(
+        `modkit run: ${modkit.extensionFailures.length} extension root(s) failed to load\n`,
+      )
+      return 2
+    }
+    const receipt = await executeCommandRequest(
+      runtime,
+      commandRequest(arguments_.command, {
+        subject: file,
+        ...(arguments_.operation === undefined ? {} : { operation: arguments_.operation }),
+        ...(operationInput === undefined ? {} : { operationInput }),
+        commit: arguments_.commit === true,
+      }),
+      {
+        openSubject: async (ref, signal) => {
+          const opened = await modkit.open(ref, signal)
+          return {
+            ref,
+            snapshot: opened.snapshot,
+            ...(opened.session === undefined ? {} : { session: opened.session }),
+            ...(opened.editing === undefined ? {} : { editing: opened.editing }),
+            dispose: () => opened.close(),
+          }
+        },
+        ...(arguments_.format === 'text'
+          ? { progress: step => writeStderr(`… ${step.message}\n`) }
+          : {}),
+        ...(options.signal === undefined ? {} : { signal: options.signal }),
+      },
+    )
+    writeStdout(
+      arguments_.format === 'protocol-json'
+        ? renderCommandReceipt(receipt)
+        : renderCommandResult(receipt.result, arguments_.format === 'json'),
+    )
+    return exitCodeFor(receipt.result)
+  } finally {
+    await modkit.close()
   }
 }

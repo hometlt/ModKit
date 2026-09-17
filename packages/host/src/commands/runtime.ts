@@ -29,10 +29,8 @@
 import type { Diagnostic } from '@modkit/core'
 import type { AssetSession, JsonValue } from '@modkit/sdk'
 import type { SubjectOpenSnapshot } from '../subject-rpc.js'
-import type {
-  ServiceOperationCatalog,
-  ServiceOperationInvocation,
-} from '../service-operations.js'
+import type { SubjectEditing } from '../subject-editing.js'
+import type { ServiceOperationCatalog, ServiceOperationInvocation } from '../service-operations.js'
 
 /** The run was asked to stop. Reported, never thrown past the runtime. */
 export const COMMAND_CANCELLED = 'x3.command/cancelled'
@@ -78,6 +76,8 @@ export interface CommandSubject {
   readonly ref: string
   readonly snapshot: SubjectOpenSnapshot
   readonly session?: AssetSession
+  /** Host-owned editing authority, present only when the opener may write this subject. */
+  readonly editing?: SubjectEditing
   dispose(): Promise<void>
 }
 
