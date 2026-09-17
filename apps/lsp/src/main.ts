@@ -2,8 +2,14 @@
 
 import { realpath } from 'node:fs/promises'
 import { pathToFileURL } from 'node:url'
+import { composeLanguageDocumentSources, resolveContentLanguageSources } from '@modkit/host'
 import { createLanguageWorkspace, languageProviderRoutes } from '@modkit/host/language'
-import { createModkit, workerBackendPolicy } from '@modkit/host/node'
+import {
+  createModkit,
+  loadContentSources,
+  workerBackendPolicy,
+  type ModkitOpened,
+} from '@modkit/host/node'
 import { ConfigurationError, modkitLspUsage, parseModkitLspConfiguration } from './config.js'
 import { createFilesystemLanguageDocumentSource } from './filesystem-source.js'
 import { createModkitLanguageServer } from './server.js'
@@ -48,16 +54,64 @@ export async function runModkitLsp(argv: readonly string[]) {
     await modkit.close()
     throw new ConfigurationError('configured extensions advertise no language contributions')
   }
-  const workspace = createLanguageWorkspace({
-    services: modkit.services,
-    grant: { id: 'modkit.app.lsp/language', classes: ['read-source'] },
-    budgets: LANGUAGE_BUDGET,
-    documentSource: createFilesystemLanguageDocumentSource({
+  /*
+   * Packed dependencies, the way MCP language sessions load them: every root that opens as a
+   * subject names its dependency closure (`content.resolve-dependencies`), the configured content
+   * provider resolves it, and its documents join the snapshot read-only after the loose files.
+   */
+  const contentSources =
+    configuration.contentSourceConfig === undefined ||
+    configuration.contentSourceStorage === undefined
+      ? undefined
+      : await loadContentSources(
+          configuration.contentSourceConfig,
+          configuration.contentSourceStorage,
+        ).catch(async (error: unknown) => {
+          await modkit.close()
+          throw error
+        })
+  const openedRoots: ModkitOpened[] = []
+  const dependencySources = []
+  if (contentSources !== undefined) {
+    for (const root of roots) {
+      const opened = await modkit.open(root)
+      if (opened.session === undefined) continue
+      openedRoots.push(opened)
+    }
+    const projected = await resolveContentLanguageSources({
+      contentSources,
+      routes,
+      limits: {
+        maxDocumentBytes: configuration.maxDocumentBytes,
+        maxWorkspaceBytes: configuration.maxWorkspaceBytes,
+        maxEntries: 65_536,
+      },
+      subjects: await Promise.all(
+        openedRoots.map(async opened => ({
+          descriptor: await opened.session!.descriptor(),
+          operations: opened.session!.operations(),
+        })),
+      ),
+      standingMounts: true,
+    })
+    for (const item of projected.diagnostics)
+      process.stderr.write(errorLine(item.code, item.message))
+    dependencySources.push(...projected.sources)
+  }
+  const documentSource = composeLanguageDocumentSources([
+    createFilesystemLanguageDocumentSource({
       roots,
       routes,
       maxDocumentBytes: configuration.maxDocumentBytes,
       maxWorkspaceBytes: configuration.maxWorkspaceBytes,
     }),
+    ...dependencySources,
+  ])
+  const workspace = createLanguageWorkspace({
+    services: modkit.services,
+    grant: { id: 'modkit.app.lsp/language', classes: ['read-source'] },
+    budgets: LANGUAGE_BUDGET,
+    ...(documentSource === undefined ? {} : { documentSource }),
   })
   await workspace.initialize()
   const server = createModkitLanguageServer({
@@ -74,6 +128,8 @@ export async function runModkitLsp(argv: readonly string[]) {
     close(): Promise<void> {
       closed ??= (async () => {
         await server.close()
+        for (const opened of openedRoots) await opened.close()
+        await contentSources?.dispose()
         await modkit.close()
       })()
       return closed

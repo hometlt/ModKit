@@ -8,7 +8,7 @@
  */
 
 import { randomUUID } from 'node:crypto'
-import { isAbsolute, relative, resolve } from 'node:path'
+import { dirname, isAbsolute, relative, resolve } from 'node:path'
 import type { Diagnostic } from '@modkit/core'
 import {
   CODEC_CONTRIBUTION_CONTRACT,
@@ -154,20 +154,24 @@ export function createPathSubjectOpener(options: PathSubjectOpenerOptions): Subj
      * handle, no roots list and no way to name a file the host did not select for it.
      */
     const companionDiagnostics: Diagnostic[] = []
-    const resolveInput = createFilesystemInputResolver({
-      primaryPath: path,
-      roots,
-      inventory: options.subjects.inventory,
-      onDiagnostic: item => companionDiagnostics.push(item),
-      ...(budget.deadlineMs === undefined ? {} : { deadlineMs: budget.deadlineMs }),
-    })
+    // A granted root opened as a subject (a mod folder) has no granted directory around it to
+    // search, so it opens without companions instead of being refused.
+    const resolveInput = inside(roots, dirname(path))
+      ? createFilesystemInputResolver({
+          primaryPath: path,
+          roots,
+          inventory: options.subjects.inventory,
+          onDiagnostic: item => companionDiagnostics.push(item),
+          ...(budget.deadlineMs === undefined ? {} : { deadlineMs: budget.deadlineMs }),
+        })
+      : undefined
     const result = await options.subjects.open({
       source,
       path,
       intent: options.intent ?? 'full',
       grant: { ...grant, id: `${grant.id}:${nextId()}` },
       budget,
-      resolveInput,
+      ...(resolveInput === undefined ? {} : { resolveInput }),
       ...(signal === undefined ? {} : { signal }),
     })
     // an absent optional companion is a fact the caller needs, and the resolver is the only place

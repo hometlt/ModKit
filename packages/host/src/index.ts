@@ -168,7 +168,12 @@ export {
 } from './namespace-origin.js'
 export {
   analyzeOperationContentDependencies,
+  composeLanguageDocumentSources,
   readOperationContentDependencies,
+  resolveContentLanguageSources,
+  type ContentLanguageSourceLimits,
+  type ContentLanguageSources,
+  type ContentLanguageSourcesRequest,
   type AnalyzeOperationContentDependenciesRequest,
   type ReadOperationContentDependenciesRequest,
   type ReadOperationContentDependenciesResult,

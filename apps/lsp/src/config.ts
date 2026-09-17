@@ -7,6 +7,9 @@ export interface ModkitLspConfiguration {
   readonly maxDocuments: number
   readonly maxDocumentBytes: number
   readonly maxWorkspaceBytes: number
+  /** Trusted content-source module configuration; packed dependencies resolve through it. */
+  readonly contentSourceConfig?: string
+  readonly contentSourceStorage?: string
 }
 
 export class ConfigurationError extends Error {}
@@ -20,7 +23,7 @@ const positiveInteger = (value: string, option: string): number => {
 }
 
 const absolute = (value: string, option: string): string => {
-  if (!isAbsolute(value)) throw new ConfigurationError(`${option} needs an absolute directory`)
+  if (!isAbsolute(value)) throw new ConfigurationError(`${option} needs an absolute path`)
   return resolve(value)
 }
 
@@ -34,7 +37,9 @@ export function modkitLspUsage(): string {
     '  --trust-extensions            Run explicitly configured extensions in-process',
     '  --max-documents <count>       Semantic snapshot limit (default 64, maximum 256)',
     '  --max-document-bytes <bytes>  Per-file UTF-8 limit (default 4194304)',
-    '  --max-workspace-bytes <bytes> Snapshot UTF-8 limit (default 16777216)',
+    '  --max-workspace-bytes <bytes> Snapshot UTF-8 limit (default 67108864)',
+    '  --content-source-config <path>  Trusted content-source JSON; resolves packed dependencies',
+    '  --content-source-storage <path> Cache/state directory for that content source',
     '  --help                        Print this text',
     '',
   ].join('\n')
@@ -53,6 +58,8 @@ export function parseModkitLspConfiguration(argv: readonly string[]): ModkitLspC
    * outside the snapshot and a reference search answered with the catalog alone.
    */
   let maxWorkspaceBytes = 67_108_864
+  let contentSourceConfig: string | undefined
+  let contentSourceStorage: string | undefined
   for (let index = 0; index < argv.length; index += 1) {
     const option = argv[index]
     if (option === '--help') throw new ConfigurationError('help requested')
@@ -79,6 +86,12 @@ export function parseModkitLspConfiguration(argv: readonly string[]): ModkitLspC
       case '--max-workspace-bytes':
         maxWorkspaceBytes = positiveInteger(value, option)
         break
+      case '--content-source-config':
+        contentSourceConfig = absolute(value, option)
+        break
+      case '--content-source-storage':
+        contentSourceStorage = absolute(value, option)
+        break
       default:
         throw new ConfigurationError(`unknown option ${option ?? ''}`)
     }
@@ -86,6 +99,11 @@ export function parseModkitLspConfiguration(argv: readonly string[]): ModkitLspC
   if (roots.length === 0) throw new ConfigurationError('at least one --root is required')
   if (extensions.length === 0) throw new ConfigurationError('at least one --extension is required')
   if (maxDocuments > 4_096) throw new ConfigurationError('--max-documents cannot exceed 4096')
+  if ((contentSourceConfig === undefined) !== (contentSourceStorage === undefined)) {
+    throw new ConfigurationError(
+      '--content-source-config and --content-source-storage must be given together',
+    )
+  }
   if (maxDocumentBytes > maxWorkspaceBytes) {
     throw new ConfigurationError('--max-document-bytes cannot exceed --max-workspace-bytes')
   }
@@ -96,5 +114,8 @@ export function parseModkitLspConfiguration(argv: readonly string[]): ModkitLspC
     maxDocuments,
     maxDocumentBytes,
     maxWorkspaceBytes,
+    ...(contentSourceConfig === undefined || contentSourceStorage === undefined
+      ? {}
+      : { contentSourceConfig, contentSourceStorage }),
   })
 }

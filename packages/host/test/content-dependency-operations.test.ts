@@ -5,6 +5,7 @@ import type { ContentSources } from '@modkit/vfs/content-sources'
 import {
   analyzeOperationContentDependencies,
   readOperationContentDependencies,
+  resolveContentLanguageSources,
 } from '../src/content-dependency-operations.js'
 
 const dependencySet = Object.freeze({
@@ -54,6 +55,41 @@ describe('operation content dependency coordinator', () => {
       descriptor: descriptor(), operations: session,
     })).resolves.toMatchObject({ state: 'resolved', dependencies: dependencySet })
     expect(session.invoke).toHaveBeenCalledWith('resolve-dependencies', {}, undefined)
+  })
+
+  it('accepts the request carried beside a codec-owned workspace lock', async () => {
+    await expect(readOperationContentDependencies({
+      descriptor: descriptor(),
+      operations: operations({ schemaVersion: 1, loadOrder: [], contentDependencies: dependencySet }),
+    })).resolves.toMatchObject({ state: 'resolved', dependencies: dependencySet })
+  })
+
+  it('projects resolved closures into language sources and reports a failing operation', async () => {
+    const failing: OperationSession = {
+      invoke: async () => { throw new Error('handler exploded') },
+      async dispose() {},
+    }
+    const resolveDependencies = vi.fn(async () => ({
+      schemaVersion: 1 as const, gameId: 'example/game', complete: true, dependencies: [],
+      diagnostics: [],
+      mounts: [{ dependencyId: 'base', order: 0, sourceId: 'local', sourcePath: 'Base', displayName: 'Base', kind: 'mod' }],
+    }))
+    const projected = await resolveContentLanguageSources({
+      contentSources: { ...sources(), resolveDependencies } as ContentSources,
+      routes: [],
+      limits: { maxDocumentBytes: 1024, maxWorkspaceBytes: 4096, maxEntries: 16 },
+      subjects: [
+        { descriptor: descriptor(), operations: operations(dependencySet) },
+        { descriptor: descriptor(), operations: failing },
+      ],
+    })
+    expect(resolveDependencies).toHaveBeenCalledWith(dependencySet)
+    expect(projected.sources).toHaveLength(1)
+    expect(projected.dependenciesComplete).toBe(false)
+    expect(projected.diagnostics).toMatchObject([{
+      code: 'x3.host/content-dependency-operation-failed',
+      message: 'handler exploded',
+    }])
   })
 
   it('reports disabled and malformed dependency operations without consulting a source', async () => {

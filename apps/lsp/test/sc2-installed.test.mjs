@@ -240,3 +240,131 @@ test(
     }
   },
 )
+
+const blizzard = resolve(extension, '..')
+const contentSourceModule = join(
+  extension,
+  'dist',
+  'modules',
+  'game',
+  'battlenet',
+  'content-sources',
+  'local-content-sources.js',
+)
+const freshWriter = join(blizzard, 'mpq', 'src', 'mpq', 'fresh-writer.js')
+const encoder = new TextEncoder()
+
+test(
+  'installed LSP resolves a mod against packed dependencies of a StarCraft II installation',
+  {
+    timeout: 300_000,
+    skip:
+      existsSync(contentSourceModule) && existsSync(freshWriter)
+        ? false
+        : `missing ${contentSourceModule}`,
+  },
+  async () => {
+    const { encodeFreshMpq } = await import(pathToFileURL(freshWriter).href)
+    const root = await mkdtemp(join(tmpdir(), 'modkit-lsp-sc2-deps-'))
+    const installation = join(root, 'install')
+    const mod = join(root, 'Probe.SC2Mod')
+    const data = join(mod, 'Base.SC2Data', 'GameData', 'UnitData.xml')
+    // Liberty is packed; Core, which Liberty loads beneath itself, is a loose directory.
+    await mkdir(join(installation, 'Mods', 'Core.SC2Mod', 'Base.SC2Data', 'GameData'), {
+      recursive: true,
+    })
+    await mkdir(join(mod, 'Base.SC2Data', 'GameData'), { recursive: true })
+    await writeFile(
+      join(installation, 'Mods', 'Liberty.SC2Mod'),
+      encodeFreshMpq(
+        [
+          {
+            path: 'Base.SC2Data/GameData/UnitData.xml',
+            bytes: encoder.encode(
+              '<?xml version="1.0" encoding="utf-8"?>\n<Catalog>\n    <CUnit id="Marine" parent="CoreUnit">\n' +
+                '        <LifeMax value="45"/>\n    </CUnit>\n</Catalog>\n',
+            ),
+          },
+        ],
+        1024 * 1024,
+      ),
+    )
+    await writeFile(
+      join(installation, 'Mods', 'Core.SC2Mod', 'Base.SC2Data', 'GameData', 'UnitData.xml'),
+      '<?xml version="1.0" encoding="utf-8"?>\n<Catalog>\n    <CUnit id="CoreUnit"/>\n</Catalog>\n',
+    )
+    await writeFile(
+      join(mod, 'ComponentList.SC2Components'),
+      '<?xml version="1.0" encoding="utf-8"?>\n<Components>\n' +
+        '    <DataComponent Type="GameData">GameData</DataComponent>\n</Components>\n',
+    )
+    const text =
+      '<?xml version="1.0" encoding="utf-8"?>\n<Catalog>\n    <CUnit id="Hero" parent="Marine"/>\n</Catalog>\n'
+    await writeFile(data, text)
+    const config = join(root, 'content-source.json')
+    await writeFile(
+      config,
+      JSON.stringify({
+        module: contentSourceModule,
+        options: {
+          installationDirectory: installation,
+          battleNetCacheDirectory: join(root, 'cache'),
+          documentsDirectory: join(root, 'documents'),
+          wizardDirectories: [],
+        },
+      }),
+    )
+    const server = startLanguageServer(
+      [
+        '--root',
+        mod,
+        '--extension',
+        extension,
+        '--content-source-config',
+        config,
+        '--content-source-storage',
+        join(root, 'storage'),
+      ],
+      { timeoutMs: 120_000 },
+    )
+    const uri = pathToFileURL(data).href
+    try {
+      const initialized = await server.request('initialize', {
+        processId: null,
+        rootUri: pathToFileURL(mod).href,
+        capabilities: {},
+      })
+      assert.equal(initialized.error, undefined, server.stderr())
+      server.notify('initialized', {})
+      server.notify('textDocument/didOpen', {
+        textDocument: { uri, languageId: 'sc2-data', version: 1, text },
+      })
+      const parent = await server.request('textDocument/definition', {
+        textDocument: { uri },
+        position: { line: 2, character: 35 },
+      })
+      assert.equal(parent.error, undefined, server.stderr())
+      const [location] = parent.result ?? []
+      // Dependency documents get host-owned URIs in load order: Core (loaded beneath Liberty) is 0.
+      const dependency = index =>
+        `content-source://local%3Ainstallation/content-dependencies/${index}/Base.SC2Data/GameData/UnitData.xml`
+      assert.equal(
+        location?.uri,
+        dependency(1),
+        `definition must land in the packed Liberty dependency: ${JSON.stringify(parent.result)}\n${server.stderr()}`,
+      )
+      assert.equal(location.range.start.line, 2)
+      const symbols = await server.request('workspace/symbol', { query: 'CoreUnit' })
+      assert.equal(symbols.error, undefined)
+      assert.ok(
+        symbols.result.some(item => item.location.uri === dependency(0)),
+        `Core must join the snapshot beneath Liberty: ${JSON.stringify(symbols.result)}`,
+      )
+      assert.doesNotMatch(server.stderr(), /installation-dependency-missing/u)
+      assert.equal(await server.shutdown(), 0)
+    } finally {
+      server.child.kill()
+      await rm(root, { recursive: true, force: true })
+    }
+  },
+)

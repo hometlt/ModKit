@@ -5,13 +5,12 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import { diagnostic, type Diagnostic } from '@modkit/core'
 import {
   artifactNamespaceSourceFromVfsMount,
-  contentDependencyDiagnostics,
-  createContentDependencyLanguageDocumentSource,
+  composeLanguageDocumentSources,
   createKnowledgeCatalog,
   discoverServiceOperations,
   invokeServiceOperation,
-  readOperationContentDependencies,
   openSubject,
+  resolveContentLanguageSources,
   subjectOpenSnapshot,
   type Inventory,
   type ServiceOperationCatalog,
@@ -607,39 +606,6 @@ export async function createHostMcpPort(
         return workspace.diagnostics(common)
     }
   }
-  const composedLanguageDocumentSource = (
-    sources: readonly LanguageWorkspaceDocumentSource[],
-    noteCompleteness: (complete: boolean) => void,
-  ): LanguageWorkspaceDocumentSource | undefined => {
-    if (sources.length === 0) return undefined
-    return Object.freeze({
-      async snapshot(request: Parameters<LanguageWorkspaceDocumentSource['snapshot']>[0]) {
-        const documents = []
-        const seen = new Set(request.workspaceDocuments.map(document => document.uri))
-        let complete = true
-        for (const source of sources) {
-          const remaining = request.maxDocuments - documents.length
-          if (remaining <= 0) {
-            complete = false
-            break
-          }
-          const result = await source.snapshot({ ...request, maxDocuments: remaining })
-          complete = complete && result.isComplete
-          for (const document of result.documents) {
-            if (seen.has(document.uri)) continue
-            if (documents.length >= request.maxDocuments) {
-              complete = false
-              break
-            }
-            seen.add(document.uri)
-            documents.push(document)
-          }
-        }
-        noteCompleteness(complete)
-        return Object.freeze({ documents: Object.freeze(documents), isComplete: complete })
-      },
-    })
-  }
 /**
  * What a dependency-backed snapshot may weigh.
  *
@@ -672,98 +638,41 @@ const LANGUAGE_SNAPSHOT_DOCUMENTS = 1_024
       byUri.set(document.uri, document)
     }
     const dependencyDiagnostics: Diagnostic[] = []
-    let dependencyResolutionComplete = false
     let dependencySnapshotComplete = false
-    let dependencySource: LanguageWorkspaceDocumentSource | undefined
-    if (context !== undefined) {
-      const discovered = await readOperationContentDependencies({
-        descriptor: context.descriptor,
-        operations: context.operations,
-        ...(signal === undefined ? {} : { signal }),
-      })
-      dependencyDiagnostics.push(...discovered.diagnostics)
-      if (discovered.state === 'resolved') {
-        if (contentSources === undefined) {
-          dependencyDiagnostics.push(
-            diagnostic(
-              'information',
-              'x3.mcp/content-sources-unavailable',
-              'The MCP host has no configured content source for the subject dependency set.',
-            ),
-          )
-        } else if (contentSources.resolveDependencies === undefined) {
-          dependencyDiagnostics.push(
-            diagnostic(
-              'information',
-              'x3.mcp/content-dependency-resolver-unavailable',
-              'The configured content source cannot resolve subject dependencies.',
-            ),
-          )
-        } else {
-          try {
-            const resolution = await contentSources.resolveDependencies(discovered.dependencies)
-            signal?.throwIfAborted()
-            dependencyDiagnostics.push(...contentDependencyDiagnostics(resolution.diagnostics))
-            dependencyResolutionComplete = resolution.complete
-            if (resolution.mounts.length > 0) {
-              dependencySource = createContentDependencyLanguageDocumentSource({
-                contentSources,
-                resolution,
-                routes: languageProviderRoutes(modkit.services.inventory),
-                maxDocumentBytes: MCP_LANGUAGE_MAX_DOCUMENT_BYTES,
-                maxWorkspaceBytes: MCP_LANGUAGE_MAX_WORKSPACE_BYTES,
-                maxEntries: 16_384,
-              })
-            }
-          } catch (error) {
-            signal?.throwIfAborted()
-            dependencyDiagnostics.push(
-              diagnostic(
-                'warning',
-                'x3.mcp/content-dependency-resolution-failed',
-                error instanceof Error ? error.message : String(error),
-              ),
-            )
-          }
-        }
-      }
+    if (context !== undefined && contentSources === undefined) {
+      dependencyDiagnostics.push(
+        diagnostic(
+          'information',
+          'x3.mcp/content-sources-unavailable',
+          'The MCP host has no configured content source for the subject dependency set.',
+        ),
+      )
     }
     /*
-     * Roots the configured provider loads regardless of the subject (editor add-on folders) join
-     * every session through the same read-only projection a dependency closure uses. They add
-     * documents only; they never make an otherwise partial workspace complete.
+     * The subject's dependency closure, then roots the configured provider loads regardless of the
+     * subject (editor add-on folders), through the same host projection the standalone LSP uses.
      */
-    let standingSource: LanguageWorkspaceDocumentSource | undefined
-    if (contentSources?.languageMounts !== undefined) {
-      try {
-        const standing = await contentSources.languageMounts()
-        signal?.throwIfAborted()
-        dependencyDiagnostics.push(...contentDependencyDiagnostics(standing.diagnostics))
-        if (standing.mounts.length > 0) {
-          standingSource = createContentDependencyLanguageDocumentSource({
+    const projected =
+      contentSources === undefined
+        ? undefined
+        : await resolveContentLanguageSources({
             contentSources,
-            resolution: standing,
             routes: languageProviderRoutes(modkit.services.inventory),
-            maxDocumentBytes: MCP_LANGUAGE_MAX_DOCUMENT_BYTES,
-            maxWorkspaceBytes: MCP_LANGUAGE_MAX_WORKSPACE_BYTES,
-            maxEntries: 16_384,
+            limits: {
+              maxDocumentBytes: MCP_LANGUAGE_MAX_DOCUMENT_BYTES,
+              maxWorkspaceBytes: MCP_LANGUAGE_MAX_WORKSPACE_BYTES,
+              maxEntries: 16_384,
+            },
+            subjects: context === undefined ? [] : [context],
+            standingMounts: true,
+            ...(signal === undefined ? {} : { signal }),
           })
-        }
-      } catch (error) {
-        signal?.throwIfAborted()
-        dependencyDiagnostics.push(
-          diagnostic(
-            'warning',
-            'x3.mcp/content-language-mounts-failed',
-            error instanceof Error ? error.message : String(error),
-          ),
-        )
-      }
-    }
-    const sources = [dependencySource, standingSource, options.languageDocumentSource].filter(
+    dependencyDiagnostics.push(...(projected?.diagnostics ?? []))
+    const dependencyResolutionComplete = projected?.dependenciesComplete === true
+    const sources = [...(projected?.sources ?? []), options.languageDocumentSource].filter(
       (source): source is LanguageWorkspaceDocumentSource => source !== undefined,
     )
-    const documentSource = composedLanguageDocumentSource(sources, complete => {
+    const documentSource = composeLanguageDocumentSources(sources, complete => {
       dependencySnapshotComplete = complete
     })
     const workspaceIncomplete = () =>
