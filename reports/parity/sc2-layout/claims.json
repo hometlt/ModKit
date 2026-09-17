@@ -1,0 +1,20 @@
+{
+  "features": [
+    ["4e6e2b6ebf7c6d34", "schema", "store-check"],
+    ["5e7580de2ba43994", "render-visual"],
+    ["95b537177a847079", "parse"],
+    ["9c15d18d9d1c44ca", "store-check"],
+    ["9fae6c663f40813c", "parse", "view.inspect"],
+    ["5731e60ed8b413c7", "export.raw"],
+    ["86e7ef83ea987380", "view.inspect"],
+    ["159157d68cde3c76", "view.render", "export.convert"]
+  ],
+  "operations": [
+    ["export.convert", "export.convert"],
+    ["export.raw", "export.raw"],
+    ["sc2-layout.parse", "parse"],
+    ["view.inspect", "view.inspect"],
+    ["view.render", "view.render"]
+  ],
+  "skipProbes": {}
+}
