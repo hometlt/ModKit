@@ -1,0 +1,252 @@
+<title>Modkit Screen Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root {
+  --ground: #f2f4f7;
+  --surface: #ffffff;
+  --ink: #17212e;
+  --muted: #5b6878;
+  --line: #d9dee6;
+  --accent: #2c6bd6;
+  --accent-ink: #ffffff;
+  --ok: #2f855a;
+  --ok-bg: #e3f3ea;
+  --bad: #c53030;
+  --bad-bg: #fbe5e5;
+  --gap: #a8680c;
+  --gap-bg: #fcf0dc;
+  --shade: rgba(16, 24, 36, 0.78);
+  --sans: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', Consolas, 'Courier New', monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --ground: #12161c; --surface: #1a2029; --ink: #e6eaf0; --muted: #97a3b4; --line: #2a323e;
+    --accent: #6fa0f0; --accent-ink: #0d1520; --ok: #5fc48d; --ok-bg: #173226; --bad: #f07b7b;
+    --bad-bg: #3a1c1f; --gap: #e0a94a; --gap-bg: #362a14; --shade: rgba(4, 7, 12, 0.86);
+  }
+}
+:root[data-theme="dark"] {
+  --ground: #12161c; --surface: #1a2029; --ink: #e6eaf0; --muted: #97a3b4; --line: #2a323e;
+  --accent: #6fa0f0; --accent-ink: #0d1520; --ok: #5fc48d; --ok-bg: #173226; --bad: #f07b7b;
+  --bad-bg: #3a1c1f; --gap: #e0a94a; --gap-bg: #362a14; --shade: rgba(4, 7, 12, 0.86);
+}
+* { box-sizing: border-box; }
+body { background: var(--ground); color: var(--ink); font: 15px/1.5 var(--sans); padding-inline: 16px; }
+.wrap { max-width: 1480px; margin: 0 auto; padding-block: 24px 48px; display: grid; gap: 20px; }
+header { display: grid; gap: 6px; }
+h1 { font-size: 1.6rem; font-weight: 600; margin: 0; text-wrap: balance; }
+.lede { color: var(--muted); margin: 0; max-width: 70ch; }
+.tally { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.tally span { font-size: 0.85rem; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); }
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--ground); padding-block: 10px; border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button { border: 0; background: transparent; color: var(--ink); font: 500 0.85rem var(--sans); padding: 6px 12px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+select, input[type="search"] { font: 0.9rem var(--sans); color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; }
+input[type="search"] { flex: 1 1 200px; min-width: 0; }
+button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, .shot:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 420px), 1fr)); gap: 18px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; display: grid; grid-template-rows: auto 1fr; overflow: hidden; }
+.card[data-status="ok"] { border-color: var(--ok); }
+.card[data-status="bug"] { border-color: var(--bad); }
+.card[data-status="gap"] { border-color: var(--gap); }
+.shot { display: block; border: 0; padding: 0; background: var(--ground); cursor: zoom-in; aspect-ratio: 16 / 10; width: 100%; }
+.shot img { width: 100%; height: 100%; object-fit: cover; object-position: top left; display: block; }
+.body { padding: 12px 14px 14px; display: grid; gap: 8px; align-content: start; }
+.head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+.head h2 { font-size: 1rem; font-weight: 600; margin: 0; }
+.tag { font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); white-space: nowrap; }
+.status { font: 0.78rem var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.notes { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.notes li { font-size: 0.85rem; background: var(--gap-bg); color: var(--ink); border-radius: 6px; padding: 4px 8px; }
+.notes li::before { content: "авто · "; color: var(--gap); font-weight: 600; }
+.verdict { display: flex; flex-wrap: wrap; gap: 6px; }
+.verdict button { font: 500 0.82rem var(--sans); border-radius: 6px; padding: 4px 10px; cursor: pointer; border: 1px solid var(--line); background: transparent; color: var(--ink); }
+.verdict button[data-v="ok"][aria-pressed="true"] { background: var(--ok-bg); border-color: var(--ok); color: var(--ok); }
+.verdict button[data-v="bug"][aria-pressed="true"] { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
+.verdict button[data-v="gap"][aria-pressed="true"] { background: var(--gap-bg); border-color: var(--gap); color: var(--gap); }
+textarea { width: 100%; min-height: 58px; resize: vertical; font: 0.88rem/1.4 var(--sans); color: var(--ink); background: var(--ground); border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; }
+.saved { font-size: 0.75rem; color: var(--muted); min-height: 1em; }
+.offline { font-size: 0.85rem; color: var(--gap); }
+.empty { color: var(--muted); padding: 40px 0; text-align: center; }
+dialog { border: 0; padding: 0; background: transparent; max-width: 100vw; max-height: 100vh; }
+dialog::backdrop { background: var(--shade); }
+.lb { display: grid; gap: 8px; justify-items: center; padding: 12px; }
+.lb img { max-width: min(96vw, 1600px); max-height: 84vh; border-radius: 6px; background: var(--surface); }
+.lb .cap { color: #fff; font-size: 0.95rem; text-align: center; }
+.lb .nav { display: flex; gap: 8px; }
+.lb .nav button { font: 500 0.9rem var(--sans); padding: 6px 14px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.4); background: rgba(255,255,255,0.08); color: #fff; cursor: pointer; }
+@media (prefers-reduced-motion: no-preference) { .card { transition: border-color 0.15s; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Экраны Modkit на проверку</h1>
+    <p class="lede">Снимки реальных приложений (Electron и VS Code) на файлах из ваших модов. Снимок {{CAPTURED}} UTC. Отметьте экран: «Нормально», «Ошибка» или «Недоработка» и опишите, что не так — отметки сохраняются здесь, и я их читаю. Жёлтые пункты — мои автоматические находки.</p>
+    <div class="tally" id="tally"></div>
+    <p class="offline" id="offline" hidden>Отметки сейчас недоступны: страница открыта без хранилища. Снимки смотреть можно.</p>
+  </header>
+  <div class="bar" role="toolbar" aria-label="Фильтры">
+    <div class="seg" id="hosts" aria-label="Приложение"></div>
+    <select id="group" aria-label="Группа"></select>
+    <div class="seg" id="verdicts" aria-label="Отметка"></div>
+    <input type="search" id="q" placeholder="Поиск по названию и заметкам">
+  </div>
+  <main class="grid" id="grid"></main>
+  <p class="empty" id="empty" hidden>Ничего не подходит под фильтры.</p>
+</div>
+
+<dialog id="lightbox" aria-label="Снимок">
+  <div class="lb">
+    <img id="lb-img" alt="">
+    <div class="cap" id="lb-cap"></div>
+    <div class="nav">
+      <button type="button" id="lb-prev">← Предыдущий</button>
+      <button type="button" id="lb-close">Закрыть</button>
+      <button type="button" id="lb-next">Следующий →</button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+const ROWS = /*ROWS*/[];
+const VERDICTS = [['ok', 'Нормально'], ['bug', 'Ошибка'], ['gap', 'Недоработка']];
+const HOST_NAMES = { electron: 'Electron', vscode: 'VS Code' };
+const reviews = new Map();
+let db = null;
+const filter = { host: 'all', group: 'all', verdict: 'all', q: '' };
+let visible = [];
+
+const $ = id => document.getElementById(id);
+function el(tag, props = {}, children = []) {
+  const node = document.createElement(tag);
+  for (const [key, value] of Object.entries(props)) {
+    if (key === 'text') node.textContent = value;
+    else if (key.startsWith('on')) node.addEventListener(key.slice(2), value);
+    else node.setAttribute(key, value);
+  }
+  for (const child of children) node.append(child);
+  return node;
+}
+
+function segmented(container, options, key) {
+  container.replaceChildren(...options.map(([value, label]) => el('button', {
+    type: 'button', 'aria-pressed': String(filter[key] === value), text: label,
+    onclick: () => { filter[key] = value; segmented(container, options, key); render(); },
+  })));
+}
+
+function tally() {
+  const counts = { ok: 0, bug: 0, gap: 0 };
+  for (const row of ROWS) { const v = reviews.get(row.key)?.status; if (v in counts) counts[v]++; }
+  const auto = ROWS.filter(row => row.notes.length > 0).length;
+  $('tally').replaceChildren(
+    el('span', { text: `Экранов: ${ROWS.length}` }),
+    el('span', { text: `С автонаходками: ${auto}` }),
+    el('span', { text: `Нормально: ${counts.ok}` }),
+    el('span', { text: `Ошибок: ${counts.bug}` }),
+    el('span', { text: `Недоработок: ${counts.gap}` }),
+  );
+}
+
+async function save(row, patch, stamp) {
+  if (db === null) return;
+  const next = { ...(reviews.get(row.key) ?? {}), ...patch, host: row.host, id: row.id, title: row.title };
+  reviews.set(row.key, next);
+  stamp.textContent = 'Сохраняется…';
+  try {
+    await db.doc(`reviews/${row.key}`).set(next);
+    stamp.textContent = 'Сохранено';
+  } catch (error) {
+    stamp.textContent = error?.code === 'permission_denied' || error?.code === 'not_granted'
+      ? 'Нет прав на запись — отметка не сохранена'
+      : 'Не сохранилось, попробуйте ещё раз';
+  }
+  tally();
+}
+
+function card(row, index) {
+  const review = reviews.get(row.key) ?? {};
+  const stamp = el('div', { class: 'saved' });
+  const note = el('textarea', { id: `note-${row.key}`, placeholder: 'Что не так на этом экране?', 'aria-label': `Заметка: ${row.title}` });
+  note.value = review.note ?? '';
+  note.disabled = db === null;
+  let timer;
+  note.addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => save(row, { note: note.value }, stamp), 800);
+  });
+  const verdict = el('div', { class: 'verdict' }, VERDICTS.map(([value, label]) => el('button', {
+    type: 'button', 'data-v': value, 'aria-pressed': String(review.status === value), text: label,
+    ...(db === null ? { disabled: '' } : {}),
+    onclick: async event => {
+      const status = reviews.get(row.key)?.status === value ? '' : value;
+      for (const b of event.currentTarget.parentElement.children) b.setAttribute('aria-pressed', String(b.dataset.v === status));
+      event.currentTarget.closest('.card').dataset.status = status;
+      await save(row, { status }, stamp);
+    },
+  })));
+  const img = el('img', { src: row.image, alt: `Снимок: ${row.title}`, loading: 'lazy' });
+  return el('article', { class: 'card', 'data-status': review.status ?? '' }, [
+    el('button', { type: 'button', class: 'shot', 'aria-label': `Открыть снимок ${row.title}`, onclick: () => openLightbox(index) }, [img]),
+    el('div', { class: 'body' }, [
+      el('div', { class: 'head' }, [el('h2', { text: row.title }), el('span', { class: 'tag', text: `${row.group} · ${HOST_NAMES[row.host]}` })]),
+      el('div', { class: 'status', text: row.status || '—' }),
+      row.notes.length ? el('ul', { class: 'notes' }, row.notes.map(text => el('li', { text }))) : el('span'),
+      verdict, note, stamp,
+    ]),
+  ]);
+}
+
+function render() {
+  const q = filter.q.trim().toLowerCase();
+  visible = ROWS.filter(row =>
+    (filter.host === 'all' || row.host === filter.host) &&
+    (filter.group === 'all' || row.group === filter.group) &&
+    (filter.verdict === 'all' || (filter.verdict === 'none' ? !reviews.get(row.key)?.status : reviews.get(row.key)?.status === filter.verdict) || (filter.verdict === 'auto' && row.notes.length > 0)) &&
+    (!q || [row.title, row.id, row.status, ...row.notes, reviews.get(row.key)?.note ?? ''].join(' ').toLowerCase().includes(q)));
+  $('grid').replaceChildren(...visible.map(card));
+  $('empty').hidden = visible.length > 0;
+  tally();
+}
+
+let current = 0;
+function openLightbox(index) {
+  current = index;
+  const row = visible[index];
+  $('lb-img').src = row.image;
+  $('lb-img').alt = `Снимок: ${row.title}`;
+  $('lb-cap').textContent = `${row.title} · ${HOST_NAMES[row.host]} · ${index + 1}/${visible.length}`;
+  if (!$('lightbox').open) $('lightbox').showModal();
+}
+$('lb-prev').onclick = () => openLightbox((current - 1 + visible.length) % visible.length);
+$('lb-next').onclick = () => openLightbox((current + 1) % visible.length);
+$('lb-close').onclick = () => $('lightbox').close();
+$('lightbox').addEventListener('click', event => { if (event.target === $('lightbox')) $('lightbox').close(); });
+document.addEventListener('keydown', event => {
+  if (!$('lightbox').open) return;
+  if (event.key === 'ArrowLeft') $('lb-prev').click();
+  if (event.key === 'ArrowRight') $('lb-next').click();
+});
+
+const hosts = [['all', 'Все'], ...[...new Set(ROWS.map(r => r.host))].map(h => [h, HOST_NAMES[h]])];
+segmented($('hosts'), hosts, 'host');
+segmented($('verdicts'), [['all', 'Все'], ['none', 'Не проверено'], ['auto', 'С автонаходками'], ['bug', 'Ошибки'], ['gap', 'Недоработки'], ['ok', 'Нормально']], 'verdict');
+$('group').replaceChildren(el('option', { value: 'all', text: 'Все группы' }), ...[...new Set(ROWS.map(r => r.group))].map(g => el('option', { value: g, text: g })));
+$('group').addEventListener('change', event => { filter.group = event.target.value; render(); });
+$('q').addEventListener('input', event => { filter.q = event.target.value; render(); });
+render();
+
+(async () => {
+  db = await window.claude?.use?.('db') ?? null;
+  if (db === null) { $('offline').hidden = false; return; }
+  let first = true;
+  db.collection('reviews').onSnapshot(snap => {
+    for (const doc of snap.docs) if (doc.exists) reviews.set(doc.id, doc.data());
+    // Re-render once when stored reviews arrive; later changes update in place via tally.
+    if (first) { first = false; render(); } else tally();
+  }, () => { $('offline').hidden = false; });
+})();
+</script>

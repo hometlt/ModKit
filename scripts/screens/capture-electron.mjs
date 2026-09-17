@@ -4,7 +4,8 @@
  *   node scripts/screens/capture-electron.mjs <scenarios.json> <out-dir>
  *
  * scenarios.json: [{ "id", "title", "folder", "path": ["Base.SC2Data", "GameData", "UnitData.xml"],
- *                    "wait"?: ms, "actions"?: [{ "click": "text" } | { "wait": ms }] }]
+ *                    "wait"?: ms, "actions"?: [{ "click": "text" } | { "wait": ms } |
+ *                    { "view": "Hex" } | { "screenshot": "suffix" }] }]
  * Each scenario launches the real app on `folder` (`--open`), expands the tree along `path`, opens
  * the last row, runs the optional actions, and writes <id>.png plus <id>.txt (visible text).
  */
@@ -55,6 +56,13 @@ for (const scenario of scenarios) {
     await page.waitForTimeout(scenario.wait ?? 3000)
     for (const action of scenario.actions ?? []) {
       if (action.click !== undefined) await (await row(page, action.click)).click()
+      // The view selector (Карточка / Hex / Таблица …) is the header's last <select>.
+      if (action.view !== undefined) {
+        await page.locator('select').last().selectOption({ label: action.view })
+        await page.waitForTimeout(action.settle ?? 4000)
+      }
+      if (action.screenshot !== undefined)
+        await page.screenshot({ path: join(outDir, `${scenario.id}--${action.screenshot}.png`) })
       if (action.wait !== undefined) await page.waitForTimeout(action.wait)
     }
     await page.screenshot({ path: join(outDir, `${scenario.id}.png`) })

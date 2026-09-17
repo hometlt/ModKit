@@ -1,0 +1,374 @@
+[
+ {
+  "id": "media-image-sample-local-dds",
+  "title": "Изображение sample-local.dds",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/images",
+  "path": [
+   "sample-local.dds"
+  ]
+ },
+ {
+  "id": "media-image-sample-local-png",
+  "title": "Изображение sample-local.png",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/images",
+  "path": [
+   "sample-local.png"
+  ]
+ },
+ {
+  "id": "media-image-sample-local-tga",
+  "title": "Изображение sample-local.tga",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/images",
+  "path": [
+   "sample-local.tga"
+  ]
+ },
+ {
+  "id": "media-image-sample-dxt5-blp2-blp",
+  "title": "Изображение sample-dxt5-blp2.blp",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/images",
+  "path": [
+   "sample-dxt5-blp2.blp"
+  ]
+ },
+ {
+  "id": "media-image-ktx2_2d_uastc-ktx2",
+  "title": "Изображение ktx2_2d_uastc.ktx2",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/images",
+  "path": [
+   "ktx2_2d_uastc.ktx2"
+  ]
+ },
+ {
+  "id": "media-image-sample-local-svg",
+  "title": "Изображение sample-local.svg",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/images",
+  "path": [
+   "sample-local.svg"
+  ]
+ },
+ {
+  "id": "media-image-sample-web-webp",
+  "title": "Изображение sample-web.webp",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/images",
+  "path": [
+   "sample-web.webp"
+  ]
+ },
+ {
+  "id": "media-image-sample-web-gif",
+  "title": "Изображение sample-web.gif",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/images",
+  "path": [
+   "sample-web.gif"
+  ]
+ },
+ {
+  "id": "media-image-pcx-cat-pcx",
+  "title": "Изображение pcx-cat.pcx",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/images",
+  "path": [
+   "pcx-cat.pcx"
+  ]
+ },
+ {
+  "id": "media-image-ggi-shp",
+  "title": "Изображение ggi.shp",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/images",
+  "path": [
+   "ggi.shp"
+  ]
+ },
+ {
+  "id": "media-image-sample-local-jpg",
+  "title": "Изображение sample-local.jpg",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/images",
+  "path": [
+   "sample-local.jpg"
+  ]
+ },
+ {
+  "id": "media-audio-sample-web-wav",
+  "title": "Аудио sample-web.wav",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/audio",
+  "path": [
+   "sample-web.wav"
+  ]
+ },
+ {
+  "id": "media-audio-sample-web-ogg",
+  "title": "Аудио sample-web.ogg",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/audio",
+  "path": [
+   "sample-web.ogg"
+  ]
+ },
+ {
+  "id": "media-audio-sample-local-mp3",
+  "title": "Аудио sample-local.mp3",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/audio",
+  "path": [
+   "sample-local.mp3"
+  ]
+ },
+ {
+  "id": "media-video-sample-web-mp4",
+  "title": "Видео sample-web.mp4",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/video",
+  "path": [
+   "sample-web.mp4"
+  ]
+ },
+ {
+  "id": "media-video-sample-web-ogv",
+  "title": "Видео sample-web.ogv",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/video",
+  "path": [
+   "sample-web.ogv"
+  ]
+ },
+ {
+  "id": "models-sample-harbinger-m3",
+  "title": "Модель sample-harbinger.m3",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/models",
+  "path": [
+   "sample-harbinger.m3"
+  ],
+  "wait": 8000
+ },
+ {
+  "id": "models-sample-proteus-jump-m3a",
+  "title": "Модель sample-proteus-jump.m3a",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/models",
+  "path": [
+   "sample-proteus-jump.m3a"
+  ],
+  "wait": 8000
+ },
+ {
+  "id": "models-sample-adept-glb",
+  "title": "Модель sample-adept.glb",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/models",
+  "path": [
+   "sample-adept.glb"
+  ],
+  "wait": 8000
+ },
+ {
+  "id": "models-sample-smiley-mdx",
+  "title": "Модель sample-smiley.mdx",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/models",
+  "path": [
+   "sample-smiley.mdx"
+  ],
+  "wait": 8000
+ },
+ {
+  "id": "archives-sample-mixed-zip",
+  "title": "Архив sample-mixed.zip",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/archives",
+  "path": [
+   "sample-mixed.zip"
+  ]
+ },
+ {
+  "id": "archives-sample-1-7z",
+  "title": "Архив sample-1.7z",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/archives",
+  "path": [
+   "sample-1.7z"
+  ]
+ },
+ {
+  "id": "archives-sample-2-tar",
+  "title": "Архив sample-2.tar",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/archives",
+  "path": [
+   "sample-2.tar"
+  ]
+ },
+ {
+  "id": "archives-big",
+  "title": "Архив BIG (C&C)",
+  "folder": "C:/FILES/SC2Files/Mods/-samples/archives/Sample-big",
+  "path": [
+   "SampleMod_1.00_Streams.big"
+  ]
+ },
+ {
+  "id": "mod-document-header",
+  "title": "DocumentHeader",
+  "folder": "C:/FILES/SC2Files/AllRaces/all-races-pvp-2/AllRaces2-Data.SC2Mod",
+  "path": [
+   "DocumentHeader"
+  ]
+ },
+ {
+  "id": "mod-document-info",
+  "title": "DocumentInfo",
+  "folder": "C:/FILES/SC2Files/AllRaces/all-races-pvp-2/AllRaces2-Data.SC2Mod",
+  "path": [
+   "DocumentInfo"
+  ]
+ },
+ {
+  "id": "mod-component-list",
+  "title": "ComponentList.SC2Components",
+  "folder": "C:/FILES/SC2Files/AllRaces/all-races-pvp-2/AllRaces2-Data.SC2Mod",
+  "path": [
+   "ComponentList.SC2Components"
+  ]
+ },
+ {
+  "id": "mod-version",
+  "title": "GameData.version",
+  "folder": "C:/FILES/SC2Files/AllRaces/all-races-pvp-2/AllRaces2-Data.SC2Mod",
+  "path": [
+   "GameData.version"
+  ]
+ },
+ {
+  "id": "mod-preload-assetdb",
+  "title": "PreloadAssetDB.txt",
+  "folder": "C:/FILES/SC2Files/AllRaces/all-races-pvp-2/AllRaces2-Data.SC2Mod",
+  "path": [
+   "PreloadAssetDB.txt"
+  ]
+ },
+ {
+  "id": "data-unitdata",
+  "title": "UnitData.xml (данные юнитов)",
+  "folder": "C:/FILES/SC2Files/AllRaces/all-races-pvp-2/AllRaces2-Data.SC2Mod",
+  "path": [
+   "Base.SC2Data",
+   "GameData",
+   "UnitData.xml"
+  ],
+  "wait": 8000
+ },
+ {
+  "id": "data-racedata",
+  "title": "RaceData.xml",
+  "folder": "C:/FILES/SC2Files/AllRaces/all-races-pvp-2/AllRaces2-Data.SC2Mod",
+  "path": [
+   "Base.SC2Data",
+   "GameData",
+   "RaceData.xml"
+  ]
+ },
+ {
+  "id": "data-gamedata-xml",
+  "title": "GameData.xml",
+  "folder": "C:/FILES/SC2Files/AllRaces/all-races-pvp-2/AllRaces2-Data.SC2Mod",
+  "path": [
+   "Base.SC2Data",
+   "GameData.xml"
+  ]
+ },
+ {
+  "id": "strings-gamestrings",
+  "title": "GameStrings.txt (локализация)",
+  "folder": "C:/FILES/SC2Files/AllRaces/all-races-pvp-2/AllRaces2-Data.SC2Mod",
+  "path": [
+   "enUS.SC2Data",
+   "LocalizedData",
+   "GameStrings.txt"
+  ]
+ },
+ {
+  "id": "strings-objectstrings",
+  "title": "ObjectStrings.txt",
+  "folder": "C:/FILES/SC2Files/AllRaces/all-races-pvp-2/AllRaces2-Data.SC2Mod",
+  "path": [
+   "enUS.SC2Data",
+   "LocalizedData",
+   "ObjectStrings.txt"
+  ]
+ },
+ {
+  "id": "triggers-bundle",
+  "title": "Triggers",
+  "folder": "C:/FILES/SC2Files/AllRaces/all-races-pvp-2/AllRaces2-Bundle-Data.SC2Mod",
+  "path": [
+   "Triggers"
+  ],
+  "wait": 8000
+ },
+ {
+  "id": "style-fontstyles",
+  "title": "FontStyles.SC2Style",
+  "folder": "C:/FILES/SC2Files/Mods/AR2.SC2Mod/Base.SC2Data/UI",
+  "path": [
+   "FontStyles.SC2Style"
+  ]
+ },
+ {
+  "id": "layout-descindex",
+  "title": "SC2Layout",
+  "folder": "C:/FILES/SC2Files/Mods/all-races-coop-2/coop-stuff/COOP_ADDONS",
+  "path": [
+   "_DescIndex.SC2Layout"
+  ]
+ },
+ {
+  "id": "galaxy-libertylib",
+  "title": "Galaxy libertylib.galaxy",
+  "folder": "C:/FILES/SC2Files/Mods/-test-liberty.sc2mod/base.sc2data/triggerlibs",
+  "path": [
+   "libertylib.galaxy"
+  ]
+ },
+ {
+  "id": "cutscene-abathur",
+  "title": "SC2Cutscene",
+  "folder": "C:/FILES/SC2Files/Mods/-test-liberty.sc2mod/base.sc2data/cutscenes",
+  "path": [
+   "mainmenuabathur.sc2cutscene"
+  ],
+  "wait": 8000
+ },
+ {
+  "id": "blizwiz-launch-missile",
+  "title": "BlizWiz",
+  "folder": "C:/FILES/SC2Files/Mods/all-races-mods-old-1/--DATA PIECES",
+  "path": [
+   "LaunchMissile.BlizWiz"
+  ]
+ },
+ {
+  "id": "map-aether-testing",
+  "title": "Карта AetherTesting.SC2Map",
+  "folder": "C:/FILES/SC2Files/Mods/Aether-Hybrids",
+  "path": [
+   "AetherTesting.SC2Map"
+  ],
+  "wait": 15000
+ },
+ {
+  "id": "map-starbattle",
+  "title": "Карта sb-main.SC2Map",
+  "folder": "C:/FILES/SC2Files/Mods/Alevice-StarBattle/Maps/SBC",
+  "path": [
+   "sb-main.SC2Map"
+  ],
+  "wait": 20000
+ },
+ {
+  "id": "replay-tokamak",
+  "title": "Реплей Tokamak-LE",
+  "folder": "C:/FILES/SC2Files/coding/modkit-extensions-blizzard/starcraft2/test/fixtures/replays",
+  "path": [
+   "Tokamak-LE.SC2Replay"
+  ],
+  "wait": 8000
+ },
+ {
+  "id": "mod-packed-voidmulti",
+  "title": "Мод VoidModBundle.SC2Mod (упакованный)",
+  "folder": "C:/FILES/SC2Files/AllRaces/all-races-bundles",
+  "path": [
+   "VoidModBundle.SC2Mod"
+  ],
+  "wait": 10000
+ }
+]
