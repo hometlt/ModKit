@@ -2423,10 +2423,10 @@
       "targetOperation": "asset.validate"
     },
     {
-      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-triggers.json",
+      "contribution": "modkit-extensions-blizzard/starcraft2/modules/triggers/codecs/triggers/codec.json",
       "handlerId": "export-convert",
       "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/export.convert",
-      "status": "pending",
+      "status": "superseded",
       "targetOperation": "export.convert"
     },
     {

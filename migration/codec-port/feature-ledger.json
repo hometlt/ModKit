@@ -1031,9 +1031,21 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-17",
+        "path": "modkit-core/reports/parity/owner-decisions/triggers-galaxy-superseded-2026-09-17.json",
+        "reason": "Owner decision 2026-09-17: the MK3 Triggers<->Galaxy converter (modkit-extensions-blizzard f10960a2, editor-aligned, tested against the SC2 Editor) is the reference; no comparison with MK2 is owed. MK2 identity constants and viewer contributions are replaced by the MK3 codec manifest and subject surface.",
+        "sha256": "798f811b0d11c55c23a5dd608ce27fa78d50405957a763cb7a19dd6bcd774912"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/triggers-galaxy-superseded-2026-09-17.json",
+          "sha256": "798f811b0d11c55c23a5dd608ce27fa78d50405957a763cb7a19dd6bcd774912"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/02c6d7125242d9cb",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "demotedOn": "2026-09-16",
@@ -1219,9 +1231,21 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-17",
+        "path": "modkit-core/reports/parity/owner-decisions/triggers-galaxy-superseded-2026-09-17.json",
+        "reason": "Owner decision 2026-09-17: the MK3 Triggers<->Galaxy converter (modkit-extensions-blizzard f10960a2, editor-aligned, tested against the SC2 Editor) is the reference; no comparison with MK2 is owed. MK2 identity constants and viewer contributions are replaced by the MK3 codec manifest and subject surface.",
+        "sha256": "798f811b0d11c55c23a5dd608ce27fa78d50405957a763cb7a19dd6bcd774912"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/triggers-galaxy-superseded-2026-09-17.json",
+          "sha256": "798f811b0d11c55c23a5dd608ce27fa78d50405957a763cb7a19dd6bcd774912"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/aee693bdd0fced58",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "demotedOn": "2026-09-16",
@@ -1270,11 +1294,23 @@
       "status": "adapted"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-17",
+        "path": "modkit-core/reports/parity/owner-decisions/triggers-galaxy-superseded-2026-09-17.json",
+        "reason": "Owner decision 2026-09-17: the MK3 Triggers<->Galaxy converter (modkit-extensions-blizzard f10960a2, editor-aligned, tested against the SC2 Editor) is the reference; no comparison with MK2 is owed. MK2 identity constants and viewer contributions are replaced by the MK3 codec manifest and subject surface.",
+        "sha256": "798f811b0d11c55c23a5dd608ce27fa78d50405957a763cb7a19dd6bcd774912"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/galaxy/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/triggers-galaxy-superseded-2026-09-17.json",
+          "sha256": "798f811b0d11c55c23a5dd608ce27fa78d50405957a763cb7a19dd6bcd774912"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/e082264235448ed8",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [
@@ -4542,11 +4578,23 @@
       "status": "adapted"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-17",
+        "path": "modkit-core/reports/parity/owner-decisions/triggers-galaxy-superseded-2026-09-17.json",
+        "reason": "Owner decision 2026-09-17: the MK3 Triggers<->Galaxy converter (modkit-extensions-blizzard f10960a2, editor-aligned, tested against the SC2 Editor) is the reference; no comparison with MK2 is owed. MK2 identity constants and viewer contributions are replaced by the MK3 codec manifest and subject surface.",
+        "sha256": "798f811b0d11c55c23a5dd608ce27fa78d50405957a763cb7a19dd6bcd774912"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-triggers/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/triggers-galaxy-superseded-2026-09-17.json",
+          "sha256": "798f811b0d11c55c23a5dd608ce27fa78d50405957a763cb7a19dd6bcd774912"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/3e3dc4d96f558126",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "demotedOn": "2026-09-16",
@@ -4562,11 +4610,23 @@
       "status": "adapted"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-17",
+        "path": "modkit-core/reports/parity/owner-decisions/triggers-galaxy-superseded-2026-09-17.json",
+        "reason": "Owner decision 2026-09-17: the MK3 Triggers<->Galaxy converter (modkit-extensions-blizzard f10960a2, editor-aligned, tested against the SC2 Editor) is the reference; no comparison with MK2 is owed. MK2 identity constants and viewer contributions are replaced by the MK3 codec manifest and subject surface.",
+        "sha256": "798f811b0d11c55c23a5dd608ce27fa78d50405957a763cb7a19dd6bcd774912"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-triggers/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/triggers-galaxy-superseded-2026-09-17.json",
+          "sha256": "798f811b0d11c55c23a5dd608ce27fa78d50405957a763cb7a19dd6bcd774912"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/4387bc663cbbb3d0",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "demotedOn": "2026-09-16",
@@ -4660,18 +4720,42 @@
       "status": "adapted"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-17",
+        "path": "modkit-core/reports/parity/owner-decisions/triggers-galaxy-superseded-2026-09-17.json",
+        "reason": "Owner decision 2026-09-17: the MK3 Triggers<->Galaxy converter (modkit-extensions-blizzard f10960a2, editor-aligned, tested against the SC2 Editor) is the reference; no comparison with MK2 is owed. MK2 identity constants and viewer contributions are replaced by the MK3 codec manifest and subject surface.",
+        "sha256": "798f811b0d11c55c23a5dd608ce27fa78d50405957a763cb7a19dd6bcd774912"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-triggers/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/triggers-galaxy-superseded-2026-09-17.json",
+          "sha256": "798f811b0d11c55c23a5dd608ce27fa78d50405957a763cb7a19dd6bcd774912"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/b21bd8948762e076",
-      "status": "pending"
+      "status": "superseded"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-17",
+        "path": "modkit-core/reports/parity/owner-decisions/triggers-galaxy-superseded-2026-09-17.json",
+        "reason": "Owner decision 2026-09-17: the MK3 Triggers<->Galaxy converter (modkit-extensions-blizzard f10960a2, editor-aligned, tested against the SC2 Editor) is the reference; no comparison with MK2 is owed. MK2 identity constants and viewer contributions are replaced by the MK3 codec manifest and subject surface.",
+        "sha256": "798f811b0d11c55c23a5dd608ce27fa78d50405957a763cb7a19dd6bcd774912"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-triggers/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/triggers-galaxy-superseded-2026-09-17.json",
+          "sha256": "798f811b0d11c55c23a5dd608ce27fa78d50405957a763cb7a19dd6bcd774912"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/bb4cc9de14f37b6d",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "demotedOn": "2026-09-16",
@@ -4700,11 +4784,23 @@
       "status": "adapted"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-17",
+        "path": "modkit-core/reports/parity/owner-decisions/triggers-galaxy-superseded-2026-09-17.json",
+        "reason": "Owner decision 2026-09-17: the MK3 Triggers<->Galaxy converter (modkit-extensions-blizzard f10960a2, editor-aligned, tested against the SC2 Editor) is the reference; no comparison with MK2 is owed. MK2 identity constants and viewer contributions are replaced by the MK3 codec manifest and subject surface.",
+        "sha256": "798f811b0d11c55c23a5dd608ce27fa78d50405957a763cb7a19dd6bcd774912"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-triggers/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/triggers-galaxy-superseded-2026-09-17.json",
+          "sha256": "798f811b0d11c55c23a5dd608ce27fa78d50405957a763cb7a19dd6bcd774912"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/d8436467fd226bfa",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "demotedOn": "2026-09-16",
@@ -4746,11 +4842,23 @@
       "status": "adapted"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-17",
+        "path": "modkit-core/reports/parity/owner-decisions/triggers-galaxy-superseded-2026-09-17.json",
+        "reason": "Owner decision 2026-09-17: the MK3 Triggers<->Galaxy converter (modkit-extensions-blizzard f10960a2, editor-aligned, tested against the SC2 Editor) is the reference; no comparison with MK2 is owed. MK2 identity constants and viewer contributions are replaced by the MK3 codec manifest and subject surface.",
+        "sha256": "798f811b0d11c55c23a5dd608ce27fa78d50405957a763cb7a19dd6bcd774912"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-triggers/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/triggers-galaxy-superseded-2026-09-17.json",
+          "sha256": "798f811b0d11c55c23a5dd608ce27fa78d50405957a763cb7a19dd6bcd774912"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/export.convert",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "demotedOn": "2026-09-16",

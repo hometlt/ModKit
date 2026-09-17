@@ -1,0 +1,99 @@
+{
+  "date": "2026-09-17",
+  "kind": "owner-decision/superseded",
+  "mk3Evidence": {
+    "command": "MODKIT_TEST_TIER=owner MODKIT_LINK_MODE=core npx vitest run --config ./test/vitest.config.mjs starcraft2/modules/triggers/test/conversion",
+    "commit": "cc746e53dbe035024d7818c222105aec15283d34",
+    "converterCommit": "f10960a2811c6267c91d8d1b2c48ec4770dd36e2",
+    "files": [
+      {
+        "failed": 0,
+        "passed": 3,
+        "path": "starcraft2/modules/triggers/test/conversion/codec-conversion-operations.test.ts",
+        "sha256": "783375d43e22e1f2d5188402116dc63cc31a4770835bb7cd9a438ffe2dce43ad"
+      },
+      {
+        "failed": 0,
+        "passed": 20,
+        "path": "starcraft2/modules/triggers/test/conversion/semantic-conversion.test.ts",
+        "sha256": "2d9fe2cec883e399d49ca7fa04762d2befa2b5c92e100ab8019db8a62ca1ee67"
+      },
+      {
+        "failed": 0,
+        "passed": 176,
+        "path": "starcraft2/modules/triggers/test/conversion/triggers-galaxy-corpus-regressions.test.ts",
+        "sha256": "42eaa2d02770f139b114df6fb408514280abfef235f2674a8ca935740c9075ef"
+      },
+      {
+        "failed": 0,
+        "passed": 24,
+        "path": "starcraft2/modules/triggers/test/conversion/triggers-galaxy-startup-validation.test.ts",
+        "sha256": "827c9659fa01030191dca84b58113a7a523d958f63bcab44c793215239886634"
+      },
+      {
+        "failed": 0,
+        "passed": 73,
+        "path": "starcraft2/modules/triggers/test/conversion/triggers-galaxy-structured.test.ts",
+        "sha256": "0c745ccc25adec13272517f2c3e896c8ea304b3ba7381b5a9ede7d44776b13f6"
+      },
+      {
+        "failed": 0,
+        "passed": 45,
+        "path": "starcraft2/modules/triggers/test/conversion/triggers-galaxy-templates.test.ts",
+        "sha256": "677d469c46770eff4d248b147bda3db2d345343e36e75bb9a8b663eff0f73260"
+      }
+    ],
+    "manifest": {
+      "path": "modkit-extensions-blizzard/starcraft2/modules/triggers/codecs/triggers/codec.json",
+      "sha256": "c911759012e669d8347432add0dbe83bd89a0bf4d63f4607449497fdfc4d8d5d"
+    },
+    "repository": "modkit-extensions-blizzard",
+    "totals": {
+      "failed": 0,
+      "passed": 341,
+      "skipped": 0,
+      "total": 341
+    }
+  },
+  "reason": "Owner decision 2026-09-17: the MK3 Triggers<->Galaxy converter (modkit-extensions-blizzard f10960a2, editor-aligned, tested against the SC2 Editor) is the reference; no comparison with MK2 is owed. MK2 identity constants and viewer contributions are replaced by the MK3 codec manifest and subject surface.",
+  "rows": [
+    {
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/d8436467fd226bfa",
+      "note": "T2G export.convert"
+    },
+    {
+      "contribution": "modkit-extensions-blizzard/starcraft2/modules/triggers/codecs/triggers/codec.json",
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/operation/export.convert",
+      "note": "published as export.convert:export-convert"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/bb4cc9de14f37b6d",
+      "note": "G2T reverse conversion"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/4387bc663cbbb3d0",
+      "note": "asset.compare T->G->T round trip (MK3 asset.compare:compare)"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/02c6d7125242d9cb",
+      "note": "T2G pipeline, the same converter seen from the galaxy codec"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/e082264235448ed8",
+      "note": "ast-factory: converter internals (galaxy-conversion/internal/ast-factory.ts)"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/3e3dc4d96f558126",
+      "note": "identity constants -> MK3 codec manifest id/match"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/aee693bdd0fced58",
+      "note": "identity constants -> MK3 codec manifest id/match"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/sc2-triggers/feature/b21bd8948762e076",
+      "note": "viewer contributions -> MK3 subject surface"
+    }
+  ],
+  "schemaVersion": 1
+}
