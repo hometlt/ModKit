@@ -4,6 +4,8 @@
   "artifactKind": "deterministic-shell",
   "shellEntries": [
     "app.css",
+    "codicons/codicon.css",
+    "codicons/codicon.ttf",
     "extension.cjs",
     "format-smoke.v1.json",
     "modkit-ui.css",
