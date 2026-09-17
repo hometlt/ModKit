@@ -11,19 +11,30 @@
       "variantId": "trusted-node",
       "entrypoint": "./src/png/codec.js",
       "target": {
-        "environments": ["node"]
+        "environments": [
+          "node"
+        ]
       },
       "executionProfile": "trusted-in-process",
-      "requestedPermissionClasses": ["read-source", "write-source"]
+      "requestedPermissionClasses": [
+        "read-source",
+        "write-source"
+      ]
     },
     {
       "variantId": "portable",
       "entrypoint": "./src/png/codec.js",
       "target": {
-        "environments": ["browser-worker", "node-worker"]
+        "environments": [
+          "browser-worker",
+          "node-worker"
+        ]
       },
       "executionProfile": "worker-brokered",
-      "requestedPermissionClasses": ["read-source", "write-source"]
+      "requestedPermissionClasses": [
+        "read-source",
+        "write-source"
+      ]
     }
   ],
   "spec": {
@@ -34,13 +45,29 @@
         "mediaType": "image/png"
       }
     ],
-    "roles": ["media"],
+    "roles": [
+      "media"
+    ],
     "sourceTopology": "single",
-    "artifactStages": ["authored", "compiled", "runtime"],
-    "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
+    "artifactStages": [
+      "authored",
+      "compiled",
+      "runtime"
+    ],
+    "openIntents": [
+      "probe",
+      "inspect",
+      "thumbnail",
+      "full",
+      "export"
+    ],
     "match": {
-      "extensions": ["png"],
-      "mediaTypes": ["image/png"],
+      "extensions": [
+        "png"
+      ],
+      "mediaTypes": [
+        "image/png"
+      ],
       "signatures": [
         {
           "from": "start",
@@ -87,29 +114,45 @@
         "id": "view.inspect",
         "handlerId": "inspect",
         "mutatesSource": false,
-        "requiredPermissions": ["read-source"],
-        "outputKinds": ["json"]
+        "requiredPermissions": [
+          "read-source"
+        ],
+        "outputKinds": [
+          "json"
+        ]
       },
       {
         "id": "asset.validate",
         "handlerId": "validate",
         "mutatesSource": false,
-        "requiredPermissions": ["read-source"],
-        "outputKinds": ["none"]
+        "requiredPermissions": [
+          "read-source"
+        ],
+        "outputKinds": [
+          "none"
+        ]
       },
       {
         "id": "export.raw",
         "handlerId": "export-raw",
         "mutatesSource": false,
-        "requiredPermissions": ["read-source"],
-        "outputKinds": ["bytes"]
+        "requiredPermissions": [
+          "read-source"
+        ],
+        "outputKinds": [
+          "bytes"
+        ]
       },
       {
         "id": "export.convert",
         "handlerId": "convert-rgba8",
         "mutatesSource": false,
-        "requiredPermissions": ["read-source"],
-        "outputKinds": ["bytes"],
+        "requiredPermissions": [
+          "read-source"
+        ],
+        "outputKinds": [
+          "bytes"
+        ],
         "inputSchema": {
           "$ref": "modkit://images/png-export-convert.v1",
           "document": {
@@ -124,16 +167,6 @@
                   "icon": true
                 },
                 "fields": []
-              },
-              {
-                "id": "button",
-                "label": "Prepare SC2 button icon",
-                "summary": "Writes a DXT5 button icon (square source, at most 256 x 256) with a transparent frame.",
-                "baseInput": {
-                  "target": "dds",
-                  "transform": "button-icon"
-                },
-                "fields": []
               }
             ]
           }
@@ -143,7 +176,10 @@
         "id": "edit.field",
         "handlerId": "set-text",
         "mutatesSource": true,
-        "requiredPermissions": ["read-source", "write-source"],
+        "requiredPermissions": [
+          "read-source",
+          "write-source"
+        ],
         "inputSchema": {
           "$ref": "modkit://image-png/edit-field.v1",
           "document": {
@@ -164,7 +200,9 @@
                       "kind": "text",
                       "pattern": "^[^\\u0000]{1,79}$"
                     },
-                    "inputPath": ["key"],
+                    "inputPath": [
+                      "key"
+                    ],
                     "required": true,
                     "initial": "Description",
                     "source": "entry-key",
@@ -176,7 +214,9 @@
                     "type": {
                       "kind": "text"
                     },
-                    "inputPath": ["value"],
+                    "inputPath": [
+                      "value"
+                    ],
                     "initial": "set from the Modkit inspector",
                     "source": "entry-value",
                     "description": "Latin-1, no NUL"
@@ -186,7 +226,9 @@
             ]
           }
         },
-        "outputKinds": ["edit-plan"]
+        "outputKinds": [
+          "edit-plan"
+        ]
       }
     ],
     "traitDeclarations": [

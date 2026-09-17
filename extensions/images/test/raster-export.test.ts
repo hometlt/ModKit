@@ -90,32 +90,6 @@ describe('DDS export.convert', () => {
     ).rejects.toThrow(/binary alpha; pixel 0,0 has alpha/u)
   })
 
-  it('prepares an SC2 button icon as DXT5 with a transparent frame', async () => {
-    const dds = encodeDds(
-      rgba(64, 64, () => [200, 100, 50, 255]),
-      { format: 'rgba8' },
-    )
-    const icon = await convert('dds/codec.js', dds, 'convert', {
-      target: 'dds',
-      transform: 'button-icon',
-    })
-    const back = await readBack('dds/codec.js', icon)
-    expect(back.encoding).toMatch(/DXT5|BC3/u)
-    expect([back.width, back.height]).toEqual([64, 64])
-    expect(back.pixels[3]).toBe(0) // the frame corner
-    expect(back.pixels[(32 * 64 + 32) * 4 + 3]).toBe(255) // the art
-  })
-
-  it('refuses a button icon larger than 256', async () => {
-    const dds = encodeDds(
-      rgba(260, 260, () => [1, 2, 3, 255]),
-      { format: 'rgba8' },
-    )
-    await expect(
-      convert('dds/codec.js', dds, 'convert', { target: 'dds', transform: 'button-icon' }),
-    ).rejects.toThrow(/no larger than 256/u)
-  })
-
   it('refuses an unknown target by name', async () => {
     const dds = encodeDds(opaque, { format: 'rgba8' })
     await expect(convert('dds/codec.js', dds, 'convert', { target: 'gif' })).rejects.toThrow(
@@ -148,35 +122,31 @@ describe('PNG export.convert', () => {
 })
 
 describe('DDS edit.content forms', () => {
-  it('publishes one generic edit-panel form per transform, and the button-icon form plans an edit', async () => {
+  it('publishes one generic edit-panel form per transform, and a form plans an edit', async () => {
     const { editOffer } = await import('@modkit/ui/field-editor')
-    const dds = encodeDds(rgba(32, 32, () => [50, 60, 70, 255]), { format: 'rgba8' })
+    const dds = encodeDds(
+      rgba(32, 32, () => [50, 60, 70, 255]),
+      { format: 'rgba8' },
+    )
     const session = (await openImageCodec('dds/codec.js', dds)) as Session
     try {
       const descriptor = (await session.descriptor()) as never
       const offer = editOffer(descriptor, { editable: true })
       expect(offer.unsupported).toEqual([])
       expect(offer.forms.map(form => form.id)).toEqual([
-        'dds-button-icon',
         'dds-recompress',
         'dds-resize',
         'dds-color-key',
         'dds-rounded-alpha',
-        'dds-normal-map',
       ])
-      const button = offer.forms[0]!
-      const input = button.build(new Map())
-      expect(input).toEqual({
-        transform: 'button-icon',
-        format: 'dxt5',
-        options: { framePercent: 5 / 128 },
-      })
-      const result = await session.operations().invoke(button.handlerId, input)
+      const recompress = offer.forms[0]!
+      const input = recompress.build(new Map())
+      expect(input).toEqual({ transform: 'recompress', format: 'dxt1' })
+      const result = await session.operations().invoke(recompress.handlerId, input)
       const plan = (result['output'] as { plan: { edits: { payload: { bytes: Uint8Array } }[] } })
         .plan
       const back = await readBack('dds/codec.js', Uint8Array.from(plan.edits[0]!.payload.bytes))
-      expect(back.encoding).toMatch(/DXT5|BC3/u)
-      expect(back.pixels[3]).toBe(0)
+      expect(back.encoding).toMatch(/DXT1|BC1/u)
     } finally {
       await session.dispose()
     }

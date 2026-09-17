@@ -43,7 +43,12 @@ import {
   type ImageEditSurface,
 } from '../image-editing/index.js'
 import { collectEncodedMedia } from '../media/encoded.js'
-import { exportOffer } from '../field-editor/index.js'
+import {
+  exportOffer,
+  mountFieldEditor,
+  operationForms,
+  type FieldEditorControlV1,
+} from '../field-editor/index.js'
 import type { UiLocalizer } from '../localization/index.js'
 import { IMAGE_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
@@ -334,6 +339,11 @@ export interface ImageViewerOptions {
    * game extension's texture checks, for instance — without this viewer knowing that game exists.
    */
   readonly sections?: readonly ImageSidebarSection[]
+  /**
+   * Pixel operations extensions published for this surface. Each becomes a sidebar section with the
+   * operation's own controls; running one replaces the pixels as an undoable edit.
+   */
+  readonly pixelOperations?: ImagePixelOperationPort
 }
 
 /**
@@ -356,6 +366,41 @@ export interface ImageEditingHandlers {
 export type ImageSaveOutcome =
   | { readonly state: 'saved'; readonly message: string }
   | { readonly state: 'refused'; readonly reason: string }
+
+/**
+ * A pixel operation an extension published (a service operation declaring a `viewer.image`
+ * surface), as the viewer needs it: a heading to group it under, a form to fill and a run.
+ *
+ * The extension's code never enters this page — the operation's own input schema describes the
+ * controls, the viewer sends it the pixels, and the result comes back as pixels.
+ */
+export interface ImagePixelOperation {
+  readonly id: string
+  readonly title: string
+  readonly summary: string
+  readonly sectionId: string
+  readonly sectionTitle: string
+  readonly icon?: string
+  /** The published `edit.content`-shaped form document, or nothing for a one-button operation. */
+  readonly inputSchema?: unknown
+}
+
+export type ImagePixelResult =
+  | {
+      readonly state: 'ok'
+      readonly image: { readonly width: number; readonly height: number; readonly rgba: Uint8Array }
+    }
+  | { readonly state: 'refused'; readonly reason: string }
+
+export interface ImagePixelOperationPort {
+  list(signal?: AbortSignal): Promise<readonly ImagePixelOperation[]>
+  run(
+    operationId: string,
+    input: JsonValue,
+    image: { readonly width: number; readonly height: number; readonly rgba: Uint8Array },
+    signal?: AbortSignal,
+  ): Promise<ImagePixelResult>
+}
 
 /**
  * A contributed sidebar section is just a viewer module, mounted into the section's body with the
@@ -1061,6 +1106,92 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
         if (outcome.state !== 'saved') throw new Error(outcome.reason)
       }
 
+      /*
+       * Sections an extension declared: one per surface heading, with the operation's own controls
+       * built from its published schema. Running one hands the current pixels over and puts the
+       * result back through the editing surface, so it is one undoable, savable edit like a stroke.
+       */
+      let pixelOperations: readonly ImagePixelOperation[] = []
+      const renderPixelOperations = (): void => {
+        const port = options.pixelOperations
+        if (port === undefined || pixelOperations.length === 0) return
+        const sections = new Map<string, ImagePixelOperation[]>()
+        for (const operation of pixelOperations) {
+          sections.set(operation.sectionId, [
+            ...(sections.get(operation.sectionId) ?? []),
+            operation,
+          ])
+        }
+        for (const [sectionId, operations] of sections) {
+          const first = operations[0] as ImagePixelOperation
+          const body = shell.section(sectionId, first.sectionTitle, {
+            ...(first.icon === undefined ? {} : { icon: first.icon }),
+            collapsed: true,
+          }).body
+          for (const operation of operations) {
+            const forms = operationForms(operation.id, operation.id, operation.inputSchema)
+            const form = forms[0]
+            const row = element(body, 'div', { part: 'image.operation' })
+            element(row, 'h3', { part: 'image.metadata-group', text: operation.title })
+            const controls = new Map<string, FieldEditorControlV1>()
+            if (form !== undefined) {
+              for (const field of form.fields) {
+                const line = element(row, 'div', { part: 'form.row' })
+                element(line, 'label', { part: 'form.label', text: field.label })
+                const slot = element(line, 'div', { part: 'form.control' })
+                void mountFieldEditor(slot, field, scope.signal).then(control => {
+                  controls.set(field.name, control)
+                })
+              }
+            }
+            const run = button(row, operation.title, operation.summary, () => {
+              const pixels = ensureWorking()
+              if (pixels === undefined) return
+              let input: JsonValue = {}
+              try {
+                const values = new Map<string, JsonValue>()
+                for (const [name, control] of controls) values.set(name, control.read())
+                input = form === undefined ? {} : form.build(values)
+              } catch (error) {
+                note = error instanceof Error ? error.message : String(error)
+                return
+              }
+              note = localizer.text('viewer.imageOperationRunning', { operation: operation.title })
+              void (async () => {
+                const outcome = await port
+                  .run(
+                    operation.id,
+                    input,
+                    {
+                      width: pixels.width,
+                      height: pixels.height,
+                      rgba: new Uint8Array(pixels.data),
+                    },
+                    scope.signal,
+                  )
+                  .catch(error => ({
+                    state: 'refused' as const,
+                    reason: error instanceof Error ? error.message : String(error),
+                  }))
+                if (outcome.state !== 'ok') {
+                  note = localizer.text('viewer.imageOperationRefused', {
+                    reason: outcome.reason,
+                  })
+                  paint()
+                  return
+                }
+                const next = new ImageData(outcome.image.width, outcome.image.height)
+                next.data.set(outcome.image.rgba.subarray(0, next.data.length))
+                editing?.applyImage(next)
+                note = ''
+                paint()
+              })()
+            })
+            run.textContent = localizer.text('viewer.imageOperationRun')
+          }
+        }
+      }
+
       const renderSections = (): void => {
         shell.clearSections()
         if (info !== undefined && model !== undefined) {
@@ -1202,6 +1333,7 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
             // A section whose module cannot bind (no such data source here) is removed, not empty.
             .catch(() => section.root.remove())
         }
+        renderPixelOperations()
         /*
          * The codec's own metadata, without the host's technical groups: identity and traits are
          * plumbing, and a group that repeats the Image and Format sections is noise.
@@ -1227,6 +1359,12 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
       }
 
       setState(stage, ['loading'])
+      try {
+        pixelOperations = (await options.pixelOperations?.list(scope.signal)) ?? []
+      } catch {
+        // A catalog that cannot be read costs the sections, not the picture.
+        pixelOperations = []
+      }
       try {
         info = await source.info(scope.signal)
         model = await modelFor(subresource)

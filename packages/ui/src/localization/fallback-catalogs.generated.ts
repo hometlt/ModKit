@@ -305,10 +305,8 @@ export const IMAGE_EDITING_FALLBACK_MESSAGES = {
   'imageEditing.lockAspect': 'Lock aspect',
   'imageEditing.nearest': 'Nearest',
   'imageEditing.powerOfTwo': 'Snap to the nearest power of two',
-  'imageEditing.redo': 'Redo (Ctrl+Y)',
   'imageEditing.resample': 'Resampling',
   'imageEditing.resize': 'Resize',
-  'imageEditing.save': 'Save the edited pixels',
   'imageEditing.size': 'Size',
   'imageEditing.tolerance': 'Fill Δ',
   'imageEditing.tool': 'Tool',
@@ -323,7 +321,6 @@ export const IMAGE_EDITING_FALLBACK_MESSAGES = {
   'imageEditing.tool.select': 'Select — drag a region, then Crop or Clear',
   'imageEditing.unavailable':
     'This format has no encoder — editing is unavailable; export still works.',
-  'imageEditing.undo': 'Undo (Ctrl+Z)',
   'imageEditing.width': 'Width',
 } as const satisfies UiMessageCatalog
 
@@ -353,6 +350,9 @@ export const IMAGE_FALLBACK_MESSAGES = {
   'viewer.imageHasAlpha': 'Has alpha',
   'viewer.imageMipLevels': 'Mip levels',
   'viewer.imageNextSubresource': 'Next {axis}',
+  'viewer.imageOperationRefused': 'The operation was refused: {reason}',
+  'viewer.imageOperationRun': 'Apply',
+  'viewer.imageOperationRunning': 'Running {operation}…',
   'viewer.imagePreviousSubresource': 'Previous {axis}',
   'viewer.imageResizeTitle': 'Resize…',
   'viewer.imageSaveRefused': 'Could not save: {reason}',

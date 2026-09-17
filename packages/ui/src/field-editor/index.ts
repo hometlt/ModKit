@@ -861,6 +861,24 @@ function resolveForm(
   })
 }
 
+/**
+ * Forms for an operation that has no subject of its own — a service operation an extension
+ * publishes, reached by a viewer with the pixels or text already in hand.
+ *
+ * Same schema as a codec's `edit.content`, same controls, same `build`; what is missing is the
+ * descriptor, so nothing here can bind to a metadata entry.
+ */
+export function operationForms(
+  operationId: string,
+  handlerId: string,
+  inputSchemaDocument: unknown,
+): readonly EditOperationForm[] {
+  const schema = parseSchema(inputSchemaDocument)
+  if (schema === undefined) return Object.freeze([])
+  const operation = { id: operationId, handlerId } as unknown as AssetOperationDescriptor
+  return Object.freeze(schema.forms.map(spec => resolveForm(operation, spec, undefined)))
+}
+
 /** Resolve forms solely from published operation schemas and descriptor field bindings. */
 export function editOffer(descriptor: AnyDescriptor, options: EditOfferOptions): EditOffer {
   if (!options.editable) return Object.freeze({ forms: [], unsupported: [] })

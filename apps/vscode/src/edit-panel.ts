@@ -78,6 +78,8 @@ export interface EditPanelOptions {
   onPixelEdit?(): void
   /** Leave the encoding field out of every form; the status bar's format menu owns that choice. */
   readonly omitEncoding?: boolean
+  /** Operations extensions published for the image surface, and how to run one. */
+  readonly pixelOperations?: ImageViewerOptions['pixelOperations']
 }
 
 const asRecord = (descriptor: AnyDescriptor): Record<string, unknown> =>

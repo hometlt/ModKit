@@ -3,7 +3,7 @@
  *
  * Ported verbatim in behaviour from
  * `references/modkitmk2/extensions/common/images/codecs/dds/src/ops.ts`: `resizeRgba`,
- * `convertNormalMapToSc2`, `combineNormalSpecular`, `applyRoundedAlpha`, `prepareSc2ButtonIcon`
+ * `combineNormalSpecular`, `applyRoundedAlpha`
  * and `applyColorKeyTransparency`. Every one takes and returns `{ width, height, pixels }` with
  * `pixels` in top-left-first RGBA8 order, and none of them mutates its input.
  *
@@ -64,25 +64,6 @@ export function resizeRgba(image, width, height) {
 }
 
 /**
- * Rearrange a conventional tangent-space normal map into the channel layout SC2 samples.
- *
- * Source `(x, y, z)` becomes `(z, 1 - y, 0, x)`: the X component moves into alpha, Y is flipped
- * for SC2's handedness, Z takes the red channel and blue is cleared — the shader reconstructs the
- * third component, so storing it would waste a channel that DXT5 compresses badly anyway.
- */
-export function convertNormalMapToSc2(image) {
-  checked(image)
-  const out = new Uint8Array(image.pixels.length)
-  for (let index = 0; index < image.pixels.length; index += 4) {
-    out[index] = image.pixels[index + 2]
-    out[index + 1] = 255 - image.pixels[index + 1]
-    out[index + 2] = 0
-    out[index + 3] = image.pixels[index]
-  }
-  return { width: image.width, height: image.height, pixels: out }
-}
-
-/**
  * Put a specular map into the blue channel a converted SC2 normal map leaves empty.
  *
  * The specular image is resampled to the normal map's size when they differ; only its blue channel
@@ -128,47 +109,6 @@ export function applyRoundedAlpha(image, radius) {
   return { width: image.width, height: image.height, pixels: out }
 }
 
-/**
- * Turn arbitrary art into an SC2 button icon: rounded, inset inside a transparent frame.
- *
- * The defaults are the proportions SC2's UI uses — a frame of 5/128 of the icon on each edge and a
- * corner radius of 16/118 of the inner art — so `prepareSc2ButtonIcon(image)` on a 128×128 source
- * reproduces the stock geometry. Every derived number can be overridden; `finalSize` and
- * `innerSize` are the square shorthands legacy kept for its older callers.
- */
-export function prepareSc2ButtonIcon(image, options = {}) {
-  checked(image)
-  const finalWidth = options.finalWidth ?? options.finalSize ?? image.width
-  const finalHeight = options.finalHeight ?? options.finalSize ?? image.height
-  const framePercent = options.framePercent ?? 5 / 128
-  const innerWidth =
-    options.innerWidth ??
-    options.innerSize ??
-    Math.max(1, Math.round(finalWidth * (1 - framePercent * 2)))
-  const innerHeight =
-    options.innerHeight ??
-    options.innerSize ??
-    Math.max(1, Math.round(finalHeight * (1 - framePercent * 2)))
-  const radius =
-    options.radius ?? Math.max(1, Math.round(Math.min(innerWidth, innerHeight) * (16 / 118)))
-  const borderX = Math.floor((finalWidth - innerWidth) / 2)
-  const borderY = Math.floor((finalHeight - innerHeight) / 2)
-  const rounded = applyRoundedAlpha(resizeRgba(image, innerWidth, innerHeight), radius)
-  const out = new Uint8Array(finalWidth * finalHeight * 4)
-  for (let y = 0; y < innerHeight; y += 1) {
-    const target = ((y + borderY) * finalWidth + borderX) * 4
-    out.set(rounded.pixels.subarray(y * innerWidth * 4, (y + 1) * innerWidth * 4), target)
-  }
-  return { width: finalWidth, height: finalHeight, pixels: out }
-}
-
-/**
- * Replace every pixel within `tolerance` of a target colour, channel by channel.
- *
- * The match is on RGB only — alpha does not take part — and the replacement writes all four
- * channels, defaulting to fully transparent black. This is the "the artist used magenta as the
- * background" case.
- */
 export function applyColorKeyTransparency(image, options) {
   checked(image)
   const tolerance = options.tolerance ?? 0

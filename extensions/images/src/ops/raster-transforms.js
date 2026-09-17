@@ -1,16 +1,21 @@
 /**
  * The pixel transforms MK2 shipped, by name, and the raster export every image codec shares.
  *
- * `ops/raster-ops.js` holds six transforms — resize, the SC2 normal-map conversion, the normal and
- * specular combine, rounded alpha, the button-icon preparation and colour-key transparency. MK2
- * reached them (and its DDS/PNG file conversions, `apps/modkit-vscode/src/dds-commands.ts`) from
- * VS Code commands; MK3 puts them behind codec operations instead — `edit.content` for an in-place
- * edit plan, `export.convert` for a new file — so the app, the editor and a script all reach the
- * same code.
+ * `ops/raster-ops.js` holds the format-agnostic transforms — resize, the normal and specular
+ * combine, rounded alpha, colour-key transparency and whole-image replacement. MK2 reached them
+ * (and its DDS/PNG file conversions, `apps/modkit-vscode/src/dds-commands.ts`) from VS Code
+ * commands; MK3 puts them behind codec operations instead — `edit.content` for an in-place edit
+ * plan, `export.convert` for a new file — so the app, the editor and a script all reach the same
+ * code.
+ *
+ * What is deliberately *not* here any more: the SC2 button icon and the SC2 normal-map layout.
+ * Those are StarCraft II conventions, not image-format knowledge, and they moved to that game's
+ * extension as `sc2-image.button-icon` and `sc2-image.normal-map` — operations any image viewer
+ * offers for any format it can decode, rather than two transforms only a DDS could reach.
  *
  * Each entry states what it needs, because the failures are silent otherwise: `combineNormalSpecular`
- * wants a second image and produces nonsense from one, and `prepareSc2ButtonIcon` assumes a square
- * icon. Checking here means a caller gets told; checking nowhere means a modder gets a wrong texture.
+ * wants a second image and produces nonsense from one. Checking here means a caller gets told;
+ * checking nowhere means a modder gets a wrong texture.
  */
 
 import { ENCODABLE_FORMATS, chooseDdsFormatForImage, encodeDds } from '../dds/encode.js'
@@ -19,13 +24,8 @@ import {
   applyColorKeyTransparency,
   applyRoundedAlpha,
   combineNormalSpecular,
-  convertNormalMapToSc2,
-  prepareSc2ButtonIcon,
   resizeRgba,
 } from './raster-ops.js'
-
-/** MK2 `prepareDdsSc2ButtonIcon`: a square icon no larger than 256 × 256. */
-const BUTTON_ICON_MAX = 256
 
 export const TRANSFORMS = Object.freeze({
   /** No pixel change: re-encode only (MK2 "DDS Convert DXT5 Binary Alpha to DXT1"). */
@@ -49,10 +49,6 @@ export const TRANSFORMS = Object.freeze({
       return resizeRgba(image, width, height)
     },
   },
-  'normal-map': {
-    label: 'Convert normal map to the SC2 channel layout',
-    apply: image => convertNormalMapToSc2(image),
-  },
   'combine-normal-specular': {
     label: 'Combine a normal map with a specular map',
     apply: (image, request) => {
@@ -74,22 +70,6 @@ export const TRANSFORMS = Object.freeze({
         throw new TypeError('rounded-alpha requires a non-negative radius')
       }
       return applyRoundedAlpha(image, radius)
-    },
-  },
-  'button-icon': {
-    label: 'Prepare an SC2 button icon',
-    apply: (image, request) => {
-      if (image.width !== image.height) {
-        throw new TypeError(
-          `button-icon requires a square image, got ${image.width} x ${image.height}`,
-        )
-      }
-      if (image.width > BUTTON_ICON_MAX) {
-        throw new TypeError(
-          `button-icon requires an icon no larger than ${BUTTON_ICON_MAX} x ${BUTTON_ICON_MAX}, got ${image.width} x ${image.height}`,
-        )
-      }
-      return prepareSc2ButtonIcon(image, request.options ?? {})
     },
   },
   /**
@@ -198,7 +178,7 @@ export async function exportRaster(image, request, options = {}) {
   }
   if (target === 'rgba8') return result.pixels
   if (target === 'png') return encodePng(result.width, result.height, result.pixels, options.signal)
-  const iconLike = request.icon === true || transformName === 'button-icon'
+  const iconLike = request.icon === true
   const named = request.format === 'keep' ? undefined : request.format
   const requested = named ?? (iconLike ? 'dxt5' : (options.defaultDdsFormat ?? 'rgba8'))
   const format = requested === 'auto' ? chooseDdsFormatForImage(result) : requested
@@ -267,25 +247,6 @@ export const DDS_EDIT_CONTENT_SCHEMA = Object.freeze({
     schemaVersion: 1,
     forms: Object.freeze([
       form(
-        'dds-button-icon',
-        'button-icon',
-        'Prepare an SC2 button icon',
-        'Insets a square icon (at most 256 x 256) in a transparent frame with rounded corners.',
-        [
-          formatField('dxt5'),
-          numberField(
-            'framePercent',
-            'Frame (fraction of the edge)',
-            ['options', 'framePercent'],
-            5 / 128,
-            {
-              min: 0,
-              max: 0.45,
-            },
-          ),
-        ],
-      ),
-      form(
         'dds-recompress',
         'recompress',
         'Change the DDS encoding',
@@ -321,13 +282,6 @@ export const DDS_EDIT_CONTENT_SCHEMA = Object.freeze({
         'Cuts the corners to transparent.',
         [numberField('radius', 'Radius', ['radius'], 8, { min: 0 }), formatField('keep')],
       ),
-      form(
-        'dds-normal-map',
-        'normal-map',
-        'Convert a normal map to the SC2 layout',
-        'Moves the normal channels into the layout the SC2 shaders read.',
-        [formatField('keep')],
-      ),
     ]),
   }),
 })
@@ -354,12 +308,6 @@ export const DDS_EXPORT_SCHEMA = Object.freeze({
         'Writes a DXT1 copy; refused while any texel is partially transparent.',
         { target: 'dds', format: 'dxt1' },
       ),
-      preset(
-        'button',
-        'Prepare SC2 button icon',
-        'Writes a DXT5 button icon (square source, at most 256 x 256) with a transparent frame.',
-        { target: 'dds', transform: 'button-icon' },
-      ),
     ]),
   }),
 })
@@ -375,12 +323,6 @@ export const PNG_EXPORT_SCHEMA = Object.freeze({
         'Convert icon to DDS',
         'Writes a DXT5 DDS of a square icon smaller than 256 x 256.',
         { target: 'dds', icon: true },
-      ),
-      preset(
-        'button',
-        'Prepare SC2 button icon',
-        'Writes a DXT5 button icon (square source, at most 256 x 256) with a transparent frame.',
-        { target: 'dds', transform: 'button-icon' },
       ),
     ]),
   }),

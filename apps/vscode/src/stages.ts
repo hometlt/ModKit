@@ -73,6 +73,10 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
           ? {}
           : { registerEditing: context.registerPixelEditing }),
         ...(context.onPixelEdit === undefined ? {} : { onEdit: context.onPixelEdit }),
+        // Extension-declared sections: the SC2 texture operations arrive this way, not from here.
+        ...(context.pixelOperations === undefined
+          ? {}
+          : { pixelOperations: context.pixelOperations }),
         /*
          * MK2's separate Edit, Metadata and Tree tabs are sidebar sections of the render view now.
          * They are viewer modules like any other, which is also how an extension adds its own.

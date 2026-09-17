@@ -85,6 +85,8 @@ export interface ImageEditing {
   /** Keyboard shortcuts; `true` = consumed. */
   keyDown(event: KeyboardEvent): boolean
   openResize(): void
+  /** Replace every pixel as one undoable edit — what an extension's operation produces. */
+  applyImage(next: ImageData): void
   /** Re-place the marquee after the view moved. */
   refresh(): void
   destroy(): void
@@ -981,6 +983,11 @@ export function createImageEditing(
       heightInput.value = String(image.height)
       dialog.hidden = false
       widthInput.focus()
+    },
+    applyImage(next) {
+      selection = undefined
+      showMarquee()
+      replaceAll(next)
     },
     refresh() {
       showMarquee()

@@ -13,7 +13,8 @@ describe('service operation command palette wiring', () => {
   })
 
   it('routes service operations across the host and worker targets with conservative effects', () => {
-    expect(source.match(/alternateTargets: \[host\.services\.target\]/gu)).toHaveLength(3)
+    // Three palette routes plus the two the image view's extension sections use (list and run).
+    expect(source.match(/alternateTargets: \[host\.services\.target\]/gu)).toHaveLength(5)
     expect(source).toContain("allowedEffects: ['none']")
     expect(source).toMatch(
       /serviceOperations:\s*\{[\s\S]*catalog:[\s\S]*discoverServiceOperations\([\s\S]*invoke:[\s\S]*invokeServiceOperation\(/u,

@@ -5285,6 +5285,11 @@
     margin: 0;
   }
 
+  /* One extension-declared operation: a heading, its own controls, then Apply. */
+  [data-mk-part='image.operation'] {
+    margin-block-start: var(--mk-space-2);
+  }
+
   [data-mk-part='image.metadata-group'] {
     margin: var(--mk-space-2) 0 2px;
     color: var(--mk-color-fg-muted);

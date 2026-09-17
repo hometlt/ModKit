@@ -157,6 +157,19 @@ export type ShellRequest =
       readonly languageIds?: readonly string[]
       readonly maxDocuments?: number
     }
+  /**
+   * Operations extensions published for a viewer surface, and one run of one of them.
+   *
+   * This is the extension-into-viewer route: the extension's code runs where it always did (the
+   * extension host), the page only renders the declared controls and carries the pixels across.
+   */
+  | { readonly op: 'viewer-operations'; readonly surface: string }
+  | {
+      readonly op: 'viewer-operation-run'
+      readonly operationId: string
+      readonly input: unknown
+      readonly image: { readonly width: number; readonly height: number; readonly rgba: string }
+    }
   | { readonly op: 'settings' }
   | { readonly op: 'set-contribution'; readonly id: string; readonly enabled: boolean }
   | { readonly op: 'set-contributions'; readonly ids: readonly string[]; readonly enabled: boolean }

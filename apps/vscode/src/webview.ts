@@ -27,6 +27,7 @@ import { resolveModelViewerTextures } from '@modkit/ui/model'
 import { templateImagesFromRaster } from '@modkit/ui/template'
 import type { UiCatalogDocument, UiLocale, UiLocalizer } from '@modkit/ui/localization'
 import type { ViewerGalleryPort, ViewerStatusPort } from '@modkit/sdk'
+import type { ImagePixelOperation } from '@modkit/ui/image'
 import {
   createSubjectCard,
   loadSubjectCardSections,
@@ -132,6 +133,15 @@ const mapPreviewCandidates = (items: readonly unknown[]): readonly MapPreviewCan
     }
     return [item as MapPreviewCandidate]
   })
+
+/** Pixels cross the bridge as JSON; base64 keeps that from being one number per byte. */
+function base64Of(bytes: Uint8Array): string {
+  let text = ''
+  for (let index = 0; index < bytes.length; index += 0x8000) {
+    text += String.fromCharCode(...bytes.subarray(index, index + 0x8000))
+  }
+  return btoa(text)
+}
 
 /** A sibling larger than this is listed without a thumbnail rather than read for one. */
 const GALLERY_THUMBNAIL_MAXIMUM_BYTES = 16 * 1024 * 1024
@@ -494,6 +504,35 @@ async function mount(
             assets,
             signal,
           )
+        },
+        pixelOperations: {
+          async list() {
+            const answer = await bridge
+              .request({ op: 'viewer-operations', surface: 'viewer.image' })
+              .catch(() => [])
+            return Array.isArray(answer) ? (answer as readonly ImagePixelOperation[]) : []
+          },
+          async run(operationId, input, image) {
+            const answer = (await bridge.request({
+              op: 'viewer-operation-run',
+              operationId,
+              input,
+              image: { width: image.width, height: image.height, rgba: base64Of(image.rgba) },
+            })) as
+              | { state: 'ok'; image: { width: number; height: number; rgba: string } }
+              | { state: 'refused'; reason: string }
+            if (answer.state !== 'ok') return answer
+            return {
+              state: 'ok',
+              image: {
+                width: answer.image.width,
+                height: answer.image.height,
+                rgba: Uint8Array.from(atob(answer.image.rgba), character =>
+                  character.charCodeAt(0),
+                ),
+              },
+            }
+          },
         },
         registerPixelEditing(handlers) {
           pixelEditing = handlers

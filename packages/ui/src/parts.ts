@@ -407,6 +407,7 @@ export const PARTS = Object.freeze([
   'card.subcard-body',
   'card.custom',
   'image.metadata-group',
+  'image.operation',
   'media-shell',
   'media-shell.toggle',
   'media-shell.gallery',

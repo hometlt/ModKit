@@ -642,6 +642,20 @@ export interface VsCodeServeOptions {
     choose: (itemId: string, choiceId: string) => void,
   ) => void
   /**
+   * Operations extensions published for a viewer surface, and how to run one.
+   *
+   * The adapter owns discovery and invocation (they need a grant and a runtime realm); the page
+   * receives inert descriptors and sends back an operation id, its input and the pixels.
+   */
+  readonly viewerOperations?: {
+    list(surface: string): Promise<readonly ViewerSurfaceOperation[]>
+    run(
+      operationId: string,
+      input: unknown,
+      image: { readonly width: number; readonly height: number; readonly rgba: Uint8Array },
+    ): Promise<ViewerSurfaceOperationResult>
+  }
+  /**
    * Write viewer-produced export files somewhere this window owns, and say where they went.
    *
    * The adapter picks the destination; the page never names one. A host without this option makes
@@ -747,6 +761,24 @@ export interface VsCodeConfigurationPort {
   /** Native folder dialog; resolves with the chosen absolute path, or nothing when cancelled. */
   pickFolder(): Promise<string | undefined>
 }
+
+/** One operation an extension published for a viewer surface, as the page receives it. */
+export interface ViewerSurfaceOperation {
+  readonly id: string
+  readonly title: string
+  readonly summary: string
+  readonly sectionId: string
+  readonly sectionTitle: string
+  readonly icon?: string
+  readonly inputSchema?: unknown
+}
+
+export type ViewerSurfaceOperationResult =
+  | {
+      readonly state: 'ok'
+      readonly image: { readonly width: number; readonly height: number; readonly rgba: string }
+    }
+  | { readonly state: 'refused'; readonly reason: string }
 
 export interface VsCodeServed {
   readonly bridge: Bridge
@@ -1422,6 +1454,20 @@ function serveVsCode(
           throw new Error('that file is outside the granted folders')
         await options.openInEditor?.(request.path)
         return true
+      }
+      case 'viewer-operations':
+        return (await options.viewerOperations?.list(request.surface)) ?? []
+      case 'viewer-operation-run': {
+        if (options.viewerOperations === undefined) {
+          return { state: 'refused', reason: 'this window publishes no viewer operations' }
+        }
+        const rgba = Uint8Array.from(atob(request.image.rgba), character => character.charCodeAt(0))
+        const outcome = await options.viewerOperations.run(request.operationId, request.input, {
+          width: request.image.width,
+          height: request.image.height,
+          rgba,
+        })
+        return outcome
       }
       case 'status-set':
         options.viewerStatus?.(

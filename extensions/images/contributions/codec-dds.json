@@ -12,19 +12,30 @@
       "variantId": "trusted-node",
       "entrypoint": "./src/dds/codec.js",
       "target": {
-        "environments": ["node"]
+        "environments": [
+          "node"
+        ]
       },
       "executionProfile": "trusted-in-process",
-      "requestedPermissionClasses": ["read-source", "write-source"]
+      "requestedPermissionClasses": [
+        "read-source",
+        "write-source"
+      ]
     },
     {
       "variantId": "portable",
       "entrypoint": "./src/dds/codec.js",
       "target": {
-        "environments": ["browser-worker", "node-worker"]
+        "environments": [
+          "browser-worker",
+          "node-worker"
+        ]
       },
       "executionProfile": "worker-brokered",
-      "requestedPermissionClasses": ["read-source", "write-source"]
+      "requestedPermissionClasses": [
+        "read-source",
+        "write-source"
+      ]
     }
   ],
   "limitations": [
@@ -36,7 +47,7 @@
     "Writing is a separate contribution: modkit/dds-encoder-writer (common.edit/writer@1) encodes RGBA8 pixels as rgba8, dxt1, dxt3 or dxt5.",
     "The compressed-texture view of a DDS (GPU blocks handed over undecoded, with block geometry, colour space, alpha mode and per-subresource byte ranges) is implemented in src/dds/compressed.js but is not published: MK3 has no common.view contract for compressed textures yet.",
     "Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global signature sniffing.",
-    "edit.content applies one named pixel transform (resize, normal-map, combine-normal-specular, rounded-alpha, button-icon, color-key) and re-encodes the whole surface: mip levels, array layers and cube faces past the first are not carried over."
+    "edit.content applies one named pixel transform (resize, combine-normal-specular, rounded-alpha, colour key, whole-image replace) and re-encodes the whole surface: mip levels, array layers and cube faces past the first are not carried over."
   ],
   "spec": {
     "formatRefs": [
@@ -45,12 +56,26 @@
         "label": "DirectDraw Surface"
       }
     ],
-    "roles": ["media"],
+    "roles": [
+      "media"
+    ],
     "sourceTopology": "single",
-    "artifactStages": ["authored", "compiled", "runtime"],
-    "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
+    "artifactStages": [
+      "authored",
+      "compiled",
+      "runtime"
+    ],
+    "openIntents": [
+      "probe",
+      "inspect",
+      "thumbnail",
+      "full",
+      "export"
+    ],
     "match": {
-      "extensions": ["dds"],
+      "extensions": [
+        "dds"
+      ],
       "signatures": [
         {
           "from": "start",
@@ -97,91 +122,51 @@
         "id": "view.inspect",
         "handlerId": "inspect",
         "mutatesSource": false,
-        "requiredPermissions": ["read-source"],
-        "outputKinds": ["json"]
+        "requiredPermissions": [
+          "read-source"
+        ],
+        "outputKinds": [
+          "json"
+        ]
       },
       {
         "id": "asset.validate",
         "handlerId": "validate",
         "mutatesSource": false,
-        "requiredPermissions": ["read-source"],
-        "outputKinds": ["none"]
+        "requiredPermissions": [
+          "read-source"
+        ],
+        "outputKinds": [
+          "none"
+        ]
       },
       {
         "id": "export.raw",
         "handlerId": "export-raw",
         "mutatesSource": false,
-        "requiredPermissions": ["read-source"],
-        "outputKinds": ["bytes"]
+        "requiredPermissions": [
+          "read-source"
+        ],
+        "outputKinds": [
+          "bytes"
+        ]
       },
       {
         "id": "edit.content",
         "handlerId": "transform",
         "mutatesSource": true,
-        "requiredPermissions": ["read-source", "write-source"],
-        "outputKinds": ["edit-plan"],
+        "requiredPermissions": [
+          "read-source",
+          "write-source"
+        ],
+        "outputKinds": [
+          "edit-plan"
+        ],
         "inputSchema": {
           "$ref": "modkit://images/dds-edit-content.v1",
           "document": {
             "schemaVersion": 1,
             "forms": [
-              {
-                "id": "dds-button-icon",
-                "label": "Prepare an SC2 button icon",
-                "summary": "Insets a square icon (at most 256 x 256) in a transparent frame with rounded corners.",
-                "baseInput": {
-                  "transform": "button-icon"
-                },
-                "fields": [
-                  {
-                    "key": "format",
-                    "label": "Encoding",
-                    "type": {
-                      "kind": "enum",
-                      "members": [
-                        {
-                          "id": "keep",
-                          "label": "Keep the source encoding"
-                        },
-                        {
-                          "id": "dxt1",
-                          "label": "DXT1 / BC1 (binary alpha)"
-                        },
-                        {
-                          "id": "dxt3",
-                          "label": "DXT3 / BC2"
-                        },
-                        {
-                          "id": "dxt5",
-                          "label": "DXT5 / BC3"
-                        },
-                        {
-                          "id": "rgba8",
-                          "label": "Uncompressed RGBA8"
-                        },
-                        {
-                          "id": "auto",
-                          "label": "DXT5 if any texel is partially transparent, else DXT1"
-                        }
-                      ]
-                    },
-                    "inputPath": ["format"],
-                    "initial": "dxt5"
-                  },
-                  {
-                    "key": "framePercent",
-                    "label": "Frame (fraction of the edge)",
-                    "type": {
-                      "kind": "number",
-                      "min": 0,
-                      "max": 0.45
-                    },
-                    "inputPath": ["options", "framePercent"],
-                    "required": true,
-                    "initial": 0.0390625
-                  }
-                ]
-              },
               {
                 "id": "dds-recompress",
                 "label": "Change the DDS encoding",
@@ -222,7 +207,9 @@
                         }
                       ]
                     },
-                    "inputPath": ["format"],
+                    "inputPath": [
+                      "format"
+                    ],
                     "initial": "dxt1"
                   }
                 ]
@@ -243,7 +230,9 @@
                       "integer": true,
                       "min": 1
                     },
-                    "inputPath": ["width"],
+                    "inputPath": [
+                      "width"
+                    ],
                     "required": true,
                     "initial": 64
                   },
@@ -255,7 +244,9 @@
                       "integer": true,
                       "min": 1
                     },
-                    "inputPath": ["height"],
+                    "inputPath": [
+                      "height"
+                    ],
                     "required": true,
                     "initial": 64
                   },
@@ -291,7 +282,9 @@
                         }
                       ]
                     },
-                    "inputPath": ["format"],
+                    "inputPath": [
+                      "format"
+                    ],
                     "initial": "keep"
                   }
                 ]
@@ -313,7 +306,10 @@
                       "min": 0,
                       "max": 255
                     },
-                    "inputPath": ["target", "r"],
+                    "inputPath": [
+                      "target",
+                      "r"
+                    ],
                     "required": true,
                     "initial": 255
                   },
@@ -326,7 +322,10 @@
                       "min": 0,
                       "max": 255
                     },
-                    "inputPath": ["target", "g"],
+                    "inputPath": [
+                      "target",
+                      "g"
+                    ],
                     "required": true,
                     "initial": 0
                   },
@@ -339,7 +338,10 @@
                       "min": 0,
                       "max": 255
                     },
-                    "inputPath": ["target", "b"],
+                    "inputPath": [
+                      "target",
+                      "b"
+                    ],
                     "required": true,
                     "initial": 255
                   },
@@ -352,7 +354,9 @@
                       "min": 0,
                       "max": 255
                     },
-                    "inputPath": ["tolerance"],
+                    "inputPath": [
+                      "tolerance"
+                    ],
                     "required": true,
                     "initial": 0
                   },
@@ -388,7 +392,9 @@
                         }
                       ]
                     },
-                    "inputPath": ["format"],
+                    "inputPath": [
+                      "format"
+                    ],
                     "initial": "keep"
                   }
                 ]
@@ -408,7 +414,9 @@
                       "kind": "number",
                       "min": 0
                     },
-                    "inputPath": ["radius"],
+                    "inputPath": [
+                      "radius"
+                    ],
                     "required": true,
                     "initial": 8
                   },
@@ -444,52 +452,9 @@
                         }
                       ]
                     },
-                    "inputPath": ["format"],
-                    "initial": "keep"
-                  }
-                ]
-              },
-              {
-                "id": "dds-normal-map",
-                "label": "Convert a normal map to the SC2 layout",
-                "summary": "Moves the normal channels into the layout the SC2 shaders read.",
-                "baseInput": {
-                  "transform": "normal-map"
-                },
-                "fields": [
-                  {
-                    "key": "format",
-                    "label": "Encoding",
-                    "type": {
-                      "kind": "enum",
-                      "members": [
-                        {
-                          "id": "keep",
-                          "label": "Keep the source encoding"
-                        },
-                        {
-                          "id": "dxt1",
-                          "label": "DXT1 / BC1 (binary alpha)"
-                        },
-                        {
-                          "id": "dxt3",
-                          "label": "DXT3 / BC2"
-                        },
-                        {
-                          "id": "dxt5",
-                          "label": "DXT5 / BC3"
-                        },
-                        {
-                          "id": "rgba8",
-                          "label": "Uncompressed RGBA8"
-                        },
-                        {
-                          "id": "auto",
-                          "label": "DXT5 if any texel is partially transparent, else DXT1"
-                        }
-                      ]
-                    },
-                    "inputPath": ["format"],
+                    "inputPath": [
+                      "format"
+                    ],
                     "initial": "keep"
                   }
                 ]
@@ -502,8 +467,12 @@
         "id": "export.convert",
         "handlerId": "convert",
         "mutatesSource": false,
-        "requiredPermissions": ["read-source"],
-        "outputKinds": ["bytes"],
+        "requiredPermissions": [
+          "read-source"
+        ],
+        "outputKinds": [
+          "bytes"
+        ],
         "inputSchema": {
           "$ref": "modkit://images/dds-export-convert.v1",
           "document": {
@@ -525,16 +494,6 @@
                 "baseInput": {
                   "target": "dds",
                   "format": "dxt1"
-                },
-                "fields": []
-              },
-              {
-                "id": "button",
-                "label": "Prepare SC2 button icon",
-                "summary": "Writes a DXT5 button icon (square source, at most 256 x 256) with a transparent frame.",
-                "baseInput": {
-                  "target": "dds",
-                  "transform": "button-icon"
                 },
                 "fields": []
               }

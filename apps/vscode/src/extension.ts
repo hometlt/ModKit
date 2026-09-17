@@ -61,6 +61,7 @@ import {
   createModkitCommandRuntime,
   discoverServiceOperations,
   invokeServiceOperation,
+  SERVICE_OPERATION_CATALOG_MAX_PAGE_ITEMS,
   loadLocalizationCatalogs,
   type CommandInput,
   type CommandResult,
@@ -134,6 +135,8 @@ import {
   VSCODE_MAXIMUM_SUBJECT_BYTES,
   VSCODE_SUBJECT_CONTRIBUTION_ID,
   VSCODE_SUBJECT_SERVICES_URL,
+  type ViewerSurfaceOperation,
+  type ViewerSurfaceOperationResult,
   type VsCodeConfigurationPort,
   type VsCodeServed,
   type VsCodeSubjectHost,
@@ -5348,6 +5351,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       // already has open rather than a second copy of it.
       containers,
       readContentSource,
+      viewerOperations: viewerSurfaceOperations,
       ...(lifecycle === undefined
         ? {}
         : {
@@ -5461,6 +5465,91 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     id: 'modkit-vscode-service-operations',
     classes: Object.freeze([]),
   })
+
+  /**
+   * Operations extensions published for a viewer surface (`ServiceOperationDescriptor.surface`).
+   *
+   * Discovery and invocation stay here, where the grant and the runtime realm are: the page gets
+   * inert descriptors and sends back an operation id, its input and the pixels. That is how an
+   * extension adds a section to a viewer without shipping code into the webview, which the page's
+   * content-security policy forbids outright.
+   */
+  const viewerSurfaceOperations = {
+    async list(surface: string): Promise<readonly ViewerSurfaceOperation[]> {
+      const catalog = await discoverServiceOperations({
+        services: serviceOperationServices,
+        alternateTargets: [host.services.target],
+        grant: serviceOperationGrant,
+        budgets: SERVICE_OPERATION_BUDGET,
+        offset: 0,
+        limit: SERVICE_OPERATION_CATALOG_MAX_PAGE_ITEMS,
+        activate: true,
+      })
+      return catalog.entries.flatMap(entry => {
+        const declared = entry.descriptor?.surface
+        if (entry.descriptor === undefined || declared?.target !== surface) return []
+        return [
+          {
+            id: entry.descriptor.id,
+            title: entry.descriptor.title,
+            summary: entry.descriptor.summary,
+            sectionId: declared.sectionId,
+            sectionTitle: declared.title,
+            ...(declared.icon === undefined ? {} : { icon: declared.icon }),
+            ...(declared.forms === undefined ? {} : { inputSchema: declared.forms }),
+          },
+        ]
+      })
+    },
+    async run(
+      operationId: string,
+      input: unknown,
+      image: { readonly width: number; readonly height: number; readonly rgba: Uint8Array },
+    ): Promise<ViewerSurfaceOperationResult> {
+      const result = await invokeServiceOperation({
+        services: serviceOperationServices,
+        alternateTargets: [host.services.target],
+        operationId,
+        input: {
+          ...(typeof input === 'object' && input !== null && !Array.isArray(input)
+            ? (input as Record<string, never>)
+            : {}),
+          image: {
+            width: image.width,
+            height: image.height,
+            pixels: Buffer.from(image.rgba).toString('base64'),
+          },
+        },
+        grant: serviceOperationGrant,
+        budgets: SERVICE_OPERATION_BUDGET,
+        allowedEffects: ['none'],
+      })
+      if (result.state !== 'invoked') {
+        const why = result.diagnostics.at(-1)?.message ?? result.state
+        return { state: 'refused', reason: `${operationId}: ${why}` }
+      }
+      if (result.result.state !== 'completed') {
+        return {
+          state: 'refused',
+          reason: `${result.result.code}: ${result.result.message}`,
+        }
+      }
+      const value = result.result.value as {
+        image?: { width?: unknown; height?: unknown; pixels?: unknown }
+      }
+      const width = Number(value.image?.width)
+      const height = Number(value.image?.height)
+      const pixels = value.image?.pixels
+      if (
+        !Number.isSafeInteger(width) ||
+        !Number.isSafeInteger(height) ||
+        typeof pixels !== 'string'
+      ) {
+        return { state: 'refused', reason: `${operationId} answered no image` }
+      }
+      return { state: 'ok', image: { width, height, rgba: pixels } }
+    },
+  }
 
   const runtimeActionLabel = (action: string): string => {
     const keys: Readonly<Record<string, UiMessageKey>> = Object.freeze({

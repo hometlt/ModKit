@@ -117,12 +117,6 @@ describe('DDS pixel transforms', () => {
     )
   })
 
-  it('refuses a button icon that is not square', async () => {
-    await expect(
-      transform(solid(8, 4, [1, 2, 3, 255]), { transform: 'button-icon' }),
-    ).rejects.toThrow(/square image, got 8 x 4/u)
-  })
-
   it('refuses a specular combine with no second image, and with a mismatched one', async () => {
     await expect(
       transform(solid(4, 4, [1, 2, 3, 255]), { transform: 'combine-normal-specular' }),

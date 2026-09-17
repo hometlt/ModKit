@@ -50,14 +50,16 @@ function operationIds(value: unknown): readonly string[] | undefined {
 
 function parseOffer(value: unknown): ServiceOperationProviderOfferFacet | undefined {
   const record = recordOf(value)
-  if (record === undefined || Object.keys(record).some(key => key !== 'operationIds')) return undefined
+  if (record === undefined || Object.keys(record).some(key => key !== 'operationIds'))
+    return undefined
   const ids = operationIds(record['operationIds'])
   return ids === undefined ? undefined : { operationIds: ids }
 }
 
 function parseRequest(value: unknown): ServiceOperationProviderRequestFacet | undefined {
   const record = recordOf(value)
-  if (record === undefined || Object.keys(record).some(key => key !== 'operationId')) return undefined
+  if (record === undefined || Object.keys(record).some(key => key !== 'operationId'))
+    return undefined
   return nonEmpty(record['operationId']) ? { operationId: record['operationId'] } : undefined
 }
 
@@ -188,7 +190,14 @@ const DESCRIPTOR_KEYS = Object.freeze([
   'inputSchema',
   'resultSchema',
   'budget',
+  /** Optional: where a product offers this operation in a view (see `ServiceOperationSurface`). */
+  'surface',
 ])
+/** Every key but `surface` is required; a descriptor that omits it is the ordinary case. */
+const REQUIRED_DESCRIPTOR_KEYS = Object.freeze(DESCRIPTOR_KEYS.filter(key => key !== 'surface'))
+const SURFACE_KEYS = Object.freeze(['target', 'sectionId', 'title', 'icon', 'forms'])
+const REQUIRED_SURFACE_KEYS = Object.freeze(['target', 'sectionId', 'title'])
+const SURFACE_TARGETS = new Set(['viewer.image'])
 const BUDGET_KEYS = Object.freeze(['maxInputBytes', 'maxOutputBytes', 'maxWallTimeMs'])
 const RESULT_KEYS = Object.freeze({
   completed: ['state', 'operationId', 'value', 'diagnostics'],
@@ -202,6 +211,18 @@ const encoder = new TextEncoder()
 function exactKeys(record: Readonly<Record<string, unknown>>, allowed: readonly string[]): boolean {
   const keys = Object.keys(record)
   return keys.length === allowed.length && keys.every(key => allowed.includes(key))
+}
+
+/** Keys drawn from `allowed`, with every one of `required` present. */
+function allowedKeys(
+  record: Readonly<Record<string, unknown>>,
+  allowed: readonly string[],
+  required: readonly string[],
+): boolean {
+  return (
+    Object.keys(record).every(key => allowed.includes(key)) &&
+    required.every(key => record[key] !== undefined)
+  )
 }
 
 function safePositiveInteger(value: unknown): value is number {
@@ -267,7 +288,7 @@ export function validateServiceOperationProvider(
     const permissions = descriptor?.['requiredPermissions']
     if (
       descriptor === undefined ||
-      !exactKeys(descriptor, DESCRIPTOR_KEYS) ||
+      !allowedKeys(descriptor, DESCRIPTOR_KEYS, REQUIRED_DESCRIPTOR_KEYS) ||
       descriptor['schemaVersion'] !== 1 ||
       typeof descriptor['id'] !== 'string' ||
       (!isDottedId(descriptor['id']) && !isQualifiedId(descriptor['id'])) ||
@@ -289,6 +310,19 @@ export function validateServiceOperationProvider(
       !safePositiveInteger(budget['maxWallTimeMs'])
     ) {
       return { valid: false, reason: 'operation descriptor is malformed or duplicated' }
+    }
+    const surface =
+      descriptor['surface'] === undefined ? undefined : recordOf(descriptor['surface'])
+    if (
+      descriptor['surface'] !== undefined &&
+      (surface === undefined ||
+        !allowedKeys(surface, SURFACE_KEYS, REQUIRED_SURFACE_KEYS) ||
+        !SURFACE_TARGETS.has(surface['target'] as string) ||
+        !nonEmpty(surface['sectionId']) ||
+        !nonEmpty(surface['title']) ||
+        (surface['icon'] !== undefined && !nonEmpty(surface['icon'])))
+    ) {
+      return { valid: false, reason: 'operation descriptor declares an unusable viewer surface' }
     }
     const inputSchema = createServiceOperationSchemaValidator(descriptor['inputSchema'])
     const resultSchema = createServiceOperationSchemaValidator(descriptor['resultSchema'])
@@ -335,7 +369,10 @@ export function validateServiceOperationResult(
   }
   const record = recordOf(snapshot)
   const state = record?.['state']
-  if (record === undefined || (state !== 'completed' && state !== 'refused' && state !== 'failed')) {
+  if (
+    record === undefined ||
+    (state !== 'completed' && state !== 'refused' && state !== 'failed')
+  ) {
     return { valid: false, reason: 'provider result state is invalid' }
   }
   if (
@@ -345,7 +382,10 @@ export function validateServiceOperationResult(
     record['diagnostics'].length > maximumDiagnostics ||
     !record['diagnostics'].every(validDiagnostic)
   ) {
-    return { valid: false, reason: 'provider result shape, operation id or diagnostics are invalid' }
+    return {
+      valid: false,
+      reason: 'provider result shape, operation id or diagnostics are invalid',
+    }
   }
   if (state === 'completed' && resultSchema !== undefined) {
     const validator = createServiceOperationSchemaValidator(resultSchema)
@@ -367,11 +407,7 @@ export function validateServiceOperationResult(
   return { valid: true, result: record as unknown as ServiceOperationResult, outputBytes }
 }
 
-export type ServiceOperationCatalogState =
-  | 'declared'
-  | 'eligible'
-  | 'activatable'
-  | 'unavailable'
+export type ServiceOperationCatalogState = 'declared' | 'eligible' | 'activatable' | 'unavailable'
 
 export interface ServiceOperationCatalogEntry {
   readonly operationId: string
@@ -421,10 +457,7 @@ function declaredServiceOperations(inventory: Inventory): Map<string, DeclaredOp
       if (!Array.isArray(provides)) continue
       for (const candidate of provides) {
         const offer = recordOf(candidate)
-        if (
-          offer?.['contract'] !== SERVICE_OPERATION_PROVIDER_CONTRACT ||
-          offer['major'] !== 1
-        ) {
+        if (offer?.['contract'] !== SERVICE_OPERATION_PROVIDER_CONTRACT || offer['major'] !== 1) {
           continue
         }
         const facet = parseOffer(offer['facet'])
@@ -698,11 +731,7 @@ async function invokeServiceOperationAtTarget(
         stage: 'provider',
         diagnostics: [
           ...resolver.diagnostics,
-          diagnostic(
-            'error',
-            'x3.host/service-operation-provider-mismatch',
-            activationMismatch,
-          ),
+          diagnostic('error', 'x3.host/service-operation-provider-mismatch', activationMismatch),
         ],
       }
     }
@@ -828,7 +857,8 @@ async function invokeServiceOperationAtTarget(
       request.budgets.deadlineMs ?? Number.MAX_SAFE_INTEGER,
     )
     const timer = setTimeout(
-      () => controller.abort(new Error(`${request.operationId} exceeded its ${deadline}ms deadline`)),
+      () =>
+        controller.abort(new Error(`${request.operationId} exceeded its ${deadline}ms deadline`)),
       deadline,
     )
     let result: unknown
