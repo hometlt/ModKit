@@ -111,6 +111,42 @@ describe('buildInventory (S1 acceptance)', () => {
     expect(inventoryHasErrors(forward)).toBe(false)
   })
 
+  /*
+   * Repeated composition is the common case — the host realm, the worker realm, every container a
+   * window opens — and validating each manifest again was most of what that cost. The cache is
+   * keyed by the document's own text, so what has to hold is that identical documents reuse the
+   * answer and different ones never do, however they are labelled.
+   */
+  it('reuses validation for an identical manifest and never across different ones', async () => {
+    const first = input('dir-cache-1', 'org.cache', 'one', {
+      'contributions/a.json': contribution('org.cache/a', { greeting: 'hello' }),
+    })
+    const again = await buildInventory([first], registry)
+    const repeated = await buildInventory([first], registry)
+    expect(canonicalJsonStringify(repeated)).toBe(canonicalJsonStringify(again))
+
+    // Same path, same declared digest, different document: the answer must follow the document.
+    const relabelled: ExtensionInput = {
+      ...first,
+      documents: new Map([
+        ['contributions/a.json', contribution('org.cache/a', { greeting: 'different' })],
+      ]),
+    }
+    const changed = await buildInventory([relabelled], registry)
+    expect(changed.extensions[0]?.contributions[0]?.manifest?.spec).toEqual({
+      greeting: 'different',
+    })
+    // And an invalid spec is still refused, even behind a digest that once validated.
+    const broken: ExtensionInput = {
+      ...first,
+      documents: new Map([
+        ['contributions/a.json', contribution('org.cache/a', { greeting: 'hi', extra: true })],
+      ]),
+    }
+    const refused = await buildInventory([broken], registry)
+    expect(refused.extensions[0]?.contributions[0]?.specState).toBe('invalid')
+  })
+
   it('keeps unknown contributions inspectable but never activatable', async () => {
     const unknown = input('dir-u', 'org.u', 'pack', {
       'contributions/mystery.json': {

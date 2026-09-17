@@ -357,7 +357,14 @@ export const DDS_EXPORT_SCHEMA = Object.freeze({
   }),
 })
 
-/** Every encoding a PNG codec can write: the same list, plus MK2's square-icon rule for DDS. */
+/**
+ * Every encoding a PNG codec can write: the same DDS list.
+ *
+ * MK2's separate «PNG icon → DDS» command is not among them. Its rule — square, under 256 — was a
+ * property of the *icon*, not of the conversion, and the plain DDS encodings already write the
+ * file; the icon geometry belongs to whoever defines the icon (the SC2 extension does, as
+ * `sc2-image.button-icon`). One conversion, not two that differ by a hidden constraint.
+ */
 export const PNG_EXPORT_SCHEMA = Object.freeze({
   $ref: 'modkit://images/png-export-convert.v1',
   document: Object.freeze({
@@ -365,13 +372,6 @@ export const PNG_EXPORT_SCHEMA = Object.freeze({
     forms: Object.freeze([
       preset('png', 'PNG', 'Writes the base image as a PNG file.', { target: 'png' }, PNG_TARGET),
       ...ddsPresets(),
-      preset(
-        'dds-icon',
-        'DDS · Icon (DXT5)',
-        'Writes a DXT5 DDS of a square icon smaller than 256 x 256.',
-        { target: 'dds', icon: true },
-        ddsTarget({ id: 'icon', label: 'Icon (DXT5)' }),
-      ),
     ]),
   }),
 })

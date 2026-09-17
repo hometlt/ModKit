@@ -285,6 +285,24 @@ export function snapshotJsonWireObject<Value extends object>(value: Value): Valu
   return snapshotJsonWireData(value)
 }
 
+/**
+ * Cache keys of schema constants.
+ *
+ * A schema is a module constant, and the key is a pure function of it — but every validation was
+ * snapshotting and canonicalising the whole schema again to look its validator up, once per
+ * contribution manifest. The identity of the object is enough to remember the answer, and a
+ * `WeakMap` lets the schema be collected with the module that owns it.
+ */
+const schemaKeys = new WeakMap<object, string>()
+
+function schemaKeyOf(schema: object): string {
+  const known = schemaKeys.get(schema)
+  if (known !== undefined) return known
+  const key = canonicalJsonStringify(snapshotJsonWireObject(schema))
+  schemaKeys.set(schema, key)
+  return key
+}
+
 /** Validates `value` against a schema const; returns diagnostics, never throws. */
 export async function validateWithSchema(
   schema: object,
@@ -302,11 +320,9 @@ export async function validateWithSchema(
   }
   if (valueSnapshot.diagnostics.length > 0) return [...valueSnapshot.diagnostics]
 
-  let schemaSnapshot: object
   let schemaCacheKey: string
   try {
-    schemaSnapshot = snapshotJsonWireObject(schema)
-    schemaCacheKey = canonicalJsonStringify(schemaSnapshot)
+    schemaCacheKey = schemaKeyOf(schema)
   } catch (error) {
     return [
       diagnostic(
@@ -354,5 +370,23 @@ export async function validateWithSchema(
       ),
     ]
   }
-  return schemaDiagnostics(validate.errors, code)
+  const reported = schemaDiagnostics(validate.errors, code)
+  if (reported.length > 0) return reported
+  /*
+   * A validator said no and explained nothing.
+   *
+   * The ajv convention is to set `.errors` beside a `false` return, and a precompiled validator
+   * that does not — a hand-written one, or one whose errors were dropped — used to fall through
+   * this function as if the value had been accepted. A refusal without a reason is still a
+   * refusal: it is reported as one, with the code the caller asked for.
+   */
+  return [
+    diagnostic(
+      'error',
+      code,
+      'the schema validator rejected the value without reporting a reason',
+      [],
+      { reason: 'validator-returned-false' },
+    ),
+  ]
 }

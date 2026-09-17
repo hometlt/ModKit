@@ -29,6 +29,56 @@ import {
   type SpecState,
 } from '@modkit/sdk'
 
+/**
+ * Validated contribution manifests, by content.
+ *
+ * Building an inventory validates every declared contribution manifest against its contract
+ * schema, then re-serialises and freezes the normalised result — three passes over each document,
+ * and a window composes more than once (the host realm, the worker realm, every container it
+ * opens). The work is a pure function of the document and the registered contract set, so the
+ * second composition reads the answer instead of recomputing it.
+ *
+ * Keyed by the document's own text, never by a digest a caller supplied: a loader that labels two
+ * different documents with one digest — a test double, a mistaken loader — would otherwise be
+ * handed the wrong manifest, and an inventory is the wrong place to discover that. The text is
+ * `JSON.stringify` of the parsed document (the same file parses to the same key order, and it is
+ * an order of magnitude cheaper than the canonical form), and every hit is compared against it.
+ */
+const validatedManifests = new Map<
+  string,
+  {
+    readonly text: string
+    readonly result: Awaited<ReturnType<typeof validateContributionManifest>>
+    readonly ownedManifest: ContributionManifestV1 | undefined
+  }
+>()
+
+/** Bounded so a long session that opens many extension sets cannot grow it without limit. */
+const VALIDATED_MANIFEST_CACHE_LIMIT = 512
+
+const registryFingerprints = new WeakMap<object, string>()
+
+/** The registered contract set, as the part of the cache key that is not the document. */
+function registryFingerprint(registry: ContributionContractRegistry): string {
+  const known = registryFingerprints.get(registry)
+  if (known !== undefined) return known
+  const fingerprint = canonicalJsonStringify(
+    registry.list().map(entry => [entry.contract.id, entry.contract.major, entry.mode] as const),
+  )
+  registryFingerprints.set(registry, fingerprint)
+  return fingerprint
+}
+
+/** FNV-1a over the document text: a bucket, not a claim — every hit is still compared. */
+function textBucket(text: string): string {
+  let hash = 0x811c9dc5
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index)
+    hash = Math.imul(hash, 0x01000193) >>> 0
+  }
+  return `${text.length.toString(36)}.${hash.toString(36)}`
+}
+
 export interface ArtifactAttestationInput {
   /** Stable content-addressed inventory identity assigned by the trusted loader. */
   readonly inventoryRecordId: string
@@ -264,15 +314,47 @@ export async function buildInventory(
         )
         continue
       }
-      const validationRegistry = registry.validationRegistry()
-      const result = await validateContributionManifest(document, validationRegistry)
-      const ownedManifest =
-        result.manifest === undefined
-          ? undefined
-          : deepFreezeJson(
-              JSON.parse(canonicalJsonStringify(result.manifest)) as ContributionManifestV1,
-            )
       const manifestDigest = input.documentDigests.get(entry.path)
+      let documentText: string | undefined
+      try {
+        documentText = JSON.stringify(document)
+      } catch {
+        // Not inert JSON: `validateContributionManifest` says so properly, and nothing is cached.
+        documentText = undefined
+      }
+      const cacheKey =
+        documentText === undefined
+          ? undefined
+          : `${registryFingerprint(registry)}|${textBucket(documentText)}`
+      const cachedEntry = cacheKey === undefined ? undefined : validatedManifests.get(cacheKey)
+      const cached =
+        cachedEntry !== undefined && cachedEntry.text === documentText ? cachedEntry : undefined
+      const validated =
+        cached ??
+        (await (async () => {
+          const validationRegistry = registry.validationRegistry()
+          const fresh = await validateContributionManifest(document, validationRegistry)
+          return {
+            text: documentText ?? '',
+            result: fresh,
+            ownedManifest:
+              fresh.manifest === undefined
+                ? undefined
+                : deepFreezeJson(
+                    JSON.parse(canonicalJsonStringify(fresh.manifest)) as ContributionManifestV1,
+                  ),
+          }
+        })())
+      if (cacheKey !== undefined && cached === undefined) {
+        // Oldest first: a composition reuses what the last one validated, which is the point.
+        if (validatedManifests.size >= VALIDATED_MANIFEST_CACHE_LIMIT) {
+          const oldest = validatedManifests.keys().next()
+          if (!oldest.done) validatedManifests.delete(oldest.value)
+        }
+        validatedManifests.set(cacheKey, validated)
+      }
+      const result = validated.result
+      const ownedManifest = validated.ownedManifest
       const localDiagnostics = [...result.diagnostics]
       let inventoryEligible = result.inventoryEligible
       let activationEligible = result.activationEligible && execution.valid
