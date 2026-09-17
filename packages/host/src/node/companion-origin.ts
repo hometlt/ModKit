@@ -55,6 +55,12 @@ export interface FilesystemCompanionOriginOptions {
    * granted root whose name ends in one of them is the `enclosing-container` scope.
    */
   readonly containerExtensions?: readonly string[]
+  /**
+   * Per container extension, the directories inside it that `enclosing-container` ids resolve
+   * under, in lookup order (`''` the container root, `*.Suffix` every top-level directory with that
+   * suffix). An extension without an entry serves its root only.
+   */
+  readonly containerAssetRoots?: Readonly<Record<string, readonly string[]>>
 }
 
 function insideRoot(root: string, path: string): boolean {
@@ -94,7 +100,40 @@ export function createFilesystemCompanionOrigin(
   const fold = (value: string): string =>
     caseSensitivity === 'insensitive' ? value.toLowerCase() : value
   const container = enclosingContainer(root, roots, options.containerExtensions ?? [])
-  /** Container-scope ids seen by `enumerate`, so `open` reads them from the container base. */
+  const assetRootPatterns =
+    container === undefined
+      ? ['']
+      : (Object.entries(options.containerAssetRoots ?? {}).find(([extension]) =>
+          basename(container).toLowerCase().endsWith(`.${extension.toLowerCase()}`),
+        )?.[1] ?? [''])
+  /** The container's asset directories that exist, in lookup order (resolved once). */
+  let assetBases: Promise<readonly string[]> | undefined
+  const containerBases = (): Promise<readonly string[]> =>
+    (assetBases ??= (async () => {
+      if (container === undefined) return []
+      const bases: string[] = []
+      for (const pattern of assetRootPatterns) {
+        const names: string[] = []
+        if (pattern.startsWith('*')) {
+          const suffix = pattern.slice(1).toLowerCase()
+          const directory = await opendir(container)
+          try {
+            for await (const entry of directory)
+              if (entry.isDirectory() && entry.name.toLowerCase().endsWith(suffix))
+                names.push(entry.name)
+          } finally {
+            await directory.close().catch(() => undefined)
+          }
+          names.sort()
+        } else names.push(pattern)
+        for (const name of names) {
+          const base = name === '' ? container : await directoryPath(name, container)
+          if (base !== undefined && !bases.some(item => fold(item) === fold(base))) bases.push(base)
+        }
+      }
+      return bases
+    })())
+  /** Container-scope ids seen by `enumerate` → the asset base `open` reads them from. */
   const containerIds = new Map<string, string>()
 
   const confinedPath = (logicalId: string, base = root): string => {
@@ -138,52 +177,21 @@ export function createFilesystemCompanionOrigin(
       signal?: AbortSignal,
     ): AsyncIterable<CompanionOriginEntry> {
       throwIfAborted(signal)
-      const base =
+      const bases =
         scope === 'sibling-directory'
-          ? root
+          ? [root]
           : scope === 'enclosing-container'
-            ? container
-            : undefined
-      if (base === undefined) return
-      const prefix = enumeration.prefix.replaceAll('\\', '/')
-      const foldedPrefix = fold(prefix)
-      const parent = prefix.slice(0, prefix.lastIndexOf('/') + 1)
-      const path = await directoryPath(parent, base)
-      if (path === undefined) return
-      const directory = await opendir(path)
-      try {
-        for await (const entry of directory) {
-          throwIfAborted(signal)
-          /*
-           * Regular files only. `isFile()` on a Dirent is lstat-shaped, so a symlink reports
-           * `isSymbolicLink()` and never `isFile()` — which is exactly the confinement rule the
-           * block plan asks for ("do not follow a filesystem symlink out of the confined root")
-           * expressed as a refusal to consider one at all, rather than as a resolve-then-check.
-           */
-          if (!entry.isFile()) continue
-          const logicalId = parent + entry.name
-          const candidate = caseSensitivity === 'insensitive' ? logicalId.toLowerCase() : logicalId
-          // Each exact texture request has its own prefix. Returning unrelated siblings here
-          // charges the same directory repeatedly and exhausts the resolver's entry budget.
-          if (!candidate.startsWith(foldedPrefix)) continue
-          if (base !== root) {
-            const absolute = join(path, entry.name)
-            // The primary is excluded by id in the sibling space; in the container space it is
-            // excluded here, where its container-relative spelling is known.
-            if (fold(absolute) === fold(primaryPath)) continue
-            containerIds.set(fold(logicalId), absolute)
-          }
-          yield Object.freeze({ logicalId })
-        }
-      } finally {
-        await directory.close().catch(() => undefined)
-      }
+            ? await containerBases()
+            : []
+      // Asset directories overlay in order: the first spelling of a logical id wins.
+      const yielded = new Set<string>()
+      for (const base of bases) yield* enumerateBase(base, scope, yielded, enumeration, signal)
     },
     async open(logicalId: string, signal?: AbortSignal): Promise<Lease<ArtifactSource>> {
       throwIfAborted(signal)
       const normalized = normalizeCompanionLogicalId(logicalId)
       // ponytail: a container id that also spells a real sibling path opens the container file.
-      const base = container !== undefined && containerIds.has(fold(normalized)) ? container : root
+      const base = containerIds.get(fold(normalized)) ?? root
       const parent = normalized.slice(0, normalized.lastIndexOf('/') + 1)
       const directory = await directoryPath(parent, base)
       if (directory === undefined || !(await lstat(confinedPath(normalized, base))).isFile())
@@ -198,6 +206,49 @@ export function createFilesystemCompanionOrigin(
       return Object.freeze({ value: source, release: async () => undefined })
     },
   })
+
+  async function* enumerateBase(
+    base: string,
+    scope: InputSearchScope,
+    yielded: Set<string>,
+    enumeration: CompanionEnumerationOptions,
+    signal?: AbortSignal,
+  ): AsyncIterable<CompanionOriginEntry> {
+    const prefix = enumeration.prefix.replaceAll('\\', '/')
+    const foldedPrefix = fold(prefix)
+    const parent = prefix.slice(0, prefix.lastIndexOf('/') + 1)
+    const path = await directoryPath(parent, base)
+    if (path === undefined) return
+    const directory = await opendir(path)
+    try {
+      for await (const entry of directory) {
+        throwIfAborted(signal)
+        /*
+         * Regular files only. `isFile()` on a Dirent is lstat-shaped, so a symlink reports
+         * `isSymbolicLink()` and never `isFile()` — which is exactly the confinement rule the
+         * block plan asks for ("do not follow a filesystem symlink out of the confined root")
+         * expressed as a refusal to consider one at all, rather than as a resolve-then-check.
+         */
+        if (!entry.isFile()) continue
+        const logicalId = parent + entry.name
+        const candidate = caseSensitivity === 'insensitive' ? logicalId.toLowerCase() : logicalId
+        // Each exact texture request has its own prefix. Returning unrelated siblings here
+        // charges the same directory repeatedly and exhausts the resolver's entry budget.
+        if (!candidate.startsWith(foldedPrefix)) continue
+        if (scope !== 'sibling-directory') {
+          const absolute = join(path, entry.name)
+          // The primary is excluded by id in the sibling space; in the container space it is
+          // excluded here, where its container-relative spelling is known.
+          if (fold(absolute) === fold(primaryPath) || yielded.has(fold(logicalId))) continue
+          yielded.add(fold(logicalId))
+          containerIds.set(fold(logicalId), base)
+        }
+        yield Object.freeze({ logicalId })
+      }
+    } finally {
+      await directory.close().catch(() => undefined)
+    }
+  }
 }
 
 /** The nearest ancestor of `directory`, inside a granted root, named like a container format. */

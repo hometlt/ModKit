@@ -30,7 +30,12 @@
 import { randomUUID } from 'node:crypto'
 import { isAbsolute, relative, resolve } from 'node:path'
 import { uint64, type Diagnostic } from '@modkit/core'
-import { createHostTopology, type AssetSession, type PermissionGrant } from '@modkit/sdk'
+import {
+  createHostTopology,
+  type AssetSession,
+  type PermissionGrant,
+  type RasterResourcePort,
+} from '@modkit/sdk'
 import type { SubjectOpenSnapshot } from '../subject-rpc.js'
 import { createSubjectEditing, type SubjectEditing } from '../subject-editing.js'
 import { createSubjectServices } from '../subject-services.js'
@@ -116,6 +121,8 @@ export interface ModkitOpened {
    * `editing.coordinator` is the prepare/commit pair for a host that drives saves itself.
    */
   readonly editing?: SubjectEditing
+  /** Subject-bound image decoding (portraits, model textures) through the subject's resources. */
+  readonly rasterResources?: RasterResourcePort
   /** Dispose the session (editing state goes with it). */
   close(): Promise<void>
 }
@@ -386,6 +393,9 @@ export async function createModkit(options: ModkitOptions): Promise<Modkit> {
       return Object.freeze({
         snapshot: result.snapshot,
         session,
+        ...(result.rasterResources === undefined
+          ? {}
+          : { rasterResources: result.rasterResources }),
         ...(editing === undefined ? {} : { editing }),
         close: async () => {
           liveSessions.delete(session)

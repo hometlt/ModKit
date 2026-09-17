@@ -1083,6 +1083,14 @@
         "container": {
           "additionalProperties": false,
           "properties": {
+            "assetRoots": {
+              "items": {
+                "maxLength": 256,
+                "type": "string"
+              },
+              "maxItems": 16,
+              "type": "array"
+            },
             "formatId": {
               "minLength": 1,
               "type": "string"

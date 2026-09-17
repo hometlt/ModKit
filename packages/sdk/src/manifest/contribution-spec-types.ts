@@ -131,6 +131,12 @@ export interface NamespaceProbePlan {
  */
 export interface ContainerTopologyAlias {
   readonly formatId: string
+  /**
+   * Directories inside the container that logical resource ids (`Assets/…`) resolve under, in
+   * lookup order. `''` is the container root; `*.Suffix` matches every top-level directory with that
+   * suffix (per-locale asset folders). Absent means the container root only.
+   */
+  readonly assetRoots?: readonly string[]
 }
 
 export interface DerivedProbePlan {

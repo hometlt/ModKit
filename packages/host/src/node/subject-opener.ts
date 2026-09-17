@@ -101,6 +101,7 @@ export function createFilesystemInputResolver(
       primaryPath: options.primaryPath,
       roots: options.roots.map(root => resolve(root)),
       containerExtensions: containerExtensionsOf(options.inventory),
+      containerAssetRoots: containerAssetRootsOf(options.inventory),
     }),
     {
       traitProbe: createSignatureTraitProbe(options.inventory),
@@ -108,6 +109,22 @@ export function createFilesystemInputResolver(
       ...(options.deadlineMs === undefined ? {} : { deadlineMs: options.deadlineMs }),
     },
   )
+}
+
+/** Per container extension, the asset directories its codec declares (first declaration wins). */
+function containerAssetRootsOf(inventory: Inventory): Readonly<Record<string, readonly string[]>> {
+  const roots: Record<string, readonly string[]> = {}
+  for (const extension of inventory.extensions) {
+    for (const contribution of extension.contributions) {
+      const manifest = contribution.manifest
+      if (manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT) continue
+      const spec = manifest.spec as unknown as CodecContributionSpecV1Wire
+      const assetRoots = spec.container?.assetRoots
+      if (spec.sourceTopology !== 'namespace' || assetRoots === undefined) continue
+      for (const value of spec.match.extensions ?? []) roots[value.toLowerCase()] ??= assetRoots
+    }
+  }
+  return Object.freeze(roots)
 }
 
 /**
@@ -201,6 +218,10 @@ export function createPathSubjectOpener(options: PathSubjectOpenerOptions): Subj
      * an editing policy is looked up by on the serving side.
      */
     options.onOpened?.(result, snapshot.sessionId)
-    return { snapshot, session: result.session }
+    return {
+      snapshot,
+      session: result.session,
+      ...(result.rasterResources === undefined ? {} : { rasterResources: result.rasterResources }),
+    }
   }
 }

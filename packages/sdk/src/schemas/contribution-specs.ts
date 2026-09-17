@@ -457,7 +457,10 @@ export const codecContributionSpecV1Schema = {
           type: 'object',
           additionalProperties: false,
           required: ['formatId'],
-          properties: { formatId: nonEmptyString },
+          properties: {
+            formatId: nonEmptyString,
+            assetRoots: { type: 'array', maxItems: 16, items: { type: 'string', maxLength: 256 } },
+          },
         },
         probe: probePlanSchema.oneOf[1],
       },
