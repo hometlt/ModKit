@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "legacy": "../sc2-layout-extras/legacy.mjs",
+  "migrated": "../sc2-layout-extras/native.mjs",
+  "corpus": "corpus.json",
+  "operation": "sc2-layout.extras-parity",
+  "receipt": "receipt.json"
+}

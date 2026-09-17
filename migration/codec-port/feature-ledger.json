@@ -3597,6 +3597,10 @@
         {
           "path": "modkit-core/reports/parity/sc2-layout-extras/receipt.json",
           "sha256": "6c55df7b05e3925c58488dc476ec6a2375b07ec3764b8131d78aeb16b372586f"
+        },
+        {
+          "path": "modkit-core/reports/parity/sc2-layout-rename/receipt.json",
+          "sha256": "ec67de75a1484d91dad7c57447a037aeb730ef7938cafee4ce0f1d42cc071df9"
         }
       ],
       "id": "legacy/codec-manifest/modkit/sc2-layout/feature/ef570244a04485ae",
