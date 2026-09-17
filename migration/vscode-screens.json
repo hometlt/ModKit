@@ -33,9 +33,9 @@
       "other": 1
     },
     "byStatus": {
-      "present": 46,
-      "missing": 26,
-      "partial": 16,
+      "present": 50,
+      "missing": 23,
+      "partial": 15,
       "superseded": 3
     }
   },
@@ -616,7 +616,7 @@
       "evidence": [
         "gap-vscode-assets-unexercised-media-and-conversion (migration/vscode-workflows.json)"
       ],
-      "notes": "subject.convert exists and is proven for one file at a time (PNG->rgba8, via the VS Code host); no batch/folder-wide conversion command or fixture found.",
+      "notes": "subject.convert now reaches PNG/DDS/RGBA8 targets on DDS and PNG (extensions/images/src/ops/raster-transforms.js); still one file per run: no folder-wide batch command.",
       "fixture": "a folder of .tga/.png files"
     },
     {
@@ -630,19 +630,28 @@
         "behavior": "Recompressed a DXT5 texture with binary (on/off) alpha down to DXT1 to save space."
       },
       "mk3": {
-        "status": "missing",
-        "commandIds": [],
-        "uiParts": [],
+        "status": "present",
+        "commandIds": [
+          "subject.convert",
+          "subject.edit"
+        ],
+        "uiParts": [
+          "image",
+          "image.convert"
+        ],
         "hosts": {
-          "vscode": "missing",
-          "electron": "missing",
-          "web": "n/a"
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
         }
       },
       "evidence": [
-        "gap-vscode-assets-unexercised-media-and-conversion"
+        "extensions/images/src/ops/raster-transforms.js (exportRaster, DDS_EXPORT_SCHEMA/PNG_EXPORT_SCHEMA)",
+        "extensions/images/test/raster-export.test.ts",
+        "packages/ui/src/image/index.ts (image.convert presets from export.convert)",
+        "packages/ui/test/image-convert.test.ts"
       ],
-      "notes": "No DXT5->DXT1 conversion command or codec path found; unexercised/unimplemented.",
+      "notes": "DDS export.convert {target:'dds',format:'dxt1'} (preset 'Convert to DXT1', MK2 binary-alpha refusal with texel coordinates); in-place variant: subject.edit edit.content form 'dds-recompress'. Host UI not yet exercised live.",
       "fixture": ".dds (DXT5, binary alpha)"
     },
     {
@@ -656,19 +665,28 @@
         "behavior": "Converted a plain PNG icon into a game-ready DDS icon."
       },
       "mk3": {
-        "status": "missing",
-        "commandIds": [],
-        "uiParts": [],
+        "status": "present",
+        "commandIds": [
+          "subject.convert",
+          "subject.edit"
+        ],
+        "uiParts": [
+          "image",
+          "image.convert"
+        ],
         "hosts": {
-          "vscode": "missing",
-          "electron": "missing",
-          "web": "n/a"
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
         }
       },
       "evidence": [
-        "gap-vscode-assets-unexercised-media-and-conversion"
+        "extensions/images/src/ops/raster-transforms.js (exportRaster, DDS_EXPORT_SCHEMA/PNG_EXPORT_SCHEMA)",
+        "extensions/images/test/raster-export.test.ts",
+        "packages/ui/src/image/index.ts (image.convert presets from export.convert)",
+        "packages/ui/test/image-convert.test.ts"
       ],
-      "notes": "No PNG-icon-to-DDS conversion command found.",
+      "notes": "PNG export.convert {target:'dds',icon:true} (DXT5, square <256, MK2 rules), preset 'Convert icon to DDS'. Host UI not yet exercised live.",
       "fixture": ".png icon"
     },
     {
@@ -682,10 +700,14 @@
         "behavior": "Exported the active DDS texture's base mip to a sibling .png file."
       },
       "mk3": {
-        "status": "partial",
-        "commandIds": [],
+        "status": "present",
+        "commandIds": [
+          "subject.convert",
+          "subject.edit"
+        ],
         "uiParts": [
-          "image"
+          "image",
+          "image.convert"
         ],
         "hosts": {
           "vscode": "present",
@@ -694,9 +716,12 @@
         }
       },
       "evidence": [
-        "gap-vscode-assets-unexercised-media-and-conversion"
+        "extensions/images/src/ops/raster-transforms.js (exportRaster, DDS_EXPORT_SCHEMA/PNG_EXPORT_SCHEMA)",
+        "extensions/images/test/raster-export.test.ts",
+        "packages/ui/src/image/index.ts (image.convert presets from export.convert)",
+        "packages/ui/test/image-convert.test.ts"
       ],
-      "notes": "subject.convert covers PNG-to-rgba8 live; the specific DDS-to-PNG export command/fixture is unexercised per the ledger gap.",
+      "notes": "DDS export.convert {target:'png'} (preset 'Export PNG'); subject.convert in every host, image-viewer Conversions bar writes <name>.png through the host export writer. Host UI not yet exercised live.",
       "fixture": ".dds"
     },
     {
@@ -710,19 +735,28 @@
         "behavior": "Resized/padded/mipped a source image into the exact DDS layout SC2 button icons require."
       },
       "mk3": {
-        "status": "missing",
-        "commandIds": [],
-        "uiParts": [],
+        "status": "present",
+        "commandIds": [
+          "subject.convert",
+          "subject.edit"
+        ],
+        "uiParts": [
+          "image",
+          "image.convert"
+        ],
         "hosts": {
-          "vscode": "missing",
-          "electron": "missing",
-          "web": "n/a"
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
         }
       },
       "evidence": [
-        "gap-vscode-assets-unexercised-media-and-conversion"
+        "extensions/images/src/ops/raster-transforms.js (exportRaster, DDS_EXPORT_SCHEMA/PNG_EXPORT_SCHEMA)",
+        "extensions/images/test/raster-export.test.ts",
+        "packages/ui/src/image/index.ts (image.convert presets from export.convert)",
+        "packages/ui/test/image-convert.test.ts"
       ],
-      "notes": "No SC2-button-icon preparation command found.",
+      "notes": "DDS/PNG export.convert {target:'dds',transform:'button-icon'} (DXT5, square <=256, MK2 rules) and edit.content form 'dds-button-icon' in the generic edit panel. Host UI not yet exercised live.",
       "fixture": "a source .png for a button icon"
     },
     {

@@ -38,9 +38,9 @@ setting group (webview-панели, открываемые командой, н
 
 | status | count |
 |---|---|
-| present | 46 |
-| partial | 16 |
-| missing | 26 |
+| present | 50 |
+| partial | 15 |
+| missing | 23 |
 | superseded | 3 |
 | not-applicable | 0 |
 
@@ -49,7 +49,7 @@ setting group (webview-панели, открываемые командой, н
 | group | present | partial | missing | superseded |
 |---|---|---|---|---|
 | archives | 14 | 1 | 4 | 0 |
-| media | 3 | 5 | 4 | 0 |
+| media | 7 | 4 | 1 | 0 |
 | models | 3 | 0 | 0 | 0 |
 | maps-replays | 2 | 3 | 3 | 0 |
 | layout | 0 | 0 | 7 | 0 |
@@ -220,3 +220,16 @@ status-bar/setting-group, а `iconThemes`/`FileDecorationProvider` контри�
 - Полная installed-приёмка (VS Code + Electron + web smoke на реальных фикстурах) для каждой
   строки не запускалась в рамках этого прохода — этот реестр фиксирует текущее состояние по
   чтению кода и существующим receipts/tests, а не новый прогон.
+
+## Обновление 2026-09-17: DDS/PNG-конвертации (группа media)
+
+Закрыты 4 строки (`missing`/`partial` → `present`): `modkit.dds.exportPng`,
+`modkit.dds.convertDxt5ToDxt1`, `modkit.dds.prepareSc2ButtonIcon`, `modkit.dds.convertPngIconToDds`.
+Это не команды хостов, а операции кодеков: `export.convert` у DDS и PNG
+(`extensions/images/src/ops/raster-transforms.js`, цели `png`/`dds`/`rgba8`, правила MK2 — бинарная
+альфа для DXT1, квадрат ≤256 для иконки кнопки, квадрат <256 для PNG-иконки) и `edit.content` у DDS
+с формами для общей панели правки. Результат — байты нового файла (`subject.convert`, панель
+«Преобразования» `image.convert` в image viewer через хостовый export writer) или edit plan
+(`subject.edit`); прямой записи нет. Тесты: `extensions/images/test/raster-export.test.ts`,
+`packages/ui/test/image-convert.test.ts`. Живая проверка в VS Code/Electron ещё не делалась.
+`modkit.assetsTexture.batchConvert` остаётся `partial` (нет пакетной команды по папке).
