@@ -328,7 +328,7 @@ export async function applyReceipt({
     validateReceipt(receipt, requirement)
     const row = next.entries.find(row => row.id === requirement.id)
     if (!row) throw new Error(`ledger row missing: ${requirement.id}`)
-    if (row.status === 'owner-dropped')
+    if (row.status === 'owner-dropped' || row.status === 'superseded')
       throw new Error(`owner decision needs explicit review before restoring: ${row.id}`)
     row.status = 'adapted'
     if (

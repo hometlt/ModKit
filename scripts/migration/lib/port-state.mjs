@@ -359,7 +359,7 @@ export async function checkLedger({
       fail(`missing ledger entry: ${requirement.id}`)
       continue
     }
-    if (!['pending', 'ported', 'adapted', 'owner-dropped'].includes(entry.status))
+    if (!['pending', 'ported', 'adapted', 'owner-dropped', 'superseded'].includes(entry.status))
       fail(`invalid status: ${requirement.id}`)
     if (!Array.isArray(entry.evidence)) {
       fail(`invalid evidence list: ${requirement.id}`)
@@ -381,7 +381,17 @@ export async function checkLedger({
       if (entry.evidence.length) fail(`pending row carries acceptance evidence: ${requirement.id}`)
       continue
     }
-    if (entry.status === 'owner-dropped') {
+    // `superseded`: the owner accepts the MK3 design as the reference, so no MK2 comparison is
+    // owed. It needs the same dated, hashed owner decision plus hashed MK3 evidence (not receipts).
+    if (entry.status === 'owner-dropped' || entry.status === 'superseded') {
+      if (entry.status === 'superseded' && !entry.evidence.length)
+        fail(`superseded without MK3 evidence: ${requirement.id}`)
+      for (const reference of entry.status === 'superseded' ? entry.evidence : [])
+        try {
+          await readEvidence(root, reference)
+        } catch (error) {
+          fail(`${requirement.id}: ${error.message}`)
+        }
       if (
         !entry.decision ||
         entry.decision.approvedBy !== 'owner' ||

@@ -423,3 +423,19 @@ test('discovery reads authored manifest globs and excludes fixtures and build ar
   assert.deepEqual(found[0].formats, ['sample'])
   assert.throws(() => requirementsFor({ units: [] }, {}, []), /empty/u)
 })
+
+test('superseded rows need a hashed owner decision and hashed MK3 evidence', async t => {
+  const state = await fixture(t)
+  const bytes = stable({ decision: 'MK3 is the reference' })
+  await writeFile(path.join(state.root, 'decision.json'), bytes)
+  const reference = { path: 'decision.json', sha256: hash(bytes) }
+  const feature = requirements.find(row => row.kind === 'feature')
+  const entry = state.ledger.entries.find(row => row.id === feature.id)
+  Object.assign(entry, { status: 'superseded', evidence: [] })
+  entry.decision = { approvedBy: 'owner', date: '2026-09-17', reason: 'superseded', ...reference }
+  assert.match((await checkLedger(state)).join('\n'), /superseded without MK3 evidence/u)
+  entry.evidence = [reference]
+  assert.deepEqual(await checkLedger(state), [])
+  entry.evidence = [{ ...reference, sha256: hash('{}') }]
+  assert.match((await checkLedger(state)).join('\n'), /digest changed/u)
+})

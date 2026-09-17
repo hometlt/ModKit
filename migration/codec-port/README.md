@@ -71,5 +71,7 @@ Operation receipts must also name the executed handler and its published
 contribution in a configured repository. Every proof names the exact adapter
 operation and successful case IDs; receipts for another codec or unrelated cases
 cannot close a requirement. Existing accepted proofs remain immutable; owner-dropped rows
-require a dated, hashed owner decision. Feature closure, operation closure,
+require a dated, hashed owner decision. `superseded` rows are owner decisions that the MK3
+implementation is the reference and no MK2 comparison is owed; they need the same decision and a
+nonempty list of hashed MK3 evidence (e.g. a recorded test run), which is not a differential receipt. Feature closure, operation closure,
 real-corpus parity and later family surface acceptance are separate obligations.
