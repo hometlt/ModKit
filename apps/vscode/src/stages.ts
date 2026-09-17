@@ -83,8 +83,9 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
          */
         sections: [
           {
+            // Not "Edit": that is the paint tools. This one runs the codec's own transforms.
             id: 'transform',
-            title: context.localizer.text('stage.edit'),
+            title: context.localizer.text('stage.transform'),
             icon: 'tools',
             module: createVsCodeEditPanel({ ...context, omitEncoding: true }),
           },

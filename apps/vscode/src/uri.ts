@@ -62,12 +62,23 @@ export function describeOpenTarget(uri: UriLike): OpenTarget {
     try {
       const parsed = new URL(uri.toString())
       const decoded = decodeURIComponent(uri.toString())
-      if (parsed.hostname !== 'battlenet' || parsed.username || parsed.password || parsed.port || parsed.search || parsed.hash ||
-        /(?:^|[/\\])\.{1,2}(?:[/\\?#]|$)/u.test(decoded) || parsed.pathname.split('/').length < 3 || parsed.pathname.endsWith('/')) {
+      if (
+        parsed.hostname !== 'battlenet' ||
+        parsed.username ||
+        parsed.password ||
+        parsed.port ||
+        parsed.search ||
+        parsed.hash ||
+        /(?:^|[/\\])\.{1,2}(?:[/\\?#]|$)/u.test(decoded) ||
+        parsed.pathname.split('/').length < 3 ||
+        parsed.pathname.endsWith('/')
+      ) {
         throw new Error('Invalid source URI')
       }
       return { state: 'accepted', path: uri.toString(), kind: 'source-entry' }
-    } catch { return { state: 'refused', reason: 'Select a file inside a connected content source' } }
+    } catch {
+      return { state: 'refused', reason: 'Select a file inside a connected content source' }
+    }
   }
   if (uri.scheme === 'file') {
     if (uri.fsPath.length === 0) {

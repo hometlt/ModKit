@@ -289,18 +289,6 @@ function metadataGroups(descriptor: AnyDescriptor): readonly MetadataGroup[] {
   return 'identity' in descriptor ? ((descriptor as ResolvedAssetDescriptor).metadata ?? []) : []
 }
 
-async function encodePng(bitmap: ImageBitmap): Promise<Uint8Array> {
-  const canvas = document.createElement('canvas')
-  canvas.width = bitmap.width
-  canvas.height = bitmap.height
-  const context = canvas.getContext('2d')
-  if (context === null) throw new TypeError('2d canvas context is unavailable')
-  context.drawImage(bitmap, 0, 0)
-  const blob = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'))
-  if (blob === null) throw new TypeError('the platform encoder produced no PNG')
-  return new Uint8Array(await blob.arrayBuffer())
-}
-
 export interface ImageViewerOptions {
   readonly localizer?: UiLocalizer
   /**
@@ -574,10 +562,6 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
           ])
         }
         return [
-          { id: 'export-png', label: localizer.text('viewer.imageExport') },
-          ...(info !== undefined && enumerateSubresources(info).length > 1
-            ? [{ id: 'export-all', label: localizer.text('viewer.imageExportAll') }]
-            : []),
           ...[...groups].map(([format, encodings]) =>
             encodings.length === 1 && encodings[0] !== undefined
               ? { id: encodings[0].id, label: format }
@@ -640,10 +624,7 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
             editing?.openResize()
             return
           } else if (itemId === 'format') {
-            if (choiceId === 'export-png') runExport(false)
-            else if (choiceId === 'export-all') runExport(true)
-            else if (choiceId.startsWith('convert:'))
-              runConversion(choiceId.slice('convert:'.length))
+            if (choiceId.startsWith('convert:')) runConversion(choiceId.slice('convert:'.length))
             return
           } else if (itemId === 'zoom') {
             if (choiceId === 'fit') {
@@ -940,41 +921,6 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
           const cell = element(row, 'dd', { part: 'metadata.value' })
           setViewerText(cell, value, 512)
         }
-      }
-
-      const runExport = (all: boolean): void => {
-        const write = options.exportBytes
-        if (write === undefined || info === undefined) return
-        const imageInfo = info
-        const baseName = exportSafeName(
-          options.exportBaseName === undefined ? 'image' : options.exportBaseName(descriptor),
-        )
-        note = localizer.text('viewer.imageExporting')
-        paint()
-        void (async () => {
-          try {
-            const wanted = all ? enumerateSubresources(imageInfo) : [subresource]
-            const files: ImageExportFile[] = []
-            for (const value of wanted) {
-              const loaded = await modelFor(value)
-              files.push({
-                name: `${baseName}.${subresourceLabel(imageInfo, value)}.png`,
-                mediaType: 'image/png',
-                bytes: await encodePng(loaded.bitmap),
-              })
-            }
-            const outcome = await write(files, scope.signal)
-            note =
-              outcome.state === 'written'
-                ? localizer.text('viewer.imageExported', { count: outcome.names.length })
-                : localizer.text('viewer.imageExportRefused', { reason: outcome.reason })
-          } catch (error) {
-            note = localizer.text('viewer.imageExportRefused', {
-              reason: error instanceof Error ? error.message : String(error),
-            })
-          }
-          paint()
-        })()
       }
 
       /** The codec's own `export.convert` presets, as data the status menu and a button can use. */

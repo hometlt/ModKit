@@ -121,7 +121,7 @@
         "modkit/tiff",
         "modkit/webp"
       ],
-      "digest": "sha256:470ff429b3032e39c4d4f41bc86079396ec0cf5aefbbff10736133468036f0de"
+      "digest": "sha256:2183d6d65efc9fbdd2a6c884613b863455e41c672b878ed6804213ac00d87918"
     },
     {
       "name": "models",

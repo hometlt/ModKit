@@ -286,6 +286,9 @@ export const DDS_EDIT_CONTENT_SCHEMA = Object.freeze({
   }),
 })
 
+const DXT1_NOTE = 'Writes a DXT1 copy; refused while any texel is partially transparent.'
+const AUTO_NOTE = 'DXT5 if any texel is partially transparent, else DXT1.'
+
 const preset = (id, label, summary, baseInput) =>
   Object.freeze({
     id,
@@ -295,32 +298,68 @@ const preset = (id, label, summary, baseInput) =>
     fields: Object.freeze([]),
   })
 
-/** `export.convert` presets of a DDS: MK2's DDS file commands, offered by every image viewer. */
+/**
+ * Every encoding this codec can write, as one preset each.
+ *
+ * A viewer's format menu is built from these and nothing else: the codec is the only thing that
+ * knows what it can encode, so a format appears there when a codec publishes a way to write it and
+ * disappears when it does not. Labels are authored as «FORMAT · encoding», which is what lets a
+ * host group them — DDS with its block encodings under it — instead of listing every pairing flat.
+ */
 export const DDS_EXPORT_SCHEMA = Object.freeze({
   $ref: 'modkit://images/dds-export-convert.v1',
   document: Object.freeze({
     schemaVersion: 1,
     forms: Object.freeze([
-      preset('png', 'Export PNG', 'Writes the base mip as a PNG file.', { target: 'png' }),
-      preset(
-        'dxt1',
-        'Convert to DXT1',
-        'Writes a DXT1 copy; refused while any texel is partially transparent.',
-        { target: 'dds', format: 'dxt1' },
-      ),
+      preset('png', 'PNG', 'Writes the base mip as a PNG file.', { target: 'png' }),
+      preset('dds-dxt1', 'DDS · DXT1 / BC1 (binary alpha)', DXT1_NOTE, {
+        target: 'dds',
+        format: 'dxt1',
+      }),
+      preset('dds-dxt3', 'DDS · DXT3 / BC2', 'Writes a DXT3 copy of the base surface.', {
+        target: 'dds',
+        format: 'dxt3',
+      }),
+      preset('dds-dxt5', 'DDS · DXT5 / BC3', 'Writes a DXT5 copy of the base surface.', {
+        target: 'dds',
+        format: 'dxt5',
+      }),
+      preset('dds-rgba8', 'DDS · Uncompressed RGBA8', 'Writes an uncompressed DDS copy.', {
+        target: 'dds',
+        format: 'rgba8',
+      }),
+      preset('dds-auto', 'DDS · Automatic', AUTO_NOTE, { target: 'dds', format: 'auto' }),
     ]),
   }),
 })
 
-/** `export.convert` presets of a PNG: MK2's "Convert PNG Icon to DDS". */
+/** Every encoding a PNG codec can write: the same list, plus MK2's square-icon rule for DDS. */
 export const PNG_EXPORT_SCHEMA = Object.freeze({
   $ref: 'modkit://images/png-export-convert.v1',
   document: Object.freeze({
     schemaVersion: 1,
     forms: Object.freeze([
+      preset('png', 'PNG', 'Writes the base image as a PNG file.', { target: 'png' }),
+      preset('dds-dxt1', 'DDS · DXT1 / BC1 (binary alpha)', DXT1_NOTE, {
+        target: 'dds',
+        format: 'dxt1',
+      }),
+      preset('dds-dxt3', 'DDS · DXT3 / BC2', 'Writes a DXT3 DDS of this image.', {
+        target: 'dds',
+        format: 'dxt3',
+      }),
+      preset('dds-dxt5', 'DDS · DXT5 / BC3', 'Writes a DXT5 DDS of this image.', {
+        target: 'dds',
+        format: 'dxt5',
+      }),
+      preset('dds-rgba8', 'DDS · Uncompressed RGBA8', 'Writes an uncompressed DDS of this image.', {
+        target: 'dds',
+        format: 'rgba8',
+      }),
+      preset('dds-auto', 'DDS · Automatic', AUTO_NOTE, { target: 'dds', format: 'auto' }),
       preset(
-        'dds',
-        'Convert icon to DDS',
+        'dds-icon',
+        'DDS · Icon (DXT5)',
         'Writes a DXT5 DDS of a square icon smaller than 256 x 256.',
         { target: 'dds', icon: true },
       ),

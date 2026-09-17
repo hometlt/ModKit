@@ -14,7 +14,14 @@
   [data-mk-part='media-shell'] {
     position: relative;
     display: grid;
-    grid-template-columns: var(--shell-left, 240px) 4px minmax(0, 1fr) 4px var(--shell-right, 300px);
+    /*
+     * Pane widths are a preference, not a promise: `min()` against the viewport keeps the render
+     * area from vanishing when the editor is narrow — a webview's viewport *is* its panel, so this
+     * is what "responsive" means here — while a dragged splitter still wins at normal widths.
+     */
+    grid-template-columns:
+      min(var(--shell-left, 240px), 35vw) 4px minmax(0, 1fr) 4px
+      min(var(--shell-right, 280px), 40vw);
     grid-template-areas: 'left lsplit stage rsplit right';
     inline-size: 100%;
     block-size: 100%;
@@ -25,11 +32,11 @@
   }
 
   [data-mk-part='media-shell'][data-layout~='left-collapsed'] {
-    grid-template-columns: 0 0 minmax(0, 1fr) 4px var(--shell-right, 300px);
+    grid-template-columns: 0 0 minmax(0, 1fr) 4px min(var(--shell-right, 280px), 40vw);
   }
 
   [data-mk-part='media-shell'][data-layout~='right-collapsed'] {
-    grid-template-columns: var(--shell-left, 240px) 4px minmax(0, 1fr) 0 0;
+    grid-template-columns: min(var(--shell-left, 240px), 35vw) 4px minmax(0, 1fr) 0 0;
   }
 
   [data-mk-part='media-shell'][data-layout~='left-collapsed'][data-layout~='right-collapsed'] {
@@ -116,11 +123,11 @@
   }
 
   [data-mk-part='media-shell.toggle'][data-side='left'] {
-    inset-inline-start: calc(var(--shell-left, 240px) + 4px + var(--mk-space-2));
+    inset-inline-start: calc(min(var(--shell-left, 240px), 35vw) + 4px + var(--mk-space-2));
   }
 
   [data-mk-part='media-shell.toggle'][data-side='right'] {
-    inset-inline-end: calc(var(--shell-right, 300px) + 4px + var(--mk-space-2));
+    inset-inline-end: calc(min(var(--shell-right, 280px), 40vw) + 4px + var(--mk-space-2));
   }
 
   [data-mk-part='media-shell'][data-layout~='left-collapsed']

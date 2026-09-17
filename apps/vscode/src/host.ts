@@ -1081,10 +1081,31 @@ function serveVsCode(
         return result
       },
     }
+    /*
+     * A file this window may write is opened with the authority to write it.
+     *
+     * The codec's own edit operations run under the grant the subject was opened with, so a
+     * read-only grant made every in-place edit refuse at the click — `write-source` missing —
+     * however writable the file was. It is added only for a real file inside the granted roots: a
+     * container member has nowhere to be written back to, and the gate still narrows the class to
+     * contributions whose manifest asked for it.
+     */
+    const writable =
+      !isContainerUriText(subjectRequested) && !subjectRequested.startsWith('modkit-source:')
+    const baseGrant = options.grant ?? DEFAULT_OPEN_GRANT
+    const openGrant: PermissionGrant = writable
+      ? {
+          ...baseGrant,
+          classes: Object.freeze([
+            ...baseGrant.classes.filter(item => item !== 'write-source'),
+            'write-source' as const,
+          ]),
+        }
+      : baseGrant
     const opener = createPathSubjectOpener({
       subjects: capturing,
       roots: options.roots(),
-      grant: options.grant ?? DEFAULT_OPEN_GRANT,
+      grant: openGrant,
       budget: options.budget ?? DEFAULT_OPEN_BUDGET,
     })
     const rawAnswer = await opener(subjectRequested, signal)

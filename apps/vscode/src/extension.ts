@@ -132,7 +132,6 @@ import {
   createVsCodeSubjectHost,
   subjectKey,
   subjectLabel,
-  VSCODE_MAXIMUM_SUBJECT_BYTES,
   VSCODE_SUBJECT_CONTRIBUTION_ID,
   VSCODE_SUBJECT_SERVICES_URL,
   type ViewerSurfaceOperation,
@@ -7531,11 +7530,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         const key = subjectKey(target.path)
         if (panel.active) {
           activeSubject = key
-          showSubjectStatus(target.path)
           viewerStatusBar.setActive(key)
         } else if (activeSubject === key) {
           activeSubject = undefined
-          showSubjectStatus(undefined)
           viewerStatusBar.setActive(undefined)
         }
       }
@@ -7552,7 +7549,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         viewerStatusBar.remove(subjectKey(target.path))
         if (activeSubject === subjectKey(target.path)) {
           activeSubject = undefined
-          showSubjectStatus(undefined)
         }
         subjectFacts.delete(subjectKey(target.path))
         document.state.detach(served)
@@ -7815,49 +7811,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     { readonly contributionId: string; readonly variantId: string; readonly bytes?: number }
   >()
 
-  /**
-   * How this window names a file out loud.
-   *
-   * `asRelativePath` returns the path unchanged when it is outside every workspace folder, and a
-   * single file opened by name usually is — so the absolute answer is refused and the basename
-   * used instead. A status bar has no room for a full path anyway, and no need for one.
-   */
-  const describeSubject = (path: string): string => {
-    // A container member is named by its container's file name and its own path inside it — the
-    // container's absolute path stays inside the URI and never reaches the bar.
-    if (parseContainerUriText(path) !== undefined) return subjectLabel(path)
-    const relative = vscode.workspace.asRelativePath(vscode.Uri.file(path), false)
-    return isAbsolute(relative) ? basename(relative) : relative
-  }
-
-  const showSubjectStatus = (path: string | undefined): void => {
-    if (path === undefined) {
-      status.hide()
-      return
-    }
-    const facts = subjectFacts.get(subjectKey(path))
-    const size =
-      facts?.bytes === undefined
-        ? undefined
-        : facts.bytes < 1024
-          ? `${facts.bytes} B`
-          : `${(facts.bytes / 1024).toFixed(1)} KiB`
-    status.text = `$(file-binary) ${describeSubject(path)}`
-    status.tooltip = [
-      describeSubject(path),
-      facts === undefined
-        ? localizer.text('vscode.shell.statusNotOpened')
-        : `${facts.contributionId}/${facts.variantId}`,
-      size,
-      localizer.text('vscode.shell.statusReadLimit', {
-        mib: VSCODE_MAXIMUM_SUBJECT_BYTES / (1024 * 1024),
-      }),
-    ]
-      .filter(line => line !== undefined)
-      .join('\n')
-    status.show()
-  }
-
   /** The Modkit editor the user is looking at, or nothing when they are looking elsewhere. */
   let activeSubject: string | undefined
 
@@ -7876,14 +7829,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           variantId: opened.variantId,
           bytes: stat.size,
         })
-        if (activeSubject === key) showSubjectStatus(key)
       },
       () => {
         subjectFacts.set(key, {
           contributionId: opened.contributionId,
           variantId: opened.variantId,
         })
-        if (activeSubject === key) showSubjectStatus(key)
       },
     )
   }
