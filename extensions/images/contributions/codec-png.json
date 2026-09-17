@@ -159,14 +159,153 @@
             "schemaVersion": 1,
             "forms": [
               {
-                "id": "dds",
-                "label": "Convert icon to DDS",
+                "id": "png",
+                "label": "PNG",
+                "summary": "Writes the base image as a PNG file.",
+                "baseInput": {
+                  "target": "png"
+                },
+                "fields": [],
+                "writes": {
+                  "format": {
+                    "id": "png",
+                    "label": "PNG"
+                  },
+                  "extension": ".png",
+                  "mediaType": "image/png"
+                }
+              },
+              {
+                "id": "dds-dxt1",
+                "label": "DDS · DXT1 / BC1 (binary alpha)",
+                "summary": "Writes a DXT1 copy; refused while any texel is partially transparent.",
+                "baseInput": {
+                  "target": "dds",
+                  "format": "dxt1"
+                },
+                "fields": [],
+                "writes": {
+                  "format": {
+                    "id": "dds",
+                    "label": "DDS"
+                  },
+                  "encoding": {
+                    "id": "dxt1",
+                    "label": "DXT1 / BC1 (binary alpha)"
+                  },
+                  "extension": ".dds",
+                  "mediaType": "image/vnd-ms.dds"
+                }
+              },
+              {
+                "id": "dds-dxt3",
+                "label": "DDS · DXT3 / BC2",
+                "summary": "Writes a DXT3 copy.",
+                "baseInput": {
+                  "target": "dds",
+                  "format": "dxt3"
+                },
+                "fields": [],
+                "writes": {
+                  "format": {
+                    "id": "dds",
+                    "label": "DDS"
+                  },
+                  "encoding": {
+                    "id": "dxt3",
+                    "label": "DXT3 / BC2"
+                  },
+                  "extension": ".dds",
+                  "mediaType": "image/vnd-ms.dds"
+                }
+              },
+              {
+                "id": "dds-dxt5",
+                "label": "DDS · DXT5 / BC3",
+                "summary": "Writes a DXT5 copy.",
+                "baseInput": {
+                  "target": "dds",
+                  "format": "dxt5"
+                },
+                "fields": [],
+                "writes": {
+                  "format": {
+                    "id": "dds",
+                    "label": "DDS"
+                  },
+                  "encoding": {
+                    "id": "dxt5",
+                    "label": "DXT5 / BC3"
+                  },
+                  "extension": ".dds",
+                  "mediaType": "image/vnd-ms.dds"
+                }
+              },
+              {
+                "id": "dds-rgba8",
+                "label": "DDS · Uncompressed RGBA8",
+                "summary": "Writes an uncompressed copy.",
+                "baseInput": {
+                  "target": "dds",
+                  "format": "rgba8"
+                },
+                "fields": [],
+                "writes": {
+                  "format": {
+                    "id": "dds",
+                    "label": "DDS"
+                  },
+                  "encoding": {
+                    "id": "rgba8",
+                    "label": "Uncompressed RGBA8"
+                  },
+                  "extension": ".dds",
+                  "mediaType": "image/vnd-ms.dds"
+                }
+              },
+              {
+                "id": "dds-auto",
+                "label": "DDS · Automatic",
+                "summary": "DXT5 if any texel is partially transparent, else DXT1.",
+                "baseInput": {
+                  "target": "dds",
+                  "format": "auto"
+                },
+                "fields": [],
+                "writes": {
+                  "format": {
+                    "id": "dds",
+                    "label": "DDS"
+                  },
+                  "encoding": {
+                    "id": "auto",
+                    "label": "Automatic"
+                  },
+                  "extension": ".dds",
+                  "mediaType": "image/vnd-ms.dds"
+                }
+              },
+              {
+                "id": "dds-icon",
+                "label": "DDS · Icon (DXT5)",
                 "summary": "Writes a DXT5 DDS of a square icon smaller than 256 x 256.",
                 "baseInput": {
                   "target": "dds",
                   "icon": true
                 },
-                "fields": []
+                "fields": [],
+                "writes": {
+                  "format": {
+                    "id": "dds",
+                    "label": "DDS"
+                  },
+                  "encoding": {
+                    "id": "icon",
+                    "label": "Icon (DXT5)"
+                  },
+                  "extension": ".dds",
+                  "mediaType": "image/vnd-ms.dds"
+                }
               }
             ]
           }

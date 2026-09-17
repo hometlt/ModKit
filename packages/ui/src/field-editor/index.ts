@@ -133,6 +133,8 @@ export interface EditOperationField extends FieldEditFormField {
 }
 
 export interface EditOperationForm {
+  /** What this form writes, when it writes a file of its own (see `FieldEditFormSpecV1.writes`). */
+  readonly writes?: FieldEditFormSpecV1['writes']
   readonly id: string
   readonly label: string
   readonly operationId: string
@@ -605,6 +607,24 @@ function validFieldType(type: unknown, depth = 0): type is FieldType {
   }
 }
 
+/** A declared write target: format, optional encoding, and what the file is called. */
+function validWrites(value: unknown): boolean {
+  if (!object(value) || !onlyKeys(value, ['format', 'encoding', 'extension', 'mediaType'])) {
+    return false
+  }
+  const named = (candidate: unknown): boolean =>
+    object(candidate) &&
+    onlyKeys(candidate, ['id', 'label']) &&
+    nonEmptyString(candidate['id']) &&
+    nonEmptyString(candidate['label'])
+  return (
+    named(value['format']) &&
+    (value['encoding'] === undefined || named(value['encoding'])) &&
+    nonEmptyString(value['extension']) &&
+    nonEmptyString(value['mediaType'])
+  )
+}
+
 function parseSchema(value: unknown): FieldEditInputSchemaV1 | undefined {
   if (
     !validJson(value) ||
@@ -619,7 +639,7 @@ function parseSchema(value: unknown): FieldEditInputSchemaV1 | undefined {
   for (const form of value['forms']) {
     if (
       !object(form) ||
-      !onlyKeys(form, ['id', 'label', 'summary', 'binding', 'fields', 'baseInput']) ||
+      !onlyKeys(form, ['id', 'label', 'summary', 'binding', 'fields', 'baseInput', 'writes']) ||
       typeof form['id'] !== 'string' ||
       form['id'].length === 0 ||
       ids.has(form['id']) ||
@@ -639,6 +659,7 @@ function parseSchema(value: unknown): FieldEditInputSchemaV1 | undefined {
         ))
     )
       return undefined
+    if (form['writes'] !== undefined && !validWrites(form['writes'])) return undefined
     ids.add(form['id'])
     if (
       form['binding'] !== undefined &&
@@ -835,6 +856,7 @@ function resolveForm(
     handlerId: operation.handlerId,
     summary: spec.summary,
     fields,
+    ...(spec.writes === undefined ? {} : { writes: spec.writes }),
     build(values: ReadonlyMap<string, JsonValue>): JsonValue {
       const input: Record<string, JsonValue> =
         spec.baseInput === undefined

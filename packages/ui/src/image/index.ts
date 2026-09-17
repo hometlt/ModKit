@@ -47,6 +47,7 @@ import {
   exportOffer,
   mountFieldEditor,
   operationForms,
+  type EditOperationForm,
   type FieldEditorControlV1,
 } from '../field-editor/index.js'
 import type { UiLocalizer } from '../localization/index.js'
@@ -83,14 +84,6 @@ export interface ImageExportFile {
   readonly mediaType: string
   readonly bytes: Uint8Array
 }
-
-/** Media type and extension of an `export.convert` target the viewer knows how to name. */
-const CONVERT_TARGETS: Readonly<Record<string, { readonly ext: string; readonly type: string }>> =
-  Object.freeze({
-    png: { ext: 'png', type: 'image/png' },
-    dds: { ext: 'dds', type: 'image/vnd-ms.dds' },
-    rgba8: { ext: 'rgba', type: 'application/octet-stream' },
-  })
 
 /**
  * File name for one conversion preset: `<base>.<ext>` when the preset is named after its target,
@@ -924,23 +917,25 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
       }
 
       /** The codec's own `export.convert` presets, as data the status menu and a button can use. */
+      /**
+       * The codec's `export.convert` presets, as data the status menu and the writer can use.
+       *
+       * A form that declares no write target is not a conversion — it is some other preset of the
+       * same operation — and is left out rather than guessed at from its input.
+       */
       const conversions = (): readonly {
-        readonly form: { readonly id: string; readonly label: string; readonly handlerId: string }
+        readonly form: EditOperationForm
         readonly input: JsonValue
-        readonly target: { readonly ext: string; readonly type: string }
       }[] =>
         exportOffer(descriptor).flatMap(form => {
+          if (form.writes === undefined) return []
           let input
           try {
             input = form.build(new Map())
           } catch {
             return []
           }
-          const target =
-            typeof input === 'object' && input !== null && !Array.isArray(input)
-              ? CONVERT_TARGETS[String((input as Readonly<Record<string, unknown>>)['target'])]
-              : undefined
-          return target === undefined ? [] : [{ form, input, target }]
+          return [{ form, input }]
         })
 
       const runConversion = (formId: string): void => {
@@ -962,11 +957,13 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
             if (output.kind !== 'bytes' || !(output.value instanceof Uint8Array)) {
               throw new Error(`the codec answered ${output.kind}, not bytes`)
             }
+            const writes = preset.form.writes
+            if (writes === undefined) throw new Error(`${preset.form.id} declares no write target`)
             const outcome = await write(
               [
                 {
-                  name: convertedFileName(baseName, preset.form.id, preset.target.ext),
-                  mediaType: preset.target.type,
+                  name: convertedFileName(baseName, preset.form.id, writes.extension),
+                  mediaType: writes.mediaType,
                   bytes: output.value,
                 },
               ],

@@ -289,46 +289,70 @@ export const DDS_EDIT_CONTENT_SCHEMA = Object.freeze({
 const DXT1_NOTE = 'Writes a DXT1 copy; refused while any texel is partially transparent.'
 const AUTO_NOTE = 'DXT5 if any texel is partially transparent, else DXT1.'
 
-const preset = (id, label, summary, baseInput) =>
+const preset = (id, label, summary, baseInput, writes) =>
   Object.freeze({
     id,
     label,
     summary,
     baseInput: Object.freeze(baseInput),
     fields: Object.freeze([]),
+    ...(writes === undefined ? {} : { writes: Object.freeze(writes) }),
   })
 
 /**
- * Every encoding this codec can write, as one preset each.
+ * What these codecs can write, declared as data.
  *
- * A viewer's format menu is built from these and nothing else: the codec is the only thing that
- * knows what it can encode, so a format appears there when a codec publishes a way to write it and
- * disappears when it does not. Labels are authored as «FORMAT · encoding», which is what lets a
- * host group them — DDS with its block encodings under it — instead of listing every pairing flat.
+ * A host's conversion menu is built from these declarations and nothing else: the codec is the only
+ * thing that knows what it can encode, so a format appears when a codec publishes a way to write it
+ * and disappears when it does not. The format and the encoding are separate ids, which is what lets
+ * a surface group them — DDS with its block encodings under it — without parsing any label.
  */
+const PNG_TARGET = Object.freeze({
+  format: Object.freeze({ id: 'png', label: 'PNG' }),
+  extension: '.png',
+  mediaType: 'image/png',
+})
+
+const DDS_ENCODINGS = Object.freeze([
+  Object.freeze({ id: 'dxt1', label: 'DXT1 / BC1 (binary alpha)', summary: DXT1_NOTE }),
+  Object.freeze({ id: 'dxt3', label: 'DXT3 / BC2', summary: 'Writes a DXT3 copy.' }),
+  Object.freeze({ id: 'dxt5', label: 'DXT5 / BC3', summary: 'Writes a DXT5 copy.' }),
+  Object.freeze({
+    id: 'rgba8',
+    label: 'Uncompressed RGBA8',
+    summary: 'Writes an uncompressed copy.',
+  }),
+  Object.freeze({ id: 'auto', label: 'Automatic', summary: AUTO_NOTE }),
+])
+
+const ddsTarget = encoding =>
+  Object.freeze({
+    format: Object.freeze({ id: 'dds', label: 'DDS' }),
+    encoding: Object.freeze({ id: encoding.id, label: encoding.label }),
+    extension: '.dds',
+    mediaType: 'image/vnd-ms.dds',
+  })
+
+/** One preset per DDS encoding: the same list wherever a codec can write a DDS. */
+const ddsPresets = () =>
+  DDS_ENCODINGS.map(encoding =>
+    preset(
+      `dds-${encoding.id}`,
+      `DDS · ${encoding.label}`,
+      encoding.summary,
+      { target: 'dds', format: encoding.id },
+      ddsTarget(encoding),
+    ),
+  )
+
+/** `export.convert` presets of a DDS: the base mip as a PNG, or a re-encoded DDS. */
 export const DDS_EXPORT_SCHEMA = Object.freeze({
   $ref: 'modkit://images/dds-export-convert.v1',
   document: Object.freeze({
     schemaVersion: 1,
     forms: Object.freeze([
-      preset('png', 'PNG', 'Writes the base mip as a PNG file.', { target: 'png' }),
-      preset('dds-dxt1', 'DDS · DXT1 / BC1 (binary alpha)', DXT1_NOTE, {
-        target: 'dds',
-        format: 'dxt1',
-      }),
-      preset('dds-dxt3', 'DDS · DXT3 / BC2', 'Writes a DXT3 copy of the base surface.', {
-        target: 'dds',
-        format: 'dxt3',
-      }),
-      preset('dds-dxt5', 'DDS · DXT5 / BC3', 'Writes a DXT5 copy of the base surface.', {
-        target: 'dds',
-        format: 'dxt5',
-      }),
-      preset('dds-rgba8', 'DDS · Uncompressed RGBA8', 'Writes an uncompressed DDS copy.', {
-        target: 'dds',
-        format: 'rgba8',
-      }),
-      preset('dds-auto', 'DDS · Automatic', AUTO_NOTE, { target: 'dds', format: 'auto' }),
+      preset('png', 'PNG', 'Writes the base mip as a PNG file.', { target: 'png' }, PNG_TARGET),
+      ...ddsPresets(),
     ]),
   }),
 })
@@ -339,29 +363,14 @@ export const PNG_EXPORT_SCHEMA = Object.freeze({
   document: Object.freeze({
     schemaVersion: 1,
     forms: Object.freeze([
-      preset('png', 'PNG', 'Writes the base image as a PNG file.', { target: 'png' }),
-      preset('dds-dxt1', 'DDS · DXT1 / BC1 (binary alpha)', DXT1_NOTE, {
-        target: 'dds',
-        format: 'dxt1',
-      }),
-      preset('dds-dxt3', 'DDS · DXT3 / BC2', 'Writes a DXT3 DDS of this image.', {
-        target: 'dds',
-        format: 'dxt3',
-      }),
-      preset('dds-dxt5', 'DDS · DXT5 / BC3', 'Writes a DXT5 DDS of this image.', {
-        target: 'dds',
-        format: 'dxt5',
-      }),
-      preset('dds-rgba8', 'DDS · Uncompressed RGBA8', 'Writes an uncompressed DDS of this image.', {
-        target: 'dds',
-        format: 'rgba8',
-      }),
-      preset('dds-auto', 'DDS · Automatic', AUTO_NOTE, { target: 'dds', format: 'auto' }),
+      preset('png', 'PNG', 'Writes the base image as a PNG file.', { target: 'png' }, PNG_TARGET),
+      ...ddsPresets(),
       preset(
         'dds-icon',
         'DDS · Icon (DXT5)',
         'Writes a DXT5 DDS of a square icon smaller than 256 x 256.',
         { target: 'dds', icon: true },
+        ddsTarget({ id: 'icon', label: 'Icon (DXT5)' }),
       ),
     ]),
   }),

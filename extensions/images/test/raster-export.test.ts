@@ -121,6 +121,76 @@ describe('PNG export.convert', () => {
   })
 })
 
+describe('declared conversion targets', () => {
+  /*
+   * The mechanism, not the list: a host builds its conversion menu from what codecs declare, so
+   * what matters is that every conversion form carries a format id, an encoding where the format
+   * has several, and the extension and media type of the file it writes. A codec that gains an
+   * encoder gains a menu entry by publishing one more of these — no host changes.
+   */
+  it('declares a format, an encoding and a file name for every conversion a codec can write', async () => {
+    const { exportOffer } = await import('@modkit/ui/field-editor')
+    const dds = encodeDds(
+      rgba(8, 8, () => [1, 2, 3, 255]),
+      { format: 'rgba8' },
+    )
+    const session = (await openImageCodec('dds/codec.js', dds)) as Session
+    try {
+      const descriptor = (await session.descriptor()) as never
+      const forms = exportOffer(descriptor)
+      expect(forms.every(form => form.writes !== undefined)).toBe(true)
+      const targets = forms.map(form => [
+        form.writes?.format.id,
+        form.writes?.encoding?.id,
+        form.writes?.extension,
+      ])
+      expect(targets).toEqual([
+        ['png', undefined, '.png'],
+        ['dds', 'dxt1', '.dds'],
+        ['dds', 'dxt3', '.dds'],
+        ['dds', 'dxt5', '.dds'],
+        ['dds', 'rgba8', '.dds'],
+        ['dds', 'auto', '.dds'],
+      ])
+      // One format, several encodings: what a surface groups under a single «DDS» entry.
+      const ddsEncodings = forms.filter(form => form.writes?.format.id === 'dds')
+      expect(new Set(ddsEncodings.map(form => form.writes?.encoding?.label)).size).toBe(
+        ddsEncodings.length,
+      )
+    } finally {
+      await session.dispose()
+    }
+  })
+
+  it('writes each declared DDS encoding as a readable DDS in that encoding', async () => {
+    const source = encodeDds(
+      rgba(8, 8, () => [10, 20, 30, 255]),
+      { format: 'rgba8' },
+    )
+    for (const [formId, expected] of [
+      ['dds-dxt1', /DXT1|BC1/u],
+      ['dds-dxt3', /DXT3|BC2/u],
+      ['dds-dxt5', /DXT5|BC3/u],
+      // An uncompressed DDS reads back as what its header declares: 32-bit RGB.
+      ['dds-rgba8', /RGBA8|A8R8G8B8|X8R8G8B8|32-bit RGB/u],
+    ] as const) {
+      const { exportOffer } = await import('@modkit/ui/field-editor')
+      const session = (await openImageCodec('dds/codec.js', source)) as Session
+      try {
+        const descriptor = (await session.descriptor()) as never
+        const form = exportOffer(descriptor).find(item => item.id === formId)
+        if (form === undefined) throw new Error(`${formId} is not offered`)
+        const result = await session.operations().invoke(form.handlerId, form.build(new Map()))
+        const bytes = result['output'] as { value: Uint8Array }
+        const back = await readBack('dds/codec.js', Uint8Array.from(bytes.value))
+        expect(back.encoding, formId).toMatch(expected)
+      } finally {
+        await session.dispose()
+      }
+    }
+  })
+})
+
 describe('DDS edit.content forms', () => {
   it('publishes one generic edit-panel form per transform, and a form plans an edit', async () => {
     const { editOffer } = await import('@modkit/ui/field-editor')

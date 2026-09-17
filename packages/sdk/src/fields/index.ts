@@ -114,6 +114,22 @@ export interface FieldEditFormSpecV1 {
     readonly entryKey?: string
   }
   readonly fields: readonly FieldEditFormField[]
+  /**
+   * What this form writes, when it writes a file in a format of its own.
+   *
+   * This is how a codec extends a host's conversion menu: it declares the format and the encoding
+   * it can produce, and a surface groups by `format.id` and names the entry by `encoding` — no
+   * host knows which formats exist, and no label is parsed to find out. A codec that gains an
+   * encoder gains a menu entry by publishing one more form.
+   */
+  readonly writes?: {
+    readonly format: { readonly id: string; readonly label: string }
+    /** Distinguishes several encodings of one format (DXT1, DXT5, RGBA8…). */
+    readonly encoding?: { readonly id: string; readonly label: string }
+    /** Extension for the written file, including the dot. */
+    readonly extension: string
+    readonly mediaType: string
+  }
 }
 
 /**
