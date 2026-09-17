@@ -24,6 +24,7 @@ import { createAccordion, accordionField } from '../primitives/accordion.js'
 import { setPart, setState } from '../parts.js'
 import { setToken } from '../tokens/index.js'
 import {
+  bindingFor,
   createSurface,
   createViewerMount,
   defineViewerModule,
@@ -1046,10 +1047,11 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
         )
         if (lease === undefined) throw new TypeError('subject facts binding is unavailable')
         scope.lease(lease)
-        const sections = await loadSubjectCardSections(lease.value as SubjectFactsSource, {
+        const loaded = await loadSubjectCardSections(lease.value as SubjectFactsSource, {
           localizer,
           signal: scope.signal,
         })
+        const sections = embedPreview(loaded, args, scope, localizer)
         const subjectNavigation = args.subjectNavigation
         const navigate =
           subjectNavigation === undefined
@@ -1080,6 +1082,53 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
       }
     },
   })
+}
+
+/**
+ * The card's preview section shows the subject itself, not a link to it: when the host bound a
+ * raster or model source to this slot, the standard image or model stage mounts inside the
+ * section. Without such a binding the section keeps its link.
+ */
+function embedPreview(
+  sections: readonly CardSection[],
+  args: Parameters<ViewerModule['mount']>[0],
+  scope: ViewerMountScope,
+  localizer: UiLocalizer,
+): readonly CardSection[] {
+  const kind = bindingFor(args.slot, 'common.view/model-scene-source')
+    ? 'model'
+    : bindingFor(args.slot, 'common.view/raster-image-source')
+      ? 'raster'
+      : undefined
+  if (kind === undefined) return sections
+  return sections.map(section =>
+    section.kind !== 'links' || section.id !== 'preview'
+      ? section
+      : {
+          kind: 'custom' as const,
+          id: 'preview',
+          title: section.title,
+          expanded: true,
+          async render(host: HTMLElement) {
+            setPart(host, 'card.preview')
+            try {
+              // Loaded on demand: the model stage brings the 3D renderer with it.
+              const module =
+                kind === 'model'
+                  ? (await import('../model/index.js')).createModelViewer({ localizer })
+                  : (await import('../image/index.js')).createImageViewer({ localizer })
+              if (scope.signal.aborted) return
+              const mount = await module.mount({ ...args, container: host, signal: scope.signal })
+              scope.cleanup(() => mount.unmount())
+            } catch (error) {
+              if (scope.signal.aborted) return
+              host.textContent = localizer.text('card.previewUnavailable', {
+                reason: safeViewerText(error instanceof Error ? error.message : String(error), 256),
+              })
+            }
+          },
+        },
+  )
 }
 
 export const subjectCardViewer: ViewerModule = createSubjectCardViewer()

@@ -81,6 +81,12 @@ export const PREVIEW_STAGES = Object.freeze([
     label: 'Card',
     contract: 'common.view/subject-facts-source',
     module: subjectCardViewer,
+    optionalContracts: [
+      'common.view/raster-image-source',
+      'common.view/model-scene-source',
+      'common.view/model-resource-refs-source',
+      'common.view/model-material-source',
+    ],
   },
   {
     id: 'calculations',
@@ -156,6 +162,12 @@ export const PREVIEW_STAGES_READONLY = Object.freeze([
     label: 'Card',
     contract: 'common.view/subject-facts-source',
     module: subjectCardViewer,
+    optionalContracts: [
+      'common.view/raster-image-source',
+      'common.view/model-scene-source',
+      'common.view/model-resource-refs-source',
+      'common.view/model-material-source',
+    ],
   },
   {
     id: 'calculations',
@@ -251,6 +263,12 @@ export function createPreviewStages(localizer) {
       label: 'Card',
       contract: 'common.view/subject-facts-source',
       module: createSubjectCardViewer({ localizer }),
+      optionalContracts: [
+        'common.view/raster-image-source',
+        'common.view/model-scene-source',
+        'common.view/model-resource-refs-source',
+        'common.view/model-material-source',
+      ],
     },
     {
       id: 'calculations',
@@ -358,6 +376,12 @@ export function createPreviewStagesReadonly(localizer) {
       label: 'Card',
       contract: 'common.view/subject-facts-source',
       module: createSubjectCardViewer({ localizer }),
+      optionalContracts: [
+        'common.view/raster-image-source',
+        'common.view/model-scene-source',
+        'common.view/model-resource-refs-source',
+        'common.view/model-material-source',
+      ],
     },
     {
       id: 'calculations',

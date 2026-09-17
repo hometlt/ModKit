@@ -15,6 +15,12 @@
   "spec": {
     "kind": "stage",
     "consumesDataSources": [{ "contract": "common.view/subject-facts-source", "major": 1 }],
+    "optionalDataSources": [
+      { "contract": "common.view/raster-image-source", "major": 1 },
+      { "contract": "common.view/model-scene-source", "major": 1 },
+      { "contract": "common.view/model-resource-refs-source", "major": 1 },
+      { "contract": "common.view/model-material-source", "major": 1 }
+    ],
     "priority": 390,
     "singletonGroup": "center-stage"
   }

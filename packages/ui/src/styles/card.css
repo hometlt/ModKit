@@ -661,6 +661,16 @@
     overflow-wrap: anywhere;
   }
 
+  /* The subject itself, mounted by the image or model stage inside the card. */
+  [data-mk-part='card.preview'] {
+    position: relative;
+    block-size: 26rem;
+    min-block-size: 12rem;
+    max-block-size: 80vh;
+    overflow: hidden;
+    resize: vertical;
+  }
+
   [data-mk-part='metadata.note'] {
     display: block;
     margin-block-start: var(--mk-space-1);

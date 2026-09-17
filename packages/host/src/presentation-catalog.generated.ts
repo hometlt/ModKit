@@ -257,9 +257,37 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
         }),
       ]),
     }),
+    optionalBindings: Object.freeze([
+      Object.freeze({
+        bindingId: 'card-optional-1',
+        contract: 'common.view/raster-image-source',
+        major: 1,
+      }),
+      Object.freeze({
+        bindingId: 'card-optional-2',
+        contract: 'common.view/model-scene-source',
+        major: 1,
+      }),
+      Object.freeze({
+        bindingId: 'card-optional-3',
+        contract: 'common.view/model-resource-refs-source',
+        major: 1,
+      }),
+      Object.freeze({
+        bindingId: 'card-optional-4',
+        contract: 'common.view/model-material-source',
+        major: 1,
+      }),
+    ]),
     spec: Object.freeze({
       kind: 'stage',
       consumesDataSources: [{ contract: 'common.view/subject-facts-source', major: 1 }],
+      optionalDataSources: [
+        { contract: 'common.view/raster-image-source', major: 1 },
+        { contract: 'common.view/model-scene-source', major: 1 },
+        { contract: 'common.view/model-resource-refs-source', major: 1 },
+        { contract: 'common.view/model-material-source', major: 1 },
+      ],
       priority: 390,
       singletonGroup: 'center-stage',
     }),

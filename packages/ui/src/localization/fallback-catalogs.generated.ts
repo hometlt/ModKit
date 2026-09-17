@@ -67,6 +67,7 @@ export const CARD_FALLBACK_MESSAGES = {
   'card.locale': 'Locale',
   'card.namedSubject': '{label} subject card',
   'card.preview': 'Preview',
+  'card.previewUnavailable': 'Preview unavailable: {reason}',
   'card.relatedCapped': 'Related subjects are capped.',
   'card.relatedSubjects': 'Related subjects',
   'card.repository.fact.displayName': 'Display name',
@@ -374,6 +375,7 @@ export const PANELS_FALLBACK_MESSAGES = {
 export const PARTS_FALLBACK_MESSAGES = {
   'calculations.summary': '{count} calculations · {warnings} warnings',
   'card.locale': 'Locale',
+  'card.preview': 'Preview',
   'editor.text': 'Text editor',
   'graph.controls': 'Graph controls',
   'graph.hint': 'Scroll to zoom · drag the background to pan · drag nodes to move them',

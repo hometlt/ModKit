@@ -152,7 +152,7 @@
     padding-inline: var(--mk-space-2);
     color: var(--mk-color-fg);
     border: 1px solid var(--mk-color-border);
-    border-radius: var(--mk-radius-control);
+    border-radius: var(--mk-radius-sm);
     background: var(--mk-color-bg);
     cursor: pointer;
   }

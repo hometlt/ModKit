@@ -371,6 +371,7 @@ export const PARTS = Object.freeze([
   'card.subcard-head',
   'card.subcard-body',
   'card.custom',
+  'card.preview',
 
   // relation graph
   'graph',

@@ -230,15 +230,15 @@
    * default that would quietly mis-colour a language nobody has themed yet.
    */
   [data-mk-part='value.token'][data-mk-token='keyword'] {
-    color: var(--mk-color-syntax-keyword, var(--mk-color-accent));
+    color: var(--mk-chart-categorical-1, var(--mk-color-accent));
   }
 
   [data-mk-part='value.token'][data-mk-token='string'] {
-    color: var(--mk-color-syntax-string, var(--mk-color-success-fg, var(--mk-color-fg)));
+    color: var(--mk-chart-categorical-2, var(--mk-status-ok, var(--mk-color-fg)));
   }
 
   [data-mk-part='value.token'][data-mk-token='number'] {
-    color: var(--mk-color-syntax-number, var(--mk-color-fg));
+    color: var(--mk-chart-categorical-3, var(--mk-color-fg));
     font-variant-numeric: tabular-nums;
   }
 
@@ -250,13 +250,13 @@
   [data-mk-part='value.token'][data-mk-token='type'],
   [data-mk-part='value.token'][data-mk-token='class'],
   [data-mk-part='value.token'][data-mk-token='namespace'] {
-    color: var(--mk-color-syntax-type, var(--mk-color-fg));
+    color: var(--mk-chart-categorical-4, var(--mk-color-fg));
   }
 
   [data-mk-part='value.token'][data-mk-token='variable'],
   [data-mk-part='value.token'][data-mk-token='parameter'],
   [data-mk-part='value.token'][data-mk-token='property'] {
-    color: var(--mk-color-syntax-variable, var(--mk-color-fg-muted));
+    color: var(--mk-chart-categorical-5, var(--mk-color-fg-muted));
   }
 
   [data-mk-part='value.token'][data-mk-token='operator'] {
@@ -265,7 +265,7 @@
 
   /* A run the codec marked as wrong is worth seeing even in a one-line cell. */
   [data-mk-part='value.token'][data-mk-token-modifiers~='invalid'] {
-    text-decoration: underline wavy var(--mk-color-danger-fg, currentColor);
+    text-decoration: underline wavy var(--mk-status-error, currentColor);
   }
 
   /* ---------------------------------------------------------------- inline field editing */
@@ -291,7 +291,7 @@
   }
 
   [data-mk-part='field.status'] {
-    color: var(--mk-color-danger-fg, var(--mk-color-fg-muted));
+    color: var(--mk-status-error, var(--mk-color-fg-muted));
     font-size: var(--mk-font-size-sm);
   }
 
