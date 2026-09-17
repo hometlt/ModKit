@@ -1124,19 +1124,34 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/galaxy-extras/receipt.json",
+          "sha256": "7eaaa4c935c0746dd5cf592e934f41fe66128c1a3f15b3851e9cd8dc8ad3a78c"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/45527fd6a18938e7",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/galaxy-extras/receipt.json",
+          "sha256": "7eaaa4c935c0746dd5cf592e934f41fe66128c1a3f15b3851e9cd8dc8ad3a78c"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/478291e85f752326",
-      "status": "pending"
+      "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/galaxy-extras/receipt.json",
+          "sha256": "7eaaa4c935c0746dd5cf592e934f41fe66128c1a3f15b3851e9cd8dc8ad3a78c"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/4d66bcba31cfe951",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "demotedOn": "2026-09-16",

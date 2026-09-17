@@ -1,0 +1,7 @@
+{
+  "features": [
+    ["4d66bcba31cfe951", "detect"],
+    ["45527fd6a18938e7", "galaxy-check"],
+    ["478291e85f752326", "galaxy-audit", "trigger-audit", "audit-compare", "sentinels"]
+  ]
+}
