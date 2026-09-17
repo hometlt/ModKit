@@ -1,0 +1,30 @@
+{
+  "features": [
+    ["9de6b428e0a80208", "view.inspect"],
+    ["94a8faa139141b9a", "view.inspect", "export.convert"],
+    ["13d1fd7ef59d4e03", "asset.validate"],
+    ["b9aff055f2372c3d", "export.raw"],
+    ["84dcfb1324332f4b", "export.convert"],
+    ["833247a23381503e", "sc2-replay.analyze"],
+    ["8954921428619623", "view.render"],
+    ["3bd221ae350353f3", "media.seek", "media.play"],
+    ["edaccd70a189e491", "detect"],
+    ["b759e743f9fd83e5", "export.convert", "sc2-replay.analyze"]
+  ],
+  "operations": [
+    ["view.inspect", "view.inspect"],
+    ["asset.validate", "asset.validate"],
+    ["export.raw", "export.raw"],
+    ["sc2-replay.analyze", "sc2-replay.analyze"],
+    ["view.render", "view.render"],
+    ["media.seek", "media.seek"],
+    ["media.play", "media.play"]
+  ],
+  "skipProbes": {},
+  "divergences": {
+    "early-replay": "MK3 opens build-16561 replays without tracker events; MK2 cannot decode them.",
+    "nearest-protocol": "MK2 decodes game/message events of unbundled builds with the nearest protocol; MK3 only with an exact protocol.",
+    "loop-past-end": "MK2 clamps render/seek loops to max(header, timeline); MK3 refuses render and clamps seek to the tracker timeline (one loop shorter).",
+    "export.convert": "MK3 publishes no export.convert; the MK2 JSON export is compared against view.inspect + timeline, so the operation row is not claimed."
+  }
+}
