@@ -63,6 +63,8 @@ export const CARD_FALLBACK_MESSAGES = {
   'card.extension.group.specification': 'Specification',
   'card.extension.group.state': 'State',
   'card.factGroupsCapped': 'Fact groups are capped.',
+  'card.historyBack': 'Previous subject',
+  'card.historyForward': 'Next subject',
   'card.loadingDescription': 'Loading description…',
   'card.locale': 'Locale',
   'card.namedSubject': '{label} subject card',
@@ -291,10 +293,10 @@ export const IMAGE_FALLBACK_MESSAGES = {
   'viewer.imageCompareTitle': 'Cycle comparison: off, side by side, difference',
   'viewer.imageCompareWith': 'compared with {subresource} ({mode})',
   'viewer.imageControls': 'Image controls',
-  'viewer.imageDecodeError':
-    'The platform decoder cannot render these bytes: {reason}. A format-specific decoder provider is required.',
   'viewer.imageConvert': 'Conversions',
   'viewer.imageConverting': 'converting: {preset}…',
+  'viewer.imageDecodeError':
+    'The platform decoder cannot render these bytes: {reason}. A format-specific decoder provider is required.',
   'viewer.imageExport': 'Export',
   'viewer.imageExportAll': 'Export all',
   'viewer.imageExportAllTitle': 'Export every declared subresource as PNG',
@@ -543,6 +545,35 @@ export const TRANSPORT_FALLBACK_MESSAGES = {
   'viewer.transport': 'Transport controls',
 } as const satisfies UiMessageCatalog
 
+export const TRANSPORT_PLAYBACK_FALLBACK_MESSAGES = {
+  'viewer.pause': 'Pause',
+  'viewer.play': 'Play',
+  'viewer.playback': 'Playback',
+  'viewer.playbackCharts': 'Values over time',
+  'viewer.playbackEvent.structure-done': 'Built',
+  'viewer.playbackEvent.unit-born': 'Born',
+  'viewer.playbackEvent.unit-died': 'Died',
+  'viewer.playbackEvent.upgrade': 'Upgrade',
+  'viewer.playbackEvents': 'Events',
+  'viewer.playbackFact.apm': 'APM',
+  'viewer.playbackMap': 'Positions at {time}: {count} units',
+  'viewer.playbackMetric.army-value': 'Army value',
+  'viewer.playbackMetric.units': 'Units',
+  'viewer.playbackNoTimeline': 'This source publishes no participants, series or events.',
+  'viewer.playbackNoWorld': 'This source publishes no positions.',
+  'viewer.playbackOutcome.loss': 'Defeat',
+  'viewer.playbackOutcome.tie': 'Tie',
+  'viewer.playbackOutcome.undecided': 'Undecided',
+  'viewer.playbackOutcome.win': 'Victory',
+  'viewer.playbackParticipants': 'Participants',
+  'viewer.playbackRate': 'Playback speed',
+  'viewer.playbackSampled':
+    'Positions are interpolated between recorded samples (tracker events). This is not a game simulation.',
+  'viewer.playbackSeek': 'Playback position',
+  'viewer.playbackTime': '{position} / {duration}',
+  'viewer.playbackTruncated': 'Bounded view: some events or samples are not shown.',
+} as const satisfies UiMessageCatalog
+
 export const TREE_FALLBACK_MESSAGES = {
   'tree.loadFailed': 'Could not load this page. Try again.',
   'tree.more': 'Load more',
@@ -579,32 +610,3 @@ export const WORLD_FALLBACK_MESSAGES = {
   'viewer.worldPreview': 'Top-down world preview',
   'viewer.worldSummary': '{map} · {layers} layers · {items} items{bounded}',
 } as const satisfies UiMessageCatalog
-export const TRANSPORT_PLAYBACK_FALLBACK_MESSAGES = {
-  'viewer.pause': 'Pause',
-  'viewer.play': 'Play',
-  'viewer.playback': 'Playback',
-  'viewer.playbackCharts': 'Values over time',
-  'viewer.playbackEvent.structure-done': 'Built',
-  'viewer.playbackEvent.unit-born': 'Born',
-  'viewer.playbackEvent.unit-died': 'Died',
-  'viewer.playbackEvent.upgrade': 'Upgrade',
-  'viewer.playbackEvents': 'Events',
-  'viewer.playbackFact.apm': 'APM',
-  'viewer.playbackMap': 'Positions at {time}: {count} units',
-  'viewer.playbackMetric.army-value': 'Army value',
-  'viewer.playbackMetric.units': 'Units',
-  'viewer.playbackNoTimeline': 'This source publishes no participants, series or events.',
-  'viewer.playbackNoWorld': 'This source publishes no positions.',
-  'viewer.playbackOutcome.loss': 'Defeat',
-  'viewer.playbackOutcome.tie': 'Tie',
-  'viewer.playbackOutcome.undecided': 'Undecided',
-  'viewer.playbackOutcome.win': 'Victory',
-  'viewer.playbackParticipants': 'Participants',
-  'viewer.playbackRate': 'Playback speed',
-  'viewer.playbackSampled':
-    'Positions are interpolated between recorded samples (tracker events). This is not a game simulation.',
-  'viewer.playbackSeek': 'Playback position',
-  'viewer.playbackTime': '{position} / {duration}',
-  'viewer.playbackTruncated': 'Bounded view: some events or samples are not shown.',
-} as const satisfies UiMessageCatalog
-

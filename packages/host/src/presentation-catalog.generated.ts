@@ -356,37 +356,6 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
         contract: 'common.view/model-socket-source',
         major: 1,
       }),
-    ]),
-    spec: Object.freeze({
-      kind: 'stage',
-      consumesDataSources: [{ contract: 'common.view/subject-facts-source', major: 1 }],
-      optionalDataSources: [
-        { contract: 'common.view/raster-image-source', major: 1 },
-        { contract: 'common.view/model-scene-source', major: 1 },
-        { contract: 'common.view/model-resource-refs-source', major: 1 },
-        { contract: 'common.view/model-skeleton-source', major: 1 },
-        { contract: 'common.view/model-animation-source', major: 1 },
-        { contract: 'common.view/model-collision-source', major: 1 },
-        { contract: 'common.view/model-material-source', major: 1 },
-        { contract: 'common.view/model-socket-source', major: 1 },
-      ],
-      optionalServices: [{ contract: 'common.render/scene-3d', major: 1 }],
-      priority: 390,
-      singletonGroup: 'center-stage',
-    }),
-  }),
-  Object.freeze({
-    slot: Object.freeze({
-      slotId: 'calculations',
-      kind: 'stage',
-      contributionId: 'modkit.ui/subject-calculations-stage',
-      extensionId: 'modkit/ui',
-      priority: 380,
-      singletonGroup: 'center-stage',
-      bindings: Object.freeze([
-        Object.freeze({
-          bindingId: 'calculations-content',
-          contract: 'common.view/subject-calculations-source',
       Object.freeze({
         bindingId: 'card-optional-9',
         contract: 'common.view/video-media-source',
@@ -407,6 +376,41 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
         contract: 'common.view/subject-selector-source',
         major: 1,
       }),
+    ]),
+    spec: Object.freeze({
+      kind: 'stage',
+      consumesDataSources: [{ contract: 'common.view/subject-facts-source', major: 1 }],
+      optionalDataSources: [
+        { contract: 'common.view/raster-image-source', major: 1 },
+        { contract: 'common.view/model-scene-source', major: 1 },
+        { contract: 'common.view/model-resource-refs-source', major: 1 },
+        { contract: 'common.view/model-skeleton-source', major: 1 },
+        { contract: 'common.view/model-animation-source', major: 1 },
+        { contract: 'common.view/model-collision-source', major: 1 },
+        { contract: 'common.view/model-material-source', major: 1 },
+        { contract: 'common.view/model-socket-source', major: 1 },
+        { contract: 'common.view/video-media-source', major: 1 },
+        { contract: 'common.view/audio-media-source', major: 1 },
+        { contract: 'common.view/transport-source', major: 1 },
+        { contract: 'common.view/subject-selector-source', major: 1 },
+      ],
+      optionalServices: [{ contract: 'common.render/scene-3d', major: 1 }],
+      priority: 390,
+      singletonGroup: 'center-stage',
+    }),
+  }),
+  Object.freeze({
+    slot: Object.freeze({
+      slotId: 'calculations',
+      kind: 'stage',
+      contributionId: 'modkit.ui/subject-calculations-stage',
+      extensionId: 'modkit/ui',
+      priority: 380,
+      singletonGroup: 'center-stage',
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: 'calculations-content',
+          contract: 'common.view/subject-calculations-source',
           major: 1,
         }),
       ]),
@@ -420,10 +424,6 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
   }),
   Object.freeze({
     slot: Object.freeze({
-        { contract: 'common.view/video-media-source', major: 1 },
-        { contract: 'common.view/audio-media-source', major: 1 },
-        { contract: 'common.view/transport-source', major: 1 },
-        { contract: 'common.view/subject-selector-source', major: 1 },
       slotId: 'relations',
       kind: 'stage',
       contributionId: 'modkit.ui/relation-graph-stage',

@@ -95,6 +95,7 @@ const VIEW_KEYS: Readonly<Record<string, string>> = Object.freeze({
   image: 'image',
   'image-edit': 'imageEdit',
   audio: 'audio',
+  playback: 'playback',
   world: 'world',
   model: 'model',
   vector: 'vector',
@@ -109,7 +110,6 @@ const VIEW_KEYS: Readonly<Record<string, string>> = Object.freeze({
   text: 'text',
   'virtual-text': 'virtualText',
   hex: 'hex',
-  playback: 'playback',
 })
 
 const localizedLabel = (stage: PreviewStage, localizer?: UiLocalizer): PreviewStage => {

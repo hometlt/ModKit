@@ -398,6 +398,7 @@ const LOCALIZED_STAGE_FACTORIES = Object.freeze({
   imageViewer: 'createImageViewer',
   gameTemplateViewer: 'createGameTemplateViewer',
   modelViewer: 'createModelViewer',
+  playbackViewer: 'createPlaybackViewer',
   relationGraphViewer: 'createRelationGraphViewer',
   subjectCalculationsViewer: 'createSubjectCalculationsViewer',
   subjectCardViewer: 'createSubjectCardViewer',
@@ -407,7 +408,6 @@ const LOCALIZED_STAGE_FACTORIES = Object.freeze({
   virtualTextViewer: 'createVirtualTextViewer',
   vectorViewer: 'createVectorViewer',
   videoViewer: 'createVideoViewer',
-  playbackViewer: 'createPlaybackViewer',
   worldViewer: 'createWorldViewer',
 })
 

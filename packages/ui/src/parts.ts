@@ -102,15 +102,6 @@ export const PARTS = Object.freeze([
   'transport.button',
   'transport.track',
 
-  // diagnostics panel
-  'diagnostics',
-  'diagnostics.group',
-  'diagnostics.heading',
-  'diagnostics.list',
-  'diagnostics.item',
-  'diagnostics.message',
-
-  // operation toolbar
   // playback stage: a transport with its world positions, participants, series and events
   'playback',
   'playback.bar',
@@ -130,6 +121,15 @@ export const PARTS = Object.freeze([
   'playback.events',
   'playback.event',
 
+  // diagnostics panel
+  'diagnostics',
+  'diagnostics.group',
+  'diagnostics.heading',
+  'diagnostics.list',
+  'diagnostics.item',
+  'diagnostics.message',
+
+  // operation toolbar
   'operations',
   'operations.status',
   'operations.button',
@@ -176,6 +176,7 @@ export const PARTS = Object.freeze([
   'image.toolbar',
   'image.readout',
   'image.subresources',
+  'image.convert',
   'image.metadata',
 
   // image editing surface (MK2 assetsTextureViewer parity)
@@ -185,7 +186,6 @@ export const PARTS = Object.freeze([
   'imageedit.options',
   'imageedit.swatch',
   'imageedit.size',
-  'image.convert',
   'imageedit.actions',
   'imageedit.action',
   'imageedit.marquee',
@@ -396,6 +396,8 @@ export const PARTS = Object.freeze([
   'card.field',
   'card.field-name',
   'card.field-value',
+  'card.field-note',
+  'card.nav',
   'card.knowledge',
   'card.links',
   'card.link-item',
@@ -416,8 +418,6 @@ export const PARTS = Object.freeze([
   'graph.type-count',
   'graph.main',
   'graph.controls',
-  'card.field-note',
-  'card.nav',
   'graph.control',
   'graph.canvas',
   'graph.status',

@@ -1837,54 +1837,6 @@
     background: var(--mk-color-accent);
   }
 
-  /* ---------------------------------------------------------------- diagnostics */
-  [data-mk-part='diagnostics.group'] {
-    display: flex;
-    flex-direction: column;
-    gap: var(--mk-space-2);
-    padding-block: var(--mk-space-2);
-    border-bottom: 1px solid var(--mk-color-separator);
-  }
-
-  [data-mk-part='diagnostics.heading'] {
-    color: var(--mk-color-fg-muted);
-    font-size: var(--mk-font-size-xs);
-    font-weight: var(--mk-font-weight-medium);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-
-  [data-mk-part='diagnostics.message'] {
-    display: flex;
-    align-items: center;
-    gap: var(--mk-space-2);
-    width: 100%;
-    padding: var(--mk-space-2) var(--mk-space-3);
-    border-inline-start: 2px solid transparent;
-    border-radius: var(--mk-radius-sm);
-    text-align: start;
-    cursor: pointer;
-  }
-
-  [data-mk-part='diagnostics.message']:hover {
-    background: var(--mk-color-hover);
-  }
-
-  [data-mk-part='diagnostics.item'][data-severity='error'] [data-mk-part='diagnostics.message'] {
-    border-inline-start-color: var(--mk-status-error);
-    background: var(--mk-status-error-bg);
-  }
-
-  [data-mk-part='diagnostics.item'][data-severity='warning'] [data-mk-part='diagnostics.message'] {
-    border-inline-start-color: var(--mk-status-warn);
-    background: var(--mk-status-warn-bg);
-  }
-
-  [data-mk-part='diagnostics.item'][data-severity='information']
-    [data-mk-part='diagnostics.message'] {
-    border-inline-start-color: var(--mk-status-info);
-    background: var(--mk-status-info-bg);
-  }
   /* ---------------------------------------------------------------- playback */
   [data-mk-part='playback'] {
     display: flex;
@@ -2044,6 +1996,54 @@
     color: var(--mk-color-selection-fg);
   }
 
+  /* ---------------------------------------------------------------- diagnostics */
+  [data-mk-part='diagnostics.group'] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mk-space-2);
+    padding-block: var(--mk-space-2);
+    border-bottom: 1px solid var(--mk-color-separator);
+  }
+
+  [data-mk-part='diagnostics.heading'] {
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-xs);
+    font-weight: var(--mk-font-weight-medium);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  [data-mk-part='diagnostics.message'] {
+    display: flex;
+    align-items: center;
+    gap: var(--mk-space-2);
+    width: 100%;
+    padding: var(--mk-space-2) var(--mk-space-3);
+    border-inline-start: 2px solid transparent;
+    border-radius: var(--mk-radius-sm);
+    text-align: start;
+    cursor: pointer;
+  }
+
+  [data-mk-part='diagnostics.message']:hover {
+    background: var(--mk-color-hover);
+  }
+
+  [data-mk-part='diagnostics.item'][data-severity='error'] [data-mk-part='diagnostics.message'] {
+    border-inline-start-color: var(--mk-status-error);
+    background: var(--mk-status-error-bg);
+  }
+
+  [data-mk-part='diagnostics.item'][data-severity='warning'] [data-mk-part='diagnostics.message'] {
+    border-inline-start-color: var(--mk-status-warn);
+    background: var(--mk-status-warn-bg);
+  }
+
+  [data-mk-part='diagnostics.item'][data-severity='information']
+    [data-mk-part='diagnostics.message'] {
+    border-inline-start-color: var(--mk-status-info);
+    background: var(--mk-status-info-bg);
+  }
 
   [data-mk-part='diagnostics.item'][data-severity='hint'] [data-mk-part='diagnostics.message'] {
     border-inline-start-color: var(--mk-color-border-strong);
@@ -2385,6 +2385,7 @@
   }
 
   [data-mk-part='image.toolbar'],
+  [data-mk-part='image.convert'],
   [data-mk-part='audio.toolbar'] {
     display: flex;
     flex-wrap: wrap;
@@ -2433,7 +2434,6 @@
   }
 
   [data-mk-part='archive.tree'],
-  [data-mk-part='image.convert'],
   [data-mk-part='archive.preview'] {
     min-height: 0;
     overflow: auto;
@@ -4197,8 +4197,50 @@
 
   [data-mk-part='card.field-value'] {
     overflow-wrap: anywhere;
+    white-space: pre-line;
     font-size: var(--mk-font-size-sm);
     font-variant-numeric: tabular-nums;
+  }
+
+  [data-mk-part='card.field-note'] {
+    display: block;
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-xs);
+    white-space: normal;
+  }
+
+  [data-mk-part='card.nav'] {
+    display: flex;
+    gap: var(--mk-space-1);
+    padding: var(--mk-space-2) var(--mk-space-4) 0;
+  }
+
+  [data-mk-part='card.nav'][hidden] {
+    display: none;
+  }
+
+  [data-mk-part='card.nav'] button {
+    min-width: var(--mk-size-control);
+    height: var(--mk-size-control);
+    color: var(--mk-color-fg);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    background: var(--mk-color-surface);
+    cursor: pointer;
+  }
+
+  [data-mk-part='card.nav'] button:disabled {
+    color: var(--mk-color-fg-disabled);
+    cursor: default;
+  }
+
+  canvas[data-mk-part='card.portrait'] {
+    object-fit: contain;
+    image-rendering: auto;
+  }
+
+  canvas[data-mk-part='card.portrait'][hidden] {
+    display: none;
   }
 
   [data-mk-part='card.knowledge'] {
@@ -4356,52 +4398,10 @@
   [data-mk-part='graph.type'][data-mk-state~='disabled'] {
     color: var(--mk-color-fg-disabled);
     pointer-events: auto;
-    white-space: pre-line;
   }
 
   [data-mk-part='graph.type-swatch'] {
     flex: 0 0 auto;
-  [data-mk-part='card.field-note'] {
-    display: block;
-    color: var(--mk-color-fg-muted);
-    font-size: var(--mk-font-size-xs);
-    white-space: normal;
-  }
-
-  [data-mk-part='card.nav'] {
-    display: flex;
-    gap: var(--mk-space-1);
-    padding: var(--mk-space-2) var(--mk-space-4) 0;
-  }
-
-  [data-mk-part='card.nav'][hidden] {
-    display: none;
-  }
-
-  [data-mk-part='card.nav'] button {
-    min-width: var(--mk-size-control);
-    height: var(--mk-size-control);
-    color: var(--mk-color-fg);
-    border: 1px solid var(--mk-color-border);
-    border-radius: var(--mk-radius-sm);
-    background: var(--mk-color-surface);
-    cursor: pointer;
-  }
-
-  [data-mk-part='card.nav'] button:disabled {
-    color: var(--mk-color-fg-disabled);
-    cursor: default;
-  }
-
-  canvas[data-mk-part='card.portrait'] {
-    object-fit: contain;
-    image-rendering: auto;
-  }
-
-  canvas[data-mk-part='card.portrait'][hidden] {
-    display: none;
-  }
-
     width: 8px;
     height: 8px;
     border-radius: var(--mk-radius-pill);
@@ -4539,7 +4539,6 @@
     outline: 1px solid var(--mk-color-focus);
     outline-offset: -1px;
   }
-
 
   [data-mk-part='graph.hint'] {
     margin: 0;

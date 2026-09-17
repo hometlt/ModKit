@@ -448,9 +448,68 @@ export type TransportEvent =
   | { readonly kind: 'snapshot'; readonly snapshot: TransportSnapshot }
   | { readonly kind: 'diagnostic'; readonly diagnostic: AssetDiagnostic }
 
+/** Bounds a consumer sets on one `TransportSource.timeline` answer. */
+export interface TransportTimelineRequest {
+  readonly maxMarkers: number
+  /** Per series. */
+  readonly maxSeriesPoints: number
+}
+
+/** One labelled value about a participant; `id` lets a surface localize well-known facts. */
+export interface TransportTimelineFact {
+  readonly id: string
+  readonly label: string
+  readonly value: string
+}
+
+/** Someone or something the timeline follows: a player, a team, a faction. */
+export interface TransportParticipant {
+  readonly id: string
+  readonly label: string
+  /** CSS `#rrggbb`, the participant's own colour in the source. */
+  readonly color?: string
+  /** Faction, race or team, as the source names it. */
+  readonly group?: string
+  readonly outcome?: 'win' | 'loss' | 'tie' | 'undecided'
+  readonly facts: readonly TransportTimelineFact[]
+}
+
+/** A numeric value over time: `points` is `[positionMs, value, positionMs, value, …]`. */
+export interface TransportTimelineSeries {
+  /** What is measured, shared by every participant's series of that measure (e.g. `units`). */
+  readonly metric: string
+  readonly label: string
+  readonly participantId?: string
+  readonly points: readonly number[]
+}
+
+/** Something that happened at one position. `kind` is a stable token a surface may localize. */
+export interface TransportTimelineMarker {
+  readonly positionMs: number
+  readonly kind: string
+  readonly label: string
+  readonly participantId?: string
+}
+
+export interface TransportTimeline {
+  readonly participants: readonly TransportParticipant[]
+  readonly series: readonly TransportTimelineSeries[]
+  /** Ordered by position. */
+  readonly markers: readonly TransportTimelineMarker[]
+  /** False when a bound cut markers or series points. */
+  readonly complete: boolean
+  /**
+   * `sampled`: world positions are interpolated between recorded samples, not simulated, so a
+   * surface must say so.
+   */
+  readonly fidelity: 'exact' | 'sampled'
+}
+
 export interface TransportSource {
   snapshot(signal?: AbortSignal): Promise<TransportSnapshot>
   events(signal?: AbortSignal): AsyncIterable<TransportEvent>
+  /** Participants, measured series and markers of the whole playable range. */
+  timeline?(request: TransportTimelineRequest, signal?: AbortSignal): Promise<TransportTimeline>
 }
 
 export interface NamespaceEntry {
@@ -548,68 +607,9 @@ export interface ContainerPackCreateInputV1 {
   readonly schemaVersion: 1
   readonly mode: 'create'
   readonly expectedContainerRevision: RevisionId
-/** Bounds a consumer sets on one `TransportSource.timeline` answer. */
-export interface TransportTimelineRequest {
-  readonly maxMarkers: number
-  /** Per series. */
-  readonly maxSeriesPoints: number
-}
-
-/** One labelled value about a participant; `id` lets a surface localize well-known facts. */
-export interface TransportTimelineFact {
-  readonly id: string
-  readonly label: string
-  readonly value: string
-}
-
-/** Someone or something the timeline follows: a player, a team, a faction. */
-export interface TransportParticipant {
-  readonly id: string
-  readonly label: string
-  /** CSS `#rrggbb`, the participant's own colour in the source. */
-  readonly color?: string
-  /** Faction, race or team, as the source names it. */
-  readonly group?: string
-  readonly outcome?: 'win' | 'loss' | 'tie' | 'undecided'
-  readonly facts: readonly TransportTimelineFact[]
-}
-
-/** A numeric value over time: `points` is `[positionMs, value, positionMs, value, …]`. */
-export interface TransportTimelineSeries {
-  /** What is measured, shared by every participant's series of that measure (e.g. `units`). */
-  readonly metric: string
-  readonly label: string
-  readonly participantId?: string
-  readonly points: readonly number[]
-}
-
-/** Something that happened at one position. `kind` is a stable token a surface may localize. */
-export interface TransportTimelineMarker {
-  readonly positionMs: number
-  readonly kind: string
-  readonly label: string
-  readonly participantId?: string
-}
-
-export interface TransportTimeline {
-  readonly participants: readonly TransportParticipant[]
-  readonly series: readonly TransportTimelineSeries[]
-  /** Ordered by position. */
-  readonly markers: readonly TransportTimelineMarker[]
-  /** False when a bound cut markers or series points. */
-  readonly complete: boolean
-  /**
-   * `sampled`: world positions are interpolated between recorded samples, not simulated, so a
-   * surface must say so.
-   */
-  readonly fidelity: 'exact' | 'sampled'
-}
-
   readonly files: readonly ContainerPackCreateFileV1[]
   readonly replacements?: never
   readonly intent?: never
-  /** Participants, measured series and markers of the whole playable range. */
-  timeline?(request: TransportTimelineRequest, signal?: AbortSignal): Promise<TransportTimeline>
 }
 
 /** Version-one replacement or fresh-creation request for the standard `container.pack` operation. */
@@ -697,6 +697,11 @@ export interface SubjectFactsIdentity {
   readonly type?: string
   readonly origins: readonly SubjectFactProvenance[]
   /**
+   * A logical image id (an icon, a portrait) the host resolves through the subject's own raster
+   * resource port. The card never turns it into a path; without a resolver it is simply not drawn.
+   */
+  readonly portrait?: string
+  /**
    * A logical model id (the model a unit is drawn with) the host resolves through the subject's own
    * resource session; the facts source then offers it through `openModel`. Like `portrait`, the
    * card never turns it into a path.
@@ -704,6 +709,8 @@ export interface SubjectFactsIdentity {
   readonly model?: string
   /** Scale the model's native units convert at, when the producer knows it (as map semantics do). */
   readonly modelMetersPerSourceUnit?: number
+  /** The label in each locale the producer resolved, keyed by the same locale ids facts carry. */
+  readonly localizedLabels?: Readonly<Record<string, string>>
 }
 
 export interface SubjectFactGroup {
@@ -718,6 +725,13 @@ export interface SubjectFact {
   readonly label: string
   readonly value: JsonValue
   readonly provenance: readonly SubjectFactProvenance[]
+  /** One short sentence about what the value is, when the value alone misleads (as `MetadataEntry`). */
+  readonly note?: string
+  /**
+   * The locale this value is written in. A subject that publishes the same fact in several locales
+   * tags each copy; a card shows one locale at a time and offers the rest as a switch.
+   */
+  readonly locale?: string
   /** Exact lookup coordinate for optional host-provided help. */
   readonly knowledgeTarget?: KnowledgeTarget
   /**
@@ -860,13 +874,6 @@ export interface SelectableSubject {
 }
 
 export interface SubjectSelectorSummary {
-  /**
-   * A logical image id (an icon, a portrait) the host resolves through the subject's own raster
-   * resource port. The card never turns it into a path; without a resolver it is simply not drawn.
-   */
-  readonly portrait?: string
-  /** The label in each locale the producer resolved, keyed by the same locale ids facts carry. */
-  readonly localizedLabels?: Readonly<Record<string, string>>
   readonly snapshotId: string
   readonly totalSubjects: number
   readonly completeness: SubjectSelectorCompleteness
@@ -881,13 +888,6 @@ export interface SubjectEditDocumentRef {
 
 export interface SubjectEditTargetRequest {
   readonly subjectId: string
-  /** One short sentence about what the value is, when the value alone misleads (as `MetadataEntry`). */
-  readonly note?: string
-  /**
-   * The locale this value is written in. A subject that publishes the same fact in several locales
-   * tags each copy; a card shows one locale at a time and offers the rest as a switch.
-   */
-  readonly locale?: string
   readonly fieldPath: readonly string[]
   readonly targetDocument?: Pick<SubjectEditDocumentRef, 'rootId' | 'path'>
 }

@@ -566,6 +566,10 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
         'common.view/raster-image-source',
         'common.view/model-scene-source',
         ...MODEL_FACET_CONTRACTS,
+        'common.view/video-media-source',
+        'common.view/audio-media-source',
+        'common.view/transport-source',
+        'common.view/subject-selector-source',
       ],
     },
     {
@@ -575,10 +579,6 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
       module: createSubjectCalculationsViewer({ localizer }),
     },
     {
-        'common.view/video-media-source',
-        'common.view/audio-media-source',
-        'common.view/transport-source',
-        'common.view/subject-selector-source',
       id: 'table',
       label: text('web.view.table'),
       contract: 'common.view/table-data-source',
