@@ -150,6 +150,13 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       module: createSubjectCalculationsViewer({ localizer: context.localizer }),
     },
     {
+      // A table whose columns are locales (SC2 GameStrings and the like); ranked above the card.
+      id: 'localization',
+      label: context.localizer.text('stage.localization'),
+      contract: 'common.view/table-data-source',
+      module: createTableViewer({ localizer: context.localizer }),
+    },
+    {
       id: 'table',
       label: context.localizer.text('stage.table'),
       contract: 'common.view/table-data-source',

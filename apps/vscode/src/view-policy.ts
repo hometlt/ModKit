@@ -30,6 +30,7 @@ export const STAGE_ORDER: readonly string[] = Object.freeze([
   'playback',
   'archive',
   'template',
+  'localization',
   'card',
   'calculations',
   'table',
