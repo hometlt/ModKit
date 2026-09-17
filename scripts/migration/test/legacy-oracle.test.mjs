@@ -9,6 +9,7 @@ import {
   loadMk2,
   digestManifest,
   createCorpusManifest,
+  expandTemplateImports,
 } from '../lib/legacy-oracle.mjs'
 
 test('pinned source can disable all working-tree observation', async t => {
@@ -401,4 +402,15 @@ test('external snapshots retain required peers, optional installed peers and pac
     peerDependencies: { ...formatterManifest.peerDependencies, 'required-missing-peer': '^1.0.0' },
   })
   await assert.rejects(loadMk2('entry.ts', options), /required-missing-peer/u)
+})
+
+test('template-literal dynamic imports expand to the matching pinned files', () => {
+  const source = 'const m = await import(/* @vite-ignore */ `./data/p${build}.js`)'
+  const files = ['a/data/p1.ts', 'a/data/p20.ts', 'a/data/nested/p3.ts', 'a/data/q4.ts', 'a/other.ts']
+  const out = expandTemplateImports(source, 'a/index.ts', files)
+  assert.match(out, /"\.\/data\/p1\.js": \(\) => import\("\.\/data\/p1\.js"\)/u)
+  assert.match(out, /"\.\/data\/p20\.js"/u)
+  assert.doesNotMatch(out, /nested|q4/u)
+  assert.match(out, /await __mk2TemplateImport0\(`\.\/data\/p\$\{build\}\.js`\)/u)
+  assert.equal(expandTemplateImports('import("./x.js")', 'a/index.ts', files), 'import("./x.js")')
 })

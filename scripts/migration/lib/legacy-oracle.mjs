@@ -232,6 +232,40 @@ function targetFor(manifest, subpath) {
   if (!exports && subpath === '.') return manifest.main ?? './index.js'
 }
 
+const TEMPLATE_IMPORT =
+  /import\(\s*(?:\/\*[\s\S]*?\*\/\s*)?`(\.\.?\/[^`$]*)\$\{([^}`]+)\}([^`$]*)`\s*\)/gu
+
+/**
+ * Pinned sources are served from a virtual namespace, where esbuild cannot expand a
+ * template-literal dynamic import (`import(\`./data/protocol${build}.js\`)`) by scanning a
+ * directory. Rewrite each one into an explicit map over the matching pinned files (sorted, so
+ * the bundle is deterministic); an unmatched key rejects exactly like a missing module.
+ */
+export function expandTemplateImports(contents, importer, files) {
+  const helpers = []
+  const rewritten = contents.replace(TEMPLATE_IMPORT, (_match, prefix, expression, suffix) => {
+    const base = path.posix.normalize(path.posix.join(path.posix.dirname(importer), prefix))
+    const extensions = /\.m?js$/u.test(suffix) ? [suffix, suffix.replace(/\.m?js$/u, '.ts')] : [suffix]
+    const keys = new Set()
+    for (const file of files) {
+      if (!file.startsWith(base)) continue
+      const extension = extensions.find(item => file.endsWith(item))
+      if (extension === undefined) continue
+      const middle = file.slice(base.length, file.length - extension.length)
+      if (!middle || middle.includes('/')) continue
+      keys.add(`${prefix}${middle}${suffix}`)
+    }
+    const name = `__mk2TemplateImport${helpers.length}`
+    const entries = [...keys].sort().map(key => `${JSON.stringify(key)}: () => import(${JSON.stringify(key)})`)
+    helpers.push(
+      `const ${name} = key => { const load = ({ ${entries.join(', ')} })[key]; ` +
+        `return load === undefined ? Promise.reject(new Error('Unknown pinned dynamic import: ' + key)) : load() };`,
+    )
+    return `${name}(\`${prefix}\${${expression}}${suffix}\`)`
+  })
+  return helpers.length === 0 ? contents : `${helpers.join('\n')}\n${rewritten}`
+}
+
 function sourceCandidates(file) {
   const values = [
     file.replace(/\/dist\/src\//u, '/src/'),
@@ -540,7 +574,11 @@ export async function loadMk2(entry, options = {}) {
           })
           build.onLoad({ filter: /.*/, namespace: 'mk2-pin' }, async args => {
             const original = await read(args.path)
-            const contents = stubMap.get(args.path)?.source ?? original
+            const contents = expandTemplateImports(
+              stubMap.get(args.path)?.source ?? original,
+              args.path,
+              source.listFiles(),
+            )
             const ext = path.extname(args.path)
             if (ext === '.json') return { contents, loader: 'json' }
             const transformed = await esbuild.transform(contents, {
