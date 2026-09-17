@@ -27,7 +27,7 @@ import {
   createAssetSession,
   createUtf8TextDataSource,
 } from '@modkit/host/codec'
-import { revisionId } from '@modkit/sdk'
+import { revisionId } from '@modkit/sdk/codec'
 
 const BASE_OPERATIONS = Object.freeze([
   {

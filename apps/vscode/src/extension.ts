@@ -73,7 +73,12 @@ import {
   type LanguageWorkspaceDocumentSource,
 } from '@modkit/host/language'
 import { discoverGameInstallations } from '@modkit/host/games'
-import { createNodeMapPreviewResourcePlanResolver, launchNodeGameResource } from '@modkit/host/node'
+import {
+  createNodeMapPreviewResourcePlanResolver,
+  flushArtifactDigestCache,
+  launchNodeGameResource,
+  useArtifactDigestCache,
+} from '@modkit/host/node'
 import type { SubjectCandidateProviderSource, SubjectCandidateScope } from '@modkit/sdk'
 import type { ContainerRegistry } from './containers.js'
 import {
@@ -1280,6 +1285,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
    * repository's `extensions/` in a checkout — but the list of roots is now data committed beside
    * the code, the same arrangement Electron and the PWA have had all along.
    */
+  /*
+   * Digests of the bundled roots, kept between launches.
+   *
+   * Loading the catalog hashes every file of every extension root, and nothing in a shipped VSIX
+   * changes between two launches of the same build — so the answer is remembered in this window's
+   * own storage, keyed by a stat fingerprint of each root. A file that changed is hashed again.
+   */
+  useArtifactDigestCache(join(context.globalStorageUri.fsPath, 'artifact-digests.v1.json'))
+  context.subscriptions.push({ dispose: () => flushArtifactDigestCache() })
   const composing = timing.phase('compose host (catalog roots, inventory, realms)')
   const host = await createVsCodeSubjectHost({
     bundledCatalog: BUNDLED_CATALOG.roots,

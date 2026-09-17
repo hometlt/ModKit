@@ -409,6 +409,8 @@ describe('common world source native visual facets', () => {
                 sourceKey: 'geometry-less-tool',
                 diagnostics: [],
               },
+              async meshes() { return { items: [] } },
+              async materials() { return { items: [{ id: 'projector-material' }] } },
             },
             async release() {},
           }
@@ -639,8 +641,9 @@ describe('common world source native visual facets', () => {
         uvmBytes: new Uint8Array([9, 8, 7]),
         meshes: [],
         primitives: [],
-        diagnostics: [{ code: 'x3.host/world-model-render-facets-unavailable' }],
-        complete: false,
+        materials: [{ id: 'projector-material' }],
+        diagnostics: [],
+        complete: true,
       })
       const objectLayer = info.facets.find(item => item.facet === 'objects')!
       const objectPage = await lease.value.page({

@@ -120,7 +120,43 @@ function normalizeExtensionManifestIdentities(manifest: ExtensionManifest): Exte
   }) as ExtensionManifest
 }
 
+/**
+ * Normalised extension manifests, by the text of what was authored.
+ *
+ * Validating and freezing one extension manifest is a few milliseconds; a host does it for every
+ * root of its catalog, at every composition, and the work is a pure function of the input. Keyed
+ * by `JSON.stringify` of the containers — identical input, identical answer — and bounded, so a
+ * session that walks many extension sets cannot grow it without limit.
+ */
+const normalizedManifests = new Map<string, NormalizationResult>()
+const NORMALIZED_MANIFEST_CACHE_LIMIT = 256
+
 export async function normalizeExtensionManifest(
+  input: AuthoredContainers,
+): Promise<NormalizationResult> {
+  let cacheKey: string | undefined
+  try {
+    cacheKey = JSON.stringify(input)
+  } catch {
+    // Not inert data: the checks below say so properly, and nothing is cached.
+    cacheKey = undefined
+  }
+  if (cacheKey !== undefined) {
+    const cached = normalizedManifests.get(cacheKey)
+    if (cached !== undefined) return cached
+  }
+  const result = await normalizeExtensionManifestUncached(input)
+  if (cacheKey !== undefined) {
+    if (normalizedManifests.size >= NORMALIZED_MANIFEST_CACHE_LIMIT) {
+      const oldest = normalizedManifests.keys().next()
+      if (!oldest.done) normalizedManifests.delete(oldest.value)
+    }
+    normalizedManifests.set(cacheKey, result)
+  }
+  return result
+}
+
+async function normalizeExtensionManifestUncached(
   input: AuthoredContainers,
 ): Promise<NormalizationResult> {
   let packageInput: unknown

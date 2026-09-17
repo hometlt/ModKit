@@ -20,6 +20,18 @@
       "types": "./dist/manifest/validators.generated.d.ts",
       "default": "./dist/manifest/validators.generated.js"
     },
+    "./security": {
+      "types": "./dist/security/grant.d.ts",
+      "default": "./dist/security/grant.js"
+    },
+    "./descriptor": {
+      "types": "./dist/asset-capabilities/validate-descriptor.d.ts",
+      "default": "./dist/asset-capabilities/validate-descriptor.js"
+    },
+    "./codec": {
+      "types": "./dist/codec.d.ts",
+      "default": "./dist/codec.js"
+    },
     "./subjects": {
       "types": "./dist/subjects/index.d.ts",
       "default": "./dist/subjects/index.js"

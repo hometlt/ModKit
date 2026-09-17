@@ -6,29 +6,37 @@ import {
   throwIfAborted,
   type Diagnostic,
 } from '@modkit/core'
-import {
-  grantValidity,
-  validateSubjectDescriptorV2,
-  type AnyDescriptor,
-  type AnyDescriptorWire,
-  type AssetDiagnostic,
-  type AssetSession,
-  type AssetSessionEvent,
-  type DataSourceMajor,
-  type DataSourceOf,
-  type DataSourceOffer,
-  type JsonValue,
-  type KnownDataSourceId,
-  type Lease,
-  type OperationDecl,
-  type OperationOutput,
-  type OperationResult,
-  type OperationSession,
-  type PermissionGrant,
-  type Progress,
-  type RevisionId,
-  type SessionState,
-  type SubjectKindDefinitionSpecV1,
+/*
+ * Value imports come from their own modules, not the package root.
+ *
+ * This module is on the codec path — `@modkit/host/codec` re-exports from it — and the root
+ * barrel evaluates every schema, registry, language and renderer module of the SDK: ~45 ms in a
+ * fresh worker, once per codec activation, for two functions. Types still come from the root,
+ * because a type costs nothing to import.
+ */
+import { grantValidity } from '@modkit/sdk/security'
+import { validateSubjectDescriptorV2 } from '@modkit/sdk/descriptor'
+import type {
+  AnyDescriptor,
+  AnyDescriptorWire,
+  AssetDiagnostic,
+  AssetSession,
+  AssetSessionEvent,
+  DataSourceMajor,
+  DataSourceOf,
+  DataSourceOffer,
+  JsonValue,
+  KnownDataSourceId,
+  Lease,
+  OperationDecl,
+  OperationOutput,
+  OperationResult,
+  OperationSession,
+  PermissionGrant,
+  Progress,
+  RevisionId,
+  SessionState,
+  SubjectKindDefinitionSpecV1,
 } from '@modkit/sdk'
 import type {
   SubjectFieldReferenceResolver,

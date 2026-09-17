@@ -2977,6 +2977,16 @@
     background: var(--mk-color-active);
   }
 
+  /* The box a stage will take, while the host is still opening the subject. */
+  [data-mk-part='explorer.opening'] {
+    display: grid;
+    flex: 1 1 0;
+    place-items: center;
+    min-width: 0;
+    min-height: 0;
+    color: var(--mk-color-fg-muted);
+  }
+
   [data-mk-part='explorer.tabcontent'] {
     display: flex;
     flex: 1 1 auto;

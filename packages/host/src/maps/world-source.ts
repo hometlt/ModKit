@@ -1739,7 +1739,7 @@ export function createCandidateWorldSceneLease(
                   diagnostics: Object.freeze([...result.diagnostics]),
                 })
               }
-              if (lease.value.meshes === undefined || lease.value.primitive === undefined) {
+              if (lease.value.meshes === undefined) {
                 return Object.freeze({
                   state: 'converted' as const,
                   sourceKey: result.sourceKey,
@@ -1816,6 +1816,8 @@ export function createCandidateWorldSceneLease(
               }
               const allPrimitiveIds = meshPage.items.flatMap(mesh => mesh.primitiveIds)
               const primitiveIds = allPrimitiveIds.slice(0, request.maxPrimitives)
+              if (primitiveIds.length > 0 && lease.value.primitive === undefined)
+                throw new TypeError('model publishes primitive ids without a primitive reader')
               const primitives = await Promise.all(
                 primitiveIds.map(primitiveId =>
                   lease.value.primitive!(

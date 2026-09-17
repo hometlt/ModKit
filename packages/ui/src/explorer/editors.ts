@@ -215,7 +215,21 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
     tab.run?.abort()
     const run = new AbortController()
     tab.run = run
+    /*
+     * Something on the screen before the subject arrives.
+     *
+     * Opening a file crosses the host: it detects the format, activates the codec and inspects
+     * the bytes, and only then can a stage mount. That is a few hundred milliseconds on a cold
+     * codec, and the tab used to stay empty for all of it — the file looked like it had failed to
+     * open. A named, busy placeholder occupies the same box the stage will take, and the stage
+     * replaces it.
+     */
     tab.content.replaceChildren()
+    const pending = element(tab.content, 'div', { part: 'explorer.opening', state: ['loading'] })
+    element(pending, 'p', {
+      part: 'viewer.empty',
+      text: localizer.text('explorer.opening', { name: tab.entry.name }),
+    })
     report({
       path: tab.entry.id,
       detail: localizer.text('explorer.opening', { name: tab.entry.name }),
@@ -225,6 +239,8 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
     try {
       const bytes = await options.read(tab.entry, run.signal)
       if (run.signal.aborted) return
+      // The stage owns the box from here: the placeholder goes before the stage is mounted.
+      pending.remove()
       const handle = await options.preview.open(tab.content, tab.entry, bytes, run.signal)
       if (run.signal.aborted) {
         await handle?.unmount()

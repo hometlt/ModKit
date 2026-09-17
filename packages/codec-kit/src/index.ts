@@ -271,7 +271,7 @@ import {
   createAssetSession,
   createUtf8TextDataSource,
 } from '@modkit/host/codec'
-import { revisionId, toPortableProjectionReceipt } from '@modkit/sdk'
+import { revisionId, toPortableProjectionReceipt } from '@modkit/sdk/codec'
 
 export const INSPECTION_OPERATIONS: readonly OperationDecl[] = Object.freeze([
   Object.freeze({

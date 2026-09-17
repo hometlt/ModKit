@@ -275,6 +275,7 @@ export const PARTS = Object.freeze([
   'explorer.filetab',
   'explorer.filetab-close',
   'explorer.tabcontent',
+  'explorer.opening',
   'explorer.split',
   // right-click menu on a tab: Close / Close Others / Close to the Right / Close All
   'explorer.tabmenu',

@@ -1,4 +1,9 @@
 export { listFilesRecursive, loadExtensionDirectory } from './loader.js'
+export {
+  flushArtifactDigestCache,
+  useArtifactDigestCache,
+  type ArtifactDigestRecord,
+} from './artifact-digest-cache.js'
 export { openFileSource } from './file-source.js'
 export {
   openFileArtifactSource,

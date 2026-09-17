@@ -274,6 +274,7 @@ export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}):
         await previous.worker.exit
       }
       generation += 1
+      const spawnedAt = performance.now()
       const spawned = spawn(context, session, generation)
       try {
         const loaded = await watched(spawned, () =>
@@ -291,6 +292,16 @@ export function createNodeWorkerBackend(options: NodeWorkerBackendOptions = {}):
             },
           ),
         )
+        /*
+         * What a codec activation cost, where a person can read it: spawning the realm and
+         * evaluating the module graph are the two halves, and only the second one moves when a
+         * package barrel is narrowed. Reported as information, once per realm brought up.
+         */
+        report({
+          code: 'x3.host/worker-realm-ready',
+          severity: 'information',
+          message: `${context.ticket.contributionId} realm ${generation} ready in ${Math.round(performance.now() - spawnedAt)} ms (spawn and module load)`,
+        })
         return { ...spawned, root: loaded.root }
       } catch (error) {
         await shutdown(spawned, 'load failed')

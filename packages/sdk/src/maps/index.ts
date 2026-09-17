@@ -334,6 +334,15 @@ export interface MapPlacedObject {
   /** Renderer team-color intensity for this object (see `SceneRendererMaterialContext`); 0 = none. */
   readonly presentationTeamColorIntensity?: number
   readonly variation?: number
+  /** Authored resource amount, before any gameplay harvesting. */
+  readonly resources?: number
+  /** Initial animation selected by the source's resolved actor events. */
+  readonly presentationAnimation?: {
+    readonly name: string
+    readonly groups: readonly string[]
+    readonly loop: boolean
+    readonly speed: number
+  }
   readonly modules?: number
   readonly name?: string
   readonly catalog?: MapCatalogBinding
