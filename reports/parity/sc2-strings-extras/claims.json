@@ -1,0 +1,13 @@
+{
+  "features": [
+    ["088b71698a85b749", "tokenize", "complete"],
+    ["1f4483c5d1d3421b", "resolve"],
+    ["22683deeeecacce5", "detect"],
+    ["2b434e6b1640c503", "analysis"],
+    ["34b8b6cee9e8b8d4", "hotkeys"],
+    ["72729169e50d522d", "diff", "git"],
+    ["a26195814e821b56", "markup"],
+    ["df064397855703ff", "resolve"],
+    ["e252d2ea05fce2d0", "constants"]
+  ]
+}
