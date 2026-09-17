@@ -1,0 +1,2639 @@
+{
+  "$schema": "vscode-screen-registry-1",
+  "$comment": "Stage I (HANDOFF_SC2_CORE_RESTRUCTURE_CONTINUATION_2026-09-15.md §13) screen registry. One row per legacy MK2 VS Code surface (command, custom editor, view, status bar item, or setting group). mk3.status is decided by reading MK3 source/tests, not by name matching. Complements migration/vscode-workflows.json (14 CLI+VSCode workflows) with per-screen host (VS Code / Electron / web) coverage and UI-part evidence from packages/ui.",
+  "generatedAt": "2026-09-17",
+  "sources": {
+    "legacyPackageJson": "references/modkitmk2/apps/modkit-vscode/package.json",
+    "legacySrcDir": "references/modkitmk2/apps/modkit-vscode/src",
+    "mk3VscodePackageJson": "apps/vscode/package.json",
+    "mk3VscodeSrcDir": "apps/vscode/src",
+    "mk3UiParts": "packages/ui/src/parts.ts",
+    "mk3UiDirs": "packages/ui/src/*",
+    "existingLedger": "migration/vscode-workflows.json"
+  },
+  "counts": {
+    "total": 91,
+    "byKind": {
+      "command": 64,
+      "custom-editor": 11,
+      "setting-group": 7,
+      "view": 6,
+      "status-bar": 3
+    },
+    "byGroup": {
+      "archives": 19,
+      "media": 12,
+      "models": 3,
+      "maps-replays": 8,
+      "layout": 7,
+      "strings": 4,
+      "cards-navigation": 12,
+      "service": 21,
+      "language": 4,
+      "other": 1
+    },
+    "byStatus": {
+      "present": 46,
+      "missing": 26,
+      "partial": 16,
+      "superseded": 3
+    }
+  },
+  "rows": [
+    {
+      "id": "command:modkit.archive.clear",
+      "group": "archives",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.archive.clear",
+        "title": "Modkit: Clear Archives",
+        "module": "src/archive-view.ts",
+        "behavior": "Closed every open archive and emptied the Archives tree."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.unloadSource"
+        ],
+        "uiParts": [
+          "archive"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:6755"
+      ],
+      "notes": "candidate-vscode-container (already-equivalent), folded into generic unload.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.archive.clearSearch",
+      "group": "archives",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.archive.clearSearch",
+        "title": "Modkit: Clear Archive Search",
+        "module": "src/archive-search.ts",
+        "behavior": "Cleared the active archive search filter."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.searchContainer"
+        ],
+        "uiParts": [
+          "search"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:6589"
+      ],
+      "notes": "Folded into the generic search toolbar (clear is a search-box affordance, not a separate command); candidate-vscode-container.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.archive.explore",
+      "group": "archives",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.archive.explore",
+        "title": "Modkit: Explore Archive (file tree, extract/insert)",
+        "module": "src/archive-explorer.ts",
+        "behavior": "Opened the webview Archive Explorer custom editor: file tree with click-to-preview, context-menu Extract, drag-and-drop Insert, Delete, and Save (repack)."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [],
+        "uiParts": [
+          "archive",
+          "filetree",
+          "explorer"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/stages.ts:101",
+        "reports/vscode-focused-ga-smoke/receipt.json (warzone-map.wz, Entries stage)"
+      ],
+      "notes": "already-container-browse / candidate-vscode-assets (already-equivalent). Whether drag-and-drop Insert and Save/repack are exercised, not just browse+extract, was not independently re-verified here.",
+      "fixture": ".wz / .SC2Map"
+    },
+    {
+      "id": "command:modkit.archive.openArchive",
+      "group": "archives",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.archive.openArchive",
+        "title": "Modkit: Open Archive",
+        "module": "src/archive-view.ts",
+        "behavior": "Opened a chosen archive file (MPQ/ZIP/etc.) as the root of the Archives tree."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [],
+        "uiParts": [
+          "archive",
+          "filetree"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/test/containers.test.ts"
+      ],
+      "notes": "already-container-browse (already-equivalent).",
+      "fixture": ".SC2Map / .mpq"
+    },
+    {
+      "id": "command:modkit.archive.openAsRoot",
+      "group": "archives",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.archive.openAsRoot",
+        "title": "Modkit: Open Folder as Archive Root",
+        "module": "src/archive-view.ts",
+        "behavior": "Treated a plain filesystem folder as a virtual archive root, so a loose extracted mod could be browsed the same way as a packed one."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [],
+        "uiParts": [
+          "archive"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/test/containers.test.ts"
+      ],
+      "notes": "already-container-browse (already-equivalent): the generic container abstraction treats loose folders and packed archives uniformly.",
+      "fixture": "a loose extracted mod folder"
+    },
+    {
+      "id": "command:modkit.archive.openCasc",
+      "group": "archives",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.archive.openCasc",
+        "title": "Modkit: Open CASC Install",
+        "module": "src/archive-view.ts",
+        "behavior": "Opened a CASC install as an archive root, prompting for the install path."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.contentSources"
+        ],
+        "uiParts": [
+          "content-sources"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:1627"
+      ],
+      "notes": "candidate-vscode-source-lifecycle (already-equivalent).",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.archive.openConfiguredCasc",
+      "group": "archives",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.archive.openConfiguredCasc",
+        "title": "Modkit: Open Detected/Configured CASC",
+        "module": "src/archive-view.ts",
+        "behavior": "Opened the already-configured CASC install without re-prompting."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.contentSources"
+        ],
+        "uiParts": [
+          "content-sources"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:1627"
+      ],
+      "notes": "candidate-vscode-source-lifecycle (already-equivalent).",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.archive.openDetectedGame",
+      "group": "archives",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.archive.openDetectedGame",
+        "title": "Modkit: Open Detected Unity/Unreal Game",
+        "module": "src/archive-view.ts, src/game-install-discovery.ts",
+        "behavior": "Opened an auto-detected Unity/Unreal game installation directly as an archive root."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.selectGameInstallation"
+        ],
+        "uiParts": [
+          "content-sources"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:6700"
+      ],
+      "notes": "candidate-vscode-source-lifecycle (already-equivalent): folded into the generic install-selection flow.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.archive.refresh",
+      "group": "archives",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.archive.refresh",
+        "title": "Modkit: Refresh Archives",
+        "module": "src/archive-view.ts",
+        "behavior": "Re-read every open archive's entry list from disk."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.refreshContainer"
+        ],
+        "uiParts": [
+          "archive"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:6640 (registerCommand('modkit.refreshContainer', ...))"
+      ],
+      "notes": "candidate-vscode-container (already-equivalent).",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.archive.search",
+      "group": "archives",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.archive.search",
+        "title": "Modkit: Search Archives",
+        "module": "src/archive-search.ts",
+        "behavior": "Searched entry names/paths across every open archive with live-filtered results."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.searchContainer"
+        ],
+        "uiParts": [
+          "archive",
+          "search"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:6589 (registerCommand('modkit.searchContainer', ...))"
+      ],
+      "notes": "candidate-vscode-container (already-equivalent).",
+      "fixture": "an open archive with many entries"
+    },
+    {
+      "id": "command:modkit.browseRawFiles",
+      "group": "archives",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.browseRawFiles",
+        "title": "Modkit: Browse Raw Files",
+        "module": "src/archive-explorer.ts",
+        "behavior": "Opened a raw filesystem/VFS browse view bypassing mod resolution, for inspecting an archive or install root directly."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.browseContainer"
+        ],
+        "uiParts": [
+          "archive",
+          "filetree"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:6978 (registerCommand('modkit.browseContainer', ...))",
+        "apps/vscode/test/containers.test.ts"
+      ],
+      "notes": "already-container-browse (already-equivalent): the generic container filesystem + browse command replace the focused raw-file browser.",
+      "fixture": "a .SC2Map or .mpq archive"
+    },
+    {
+      "id": "command:modkit.casc.benchmark",
+      "group": "archives",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.casc.benchmark",
+        "title": "Modkit: Benchmark CASC",
+        "module": "src/casc-cache-info.ts",
+        "behavior": "Measured CASC read throughput for the configured install and reported results to the user."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "n/a"
+        }
+      },
+      "evidence": [],
+      "notes": "No benchmark command or equivalent exists in apps/vscode/src or the CASC codec; post-release per the fact-policy default (not named by any workflow decision).",
+      "fixture": "n/a (StarCraft II CASC install)"
+    },
+    {
+      "id": "command:modkit.casc.clearCache",
+      "group": "archives",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.casc.clearCache",
+        "title": "Modkit: Clear CASC Cache",
+        "module": "src/casc-cache-info.ts",
+        "behavior": "Deleted the per-build materialized cache directory on disk."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "n/a"
+        }
+      },
+      "evidence": [],
+      "notes": "No clear-cache command found in apps/vscode/src; generic VFS materialization has no exposed clear action today.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.casc.materialize",
+      "group": "archives",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.casc.materialize",
+        "title": "Modkit: Materialize SC2 Data",
+        "module": "src/casc-materialize.ts",
+        "behavior": "Bulk-extracted files under a chosen prefix from a CASC install into a per-build files/ cache directory, honoring a CachePolicy so a \"data\" materialize skips binaries."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.materializeContainerEntry"
+        ],
+        "uiParts": [
+          "archive",
+          "archive.tree"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:6657 (registerCommand('modkit.materializeContainerEntry', ...))",
+        "apps/vscode/test/containers.test.ts"
+      ],
+      "notes": "Bounded materialization through the shared VFS replaces the CASC-specific bulk extract (candidate-vscode-container, already-equivalent).",
+      "fixture": "a StarCraft II CASC install with a chosen data prefix"
+    },
+    {
+      "id": "command:modkit.casc.openCacheFolder",
+      "group": "archives",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.casc.openCacheFolder",
+        "title": "Modkit: Open CASC Cache Folder",
+        "module": "src/casc-cache-info.ts",
+        "behavior": "Revealed the per-build cache directory in the OS file manager."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "n/a"
+        }
+      },
+      "evidence": [],
+      "notes": "No reveal-cache-folder command found; not wired.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.casc.openSettings",
+      "group": "archives",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.casc.openSettings",
+        "title": "Modkit: CASC Cache Settings",
+        "module": "src/casc-settings-panel.ts",
+        "behavior": "Opened a webview panel over modkit.casc.* settings plus live cache size stats, with Materialize / Clear / Open-folder actions."
+      },
+      "mk3": {
+        "status": "partial",
+        "commandIds": [
+          "modkit.casc.materialize (folded)"
+        ],
+        "uiParts": [
+          "settings"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/test/containers.test.ts",
+        "apps/vscode/test/workbench-workflows.test.ts"
+      ],
+      "notes": "candidate-vscode-container (already-equivalent for search/refresh/materialize) covers materialization through the generic VFS, but the dedicated settings panel with live cache-size stats and Clear/Open-folder actions has no direct MK3 screen; folded into generic settings.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "custom-editor:modkit.archiveExplorer",
+      "group": "archives",
+      "legacy": {
+        "kind": "custom-editor",
+        "id": "modkit.archiveExplorer",
+        "title": "Modkit Archive Explorer",
+        "module": "src/archive-explorer.ts, src/archive-save.ts, src/archive-codecs.ts, src/large-archive-readers.ts, src/fast-casc-extract.ts, src/seven-zip-native.ts",
+        "webview": "shares src/webview/hex-viewer-main.ts / media-viewer-shell.ts for entry preview",
+        "behavior": "File-tree view over any archive/package format (MPQ/ZIP/7z/RAR/Unity bundle/BIG/MIX/CAB/ISO/installer/…): click-to-preview an entry, context-menu Extract, drag-and-drop Insert, Delete, and Save (repack)."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [],
+        "uiParts": [
+          "archive",
+          "filetree",
+          "explorer"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/stages.ts:101",
+        "reports/vscode-focused-ga-smoke/receipt.json (warzone-map.wz)",
+        "apps/vscode/test/containers.test.ts"
+      ],
+      "notes": "candidate-vscode-assets / already-container-browse (already-equivalent) for browse/extract/preview; Insert/Save-repack round-trip was not independently re-verified in this pass.",
+      "fixture": ".wz"
+    },
+    {
+      "id": "settings:archives-casc",
+      "group": "archives",
+      "legacy": {
+        "kind": "setting-group",
+        "id": "modkit.casc.autoLoadForProjects, modkit.casc.installations",
+        "title": "CASC source settings",
+        "module": "src/config.ts",
+        "behavior": "Whether to auto-load a configured CASC install for a project, and the list of registered CASC installations (paths + product)."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [
+          "content-sources"
+        ],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "n/a"
+        }
+      },
+      "evidence": [],
+      "notes": "candidate-vscode-settings (post-release, migration/vscode-workflows.json): the declarative mapping that once tied each key to its replacement (priority-settings.ts) no longer exists; content sources are configured through the generic modkit.contentSources UI, but no literal setting key preserves auto-load-for-projects behaviour.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "view:modkitArchiveTree",
+      "group": "archives",
+      "legacy": {
+        "kind": "view",
+        "id": "modkitArchiveTree",
+        "title": "Archives",
+        "module": "src/archive-view.ts",
+        "behavior": "Tree of every open archive/CASC install root."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [],
+        "uiParts": [
+          "archive.tree"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/test/view-policy.test.ts"
+      ],
+      "notes": "candidate-vscode-views (already-equivalent): folded into the native explorer + generic container browse.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.assetsTexture.batchConvert",
+      "group": "media",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.assetsTexture.batchConvert",
+        "title": "Assets Texture Viewer: Batch Convert Images in Folder…",
+        "module": "src/assets-texture-viewer.ts",
+        "behavior": "Batch-converted every recognized image file under a chosen folder to a target format in place."
+      },
+      "mk3": {
+        "status": "partial",
+        "commandIds": [],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "n/a"
+        }
+      },
+      "evidence": [
+        "gap-vscode-assets-unexercised-media-and-conversion (migration/vscode-workflows.json)"
+      ],
+      "notes": "subject.convert exists and is proven for one file at a time (PNG->rgba8, via the VS Code host); no batch/folder-wide conversion command or fixture found.",
+      "fixture": "a folder of .tga/.png files"
+    },
+    {
+      "id": "command:modkit.dds.convertDxt5ToDxt1",
+      "group": "media",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.dds.convertDxt5ToDxt1",
+        "title": "Modkit: DDS Convert DXT5 Binary Alpha to DXT1",
+        "module": "src/dds-commands.ts",
+        "behavior": "Recompressed a DXT5 texture with binary (on/off) alpha down to DXT1 to save space."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "n/a"
+        }
+      },
+      "evidence": [
+        "gap-vscode-assets-unexercised-media-and-conversion"
+      ],
+      "notes": "No DXT5->DXT1 conversion command or codec path found; unexercised/unimplemented.",
+      "fixture": ".dds (DXT5, binary alpha)"
+    },
+    {
+      "id": "command:modkit.dds.convertPngIconToDds",
+      "group": "media",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.dds.convertPngIconToDds",
+        "title": "Convert PNG Icon to DDS",
+        "module": "src/dds-commands.ts",
+        "behavior": "Converted a plain PNG icon into a game-ready DDS icon."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "n/a"
+        }
+      },
+      "evidence": [
+        "gap-vscode-assets-unexercised-media-and-conversion"
+      ],
+      "notes": "No PNG-icon-to-DDS conversion command found.",
+      "fixture": ".png icon"
+    },
+    {
+      "id": "command:modkit.dds.exportPng",
+      "group": "media",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.dds.exportPng",
+        "title": "Modkit: DDS Export PNG",
+        "module": "src/dds-commands.ts",
+        "behavior": "Exported the active DDS texture's base mip to a sibling .png file."
+      },
+      "mk3": {
+        "status": "partial",
+        "commandIds": [],
+        "uiParts": [
+          "image"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "gap-vscode-assets-unexercised-media-and-conversion"
+      ],
+      "notes": "subject.convert covers PNG-to-rgba8 live; the specific DDS-to-PNG export command/fixture is unexercised per the ledger gap.",
+      "fixture": ".dds"
+    },
+    {
+      "id": "command:modkit.dds.prepareSc2ButtonIcon",
+      "group": "media",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.dds.prepareSc2ButtonIcon",
+        "title": "Modkit: DDS Prepare SC2 Button Icon",
+        "module": "src/dds-commands.ts",
+        "behavior": "Resized/padded/mipped a source image into the exact DDS layout SC2 button icons require."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "n/a"
+        }
+      },
+      "evidence": [
+        "gap-vscode-assets-unexercised-media-and-conversion"
+      ],
+      "notes": "No SC2-button-icon preparation command found.",
+      "fixture": "a source .png for a button icon"
+    },
+    {
+      "id": "command:modkit.previewDds",
+      "group": "media",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.previewDds",
+        "title": "Modkit: Preview Image",
+        "module": "src/dds-commands.ts, src/assets-texture-viewer.ts",
+        "behavior": "Opened the Assets Texture Viewer custom editor for a DDS/TGA/PNG/etc. texture: mip/face/array-slice selectors, channel toggles, and pixel readout."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [],
+        "uiParts": [
+          "image",
+          "image.canvas",
+          "image.subresources",
+          "image.readout"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/stages.ts:47 (stage 'image')",
+        "reports/vscode-focused-ga-smoke/receipt.json (scenario for texture.dds)"
+      ],
+      "notes": "candidate-vscode-assets (already-equivalent): proven live with a real .dds fixture in the installed E5 receipt.",
+      "fixture": ".dds"
+    },
+    {
+      "id": "command:modkit.unreal.openAudio",
+      "group": "media",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.unreal.openAudio",
+        "title": "Modkit: Open Unreal Asset as Audio",
+        "module": "src/audio-preview.ts, src/audio-codecs.ts",
+        "behavior": "Forced an ambiguous Unreal .uasset/.uexp pair to open with the Audio Preview editor instead of the generic asset inspector."
+      },
+      "mk3": {
+        "status": "partial",
+        "commandIds": [],
+        "uiParts": [
+          "audio"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/stages.ts:89 (stage 'audio')",
+        "gap-vscode-assets-unexercised-media-and-conversion"
+      ],
+      "notes": "The generic Audio stage exists and is wired for standard containers (wav/mp3/ogg/…), but no fixture or command exercises the Unreal-specific \"open ambiguous asset as audio\" override.",
+      "fixture": ".uasset (audio-backed)"
+    },
+    {
+      "id": "command:modkit.unreal.openVideo",
+      "group": "media",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.unreal.openVideo",
+        "title": "Modkit: Open Unreal Asset as Video",
+        "module": "src/assets-video-viewer.ts",
+        "behavior": "Forced an ambiguous Unreal asset to open with the Video Preview editor."
+      },
+      "mk3": {
+        "status": "partial",
+        "commandIds": [],
+        "uiParts": [
+          "video"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/stages.ts:95 (stage 'video')",
+        "gap-vscode-assets-unexercised-media-and-conversion"
+      ],
+      "notes": "Same as unreal.openAudio: generic Video stage exists, Unreal-specific override command/fixture unexercised.",
+      "fixture": ".uasset (video-backed)"
+    },
+    {
+      "id": "custom-editor:modkit.assetsTextureViewer",
+      "group": "media",
+      "legacy": {
+        "kind": "custom-editor",
+        "id": "modkit.assetsTextureViewer",
+        "title": "Assets Texture Viewer",
+        "module": "src/assets-texture-viewer.ts, src/image-resolve.ts",
+        "webview": "src/webview/assets-texture-main.ts",
+        "behavior": "Texture/image viewer and light editor: mip/face/array-slice navigation, channel isolation, marquee crop/resize tools, and pixel readout, for every registered raster/vector/palette image format."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [],
+        "uiParts": [
+          "image",
+          "imageedit",
+          "vector"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/stages.ts:47",
+        "packages/ui/src/image/edit.ts",
+        "reports/vscode-focused-ga-smoke/receipt.json (texture.png / texture.dds)"
+      ],
+      "notes": "candidate-vscode-assets (already-equivalent) for preview; batch/DDS-specific conversions are tracked separately (see the DDS command rows) as partial/missing.",
+      "fixture": ".dds"
+    },
+    {
+      "id": "custom-editor:modkit.assetsVideoViewer",
+      "group": "media",
+      "legacy": {
+        "kind": "custom-editor",
+        "id": "modkit.assetsVideoViewer",
+        "title": "Modkit Video Preview",
+        "module": "src/assets-video-viewer.ts, src/video-codecs.ts, src/ogv-preview.ts, src/swf-preview.ts, src/windows-metafile-renderer.ts",
+        "behavior": "One preview surface for playable video (webm/mp4/mov/ogv/bik/wmv/…) plus two special cases folded into the same viewType: Ogg Theora (.ogv, via its own decoder) and Flash (.swf/.fla, rendered as a timeline or first-frame still)."
+      },
+      "mk3": {
+        "status": "partial",
+        "commandIds": [],
+        "uiParts": [
+          "video"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/stages.ts:95",
+        "extensions/video/src/ogv (OGV codec present)"
+      ],
+      "notes": "gap-vscode-assets-unexercised-media-and-conversion: standard containers + OGV are covered by the generic Video stage and a real OGV codec extension; SWF/Flash has no MK3 codec anywhere in the repo (confirmed missing by search) and .wmv is covered by extensions/video/src/wmv.",
+      "fixture": ".ogv"
+    },
+    {
+      "id": "custom-editor:modkit.audioPreview",
+      "group": "media",
+      "legacy": {
+        "kind": "custom-editor",
+        "id": "modkit.audioPreview",
+        "title": "Modkit Audio Preview",
+        "module": "src/audio-preview.ts, src/audio-codecs.ts",
+        "behavior": "Waveform + transport (play/pause/seek/speed) player for aac/flac/m4a/opus/wem/bnk/fsb/wav/mp3/ogg files."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [],
+        "uiParts": [
+          "audio",
+          "audio.waveform",
+          "audio.player"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/stages.ts:89",
+        "packages/ui/src/audio/index.ts"
+      ],
+      "notes": "Wired generically for standard containers (wav/mp3/ogg/aac/flac); game-specific containers (wem/bnk/fsb) depend on the audio codec extension's own format coverage, not independently re-verified here.",
+      "fixture": ".wav"
+    },
+    {
+      "id": "custom-editor:modkit.fontPreview",
+      "group": "media",
+      "legacy": {
+        "kind": "custom-editor",
+        "id": "modkit.fontPreview",
+        "title": "Modkit Font Preview",
+        "module": "src/font-preview.ts",
+        "behavior": "Rendered a specimen of glyphs for a .ttf/.otf/.fnt font file."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "missing"
+        }
+      },
+      "evidence": [],
+      "notes": "No font codec, stage, or \"@font-face\"/glyph-rendering code exists anywhere in packages/ui or apps/vscode; confirmed missing by direct search, not just ledger inference.",
+      "fixture": ".ttf"
+    },
+    {
+      "id": "command:modkit.inspectModel",
+      "group": "models",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.inspectModel",
+        "title": "Modkit: Inspect Warcraft Model",
+        "module": "src/model-inspect.ts",
+        "behavior": "Ran subject.inspect on a model file and printed its resolved format id, mesh/bone/animation counts and warnings."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [],
+        "uiParts": [
+          "model.facets"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "reports/vscode-focused-ga-smoke/receipt.json (sc2-model.m3 / warzone-model.pie, subject.inspect confirms formatId)"
+      ],
+      "notes": "candidate-vscode-assets (already-equivalent): generic subject.inspect covers every registered model codec, including the former Warcraft-only inspect.",
+      "fixture": ".m3 / .pie"
+    },
+    {
+      "id": "command:modkit.modelViewer.toggle",
+      "group": "models",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.modelViewer.toggle",
+        "title": "Open Model Viewer",
+        "module": "src/model-viewer.ts",
+        "behavior": "Opened/refocused the unified Model Viewer custom editor for the active model file, resolving textures on the host and rendering through a selectable three|webgl backend."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [],
+        "uiParts": [
+          "model",
+          "model.canvas",
+          "model.toolbar",
+          "model.animation-selector",
+          "gizmo"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/stages.ts:75 (stage 'model' -> createModelViewer)",
+        "packages/ui/src/model/index.ts:70"
+      ],
+      "notes": "Model files open through the generic custom editor + Model stage rather than a dedicated toggle command; no MK3 command literally named modelViewer.toggle, but the equivalent behaviour (open/refocus model editor) is the default Open behaviour for model formats.",
+      "fixture": ".m3"
+    },
+    {
+      "id": "custom-editor:modkit.modelViewer",
+      "group": "models",
+      "legacy": {
+        "kind": "custom-editor",
+        "id": "modkit.modelViewer",
+        "title": "Modkit Model Viewer",
+        "module": "src/model-viewer.ts, src/model-viewer-assets.ts, src/model-viewer-protocol.ts, src/model-assets.ts, src/model-export-edits.ts",
+        "webview": "src/webview/model-viewer-main.ts, model-viewer-backends.ts",
+        "behavior": "One custom editor for every model format modkit can parse to RenderModel (m3/mdx/mdl/dae/gltf/ply/stl/w3x/blend/…): mesh/animation/geoset visibility controls, renderer backend choice (three|webgl), and view-only geoset selection without mutating the source."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [],
+        "uiParts": [
+          "model",
+          "model.canvas",
+          "model.animation-selector",
+          "model.facets",
+          "gizmo"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/stages.ts:74",
+        "packages/ui/src/model/index.ts",
+        "reports/vscode-focused-ga-smoke/receipt.json (sc2-model.m3, warzone-model.pie)"
+      ],
+      "notes": "candidate-vscode-assets (already-equivalent): proven live for two formats across two extensions; the renderer-backend user setting (modkit.modelPreview.renderer) is tracked separately under settings-group:ui-misc.",
+      "fixture": ".m3"
+    },
+    {
+      "id": "command:modkit.launchMap",
+      "group": "maps-replays",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.launchMap",
+        "title": "Modkit: Launch SC2Map",
+        "module": "src/map-launch.ts",
+        "behavior": "Launched StarCraft II directly into the active .SC2Map for playtesting, with a running-status indicator and a warn-if-already-running guard."
+      },
+      "mk3": {
+        "status": "partial",
+        "commandIds": [
+          "modkit.game.launchActiveMap"
+        ],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/test/game-launch-workflow.test.ts",
+        "apps/vscode/src/extension.ts:6791 (registerCommand(VSCODE_GAME_LAUNCH_COMMAND, ...))"
+      ],
+      "notes": "already-vscode-game-launch (already-equivalent) for the launch action itself: user-cancel issues no grant, confirmed path issues an exact-map short-lived process grant. The MK2 status-bar \"map running\" indicator (map-launch.ts:55) has no MK3 equivalent — see the status-bar row.",
+      "fixture": ".SC2Map"
+    },
+    {
+      "id": "command:modkit.openLaunchSettings",
+      "group": "maps-replays",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.openLaunchSettings",
+        "title": "Modkit: Configure Map Launch",
+        "module": "src/map-launch.ts",
+        "behavior": "Opened settings for the launch install dir, game logs path, map path override, and warn-if-running toggle."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [
+          "settings"
+        ],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "missing"
+        }
+      },
+      "evidence": [],
+      "notes": "candidate-vscode-authoring (post-release): no openLaunchSettings command found; the generic settings surface exists but is not wired to launch-specific fields.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.previewMap",
+      "group": "maps-replays",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.previewMap",
+        "title": "Modkit: Preview SC2Map",
+        "module": "src/map-preview.ts",
+        "behavior": "Opened the 2D SC2Map preview: rendered minimap/height data and let the user drill into the archive's file entries."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [],
+        "uiParts": [
+          "world",
+          "archive.entries"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/stages.ts:101 (stage 'entries')",
+        "reports/vscode-focused-ga-smoke/receipt.json (sc2-map.SC2Map, Entries stage)"
+      ],
+      "notes": "candidate-vscode-assets (already-equivalent): proven live with a real .SC2Map fixture opening the Entries stage.",
+      "fixture": ".SC2Map"
+    },
+    {
+      "id": "command:modkit.previewMap3d",
+      "group": "maps-replays",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.previewMap3d",
+        "title": "Modkit: Preview SC2Map in 3D",
+        "module": "src/map-preview-3d.ts",
+        "behavior": "Streamed a full 3D scene of the map (terrain chunks/skirts/water/splat textures, doodads, and map-only units such as minerals/geysers/starting units) into an orbitable webview."
+      },
+      "mk3": {
+        "status": "partial",
+        "commandIds": [],
+        "uiParts": [
+          "world",
+          "world.canvas"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/stages.ts:68 (stage 'world')",
+        "reports/vscode-focused-ga-smoke/receipt.json scenario 'focused-world-presentation'"
+      ],
+      "notes": "gap-vscode-assets-world-render-broken (release-candidate): the receipt's own World-stage scenario shows the installed editor reporting \"world candidate identity changed between source and info\" instead of a rendered scene; only tab-open/stage-selection was actually verified.",
+      "fixture": ".SC2Map"
+    },
+    {
+      "id": "custom-editor:modkit.mapPreview",
+      "group": "maps-replays",
+      "legacy": {
+        "kind": "custom-editor",
+        "id": "modkit.mapPreview",
+        "title": "Modkit SC2Map Preview",
+        "module": "src/map-preview.ts",
+        "behavior": "2D preview of a .SC2Map/.s2ma: rendered heightmap/minimap plus a raw archive-entries drill-down."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [],
+        "uiParts": [
+          "world",
+          "archive.entries"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/stages.ts:68",
+        "reports/vscode-focused-ga-smoke/receipt.json (sc2-map.SC2Map)"
+      ],
+      "notes": "candidate-vscode-assets (already-equivalent).",
+      "fixture": ".SC2Map"
+    },
+    {
+      "id": "custom-editor:modkit.replayPlayer",
+      "group": "maps-replays",
+      "legacy": {
+        "kind": "custom-editor",
+        "id": "modkit.replayPlayer",
+        "title": "Modkit Replay Player",
+        "module": "src/replay-player.ts, src/replay-3d-payload.ts",
+        "webview": "src/webview/replay-player-main.ts, replay-3d-view.ts",
+        "behavior": "Opened a .SC2Replay as a video-style player: parsed the replay on the host, built a Tier-A tracker timeline, and streamed it into a webview 2D map view with play/pause/seek/speed transport (a separate 3D battle-scene payload builder existed for richer playback)."
+      },
+      "mk3": {
+        "status": "partial",
+        "commandIds": [],
+        "uiParts": [
+          "world",
+          "transport"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "modkit-extensions-blizzard/starcraft2/modules/replay (versioned decoders, tracker timeline per HANDOFF §3.4)",
+        "packages/ui/src/world/index.ts:1138 (generic transport-source contract shared by replay/cutscene)"
+      ],
+      "notes": "The World stage already has a generic transport-source contract built for exactly this (replay/cutscene playback), and the replay module has decoders + tracker timeline, but no `.SC2Replay` custom editor or codec wiring to `common.view/world-scene-source`/`transport-source` was found — the two halves exist without being connected into an openable screen yet.",
+      "fixture": ".SC2Replay"
+    },
+    {
+      "id": "settings:launch",
+      "group": "maps-replays",
+      "legacy": {
+        "kind": "setting-group",
+        "id": "modkit.launch.gameLogsPath, modkit.launch.installDir, modkit.launch.mapPath, modkit.launch.warnIfRunning",
+        "title": "Map launch settings",
+        "module": "src/map-launch.ts",
+        "behavior": "Configured the install directory used to find the game executable, an explicit map path override, where to read game logs from after launch, and whether to warn before relaunching over a running instance."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "n/a"
+        }
+      },
+      "evidence": [],
+      "notes": "candidate-vscode-settings (post-release): apps/vscode/package.json declares none of these keys; the launch workflow (game-launch-workflow.ts) resolves the install through generic game discovery instead of a user-facing settings surface.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "status-bar:map-launch-status",
+      "group": "maps-replays",
+      "legacy": {
+        "kind": "status-bar",
+        "id": "modkit.launchStatus",
+        "title": "(unnamed) map launch running indicator",
+        "module": "src/map-launch.ts:55",
+        "behavior": "Showed a running/launching indicator in the status bar while StarCraft II was starting or already running the map."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "n/a"
+        }
+      },
+      "evidence": [],
+      "notes": "apps/vscode/src/game-launch-workflow.ts issues a process-launch grant and executes once but exposes no running-status indicator; grep for StatusBar/status-slot in that file found nothing.",
+      "fixture": ".SC2Map"
+    },
+    {
+      "id": "command:modkit.previewLayout",
+      "group": "layout",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.previewLayout",
+        "title": "Modkit: Preview SC2Layout",
+        "module": "src/layout-preview.ts, src/layout-preview-host.ts",
+        "behavior": "Opened a live-rendered preview of the active .SC2Layout frame tree beside the editor, re-rendering on save/change."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "missing"
+        }
+      },
+      "evidence": [],
+      "notes": "gap-vscode-assets-unexercised-media-and-conversion (release-candidate/unexercised): no SC2Layout preview fixture or command found; the SC2Layout language provider (hover/colors/rename) exists, but no visual frame-tree render.",
+      "fixture": ".SC2Layout"
+    },
+    {
+      "id": "command:sc2layout.dtree.revealActiveFile",
+      "group": "layout",
+      "legacy": {
+        "kind": "command",
+        "id": "sc2layout.dtree.revealActiveFile",
+        "title": "Reveal in DescTree",
+        "module": "src/layout-dtree.ts",
+        "behavior": "Selected the DescTree node corresponding to the active editor's cursor position."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "missing"
+        }
+      },
+      "evidence": [],
+      "notes": "Same DescTree gap as showInTextEditor.",
+      "fixture": ".SC2Layout"
+    },
+    {
+      "id": "command:sc2layout.dtree.showInTextEditor",
+      "group": "layout",
+      "legacy": {
+        "kind": "command",
+        "id": "sc2layout.dtree.showInTextEditor",
+        "title": "Show in Text Editor",
+        "module": "src/layout-dtree.ts",
+        "behavior": "Jumped from a node in the compiled DescTree view to its source location in the raw SC2Layout XML."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "missing"
+        }
+      },
+      "evidence": [],
+      "notes": "candidate-vscode-authoring (post-release): no sc2layout.dtree.* command exists; the compiled DescTree view itself (LSP-backed, computed layout across the dependency chain) has no MK3 replacement.",
+      "fixture": ".SC2Layout"
+    },
+    {
+      "id": "command:sc2layout.dtree.showProperties",
+      "group": "layout",
+      "legacy": {
+        "kind": "command",
+        "id": "sc2layout.dtree.showProperties",
+        "title": "Show Properties",
+        "module": "src/layout-dtree.ts",
+        "behavior": "Showed the resolved (post-inheritance) property table for the selected DescTree element in the SC2Layout Element view."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [
+          "properties"
+        ],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "missing"
+        }
+      },
+      "evidence": [],
+      "notes": "The generic properties.* UI part exists in packages/ui (metadata/index.ts createPropertiesTable) but nothing wires a compiled-layout element properties view for SC2Layout today.",
+      "fixture": ".SC2Layout"
+    },
+    {
+      "id": "status-bar:sc2layout-workspace-status",
+      "group": "layout",
+      "legacy": {
+        "kind": "status-bar",
+        "id": "sc2layout.workspaceStatus",
+        "title": "(unnamed) SC2Layout workspace setup status",
+        "module": "src/layout-workspace.ts:19",
+        "behavior": "Warned in the status bar when the SC2Layout language client detected a missing/misconfigured workspace dependency (e.g. unresolved base-game catalog)."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "n/a"
+        }
+      },
+      "evidence": [],
+      "notes": "Only one generic status bar item exists in MK3 (host status); no SC2Layout-specific workspace-setup indicator was found.",
+      "fixture": ".SC2Layout"
+    },
+    {
+      "id": "view:sc2layoutElementView",
+      "group": "layout",
+      "legacy": {
+        "kind": "view",
+        "id": "sc2layoutElementView",
+        "title": "SC2Layout Element",
+        "module": "src/layout-dtree.ts",
+        "behavior": "Resolved property table for the DescTree element currently selected in sc2layoutMainView."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [
+          "properties"
+        ],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "missing"
+        }
+      },
+      "evidence": [],
+      "notes": "Same gap as sc2layoutMainView: no dedicated element/properties view registered.",
+      "fixture": ".SC2Layout"
+    },
+    {
+      "id": "view:sc2layoutMainView",
+      "group": "layout",
+      "legacy": {
+        "kind": "view",
+        "id": "sc2layoutMainView",
+        "title": "SC2Layout DescTree",
+        "module": "src/layout-dtree.ts",
+        "behavior": "Tree of the compiled (post-inheritance) SC2Layout DescTree for the active file's dependency chain."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "missing"
+        }
+      },
+      "evidence": [],
+      "notes": "candidate-vscode-views groups this as already-equivalent by aggregate, but no compiled-layout DescTree view exists in apps/vscode/package.json (2 views only: modkit.extensions, modkit.host); treated here as missing pending owner confirmation.",
+      "fixture": ".SC2Layout"
+    },
+    {
+      "id": "command:modkit.strings.extractChanged",
+      "group": "strings",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.strings.extractChanged",
+        "title": "Extract Changed Strings (since git ref)…",
+        "module": "src/strings-editor.ts",
+        "behavior": "Diffed a GameStrings file against a chosen git ref and wrote out only the changed/added keys to a new file, for handing to a translator."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "missing"
+        }
+      },
+      "evidence": [],
+      "notes": "No git-ref diff/extract command exists anywhere in apps/vscode or the strings codec; candidate-vscode-authoring (vscode-workflows.json) records the same command as unimplemented today.",
+      "fixture": "enUS.SC2Data/LocalizedData/GameStrings.txt"
+    },
+    {
+      "id": "command:modkit.strings.openColumns",
+      "group": "strings",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.strings.openColumns",
+        "title": "Open Strings Table",
+        "module": "src/strings-editor.ts",
+        "behavior": "Opened the custom GameStrings table editor: key/value rows with rendered markup preview, duplicate-key highlighting, and in-place value editing via workspace edits."
+      },
+      "mk3": {
+        "status": "partial",
+        "commandIds": [],
+        "uiParts": [
+          "table"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "modkit-extensions-blizzard/starcraft2/modules/strings/codecs/strings/src/codec.ts:379 (tableDataSource: Key/Value/Preview/Duplicate)",
+        "apps/vscode/src/stages.ts:130 (stage 'table' -> createTableViewer)"
+      ],
+      "notes": "Single-file Key/Value/Preview/Duplicate table is real and wired through the generic Table stage. Missing vs MK2: no dedicated open-as-table command (routed through generic Open/editor-association), and the multi-locale/compare/search/add-key features from Stage J are not in this codec yet.",
+      "fixture": "enUS.SC2Data/LocalizedData/GameStrings.txt"
+    },
+    {
+      "id": "command:modkit.strings.openText",
+      "group": "strings",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.strings.openText",
+        "title": "Open Strings as Text",
+        "module": "src/strings-editor.ts",
+        "behavior": "Reopened a GameStrings.txt file with the plain VS Code text editor, bypassing the custom strings table."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.openWith"
+        ],
+        "uiParts": [
+          "text",
+          "virtual-text"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:6432 (registerCommand('modkit.openWith', ...))"
+      ],
+      "notes": "No literal modkit.strings.openText id; the generic \"Open With\" / per-format editor-association picker (modkit.openWith, modkit.setCodecDefaultEditor) covers choosing the text view instead of the table view for the same file.",
+      "fixture": "enUS.SC2Data/LocalizedData/GameStrings.txt"
+    },
+    {
+      "id": "custom-editor:modkit.stringsEditor",
+      "group": "strings",
+      "legacy": {
+        "kind": "custom-editor",
+        "id": "modkit.stringsEditor",
+        "title": "Modkit GameStrings Table",
+        "module": "src/strings-editor.ts, src/strings-editor-edits.ts, src/strings-search.ts, src/strings-language.ts",
+        "webview": "inline table webview, no separate main.ts",
+        "behavior": "Table editor over one LocalizedData GameStrings .txt: Key/Value/rendered-markup-preview/Duplicate columns, in-place value edits written back as exact line edits, and an in-webview search helper (whole-word/regex)."
+      },
+      "mk3": {
+        "status": "partial",
+        "commandIds": [],
+        "uiParts": [
+          "table"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "modkit-extensions-blizzard/starcraft2/modules/strings/codecs/strings/src/codec.ts:379",
+        "apps/vscode/src/stages.ts:130"
+      ],
+      "notes": "Single-file Key/Value/Preview/Duplicate table is real. Missing: dedicated custom-editor registration/priority (routed through the generic asset editor instead), in-webview search, and the multi-locale/compare/add-key/auto-translate table from Stage J.",
+      "fixture": "enUS.SC2Data/LocalizedData/GameStrings.txt"
+    },
+    {
+      "id": "command:modkit.modTree.hideDeps",
+      "group": "cards-navigation",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.modTree.hideDeps",
+        "title": "Modkit: Hide Dependency Resources",
+        "module": "src/mod-tree.ts",
+        "behavior": "Inverse of showDeps: hid the dependency-resource grouping."
+      },
+      "mk3": {
+        "status": "partial",
+        "commandIds": [],
+        "uiParts": [
+          "tree"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/test/workbench-workflows.test.ts"
+      ],
+      "notes": "Same as modTree.showDeps.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.modTree.open",
+      "group": "cards-navigation",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.modTree.open",
+        "title": "Modkit: Open Mod Resource",
+        "module": "src/mod-tree.ts",
+        "behavior": "Opened the resource selected in the MOD tree (GameData entity, Galaxy symbol, strings resource, or asset) with its appropriate viewer."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.navigateResource"
+        ],
+        "uiParts": [
+          "tree",
+          "explorer"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:6930 (registerCommand('modkit.navigateResource', ...))"
+      ],
+      "notes": "candidate-vscode-navigation (already-equivalent): native navigation over the generic relation source replaces the MOD tree open action.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.modTree.pin",
+      "group": "cards-navigation",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.modTree.pin",
+        "title": "Modkit: Show in MOD Tree",
+        "module": "src/mod-tree.ts",
+        "behavior": "Revealed and selected the active editor's resource inside the MOD tree (\"reveal in tree\")."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.navigateResource"
+        ],
+        "uiParts": [
+          "tree"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:6930"
+      ],
+      "notes": "candidate-vscode-navigation (already-equivalent).",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.modTree.refresh",
+      "group": "cards-navigation",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.modTree.refresh",
+        "title": "Modkit: Refresh MOD Tree",
+        "module": "src/mod-tree.ts",
+        "behavior": "Recomputed the MOD tree's two groupings (own resources vs. dependency resources) after an edit."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.refreshRelations"
+        ],
+        "uiParts": [
+          "tree"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:6917 (registerCommand('modkit.refreshRelations', ...))"
+      ],
+      "notes": "candidate-vscode-navigation (already-equivalent).",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.modTree.showDeps",
+      "group": "cards-navigation",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.modTree.showDeps",
+        "title": "Modkit: Show Dependency Resources",
+        "module": "src/mod-tree.ts",
+        "behavior": "Toggled visibility of the dependency-resource grouping in the MOD tree."
+      },
+      "mk3": {
+        "status": "partial",
+        "commandIds": [],
+        "uiParts": [
+          "tree"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/test/workbench-workflows.test.ts"
+      ],
+      "notes": "candidate-vscode-navigation groups this under already-equivalent by fact-aggregate, but no MK3 command/toggle specifically named show/hide-dependency-resources was found in extension.ts; treated as partial pending a direct check of the generic tree's dependency filter UI.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.openModCard",
+      "group": "cards-navigation",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.openModCard",
+        "title": "Modkit: Open Mod Card",
+        "module": "src/mod-card.ts",
+        "behavior": "Opened a card summarizing a mod root (on-disk, CASC-relative, or a dependency VFS path): resource counts per category (Textures, Models, GameData, …) and its own dependency load order."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [
+          "card"
+        ],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "missing"
+        }
+      },
+      "evidence": [],
+      "notes": "candidate-vscode-authoring (post-release): no openModCard command registered; the generic subject card exists (present for entities) but no mod-root-specific projection (resource-category counts, load order) is wired to it yet.",
+      "fixture": "a .SC2Mod folder"
+    },
+    {
+      "id": "command:modkit.showEntityCard",
+      "group": "cards-navigation",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.showEntityCard",
+        "title": "Show Entity Card",
+        "module": "src/entity-card.ts",
+        "behavior": "Opened a webview card for one catalog entity (unit/ability/effect/etc.): portrait, metadata, inherited fields, and links to related entities and the relation graph."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [],
+        "uiParts": [
+          "card",
+          "card.section",
+          "card.fields",
+          "card.links"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/stages.ts:118 (stage 'card' -> createSubjectCardViewer)",
+        "packages/ui/src/card/index.ts:39"
+      ],
+      "notes": "Generic subject card viewer replaces the SC2-specific entity card; opened via the shared Open/subject.inspect path rather than a dedicated showEntityCard command id.",
+      "fixture": "a SC2 unit/ability id opened from a mod GameData catalog"
+    },
+    {
+      "id": "command:modkit.showModWiki",
+      "group": "cards-navigation",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.showModWiki",
+        "title": "Open Mod Wiki",
+        "module": "src/mod-wiki.ts",
+        "behavior": "Opened a browsable per-mod wiki: namespaces on one side, entries on the other, each entry linking to its entity card and to referenced assets."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [],
+        "uiParts": [
+          "namespace",
+          "namespace.list",
+          "namespace.detail"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "packages/ui/src/namespace/index.ts"
+      ],
+      "notes": "Generic namespace browser covers the wiki layout; not wired to a literal showModWiki command, opened through mod-tree/card navigation instead.",
+      "fixture": "a mod root folder (SC2Mod) opened as a subject"
+    },
+    {
+      "id": "command:modkit.showRelationGraph",
+      "group": "cards-navigation",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.showRelationGraph",
+        "title": "Show Relation Graph",
+        "module": "src/relation-graph.ts, src/relation-graph-data.ts, src/webview/relation-graph-main.ts",
+        "behavior": "Opened a Three.js pseudo-3D force-directed graph (orbit controls, bloom postprocessing) of an entity's multi-hop relations; clicking a node re-rooted the graph or opened its entity card."
+      },
+      "mk3": {
+        "status": "partial",
+        "commandIds": [],
+        "uiParts": [
+          "graph",
+          "graph.canvas",
+          "graph.controls"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "packages/ui/src/graph/index.ts:390 (2D canvas force layout, no three.js renderer wired)",
+        "apps/vscode/test/view-policy.test.ts",
+        "packages/ui/test/relation-graph-source.test.ts"
+      ],
+      "notes": "A real generic 2D canvas relation graph is wired (\"already-equivalent\" per migration/vscode-workflows.json workflow vscode/navigation-relations-refactors); the pseudo-3D visual style (three.js orbit/bloom) from relation-graph-main.ts was not reproduced and is called out separately as an Stage I/J port item.",
+      "fixture": "a SC2 unit id with several ability/effect/weapon references"
+    },
+    {
+      "id": "custom-editor:modkit.documentHeaderPreview",
+      "group": "cards-navigation",
+      "legacy": {
+        "kind": "custom-editor",
+        "id": "modkit.documentHeaderPreview",
+        "title": "Modkit DocumentHeader Preview",
+        "module": "src/document-header-preview.ts",
+        "behavior": "Read-only table view over a binary DocumentHeader/.version file: parsed entries, loading-screen info, map info fields, and known flags decoded by name."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [],
+        "uiParts": [
+          "metadata",
+          "properties"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/stages.ts:118",
+        "reports/vscode-focused-ga-smoke/receipt.json (fixture.odt, Tree stage)"
+      ],
+      "notes": "candidate-vscode-assets (already-equivalent) via the generic Tree/metadata stage; the receipt exercises an .odt DocumentHeader-bearing fixture, not a raw SC2 DocumentHeader file specifically.",
+      "fixture": "DocumentHeader"
+    },
+    {
+      "id": "custom-editor:modkit.versionPreview",
+      "group": "cards-navigation",
+      "legacy": {
+        "kind": "custom-editor",
+        "id": "modkit.versionPreview",
+        "title": "Modkit Version File Preview",
+        "module": "src/version-preview.ts",
+        "behavior": "Read-only view of a .version file: parsed version fields and resolved type tag."
+      },
+      "mk3": {
+        "status": "partial",
+        "commandIds": [],
+        "uiParts": [
+          "metadata"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "gap-vscode-assets-unexercised-media-and-conversion"
+      ],
+      "notes": "The generic metadata/properties stage exists and likely covers it structurally, but no fixture exercises a .version file specifically per the ledger gap.",
+      "fixture": ".version"
+    },
+    {
+      "id": "view:modkitModTree",
+      "group": "cards-navigation",
+      "legacy": {
+        "kind": "view",
+        "id": "modkitModTree",
+        "title": "MOD",
+        "module": "src/mod-tree.ts",
+        "behavior": "Tree of the active mod's own resources and its dependency resources, grouped by GameData/Galaxy/Strings/Assets category."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [],
+        "uiParts": [
+          "tree",
+          "explorer"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/test/view-policy.test.ts",
+        "packages/ui/test/relation-graph-source.test.ts"
+      ],
+      "notes": "candidate-vscode-views (already-equivalent): folded into the native Explorer / generic relation-source presentation.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.addCascInstall",
+      "group": "service",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.addCascInstall",
+        "title": "Modkit: Add CASC Installation",
+        "module": "src/game-install-registry.ts",
+        "behavior": "Registered an additional CASC-backed install (e.g. a PTR build) alongside the primary one."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.contentSources"
+        ],
+        "uiParts": [
+          "content-sources"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:1627"
+      ],
+      "notes": "candidate-vscode-source-lifecycle (already-equivalent): generic add-source flow covers additional CASC installs.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.addSource",
+      "group": "service",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.addSource",
+        "title": "Modkit: Add Source",
+        "module": "src/sources-merge.ts",
+        "behavior": "Added a folder/mod/archive as a merged content source for the active workspace."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.contentSources"
+        ],
+        "uiParts": [
+          "content-sources"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:1627"
+      ],
+      "notes": "already-equivalent, candidate-vscode-source-lifecycle.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.configureSources",
+      "group": "service",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.configureSources",
+        "title": "Modkit: Configure Sources",
+        "module": "src/sources-merge.ts",
+        "behavior": "Opened a picker to add/remove/reorder the merged content sources (mods, CASC installs, loose folders) that make up the active workspace."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.contentSources"
+        ],
+        "uiParts": [
+          "content-sources",
+          "settings"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:1627 (registerCommand('modkit.contentSources', ...))",
+        "extensions/blizzard/starcraft2/test/installation-candidates.test.ts"
+      ],
+      "notes": "candidate-vscode-source-lifecycle (already-equivalent): generic provider inventory + persisted content-source configuration replace the SC2-specific source list editor.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.detectInstall",
+      "group": "service",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.detectInstall",
+        "title": "Modkit: Detect StarCraft II Install",
+        "module": "src/game-install-discovery.ts",
+        "behavior": "Scanned Battle.net/registry paths for an installed StarCraft II copy and offered to add it as a source."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.selectGameInstallation"
+        ],
+        "uiParts": [
+          "content-sources"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:6700 (registerCommand('modkit.selectGameInstallation', ...))",
+        "extensions/blizzard/starcraft2/test/installation-candidates.test.ts"
+      ],
+      "notes": "candidate-vscode-source-lifecycle (already-equivalent): generic auto-discovery covers every registered game, StarCraft II included, instead of a game-specific detect command.",
+      "fixture": "n/a (local StarCraft II install)"
+    },
+    {
+      "id": "command:modkit.explainResolution",
+      "group": "service",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.explainResolution",
+        "title": "Modkit: Explain mod resolution",
+        "module": "src/extension.ts",
+        "behavior": "Explained, per open file, which codec candidates were tried, which were rejected and why, and which offer was finally selected."
+      },
+      "mk3": {
+        "status": "partial",
+        "commandIds": [
+          "modkit.explainResolution"
+        ],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:7160 (registerCommand('modkit.explainResolution', ...))"
+      ],
+      "notes": "Re-scoped, not equivalent (gap-diagnostics-explain-repurposed in migration/vscode-workflows.json): the live command under the same id reports host topology (realms, loaded/refused extension counts) instead of the original per-file codec candidate/rejection explanation.",
+      "fixture": "any opened asset with an ambiguous extension (e.g. .xml)"
+    },
+    {
+      "id": "command:modkit.exportDiagnostics",
+      "group": "service",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.exportDiagnostics",
+        "title": "Modkit: Export Diagnostics",
+        "module": "src/diagnostics-bundle.ts",
+        "behavior": "Assembled a single .zip bug-report bundle: debug log, versions, effective merged config, detected install/build, loaded-mod list + load order, and the last resolver trace."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.exportDiagnostics"
+        ],
+        "uiParts": [
+          "diagnostics"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:6952 (registerCommand('modkit.exportDiagnostics', ...))",
+        "apps/vscode/test/workbench-workflows.test.ts"
+      ],
+      "notes": "Command id and general shape (bounded diagnostics export) survive; the exact original bundle contents (resolver trace, load order) are not independently verified here and should be re-checked against diagnostics-bundle.ts field-for-field.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.gameCodecs.refresh",
+      "group": "service",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.gameCodecs.refresh",
+        "title": "Modkit: Refresh Game Codecs",
+        "module": "src/game-codec-tree.ts, src/game-codec-catalog.ts",
+        "behavior": "Recomputed the per-game effective codec contribution set (requires/defaults/suggests) and refreshed the Game Codecs tree view."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.extensions.refresh"
+        ],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:6277 (registerCommand('modkit.extensions.refresh', ...))"
+      ],
+      "notes": "candidate-vscode-source-lifecycle (already-equivalent): the generic extension/codec catalog refresh replaces the SC2-specific Game Codecs tree refresh (the dedicated tree view itself is gone, see view row).",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.openLogFile",
+      "group": "service",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.openLogFile",
+        "title": "Modkit: Open Log File",
+        "module": "src/channel-sink.ts",
+        "behavior": "Opened the on-disk log file for the current session in a text editor."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.exportDiagnostics"
+        ],
+        "uiParts": [
+          "diagnostics"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/test/workbench-workflows.test.ts"
+      ],
+      "notes": "Folded into the bounded diagnostics journal + export command (candidate-vscode-diagnostics); no separate raw log file is written to disk today.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.openLogsFolder",
+      "group": "service",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.openLogsFolder",
+        "title": "Modkit: Open Logs Folder",
+        "module": "src/channel-sink.ts",
+        "behavior": "Revealed the OS folder holding rotated log files."
+      },
+      "mk3": {
+        "status": "superseded",
+        "commandIds": [],
+        "uiParts": [
+          "diagnostics"
+        ],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "n/a"
+        }
+      },
+      "evidence": [
+        "apps/vscode/test/workbench-workflows.test.ts"
+      ],
+      "notes": "No on-disk rotated log folder exists in MK3; the bounded in-memory/exportable diagnostics journal intentionally replaces file-based log rotation (candidate-vscode-diagnostics).",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.reload",
+      "group": "service",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.reload",
+        "title": "Modkit: Reload mod for active file",
+        "module": "src/extension.ts",
+        "behavior": "Forced re-resolution of the mod/dependency chain for the active file after editing sources or settings, without restarting the extension host."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.reload"
+        ],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "reports/vscode-smoke/lifecycle-receipt.json",
+        "scripts/test/app-recovery-conformance.test.ts"
+      ],
+      "notes": "Already-equivalent per migration/vscode-workflows.json (candidate-vscode-source-lifecycle / already-source-reload): a real editor smoke and the six-app recovery matrix prove reload and recovery.",
+      "fixture": "a mod file opened while its dependency chain changes on disk"
+    },
+    {
+      "id": "command:modkit.removeCascInstall",
+      "group": "service",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.removeCascInstall",
+        "title": "Modkit: Remove CASC Installation",
+        "module": "src/game-install-registry.ts",
+        "behavior": "Unregistered a previously added CASC installation."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.unloadSource"
+        ],
+        "uiParts": [
+          "content-sources"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:6755 (registerCommand('modkit.unloadSource', ...))"
+      ],
+      "notes": "candidate-vscode-source-lifecycle (already-equivalent): generic unload-source covers any content source, CASC included.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.removeSource",
+      "group": "service",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.removeSource",
+        "title": "Modkit: Remove Source",
+        "module": "src/sources-merge.ts",
+        "behavior": "Removed a previously added content source."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.unloadSource"
+        ],
+        "uiParts": [
+          "content-sources"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:6755"
+      ],
+      "notes": "already-equivalent, candidate-vscode-source-lifecycle.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.selectInstall",
+      "group": "service",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.selectInstall",
+        "title": "Modkit: Select StarCraft II Install Folder",
+        "module": "src/game-install-registry.ts",
+        "behavior": "Let the user manually browse to and register a StarCraft II install folder when auto-detection failed."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.selectGameInstallation"
+        ],
+        "uiParts": [
+          "content-sources"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:6700"
+      ],
+      "notes": "Same generic selectGameInstallation command covers manual folder selection for any registered game (already-equivalent).",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.showLog",
+      "group": "service",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.showLog",
+        "title": "Modkit: Show Log",
+        "module": "src/channel-sink.ts",
+        "behavior": "Focused the extension's VS Code Output channel with the running debug/info log stream."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.showDiagnostics"
+        ],
+        "uiParts": [
+          "diagnostics"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/test/workbench-workflows.test.ts"
+      ],
+      "notes": "Already-equivalent per migration/vscode-workflows.json (candidate-vscode-diagnostics): a bounded, readable, exportable diagnostics journal (modkit.showDiagnostics) replaces the unreadable OutputChannel stream.",
+      "fixture": "n/a (diagnostic surface, no file)"
+    },
+    {
+      "id": "command:modkit.unloadMod",
+      "group": "service",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.unloadMod",
+        "title": "Modkit: Unload Mod",
+        "module": "src/mod-tree.ts",
+        "behavior": "Removed a mod from the active workspace composition without deleting it from disk."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.unloadSource"
+        ],
+        "uiParts": [
+          "content-sources"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:6755"
+      ],
+      "notes": "candidate-vscode-source-lifecycle (already-equivalent): generic unload-source covers unloading a mod.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "settings:enable",
+      "group": "service",
+      "legacy": {
+        "kind": "setting-group",
+        "id": "modkit.enable",
+        "title": "Extension enable toggle",
+        "module": "src/config.ts",
+        "behavior": "Globally enabled/disabled Modkit's language features without uninstalling the extension."
+      },
+      "mk3": {
+        "status": "superseded",
+        "commandIds": [],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/test/settings.test.ts"
+      ],
+      "notes": "candidate-vscode-settings: replaced by the generic per-extension/per-contribution enable model (modkit.disabledExtensions, modkit.disabledContributions) rather than one global on/off switch.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "settings:logging",
+      "group": "service",
+      "legacy": {
+        "kind": "setting-group",
+        "id": "modkit.log.categories, modkit.log.level",
+        "title": "Logging verbosity settings",
+        "module": "src/config.ts",
+        "behavior": "Filtered which log categories were emitted and at what minimum severity."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [
+          "diagnostics"
+        ],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "n/a"
+        }
+      },
+      "evidence": [],
+      "notes": "candidate-vscode-settings (post-release): the bounded diagnostics journal (modkit.showDiagnostics/exportDiagnostics) has no exposed category/level filter setting today.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "settings:source-discovery",
+      "group": "service",
+      "legacy": {
+        "kind": "setting-group",
+        "id": "modkit.sources, modkit.s2mod.sources, modkit.dataPath, modkit.gameInstallations, modkit.builtinMods, modkit.disabledMods, modkit.autoDetectInstall, modkit.games.codecOverrides",
+        "title": "Source and game-data discovery settings",
+        "module": "src/config.ts, src/sources-merge.ts",
+        "behavior": "Configured which folders/mods count as sources, extra .s2mod search paths, the raw game data path override, known/disabled mods, whether to auto-detect an install, and per-game codec overrides."
+      },
+      "mk3": {
+        "status": "superseded",
+        "commandIds": [
+          "modkit.contentSources"
+        ],
+        "uiParts": [
+          "content-sources",
+          "settings"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:1627",
+        "extensions/blizzard/starcraft2/test/installation-candidates.test.ts"
+      ],
+      "notes": "candidate-vscode-settings (post-release): none of the 25 legacy keys is expected to survive literally; source/discovery configuration moved into the generic persisted content-source model (modkit.contentSources UI) and provider-level auto-discovery, but no live artifact ties each old key 1:1 to its new home.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "status-bar:modkit-host-status",
+      "group": "service",
+      "legacy": {
+        "kind": "status-bar",
+        "id": "modkit.statusBar",
+        "title": "(unnamed) host status item",
+        "module": "src/extension.ts:1598",
+        "behavior": "Left-aligned status bar item summarizing current mod/resolution state; clicking opened diagnostics."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [
+          "modkit.showHostProfile"
+        ],
+        "uiParts": [
+          "workbench.status-slot",
+          "workbench.host-status"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/src/extension.ts:7555 (createStatusBarItem)",
+        "apps/vscode/src/extension.ts:6273 (registerCommand('modkit.showHostProfile', ...))"
+      ],
+      "notes": "Present as a generic host-status status bar item wired to modkit.showHostProfile.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "view:modkitGameCodecsTree",
+      "group": "service",
+      "legacy": {
+        "kind": "view",
+        "id": "modkitGameCodecsTree",
+        "title": "Game Codecs",
+        "module": "src/game-codec-tree.ts, src/game-codec-catalog.ts",
+        "behavior": "Tree of the effective per-game codec contribution set (requires/defaults/suggests), grouped by codec kind, with toggles for non-required contributions."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/test/view-policy.test.ts"
+      ],
+      "notes": "candidate-vscode-views (already-equivalent): folded into the generic Extensions view (modkit.extensions), which lists/toggles codec contributions per installed extension.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "view:modkitView",
+      "group": "service",
+      "legacy": {
+        "kind": "view",
+        "id": "modkitView",
+        "title": "Modkit",
+        "module": "src/extension.ts",
+        "behavior": "Root activity-bar welcome/status view: current install, loaded mods, and quick actions."
+      },
+      "mk3": {
+        "status": "present",
+        "commandIds": [],
+        "uiParts": [
+          "workbench.sidebar",
+          "workbench.host-status"
+        ],
+        "hosts": {
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
+        }
+      },
+      "evidence": [
+        "apps/vscode/test/view-policy.test.ts",
+        "apps/vscode/test/workbench-workflows.test.ts"
+      ],
+      "notes": "candidate-vscode-views (already-equivalent): folded into the native Host view (modkit.host).",
+      "fixture": "n/a"
+    },
+    {
+      "id": "command:modkit.gamedata.validateMod",
+      "group": "language",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.gamedata.validateMod",
+        "title": "Modkit: Validate Mod GameData (LSP)",
+        "module": "src/sc2-gamedata-language.ts",
+        "behavior": "Ran a whole-mod GameData XML validation pass through the SC2 language server and reported diagnostics across every affected file."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "missing"
+        }
+      },
+      "evidence": [],
+      "notes": "candidate-vscode-authoring (migration/vscode-workflows.json): apps/vscode/package.json and bundled-contributes.v1.json declare zero VS Code languages, and no command of this name is registered in extension.ts. The underlying SC2 Data provider has diagnostics (modules/data language provider), but no whole-mod validate command wires it in VS Code today.",
+      "fixture": "a SC2 mod with a broken cross-file GameData reference"
+    },
+    {
+      "id": "command:modkit.gamedata.validateModStrings",
+      "group": "language",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.gamedata.validateModStrings",
+        "title": "Modkit: Validate Mod Strings (LSP)",
+        "module": "src/sc2-gamedata-language.ts",
+        "behavior": "Cross-checked GameData catalog string references against the mod's GameStrings files and reported missing/unused keys."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "missing"
+        }
+      },
+      "evidence": [],
+      "notes": "Same gap as gamedata.validateMod (candidate-vscode-authoring): no command registered, no declared VS Code language contribution to hang it from.",
+      "fixture": "a SC2 mod GameData catalog referencing a missing GameStrings key"
+    },
+    {
+      "id": "command:modkit.verifyGalaxyScript",
+      "group": "language",
+      "legacy": {
+        "kind": "command",
+        "id": "modkit.verifyGalaxyScript",
+        "title": "Modkit: Verify Galaxy Script",
+        "module": "src/galaxy-language.ts",
+        "behavior": "Ran the Galaxy compiler/checker over the active .galaxy file (and its Root ordering/dependency chain) and reported errors."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "missing"
+        }
+      },
+      "evidence": [],
+      "notes": "candidate-vscode-authoring (post-release): no verifyGalaxyScript command in extension.ts; Galaxy diagnostics exist as live-as-you-type LSP diagnostics (per HANDOFF §3.1) but there is no explicit \"verify\" batch command/CLI-through-VS-Code path proven live (gap-cli-scripts-galaxy-live-proof).",
+      "fixture": ".galaxy"
+    },
+    {
+      "id": "settings:language-lsp",
+      "group": "language",
+      "legacy": {
+        "kind": "setting-group",
+        "id": "modkit.gamedata.useLsp, modkit.documentDiagnosticsDelay, modkit.documentUpdateDelay, modkit.xsdPath",
+        "title": "GameData language/LSP tuning settings",
+        "module": "src/config.ts",
+        "behavior": "Toggled LSP-backed GameData validation vs. a simpler in-process mode, tuned diagnostics/update debounce delays, and pointed at a custom XSD schema path."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "n/a"
+        }
+      },
+      "evidence": [],
+      "notes": "candidate-vscode-settings (post-release): no equivalent keys declared; the generic language workspace (apps/vscode/src/language-session.ts) has its own internal bounds (per HANDOFF §3.8-3.9) but no user-facing debounce/XSD-path setting was found.",
+      "fixture": "n/a"
+    },
+    {
+      "id": "settings:ui-misc",
+      "group": "other",
+      "legacy": {
+        "kind": "setting-group",
+        "id": "modkit.locale, modkit.treeview.visible, modkit.maxGraphHops, modkit.modelPreview.renderer",
+        "title": "UI/display preference settings",
+        "module": "src/config.ts",
+        "behavior": "Chose the extension's display locale, whether the MOD tree view was visible, the relation graph's max hop count, and the model viewer renderer backend (auto/three/webgl)."
+      },
+      "mk3": {
+        "status": "missing",
+        "commandIds": [],
+        "uiParts": [
+          "graph",
+          "model"
+        ],
+        "hosts": {
+          "vscode": "missing",
+          "electron": "missing",
+          "web": "n/a"
+        }
+      },
+      "evidence": [],
+      "notes": "candidate-vscode-settings (post-release): apps/vscode/package.json config keys are all extension-management keys (defaultEditorForTextFormats, disabledExtensions, etc.); none of these four legacy UI-preference keys has a declared replacement.",
+      "fixture": "n/a"
+    }
+  ]
+}
