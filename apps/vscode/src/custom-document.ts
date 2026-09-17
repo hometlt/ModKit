@@ -2,6 +2,9 @@
 export interface CustomDocumentSession {
   saveDocument(path: string): Promise<void>
   revertDocument(path: string): Promise<void>
+  /** Views that keep their own history (the image tools) answer the editor's Undo and Redo. */
+  undoDocument(path: string): Promise<void>
+  redoDocument(path: string): Promise<void>
 }
 
 export type DirtyTransition = 'became-dirty' | 'became-clean' | 'unchanged'
@@ -37,6 +40,15 @@ export class CustomDocumentState {
     if (session === undefined) throw new Error('the custom document has no resolved webview')
     await session.saveDocument(this.path)
     this.dirty = false
+  }
+
+  /** The editor's own Undo and Redo, forwarded to the view that holds the pending edit. */
+  async undo(): Promise<void> {
+    await this.session?.undoDocument(this.path)
+  }
+
+  async redo(): Promise<void> {
+    await this.session?.redoDocument(this.path)
   }
 
   async revert(): Promise<void> {

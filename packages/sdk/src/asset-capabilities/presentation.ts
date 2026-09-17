@@ -262,13 +262,23 @@ export interface ViewerWorkspaceDocuments {
  * Electron its own footer). `choices` makes the entry a picker: the host shows them and reports the
  * picked id through `ViewerStatusPort.set`'s `onChoose`.
  */
+/**
+ * One entry in a status item's menu. A choice may carry its own choices — a target format and then
+ * its encodings, say — and the host presents that as a second step rather than one flat list.
+ */
+export interface ViewerStatusChoice {
+  readonly id: string
+  readonly label: string
+  readonly choices?: readonly ViewerStatusChoice[]
+}
+
 export interface ViewerStatusItem {
   readonly id: string
   readonly text: string
   readonly tooltip?: string
   /** `start` for identity (dimensions, format, size), `end` for controls (zoom, channel). */
   readonly align?: 'start' | 'end'
-  readonly choices?: readonly { readonly id: string; readonly label: string }[]
+  readonly choices?: readonly ViewerStatusChoice[]
   readonly selected?: string
   /**
    * Codicon name drawn before the text (`zoom-in`, `symbol-ruler`, `file`, `symbol-color`), the

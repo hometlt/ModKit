@@ -678,6 +678,8 @@ export interface VsCodeServeOptions {
   readonly onDocumentDirty?: (path: string, dirty: boolean) => void
   /** Route an in-page Save button through VS Code's native save command. */
   readonly onDocumentSaveRequested?: (path: string) => void
+  /** One committed edit in a view with its own history; becomes one editor undo-stack entry. */
+  readonly onDocumentEdited?: (path: string) => void
   readonly onDiagnostic?: (diagnostic: { code: string; message: string }) => void
   /**
    * One structured subject diagnostic, for whatever surface the editor gives them.
@@ -757,6 +759,9 @@ export interface VsCodeServed {
   notice(text: string, severity?: 'info' | 'error'): void
   /** Ask the mounted editor buffer to commit; resolves only after the webview reports success. */
   saveDocument(path: string): Promise<void>
+  /** The editor's own Undo and Redo, forwarded to the view holding the pending edit. */
+  undoDocument(path: string): Promise<void>
+  redoDocument(path: string): Promise<void>
   /** Discard the mounted editor buffer and reopen the file from disk. */
   revertDocument(path: string): Promise<void>
   /**
@@ -1668,6 +1673,8 @@ function serveVsCode(
       options.onDocumentDirty?.(event.path, event.dirty)
     } else if (event.op === 'document-save-requested') {
       options.onDocumentSaveRequested?.(event.path)
+    } else if (event.op === 'document-edited') {
+      options.onDocumentEdited?.(event.path)
     }
   })
 
@@ -1693,6 +1700,12 @@ function serveVsCode(
       if ((await bridge.request({ op: 'document-save', path: subjectKey(path) })) !== true) {
         throw new Error('the webview did not confirm that the custom document was saved')
       }
+    },
+    async undoDocument(path: string) {
+      await bridge.request({ op: 'document-undo', path: subjectKey(path) }).catch(() => undefined)
+    },
+    async redoDocument(path: string) {
+      await bridge.request({ op: 'document-redo', path: subjectKey(path) }).catch(() => undefined)
     },
     async revertDocument(path: string) {
       if ((await bridge.request({ op: 'document-revert', path: subjectKey(path) })) !== true) {

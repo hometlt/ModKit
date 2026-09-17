@@ -14,7 +14,12 @@ import {
   ViewerMountScope,
 } from '@modkit/ui/viewer'
 import type { AnyDescriptor, AssetEditPlan, SceneRendererPort, ViewerModule } from '@modkit/sdk'
-import type { ImageExportFile, ImageExportOutcome, ImageViewerOptions } from '@modkit/ui/image'
+import type {
+  ImageEditingHandlers,
+  ImageExportFile,
+  ImageExportOutcome,
+  ImageViewerOptions,
+} from '@modkit/ui/image'
 import type { UiLocalizer } from '@modkit/ui/localization'
 import type { ModelViewerOptions } from '@modkit/ui/model'
 import type { GameTemplateViewerOptions } from '@modkit/ui/template'
@@ -64,6 +69,15 @@ export interface EditPanelOptions {
   readonly textures?: ModelViewerOptions['textures']
   /** The same route for the assets a template names, already encoded for a canvas. */
   readonly templateImages?: GameTemplateViewerOptions['images']
+  /**
+   * The pixel view lends its history and save to the window, so the editor's own Undo, Redo and
+   * Save drive them. Called again with `undefined` when that view goes away.
+   */
+  registerPixelEditing?(handlers: ImageEditingHandlers | undefined): void
+  /** One committed pixel edit: one entry in the editor's undo stack. */
+  onPixelEdit?(): void
+  /** Leave the encoding field out of every form; the status bar's format menu owns that choice. */
+  readonly omitEncoding?: boolean
 }
 
 const asRecord = (descriptor: AnyDescriptor): Record<string, unknown> =>
@@ -227,6 +241,12 @@ export function createVsCodeEditPanel(options: EditPanelOptions): ViewerModule {
         apply.removeAttribute('disabled')
         setViewerText(summary, `${chosen.summary} (${chosen.operationId} → ${chosen.handlerId})`)
         for (const item of chosen.fields) {
+          /*
+           * Encoding is not asked twice. The status bar's format menu is where a target encoding is
+           * chosen for this subject; an in-place transform keeps whatever the source used, which is
+           * what omitting the field means to every one of these forms.
+           */
+          if (options.omitEncoding === true && item.name === 'format') continue
           const row = element(pane, 'div', { part: 'form.row' })
           element(row, 'label', { part: 'form.label', text: item.label })
           const control = element(row, 'div', { part: 'form.control' })

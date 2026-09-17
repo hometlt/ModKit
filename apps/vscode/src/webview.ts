@@ -349,13 +349,46 @@ async function mount(
       : {
           set(items, onChoose) {
             statusChoose = onChoose
-            void bridge.request({ op: 'status-set', items }).catch(() => undefined)
+            /*
+             * One tab, several files: the gallery can move the render area to a sibling, and VS
+             * Code's tab keeps naming the file it was opened for. MK2 answered that with a path
+             * entry in the status bar, and so does this — but only while the two differ.
+             */
+            const shownPath =
+              focused !== undefined && focused !== snapshot.openPath ? focused : undefined
+            void bridge
+              .request({
+                op: 'status-set',
+                items:
+                  shownPath === undefined
+                    ? items
+                    : [
+                        {
+                          id: 'path',
+                          icon: 'file-media',
+                          text: baseName(shownPath),
+                          tooltip: shownPath,
+                          align: 'start' as const,
+                        },
+                        ...items,
+                      ],
+              })
+              .catch(() => undefined)
           },
           clear() {
             statusChoose = undefined
             void bridge.request({ op: 'status-set', items: [] }).catch(() => undefined)
           },
         }
+  /*
+   * The pixel view's own history and save, lent to the editor.
+   *
+   * The image stage keeps its edits in the page (a stroke is not a plan), so the editor's Undo,
+   * Redo and Save arrive here as requests and are answered by whichever view is mounted. Nothing
+   * is drawn for them in the page.
+   */
+  let pixelEditing: import('@modkit/ui/image').ImageEditingHandlers | undefined
+
   const galleryFor = (entry: ExplorerEntry): ViewerGalleryPort | undefined => {
     if (snapshot.openPath === undefined || entry.id !== snapshot.openPath) return undefined
     const cut = Math.max(entry.id.lastIndexOf('/'), entry.id.lastIndexOf(String.fromCharCode(92)))
@@ -408,8 +441,14 @@ async function mount(
           return undefined
         }
       },
+      /*
+       * Into this page, not a new tab: MK2's viewer was a browser over a folder, and reopening a
+       * whole webview per thumbnail is both slower and loses the layout. VS Code's own tab keeps
+       * naming the file it was opened for, so the status bar carries the file actually shown.
+       */
       async open(id) {
-        await bridge.request({ op: 'open-in-editor', path: id })
+        const name = baseName(id)
+        await editors.open({ id, name, directory: false })
       },
     }
   }
@@ -455,6 +494,13 @@ async function mount(
             assets,
             signal,
           )
+        },
+        registerPixelEditing(handlers) {
+          pixelEditing = handlers
+        },
+        onPixelEdit() {
+          if (snapshot.openPath === undefined) return
+          bridge.emit({ op: 'document-edited', path: snapshot.openPath })
         },
         portsFor(descriptor) {
           const record = recordForDescriptor(descriptor)
@@ -766,13 +812,25 @@ async function mount(
    * reverting drops the whole mounted revision and reopens disk bytes under a fresh session.
    */
   bridge.serve(async request => {
-    if (request.op !== 'document-save' && request.op !== 'document-revert') {
+    if (
+      request.op !== 'document-save' &&
+      request.op !== 'document-revert' &&
+      request.op !== 'document-undo' &&
+      request.op !== 'document-redo'
+    ) {
       throw new Error(localizer.text('vscode.webview.lifecycleOnly'))
     }
     if (snapshot.openPath === undefined || request.path !== snapshot.openPath) {
       throw new Error(localizer.text('vscode.webview.wrongDocument'))
     }
+    if (request.op === 'document-undo') return pixelEditing?.undo() ?? false
+    if (request.op === 'document-redo') return pixelEditing?.redo() ?? false
     if (request.op === 'document-save') {
+      // Painted pixels are saved by the view that holds them, through its codec operation.
+      if (pixelEditing?.dirty === true) {
+        await pixelEditing.save()
+        return true
+      }
       const record = subjects.get(request.path)
       if (record === undefined) {
         throw new Error(localizer.text('vscode.webview.documentNotOpen'))

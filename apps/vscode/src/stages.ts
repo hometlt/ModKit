@@ -68,6 +68,11 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
         exportBaseName: descriptor => context.exportBaseName?.(descriptor) ?? 'image',
         // The Edit section's Save: pixels → the codec's `replace` transform → the editing arm.
         savePixels: createVsCodePixelSaver(context),
+        // The editor owns Undo, Redo, the dirty marker and Save; the section draws none of them.
+        ...(context.registerPixelEditing === undefined
+          ? {}
+          : { registerEditing: context.registerPixelEditing }),
+        ...(context.onPixelEdit === undefined ? {} : { onEdit: context.onPixelEdit }),
         /*
          * MK2's separate Edit, Metadata and Tree tabs are sidebar sections of the render view now.
          * They are viewer modules like any other, which is also how an extension adds its own.
@@ -77,7 +82,7 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
             id: 'transform',
             title: context.localizer.text('stage.edit'),
             icon: 'tools',
-            module: createVsCodeEditPanel(context),
+            module: createVsCodeEditPanel({ ...context, omitEncoding: true }),
           },
           {
             id: 'structure',

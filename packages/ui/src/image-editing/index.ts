@@ -17,7 +17,6 @@
  * codec's `edit.content` operation, so the same tools write a PNG, a DDS or anything else.
  */
 import { setPart, setState, type PartName } from '../parts.js'
-import { icon } from '../icons/index.js'
 import type { UiLocalizer } from '../localization/index.js'
 import { IMAGE_EDITING_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
@@ -61,12 +60,21 @@ export interface ImageEditingOptions {
   readonly recentColors?: readonly string[]
   onRecentColors?(colors: readonly string[]): void
   onDirty?(dirty: boolean): void
+  /**
+   * One committed edit. A host whose editor owns the undo stack turns each of these into one entry
+   * there and drives `undo()` / `redo()` itself — which is why this module handles no undo keys.
+   */
+  onEdit?(): void
   onSave?(pixels: ImageData): Promise<void>
 }
 
 export interface ImageEditing {
   readonly root: HTMLElement
   readonly dirty: boolean
+  /** The host's own Undo, Redo and Save drive these; the section draws no buttons for them. */
+  undo(): boolean
+  redo(): boolean
+  save(): Promise<void>
   /** Tools engage only while the section is expanded (MK2's zoom/pan default). */
   setActive(active: boolean): void
   readonly active: boolean
@@ -444,6 +452,7 @@ export function createImageEditing(
     redoStack.length = 0
     markDirty(true)
     syncButtons()
+    options.onEdit?.()
   }
 
   // ---------------------------------------------------------------- unavailable
@@ -456,33 +465,10 @@ export function createImageEditing(
     )
   }
 
-  // ---------------------------------------------------------------- history
-  const history = group()
-  history.hidden = !options.editable
-  const historyRow = row(history)
-  const undoButton = toolButton(
-    historyRow,
-    localizer.text('imageEditing.undo'),
-    icon(document, 'discard'),
-    () => undo(),
-  )
-  const redoButton = toolButton(
-    historyRow,
-    localizer.text('imageEditing.redo'),
-    icon(document, 'redo'),
-    () => redo(),
-  )
-  const saveButton = toolButton(
-    historyRow,
-    localizer.text('imageEditing.save'),
-    icon(document, 'save'),
-    () => void save(),
-  )
-  const status = node('output', 'image-editing.value', historyRow)
-
   // ---------------------------------------------------------------- tools
   const toolGroup = group(localizer.text('imageEditing.tool'))
   toolGroup.hidden = !options.editable
+  const status = node('output', 'image-editing.value', toolGroup)
   const grid = node('div', 'image-editing.tools', toolGroup)
   grid.setAttribute('role', 'toolbar')
   const toolButtons = new Map<ImageEditTool, HTMLButtonElement>()
@@ -623,9 +609,6 @@ export function createImageEditing(
 
   // ---------------------------------------------------------------- behaviour
   function syncButtons(): void {
-    undoButton.disabled = undoStack.length === 0
-    redoButton.disabled = redoStack.length === 0
-    saveButton.disabled = !dirty || options.onSave === undefined
     clearButton.disabled = selection === undefined
     cropButton.disabled = selection === undefined
     const image = surface.pixels()
@@ -799,10 +782,10 @@ export function createImageEditing(
     surface.show()
   }
 
-  function undo(): void {
+  function undo(): boolean {
     const patch = undoStack.pop()
     const image = surface.pixels()
-    if (patch === undefined || image === undefined) return
+    if (patch === undefined || image === undefined) return false
     redoStack.push(patch)
     if (patch.kind === 'full') surface.replace(copyImage(patch.before))
     else {
@@ -811,12 +794,13 @@ export function createImageEditing(
     }
     markDirty(undoStack.length > 0)
     syncButtons()
+    return true
   }
 
-  function redo(): void {
+  function redo(): boolean {
     const patch = redoStack.pop()
     const image = surface.pixels()
-    if (patch === undefined || image === undefined) return
+    if (patch === undefined || image === undefined) return false
     undoStack.push(patch)
     if (patch.kind === 'full') surface.replace(copyImage(patch.after))
     else {
@@ -825,6 +809,7 @@ export function createImageEditing(
     }
     markDirty(true)
     syncButtons()
+    return true
   }
 
   function clearSelection(): void {
@@ -877,7 +862,6 @@ export function createImageEditing(
   async function save(): Promise<void> {
     const image = surface.pixels()
     if (image === undefined || options.onSave === undefined || !dirty) return
-    saveButton.disabled = true
     try {
       await options.onSave(image)
       undoStack.length = 0
@@ -895,6 +879,9 @@ export function createImageEditing(
     get dirty() {
       return dirty
     },
+    undo,
+    redo,
+    save,
     get active() {
       return engaged()
     },
@@ -975,17 +962,9 @@ export function createImageEditing(
     },
     keyDown(event) {
       if (!engaged()) return false
-      const modifier = event.ctrlKey || event.metaKey
+      // No Ctrl+Z here: the host's editor owns the undo stack and calls `undo()` itself.
       const key = event.key.toLowerCase()
-      if (modifier && key === 'z' && !event.shiftKey) {
-        undo()
-        return true
-      }
-      if (modifier && (key === 'y' || (key === 'z' && event.shiftKey))) {
-        redo()
-        return true
-      }
-      if (modifier || event.altKey) return false
+      if (event.ctrlKey || event.metaKey || event.altKey) return false
       const target = event.target
       if (target instanceof HTMLElement && /^(INPUT|SELECT|TEXTAREA)$/u.test(target.tagName)) {
         return false

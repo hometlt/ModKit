@@ -353,9 +353,14 @@ export function createMediaShell(document: Document, options: MediaShellOptions)
           const thumb = el(document, 'canvas', 'media-shell.gallery-thumb', wrap)
           thumb.width = 0
           thumb.height = 0
-          wrap.append(icon(document, 'file-media'))
+          const placeholder = icon(document, 'file-media')
+          wrap.append(placeholder)
           pending.push(() =>
-            drawThumbnail(options.gallery, item.id, thumb, THUMB_EDGE[mode], signal),
+            drawThumbnail(options.gallery, item.id, thumb, THUMB_EDGE[mode], signal).then(drawn => {
+              // The icon stands in for the picture; a stylesheet cannot retract it, because the
+              // icon font's own rule is unlayered and outranks every layered one.
+              if (drawn) placeholder.remove()
+            }),
           )
         }
         el(document, 'span', 'media-shell.gallery-label', cell).textContent = item.label
@@ -409,13 +414,13 @@ async function drawThumbnail(
   canvas: HTMLCanvasElement,
   edge: number,
   signal: AbortSignal,
-): Promise<void> {
-  if (gallery?.thumbnail === undefined) return
+): Promise<boolean> {
+  if (gallery?.thumbnail === undefined) return false
   try {
     const thumb = await gallery.thumbnail(id, edge, signal)
-    if (thumb === undefined || signal.aborted) return
+    if (thumb === undefined || signal.aborted) return false
     const context = canvas.getContext('2d')
-    if (context === null) return
+    if (context === null) return false
     const pixels = new Uint8ClampedArray(thumb.width * thumb.height * 4)
     pixels.set(thumb.rgba.subarray(0, pixels.length))
     const bitmap = await createImageBitmap(new ImageData(pixels, thumb.width, thumb.height))
@@ -427,7 +432,9 @@ async function drawThumbnail(
     context.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
     bitmap.close()
     canvas.dataset['loaded'] = 'true'
+    return true
   } catch {
     // A thumbnail is decoration: a sibling that cannot be decoded keeps its icon and label.
+    return false
   }
 }

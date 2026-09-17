@@ -1,6 +1,16 @@
 /* Authored. The shared media shell: gallery, render area and sidebar (MK2 viewer-shell). */
 
 @layer mk.components {
+  /*
+   * The shell is the whole view: the surface around it contributes neither padding nor a scrollbar
+   * of its own, or the sidebar's own scrollbar never appears and the render area sits in a frame.
+   */
+  [data-mk-part='viewer']:has(> [data-mk-part='media-shell']) {
+    gap: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
   [data-mk-part='media-shell'] {
     position: relative;
     display: grid;
@@ -40,7 +50,8 @@
   [data-mk-part='media-shell.sidebar'] {
     min-inline-size: 0;
     min-block-size: 0;
-    overflow: auto;
+    overflow-x: hidden;
+    overflow-y: auto;
     background: var(--mk-color-surface);
   }
 
@@ -387,8 +398,7 @@
       var(--mk-color-canvas-bg);
   }
 
-  /* The file icon shows only until (or unless) a thumbnail arrives. */
-  [data-mk-part='media-shell.gallery-thumb'][data-loaded='true'] + .codicon {
+  [data-mk-part='media-shell.gallery-thumb']:not([data-loaded='true']) {
     display: none;
   }
 

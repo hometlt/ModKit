@@ -719,6 +719,7 @@ export {
   type ViewerSubjectNavigationResult,
   type ViewerWorkspaceDocument,
   type ViewerWorkspaceDocuments,
+  type ViewerStatusChoice,
   type ViewerStatusItem,
   type ViewerStatusPort,
   type ViewerGalleryItem,

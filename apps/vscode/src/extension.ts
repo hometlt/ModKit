@@ -5218,6 +5218,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     lifecycle?: {
       readonly onDirty: (path: string, dirty: boolean) => void
       readonly onSaveRequested: (path: string) => void
+      /** One committed edit in a view with its own history; one editor undo-stack entry. */
+      readonly onEdited?: (path: string) => void
     },
     extensionCard?: import('./extension-cards.js').ExtensionCardBundle,
     extensionCardResources?: import('./extension-cards.js').ExtensionCardResourceTargets,
@@ -5351,6 +5353,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         : {
             onDocumentDirty: lifecycle.onDirty,
             onDocumentSaveRequested: lifecycle.onSaveRequested,
+            ...(lifecycle.onEdited === undefined ? {} : { onDocumentEdited: lifecycle.onEdited }),
           }),
       onDiagnostic: diagnostic => log(`[subject-rpc] ${diagnostic.code}: ${diagnostic.message}`),
       onSubjectDiagnostic: publishDiagnostic,
@@ -7329,8 +7332,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   )
 
   // ---------------------------------------------------------------- custom editor
+  /*
+   * Content changes and real edits both travel here.
+   *
+   * A view that keeps its own history (the image tools) reports each edit, and each becomes one
+   * entry in the editor's undo stack with `undo`/`redo` routed back into that view — so Ctrl+Z,
+   * Ctrl+Y and Ctrl+S behave exactly as they do in a text editor, and no view draws its own.
+   */
   const customDocumentChanged = new vscode.EventEmitter<
-    vscode.CustomDocumentContentChangeEvent<ModkitCustomDocument>
+    | vscode.CustomDocumentContentChangeEvent<ModkitCustomDocument>
+    | vscode.CustomDocumentEditEvent<ModkitCustomDocument>
   >()
   context.subscriptions.push(customDocumentChanged)
 
@@ -7393,6 +7404,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             if (path === document.state.path) {
               void vscode.commands.executeCommand('workbench.action.files.save')
             }
+          },
+          onEdited(path) {
+            if (path !== document.state.path) return
+            document.state.markDirty(true)
+            customDocumentChanged.fire({
+              document,
+              label: 'Edit',
+              undo: () => document.state.undo(),
+              redo: () => document.state.redo(),
+            })
           },
         },
         undefined,

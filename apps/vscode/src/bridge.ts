@@ -110,11 +110,21 @@ export interface ShellConfigureResult {
 }
 
 /** Webview → extension host. Every one of these is answered exactly once. */
+/** One menu entry a viewer publishes with a status item; a choice may carry a second step. */
+export interface ShellStatusChoice {
+  readonly id: string
+  readonly label: string
+  readonly choices?: readonly ShellStatusChoice[]
+}
+
 export type ShellRequest =
   | { readonly op: 'list'; readonly path?: string }
   | { readonly op: 'read'; readonly path: string; readonly maxBytes: number }
   /** Native CustomEditorProvider lifecycle, extension host → its one resolved webview. */
   | { readonly op: 'document-save'; readonly path: string }
+  /** The editor's own Undo and Redo, routed to whichever view owns the pending edit. */
+  | { readonly op: 'document-undo'; readonly path: string }
+  | { readonly op: 'document-redo'; readonly path: string }
   | { readonly op: 'document-revert'; readonly path: string }
   /** A webview iframe cannot show a modal of its own, so the prompt happens in the editor. */
   | { readonly op: 'confirm'; readonly message: string; readonly savable: boolean }
@@ -128,7 +138,7 @@ export type ShellRequest =
         readonly text: string
         readonly tooltip?: string
         readonly align?: 'start' | 'end'
-        readonly choices?: readonly { readonly id: string; readonly label: string }[]
+        readonly choices?: readonly ShellStatusChoice[]
         /** Codicon name; the native status bar spells it `$(name)`. */
         readonly icon?: string
         /** One click, no menu: reported back as an empty choice id. */
@@ -210,6 +220,14 @@ export type ShellEvent =
   | { readonly op: 'facilities'; readonly observed: readonly string[] }
   /** The custom document's native dirty indicator follows this one opened path only. */
   | { readonly op: 'document-dirty'; readonly path: string; readonly dirty: boolean }
+  /**
+   * One committed edit in a view that keeps its own history (the image tools).
+   *
+   * The editor owns the undo stack: every edit reported here becomes one entry in it, and the
+   * editor's Undo and Redo come back as `document-undo` / `document-redo`. A view must therefore
+   * not undo on its own key handling, or the two stacks drift apart.
+   */
+  | { readonly op: 'document-edited'; readonly path: string }
   /** An in-page Save button delegates to VS Code so the provider, title marker and Ctrl+S agree. */
   | { readonly op: 'document-save-requested'; readonly path: string }
 

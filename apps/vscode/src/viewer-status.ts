@@ -7,12 +7,19 @@
  */
 import * as vscode from 'vscode'
 
+export interface ViewerStatusBarChoice {
+  readonly id: string
+  readonly label: string
+  /** A second step, e.g. the encodings of a target format. */
+  readonly choices?: readonly ViewerStatusBarChoice[]
+}
+
 export interface ViewerStatusBarItem {
   readonly id: string
   readonly text: string
   readonly tooltip?: string
   readonly align?: 'start' | 'end'
-  readonly choices?: readonly { readonly id: string; readonly label: string }[]
+  readonly choices?: readonly ViewerStatusBarChoice[]
   readonly selected?: string
   /** Codicon name; VS Code's own status bar spells it `$(name)`. */
   readonly icon?: string
@@ -84,15 +91,30 @@ export function createViewerStatusBar(): ViewerStatusBar {
         if (item.action === true) entry.choose(itemId, '')
         return
       }
-      const picked = await vscode.window.showQuickPick(
-        item.choices.map(choice => ({
-          label: choice.label,
-          id: choice.id,
-          ...(choice.id === item.selected ? { description: '$(check)' } : {}),
-        })),
-        { placeHolder: item.tooltip ?? item.text },
-      )
-      if (picked !== undefined) entry.choose(itemId, picked.id)
+      /*
+       * A choice may carry its own choices — pick the format, then its encoding. The loop walks
+       * down as far as the viewer declared, so one menu shape covers both depths.
+       */
+      let level: readonly ViewerStatusBarChoice[] = item.choices
+      let chosen: ViewerStatusBarChoice | undefined
+      while (level.length > 0) {
+        const picked = await vscode.window.showQuickPick(
+          level.map(choice => ({
+            label: choice.label,
+            choice,
+            ...(choice.choices !== undefined && choice.choices.length > 0
+              ? { description: '$(chevron-right)' }
+              : choice.id === item.selected
+                ? { description: '$(check)' }
+                : {}),
+          })),
+          { placeHolder: chosen?.label ?? item.tooltip ?? item.text },
+        )
+        if (picked === undefined) return
+        chosen = picked.choice
+        level = picked.choice.choices ?? []
+      }
+      if (chosen !== undefined) entry.choose(itemId, chosen.id)
     },
   )
 

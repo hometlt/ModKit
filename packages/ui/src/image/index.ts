@@ -18,6 +18,7 @@ import type {
   AnyDescriptor,
   JsonValue,
   OperationSession,
+  ViewerStatusChoice,
   MetadataGroup,
   RasterImageInfo,
   RasterImageSource,
@@ -317,6 +318,15 @@ export interface ImageViewerOptions {
   ) => Promise<ImageSaveOutcome>
   /** Why saving is unavailable, when `savePixels` is absent. */
   readonly editableReason?: string
+  /** Unsaved pixels; the host marks its document dirty, so its own Save applies to them. */
+  onEditingChange?(dirty: boolean): void
+  /** One committed edit, for a host whose editor owns the undo stack. */
+  onEdit?(): void
+  /**
+   * Hands the host this view's history and save, so the editor's own Undo, Redo and Save drive
+   * them and the sidebar draws no buttons of its own. Called again with `undefined` on unmount.
+   */
+  registerEditing?(handlers: ImageEditingHandlers | undefined): void
   /** False removes the Edit section entirely (a read-only surface, e.g. a card preview). */
   readonly editing?: boolean
   /**
@@ -334,6 +344,13 @@ export interface ImageSaveRequest {
   readonly descriptor: AnyDescriptor
   readonly operations: OperationSession
   readonly image: { readonly width: number; readonly height: number; readonly rgba: Uint8Array }
+}
+
+export interface ImageEditingHandlers {
+  undo(): boolean
+  redo(): boolean
+  save(): Promise<void>
+  readonly dirty: boolean
 }
 
 export type ImageSaveOutcome =
@@ -494,20 +511,34 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
         return encoding === undefined ? base : `${base} · ${String(encoding.value)}`
       }
 
-      /** Conversions plus the PNG exports, as one status-bar menu on the format item. */
-      const formatChoices = (): readonly { readonly id: string; readonly label: string }[] => {
+      /**
+       * The format menu: a target format, and its encodings as that format's own second step —
+       * "DDS" then "DXT5 / DXT1 / RGBA8", rather than one flat list of every pairing.
+       */
+      const formatChoices = (): readonly ViewerStatusChoice[] => {
         if (options.exportBytes === undefined) return []
-        const choices = [
+        const groups = new Map<string, { readonly id: string; readonly label: string }[]>()
+        for (const preset of conversions()) {
+          // Labels are authored as "DDS · DXT5 (BC3)": the part before the separator is the format.
+          const [head, ...rest] = preset.form.label.split(' · ')
+          const format = (head ?? preset.form.label).trim()
+          const encoding = rest.join(' · ').trim()
+          groups.set(format, [
+            ...(groups.get(format) ?? []),
+            { id: `convert:${preset.form.id}`, label: encoding === '' ? format : encoding },
+          ])
+        }
+        return [
           { id: 'export-png', label: localizer.text('viewer.imageExport') },
           ...(info !== undefined && enumerateSubresources(info).length > 1
             ? [{ id: 'export-all', label: localizer.text('viewer.imageExportAll') }]
             : []),
-          ...conversions().map(preset => ({
-            id: `convert:${preset.form.id}`,
-            label: preset.form.label,
-          })),
+          ...[...groups].map(([format, encodings]) =>
+            encodings.length === 1 && encodings[0] !== undefined
+              ? { id: encodings[0].id, label: format }
+              : { id: `format:${format}`, label: format, choices: encodings },
+          ),
         ]
-        return choices
       }
 
       const publishStatus = (): void => {
@@ -1136,6 +1167,21 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
               ? {}
               : { unavailableReason: options.editableReason }),
             ...(options.savePixels === undefined ? {} : { onSave: saveEdits }),
+            onDirty(dirty) {
+              options.onEditingChange?.(dirty)
+            },
+            onEdit() {
+              options.onEdit?.()
+            },
+          })
+          const surfaceEditing = editing
+          options.registerEditing?.({
+            undo: () => surfaceEditing.undo(),
+            redo: () => surfaceEditing.redo(),
+            save: () => surfaceEditing.save(),
+            get dirty() {
+              return surfaceEditing.dirty
+            },
           })
           editing.setActive(!section.collapsed)
           section.onToggle(collapsed => {
@@ -1199,6 +1245,7 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
       }
       scope.cleanup(() => {
         editing?.destroy()
+        options.registerEditing?.(undefined)
         args.status?.clear()
       })
 
