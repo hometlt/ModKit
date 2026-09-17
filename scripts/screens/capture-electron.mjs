@@ -20,6 +20,12 @@ if (scenarioFile === undefined || outDir === undefined)
 const scenarios = JSON.parse(await readFile(scenarioFile, 'utf8'))
 await mkdir(outDir, { recursive: true })
 
+// The header's view selector (Карточка / Hex / Модель …), not a select inside a mounted viewer.
+const viewPicker = page =>
+  page
+    .locator("select[data-mk-part='explorer.viewpicker'], select[data-mk-part='viewpicker.select']")
+    .first()
+
 async function row(page, label) {
   const candidates = page.getByText(label, { exact: true })
   await candidates.first().waitFor({ timeout: 90_000 })
@@ -56,9 +62,8 @@ for (const scenario of scenarios) {
     await page.waitForTimeout(scenario.wait ?? 3000)
     for (const action of scenario.actions ?? []) {
       if (action.click !== undefined) await (await row(page, action.click)).click()
-      // The view selector (Карточка / Hex / Таблица …) is the header's last <select>.
       if (action.view !== undefined) {
-        await page.locator('select').last().selectOption({ label: action.view })
+        await viewPicker(page).selectOption({ label: action.view })
         await page.waitForTimeout(action.settle ?? 4000)
       }
       if (action.screenshot !== undefined)
@@ -66,6 +71,9 @@ for (const scenario of scenarios) {
       if (action.wait !== undefined) await page.waitForTimeout(action.wait)
     }
     await page.screenshot({ path: join(outDir, `${scenario.id}.png`) })
+    result.views = await viewPicker(page)
+      .evaluate(select => [...select.options].map(option => option.label))
+      .catch(() => [])
     const text = await page.evaluate(() => document.body.innerText)
     await writeFile(join(outDir, `${scenario.id}.txt`), text)
   } catch (error) {

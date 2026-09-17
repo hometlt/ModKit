@@ -15,6 +15,7 @@ import type { PreviewStage } from '@modkit/ui'
 import type { UiLocalizer } from '@modkit/ui/localization'
 import type { OperationSession } from '@modkit/sdk'
 import type { SceneRendererPort } from '@modkit/sdk'
+import { createSubjectCardViewer } from '@modkit/ui/card'
 import { createModelViewer, type ModelViewerOptions } from '@modkit/ui/model'
 
 import {
@@ -41,17 +42,26 @@ export interface ElectronStageOptions {
   readonly onImageCommitted?: (descriptor: Record<string, unknown>) => Promise<boolean>
 }
 
+const configuredModelViewer = (options: ElectronStageOptions) =>
+  createModelViewer({
+    ...(options.localizer === undefined ? {} : { localizer: options.localizer }),
+    ...(options.renderer === undefined ? {} : { renderer: options.renderer }),
+    ...(options.textures === undefined ? {} : { textures: options.textures }),
+  })
+
 const configuredStage = (stage: PreviewStage, options: ElectronStageOptions): PreviewStage => {
   const localized = localizedLabel(stage, options.localizer)
-  if (localized.id !== 'model') return localized
-  return {
-    ...localized,
-    module: createModelViewer({
-      ...(options.localizer === undefined ? {} : { localizer: options.localizer }),
-      ...(options.renderer === undefined ? {} : { renderer: options.renderer }),
-      ...(options.textures === undefined ? {} : { textures: options.textures }),
-    }),
-  }
+  if (localized.id === 'model') return { ...localized, module: configuredModelViewer(options) }
+  // The card's preview section mounts the same shaded, textured model stage.
+  if (localized.id === 'card')
+    return {
+      ...localized,
+      module: createSubjectCardViewer({
+        ...(options.localizer === undefined ? {} : { localizer: options.localizer }),
+        previews: { model: configuredModelViewer(options) },
+      }),
+    }
+  return localized
 }
 
 const VIEW_KEYS: Readonly<Record<string, string>> = Object.freeze({

@@ -1030,6 +1030,12 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
 /** Standard stage adapter over the codec-owned, presentation-neutral subject facts source. */
 export interface SubjectCardViewerOptions {
   readonly localizer?: UiLocalizer
+  /**
+   * The stages the preview section mounts. A host passes the same configured modules its own
+   * image and model stages use (renderer port, texture resolver, export writer); without them the
+   * card falls back to unconfigured ones, which draw a wireframe model and untextured materials.
+   */
+  readonly previews?: { readonly image?: ViewerModule; readonly model?: ViewerModule }
 }
 
 export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}): ViewerModule {
@@ -1051,7 +1057,7 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
           localizer,
           signal: scope.signal,
         })
-        const sections = embedPreview(loaded, args, scope, localizer)
+        const sections = embedPreview(loaded, args, scope, localizer, options.previews)
         const subjectNavigation = args.subjectNavigation
         const navigate =
           subjectNavigation === undefined
@@ -1094,6 +1100,7 @@ function embedPreview(
   args: Parameters<ViewerModule['mount']>[0],
   scope: ViewerMountScope,
   localizer: UiLocalizer,
+  previews: SubjectCardViewerOptions['previews'],
 ): readonly CardSection[] {
   const kind = bindingFor(args.slot, 'common.view/model-scene-source')
     ? 'model'
@@ -1115,8 +1122,10 @@ function embedPreview(
               // Loaded on demand: the model stage brings the 3D renderer with it.
               const module =
                 kind === 'model'
-                  ? (await import('../model/index.js')).createModelViewer({ localizer })
-                  : (await import('../image/index.js')).createImageViewer({ localizer })
+                  ? (previews?.model ??
+                    (await import('../model/index.js')).createModelViewer({ localizer }))
+                  : (previews?.image ??
+                    (await import('../image/index.js')).createImageViewer({ localizer }))
               if (scope.signal.aborted) return
               const mount = await module.mount({ ...args, container: host, signal: scope.signal })
               scope.cleanup(() => mount.unmount())

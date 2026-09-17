@@ -484,6 +484,14 @@ function archiveStage(context: WebViewContext): ViewerModule {
 export function createWebPreviewStages(context: WebViewContext): readonly PreviewStage[] {
   const localizer = context.localizer ?? DEFAULT_UI_LOCALIZER
   const text = localizer.text
+  // A GPU frame where this page can resolve a provider, the 2D wireframe where it cannot — the
+  // stage decides on the answer, not on the presence of the option.
+  const modelViewer = () =>
+    createModelViewer({
+      localizer,
+      ...(context.renderer === undefined ? {} : { renderer: context.renderer }),
+      ...(context.textures === undefined ? {} : { textures: context.textures }),
+    })
   return Object.freeze([
     {
       id: 'image',
@@ -507,13 +515,7 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
       id: 'model',
       label: text('web.view.model'),
       contract: 'common.view/model-scene-source',
-      module: createModelViewer({
-        localizer,
-        // A GPU frame where this page can resolve a provider, the 2D wireframe where it cannot —
-        // the stage decides on the answer, not on the presence of the option.
-        ...(context.renderer === undefined ? {} : { renderer: context.renderer }),
-        ...(context.textures === undefined ? {} : { textures: context.textures }),
-      }),
+      module: modelViewer(),
       // optional, never a selection rule: a codec publishing none of these still gets the stage
       optionalContracts: MODEL_FACET_CONTRACTS,
     },
@@ -545,7 +547,13 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
       id: 'card',
       label: text('web.view.card'),
       contract: 'common.view/subject-facts-source',
-      module: createSubjectCardViewer({ localizer }),
+      // The card's preview section mounts the same model stage, or the image stage.
+      module: createSubjectCardViewer({ localizer, previews: { model: modelViewer() } }),
+      optionalContracts: [
+        'common.view/raster-image-source',
+        'common.view/model-scene-source',
+        ...MODEL_FACET_CONTRACTS,
+      ],
     },
     {
       id: 'calculations',

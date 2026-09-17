@@ -42,6 +42,12 @@ import type { UiLocalizer } from '@modkit/ui/localization'
  * is not ranked is a composition error rather than a stage that silently never appears.
  */
 export function createVsCodePreviewStages(context: EditPanelOptions): readonly PreviewStage[] {
+  const modelViewer = () =>
+    createModelViewer({
+      localizer: context.localizer,
+      ...(context.renderer === undefined ? {} : { renderer: context.renderer }),
+      ...(context.textures === undefined ? {} : { textures: context.textures }),
+    })
   return orderStages<PreviewStage>([
     {
       id: 'image',
@@ -79,11 +85,7 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
        * this stage's own 2D wireframe where it selected none. The page never resolves: it is handed
        * a port or it is not, exactly as the image stage is handed an export writer or not.
        */
-      module: createModelViewer({
-        localizer: context.localizer,
-        ...(context.renderer === undefined ? {} : { renderer: context.renderer }),
-        ...(context.textures === undefined ? {} : { textures: context.textures }),
-      }),
+      module: modelViewer(),
     },
     {
       id: 'audio',
@@ -117,7 +119,11 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       id: 'card',
       label: context.localizer.text('stage.card'),
       contract: 'common.view/subject-facts-source',
-      module: createSubjectCardViewer({ localizer: context.localizer }),
+      // The card's preview section mounts the same shaded, textured model stage.
+      module: createSubjectCardViewer({
+        localizer: context.localizer,
+        previews: { model: modelViewer() },
+      }),
     },
     {
       id: 'calculations',
