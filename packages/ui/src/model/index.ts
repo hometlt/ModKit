@@ -23,6 +23,7 @@ export {
   MODEL_MAXIMUM_PRIMITIVES,
 } from './source.js'
 export type { ModelStageModel } from './source.js'
+import { createMediaShell } from '../media-shell/index.js'
 import {
   createSurface,
   createViewerMount,
@@ -596,7 +597,18 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
     async mount(args) {
       const scope = new ViewerMountScope(args.signal)
       const root = createSurface(args.container, localizer.text('viewer.model'))
-      const stage = element(root, 'div', { part: 'model' })
+      /*
+       * The shared media shell, as in the image, video and audio views: siblings on the left, the
+       * scene as the whole render area, and what the model declares as sidebar sections.
+       */
+      const shell = createMediaShell(root.ownerDocument, {
+        localizer,
+        ...(args.gallery === undefined ? {} : { gallery: args.gallery }),
+      })
+      root.append(shell.root)
+      scope.cleanup(() => shell.destroy())
+      if (args.gallery !== undefined) void shell.refreshGallery(scope.signal).catch(() => undefined)
+      const stage = element(shell.stage, 'div', { part: 'model' })
       const readout = element(stage, 'output', { part: 'model.readout' })
 
       const toolbar = element(stage, 'div', { part: 'model.toolbar', role: 'toolbar' })
@@ -662,21 +674,44 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
             facets: facets.length === 0 ? '' : ` · ${facets.join(' · ')}`,
           }),
         )
-        if (facetDetails.length > 0) {
-          const panel = element(stage, 'section', { part: 'model.facets' })
-          panel.setAttribute('aria-label', localizer.text('viewer.modelDetails'))
-          for (const detail of facetDetails) {
-            const group = element(panel, 'details', { part: 'model.facet' })
-            element(group, 'summary', {
-              part: 'model.facet-summary',
-              text: `${detail.label} (${detail.items.length}${detail.truncated ? '+' : ''})`,
-            })
-            const list = element(group, 'ul', { part: 'model.facet-list' })
-            for (const item of detail.items) {
-              element(list, 'li', { part: 'model.facet-item', text: item })
-            }
+        // What the scene declares, as sidebar sections rather than a panel over the render area.
+        const body = shell.section('model', localizer.text('viewer.model'), {
+          icon: 'symbol-misc',
+        }).body
+        const list = element(body, 'dl', { part: 'image.metadata' })
+        for (const [label, value] of [
+          [localizer.text('viewer.modelMeshCount'), String(model.info.meshes)],
+          [localizer.text('viewer.modelMaterialCount'), String(model.info.materials)],
+          [localizer.text('viewer.modelAnimationCount'), String(model.info.animations)],
+        ] as const) {
+          const row = element(list, 'div', { part: 'metadata.row' })
+          element(row, 'dt', { text: label, part: 'metadata.label' })
+          setViewerText(element(row, 'dd', { part: 'metadata.value' }), value, 64)
+        }
+        for (const detail of facetDetails) {
+          const section = shell.section(
+            `facet:${detail.label}`,
+            `${detail.label} (${detail.items.length}${detail.truncated ? '+' : ''})`,
+            { icon: 'list-tree', collapsed: true },
+          )
+          const items = element(section.body, 'ul', { part: 'model.facet-list' })
+          for (const item of detail.items) {
+            element(items, 'li', { part: 'model.facet-item', text: item })
           }
         }
+        args.status?.set([
+          {
+            id: 'scene',
+            icon: 'symbol-misc',
+            text: localizer.text('viewer.modelSceneCounts', {
+              meshes: model.info.meshes,
+              materials: model.info.materials,
+              animations: model.info.animations,
+            }),
+            align: 'start',
+          },
+        ])
+        scope.cleanup(() => args.status?.clear())
         if (model.primitive === undefined) {
           canvas.remove()
           gizmo.destroy()

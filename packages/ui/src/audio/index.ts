@@ -5,7 +5,8 @@
  * its platform decoder; a separately selected provider may expose PCM without coupling this viewer
  * to MP3, Vorbis, Opus, or any native library.
  */
-import type { AudioMediaSource, ViewerModule } from '@modkit/sdk'
+import type { AnyDescriptor, AudioMediaSource, MetadataGroup, ViewerModule } from '@modkit/sdk'
+import { createMediaShell } from '../media-shell/index.js'
 import {
   createSurface,
   createViewerMount,
@@ -262,6 +263,22 @@ export interface AudioViewerOptions {
   readonly localizer?: UiLocalizer
 }
 
+/** `AnyDescriptor` also covers the unresolved arm, which carries no metadata. */
+function metadataGroups(descriptor: AnyDescriptor): readonly MetadataGroup[] {
+  return 'identity' in descriptor
+    ? ((descriptor as { readonly metadata?: readonly MetadataGroup[] }).metadata ?? [])
+    : []
+}
+
+function facts(parent: HTMLElement, rows: readonly (readonly [string, string])[]): void {
+  const list = element(parent, 'dl', { part: 'image.metadata' })
+  for (const [label, value] of rows) {
+    const row = element(list, 'div', { part: 'metadata.row' })
+    element(row, 'dt', { text: label, part: 'metadata.label' })
+    setViewerText(element(row, 'dd', { part: 'metadata.value' }), value, 512)
+  }
+}
+
 export function createAudioViewer(options: AudioViewerOptions = {}): ViewerModule {
   const localizer = withEnglishUiFallback(options.localizer, AUDIO_FALLBACK_MESSAGES)
   return defineViewerModule({
@@ -269,7 +286,18 @@ export function createAudioViewer(options: AudioViewerOptions = {}): ViewerModul
     async mount(args) {
       const scope = new ViewerMountScope(args.signal)
       const root = createSurface(args.container, localizer.text('viewer.audio'))
-      const stage = element(root, 'div', { part: 'audio' })
+      /*
+       * The shared media shell, as in the image and video views: the siblings on the left, the
+       * waveform and transport as the render area, the facts as sidebar sections.
+       */
+      const shell = createMediaShell(root.ownerDocument, {
+        localizer,
+        ...(args.gallery === undefined ? {} : { gallery: args.gallery }),
+      })
+      root.append(shell.root)
+      scope.cleanup(() => shell.destroy())
+      if (args.gallery !== undefined) void shell.refreshGallery(scope.signal).catch(() => undefined)
+      const stage = element(shell.stage, 'div', { part: 'audio' })
       const toolbar = element(stage, 'div', { part: 'audio.toolbar', role: 'toolbar' })
       toolbar.setAttribute('aria-label', localizer.text('viewer.audioControls'))
       const readout = element(stage, 'output', { part: 'audio.readout' })
@@ -493,6 +521,38 @@ export function createAudioViewer(options: AudioViewerOptions = {}): ViewerModul
           player.remove()
         }
         setState(stage, [])
+        // The facts, once: they belong in the sidebar, not in a readout repainted every frame.
+        const loadedModel = loaded.model
+        facts(shell.section('audio', localizer.text('viewer.audio'), { icon: 'unmute' }).body, [
+          [localizer.text('viewer.duration'), clock(loadedModel.duration)],
+          [localizer.text('viewer.audioChannels'), String(loadedModel.channels)],
+          [
+            localizer.text('viewer.audioSampleRate'),
+            `${(loadedModel.sampleRate / 1000).toFixed(1)} kHz`,
+          ],
+          [localizer.text('viewer.audioSize'), `${(loadedModel.bytes / 1024).toFixed(0)} KiB`],
+          [localizer.text('viewer.audioDecoder'), loaded.decodedBy],
+        ])
+        for (const group of metadataGroups(args.descriptor)) {
+          if (/^(identity|traits|detection)$/iu.test(group.id)) continue
+          facts(
+            shell.section(`metadata:${group.id}`, group.label, {
+              icon: 'symbol-misc',
+              collapsed: true,
+            }).body,
+            group.entries.map(entry => [entry.key, String(entry.value)] as const),
+          )
+        }
+        args.status?.set([
+          { id: 'duration', icon: 'watch', text: clock(loadedModel.duration), align: 'start' },
+          {
+            id: 'format',
+            icon: 'unmute',
+            text: `${loadedModel.channels} ch · ${(loadedModel.sampleRate / 1000).toFixed(1)} kHz`,
+            align: 'start',
+          },
+        ])
+        scope.cleanup(() => args.status?.clear())
         paint()
       } catch (error) {
         setState(stage, ['error'])

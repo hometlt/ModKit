@@ -3,17 +3,22 @@ import type { UiMessageCatalog } from './index.js'
 
 export const AUDIO_FALLBACK_MESSAGES = {
   'viewer.audio': 'Audio viewer',
+  'viewer.audioChannels': 'Channels',
   'viewer.audioControls': 'Audio controls',
   'viewer.audioCycleRate': 'Cycle the playback rate',
   'viewer.audioDecodeError':
     'The platform decoder cannot render this audio: {reason}. A format-specific decoder provider is required.',
+  'viewer.audioDecoder': 'Decoded by',
   'viewer.audioPause': 'Pause',
   'viewer.audioPaused': 'paused',
   'viewer.audioPlay': 'Play',
   'viewer.audioPlaying': 'playing',
   'viewer.audioRestart': 'Back to the start',
+  'viewer.audioSampleRate': 'Sample rate',
+  'viewer.audioSize': 'Decoded size',
   'viewer.audioSummary': '{position} / {duration} · {channels} channels · {rate} kHz · {size} KiB',
   'viewer.audioTransport': '{state} · ×{speed} · decoded by {decoder}',
+  'viewer.duration': 'Duration',
 } as const satisfies UiMessageCatalog
 
 export const CALCULATIONS_FALLBACK_MESSAGES = {
@@ -402,24 +407,27 @@ export const MODEL_FALLBACK_MESSAGES = {
   'viewer.model': 'Model viewer',
   'viewer.modelAllPrimitives': 'Complete model',
   'viewer.modelAnimation': 'Animation',
+  'viewer.modelAnimationCount': 'Animations',
   'viewer.modelAnimationTime': 'Animation time in seconds',
   'viewer.modelBlendUnknown': 'blend unknown',
   'viewer.modelBones': 'bones',
   'viewer.modelClipDetail': '{frames} frames · {channels} channels · {samples} samples',
   'viewer.modelClips': 'clips',
   'viewer.modelCollision': 'collision',
-  'viewer.modelDetails': 'Model details',
   'viewer.modelError': 'The model scene cannot be rendered: {reason}',
   'viewer.modelGeometryUnavailable':
     'Scene metadata is available. A buffer resolver/renderer provider is required for geometry.',
   'viewer.modelLayers': '{count} layers',
   'viewer.modelMaterial': 'material',
+  'viewer.modelMaterialCount': 'Materials',
   'viewer.modelMaterials': 'materials',
+  'viewer.modelMeshCount': 'Meshes',
   'viewer.modelNoNamedFlags': 'no named flags',
   'viewer.modelParent': 'parent {parent}',
   'viewer.modelPrimitive': 'Model primitive',
   'viewer.modelResources': 'resources',
   'viewer.modelRestPose': 'Rest pose',
+  'viewer.modelSceneCounts': '{meshes} meshes · {materials} materials · {animations} animations',
   'viewer.modelSkeletonOverlay': 'Show the bone overlay',
   'viewer.modelSockets': 'sockets',
   'viewer.modelSummary':
@@ -652,10 +660,15 @@ export const VECTOR_FALLBACK_MESSAGES = {
 } as const satisfies UiMessageCatalog
 
 export const VIDEO_FALLBACK_MESSAGES = {
+  'viewer.audioTracks': 'Audio tracks',
+  'viewer.duration': 'Duration',
   'viewer.durationUnknown': 'duration unknown',
+  'viewer.mediaType': 'Media type',
   'viewer.video': 'Video viewer',
   'viewer.videoPlayError': 'The platform cannot play this video representation: {reason}',
   'viewer.videoSummary': '{video} video · {audio} audio · {duration}',
+  'viewer.videoTrackCount': '{video} video · {audio} audio',
+  'viewer.videoTracks': 'Video tracks',
 } as const satisfies UiMessageCatalog
 
 export const WORKBENCH_FALLBACK_MESSAGES = {

@@ -410,6 +410,33 @@
     white-space: nowrap;
   }
 
+  /* Video, audio and models fill the render area the same way the image does. */
+  [data-mk-part='media-shell.stage'] > [data-mk-part='video'],
+  [data-mk-part='media-shell.stage'] > [data-mk-part='audio'],
+  [data-mk-part='media-shell.stage'] > [data-mk-part='model'] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mk-space-2);
+    inline-size: 100%;
+    block-size: 100%;
+    min-block-size: 0;
+    padding: var(--mk-space-2);
+    overflow: auto;
+  }
+
+  [data-mk-part='media-shell.stage'] [data-mk-part='video.player'],
+  [data-mk-part='media-shell.stage'] [data-mk-part='model.canvas'] {
+    flex: 1 1 auto;
+    min-block-size: 0;
+    max-inline-size: 100%;
+    background: var(--mk-color-canvas-bg);
+  }
+
+  [data-mk-part='media-shell.stage'] [data-mk-part='audio.waveform'] {
+    inline-size: 100%;
+    background: var(--mk-color-canvas-bg);
+  }
+
   /* Image render area: the canvas is the whole stage; the image is centred inside it. */
   [data-mk-part='media-shell.stage'] > [data-mk-part='image'] {
     position: absolute;
