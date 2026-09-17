@@ -2212,7 +2212,7 @@
       "codec": "sc2-mod",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 24,
+      "pending": 23,
       "requirements": 24,
       "source": "extensions/blizzard/starcraft-2/codecs/sc2-mod/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/sc2-mod",

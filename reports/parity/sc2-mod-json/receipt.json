@@ -1,0 +1,1048 @@
+{
+  "cases": [
+    {
+      "id": "json/tab",
+      "legacySha256": "64111541106505e6c095a35a1f51f0394c40ebd2429ecd2d97f0a932ab5a1770",
+      "migratedSha256": "64111541106505e6c095a35a1f51f0394c40ebd2429ecd2d97f0a932ab5a1770",
+      "verdict": "identical"
+    },
+    {
+      "id": "json/default",
+      "legacySha256": "d5756a9d4290a84437317f7ceb6d796e1e2d03d3c9981a6fa166f5ff4a329e25",
+      "migratedSha256": "d5756a9d4290a84437317f7ceb6d796e1e2d03d3c9981a6fa166f5ff4a329e25",
+      "verdict": "identical"
+    }
+  ],
+  "codec": "sc2-mod",
+  "corpusKind": "synthetic",
+  "corpusSha256": "1d3996d61aba6a776aab1a07dfb36659d31c73441c8b4443d6c9f302f454d115",
+  "counts": {
+    "bothRefused": 0,
+    "differing": 0,
+    "identical": 2,
+    "total": 2
+  },
+  "harness": {
+    "digest": "ead3d085f78b56e82257d139955da0b017b8148b8dd566b20c34956677f2835d",
+    "files": [
+      {
+        "byteLength": 1798,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\sc2-mod-json\\run.mjs",
+        "sha256": "770aec9ce9a9e1461157b3dcc20dcd935204236845068e1c141668d27da8204d"
+      },
+      {
+        "byteLength": 35763,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\algorithms.mjs",
+        "sha256": "6e704837a200db9cd3b4a823df084d6f3b8e4b3ebd18a85e941c2880e7fbc5f9"
+      },
+      {
+        "byteLength": 10011,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\canonical-yaml.mjs",
+        "sha256": "541a530faceaf3f15e492d2203113eed830eb58f83e20c6f47755458a0b23049"
+      },
+      {
+        "byteLength": 1004,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\external-extension-roots.d.mts",
+        "sha256": "b2d681c1330a2024cbe2b8f7c106e5fcaa2c42e365a427349af48e2595f4e7fa"
+      },
+      {
+        "byteLength": 2098,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\external-extension-roots.mjs",
+        "sha256": "5595431b2d47b090c60b6ab4da5b8fee5aec71624342dd8bcc7b08e1f225aaaf"
+      },
+      {
+        "byteLength": 4359,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\identity-migration.d.mts",
+        "sha256": "d3fad3c8bed2acbf753bd02f431312a65bfa61cc3355d3e6b304fdf49123b54b"
+      },
+      {
+        "byteLength": 26727,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\identity-migration.mjs",
+        "sha256": "834d1aeab8d3268a91275c45023031645361f4164273b543e172a550403e376b"
+      },
+      {
+        "byteLength": 28556,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs",
+        "sha256": "1370bde7f031ce62bc4df3d7b47eaab24c3e4024fd48f4714b1c4fb63d78d993"
+      },
+      {
+        "byteLength": 66857,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\mk2-copy.mjs",
+        "sha256": "9072b036eab1516d16a552d3a9ae8089f28efa42c1e9d63c202c05a7c3b9b2ac"
+      },
+      {
+        "byteLength": 2267,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\nearest-block.mjs",
+        "sha256": "cf54a61f78153e9ad8ec023bd3fa5833b9ff0c64c6daeb81e6e79c1bf7aefca0"
+      },
+      {
+        "byteLength": 805,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\port-cli.mjs",
+        "sha256": "cfae57a42edc9c8567e060e33284c87695ae575faa00b43d20acbb39203b824a"
+      },
+      {
+        "byteLength": 2025,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\port-context.mjs",
+        "sha256": "f7b8cc5081ad0b7b6315f1678fb4e16116aa6d815c4515837bd758fa2a362223"
+      },
+      {
+        "byteLength": 15636,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\port-generators.mjs",
+        "sha256": "acaf7ba9da1b8c4c16f7973356b4479c214c88681a21f836795af2233e94c28a"
+      },
+      {
+        "byteLength": 12010,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\port-oracle-proof.mjs",
+        "sha256": "f41a6bc2df597eb62ca3b32babdb74419ed22525fef454ef96a199b21a3700d4"
+      },
+      {
+        "byteLength": 3500,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\port-runtime-proof.mjs",
+        "sha256": "7648d87eb0ee761d59302ffbdfa7b6350001f25f3de05b2e2f90c8dc97734790"
+      },
+      {
+        "byteLength": 17717,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\port-state.mjs",
+        "sha256": "cfb4fdfd27582132156123fc160d0e2b7f9257afe40b991eb9acc2ca32238d0f"
+      },
+      {
+        "byteLength": 3831,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\sc2-m3-destinations.mjs",
+        "sha256": "64101261b0387625e82b00cb414ae450dadec924314f80a3271820a301ec1214"
+      },
+      {
+        "byteLength": 1247,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\sc2-m3-refreeze.mjs",
+        "sha256": "39ec2c00e54be6f19471b22118285ea527ba220ee201750d35ddf1847aef8928"
+      },
+      {
+        "byteLength": 915,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\surface-matrix.d.mts",
+        "sha256": "80eecb871df4f131fb275351148913b89bd10b243f5a53cbc75c11de2a66971a"
+      },
+      {
+        "byteLength": 12839,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\surface-matrix.mjs",
+        "sha256": "b0b7f1a64608b64a145610d3e6b23aff84292cde548a994e51f5dcfd81a9aa7e"
+      },
+      {
+        "byteLength": 2590,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\ts-strict.mjs",
+        "sha256": "dd3eb67f7564ba869a81cb01df52818984bf5e4807e2069cd5674ed6a7971760"
+      }
+    ],
+    "omittedOptional": [],
+    "packages": [],
+    "runtime": {
+      "arch": "x64",
+      "node": "v24.16.0",
+      "platform": "win32"
+    },
+    "schemaVersion": 1
+  },
+  "inputs": {
+    "configSha256": "dd4cffc4bed262509b5f11849a443c4a84768f0ff3ced7deb87ac1cc87f8d32e",
+    "corpusFileSha256": "c04917750aef9aef3c53b122b7aca9a5016d34edba2b84614ec7f25d3351e895",
+    "legacyAdapterSha256": "6032912335d6580eb067264fe69bd99b21d46977b82ad99d7ebe24611af0c88f",
+    "migratedAdapterSha256": "9a4593e51ae99afb0b6ca6d55b79fb535cc67f3b2604a2e9d8f739edddfd386a",
+    "operation": "sc2-mod.json-parity"
+  },
+  "migrated": {
+    "adapterSha256": "9a4593e51ae99afb0b6ca6d55b79fb535cc67f3b2604a2e9d8f739edddfd386a",
+    "probesSha256": "1b774fea3ca4f09ff82dcaf0b3071b149556ec2e9941ccdbf351e0f889dfb5da",
+    "publicExport": "starcraft2/dist/modules/mod/shared/json-mod.js",
+    "publicExportSha256": "53edf07ac2694c53ca9ee6769373d1c35ac98101a18da797e7aa38d77a6d4404"
+  },
+  "oracle": {
+    "modules": [
+      {
+        "additionalFiles": [],
+        "build": {
+          "compilerOptions": {
+            "declaration": true,
+            "declarationMap": true,
+            "esModuleInterop": true,
+            "exactOptionalPropertyTypes": true,
+            "forceConsistentCasingInFileNames": true,
+            "lib": [
+              "ES2022",
+              "DOM"
+            ],
+            "module": "NodeNext",
+            "moduleResolution": "NodeNext",
+            "noImplicitOverride": true,
+            "noPropertyAccessFromIndexSignature": true,
+            "noUncheckedIndexedAccess": true,
+            "outDir": "./dist",
+            "rootDir": "./src",
+            "skipLibCheck": true,
+            "sourceMap": true,
+            "strict": true,
+            "target": "ES2022"
+          },
+          "experimentalDecorators": true,
+          "format": "esm",
+          "target": "es2022"
+        },
+        "bundleSha256": "43cab886def0cc857c9d2efff58fa6f915872bba8a30f24c978406c60beabe45",
+        "cacheHit": false,
+        "cacheKey": "8aae0d6817ff84134f01f98ac6b6cc38ff8de0ff5f3c5254eb8c155da32f9342",
+        "corpusDigest": "c214651db4b014983ffc15d1fc15f7d0efbe555613bf93cfba5549660e31c7f4",
+        "corpusManifest": {
+          "cases": [
+            {
+              "id": "json/tab",
+              "input": {
+                "indent": "\t",
+                "mods": {
+                  "Empty.SC2Mod": {
+                    "deps": [],
+                    "entries": {},
+                    "manifest": {
+                      "format": "modkit-json-mod@1"
+                    }
+                  },
+                  "Parity.SC2Mod": {
+                    "deps": [
+                      "Liberty.SC2Mod",
+                      "Parity Base.SC2Mod"
+                    ],
+                    "entries": {
+                      "Abil": {},
+                      "Unit": {
+                        "Child": {
+                          "LifeMax": {
+                            "value": "60"
+                          },
+                          "class": "CUnitHero",
+                          "parent": "Marine"
+                        },
+                        "Marine": {
+                          "LifeMax": {
+                            "value": "45"
+                          },
+                          "Name": {
+                            "value": "Unit/Name/Marine"
+                          },
+                          "WeaponArray": [
+                            {
+                              "Link": "Gun"
+                            },
+                            {
+                              "Link": "Gun2"
+                            }
+                          ]
+                        }
+                      },
+                      "Weapon": {
+                        "Gun": {
+                          "Range": {
+                            "value": "5"
+                          },
+                          "class": "CWeaponLegacy"
+                        }
+                      }
+                    },
+                    "manifest": {
+                      "format": "modkit-json-mod@1",
+                      "name": "Parity"
+                    }
+                  }
+                },
+                "paths": [
+                  "Parity.SC2Mod",
+                  "parity.sc2mod",
+                  "Parity.SC2Mod/Base.SC2Data",
+                  "Parity.SC2Mod/Base.SC2Data/GameData",
+                  "Parity.SC2Mod/Base.SC2Data/GameData/UnitData.xml",
+                  "Parity.SC2Mod/base.sc2data/gamedata/unitdata.xml",
+                  "Parity.SC2Mod/Base.SC2Data/GameData/WeaponData.xml",
+                  "Parity.SC2Mod/Base.SC2Data/GameData/AbilData.xml",
+                  "Parity.SC2Mod/DocumentInfo",
+                  "Parity.SC2Mod/ComponentList.SC2Components",
+                  "Empty.SC2Mod",
+                  "Empty.SC2Mod/DocumentInfo",
+                  "Missing.SC2Mod/x",
+                  ""
+                ]
+              }
+            },
+            {
+              "id": "json/default",
+              "input": {
+                "mods": {
+                  "Empty.SC2Mod": {
+                    "deps": [],
+                    "entries": {},
+                    "manifest": {
+                      "format": "modkit-json-mod@1"
+                    }
+                  },
+                  "Parity.SC2Mod": {
+                    "deps": [
+                      "Liberty.SC2Mod",
+                      "Parity Base.SC2Mod"
+                    ],
+                    "entries": {
+                      "Abil": {},
+                      "Unit": {
+                        "Child": {
+                          "LifeMax": {
+                            "value": "60"
+                          },
+                          "class": "CUnitHero",
+                          "parent": "Marine"
+                        },
+                        "Marine": {
+                          "LifeMax": {
+                            "value": "45"
+                          },
+                          "Name": {
+                            "value": "Unit/Name/Marine"
+                          },
+                          "WeaponArray": [
+                            {
+                              "Link": "Gun"
+                            },
+                            {
+                              "Link": "Gun2"
+                            }
+                          ]
+                        }
+                      },
+                      "Weapon": {
+                        "Gun": {
+                          "Range": {
+                            "value": "5"
+                          },
+                          "class": "CWeaponLegacy"
+                        }
+                      }
+                    },
+                    "manifest": {
+                      "format": "modkit-json-mod@1",
+                      "name": "Parity"
+                    }
+                  }
+                },
+                "paths": [
+                  "Parity.SC2Mod",
+                  "parity.sc2mod",
+                  "Parity.SC2Mod/Base.SC2Data",
+                  "Parity.SC2Mod/Base.SC2Data/GameData",
+                  "Parity.SC2Mod/Base.SC2Data/GameData/UnitData.xml",
+                  "Parity.SC2Mod/base.sc2data/gamedata/unitdata.xml",
+                  "Parity.SC2Mod/Base.SC2Data/GameData/WeaponData.xml",
+                  "Parity.SC2Mod/Base.SC2Data/GameData/AbilData.xml",
+                  "Parity.SC2Mod/DocumentInfo",
+                  "Parity.SC2Mod/ComponentList.SC2Components",
+                  "Empty.SC2Mod",
+                  "Empty.SC2Mod/DocumentInfo",
+                  "Missing.SC2Mod/x",
+                  ""
+                ]
+              }
+            }
+          ],
+          "kind": "synthetic",
+          "proofs": [
+            {
+              "adapterOperation": "sc2-mod.json-parity",
+              "caseIds": [
+                "json/tab",
+                "json/default"
+              ],
+              "kind": "feature",
+              "requirement": "legacy/codec-manifest/modkit/sc2-mod/feature/51f919fb5ce9eda8"
+            }
+          ],
+          "schemaVersion": 1
+        },
+        "dependencies": [
+          {
+            "dependencies": {},
+            "files": [
+              {
+                "path": "esbuild.exe",
+                "sha256": "c7bee37877d0aa6a046e52783fa0a2cf1a9ce5579d68bb3083bda99d4bff18ef"
+              },
+              {
+                "path": "package.json",
+                "sha256": "89382df45735edcd917c492a810ab514920fa07d36c653cdc122bdfd8f526964"
+              },
+              {
+                "path": "README.md",
+                "sha256": "29cf512fa580b72392176bf694933ae0decaf18116fdeee917511b445411ce16"
+              }
+            ],
+            "name": "@esbuild/win32-x64",
+            "root": "C:\\FILES\\SC2Files\\coding\\modkit-core\\node_modules\\.pnpm\\@esbuild+win32-x64@0.28.2\\node_modules\\@esbuild\\win32-x64",
+            "version": "0.28.2"
+          },
+          {
+            "dependencies": {},
+            "files": [
+              {
+                "path": "bin/esbuild",
+                "sha256": "183d6ead2dbc3af51aec767d5395f86fe54fbbc2d2aa8e54feb4e31d76a62f7e"
+              },
+              {
+                "path": "install.js",
+                "sha256": "612294e278914443bdcf81cb17f54afec34dbdd2ebd999a6ee187912320cc315"
+              },
+              {
+                "path": "lib/main.d.ts",
+                "sha256": "e078310f23f0ccfa28a6ac81b5fad81f27150e921f92ab6e648caab42e2d9a14"
+              },
+              {
+                "path": "lib/main.js",
+                "sha256": "61ec0ba144ff93f4bf0e96ad6fab6f430ede0aa13e27ace8063ed63ba416b3cd"
+              },
+              {
+                "path": "LICENSE.md",
+                "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+              },
+              {
+                "path": "package.json",
+                "sha256": "9d0bc453f4e791553c4cc2298ba023b409241fd9801e494741666eb0f6051490"
+              },
+              {
+                "path": "README.md",
+                "sha256": "6d481cd60ec3c679e5e395f547ab4221147f35642894f6b95a8df38fd25c87bd"
+              }
+            ],
+            "name": "esbuild",
+            "root": "C:\\FILES\\SC2Files\\coding\\modkit-core\\node_modules\\.pnpm\\esbuild@0.28.2\\node_modules\\esbuild",
+            "version": "0.28.2"
+          }
+        ],
+        "dependenciesDigest": "eb22efd477f7a73a9752399120202e045534fd70f15adc558f8aefe7bbaeb6e0",
+        "directory": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\8aae0d6817ff84134f01f98ac6b6cc38ff8de0ff5f3c5254eb8c155da32f9342",
+        "entry": "extensions/blizzard/starcraft-2/codecs/sc2-mod/src/json-mod.ts",
+        "loader": [
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs",
+            "sha256": "1370bde7f031ce62bc4df3d7b47eaab24c3e4024fd48f4714b1c4fb63d78d993"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\sc2-mod-json\\legacy.mjs",
+            "sha256": "6032912335d6580eb067264fe69bd99b21d46977b82ad99d7ebe24611af0c88f"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\lib\\kit.mjs",
+            "sha256": "47c53baac5474cc94fa1563e9106648ed32754f56e30f566b0297867498553c6"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\sc2-mod-json\\probes.mjs",
+            "sha256": "1b774fea3ca4f09ff82dcaf0b3071b149556ec2e9941ccdbf351e0f889dfb5da"
+          }
+        ],
+        "loaderDigest": "c51d1de18960d19d4bccb944643d26e83d182d5e2d5b08a4432d4a43d3c3d805",
+        "loaderSnapshots": [
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs",
+            "sha256": "1370bde7f031ce62bc4df3d7b47eaab24c3e4024fd48f4714b1c4fb63d78d993",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\8aae0d6817ff84134f01f98ac6b6cc38ff8de0ff5f3c5254eb8c155da32f9342\\loader\\0-legacy-oracle.mjs"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\sc2-mod-json\\legacy.mjs",
+            "sha256": "6032912335d6580eb067264fe69bd99b21d46977b82ad99d7ebe24611af0c88f",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\8aae0d6817ff84134f01f98ac6b6cc38ff8de0ff5f3c5254eb8c155da32f9342\\loader\\1-legacy.mjs"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\lib\\kit.mjs",
+            "sha256": "47c53baac5474cc94fa1563e9106648ed32754f56e30f566b0297867498553c6",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\8aae0d6817ff84134f01f98ac6b6cc38ff8de0ff5f3c5254eb8c155da32f9342\\loader\\2-kit.mjs"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\sc2-mod-json\\probes.mjs",
+            "sha256": "1b774fea3ca4f09ff82dcaf0b3071b149556ec2e9941ccdbf351e0f889dfb5da",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\8aae0d6817ff84134f01f98ac6b6cc38ff8de0ff5f3c5254eb8c155da32f9342\\loader\\3-probes.mjs"
+          }
+        ],
+        "observeWorkingTree": false,
+        "operation": "sc2-mod.json-parity",
+        "operationOptions": {
+          "adapterProtocol": "sc2-mod-json-parity-v1",
+          "execution": "pinned-json-mod"
+        },
+        "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "runtime": {
+          "arch": "x64",
+          "binaryDigest": "c7bee37877d0aa6a046e52783fa0a2cf1a9ce5579d68bb3083bda99d4bff18ef",
+          "esbuild": "0.28.2",
+          "node": "v24.16.0",
+          "platform": "win32"
+        },
+        "runtimeDependencies": [],
+        "schemaVersion": 1,
+        "source": [
+          {
+            "gitBlob": "9c648d7fcc5c19a97b7760c409e2c7184ad96128",
+            "path": "extensions/blizzard/starcraft-2/codecs/sc2-data/src/entity-xml.ts",
+            "sha256": "e4733943090711ca8e33dce4396d01ad03cea413f95016911fd91c2b61527112"
+          },
+          {
+            "gitBlob": "1cb8fed89b91d438bcf7777318c4e8d50cb2aa4f",
+            "path": "extensions/blizzard/starcraft-2/codecs/sc2-document-metadata/src/detect.ts",
+            "sha256": "9b612e7063f03992c99eb2954d17bd012029ff6edecb0605b4459163c74c012c"
+          },
+          {
+            "gitBlob": "763177cdcf50d2e2a4d3ebf30007282f402e9182",
+            "path": "extensions/blizzard/starcraft-2/codecs/sc2-document-metadata/src/document.ts",
+            "sha256": "1715cdb75afb733f824e9a04bcf4c637d4af5b71712d8a612bfd962482339777"
+          },
+          {
+            "gitBlob": "b2170123a4662e759c5e4df884f417176e2a4605",
+            "path": "extensions/blizzard/starcraft-2/codecs/sc2-document-metadata/src/edit.ts",
+            "sha256": "2d36d04d3f0a17109822b4da40e818cd73f1e5191898e650d3a456724b00830a"
+          },
+          {
+            "gitBlob": "83df2fbac093d5c4cc34fa1a1126402b70506109",
+            "path": "extensions/blizzard/starcraft-2/codecs/sc2-document-metadata/src/identity.ts",
+            "sha256": "f3246d88d166423e05e32acf9c612b75f1c7f57498da3437267be112d9dd69e7"
+          },
+          {
+            "gitBlob": "6a89c60e44bcf4b6ec02564f1c9785fe5225a4c5",
+            "path": "extensions/blizzard/starcraft-2/codecs/sc2-mod/src/json-mod.ts",
+            "sha256": "86f362086256441d034338e91404980678a9b8ee673a625a23a02d2f8cf50ce8"
+          },
+          {
+            "gitBlob": "c6d864122c608e6adc40878c0d05ddc12469f677",
+            "path": "package.json",
+            "sha256": "801d820bdbfea47c3da11f02bb4e330536149a5e277b7b053650efae7808ea7f"
+          },
+          {
+            "gitBlob": "14fbdacad91594b7db3d84201cc10b6d2c520f5d",
+            "path": "packages/assets/package.json",
+            "sha256": "6316fba017961b70ee532ee7923e6eaecef2a0bef7fcaa5a6f43511f7c3baa2f"
+          },
+          {
+            "gitBlob": "44a05ecc8c55570751a7e4220afd4712d4d977fe",
+            "path": "packages/assets/src/artifact-registry.ts",
+            "sha256": "98dfb7f4d7d111c7edc3d271592b0e97f91866dd61252856775ada85088e47a4"
+          },
+          {
+            "gitBlob": "aaef41b228996e534979a9ce79f8730d4fae0995",
+            "path": "packages/assets/src/artifact-session.ts",
+            "sha256": "bf793763560709d654b3aa313a28e1c07f55fc95401a37e0803e6bc086f55490"
+          },
+          {
+            "gitBlob": "1482aa85e6afe2ba6113aea653214f9a30b7d00f",
+            "path": "packages/assets/src/asset-session.ts",
+            "sha256": "50ef09b361a65cbdbdd8db288d0810c0ec2b1a164799829a6d846457ce485305"
+          },
+          {
+            "gitBlob": "f3f942256c9cffd2f8055477be175a98d775b47a",
+            "path": "packages/assets/src/cancellation.ts",
+            "sha256": "f7c2202facc93ef36f2bec58e018a24798975b6c63e5838703a09aeec59a9c00"
+          },
+          {
+            "gitBlob": "600ac23eb9cfad2c7b05f6e6adda86678866748e",
+            "path": "packages/assets/src/capabilities.ts",
+            "sha256": "46a38586304ace9ef258f8d8204f0212bb00ebc0914ecaf3c7b3e1f691ae64dc"
+          },
+          {
+            "gitBlob": "6e5d2b7cd6ca9b21614254e778686568fc8dc69d",
+            "path": "packages/assets/src/codec-host.ts",
+            "sha256": "f24a096cfddd2d8f2271d7f565617af28e693065f4303e4d12b940bac24f3c71"
+          },
+          {
+            "gitBlob": "e77b711c651c418808c17b928e847b8325fe1e48",
+            "path": "packages/assets/src/codec-manifest.ts",
+            "sha256": "8dc829b32526c0c6c62de342f8290e8e3ac7e48cfa202e8791be118b97880592"
+          },
+          {
+            "gitBlob": "be4d26c9facbac09a54e0a125a4f43cdfb2eb3dd",
+            "path": "packages/assets/src/codec-matching.ts",
+            "sha256": "899ef6078a45e99570db905f9afe84094b99a2546b62183e3454c3e80eb52fb1"
+          },
+          {
+            "gitBlob": "8fe59decde18c184ce739bb92c1bcb9c4acbe2a1",
+            "path": "packages/assets/src/content.ts",
+            "sha256": "652751e3977d4fbd391d4b3c98b73505caf4567abb1fb134f1dec31447667f73"
+          },
+          {
+            "gitBlob": "5058369d401507a7e57850d87a646cf22f4174b7",
+            "path": "packages/assets/src/contributions.ts",
+            "sha256": "07b7b48dd5a47fbbf0cbc984bc4eccd28d27ad84a315bfeafbfd71856fbb570b"
+          },
+          {
+            "gitBlob": "7c8c95b1896b1105f6ef05934a505a340a59426c",
+            "path": "packages/assets/src/descriptor.ts",
+            "sha256": "23ed304bf71ff461a594f5322ecd2cf0a2c49263dd91f3d08dd41a6b51745c40"
+          },
+          {
+            "gitBlob": "9594c33c12e6ad9d1505fa0ad176dde7e4b9601f",
+            "path": "packages/assets/src/detection.ts",
+            "sha256": "3b29a2505d6287f39ffe02f324187d295c67f55e073788a8cb5842a3dc080bb9"
+          },
+          {
+            "gitBlob": "e8f344d8562f33381ccd42210164c066e9f24bc1",
+            "path": "packages/assets/src/diagnostics.ts",
+            "sha256": "22f992154fd099a4f867baf6e1ae1e7c84bf6682af65a5ad5d54cd30f4ced76b"
+          },
+          {
+            "gitBlob": "1102c8383fd141fa66bc6de63ab5ca5fbe1e8a06",
+            "path": "packages/assets/src/editing.ts",
+            "sha256": "331d2cd15839ab62339dc3dabd14a7ea0152af2fc9a0893015dffa004213c707"
+          },
+          {
+            "gitBlob": "4ebed340b01aff606ee8ce63bf887f3507509c3e",
+            "path": "packages/assets/src/format-registry-catalog-adapter.ts",
+            "sha256": "15e55e02fe9710e8743a9bc990c00c3300168f8c718e27abf70cbfe1b2b8c2ab"
+          },
+          {
+            "gitBlob": "6ea9f263fea954e4fa9f007ff9ace7cae81ae55c",
+            "path": "packages/assets/src/format-registry.ts",
+            "sha256": "574e1818c892be45b1c94c87782c42b727eafe3c673226b3b6997e64268d60a3"
+          },
+          {
+            "gitBlob": "6e6ad756db5528d6cd5d000785541dfb2fef7857",
+            "path": "packages/assets/src/game-contributions.ts",
+            "sha256": "101d1b196161809ef9703ce14260c603ca8901c7a2b86c9dd106c4a31cf5cecd"
+          },
+          {
+            "gitBlob": "5d72dc70a27791e94f0c0e61e416ae1d1bd74b7d",
+            "path": "packages/assets/src/index.ts",
+            "sha256": "366e3d5f311b086547c8a852a1092aa699993997bdaa68669df32ba92a11aac6"
+          },
+          {
+            "gitBlob": "c81b98081f92c116056e2c86632259d54353721c",
+            "path": "packages/assets/src/json.ts",
+            "sha256": "f044a80c402d72142fdf2c0f5345882cbcba828050b90704a022e4e01b00f4c5"
+          },
+          {
+            "gitBlob": "0b8dab34e8fb438fdaae451bfc56c9dc111531b8",
+            "path": "packages/assets/src/operations.ts",
+            "sha256": "7dd2c86bd0dbd06c4bfa78656bd4f3a36e0303a71ed0076e45b9014ca13b36f3"
+          },
+          {
+            "gitBlob": "4c23a7363474f99af595c8d4549d1f862e24e70b",
+            "path": "packages/assets/src/progress.ts",
+            "sha256": "f13bd7c0001c65a553cf0a90b5d36fbd32584d2de516837d37e43a3a2cae7285"
+          },
+          {
+            "gitBlob": "5dce8c8c3d9a93ef7556182709646c3fc8c56c87",
+            "path": "packages/assets/src/provenance.ts",
+            "sha256": "416aa8c50c436cbf5077fc37b9aab78c8932425ebc8286f2acc8dea5e3431037"
+          },
+          {
+            "gitBlob": "ffebcac77e7c768e67a38bec473132327857b899",
+            "path": "packages/assets/src/resolvers.ts",
+            "sha256": "afc9bf36cdac44a6e5d0cf043215461492a05438ec46fa40602cd3c66e86c73d"
+          },
+          {
+            "gitBlob": "20947903e77fb580e40bfc6483eab3f9ec0985f3",
+            "path": "packages/assets/src/source.ts",
+            "sha256": "beaa0779256b9dbbd0fd0b253a11ab7975919e778af6b84ee2d784adfa82a122"
+          },
+          {
+            "gitBlob": "bd9edf7b4f3e496d6f47f4f5df59dc02d1ad2984",
+            "path": "packages/assets/src/view-descriptors.ts",
+            "sha256": "09fe218ef8d491c8cea4d22cda3b215fc1ac9004d042bf168d95e57a6f5044ca"
+          },
+          {
+            "gitBlob": "27eadc620749f4c97c51c3f4faab3bb2aea76813",
+            "path": "packages/core/package.json",
+            "sha256": "8f0b475160fa2c26d8dddc1d667ddc4158aea98d63588109f59c2ca781a2321d"
+          },
+          {
+            "gitBlob": "712ccca88394d6b5bae1248d9ae9b3bb3c05fbc2",
+            "path": "packages/core/src/errors.ts",
+            "sha256": "4d5a594261ffa101005198d024cae9fa9ebefc3c617c49d4d6b1f45589857d20"
+          },
+          {
+            "gitBlob": "02bf9cb7dceadf52bafec72d43c40a1437025ea4",
+            "path": "packages/documents-processing/package.json",
+            "sha256": "9b5cd382b8c2814a83d6a29907439f767bd3c58aea6dfa99f32af85fd1dd409c"
+          },
+          {
+            "gitBlob": "6bd46b28d7c030ce41f3d4eecb4a1c6f0564db55",
+            "path": "packages/documents-processing/src/sc2-metadata-core/document-header.ts",
+            "sha256": "1cbf39328d259310f835b9d48713c158cb877d820013fe3732d73d15962c5ef1"
+          },
+          {
+            "gitBlob": "043661f1841a81d4ac1965406519f6f77f9fef0c",
+            "path": "packages/documents-processing/src/sc2-metadata-core/document-info.ts",
+            "sha256": "5135e5f21d1a1247dae2d252ccb4a15526c25c3368aeb641a08343f9abe5f5a3"
+          },
+          {
+            "gitBlob": "6fc444aa1e65b80bb27127c98349a696d77c9c54",
+            "path": "packages/documents-processing/src/sc2-metadata-core/index.ts",
+            "sha256": "aaa5c1f7bf38e45952aa4e1f0df582ef840fc17d020c277981f1349600a9fd84"
+          },
+          {
+            "gitBlob": "599f5aa17b6aaa5c470017d93109fcc61e2c1c08",
+            "path": "packages/documents-processing/src/sc2-metadata-core/types.ts",
+            "sha256": "af60e7cc5b90ec57918d98183891a74b1908d65ca2f9b8d9aa708173ab73e59e"
+          },
+          {
+            "gitBlob": "7ce0f8d8572eee468a1473d75e44fa1eff5f95fe",
+            "path": "packages/documents-processing/src/sc2-metadata-core/version-file.ts",
+            "sha256": "91b12b7fb4a02a0b20125409098e4ff5d81c79fd72d07aca162cef5fca14cdef"
+          },
+          {
+            "gitBlob": "0622de93d73526af611cecfdada3e69ea7d74e10",
+            "path": "pnpm-lock.yaml",
+            "sha256": "1d01882dc1a3e00f918b08977bab09b5fa73deec6310644838ad16374cf8c296"
+          },
+          {
+            "gitBlob": "44e9289e360928f5efa7446128cc2e2092465e8d",
+            "path": "pnpm-workspace.yaml",
+            "sha256": "386e54acc7666b3a76bc5edba0d4bbf06bada6f28882169d1106885efc92ed1a"
+          },
+          {
+            "gitBlob": "d32176af2d4f65c1e55ca115e8add031fad01b99",
+            "path": "tsconfig.base.json",
+            "sha256": "ecfe908e6bd1cc0d8369707f6488d8d54cf945750f07a24cf4909782e40bfc76"
+          },
+          {
+            "gitBlob": "cd19a6ddf32838e95e0e9e7d4a537cd4dcaf5546",
+            "path": "tsconfig.json",
+            "sha256": "de14f0580bf35c4ab062c9e92501c80447663f50b6d024b71b450421301dee92"
+          }
+        ],
+        "sourceClosureDigest": "7b362e59f63cf64d6378cd0717be701f3966c33ef4af410da021b5bde42bfdf6",
+        "sourceFiles": [
+          {
+            "gitBlob": "9c648d7fcc5c19a97b7760c409e2c7184ad96128",
+            "path": "extensions/blizzard/starcraft-2/codecs/sc2-data/src/entity-xml.ts",
+            "sha256": "e4733943090711ca8e33dce4396d01ad03cea413f95016911fd91c2b61527112",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "1cb8fed89b91d438bcf7777318c4e8d50cb2aa4f",
+            "path": "extensions/blizzard/starcraft-2/codecs/sc2-document-metadata/src/detect.ts",
+            "sha256": "9b612e7063f03992c99eb2954d17bd012029ff6edecb0605b4459163c74c012c",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "763177cdcf50d2e2a4d3ebf30007282f402e9182",
+            "path": "extensions/blizzard/starcraft-2/codecs/sc2-document-metadata/src/document.ts",
+            "sha256": "1715cdb75afb733f824e9a04bcf4c637d4af5b71712d8a612bfd962482339777",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "b2170123a4662e759c5e4df884f417176e2a4605",
+            "path": "extensions/blizzard/starcraft-2/codecs/sc2-document-metadata/src/edit.ts",
+            "sha256": "2d36d04d3f0a17109822b4da40e818cd73f1e5191898e650d3a456724b00830a",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "83df2fbac093d5c4cc34fa1a1126402b70506109",
+            "path": "extensions/blizzard/starcraft-2/codecs/sc2-document-metadata/src/identity.ts",
+            "sha256": "f3246d88d166423e05e32acf9c612b75f1c7f57498da3437267be112d9dd69e7",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "6a89c60e44bcf4b6ec02564f1c9785fe5225a4c5",
+            "path": "extensions/blizzard/starcraft-2/codecs/sc2-mod/src/json-mod.ts",
+            "sha256": "86f362086256441d034338e91404980678a9b8ee673a625a23a02d2f8cf50ce8",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "c6d864122c608e6adc40878c0d05ddc12469f677",
+            "path": "package.json",
+            "sha256": "801d820bdbfea47c3da11f02bb4e330536149a5e277b7b053650efae7808ea7f",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "14fbdacad91594b7db3d84201cc10b6d2c520f5d",
+            "path": "packages/assets/package.json",
+            "sha256": "6316fba017961b70ee532ee7923e6eaecef2a0bef7fcaa5a6f43511f7c3baa2f",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "44a05ecc8c55570751a7e4220afd4712d4d977fe",
+            "path": "packages/assets/src/artifact-registry.ts",
+            "sha256": "98dfb7f4d7d111c7edc3d271592b0e97f91866dd61252856775ada85088e47a4",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "aaef41b228996e534979a9ce79f8730d4fae0995",
+            "path": "packages/assets/src/artifact-session.ts",
+            "sha256": "bf793763560709d654b3aa313a28e1c07f55fc95401a37e0803e6bc086f55490",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "1482aa85e6afe2ba6113aea653214f9a30b7d00f",
+            "path": "packages/assets/src/asset-session.ts",
+            "sha256": "50ef09b361a65cbdbdd8db288d0810c0ec2b1a164799829a6d846457ce485305",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "f3f942256c9cffd2f8055477be175a98d775b47a",
+            "path": "packages/assets/src/cancellation.ts",
+            "sha256": "f7c2202facc93ef36f2bec58e018a24798975b6c63e5838703a09aeec59a9c00",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "600ac23eb9cfad2c7b05f6e6adda86678866748e",
+            "path": "packages/assets/src/capabilities.ts",
+            "sha256": "46a38586304ace9ef258f8d8204f0212bb00ebc0914ecaf3c7b3e1f691ae64dc",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "6e5d2b7cd6ca9b21614254e778686568fc8dc69d",
+            "path": "packages/assets/src/codec-host.ts",
+            "sha256": "f24a096cfddd2d8f2271d7f565617af28e693065f4303e4d12b940bac24f3c71",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "e77b711c651c418808c17b928e847b8325fe1e48",
+            "path": "packages/assets/src/codec-manifest.ts",
+            "sha256": "8dc829b32526c0c6c62de342f8290e8e3ac7e48cfa202e8791be118b97880592",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "be4d26c9facbac09a54e0a125a4f43cdfb2eb3dd",
+            "path": "packages/assets/src/codec-matching.ts",
+            "sha256": "899ef6078a45e99570db905f9afe84094b99a2546b62183e3454c3e80eb52fb1",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "8fe59decde18c184ce739bb92c1bcb9c4acbe2a1",
+            "path": "packages/assets/src/content.ts",
+            "sha256": "652751e3977d4fbd391d4b3c98b73505caf4567abb1fb134f1dec31447667f73",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "5058369d401507a7e57850d87a646cf22f4174b7",
+            "path": "packages/assets/src/contributions.ts",
+            "sha256": "07b7b48dd5a47fbbf0cbc984bc4eccd28d27ad84a315bfeafbfd71856fbb570b",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "7c8c95b1896b1105f6ef05934a505a340a59426c",
+            "path": "packages/assets/src/descriptor.ts",
+            "sha256": "23ed304bf71ff461a594f5322ecd2cf0a2c49263dd91f3d08dd41a6b51745c40",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "9594c33c12e6ad9d1505fa0ad176dde7e4b9601f",
+            "path": "packages/assets/src/detection.ts",
+            "sha256": "3b29a2505d6287f39ffe02f324187d295c67f55e073788a8cb5842a3dc080bb9",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "e8f344d8562f33381ccd42210164c066e9f24bc1",
+            "path": "packages/assets/src/diagnostics.ts",
+            "sha256": "22f992154fd099a4f867baf6e1ae1e7c84bf6682af65a5ad5d54cd30f4ced76b",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "1102c8383fd141fa66bc6de63ab5ca5fbe1e8a06",
+            "path": "packages/assets/src/editing.ts",
+            "sha256": "331d2cd15839ab62339dc3dabd14a7ea0152af2fc9a0893015dffa004213c707",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "4ebed340b01aff606ee8ce63bf887f3507509c3e",
+            "path": "packages/assets/src/format-registry-catalog-adapter.ts",
+            "sha256": "15e55e02fe9710e8743a9bc990c00c3300168f8c718e27abf70cbfe1b2b8c2ab",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "6ea9f263fea954e4fa9f007ff9ace7cae81ae55c",
+            "path": "packages/assets/src/format-registry.ts",
+            "sha256": "574e1818c892be45b1c94c87782c42b727eafe3c673226b3b6997e64268d60a3",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "6e6ad756db5528d6cd5d000785541dfb2fef7857",
+            "path": "packages/assets/src/game-contributions.ts",
+            "sha256": "101d1b196161809ef9703ce14260c603ca8901c7a2b86c9dd106c4a31cf5cecd",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "5d72dc70a27791e94f0c0e61e416ae1d1bd74b7d",
+            "path": "packages/assets/src/index.ts",
+            "sha256": "366e3d5f311b086547c8a852a1092aa699993997bdaa68669df32ba92a11aac6",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "c81b98081f92c116056e2c86632259d54353721c",
+            "path": "packages/assets/src/json.ts",
+            "sha256": "f044a80c402d72142fdf2c0f5345882cbcba828050b90704a022e4e01b00f4c5",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "0b8dab34e8fb438fdaae451bfc56c9dc111531b8",
+            "path": "packages/assets/src/operations.ts",
+            "sha256": "7dd2c86bd0dbd06c4bfa78656bd4f3a36e0303a71ed0076e45b9014ca13b36f3",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "4c23a7363474f99af595c8d4549d1f862e24e70b",
+            "path": "packages/assets/src/progress.ts",
+            "sha256": "f13bd7c0001c65a553cf0a90b5d36fbd32584d2de516837d37e43a3a2cae7285",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "5dce8c8c3d9a93ef7556182709646c3fc8c56c87",
+            "path": "packages/assets/src/provenance.ts",
+            "sha256": "416aa8c50c436cbf5077fc37b9aab78c8932425ebc8286f2acc8dea5e3431037",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "ffebcac77e7c768e67a38bec473132327857b899",
+            "path": "packages/assets/src/resolvers.ts",
+            "sha256": "afc9bf36cdac44a6e5d0cf043215461492a05438ec46fa40602cd3c66e86c73d",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "20947903e77fb580e40bfc6483eab3f9ec0985f3",
+            "path": "packages/assets/src/source.ts",
+            "sha256": "beaa0779256b9dbbd0fd0b253a11ab7975919e778af6b84ee2d784adfa82a122",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "bd9edf7b4f3e496d6f47f4f5df59dc02d1ad2984",
+            "path": "packages/assets/src/view-descriptors.ts",
+            "sha256": "09fe218ef8d491c8cea4d22cda3b215fc1ac9004d042bf168d95e57a6f5044ca",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "27eadc620749f4c97c51c3f4faab3bb2aea76813",
+            "path": "packages/core/package.json",
+            "sha256": "8f0b475160fa2c26d8dddc1d667ddc4158aea98d63588109f59c2ca781a2321d",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "712ccca88394d6b5bae1248d9ae9b3bb3c05fbc2",
+            "path": "packages/core/src/errors.ts",
+            "sha256": "4d5a594261ffa101005198d024cae9fa9ebefc3c617c49d4d6b1f45589857d20",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "02bf9cb7dceadf52bafec72d43c40a1437025ea4",
+            "path": "packages/documents-processing/package.json",
+            "sha256": "9b5cd382b8c2814a83d6a29907439f767bd3c58aea6dfa99f32af85fd1dd409c",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "6bd46b28d7c030ce41f3d4eecb4a1c6f0564db55",
+            "path": "packages/documents-processing/src/sc2-metadata-core/document-header.ts",
+            "sha256": "1cbf39328d259310f835b9d48713c158cb877d820013fe3732d73d15962c5ef1",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "043661f1841a81d4ac1965406519f6f77f9fef0c",
+            "path": "packages/documents-processing/src/sc2-metadata-core/document-info.ts",
+            "sha256": "5135e5f21d1a1247dae2d252ccb4a15526c25c3368aeb641a08343f9abe5f5a3",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "6fc444aa1e65b80bb27127c98349a696d77c9c54",
+            "path": "packages/documents-processing/src/sc2-metadata-core/index.ts",
+            "sha256": "aaa5c1f7bf38e45952aa4e1f0df582ef840fc17d020c277981f1349600a9fd84",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "599f5aa17b6aaa5c470017d93109fcc61e2c1c08",
+            "path": "packages/documents-processing/src/sc2-metadata-core/types.ts",
+            "sha256": "af60e7cc5b90ec57918d98183891a74b1908d65ca2f9b8d9aa708173ab73e59e",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "7ce0f8d8572eee468a1473d75e44fa1eff5f95fe",
+            "path": "packages/documents-processing/src/sc2-metadata-core/version-file.ts",
+            "sha256": "91b12b7fb4a02a0b20125409098e4ff5d81c79fd72d07aca162cef5fca14cdef",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "0622de93d73526af611cecfdada3e69ea7d74e10",
+            "path": "pnpm-lock.yaml",
+            "sha256": "1d01882dc1a3e00f918b08977bab09b5fa73deec6310644838ad16374cf8c296",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "44e9289e360928f5efa7446128cc2e2092465e8d",
+            "path": "pnpm-workspace.yaml",
+            "sha256": "386e54acc7666b3a76bc5edba0d4bbf06bada6f28882169d1106885efc92ed1a",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "d32176af2d4f65c1e55ca115e8add031fad01b99",
+            "path": "tsconfig.base.json",
+            "sha256": "ecfe908e6bd1cc0d8369707f6488d8d54cf945750f07a24cf4909782e40bfc76",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "cd19a6ddf32838e95e0e9e7d4a537cd4dcaf5546",
+            "path": "tsconfig.json",
+            "sha256": "de14f0580bf35c4ab062c9e92501c80447663f50b6d024b71b450421301dee92",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          }
+        ],
+        "stubs": [],
+        "workspaceScopes": [
+          "@modkitx"
+        ]
+      }
+    ]
+  },
+  "proofs": [
+    {
+      "adapterOperation": "sc2-mod.json-parity",
+      "caseIds": [
+        "json/tab",
+        "json/default"
+      ],
+      "kind": "feature",
+      "requirement": "legacy/codec-manifest/modkit/sc2-mod/feature/51f919fb5ce9eda8"
+    }
+  ],
+  "schemaVersion": 1,
+  "tests": {
+    "failed": 0,
+    "passed": 2
+  },
+  "verdict": "pass"
+}

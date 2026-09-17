@@ -3795,9 +3795,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-mod-json/receipt.json",
+          "sha256": "dd092395d80b751f38e0bbde44e9c8c993d92ad3e7087218f0e1e2b0f7c3035a"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-mod/feature/51f919fb5ce9eda8",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [],
