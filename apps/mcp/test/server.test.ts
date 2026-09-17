@@ -973,11 +973,11 @@ describe('MCP v2 adapter', () => {
               'modkit.commit_edit',
               'modkit.undo_edit',
               'modkit.redo_edit',
+              'modkit.discard_edit',
             ].includes(tool.name),
         )
         .every(tool => tool.annotations?.readOnlyHint === true),
     ).toBe(true)
-              'modkit.discard_edit',
     expect(
       tools.tools.find(tool => tool.name === 'modkit.invoke_service_operation')?.annotations,
     ).toMatchObject({ readOnlyHint: false, destructiveHint: true, openWorldHint: true })
@@ -1765,7 +1765,7 @@ describe('MCP v2 adapter', () => {
     const opened = structured(
       await client.callTool({
         name: 'modkit.open_subject',
-        arguments: { path: 'C:\allowed\fixture' },
+        arguments: { path: 'C:\\allowed\\fixture' },
       }),
     )
     const result = structured(
@@ -1904,6 +1904,17 @@ describe('MCP v2 adapter', () => {
     const opened = structured(
       await client.callTool({
         name: 'modkit.open_subject',
+        arguments: { path: 'C:\\allowed\\fixture' },
+      }),
+    )
+    const response = await client.callTool({
+      name: 'modkit.propose_edit',
+      arguments: { handle: handleFrom(opened), operationId: 'fixture/read', input: null },
+    })
+    expect(response.isError).toBe(true)
+    expect(structured(response).diagnostics[0]?.code).toBe('x3.mcp/non-mutating-operation-refused')
+  })
+
   it('expires a retained plan after its TTL and releases its staged payloads', async () => {
     const fake = fakeHost({ withEditing: true, editsEnabled: true })
     const { client } = await connected(fake.host)
@@ -1933,17 +1944,6 @@ describe('MCP v2 adapter', () => {
       Date.now = now
     }
     expect(fake.editInvocations()).toEqual(['stage', 'release-plan'])
-  })
-
-        arguments: { path: 'C:\allowed\fixture' },
-      }),
-    )
-    const response = await client.callTool({
-      name: 'modkit.propose_edit',
-      arguments: { handle: handleFrom(opened), operationId: 'fixture/read', input: null },
-    })
-    expect(response.isError).toBe(true)
-    expect(structured(response).diagnostics[0]?.code).toBe('x3.mcp/non-mutating-operation-refused')
   })
 
   it('preserves a host operation rejection as bounded invalid data', async () => {

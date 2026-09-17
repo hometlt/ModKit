@@ -34,7 +34,7 @@ function defined<T>(value: T | undefined): T {
 const round = (points: readonly (readonly number[])[]) =>
   points.map(point => point.map(value => Math.round(value)))
 
-function cameraFor(target: readonly number[], distance: number): Camera {
+function cameraFor(target: readonly [number, number, number], distance: number): Camera {
   const orbit = createOrbitController({ yaw: 0, pitch: 0 })
   return {
     target,
