@@ -102,6 +102,25 @@ export const PARTS = Object.freeze([
   'diagnostics.message',
 
   // operation toolbar
+  // playback stage: a transport with its world positions, participants, series and events
+  'playback',
+  'playback.bar',
+  'playback.seek',
+  'playback.time',
+  'playback.rate',
+  'playback.body',
+  'playback.map',
+  'playback.note',
+  'playback.side',
+  'playback.participants',
+  'playback.participant',
+  'playback.swatch',
+  'playback.charts',
+  'playback.chart',
+  'playback.playhead',
+  'playback.events',
+  'playback.event',
+
   'operations',
   'operations.status',
   'operations.button',

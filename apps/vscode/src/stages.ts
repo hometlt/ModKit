@@ -23,6 +23,7 @@ import { createHexEditor } from '@modkit/ui/hex-editor'
 import { createImageViewer } from '@modkit/ui/image'
 import { createMetadataPanel } from '@modkit/ui/metadata'
 import { createModelViewer } from '@modkit/ui/model'
+import { createPlaybackViewer } from '@modkit/ui/transport'
 import { createTableViewer } from '@modkit/ui/table'
 import { createVirtualTextViewer } from '@modkit/ui/text-virtual'
 import { createTreeViewer } from '@modkit/ui/tree'
@@ -71,10 +72,19 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       module: createVectorViewer({ localizer: context.localizer }),
     },
     {
+      id: 'playback',
+      label: context.localizer.text('stage.playback'),
+      contract: 'common.view/transport-source',
+      module: createPlaybackViewer({ localizer: context.localizer }),
+      optionalContracts: ['common.view/world-scene-source'],
+    },
+    {
       id: 'world',
       label: context.localizer.text('stage.world'),
       contract: 'common.view/world-scene-source',
       module: createWorldViewer({ localizer: context.localizer }),
+      // A timed world (a replay, a cutscene) follows its transport.
+      optionalContracts: ['common.view/transport-source'],
     },
     {
       id: 'model',

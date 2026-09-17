@@ -113,3 +113,5 @@ export function createTransportViewer(options: UiLocalizationOptions = {}): View
 export const transportViewer: ViewerModule = createTransportViewer()
 
 export default transportViewer
+
+export * from './playback.js'

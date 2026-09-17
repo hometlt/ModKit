@@ -150,6 +150,7 @@ const transportSourceSurface = {
     snapshot: cancellableValue,
     /** A live stream, not a finite listing: `subscribe` → `event…` → `done`. */
     events: { kind: 'events', ...sig },
+    timeline: { kind: 'value', optional: true, ...sig },
   },
 } as const satisfies SurfaceOf<TransportSource>
 

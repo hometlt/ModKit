@@ -539,3 +539,32 @@ export const WORLD_FALLBACK_MESSAGES = {
   'viewer.worldPreview': 'Top-down world preview',
   'viewer.worldSummary': '{map} · {layers} layers · {items} items{bounded}',
 } as const satisfies UiMessageCatalog
+export const TRANSPORT_PLAYBACK_FALLBACK_MESSAGES = {
+  'viewer.pause': 'Pause',
+  'viewer.play': 'Play',
+  'viewer.playback': 'Playback',
+  'viewer.playbackCharts': 'Values over time',
+  'viewer.playbackEvent.structure-done': 'Built',
+  'viewer.playbackEvent.unit-born': 'Born',
+  'viewer.playbackEvent.unit-died': 'Died',
+  'viewer.playbackEvent.upgrade': 'Upgrade',
+  'viewer.playbackEvents': 'Events',
+  'viewer.playbackFact.apm': 'APM',
+  'viewer.playbackMap': 'Positions at {time}: {count} units',
+  'viewer.playbackMetric.army-value': 'Army value',
+  'viewer.playbackMetric.units': 'Units',
+  'viewer.playbackNoTimeline': 'This source publishes no participants, series or events.',
+  'viewer.playbackNoWorld': 'This source publishes no positions.',
+  'viewer.playbackOutcome.loss': 'Defeat',
+  'viewer.playbackOutcome.tie': 'Tie',
+  'viewer.playbackOutcome.undecided': 'Undecided',
+  'viewer.playbackOutcome.win': 'Victory',
+  'viewer.playbackParticipants': 'Participants',
+  'viewer.playbackRate': 'Playback speed',
+  'viewer.playbackSampled':
+    'Positions are interpolated between recorded samples (tracker events). This is not a game simulation.',
+  'viewer.playbackSeek': 'Playback position',
+  'viewer.playbackTime': '{position} / {duration}',
+  'viewer.playbackTruncated': 'Bounded view: some events or samples are not shown.',
+} as const satisfies UiMessageCatalog
+

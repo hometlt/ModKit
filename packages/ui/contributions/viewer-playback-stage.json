@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "modkit/viewer-contribution", "major": 1 },
+  "id": "modkit.ui/playback-stage",
+  "displayName": "playback stage",
+  "runtimeVariants": [
+    {
+      "variantId": "browser",
+      "entrypoint": "./dist/transport/playback.js",
+      "target": { "environments": ["browser-main"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "kind": "stage",
+    "consumesDataSources": [{ "contract": "common.view/transport-source", "major": 1 }],
+    "optionalDataSources": [{ "contract": "common.view/world-scene-source", "major": 1 }],
+    "priority": 355,
+    "singletonGroup": "center-stage"
+  }
+}

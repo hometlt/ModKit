@@ -55,6 +55,12 @@ const previewPolicy = Object.freeze([
     module: 'audioViewer',
   },
   {
+    slotId: 'playback',
+    label: 'Player',
+    contributionId: 'modkit.ui/playback-stage',
+    module: 'playbackViewer',
+  },
+  {
     slotId: 'world',
     label: 'World',
     contributionId: 'modkit.ui/world-stage',
@@ -392,6 +398,7 @@ const LOCALIZED_STAGE_FACTORIES = Object.freeze({
   virtualTextViewer: 'createVirtualTextViewer',
   vectorViewer: 'createVectorViewer',
   videoViewer: 'createVideoViewer',
+  playbackViewer: 'createPlaybackViewer',
   worldViewer: 'createWorldViewer',
 })
 

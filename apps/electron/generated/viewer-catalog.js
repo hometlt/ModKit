@@ -7,6 +7,7 @@ import {
   createHexViewer,
   createImageViewer,
   createModelViewer,
+  createPlaybackViewer,
   createRelationGraphViewer,
   createSubjectCalculationsViewer,
   createSubjectCardViewer,
@@ -24,6 +25,7 @@ import {
   hexViewer,
   imageViewer,
   modelViewer,
+  playbackViewer,
   relationGraphViewer,
   subjectCalculationsViewer,
   subjectCardViewer,
@@ -48,6 +50,13 @@ export const PREVIEW_STAGES = Object.freeze([
   { id: 'video', label: 'Video', contract: 'common.view/video-media-source', module: videoViewer },
   { id: 'image', label: 'Image', contract: 'common.view/raster-image-source', module: imageViewer },
   { id: 'audio', label: 'Audio', contract: 'common.view/audio-media-source', module: audioViewer },
+  {
+    id: 'playback',
+    label: 'Player',
+    contract: 'common.view/transport-source',
+    module: playbackViewer,
+    optionalContracts: ['common.view/world-scene-source'],
+  },
   {
     id: 'world',
     label: 'World',
@@ -143,6 +152,13 @@ export const PREVIEW_STAGES_READONLY = Object.freeze([
     contract: 'common.view/world-scene-source',
     module: worldViewer,
     optionalContracts: ['common.view/transport-source'],
+  },
+  {
+    id: 'playback',
+    label: 'Player',
+    contract: 'common.view/transport-source',
+    module: playbackViewer,
+    optionalContracts: ['common.view/world-scene-source'],
   },
   {
     id: 'model',
@@ -255,6 +271,13 @@ export function createPreviewStages(localizer) {
       module: createModelViewer({ localizer }),
       optionalContracts: [
         'common.view/model-resource-refs-source',
+    {
+      id: 'playback',
+      label: 'Player',
+      contract: 'common.view/transport-source',
+      module: createPlaybackViewer({ localizer }),
+      optionalContracts: ['common.view/world-scene-source'],
+    },
         'common.view/model-skeleton-source',
         'common.view/model-animation-source',
         'common.view/model-collision-source',
@@ -382,6 +405,13 @@ export function createPreviewStagesReadonly(localizer) {
         'common.view/model-material-source',
         'common.view/model-socket-source',
       ],
+    },
+    {
+      id: 'playback',
+      label: 'Player',
+      contract: 'common.view/transport-source',
+      module: createPlaybackViewer({ localizer }),
+      optionalContracts: ['common.view/world-scene-source'],
     },
     {
       id: 'vector',

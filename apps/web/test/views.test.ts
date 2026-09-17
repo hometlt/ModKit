@@ -79,6 +79,7 @@ describe('web preview policy', () => {
       'model',
       'audio',
       'video',
+      'playback',
       'archive',
       'template',
       'card',
@@ -264,7 +265,7 @@ describe('web preview policy', () => {
       ],
       ['audio.streams'],
     )
-    expect(applicableStages(stages, audio).map(stageIdOf)).toEqual(['audio', 'metadata', 'hex'])
+    expect(applicableStages(stages, audio).map(stageIdOf)).toEqual(['audio', 'playback', 'metadata', 'hex'])
 
     const video = syntheticDescriptor(
       ['common.view/video-media-source', 'common.view/byte-range-source'],

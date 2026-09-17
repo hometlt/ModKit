@@ -527,7 +527,13 @@ export {
 } from './asset-capabilities/data-sources.js'
 export {
   AUXILIARY_DATA_SOURCE_SURFACES,
+  type TransportParticipant,
   ENCODED_MEDIA_SURFACE_CONTRACT,
+  type TransportTimeline,
+  type TransportTimelineFact,
+  type TransportTimelineMarker,
+  type TransportTimelineRequest,
+  type TransportTimelineSeries,
   ENCODED_MEDIA_SURFACE_ID,
   STANDARD_DATA_SOURCE_SURFACES,
   standardDataSourceSurfaceFor,

@@ -168,10 +168,14 @@ export async function inspectCandidateWorld(
   const infoStartedAt = inspectionClock()
   const info = await source.info(options.signal)
   const infoMilliseconds = elapsedInspectionMilliseconds(infoStartedAt)
+  // A source materialized across an execution boundary carries only its methods, so its identity
+  // is the one info() reports (a dynamic source pins its pages to that info() snapshot).
+  const identity =
+    (source as Partial<CandidateWorldSceneSource>).snapshotId === undefined ? info : source
   if (
-    source.contract !== info.contract ||
-    source.major !== info.major ||
-    source.snapshotId !== info.snapshotId ||
+    identity.contract !== info.contract ||
+    identity.major !== info.major ||
+    identity.snapshotId !== info.snapshotId ||
     info.maturity !== 'publisher-candidate'
   ) {
     throw new TypeError('world candidate identity changed between source and info')
@@ -205,7 +209,7 @@ export async function inspectCandidateWorld(
           layer,
           page: Object.freeze({
             ...previous.page,
-            snapshotId: source.snapshotId,
+            snapshotId: identity.snapshotId,
             items: Object.freeze(
               previous.page.items.map((item, index) =>
                 Object.freeze({
@@ -239,7 +243,7 @@ export async function inspectCandidateWorld(
           options.signal,
         )
         if (
-          page.snapshotId !== source.snapshotId ||
+          page.snapshotId !== identity.snapshotId ||
           page.facet !== layer.kind ||
           page.items.length > Math.min(maxPageItems, remaining)
         ) {
@@ -337,7 +341,7 @@ export async function inspectCandidateWorld(
     await forEachConcurrent(admittedResources, maxConcurrentModelAcquisitions, async item => {
       const previous = options.previous?.models?.get(item.id)
       if (
-        options.previous?.snapshotId === source.snapshotId &&
+        options.previous?.snapshotId === identity.snapshotId &&
         options.previous.modelRequestKey === modelRequestKey &&
         previous?.state === 'converted'
       ) {
@@ -397,7 +401,7 @@ export async function inspectCandidateWorld(
     )
     await forEachConcurrent(terrainTextureIds, maxConcurrentModelAcquisitions, async resourceId => {
       const previous = options.previous?.terrainTextures?.get(resourceId)
-      if (options.previous?.snapshotId === source.snapshotId && previous !== undefined) {
+      if (options.previous?.snapshotId === identity.snapshotId && previous !== undefined) {
         reusedTerrainTextures += 1
         terrainTextures.set(resourceId, previous)
         return
@@ -419,9 +423,9 @@ export async function inspectCandidateWorld(
     terrainTextureAcquisitionStartedAt,
   )
   return Object.freeze({
-    contract: source.contract,
-    major: source.major,
-    snapshotId: source.snapshotId,
+    contract: identity.contract,
+    major: identity.major,
+    snapshotId: identity.snapshotId,
     info,
     layers: Object.freeze(inspected.map(({ layer, page }) => Object.freeze({ layer, page }))),
     reusedLayerKinds: Object.freeze(

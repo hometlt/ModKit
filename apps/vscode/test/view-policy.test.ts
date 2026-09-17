@@ -185,6 +185,7 @@ describe('VS Code view policy', () => {
       'image',
       'metadata',
       'model',
+      'transport',
       'table',
       'text-virtual',
       'tree',

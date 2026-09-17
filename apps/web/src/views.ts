@@ -57,7 +57,7 @@ import { createSubjectCardViewer } from '@modkit/ui/card'
 import { createTextEditorModule } from '@modkit/ui/editor'
 import { tableViewer } from '@modkit/ui/table'
 import { virtualTextViewer } from '@modkit/ui/text-virtual'
-import { transportViewer } from '@modkit/ui/transport'
+import { createPlaybackViewer, transportViewer } from '@modkit/ui/transport'
 import { createAudioViewer } from '@modkit/ui/audio'
 import { createTreeViewer } from '@modkit/ui/tree'
 import { createVectorViewer } from '@modkit/ui/vector'
@@ -510,6 +510,8 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
       label: text('web.view.world'),
       contract: 'common.view/world-scene-source',
       module: createWorldViewer({ localizer }),
+      // A timed world (a replay, a cutscene) follows its transport.
+      optionalContracts: ['common.view/transport-source'],
     },
     {
       id: 'model',
@@ -530,6 +532,13 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
       label: text('web.view.video'),
       contract: 'common.view/video-media-source',
       module: createVideoViewer({ localizer }),
+    },
+    {
+      id: 'playback',
+      label: text('web.view.playback'),
+      contract: 'common.view/transport-source',
+      module: createPlaybackViewer({ localizer }),
+      optionalContracts: ['common.view/world-scene-source'],
     },
     {
       id: 'archive',

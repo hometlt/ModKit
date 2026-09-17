@@ -99,6 +99,37 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
   }),
   Object.freeze({
     slot: Object.freeze({
+      slotId: 'playback',
+      kind: 'stage',
+      contributionId: 'modkit.ui/playback-stage',
+      extensionId: 'modkit/ui',
+      priority: 355,
+      singletonGroup: 'center-stage',
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: 'playback-content',
+          contract: 'common.view/transport-source',
+          major: 1,
+        }),
+      ]),
+    }),
+    optionalBindings: Object.freeze([
+      Object.freeze({
+        bindingId: 'playback-optional-1',
+        contract: 'common.view/world-scene-source',
+        major: 1,
+      }),
+    ]),
+    spec: Object.freeze({
+      kind: 'stage',
+      consumesDataSources: [{ contract: 'common.view/transport-source', major: 1 }],
+      optionalDataSources: [{ contract: 'common.view/world-scene-source', major: 1 }],
+      priority: 355,
+      singletonGroup: 'center-stage',
+    }),
+  }),
+  Object.freeze({
+    slot: Object.freeze({
       slotId: 'world',
       kind: 'stage',
       contributionId: 'modkit.ui/world-stage',

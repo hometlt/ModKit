@@ -448,9 +448,68 @@ export interface ContainerPackCreateInputV1 {
   readonly schemaVersion: 1
   readonly mode: 'create'
   readonly expectedContainerRevision: RevisionId
+/** Bounds a consumer sets on one `TransportSource.timeline` answer. */
+export interface TransportTimelineRequest {
+  readonly maxMarkers: number
+  /** Per series. */
+  readonly maxSeriesPoints: number
+}
+
+/** One labelled value about a participant; `id` lets a surface localize well-known facts. */
+export interface TransportTimelineFact {
+  readonly id: string
+  readonly label: string
+  readonly value: string
+}
+
+/** Someone or something the timeline follows: a player, a team, a faction. */
+export interface TransportParticipant {
+  readonly id: string
+  readonly label: string
+  /** CSS `#rrggbb`, the participant's own colour in the source. */
+  readonly color?: string
+  /** Faction, race or team, as the source names it. */
+  readonly group?: string
+  readonly outcome?: 'win' | 'loss' | 'tie' | 'undecided'
+  readonly facts: readonly TransportTimelineFact[]
+}
+
+/** A numeric value over time: `points` is `[positionMs, value, positionMs, value, …]`. */
+export interface TransportTimelineSeries {
+  /** What is measured, shared by every participant's series of that measure (e.g. `units`). */
+  readonly metric: string
+  readonly label: string
+  readonly participantId?: string
+  readonly points: readonly number[]
+}
+
+/** Something that happened at one position. `kind` is a stable token a surface may localize. */
+export interface TransportTimelineMarker {
+  readonly positionMs: number
+  readonly kind: string
+  readonly label: string
+  readonly participantId?: string
+}
+
+export interface TransportTimeline {
+  readonly participants: readonly TransportParticipant[]
+  readonly series: readonly TransportTimelineSeries[]
+  /** Ordered by position. */
+  readonly markers: readonly TransportTimelineMarker[]
+  /** False when a bound cut markers or series points. */
+  readonly complete: boolean
+  /**
+   * `sampled`: world positions are interpolated between recorded samples, not simulated, so a
+   * surface must say so.
+   */
+  readonly fidelity: 'exact' | 'sampled'
+}
+
   readonly files: readonly ContainerPackCreateFileV1[]
   readonly replacements?: never
   readonly intent?: never
+  /** Participants, measured series and markers of the whole playable range. */
+  timeline?(request: TransportTimelineRequest, signal?: AbortSignal): Promise<TransportTimeline>
 }
 
 /** Version-one replacement or fresh-creation request for the standard `container.pack` operation. */

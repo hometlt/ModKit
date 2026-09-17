@@ -27,6 +27,18 @@ export { treeViewer, LazyTreeModel, createTreeViewer } from './tree/index.js'
 export { tableViewer, LazyTableModel, createTableViewer } from './table/index.js'
 export { transportViewer, TransportModel, createTransportViewer } from './transport/index.js'
 export {
+  createPlaybackViewer,
+  formatPlaybackTime,
+  markerIndexAt,
+  playbackViewer,
+  readPlaybackWorld,
+  PLAYBACK_MAX_MARKERS,
+  PLAYBACK_MAX_OBJECTS,
+  PLAYBACK_MAX_SERIES_POINTS,
+  PLAYBACK_RATES,
+  type PlaybackWorldFrame,
+} from './transport/playback.js'
+export {
   namespaceViewer,
   NamespaceModel,
   normalizeNamespacePath,
