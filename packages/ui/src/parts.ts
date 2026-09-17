@@ -138,6 +138,10 @@ export const PARTS = Object.freeze([
   'properties.value',
   'properties.origin',
 
+  // game template stage: the resolved tree, the drawn template and the element view side by side
+  'template.body',
+  'template.canvas',
+
   // image stage
   'image',
   'image.canvas',

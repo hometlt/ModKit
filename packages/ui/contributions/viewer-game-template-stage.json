@@ -16,7 +16,7 @@
     "kind": "stage",
     "requiresOperations": ["view.template"],
     "consumesDataSources": [],
-    "priority": 365,
+    "priority": 410,
     "singletonGroup": "center-stage"
   }
 }

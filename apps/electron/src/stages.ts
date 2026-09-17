@@ -17,6 +17,7 @@ import type { OperationSession } from '@modkit/sdk'
 import type { SceneRendererPort } from '@modkit/sdk'
 import { createSubjectCardViewer } from '@modkit/ui/card'
 import { createModelViewer, type ModelViewerOptions } from '@modkit/ui/model'
+import { createGameTemplateViewer, type GameTemplateViewerOptions } from '@modkit/ui/template'
 
 import {
   createPreviewStages,
@@ -34,6 +35,8 @@ export interface ElectronStageOptions {
   readonly renderer?: SceneRendererPort
   /** Subject-bound decoded textures used by the model stage. */
   readonly textures?: ModelViewerOptions['textures']
+  /** Subject-bound pixels for the assets a template names. */
+  readonly templateImages?: GameTemplateViewerOptions['images']
   /** Operation session for the subject a stage was mounted for, when the host has one. */
   operationsFor(descriptor: Record<string, unknown>): Promise<OperationSession | undefined>
   /** Include the pixel editor only for a subject whose PNG/RGBA8 writer resolved in main. */
@@ -52,6 +55,14 @@ const configuredModelViewer = (options: ElectronStageOptions) =>
 const configuredStage = (stage: PreviewStage, options: ElectronStageOptions): PreviewStage => {
   const localized = localizedLabel(stage, options.localizer)
   if (localized.id === 'model') return { ...localized, module: configuredModelViewer(options) }
+  if (localized.id === 'template' && options.templateImages !== undefined)
+    return {
+      ...localized,
+      module: createGameTemplateViewer({
+        ...(options.localizer === undefined ? {} : { localizer: options.localizer }),
+        images: options.templateImages,
+      }),
+    }
   // The card's preview section mounts the same shaded, textured model stage.
   if (localized.id === 'card')
     return {

@@ -68,6 +68,7 @@ import {
 import {
   createLanguageWorkspace,
   languageProviderRoutes,
+  resolveLanguageProvider,
   type LanguageWorkspaceDocumentSource,
 } from '@modkit/host/language'
 import { discoverGameInstallations } from '@modkit/host/games'
@@ -4403,6 +4404,32 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     },
   })
 
+  /*
+   * The languages a document is read together with, as its own language provider declares them.
+   * A page shown in a custom editor has no TextDocument, so the route is found by extension; the
+   * provider's opt-in (a layout reads style sheets and strings) is what the language features use
+   * too, so a preview and a hover see the same neighbours.
+   */
+  const workspaceLanguagesFor = async (
+    languageId: string | undefined,
+    extension: string | undefined,
+  ): Promise<readonly string[]> => {
+    const route =
+      languageRoutes.find(item => item.languageId === languageId) ??
+      languageRoutes.find(item => extension !== undefined && item.extension === extension)
+    if (route === undefined) return languageId === undefined ? [] : [languageId]
+    const resolution = await resolveLanguageProvider({
+      ...route,
+      services: host.services,
+      grant: { id: 'modkit.app.vscode/language', classes: [] },
+      budgets: LANGUAGE_ACTIVATION_BUDGET,
+    })
+    if (resolution.state !== 'resolved') return [route.languageId]
+    const accepted = resolution.provider.workspaceLanguageIds ?? []
+    await resolution.release()
+    return [route.languageId, ...accepted.filter(item => item !== route.languageId)]
+  }
+
   const languageWorkspace = createLanguageWorkspace({
     services: host.services,
     grant: { id: 'modkit.app.vscode/language', classes: [] },
@@ -5187,7 +5214,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             item => item.uri.toString() === uri.toString(),
           )
         const languageIds =
-          request.languageIds ?? (open === undefined ? [] : [open.languageId])
+          request.languageIds ??
+          (await workspaceLanguagesFor(
+            open?.languageId,
+            request.path?.split('.').at(-1)?.toLowerCase(),
+          ))
         if (languageIds.length === 0) return { documents: [], isComplete: false }
         const primary = {
           uri: uri?.toString() ?? '',

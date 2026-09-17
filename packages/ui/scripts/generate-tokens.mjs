@@ -244,6 +244,8 @@ ${fragment('components.css')}
 ${fragment('chrome.css')}
 
 ${fragment('card.css')}
+
+${fragment('template.css')}
 `
 
 // ---------------------------------------------------------------- TypeScript

@@ -64,6 +64,7 @@ import { createInspectorDock, type InspectorSubject } from './inspector.js'
 import { createElectronReadOnlyStages, createElectronStages } from './stages.js'
 import { createElectronRendererPort } from './renderer-port.js'
 import { resolveModelViewerTextures } from '@modkit/ui/model'
+import { templateImagesFromRaster } from '@modkit/ui/template'
 import { preferredStage, selfTestCodecLine, selfTestLine } from './view-policy.js'
 import { continueElectronMapPreviewSelection } from './map-preview-selection.js'
 import { createElectronLocalizer } from './localization.js'
@@ -465,6 +466,18 @@ async function boot(): Promise<void> {
       return resolveModelViewerTextures(
         { read: (request, abort) => readRaster(request, abort) },
         references,
+        signal,
+      )
+    },
+    // The icons a template names, through the same subject-bound raster port.
+    async templateImages(descriptor: unknown, assets: readonly string[], signal?: AbortSignal) {
+      const record = subjectsByDescriptor.get(descriptorKey(descriptor as Record<string, unknown>))
+      const readRaster = record?.session.readRasterResource
+      if (readRaster === undefined) return new Map<string, string>()
+      return templateImagesFromRaster(
+        document,
+        { read: (request, abort) => readRaster(request, abort) },
+        assets,
         signal,
       )
     },

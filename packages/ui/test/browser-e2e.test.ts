@@ -1811,6 +1811,145 @@ describe('13C real-browser viewer host', () => {
     expect(result.remaining).toBe(0)
   })
 
+  it('lists the resolved template tree and explains the node selected on the canvas', async () => {
+    await reset()
+    const result = await page.evaluate(async () => {
+      const { ui } = (globalThis as unknown as { modkit: { ui: Record<string, unknown> } }).modkit
+      const root = document.querySelector('#app') as HTMLElement
+      const inputs: unknown[] = []
+      const node = (name: string, path: string[], extra: Record<string, unknown> = {}) => ({
+        name,
+        type: 'Frame',
+        path,
+        children: [],
+        ...extra,
+      })
+      const preview = (rootPath: string) => ({
+        schemaVersion: 1,
+        operationId: 'view.template',
+        templateKind: 'sc2-layout',
+        entryUri: 'memory://Tech.SC2Layout',
+        rootPath,
+        roots: ['Panel', 'Other'],
+        resolvedTree: node(rootPath, [rootPath], {
+          children: [
+            node('Yard', [rootPath, 'Yard'], {
+              template: 'Standard/TechItem',
+              properties: [
+                {
+                  name: 'Width',
+                  val: '#ItemSize',
+                  resolved: '64',
+                  source: {
+                    origin: 'template',
+                    frame: 'TechItem',
+                    uri: 'memory://Standard.SC2Layout',
+                  },
+                },
+              ],
+            }),
+          ],
+        }),
+        displayItems: [
+          { kind: 'box', path: [rootPath], rect: { x: 0, y: 0, width: 400, height: 300 } },
+          { kind: 'box', path: [rootPath, 'Yard'], rect: { x: 20, y: 20, width: 64, height: 64 } },
+        ],
+        diagnostics: [],
+        completeness: 'complete',
+        fidelity: { comparison: 'semantic', unsupported: [] },
+        provenance: {},
+        digest: { algorithm: 'fixture', value: '1' },
+      })
+      const mount = await (
+        ui['gameTemplateViewer'] as {
+          mount(args: unknown): Promise<{ unmount(): Promise<void> }>
+        }
+      ).mount({
+        container: root,
+        descriptor: {
+          revision: 'template-tree-r1',
+          operations: [
+            {
+              id: 'view.template',
+              handlerId: 'game-template-preview',
+              state: 'available',
+              mutatesSource: false,
+            },
+          ],
+          diagnostics: [],
+        },
+        slot: {
+          slotId: 'template',
+          kind: 'stage',
+          contributionId: 'modkit.ui/game-template-stage',
+          extensionId: 'modkit/ui',
+          priority: 410,
+          bindings: [],
+        },
+        sources: {
+          async get() {
+            throw new Error('template stage needs no data source')
+          },
+        },
+        operations: {
+          async invoke(_handlerId: string, input: { rootPath?: string }) {
+            inputs.push(input)
+            return {
+              state: 'ok',
+              diagnostics: [],
+              output: { kind: 'json', value: preview(input.rootPath ?? 'Panel') },
+            }
+          },
+          async dispose() {},
+        },
+      })
+      const rows = () =>
+        [...root.querySelectorAll('[data-mk-part="tree.item"]')].map(item =>
+          item.getAttribute('data-path'),
+        )
+      const firstRows = rows()
+      const selectedAtStart = root
+        .querySelector('[data-mk-part="tree.item"][data-mk-state~="selected"]')
+        ?.getAttribute('data-path')
+      const yard = root.querySelector('g[data-path="Panel/Yard"] rect') as SVGElement
+      yard.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+      const panelText = root.querySelector('.modkit-template__properties')?.textContent ?? ''
+      const selectedRow = root
+        .querySelector('[data-mk-part="tree.item"][data-mk-state~="selected"]')
+        ?.getAttribute('data-path')
+      const selectedShape = root
+        .querySelector('g[data-mk-state~="selected"]')
+        ?.getAttribute('data-path')
+      const picker = root.querySelector('select') as HTMLSelectElement
+      picker.value = 'Other'
+      picker.dispatchEvent(new Event('change'))
+      for (let attempt = 0; attempt < 50 && rows()[0] !== 'Other'; attempt += 1) {
+        await new Promise(resolve => setTimeout(resolve, 20))
+      }
+      const otherRows = rows()
+      await mount.unmount()
+      return {
+        firstRows,
+        selectedAtStart,
+        panelText,
+        selectedRow,
+        selectedShape,
+        otherRows,
+        lastInput: inputs.at(-1),
+      }
+    })
+
+    expect(result.firstRows).toEqual(['Panel', 'Panel/Yard'])
+    expect(result.selectedAtStart).toBe('Panel')
+    expect(result.selectedRow).toBe('Panel/Yard')
+    expect(result.selectedShape).toBe('Panel/Yard')
+    expect(result.panelText).toContain('#ItemSize → 64')
+    expect(result.panelText).toContain('template · TechItem · Standard.SC2Layout')
+    expect(result.panelText).toContain('Standard/TechItem')
+    expect(result.otherRows).toEqual(['Other', 'Other/Yard'])
+    expect(result.lastInput).toMatchObject({ rootPath: 'Other' })
+  })
+
   it('switches stages 100 times without reopening the asset and releases every lease', async () => {
     await reset()
     const result = await page.evaluate(async () => {

@@ -68,6 +68,8 @@ export interface GameTemplateTextRun {
   readonly bold?: boolean
   readonly italic?: boolean
   readonly underline?: boolean
+  /** Glyph height in the template's own units, when the producer's style sheet says one. */
+  readonly size?: number
 }
 
 /**
@@ -108,7 +110,8 @@ function isTextRun(value: unknown): value is GameTemplateTextRun {
     (run['color'] === undefined || typeof run['color'] === 'string') &&
     optionalBoolean(run['bold']) &&
     optionalBoolean(run['italic']) &&
-    optionalBoolean(run['underline'])
+    optionalBoolean(run['underline']) &&
+    (run['size'] === undefined || (finite(run['size']) && run['size'] > 0))
   )
 }
 
@@ -146,6 +149,126 @@ export function gameTemplateTextRuns(
 }
 
 /**
+ * Where one resolved value came from, in the producer's own words.
+ *
+ * `origin` says how the value reached the node — its own declaration, a template it inherits, a
+ * state — and `frame` names the declaring node when that is not the node itself. A viewer shows
+ * both as text and never interprets them.
+ */
+export interface GameTemplateValueSource {
+  readonly uri?: string
+  readonly origin?: string
+  readonly frame?: string
+  readonly start?: number
+  readonly end?: number
+}
+
+/** One property of a resolved node: what the source wrote and, when it differs, what it means. */
+export interface GameTemplateNodeProperty {
+  readonly name: string
+  readonly val?: string
+  readonly resolved?: string
+  readonly source?: GameTemplateValueSource
+}
+
+/** One edge constraint of a resolved node, as the producer wrote it. */
+export interface GameTemplateNodeAnchor {
+  readonly side: string
+  readonly relative?: string
+  readonly pos?: string
+  readonly offset?: string
+  readonly source?: GameTemplateValueSource
+}
+
+/**
+ * One node of a resolved template tree: what a viewer lists, selects and explains.
+ *
+ * `path` is the same key display items carry, so a tree row and a drawn rectangle are one thing.
+ * A producer may carry more fields; a viewer reads only these.
+ */
+export interface GameTemplateTreeNode {
+  readonly name: string
+  readonly type?: string
+  readonly path: readonly string[]
+  /** The template this node was declared from, as written. */
+  readonly template?: string
+  readonly properties?: readonly GameTemplateNodeProperty[]
+  readonly anchors?: readonly GameTemplateNodeAnchor[]
+  readonly children: readonly GameTemplateTreeNode[]
+}
+
+const optionalString = (value: unknown): boolean => value === undefined || typeof value === 'string'
+
+function isValueSource(value: unknown): boolean {
+  if (value === undefined) return true
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  const source = value as Record<string, unknown>
+  return (
+    optionalString(source['uri']) &&
+    optionalString(source['origin']) &&
+    optionalString(source['frame']) &&
+    (source['start'] === undefined || finite(source['start'])) &&
+    (source['end'] === undefined || finite(source['end']))
+  )
+}
+
+const recordsOk = (list: unknown, check: (item: Record<string, unknown>) => boolean): boolean =>
+  list === undefined ||
+  (Array.isArray(list) &&
+    list.every(
+      item =>
+        typeof item === 'object' &&
+        item !== null &&
+        !Array.isArray(item) &&
+        check(item as Record<string, unknown>),
+    ))
+
+function isNodeShallow(value: unknown): value is GameTemplateTreeNode {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false
+  const node = value as Record<string, unknown>
+  return (
+    typeof node['name'] === 'string' &&
+    optionalString(node['type']) &&
+    optionalString(node['template']) &&
+    Array.isArray(node['path']) &&
+    node['path'].every(part => typeof part === 'string') &&
+    Array.isArray(node['children']) &&
+    recordsOk(
+      node['properties'],
+      item =>
+        typeof item['name'] === 'string' &&
+        optionalString(item['val']) &&
+        optionalString(item['resolved']) &&
+        isValueSource(item['source']),
+    ) &&
+    recordsOk(
+      node['anchors'],
+      item =>
+        typeof item['side'] === 'string' &&
+        optionalString(item['relative']) &&
+        optionalString(item['pos']) &&
+        optionalString(item['offset']) &&
+        isValueSource(item['source']),
+    )
+  )
+}
+
+/** Runtime guard for a whole tree, bounded so a hostile producer cannot make the check the cost. */
+export function isGameTemplateTreeNode(
+  value: unknown,
+  maximumNodes = 100_000,
+): value is GameTemplateTreeNode {
+  const pending: unknown[] = [value]
+  let seen = 0
+  while (pending.length > 0) {
+    const node = pending.pop()
+    if (!isNodeShallow(node) || ++seen > maximumNodes) return false
+    for (const child of node.children) pending.push(child)
+  }
+  return true
+}
+
+/**
  * Common semantic envelope. `resolvedTree` and `displayItems` intentionally remain JSON data: each
  * game owns how a template is formed, while every consumer gets the same evidence boundary.
  */
@@ -155,6 +278,8 @@ export interface GameTemplatePreviewResult {
   readonly templateKind: string
   readonly entryUri: string
   readonly rootPath?: string
+  /** Other roots the same subject can be previewed from, by the name `rootPath` accepts. */
+  readonly roots?: readonly string[]
   readonly resolvedTree: JsonValue
   readonly displayItems: readonly JsonValue[]
   readonly diagnostics: readonly GameTemplatePreviewDiagnostic[]
@@ -178,6 +303,9 @@ export function isGameTemplatePreviewResult(value: unknown): value is GameTempla
     nonEmpty(result['templateKind']) &&
     nonEmpty(result['entryUri']) &&
     (result['rootPath'] === undefined || typeof result['rootPath'] === 'string') &&
+    (result['roots'] === undefined ||
+      (Array.isArray(result['roots']) &&
+        result['roots'].every(root => typeof root === 'string'))) &&
     typeof result['resolvedTree'] === 'object' &&
     result['resolvedTree'] !== null &&
     Array.isArray(result['displayItems']) &&

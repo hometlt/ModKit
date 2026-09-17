@@ -26,6 +26,12 @@ describe('game template preview contract', () => {
     expect(isGameTemplatePreviewResult(result)).toBe(true)
   })
 
+  it('accepts the roots a producer offers and nothing else in their place', () => {
+    expect(isGameTemplatePreviewResult({ ...result, roots: ['root', 'other'] })).toBe(true)
+    expect(isGameTemplatePreviewResult({ ...result, roots: 'root' })).toBe(false)
+    expect(isGameTemplatePreviewResult({ ...result, roots: [1] })).toBe(false)
+  })
+
   it('rejects candidate and pixel-comparison envelopes', () => {
     expect(isGameTemplatePreviewResult({ ...result, operationId: 'vendor/candidate' })).toBe(false)
     expect(
@@ -59,6 +65,9 @@ describe('game template display items', () => {
     expect(isGameTemplateDisplayItem({ ...box, kind: 'sprite' })).toBe(false)
     expect(isGameTemplateDisplayItem({ ...box, path: ['Root', 2] })).toBe(false)
     expect(isGameTemplateDisplayItem({ ...box, text: [{ color: '#fff' }] })).toBe(false)
+    // A glyph height is the producer's, in template units, and never zero or negative.
+    expect(isGameTemplateDisplayItem({ ...box, text: [{ text: 'Title', size: 24 }] })).toBe(true)
+    expect(isGameTemplateDisplayItem({ ...box, text: [{ text: 'Title', size: 0 }] })).toBe(false)
   })
 
   it('reads a plain string as one unstyled run', () => {

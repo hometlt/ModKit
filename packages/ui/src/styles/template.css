@@ -1,0 +1,103 @@
+/* Authored. The game template stage: resolved tree, drawn template and element view. */
+
+@layer mk.components {
+  .modkit-template__body {
+    display: grid;
+    grid-template-columns: minmax(12rem, 18rem) minmax(0, 1fr) minmax(14rem, 22rem);
+    gap: var(--mk-space-3);
+    align-items: start;
+    min-block-size: 0;
+  }
+
+  @media (width < 900px) {
+    .modkit-template__body {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  .modkit-template__tree,
+  .modkit-template__properties {
+    max-block-size: 40rem;
+    overflow: auto;
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    background: var(--mk-color-surface);
+    font-size: var(--mk-font-size-sm);
+  }
+
+  .modkit-template__tree [data-mk-part='tree.list'] {
+    margin: 0;
+    padding: var(--mk-space-1) 0;
+    list-style: none;
+  }
+
+  .modkit-template__tree [data-mk-part='tree.item'] {
+    padding-block: 1px;
+    padding-inline: calc(var(--template-depth, 0) * var(--mk-space-3) + var(--mk-space-2))
+      var(--mk-space-2);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+
+  .modkit-template__tree [data-mk-part='tree.item']:hover {
+    background: var(--mk-color-hover);
+  }
+
+  .modkit-template__tree [data-mk-part='tree.item'][data-mk-state~='selected'] {
+    background: var(--mk-color-selection);
+    color: var(--mk-color-selection-fg);
+  }
+
+  .modkit-template__tree [data-mk-part='tree.row'] {
+    display: inline-flex;
+    gap: var(--mk-space-1);
+  }
+
+  .modkit-template__tree [data-mk-part='tree.value'],
+  .modkit-template__tree [data-mk-part='tree.key'] {
+    color: var(--mk-color-fg-muted);
+  }
+
+  .modkit-template__stage {
+    min-inline-size: 0;
+  }
+
+  .modkit-template__stage [data-mk-part='template.canvas'] {
+    max-block-size: 40rem;
+    cursor: crosshair;
+  }
+
+  .modkit-template__node[data-mk-state~='selected'] rect {
+    fill: color-mix(in srgb, var(--mk-color-accent) 22%, transparent);
+    stroke: var(--mk-color-accent);
+    stroke-width: 2;
+  }
+
+  .modkit-template__properties {
+    display: grid;
+    gap: var(--mk-space-1);
+    padding: var(--mk-space-2);
+  }
+
+  .modkit-template__properties [data-mk-part='properties'] {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    gap: 0 var(--mk-space-2);
+  }
+
+  .modkit-template__properties [data-mk-part='properties.row'] {
+    display: contents;
+  }
+
+  .modkit-template__properties [data-mk-part='properties.value'] {
+    overflow-wrap: anywhere;
+    font-family: var(--mk-font-mono);
+  }
+
+  .modkit-template__properties [data-mk-part='properties.origin'] {
+    grid-column: 2;
+    margin-block-end: var(--mk-space-1);
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-xs);
+  }
+}

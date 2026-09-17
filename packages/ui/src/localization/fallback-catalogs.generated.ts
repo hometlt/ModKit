@@ -482,6 +482,10 @@ export const TEMPLATE_FALLBACK_MESSAGES = {
   'viewer.namedRemainder': '{count} named remainder',
   'viewer.noDisplayItems': 'No display items.',
   'viewer.resolvedSemanticTree': 'Resolved semantic tree',
+  'viewer.templateChain': 'Inherits: {chain}',
+  'viewer.templateNoProperties': 'This node sets no properties.',
+  'viewer.templateRoot': 'Preview root',
+  'viewer.templateSelectNode': 'Select a node to see its properties.',
   'viewer.templateUnavailable': 'Template unavailable: {reason}',
 } as const satisfies UiMessageCatalog
 
