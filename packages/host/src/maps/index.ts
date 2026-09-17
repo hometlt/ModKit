@@ -1459,6 +1459,11 @@ export type CoordinatedMapPreviewAssetSessionResult =
       descriptor: AnyDescriptor
       snapshot: ResolvedMapWorkspaceSnapshot
       plan: ResolvedMapWorkspacePlan
+      /**
+       * The catalog the map was analysed with (the caller's, or the one enrichment resolved over
+       * the map's workspace and dependencies), for consumers that render from catalog data too.
+       */
+      catalog?: DataCatalogSnapshot
       diagnostics: readonly Diagnostic[]
     }>
 
@@ -2742,6 +2747,7 @@ export async function coordinateMapPreviewAssetSession(
     }
     return Object.freeze({
       ...opened,
+      ...(enrichment.catalog === undefined ? {} : { catalog: enrichment.catalog }),
       session: sessionHoldingMapPreviewPrerequisites(
         opened.session,
         releasePreparedResources,
