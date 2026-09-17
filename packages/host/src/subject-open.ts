@@ -1078,9 +1078,13 @@ function runnableCandidates(
         const spec = manifest.spec as unknown as CodecContributionSpecV1Wire | undefined
         const claimsSource =
           spec !== undefined &&
+          spec.match !== undefined &&
           (options.source.kind === 'namespace'
-            ? spec.sourceTopology === 'namespace' && spec.probe.kind === 'namespace'
-            : spec.probe.kind === 'bytes' && matchesSpec(spec, path, options.mediaType))
+            ? spec.sourceTopology === 'namespace' && spec.probe?.kind === 'namespace'
+            : // a packed file a semantic container alias would have claimed (e.g. an .SC2Map
+              // whose codec failed validation) must not open as the bare carrier silently
+              (spec.probe?.kind === 'bytes' || spec.container !== undefined) &&
+              matchesSpec(spec, path, options.mediaType))
         if (claimsSource) {
           suppressed.push({
             contributionId: manifest.id,
@@ -1291,12 +1295,16 @@ async function openSubjectDirect(
   const suppressed: SuppressedCandidate[] = []
   const candidates = runnableCandidates(options, offers, signatureWindows, suppressed, route)
   for (const item of suppressed) {
+    // A user's switch is information; a codec the host could not validate is a fault to show.
+    const switchedOff = item.reasons.every(
+      code => code === 'x3.host/contribution-disabled' || code === 'x3.host/extension-disabled',
+    )
     diagnostics.push(
       diagnostic(
-        'information',
+        switchedOff ? 'information' : 'warning',
         'x3.host/candidate-suppressed',
         `«${item.contributionId}» matches this file but cannot run${
-          item.reasons.length === 0 ? '' : `: ${item.reasons.join(', ')}`
+          item.reasons.length === 0 ? '' : `: ${[...new Set(item.reasons)].join(', ')}`
         }`,
         [item.extensionId, item.contributionId],
       ),

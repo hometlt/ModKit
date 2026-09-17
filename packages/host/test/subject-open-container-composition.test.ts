@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest'
+import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { OperationCancelledError } from '@modkit/core'
 import {
@@ -617,6 +619,53 @@ describe('host-owned container composition', () => {
     expect(releases.filter(name => name === 'carrier.mjs')).toHaveLength(
       carrierReleasesBeforeDispose + 1,
     )
+  })
+
+  it('says so when an invalid semantic alias leaves the file to the bare carrier', async () => {
+    // An older SDK rejects a container field it does not know (as it did `assetRoots`): the
+    // semantic codec becomes ineligible and the packed file opens as its carrier.
+    // A sibling of the fixture, so its relative imports still resolve.
+    const copy = mkdtempSync(join(fixture, '..', 'tmp-invalid-alias-'))
+    try {
+      cpSync(fixture, copy, { recursive: true })
+      const manifest = join(copy, 'contributions', 'semantic.json')
+      writeFileSync(
+        manifest,
+        readFileSync(manifest, 'utf8').replace(
+          '"container": { "formatId": "test-carrier" }',
+          '"container": { "formatId": "test-carrier", "unknownField": [] }',
+        ),
+      )
+      const { executionBackends } = await harness()
+      const input = await loadExtensionDirectory(copy)
+      const inventory = await buildInventory(
+        [{ ...input, execution: { origin: 'bundled', allowTrustedInProcess: true } }],
+        createHostContributionContractRegistry(),
+      )
+      const result = await openSubject({
+        inventory,
+        source: source(),
+        path: 'map.car',
+        intent: 'full',
+        target: { environment: 'node', operatingSystem: 'windows', architecture: 'x64' },
+        grant: { id: 'container-composition', classes: ['read-source'] },
+        executionBackends,
+        budget,
+      })
+      expect(result.state).toBe('opened')
+      if (result.state !== 'opened') return
+      expect(result.selected.contributionId).toBe('org.example/test-carrier')
+      expect(result.diagnostics).toContainEqual(
+        expect.objectContaining({
+          code: 'x3.host/candidate-suppressed',
+          severity: 'warning',
+          message: expect.stringContaining('org.example/test-semantic'),
+        }),
+      )
+      await result.session.dispose()
+    } finally {
+      rmSync(copy, { recursive: true, force: true })
+    }
   })
 
   it('fails closed when semantic aliases tie instead of returning the generic carrier', async () => {
