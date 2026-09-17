@@ -686,6 +686,13 @@ export interface SelectableSubject {
 }
 
 export interface SubjectSelectorSummary {
+  /**
+   * A logical image id (an icon, a portrait) the host resolves through the subject's own raster
+   * resource port. The card never turns it into a path; without a resolver it is simply not drawn.
+   */
+  readonly portrait?: string
+  /** The label in each locale the producer resolved, keyed by the same locale ids facts carry. */
+  readonly localizedLabels?: Readonly<Record<string, string>>
   readonly snapshotId: string
   readonly totalSubjects: number
   readonly completeness: SubjectSelectorCompleteness
@@ -700,6 +707,13 @@ export interface SubjectEditDocumentRef {
 
 export interface SubjectEditTargetRequest {
   readonly subjectId: string
+  /** One short sentence about what the value is, when the value alone misleads (as `MetadataEntry`). */
+  readonly note?: string
+  /**
+   * The locale this value is written in. A subject that publishes the same fact in several locales
+   * tags each copy; a card shows one locale at a time and offers the rest as a switch.
+   */
+  readonly locale?: string
   readonly fieldPath: readonly string[]
   readonly targetDocument?: Pick<SubjectEditDocumentRef, 'rootId' | 'path'>
 }

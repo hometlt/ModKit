@@ -133,7 +133,15 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
     },
     {
       id: 'table',
+        ...(context.textures === undefined ? {} : { textures: context.textures }),
       label: context.localizer.text('stage.table'),
+      optionalContracts: [
+        'common.view/raster-image-source',
+        'common.view/model-scene-source',
+        'common.view/video-media-source',
+        'common.view/audio-media-source',
+        'common.view/subject-selector-source',
+      ],
       contract: 'common.view/table-data-source',
       module: createTableViewer({ localizer: context.localizer }),
     },

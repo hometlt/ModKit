@@ -547,8 +547,12 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
       id: 'card',
       label: text('web.view.card'),
       contract: 'common.view/subject-facts-source',
-      // The card's preview section mounts the same model stage, or the image stage.
-      module: createSubjectCardViewer({ localizer, previews: { model: modelViewer() } }),
+      // The card's preview section mounts the same model, image, video or audio stage.
+      module: createSubjectCardViewer({
+        localizer,
+        previews: { model: modelViewer(), audio: audioStage(localizer) },
+        ...(context.textures === undefined ? {} : { textures: context.textures }),
+      }),
       optionalContracts: [
         'common.view/raster-image-source',
         'common.view/model-scene-source',
@@ -562,6 +566,10 @@ export function createWebPreviewStages(context: WebViewContext): readonly Previe
       module: createSubjectCalculationsViewer({ localizer }),
     },
     {
+        'common.view/video-media-source',
+        'common.view/audio-media-source',
+        'common.view/transport-source',
+        'common.view/subject-selector-source',
       id: 'table',
       label: text('web.view.table'),
       contract: 'common.view/table-data-source',

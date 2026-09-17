@@ -23,7 +23,11 @@
       { "contract": "common.view/model-animation-source", "major": 1 },
       { "contract": "common.view/model-collision-source", "major": 1 },
       { "contract": "common.view/model-material-source", "major": 1 },
-      { "contract": "common.view/model-socket-source", "major": 1 }
+      { "contract": "common.view/model-socket-source", "major": 1 },
+      { "contract": "common.view/video-media-source", "major": 1 },
+      { "contract": "common.view/audio-media-source", "major": 1 },
+      { "contract": "common.view/transport-source", "major": 1 },
+      { "contract": "common.view/subject-selector-source", "major": 1 }
     ],
     "optionalServices": [{ "contract": "common.render/scene-3d", "major": 1 }],
     "priority": 390,

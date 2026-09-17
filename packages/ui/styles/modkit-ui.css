@@ -4148,10 +4148,52 @@
   [data-mk-part='graph.type'][data-mk-state~='disabled'] {
     color: var(--mk-color-fg-disabled);
     pointer-events: auto;
+    white-space: pre-line;
   }
 
   [data-mk-part='graph.type-swatch'] {
     flex: 0 0 auto;
+  [data-mk-part='card.field-note'] {
+    display: block;
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-xs);
+    white-space: normal;
+  }
+
+  [data-mk-part='card.nav'] {
+    display: flex;
+    gap: var(--mk-space-1);
+    padding: var(--mk-space-2) var(--mk-space-4) 0;
+  }
+
+  [data-mk-part='card.nav'][hidden] {
+    display: none;
+  }
+
+  [data-mk-part='card.nav'] button {
+    min-width: var(--mk-size-control);
+    height: var(--mk-size-control);
+    color: var(--mk-color-fg);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    background: var(--mk-color-surface);
+    cursor: pointer;
+  }
+
+  [data-mk-part='card.nav'] button:disabled {
+    color: var(--mk-color-fg-disabled);
+    cursor: default;
+  }
+
+  canvas[data-mk-part='card.portrait'] {
+    object-fit: contain;
+    image-rendering: auto;
+  }
+
+  canvas[data-mk-part='card.portrait'][hidden] {
+    display: none;
+  }
+
     width: 8px;
     height: 8px;
     border-radius: var(--mk-radius-pill);

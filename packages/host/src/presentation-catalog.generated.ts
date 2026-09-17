@@ -329,6 +329,26 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
         Object.freeze({
           bindingId: 'calculations-content',
           contract: 'common.view/subject-calculations-source',
+      Object.freeze({
+        bindingId: 'card-optional-9',
+        contract: 'common.view/video-media-source',
+        major: 1,
+      }),
+      Object.freeze({
+        bindingId: 'card-optional-10',
+        contract: 'common.view/audio-media-source',
+        major: 1,
+      }),
+      Object.freeze({
+        bindingId: 'card-optional-11',
+        contract: 'common.view/transport-source',
+        major: 1,
+      }),
+      Object.freeze({
+        bindingId: 'card-optional-12',
+        contract: 'common.view/subject-selector-source',
+        major: 1,
+      }),
           major: 1,
         }),
       ]),
@@ -342,6 +362,10 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
   }),
   Object.freeze({
     slot: Object.freeze({
+        { contract: 'common.view/video-media-source', major: 1 },
+        { contract: 'common.view/audio-media-source', major: 1 },
+        { contract: 'common.view/transport-source', major: 1 },
+        { contract: 'common.view/subject-selector-source', major: 1 },
       slotId: 'relations',
       kind: 'stage',
       contributionId: 'modkit.ui/relation-graph-stage',

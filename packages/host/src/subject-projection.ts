@@ -636,8 +636,11 @@ function descriptorPreview(
   const wanted = definition?.card?.preview
   const hasRaster = contracts.has('common.view/raster-image-source')
   const hasModel = contracts.has('common.view/model-scene-source')
+  const hasMedia =
+    contracts.has('common.view/video-media-source') ||
+    contracts.has('common.view/audio-media-source')
   if ((wanted === 'raster' && !hasRaster) || (wanted === 'model' && !hasModel)) return undefined
-  if (wanted === undefined && !hasRaster && !hasModel) return undefined
+  if (wanted === undefined && !hasRaster && !hasModel && !hasMedia) return undefined
   const source = descriptorSources(descriptor)[0]
   if (source === undefined) return undefined
   return Object.freeze({
@@ -645,7 +648,12 @@ function descriptorPreview(
     ...(descriptor.interpretation === 'codec' && descriptor.identity.mediaType !== undefined
       ? { mediaType: descriptor.identity.mediaType }
       : {}),
-    label: wanted === 'model' || (!hasRaster && hasModel) ? 'model preview' : 'raster preview',
+    label:
+      wanted === 'model' || (!hasRaster && hasModel)
+        ? 'model preview'
+        : hasRaster || wanted === 'raster'
+          ? 'raster preview'
+          : 'media preview',
   })
 }
 
@@ -718,6 +726,7 @@ function descriptorFactGroups(
             label: entry.key,
             value: entry.value,
             provenance: Object.freeze([...(entry.provenance ?? [])]),
+            ...(entry.note === undefined ? {} : { note: entry.note }),
             ...(entry.knowledgeTarget === undefined
               ? {}
               : { knowledgeTarget: entry.knowledgeTarget }),
@@ -890,8 +899,11 @@ export function createCompositeSubjectFactsSource(
       for (const group of item.groups) {
         if (!groupMap.has(group.id)) groupMap.set(group.id, group)
         const facts = factMaps.get(group.id) ?? new Map<string, SubjectFact>()
-        for (const fact of item.facts.get(group.id) ?? [])
-          if (!facts.has(fact.id)) facts.set(fact.id, fact)
+        for (const fact of item.facts.get(group.id) ?? []) {
+          // The same fact in another locale is another value, not a duplicate.
+          const key = `${fact.id}\u0000${fact.locale ?? ''}`
+          if (!facts.has(key)) facts.set(key, fact)
+        }
         factMaps.set(group.id, facts)
       }
       for (const relation of item.relations) {

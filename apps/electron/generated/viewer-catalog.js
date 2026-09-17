@@ -99,6 +99,10 @@ export const PREVIEW_STAGES = Object.freeze([
     module: subjectCalculationsViewer,
   },
   {
+      'common.view/video-media-source',
+      'common.view/audio-media-source',
+      'common.view/transport-source',
+      'common.view/subject-selector-source',
     id: 'relations',
     label: 'Relations',
     contract: 'common.view/relation-graph-source',
@@ -191,6 +195,10 @@ export const PREVIEW_STAGES_READONLY = Object.freeze([
   },
   { id: 'template', label: 'Template', operation: 'view.template', module: gameTemplateViewer },
   { id: 'tree', label: 'Tree', contract: 'common.view/tree-data-source', module: treeViewer },
+      'common.view/video-media-source',
+      'common.view/audio-media-source',
+      'common.view/transport-source',
+      'common.view/subject-selector-source',
   {
     id: 'text',
     label: 'Text',
@@ -303,6 +311,10 @@ export function createPreviewStages(localizer) {
     {
       id: 'tree',
       label: 'Tree',
+        'common.view/video-media-source',
+        'common.view/audio-media-source',
+        'common.view/transport-source',
+        'common.view/subject-selector-source',
       contract: 'common.view/tree-data-source',
       module: createTreeViewer({ localizer }),
     },
@@ -427,6 +439,10 @@ export function createPreviewStagesReadonly(localizer) {
       id: 'text',
       label: 'Text',
       contract: 'common.view/text-data-source',
+        'common.view/video-media-source',
+        'common.view/audio-media-source',
+        'common.view/transport-source',
+        'common.view/subject-selector-source',
       module: createBoundedTextViewer({ localizer }),
     },
     {

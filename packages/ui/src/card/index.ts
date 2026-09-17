@@ -11,6 +11,9 @@
  */
 import type {
   JsonValue,
+  Lease,
+  ModelResourceRef,
+  SubjectSelectorSource,
   KnowledgeCatalog,
   KnowledgeHit,
   KnowledgeTarget,
@@ -36,6 +39,7 @@ import { type UiLocalizer, type UiMessageKey } from '../localization/index.js'
 import { CARD_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
 import { mountFieldEditTarget } from '../field-write/index.js'
+import type { ModelViewerOptions } from '../model/index.js'
 
 export interface CardRef {
   readonly label: string
@@ -139,6 +143,8 @@ export interface CardField {
   /** Rendered as a chip after the value: the origin subject, a unit, a schema hint. */
   readonly badge?: string
   readonly title?: string
+  /** One sentence under the value about what it is, when the value alone misleads. */
+  readonly note?: string
   /** Exact codec-owned address for lazily resolving field help. */
   readonly knowledgeTarget?: KnowledgeTarget
   readonly editTarget?: SubjectEditTargetResult
@@ -165,6 +171,8 @@ export type CardSection =
       readonly kind: 'header'
       readonly title: string
       readonly portrait?: string
+      /** A logical image id resolved through `SubjectCardOptions.resolveImage`. */
+      readonly portraitImage?: string
       readonly refs?: readonly CardRef[]
       readonly chips?: readonly CardChip[]
       readonly description?: string
@@ -230,6 +238,15 @@ export interface SubjectCardOptions {
   readonly knowledge?: KnowledgeCatalog
   readonly knowledgeLocales?: readonly string[]
   onNavigate?(ref: CardRef): void
+  /** Host-owned image lookup for `portraitImage`; the card never turns an id into a path. */
+  resolveImage?(id: string, signal: AbortSignal): Promise<CardImage | undefined>
+}
+
+/** Decoded RGBA8 pixels, top-left origin. */
+export interface CardImage {
+  readonly width: number
+  readonly height: number
+  readonly rgba: Uint8Array
 }
 
 export interface SubjectCard {
@@ -244,6 +261,10 @@ export interface SubjectCardLoadOptions {
   readonly relationLimit?: number
   readonly pageSize?: number
   readonly signal?: AbortSignal
+  /** Which locale to show when facts are published in several; defaults to enUS, then the first. */
+  readonly locale?: string
+  /** Called with the chosen locale when the reader switches it in the header. */
+  onLocaleChange?(locale: string): void
 }
 
 function cardLoadLimit(value: number, label: string): number {
@@ -270,11 +291,68 @@ async function loadCardPages<T>(
   return { items: Object.freeze(items), capped: cursor !== undefined }
 }
 
-function factValue(value: JsonValue): string {
+function scalarText(value: JsonValue): string | undefined {
   if (typeof value === 'string') return value
   if (value === null || typeof value === 'number' || typeof value === 'boolean')
     return String(value)
+  return undefined
+}
+
+/** A list reads as lines and a flat record as `key: value` lines; only deeper values stay JSON. */
+function factValue(value: JsonValue): string {
+  const scalar = scalarText(value)
+  if (scalar !== undefined) return scalar
+  if (Array.isArray(value)) {
+    const items = value.map(scalarText)
+    if (items.every((item): item is string => item !== undefined)) return items.join('\n')
+  } else if (value !== null) {
+    const entries = Object.entries(value).map(([key, item]) => [key, scalarText(item)] as const)
+    if (entries.every(([, item]) => item !== undefined))
+      return entries.map(([key, item]) => `${key}: ${item ?? ''}`).join('\n')
+  }
   return JSON.stringify(value)
+}
+
+/**
+ * Glyphs for the stat row, keyed by the fact's own id. These are the vocabulary of any unit or item
+ * in any game: a producer that publishes a `stats` group names its facts with them and gets an
+ * icon; any other id gets a neutral bullet.
+ */
+const STAT_ICONS: Readonly<Record<string, string>> = Object.freeze({
+  life: '\u2665',
+  health: '\u2665',
+  shields: '\u25C8',
+  energy: '\u26A1',
+  armor: '\u26E8',
+  speed: '\u00BB',
+  minerals: '\u25C6',
+  vespene: '\u25B2',
+  gas: '\u25B2',
+  food: '\u2302',
+  supply: '\u2302',
+  time: '\u23F1',
+  damage: '\u2694',
+  range: '\u2192',
+  cooldown: '\u21BB',
+  dps: '\u2694',
+})
+
+function statOf(fact: SubjectFact): CardStat {
+  const key = fact.id.toLowerCase().split(/[-.:]/u).at(-1) ?? ''
+  return {
+    icon: STAT_ICONS[key] ?? '\u2022',
+    value: factValue(fact.value),
+    title: fact.note === undefined ? fact.label : `${fact.label} \u2014 ${fact.note}`,
+  }
+}
+
+function localeOf(fact: { readonly locale?: string }): string | undefined {
+  return typeof fact.locale === 'string' && fact.locale !== '' ? fact.locale : undefined
+}
+
+function preferredLocale(locales: readonly string[], wanted?: string): string | undefined {
+  if (wanted !== undefined && locales.includes(wanted)) return wanted
+  return locales.find(locale => locale.toLowerCase() === 'enus') ?? locales[0]
 }
 
 const EXTENSION_SUBJECT_KIND = 'modkit/extension'
@@ -387,6 +465,7 @@ function factField(fact: SubjectFact, subjectKind: string, localizer: UiLocalize
     value: factValue(fact.value),
     ...(provenance.length === 0 ? {} : { badge: provenance[0] }),
     ...(provenance.length <= 1 ? {} : { title: provenance.join(' · ') }),
+    ...(fact.note === undefined ? {} : { note: fact.note }),
     ...(fact.knowledgeTarget === undefined ? {} : { knowledgeTarget: fact.knowledgeTarget }),
     ...(fact.editTarget === undefined ? {} : { editTarget: fact.editTarget }),
   }
@@ -434,7 +513,12 @@ function applyCardLayout(
   const layoutId = (section: CardSection): string => {
     if (section.kind === 'header') return 'identity'
     if (rank.has(section.id)) return section.id
-    if (section.id === 'related-subjects' || section.id === 'contributions') return 'relations'
+    if (
+      section.id === 'related-subjects' ||
+      section.id === 'contributions' ||
+      section.id.startsWith('related:')
+    )
+      return 'relations'
     return section.id
   }
   return Object.freeze(
@@ -479,21 +563,6 @@ export async function loadSubjectCardSections(
     notes.push(localizer.text('card.factGroupsCapped'))
   if (relations.capped || relations.items.length < summary.relationCount)
     notes.push(localizer.text('card.relatedCapped'))
-  const sections: CardSection[] = [
-    {
-      kind: 'header',
-      title: summary.identity.label,
-      refs: summary.identity.origins.map(origin => ({
-        label: origin.label,
-        ...(origin.source === undefined ? {} : { href: origin.source.uri }),
-      })),
-      chips: [
-        { label: summary.identity.kind },
-        ...(summary.identity.type === undefined ? [] : [{ label: summary.identity.type }]),
-      ],
-      ...(notes.length === 0 ? {} : { notes }),
-    },
-  ]
   const factGroups = await Promise.all(
     groups.items.map(async group => ({
       group,
@@ -509,9 +578,53 @@ export async function loadSubjectCardSections(
       ),
     })),
   )
+  const identity = summary.identity
+  const labels = identity.localizedLabels ?? {}
+  const locales = [
+    ...new Set([
+      ...factGroups.flatMap(item => item.page.items.map(localeOf)),
+      ...Object.keys(labels),
+    ]),
+  ]
+    .filter((locale): locale is string => locale !== undefined)
+    .sort()
+  const locale = preferredLocale(locales, options.locale)
+  const visible = (fact: SubjectFact): boolean => {
+    const own = localeOf(fact)
+    return own === undefined || own === locale
+  }
+  const stats = factGroups
+    .filter(item => item.group.id === 'stats')
+    .flatMap(item => item.page.items.filter(visible).map(statOf))
+  const sections: CardSection[] = [
+    {
+      kind: 'header',
+      title: (locale === undefined ? undefined : labels[locale]) ?? identity.label,
+      ...(identity.portrait === undefined ? {} : { portraitImage: identity.portrait }),
+      ...(stats.length === 0 ? {} : { stats }),
+      ...(locales.length < 2
+        ? {}
+        : {
+            aside: {
+              options: locales,
+              ...(locale === undefined ? {} : { value: locale }),
+              ...(options.onLocaleChange === undefined ? {} : { onChange: options.onLocaleChange }),
+            },
+          }),
+      refs: summary.identity.origins.map(origin => ({
+        label: origin.label,
+        ...(origin.source === undefined ? {} : { href: origin.source.uri }),
+      })),
+      chips: [
+        { label: summary.identity.kind },
+        ...(summary.identity.type === undefined ? [] : [{ label: summary.identity.type }]),
+      ],
+      ...(notes.length === 0 ? {} : { notes }),
+    },
+  ]
   const description = factGroups
-    .find(item => item.group.id === 'overview')
-    ?.page.items.find(item => item.id === 'description')?.value
+    .flatMap(item => item.page.items)
+    .find(item => item.id === 'description' && visible(item))?.value
   if (typeof description === 'string' && description.trim() !== '') {
     const header = sections[0]
     if (header?.kind === 'header') sections[0] = { ...header, description }
@@ -531,7 +644,10 @@ export async function loadSubjectCardSections(
       expanded: true,
     })
   }
-  for (const { group, page } of factGroups) {
+  for (const { group, page: loadedPage } of factGroups) {
+    if (group.id === 'stats') continue
+    const page = { ...loadedPage, items: loadedPage.items.filter(visible) }
+    if (page.items.length === 0 && loadedPage.items.length > 0) continue
     // Extension-owned contributions are navigable subjects, not opaque JSON fields. Their
     // canonical links come from the relation page below; suppress the duplicate fact projection.
     if (summary.identity.kind === EXTENSION_SUBJECT_KIND && group.id === 'contributions') continue
@@ -586,7 +702,25 @@ export async function loadSubjectCardSections(
       expanded: true,
     })
   }
-  if (relations.items.length > 0) {
+  const relationRef = (item: (typeof relations.items)[number]): CardRef => ({
+    label: item.label,
+    href: item.subjectId,
+    title: `${item.role} · ${item.kind}`,
+    ...(item.dead === undefined ? {} : { dead: item.dead }),
+  })
+  const roles = [...new Set(relations.items.map(item => item.role))]
+  if (summary.identity.kind !== EXTENSION_SUBJECT_KIND && roles.length > 1) {
+    // Several kinds of link (weapons, abilities, dependencies) read as lists of their own.
+    for (const role of roles) {
+      sections.push({
+        kind: 'links',
+        id: `related:${role}`,
+        title: role,
+        links: relations.items.filter(item => item.role === role).map(relationRef),
+        expanded: true,
+      })
+    }
+  } else if (relations.items.length > 0) {
     const extensionContributions = summary.identity.kind === EXTENSION_SUBJECT_KIND
     sections.push({
       kind: 'links',
@@ -594,12 +728,7 @@ export async function loadSubjectCardSections(
       title: extensionContributions
         ? localizer.text('card.extension.group.contributions')
         : localizer.text('card.relatedSubjects'),
-      links: relations.items.map(item => ({
-        label: item.label,
-        href: item.subjectId,
-        title: `${item.role} · ${item.kind}`,
-        ...(item.dead === undefined ? {} : { dead: item.dead }),
-      })),
+      links: relations.items.map(relationRef),
       ...(extensionContributions ? { expanded: true } : {}),
     })
   }
@@ -629,13 +758,35 @@ function renderHeader(
   host: HTMLElement,
   section: Extract<CardSection, { kind: 'header' }>,
   localizer: UiLocalizer,
+  signal: AbortSignal,
   onNavigate?: (ref: CardRef) => void,
+  resolveImage?: SubjectCardOptions['resolveImage'],
 ): void {
   const header = document.createElement('div')
   header.className = 'modkit-card__header'
   setPart(header, 'card.header')
 
-  if (section.portrait !== undefined) {
+  if (section.portraitImage !== undefined && resolveImage !== undefined) {
+    const portrait = document.createElement('canvas')
+    portrait.className = 'modkit-card__portrait'
+    portrait.setAttribute('aria-hidden', 'true')
+    portrait.hidden = true
+    setPart(portrait, 'card.portrait')
+    header.append(portrait)
+    void resolveImage(section.portraitImage, signal)
+      .then(image => {
+        const context = image === undefined ? null : portrait.getContext('2d')
+        if (image === undefined || context === null || signal.aborted) return
+        if (image.rgba.byteLength !== image.width * image.height * 4) return
+        portrait.width = image.width
+        portrait.height = image.height
+        const pixels = context.createImageData(image.width, image.height)
+        pixels.data.set(image.rgba)
+        context.putImageData(pixels, 0, 0)
+        portrait.hidden = false
+      })
+      .catch(() => undefined)
+  } else if (section.portrait !== undefined) {
     const portrait = document.createElement('div')
     portrait.className = 'modkit-card__portrait'
     portrait.setAttribute('aria-hidden', 'true')
@@ -768,6 +919,12 @@ function renderFields(
     const value = document.createElement('span')
     value.textContent = safeViewerText(field.value, 2048)
     setPart(value, 'card.field-value')
+    if (field.note !== undefined) {
+      const note = document.createElement('small')
+      note.textContent = safeViewerText(field.note, 512)
+      setPart(note, 'card.field-note')
+      value.append(note)
+    }
     row.append(name, value)
     if (field.badge !== undefined) {
       const badge = document.createElement('span')
@@ -795,8 +952,18 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
   root.setAttribute('aria-label', localizer.text('card.namedSubject', { label: options.label }))
   setPart(root, 'card')
 
+  const images = new AbortController()
   const header = options.sections.find(section => section.kind === 'header')
-  if (header !== undefined) renderHeader(document, root, header, localizer, options.onNavigate)
+  if (header !== undefined)
+    renderHeader(
+      document,
+      root,
+      header,
+      localizer,
+      images.signal,
+      options.onNavigate,
+      options.resolveImage,
+    )
 
   const knowledge = document.createElement('aside')
   knowledge.className = 'modkit-card__knowledge'
@@ -1021,6 +1188,7 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
     root,
     destroy() {
       cancelLookup('card-destroyed')
+      images.abort('card-destroyed')
       accordion.destroy()
       root.remove()
     },
@@ -1035,7 +1203,17 @@ export interface SubjectCardViewerOptions {
    * image and model stages use (renderer port, texture resolver, export writer); without them the
    * card falls back to unconfigured ones, which draw a wireframe model and untextured materials.
    */
-  readonly previews?: { readonly image?: ViewerModule; readonly model?: ViewerModule }
+  readonly previews?: {
+    readonly image?: ViewerModule
+    readonly model?: ViewerModule
+    readonly audio?: ViewerModule
+    readonly video?: ViewerModule
+  }
+  /**
+   * The host's subject-bound image lookup, the same one its model stage uses for textures. The
+   * card uses it for a subject's portrait; without it the portrait is not drawn.
+   */
+  readonly textures?: ModelViewerOptions['textures']
 }
 
 export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}): ViewerModule {
@@ -1053,30 +1231,144 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
         )
         if (lease === undefined) throw new TypeError('subject facts binding is unavailable')
         scope.lease(lease)
-        const loaded = await loadSubjectCardSections(lease.value as SubjectFactsSource, {
-          localizer,
-          signal: scope.signal,
-        })
-        const sections = embedPreview(loaded, args, scope, localizer, options.previews)
-        const subjectNavigation = args.subjectNavigation
-        const navigate =
-          subjectNavigation === undefined
+        const selectorLease = (await unknownSourceLease(
+          args.sources,
+          args.slot,
+          SUBJECT_SELECTOR_CONTRACT,
+        )) as Lease<SubjectSelectorSource> | undefined
+        if (selectorLease !== undefined) scope.lease(selectorLease)
+        const selector = selectorLease?.value
+        const own = lease.value as SubjectFactsSource
+        const ownId = (await own.summary(scope.signal)).identity.subjectId
+        const document = root.ownerDocument
+        const history = new SubjectNavigationHistory()
+        history.reset(ownId)
+        const nav = document.createElement('div')
+        setPart(nav, 'card.nav')
+        const back = document.createElement('button')
+        back.type = 'button'
+        back.textContent = '\u2190'
+        back.title = localizer.text('card.historyBack')
+        back.setAttribute('aria-label', localizer.text('card.historyBack'))
+        const forward = document.createElement('button')
+        forward.type = 'button'
+        forward.textContent = '\u2192'
+        forward.title = localizer.text('card.historyForward')
+        forward.setAttribute('aria-label', localizer.text('card.historyForward'))
+        nav.append(back, forward)
+        root.append(nav)
+
+        const resolveImage =
+          options.textures === undefined
             ? undefined
-            : (reference: CardRef): void => {
-                if (reference.href === undefined) return
-                void subjectNavigation
-                  .open({ scope: subjectNavigation.scope, target: reference.href }, scope.signal)
-                  .catch(() => undefined)
+            : async (id: string, signal: AbortSignal): Promise<CardImage | undefined> => {
+                const textures = await options.textures?.(
+                  args.descriptor,
+                  [
+                    {
+                      id,
+                      role: 'texture',
+                      provenance: 'reference-only',
+                    } satisfies ModelResourceRef,
+                  ],
+                  signal,
+                )
+                const texture = textures?.get(id)
+                if (texture === undefined || texture.dimension === 'cube') return undefined
+                return {
+                  width: texture.width,
+                  height: texture.height,
+                  rgba: texture.rgba.subarray(0, texture.width * texture.height * 4),
+                }
               }
-        const card = createSubjectCard(root.ownerDocument, {
-          label: localizer.text('card.subject'),
-          localizer,
-          sections,
-          ...(args.knowledge === undefined ? {} : { knowledge: args.knowledge }),
-          ...(navigate === undefined ? {} : { onNavigate: navigate }),
+
+        let locale: string | undefined
+        let page: { card: SubjectCard; scope: ViewerMountScope } | undefined
+        let generation = 0
+        /*
+         * One card at a time. A related subject the codec can lend from this same session (an
+         * entity inside a catalog, a member of a mod) opens in place with back/forward; anything
+         * else goes to the host's own navigation, which opens it as a subject of its own.
+         */
+        const show = async (address: string, commit?: () => void): Promise<void> => {
+          const current = ++generation
+          const pageScope = new ViewerMountScope(scope.signal)
+          try {
+            let source = own
+            if (address !== ownId) {
+              if (selector === undefined) throw new TypeError('no subject selector is bound')
+              source = pageScope.lease(await selector.openFacts(address, pageScope.signal)).value
+            }
+            const loaded = await loadSubjectCardSections(source, {
+              localizer,
+              signal: pageScope.signal,
+              ...(locale === undefined ? {} : { locale }),
+              onLocaleChange(next) {
+                locale = next
+                void show(address).catch(() => undefined)
+              },
+            })
+            if (current !== generation || scope.signal.aborted) {
+              await pageScope.close()
+              return
+            }
+            const sections =
+              address === ownId
+                ? embedPreview(loaded, args, pageScope, localizer, options.previews)
+                : loaded
+            const card = createSubjectCard(document, {
+              label: localizer.text('card.subject'),
+              localizer,
+              sections,
+              ...(args.knowledge === undefined ? {} : { knowledge: args.knowledge }),
+              onNavigate: navigate,
+              ...(resolveImage === undefined ? {} : { resolveImage }),
+            })
+            commit?.()
+            const previous = page
+            page = { card, scope: pageScope }
+            pageScope.cleanup(() => card.destroy())
+            if (previous === undefined) root.append(card.root)
+            else previous.card.root.replaceWith(card.root)
+            await previous?.scope.close()
+            back.disabled = !history.canBack
+            forward.disabled = !history.canForward
+            nav.hidden = !history.canBack && !history.canForward
+            root.dataset['subject'] = address
+          } catch (error) {
+            await pageScope.close()
+            throw error
+          }
+        }
+        const subjectNavigation = args.subjectNavigation
+        const navigate = (reference: CardRef): void => {
+          const target = reference.href
+          if (target === undefined) return
+          void (async () => {
+            if (target === history.current) return
+            if (selector !== undefined || target === ownId) {
+              try {
+                await show(target, () => history.open(target))
+                return
+              } catch {
+                // Not one of this session's subjects: the host opens it as a subject of its own.
+              }
+            }
+            await subjectNavigation
+              ?.open({ scope: subjectNavigation.scope, target }, scope.signal)
+              .catch(() => undefined)
+          })()
+        }
+        back.addEventListener('click', () => {
+          const address = history.back()
+          if (address !== undefined) void show(address).catch(() => undefined)
         })
-        root.append(card.root)
-        scope.cleanup(() => card.destroy())
+        forward.addEventListener('click', () => {
+          const address = history.forward()
+          if (address !== undefined) void show(address).catch(() => undefined)
+        })
+        await show(ownId)
+        scope.cleanup(() => page?.scope.close())
         root.dataset['revision'] = args.descriptor.revision
         return createViewerMount(root, scope, args, ({ descriptor }) => {
           root.dataset['revision'] = descriptor.revision
@@ -1090,9 +1382,37 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
   })
 }
 
+const SUBJECT_SELECTOR_CONTRACT = 'common.view/subject-selector-source'
+
+const PREVIEW_STAGES = [
+  { kind: 'model', contract: 'common.view/model-scene-source' },
+  { kind: 'image', contract: 'common.view/raster-image-source' },
+  { kind: 'video', contract: 'common.view/video-media-source' },
+  { kind: 'audio', contract: 'common.view/audio-media-source' },
+] as const
+
+type PreviewStageKind = (typeof PREVIEW_STAGES)[number]['kind']
+
+// Loaded on demand: the model stage brings the 3D renderer with it.
+async function defaultPreviewStage(
+  kind: PreviewStageKind,
+  localizer: UiLocalizer,
+): Promise<ViewerModule> {
+  switch (kind) {
+    case 'model':
+      return (await import('../model/index.js')).createModelViewer({ localizer })
+    case 'image':
+      return (await import('../image/index.js')).createImageViewer({ localizer })
+    case 'video':
+      return (await import('../video/index.js')).createVideoViewer({ localizer })
+    case 'audio':
+      return (await import('../audio/index.js')).createAudioViewer({ localizer })
+  }
+}
+
 /**
  * The card's preview section shows the subject itself, not a link to it: when the host bound a
- * raster or model source to this slot, the standard image or model stage mounts inside the
+ * raster, model, video or audio source to this slot, the standard stage mounts inside the
  * section. Without such a binding the section keeps its link.
  */
 function embedPreview(
@@ -1102,11 +1422,7 @@ function embedPreview(
   localizer: UiLocalizer,
   previews: SubjectCardViewerOptions['previews'],
 ): readonly CardSection[] {
-  const kind = bindingFor(args.slot, 'common.view/model-scene-source')
-    ? 'model'
-    : bindingFor(args.slot, 'common.view/raster-image-source')
-      ? 'raster'
-      : undefined
+  const kind = PREVIEW_STAGES.find(item => bindingFor(args.slot, item.contract))?.kind
   if (kind === undefined) return sections
   return sections.map(section =>
     section.kind !== 'links' || section.id !== 'preview'
@@ -1119,13 +1435,7 @@ function embedPreview(
           async render(host: HTMLElement) {
             setPart(host, 'card.preview')
             try {
-              // Loaded on demand: the model stage brings the 3D renderer with it.
-              const module =
-                kind === 'model'
-                  ? (previews?.model ??
-                    (await import('../model/index.js')).createModelViewer({ localizer }))
-                  : (previews?.image ??
-                    (await import('../image/index.js')).createImageViewer({ localizer }))
+              const module = previews?.[kind] ?? (await defaultPreviewStage(kind, localizer))
               if (scope.signal.aborted) return
               const mount = await module.mount({ ...args, container: host, signal: scope.signal })
               scope.cleanup(() => mount.unmount())

@@ -70,6 +70,7 @@ const configuredStage = (stage: PreviewStage, options: ElectronStageOptions): Pr
       module: createSubjectCardViewer({
         ...(options.localizer === undefined ? {} : { localizer: options.localizer }),
         previews: { model: configuredModelViewer(options) },
+        ...(options.textures === undefined ? {} : { textures: options.textures }),
       }),
     }
   return localized

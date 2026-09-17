@@ -387,6 +387,8 @@ export const PARTS = Object.freeze([
   'graph.type-count',
   'graph.main',
   'graph.controls',
+  'card.field-note',
+  'card.nav',
   'graph.control',
   'graph.canvas',
   'graph.status',

@@ -197,6 +197,10 @@ describe('P3 generic subject projection', () => {
     ])
     const groups = await all(page => lease.value.groups(page))
     expect(groups.map(group => group.id)).toEqual(['identity', 'traits', 'texture'])
+    // The codec's one-sentence note travels with the fact, so a card can show it beside the value.
+    expect(await all(page => lease.value.facts('texture', page))).toContainEqual(
+      expect.objectContaining({ id: 'width', note: 'Top mip level only' }),
+    )
     await lease.release()
     await managed.session.dispose()
   })
@@ -303,7 +307,12 @@ function ddsDescriptor(): ResolvedAssetDescriptorWire {
         id: 'texture',
         label: 'Texture',
         entries: [
-          { key: 'width', value: 256, type: { kind: 'number', integer: true, unit: 'px' } },
+          {
+            key: 'width',
+            value: 256,
+            note: 'Top mip level only',
+            type: { kind: 'number', integer: true, unit: 'px' },
+          },
           { key: 'height', value: 128, type: { kind: 'number', integer: true, unit: 'px' } },
           {
             key: 'source-image',
