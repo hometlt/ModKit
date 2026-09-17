@@ -76,8 +76,8 @@ describe('generated installed format-family smoke', () => {
     })
   })
 
-  it('keeps the installed release at exact 8 Common plus 9 external roots', () => {
-    expect(generated.generatedFrom.bundledCatalog.roots).toHaveLength(8)
+  it('keeps the installed release at exact 9 Common plus 9 external roots', () => {
+    expect(generated.generatedFrom.bundledCatalog.roots).toHaveLength(9)
     expect(generated.generatedFrom.bundledCatalog.provenance).toBe(
       'checkout-physical-roots-verified-by-host-artifact-digest',
     )
