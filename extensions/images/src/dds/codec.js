@@ -6,13 +6,15 @@ import {
   replaceBytes,
 } from '@modkit/codec-kit'
 import { decodeBc6h, decodeBc7 } from './bptc.js'
-import { ENCODABLE_FORMATS } from './encode.js'
+import { ENCODABLE_FORMATS, encodeDds } from './encode.js'
 import {
-  DDS_EDIT_CONTENT_SCHEMA,
-  DDS_EXPORT_SCHEMA,
-  exportRaster,
-  transformNamed,
-} from '../ops/raster-transforms.js'
+  applyColorKeyTransparency,
+  applyRoundedAlpha,
+  combineNormalSpecular,
+  convertNormalMapToSc2,
+  prepareSc2ButtonIcon,
+  resizeRgba,
+} from '../ops/raster-ops.js'
 import {
   blockBytesFor,
   levelDimensions,
@@ -641,6 +643,111 @@ function regionReader(bytes, info) {
   }
 }
 
+/**
+ * The pixel transforms MK2 shipped, as one operation.
+ *
+ * `ops/raster-ops.js` holds six of them — resize, the SC2 normal-map conversion, the normal and
+ * specular combine, rounded alpha, the button-icon preparation and colour-key transparency — ported
+ * and, until now, imported by nothing. MK2 reached them from VS Code commands; MK3 puts them behind
+ * an operation instead, so the app, the editor and a script all reach the same code rather than the
+ * editor owning a capability the others cannot have.
+ *
+ * Each entry states what it needs, because the failures are silent otherwise: `combineNormalSpecular`
+ * wants a second image and produces nonsense from one, and `prepareSc2ButtonIcon` assumes a square
+ * icon. Checking here means a caller gets told; checking nowhere means a modder gets a wrong texture.
+ */
+const TRANSFORMS = Object.freeze({
+  resize: {
+    label: 'Resize',
+    apply: (image, request) => {
+      const width = Number(request.width)
+      const height = Number(request.height)
+      if (
+        !Number.isSafeInteger(width) ||
+        !Number.isSafeInteger(height) ||
+        width <= 0 ||
+        height <= 0
+      ) {
+        throw new TypeError('resize requires a positive integer width and height')
+      }
+      return resizeRgba(image, width, height)
+    },
+  },
+  'normal-map': {
+    label: 'Convert normal map to the SC2 channel layout',
+    apply: image => convertNormalMapToSc2(image),
+  },
+  'combine-normal-specular': {
+    label: 'Combine a normal map with a specular map',
+    apply: (image, request) => {
+      const specular = imageFromRequest(request.specular)
+      if (specular === undefined) {
+        throw new TypeError('combine-normal-specular requires a specular image')
+      }
+      if (specular.width !== image.width || specular.height !== image.height) {
+        throw new TypeError('combine-normal-specular requires both images at the same size')
+      }
+      return combineNormalSpecular(image, specular)
+    },
+  },
+  'rounded-alpha': {
+    label: 'Round the alpha corners',
+    apply: (image, request) => {
+      const radius = Number(request.radius ?? 0)
+      if (!Number.isFinite(radius) || radius < 0) {
+        throw new TypeError('rounded-alpha requires a non-negative radius')
+      }
+      return applyRoundedAlpha(image, radius)
+    },
+  },
+  'button-icon': {
+    label: 'Prepare an SC2 button icon',
+    apply: (image, request) => {
+      if (image.width !== image.height) {
+        throw new TypeError(
+          `button-icon requires a square image, got ${image.width} x ${image.height}`,
+        )
+      }
+      return prepareSc2ButtonIcon(image, request.options ?? {})
+    },
+  },
+  'color-key': {
+    label: 'Make one colour transparent',
+    apply: (image, request) => {
+      // The library's own option names, so a caller reads one vocabulary rather than two.
+      const target = request.target
+      if (target === null || typeof target !== 'object') {
+        throw new TypeError('color-key requires a target colour as { r, g, b }')
+      }
+      for (const channel of ['r', 'g', 'b']) {
+        if (!Number.isFinite(Number(target[channel]))) {
+          throw new TypeError(`color-key target is missing ${channel}`)
+        }
+      }
+      return applyColorKeyTransparency(image, {
+        target,
+        ...(request.tolerance === undefined ? {} : { tolerance: Number(request.tolerance) }),
+        ...(request.replacement === undefined ? {} : { replacement: request.replacement }),
+      })
+    },
+  },
+})
+
+/** An `{ width, height, pixels }` image supplied in a request, with pixels as a number array. */
+function imageFromRequest(value) {
+  if (value === null || typeof value !== 'object') return undefined
+  const width = Number(value.width)
+  const height = Number(value.height)
+  const pixels = Array.isArray(value.pixels) ? Uint8Array.from(value.pixels) : undefined
+  if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || pixels === undefined) {
+    return undefined
+  }
+  if (pixels.length !== width * height * 4) {
+    throw new TypeError('a supplied image needs width * height * 4 RGBA bytes')
+  }
+  return { width, height, pixels }
+}
+
 const definition = Object.freeze({
   id: ID,
   version: '1.0.0',
@@ -650,20 +757,7 @@ const definition = Object.freeze({
       handlerId: 'transform',
       mutatesSource: true,
       requiredPermissions: Object.freeze(['read-source', 'write-source']),
-      inputSchema: DDS_EDIT_CONTENT_SCHEMA,
       outputKinds: Object.freeze(['edit-plan']),
-    }),
-    /*
-     * MK2's DDS file commands (export PNG, DXT5 → DXT1, SC2 button icon) as one export: the
-     * transforms of `edit.content` plus a target encoding, returned as bytes for a new file.
-     */
-    Object.freeze({
-      id: 'export.convert',
-      handlerId: 'convert',
-      mutatesSource: false,
-      requiredPermissions: Object.freeze(['read-source']),
-      inputSchema: DDS_EXPORT_SCHEMA,
-      outputKinds: Object.freeze(['bytes']),
     }),
   ]),
   format: Object.freeze({ id: 'dds', label: 'DirectDraw Surface', mediaType: 'image/vnd-ms.dds' }),
@@ -764,29 +858,6 @@ const definition = Object.freeze({
         { kind: 'group', label: 'Mip chain', children: mipChain },
       ],
     })
-    /** Mip 0 of layer 0, face 0 as RGBA8: the one surface every transform and export reads. */
-    const baseSurface = async () => {
-      const region = await regionReader(
-        bytes,
-        info,
-      )({
-        x: 0,
-        y: 0,
-        width: info.width,
-        height: info.height,
-        frame: 0,
-        mipLevel: 0,
-        layer: 0,
-        face: 0,
-        slice: 0,
-        pixelFormat: 'rgba8',
-        maxBytes: decodedBytes,
-      })
-      return { width: region.width, height: region.height, pixels: region.pixels }
-    }
-    // The parser names block formats in upper case (`DXT5`); the encoder takes them in lower case.
-    const lowered = String(info.format).toLowerCase()
-    const sourceFormat = ENCODABLE_FORMATS.includes(lowered) ? lowered : 'rgba8'
     return {
       summary: {
         format: 'dds',
@@ -850,14 +921,6 @@ const definition = Object.freeze({
        */
       unsupportedFeatures: ['dds-transform-writes-a-single-surface'],
       handlers: {
-        /** Export the base surface as PNG, raw RGBA8 or a re-encoded DDS, optionally transformed. */
-        convert: async (input, options) => ({
-          kind: 'bytes',
-          value: await exportRaster(await baseSurface(), input ?? {}, {
-            defaultDdsFormat: sourceFormat,
-            signal: options?.signal,
-          }),
-        }),
         /**
          * Apply one named pixel transform and hand back the re-encoded file.
          *
@@ -866,19 +929,37 @@ const definition = Object.freeze({
          * "the image" in a block-compressed payload. The plan says so through its fidelity, and the
          * output format defaults to what the source used when that format can be written back.
          */
-        transform: async (input, options) => {
+        transform: async input => {
           const request = input ?? {}
-          const name = request.transform
-          const transform = transformNamed(name)
+          const name = typeof request.transform === 'string' ? request.transform : undefined
+          const transform = name === undefined ? undefined : TRANSFORMS[name]
+          if (transform === undefined) {
+            throw new TypeError(
+              `DDS transform must be one of ${Object.keys(TRANSFORMS).join(', ')}`,
+            )
+          }
+          const region = await regionReader(
+            bytes,
+            info,
+          )({
+            x: 0,
+            y: 0,
+            width: info.width,
+            height: info.height,
+            frame: 0,
+            mipLevel: 0,
+            layer: 0,
+            face: 0,
+            slice: 0,
+            pixelFormat: 'rgba8',
+            maxBytes: decodedBytes,
+          })
+          const source = { width: region.width, height: region.height, pixels: region.pixels }
+          const result = transform.apply(source, request)
+          const requested = typeof request.format === 'string' ? request.format : undefined
           const format =
-            request.format === undefined || request.format === 'keep'
-              ? sourceFormat
-              : request.format
-          const encoded = await exportRaster(
-            await baseSurface(),
-            { target: 'dds', format, transform: name, transformInput: request },
-            { defaultDdsFormat: sourceFormat, signal: options?.signal },
-          )
+            requested ?? (ENCODABLE_FORMATS.includes(info.format) ? info.format : 'rgba8')
+          const encoded = encodeDds(result, { format })
           return {
             kind: 'edit-plan',
             plan: editPlanFromInput(context.input, {

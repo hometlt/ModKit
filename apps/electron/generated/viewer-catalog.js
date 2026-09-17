@@ -84,6 +84,13 @@ export const PREVIEW_STAGES = Object.freeze([
     contract: 'common.view/vector-scene-source',
     module: vectorViewer,
   },
+  {
+    id: 'localization',
+    label: 'Localization',
+    contract: 'common.view/table-data-source',
+    module: tableViewer,
+    usesEditorPorts: true,
+  },
   { id: 'table', label: 'Table', contract: 'common.view/table-data-source', module: tableViewer },
   {
     id: 'card',
@@ -179,6 +186,13 @@ export const PREVIEW_STAGES_READONLY = Object.freeze([
     label: 'Vector',
     contract: 'common.view/vector-scene-source',
     module: vectorViewer,
+  },
+  {
+    id: 'localization',
+    label: 'Localization',
+    contract: 'common.view/table-data-source',
+    module: tableViewer,
+    usesEditorPorts: true,
   },
   { id: 'table', label: 'Table', contract: 'common.view/table-data-source', module: tableViewer },
   {
@@ -290,6 +304,13 @@ export function createPreviewStages(localizer) {
       label: 'Vector',
       contract: 'common.view/vector-scene-source',
       module: createVectorViewer({ localizer }),
+    },
+    {
+      id: 'localization',
+      label: 'Localization',
+      contract: 'common.view/table-data-source',
+      module: createTableViewer({ localizer }),
+      usesEditorPorts: true,
     },
     {
       id: 'table',
@@ -418,6 +439,13 @@ export function createPreviewStagesReadonly(localizer) {
       label: 'Vector',
       contract: 'common.view/vector-scene-source',
       module: createVectorViewer({ localizer }),
+    },
+    {
+      id: 'localization',
+      label: 'Localization',
+      contract: 'common.view/table-data-source',
+      module: createTableViewer({ localizer }),
+      usesEditorPorts: true,
     },
     {
       id: 'table',

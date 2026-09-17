@@ -64,6 +64,11 @@ export interface PreviewStage {
    * not — a read-only host must not mount an editor that can never save.
    */
   readonly editable?: boolean
+  /**
+   * A viewer that reads without the editor ports and writes through them when the host has them
+   * (a table with editable cells). Unlike `editable`, the stage is offered either way.
+   */
+  readonly usesEditorPorts?: boolean
 }
 
 export interface CodecPreviewOptions {
@@ -286,7 +291,8 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
          * host-owned ports, and it calls `edit.propose()` during mount. Passing them only for
          * `editable` stages keeps a plain viewer from ever seeing a write path.
          */
-        const stagePorts = stage.editable === true ? ports : undefined
+        const stagePorts =
+          stage.editable === true || stage.usesEditorPorts === true ? ports : undefined
 
         const mounted = await stage.module.mount({
           container,

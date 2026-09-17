@@ -304,11 +304,111 @@ export interface TableQuery {
   readonly pattern: string
 }
 
+/**
+ * What one column holds, when a table is more than a grid.
+ *
+ * A localization table is the case that needs it: its value columns are the same text in several
+ * languages, and a surface that knows which column is which can search, compare and translate
+ * without knowing the format. `variant` names the language (or any other variant axis); `base` marks
+ * the one the others are compared with and translated from.
+ */
+export interface TableColumnInfo {
+  /**
+   * `key` identifies the row, `variant` holds one variant of the row's value, `status` lists the
+   * row's `TableRowStatus` tokens separated by spaces, and `detail` is any other derived column.
+   */
+  readonly role: 'key' | 'variant' | 'status' | 'detail'
+  readonly variant?: string
+  /** BCP-47 language of a variant column, for a translation service. */
+  readonly language?: string
+  readonly base?: boolean
+}
+
+/** Tokens a `status` column may carry. */
+export type TableRowStatus = 'missing' | 'untranslated' | 'duplicate'
+
+/**
+ * Operations a table offers over its rows, by descriptor operation id.
+ *
+ * Each one is an ordinary codec operation; naming it here only tells a surface which request shape
+ * it accepts, so the surface stays free of any format's operation names.
+ */
+export interface TableActions {
+  /**
+   * Invoked with `TableRowAddRequest`, or with `TableVariantWriteRequest` for a batch of values in
+   * one variant; answers with one edit plan.
+   */
+  readonly addRow?: AssetOperationId
+  /** Invoked with `TableVariantCompareRequest`; answers with `TableVariantComparison`. */
+  readonly compareVariants?: AssetOperationId
+  /**
+   * Invoked with `TableVariantTranslateRequest`, answering `TableVariantTranslation`, or with
+   * `{ probe: true }`, answering `TableTranslateAvailability` before anything is sent anywhere.
+   */
+  readonly translateVariant?: AssetOperationId
+}
+
+export interface TableRowAddRequest {
+  readonly action: 'add'
+  readonly key: string
+  readonly value: string
+  /** The variant column that receives the row; the opened subject's own when omitted. */
+  readonly variant?: string
+}
+
+export interface TableVariantWriteRequest {
+  readonly action: 'set-many'
+  readonly variant: string
+  /** Each key is set, or added when the variant lacks it. */
+  readonly entries: readonly { readonly key: string; readonly value: string }[]
+}
+
+export interface TableVariantCompareRequest {
+  /** Compared with the base variant. */
+  readonly variant: string
+}
+
+export interface TableVariantComparison {
+  readonly missing: readonly string[]
+  readonly orphaned: readonly string[]
+  readonly identical: readonly string[]
+  readonly empty: readonly string[]
+  readonly total: number
+  readonly translated: number
+}
+
+export interface TableVariantTranslateRequest {
+  readonly key: string
+  readonly sourceVariant: string
+  readonly targetVariant: string
+  readonly sourceLanguage: string
+  readonly targetLanguage: string
+}
+
+export interface TableVariantTranslation {
+  readonly key: string
+  readonly translated: string
+  readonly changed: boolean
+  /** Present when the service answered and its answer was discarded. */
+  readonly refused?: string
+}
+
+export interface TableTranslateAvailability {
+  readonly available: boolean
+  /** Why translation cannot run here, for the surface to show beside a disabled control. */
+  readonly reason?: string
+}
+
 export interface TableDataSource {
   shape(): Promise<{
     readonly rows: number | 'unknown'
     readonly columns: number
     readonly header?: readonly string[]
+    /** One entry per column when present. */
+    readonly columnInfo?: readonly TableColumnInfo[]
+    readonly actions?: TableActions
+    /** Separator of group segments in the `key` column, e.g. `/`. */
+    readonly keySeparator?: string
   }>
   rows(request: TablePageRequest, signal?: AbortSignal): Promise<Page<Row>>
   cell(coord: CellCoord, signal?: AbortSignal): Promise<CellFacts>

@@ -77,6 +77,15 @@ export const PARTS = Object.freeze([
   'table.row',
   'table.cell',
   'table.next',
+  // variant (localization) tables
+  'table.head',
+  'table.controls',
+  'table.group',
+  'table.note',
+  'table.panel',
+  'table.add',
+  'table.compare',
+  'table.select',
 
   // namespace
   'namespace',
@@ -176,7 +185,6 @@ export const PARTS = Object.freeze([
   'imageedit.options',
   'imageedit.swatch',
   'imageedit.size',
-  'image.convert',
   'imageedit.actions',
   'imageedit.action',
   'imageedit.marquee',

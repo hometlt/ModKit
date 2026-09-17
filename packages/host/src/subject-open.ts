@@ -886,7 +886,13 @@ export function defaultResolveInput(context: SubjectInputResolutionContext): Ass
       },
     })
   }
-  if (plan.originKind !== 'single' || plan.requirements.length !== 0) {
+  /*
+   * A bundle whose every companion is optional is still a readable file on its own; without an
+   * origin to search there is nothing to bind, so it opens exactly as the lone file it is.
+   */
+  const loneBundle =
+    plan.originKind === 'bundle' && plan.requirements.every(requirement => !requirement.required)
+  if (!loneBundle && (plan.originKind !== 'single' || plan.requirements.length !== 0)) {
     throw new ModkitError({
       code: 'x3.host/input-resolver-required',
       message: `the default subject input resolver cannot satisfy ${plan.originKind} topology`,

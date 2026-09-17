@@ -12,7 +12,7 @@
  */
 
 import { opendir, lstat } from 'node:fs/promises'
-import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { ModkitError, throwIfAborted } from '@modkit/core'
 import type { ArtifactSource, InputSearchScope, Lease } from '@modkit/sdk'
 import {
@@ -25,8 +25,16 @@ import {
 } from '../input-resolution.js'
 import { openFileArtifactSource } from './file-artifact-source.js'
 
-/** `sibling-directory` and nothing else: a directory is not a mount and not a container. */
-const FILESYSTEM_SCOPES: readonly InputSearchScope[] = Object.freeze(['sibling-directory'])
+/**
+ * `sibling-directory` always. `enclosing-container` only when an ancestor directory is named like a
+ * container format the inventory knows (a loose `Foo.SC2Mod` folder is the archive, unpacked); its
+ * logical ids are then relative to that folder, exactly as they are inside the packed archive.
+ */
+const SIBLING_SCOPES: readonly InputSearchScope[] = Object.freeze(['sibling-directory'])
+const CONTAINER_SCOPES: readonly InputSearchScope[] = Object.freeze([
+  'sibling-directory',
+  'enclosing-container',
+])
 
 /** The primary subject's directory lies outside every root the product granted. */
 export const COMPANION_ORIGIN_OUTSIDE_ROOTS = 'x3.host/companion-origin-outside-roots'
@@ -42,6 +50,11 @@ export interface FilesystemCompanionOriginOptions {
    * one companion or two, and a test must be able to pin either answer.
    */
   readonly caseSensitivity?: CompanionCaseSensitivity
+  /**
+   * Lower-case extensions (no dot) of container formats. The nearest ancestor directory inside a
+   * granted root whose name ends in one of them is the `enclosing-container` scope.
+   */
+  readonly containerExtensions?: readonly string[]
 }
 
 function insideRoot(root: string, path: string): boolean {
@@ -78,11 +91,16 @@ export function createFilesystemCompanionOrigin(
   }
   const primaryLogicalId = normalizeCompanionLogicalId(relative(root, primaryPath))
   const caseSensitivity = options.caseSensitivity ?? platformCaseSensitivity()
+  const fold = (value: string): string =>
+    caseSensitivity === 'insensitive' ? value.toLowerCase() : value
+  const container = enclosingContainer(root, roots, options.containerExtensions ?? [])
+  /** Container-scope ids seen by `enumerate`, so `open` reads them from the container base. */
+  const containerIds = new Map<string, string>()
 
-  const confinedPath = (logicalId: string): string => {
+  const confinedPath = (logicalId: string, base = root): string => {
     const normalized = normalizeCompanionLogicalId(logicalId)
-    const path = resolve(join(root, normalized))
-    if (!insideRoot(root, path)) {
+    const path = resolve(join(base, normalized))
+    if (!insideRoot(base, path)) {
       throw new ModkitError({
         code: COMPANION_PATH_REFUSED,
         message: `companion «${normalized}» resolves outside its confined origin root`,
@@ -92,10 +110,10 @@ export function createFilesystemCompanionOrigin(
     return path
   }
 
-  const directoryPath = async (prefix: string): Promise<string | undefined> => {
-    if (prefix === '') return root
+  const directoryPath = async (prefix: string, base = root): Promise<string | undefined> => {
+    if (prefix === '') return base
     const normalized = normalizeCompanionLogicalId(prefix)
-    let path = root
+    let path = base
     for (const segment of normalized.split('/')) {
       path = join(path, segment)
       try {
@@ -113,18 +131,24 @@ export function createFilesystemCompanionOrigin(
   return Object.freeze({
     primaryLogicalId,
     caseSensitivity,
-    scopes: FILESYSTEM_SCOPES,
+    scopes: container === undefined ? SIBLING_SCOPES : CONTAINER_SCOPES,
     async *enumerate(
       scope: InputSearchScope,
       enumeration: CompanionEnumerationOptions,
       signal?: AbortSignal,
     ): AsyncIterable<CompanionOriginEntry> {
       throwIfAborted(signal)
-      if (scope !== 'sibling-directory') return
+      const base =
+        scope === 'sibling-directory'
+          ? root
+          : scope === 'enclosing-container'
+            ? container
+            : undefined
+      if (base === undefined) return
       const prefix = enumeration.prefix.replaceAll('\\', '/')
-      const foldedPrefix = caseSensitivity === 'insensitive' ? prefix.toLowerCase() : prefix
+      const foldedPrefix = fold(prefix)
       const parent = prefix.slice(0, prefix.lastIndexOf('/') + 1)
-      const path = await directoryPath(parent)
+      const path = await directoryPath(parent, base)
       if (path === undefined) return
       const directory = await opendir(path)
       try {
@@ -142,6 +166,13 @@ export function createFilesystemCompanionOrigin(
           // Each exact texture request has its own prefix. Returning unrelated siblings here
           // charges the same directory repeatedly and exhausts the resolver's entry budget.
           if (!candidate.startsWith(foldedPrefix)) continue
+          if (base !== root) {
+            const absolute = join(path, entry.name)
+            // The primary is excluded by id in the sibling space; in the container space it is
+            // excluded here, where its container-relative spelling is known.
+            if (fold(absolute) === fold(primaryPath)) continue
+            containerIds.set(fold(logicalId), absolute)
+          }
           yield Object.freeze({ logicalId })
         }
       } finally {
@@ -151,18 +182,37 @@ export function createFilesystemCompanionOrigin(
     async open(logicalId: string, signal?: AbortSignal): Promise<Lease<ArtifactSource>> {
       throwIfAborted(signal)
       const normalized = normalizeCompanionLogicalId(logicalId)
+      // ponytail: a container id that also spells a real sibling path opens the container file.
+      const base = container !== undefined && containerIds.has(fold(normalized)) ? container : root
       const parent = normalized.slice(0, normalized.lastIndexOf('/') + 1)
-      const directory = await directoryPath(parent)
-      if (directory === undefined || !(await lstat(confinedPath(normalized))).isFile())
+      const directory = await directoryPath(parent, base)
+      if (directory === undefined || !(await lstat(confinedPath(normalized, base))).isFile())
         throw new ModkitError({
           code: COMPANION_PATH_REFUSED,
           message: 'resource path is not a regular file inside the confined origin',
         })
       const source = await openFileArtifactSource(
-        confinedPath(normalized),
+        confinedPath(normalized, base),
         signal === undefined ? {} : { signal },
       )
       return Object.freeze({ value: source, release: async () => undefined })
     },
   })
+}
+
+/** The nearest ancestor of `directory`, inside a granted root, named like a container format. */
+function enclosingContainer(
+  directory: string,
+  roots: readonly string[],
+  extensions: readonly string[],
+): string | undefined {
+  if (extensions.length === 0) return undefined
+  const suffixes = extensions.map(extension => `.${extension.toLowerCase()}`)
+  for (let current = directory; ; current = dirname(current)) {
+    if (!roots.some(value => insideRoot(value, current))) return undefined
+    const name = basename(current).toLowerCase()
+    if (suffixes.some(suffix => name.endsWith(suffix) && name.length > suffix.length))
+      return current
+    if (dirname(current) === current) return undefined
+  }
 }

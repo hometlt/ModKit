@@ -626,8 +626,7 @@ function parseSchema(value: unknown): FieldEditInputSchemaV1 | undefined {
       typeof form['label'] !== 'string' ||
       typeof form['summary'] !== 'string' ||
       !Array.isArray(form['fields']) ||
-      // A preset (fixed `baseInput`, nothing to fill in) is the one form without controls.
-      (form['fields'].length === 0 && form['baseInput'] === undefined)
+      form['fields'].length === 0
     ) {
       return undefined
     }
@@ -916,29 +915,6 @@ export function editOffer(descriptor: AnyDescriptor, options: EditOfferOptions):
     }
   }
   return Object.freeze({ forms: Object.freeze(forms), unsupported: Object.freeze(unsupported) })
-}
-
-/**
- * Presets a non-mutating operation publishes through the same form schema — e.g. the
- * `export.convert` targets of an image. The result is bytes for a new file, never an edit plan, so
- * these are offered to export surfaces, not to the edit panel.
- */
-export function exportOffer(
-  descriptor: AnyDescriptor,
-  operationId = 'export.convert',
-): readonly EditOperationForm[] {
-  const forms: EditOperationForm[] = []
-  for (const operation of descriptor.operations) {
-    if (operation.id !== operationId || operation.mutatesSource || operation.state !== 'available')
-      continue
-    const schema = parseSchema(operation.inputSchema?.document)
-    for (const spec of schema?.forms ?? []) {
-      if (spec.binding !== undefined || spec.fields.some(field => field.type.kind === 'custom'))
-        continue
-      forms.push(resolveForm(operation, spec, undefined))
-    }
-  }
-  return Object.freeze(forms)
 }
 
 export function offersEditPanel(descriptor: AnyDescriptor, options: EditOfferOptions): boolean {

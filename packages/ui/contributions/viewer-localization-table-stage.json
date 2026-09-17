@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "contract": { "id": "modkit/viewer-contribution", "major": 1 },
+  "id": "modkit.ui/localization-table-stage",
+  "displayName": "localization table stage",
+  "runtimeVariants": [
+    {
+      "variantId": "browser",
+      "entrypoint": "./dist/table/index.js",
+      "target": { "environments": ["browser-main"] },
+      "executionProfile": "trusted-in-process",
+      "requestedPermissionClasses": []
+    }
+  ],
+  "spec": {
+    "kind": "stage",
+    "requiresTraits": [
+      { "id": "game.localization", "states": ["available"] },
+      { "id": "table.cells", "states": ["available"] }
+    ],
+    "consumesDataSources": [{ "contract": "common.view/table-data-source", "major": 1 }],
+    "priority": 410,
+    "singletonGroup": "stage.localization"
+  }
+}

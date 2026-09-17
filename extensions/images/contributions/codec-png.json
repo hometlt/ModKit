@@ -109,35 +109,7 @@
         "handlerId": "convert-rgba8",
         "mutatesSource": false,
         "requiredPermissions": ["read-source"],
-        "outputKinds": ["bytes"],
-        "inputSchema": {
-          "$ref": "modkit://images/png-export-convert.v1",
-          "document": {
-            "schemaVersion": 1,
-            "forms": [
-              {
-                "id": "dds",
-                "label": "Convert icon to DDS",
-                "summary": "Writes a DXT5 DDS of a square icon smaller than 256 x 256.",
-                "baseInput": {
-                  "target": "dds",
-                  "icon": true
-                },
-                "fields": []
-              },
-              {
-                "id": "button",
-                "label": "Prepare SC2 button icon",
-                "summary": "Writes a DXT5 button icon (square source, at most 256 x 256) with a transparent frame.",
-                "baseInput": {
-                  "target": "dds",
-                  "transform": "button-icon"
-                },
-                "fields": []
-              }
-            ]
-          }
-        }
+        "outputKinds": ["bytes"]
       },
       {
         "id": "edit.field",
@@ -153,17 +125,12 @@
                 "id": "png-set-text",
                 "label": "Set a PNG text field",
                 "summary": "Sets or replaces one tEXt chunk; every other byte of the file is kept.",
-                "binding": {
-                  "groupId": "png-text"
-                },
+                "binding": { "groupId": "png-text" },
                 "fields": [
                   {
                     "key": "key",
                     "label": "Keyword",
-                    "type": {
-                      "kind": "text",
-                      "pattern": "^[^\\u0000]{1,79}$"
-                    },
+                    "type": { "kind": "text", "pattern": "^[^\\u0000]{1,79}$" },
                     "inputPath": ["key"],
                     "required": true,
                     "initial": "Description",
@@ -173,9 +140,7 @@
                   {
                     "key": "value",
                     "label": "Text",
-                    "type": {
-                      "kind": "text"
-                    },
+                    "type": { "kind": "text" },
                     "inputPath": ["value"],
                     "initial": "set from the Modkit inspector",
                     "source": "entry-value",

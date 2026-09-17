@@ -17,6 +17,7 @@ import type { OperationSession } from '@modkit/sdk'
 import type { SceneRendererPort } from '@modkit/sdk'
 import { createSubjectCardViewer } from '@modkit/ui/card'
 import { createModelViewer, type ModelViewerOptions } from '@modkit/ui/model'
+import { createTableViewer } from '@modkit/ui/table'
 import { createGameTemplateViewer, type GameTemplateViewerOptions } from '@modkit/ui/template'
 
 import {
@@ -41,6 +42,8 @@ export interface ElectronStageOptions {
   operationsFor(descriptor: Record<string, unknown>): Promise<OperationSession | undefined>
   /** Include the pixel editor only for a subject whose PNG/RGBA8 writer resolved in main. */
   readonly imageEditing?: boolean
+  /** Reopen a subject after the localization table commits a write. */
+  readonly onTableCommitted?: (descriptor: Record<string, unknown>) => Promise<boolean>
   /** Reopen a PNG after the semantic encoder commits its new bytes. */
   readonly onImageCommitted?: (descriptor: Record<string, unknown>) => Promise<boolean>
 }
@@ -55,6 +58,16 @@ const configuredModelViewer = (options: ElectronStageOptions) =>
 const configuredStage = (stage: PreviewStage, options: ElectronStageOptions): PreviewStage => {
   const localized = localizedLabel(stage, options.localizer)
   if (localized.id === 'model') return { ...localized, module: configuredModelViewer(options) }
+  if (localized.id === 'localization' && options.onTableCommitted !== undefined) {
+    const reopen = options.onTableCommitted
+    return {
+      ...localized,
+      module: createTableViewer({
+        ...(options.localizer === undefined ? {} : { localizer: options.localizer }),
+        onCommitted: descriptor => reopen(descriptor as unknown as Record<string, unknown>),
+      }),
+    }
+  }
   if (localized.id === 'template' && options.templateImages !== undefined)
     return {
       ...localized,
@@ -89,6 +102,7 @@ const VIEW_KEYS: Readonly<Record<string, string>> = Object.freeze({
   template: 'template',
   card: 'card',
   calculations: 'calculations',
+  localization: 'localization',
   table: 'table',
   tree: 'tree',
   relations: 'relations',

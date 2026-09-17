@@ -293,8 +293,6 @@ export const IMAGE_FALLBACK_MESSAGES = {
   'viewer.imageControls': 'Image controls',
   'viewer.imageDecodeError':
     'The platform decoder cannot render these bytes: {reason}. A format-specific decoder provider is required.',
-  'viewer.imageConvert': 'Conversions',
-  'viewer.imageConverting': 'converting: {preset}…',
   'viewer.imageExport': 'Export',
   'viewer.imageExportAll': 'Export all',
   'viewer.imageExportAllTitle': 'Export every declared subresource as PNG',
@@ -397,6 +395,8 @@ export const PARTS_FALLBACK_MESSAGES = {
   'settings.add': 'Add',
   'settings.close': 'Close settings (Esc)',
   'settings.groups': 'Settings groups',
+  'table.compare': 'Compare locales',
+  'table.group': 'Key group',
 } as const satisfies UiMessageCatalog
 
 export const PRIMITIVES_FILE_TREE_FALLBACK_MESSAGES = {
@@ -472,9 +472,45 @@ export const SHELL_CHROME_FALLBACK_MESSAGES = {
 export const TABLE_FALLBACK_MESSAGES = {
   'card.descriptionUnavailable': 'Description is not available yet.',
   'card.loadingDescription': 'Loading description…',
+  'table.stale': 'Saved. Reopen the file to make further changes.',
   'viewer.nextRows': 'Next rows',
   'viewer.table': 'Table viewer',
   'viewer.tableShape': '{rows} rows, {columns} columns',
+} as const satisfies UiMessageCatalog
+
+export const TABLE_VARIANTS_FALLBACK_MESSAGES = {
+  'table.addKey': 'Add key',
+  'table.addKeyName': 'New key',
+  'table.addKeySubmit': 'Add',
+  'table.addKeyValue': 'Value ({variant})',
+  'table.compare': 'Compare locales',
+  'table.compareEmpty': 'Empty',
+  'table.compareLine':
+    '{variant}: {translated} of {total} translated from {base}; {missing} missing, {identical} untranslated, {empty} empty, {orphaned} not in {base}.',
+  'table.compareOrphaned': 'Not in base',
+  'table.filterChanged': 'Changed',
+  'table.filterDuplicate': 'Duplicates',
+  'table.filterMissing': 'Missing',
+  'table.filterUntranslated': 'Untranslated',
+  'table.filters': 'Table filters',
+  'table.group': 'Key group',
+  'table.groupAll': 'All groups',
+  'table.keyExists': '{key} already exists',
+  'table.more': 'Show more rows',
+  'table.refused': 'Not saved: {reason}',
+  'table.saved': 'Saved.',
+  'table.search': 'Search keys and values',
+  'table.selectRow': 'Select row {key}',
+  'table.showAll': 'Show all rows',
+  'table.shown': '{shown} of {total} rows shown',
+  'table.translate': 'Translate empty cells',
+  'table.translateApply': 'Apply translations',
+  'table.translateNothing': 'No empty {variant} cells among the chosen rows.',
+  'table.translateReady': '{count} translations into {variant} are ready to review.',
+  'table.translateRefused': '{key}: {reason}',
+  'table.translateTarget': 'Translation target',
+  'table.translateUnavailable': 'Translation is unavailable: {reason}',
+  'table.working': 'Working…',
 } as const satisfies UiMessageCatalog
 
 export const TEMPLATE_FALLBACK_MESSAGES = {

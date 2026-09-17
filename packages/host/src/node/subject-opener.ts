@@ -10,7 +10,12 @@
 import { randomUUID } from 'node:crypto'
 import { isAbsolute, relative, resolve } from 'node:path'
 import type { Diagnostic } from '@modkit/core'
-import type { PermissionGrant, ResourceBudget } from '@modkit/sdk'
+import {
+  CODEC_CONTRIBUTION_CONTRACT,
+  type CodecContributionSpecV1Wire,
+  type PermissionGrant,
+  type ResourceBudget,
+} from '@modkit/sdk'
 import type { SubjectServices } from '../subject-services.js'
 import type { Inventory } from '../inventory.js'
 import type { OpenedSubject, SubjectInputResolver } from '../subject-open.js'
@@ -95,6 +100,7 @@ export function createFilesystemInputResolver(
     createFilesystemCompanionOrigin({
       primaryPath: options.primaryPath,
       roots: options.roots.map(root => resolve(root)),
+      containerExtensions: containerExtensionsOf(options.inventory),
     }),
     {
       traitProbe: createSignatureTraitProbe(options.inventory),
@@ -102,6 +108,24 @@ export function createFilesystemInputResolver(
       ...(options.deadlineMs === undefined ? {} : { deadlineMs: options.deadlineMs }),
     },
   )
+}
+
+/**
+ * Extensions of the archive formats a namespace codec opens. A loose folder named like one of them
+ * is that archive unpacked, so it bounds the `enclosing-container` companion scope on disk too.
+ */
+function containerExtensionsOf(inventory: Inventory): readonly string[] {
+  const extensions = new Set<string>()
+  for (const extension of inventory.extensions) {
+    for (const contribution of extension.contributions) {
+      const manifest = contribution.manifest
+      if (manifest?.contract.id !== CODEC_CONTRIBUTION_CONTRACT) continue
+      const spec = manifest.spec as unknown as CodecContributionSpecV1Wire
+      if (spec.sourceTopology !== 'namespace' || spec.container === undefined) continue
+      for (const value of spec.match.extensions ?? []) extensions.add(value.toLowerCase())
+    }
+  }
+  return Object.freeze([...extensions].sort())
 }
 
 /** The opener a host passes to `exposeSubjectRpc`; refusals throw, so the RPC reports them. */

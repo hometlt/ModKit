@@ -250,6 +250,33 @@ export const COMMON_PRESENTATION_CATALOG = Object.freeze([
   }),
   Object.freeze({
     slot: Object.freeze({
+      slotId: 'localization',
+      kind: 'stage',
+      contributionId: 'modkit.ui/localization-table-stage',
+      extensionId: 'modkit/ui',
+      priority: 410,
+      singletonGroup: 'stage.localization',
+      bindings: Object.freeze([
+        Object.freeze({
+          bindingId: 'localization-content',
+          contract: 'common.view/table-data-source',
+          major: 1,
+        }),
+      ]),
+    }),
+    spec: Object.freeze({
+      kind: 'stage',
+      requiresTraits: [
+        { id: 'game.localization', states: ['available'] },
+        { id: 'table.cells', states: ['available'] },
+      ],
+      consumesDataSources: [{ contract: 'common.view/table-data-source', major: 1 }],
+      priority: 410,
+      singletonGroup: 'stage.localization',
+    }),
+  }),
+  Object.freeze({
+    slot: Object.freeze({
       slotId: 'table',
       kind: 'stage',
       contributionId: 'modkit.ui/table-stage',

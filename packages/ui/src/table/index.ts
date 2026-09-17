@@ -1,4 +1,5 @@
 import type {
+  AnyDescriptor,
   CellCoord,
   KnowledgeHit,
   Page,
@@ -28,6 +29,7 @@ import { renderValueWithSpans } from '../spans/index.js'
 import { type UiLocalizationOptions } from '../localization/index.js'
 import { TABLE_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
+import { mountVariantTable, type VariantTable } from './variants.js'
 
 export const TABLE_PAGE_ROWS = 200
 export const TABLE_KNOWLEDGE_SUMMARY_CHARACTERS = 512
@@ -82,6 +84,12 @@ export interface TableViewerOptions extends UiLocalizationOptions {
    */
   readonly toolbar?: ToolbarSpec
   readonly onToolbar?: (handle: ToolbarHandle) => void
+  /**
+   * Called after a write this table committed. The open session is pinned to the old revision, so
+   * a host that can reopens the subject and answers `true`; otherwise the table stops offering
+   * writes and says why, instead of letting the next one fail as a conflict.
+   */
+  readonly onCommitted?: (descriptor: AnyDescriptor) => boolean | Promise<boolean>
 }
 
 export function createTableViewer(options: TableViewerOptions = {}): ViewerModule {
@@ -115,6 +123,18 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
         caption,
         localizer.text('viewer.tableShape', { rows: shape.rows, columns: shape.columns }),
       )
+      const variantMode = shape.columnInfo?.some(column => column.role === 'variant') === true
+      if (shape.header !== undefined) {
+        const head = table.createTHead().insertRow()
+        setPart(head, 'table.head')
+        if (variantMode) head.append(table.ownerDocument.createElement('th'))
+        for (const label of shape.header) {
+          const th = table.ownerDocument.createElement('th')
+          th.scope = 'col'
+          setViewerText(th, label)
+          head.append(th)
+        }
+      }
       const body = table.createTBody()
       setPart(body, 'table.body')
       const knowledge = element(root, 'aside', {
@@ -133,6 +153,13 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
       const clearEditTarget = (): void => {
         editTarget.replaceChildren()
         editTarget.hidden = true
+      }
+      let variants: VariantTable | undefined
+      /** Why this table no longer writes, once a commit left its session behind. */
+      let stale: string | undefined
+      const committed = async (): Promise<void> => {
+        const reopened = (await options.onCommitted?.(args.descriptor)) === true
+        if (!reopened) stale = localizer.text('table.stale')
       }
       let lookupRevision = 0
       let lookupController: AbortController | undefined
@@ -239,6 +266,10 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
         const facts = await model.cell(coord, scope.signal)
         if (scope.signal.aborted) return
         if (facts.type === undefined) return
+        if (stale !== undefined) {
+          cell.title = stale
+          return
+        }
         const refusal = fieldWriteRefusal(args.descriptor, facts.editable, {
           ...(args.commit === undefined ? {} : { commit: args.commit }),
           ...(args.authorization === undefined ? {} : { authorization: args.authorization }),
@@ -248,6 +279,7 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
           return
         }
         const previous = cell.textContent ?? ''
+        let written: string | undefined
         cell.dataset['editing'] = 'true'
         cell.replaceChildren()
         const header = shape.header?.[coord.column]
@@ -269,14 +301,22 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
           signal: scope.signal,
           ...(options.fieldEditors === undefined ? {} : { fieldEditors: options.fieldEditors }),
           ...(options.candidates === undefined ? {} : { candidates: options.candidates }),
+          onWritten: value => {
+            written = value === null || value === undefined ? '' : String(value)
+          },
         })
         const finish = async (write: boolean) => {
           const accepted = write ? await mount.commit() : false
           if (!accepted && write) return // the status line inside the field says why; stay open
-          const settled = accepted ? await model.cell(coord, scope.signal) : undefined
           await mount.unmount()
           delete cell.dataset['editing']
-          setViewerText(cell, settled?.value ?? previous)
+          // The session still holds the old snapshot; the committed value is what the file has now.
+          const shown = written ?? previous
+          setViewerText(cell, shown)
+          if (written !== undefined) {
+            variants?.written(coord.row, coord.column, shown)
+            await committed()
+          }
         }
         const onKey = (event: KeyboardEvent) => {
           if (event.key === 'Enter') {
@@ -292,13 +332,15 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
         scope.cleanup(() => cell.removeEventListener('keydown', onKey))
       }
 
-      const render = (rows: readonly Row[]) => {
+      const render = (rows: readonly Row[]): readonly HTMLTableRowElement[] => {
         cancelLookup('table-page-changed')
         clearEditTarget()
         showMissingKnowledge()
         body.replaceChildren()
+        const drawn: HTMLTableRowElement[] = []
         for (const row of rows) {
           const tr = body.insertRow()
+          drawn.push(tr)
           setPart(tr, 'table.row')
           tr.dataset['row'] = String(row.index)
           for (const [column, value] of row.cells.entries()) {
@@ -350,6 +392,28 @@ export function createTableViewer(options: TableViewerOptions = {}): ViewerModul
             })
           }
         }
+        return drawn
+      }
+      if (variantMode) {
+        variants = await mountVariantTable({
+          root,
+          source: model.source,
+          shape,
+          descriptor: args.descriptor,
+          operations: args.operations,
+          ...(args.commit === undefined ? {} : { commit: args.commit }),
+          ...(args.authorization === undefined ? {} : { authorization: args.authorization }),
+          signal: scope.signal,
+          ...(options.localizer === undefined ? {} : { localizer: options.localizer }),
+          render,
+          committed,
+          before: table,
+        })
+        return createViewerMount(root, scope, args, ({ descriptor }) => {
+          cancelLookup('viewer-updated')
+          clearEditTarget()
+          root.dataset['revision'] = descriptor.revision
+        })
       }
       const first = await model.first(0, scope.signal)
       render(first.items)

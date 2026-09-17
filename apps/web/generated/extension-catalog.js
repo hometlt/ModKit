@@ -6582,7 +6582,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:462741af663e33a773db15e9c8ea975f4ff9278d47ecc7354b68a5e17410f72c',
+        artifactDigest: 'sha256:cce66be2927e3b2785e267a722ca4720d070c85b285e423022c83453873b4341',
         fileDigests: {
           'MIGRATION-NOTES-common-images.json':
             'sha256:44c30ea45aaceceff66d53f72e5e0d0ec8efb1a7f2afbc2f9913849720632e93',
@@ -6600,7 +6600,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-cur.json':
             'sha256:ca83a2ee185f99c30030382692eb875a4a7301aeb0d072a4bbf109f787d17bdf',
           'contributions/codec-dds.json':
-            'sha256:86f715f9a0f64b339f1f2a1416f23b4ff99a7072d008ecdf859620b6dd9fd719',
+            'sha256:cc28d5738fe1a8905cfefee06f74cab13b1fa1e28e4a3e0ef0634a6d7763c692',
           'contributions/codec-exr.json':
             'sha256:377eb43959c01dff23c3117a6a1263a9797e91503b79e65a718d049336e6cca7',
           'contributions/codec-gif.json':
@@ -6622,7 +6622,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-pkm.json':
             'sha256:a59ca6a16fac9666bc9a22c5ec29584dce1fd6a58c1f76b66b069d77e8239929',
           'contributions/codec-png.json':
-            'sha256:a155950da23ab14b974671302d4c9bdd3b24e6341268faa082a314da5b125acd',
+            'sha256:81fcb364ce343b12455cd2037e2028e557b6cf44e2bce8e3b2a07236e2169188',
           'contributions/codec-pvr.json':
             'sha256:e5eff0a04b8c20ee5806859a00d5e843a4c6a1cc089d768b0bed3c701fd1476b',
           'contributions/codec-tga.json':
@@ -6653,7 +6653,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/dds/bptc.js':
             'sha256:f3a0636b0f5dde9b7f7ccc2e6874425bfef0f5e86f6a1801a8032885f61a39b4',
           'src/dds/codec.js':
-            'sha256:8a67ff55b5bd476af91f42fd3f72fbacc776340a0b71f7c4b6c65fbf4a2e6157',
+            'sha256:c60d879cf63b654ebac2a2b8b527b1e4547f4db3de65f07fb901b734d767fbb6',
           'src/dds/compressed.js':
             'sha256:af63c9438834ec0618e5ce3a207d45195cc603dcf4376c7964dfd3e939f7823e',
           'src/dds/encode.js':
@@ -6681,8 +6681,6 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:bbe85af6cdf6da5544829b2bd7ad09a733ca00edc56e2229659247eba5cf8975',
           'src/ops/raster-ops.js':
             'sha256:01cf3696184a2597c96233219ab3c1084c6250cc78800e64e93e5e220b4ff798',
-          'src/ops/raster-transforms.js':
-            'sha256:dcca210f1f32b8182c59b1ef0c228a2470d457ab9967dbe5639a10e3a4c42e98',
           'src/pal/codec.js':
             'sha256:68718910cbdbc34fdca7a99817fc26d4a54b8521da4d38d4d13cbf633acbfc0b',
           'src/pcx/codec.js':
@@ -6692,7 +6690,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/pkm/etc.js':
             'sha256:99c4f4ab06d944e71e0993f671e3af6904c37bb5eb2bc0a65fdf1e6de265db7f',
           'src/png/codec.js':
-            'sha256:47eb42f9b93a15ec9311232326c0424d6668a94f9f178252bc8ba0ccb34c6d76',
+            'sha256:cf0629439171a7da1a94a985e83194443b85831a572bb6e9097e84a41ef4ac4a',
           'src/pvr/codec.js':
             'sha256:3c02b42c1d6963dcb8e38a8bbfcc49ccf9b115118180835d59eb4ada15de7fea',
           'src/tga/codec.js':
@@ -6704,7 +6702,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/writers/dds-encoder.js':
             'sha256:c4123ea5aa1089b6b53f6c8580e525cd7886c5be354ade13db3836ee53471cf1',
           'src/writers/png-encoder.js':
-            'sha256:7c3c406f732ab0988ec1005bdc00a02e43b20feebf38148dfcf442b56a0f028c',
+            'sha256:afe0012d7a40473d5e545ed61df93bf790a118402a56f447960cb933a063616f',
           'test/ani-raster-decode.test.ts':
             'sha256:7315f4f53f2c70259b308ba21190a890cf03b9fee61b2237ef981987b09dbc75',
           'test/astc-ordinary-ldr.test.ts':
@@ -6721,8 +6719,6 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:2a0d83d3152224ce7ea530605bb9441912aa9be68b3b4ec60d1e51cb0e5beed4',
           'test/png-palette-decode.test.ts':
             'sha256:a91dff0a852807126efb31df8f4f7401a0eab4dcf9a36ba55081bd580ac5ac14',
-          'test/raster-export.test.ts':
-            'sha256:2f9fb0f38c12cffe24651d3fa0395ae57b2d5d962cb88626430e563e610e5e43',
           'vendor/texture2ddecoder/LICENSE':
             'sha256:49e3169a509b9a5311fe50957a334e9e1975164f27da6004358c22e91e10747c',
           'vendor/texture2ddecoder/README.md':
@@ -6733,7 +6729,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:8b819b0622cce57f809b369081bdd6eca09d1c1793da7f82192db39229356c1d',
         },
         inventoryRecordId:
-          'artifact:sha256:462741af663e33a773db15e9c8ea975f4ff9278d47ecc7354b68a5e17410f72c',
+          'artifact:sha256:cce66be2927e3b2785e267a722ca4720d070c85b285e423022c83453873b4341',
       },
       artifactRoot: 'extensions/images/',
       containers: {
@@ -6815,7 +6811,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-dds.json',
-          'sha256:86f715f9a0f64b339f1f2a1416f23b4ff99a7072d008ecdf859620b6dd9fd719',
+          'sha256:cc28d5738fe1a8905cfefee06f74cab13b1fa1e28e4a3e0ef0634a6d7763c692',
         ],
         [
           'contributions/codec-exr.json',
@@ -6859,7 +6855,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-png.json',
-          'sha256:a155950da23ab14b974671302d4c9bdd3b24e6341268faa082a314da5b125acd',
+          'sha256:81fcb364ce343b12455cd2037e2028e557b6cf44e2bce8e3b2a07236e2169188',
         ],
         [
           'contributions/codec-pvr.json',
@@ -7746,436 +7742,9 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 {
                   handlerId: 'transform',
                   id: 'edit.content',
-                  inputSchema: {
-                    $ref: 'modkit://images/dds-edit-content.v1',
-                    document: {
-                      forms: [
-                        {
-                          baseInput: {
-                            transform: 'button-icon',
-                          },
-                          fields: [
-                            {
-                              initial: 'dxt5',
-                              inputPath: ['format'],
-                              key: 'format',
-                              label: 'Encoding',
-                              type: {
-                                kind: 'enum',
-                                members: [
-                                  {
-                                    id: 'keep',
-                                    label: 'Keep the source encoding',
-                                  },
-                                  {
-                                    id: 'dxt1',
-                                    label: 'DXT1 / BC1 (binary alpha)',
-                                  },
-                                  {
-                                    id: 'dxt3',
-                                    label: 'DXT3 / BC2',
-                                  },
-                                  {
-                                    id: 'dxt5',
-                                    label: 'DXT5 / BC3',
-                                  },
-                                  {
-                                    id: 'rgba8',
-                                    label: 'Uncompressed RGBA8',
-                                  },
-                                  {
-                                    id: 'auto',
-                                    label: 'DXT5 if any texel is partially transparent, else DXT1',
-                                  },
-                                ],
-                              },
-                            },
-                            {
-                              initial: 0.0390625,
-                              inputPath: ['options', 'framePercent'],
-                              key: 'framePercent',
-                              label: 'Frame (fraction of the edge)',
-                              required: true,
-                              type: {
-                                kind: 'number',
-                                max: 0.45,
-                                min: 0,
-                              },
-                            },
-                          ],
-                          id: 'dds-button-icon',
-                          label: 'Prepare an SC2 button icon',
-                          summary:
-                            'Insets a square icon (at most 256 x 256) in a transparent frame with rounded corners.',
-                        },
-                        {
-                          baseInput: {
-                            transform: 'recompress',
-                          },
-                          fields: [
-                            {
-                              initial: 'dxt1',
-                              inputPath: ['format'],
-                              key: 'format',
-                              label: 'Encoding',
-                              type: {
-                                kind: 'enum',
-                                members: [
-                                  {
-                                    id: 'keep',
-                                    label: 'Keep the source encoding',
-                                  },
-                                  {
-                                    id: 'dxt1',
-                                    label: 'DXT1 / BC1 (binary alpha)',
-                                  },
-                                  {
-                                    id: 'dxt3',
-                                    label: 'DXT3 / BC2',
-                                  },
-                                  {
-                                    id: 'dxt5',
-                                    label: 'DXT5 / BC3',
-                                  },
-                                  {
-                                    id: 'rgba8',
-                                    label: 'Uncompressed RGBA8',
-                                  },
-                                  {
-                                    id: 'auto',
-                                    label: 'DXT5 if any texel is partially transparent, else DXT1',
-                                  },
-                                ],
-                              },
-                            },
-                          ],
-                          id: 'dds-recompress',
-                          label: 'Change the DDS encoding',
-                          summary:
-                            'Re-encodes the base surface; DXT1 is refused while any texel is partially transparent.',
-                        },
-                        {
-                          baseInput: {
-                            transform: 'resize',
-                          },
-                          fields: [
-                            {
-                              initial: 64,
-                              inputPath: ['width'],
-                              key: 'width',
-                              label: 'Width',
-                              required: true,
-                              type: {
-                                integer: true,
-                                kind: 'number',
-                                min: 1,
-                              },
-                            },
-                            {
-                              initial: 64,
-                              inputPath: ['height'],
-                              key: 'height',
-                              label: 'Height',
-                              required: true,
-                              type: {
-                                integer: true,
-                                kind: 'number',
-                                min: 1,
-                              },
-                            },
-                            {
-                              initial: 'keep',
-                              inputPath: ['format'],
-                              key: 'format',
-                              label: 'Encoding',
-                              type: {
-                                kind: 'enum',
-                                members: [
-                                  {
-                                    id: 'keep',
-                                    label: 'Keep the source encoding',
-                                  },
-                                  {
-                                    id: 'dxt1',
-                                    label: 'DXT1 / BC1 (binary alpha)',
-                                  },
-                                  {
-                                    id: 'dxt3',
-                                    label: 'DXT3 / BC2',
-                                  },
-                                  {
-                                    id: 'dxt5',
-                                    label: 'DXT5 / BC3',
-                                  },
-                                  {
-                                    id: 'rgba8',
-                                    label: 'Uncompressed RGBA8',
-                                  },
-                                  {
-                                    id: 'auto',
-                                    label: 'DXT5 if any texel is partially transparent, else DXT1',
-                                  },
-                                ],
-                              },
-                            },
-                          ],
-                          id: 'dds-resize',
-                          label: 'Resize',
-                          summary: 'Bilinear resample of the base surface.',
-                        },
-                        {
-                          baseInput: {
-                            transform: 'color-key',
-                          },
-                          fields: [
-                            {
-                              initial: 255,
-                              inputPath: ['target', 'r'],
-                              key: 'r',
-                              label: 'Red',
-                              required: true,
-                              type: {
-                                integer: true,
-                                kind: 'number',
-                                max: 255,
-                                min: 0,
-                              },
-                            },
-                            {
-                              initial: 0,
-                              inputPath: ['target', 'g'],
-                              key: 'g',
-                              label: 'Green',
-                              required: true,
-                              type: {
-                                integer: true,
-                                kind: 'number',
-                                max: 255,
-                                min: 0,
-                              },
-                            },
-                            {
-                              initial: 255,
-                              inputPath: ['target', 'b'],
-                              key: 'b',
-                              label: 'Blue',
-                              required: true,
-                              type: {
-                                integer: true,
-                                kind: 'number',
-                                max: 255,
-                                min: 0,
-                              },
-                            },
-                            {
-                              initial: 0,
-                              inputPath: ['tolerance'],
-                              key: 'tolerance',
-                              label: 'Tolerance',
-                              required: true,
-                              type: {
-                                integer: true,
-                                kind: 'number',
-                                max: 255,
-                                min: 0,
-                              },
-                            },
-                            {
-                              initial: 'keep',
-                              inputPath: ['format'],
-                              key: 'format',
-                              label: 'Encoding',
-                              type: {
-                                kind: 'enum',
-                                members: [
-                                  {
-                                    id: 'keep',
-                                    label: 'Keep the source encoding',
-                                  },
-                                  {
-                                    id: 'dxt1',
-                                    label: 'DXT1 / BC1 (binary alpha)',
-                                  },
-                                  {
-                                    id: 'dxt3',
-                                    label: 'DXT3 / BC2',
-                                  },
-                                  {
-                                    id: 'dxt5',
-                                    label: 'DXT5 / BC3',
-                                  },
-                                  {
-                                    id: 'rgba8',
-                                    label: 'Uncompressed RGBA8',
-                                  },
-                                  {
-                                    id: 'auto',
-                                    label: 'DXT5 if any texel is partially transparent, else DXT1',
-                                  },
-                                ],
-                              },
-                            },
-                          ],
-                          id: 'dds-color-key',
-                          label: 'Make one colour transparent',
-                          summary:
-                            'Every texel within the tolerance of the colour becomes fully transparent.',
-                        },
-                        {
-                          baseInput: {
-                            transform: 'rounded-alpha',
-                          },
-                          fields: [
-                            {
-                              initial: 8,
-                              inputPath: ['radius'],
-                              key: 'radius',
-                              label: 'Radius',
-                              required: true,
-                              type: {
-                                kind: 'number',
-                                min: 0,
-                              },
-                            },
-                            {
-                              initial: 'keep',
-                              inputPath: ['format'],
-                              key: 'format',
-                              label: 'Encoding',
-                              type: {
-                                kind: 'enum',
-                                members: [
-                                  {
-                                    id: 'keep',
-                                    label: 'Keep the source encoding',
-                                  },
-                                  {
-                                    id: 'dxt1',
-                                    label: 'DXT1 / BC1 (binary alpha)',
-                                  },
-                                  {
-                                    id: 'dxt3',
-                                    label: 'DXT3 / BC2',
-                                  },
-                                  {
-                                    id: 'dxt5',
-                                    label: 'DXT5 / BC3',
-                                  },
-                                  {
-                                    id: 'rgba8',
-                                    label: 'Uncompressed RGBA8',
-                                  },
-                                  {
-                                    id: 'auto',
-                                    label: 'DXT5 if any texel is partially transparent, else DXT1',
-                                  },
-                                ],
-                              },
-                            },
-                          ],
-                          id: 'dds-rounded-alpha',
-                          label: 'Round the alpha corners',
-                          summary: 'Cuts the corners to transparent.',
-                        },
-                        {
-                          baseInput: {
-                            transform: 'normal-map',
-                          },
-                          fields: [
-                            {
-                              initial: 'keep',
-                              inputPath: ['format'],
-                              key: 'format',
-                              label: 'Encoding',
-                              type: {
-                                kind: 'enum',
-                                members: [
-                                  {
-                                    id: 'keep',
-                                    label: 'Keep the source encoding',
-                                  },
-                                  {
-                                    id: 'dxt1',
-                                    label: 'DXT1 / BC1 (binary alpha)',
-                                  },
-                                  {
-                                    id: 'dxt3',
-                                    label: 'DXT3 / BC2',
-                                  },
-                                  {
-                                    id: 'dxt5',
-                                    label: 'DXT5 / BC3',
-                                  },
-                                  {
-                                    id: 'rgba8',
-                                    label: 'Uncompressed RGBA8',
-                                  },
-                                  {
-                                    id: 'auto',
-                                    label: 'DXT5 if any texel is partially transparent, else DXT1',
-                                  },
-                                ],
-                              },
-                            },
-                          ],
-                          id: 'dds-normal-map',
-                          label: 'Convert a normal map to the SC2 layout',
-                          summary:
-                            'Moves the normal channels into the layout the SC2 shaders read.',
-                        },
-                      ],
-                      schemaVersion: 1,
-                    },
-                  },
                   mutatesSource: true,
                   outputKinds: ['edit-plan'],
                   requiredPermissions: ['read-source', 'write-source'],
-                },
-                {
-                  handlerId: 'convert',
-                  id: 'export.convert',
-                  inputSchema: {
-                    $ref: 'modkit://images/dds-export-convert.v1',
-                    document: {
-                      forms: [
-                        {
-                          baseInput: {
-                            target: 'png',
-                          },
-                          fields: [],
-                          id: 'png',
-                          label: 'Export PNG',
-                          summary: 'Writes the base mip as a PNG file.',
-                        },
-                        {
-                          baseInput: {
-                            format: 'dxt1',
-                            target: 'dds',
-                          },
-                          fields: [],
-                          id: 'dxt1',
-                          label: 'Convert to DXT1',
-                          summary:
-                            'Writes a DXT1 copy; refused while any texel is partially transparent.',
-                        },
-                        {
-                          baseInput: {
-                            target: 'dds',
-                            transform: 'button-icon',
-                          },
-                          fields: [],
-                          id: 'button',
-                          label: 'Prepare SC2 button icon',
-                          summary:
-                            'Writes a DXT5 button icon (square source, at most 256 x 256) with a transparent frame.',
-                        },
-                      ],
-                      schemaVersion: 1,
-                    },
-                  },
-                  mutatesSource: false,
-                  outputKinds: ['bytes'],
-                  requiredPermissions: ['read-source'],
                 },
               ],
               probe: {
@@ -9688,35 +9257,6 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 {
                   handlerId: 'convert-rgba8',
                   id: 'export.convert',
-                  inputSchema: {
-                    $ref: 'modkit://images/png-export-convert.v1',
-                    document: {
-                      forms: [
-                        {
-                          baseInput: {
-                            icon: true,
-                            target: 'dds',
-                          },
-                          fields: [],
-                          id: 'dds',
-                          label: 'Convert icon to DDS',
-                          summary: 'Writes a DXT5 DDS of a square icon smaller than 256 x 256.',
-                        },
-                        {
-                          baseInput: {
-                            target: 'dds',
-                            transform: 'button-icon',
-                          },
-                          fields: [],
-                          id: 'button',
-                          label: 'Prepare SC2 button icon',
-                          summary:
-                            'Writes a DXT5 button icon (square source, at most 256 x 256) with a transparent frame.',
-                        },
-                      ],
-                      schemaVersion: 1,
-                    },
-                  },
                   mutatesSource: false,
                   outputKinds: ['bytes'],
                   requiredPermissions: ['read-source'],
@@ -10486,7 +10026,6 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'src/ktx2/codec.js',
         'src/linked.js',
         'src/ops/raster-ops.js',
-        'src/ops/raster-transforms.js',
         'src/pal/codec.js',
         'src/pcx/codec.js',
         'src/pkm/codec.js',
@@ -10506,7 +10045,6 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'test/dds-transform.test.ts',
         'test/eac-r11-decode.test.ts',
         'test/png-palette-decode.test.ts',
-        'test/raster-export.test.ts',
         'vendor/texture2ddecoder/LICENSE',
         'vendor/texture2ddecoder/README.md',
         'vendor/texture2ddecoder/texture2ddecoder.js',

@@ -482,16 +482,23 @@ async function boot(): Promise<void> {
       )
     },
   } as const
-  const stages = createElectronStages({ operationsFor, localizer, ...modelStageOptions })
+  const reopenCommitted = async (descriptor: Record<string, unknown>): Promise<boolean> => {
+    const record = subjectsByDescriptor.get(descriptorKey(descriptor))
+    return record === undefined ? false : reopenSubject(record.path)
+  }
+  const stages = createElectronStages({
+    operationsFor,
+    localizer,
+    ...modelStageOptions,
+    onTableCommitted: reopenCommitted,
+  })
   const imageEditingStages = createElectronStages({
     operationsFor,
     localizer,
     ...modelStageOptions,
     imageEditing: true,
-    onImageCommitted: async descriptor => {
-      const record = subjectsByDescriptor.get(descriptorKey(descriptor))
-      return record === undefined ? false : reopenSubject(record.path)
-    },
+    onImageCommitted: reopenCommitted,
+    onTableCommitted: reopenCommitted,
   })
   const readOnlyStages = createElectronReadOnlyStages({
     operationsFor,

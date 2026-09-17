@@ -79,6 +79,15 @@ const previewPolicy = Object.freeze([
     module: 'vectorViewer',
   },
   {
+    // Before `code` in priority: a localization catalog opens as its table. Writes go through the
+    // editor ports when the host has them, and the stage still reads without them.
+    slotId: 'localization',
+    label: 'Localization',
+    contributionId: 'modkit.ui/localization-table-stage',
+    module: 'tableViewer',
+    usesEditorPorts: true,
+  },
+  {
     slotId: 'table',
     label: 'Table',
     contributionId: 'modkit.ui/table-stage',
@@ -430,7 +439,8 @@ function renderViewerCatalog(root) {
       .map(stage => {
         const editable = !readonly && stage.editable === true ? ', editable: true' : ''
         const module = readonly ? (stage.readOnlyModule ?? stage.module) : stage.module
-        return `  { id: ${quote(stage.slotId)}, label: ${quote(stage.label)}, ${requirementOf(stage)}, module: ${moduleOf(module, localized)}${optionalOf(stage)}${editable} },`
+        const ports = stage.usesEditorPorts === true ? ', usesEditorPorts: true' : ''
+        return `  { id: ${quote(stage.slotId)}, label: ${quote(stage.label)}, ${requirementOf(stage)}, module: ${moduleOf(module, localized)}${optionalOf(stage)}${editable}${ports} },`
       })
       .join('\n')
   const stageEntries = entries(false, false)

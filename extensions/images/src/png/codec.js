@@ -5,7 +5,6 @@ import {
   editPlanFromInput,
   replaceBytes,
 } from '@modkit/codec-kit'
-import { EXPORT_TARGETS, PNG_EXPORT_SCHEMA, exportRaster } from '../ops/raster-transforms.js'
 
 const SIGNATURE = Object.freeze([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
 const ascii = new TextDecoder('latin1')
@@ -156,7 +155,9 @@ async function decodeRgba8(bytes, png, signal) {
     compressedOffset += chunk.length
   }
   const indexed = png.colorType === 3
-  const rowBytes = indexed ? Math.ceil((png.width * png.bitDepth) / 8) : png.width * png.channels
+  const rowBytes = indexed
+    ? Math.ceil((png.width * png.bitDepth) / 8)
+    : png.width * png.channels
   const filterBytesPerPixel = indexed ? 1 : png.channels
   const expectedBytes = (rowBytes + 1) * png.height
   if (!Number.isSafeInteger(expectedBytes)) throw new RangeError('PNG decoded size is unsafe')
@@ -197,13 +198,12 @@ async function decodeRgba8(bytes, png, signal) {
       paletteChunk.dataOffset + paletteChunk.length,
     )
     const transparencyChunk = png.chunks.find(chunk => chunk.type === 'tRNS')
-    const transparency =
-      transparencyChunk === undefined
-        ? undefined
-        : bytes.subarray(
-            transparencyChunk.dataOffset,
-            transparencyChunk.dataOffset + transparencyChunk.length,
-          )
+    const transparency = transparencyChunk === undefined
+      ? undefined
+      : bytes.subarray(
+          transparencyChunk.dataOffset,
+          transparencyChunk.dataOffset + transparencyChunk.length,
+        )
     const mask = (1 << png.bitDepth) - 1
     for (let y = 0; y < png.height; y += 1) {
       const rowStart = y * rowBytes
@@ -360,37 +360,23 @@ const EDIT_FIELD_OPERATION = Object.freeze({
 /**
  * A real, deterministic conversion owned by the PNG codec rather than by a CLI/UI adapter.
  * `subject.convert --target rgba8` routes here in every host and returns tightly packed pixels in
- * top-left row order. `--target dds` (and `png`, after an optional transform) goes through the
- * shared raster export; `{ target: 'dds', icon: true }` is MK2's "Convert PNG Icon to DDS".
+ * top-left row order. Other target formats need their own writer/provider and are refused by name.
  */
 const CONVERT_RGBA8_OPERATION = Object.freeze({
   id: 'export.convert',
   handlerId: 'convert-rgba8',
   mutatesSource: false,
   requiredPermissions: Object.freeze(['read-source']),
-  inputSchema: PNG_EXPORT_SCHEMA,
   outputKinds: Object.freeze(['bytes']),
 })
 
 function convertRgba8Handler(bytes, png) {
   return async (value, options) => {
-    if (!EXPORT_TARGETS.includes(value?.target)) {
-      throw new TypeError(`PNG conversion target must be one of ${EXPORT_TARGETS.join(', ')}`)
+    if (value?.target !== 'rgba8') throw new TypeError('PNG conversion target must be rgba8')
+    if (png.bitDepth !== 8 || ![0, 2, 4, 6].includes(png.colorType) || png.interlace !== 0) {
+      throw new TypeError('PNG rgba8 conversion requires non-interlaced 8-bit direct pixels')
     }
-    const palette = png.colorType === 3 && [1, 2, 4, 8].includes(png.bitDepth)
-    const direct = png.bitDepth === 8 && [0, 2, 4, 6].includes(png.colorType)
-    if (!(direct || palette) || png.interlace !== 0) {
-      throw new TypeError(
-        'PNG conversion requires non-interlaced 8-bit direct or 1/2/4/8-bit palette pixels',
-      )
-    }
-    const pixels = await decodeRgba8(bytes, png, options?.signal)
-    return {
-      kind: 'bytes',
-      value: await exportRaster({ width: png.width, height: png.height, pixels }, value, {
-        signal: options?.signal,
-      }),
-    }
+    return { kind: 'bytes', value: await decodeRgba8(bytes, png, options?.signal) }
   }
 }
 
@@ -479,8 +465,7 @@ const definition = Object.freeze({
   async inspect(bytes, context) {
     const png = parsePng(bytes, context.budget.maxNodes)
     const hasAlpha =
-      png.colorType === 4 ||
-      png.colorType === 6 ||
+      png.colorType === 4 || png.colorType === 6 ||
       (png.colorType === 3 && png.chunks.some(chunk => chunk.type === 'tRNS'))
     const hasPalette = png.colorType === 3
     const decodedDirect =

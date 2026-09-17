@@ -87,8 +87,8 @@ export interface InlineFieldOptions {
   readonly signal: AbortSignal
   readonly fieldEditors?: FieldEditorRegistry
   readonly candidates?: SubjectCandidateProvider
-  /** Called after the codec accepted a write, so the caller can re-read what it displays. */
-  readonly onWritten?: () => void | Promise<void>
+  /** Called with the committed value after the codec accepted a write. */
+  readonly onWritten?: (value: JsonValue) => void | Promise<void>
 }
 
 /**
@@ -137,6 +137,45 @@ export function fieldWriteRefusal(
 function editPlanOf(result: unknown): AssetEditPlan | undefined {
   const output = (result as { output?: { kind?: string; plan?: AssetEditPlan } }).output
   return output?.kind === 'edit-plan' ? output.plan : undefined
+}
+
+/**
+ * Invoke one mutating operation and carry its edit plan through authorize → prepare → commit.
+ *
+ * Answers `undefined` once the change is on disk, or the reason it is not. Table row actions and
+ * inline fields share it, so there is one write path whatever control started the write.
+ */
+export async function commitOperationWrite(
+  route: FieldWriteRoute & { readonly descriptor: AnyDescriptor },
+  operationId: string,
+  input: JsonValue,
+  signal?: AbortSignal,
+): Promise<string | undefined> {
+  const operation = route.descriptor.operations.find(candidate => candidate.id === operationId)
+  if (operation === undefined) return `the codec declares no operation «${operationId}»`
+  if (operation.state !== 'available') {
+    return `the operation «${operationId}» is ${operation.state} for this file`
+  }
+  const coordinator = route.commit
+  const authorization = route.authorization
+  if (coordinator === undefined || authorization === undefined) {
+    return 'no route to save this change'
+  }
+  const options = signal === undefined ? {} : { signal }
+  const result = await route.operations.invoke(operation.handlerId, input, options)
+  if (isRejected(result)) return invokeRefusalMessage(result)
+  const plan = editPlanOf(result)
+  if (plan === undefined) return 'the codec returned no edit plan for this write'
+  const grant = await authorization.request(plan, options)
+  if (grant === undefined) return 'not authorised to write this file'
+  const prepared = await coordinator.prepare(plan, { grant: grant.grant, ...options })
+  if (prepared.state !== 'ready') {
+    return prepared.state === 'conflict'
+      ? 'the file changed after this view opened it'
+      : `refused: ${prepared.reason ?? prepared.state}`
+  }
+  const receipt = await coordinator.commit(prepared.prepared, { grant: grant.grant, ...options })
+  return receipt.state === 'committed' ? undefined : `not saved: ${receipt.state}`
 }
 
 /** The control the field editor needs, synthesised from one data-source value. */
@@ -219,9 +258,7 @@ export async function mountInlineField(
    * reader is looking, in its own words, rather than collapsed into a single failure.
    */
   const commit = async (): Promise<boolean> => {
-    const coordinator = options.commit
-    const authorization = options.authorization
-    if (operation === undefined || coordinator === undefined || authorization === undefined) {
+    if (operation === undefined) {
       setViewerText(status, 'no route to save this change', 512)
       return false
     }
@@ -230,56 +267,26 @@ export async function mountInlineField(
       setViewerText(status, problem, 512)
       return false
     }
+    const value = control.read()
     const request: FieldWriteRequest = {
       groupId: options.target.groupId,
       key: options.target.key,
       ...(options.target.path === undefined ? {} : { path: options.target.path }),
-      value: control.read(),
+      value,
     }
     setViewerText(status, '…', 8)
-    const result = await options.operations.invoke(
-      operation.handlerId,
+    const refusal = await commitOperationWrite(
+      options,
+      operation.id,
       request as unknown as JsonValue,
-      { signal: options.signal },
+      options.signal,
     )
-    if (isRejected(result)) {
-      setViewerText(status, invokeRefusalMessage(result), 512)
-      return false
-    }
-    const plan = editPlanOf(result)
-    if (plan === undefined) {
-      setViewerText(status, 'the codec returned no edit plan for this write', 512)
-      return false
-    }
-    const grant = await authorization.request(plan, { signal: options.signal })
-    if (grant === undefined) {
-      setViewerText(status, 'not authorised to write this file', 512)
-      return false
-    }
-    const prepared = await coordinator.prepare(plan, {
-      grant: grant.grant,
-      signal: options.signal,
-    })
-    if (prepared.state !== 'ready') {
-      setViewerText(
-        status,
-        prepared.state === 'conflict'
-          ? 'the file changed after this view opened it'
-          : `refused: ${prepared.reason ?? prepared.state}`,
-        512,
-      )
-      return false
-    }
-    const receipt = await coordinator.commit(prepared.prepared, {
-      grant: grant.grant,
-      signal: options.signal,
-    })
-    if (receipt.state !== 'committed') {
-      setViewerText(status, `not saved: ${receipt.state}`, 512)
+    if (refusal !== undefined) {
+      setViewerText(status, refusal, 512)
       return false
     }
     setViewerText(status, '', 1)
-    await options.onWritten?.()
+    await options.onWritten?.(value)
     return true
   }
 

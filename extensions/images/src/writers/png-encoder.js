@@ -73,8 +73,7 @@ async function deflate(bytes, signal) {
   return compressed
 }
 
-/** RGBA8 → PNG bytes; also the `export.convert` PNG target of every image codec. */
-export async function encodePng(width, height, pixels, signal) {
+async function encodePng(width, height, pixels, signal) {
   const rowBytes = width * CHANNELS
   const raw = new Uint8Array((rowBytes + 1) * height)
   for (let row = 0; row < height; row += 1) {
