@@ -21,8 +21,8 @@
     }
   ],
   "limitations": [
-    "Portable extraction is intentionally bounded to plain RAR4 archives containing stored regular files.",
-    "RAR5, compression, encryption, solid and split archives, volumes, directories, extended headers, and writing are not implemented."
+    "Portable reading lists RAR4 files and directories (Unicode names, large sizes, extended times, service blocks) and extracts stored (m0) files with CRC-32 verification.",
+    "Compressed (m1-m5), encrypted and split entries are listed and refuse extraction with a coded diagnostic; RAR5 opens as an empty namespace with archives/rar5-unsupported; writing is not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "rar", "label": "RAR archive" }],
@@ -32,7 +32,10 @@
     "openIntents": ["probe", "inspect", "full", "export"],
     "match": {
       "extensions": ["rar"],
-      "signatures": [{ "from": "start", "offset": 0, "bytesHex": "526172211a0700" }]
+      "signatures": [
+        { "from": "start", "offset": 0, "bytesHex": "526172211a0700" },
+        { "from": "start", "offset": 0, "bytesHex": "526172211a070100" }
+      ]
     },
     "probe": { "kind": "bytes", "ranges": [{ "from": "start", "length": 4096 }], "maxBytes": 4096 },
     "representations": [

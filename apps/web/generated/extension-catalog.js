@@ -6,13 +6,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
   extensions: [
     {
       artifact: {
-        artifactDigest: 'sha256:064da7e525ab39cf1d29771644644b1ede7d0f501ccf3f49877e7bd217affb9e',
+        artifactDigest: 'sha256:62a9eea31faebb23a5c7ddf4347042b3d394ef97b89638e68651db8a8a079d86',
         fileDigests: {
           'MIGRATION-NOTES-common-archives.json':
             'sha256:4e1d77808583a26fb61d65d660ef09c3f4c222915c2e3581d793b202cbde4b44',
           'README.md': 'sha256:915e1860d19a23f3ae677cd1edea4d5bc27c81f2c901b365c56da2558220dd11',
           'contributions/codec-7z.json':
-            'sha256:80a3162f707f7829101bf641828ebccdb59c7b2fe009e9e873ff48980ac284f3',
+            'sha256:dea5b5ddc609ac399b86eac1b5f8279a617ef2c95f66e8078ec0c0b6b82af8ba',
           'contributions/codec-brotli.json':
             'sha256:5306aacf196b35aa996d0d4aac42031a72041c1dc605e1adb0f76b1c54f7ef27',
           'contributions/codec-bzip2.json':
@@ -30,18 +30,18 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-pe.json':
             'sha256:340196d4307068d14a0df3defe77af5dd1606ea458642c401fb85bb328d526ec',
           'contributions/codec-rar.json':
-            'sha256:645a39c0f1e89a9e6ea6cae24325571f318fd61ff05255b064f996e2d5ca5bf2',
+            'sha256:76927101b7e7f4a8e1a26719e8ac156b0d563b3780e9d2cd60872696456da61a',
           'contributions/codec-tar.json':
             'sha256:1ff7a59af85ed33cb4d95f88c5b983af98774aa226f1c79fa9a3f921c1a16524',
           'contributions/codec-xz.json':
-            'sha256:effe08ca5ab5605658d355535cc91e496855e2f9c0bbdac63bbd8bd6044a753b',
+            'sha256:b945ae5d8901c20343b9dfee344832375c2874acc24e2c791da9978baf28555e',
           'contributions/codec-zip.json':
             'sha256:d765dacf8928d2e723ed903b99b4d86a89e1d6d7dfcb25229cb8a5f9dd438c4b',
           'contributions/codec-zstd.json':
             'sha256:04f0c3c2fbad4b0f3f31f14ef33da92e4e2fa8957be84ddc0aa16ca4b007765f',
           'package.json': 'sha256:0f450dab994733b1f04493efbe9a07bb0f7f702969fbf9350675f2d425600c04',
           'src/7z/codec.js':
-            'sha256:60d5070f1cf8d9edc3c3ab822fd73dc4c352a7c55c96e78b433b503f2cf08964',
+            'sha256:6450a185f9d62348f0d6fc7eddc7ad6326a9c55a31a8a8f293216002dd0d5a25',
           'src/brotli/codec.js':
             'sha256:e93f4d0c46b1e65cbcfb6e45a261a9e9bb1f121d1bd29ed4af693597578855e4',
           'src/bzip2/codec.js':
@@ -58,22 +58,46 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/linked.js':
             'sha256:f2b09e5c8a9b19da46459d041fcb39cf27c7c1868ea6f3348210992ebf637d1f',
           'src/lzma/codec.js':
-            'sha256:7af2a688ee9fd450bb4f4e265fb987dbb53b25bfaaa6ec85363c00841dccb751',
+            'sha256:4389b74e768b0fd8823283bfaca763d3054318ec3a803357053a224211e51936',
           'src/pe/codec.js':
             'sha256:1fbc818d299678e2ee42241b81f6235401f717bd123449d0eae6d429bb0aa056',
           'src/rar/codec.js':
-            'sha256:e13d94fec648378ce3cc274259906be54ffd847023fc15a48a90f3296bdf154d',
+            'sha256:0e9b22191b78f07fd8b094b6830f4d5704c7cc8051b44d41bab88c494615104b',
           'src/tar/codec.js':
             'sha256:1ee376c3a57b28fd539f4dcaf800844d327c4eb1e6852a18617d85199661b3ac',
           'src/xz/codec.js':
-            'sha256:44e9ac364de3143616a034e357e2af0150f579a73ba9778c51a04897bb554799',
+            'sha256:f91feab9fba35de78b6358997d65064b2bd6e2ac52a5226acb70d6a580293fdb',
           'src/zip/codec.js':
             'sha256:d79f278cf8be4906cdecde32def292c5b09456cb2cd64205afd33b3d2e9aeb09',
           'src/zstd/codec.js':
             'sha256:6266e084d92f68329bb8ea89d24977a809e59d6db68fb03c4af97f43660231ca',
+          'test/fixtures/7z/bcj.7z':
+            'sha256:3b4a91035aa6af04c382d596879fce7c18971cbcc935305ba1d3786798929fb6',
+          'test/fixtures/7z/bcj2.7z':
+            'sha256:fa632765de880a3f4a75b6a92508bee3708d98c5fb32c77b9eb403fc8e7204cc',
+          'test/fixtures/7z/bzip2.7z':
+            'sha256:1a59e38b8931a24c452c7c1cab9d6a898327ace836fc72a96970917ef4e06ae6',
+          'test/fixtures/7z/copy.7z':
+            'sha256:a4e399106760cd191c00b1631d4bdd8fe9cabf3dafaef0f3484aec0bedef5d68',
+          'test/fixtures/7z/deflate.7z':
+            'sha256:68588e9dffbf7596cef3b9c627c91cee8a335c3afcd5c8e136b97326f45e6dec',
+          'test/fixtures/7z/delta.7z':
+            'sha256:ccf6a8b785619ba0694ceb1324539ad364516e4b4660cb4978efc95b028afd1b',
+          'test/fixtures/7z/encrypted-header.7z':
+            'sha256:2f81f5dcc6025d5297e60833e4304e87c82823569deded7c26db72f1c6237ab9',
+          'test/fixtures/7z/encrypted.7z':
+            'sha256:178e2459c49d28baaaf923a08c5f2143cb9215f1d6a13136f9de9439794a4578',
+          'test/fixtures/7z/lzma.7z':
+            'sha256:e51596de80018c92547c4fc3f06ac654854cf7951ff28591fbb416b42e3b2bcd',
+          'test/fixtures/7z/lzma2.7z':
+            'sha256:a6d12748dc7d2d4f720646be958cf92c3fc296b12b907b841e7579e52bdc559c',
+          'test/fixtures/7z/plain-header.7z':
+            'sha256:57143f60a3776ae9c9599db8b4c58ad56802ba21555af17eacfa8a3b7b1c7fce',
+          'test/seven-zip-rar.test.ts':
+            'sha256:ba910f659d74ec19eec62ac888ce88f34cc9cabce16624368c2fc972c70cbe65',
         },
         inventoryRecordId:
-          'artifact:sha256:064da7e525ab39cf1d29771644644b1ede7d0f501ccf3f49877e7bd217affb9e',
+          'artifact:sha256:62a9eea31faebb23a5c7ddf4347042b3d394ef97b89638e68651db8a8a079d86',
       },
       artifactRoot: 'extensions/archives/',
       containers: {
@@ -125,7 +149,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
       documentDigests: [
         [
           'contributions/codec-7z.json',
-          'sha256:80a3162f707f7829101bf641828ebccdb59c7b2fe009e9e873ff48980ac284f3',
+          'sha256:dea5b5ddc609ac399b86eac1b5f8279a617ef2c95f66e8078ec0c0b6b82af8ba',
         ],
         [
           'contributions/codec-brotli.json',
@@ -161,7 +185,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-rar.json',
-          'sha256:645a39c0f1e89a9e6ea6cae24325571f318fd61ff05255b064f996e2d5ca5bf2',
+          'sha256:76927101b7e7f4a8e1a26719e8ac156b0d563b3780e9d2cd60872696456da61a',
         ],
         [
           'contributions/codec-tar.json',
@@ -169,7 +193,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-xz.json',
-          'sha256:effe08ca5ab5605658d355535cc91e496855e2f9c0bbdac63bbd8bd6044a753b',
+          'sha256:b945ae5d8901c20343b9dfee344832375c2874acc24e2c791da9978baf28555e',
         ],
         [
           'contributions/codec-zip.json',
@@ -191,8 +215,8 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             displayName: '7-Zip archive',
             id: 'modkit/7z',
             limitations: [
-              'Portable extraction is intentionally bounded to one regular file in one raw-header folder using the official Copy coder.',
-              'Compressed or encrypted coders, encoded headers, solid and multi-volume archives, multiple files or folders, and writing are not implemented.',
+              'Portable reading covers plain and encoded headers, solid and non-solid folders, empty files and directories, and the Copy, LZMA, LZMA2, BCJ (x86), BCJ2, Delta, Deflate and BZip2 coders; one decoded folder is cached per session and every folder output is bounded by maxScalarBytes.',
+              'Encrypted archives list their entries (unless headers are encrypted) and refuse extraction with archives/password-required; PPMd, Deflate64, ARM/ARMT/ARM64/PPC/SPARC/IA64/RISC-V filters, multi-volume archives and writing are not implemented.',
             ],
             runtimeVariants: [
               {
@@ -1370,8 +1394,8 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             displayName: 'RAR archive',
             id: 'modkit/rar',
             limitations: [
-              'Portable extraction is intentionally bounded to plain RAR4 archives containing stored regular files.',
-              'RAR5, compression, encryption, solid and split archives, volumes, directories, extended headers, and writing are not implemented.',
+              'Portable reading lists RAR4 files and directories (Unicode names, large sizes, extended times, service blocks) and extracts stored (m0) files with CRC-32 verification.',
+              'Compressed (m1-m5), encrypted and split entries are listed and refuse extraction with a coded diagnostic; RAR5 opens as an empty namespace with archives/rar5-unsupported; writing is not implemented.',
             ],
             runtimeVariants: [
               {
@@ -1417,6 +1441,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 signatures: [
                   {
                     bytesHex: '526172211a0700',
+                    from: 'start',
+                    offset: 0,
+                  },
+                  {
+                    bytesHex: '526172211a070100',
                     from: 'start',
                     offset: 0,
                   },
@@ -1634,8 +1663,8 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             displayName: 'XZ compressed payload',
             id: 'modkit/xz',
             limitations: [
-              'Portable extraction is intentionally bounded to one Check=None stream with one LZMA2 filter and uncompressed LZMA2 chunks.',
-              'Compressed LZMA2 chunks, other checks and filters, concatenated streams, stream padding, and writing are not implemented.',
+              'Portable extraction is intentionally bounded to one Check=None stream with one LZMA2 filter whose block headers declare both sizes.',
+              'Other checks and filters, blocks without declared sizes, concatenated streams, stream padding, and writing are not implemented.',
             ],
             runtimeVariants: [
               {
@@ -2241,6 +2270,18 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'src/xz/codec.js',
         'src/zip/codec.js',
         'src/zstd/codec.js',
+        'test/fixtures/7z/bcj.7z',
+        'test/fixtures/7z/bcj2.7z',
+        'test/fixtures/7z/bzip2.7z',
+        'test/fixtures/7z/copy.7z',
+        'test/fixtures/7z/deflate.7z',
+        'test/fixtures/7z/delta.7z',
+        'test/fixtures/7z/encrypted-header.7z',
+        'test/fixtures/7z/encrypted.7z',
+        'test/fixtures/7z/lzma.7z',
+        'test/fixtures/7z/lzma2.7z',
+        'test/fixtures/7z/plain-header.7z',
+        'test/seven-zip-rar.test.ts',
       ],
       name: 'archives',
       source: 'extensions/archives',

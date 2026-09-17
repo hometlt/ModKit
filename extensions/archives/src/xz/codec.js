@@ -1,4 +1,5 @@
 import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkit/codec-kit'
+import { lzma2Decode, lzma2DictionarySize } from '@modkit/codec-kit/compression'
 
 const ID = 'modkit/xz'
 const HEADER_MAGIC = Object.freeze([0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00])
@@ -47,43 +48,11 @@ function readVli(bytes, offset, end, label) {
   throw new TypeError(`XZ ${label} VLI is too long`)
 }
 
-function decodeLzma2Stored(data, expected, maximum) {
+function decodeLzma2(data, expected, maximum, dictionaryProperty) {
   if (expected > maximum) throw new RangeError('XZ payload exceeds maxScalarBytes budget')
-  const chunks = []
-  let cursor = 0
-  let produced = 0
-  let dictionaryReady = false
-  let ended = false
-  while (cursor < data.byteLength) {
-    const control = data[cursor] ?? 0
-    cursor += 1
-    if (control === 0) {
-      ended = true
-      break
-    }
-    if (control !== 1 && control !== 2) {
-      throw new TypeError('XZ compressed LZMA2 chunks are outside the supported subset')
-    }
-    if (control === 2 && !dictionaryReady) {
-      throw new TypeError('XZ LZMA2 stream uses an uninitialized dictionary')
-    }
-    if (cursor + 2 > data.byteLength) throw new TypeError('XZ LZMA2 chunk header is truncated')
-    const size = (((data[cursor] ?? 0) << 8) | (data[cursor + 1] ?? 0)) + 1
-    cursor += 2
-    if (cursor + size > data.byteLength) throw new TypeError('XZ LZMA2 chunk payload is truncated')
-    if (size > expected - produced || produced + size > maximum) {
-      throw new RangeError('XZ LZMA2 output exceeds its declared size or budget')
-    }
-    chunks.push(data.subarray(cursor, cursor + size))
-    cursor += size
-    produced += size
-    dictionaryReady = true
-  }
-  if (!ended || cursor !== data.byteLength) {
-    throw new TypeError('XZ LZMA2 end marker is missing or not final')
-  }
-  if (produced !== expected) throw new TypeError('XZ LZMA2 decoded size is invalid')
-  return Object.freeze(chunks)
+  return Object.freeze([
+    lzma2Decode(data, lzma2DictionarySize(dictionaryProperty), { outputSize: expected }),
+  ])
 }
 
 function parseBlock(bytes, offset, indexOffset, maximum) {
@@ -128,7 +97,12 @@ function parseBlock(bytes, offset, indexOffset, maximum) {
   const dataOffset = headerEnd
   const dataEnd = dataOffset + compressed.value
   if (dataEnd > indexOffset) throw new TypeError('XZ compressed data is truncated')
-  const chunks = decodeLzma2Stored(bytes.subarray(dataOffset, dataEnd), uncompressed.value, maximum)
+  const chunks = decodeLzma2(
+    bytes.subarray(dataOffset, dataEnd),
+    uncompressed.value,
+    maximum,
+    dictionaryProperty,
+  )
   const padding = (4 - (compressed.value % 4)) % 4
   const next = dataEnd + padding
   if (next > indexOffset) throw new TypeError('XZ block padding is truncated')

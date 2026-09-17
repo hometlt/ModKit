@@ -9,12 +9,12 @@
     },
     "bundledCatalog": {
       "file": "generated/bundled-catalog.json",
-      "sha256": "sha256:41dacc2d7bc9a660a6d953df38c322ad72cd4d3073e5da7f35dc3c99601d06ed",
+      "sha256": "sha256:ab8c761d6a99e04b286da2aa778ac4f4e5c3cd40e32a32dd359013e0c9e4794a",
       "provenance": "checkout-physical-roots-verified-by-host-artifact-digest",
       "roots": [
         {
           "coordinate": "modkit/archives",
-          "digest": "sha256:064da7e525ab39cf1d29771644644b1ede7d0f501ccf3f49877e7bd217affb9e"
+          "digest": "sha256:62a9eea31faebb23a5c7ddf4347042b3d394ef97b89638e68651db8a8a079d86"
         },
         {
           "coordinate": "modkit/audio",

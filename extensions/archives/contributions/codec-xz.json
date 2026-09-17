@@ -21,8 +21,8 @@
     }
   ],
   "limitations": [
-    "Portable extraction is intentionally bounded to one Check=None stream with one LZMA2 filter and uncompressed LZMA2 chunks.",
-    "Compressed LZMA2 chunks, other checks and filters, concatenated streams, stream padding, and writing are not implemented."
+    "Portable extraction is intentionally bounded to one Check=None stream with one LZMA2 filter whose block headers declare both sizes.",
+    "Other checks and filters, blocks without declared sizes, concatenated streams, stream padding, and writing are not implemented."
   ],
   "spec": {
     "formatRefs": [{ "formatId": "xz", "label": "XZ compressed payload" }],
