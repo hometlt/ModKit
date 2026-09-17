@@ -696,6 +696,14 @@ export interface SubjectFactsIdentity {
   readonly kind: string
   readonly type?: string
   readonly origins: readonly SubjectFactProvenance[]
+  /**
+   * A logical model id (the model a unit is drawn with) the host resolves through the subject's own
+   * resource session; the facts source then offers it through `openModel`. Like `portrait`, the
+   * card never turns it into a path.
+   */
+  readonly model?: string
+  /** Scale the model's native units convert at, when the producer knows it (as map semantics do). */
+  readonly modelMetersPerSourceUnit?: number
 }
 
 export interface SubjectFactGroup {
@@ -762,6 +770,13 @@ export interface SubjectFactsSource {
   groups(page: PageRequest, signal?: AbortSignal): Promise<Page<SubjectFactGroup>>
   facts(groupId: string, page: PageRequest, signal?: AbortSignal): Promise<Page<SubjectFact>>
   relations(page: PageRequest, signal?: AbortSignal): Promise<Page<RelatedSubjectFact>>
+  /**
+   * The model named by `identity.model`, host-resolved and converted: its scene, materials and
+   * resource references. Hosts add these; a producer only names the model.
+   */
+  openModel?(signal?: AbortSignal): Promise<Lease<ModelSceneSource>>
+  openModelMaterials?(signal?: AbortSignal): Promise<Lease<ModelMaterialSource>>
+  openModelResources?(signal?: AbortSignal): Promise<Lease<ModelResourceRefsSource>>
 }
 
 export type SubjectCalculationStatus = 'computed' | 'missing-data' | 'unsupported' | 'invalid'

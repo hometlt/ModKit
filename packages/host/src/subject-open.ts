@@ -40,6 +40,7 @@ import {
   type ProviderOffer,
   type ProviderPolicyLockEntry,
   type ProviderRequest,
+  type ModelResourcePort,
   type RasterResourcePort,
   type ResourceBudget,
   type ResourceSessionPort,
@@ -365,6 +366,7 @@ function sessionWithResources(
   resources: AsyncReleaseScope,
   gating?: { readonly spec: CodecContributionSpecV1Wire; readonly grant: PermissionGrant },
   beforeDispose?: () => void,
+  models?: ModelResourcePort,
 ): AssetSession {
   let disposed = false
   const operations =
@@ -373,7 +375,10 @@ function sessionWithResources(
     revision: session.revision,
     state: () => session.state(),
     descriptor: () => session.descriptor(),
-    dataSource: session.dataSource.bind(session) as AssetSession['dataSource'],
+    dataSource:
+      models === undefined
+        ? (session.dataSource.bind(session) as AssetSession['dataSource'])
+        : subjectModelDataSources(session.dataSource.bind(session), models),
     operations: () => operations ?? session.operations(),
     events: (signal?: AbortSignal) => session.events(signal),
     async dispose(): Promise<void> {
@@ -1818,6 +1823,42 @@ async function openSubjectDirect(
       ...best.nestedLocks,
       ...(best.selectionLock === undefined ? [] : [best.selectionLock]),
     ])
+    const isReadAuthorized = () =>
+      grantValidity(best.effectiveGrant).state === 'valid' &&
+      best.effectiveGrant.classes.includes('read-source')
+    // The model a card names is resolved like any other model of this subject (see subject-models).
+    const models =
+      options.provideRasterResources === false
+        ? undefined
+        : createSubjectModelResources({
+            state: best.rasterState,
+            budget: best.effectiveBudget,
+            isAuthorized: isReadAuthorized,
+            ancestors: [`${options.source.ref.id}@${options.source.revision}`],
+            own: release => best.resources.add(release),
+            open: (source, path, signal) =>
+              openSubject({
+                inventory: options.inventory,
+                source,
+                path,
+                target: options.target,
+                intent: 'full',
+                grant: { ...best.effectiveGrant, classes: ['read-source'] },
+                budget: best.effectiveBudget,
+                executionBackends,
+                ...(best.rasterState.resources === undefined
+                  ? {}
+                  : { resourceSession: best.rasterState.resources }),
+                ...(options.resolveInput === undefined
+                  ? {}
+                  : { resolveInput: options.resolveInput }),
+                ...(options.serviceDefinitions === undefined
+                  ? {}
+                  : { serviceDefinitions: options.serviceDefinitions }),
+                ...(options.policy === undefined ? {} : { policy: options.policy }),
+                ...(signal === undefined ? {} : { signal }),
+              }),
+          })
     const managedSession = sessionWithResources(
       session,
       best.resources,
@@ -1828,6 +1869,7 @@ async function openSubjectDirect(
       () => {
         best.logicalState.live = false
       },
+      models,
     )
     if (postOpenResources !== undefined) best.rasterState.resources = postOpenResources
     best.rasterState.live = true
@@ -2115,3 +2157,4 @@ export async function openSubject(request: OpenSubjectOptions): Promise<OpenSubj
   }
 }
 import { createSubjectModelResources } from './model-resources.js'
+import { subjectModelDataSources } from './subject-models.js'

@@ -18,10 +18,12 @@ import type {
   KnowledgeHit,
   KnowledgeTarget,
   Page,
+  PresentationSlot,
   SubjectFact,
   SubjectFactsSource,
   SubjectEditTargetResult,
   ViewerModule,
+  ViewerSources,
 } from '@modkit/sdk'
 import { createAccordion, accordionField } from '../primitives/accordion.js'
 import { setPart, setState } from '../parts.js'
@@ -1312,10 +1314,16 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
               await pageScope.close()
               return
             }
-            const sections =
+            const sections = await embedRelatedModel(
               address === ownId
                 ? embedPreview(loaded, args, pageScope, localizer, options.previews)
-                : loaded
+                : loaded,
+              source,
+              args,
+              pageScope,
+              localizer,
+              options.previews,
+            )
             const card = createSubjectCard(document, {
               label: localizer.text('card.subject'),
               localizer,
@@ -1448,6 +1456,103 @@ function embedPreview(
           },
         },
   )
+}
+
+const RELATED_MODEL_FACETS = [
+  { contract: 'common.view/model-scene-source', open: 'openModel' },
+  { contract: 'common.view/model-material-source', open: 'openModelMaterials' },
+  { contract: 'common.view/model-resource-refs-source', open: 'openModelResources' },
+] as const
+
+/**
+ * The slot and sources a model stage mounts with for a facts source's related model: one binding
+ * per model facet, each served by the facts source's host-added `openModel*` lease.
+ */
+export function relatedModelStageInputs(
+  source: SubjectFactsSource,
+  parent: PresentationSlot,
+  signal: AbortSignal,
+): { readonly slot: PresentationSlot; readonly sources: ViewerSources } {
+  const slot = {
+    ...parent,
+    bindings: RELATED_MODEL_FACETS.map(({ contract }) => ({
+      bindingId: `card-model:${contract}`,
+      contract,
+      major: 1,
+    })),
+  } as unknown as PresentationSlot
+  const sources = {
+    async get(binding: { readonly contract?: string }) {
+      const facet = RELATED_MODEL_FACETS.find(item => item.contract === binding.contract)
+      const open =
+        facet === undefined
+          ? undefined
+          : (source[facet.open] as
+              | ((signal?: AbortSignal) => Promise<Lease<unknown>>)
+              | undefined)
+      if (open === undefined) return undefined
+      try {
+        return await open.call(source, signal)
+      } catch (error) {
+        // The scene is the preview; a missing material or reference facet only drops detail.
+        if (facet?.open === 'openModel') throw error
+        return undefined
+      }
+    },
+    async getUnknown() {
+      return undefined
+    },
+  } as unknown as ViewerSources
+  return { slot, sources }
+}
+
+/**
+ * A subject that names a model (`identity.model`) shows it: the host resolved and converted that
+ * model and lends it through the facts source, and the standard model stage mounts over those
+ * leases. The stage keeps this subject's descriptor, so the model's textures resolve through the
+ * same subject-bound image lookup the portrait uses.
+ */
+async function embedRelatedModel(
+  sections: readonly CardSection[],
+  source: SubjectFactsSource,
+  args: Parameters<ViewerModule['mount']>[0],
+  scope: ViewerMountScope,
+  localizer: UiLocalizer,
+  previews: SubjectCardViewerOptions['previews'],
+): Promise<readonly CardSection[]> {
+  if (source.openModel === undefined) return sections
+  const model = (await source.summary(scope.signal)).identity.model
+  if (model === undefined) return sections
+  const { slot, sources } = relatedModelStageInputs(source, args.slot, scope.signal)
+  const section: CardSection = {
+    kind: 'custom',
+    id: 'model',
+    title: localizer.text('card.preview'),
+    expanded: true,
+    async render(host: HTMLElement) {
+      setPart(host, 'card.preview')
+      host.dataset['model'] = model
+      try {
+        const module = previews?.model ?? (await defaultPreviewStage('model', localizer))
+        if (scope.signal.aborted) return
+        const mount = await module.mount({
+          ...args,
+          container: host,
+          slot,
+          sources,
+          signal: scope.signal,
+        })
+        scope.cleanup(() => mount.unmount())
+      } catch (error) {
+        if (scope.signal.aborted) return
+        host.textContent = localizer.text('card.previewUnavailable', {
+          reason: safeViewerText(error instanceof Error ? error.message : String(error), 256),
+        })
+      }
+    },
+  }
+  const at = sections.findIndex(item => item.kind !== 'header')
+  return at < 0 ? [...sections, section] : [...sections.slice(0, at), section, ...sections.slice(at)]
 }
 
 export const subjectCardViewer: ViewerModule = createSubjectCardViewer()

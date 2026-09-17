@@ -282,6 +282,27 @@ const subjectFactsSourceSurface = {
     groups: cancellableValue,
     facts: cancellableValue,
     relations: cancellableValue,
+    openModel: {
+      kind: 'lease',
+      result: { contract: contractId('common.view/model-scene-source'), major: 1 },
+      wrapper: 'lease',
+      optional: true,
+      ...sig,
+    },
+    openModelMaterials: {
+      kind: 'lease',
+      result: { contract: contractId('common.view/model-material-source'), major: 1 },
+      wrapper: 'lease',
+      optional: true,
+      ...sig,
+    },
+    openModelResources: {
+      kind: 'lease',
+      result: { contract: contractId('common.view/model-resource-refs-source'), major: 1 },
+      wrapper: 'lease',
+      optional: true,
+      ...sig,
+    },
   },
 } as const satisfies SurfaceOf<SubjectFactsSource>
 
