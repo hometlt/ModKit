@@ -60,6 +60,11 @@ export interface EditorAreaOptions {
     readonly tabs?: boolean
     /** The path breadcrumb above the stage. */
     readonly breadcrumb?: boolean
+    /**
+     * The in-page view picker. A host whose editor already switches views (VS Code's editor type
+     * picker over a custom editor) turns it off, and then the whole header row goes.
+     */
+    readonly viewPicker?: boolean
   }
 }
 
@@ -408,6 +413,8 @@ export function createEditorArea(document: Document, options: EditorAreaOptions)
     const picker = element(header, 'select', { part: 'explorer.viewpicker' }) as HTMLSelectElement
     picker.setAttribute('aria-label', localizer.text('explorer.view'))
     picker.disabled = true
+    if (options.chrome?.viewPicker === false) picker.remove()
+    if (header.childElementCount === 0) header.remove()
 
     const stage = element(groupRoot, 'div', { part: 'explorer.stage' })
 

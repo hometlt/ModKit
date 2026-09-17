@@ -634,6 +634,13 @@ export interface VsCodeServeOptions {
   readonly localizer?: UiLocalizer
   /** Confirm discarding unsaved work; a webview iframe cannot show a modal of its own. */
   readonly confirmClose?: (message: string, savable: boolean) => Promise<CloseAnswer>
+  /** Open a file in an editor of its own kind (a gallery pick). */
+  readonly openInEditor?: (path: string) => Promise<void>
+  /** Draw the mounted viewer's status items; `choose` reports a picked choice back to the page. */
+  readonly viewerStatus?: (
+    items: Extract<ShellRequest, { op: 'status-set' }>['items'],
+    choose: (itemId: string, choiceId: string) => void,
+  ) => void
   /**
    * Write viewer-produced export files somewhere this window owns, and say where they went.
    *
@@ -1404,6 +1411,19 @@ function serveVsCode(
         return isContainerUriText(request.path)
           ? readContainerEntry(options.containers, request.path, request.maxBytes)
           : readEntry(roots, request.path, request.maxBytes)
+      case 'open-in-editor': {
+        const roots = options.roots().map(root => resolve(root))
+        if (!withinRoots(roots, request.path))
+          throw new Error('that file is outside the granted folders')
+        await options.openInEditor?.(request.path)
+        return true
+      }
+      case 'status-set':
+        options.viewerStatus?.(
+          Array.isArray(request.items) ? request.items : [],
+          (itemId, choiceId) => bridge.emit({ op: 'status-choose', itemId, choiceId }),
+        )
+        return true
       case 'confirm':
         // No adapter means no way to ask, and discarding silently is the one answer that loses
         // work — so an unanswerable prompt keeps the tab open.

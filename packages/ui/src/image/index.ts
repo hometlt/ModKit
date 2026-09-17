@@ -32,7 +32,7 @@ import {
   unknownSourceLease,
   ViewerMountScope,
 } from '../viewer/index.js'
-import { setToken } from '../tokens/index.js'
+import { createMediaShell } from '../media-shell/index.js'
 import { collectEncodedMedia } from '../media/encoded.js'
 import { exportOffer } from '../field-editor/index.js'
 import type { UiLocalizer } from '../localization/index.js'
@@ -301,6 +301,9 @@ export interface ImageViewerOptions {
   readonly exportBaseName?: (descriptor: AnyDescriptor) => string
 }
 
+const ZOOM_CHOICES = [0.25, 0.5, 1, 2, 4, 8] as const
+const CHANNELS: readonly ImageChannel[] = ['rgb', 'r', 'g', 'b', 'a']
+
 export function createImageViewer(options: ImageViewerOptions = {}): ViewerModule {
   const localizer = withEnglishUiFallback(options.localizer, IMAGE_FALLBACK_MESSAGES)
   return defineViewerModule({
@@ -308,21 +311,28 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
     async mount(args) {
       const scope = new ViewerMountScope(args.signal)
       const root = createSurface(args.container, localizer.text('viewer.image'))
-      const stage = element(root, 'div', { part: 'image' })
-
-      const toolbar = element(stage, 'div', { part: 'image.toolbar', role: 'toolbar' })
-      toolbar.setAttribute('aria-label', localizer.text('viewer.imageControls'))
-      const subresourceBar = element(stage, 'div', {
-        part: 'image.subresources',
-        role: 'toolbar',
+      /*
+       * MK2 layout: gallery | render area | sidebar. The render area holds only the image; every
+       * control and fact is a sidebar section, and zoom/channel/size live in the host status bar.
+       */
+      const shell = createMediaShell(root.ownerDocument, {
+        localizer,
+        ...(args.gallery === undefined ? {} : { gallery: args.gallery }),
       })
-      subresourceBar.setAttribute('aria-label', localizer.text('viewer.imageSubresources'))
-      const convertBar = element(stage, 'div', { part: 'image.convert', role: 'toolbar' })
-      convertBar.setAttribute('aria-label', localizer.text('viewer.imageConvert'))
-      const readout = element(stage, 'output', { part: 'image.readout' })
+      root.append(shell.root)
+      scope.cleanup(() => shell.destroy())
+      if (args.gallery !== undefined) void shell.refreshGallery(scope.signal).catch(() => undefined)
+      const stage = element(shell.stage, 'div', { part: 'image' })
       const canvas = element(stage, 'canvas', { part: 'image.canvas' }) as HTMLCanvasElement
       canvas.tabIndex = 0
-      const facts = element(stage, 'dl', { part: 'image.metadata' })
+      canvas.setAttribute('aria-label', localizer.text('viewer.image'))
+      // Without a host status bar the same controls sit over the render area.
+      const overlay =
+        args.status === undefined
+          ? element(stage, 'div', { part: 'image.toolbar', role: 'toolbar' })
+          : undefined
+      overlay?.setAttribute('aria-label', localizer.text('viewer.imageControls'))
+      const readout = element(stage, 'output', { part: 'image.readout' })
 
       const lease = await unknownSourceLease(
         args.sources,
@@ -346,6 +356,7 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
       let background: ImageBackground = 'checker'
       let channel: ImageChannel = 'rgb'
       let note = ''
+      let descriptor = args.descriptor
       const decoded = new Map<string, ImageStageModel>()
 
       const context = canvas.getContext('2d')
@@ -363,20 +374,8 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
         return loaded
       }
 
-      const drawInto = (
-        target: CanvasRenderingContext2D,
-        bitmap: ImageBitmap,
-        x: number,
-        y: number,
-        width: number,
-        height: number,
-      ): void => {
-        target.imageSmoothingEnabled = width < bitmap.width
-        target.drawImage(bitmap, x, y, width, height)
-      }
-
       const bitmapData = (bitmap: ImageBitmap): ImageData => {
-        const scratch = document.createElement('canvas')
+        const scratch = root.ownerDocument.createElement('canvas')
         scratch.width = bitmap.width
         scratch.height = bitmap.height
         const scratchContext = scratch.getContext('2d')
@@ -385,67 +384,184 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
         return scratchContext.getImageData(0, 0, bitmap.width, bitmap.height)
       }
 
+      /** The scale "Fit" means: the whole image inside the render area, never enlarged. */
+      const fitScale = (): number => {
+        if (model === undefined) return 1
+        const box = stage.getBoundingClientRect()
+        const wide = compare === 'side-by-side' && comparison !== undefined
+        const contentWidth = wide ? model.bitmap.width * 2 + 8 : model.bitmap.width
+        return Math.min(
+          Math.max(16, box.width - 32) / contentWidth,
+          Math.max(16, box.height - 32) / model.bitmap.height,
+          1,
+        )
+      }
+      const currentScale = (): number => (fit ? fitScale() : zoom)
+
+      const formatLabel = (): string => {
+        const encoding = metadataGroups(descriptor)
+          .flatMap(group => group.entries)
+          .find(entry => /^(encoding|format|pixelformat|compression)$/iu.test(entry.key))
+        const base =
+          'identity' in descriptor
+            ? (descriptor as ResolvedAssetDescriptor).identity.formatLabel
+            : localizer.text('viewer.image')
+        return encoding === undefined ? base : `${base} · ${String(encoding.value)}`
+      }
+
+      const publishStatus = (): void => {
+        if (model === undefined) return
+        const scale = currentScale()
+        const items = [
+          {
+            id: 'size',
+            text: `${model.bitmap.width} × ${model.bitmap.height}`,
+            align: 'start' as const,
+          },
+          { id: 'format', text: formatLabel(), align: 'start' as const },
+          { id: 'bytes', text: `${(model.bytes / 1024).toFixed(1)} KiB`, align: 'start' as const },
+          {
+            id: 'channel',
+            text: channel.toUpperCase(),
+            tooltip: localizer.text('viewer.imageControls'),
+            align: 'end' as const,
+            selected: channel,
+            choices: CHANNELS.map(value => ({ id: value, label: value.toUpperCase() })),
+          },
+          {
+            id: 'zoom',
+            text: fit
+              ? `${localizer.text('viewer.fit')} (${Math.round(scale * 100)}%)`
+              : `${Math.round(scale * 100)}%`,
+            tooltip: localizer.text('viewer.fitTitle'),
+            align: 'end' as const,
+            selected: fit ? 'fit' : String(zoom),
+            choices: [
+              { id: 'fit', label: localizer.text('viewer.fit') },
+              ...ZOOM_CHOICES.map(value => ({ id: String(value), label: `${value * 100}%` })),
+            ],
+          },
+        ]
+        if (args.status !== undefined) {
+          args.status.set(items, (itemId, choiceId) => {
+            if (itemId === 'channel' && CHANNELS.includes(choiceId as ImageChannel)) {
+              channel = choiceId as ImageChannel
+            } else if (itemId === 'zoom') {
+              if (choiceId === 'fit') {
+                fit = true
+                panX = 0
+                panY = 0
+              } else {
+                const value = Number(choiceId)
+                if (Number.isFinite(value) && value > 0) {
+                  fit = false
+                  zoom = value
+                }
+              }
+            }
+            paint()
+          })
+        }
+      }
+
       const paint = (): void => {
         if (model === undefined) return
         const { bitmap } = model
         const box = stage.getBoundingClientRect()
-        const available = {
-          width: Math.max(64, box.width - 8),
-          height: Math.max(64, box.height - 160),
-        }
-        const wide = compare === 'side-by-side' && comparison !== undefined
-        const contentWidth = wide ? bitmap.width * 2 + 8 : bitmap.width
-        const scale = fit
-          ? Math.min(available.width / contentWidth, available.height / bitmap.height, 1)
-          : zoom
+        const ratio = globalThis.devicePixelRatio || 1
+        const cssWidth = Math.max(1, Math.round(box.width))
+        const cssHeight = Math.max(1, Math.round(box.height))
+        canvas.width = Math.round(cssWidth * ratio)
+        canvas.height = Math.round(cssHeight * ratio)
+        context.setTransform(ratio, 0, 0, ratio, 0, 0)
+        context.clearRect(0, 0, cssWidth, cssHeight)
+        const scale = currentScale()
         const width = Math.max(1, Math.round(bitmap.width * scale))
         const height = Math.max(1, Math.round(bitmap.height * scale))
+        const wide = compare === 'side-by-side' && comparison !== undefined
         const gap = wide ? 8 : 0
-        canvas.width = wide ? width * 2 + gap : width
-        canvas.height = height
-        // C3: the rendered size travels as a validated token, never as a style attribute.
-        setToken(canvas, 'size.icon', `${Math.min(canvas.width, 4096)}px`)
-        if (background === 'checker') drawChecker(context, canvas.width, canvas.height)
-        else {
-          context.fillStyle = background === 'dark' ? '#141414' : '#f4f4f4'
-          context.fillRect(0, 0, canvas.width, canvas.height)
+        const total = wide ? width * 2 + gap : width
+        const x = Math.round((cssWidth - total) / 2 + panX)
+        const y = Math.round((cssHeight - height) / 2 + panY)
+        // The backdrop covers only the image, as in MK2: the render area keeps the editor colour.
+        const backdrop = (left: number): void => {
+          context.save()
+          context.beginPath()
+          context.rect(left, y, width, height)
+          context.clip()
+          if (background === 'checker') {
+            context.translate(left, y)
+            drawChecker(context, width, height)
+          } else {
+            context.fillStyle = background === 'dark' ? '#141414' : '#f4f4f4'
+            context.fillRect(left, y, width, height)
+          }
+          context.restore()
+        }
+        const draw = (image: CanvasImageSource, left: number): void => {
+          backdrop(left)
+          context.imageSmoothingEnabled = scale < 1
+          context.drawImage(image, left, y, width, height)
         }
         if (compare === 'diff' && comparison !== undefined) {
-          context.putImageData(
-            differenceOf(bitmapData(bitmap), bitmapData(comparison.bitmap)),
-            0,
-            0,
-          )
+          const scratch = root.ownerDocument.createElement('canvas')
+          scratch.width = bitmap.width
+          scratch.height = bitmap.height
+          scratch
+            .getContext('2d')
+            ?.putImageData(differenceOf(bitmapData(bitmap), bitmapData(comparison.bitmap)), 0, 0)
+          draw(scratch, x)
         } else {
-          drawInto(context, bitmap, panX, panY, width, height)
-          if (wide && comparison !== undefined) {
-            drawInto(context, comparison.bitmap, width + gap + panX, panY, width, height)
+          draw(bitmap, x)
+          if (wide && comparison !== undefined) draw(comparison.bitmap, x + width + gap)
+        }
+        if (channel !== 'rgb') {
+          const left = Math.max(0, x)
+          const top = Math.max(0, y)
+          const right = Math.min(cssWidth, x + total)
+          const bottom = Math.min(cssHeight, y + height)
+          if (right > left && bottom > top) {
+            context.save()
+            context.setTransform(1, 0, 0, 1, 0, 0)
+            const sx = Math.round(left * ratio)
+            const sy = Math.round(top * ratio)
+            const frame = context.getImageData(
+              sx,
+              sy,
+              Math.max(1, Math.round((right - left) * ratio)),
+              Math.max(1, Math.round((bottom - top) * ratio)),
+            )
+            const scratch = root.ownerDocument.createElement('canvas')
+            scratch.width = frame.width
+            scratch.height = frame.height
+            const scratchContext = scratch.getContext('2d')
+            if (scratchContext !== null) {
+              scratchContext.putImageData(frame, 0, 0)
+              isolateChannel(scratchContext, frame.width, frame.height, channel)
+              context.drawImage(scratch, sx, sy)
+            }
+            context.restore()
           }
         }
-        isolateChannel(context, canvas.width, canvas.height, channel)
         setViewerText(
           readout,
-          `${localizer.text('viewer.imageSummary', {
-            width: bitmap.width,
-            height: bitmap.height,
-            size: (model.bytes / 1024).toFixed(1),
-            scale: Math.round(scale * 100),
-            channel:
-              channel === 'rgb'
-                ? ''
-                : localizer.text('viewer.imageChannel', { channel: channel.toUpperCase() }),
-          })} · ${localizer.text('viewer.imageSubresource', {
-            subresource: subresourceLabel(info, subresource),
-          })}${
+          `${
             compare === 'off'
               ? ''
-              : ` · ${localizer.text('viewer.imageCompareWith', {
+              : localizer.text('viewer.imageCompareWith', {
                   subresource: subresourceLabel(info, compareWith),
                   mode: compare,
-                })}`
-          }${note === '' ? '' : ` · ${note}`}`,
+                })
+          }${note === '' ? '' : `${compare === 'off' ? '' : ' · '}${note}`}`,
         )
+        readout.hidden = compare === 'off' && note === ''
+        renderOverlay()
+        publishStatus()
       }
+
+      const resize = new ResizeObserver(() => paint())
+      resize.observe(stage)
+      scope.cleanup(() => resize.disconnect())
 
       const reload = (): void => {
         void (async () => {
@@ -456,6 +572,7 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
           } catch (error) {
             note = error instanceof Error ? error.message : String(error)
           }
+          renderSections()
           paint()
         })()
       }
@@ -465,6 +582,7 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
         label: string,
         title: string,
         onClick: () => void,
+        pressed?: boolean,
       ): HTMLButtonElement => {
         const node = element(parent, 'button', {
           text: label,
@@ -472,51 +590,67 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
         }) as HTMLButtonElement
         node.type = 'button'
         node.title = title
+        if (pressed !== undefined) node.setAttribute('aria-pressed', String(pressed))
         node.addEventListener('click', () => {
           onClick()
           paint()
         })
-        scope.cleanup(() => node.replaceWith(node.cloneNode(true)))
         return node
       }
 
-      button(toolbar, localizer.text('viewer.fit'), localizer.text('viewer.fitTitle'), () => {
-        fit = true
-        panX = 0
-        panY = 0
-      })
-      button(toolbar, '1:1', localizer.text('viewer.actualPixels'), () => {
-        fit = false
-        zoom = 1
-        panX = 0
-        panY = 0
-      })
-      button(toolbar, '−', localizer.text('viewer.zoomOut'), () => {
-        fit = false
-        zoom = Math.max(0.1, zoom / 1.5)
-      })
-      button(toolbar, '+', localizer.text('viewer.zoomIn'), () => {
-        fit = false
-        zoom = Math.min(32, zoom * 1.5)
-      })
-      button(toolbar, 'BG', localizer.text('viewer.cycleBackdrop'), () => {
-        background = background === 'checker' ? 'dark' : background === 'dark' ? 'light' : 'checker'
-      })
-      for (const value of ['rgb', 'r', 'g', 'b', 'a'] as const) {
+      const renderOverlay = (): void => {
+        if (overlay === undefined) return
+        overlay.replaceChildren()
         button(
-          toolbar,
-          value.toUpperCase(),
-          localizer.text('viewer.isolateChannel', { channel: value.toUpperCase() }),
+          overlay,
+          localizer.text('viewer.fit'),
+          localizer.text('viewer.fitTitle'),
           () => {
-            channel = value
+            fit = true
+            panX = 0
+            panY = 0
           },
+          fit,
         )
+        button(
+          overlay,
+          '1:1',
+          localizer.text('viewer.actualPixels'),
+          () => {
+            fit = false
+            zoom = 1
+          },
+          !fit && zoom === 1,
+        )
+        button(overlay, '−', localizer.text('viewer.zoomOut'), () => {
+          zoom = Math.max(0.1, currentScale() / 1.5)
+          fit = false
+        })
+        button(overlay, '+', localizer.text('viewer.zoomIn'), () => {
+          zoom = Math.min(32, currentScale() * 1.5)
+          fit = false
+        })
+        element(overlay, 'span', {
+          part: 'image.readout',
+          text: `${Math.round(currentScale() * 100)}%`,
+        })
       }
 
-      /*
-       * Pointer pan. The MK2 texture viewer panned with a drag and this one could only zoom, which
-       * made 1:1 on a 2048px atlas a view of its top-left corner and nothing else.
-       */
+      // Wheel zoom about the pointer and drag pan, as in MK2.
+      const onWheel = (event: WheelEvent): void => {
+        if (model === undefined) return
+        event.preventDefault()
+        const before = currentScale()
+        const next = Math.min(32, Math.max(0.05, before * (event.deltaY < 0 ? 1.25 : 0.8)))
+        const box = stage.getBoundingClientRect()
+        const cx = event.clientX - box.left - box.width / 2 - panX
+        const cy = event.clientY - box.top - box.height / 2 - panY
+        panX -= cx * (next / before - 1)
+        panY -= cy * (next / before - 1)
+        fit = false
+        zoom = next
+        paint()
+      }
       let dragging: number | undefined
       let originX = 0
       let originY = 0
@@ -537,123 +671,75 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
         dragging = undefined
         canvas.releasePointerCapture(event.pointerId)
       }
+      canvas.addEventListener('wheel', onWheel, { passive: false })
       canvas.addEventListener('pointerdown', onPointerDown)
       canvas.addEventListener('pointermove', onPointerMove)
       canvas.addEventListener('pointerup', onPointerUp)
       canvas.addEventListener('pointercancel', onPointerUp)
+      canvas.addEventListener('dblclick', () => {
+        fit = true
+        panX = 0
+        panY = 0
+        paint()
+      })
       scope.cleanup(() => {
+        canvas.removeEventListener('wheel', onWheel)
         canvas.removeEventListener('pointerdown', onPointerDown)
         canvas.removeEventListener('pointermove', onPointerMove)
         canvas.removeEventListener('pointerup', onPointerUp)
         canvas.removeEventListener('pointercancel', onPointerUp)
       })
 
-      const renderSubresourceControls = (): void => {
-        subresourceBar.replaceChildren()
-        if (info === undefined) return
-        const axes: readonly (readonly [keyof ImageSubresource, string])[] = [
-          ['mipLevel', 'mip'],
-          ['layer', 'layer'],
-          ['face', 'face'],
-          ['slice', 'slice'],
-        ]
-        for (const [axis, name] of axes) {
-          const count = axisCount(info, axis)
-          if (count <= 1) continue
-          const step = (delta: number): void => {
-            const next = Math.min(count - 1, Math.max(0, subresource[axis] + delta))
-            subresource = Object.freeze({ ...subresource, [axis]: next })
-            reload()
-          }
-          button(
-            subresourceBar,
-            `${name}−`,
-            localizer.text('viewer.imagePreviousSubresource', { axis: name }),
-            () => step(-1),
-          )
-          button(
-            subresourceBar,
-            `${name}+`,
-            localizer.text('viewer.imageNextSubresource', { axis: name }),
-            () => step(1),
-          )
+      const facts = (parent: HTMLElement, rows: readonly (readonly [string, string])[]): void => {
+        const list = element(parent, 'dl', { part: 'image.metadata' })
+        for (const [label, value] of rows) {
+          const row = element(list, 'div', { part: 'metadata.row' })
+          element(row, 'dt', { text: label, part: 'metadata.label' })
+          const cell = element(row, 'dd', { part: 'metadata.value' })
+          setViewerText(cell, value, 512)
         }
-        if (enumerateSubresources(info).length > 1) {
-          button(
-            subresourceBar,
-            localizer.text('viewer.imageCompare'),
-            localizer.text('viewer.imageCompareTitle'),
-            () => {
-              compare =
-                compare === 'off' ? 'side-by-side' : compare === 'side-by-side' ? 'diff' : 'off'
-              if (compare !== 'off' && key(compareWith) === key(subresource)) {
-                compareWith = Object.freeze({
-                  ...subresource,
-                  mipLevel: Math.min(axisCount(info, 'mipLevel') - 1, subresource.mipLevel + 1),
-                })
-              }
-              reload()
-            },
-          )
-        }
-        const canExport = options.exportBytes !== undefined
+      }
+
+      const runExport = (all: boolean): void => {
+        const write = options.exportBytes
+        if (write === undefined || info === undefined) return
+        const imageInfo = info
         const baseName = exportSafeName(
-          options.exportBaseName === undefined ? 'image' : options.exportBaseName(args.descriptor),
+          options.exportBaseName === undefined ? 'image' : options.exportBaseName(descriptor),
         )
-        const runExport = (all: boolean): void => {
-          const write = options.exportBytes
-          if (write === undefined || info === undefined) return
-          note = localizer.text('viewer.imageExporting')
-          paint()
-          void (async () => {
-            try {
-              const wanted = all ? enumerateSubresources(info) : [subresource]
-              const files: ImageExportFile[] = []
-              for (const value of wanted) {
-                const loaded = await modelFor(value)
-                files.push({
-                  name: `${baseName}.${subresourceLabel(info, value)}.png`,
-                  mediaType: 'image/png',
-                  bytes: await encodePng(loaded.bitmap),
-                })
-              }
-              const outcome = await write(files, scope.signal)
-              note =
-                outcome.state === 'written'
-                  ? localizer.text('viewer.imageExported', { count: outcome.names.length })
-                  : localizer.text('viewer.imageExportRefused', { reason: outcome.reason })
-            } catch (error) {
-              note = localizer.text('viewer.imageExportRefused', {
-                reason: error instanceof Error ? error.message : String(error),
+        note = localizer.text('viewer.imageExporting')
+        paint()
+        void (async () => {
+          try {
+            const wanted = all ? enumerateSubresources(imageInfo) : [subresource]
+            const files: ImageExportFile[] = []
+            for (const value of wanted) {
+              const loaded = await modelFor(value)
+              files.push({
+                name: `${baseName}.${subresourceLabel(imageInfo, value)}.png`,
+                mediaType: 'image/png',
+                bytes: await encodePng(loaded.bitmap),
               })
             }
-            paint()
-          })()
-        }
-        const single = button(
-          subresourceBar,
-          localizer.text('viewer.imageExport'),
-          localizer.text('viewer.imageExportTitle'),
-          () => runExport(false),
-        )
-        const batch = button(
-          subresourceBar,
-          localizer.text('viewer.imageExportAll'),
-          localizer.text('viewer.imageExportAllTitle'),
-          () => runExport(true),
-        )
-        for (const node of [single, batch]) {
-          node.disabled = !canExport
-          if (!canExport) node.title = localizer.text('viewer.imageExportUnavailable')
-        }
+            const outcome = await write(files, scope.signal)
+            note =
+              outcome.state === 'written'
+                ? localizer.text('viewer.imageExported', { count: outcome.names.length })
+                : localizer.text('viewer.imageExportRefused', { reason: outcome.reason })
+          } catch (error) {
+            note = localizer.text('viewer.imageExportRefused', {
+              reason: error instanceof Error ? error.message : String(error),
+            })
+          }
+          paint()
+        })()
       }
 
       /*
        * The codec's own conversions (`export.convert` presets): the file comes back as bytes and
        * goes to the same host writer as a PNG export — never back into the source.
        */
-      const renderConvertControls = (descriptor: AnyDescriptor): void => {
-        convertBar.replaceChildren()
+      const renderConversions = (parent: HTMLElement): void => {
         const presets = exportOffer(descriptor).flatMap(form => {
           let input
           try {
@@ -668,11 +754,13 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
           return target === undefined ? [] : [{ form, input, target }]
         })
         if (presets.length === 0) return
+        const bar = element(parent, 'div', { part: 'image.convert', role: 'toolbar' })
+        bar.setAttribute('aria-label', localizer.text('viewer.imageConvert'))
         const baseName = exportSafeName(
           options.exportBaseName === undefined ? 'image' : options.exportBaseName(descriptor),
         )
         for (const { form, input, target } of presets) {
-          const node = button(convertBar, form.label, form.summary, () => {
+          const node = button(bar, form.label, form.summary, () => {
             const write = options.exportBytes
             if (write === undefined) return
             note = localizer.text('viewer.imageConverting', { preset: form.label })
@@ -713,35 +801,133 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
         }
       }
 
-      /*
-       * Format, compression and subresource facts inline. They were reachable only by leaving for
-       * the Metadata stage, which is exactly the split the parity matrix called out.
-       */
-      const renderFacts = (descriptor: AnyDescriptor): void => {
-        facts.replaceChildren()
-        if (info !== undefined) {
-          for (const [label, value] of [
-            ['size', `${info.width} × ${info.height}`],
-            ['mipLevels', String(axisCount(info, 'mipLevel'))],
-            ['layers', String(axisCount(info, 'layer'))],
-            ['faces', String(axisCount(info, 'face'))],
-            ['depth', String(axisCount(info, 'slice'))],
-            ['channels', `${info.channels} × ${info.bitDepth}-bit`],
-            ['alphaMode', String(info.alphaMode)],
-            ['colorSpace', String(info.colorSpace)],
-          ] as const) {
-            const row = element(facts, 'div', { part: 'metadata.row' })
-            element(row, 'dt', { text: label, part: 'metadata.label' })
-            const cell = element(row, 'dd', { part: 'metadata.value' })
-            setViewerText(cell, value, 512)
+      const renderSections = (): void => {
+        shell.clearSections()
+        if (info !== undefined && model !== undefined) {
+          const extent = subresourceExtent(info, subresource.mipLevel)
+          facts(shell.section('image', localizer.text('viewer.imageSectionImage')).body, [
+            [localizer.text('viewer.imageDimensions'), `${extent.width} × ${extent.height}`],
+            [localizer.text('viewer.imageAspect'), (extent.width / extent.height).toFixed(3)],
+            [
+              localizer.text('viewer.imageHasAlpha'),
+              info.alphaMode === 'none' || info.channels < 4 ? 'no' : 'yes',
+            ],
+          ])
+          facts(shell.section('format', localizer.text('viewer.imageSectionFormat')).body, [
+            [localizer.text('viewer.imageFormat'), formatLabel()],
+            [localizer.text('viewer.imageMipLevels'), String(axisCount(info, 'mipLevel'))],
+            [localizer.text('viewer.imageChannels'), `${info.channels} × ${info.bitDepth}-bit`],
+            [localizer.text('viewer.imageColorSpace'), String(info.colorSpace)],
+          ])
+          const axes: readonly (readonly [keyof ImageSubresource, string])[] = [
+            ['mipLevel', 'mip'],
+            ['layer', 'layer'],
+            ['face', 'face'],
+            ['slice', 'slice'],
+          ]
+          if (axes.some(([axis]) => axisCount(info, axis) > 1)) {
+            const body = shell.section(
+              'subresource',
+              localizer.text('viewer.imageSubresources'),
+            ).body
+            const bar = element(body, 'div', { part: 'image.subresources', role: 'toolbar' })
+            const current = info
+            for (const [axis, name] of axes) {
+              const count = axisCount(current, axis)
+              if (count <= 1) continue
+              const step = (delta: number): void => {
+                const next = Math.min(count - 1, Math.max(0, subresource[axis] + delta))
+                subresource = Object.freeze({ ...subresource, [axis]: next })
+                reload()
+              }
+              button(
+                bar,
+                `${name}−`,
+                localizer.text('viewer.imagePreviousSubresource', { axis: name }),
+                () => step(-1),
+              )
+              element(bar, 'span', {
+                part: 'image.readout',
+                text: `${subresource[axis]}/${count - 1}`,
+              })
+              button(
+                bar,
+                `${name}+`,
+                localizer.text('viewer.imageNextSubresource', { axis: name }),
+                () => step(1),
+              )
+            }
+            if (enumerateSubresources(current).length > 1) {
+              button(
+                bar,
+                localizer.text('viewer.imageCompare'),
+                localizer.text('viewer.imageCompareTitle'),
+                () => {
+                  compare =
+                    compare === 'off' ? 'side-by-side' : compare === 'side-by-side' ? 'diff' : 'off'
+                  if (compare !== 'off' && key(compareWith) === key(subresource)) {
+                    compareWith = Object.freeze({
+                      ...subresource,
+                      mipLevel: Math.min(
+                        axisCount(current, 'mipLevel') - 1,
+                        subresource.mipLevel + 1,
+                      ),
+                    })
+                  }
+                  reload()
+                },
+                compare !== 'off',
+              )
+            }
           }
         }
-        for (const group of metadataGroups(descriptor)) {
-          for (const entry of group.entries) {
-            const row = element(facts, 'div', { part: 'metadata.row' })
-            element(row, 'dt', { text: `${group.label} · ${entry.key}`, part: 'metadata.label' })
-            const cell = element(row, 'dd', { part: 'metadata.value' })
-            setViewerText(cell, entry.value, 512)
+        const channels = shell.section(
+          'channels',
+          localizer.text('viewer.imageSectionChannels'),
+        ).body
+        const channelBar = element(channels, 'div', { part: 'image.toolbar', role: 'toolbar' })
+        for (const value of CHANNELS) {
+          button(
+            channelBar,
+            value.toUpperCase(),
+            localizer.text('viewer.isolateChannel', { channel: value.toUpperCase() }),
+            () => {
+              channel = value
+              renderSections()
+            },
+            channel === value,
+          )
+        }
+        button(channelBar, 'BG', localizer.text('viewer.cycleBackdrop'), () => {
+          background =
+            background === 'checker' ? 'dark' : background === 'dark' ? 'light' : 'checker'
+        })
+        const exportBody = shell.section('export', localizer.text('viewer.imageSectionExport')).body
+        const exportBar = element(exportBody, 'div', { part: 'image.toolbar', role: 'toolbar' })
+        const canExport = options.exportBytes !== undefined
+        for (const [label, title, all] of [
+          [localizer.text('viewer.imageExport'), localizer.text('viewer.imageExportTitle'), false],
+          [
+            localizer.text('viewer.imageExportAll'),
+            localizer.text('viewer.imageExportAllTitle'),
+            true,
+          ],
+        ] as const) {
+          const node = button(exportBar, label, title, () => runExport(all))
+          node.disabled =
+            !canExport || (all && (info === undefined || enumerateSubresources(info).length < 2))
+          if (!canExport) node.title = localizer.text('viewer.imageExportUnavailable')
+        }
+        renderConversions(exportBody)
+        const groups = metadataGroups(descriptor)
+        if (groups.length > 0) {
+          const body = shell.section('metadata', localizer.text('viewer.imageSectionMetadata')).body
+          for (const group of groups) {
+            element(body, 'h3', { part: 'image.metadata-group', text: group.label })
+            facts(
+              body,
+              group.entries.map(entry => [entry.key, String(entry.value)] as const),
+            )
           }
         }
       }
@@ -750,9 +936,7 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
       try {
         info = await source.info(scope.signal)
         model = await modelFor(subresource)
-        renderSubresourceControls()
-        renderConvertControls(args.descriptor)
-        renderFacts(args.descriptor)
+        renderSections()
         setState(stage, [])
         paint()
       } catch (error) {
@@ -765,11 +949,12 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
           }),
         })
       }
+      scope.cleanup(() => args.status?.clear())
 
-      return createViewerMount(root, scope, args, ({ descriptor }) => {
-        root.dataset['revision'] = descriptor.revision
-        renderConvertControls(descriptor)
-        renderFacts(descriptor)
+      return createViewerMount(root, scope, args, ({ descriptor: next }) => {
+        descriptor = next
+        root.dataset['revision'] = next.revision
+        renderSections()
         paint()
       })
     },

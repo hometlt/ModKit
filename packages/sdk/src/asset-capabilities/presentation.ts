@@ -257,6 +257,57 @@ export interface ViewerWorkspaceDocuments {
   read(request?: ViewerWorkspaceDocumentsRequest): Promise<ViewerWorkspaceDocumentsResult>
 }
 
+/**
+ * One entry a viewer publishes to its host's status bar (VS Code draws native status bar items,
+ * Electron its own footer). `choices` makes the entry a picker: the host shows them and reports the
+ * picked id through `ViewerStatusPort.set`'s `onChoose`.
+ */
+export interface ViewerStatusItem {
+  readonly id: string
+  readonly text: string
+  readonly tooltip?: string
+  /** `start` for identity (dimensions, format, size), `end` for controls (zoom, channel). */
+  readonly align?: 'start' | 'end'
+  readonly choices?: readonly { readonly id: string; readonly label: string }[]
+  readonly selected?: string
+}
+
+/** Host-owned status bar. A viewer mounted without it draws nothing there and loses nothing. */
+export interface ViewerStatusPort {
+  /** Replace this viewer's items. `onChoose(itemId, choiceId)` reports a picked choice. */
+  set(
+    items: readonly ViewerStatusItem[],
+    onChoose?: (itemId: string, choiceId: string) => void,
+  ): void
+  clear(): void
+}
+
+/** One subject beside the opened one that a media viewer's gallery offers. */
+export interface ViewerGalleryItem {
+  readonly id: string
+  readonly label: string
+  /** Group heading, e.g. the containing folder. */
+  readonly group?: string
+  readonly active?: boolean
+}
+
+/**
+ * Host-owned list of sibling subjects the viewer can switch between without leaving its render
+ * area. `thumbnail` answers a small RGBA preview when the host can decode one.
+ */
+export interface ViewerGalleryPort {
+  list(signal?: AbortSignal): Promise<readonly ViewerGalleryItem[]>
+  thumbnail?(
+    id: string,
+    maxEdge: number,
+    signal?: AbortSignal,
+  ): Promise<
+    { readonly width: number; readonly height: number; readonly rgba: Uint8Array } | undefined
+  >
+  /** Show this sibling in the same editor; the host remounts the viewer for it. */
+  open(id: string): Promise<void>
+}
+
 export interface ViewerModule {
   readonly abiVersion: 1
   mount(args: {
@@ -285,6 +336,10 @@ export interface ViewerModule {
      */
     readonly commit?: CommitCoordinator
     readonly authorization?: EditAuthorizationPort
+    /** Optional host status bar (zoom, channel, dimensions, format, size). */
+    readonly status?: ViewerStatusPort
+    /** Optional sibling subjects a media viewer shows in its gallery. */
+    readonly gallery?: ViewerGalleryPort
     readonly signal?: AbortSignal
   }): Promise<ViewerMount>
 }

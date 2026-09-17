@@ -288,7 +288,9 @@ export const IMAGE_FALLBACK_MESSAGES = {
   'viewer.fit': 'Fit',
   'viewer.fitTitle': 'Fit to the stage',
   'viewer.image': 'Image viewer',
-  'viewer.imageChannel': ' · channel {channel}',
+  'viewer.imageAspect': 'Aspect',
+  'viewer.imageChannels': 'Channels',
+  'viewer.imageColorSpace': 'Colour space',
   'viewer.imageCompare': 'Compare',
   'viewer.imageCompareTitle': 'Cycle comparison: off, side by side, difference',
   'viewer.imageCompareWith': 'compared with {subresource} ({mode})',
@@ -297,6 +299,7 @@ export const IMAGE_FALLBACK_MESSAGES = {
   'viewer.imageConverting': 'converting: {preset}…',
   'viewer.imageDecodeError':
     'The platform decoder cannot render these bytes: {reason}. A format-specific decoder provider is required.',
+  'viewer.imageDimensions': 'Dimensions',
   'viewer.imageExport': 'Export',
   'viewer.imageExportAll': 'Export all',
   'viewer.imageExportAllTitle': 'Export every declared subresource as PNG',
@@ -305,14 +308,31 @@ export const IMAGE_FALLBACK_MESSAGES = {
   'viewer.imageExportUnavailable': 'This host cannot write exported files',
   'viewer.imageExported': 'exported {count} file(s)',
   'viewer.imageExporting': 'exporting…',
+  'viewer.imageFormat': 'Format',
+  'viewer.imageHasAlpha': 'Has alpha',
+  'viewer.imageMipLevels': 'Mip levels',
   'viewer.imageNextSubresource': 'Next {axis}',
   'viewer.imagePreviousSubresource': 'Previous {axis}',
-  'viewer.imageSubresource': 'subresource {subresource}',
+  'viewer.imageSectionChannels': 'Channels',
+  'viewer.imageSectionExport': 'Export',
+  'viewer.imageSectionFormat': 'Format',
+  'viewer.imageSectionImage': 'Image',
+  'viewer.imageSectionMetadata': 'Header / metadata',
   'viewer.imageSubresources': 'Subresource, comparison and export',
-  'viewer.imageSummary': '{width}×{height} · {size} KiB · {scale}%{channel}',
   'viewer.isolateChannel': 'Isolate the {channel} channel',
   'viewer.zoomIn': 'Zoom in',
   'viewer.zoomOut': 'Zoom out',
+} as const satisfies UiMessageCatalog
+
+export const MEDIA_SHELL_FALLBACK_MESSAGES = {
+  'mediaShell.gallery': 'Gallery',
+  'mediaShell.galleryBig': 'Large icons',
+  'mediaShell.galleryFilter': 'Filter',
+  'mediaShell.galleryList': 'List',
+  'mediaShell.gallerySmall': 'Small icons',
+  'mediaShell.sidebar': 'Details',
+  'mediaShell.toggleGallery': 'Toggle gallery',
+  'mediaShell.toggleSidebar': 'Toggle details',
 } as const satisfies UiMessageCatalog
 
 export const METADATA_FALLBACK_MESSAGES = {

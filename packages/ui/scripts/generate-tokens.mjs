@@ -245,6 +245,8 @@ ${fragment('chrome.css')}
 
 ${fragment('card.css')}
 
+${fragment('media-shell.css')}
+
 ${fragment('template.css')}
 `
 

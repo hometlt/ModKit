@@ -11,6 +11,8 @@
 import type {
   EditorModule,
   KnowledgeCatalog,
+  ViewerGalleryPort,
+  ViewerStatusPort,
   ViewerWorkspaceDocuments,
   OperationSession,
   PresentationPlan,
@@ -76,6 +78,10 @@ export interface CodecPreviewOptions {
   readonly stages: readonly PreviewStage[]
   /** Optional host-owned read-only help catalog shared by every mounted stage. */
   readonly knowledge?: KnowledgeCatalog
+  /** The host status bar every mounted stage publishes to (VS Code: native entries). */
+  readonly status?: ViewerStatusPort
+  /** Sibling subjects a media stage may show in its gallery, per opened entry. */
+  readonly gallery?: (entry: ExplorerEntry) => ViewerGalleryPort | undefined
   /**
    * Optional bounded snapshot of the documents around the opened subject.
    *
@@ -215,6 +221,7 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
        * answer per build had to construct two previewers and pick between them at every open.
        */
       const ports = await options.editorPorts?.(entry, bytes)
+      const gallery = options.gallery?.(entry)
       const traits = new Set(traitsOf(descriptor))
       const published = new Set(publishedContracts(descriptor))
       /*
@@ -270,6 +277,7 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
         if (stage === undefined) throw new Error(`unknown view: ${viewId}`)
         await active?.unmount()
         active = undefined
+        options.status?.clear()
         container.replaceChildren()
         activeId = viewId
 
@@ -321,7 +329,7 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
           sources: {
             async get(binding: { contract: string; major?: number }) {
               if (rawBytes !== undefined && binding.contract === BYTE_RANGE_CONTRACT)
-                return { value: rawBytes, async release() {} }
+                return { value: rawBytes, release: () => Promise.resolve() }
               const lease = await session.dataSource(binding.contract, binding.major ?? 1)
               return {
                 value: lease.value,
@@ -332,7 +340,7 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
             },
             async getUnknown(binding: { contract: string; major?: number }) {
               if (rawBytes !== undefined && binding.contract === BYTE_RANGE_CONTRACT)
-                return { value: rawBytes, async release() {} }
+                return { value: rawBytes, release: () => Promise.resolve() }
               const lease = await session.dataSource(binding.contract, binding.major ?? 1)
               return {
                 value: lease.value,
@@ -344,6 +352,8 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
           } as never,
           operations: operations as never,
           ...(options.knowledge === undefined ? {} : { knowledge: options.knowledge }),
+          ...(options.status === undefined ? {} : { status: options.status }),
+          ...(gallery === undefined ? {} : { gallery }),
           ...(options.workspaceDocuments === undefined
             ? {}
             : { workspaceDocuments: options.workspaceDocuments }),

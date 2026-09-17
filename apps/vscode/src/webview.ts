@@ -26,6 +26,7 @@ import { createWorkbench } from '@modkit/ui/workbench'
 import { resolveModelViewerTextures } from '@modkit/ui/model'
 import { templateImagesFromRaster } from '@modkit/ui/template'
 import type { UiCatalogDocument, UiLocale, UiLocalizer } from '@modkit/ui/localization'
+import type { ViewerGalleryPort, ViewerStatusPort } from '@modkit/sdk'
 import {
   createSubjectCard,
   loadSubjectCardSections,
@@ -334,9 +335,57 @@ async function mount(
     return wanted.length === 0 ? stages : wanted
   }
 
+  /*
+   * The custom editor's own chrome does the rest of what MK2's viewers had: the status bar entries
+   * come from the viewer through this port, and the gallery lists the opened file's siblings.
+   */
+  let statusChoose: ((itemId: string, choiceId: string) => void) | undefined
+  const viewerStatus: ViewerStatusPort | undefined =
+    snapshot.openPath === undefined
+      ? undefined
+      : {
+          set(items, onChoose) {
+            statusChoose = onChoose
+            void bridge.request({ op: 'status-set', items }).catch(() => undefined)
+          },
+          clear() {
+            statusChoose = undefined
+            void bridge.request({ op: 'status-set', items: [] }).catch(() => undefined)
+          },
+        }
+  const galleryFor = (entry: ExplorerEntry): ViewerGalleryPort | undefined => {
+    if (snapshot.openPath === undefined || entry.id !== snapshot.openPath) return undefined
+    const cut = Math.max(entry.id.lastIndexOf('/'), entry.id.lastIndexOf(String.fromCharCode(92)))
+    const extension = entry.name.includes('.')
+      ? entry.name.split('.').at(-1)?.toLowerCase()
+      : undefined
+    if (cut <= 0 || extension === undefined) return undefined
+    const folder = entry.id.slice(0, cut)
+    return {
+      async list() {
+        const entries = await access.list(folder).catch(() => [])
+        return entries
+          .filter(
+            item => !item.directory && item.name.split('.').at(-1)?.toLowerCase() === extension,
+          )
+          .map(item => ({
+            id: item.id,
+            label: item.name,
+            group: baseName(folder),
+            active: item.id === entry.id,
+          }))
+      },
+      async open(id) {
+        await bridge.request({ op: 'open-in-editor', path: id })
+      },
+    }
+  }
+
   const codecPreview = createCodecPreview({
     localizer,
     supported: snapshot.supportedExtensions,
+    ...(viewerStatus === undefined ? {} : { status: viewerStatus }),
+    gallery: galleryFor,
     stages: onlyForcedStage(
       createVsCodePreviewStages({
         localizer,
@@ -603,7 +652,7 @@ async function mount(
      */
     ...(snapshot.openPath === undefined
       ? {}
-      : { chrome: { tabs: false, breadcrumb: false } as const }),
+      : { chrome: { tabs: false, breadcrumb: false, viewPicker: false } as const }),
     read: (entry, signal) => access.read(entry.id, EXPLORER_MAXIMUM_BYTES, signal),
     async confirmClose(entry) {
       const answer = String(
@@ -747,6 +796,9 @@ async function mount(
         break
       case 'notice':
         say(event.text)
+        break
+      case 'status-choose':
+        statusChoose?.(event.itemId, event.choiceId)
         break
       default:
         break

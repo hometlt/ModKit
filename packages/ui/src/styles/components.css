@@ -972,9 +972,6 @@
 
   [data-mk-part='image.canvas'] {
     display: block;
-    max-width: 100%;
-    margin: auto;
-    border: 1px solid var(--mk-color-border);
     image-rendering: pixelated;
   }
 

@@ -167,6 +167,7 @@ import {
 } from './workbench-workflows.js'
 import { runExplicitGameLaunch, VSCODE_GAME_LAUNCH_COMMAND } from './game-launch-workflow.js'
 import { planEditorAssociations, type AssociationPlan } from './editor-associations.js'
+import { createViewerStatusBar } from './viewer-status.js'
 import {
   selectScopedSubjectCandidates,
   type VsCodeSubjectCandidateScope,
@@ -594,7 +595,9 @@ function readPackagedManagedRegistry(extensionRoot: string): PackagedManagedRegi
  * downstream would silently address a file that does not exist.
  */
 function subjectPathOf(uri: vscode.Uri): string {
-  return uri.scheme === CONTAINER_SCHEME || uri.scheme === 'modkit-source' ? uri.toString() : uri.fsPath
+  return uri.scheme === CONTAINER_SCHEME || uri.scheme === 'modkit-source'
+    ? uri.toString()
+    : uri.fsPath
 }
 
 /** The inverse: the URI a subject string names, for the editor surfaces that take one. */
@@ -626,7 +629,8 @@ class ModkitCustomDocument implements vscode.CustomDocument {
     forceReadOnly = false,
   ) {
     this.state = new CustomDocumentState(subjectPathOf(uri))
-    this.readOnly = forceReadOnly || uri.scheme === CONTAINER_SCHEME || uri.scheme === 'modkit-source'
+    this.readOnly =
+      forceReadOnly || uri.scheme === CONTAINER_SCHEME || uri.scheme === 'modkit-source'
   }
 
   dispose(): void {
@@ -1170,6 +1174,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   const activationStarted = Date.now()
   const output = vscode.window.createOutputChannel('Modkit MK3')
   context.subscriptions.push(output)
+  /** Zoom, channel, dimensions, format and size of the viewer in the active Modkit editor. */
+  const viewerStatusBar = createViewerStatusBar()
+  context.subscriptions.push(viewerStatusBar)
   const journal = createDiagnosticJournal()
   let localizer = createVscodeLocalizer(vscode.env.language)
   const log = (line: string): void => {
@@ -1562,10 +1569,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     if (!vscode.workspace.isTrusted) throw new Error('Content sources require a trusted workspace')
     const storage = join(context.globalStorageUri.fsPath, 'content-sources')
     const defaultConfig = join(storage, 'provider.json')
-    contentSources ??= loadContentSources(process.env['MODKIT_CONTENT_SOURCE_CONFIG'] ??
-      (existsSync(defaultConfig) ? defaultConfig : undefined), storage)
+    contentSources ??= loadContentSources(
+      process.env['MODKIT_CONTENT_SOURCE_CONFIG'] ??
+        (existsSync(defaultConfig) ? defaultConfig : undefined),
+      storage,
+    )
     const source = await contentSources
-    if (!source) throw new Error('Battle.net source runtime is not configured for this installation')
+    if (!source)
+      throw new Error('Battle.net source runtime is not configured for this installation')
     return source
   }
   const sourceChanges = new vscode.EventEmitter<vscode.FileChangeEvent[]>()
@@ -1577,11 +1588,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     return bytes
   }
   const sourceLocation = (uri: vscode.Uri) => {
-    if (uri.scheme !== 'modkit-source' || uri.authority !== 'battlenet' || uri.query || uri.fragment) {
+    if (
+      uri.scheme !== 'modkit-source' ||
+      uri.authority !== 'battlenet' ||
+      uri.query ||
+      uri.fragment
+    ) {
       throw vscode.FileSystemError.FileNotFound(uri)
     }
     const [id, ...parts] = uri.path.replace(/^\//u, '').split('/')
-    if (!id || parts.some(part => part === '..' || part === '.')) throw vscode.FileSystemError.FileNotFound(uri)
+    if (!id || parts.some(part => part === '..' || part === '.'))
+      throw vscode.FileSystemError.FileNotFound(uri)
     return { id, path: parts.join('/') }
   }
   const sourceFileSystem: vscode.FileSystemProvider = {
@@ -1591,52 +1608,99 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       const location = sourceLocation(uri)
       const source = await requireContentSources()
       if (!location.path) {
-        if (!(await source.snapshot()).roots.some(root => root.id === location.id)) throw vscode.FileSystemError.FileNotFound(uri)
-        return { type: vscode.FileType.Directory, ctime: 0, mtime: 0, size: 0, permissions: vscode.FilePermission.Readonly }
+        if (!(await source.snapshot()).roots.some(root => root.id === location.id))
+          throw vscode.FileSystemError.FileNotFound(uri)
+        return {
+          type: vscode.FileType.Directory,
+          ctime: 0,
+          mtime: 0,
+          size: 0,
+          permissions: vscode.FilePermission.Readonly,
+        }
       }
-      const parts = location.path.split('/'); const name = parts.pop()
-      const node = (await source.list(location.id, parts.join('/'))).find(item => item.name === name)
+      const parts = location.path.split('/')
+      const name = parts.pop()
+      const node = (await source.list(location.id, parts.join('/'))).find(
+        item => item.name === name,
+      )
       if (!node) throw vscode.FileSystemError.FileNotFound(uri)
-      return { type: node.directory ? vscode.FileType.Directory : vscode.FileType.File,
-        ctime: 0, mtime: 0, size: node.size ?? 0, permissions: vscode.FilePermission.Readonly }
+      return {
+        type: node.directory ? vscode.FileType.Directory : vscode.FileType.File,
+        ctime: 0,
+        mtime: 0,
+        size: node.size ?? 0,
+        permissions: vscode.FilePermission.Readonly,
+      }
     },
     async readDirectory(uri) {
       const location = sourceLocation(uri)
-      return (await (await requireContentSources()).list(location.id, location.path))
-        .map(item => [item.name, item.directory ? vscode.FileType.Directory : vscode.FileType.File])
+      return (await (await requireContentSources()).list(location.id, location.path)).map(item => [
+        item.name,
+        item.directory ? vscode.FileType.Directory : vscode.FileType.File,
+      ])
     },
     async readFile(uri) {
       const location = sourceLocation(uri)
       return (await requireContentSources()).read(location.id, location.path, 64 * 1024 * 1024)
     },
-    createDirectory: uri => { throw vscode.FileSystemError.NoPermissions(uri) },
-    writeFile: uri => { throw vscode.FileSystemError.NoPermissions(uri) },
-    delete: uri => { throw vscode.FileSystemError.NoPermissions(uri) },
-    rename: uri => { throw vscode.FileSystemError.NoPermissions(uri) },
+    createDirectory: uri => {
+      throw vscode.FileSystemError.NoPermissions(uri)
+    },
+    writeFile: uri => {
+      throw vscode.FileSystemError.NoPermissions(uri)
+    },
+    delete: uri => {
+      throw vscode.FileSystemError.NoPermissions(uri)
+    },
+    rename: uri => {
+      throw vscode.FileSystemError.NoPermissions(uri)
+    },
   }
   const operationOutputs = createOperationOutputStore()
   const operationOutputChanged = new vscode.EventEmitter<vscode.Uri>()
-  context.subscriptions.push(sourceChanges,
-    vscode.workspace.registerFileSystemProvider('modkit-source', sourceFileSystem, { isReadonly: true, isCaseSensitive: true }),
+  context.subscriptions.push(
+    sourceChanges,
+    vscode.workspace.registerFileSystemProvider('modkit-source', sourceFileSystem, {
+      isReadonly: true,
+      isCaseSensitive: true,
+    }),
     // Answers that are documents; the scheme carries no authority, only what this window produced.
     vscode.workspace.registerTextDocumentContentProvider(OPERATION_OUTPUT_SCHEME, {
       onDidChange: operationOutputChanged.event,
       provideTextDocumentContent: uri => operationOutputs.read(uri.path) ?? '',
     }),
     operationOutputChanged,
-    { dispose: () => { void contentSources?.then(source => source?.dispose()).catch(() => undefined) } },
+    {
+      dispose: () => {
+        void contentSources?.then(source => source?.dispose()).catch(() => undefined)
+      },
+    },
     vscode.commands.registerCommand('modkit.contentSources', async () => {
       try {
         await chooseContentSource({
           russian: vscode.env.language.startsWith('ru'),
-          choose: async (title, items) => (await vscode.window.showQuickPick([...items], { title }))?.id,
+          choose: async (title, items) =>
+            (await vscode.window.showQuickPick([...items], { title }))?.id,
           input: title => Promise.resolve(vscode.window.showInputBox({ title })),
           async call(method, args) {
             const source = await requireContentSources()
             const value = await callContentSources(source, method, args)
-            if (['connect', 'disconnect', 'add', 'remove', 'refresh', 'publish', 'deletePublication'].includes(method)) {
-              sourceChanges.fire((vscode.workspace.workspaceFolders ?? []).filter(folder => folder.uri.scheme === 'modkit-source')
-                .map(folder => ({ type: vscode.FileChangeType.Changed, uri: folder.uri })))
+            if (
+              [
+                'connect',
+                'disconnect',
+                'add',
+                'remove',
+                'refresh',
+                'publish',
+                'deletePublication',
+              ].includes(method)
+            ) {
+              sourceChanges.fire(
+                (vscode.workspace.workspaceFolders ?? [])
+                  .filter(folder => folder.uri.scheme === 'modkit-source')
+                  .map(folder => ({ type: vscode.FileChangeType.Changed, uri: folder.uri })),
+              )
             }
             return value
           },
@@ -1644,17 +1708,32 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             if (!vscode.workspace.workspaceFolders?.length) {
               throw new Error(localizer.text('vscode.container.openFolderFirst'))
             }
-            const uri = vscode.Uri.from({ scheme: 'modkit-source', authority: 'battlenet', path: `/${source.id}` })
+            const uri = vscode.Uri.from({
+              scheme: 'modkit-source',
+              authority: 'battlenet',
+              path: `/${source.id}`,
+            })
             const result = await addContainerWorkspaceFolder(uri, source.label)
-            if (result === 'rejected') throw new Error('The workspace could not add this content source')
+            if (result === 'rejected')
+              throw new Error('The workspace could not add this content source')
             await vscode.commands.executeCommand('revealInExplorer', uri)
           },
           async openLocal() {
-            const selected = await vscode.commands.executeCommand<{ installPath: string } | undefined>('modkit.selectGameInstallation')
-            if (selected) await vscode.commands.executeCommand('modkit.browseContainer', vscode.Uri.file(selected.installPath))
+            const selected = await vscode.commands.executeCommand<
+              { installPath: string } | undefined
+            >('modkit.selectGameInstallation')
+            if (selected)
+              await vscode.commands.executeCommand(
+                'modkit.browseContainer',
+                vscode.Uri.file(selected.installPath),
+              )
           },
         })
-      } catch (error) { void vscode.window.showErrorMessage(`Modkit: ${error instanceof Error ? error.message : 'Content source failed'}`) }
+      } catch (error) {
+        void vscode.window.showErrorMessage(
+          `Modkit: ${error instanceof Error ? error.message : 'Content source failed'}`,
+        )
+      }
     }),
   )
   const containerFileSystem: vscode.FileSystemProvider = {
@@ -4342,7 +4421,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
        * by extension so one large kind cannot spend the remainder alone.
        */
       const primaryExtension = request.document.uri.split('.').at(-1)?.toLowerCase()
-      const byExtension = new Map<string, { readonly uri: vscode.Uri; readonly extension: string }[]>()
+      const byExtension = new Map<
+        string,
+        { readonly uri: vscode.Uri; readonly extension: string }[]
+      >()
       for (const candidate of [...candidates.values()].sort((left, right) =>
         left.uri.toString().localeCompare(right.uri.toString()),
       ))
@@ -4534,13 +4616,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
 
   const nativeCodeActionKind = (kind: string): vscode.CodeActionKind | undefined => {
     switch (kind) {
-      case 'quickfix': return vscode.CodeActionKind.QuickFix
-      case 'refactor': return vscode.CodeActionKind.Refactor
-      case 'refactor.extract': return vscode.CodeActionKind.RefactorExtract
-      case 'refactor.inline': return vscode.CodeActionKind.RefactorInline
-      case 'rewrite': return vscode.CodeActionKind.RefactorRewrite
-      case 'source': return vscode.CodeActionKind.Source
-      default: return undefined
+      case 'quickfix':
+        return vscode.CodeActionKind.QuickFix
+      case 'refactor':
+        return vscode.CodeActionKind.Refactor
+      case 'refactor.extract':
+        return vscode.CodeActionKind.RefactorExtract
+      case 'refactor.inline':
+        return vscode.CodeActionKind.RefactorInline
+      case 'rewrite':
+        return vscode.CodeActionKind.RefactorRewrite
+      case 'source':
+        return vscode.CodeActionKind.Source
+      default:
+        return undefined
     }
   }
 
@@ -4695,9 +4784,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
                 cancellation.signal,
               )
               return result?.actions.map(item => {
-                const action = new vscode.CodeAction(item.title, nativeCodeActionKind(item.kind ?? ''))
+                const action = new vscode.CodeAction(
+                  item.title,
+                  nativeCodeActionKind(item.kind ?? ''),
+                )
                 if (item.isPreferred !== undefined) action.isPreferred = item.isPreferred
-                if (item.disabledReason !== undefined) action.disabled = { reason: item.disabledReason }
+                if (item.disabledReason !== undefined)
+                  action.disabled = { reason: item.disabledReason }
                 if (item.diagnosticCodes !== undefined) {
                   const codes = new Set(item.diagnosticCodes)
                   action.diagnostics = context.diagnostics.filter(candidate => {
@@ -5201,6 +5294,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             },
           }),
       confirmClose,
+      ...(openPath === undefined
+        ? {}
+        : {
+            viewerStatus: (items, choose) =>
+              viewerStatusBar.set(subjectKey(openPath), items, choose),
+          }),
+      openInEditor: async path => {
+        await vscode.commands.executeCommand('vscode.open', vscode.Uri.file(path))
+      },
       /*
        * The same bounded snapshot the language features run on, for the operations that need it.
        * A template names a template in another file and a localized value renders through the
@@ -5210,9 +5312,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       async readWorkspaceDocuments(request) {
         const uri = request.path === undefined ? undefined : vscode.Uri.file(request.path)
         const open =
-          uri === undefined ? undefined : vscode.workspace.textDocuments.find(
-            item => item.uri.toString() === uri.toString(),
-          )
+          uri === undefined
+            ? undefined
+            : vscode.workspace.textDocuments.find(item => item.uri.toString() === uri.toString())
         const languageIds =
           request.languageIds ??
           (await workspaceLanguagesFor(
@@ -5601,7 +5703,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         `${title}: ${localizer.text('vscode.command.completedOutput', {
           subject:
             request.subject === undefined
-              ? request.operationId ?? request.command
+              ? (request.operationId ?? request.command)
               : subjectLabel(request.subject),
         })}`,
       )
@@ -6497,14 +6599,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
      */
     vscode.commands.registerCommand('modkit.runCommand', (argument: unknown) => {
       const request = argument as
-        {
-          command?: string
-          subject?: string
-          entry?: string
-          target?: string
-          operationId?: string
-          operationInput?: CommandInput[string]
-        } | undefined
+        | {
+            command?: string
+            subject?: string
+            entry?: string
+            target?: string
+            operationId?: string
+            operationInput?: CommandInput[string]
+          }
+        | undefined
       return (async (): Promise<CommandResult | undefined> => {
         const requestedDescriptor =
           typeof request?.command === 'string' ? commandRuntime.get(request.command) : undefined
@@ -7311,9 +7414,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         if (panel.active) {
           activeSubject = key
           showSubjectStatus(target.path)
+          viewerStatusBar.setActive(key)
         } else if (activeSubject === key) {
           activeSubject = undefined
           showSubjectStatus(undefined)
+          viewerStatusBar.setActive(undefined)
         }
       }
       followActive()
@@ -7326,6 +7431,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         if (liveArchiveAcceptanceServed.get(document.uri.toString()) === served) {
           liveArchiveAcceptanceServed.delete(document.uri.toString())
         }
+        viewerStatusBar.remove(subjectKey(target.path))
         if (activeSubject === subjectKey(target.path)) {
           activeSubject = undefined
           showSubjectStatus(undefined)

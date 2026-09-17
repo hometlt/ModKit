@@ -118,6 +118,20 @@ export type ShellRequest =
   | { readonly op: 'document-revert'; readonly path: string }
   /** A webview iframe cannot show a modal of its own, so the prompt happens in the editor. */
   | { readonly op: 'confirm'; readonly message: string; readonly savable: boolean }
+  /** Show another file in this editor (a gallery pick). */
+  | { readonly op: 'open-in-editor'; readonly path: string }
+  /** The mounted viewer's status items, drawn as native status bar entries. */
+  | {
+      readonly op: 'status-set'
+      readonly items: readonly {
+        readonly id: string
+        readonly text: string
+        readonly tooltip?: string
+        readonly align?: 'start' | 'end'
+        readonly choices?: readonly { readonly id: string; readonly label: string }[]
+        readonly selected?: string
+      }[]
+    }
   /*
    * Settings traffic. The webview holds no host and no configuration API, so it asks — which is
    * the honest path: `vscode.workspace.getConfiguration().update` exists only on the extension
@@ -179,6 +193,8 @@ export type ShellEvent =
   | { readonly op: 'notice'; readonly text: string; readonly severity: 'info' | 'error' }
   /** The webview's status line, mirrored into the extension's output channel. */
   | { readonly op: 'status'; readonly text: string }
+  /** A status bar choice the user picked for the mounted viewer. */
+  | { readonly op: 'status-choose'; readonly itemId: string; readonly choiceId: string }
   /**
    * What the page's realm can actually honour, probed by the page itself (§1.5).
    *
