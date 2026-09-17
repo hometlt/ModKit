@@ -2094,38 +2094,38 @@
       "targetOperation": "view.inspect"
     },
     {
-      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-document-metadata.json",
+      "contribution": "modkit-extensions-blizzard/starcraft2/modules/mod/codecs/document-metadata/codec.json",
       "handlerId": "validate",
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/asset.validate",
-      "status": "pending",
+      "status": "adapted",
       "targetOperation": "asset.validate"
     },
     {
-      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-document-metadata.json",
+      "contribution": "modkit-extensions-blizzard/starcraft2/modules/mod/codecs/document-metadata/codec.json",
       "handlerId": "replace-dependencies",
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/edit.content",
-      "status": "pending",
+      "status": "adapted",
       "targetOperation": "edit.content"
     },
     {
-      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-document-metadata.json",
+      "contribution": "modkit-extensions-blizzard/starcraft2/modules/mod/codecs/document-metadata/codec.json",
       "handlerId": "export-convert",
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/export.convert",
-      "status": "pending",
+      "status": "adapted",
       "targetOperation": "export.convert"
     },
     {
-      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-document-metadata.json",
+      "contribution": "modkit-extensions-blizzard/starcraft2/modules/mod/codecs/document-metadata/codec.json",
       "handlerId": "export-raw",
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/export.raw",
-      "status": "pending",
+      "status": "adapted",
       "targetOperation": "export.raw"
     },
     {
-      "contribution": "modkit-extensions-blizzard/starcraft2/contributions/codec-sc2-document-metadata.json",
+      "contribution": "modkit-extensions-blizzard/starcraft2/modules/mod/codecs/document-metadata/codec.json",
       "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/sc2-document-metadata/operation/view.inspect",
-      "status": "pending",
+      "status": "adapted",
       "targetOperation": "view.inspect"
     },
     {

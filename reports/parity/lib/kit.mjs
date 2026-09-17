@@ -27,6 +27,7 @@ export const resolveInput = (input, corpus) =>
 /** Case bytes: pinned MK2 Git blob, declared corpus file (hash-checked) or inline text. */
 export async function caseBytes(input) {
   if (typeof input?.text === 'string') return new TextEncoder().encode(input.text)
+  if (typeof input?.base64 === 'string') return new Uint8Array(Buffer.from(input.base64, 'base64'))
   if (typeof input?.fixture === 'string') {
     const record = await (await pinnedSource()).read(input.fixture)
     if (input.sha256 !== undefined && record.sha256 !== input.sha256)

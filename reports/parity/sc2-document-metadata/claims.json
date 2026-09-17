@@ -1,0 +1,21 @@
+{
+  "features": [
+    ["3a78aac39b5556a4", "view.inspect"],
+    ["437917b026066633", "detect"],
+    ["47ee2ef6aef62092", "view.inspect.version"],
+    ["547c7eb73ef1a273", "edit.content"],
+    ["5d6da44ca2681acf", "export.convert"],
+    ["638009c37a18785e", "asset.validate"],
+    ["9081602bc75c7f95", "view.inspect.header"],
+    ["9506fc40b327f3fc", "view.inspect.info"],
+    ["dd51cb920062a655", "export.raw"]
+  ],
+  "operations": [
+    ["view.inspect", "view.inspect"],
+    ["asset.validate", "asset.validate"],
+    ["edit.content", "edit.content"],
+    ["export.convert", "export.convert"],
+    ["export.raw", "export.raw"]
+  ],
+  "skipProbes": {}
+}
