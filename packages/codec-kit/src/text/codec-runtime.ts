@@ -13,7 +13,7 @@ import type {
   DataSourceMajor,
   DataSourceOf,
 } from '@modkit/sdk'
-import type { HostOperationHandler } from '@modkit/host'
+import type { HostOperationHandler } from '@modkit/host/codec'
 import type { TextDataContractId } from '@modkit/sdk/text-data'
 export interface TextCodecDefinition {
   readonly format: string
@@ -26,7 +26,7 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource,
-} from '@modkit/host'
+} from '@modkit/host/codec'
 import { revisionId } from '@modkit/sdk'
 
 const BASE_OPERATIONS = Object.freeze([

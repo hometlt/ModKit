@@ -20,6 +20,10 @@ import {
 import type { DataSourceSurfaceSource } from '../execution/index.js'
 import type { WorkerBackendPolicy } from '../execution/worker-policy.js'
 import { NATIVE_TEXT_MODULES, withNativeTextModules } from '../native-text.js'
+import {
+  warmExecutionBackend,
+  type WarmExecutionBackendOptions,
+} from '../execution/warm-backend.js'
 import { createNodeWorkerBackend } from './worker-backend.js'
 
 export interface NodeExecutionBackendsOptions {
@@ -41,6 +45,8 @@ export interface NodeExecutionBackendsOptions {
   readonly bootstrapUrl?: URL
   /** Register the in-process backend too (default true; the gate still requires the artifact decision). */
   readonly trustedInProcess?: boolean
+  /** How long, and how many, activated worker realms stay warm between opens. */
+  readonly warmRealms?: WarmExecutionBackendOptions
   /**
    * Modules the application imported at build time, keyed by the linked entrypoint href
    * (`linkedExtensionInputs(...).modules`). When present, the in-process backend serves these
@@ -60,15 +66,35 @@ export function createNodeExecutionBackends(
       ? NATIVE_TEXT_MODULES
       : withNativeTextModules(options.linkedModules)
   backends.push(linkedInProcessBackend(linkedModules))
+  /*
+   * Warm, not new, for the next open of the same codec under the same grant: the spawn is cheap
+   * and the cold module graph is not. See `../execution/warm-backend.ts`.
+   */
   backends.push(
-    createNodeWorkerBackend({
-      ...(options.policy === undefined ? {} : { policy: options.policy }),
-      ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
-      ...(options.foreignSurfaces === undefined
-        ? {}
-        : { foreignSurfaces: options.foreignSurfaces }),
-      ...(options.bootstrapUrl === undefined ? {} : { bootstrapUrl: options.bootstrapUrl }),
-    }),
+    warmExecutionBackend(
+      createNodeWorkerBackend({
+        ...(options.policy === undefined ? {} : { policy: options.policy }),
+        ...(options.onDiagnostic === undefined ? {} : { onDiagnostic: options.onDiagnostic }),
+        ...(options.foreignSurfaces === undefined
+          ? {}
+          : { foreignSurfaces: options.foreignSurfaces }),
+        ...(options.bootstrapUrl === undefined ? {} : { bootstrapUrl: options.bootstrapUrl }),
+      }),
+      {
+        ...(options.warmRealms ?? {}),
+        ...(options.onDiagnostic === undefined
+          ? {}
+          : {
+              onReuse: (contributionId: string) => {
+                options.onDiagnostic?.({
+                  code: 'x3.host/worker-realm-reused',
+                  severity: 'information',
+                  message: `«${contributionId}» reused a warm worker realm: its module graph was already loaded`,
+                })
+              },
+            }),
+      },
+    ),
   )
   return createExecutionBackendRegistry(backends)
 }

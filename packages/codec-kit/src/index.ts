@@ -24,7 +24,7 @@ import type {
   ValueSpan,
   Writer,
 } from '@modkit/sdk'
-import type { HostOperationHandler } from '@modkit/host'
+import type { HostOperationHandler } from '@modkit/host/codec'
 
 import type {
   ArtifactByteSource,
@@ -270,7 +270,7 @@ import {
   assembleSubjectDescriptor,
   createAssetSession,
   createUtf8TextDataSource,
-} from '@modkit/host'
+} from '@modkit/host/codec'
 import { revisionId, toPortableProjectionReceipt } from '@modkit/sdk'
 
 export const INSPECTION_OPERATIONS: readonly OperationDecl[] = Object.freeze([
