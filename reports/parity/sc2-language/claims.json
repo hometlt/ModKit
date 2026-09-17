@@ -1,12 +1,23 @@
 {
   "galaxy": {
     "features": [
-      ["galaxy/feature/e8f590258fb1808d", "capabilities", "galaxy.hover", "galaxy.definition", "galaxy.signature"]
+      [
+        "galaxy/feature/e8f590258fb1808d",
+        "capabilities",
+        "galaxy.hover",
+        "galaxy.definition",
+        "galaxy.signature"
+      ]
     ],
     "skipCases": [
-      "galaxy.hover/const", "galaxy.hover/field", "galaxy.definition/struct",
-      "galaxy.references/decl", "galaxy.references/nodecl", "galaxy.symbols/main", "galaxy.symbols/lib",
-      "galaxy.workspace-symbols/help", "galaxy.workspace-symbols/pair", "galaxy.rename/helper"
+      "galaxy.definition/struct",
+      "galaxy.references/decl",
+      "galaxy.references/nodecl",
+      "galaxy.symbols/main",
+      "galaxy.symbols/lib",
+      "galaxy.workspace-symbols/help",
+      "galaxy.workspace-symbols/pair",
+      "galaxy.rename/helper"
     ],
     "divergences": {
       "galaxy.hover/const": "MK2 renders `const int c_limit = 3`; MK3 renders `int c_limit`",
@@ -20,10 +31,21 @@
   },
   "sc2-layout": {
     "features": [
-      ["sc2-layout/feature/4103ffd9b1e8c390", "layout.color"],
-      ["sc2-layout/feature/86138cdac17f384a", "layout.symbols"]
+      [
+        "sc2-layout/feature/4103ffd9b1e8c390",
+        "layout.color"
+      ],
+      [
+        "sc2-layout/feature/86138cdac17f384a",
+        "layout.symbols"
+      ]
     ],
-    "skipCases": ["layout.hover/frame", "layout.definition/constant", "layout.references/constant", "layout.rename/constant"],
+    "skipCases": [
+      "layout.hover/frame",
+      "layout.definition/constant",
+      "layout.references/constant",
+      "layout.rename/constant"
+    ],
     "divergences": {
       "layout.hover/frame": "MK2 null; MK3 schema-doc hover",
       "layout.definition/constant": "MK2 points at the element start (twice); MK3 at the name value",

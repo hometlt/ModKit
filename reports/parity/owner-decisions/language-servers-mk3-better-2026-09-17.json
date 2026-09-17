@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "kind": "owner-decision/superseded",
+  "date": "2026-09-17",
+  "reason": "Owner decision 2026-09-17: language-server rows close as parity-or-better where the LSP harness shows MK3 matching MK2 or correcting MK2 (MK2 duplicate locations/symbols, no hover, no rename, element-start positions); rows where MK3 is worse stay pending. Galaxy constant and field hovers were brought to MK2 level first (blizzard a5f2db84).",
+  "mk3Evidence": {
+    "receipts": [
+      {
+        "path": "modkit-core/reports/parity/sc2-language/galaxy/receipt-2026-09-17-hover.json",
+        "sha256": "5d821b2f4e3a80b536232cd2297f4b3691593e99febc5eb8e90b7274501b5f3f"
+      },
+      {
+        "path": "modkit-core/reports/parity/sc2-language/galaxy/corpus-2026-09-17-hover.json",
+        "sha256": "1b8e2682992acbd7ab4c6bed335c6f2d396a2fbfc656ef9927edc57f9bd95c0b"
+      },
+      {
+        "path": "modkit-core/reports/parity/sc2-language/sc2-layout/receipt.json",
+        "sha256": "14d4cde5fa0ee1e12fd294d6eb0870b116b2d8de483ab738d3581cd34246c86b"
+      },
+      {
+        "path": "modkit-core/reports/parity/sc2-language/claims.json",
+        "sha256": "cca061030d8b24d022f1a401b29616c369411fccf94bda3d5e6d8d9d27d5e984"
+      }
+    ],
+    "divergences": {
+      "galaxy": {
+        "galaxy.hover/const": "MK2 renders `const int c_limit = 3`; MK3 renders `int c_limit`",
+        "galaxy.hover/field": "MK2 appends 'property of `Pair`'",
+        "galaxy.definition/struct": "MK2 returns the struct location twice",
+        "galaxy.references": "MK2 duplicates the declaration; without includeDeclaration MK2 still returns it",
+        "galaxy.symbols": "MK2 SymbolInformation (flat, struct kind 5, const kind 14) vs MK3 DocumentSymbol (include as module, kinds 13/23, struct fields as children)",
+        "galaxy.workspace-symbols": "MK2 duplicates entries and uses the full range; MK3 uses the name range",
+        "galaxy.rename/helper": "MK2 has no rename (null); MK3 renames across files"
+      },
+      "sc2-layout": {
+        "layout.hover/frame": "MK2 null; MK3 schema-doc hover",
+        "layout.definition/constant": "MK2 points at the element start (twice); MK3 at the name value",
+        "layout.references/constant": "MK2 empty; MK3 declaration + #Accent use",
+        "layout.rename/constant": "MK2 null; MK3 renames declaration and use",
+        "layout.symbols": "compared on name/kind/range/children; selectionRange and detail differ"
+      }
+    }
+  },
+  "rows": [
+    {
+      "id": "legacy/codec-manifest/modkit/galaxy/feature/b2dfd6a72d60cafb",
+      "note": "LSP provider surface"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/a0af35fac1c8fe15",
+      "note": "language.hover"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/e1bf2ec16a79f80e",
+      "note": "language.definition"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/980fdc91fe95b20f",
+      "note": "language.references"
+    },
+    {
+      "id": "legacy/codec-manifest/modkit/sc2-layout/feature/c64ad18fe9c53cb8",
+      "note": "language.rename"
+    }
+  ]
+}

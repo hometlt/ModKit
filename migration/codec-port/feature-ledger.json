@@ -1248,11 +1248,23 @@
       "status": "superseded"
     },
     {
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-17",
+        "path": "modkit-core/reports/parity/owner-decisions/language-servers-mk3-better-2026-09-17.json",
+        "reason": "Owner decision 2026-09-17: language-server rows close as parity-or-better where the LSP harness shows MK3 matching MK2 or correcting MK2 (MK2 duplicate locations/symbols, no hover, no rename, element-start positions); rows where MK3 is worse stay pending. Galaxy constant and field hovers were brought to MK2 level first (blizzard a5f2db84).",
+        "sha256": "cb6929a05ee8299289e628d360a450cab01cbf3c54c3d1306a284339ec992232"
+      },
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/galaxy/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/language-servers-mk3-better-2026-09-17.json",
+          "sha256": "cb6929a05ee8299289e628d360a450cab01cbf3c54c3d1306a284339ec992232"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/b2dfd6a72d60cafb",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "demotedOn": "2026-09-16",
@@ -3588,9 +3600,21 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-17",
+        "path": "modkit-core/reports/parity/owner-decisions/language-servers-mk3-better-2026-09-17.json",
+        "reason": "Owner decision 2026-09-17: language-server rows close as parity-or-better where the LSP harness shows MK3 matching MK2 or correcting MK2 (MK2 duplicate locations/symbols, no hover, no rename, element-start positions); rows where MK3 is worse stay pending. Galaxy constant and field hovers were brought to MK2 level first (blizzard a5f2db84).",
+        "sha256": "cb6929a05ee8299289e628d360a450cab01cbf3c54c3d1306a284339ec992232"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/language-servers-mk3-better-2026-09-17.json",
+          "sha256": "cb6929a05ee8299289e628d360a450cab01cbf3c54c3d1306a284339ec992232"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-layout/feature/980fdc91fe95b20f",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "demotedOn": "2026-09-16",
@@ -3619,9 +3643,21 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-17",
+        "path": "modkit-core/reports/parity/owner-decisions/language-servers-mk3-better-2026-09-17.json",
+        "reason": "Owner decision 2026-09-17: language-server rows close as parity-or-better where the LSP harness shows MK3 matching MK2 or correcting MK2 (MK2 duplicate locations/symbols, no hover, no rename, element-start positions); rows where MK3 is worse stay pending. Galaxy constant and field hovers were brought to MK2 level first (blizzard a5f2db84).",
+        "sha256": "cb6929a05ee8299289e628d360a450cab01cbf3c54c3d1306a284339ec992232"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/language-servers-mk3-better-2026-09-17.json",
+          "sha256": "cb6929a05ee8299289e628d360a450cab01cbf3c54c3d1306a284339ec992232"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-layout/feature/a0af35fac1c8fe15",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [],
@@ -3629,9 +3665,21 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-17",
+        "path": "modkit-core/reports/parity/owner-decisions/language-servers-mk3-better-2026-09-17.json",
+        "reason": "Owner decision 2026-09-17: language-server rows close as parity-or-better where the LSP harness shows MK3 matching MK2 or correcting MK2 (MK2 duplicate locations/symbols, no hover, no rename, element-start positions); rows where MK3 is worse stay pending. Galaxy constant and field hovers were brought to MK2 level first (blizzard a5f2db84).",
+        "sha256": "cb6929a05ee8299289e628d360a450cab01cbf3c54c3d1306a284339ec992232"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/language-servers-mk3-better-2026-09-17.json",
+          "sha256": "cb6929a05ee8299289e628d360a450cab01cbf3c54c3d1306a284339ec992232"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-layout/feature/c64ad18fe9c53cb8",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [],
@@ -3639,9 +3687,21 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "decision": {
+        "approvedBy": "owner",
+        "date": "2026-09-17",
+        "path": "modkit-core/reports/parity/owner-decisions/language-servers-mk3-better-2026-09-17.json",
+        "reason": "Owner decision 2026-09-17: language-server rows close as parity-or-better where the LSP harness shows MK3 matching MK2 or correcting MK2 (MK2 duplicate locations/symbols, no hover, no rename, element-start positions); rows where MK3 is worse stay pending. Galaxy constant and field hovers were brought to MK2 level first (blizzard a5f2db84).",
+        "sha256": "cb6929a05ee8299289e628d360a450cab01cbf3c54c3d1306a284339ec992232"
+      },
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/owner-decisions/language-servers-mk3-better-2026-09-17.json",
+          "sha256": "cb6929a05ee8299289e628d360a450cab01cbf3c54c3d1306a284339ec992232"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-layout/feature/e1bf2ec16a79f80e",
-      "status": "pending"
+      "status": "superseded"
     },
     {
       "evidence": [
