@@ -1,0 +1,24 @@
+{
+  "features": [
+    ["05d154295c0f920d", "editor"],
+    ["0b8a8111a4bee7a5", "sort"],
+    ["1366f797e4c93c82", "values"],
+    ["195a72de94bde280", "metadata"],
+    ["2c361e68d5fbe17f", "parse", "lookup"],
+    ["43798a3c1fb2eb43", "patch"],
+    ["5d197c13ed496941", "signature"],
+    ["652c8ab5f4e58d1b", "io"],
+    ["74260e4c491b45c3", "discover"],
+    ["76a2e574f1e33647", "serialize"],
+    ["8c991e2fe9eddf98", "infer"],
+    ["9613a2f48123d984", "banklist"],
+    ["a64d56c9c7aa0849", "cli"],
+    ["aeff20fd6b1162e6", "metadata"],
+    ["c82ea2cedc50fcbb", "parse", "patch"],
+    ["d985ed421c3e42b1", "detect"],
+    ["dffea872f8e08161", "validate"],
+    ["e40365a9cf02c976", "export.raw"],
+    ["e808d267b7804aa6", "verify"],
+    ["eb369e7ac8d1b000", "signature"]
+  ]
+}

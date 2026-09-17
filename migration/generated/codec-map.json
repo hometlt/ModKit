@@ -2127,7 +2127,7 @@
       "codec": "sc2-bank",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 21,
+      "pending": 1,
       "requirements": 27,
       "source": "extensions/blizzard/starcraft-2/codecs/sc2-bank/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/sc2-bank",
