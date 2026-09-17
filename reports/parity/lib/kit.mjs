@@ -168,3 +168,17 @@ export async function invokeHandler(codec, bytes, uri, handlerId, request = {}) 
     return result.output
   } finally { await session.dispose() }
 }
+
+const LOGTAPE_ROOT = Symbol.for('logtape.rootLogger')
+/**
+ * Run an oracle call without leaking the pinned MK2 LogTape root logger into the process: LogTape
+ * keeps it on a global symbol that MK3's own LogTape copy would otherwise pick up.
+ */
+export async function isolatedOracle(run) {
+  const had = Object.hasOwn(globalThis, LOGTAPE_ROOT)
+  const previous = globalThis[LOGTAPE_ROOT]
+  try { return await run() } finally {
+    if (had) globalThis[LOGTAPE_ROOT] = previous
+    else delete globalThis[LOGTAPE_ROOT]
+  }
+}

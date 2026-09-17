@@ -135,14 +135,14 @@
     {
       "id": "view.render/1@1000",
       "legacySha256": "bf43918777bfaa48ee5699297607ed96a64233c9168f45a694c1e2aabb550ea7",
-      "migratedSha256": "f8e114dd5081f1a8cf6aded823e52309f3431d1e22ad58e2f9a50ccbdc31f0da",
-      "verdict": "different"
+      "migratedSha256": "bf43918777bfaa48ee5699297607ed96a64233c9168f45a694c1e2aabb550ea7",
+      "verdict": "identical"
     },
     {
       "id": "media.seek/1@1000",
       "legacySha256": "35383d4bcb5d915196c1dd1f8575d81aa8492ac2e11a251c338754d3e3ec181c",
-      "migratedSha256": "f8e114dd5081f1a8cf6aded823e52309f3431d1e22ad58e2f9a50ccbdc31f0da",
-      "verdict": "different"
+      "migratedSha256": "35383d4bcb5d915196c1dd1f8575d81aa8492ac2e11a251c338754d3e3ec181c",
+      "verdict": "identical"
     },
     {
       "id": "media.play/1@1000",
@@ -354,8 +354,8 @@
   "corpusSha256": "a309a235b6f78b4fd94ef6ca10ccabf4fd8c0f16346aea966d2df80180b647ae",
   "counts": {
     "bothRefused": 0,
-    "differing": 2,
-    "identical": 56,
+    "differing": 0,
+    "identical": 58,
     "total": 58
   },
   "harness": {
@@ -479,7 +479,7 @@
   "inputs": {
     "configSha256": "d819ad4d941d65832fac1f42b9c4fef733261e3e7d9fdcaa6089bbca319ed08f",
     "corpusFileSha256": "d68a7c31fc957c9c35dabee085dfb96513a1f1fc13ae3e4e7f19563d0ca4aa06",
-    "legacyAdapterSha256": "16748788fde373e7aa7fab580050050bb45d5e5e04d9c50f4c23b6debe465ecc",
+    "legacyAdapterSha256": "ce41314350d92f174073925cb9689f128b6e1c7ddd204974e8fb0094bd78de0f",
     "migratedAdapterSha256": "873f0c24f525893c3de2f6bd53de61b0f87e340cbfc191fdaadbb07e86b6a159",
     "operation": "sc2-replay.parity"
   },
@@ -523,7 +523,7 @@
         },
         "bundleSha256": "b856927442ea4737ecc0e6add90fd2e64f991a0f689cfc6b260257c1f432edef",
         "cacheHit": true,
-        "cacheKey": "4a978042fe15b0a58f4f197c6c72019dad129e24094c12974f41df604422b374",
+        "cacheKey": "f2f7ac5274a364d664617db3e87eb846d9fcf762e273c6dc1a757ef7e639778b",
         "corpusDigest": "6701ea4378cbe908582166a49a4fee49320867b6d547d1fd5445674aa6092c35",
         "corpusManifest": {
           "cases": [
@@ -3226,7 +3226,7 @@
           }
         ],
         "dependenciesDigest": "a6f3d3676f971e4e102a765c690b527965663f6594e31b6987a1204705bc0428",
-        "directory": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\4a978042fe15b0a58f4f197c6c72019dad129e24094c12974f41df604422b374",
+        "directory": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\f2f7ac5274a364d664617db3e87eb846d9fcf762e273c6dc1a757ef7e639778b",
         "entry": "extensions/blizzard/starcraft-2/codecs/sc2-replay/src/node.ts",
         "loader": [
           {
@@ -3235,38 +3235,38 @@
           },
           {
             "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\sc2-replay\\legacy.mjs",
-            "sha256": "16748788fde373e7aa7fab580050050bb45d5e5e04d9c50f4c23b6debe465ecc"
+            "sha256": "ce41314350d92f174073925cb9689f128b6e1c7ddd204974e8fb0094bd78de0f"
           },
           {
             "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\lib\\kit.mjs",
-            "sha256": "47c53baac5474cc94fa1563e9106648ed32754f56e30f566b0297867498553c6"
+            "sha256": "b26c9a45d47c13582912850f504fa2f497cbf952cd69a1069d84b344e60d30f3"
           },
           {
             "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\sc2-replay\\projection.mjs",
             "sha256": "e53b1902f71cbb88fc4c2f3db1b1abf42ce18cf5281d4404a4214d73c8847fd0"
           }
         ],
-        "loaderDigest": "7ecea38a1727dac82710e81b21ea6b20e49b67f132acc69ac5e8d9b708468ea3",
+        "loaderDigest": "186aabe08d39dfd0912fc5065c9eaf1abed299bd73eb8eb12e1c2ec657c982ce",
         "loaderSnapshots": [
           {
             "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs",
             "sha256": "c606474d7b937c6664668a69e1be51350549435252d21ae81a25252142b7fc61",
-            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\4a978042fe15b0a58f4f197c6c72019dad129e24094c12974f41df604422b374\\loader\\0-legacy-oracle.mjs"
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\f2f7ac5274a364d664617db3e87eb846d9fcf762e273c6dc1a757ef7e639778b\\loader\\0-legacy-oracle.mjs"
           },
           {
             "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\sc2-replay\\legacy.mjs",
-            "sha256": "16748788fde373e7aa7fab580050050bb45d5e5e04d9c50f4c23b6debe465ecc",
-            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\4a978042fe15b0a58f4f197c6c72019dad129e24094c12974f41df604422b374\\loader\\1-legacy.mjs"
+            "sha256": "ce41314350d92f174073925cb9689f128b6e1c7ddd204974e8fb0094bd78de0f",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\f2f7ac5274a364d664617db3e87eb846d9fcf762e273c6dc1a757ef7e639778b\\loader\\1-legacy.mjs"
           },
           {
             "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\lib\\kit.mjs",
-            "sha256": "47c53baac5474cc94fa1563e9106648ed32754f56e30f566b0297867498553c6",
-            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\4a978042fe15b0a58f4f197c6c72019dad129e24094c12974f41df604422b374\\loader\\2-kit.mjs"
+            "sha256": "b26c9a45d47c13582912850f504fa2f497cbf952cd69a1069d84b344e60d30f3",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\f2f7ac5274a364d664617db3e87eb846d9fcf762e273c6dc1a757ef7e639778b\\loader\\2-kit.mjs"
           },
           {
             "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\sc2-replay\\projection.mjs",
             "sha256": "e53b1902f71cbb88fc4c2f3db1b1abf42ce18cf5281d4404a4214d73c8847fd0",
-            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\4a978042fe15b0a58f4f197c6c72019dad129e24094c12974f41df604422b374\\loader\\3-projection.mjs"
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\f2f7ac5274a364d664617db3e87eb846d9fcf762e273c6dc1a757ef7e639778b\\loader\\3-projection.mjs"
           }
         ],
         "observeWorkingTree": false,
@@ -8570,7 +8570,7 @@
         },
         "bundleSha256": "9d01dcedfae878baaeeb3c00337df56679ce99133b39015754d6d9642c6e2538",
         "cacheHit": true,
-        "cacheKey": "83efa9bc94c9e9e9abaca10b74318c847eb39a336c961b076691e54d7404d24d",
+        "cacheKey": "79c3a44b6a6589296bafdb90ac1369896fa079f08839383d1f26a62f89230e0c",
         "corpusDigest": "6701ea4378cbe908582166a49a4fee49320867b6d547d1fd5445674aa6092c35",
         "corpusManifest": {
           "cases": [
@@ -10131,7 +10131,7 @@
           }
         ],
         "dependenciesDigest": "2f1537ad87537e0e1a880054b6e112781dc6b6c891644975d7655511e6ddc261",
-        "directory": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\83efa9bc94c9e9e9abaca10b74318c847eb39a336c961b076691e54d7404d24d",
+        "directory": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\79c3a44b6a6589296bafdb90ac1369896fa079f08839383d1f26a62f89230e0c",
         "entry": "extensions/blizzard/starcraft-2/codecs/sc2-replay/src/detect.ts",
         "loader": [
           {
@@ -10140,38 +10140,38 @@
           },
           {
             "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\sc2-replay\\legacy.mjs",
-            "sha256": "16748788fde373e7aa7fab580050050bb45d5e5e04d9c50f4c23b6debe465ecc"
+            "sha256": "ce41314350d92f174073925cb9689f128b6e1c7ddd204974e8fb0094bd78de0f"
           },
           {
             "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\lib\\kit.mjs",
-            "sha256": "47c53baac5474cc94fa1563e9106648ed32754f56e30f566b0297867498553c6"
+            "sha256": "b26c9a45d47c13582912850f504fa2f497cbf952cd69a1069d84b344e60d30f3"
           },
           {
             "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\sc2-replay\\projection.mjs",
             "sha256": "e53b1902f71cbb88fc4c2f3db1b1abf42ce18cf5281d4404a4214d73c8847fd0"
           }
         ],
-        "loaderDigest": "7ecea38a1727dac82710e81b21ea6b20e49b67f132acc69ac5e8d9b708468ea3",
+        "loaderDigest": "186aabe08d39dfd0912fc5065c9eaf1abed299bd73eb8eb12e1c2ec657c982ce",
         "loaderSnapshots": [
           {
             "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs",
             "sha256": "c606474d7b937c6664668a69e1be51350549435252d21ae81a25252142b7fc61",
-            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\83efa9bc94c9e9e9abaca10b74318c847eb39a336c961b076691e54d7404d24d\\loader\\0-legacy-oracle.mjs"
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\79c3a44b6a6589296bafdb90ac1369896fa079f08839383d1f26a62f89230e0c\\loader\\0-legacy-oracle.mjs"
           },
           {
             "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\sc2-replay\\legacy.mjs",
-            "sha256": "16748788fde373e7aa7fab580050050bb45d5e5e04d9c50f4c23b6debe465ecc",
-            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\83efa9bc94c9e9e9abaca10b74318c847eb39a336c961b076691e54d7404d24d\\loader\\1-legacy.mjs"
+            "sha256": "ce41314350d92f174073925cb9689f128b6e1c7ddd204974e8fb0094bd78de0f",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\79c3a44b6a6589296bafdb90ac1369896fa079f08839383d1f26a62f89230e0c\\loader\\1-legacy.mjs"
           },
           {
             "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\lib\\kit.mjs",
-            "sha256": "47c53baac5474cc94fa1563e9106648ed32754f56e30f566b0297867498553c6",
-            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\83efa9bc94c9e9e9abaca10b74318c847eb39a336c961b076691e54d7404d24d\\loader\\2-kit.mjs"
+            "sha256": "b26c9a45d47c13582912850f504fa2f497cbf952cd69a1069d84b344e60d30f3",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\79c3a44b6a6589296bafdb90ac1369896fa079f08839383d1f26a62f89230e0c\\loader\\2-kit.mjs"
           },
           {
             "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\sc2-replay\\projection.mjs",
             "sha256": "e53b1902f71cbb88fc4c2f3db1b1abf42ce18cf5281d4404a4214d73c8847fd0",
-            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\83efa9bc94c9e9e9abaca10b74318c847eb39a336c961b076691e54d7404d24d\\loader\\3-projection.mjs"
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\79c3a44b6a6589296bafdb90ac1369896fa079f08839383d1f26a62f89230e0c\\loader\\3-projection.mjs"
           }
         ],
         "observeWorkingTree": false,
@@ -10699,7 +10699,7 @@
         },
         "bundleSha256": "d8778da42cd519330bbf3c68df4a9800f5e24c7c5a44573bd1c020b530484d0f",
         "cacheHit": true,
-        "cacheKey": "403fc95e5f826b74505d0839c3ae53908872f6302bf7ca7d196e36858f3b14c8",
+        "cacheKey": "a3c5c8ff5c5ab91f0bbde2676c3e960e7f4e35f0385ce4ddc8541f7adff999be",
         "corpusDigest": "6701ea4378cbe908582166a49a4fee49320867b6d547d1fd5445674aa6092c35",
         "corpusManifest": {
           "cases": [
@@ -11508,7 +11508,7 @@
           }
         ],
         "dependenciesDigest": "eb22efd477f7a73a9752399120202e045534fd70f15adc558f8aefe7bbaeb6e0",
-        "directory": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\403fc95e5f826b74505d0839c3ae53908872f6302bf7ca7d196e36858f3b14c8",
+        "directory": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\a3c5c8ff5c5ab91f0bbde2676c3e960e7f4e35f0385ce4ddc8541f7adff999be",
         "entry": "packages/assets/src/source.ts",
         "loader": [
           {
@@ -11517,38 +11517,38 @@
           },
           {
             "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\sc2-replay\\legacy.mjs",
-            "sha256": "16748788fde373e7aa7fab580050050bb45d5e5e04d9c50f4c23b6debe465ecc"
+            "sha256": "ce41314350d92f174073925cb9689f128b6e1c7ddd204974e8fb0094bd78de0f"
           },
           {
             "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\lib\\kit.mjs",
-            "sha256": "47c53baac5474cc94fa1563e9106648ed32754f56e30f566b0297867498553c6"
+            "sha256": "b26c9a45d47c13582912850f504fa2f497cbf952cd69a1069d84b344e60d30f3"
           },
           {
             "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\sc2-replay\\projection.mjs",
             "sha256": "e53b1902f71cbb88fc4c2f3db1b1abf42ce18cf5281d4404a4214d73c8847fd0"
           }
         ],
-        "loaderDigest": "7ecea38a1727dac82710e81b21ea6b20e49b67f132acc69ac5e8d9b708468ea3",
+        "loaderDigest": "186aabe08d39dfd0912fc5065c9eaf1abed299bd73eb8eb12e1c2ec657c982ce",
         "loaderSnapshots": [
           {
             "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs",
             "sha256": "c606474d7b937c6664668a69e1be51350549435252d21ae81a25252142b7fc61",
-            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\403fc95e5f826b74505d0839c3ae53908872f6302bf7ca7d196e36858f3b14c8\\loader\\0-legacy-oracle.mjs"
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\a3c5c8ff5c5ab91f0bbde2676c3e960e7f4e35f0385ce4ddc8541f7adff999be\\loader\\0-legacy-oracle.mjs"
           },
           {
             "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\sc2-replay\\legacy.mjs",
-            "sha256": "16748788fde373e7aa7fab580050050bb45d5e5e04d9c50f4c23b6debe465ecc",
-            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\403fc95e5f826b74505d0839c3ae53908872f6302bf7ca7d196e36858f3b14c8\\loader\\1-legacy.mjs"
+            "sha256": "ce41314350d92f174073925cb9689f128b6e1c7ddd204974e8fb0094bd78de0f",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\a3c5c8ff5c5ab91f0bbde2676c3e960e7f4e35f0385ce4ddc8541f7adff999be\\loader\\1-legacy.mjs"
           },
           {
             "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\lib\\kit.mjs",
-            "sha256": "47c53baac5474cc94fa1563e9106648ed32754f56e30f566b0297867498553c6",
-            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\403fc95e5f826b74505d0839c3ae53908872f6302bf7ca7d196e36858f3b14c8\\loader\\2-kit.mjs"
+            "sha256": "b26c9a45d47c13582912850f504fa2f497cbf952cd69a1069d84b344e60d30f3",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\a3c5c8ff5c5ab91f0bbde2676c3e960e7f4e35f0385ce4ddc8541f7adff999be\\loader\\2-kit.mjs"
           },
           {
             "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\sc2-replay\\projection.mjs",
             "sha256": "e53b1902f71cbb88fc4c2f3db1b1abf42ce18cf5281d4404a4214d73c8847fd0",
-            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\403fc95e5f826b74505d0839c3ae53908872f6302bf7ca7d196e36858f3b14c8\\loader\\3-projection.mjs"
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\a3c5c8ff5c5ab91f0bbde2676c3e960e7f4e35f0385ce4ddc8541f7adff999be\\loader\\3-projection.mjs"
           }
         ],
         "observeWorkingTree": false,
@@ -11726,28 +11726,28 @@
   "oracleVerification": {
     "adapterPath": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\sc2-replay\\legacy.mjs",
     "adapterReviewRequired": true,
-    "adapterSha256": "16748788fde373e7aa7fab580050050bb45d5e5e04d9c50f4c23b6debe465ecc",
+    "adapterSha256": "ce41314350d92f174073925cb9689f128b6e1c7ddd204974e8fb0094bd78de0f",
     "corpusDigest": "6701ea4378cbe908582166a49a4fee49320867b6d547d1fd5445674aa6092c35",
     "modules": [
       {
         "bundleSha256": "b856927442ea4737ecc0e6add90fd2e64f991a0f689cfc6b260257c1f432edef",
-        "cacheKey": "4a978042fe15b0a58f4f197c6c72019dad129e24094c12974f41df604422b374",
+        "cacheKey": "f2f7ac5274a364d664617db3e87eb846d9fcf762e273c6dc1a757ef7e639778b",
         "dependencyPackages": 17,
-        "directory": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\4a978042fe15b0a58f4f197c6c72019dad129e24094c12974f41df604422b374",
+        "directory": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\f2f7ac5274a364d664617db3e87eb846d9fcf762e273c6dc1a757ef7e639778b",
         "sourceFiles": 437
       },
       {
         "bundleSha256": "9d01dcedfae878baaeeb3c00337df56679ce99133b39015754d6d9642c6e2538",
-        "cacheKey": "83efa9bc94c9e9e9abaca10b74318c847eb39a336c961b076691e54d7404d24d",
+        "cacheKey": "79c3a44b6a6589296bafdb90ac1369896fa079f08839383d1f26a62f89230e0c",
         "dependencyPackages": 5,
-        "directory": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\83efa9bc94c9e9e9abaca10b74318c847eb39a336c961b076691e54d7404d24d",
+        "directory": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\79c3a44b6a6589296bafdb90ac1369896fa079f08839383d1f26a62f89230e0c",
         "sourceFiles": 39
       },
       {
         "bundleSha256": "d8778da42cd519330bbf3c68df4a9800f5e24c7c5a44573bd1c020b530484d0f",
-        "cacheKey": "403fc95e5f826b74505d0839c3ae53908872f6302bf7ca7d196e36858f3b14c8",
+        "cacheKey": "a3c5c8ff5c5ab91f0bbde2676c3e960e7f4e35f0385ce4ddc8541f7adff999be",
         "dependencyPackages": 2,
-        "directory": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\403fc95e5f826b74505d0839c3ae53908872f6302bf7ca7d196e36858f3b14c8",
+        "directory": "C:\\Users\\Admin\\AppData\\Local\\Temp\\modkit-parity-cache\\a3c5c8ff5c5ab91f0bbde2676c3e960e7f4e35f0385ce4ddc8541f7adff999be",
         "sourceFiles": 12
       }
     ],
@@ -12030,8 +12030,8 @@
   ],
   "schemaVersion": 1,
   "tests": {
-    "failed": 2,
-    "passed": 56
+    "failed": 0,
+    "passed": 58
   },
-  "verdict": "fail"
+  "verdict": "pass"
 }

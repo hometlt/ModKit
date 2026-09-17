@@ -1,6 +1,6 @@
 // Pinned MK2 sc2-replay oracle: the Node replay codec (pinned @modkitx/replay decoder) session.
 import { fileURLToPath } from 'node:url'
-import { caseBytes, caseName, kitFile, loadPinned, resolveInput } from '../lib/kit.mjs'
+import { caseBytes, caseName, isolatedOracle, kitFile, loadPinned, resolveInput } from '../lib/kit.mjs'
 import { project } from './projection.mjs'
 
 const adapter = fileURLToPath(import.meta.url)
@@ -9,7 +9,7 @@ const root = 'extensions/blizzard/starcraft-2/codecs/sc2-replay/src'
 
 export async function prepareOracle({ operation, corpus }) {
   const loaded = []
-  for (const [entry, execution] of [
+  await isolatedOracle(async () => { for (const [entry, execution] of [
     [`${root}/node.ts`, 'pinned-createNodeSc2ReplayCodec'],
     [`${root}/detect.ts`, 'pinned-detectSc2Replay'],
     ['packages/assets/src/source.ts', 'pinned-createMemoryAssetSource'],
@@ -17,7 +17,7 @@ export async function prepareOracle({ operation, corpus }) {
     loaded.push(await loadPinned(entry, {
       operation, corpus, loaderFiles: [adapter, kitFile, projection],
       operationOptions: { adapterProtocol: 'sc2-replay-parity-v1', execution },
-    }))
+    })) })
   const [nodeLoaded, detectLoaded, assetsLoaded] = loaded
   // MK3 decodes every known stream; ask the MK2 decoder for the same set.
   const codec = nodeLoaded.module.createNodeSc2ReplayCodec({ parseOptions: { gameEvents: true, messageEvents: true, initData: true, loadInfo: true } })
@@ -50,7 +50,7 @@ export async function prepareOracle({ operation, corpus }) {
     throw new Error(`unknown sc2-replay probe: ${input.probe}`)
   }
   return {
-    module: { [operation]: invoke },
+    module: { [operation]: input => isolatedOracle(() => invoke(input)) },
     evidence: { modules: loaded.map(item => item.evidence) },
   }
 }

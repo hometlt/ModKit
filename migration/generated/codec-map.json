@@ -2229,7 +2229,7 @@
       "codec": "sc2-replay",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 27,
+      "pending": 10,
       "requirements": 27,
       "source": "extensions/blizzard/starcraft-2/codecs/sc2-replay/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/sc2-replay",

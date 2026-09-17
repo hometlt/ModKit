@@ -2262,11 +2262,11 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/modules/replay/codecs/replay/codec.json",
+      "handlerId": "validate",
       "id": "legacy/codec-manifest/modkit/sc2-replay/operation/asset.validate",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "asset.validate"
     },
     {
       "contribution": null,
@@ -2276,46 +2276,46 @@
       "targetOperation": null
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/modules/replay/codecs/replay/codec.json",
+      "handlerId": "export-raw",
       "id": "legacy/codec-manifest/modkit/sc2-replay/operation/export.raw",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "export.raw"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/modules/replay/codecs/replay/codec.json",
+      "handlerId": "transport-play-pause",
       "id": "legacy/codec-manifest/modkit/sc2-replay/operation/media.play",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "media.play-pause"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/modules/replay/codecs/replay/codec.json",
+      "handlerId": "transport-seek",
       "id": "legacy/codec-manifest/modkit/sc2-replay/operation/media.seek",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "media.seek"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/modules/replay/codecs/replay/codec.json",
+      "handlerId": "analyze",
       "id": "legacy/codec-manifest/modkit/sc2-replay/operation/sc2-replay.analyze",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "blizzard/sc2-replay.analyze"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/modules/replay/codecs/replay/codec.json",
+      "handlerId": "inspect",
       "id": "legacy/codec-manifest/modkit/sc2-replay/operation/view.inspect",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "view.inspect"
     },
     {
-      "contribution": null,
-      "handlerId": null,
+      "contribution": "modkit-extensions-blizzard/starcraft2/modules/replay/codecs/replay/codec.json",
+      "handlerId": "sample-scene",
       "id": "legacy/codec-manifest/modkit/sc2-replay/operation/view.render",
-      "status": "pending",
-      "targetOperation": null
+      "status": "adapted",
+      "targetOperation": "blizzard/sc2-replay.sample-scene"
     },
     {
       "contribution": null,
