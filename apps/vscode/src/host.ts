@@ -77,6 +77,7 @@ import {
 } from '@modkit/host/node'
 
 import { STAGE_ORDER } from './view-policy.js'
+import type { PhaseLog } from './timing.js'
 import { contentSourceOpener, type ContentSourceReader } from './content-source-open.js'
 
 const VSCODE_BUILTIN_MODULES = /* @__PURE__ */ linkedExtensionInputs([sceneModule, uvModule])
@@ -695,6 +696,8 @@ export interface VsCodeServeOptions {
   /** One committed edit in a view with its own history; becomes one editor undo-stack entry. */
   readonly onDocumentEdited?: (path: string) => void
   readonly onDiagnostic?: (diagnostic: { code: string; message: string }) => void
+  /** Where the time goes: the subject open is timed, and the page's own marks land here too. */
+  readonly timing?: PhaseLog
   /**
    * One structured subject diagnostic, for whatever surface the editor gives them.
    *
@@ -1053,7 +1056,11 @@ function serveVsCode(
     const capturing: SubjectServices = {
       ...services,
       open: async request => {
+        const finished = options.timing?.phase(
+          `open ${subjectLabel(request.path)} (detect, activate codec, inspect)`,
+        )
         const result = await services.open(request)
+        finished?.()
         if (result.state === 'opened') {
           const preview = await prepareVsCodeMapPreview({
             services,
@@ -1721,6 +1728,8 @@ function serveVsCode(
       options.onDocumentSaveRequested?.(event.path)
     } else if (event.op === 'document-edited') {
       options.onDocumentEdited?.(event.path)
+    } else if (event.op === 'timing') {
+      options.timing?.mark(`page ${event.name}`, event.milliseconds)
     }
   })
 

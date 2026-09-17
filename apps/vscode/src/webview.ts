@@ -151,6 +151,14 @@ function baseName(path: string): string {
   return parts[parts.length - 1] ?? path
 }
 
+/**
+ * When this bundle began evaluating, so the page can say what it spent before showing anything.
+ *
+ * `performance.timeOrigin` is the navigation, so the difference is the cost of fetching, parsing
+ * and evaluating the bundle — which is the part a 7 MiB page pays before any of this code runs.
+ */
+const pageEntered = performance.now()
+
 const bootstrap = (globalThis as { __MODKIT_BOOTSTRAP__?: Bootstrap }).__MODKIT_BOOTSTRAP__
 const acquire = (globalThis as { acquireVsCodeApi?: () => VsCodeWebviewApi }).acquireVsCodeApi
 if (bootstrap !== undefined) exposeModkitAcceptance(globalThis, bootstrap.acceptance)
@@ -213,6 +221,13 @@ async function mount(
     embedded: true,
   })
   mountPoint.replaceChildren(workbench.root)
+  // Reported to the output channel, beside the extension host's own phases (see `./timing.ts`).
+  bridge.emit({ op: 'timing', name: 'bundle evaluated', milliseconds: pageEntered })
+  bridge.emit({
+    op: 'timing',
+    name: 'workbench mounted',
+    milliseconds: performance.now() - pageEntered,
+  })
 
   /*
    * No status line of its own any more.
@@ -936,7 +951,14 @@ async function mount(
   })
 
   if (snapshot.openPath !== undefined) {
+    // The number that matters: from this bundle's first line to pixels on the screen.
+    const started = performance.now()
     await openPath(snapshot.openPath, baseName(snapshot.openPath))
+    bridge.emit({
+      op: 'timing',
+      name: 'subject mounted (rpc open, decode, first paint)',
+      milliseconds: performance.now() - started,
+    })
   }
 }
 

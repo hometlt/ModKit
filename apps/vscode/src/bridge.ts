@@ -241,6 +241,8 @@ export type ShellEvent =
    * not undo on its own key handling, or the two stacks drift apart.
    */
   | { readonly op: 'document-edited'; readonly path: string }
+  /** One phase the page measured (bundle evaluated, workbench mounted, stage mounted). */
+  | { readonly op: 'timing'; readonly name: string; readonly milliseconds: number }
   /** An in-page Save button delegates to VS Code so the provider, title marker and Ctrl+S agree. */
   | { readonly op: 'document-save-requested'; readonly path: string }
 

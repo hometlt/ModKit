@@ -170,6 +170,7 @@ import {
 } from './workbench-workflows.js'
 import { runExplicitGameLaunch, VSCODE_GAME_LAUNCH_COMMAND } from './game-launch-workflow.js'
 import { planEditorAssociations, type AssociationPlan } from './editor-associations.js'
+import { createPhaseLog } from './timing.js'
 import { createViewerStatusBar } from './viewer-status.js'
 import {
   selectScopedSubjectCandidates,
@@ -1177,6 +1178,10 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   const activationStarted = Date.now()
   const output = vscode.window.createOutputChannel('Modkit MK3')
   context.subscriptions.push(output)
+  /** Where the time goes on the paths a person waits on; see `./timing.ts`. */
+  const timing = createPhaseLog(line => {
+    output.appendLine(line)
+  })
   /** Zoom, channel, dimensions, format and size of the viewer in the active Modkit editor. */
   const viewerStatusBar = createViewerStatusBar()
   context.subscriptions.push(viewerStatusBar)
@@ -1276,6 +1281,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
    * repository's `extensions/` in a checkout — but the list of roots is now data committed beside
    * the code, the same arrangement Electron and the PWA have had all along.
    */
+  const composing = timing.phase('compose host (catalog roots, inventory, realms)')
   const host = await createVsCodeSubjectHost({
     bundledCatalog: BUNDLED_CATALOG.roots,
     catalogCandidates: catalogCandidates(extensionRoot, repositoryRoot),
@@ -1297,6 +1303,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     onDiagnostic: diagnostic =>
       log(`[worker] ${diagnostic.severity} ${diagnostic.code}: ${diagnostic.message}`),
   })
+  composing()
   const acceptance = createModkitAcceptanceReceipt(
     createA7AcceptanceReceipt(BUNDLED_CATALOG.roots, {
       roots: host.extensions.bundled,
@@ -5352,6 +5359,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       containers,
       readContentSource,
       viewerOperations: viewerSurfaceOperations,
+      timing,
       ...(lifecycle === undefined
         ? {}
         : {
