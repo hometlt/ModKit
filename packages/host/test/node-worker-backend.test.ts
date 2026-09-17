@@ -455,7 +455,7 @@ describe('node worker backend — verify-after-load, containment and policy', ()
     expect(() => workerBackendPolicy({ graceMs: 999_999 })).toThrow(/exceeds the host ceiling/)
     expect(() => workerBackendPolicy({ resourceLimits: { stackSizeMb: 0 } })).toThrow(/integer ≥ 1/)
     expect(workerBackendPolicy({ loadDeadlineMs: 500 }).loadDeadlineMs).toBe(500)
-    expect(workerBackendPolicy().graceMs).toBe(1_000)
+    expect(workerBackendPolicy().graceMs).toBe(5_000)
   })
 
   it('release is idempotent and a released module answers structurally', async () => {

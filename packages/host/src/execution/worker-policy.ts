@@ -48,18 +48,23 @@ export const WORKER_BACKEND_POLICY_CEILINGS: WorkerBackendPolicy = Object.freeze
   maxRestartsPerLease: 1_000,
 })
 
-/** Conservative defaults for a lab host; production roots choose their own within the ceilings. */
+/**
+ * Defaults sized for real game extensions, not just small codecs: the StarCraft II set needs a
+ * few seconds to load its larger modules on a busy machine (15 s timed out under parallel test
+ * load) and its data codec does not fit a 32 MB heap even on a one-unit fixture, so a small
+ * default made such subjects open unresolved. A composition root may still choose tighter values.
+ */
 export const DEFAULT_WORKER_BACKEND_POLICY: WorkerBackendPolicy = Object.freeze({
   resourceLimits: Object.freeze({
-    maxOldGenerationSizeMb: 512,
-    maxYoungGenerationSizeMb: 64,
+    maxOldGenerationSizeMb: 2_048,
+    maxYoungGenerationSizeMb: 256,
     codeRangeSizeMb: 64,
     stackSizeMb: 4,
   }),
-  loadDeadlineMs: 15_000,
-  defaultCallDeadlineMs: 30_000,
-  graceMs: 1_000,
-  outputCapBytes: 64 * 1024,
+  loadDeadlineMs: 120_000,
+  defaultCallDeadlineMs: 120_000,
+  graceMs: 5_000,
+  outputCapBytes: 1024 * 1024,
   maxRestartsPerLease: 3,
 })
 

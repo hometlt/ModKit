@@ -189,6 +189,36 @@ export interface UnresolvedSubject {
 
 export type OpenSubjectResult = OpenedSubject | UnresolvedSubject
 
+const WORKER_REFUSAL_CODES = new Set([
+  'x3.host/artifact-digest-mismatch',
+  'x3.host/rpc-deadline-exceeded',
+  'x3.host/rpc-peer-exited',
+  'x3.host/worker-crashed',
+  'x3.host/worker-restart-limit',
+])
+
+/**
+ * A candidate whose worker ran out of time or memory (or whose artifact changed on disk) is only
+ * "rejected" in its own explanation; lifted to the subject, the refusal says why nothing opened
+ * instead of a bare `no-match`.
+ */
+function workerRefusals(
+  explanations: readonly SubjectOpenCandidateExplanation[],
+): readonly Diagnostic[] {
+  return explanations.flatMap(explanation =>
+    explanation.state !== 'rejected'
+      ? []
+      : explanation.diagnostics
+          .filter(item => WORKER_REFUSAL_CODES.has(item.code))
+          .map(item => ({
+            code: 'x3.host/subject-open-worker-refused',
+            severity: 'error' as const,
+            message: `${explanation.contributionId} could not examine this subject in its worker: ${item.message}`,
+            data: { contributionId: explanation.contributionId, cause: item.code },
+          })),
+  )
+}
+
 interface RunnableCandidate {
   readonly contribution: InventoryContribution
   readonly extensionId: string
@@ -1605,7 +1635,7 @@ async function openSubjectDirect(
       descriptor,
       fallback: await unresolvedFallback(options.source, options.signal),
       candidates: Object.freeze(explanations),
-      diagnostics: Object.freeze(diagnostics),
+      diagnostics: Object.freeze([...diagnostics, ...workerRefusals(explanations)]),
     })
   }
 

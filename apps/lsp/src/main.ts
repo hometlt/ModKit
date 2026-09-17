@@ -33,12 +33,7 @@ export async function runModkitLsp(argv: readonly string[]) {
       : { userExtensions: extensions }),
     roots,
     intent: 'inspect',
-    policy: workerBackendPolicy({
-      loadDeadlineMs: 120_000,
-      defaultCallDeadlineMs: 120_000,
-      graceMs: 5_000,
-      outputCapBytes: 4_194_304,
-    }),
+    policy: workerBackendPolicy({ outputCapBytes: 4_194_304 }),
     onDiagnostic: diagnostic =>
       process.stderr.write(errorLine(diagnostic.code, diagnostic.message)),
   })

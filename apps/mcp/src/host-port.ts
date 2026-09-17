@@ -31,7 +31,6 @@ import {
   createModkit,
   createNodeMapPreviewResourcePlanResolver,
   type ModkitOpened,
-  workerBackendPolicy,
 } from '@modkit/host/node'
 import { sceneModule } from '@modkit/scene/module'
 import { uvModule } from '@modkit/uv/module'
@@ -414,16 +413,6 @@ export async function createHostMcpPort(
     // roots here lets mutating codec operations produce plans while the transport remains non-writing.
     writableRoots: roots,
     intent: 'inspect',
-    policy: workerBackendPolicy({
-      resourceLimits: {
-        maxOldGenerationSizeMb: 2_048,
-        maxYoungGenerationSizeMb: 256,
-      },
-      loadDeadlineMs: 120_000,
-      defaultCallDeadlineMs: 120_000,
-      graceMs: 5_000,
-      outputCapBytes: 1_048_576,
-    }),
     ...(onDiagnostic === undefined ? {} : { onDiagnostic }),
   })
   if (modkit.extensionFailures.length > 0) {

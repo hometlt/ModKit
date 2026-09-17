@@ -34,7 +34,6 @@ import {
   createModkit,
   createPathSubjectOpener,
   loadExtensionDirectory,
-  workerBackendPolicy,
 } from '@modkit/host/node'
 import { sceneModule } from '@modkit/scene/module'
 import { uvModule } from '@modkit/uv/module'
@@ -340,12 +339,6 @@ async function runEditCommand(
     // Mutating operations need write-source in the open grant even to be planned.
     writableRoots: [directory],
     intent: 'inspect',
-    // The facade's lab default is too small for large game extensions, which then claim nothing.
-    policy: workerBackendPolicy({
-      resourceLimits: { maxOldGenerationSizeMb: 2_048, maxYoungGenerationSizeMb: 256 },
-      loadDeadlineMs: 120_000,
-      defaultCallDeadlineMs: 120_000,
-    }),
   })
   try {
     if (modkit.extensionFailures.length > 0) {
