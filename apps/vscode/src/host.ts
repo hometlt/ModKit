@@ -788,6 +788,19 @@ export interface VsCodeServed {
   readonly exposure: SubjectRpcExposure
   /** Ask the page to open this path in a tab. */
   open(path: string): void
+  /**
+   * Bring the codec this path needs up while the page is still loading.
+   *
+   * Opening an editor is two waits in sequence: the webview fetches and evaluates its bundle, and
+   * the extension host detects the format, activates the codec and inspects the bytes. Nothing
+   * makes them sequential except that the page asks second — so this runs the second one early,
+   * under the same grant, and drops the session it opened. The realm it activated stays warm (see
+   * `execution/warm-backend.ts`), which is what the page's own open then reuses.
+   *
+   * Best effort by construction: a failure here is not reported, because the real open will report
+   * it properly a moment later.
+   */
+  warm(path: string): void
   /** Push the current granted folders; called again when the workspace changes. */
   publishRoots(): void
   /** Show one line in the page's status area (an extension that failed to load, say). */
@@ -985,6 +998,9 @@ function serveVsCode(
       })
     }
   }
+
+  /** Paths already warmed in this window; warming twice buys nothing. */
+  const warmed = new Set<string>()
 
   const openSubject: SubjectOpener = async (requested, signal) => {
     const generation = beginsSubjectOpen()
@@ -1759,6 +1775,20 @@ function serveVsCode(
     exposure,
     open(path: string) {
       bridge.emit({ op: 'open', path: subjectKey(path), name: subjectLabel(path) })
+    },
+    warm(path: string) {
+      if (warmed.has(subjectKey(path))) return
+      warmed.add(subjectKey(path))
+      const started = performance.now()
+      void openSubject(path)
+        .then(async answer => {
+          await answer.session?.dispose()
+          options.timing?.mark(
+            `warm ${subjectLabel(path)} (codec realm ready)`,
+            performance.now() - started,
+          )
+        })
+        .catch(() => undefined)
     },
     publishRoots() {
       bridge.emit({

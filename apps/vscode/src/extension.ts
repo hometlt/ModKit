@@ -5410,6 +5410,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       ...(forcedStage === undefined ? {} : { forcedStage }),
       ...(displayedExtensionCard === undefined ? {} : { extensionCard: displayedExtensionCard }),
     })
+    /*
+     * The page is now fetching and evaluating its bundle; the codec can come up in that time
+     * instead of after it. `warm` opens the same subject under the same grant, drops the session
+     * and leaves the realm warm for the page's own open a moment later.
+     */
+    if (openPath !== undefined) served.warm(openPath)
     return served
   }
 
