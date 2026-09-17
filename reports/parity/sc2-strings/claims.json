@@ -1,0 +1,18 @@
+{
+  "features": [
+    ["7bb7815d3cd1be7d", "parse"],
+    ["98b3da8119c0b801", "export.convert", "export.entries"],
+    ["c10fd53344cca6e8", "edit.content"],
+    ["d16933fb127f448a", "references"],
+    ["5ae94808f37f3aa7", "compare-locales"],
+    ["be54bfae29b91a54", "resolve-fallback"]
+  ],
+  "operations": [
+    ["view.inspect", "view.inspect"],
+    ["asset.validate", "asset.validate"],
+    ["edit.content", "edit.content"],
+    ["export.convert", "export.convert", "export.entries"],
+    ["sc2-strings.references", "references"]
+  ],
+  "skipProbes": {}
+}
