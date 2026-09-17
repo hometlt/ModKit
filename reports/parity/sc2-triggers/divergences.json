@@ -1,0 +1,63 @@
+{
+  "libraryNameNonHexId": {
+    "inputs": [
+      "Mods/all-races-pvp-2/AllRaces2-Extension-HTXL.SC2Mod/Triggers",
+      "Mods/all-races-pvp-2/AllRaces2-Extension.SC2Mod/Triggers",
+      "Mods/all-races-pvp-2/UEDAlternateCrossoverExtension.SC2Mod/Triggers",
+      "Mods/tiberium-crossover/mods/tiberium-crossover-extension.SC2Mod/Triggers"
+    ],
+    "probes": [
+      "sax-read-strings"
+    ],
+    "rule": "MK2 parseTriggerStrings accepts Library/Name/<id> only for hexadecimal ids, so non-hex library ids (ARMP, AREX) get no library name; MK3 applies the name."
+  },
+  "mapFormTriggerData": {
+    "inputs": [
+      "Maps/all-races-coop-maps/06-MistOpportunities.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/16-DeathFromAbove.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/17-Dilemma.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/19-HotCargo.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/21-LosingMemories.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/23-PrimalAscension.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/24-ScavengerHunt.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/27-RelicOfTwilight.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/28-TreasureHunt.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/30-SkyFall.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/31-PrecipiceOfSalvation.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/32-CoreOfCybros.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/33-TheOldCity.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/34-PartAndParcelOriginal.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/35-ConstructionYard.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/38-Essens-o-maina.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/40-ArmoryRetaking.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/41-SmashBrothers.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/42-BurningSwarm.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/43-PrisonEscape.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/45-GalateaAscent.sc2map/Triggers",
+      "Maps/all-races-coop-maps/46-DominionWarMachines.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/50-RealSteel.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/52-OperationBrainstorm.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/53-DylarianShipyards.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/55-GuardiansOfAiur.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/57-MothersMercy.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/62-PurifiersAwakening.sc2map/Triggers",
+      "Maps/all-races-coop-maps/all-races-coop-launcher-defenders.SC2Map/Triggers",
+      "Maps/all-races-coop-maps/all-races-coop-launcher.SC2Map/Triggers",
+      "Maps/RustBucketYZc.SC2Map/Triggers",
+      "Mods/tiberium-crossover/maps/mission-nod.SC2Map/Triggers"
+    ],
+    "rule": "MK2 readTriggerLibraryFast throws \"No libraries found in trigger XML\" for map-form TriggerData without a Library/Standard element; MK3 blizzard/sc2-triggers parses it as an implicit Map library (superset). These inputs are compared only by detect and source-index."
+  },
+  "schemaVersion": 1,
+  "validateMk2FalsePositives": {
+    "inputs": [
+      "Mods/all-races-pvp-2/AllRaces2-Extension-HTXL.SC2Mod/Triggers",
+      "Mods/all-races-pvp-2/AllRaces2-Extension.SC2Mod/Triggers",
+      "Mods/tiberium-crossover/mods/tiberium-crossover-extension.SC2Mod/Triggers"
+    ],
+    "probes": [
+      "asset.validate"
+    ],
+    "rule": "MK2 validateLibraryStructure reports Comment references as missing (MK2 does not model Comment elements) and flags Params reachable only through them as orphans; MK3 models Comment/CustomScript and reports no finding."
+  }
+}

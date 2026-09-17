@@ -1,0 +1,98 @@
+{
+  "features": [
+    [
+      "0276b08d70557635",
+      "asset.search"
+    ],
+    [
+      "2a1c5bdb373d16cf",
+      "detect"
+    ],
+    [
+      "3fcc9a2f9056345e",
+      "to-engine"
+    ],
+    [
+      "4766443d7a132046",
+      "edit.content"
+    ],
+    [
+      "50b387f15dffcdfb",
+      "script.references"
+    ],
+    [
+      "553ddd3db81b6b58",
+      "asset.validate"
+    ],
+    [
+      "6ea9bf1e1829e502",
+      "disabled-verbs"
+    ],
+    [
+      "831e47adea12d689",
+      "sax-read"
+    ],
+    [
+      "8c342f3fbc782916",
+      "source-index"
+    ],
+    [
+      "bfa2ca79d2c2c031",
+      "content-scripts"
+    ],
+    [
+      "d45424b8d63068d9",
+      "script.symbols"
+    ],
+    [
+      "d8436467fd226bfa",
+      "export.convert"
+    ],
+    [
+      "ec52bbcdd73a885a",
+      "xml2js-read"
+    ],
+    [
+      "55ee02c47c739487",
+      "sax-read-strings"
+    ]
+  ],
+  "operations": [
+    "view.inspect",
+    "script.symbols",
+    "script.references",
+    "asset.validate",
+    "asset.search",
+    "export.convert"
+  ],
+  "skipProbes": {
+    "trigger-strings": "MK3 parseTriggerStrings keys are type-qualified ({type}:{lib}_{id}, Grammar:, ParamValue:) to stop cross-type ID collisions; the raw map is not MK2-shaped. The localization overlay is compared through sax-read with TriggerStrings.",
+    "g2t": "MK3 G2T (galaxy-conversion service) was reworked against the SC2 Editor oracle and requires/uses dependency libraries; MK2 convertGalaxyToTriggerLibrary without NativeLib refuses or reconstructs 0 elements on the installed corpus. Needs owner disposition and a NativeLib corpus.",
+    "export.convert": "MK3 T2G requires dependency TriggerData for cross-library references (throws 'Trigger reference cannot be resolved in the loaded libraries'); MK2 degraded to fallback names without NativeLib. 12 of 16 installed cases refuse on MK3 only. Needs a NativeLib corpus (CASC) and an owner decision on the removed fallback."
+  },
+  "divergences": {
+    "validateMk2FalsePositives": {
+      "rule": "MK2 validateLibraryStructure reports Comment references as missing (MK2 does not model Comment elements) and flags Params reachable only through them as orphans; MK3 models Comment/CustomScript and reports no finding.",
+      "probes": [
+        "asset.validate"
+      ],
+      "inputs": [
+        "Mods/all-races-pvp-2/AllRaces2-Extension-HTXL.SC2Mod/Triggers",
+        "Mods/all-races-pvp-2/AllRaces2-Extension.SC2Mod/Triggers",
+        "Mods/tiberium-crossover/mods/tiberium-crossover-extension.SC2Mod/Triggers"
+      ]
+    },
+    "libraryNameNonHexId": {
+      "rule": "MK2 parseTriggerStrings accepts Library/Name/<id> only for hexadecimal ids, so non-hex library ids (ARMP, AREX) get no library name; MK3 applies the name.",
+      "probes": [
+        "sax-read-strings"
+      ],
+      "inputs": [
+        "Mods/all-races-pvp-2/AllRaces2-Extension-HTXL.SC2Mod/Triggers",
+        "Mods/all-races-pvp-2/AllRaces2-Extension.SC2Mod/Triggers",
+        "Mods/all-races-pvp-2/UEDAlternateCrossoverExtension.SC2Mod/Triggers",
+        "Mods/tiberium-crossover/mods/tiberium-crossover-extension.SC2Mod/Triggers"
+      ]
+    }
+  }
+}

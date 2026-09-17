@@ -33,6 +33,11 @@ export async function caseBytes(input) {
       throw new Error(`pinned fixture differs from corpus: ${input.fixture}`)
     return new Uint8Array(record.bytes)
   }
+  if (typeof input?.install === 'string') {
+    const bytes = await readFile(path.join(await sc2Install(), input.install))
+    if (sha256(bytes) !== input.sha256) throw new Error(`installed corpus file changed: ${input.install}`)
+    return new Uint8Array(bytes)
+  }
   if (typeof input?.file === 'string') {
     const bytes = await readFile(path.resolve(workspace, input.file))
     if (sha256(bytes) !== input.sha256) throw new Error(`corpus file changed: ${input.file}`)
@@ -42,7 +47,44 @@ export async function caseBytes(input) {
 }
 
 export const caseName = input =>
-  input?.name ?? path.posix.basename(input?.fixture ?? input?.file?.replaceAll('\\', '/') ?? 'Lib.galaxy')
+  input?.name ?? path.posix.basename(input?.fixture ?? input?.install ?? input?.file?.replaceAll('\\', '/') ?? 'Lib.galaxy')
+
+let install
+/** The installed StarCraft II root, found by the published MK3 installation discovery provider. */
+export function sc2Install() {
+  return (install ??= (async () => {
+    const { module } = await importPublic(path.join(blizzardRoot, 'starcraft2'), '@modkit/blizzard-starcraft2')
+    const result = await module.discoverStarcraft2Installations({ gameId: 'blizzard/starcraft-2', maxCandidates: 16 })
+    const found = result.installations[0]
+    if (found === undefined) throw Object.assign(new Error('no installed StarCraft II found; installed corpus unavailable'), { code: 'CORPUS_MISSING' })
+    return found.installPath
+  })())
+}
+
+/**
+ * Loose (folder-form) files under the installed Maps and Mods directories matching `accept`,
+ * sorted, as `{ install, sha256, size }` records. Packed archives are not opened here.
+ */
+export async function installedFiles(accept, { maxBytes = 16_000_000 } = {}) {
+  const { readdir, stat } = await import('node:fs/promises')
+  const root = await sc2Install()
+  const out = []
+  const walk = async relative => {
+    let rows
+    try { rows = await readdir(path.join(root, relative), { withFileTypes: true }) } catch { return }
+    for (const row of rows.sort((a, b) => a.name.localeCompare(b.name, 'en'))) {
+      const child = `${relative}/${row.name}`
+      if (row.isDirectory()) await walk(child)
+      else if (row.isFile() && accept(child)) {
+        const info = await stat(path.join(root, child))
+        if (info.size > maxBytes) continue
+        out.push({ install: child, sha256: sha256(await readFile(path.join(root, child))), size: info.size })
+      }
+    }
+  }
+  for (const top of ['Maps', 'Mods']) await walk(top)
+  return out
+}
 
 /** loadMk2 wrapper binding the executed operation/corpus and every adapter-side loader file. */
 export function loadPinned(entry, { operation, corpus, loaderFiles, ...options }) {

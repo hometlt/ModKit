@@ -2280,7 +2280,7 @@
       "codec": "sc2-triggers",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 24,
+      "pending": 6,
       "requirements": 24,
       "source": "extensions/blizzard/starcraft-2/codecs/sc2-triggers/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/sc2-triggers",
