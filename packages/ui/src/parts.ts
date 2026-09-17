@@ -185,6 +185,7 @@ export const PARTS = Object.freeze([
   'imageedit.options',
   'imageedit.swatch',
   'imageedit.size',
+  'image.convert',
   'imageedit.actions',
   'imageedit.action',
   'imageedit.marquee',

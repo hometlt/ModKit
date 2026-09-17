@@ -9,7 +9,7 @@
     },
     "bundledCatalog": {
       "file": "generated/bundled-catalog.json",
-      "sha256": "sha256:ab8c761d6a99e04b286da2aa778ac4f4e5c3cd40e32a32dd359013e0c9e4794a",
+      "sha256": "sha256:2ad3d6e1a276bbb0f553fbd3acdebba479ba4c8600ff2734bdb2f343e1ea2fa6",
       "provenance": "checkout-physical-roots-verified-by-host-artifact-digest",
       "roots": [
         {
@@ -30,7 +30,7 @@
         },
         {
           "coordinate": "modkit/images",
-          "digest": "sha256:cce66be2927e3b2785e267a722ca4720d070c85b285e423022c83453873b4341"
+          "digest": "sha256:462741af663e33a773db15e9c8ea975f4ff9278d47ecc7354b68a5e17410f72c"
         },
         {
           "coordinate": "modkit/models",

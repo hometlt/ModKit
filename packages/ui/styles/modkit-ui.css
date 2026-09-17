@@ -2433,6 +2433,7 @@
   }
 
   [data-mk-part='archive.tree'],
+  [data-mk-part='image.convert'],
   [data-mk-part='archive.preview'] {
     min-height: 0;
     overflow: auto;
