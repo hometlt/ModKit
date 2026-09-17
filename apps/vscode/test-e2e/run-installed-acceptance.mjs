@@ -2828,9 +2828,9 @@ function assertA7(a7) {
       `A7 expected/loaded roots are ${a7.expectedRoots.length}/${a7.loadedRoots.length}, not 9/9`,
     )
   }
-  if (a7.expectedContributions.length !== 89 || a7.loadedContributions.length !== 89) {
+  if (a7.expectedContributions.length !== 90 || a7.loadedContributions.length !== 90) {
     throw new Error(
-      `A7 expected/loaded contributions are ${a7.expectedContributions.length}/${a7.loadedContributions.length}, not 89/89`,
+      `A7 expected/loaded contributions are ${a7.expectedContributions.length}/${a7.loadedContributions.length}, not 90/90`,
     )
   }
   for (const field of [

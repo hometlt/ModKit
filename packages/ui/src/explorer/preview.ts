@@ -181,6 +181,8 @@ const stageId = (stage: PreviewStage): string => {
   return id
 }
 
+const BYTE_RANGE_CONTRACT = 'common.view/byte-range-source'
+
 export function createCodecPreview(options: CodecPreviewOptions): PreviewResolver {
   const localizer = withEnglishUiFallback(options.localizer, EXPLORER_PREVIEW_FALLBACK_MESSAGES)
   const supported = [
@@ -215,6 +217,13 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
       const ports = await options.editorPorts?.(entry, bytes)
       const traits = new Set(traitsOf(descriptor))
       const published = new Set(publishedContracts(descriptor))
+      /*
+       * Every opened file has bytes, so the byte view is always possible: a codec that publishes no
+       * byte-range source (an image, a model) still gets the hex stage, served from those bytes.
+       */
+      const rawBytes =
+        resolved && !published.has(BYTE_RANGE_CONTRACT) ? builtinByteRangeSource(bytes) : undefined
+      if (rawBytes !== undefined) published.add(BYTE_RANGE_CONTRACT)
       const availableOperations = new Set(publishedOperations(descriptor))
 
       const candidates = resolved ? options.stages : fallbackStages(options.fallback, localizer)
@@ -231,7 +240,10 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
        */
       const usable = candidates.filter(
         stage =>
-          (!hasPresentationPlan || plannedSlots.has(stageId(stage)) || stage.appLocal === true) &&
+          (!hasPresentationPlan ||
+            plannedSlots.has(stageId(stage)) ||
+            stage.appLocal === true ||
+            (rawBytes !== undefined && stage.contract === BYTE_RANGE_CONTRACT)) &&
           (stage.contract === undefined || published.has(stage.contract)) &&
           (stage.operation === undefined ||
             (operations !== undefined && availableOperations.has(stage.operation))) &&
@@ -308,6 +320,8 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
               }),
           sources: {
             async get(binding: { contract: string; major?: number }) {
+              if (rawBytes !== undefined && binding.contract === BYTE_RANGE_CONTRACT)
+                return { value: rawBytes, async release() {} }
               const lease = await session.dataSource(binding.contract, binding.major ?? 1)
               return {
                 value: lease.value,
@@ -317,6 +331,8 @@ export function createCodecPreview(options: CodecPreviewOptions): PreviewResolve
               }
             },
             async getUnknown(binding: { contract: string; major?: number }) {
+              if (rawBytes !== undefined && binding.contract === BYTE_RANGE_CONTRACT)
+                return { value: rawBytes, async release() {} }
               const lease = await session.dataSource(binding.contract, binding.major ?? 1)
               return {
                 value: lease.value,
