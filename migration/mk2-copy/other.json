@@ -1,0 +1,2124 @@
+{
+  "schemaVersion": 1,
+  "family": "other",
+  "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "scopes": {
+    "stage-h-mechanical-port": {
+      "status": "ready",
+      "copiedAt": "2026-09-17",
+      "note": "Mechanical MK2 -> MK3 verbatim source copies for the other-publishers extensions (Stage H). Not the sc2-family pinned-closure scope format: no adapter/dependency closure validation is required at this stage, algorithms are ported unchanged and refined later.",
+      "recordedElsewhere": [
+        {
+          "path": "references/modkitmk2/extensions/opensource/spring",
+          "fileCount": 24,
+          "disposition": "belongs to modkit-extensions-spring"
+        },
+        {
+          "path": "references/modkitmk2/extensions/opensource/warzone-2100",
+          "fileCount": 19,
+          "disposition": "belongs to modkit-extensions-warzone"
+        }
+      ]
+    }
+  },
+  "copies": [
+    {
+      "source": "references/modkitmk2/extensions/adobe/flash/codecs/fla/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/adobe-flash/src/lib/mk2/flash/codecs/fla/src/detect.ts",
+      "sha256Mk2": "504ff12bc69619e958fc2395b9c1722b744a0bba66f10a1346ed37aed7a8b00b",
+      "sha256Mk3": "504ff12bc69619e958fc2395b9c1722b744a0bba66f10a1346ed37aed7a8b00b",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/adobe/flash/codecs/fla/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/adobe-flash/src/lib/mk2/flash/codecs/fla/src/index.ts",
+      "sha256Mk2": "713f1712949f511c71a143df075620c00b92a11d06eea8edc5e9020dc3141df2",
+      "sha256Mk3": "56de6a785a8093e1d56e8f7678b07f0343d85a2aa3d6946918394fa1b201039e",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/adobe/flash/codecs/fla/test/fla-project.spec.ts",
+      "destination": "modkit-extensions-other/extensions/adobe-flash/src/lib/mk2/flash/codecs/fla/test/fla-project.spec.ts",
+      "sha256Mk2": "2aed900e8b13242f7f24a9faab071a72c196880810846d2e7616fb1e1574220a",
+      "sha256Mk3": "2aed900e8b13242f7f24a9faab071a72c196880810846d2e7616fb1e1574220a",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/adobe/flash/codecs/flv/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/adobe-flash/src/lib/mk2/flash/codecs/flv/src/detect.ts",
+      "sha256Mk2": "f3be6b248ac5f5d2ede632ab6494ff06f1711015828dd8047b34e47c3768d45a",
+      "sha256Mk3": "f3be6b248ac5f5d2ede632ab6494ff06f1711015828dd8047b34e47c3768d45a",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/adobe/flash/codecs/flv/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/adobe-flash/src/lib/mk2/flash/codecs/flv/src/index.ts",
+      "sha256Mk2": "75f487d74bbe5c1b13034d7791ae2dc266627bb82d612e071ccd92f37bc221c2",
+      "sha256Mk3": "dc2bdb1be8adf50f389beb1c2d2f4b60a86b1c473dd233797ced039158a66344",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/adobe/flash/codecs/swf/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/adobe-flash/src/lib/mk2/flash/codecs/swf/src/detect.ts",
+      "sha256Mk2": "bb9bbda439a0376ff5a2472ac562a83d01bd404311e8a79b0e612ab0e8987b70",
+      "sha256Mk3": "bb9bbda439a0376ff5a2472ac562a83d01bd404311e8a79b0e612ab0e8987b70",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/adobe/flash/codecs/swf/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/adobe-flash/src/lib/mk2/flash/codecs/swf/src/index.ts",
+      "sha256Mk2": "bb3bc8c2d57489f43ef7a77ccdcc4dbfa2b77edd8e0c396e34518ac4e7821c6f",
+      "sha256Mk3": "3d476ae1dc0fbe799c5209d9b08fdb8dea3d74c1f85b8923f568c51c49561eed",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/annihilation/gas-powered/codecs/supcom-scm/src/implementation.ts",
+      "destination": "modkit-extensions-other/extensions/annihilation-gas-powered/src/lib/mk2/gas-powered/codecs/supcom-scm/src/implementation.ts",
+      "sha256Mk2": "47c8b714dd04694813cf0350c6c841b08b1608f8a38c2c492820fcce1b4d314a",
+      "sha256Mk3": "6082161db9d8ea79363c8981a07023077731b97b63417b2d1bc1c8288d8ddef9",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/annihilation/gas-powered/codecs/supcom-scm/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/annihilation-gas-powered/src/lib/mk2/gas-powered/codecs/supcom-scm/src/index.ts",
+      "sha256Mk2": "6e553782cfe7837e11815bc40455183e8c5b476ac16b15a2382122d6a370ad86",
+      "sha256Mk3": "b7952d85a610cf909f77f179556af0bfdef929ea1564b5be19227b25e372d987",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/annihilation/gas-powered/codecs/supcom-scm/test/index.spec.ts",
+      "destination": "modkit-extensions-other/extensions/annihilation-gas-powered/src/lib/mk2/gas-powered/codecs/supcom-scm/test/index.spec.ts",
+      "sha256Mk2": "7899ab6f5ee12619149580b2c62e78b11e8e057756c7345bd315e0e0afec37df",
+      "sha256Mk3": "7899ab6f5ee12619149580b2c62e78b11e8e057756c7345bd315e0e0afec37df",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/annihilation/gas-powered/codecs/supcom-scm/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/annihilation-gas-powered/src/lib/mk2/gas-powered/codecs/supcom-scm/test/manifest.spec.ts",
+      "sha256Mk2": "9acdd4f2fb5b5003593e3f8ec7f6904f52feed6d7d415f29e9a08a05f67735d6",
+      "sha256Mk3": "9acdd4f2fb5b5003593e3f8ec7f6904f52feed6d7d415f29e9a08a05f67735d6",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/audiokinetic/wwise/codecs/bnk/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/audiokinetic-wwise/src/lib/mk2/wwise/codecs/bnk/src/index.ts",
+      "sha256Mk2": "ee4b2372ee08e2d478f430c907e222e432abab942be0337774c823bf6f984e71",
+      "sha256Mk3": "8e9e2010acc8cb0c5193cee65f92a618a5282f2e2daa67f73c16313d4c8246bb",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/audiokinetic/wwise/codecs/wem/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/audiokinetic-wwise/src/lib/mk2/wwise/codecs/wem/src/index.ts",
+      "sha256Mk2": "301d18f090b3465f071197d83fa7f3199960ffd26010c3d22442bd56f17deaa0",
+      "sha256Mk3": "c47b22dec7a68c96dced96f3117a1c403e68acde008c3a882ce66933a7f56849",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/audiokinetic/wwise/codecs/wem/test/manifests.spec.ts",
+      "destination": "modkit-extensions-other/extensions/audiokinetic-wwise/src/lib/mk2/wwise/codecs/wem/test/manifests.spec.ts",
+      "sha256Mk2": "f57711c4f459c6cfb64c666fc234de9567acfd4fb29c47f3d75621592da7cdf5",
+      "sha256Mk3": "f57711c4f459c6cfb64c666fc234de9567acfd4fb29c47f3d75621592da7cdf5",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/audiokinetic/wwise/codecs/wwise-pck/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/audiokinetic-wwise/src/lib/mk2/wwise/codecs/wwise-pck/src/index.ts",
+      "sha256Mk2": "e41968488a67b146c09d6dc8e966eef8172e6b41624d10a561bd412202ec3bd1",
+      "sha256Mk3": "9fee48d46ac2e1adccc5731a8eed8f57acdbcf783ad324af0a09b93bbe4be59b",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/audiokinetic/wwise/codecs/wwise-pck/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/audiokinetic-wwise/src/lib/mk2/wwise/codecs/wwise-pck/test/manifest.spec.ts",
+      "sha256Mk2": "760e68bff069e5539ee852d849443e9e6b62c25dd63d08431854266888256b65",
+      "sha256Mk3": "693aef96e627e194599eed4d63e8bc0db91e5108be27996f617c063dcb711cc2",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/audiokinetic/wwise/codecs/wwise-pck/test/parse.spec.ts",
+      "destination": "modkit-extensions-other/extensions/audiokinetic-wwise/src/lib/mk2/wwise/codecs/wwise-pck/test/parse.spec.ts",
+      "sha256Mk2": "ca3b13d9017f827d435cb065174dbf89bcfdd0552e4c368a6e2327be9a16a64d",
+      "sha256Mk3": "ca3b13d9017f827d435cb065174dbf89bcfdd0552e4c368a6e2327be9a16a64d",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/cavedog/total-annihilation/codecs/gaf/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/cavedog-total-annihilation/src/lib/mk2/total-annihilation/codecs/gaf/src/index.ts",
+      "sha256Mk2": "57f028b29aa000e8d5d989b03717b3be4ec5e9f791af8bea11fb6b567a5f36be",
+      "sha256Mk3": "6174156d59b8c2029276731206fcd5673f0c58531d17c51c057f91ba978946ba",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/cavedog/total-annihilation/codecs/ta-hpi/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/cavedog-total-annihilation/src/lib/mk2/total-annihilation/codecs/ta-hpi/src/index.ts",
+      "sha256Mk2": "d8688be67124a0d21b02dced137402a6ec46588c9cdf61b4e4443cead47dc189",
+      "sha256Mk3": "2ef9f172a69e2882619052314e940fee0a2c03a680cfe2e6a6f3b1e9c2ec352d",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/cavedog/total-annihilation/codecs/ta-hpi/test/archive.spec.ts",
+      "destination": "modkit-extensions-other/extensions/cavedog-total-annihilation/src/lib/mk2/total-annihilation/codecs/ta-hpi/test/archive.spec.ts",
+      "sha256Mk2": "0d42df4eb22c3a28f5b7641bee3ad43772f7e77e70d84e33f0235a25d34009cc",
+      "sha256Mk3": "2a7f4ed46456faf20a9160a13a927d94b6f6184d22c24016cc0aff88413728dd",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/cavedog/total-annihilation/codecs/ta-hpi/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/cavedog-total-annihilation/src/lib/mk2/total-annihilation/codecs/ta-hpi/test/manifest.spec.ts",
+      "sha256Mk2": "02ac4e9c820dd296b388e07115af902e1e4a828abbd35ebfabf22b4096c3425d",
+      "sha256Mk3": "dc2713031a94066079922a79a3ba87b8aa2e656af98b3a0214d6ae73f9ba6796",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/uasset/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/uasset/src/index.ts",
+      "sha256Mk2": "17253f97bb85b86120791e26272a1834a681d96ce72e3d3a433af494022c7940",
+      "sha256Mk3": "0d5da3c0a9ad8b84479bceb722abda82246c0381e46d267194fecefc5560e1d3",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/uasset/src/unreal-soundwave.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/uasset/src/unreal-soundwave.ts",
+      "sha256Mk2": "82361119ddc18ab74de0fb306b368cd67439d7dd358d70fb1a7782031ed44b58",
+      "sha256Mk3": "82361119ddc18ab74de0fb306b368cd67439d7dd358d70fb1a7782031ed44b58",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/uasset/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/uasset/test/manifest.spec.ts",
+      "sha256Mk2": "c66fac82d206aad54e4e50adab13b8f5fb5d484c2e46c446816434ee3bd9f77c",
+      "sha256Mk3": "c66fac82d206aad54e4e50adab13b8f5fb5d484c2e46c446816434ee3bd9f77c",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-actorx/src/implementation.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-actorx/src/implementation.ts",
+      "sha256Mk2": "0f08a2b465bbcfd5e7edcfa4e3fef2cbdf75efeacf36f3d5a1e36b93f54e8672",
+      "sha256Mk3": "0f08a2b465bbcfd5e7edcfa4e3fef2cbdf75efeacf36f3d5a1e36b93f54e8672",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-actorx/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-actorx/src/index.ts",
+      "sha256Mk2": "6e553782cfe7837e11815bc40455183e8c5b476ac16b15a2382122d6a370ad86",
+      "sha256Mk3": "b7952d85a610cf909f77f179556af0bfdef929ea1564b5be19227b25e372d987",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-actorx/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-actorx/test/manifest.spec.ts",
+      "sha256Mk2": "b4da44ae675e22d9a33604e54d006adc22ade462c5abd930e65393aea2fcc85d",
+      "sha256Mk3": "fbf2ea4dbc4f6e2155b8efbec9c1135e63e2eac9aec539852d8f86c6773c1131",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-actorx/test/unreal-actorx.spec.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-actorx/test/unreal-actorx.spec.ts",
+      "sha256Mk2": "b96b4abc2136decb5fcbb797dc821592ccb0d53f8a914d730955eafb4e421ea8",
+      "sha256Mk3": "b96b4abc2136decb5fcbb797dc821592ccb0d53f8a914d730955eafb4e421ea8",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/src/detect.ts",
+      "sha256Mk2": "e2d69321d1f73f6d611f8497ca04010850586ab747987456c42c66a222050839",
+      "sha256Mk3": "37962516833af790465cb8d15dad3fb8b79ce88f588f7cfa4296b2f886771d77",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/src/index.ts",
+      "sha256Mk2": "b42dbfdce9d63f8f8b7f7a3bfb15cf2114fbe5507f00bd46df3e40ac81903e1d",
+      "sha256Mk3": "992447f50178ea35bdaaf7b6f21bd895e50fb57bbeda9894c4e5c716ab563a3c",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/src/oodle-native.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/src/oodle-native.ts",
+      "sha256Mk2": "aa95f64147c772fae3162b86e41963e8ba2ae40c8bb998dd06903adf15a58a2e",
+      "sha256Mk3": "aa95f64147c772fae3162b86e41963e8ba2ae40c8bb998dd06903adf15a58a2e",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/src/oodle-wasm.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/src/oodle-wasm.ts",
+      "sha256Mk2": "65028bc0148a5e8f5af8ad2b23bf5f07785157ed11633da2001745607d6f4990",
+      "sha256Mk3": "65028bc0148a5e8f5af8ad2b23bf5f07785157ed11633da2001745607d6f4990",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/src/real.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/src/real.ts",
+      "sha256Mk2": "c16a957320841f150504e80445cf3c7881847ee98c7a483e416005e435d8ae0d",
+      "sha256Mk3": "c16a957320841f150504e80445cf3c7881847ee98c7a483e416005e435d8ae0d",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/test/iostore-real.spec.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/test/iostore-real.spec.ts",
+      "sha256Mk2": "861fc12d1af0187a920334ff32db051ba854f39bc2890937f94e9d47ea1d0b17",
+      "sha256Mk3": "5a834bc755d68257fb36e79724f80ae5b9db13ff921ca95e723f377c949850f5",
+      "rewrites": [
+        "line-ending-normalization: CRLF -> LF"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/test/iostore.spec.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/test/iostore.spec.ts",
+      "sha256Mk2": "d416d400acbcd3f69431f1304078b4abbc9594363bea9317330b05090b52c0cd",
+      "sha256Mk3": "d416d400acbcd3f69431f1304078b4abbc9594363bea9317330b05090b52c0cd",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/test/manifest.spec.ts",
+      "sha256Mk2": "ee4d4a70c35ab2d491f0659c293a4dd1c32aa5042e2f1767517e8e42db18e33a",
+      "sha256Mk3": "ee4d4a70c35ab2d491f0659c293a4dd1c32aa5042e2f1767517e8e42db18e33a",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/test/oodle-native.spec.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/test/oodle-native.spec.ts",
+      "sha256Mk2": "2a7e21f9abcbc95a069fad5d0e7516856b92c52d8b98dd3f3b75a88fd39c71b5",
+      "sha256Mk3": "c09385061b062bd593a0b4b5988876b7a4854d0d3172388a629a29bbdc5805f0",
+      "rewrites": [
+        "line-ending-normalization: CRLF -> LF"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-iostore/test/oodle-wasm.spec.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-iostore/test/oodle-wasm.spec.ts",
+      "sha256Mk2": "6d24851f80f2aa40401fabdd34e0a6f19cfdf7f887460adef9896fd27300bbb8",
+      "sha256Mk3": "e37b44778f313668628997685fc4d2158a9e52eb2f01f34871ea1e606958a926",
+      "rewrites": [
+        "line-ending-normalization: CRLF -> LF"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-pak/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-pak/src/detect.ts",
+      "sha256Mk2": "507a771094619d30bb76a47b7ea698cc4a8b96c0af4a17c36268021d1695ecb3",
+      "sha256Mk3": "6933eb673d5ac7c9fe4033d59467616fda2b6a3ce6cdf2ffc81c848494791a36",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-pak/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-pak/src/index.ts",
+      "sha256Mk2": "95f7179b75d6b1033a45f90655641cb05c0903730bec6eb11246aba06d03caec",
+      "sha256Mk3": "95f7179b75d6b1033a45f90655641cb05c0903730bec6eb11246aba06d03caec",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-pak/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-pak/test/manifest.spec.ts",
+      "sha256Mk2": "b6c696fcf3c4c75a801f9336ac481a1f96eb9a7372c0446d29ecb38c5c4d716f",
+      "sha256Mk3": "b6c696fcf3c4c75a801f9336ac481a1f96eb9a7372c0446d29ecb38c5c4d716f",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-pak/test/pak-source.spec.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-pak/test/pak-source.spec.ts",
+      "sha256Mk2": "4c2b3bce605494670b223a0df610ebc5c9e22740974b9f9bcce869b74238f36f",
+      "sha256Mk3": "23f489dceb008d7d6183be5f98ade6c7381dbb0a95e5258134376f4966640d8d",
+      "rewrites": [
+        "line-ending-normalization: CRLF -> LF"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-pak/test/pak.spec.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-pak/test/pak.spec.ts",
+      "sha256Mk2": "0df11f62f29412dc6a945e574264b20a87d76631230574cee65761eef2047c18",
+      "sha256Mk3": "0df11f62f29412dc6a945e574264b20a87d76631230574cee65761eef2047c18",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset-texture/src/implementation.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset-texture/src/implementation.ts",
+      "sha256Mk2": "2309833799b1f95d93067fdf1584f552b62ad67e248d59d631209a4049cc4d0f",
+      "sha256Mk3": "e011ccf172f474f52698c910c3e18b0f31f0d695dfe09738fef938821dc54ad2",
+      "rewrites": [
+        "line-ending-normalization: CRLF -> LF"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset-texture/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset-texture/src/index.ts",
+      "sha256Mk2": "1c905ecfa299dd1f28f64125a9ff3834b06a23da04b5b603c90f1e6bd4b9aa59",
+      "sha256Mk3": "6dd6ae38563b37c8e84fc51958d42807f426db92bb8fd98df9198523028d0a39",
+      "rewrites": [
+        "line-ending-normalization: CRLF -> LF"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset-texture/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset-texture/test/manifest.spec.ts",
+      "sha256Mk2": "9b4f1477116af23c460a3e26c066e8f923c475b372b831046c75ff6c8ad95e96",
+      "sha256Mk3": "9b4f1477116af23c460a3e26c066e8f923c475b372b831046c75ff6c8ad95e96",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset-video/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset-video/src/detect.ts",
+      "sha256Mk2": "133052e1c0d63d7bd360578b86df560fffc42b46184e1434c888c24d013adfb4",
+      "sha256Mk3": "133052e1c0d63d7bd360578b86df560fffc42b46184e1434c888c24d013adfb4",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset-video/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset-video/src/index.ts",
+      "sha256Mk2": "8210a7f3a7a12c1788a5327bc00e1f3d0922703c7b47e34ad99e2fad82a81550",
+      "sha256Mk3": "152ad783905ac32b3485d752db8ccfca1ff8d5702aea95e78c88fd6c0094bea7",
+      "rewrites": [
+        "line-ending-normalization: CRLF -> LF"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset-video/src/unreal-media.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset-video/src/unreal-media.ts",
+      "sha256Mk2": "0bfbca02c458b550ddc2e86a0f083130f070af602a7efdb8b9f0d81261a64db0",
+      "sha256Mk3": "0bfbca02c458b550ddc2e86a0f083130f070af602a7efdb8b9f0d81261a64db0",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset-video/test/media-references.spec.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset-video/test/media-references.spec.ts",
+      "sha256Mk2": "b10de80069e290ef09e2e3b33def0371bc65c9543d581820ac50751e24114acc",
+      "sha256Mk3": "b10de80069e290ef09e2e3b33def0371bc65c9543d581820ac50751e24114acc",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset/src/implementation.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset/src/implementation.ts",
+      "sha256Mk2": "c8adb63eb83db80cf77a3eb041d9fa556eac00fb8c0e6cd4dba426d9a0d0806a",
+      "sha256Mk3": "c8adb63eb83db80cf77a3eb041d9fa556eac00fb8c0e6cd4dba426d9a0d0806a",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset/src/index.ts",
+      "sha256Mk2": "c4ff41c9c33b4ecf214b0007525f336df2107f94771dae8773f127531169a8ce",
+      "sha256Mk3": "647094308094f6a10c3c95b96b779b8857fa39107090e7cd87e566d96a8d63d4",
+      "rewrites": [
+        "line-ending-normalization: CRLF -> LF"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset/test/manifest.spec.ts",
+      "sha256Mk2": "978a5e1e96ae405015b3fda47459ef4f36f726e97ae4f01282a430c30e9a0be0",
+      "sha256Mk3": "672dcdacbdc2059519c07f4995dc3b87c092bcebb7ccc0f69252ee385b031c51",
+      "rewrites": [
+        "line-ending-normalization: CRLF -> LF"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/codecs/unreal-uasset/test/unreal-uasset.spec.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/codecs/unreal-uasset/test/unreal-uasset.spec.ts",
+      "sha256Mk2": "48edddee55f0f45cc35b91f50f35f8e0b01fddc6ba028e4ca96286e2b1f8397c",
+      "sha256Mk3": "48edddee55f0f45cc35b91f50f35f8e0b01fddc6ba028e4ca96286e2b1f8397c",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/src/formats/unreal-animation.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/src/formats/unreal-animation.ts",
+      "sha256Mk2": "2466f9aa43fe8f205e8bb47e99d862732e4cdaecd3199858bb8323f84dd81da9",
+      "sha256Mk3": "2466f9aa43fe8f205e8bb47e99d862732e4cdaecd3199858bb8323f84dd81da9",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/src/formats/unreal-properties.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/src/formats/unreal-properties.ts",
+      "sha256Mk2": "7c65d0aeb2dd8a7566b4af04f9dea2416ae6915529486eba168407a00c8f090e",
+      "sha256Mk3": "7c65d0aeb2dd8a7566b4af04f9dea2416ae6915529486eba168407a00c8f090e",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/src/formats/unreal-skeletal-mesh.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/src/formats/unreal-skeletal-mesh.ts",
+      "sha256Mk2": "ca5eb7d52e5619bd46c826fbf47a7b22f146772ff07f5a44bb45843da8d50a4e",
+      "sha256Mk3": "ca5eb7d52e5619bd46c826fbf47a7b22f146772ff07f5a44bb45843da8d50a4e",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/src/formats/unreal-static-mesh.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/src/formats/unreal-static-mesh.ts",
+      "sha256Mk2": "613825df14c518a311ef1efd7db7fcee6e1e9a7eff9aaf44aac0331de3884410",
+      "sha256Mk3": "613825df14c518a311ef1efd7db7fcee6e1e9a7eff9aaf44aac0331de3884410",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/epic-games/unreal-engine/src/unreal.ts",
+      "destination": "modkit-extensions-other/extensions/epic-games-unreal-engine/src/lib/mk2/unreal-engine/src/unreal.ts",
+      "sha256Mk2": "f40217d53490118c8a035f00b9541f21a38e8ecd36b8c5d49d129f34e1b08285",
+      "sha256Mk3": "198c673a368c03115340632d293c8d4e59f264e9e3e7e75ff362e122dc1d059d",
+      "rewrites": [
+        "line-ending-normalization: CRLF -> LF"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/firelight/fmod/codecs/fsb/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/firelight-fmod/src/lib/mk2/fmod/codecs/fsb/src/index.ts",
+      "sha256Mk2": "dda8879a810894cddded8276934941ee196d7acff9c5e3759953e17198633735",
+      "sha256Mk3": "b2b4c51287b2187c831df341f5574ab6bd14f995b39cc36a86e06a64c177dd2e",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/firelight/fmod/codecs/fsb/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/firelight-fmod/src/lib/mk2/fmod/codecs/fsb/test/manifest.spec.ts",
+      "sha256Mk2": "a04a3578dcaa16f76e210378439279abde91e12a2a0e6900c45fe8cbf3092cf2",
+      "sha256Mk3": "a04a3578dcaa16f76e210378439279abde91e12a2a0e6900c45fe8cbf3092cf2",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/src/codec.ts",
+      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/src/codec.ts",
+      "sha256Mk2": "4f2091e9c84640c68d5f24bfc4acf7ac20c5975aac763c6c9fe0582ec7a41a04",
+      "sha256Mk3": "4f2091e9c84640c68d5f24bfc4acf7ac20c5975aac763c6c9fe0582ec7a41a04",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/src/discovery.ts",
+      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/src/discovery.ts",
+      "sha256Mk2": "7e1f86abe4e4698cc60e0da4b15c2a893578fe76ba9862f87a4356c3af48ea0a",
+      "sha256Mk3": "7e1f86abe4e4698cc60e0da4b15c2a893578fe76ba9862f87a4356c3af48ea0a",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/src/index.ts",
+      "sha256Mk2": "2d60d5cf9077edcd2750ce2cee5fba7f200f84cd5378dd59f3e47d1ad6b5bbd7",
+      "sha256Mk3": "2d60d5cf9077edcd2750ce2cee5fba7f200f84cd5378dd59f3e47d1ad6b5bbd7",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/src/install-probe.ts",
+      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/src/install-probe.ts",
+      "sha256Mk2": "ebedbfc014b1757afbc7a1711a618256780e0a1392a96ee47505ecd03de441ad",
+      "sha256Mk3": "ebedbfc014b1757afbc7a1711a618256780e0a1392a96ee47505ecd03de441ad",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/src/ops.ts",
+      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/src/ops.ts",
+      "sha256Mk2": "4a3d1029dd682f8c1b84437abd75ce62e8891553e00a58de8b0be8d3e8bce876",
+      "sha256Mk3": "4a3d1029dd682f8c1b84437abd75ce62e8891553e00a58de8b0be8d3e8bce876",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/test/discovery.spec.ts",
+      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/discovery.spec.ts",
+      "sha256Mk2": "b75e00474e4e855f2861afc2ae51df1f5711a74aa21aaef8764a14a90e9d96a0",
+      "sha256Mk3": "b75e00474e4e855f2861afc2ae51df1f5711a74aa21aaef8764a14a90e9d96a0",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/test/index.spec.ts",
+      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/index.spec.ts",
+      "sha256Mk2": "1f6f3377f237e8e28590fd963624e45016cd6641f0e17090dc0f6a1f9557712f",
+      "sha256Mk3": "1f6f3377f237e8e28590fd963624e45016cd6641f0e17090dc0f6a1f9557712f",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/test/install-probe.spec.ts",
+      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/install-probe.spec.ts",
+      "sha256Mk2": "058e5e69ad8f41d102b2889e394a550ae8b60ad966a13f4f7e98f063bebe34ca",
+      "sha256Mk3": "058e5e69ad8f41d102b2889e394a550ae8b60ad966a13f4f7e98f063bebe34ca",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/manifest.spec.ts",
+      "sha256Mk2": "70188d25f94788a38d0def5fb116cce0fc1751a9220bea90d23ab85429c307a0",
+      "sha256Mk3": "70188d25f94788a38d0def5fb116cce0fc1751a9220bea90d23ab85429c307a0",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/test/ops.spec.ts",
+      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/ops.spec.ts",
+      "sha256Mk2": "deffbe26fa47785205530a8597625b5a6d052e254c549659872b953ff8599f7f",
+      "sha256Mk3": "deffbe26fa47785205530a8597625b5a6d052e254c549659872b953ff8599f7f",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/frost-giant/stormgate/games/stormgate/test/real.manual.spec.ts",
+      "destination": "modkit-extensions-other/extensions/frost-giant-stormgate/src/lib/mk2/stormgate/games/stormgate/test/real.manual.spec.ts",
+      "sha256Mk2": "f6f97336a43f8d0194ec73c61219e91645ed139603b667f00d51d324a18c0495",
+      "sha256Mk3": "f6f97336a43f8d0194ec73c61219e91645ed139603b667f00d51d324a18c0495",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/age-bar/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-bar/src/index.ts",
+      "sha256Mk2": "63569b0bfea2320aab3fe938f5952d239abe463122719b49c84d3c457af9ab40",
+      "sha256Mk3": "3f91d86fe2e8960eefcbce116a0c1475fa024fd64becd05f487ba33e87e226f2",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/age-bar/test/archive.spec.ts",
+      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-bar/test/archive.spec.ts",
+      "sha256Mk2": "bd0177ba07eb475e58a6512d3e4185038c93766002f373c32c578b6a295fdcc3",
+      "sha256Mk3": "07624002742fa23297e9164beb11a4793f5164be89be016b3a82b056108fefa3",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/age-bar/test/fixture-bytes.ts",
+      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-bar/test/fixture-bytes.ts",
+      "sha256Mk2": "939ebc735bd6094fa6d978172ee2d268f6307d3d6769b36420c5a2e66c5bb2c6",
+      "sha256Mk3": "b7a7a70235e621ea5a2c1516b6db921b667c53ad11c9bbf3de49f17ebc99cc02",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/age-bar/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-bar/test/manifest.spec.ts",
+      "sha256Mk2": "851d58625c86f11a3ea9d9b9810f2ef25f536d9f8096ee54606d35d33a3cd5bb",
+      "sha256Mk3": "e20171e779717641f4439f3830c7d9b461d9dddb0d22c12479550e4fbda80c8a",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/age-bar/test/named-record-fixture.ts",
+      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-bar/test/named-record-fixture.ts",
+      "sha256Mk2": "6d1aa1843b02347fda54d683c44075b38138675849c7b8e1ccf7c1e79597ac40",
+      "sha256Mk3": "3dae5b21209152713a9c0a88fec4676ec04faf17e7adcfba6511a45110c5a86b",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/age-drs/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-drs/src/index.ts",
+      "sha256Mk2": "971831d021fc1039186f044e373b1c4a09dc27ab102642c86a8c2af711c4d8ea",
+      "sha256Mk3": "0a66d9835b59fcd4bb5aaa27d52d3d1255eca066eb689579ab5ffb36d616f1cd",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/age-drs/test/archive.spec.ts",
+      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-drs/test/archive.spec.ts",
+      "sha256Mk2": "41c214d52ff666ca974e5d1300e15a9cc3b60456bbc5931d6cf3b755f3142524",
+      "sha256Mk3": "d2279e3f522d682d6f085b51888b751e534778878c46e9380721d13543df52df",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/age-drs/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-drs/test/manifest.spec.ts",
+      "sha256Mk2": "8db8dd0f54de5d90c558d25f5e12c470b27966d157b027927a69eb4dc868e30a",
+      "sha256Mk3": "00fe2913e2246c5d54f13228e134f1582c550a94a990e173088d50c1df16e761",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/age-of-mythology-brg/codec.manifest.json",
+      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/age-of-mythology-brg/codec.manifest.json",
+      "sha256Mk2": "667bee1cae4d2ae1370b64c10a76b6ba81fb81d56b6d415ee96c65a47012503a",
+      "sha256Mk3": "667bee1cae4d2ae1370b64c10a76b6ba81fb81d56b6d415ee96c65a47012503a",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/bti/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/bti/src/index.ts",
+      "sha256Mk2": "1f686e56f55733e3bffed7a6ad3fa6262027905e29a712ed386e2d00011ec951",
+      "sha256Mk3": "15f8218cd31c6f9b6a83b4c47016865261944f9d87fd9f569cedd401914dc6af",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/cub/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/cub/src/index.ts",
+      "sha256Mk2": "bc7c6ad1a389e886756f686a6130b635d256da36f6d807839285f14b8537029d",
+      "sha256Mk3": "7bcebeb4811843f879bf6073f981dc561cb63cb77606a2898f02896f997f6598",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/ddt/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/ddt/src/index.ts",
+      "sha256Mk2": "b54e0d1cac76b89032f6b4401814b7b107c04309dc86dc955d280bb9684d03c2",
+      "sha256Mk3": "22f85d5ecdc16194bf5dd9f56f96064fb5125e31ab07f9cae533fd95c648d364",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/mtrl/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/mtrl/src/index.ts",
+      "sha256Mk2": "7193af78968312308d6cc107818978b10b904a31e0eb74d5e8bdefee68b9699c",
+      "sha256Mk3": "c0071379a966df43b36dda2864ae954cb2fad133d251c27417251b74a5f3969c",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/prt/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/prt/src/index.ts",
+      "sha256Mk2": "92fc684337e35596fedf4fda7787119ff1c7add031b062365b21b13139697b6f",
+      "sha256Mk3": "edc1390d17eb5aa7a15ceac6e58a156716ead4bad1e2fee11b4d6abc6caa3a25",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/sld/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/sld/src/index.ts",
+      "sha256Mk2": "eae0db504974f8634c25e2fb3ddf27293542bc6eb41414332a7d82d81f5ea77a",
+      "sha256Mk3": "2bf0bcc9b7b196671e58e7f748a2ee8643d2511fda6af9a950cb0b5122855285",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/slp/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/slp/src/detect.ts",
+      "sha256Mk2": "4395dbc831c517c312c78e676ebebd3835bf519063e8d2eefd6565ee83ac87ca",
+      "sha256Mk3": "c88b845ebbeff551f8085741d5b85204530b735cac8e325cc669c51d8c92947f",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/slp/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/slp/src/index.ts",
+      "sha256Mk2": "24c92ead08664b7a43a7870e3a966accfbdb0f11ccbd399301673ce5a0963d03",
+      "sha256Mk3": "ffd601149ee17685c5574a6ea90ec0f4eb3cf9474350fd1aa932d19ea7efd16b",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/smp/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/smp/src/index.ts",
+      "sha256Mk2": "c0e2135804f9a98688b10e54baaa779faa285f6a1fcbc6486288e9c5d9c9db39",
+      "sha256Mk3": "6c9f54ca973fa4ef5c693af0d6a60adf97b394dd5dc9ef63b13937e73f15c499",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/smx/src/aoe-de-sprite.ts",
+      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/smx/src/aoe-de-sprite.ts",
+      "sha256Mk2": "5064f34aa9bdc1abf2a872f85a574c5a8941c2a9a932f172e96bebf9c8b3cff5",
+      "sha256Mk3": "9433e219d2c9f4a3b3bd598ad223461066ac451aa91acb0f92d64431d827696f",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/age-series/codecs/smx/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/microsoft-age-series/src/lib/mk2/age-series/codecs/smx/src/index.ts",
+      "sha256Mk2": "00e31438c37f41215581dea933eec320a7ccb301743cc0a47d9103b8229b7cb8",
+      "sha256Mk3": "da4dd97e9c6bdf8498c9d9f128e0f0ad431e4ff3b04ec23dcb89c1a3ee42cc87",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/halo-wars/codecs/halo-era/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/microsoft-halo-wars/src/lib/mk2/halo-wars/codecs/halo-era/src/detect.ts",
+      "sha256Mk2": "dddb6980979acc72d2273a7758eea37d899e73e208e7b192c3b23ab2a27baf12",
+      "sha256Mk3": "83eadd71e6a9e73da67deb97fd694be839cd3bf5b324086d3585315e9ae48e3e",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/halo-wars/codecs/halo-era/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/microsoft-halo-wars/src/lib/mk2/halo-wars/codecs/halo-era/src/index.ts",
+      "sha256Mk2": "22654f444bd2cd28302fc61cf170cbc85353555ddd1b277fbd2924268a76ff2c",
+      "sha256Mk3": "a57da5c5a459aa96653b0ef7b012d11af2352577f29257128b4d7fe1f9a5c828",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/halo-wars/codecs/halo-era/test/archive.spec.ts",
+      "destination": "modkit-extensions-other/extensions/microsoft-halo-wars/src/lib/mk2/halo-wars/codecs/halo-era/test/archive.spec.ts",
+      "sha256Mk2": "c5b4c8b53de26bf16f92eaa8577bba8bd7f435b8b1c8fa43fd2d8b8d449cbbd2",
+      "sha256Mk3": "6f8b5d34ecd89185999c02b357f2d5ff450bc97c9c043135ce0790aec66e849e",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/halo-wars/codecs/halo-era/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/microsoft-halo-wars/src/lib/mk2/halo-wars/codecs/halo-era/test/manifest.spec.ts",
+      "sha256Mk2": "85461bff94535309d73f6b8514654429384573038baaaf853b6b4a92476f3970",
+      "sha256Mk3": "85461bff94535309d73f6b8514654429384573038baaaf853b6b4a92476f3970",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/microsoft/halo-wars/codecs/halo-wars-ugx/codec.manifest.json",
+      "destination": "modkit-extensions-other/extensions/microsoft-halo-wars/src/lib/mk2/halo-wars/codecs/halo-wars-ugx/codec.manifest.json",
+      "sha256Mk2": "3f18327de458fde7bc59fa570fc022be8499338efcc652e97b1882ff11943ff4",
+      "sha256Mk3": "3f18327de458fde7bc59fa570fc022be8499338efcc652e97b1882ff11943ff4",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/new-world-computing/heroes-3/codecs/def/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/new-world-computing-heroes-3/src/lib/mk2/heroes-3/codecs/def/src/index.ts",
+      "sha256Mk2": "74345c8c1a144b3841fd7f47ada7a75c50d5202e3b94f28f7d2f6b2b31ca8d85",
+      "sha256Mk3": "1a2fb8bf918a510d957362ee7282d7b2119147386e3f4536f815aa3c7e26dd5c",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/new-world-computing/heroes-3/codecs/heroes3-lod/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/new-world-computing-heroes-3/src/lib/mk2/heroes-3/codecs/heroes3-lod/src/detect.ts",
+      "sha256Mk2": "484d959c720da05a9f6967efd2248425b684cc3c411e98be8bcaa805ebf0d9bf",
+      "sha256Mk3": "3d24a6bfc1d0f52e181d43fc367193ed7f98004993fdc38bb07ae5d1cc7fd512",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/new-world-computing/heroes-3/codecs/heroes3-lod/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/new-world-computing-heroes-3/src/lib/mk2/heroes-3/codecs/heroes3-lod/src/index.ts",
+      "sha256Mk2": "d531aa7c96fc4b8bb26fbf165e72475432daf2170eb1c548c3a7f7774dc95b93",
+      "sha256Mk3": "43590a15642e795abe8b6f82b9edc30a1c8f072eea97607aaacf663aeeae6b88",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/new-world-computing/heroes-3/codecs/heroes3-lod/test/archive.spec.ts",
+      "destination": "modkit-extensions-other/extensions/new-world-computing-heroes-3/src/lib/mk2/heroes-3/codecs/heroes3-lod/test/archive.spec.ts",
+      "sha256Mk2": "0d3cc52f8616b8cf7b28e3f6076abd18ebe9231c41160379984c6c406814edba",
+      "sha256Mk3": "2da3bd678931828a8d2fd260cd104831a8847dc24264d0cfab76e8fe7f75f9bc",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/new-world-computing/heroes-3/codecs/heroes3-lod/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/new-world-computing-heroes-3/src/lib/mk2/heroes-3/codecs/heroes3-lod/test/manifest.spec.ts",
+      "sha256Mk2": "0e1a38a0920ecc8b09e080f7fa1aaee04099a5c91f59b87189d3da0c70e8f09c",
+      "sha256Mk3": "0e1a38a0920ecc8b09e080f7fa1aaee04099a5c91f59b87189d3da0c70e8f09c",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/new-world-computing/heroes-4/codecs/heroes4-resource/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/new-world-computing-heroes-4/src/lib/mk2/heroes-4/codecs/heroes4-resource/src/index.ts",
+      "sha256Mk2": "1d26f1ef811431795e7235d5bb824981d33947dda573eb9756990b3065a9c26c",
+      "sha256Mk3": "eed77f31832cad440d39154baac28c5dc5962a1a6dd2bcfc11e740f8d0f3f5d9",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/new-world-computing/heroes-4/codecs/heroes4-resource/test/archive.spec.ts",
+      "destination": "modkit-extensions-other/extensions/new-world-computing-heroes-4/src/lib/mk2/heroes-4/codecs/heroes4-resource/test/archive.spec.ts",
+      "sha256Mk2": "128fe870a574b4f8f02b21f28fcfbb83180077f7b6b105f567fa70bfd7d22353",
+      "sha256Mk3": "f3ab18f1693fca40ddb42cdc347df16f18ec012062797e45a4c2f1625ab02790",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/new-world-computing/heroes-4/codecs/heroes4-resource/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/new-world-computing-heroes-4/src/lib/mk2/heroes-4/codecs/heroes4-resource/test/manifest.spec.ts",
+      "sha256Mk2": "310383b8dd277b5a191be39da502dd6dc849fb3638ee0765e3309fc962d15483",
+      "sha256Mk3": "a5d8d64b577868f6ec3b8285c1e248b26700b8f8cb9f0f700ca0df857854d0e9",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/petroglyph/glyphx/codecs/grey-goo-alo/src/codec.browser.ts",
+      "destination": "modkit-extensions-other/extensions/petroglyph-glyphx/src/lib/mk2/glyphx/codecs/grey-goo-alo/src/codec.browser.ts",
+      "sha256Mk2": "4c33965e3ad6e2a1af2b67688693c7de3b1f7abab8f49c2de0908a46f02909ff",
+      "sha256Mk3": "2db2786e7efeb55a56242ddc712d6d7aecd8e904cead44ae8285495337b054d0",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/petroglyph/glyphx/codecs/grey-goo-alo/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/petroglyph-glyphx/src/lib/mk2/glyphx/codecs/grey-goo-alo/src/detect.ts",
+      "sha256Mk2": "fce4fa3d75c9975828c7f6c0685bf605960fe89c31563bdee0cd1ffd5eef3931",
+      "sha256Mk3": "fce4fa3d75c9975828c7f6c0685bf605960fe89c31563bdee0cd1ffd5eef3931",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/petroglyph/glyphx/codecs/grey-goo-alo/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/petroglyph-glyphx/src/lib/mk2/glyphx/codecs/grey-goo-alo/src/index.ts",
+      "sha256Mk2": "ebea692092c31bac7b73dc09e6d8172b1a033fb63cb17450fb2d5f7564480364",
+      "sha256Mk3": "11a8643fcf5a31aa7b5ab875bff90cdefb7fb4e6d39d63594d58c86fbede0d07",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/petroglyph/glyphx/codecs/grey-goo-alo/test/index.spec.ts",
+      "destination": "modkit-extensions-other/extensions/petroglyph-glyphx/src/lib/mk2/glyphx/codecs/grey-goo-alo/test/index.spec.ts",
+      "sha256Mk2": "dc8c54999443045ca326c41a2da18376e4dd136413c56f30c5be4c8812074cb8",
+      "sha256Mk3": "69852627da12345f9a745cede6b93e410d9b2c4410c80e32b04c2d1b2cbe34dc",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/petroglyph/glyphx/codecs/grey-goo-alo/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/petroglyph-glyphx/src/lib/mk2/glyphx/codecs/grey-goo-alo/test/manifest.spec.ts",
+      "sha256Mk2": "1681535d8b0482a3d61a10fced105fe264f948ee952c15342d6501ebb75910f8",
+      "sha256Mk3": "1681535d8b0482a3d61a10fced105fe264f948ee952c15342d6501ebb75910f8",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/petroglyph/glyphx/codecs/petroglyph-meg/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/petroglyph-glyphx/src/lib/mk2/glyphx/codecs/petroglyph-meg/src/detect.ts",
+      "sha256Mk2": "f33f96c7f19b0ecb3d42bc45d1c95f1e601acf81c33dfe002b6e3127ab5dc99b",
+      "sha256Mk3": "2b1c2567c2cb446e75c5d24aef3304549c5afda6341bca0a5fc09c39d3e0fe0f",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/petroglyph/glyphx/codecs/petroglyph-meg/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/petroglyph-glyphx/src/lib/mk2/glyphx/codecs/petroglyph-meg/src/index.ts",
+      "sha256Mk2": "9b5db34f2706da2b23fdc2431b61a76507edc2e162e37f49ba91a401c9397a69",
+      "sha256Mk3": "84b6530688eb084ee42d1a63fb00a9b97a7640bee02306a977f685d91a652753",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/petroglyph/glyphx/codecs/petroglyph-meg/test/index.spec.ts",
+      "destination": "modkit-extensions-other/extensions/petroglyph-glyphx/src/lib/mk2/glyphx/codecs/petroglyph-meg/test/index.spec.ts",
+      "sha256Mk2": "f804dac9568adba3f624c0a92e790f5eeaf099bcfd027cd14cdd948b75ddc165",
+      "sha256Mk3": "b40c10296e58f3197bcd340fe4050103a667607783a840c2741b119c17c48e1f",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/petroglyph/glyphx/codecs/petroglyph-meg/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/petroglyph-glyphx/src/lib/mk2/glyphx/codecs/petroglyph-meg/test/manifest.spec.ts",
+      "sha256Mk2": "4fc0e29ef651de58e94b6e0814997c9b6699ea4e8bb82e0046ad1b3e3b879eee",
+      "sha256Mk3": "fa1fbaa026d348ac2ad20ce4ae2cb966409607101b9968a20b358cdc307945bc",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/petroglyph/glyphx/codecs/petroglyph-meg/test/source.spec.ts",
+      "destination": "modkit-extensions-other/extensions/petroglyph-glyphx/src/lib/mk2/glyphx/codecs/petroglyph-meg/test/source.spec.ts",
+      "sha256Mk2": "5d675794f1bef251de1bdf7992237dc1b081e60f01072ccb76844c53ce333662",
+      "sha256Mk3": "394e1c9d1994258ca2d65af93cac6eed74e9de1f5537e9c8a36ef8a958b675b3",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/rad-game-tools/video/codecs/bink/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/rad-game-tools-video/src/lib/mk2/video/codecs/bink/src/detect.ts",
+      "sha256Mk2": "95a997b135f9ff769158979321738b40d712f6c67ad3c7e56ce97b09a0c19b6f",
+      "sha256Mk3": "95a997b135f9ff769158979321738b40d712f6c67ad3c7e56ce97b09a0c19b6f",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/rad-game-tools/video/codecs/bink/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/rad-game-tools-video/src/lib/mk2/video/codecs/bink/src/index.ts",
+      "sha256Mk2": "5b4795d5e2ab4f997a6f64566a716106a4887ef30fc0aa6da23a2f7b33bc8e16",
+      "sha256Mk3": "58fb3cad836f7641c0f8e36ac3e11aeea4d5c0a424a6b061bbf3b83fb1433393",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/rad-game-tools/video/codecs/bink/test/manifests.spec.ts",
+      "destination": "modkit-extensions-other/extensions/rad-game-tools-video/src/lib/mk2/video/codecs/bink/test/manifests.spec.ts",
+      "sha256Mk2": "dced04eeb0b4f37cc62a3ad12ab3db531e38c99b3f3ea21566ffffe6713ad2a4",
+      "sha256Mk3": "dced04eeb0b4f37cc62a3ad12ab3db531e38c99b3f3ea21566ffffe6713ad2a4",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/rad-game-tools/video/codecs/smacker/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/rad-game-tools-video/src/lib/mk2/video/codecs/smacker/src/detect.ts",
+      "sha256Mk2": "c3250d416400273941af1aaa3b60e9b52b14e570fe1df3c7aac2f2eb9bf683d0",
+      "sha256Mk3": "c3250d416400273941af1aaa3b60e9b52b14e570fe1df3c7aac2f2eb9bf683d0",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/rad-game-tools/video/codecs/smacker/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/rad-game-tools-video/src/lib/mk2/video/codecs/smacker/src/index.ts",
+      "sha256Mk2": "6fee706cb594b4e6f742c466b22588443ea3dfb707ac3b8f9bbcd50f817f20dd",
+      "sha256Mk3": "8eb94d9a0d478aacc35b9b04021a023283545eb5f81064833e39fe4db21964de",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/realitypump/earth-2150/codecs/earth-par/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/realitypump-earth-2150/src/lib/mk2/earth-2150/codecs/earth-par/src/index.ts",
+      "sha256Mk2": "95ebe19274cad425e940b4fec4cb588d8c22b850570885e957bd1033bac1f142",
+      "sha256Mk3": "9c001003686fa3b855fe1684ff348078a1adc9f3853117d0f40d5ee713562fbe",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/realitypump/earth-2150/codecs/earth-par/test/archive.spec.ts",
+      "destination": "modkit-extensions-other/extensions/realitypump-earth-2150/src/lib/mk2/earth-2150/codecs/earth-par/test/archive.spec.ts",
+      "sha256Mk2": "22927987b0aa30b4c85a09fa9f0b0ccb3cd8800986b6ee17f8c9b07bc5eda1a1",
+      "sha256Mk3": "d6b191a2f38e3d872c218fe616aff64b0d142a6e14f78273ffd38fe472b7043a",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/realitypump/earth-2150/codecs/earth-par/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/realitypump-earth-2150/src/lib/mk2/earth-2150/codecs/earth-par/test/manifest.spec.ts",
+      "sha256Mk2": "8831c1cff1c59bc6a7d567836f30ef1390b1e64a47d5e8c2831bf3be434178da",
+      "sha256Mk3": "982b464e5c2eb865552734a229f89bb0c779baeb017495347aa6c2596c0d3439",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/realitypump/earth-2150/codecs/earth-res/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/realitypump-earth-2150/src/lib/mk2/earth-2150/codecs/earth-res/src/index.ts",
+      "sha256Mk2": "c9019bce4cdc3ae72e788e46382c75462bfec4ba602f352f43b8f4db675efe2c",
+      "sha256Mk3": "1a03ef1f9bdc7646fbb16dbdc90193d87e82f2ae4f50ba3bbdbba1d83278e1e3",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/realitypump/earth-2150/codecs/earth-res/test/archive.spec.ts",
+      "destination": "modkit-extensions-other/extensions/realitypump-earth-2150/src/lib/mk2/earth-2150/codecs/earth-res/test/archive.spec.ts",
+      "sha256Mk2": "49007958c2a19c3492f44cd9636cb2ccace8b2c0e08f4a28be66e86cf7234921",
+      "sha256Mk3": "bfd8df114feaeeabaeadafa95c78c3048383c004f56c0f814a2e41e3e18f82b6",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/realitypump/earth-2150/codecs/earth-res/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/realitypump-earth-2150/src/lib/mk2/earth-2150/codecs/earth-res/test/manifest.spec.ts",
+      "sha256Mk2": "58e913d0522e8b31e6b21a56efbe2b2d017b90b5f82a4bd582632445dad4f1eb",
+      "sha256Mk3": "acf819da026caf351f88cd1b669de4179c6cca98a55d1a0b133f7c7f71328db8",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/realitypump/earth-2150/codecs/earth-tex/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/realitypump-earth-2150/src/lib/mk2/earth-2150/codecs/earth-tex/src/detect.ts",
+      "sha256Mk2": "2afbf0104e200c64f2c379af9b851f4359fae562c8ef6ea61804e019ad8c6f55",
+      "sha256Mk3": "caf3c5205f42d15b8e3de3dc39cf5e7ce10824284819ecb58ecc620db457ca47",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/realitypump/earth-2150/codecs/earth-tex/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/realitypump-earth-2150/src/lib/mk2/earth-2150/codecs/earth-tex/src/index.ts",
+      "sha256Mk2": "450ab49bb4b79b0064c341f8a3d630026a6f7bfbb53946586af8b976f2988a1c",
+      "sha256Mk3": "f4bd4bfb470f3c988715120933b3bd5758eeda63eacfc5dd5c6c5ce128e3fcdc",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/realitypump/earth2160/codecs/earth2160-model/src/implementation.ts",
+      "destination": "modkit-extensions-other/extensions/realitypump-earth2160/src/lib/mk2/earth2160/codecs/earth2160-model/src/implementation.ts",
+      "sha256Mk2": "c1913fde7c2565024d9b36440842625880f5177ec2c31c17f9f511e656290994",
+      "sha256Mk3": "2fd789de3a52d79930dbe540a1a7f05e636131f2bc14d8d1479833f6d490326c",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/realitypump/earth2160/codecs/earth2160-model/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/realitypump-earth2160/src/lib/mk2/earth2160/codecs/earth2160-model/src/index.ts",
+      "sha256Mk2": "6e553782cfe7837e11815bc40455183e8c5b476ac16b15a2382122d6a370ad86",
+      "sha256Mk3": "b7952d85a610cf909f77f179556af0bfdef929ea1564b5be19227b25e372d987",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/realitypump/earth2160/codecs/earth2160-model/test/index.spec.ts",
+      "destination": "modkit-extensions-other/extensions/realitypump-earth2160/src/lib/mk2/earth2160/codecs/earth2160-model/test/index.spec.ts",
+      "sha256Mk2": "f58908ffbc2fde716e04d05a09a28e4de3b75b53258d1452400c7145b3f6041f",
+      "sha256Mk3": "f58908ffbc2fde716e04d05a09a28e4de3b75b53258d1452400c7145b3f6041f",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/realitypump/earth2160/codecs/earth2160-model/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/realitypump-earth2160/src/lib/mk2/earth2160/codecs/earth2160-model/test/manifest.spec.ts",
+      "sha256Mk2": "5a6341e9de161b345be3e2f7a35d21fc38106c28d6c818eaaca8b86c7bee3925",
+      "sha256Mk3": "5a6341e9de161b345be3e2f7a35d21fc38106c28d6c818eaaca8b86c7bee3925",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/realitypump/earth2160/codecs/wd/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/realitypump-earth2160/src/lib/mk2/earth2160/codecs/wd/src/detect.ts",
+      "sha256Mk2": "121560a94eb670974028da19617dbe6001cded80359790323f3196a3424d035c",
+      "sha256Mk3": "3c3def793340e678112fad087a90ebd7b67a66e52b45201b62f53ea76bc4fc86",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/realitypump/earth2160/codecs/wd/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/realitypump-earth2160/src/lib/mk2/earth2160/codecs/wd/src/index.ts",
+      "sha256Mk2": "a57ad4184f6d6e67ac287daec2e1c6f769af08d36acd60a23f2bf42fe8d38e3b",
+      "sha256Mk3": "e98c94b166ee0f47dc92616427b5e630282c6e8ca463e2446353f546412f1796",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/realitypump/earth2160/codecs/wd/test/archive.spec.ts",
+      "destination": "modkit-extensions-other/extensions/realitypump-earth2160/src/lib/mk2/earth2160/codecs/wd/test/archive.spec.ts",
+      "sha256Mk2": "cb5174423224dd453ad5f1e1bdd64a4e6f75db910292b0549cfec05adaf36cf4",
+      "sha256Mk3": "b05ee31994e353b8371257a95ed9762d8522c1a9874905949209c80d6d372a50",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/realitypump/earth2160/codecs/wd/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/realitypump-earth2160/src/lib/mk2/earth2160/codecs/wd/test/manifest.spec.ts",
+      "sha256Mk2": "6604f8bdbaee2d960439ab249c5e199413877fc3553781082458f2858567e39b",
+      "sha256Mk3": "d120c410eaa4f0b227b7ee8bc7e7326da76a8e9c9b406f4a57fa388b5232c13f",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/essence/codecs/relic-rgm/codec.manifest.json",
+      "destination": "modkit-extensions-other/extensions/relic-essence/src/lib/mk2/essence/codecs/relic-rgm/codec.manifest.json",
+      "sha256Mk2": "88c34bde4fd6adabc6d609757ca6077faa827c04cf1fba31e00ede2716f31062",
+      "sha256Mk3": "88c34bde4fd6adabc6d609757ca6077faa827c04cf1fba31e00ede2716f31062",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/essence/codecs/relic-sga/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/relic-essence/src/lib/mk2/essence/codecs/relic-sga/src/index.ts",
+      "sha256Mk2": "95eb6412dcbee5aea9d587ae73782e69c00a2f47b14d26e1b5ec82da2b4f9855",
+      "sha256Mk3": "07a3ba7887f1669bb0befd45e6c0ca79304140601d2021f83e586ebcc5c98b67",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/essence/codecs/relic-sga/test/archive.spec.ts",
+      "destination": "modkit-extensions-other/extensions/relic-essence/src/lib/mk2/essence/codecs/relic-sga/test/archive.spec.ts",
+      "sha256Mk2": "771987aa0be0218ac6d012dd89644495b52a661dd4da018e6b3d8cbbf62cbbb7",
+      "sha256Mk3": "e59426a5a75a57358bebee60fcad352d2dd44a9e851bfc39897edad0a654dbe8",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/essence/codecs/relic-sga/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/relic-essence/src/lib/mk2/essence/codecs/relic-sga/test/manifest.spec.ts",
+      "sha256Mk2": "a17d790596585c93d4043ef26357b7e5fb3cd978371d341a77eaa6068e6553bf",
+      "sha256Mk3": "f69cd5be1588d8fad207bb101813662feb98526b56ba493ebac37bd2994917d4",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/essence/codecs/relic-sga/test/versions.spec.ts",
+      "destination": "modkit-extensions-other/extensions/relic-essence/src/lib/mk2/essence/codecs/relic-sga/test/versions.spec.ts",
+      "sha256Mk2": "fee7f8e703a02ab974fc0eaa85f82fe2b02423b5fb9256eda469ce4ed2ba2b5a",
+      "sha256Mk3": "56e68ed014c71f9848e62690c1dcb646ebe91738dfc613b45558b4d10db55370",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/essence/codecs/relic-ucs/codec.manifest.json",
+      "destination": "modkit-extensions-other/extensions/relic-essence/src/lib/mk2/essence/codecs/relic-ucs/codec.manifest.json",
+      "sha256Mk2": "fd1fedfa547246c841957e634b85509e29af59a66ca80120ce66a76cec81e5e0",
+      "sha256Mk3": "fd1fedfa547246c841957e634b85509e29af59a66ca80120ce66a76cec81e5e0",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/essence/codecs/relic/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/relic-essence/src/lib/mk2/essence/codecs/relic/src/index.ts",
+      "sha256Mk2": "4893a3ec29a15de282d93241177bc0da132ecde66c931bf63c676b369f2908af",
+      "sha256Mk3": "cc10bf15edb517e486d18fadce8afc094776ce6e0f1d061c07e7435166f81556",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/essence/codecs/relic/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/relic-essence/src/lib/mk2/essence/codecs/relic/test/manifest.spec.ts",
+      "sha256Mk2": "ffe8903a556ed46e0f7b80e6c9754257702b95bc217485018bc9771a018fed99",
+      "sha256Mk3": "76cedc1a5e6b09733a9e3f82508e4e7e4081da4d0228f77e2129feb1f197f84d",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/essence/codecs/rgt/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/relic-essence/src/lib/mk2/essence/codecs/rgt/src/detect.ts",
+      "sha256Mk2": "1d10df95afcf7dd634c37b615c20f70051fa1fd765270580bdc170edeff46636",
+      "sha256Mk3": "0288d7a7b12e717f974aa005e3254a4693cd8408ca17c63d2989204fa3c4d603",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/essence/codecs/rgt/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/relic-essence/src/lib/mk2/essence/codecs/rgt/src/index.ts",
+      "sha256Mk2": "73e02cecff708c0e1b0a86be0c9bd3ecd372f69866b088b1910420d1931a5eef",
+      "sha256Mk3": "2e6b004c9a3edc62e2fc09f53a1d79b1ced8cc5e0d864618e4c74ef9611c627b",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/essence/codecs/rrtex/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/relic-essence/src/lib/mk2/essence/codecs/rrtex/src/detect.ts",
+      "sha256Mk2": "b60fda8f8590ab6f350378a0e55bec345bf13fa16cdcbbe13f1b48d880f5c9a8",
+      "sha256Mk3": "baa322a7d6ac80fb359300cec2d820163975bf942f7b2d41705ea7f99e70d7cc",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/essence/codecs/rrtex/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/relic-essence/src/lib/mk2/essence/codecs/rrtex/src/index.ts",
+      "sha256Mk2": "44470d58143eef1ff414d31be386925aef5234404977704098063df377713264",
+      "sha256Mk3": "cc4795006a5cc546010480f4ef387be747061a184b64f833f89e2011dd314587",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/essence/codecs/rsh/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/relic-essence/src/lib/mk2/essence/codecs/rsh/src/detect.ts",
+      "sha256Mk2": "aabd6f88b8ff3cc8d754faf26266ed56a4f6c38d7a36c00b6999c0dd4b7926f9",
+      "sha256Mk3": "9368797e41f4a42e6f5a7b948bbe262bff4a2a6cb073d96f72fd979df6382dd3",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/essence/codecs/rsh/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/relic-essence/src/lib/mk2/essence/codecs/rsh/src/index.ts",
+      "sha256Mk2": "9b8b22ab3ade99d5729360901fbc97a407d522ddf482293e7787156921f819d0",
+      "sha256Mk3": "844f43713b0460d6756614d8b0c3ffc7261acb6609da86203d87a4ada5314393",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/essence/codecs/rtx/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/relic-essence/src/lib/mk2/essence/codecs/rtx/src/detect.ts",
+      "sha256Mk2": "1f94d211f42db450ca149dda7fd2ea5676e3058f08ba3604c6ef8a05631ff86b",
+      "sha256Mk3": "2154c32ad71183b8bca1d1410c6422bb5b42980965c3bd87c2422db3c98534bc",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/essence/codecs/rtx/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/relic-essence/src/lib/mk2/essence/codecs/rtx/src/index.ts",
+      "sha256Mk2": "04f36a1ad99068acf69f940c4e1890bacc64f8663c9b15a3787772c3f3c04efe",
+      "sha256Mk3": "2ff106cba3d03ba79cb5d13e8584cfc923efbd8730de528f1aaf8407f7fc222e",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/essence/codecs/wtp/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/relic-essence/src/lib/mk2/essence/codecs/wtp/src/detect.ts",
+      "sha256Mk2": "c8623e194ca48f77b3287b5916d8177024666f257e1efe71ce8561b5ce502427",
+      "sha256Mk3": "59f461fb926a3fe132a859b12f1e56476c8e0267aba10ae2c7c1c2d367e3f1b3",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/essence/codecs/wtp/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/relic-essence/src/lib/mk2/essence/codecs/wtp/src/index.ts",
+      "sha256Mk2": "c1aaf7b7ead3cddfad3aaab340d46da64ea47a5a0aefd528142ed47655f05384",
+      "sha256Mk3": "34e668fc965785a84edda79c12b03aa1606a16d4bcf30ce533e29595e4d3815f",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/models/codecs/relic-sgm/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/relic-models/src/lib/mk2/models/codecs/relic-sgm/src/detect.ts",
+      "sha256Mk2": "ac1f1a7e941dc5b731f280386665cdb705548a7f8f4e1e6d1395b0099969e868",
+      "sha256Mk3": "ac1f1a7e941dc5b731f280386665cdb705548a7f8f4e1e6d1395b0099969e868",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/models/codecs/relic-sgm/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/relic-models/src/lib/mk2/models/codecs/relic-sgm/src/index.ts",
+      "sha256Mk2": "7f71bd92a23d13fa7fdcebe32573a3c60693d9ee9b8bc9055941b6e61634061f",
+      "sha256Mk3": "7f71bd92a23d13fa7fdcebe32573a3c60693d9ee9b8bc9055941b6e61634061f",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/models/codecs/relic-sgm/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/relic-models/src/lib/mk2/models/codecs/relic-sgm/test/manifest.spec.ts",
+      "sha256Mk2": "ab9ea7590751dfcdb35fd1789dea9918983627dd53856f415e4f4a7944aacd73",
+      "sha256Mk3": "ab9ea7590751dfcdb35fd1789dea9918983627dd53856f415e4f4a7944aacd73",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/models/codecs/relic-whm/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/relic-models/src/lib/mk2/models/codecs/relic-whm/src/detect.ts",
+      "sha256Mk2": "3f12dcbe5541f0979f4657f5bbf4e869cfcbc487902d761c54c181598d4b4865",
+      "sha256Mk3": "3f12dcbe5541f0979f4657f5bbf4e869cfcbc487902d761c54c181598d4b4865",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/models/codecs/relic-whm/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/relic-models/src/lib/mk2/models/codecs/relic-whm/src/index.ts",
+      "sha256Mk2": "a3eb61fc824c60793bd30d094f3e1b86c3fbcc7c6c219464bf448e752c0aff4d",
+      "sha256Mk3": "a3eb61fc824c60793bd30d094f3e1b86c3fbcc7c6c219464bf448e752c0aff4d",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/models/codecs/relic-whm/test/index.spec.ts",
+      "destination": "modkit-extensions-other/extensions/relic-models/src/lib/mk2/models/codecs/relic-whm/test/index.spec.ts",
+      "sha256Mk2": "af01a14f4fffcd04869118df37b9e792dd6674874c3d5ca8f50aa225ae770aa0",
+      "sha256Mk3": "af01a14f4fffcd04869118df37b9e792dd6674874c3d5ca8f50aa225ae770aa0",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/relic/models/codecs/relic-whm/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/relic-models/src/lib/mk2/models/codecs/relic-whm/test/manifest.spec.ts",
+      "sha256Mk2": "930573fd289027271b7908f2ea4cb3c2dffd998b30e1d4cacfff6dbd7d5805a1",
+      "sha256Mk3": "930573fd289027271b7908f2ea4cb3c2dffd998b30e1d4cacfff6dbd7d5805a1",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/stainless-steel-studios/empire-earth/codecs/empire-earth-ssa/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/stainless-steel-studios-empire-earth/src/lib/mk2/empire-earth/codecs/empire-earth-ssa/src/index.ts",
+      "sha256Mk2": "70e55d36836d942882b0f4e68ecd5485608fc63ca083e4f8780693ca2daff18c",
+      "sha256Mk3": "381a4d3926e6e1f516df31d533708caf0ca7e435580b2d4e24bce550d5346387",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/stainless-steel-studios/empire-earth/codecs/empire-earth-ssa/test/archive.spec.ts",
+      "destination": "modkit-extensions-other/extensions/stainless-steel-studios-empire-earth/src/lib/mk2/empire-earth/codecs/empire-earth-ssa/test/archive.spec.ts",
+      "sha256Mk2": "e3719398deb29ba721189297d5dff40015bea95e8ea8a47e27ed4d341aebaa4c",
+      "sha256Mk3": "2ff897623278e0716b8a4bccb3b367ed5b5726775abfff598a315c9715ed290d",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/stainless-steel-studios/empire-earth/codecs/empire-earth-ssa/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/stainless-steel-studios-empire-earth/src/lib/mk2/empire-earth/codecs/empire-earth-ssa/test/manifest.spec.ts",
+      "sha256Mk2": "270de79e63752c7489e853f7be8e57b025e46d7d2974ad51984fa969df7d3b5c",
+      "sha256Mk3": "f20fd009cd94f1fb55c6bc4b3b1c867673254ff799f5d6966b38ddcf75e1e1de",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/stainless-steel-studios/empire-earth/codecs/sst/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/stainless-steel-studios-empire-earth/src/lib/mk2/empire-earth/codecs/sst/src/index.ts",
+      "sha256Mk2": "bff449de65062ef705ff30884097d58fed0cc250f88fbe50da5bad33c77b7eaf",
+      "sha256Mk3": "7ed434880c50c8a96f333c60a632da0c0fac3f506982fb1f4b8265034c39d343",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/stainless-steel-studios/empire-earth/codecs/texcache/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/stainless-steel-studios-empire-earth/src/lib/mk2/empire-earth/codecs/texcache/src/index.ts",
+      "sha256Mk2": "1075f5962adeff7e711ef9f3bbaec59643d0a603482c0992193f111951becf2d",
+      "sha256Mk3": "64580077b5fe01b61607736443a62f80ad7c2c6ce1d48310bd83e1563b8cbaaa",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/ubisoft/heroes-6/codecs/heroes6-orc/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/ubisoft-heroes-6/src/lib/mk2/heroes-6/codecs/heroes6-orc/src/detect.ts",
+      "sha256Mk2": "bc0caa6c606130cd0a9fcf7a83176ce5f42e3d98ceaedb6f80fe08747ec3a31f",
+      "sha256Mk3": "eb5231b3142006c1989f5de0e84950085d005f8ec1f32615b6b40ee88021be1f",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/ubisoft/heroes-6/codecs/heroes6-orc/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/ubisoft-heroes-6/src/lib/mk2/heroes-6/codecs/heroes6-orc/src/index.ts",
+      "sha256Mk2": "bfb306687cd37b84635dd14dff027e3424932c082a8a0bb756d4b10ab25982a9",
+      "sha256Mk3": "4e3cf021576ad258e333e1cb8606660121b39b768d84beb2cc691edc0ae9c8ac",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/ubisoft/heroes-6/codecs/heroes6-orc/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/ubisoft-heroes-6/src/lib/mk2/heroes-6/codecs/heroes6-orc/test/manifest.spec.ts",
+      "sha256Mk2": "0fbb4710a88f023e006215e696a4f75c02ba8b42d40daec9ce921d5526a3704f",
+      "sha256Mk3": "0fbb4710a88f023e006215e696a4f75c02ba8b42d40daec9ce921d5526a3704f",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/ai/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/ai/src/index.ts",
+      "sha256Mk2": "9b989d3a9269e97b21ba247701dce7ee4c72d659b55a3d549d8623be4de57b78",
+      "sha256Mk3": "d3feda2ecabc72036fa2a4818b12aca38118c450921f4d57b2e7653ada49e102",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/ai/src/viewer.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/ai/src/viewer.ts",
+      "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
+      "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/ai/test/index.spec.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/ai/test/index.spec.ts",
+      "sha256Mk2": "7bad34f0ba8a93f0b84d8df644617dc9e5a2771b1c95d4b372d8ab6ac64b567c",
+      "sha256Mk3": "3ea8979be0b61a164c91a4b7cbac2090700c7668d0c57da6729ef1628251d234",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/blend/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/blend/src/index.ts",
+      "sha256Mk2": "f568b2e56e2b0385ee79be0d4055bd8158f0443323878d92567c8f6d53c0c5c0",
+      "sha256Mk3": "f568b2e56e2b0385ee79be0d4055bd8158f0443323878d92567c8f6d53c0c5c0",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/blend/test/index.spec.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/blend/test/index.spec.ts",
+      "sha256Mk2": "f25b8b6427df7ecac79d9cb1cc26e8741d732000afaf706c5eb5589fbee78982",
+      "sha256Mk3": "3452e3603eb93316bff4646d5f93bd50af8be99046598551303febe52cb76617",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/cdr/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/cdr/src/index.ts",
+      "sha256Mk2": "29933a552c2e38427b05c36b5599298807eec1cf333f6324cec1011fdd34f33e",
+      "sha256Mk3": "54713df0a2c3ea08f4054b6d5db2c7cda83dd6b42b94687d0c1cbb61554b23f6",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/cdr/src/viewer.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/cdr/src/viewer.ts",
+      "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
+      "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/cdr/test/index.spec.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/cdr/test/index.spec.ts",
+      "sha256Mk2": "3cf3a05e0fc65eac0f3d56d6cd190962e0755fe043bfb98447f9521d8eda584a",
+      "sha256Mk3": "b969476257fc9d44832d5c92c941de1ba6cabb003ea33fedfe1add3b35a94f6e",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/csv/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/csv/src/index.ts",
+      "sha256Mk2": "7dd8f2bca053250862310938a21ae50b718c4605f1eded0f716dc2de0921f0b2",
+      "sha256Mk3": "129830dc7ea97020d4dff5f6936b6f7dbbf5fc7603522e49b1d9a7dcc5b1599e",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/csv/src/viewer.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/csv/src/viewer.ts",
+      "sha256Mk2": "1a544263e3b84bb700b8a0258c5009b4abefd4a3e5b3c195a8aec7f48573c881",
+      "sha256Mk3": "b4d20ef8e0e70fc3c274dd2c357fd31d19e25274aa4e289fd1387e3a8960697f",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/csv/test/index.spec.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/csv/test/index.spec.ts",
+      "sha256Mk2": "e7a102cfa4b7fb9294f6563dcbb7292f179726362f9055a741c7bffbd74f2244",
+      "sha256Mk3": "255a7bcd557ccb7b3b0a3d787332d81f206b2336b43ab9cfd473c4e5a009f7f8",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/docx/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/docx/src/index.ts",
+      "sha256Mk2": "36b2182e0f74bfb333e6ba8f0f0525cadd78c8b93d2481e1ba5469ee7f3affa3",
+      "sha256Mk3": "b4fa43257301950142d84ad1a3189c4614962fcba8792d50a4af920379c8b689",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/docx/src/viewer.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/docx/src/viewer.ts",
+      "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
+      "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/docx/test/codec.spec.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/docx/test/codec.spec.ts",
+      "sha256Mk2": "1a54edb586c47bfd21672e3f95246f663465ff47375cc3da8c3adcdf0d33fbb1",
+      "sha256Mk3": "bbbe4b0a83685baf9337d7cf2ef4c434bb0e87bf784e7519b634abdf6db3d175",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/drawio/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/drawio/src/index.ts",
+      "sha256Mk2": "a1d712a982a3034d44c8477a0f26a1a7c40da0aaf0a8a347fa894dd4b189bea2",
+      "sha256Mk3": "0f95e7f28439b136eee46bd188a49d75679b6165b9eb6518caae1efb9887a7c3",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/drawio/src/viewer.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/drawio/src/viewer.ts",
+      "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
+      "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/drawio/test/index.spec.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/drawio/test/index.spec.ts",
+      "sha256Mk2": "c3ef07955c7387948096a00c528eedfdf3c449cfab7987b14da27e2502814007",
+      "sha256Mk3": "57cd03ebb49aab1f07de5cc79c3ec208cb6149860223ab23362dac33ecfcb6af",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/figma/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/figma/src/index.ts",
+      "sha256Mk2": "3c9d3b53705b80a659189be1adc8ed717a7d40c856ea8f418f23d719eb8a472b",
+      "sha256Mk3": "702bb95681584005c20dcd6452e463139393550efaf45deeb5795c60035a3551",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/figma/src/viewer.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/figma/src/viewer.ts",
+      "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
+      "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/figma/test/index.spec.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/figma/test/index.spec.ts",
+      "sha256Mk2": "b1b966c64d94f37f5c075000064663ed5d52e3b6d8854b606000e20eb426fa66",
+      "sha256Mk3": "15a4858c265d14caef9e4687a74dd919bc42702368af44b05ef5e15bc756ba21",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/markdown/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/markdown/src/index.ts",
+      "sha256Mk2": "b86398a936a0faf83db443e23b60a21b758a17ce43f6da2f51a975f78286ad92",
+      "sha256Mk3": "b50277204f9fa322cb2038e9bfea018032b16ee03a2476bb0f7cd12291c4e391",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/markdown/src/viewer.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/markdown/src/viewer.ts",
+      "sha256Mk2": "1a544263e3b84bb700b8a0258c5009b4abefd4a3e5b3c195a8aec7f48573c881",
+      "sha256Mk3": "b4d20ef8e0e70fc3c274dd2c357fd31d19e25274aa4e289fd1387e3a8960697f",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/markdown/test/index.spec.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/markdown/test/index.spec.ts",
+      "sha256Mk2": "f02fa58c55a2b4530a24f0ef8aa7873f36ada18cd89fc51987f84dbe3da7812a",
+      "sha256Mk3": "801f141778e27bd40013be4a3649d958b05561fd7f5083f6cce45c9c1e0003a8",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/max/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/max/src/index.ts",
+      "sha256Mk2": "e8839eb6bad13707b533380002b9f326e9965906677d3417584332cd5c16bf39",
+      "sha256Mk3": "e8839eb6bad13707b533380002b9f326e9965906677d3417584332cd5c16bf39",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/max/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/max/test/manifest.spec.ts",
+      "sha256Mk2": "95ac9348b0a22380051c3e0d90e2cf374271ff8a2db1314b4df5ff200dfc08ac",
+      "sha256Mk3": "95ac9348b0a22380051c3e0d90e2cf374271ff8a2db1314b4df5ff200dfc08ac",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/odp/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/odp/src/index.ts",
+      "sha256Mk2": "09e52c4412e97ddbddbe04ac0c1462e31c1c27c698b8c4cb61b12562bb5d9365",
+      "sha256Mk3": "a92534dbda44abdeb2d8fa609cf4359614d496a82b4e37e328cfe041467de6ac",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/odp/src/viewer.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/odp/src/viewer.ts",
+      "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
+      "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/odp/test/codec.spec.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/odp/test/codec.spec.ts",
+      "sha256Mk2": "7f02b1a03bf255c735fa7feae6b5368a3c3e17ee23629a7421e9e8792dc9965c",
+      "sha256Mk3": "579255c4f52c545702e2997ccb821a9b5028ae9855b6c572d2e6ae1f09e4a07f",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/ods/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/ods/src/index.ts",
+      "sha256Mk2": "51e286cd5531693b755ff647cfc7fd9dca1125ac7ce0e068256c1c0e43793646",
+      "sha256Mk3": "0c9814f4273a008eeceddc4587de03ad6f43c172328b962fac4ecc6d8716f1e6",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/ods/src/viewer.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/ods/src/viewer.ts",
+      "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
+      "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/ods/test/codec.spec.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/ods/test/codec.spec.ts",
+      "sha256Mk2": "7a6ec5969cc42b5fae2a78fac1f10de204d8fa47a1fefa91b6b935e65d5de91f",
+      "sha256Mk3": "0ec03df6fa1a5292579fffec98808160ff1e1c72814ec42b31104f5544caa690",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/odt/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/odt/src/index.ts",
+      "sha256Mk2": "bb53282524427f59b9829ae17dd2158ec8e37758cfbf09b61aed406c11707b35",
+      "sha256Mk3": "6db128ab666efdba82a1d0a3613882fed1d4241e75a8f477c183bf643c265a9b",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/odt/src/viewer.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/odt/src/viewer.ts",
+      "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
+      "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/odt/test/codec.spec.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/odt/test/codec.spec.ts",
+      "sha256Mk2": "d449a19f0bf9749b5ebe66814a2bacd16f8b1392e1c1d59db7848ece7da7d1e2",
+      "sha256Mk3": "4fb90a4ba047039a91f9a32246263c9f2b5da2349a94b9a647ec2876ef9273e5",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/pdf/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/pdf/src/index.ts",
+      "sha256Mk2": "550985f291cd3b7285f63cf794913f2fbcb5c40b6414a1f88b78d57831ddfe9a",
+      "sha256Mk3": "e87bf5679e967a544f446783e1149a8652d735b9f158a6533204db0050717a38",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/pdf/src/viewer.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/pdf/src/viewer.ts",
+      "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
+      "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/pdf/test/index.spec.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/pdf/test/index.spec.ts",
+      "sha256Mk2": "de717502f1a5247e457010957b78637706358eb991e85231222fb6b853f31c83",
+      "sha256Mk3": "5a0e57d4ea1f54c2125dc66e111bce98783b020327f120f1623fbba3a7263b48",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/pptx/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/pptx/src/index.ts",
+      "sha256Mk2": "40bd2045d17f79ba54d44e2531418b2c5b883841cf01e7216e7af10fc5759f4a",
+      "sha256Mk3": "3e62922be2c61de29d42470ffbdc3911bc49688b2ee0af28208f8f793523358b",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/pptx/src/viewer.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/pptx/src/viewer.ts",
+      "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
+      "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/pptx/test/codec.spec.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/pptx/test/codec.spec.ts",
+      "sha256Mk2": "b0854deb8c97b7a0ada73937447e9ad12ea7ed5612039bf6e28b0c7f51771039",
+      "sha256Mk3": "8058bcdf453a8211e26b72cd5b8df8d812a2fa6a039738de06a021a9e1f032cc",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/psd/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/psd/src/index.ts",
+      "sha256Mk2": "b5541343912bb870024c4129499b6a1f459f9dbc9eec6a32ceb89ef35bf615e5",
+      "sha256Mk3": "b5541343912bb870024c4129499b6a1f459f9dbc9eec6a32ceb89ef35bf615e5",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/psd/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/psd/test/manifest.spec.ts",
+      "sha256Mk2": "91c7442eb0cb10c88880ec75b873d35200a3fda56d9874fa94b4177863c41337",
+      "sha256Mk3": "91c7442eb0cb10c88880ec75b873d35200a3fda56d9874fa94b4177863c41337",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/rtf/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/rtf/src/index.ts",
+      "sha256Mk2": "0e0b99aab1e5c57152e51652b8ad5f7b2d3962248fa77e3c0ca60ef33900d23f",
+      "sha256Mk3": "fdedce5b666482da4b4c1ee581001a43e951a3fd629a4f3528ebf3b3a69389e8",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/rtf/src/viewer.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/rtf/src/viewer.ts",
+      "sha256Mk2": "5a880b41f6350a11076cb90443b32f59430f8fa56dfbe2eb5b25a25f55a39e16",
+      "sha256Mk3": "3161cf83bfa85a52858455751720189d55429d917ef9271dd3b3f6553bb19c28",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/rtf/test/index.spec.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/rtf/test/index.spec.ts",
+      "sha256Mk2": "9ff3832d5be60a3e371ee14adcaa788143005984f0f0ab48e809f0f4b5c473b0",
+      "sha256Mk3": "17f87f8a59aec5124790ff1a0e6dc84f802c0ca1195df3d6ad007a190116c6ac",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/txt/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/txt/src/index.ts",
+      "sha256Mk2": "1eeaa7e1f4f3250a59fab3e8d9130fe7d1f1140754eaa6ade5725d17858a3df8",
+      "sha256Mk3": "3aae548ef68b552f9802b790ec96e9d3b0f76c778c08afd73e88835d4ff030a8",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/txt/src/viewer.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/txt/src/viewer.ts",
+      "sha256Mk2": "1a544263e3b84bb700b8a0258c5009b4abefd4a3e5b3c195a8aec7f48573c881",
+      "sha256Mk3": "b4d20ef8e0e70fc3c274dd2c357fd31d19e25274aa4e289fd1387e3a8960697f",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/txt/test/index.spec.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/txt/test/index.spec.ts",
+      "sha256Mk2": "1502538b97d5b678386a28f776ac06369a439258bd76fa97fbb70f2b0e483564",
+      "sha256Mk3": "346f175001a98035799189ce10caee73bf55991c6e406170214c2d02034923ec",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/visio/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/visio/src/index.ts",
+      "sha256Mk2": "0806edabc110da2a86556e49e90353f0b0c1c0af9eef37c14f812043148d8df5",
+      "sha256Mk3": "608db0b0427b1056b0c5f66e047589fd317cbcbe1085e64ddb0d9e3aed7b6183",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/visio/src/viewer.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/visio/src/viewer.ts",
+      "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
+      "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/visio/test/index.spec.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/visio/test/index.spec.ts",
+      "sha256Mk2": "1cc26dcc2244015df3564eaba737cb1bda6c949b8bb873064f53db2806b0900e",
+      "sha256Mk3": "e4a71923acf4fa67d2252a77e7862922bae2263a262f8b224aef3426abbda777",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/xlsx/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/xlsx/src/index.ts",
+      "sha256Mk2": "78238918fb0e2798e3005c4de27ba9a4438e79d7f4e4b9ff79d4601f39175d46",
+      "sha256Mk3": "c8d0383f338439acb75f7c242b7f84f7e444e46966c0d89fd3f6ad6652f1bdb8",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/xlsx/src/viewer.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/xlsx/src/viewer.ts",
+      "sha256Mk2": "a94521c8db1a483b52168bf4724e3cfadbebbd0e6099ce7b99dcdeca7ee69847",
+      "sha256Mk3": "c8f3359c0502c2f20c1d0355e049a338242055403fdb4fc9d22ebf6dc3dedffb",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/codecs/xlsx/test/codec.spec.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/codecs/xlsx/test/codec.spec.ts",
+      "sha256Mk2": "7f2a536c4d446c5672fa2f637aac5369e200b7c3cece5c01c441f32543f28e1e",
+      "sha256Mk3": "7cb027159839b7e2c1b4c5284ef5b65a57f409178dbafb3d673f151202b92281",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/src/codec.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/src/codec.ts",
+      "sha256Mk2": "8e59f1897783e02982b2b08d8213f4fb1b4612ffa7bba39a127b152c1a258606",
+      "sha256Mk3": "e37e87bba67a90b342fe39f6e30306a230634565dd0d3c9ad579702e42213204",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/src/index.ts",
+      "sha256Mk2": "bd99325ed28000be428af3f3eb88d3e9f423f751f5874cfcc3efdc7cf1939d90",
+      "sha256Mk3": "a350e31bcfb7d0ff6d70abe49f1fd5cda63f5c7f21764cf2f26cbd5515438419",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/src/parsers.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/src/parsers.ts",
+      "sha256Mk2": "de63f81a75057d6abfc18e1787b2c8614d4ba581c52c19f7fb7bab8e077cdae5",
+      "sha256Mk3": "5764df11402199175bd4a71e36aa89132c66b3449c193a2a31ba1668461957a7",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/src/security.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/src/security.ts",
+      "sha256Mk2": "a8567b330303f1dcbdb648c857a93f5660f71f8c4dc3b1f9ab74bb788094fbcc",
+      "sha256Mk3": "307c334e81e8bd354c7a892b4e63ec5ee3d22dc990cf9a55fc46d78b04c183e4",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/src/view-model.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/src/view-model.ts",
+      "sha256Mk2": "2d8dd2b569deba14fbd479ef30ab6ced0c5de1930563494b084f7a61bed6df84",
+      "sha256Mk3": "593573592bf0cafb00d1e810d2b9b4f4363f77d4693b52f84fc08dc9b69d5084",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/src/webview.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/src/webview.ts",
+      "sha256Mk2": "bf78e5c286817163a572fd7078b7359292f25d5ab0b749256498b0a7f0190bda",
+      "sha256Mk3": "e4603fb37f172b84049dd6d3dba2165db7169765e16ebc8aa99ff21da376d418",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/uncommon/documents/test/viewer-harness.ts",
+      "destination": "modkit-extensions-other/extensions/uncommon-documents/src/lib/mk2/documents/test/viewer-harness.ts",
+      "sha256Mk2": "1054f7a66ead7c0945504a86be06e71c7137eddfcc76f5397037ab37420977c8",
+      "sha256Mk3": "c3610f281328054d24f52a299a699937984343754afce3d699582448445da894",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/unity/engine/codecs/unity-assets/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/unity-engine/src/lib/mk2/engine/codecs/unity-assets/src/detect.ts",
+      "sha256Mk2": "c4ed1147c0a6662ab06129abc01b0b3bdbe369e3112f342861db0a76cef67ccf",
+      "sha256Mk3": "75d3eabbb2ec4cc9b679fb5c8635dfbc6ba34456027724a2d320e6e804aaacd3",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/unity/engine/codecs/unity-assets/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/unity-engine/src/lib/mk2/engine/codecs/unity-assets/src/index.ts",
+      "sha256Mk2": "851c45762c777bfdeec171c644daba5a7d16f70d2440850924038baab9c4ad9c",
+      "sha256Mk3": "0f8b70641029b9d97d4f205460076bbddc46158a99e5fe9c1a806ea41566dc8f",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/unity/engine/codecs/unity-assets/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/unity-engine/src/lib/mk2/engine/codecs/unity-assets/test/manifest.spec.ts",
+      "sha256Mk2": "f75794eb8c661ebc773117a39dc531ddcd50195bdb0b9d1e33b8cd2f42202ee8",
+      "sha256Mk3": "f75794eb8c661ebc773117a39dc531ddcd50195bdb0b9d1e33b8cd2f42202ee8",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/unity/engine/codecs/unity-mesh/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/unity-engine/src/lib/mk2/engine/codecs/unity-mesh/src/index.ts",
+      "sha256Mk2": "38077edbbb7ec27ef9359c309ed9896338e3420677e44a44c3c66d959268bf39",
+      "sha256Mk3": "2ae57d20af69a0e50e39e2f7d4a8a79d8cc97ae009234e348dac45fbc956c3db",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/unity/engine/codecs/unity-mesh/test/index.spec.ts",
+      "destination": "modkit-extensions-other/extensions/unity-engine/src/lib/mk2/engine/codecs/unity-mesh/test/index.spec.ts",
+      "sha256Mk2": "0d445d35d59e0e9a3475475c988bc5351388bcb26dcf998636d268b7b7227e37",
+      "sha256Mk3": "261b00729304e68a4c0aedc0eeff0eb4e5d7d6162004d935ffe8e8640da518a0",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/unity/engine/codecs/unity-mesh/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/unity-engine/src/lib/mk2/engine/codecs/unity-mesh/test/manifest.spec.ts",
+      "sha256Mk2": "653ab57beb139343f1f4ae4e5000ec8b79ad506c84b0408047720d3369167484",
+      "sha256Mk3": "8e3911df931827d6d5db07f7ed1e5a00b78622e1ee4febed72ae2fa83bc36d70",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/unity/engine/codecs/unity-mesh/test/webgl-render.spec.ts",
+      "destination": "modkit-extensions-other/extensions/unity-engine/src/lib/mk2/engine/codecs/unity-mesh/test/webgl-render.spec.ts",
+      "sha256Mk2": "558926cc4760655f99faadd24f9237ba1360dedf45963857fa84437884e8d1d0",
+      "sha256Mk3": "558926cc4760655f99faadd24f9237ba1360dedf45963857fa84437884e8d1d0",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/unity/engine/codecs/unity-ress/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/unity-engine/src/lib/mk2/engine/codecs/unity-ress/src/index.ts",
+      "sha256Mk2": "b76333082cc7367e85d836dacbd5250971ecf5716b4549e6d735b970a186ed15",
+      "sha256Mk3": "60495daf337026ceb36ccd7e3a7e760f6a7ffb6f537a154f5989430407f11a14",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/unity/engine/codecs/unity-ress/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/unity-engine/src/lib/mk2/engine/codecs/unity-ress/test/manifest.spec.ts",
+      "sha256Mk2": "23c9d6aabeb30932ccd23df77e18f0a268cbf369eaff0a450bb5f3da4d7084ad",
+      "sha256Mk3": "6b3faa989c401b4020f465a54ddd8d7a64b18bdd9ff70d4ad913e4d50d8a690e",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/unity/engine/codecs/unity/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/unity-engine/src/lib/mk2/engine/codecs/unity/src/detect.ts",
+      "sha256Mk2": "3849b070b3fe91e8b0a2cb79f03d4dba48b5a11f30fea39f7c3155862c5e676a",
+      "sha256Mk3": "3849b070b3fe91e8b0a2cb79f03d4dba48b5a11f30fea39f7c3155862c5e676a",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/unity/engine/codecs/unity/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/unity-engine/src/lib/mk2/engine/codecs/unity/src/index.ts",
+      "sha256Mk2": "9570be7327f733c1d2387708b96cb063b1c7de1bb087e94ca183c191fd627b2e",
+      "sha256Mk3": "202b47e6bad803080947a49520a1d07e9de4b81b3901567d99b08d248346ec59",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/unity/engine/codecs/unity/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/unity-engine/src/lib/mk2/engine/codecs/unity/test/manifest.spec.ts",
+      "sha256Mk2": "f34de2f7a4602493245484829631e16c26339b1cae73a0d2fc8cc990e436405c",
+      "sha256Mk3": "f34de2f7a4602493245484829631e16c26339b1cae73a0d2fc8cc990e436405c",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/unity/engine/codecs/unityfs/src/detect.ts",
+      "destination": "modkit-extensions-other/extensions/unity-engine/src/lib/mk2/engine/codecs/unityfs/src/detect.ts",
+      "sha256Mk2": "d32448609576376517a049a3ac0970f1df86719d81526a4767fd5d942719009e",
+      "sha256Mk3": "609bb792f0b59b032cdcf9f12384a0f17d9f72ddfeb81d34ac27f9071d987972",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/unity/engine/codecs/unityfs/src/index.ts",
+      "destination": "modkit-extensions-other/extensions/unity-engine/src/lib/mk2/engine/codecs/unityfs/src/index.ts",
+      "sha256Mk2": "7204ca66a419d3a137eb2a76d015f64c56e79f9ff922153412f5ae5d46084385",
+      "sha256Mk3": "29d76858057cbc2e8f61edae7f86279ac34e12e1c6a635e1752c7b2a4c0dabda",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/unity/engine/codecs/unityfs/test/manifest.spec.ts",
+      "destination": "modkit-extensions-other/extensions/unity-engine/src/lib/mk2/engine/codecs/unityfs/test/manifest.spec.ts",
+      "sha256Mk2": "533dd96b1b06242535a46b1c5fb616ce6662642e8a382d5f06e5402d10b5fb8f",
+      "sha256Mk3": "d7c382aa92d6b240b2bcf35a35ae6db816ddcd206b003c829c29efcd0ad526df",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/unity/engine/codecs/unityfs/test/unityfs.spec.ts",
+      "destination": "modkit-extensions-other/extensions/unity-engine/src/lib/mk2/engine/codecs/unityfs/test/unityfs.spec.ts",
+      "sha256Mk2": "8197281592b234bec8a1f96b8b1c8fef5521ea1608d6a6a6d8a27559b994a267",
+      "sha256Mk3": "8197281592b234bec8a1f96b8b1c8fef5521ea1608d6a6a6d8a27559b994a267",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/unity/engine/src/unity.ts",
+      "destination": "modkit-extensions-other/extensions/unity-engine/src/lib/mk2/engine/src/unity.ts",
+      "sha256Mk2": "d8106fca2f29e08db473d5ea5dc2c481a73ff7b6d76821f519ca7b6615fbbd50",
+      "sha256Mk3": "36be721750526906f5cbc7c43e352a06917fe80bfbb75cb54a19d0d71147429c",
+      "rewrites": [
+        "line-ending-normalization"
+      ]
+    },
+    {
+      "source": "references/modkitmk2/extensions/unity/engine/test/unity-archive-fixtures.ts",
+      "destination": "modkit-extensions-other/extensions/unity-engine/src/lib/mk2/engine/test/unity-archive-fixtures.ts",
+      "sha256Mk2": "fa679655d73bcd086f87badf4073739a6b04673ec5497443e98c9250815b78b0",
+      "sha256Mk3": "fa679655d73bcd086f87badf4073739a6b04673ec5497443e98c9250815b78b0",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/unity/engine/test/unity-archive.spec.ts",
+      "destination": "modkit-extensions-other/extensions/unity-engine/src/lib/mk2/engine/test/unity-archive.spec.ts",
+      "sha256Mk2": "fb333aa4cc0afafa64a7e675d06761d8507c50ebda10a077acbd42d7582a2e37",
+      "sha256Mk3": "fb333aa4cc0afafa64a7e675d06761d8507c50ebda10a077acbd42d7582a2e37",
+      "rewrites": []
+    },
+    {
+      "source": "references/modkitmk2/extensions/unity/engine/test/unity-serialized.spec.ts",
+      "destination": "modkit-extensions-other/extensions/unity-engine/src/lib/mk2/engine/test/unity-serialized.spec.ts",
+      "sha256Mk2": "6f08a5b33c18e3f02bea1138d90782892b2dd2bb7acb5206744a1aafb2acfa20",
+      "sha256Mk3": "6f08a5b33c18e3f02bea1138d90782892b2dd2bb7acb5206744a1aafb2acfa20",
+      "rewrites": []
+    }
+  ]
+}
