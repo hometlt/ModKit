@@ -293,6 +293,8 @@ export const IMAGE_FALLBACK_MESSAGES = {
   'viewer.imageControls': 'Image controls',
   'viewer.imageDecodeError':
     'The platform decoder cannot render these bytes: {reason}. A format-specific decoder provider is required.',
+  'viewer.imageConvert': 'Conversions',
+  'viewer.imageConverting': 'converting: {preset}…',
   'viewer.imageExport': 'Export',
   'viewer.imageExportAll': 'Export all',
   'viewer.imageExportAllTitle': 'Export every declared subresource as PNG',

@@ -34,6 +34,7 @@ import {
 } from '../viewer/index.js'
 import { setToken } from '../tokens/index.js'
 import { collectEncodedMedia } from '../media/encoded.js'
+import { exportOffer } from '../field-editor/index.js'
 import type { UiLocalizer } from '../localization/index.js'
 import { IMAGE_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
@@ -64,8 +65,25 @@ export interface ImageSubresource {
 /** One file an export produced. The viewer never writes; a host that can write is handed these. */
 export interface ImageExportFile {
   readonly name: string
-  readonly mediaType: 'image/png'
+  /** `image/png` for a view export; a codec conversion names its own target type. */
+  readonly mediaType: string
   readonly bytes: Uint8Array
+}
+
+/** Media type and extension of an `export.convert` target the viewer knows how to name. */
+const CONVERT_TARGETS: Readonly<Record<string, { readonly ext: string; readonly type: string }>> =
+  Object.freeze({
+    png: { ext: 'png', type: 'image/png' },
+    dds: { ext: 'dds', type: 'image/vnd-ms.dds' },
+    rgba8: { ext: 'rgba', type: 'application/octet-stream' },
+  })
+
+/**
+ * File name for one conversion preset: `<base>.<ext>` when the preset is named after its target,
+ * `<base>.<preset>.<ext>` otherwise — `tex.png`, `tex.dxt1.dds`, `tex.button.dds`, as MK2 wrote.
+ */
+export function convertedFileName(baseName: string, presetId: string, ext: string): string {
+  return presetId === ext ? `${baseName}.${ext}` : `${baseName}.${exportSafeName(presetId)}.${ext}`
 }
 
 /** What the host did with them. A refusal is a stated outcome, never a silent no-op. */
@@ -299,6 +317,8 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
         role: 'toolbar',
       })
       subresourceBar.setAttribute('aria-label', localizer.text('viewer.imageSubresources'))
+      const convertBar = element(stage, 'div', { part: 'image.convert', role: 'toolbar' })
+      convertBar.setAttribute('aria-label', localizer.text('viewer.imageConvert'))
       const readout = element(stage, 'output', { part: 'image.readout' })
       const canvas = element(stage, 'canvas', { part: 'image.canvas' }) as HTMLCanvasElement
       canvas.tabIndex = 0
@@ -629,6 +649,71 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
       }
 
       /*
+       * The codec's own conversions (`export.convert` presets): the file comes back as bytes and
+       * goes to the same host writer as a PNG export — never back into the source.
+       */
+      const renderConvertControls = (descriptor: AnyDescriptor): void => {
+        convertBar.replaceChildren()
+        const presets = exportOffer(descriptor).flatMap(form => {
+          let input
+          try {
+            input = form.build(new Map())
+          } catch {
+            return []
+          }
+          const target =
+            typeof input === 'object' && input !== null && !Array.isArray(input)
+              ? CONVERT_TARGETS[String((input as Readonly<Record<string, unknown>>)['target'])]
+              : undefined
+          return target === undefined ? [] : [{ form, input, target }]
+        })
+        if (presets.length === 0) return
+        const baseName = exportSafeName(
+          options.exportBaseName === undefined ? 'image' : options.exportBaseName(descriptor),
+        )
+        for (const { form, input, target } of presets) {
+          const node = button(convertBar, form.label, form.summary, () => {
+            const write = options.exportBytes
+            if (write === undefined) return
+            note = localizer.text('viewer.imageConverting', { preset: form.label })
+            void (async () => {
+              try {
+                const result = await args.operations.invoke(form.handlerId, input, {
+                  signal: scope.signal,
+                })
+                if (result.state !== 'ok') throw new Error(result.reason)
+                const output = result.output as { kind: string; value?: unknown }
+                if (output.kind !== 'bytes' || !(output.value instanceof Uint8Array)) {
+                  throw new Error(`the codec answered ${output.kind}, not bytes`)
+                }
+                const outcome = await write(
+                  [
+                    {
+                      name: convertedFileName(baseName, form.id, target.ext),
+                      mediaType: target.type,
+                      bytes: output.value,
+                    },
+                  ],
+                  scope.signal,
+                )
+                note =
+                  outcome.state === 'written'
+                    ? localizer.text('viewer.imageExported', { count: outcome.names.length })
+                    : localizer.text('viewer.imageExportRefused', { reason: outcome.reason })
+              } catch (error) {
+                note = localizer.text('viewer.imageExportRefused', {
+                  reason: error instanceof Error ? error.message : String(error),
+                })
+              }
+              paint()
+            })()
+          })
+          node.disabled = options.exportBytes === undefined
+          if (node.disabled) node.title = localizer.text('viewer.imageExportUnavailable')
+        }
+      }
+
+      /*
        * Format, compression and subresource facts inline. They were reachable only by leaving for
        * the Metadata stage, which is exactly the split the parity matrix called out.
        */
@@ -666,6 +751,7 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
         info = await source.info(scope.signal)
         model = await modelFor(subresource)
         renderSubresourceControls()
+        renderConvertControls(args.descriptor)
         renderFacts(args.descriptor)
         setState(stage, [])
         paint()
@@ -682,6 +768,7 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
 
       return createViewerMount(root, scope, args, ({ descriptor }) => {
         root.dataset['revision'] = descriptor.revision
+        renderConvertControls(descriptor)
         renderFacts(descriptor)
         paint()
       })
