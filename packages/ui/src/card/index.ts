@@ -240,6 +240,8 @@ export interface SubjectCardOptions {
   readonly knowledge?: KnowledgeCatalog
   readonly knowledgeLocales?: readonly string[]
   onNavigate?(ref: CardRef): void
+  /** False drops the identity header; the host's own chrome already names the subject. */
+  readonly header?: boolean
   /** Host-owned image lookup for `portraitImage`; the card never turns an id into a path. */
   resolveImage?(id: string, signal: AbortSignal): Promise<CardImage | undefined>
 }
@@ -955,7 +957,14 @@ export function createSubjectCard(document: Document, options: SubjectCardOption
   setPart(root, 'card')
 
   const images = new AbortController()
-  const header = options.sections.find(section => section.kind === 'header')
+  /*
+   * The header repeats what the host's own chrome already says — the subject's name, its format,
+   * its portrait — so a host that has chrome of its own switches it off and keeps the facts.
+   */
+  const header =
+    options.header === false
+      ? undefined
+      : options.sections.find(section => section.kind === 'header')
   if (header !== undefined)
     renderHeader(
       document,
@@ -1216,6 +1225,8 @@ export interface SubjectCardViewerOptions {
    * card uses it for a subject's portrait; without it the portrait is not drawn.
    */
   readonly textures?: ModelViewerOptions['textures']
+  /** False drops the card's identity header (a host whose chrome already names the subject). */
+  readonly header?: boolean
 }
 
 export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}): ViewerModule {
@@ -1328,6 +1339,7 @@ export function createSubjectCardViewer(options: SubjectCardViewerOptions = {}):
               label: localizer.text('card.subject'),
               localizer,
               sections,
+              ...(options.header === undefined ? {} : { header: options.header }),
               ...(args.knowledge === undefined ? {} : { knowledge: args.knowledge }),
               onNavigate: navigate,
               ...(resolveImage === undefined ? {} : { resolveImage }),
@@ -1487,9 +1499,7 @@ export function relatedModelStageInputs(
       const open =
         facet === undefined
           ? undefined
-          : (source[facet.open] as
-              | ((signal?: AbortSignal) => Promise<Lease<unknown>>)
-              | undefined)
+          : (source[facet.open] as ((signal?: AbortSignal) => Promise<Lease<unknown>>) | undefined)
       if (open === undefined) return undefined
       try {
         return await open.call(source, signal)
@@ -1552,7 +1562,9 @@ async function embedRelatedModel(
     },
   }
   const at = sections.findIndex(item => item.kind !== 'header')
-  return at < 0 ? [...sections, section] : [...sections.slice(0, at), section, ...sections.slice(at)]
+  return at < 0
+    ? [...sections, section]
+    : [...sections.slice(0, at), section, ...sections.slice(at)]
 }
 
 export const subjectCardViewer: ViewerModule = createSubjectCardViewer()

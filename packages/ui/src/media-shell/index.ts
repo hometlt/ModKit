@@ -1,14 +1,20 @@
 /**
- * MediaShell — the MK2 viewer shell (`@modkitx/viewer-shell`) as a shared MK3 layout.
+ * MediaShell — the MK2 viewer shell (`@modkitx/viewer-shell`) and its media gallery, ported.
  *
  * Three panes: a gallery of sibling subjects on the left, the render area in the middle and a
- * sidebar of collapsible sections on the right. The only chrome is two floating toggles over the
- * render area and two splitters. Image, video and model viewers mount their main render into
- * `stage` and publish everything else as sidebar sections, so every media type reads the same.
- * Status (zoom, channels, dimensions) is not drawn here: it goes to the host status bar.
+ * sidebar of collapsible sections on the right. The only chrome is two floating codicon toggles
+ * over the render area and two splitters. Image, video and model viewers mount their main render
+ * into `stage` (full size, no margins) and publish everything else as sidebar sections, so every
+ * media type reads the same. Status (zoom, channels, size, format) goes to the host status bar.
+ *
+ * The gallery is MK2's `media-viewer-shell.ts`: folder groups with a chevron and a count
+ * (collapsed unless they hold the open file or a filter is typed), list / small / big views,
+ * thumbnails only for expanded groups, and the case / word / regex quick filter.
  */
 import type { ViewerGalleryItem, ViewerGalleryPort } from '@modkit/sdk'
-import { setPart, type PartName } from '../parts.js'
+import { setPart, setState, type PartName } from '../parts.js'
+import { icon, iconButton } from '../icons/index.js'
+import { createFilterWidget, textMatches } from '../filter/index.js'
 import type { UiLocalizer } from '../localization/index.js'
 import { MEDIA_SHELL_FALLBACK_MESSAGES } from '../localization/fallback-catalogs.generated.js'
 import { withEnglishUiFallback } from '../localization/fallback.js'
@@ -20,6 +26,9 @@ export interface MediaShellState {
   rightCollapsed?: boolean
   galleryMode?: GalleryMode
   collapsedSections?: readonly string[]
+  filterCase?: boolean
+  filterWord?: boolean
+  filterRegex?: boolean
 }
 
 export type GalleryMode = 'list' | 'small' | 'big'
@@ -34,10 +43,19 @@ export interface MediaShellOptions {
   readonly gallery?: ViewerGalleryPort
 }
 
+export interface MediaShellSectionOptions {
+  readonly collapsed?: boolean
+  /** Codicon name drawn before the title. */
+  readonly icon?: string
+}
+
 export interface MediaShellSection {
   readonly root: HTMLElement
   readonly body: HTMLElement
+  readonly collapsed: boolean
   setCollapsed(collapsed: boolean): void
+  /** Called after the person expands or collapses the section. */
+  onToggle(listener: (collapsed: boolean) => void): void
 }
 
 export interface MediaShell {
@@ -45,9 +63,9 @@ export interface MediaShell {
   /** The render area; the viewer owns everything inside it. */
   readonly stage: HTMLElement
   /** Add (or return the existing) sidebar section. */
-  section(id: string, title: string, options?: { collapsed?: boolean }): MediaShellSection
-  /** Remove every sidebar section, e.g. before a remount. */
-  clearSections(): void
+  section(id: string, title: string, options?: MediaShellSectionOptions): MediaShellSection
+  /** Remove sidebar sections (all, or every one not in `keep`), e.g. before a re-render. */
+  clearSections(keep?: readonly string[]): void
   /** Refill the gallery from the port. */
   refreshGallery(signal?: AbortSignal): Promise<void>
   destroy(): void
@@ -55,7 +73,8 @@ export interface MediaShell {
 
 const MIN_PANE = 120
 const MAX_PANE = 640
-const THUMB_EDGE = { small: 60, big: 112 } as const
+const THUMB_EDGE = { small: 76, big: 128 } as const
+const THUMB_CONCURRENCY = 6
 
 function el<K extends keyof HTMLElementTagNameMap>(
   document: Document,
@@ -73,10 +92,10 @@ export function createMediaShell(document: Document, options: MediaShellOptions)
   const localizer = withEnglishUiFallback(options.localizer, MEDIA_SHELL_FALLBACK_MESSAGES)
   const state: MediaShellState = {
     leftWidth: 240,
-    rightWidth: 300,
-    leftCollapsed: options.gallery === undefined,
+    rightWidth: 280,
+    leftCollapsed: false,
     rightCollapsed: false,
-    galleryMode: 'small',
+    galleryMode: 'list',
     collapsedSections: [],
     ...options.state,
   }
@@ -84,17 +103,21 @@ export function createMediaShell(document: Document, options: MediaShellOptions)
   const cleanup: (() => void)[] = []
 
   const root = el(document, 'div', 'media-shell')
-  const toggleLeft = el(document, 'button', 'media-shell.toggle', root)
+  const toggleLeft = iconButton(
+    root,
+    'layout-sidebar-left',
+    localizer.text('mediaShell.toggleGallery'),
+  )
+  setPart(toggleLeft, 'media-shell.toggle')
   toggleLeft.dataset['side'] = 'left'
-  toggleLeft.type = 'button'
-  toggleLeft.title = localizer.text('mediaShell.toggleGallery')
-  toggleLeft.setAttribute('aria-label', toggleLeft.title)
   toggleLeft.hidden = options.gallery === undefined
-  const toggleRight = el(document, 'button', 'media-shell.toggle', root)
+  const toggleRight = iconButton(
+    root,
+    'layout-sidebar-right',
+    localizer.text('mediaShell.toggleSidebar'),
+  )
+  setPart(toggleRight, 'media-shell.toggle')
   toggleRight.dataset['side'] = 'right'
-  toggleRight.type = 'button'
-  toggleRight.title = localizer.text('mediaShell.toggleSidebar')
-  toggleRight.setAttribute('aria-label', toggleRight.title)
   const left = el(document, 'aside', 'media-shell.gallery', root)
   left.setAttribute('aria-label', localizer.text('mediaShell.gallery'))
   const splitLeft = el(document, 'div', 'media-shell.splitter', root)
@@ -113,7 +136,7 @@ export function createMediaShell(document: Document, options: MediaShellOptions)
   const applyLayout = (): void => {
     root.style.setProperty('--shell-left', `${state.leftWidth}px`)
     root.style.setProperty('--shell-right', `${state.rightWidth}px`)
-    const flags: ('left-collapsed' | 'right-collapsed')[] = []
+    const flags: string[] = []
     if (state.leftCollapsed) flags.push('left-collapsed')
     if (state.rightCollapsed) flags.push('right-collapsed')
     root.dataset['layout'] = flags.join(' ')
@@ -127,6 +150,7 @@ export function createMediaShell(document: Document, options: MediaShellOptions)
   toggleLeft.addEventListener('click', () => {
     state.leftCollapsed = !state.leftCollapsed
     applyLayout()
+    if (!state.leftCollapsed) renderGallery()
     emit()
   })
   toggleRight.addEventListener('click', () => {
@@ -142,6 +166,7 @@ export function createMediaShell(document: Document, options: MediaShellOptions)
       const startWidth = (side === 'left' ? state.leftWidth : state.rightWidth) ?? 240
       splitter.setPointerCapture(down.pointerId)
       root.dataset['resizing'] = 'true'
+      setState(splitter, ['active'])
       const move = (event: PointerEvent): void => {
         const delta = side === 'left' ? event.clientX - startX : startX - event.clientX
         const width = Math.min(MAX_PANE, Math.max(MIN_PANE, startWidth + delta))
@@ -154,6 +179,7 @@ export function createMediaShell(document: Document, options: MediaShellOptions)
         splitter.removeEventListener('pointerup', up)
         splitter.removeEventListener('pointercancel', up)
         delete root.dataset['resizing']
+        setState(splitter, [])
         emit()
       }
       splitter.addEventListener('pointermove', move)
@@ -169,7 +195,7 @@ export function createMediaShell(document: Document, options: MediaShellOptions)
   const section = (
     id: string,
     title: string,
-    sectionOptions: { collapsed?: boolean } = {},
+    sectionOptions: MediaShellSectionOptions = {},
   ): MediaShellSection => {
     const existing = sections.get(id)
     if (existing !== undefined) return existing
@@ -177,95 +203,160 @@ export function createMediaShell(document: Document, options: MediaShellOptions)
     box.dataset['sectionId'] = id
     const header = el(document, 'button', 'media-shell.section-header', box)
     header.type = 'button'
-    const chevron = el(document, 'span', 'media-shell.section-chevron', header)
-    chevron.setAttribute('aria-hidden', 'true')
+    const chevron = icon(document, 'chevron-down')
+    setPart(chevron, 'media-shell.section-chevron')
+    header.append(chevron)
+    if (sectionOptions.icon !== undefined) {
+      const glyph = icon(document, sectionOptions.icon)
+      setPart(glyph, 'media-shell.section-icon')
+      header.append(glyph)
+    }
     el(document, 'span', 'media-shell.section-title', header).textContent = title
     const body = el(document, 'div', 'media-shell.section-body', box)
+    const listeners: ((collapsed: boolean) => void)[] = []
     const setCollapsed = (collapsed: boolean): void => {
       box.dataset['collapsed'] = String(collapsed)
       header.setAttribute('aria-expanded', String(!collapsed))
       body.hidden = collapsed
     }
     const remembered = state.collapsedSections?.includes(id)
-    setCollapsed(remembered ?? sectionOptions.collapsed ?? false)
+    setCollapsed(remembered === true ? true : (sectionOptions.collapsed ?? false))
     header.addEventListener('click', () => {
       const collapsed = box.dataset['collapsed'] !== 'true'
       setCollapsed(collapsed)
       const others = (state.collapsedSections ?? []).filter(item => item !== id)
       state.collapsedSections = collapsed ? [...others, id] : others
+      for (const listener of listeners) listener(collapsed)
       emit()
     })
-    const created = { root: box, body, setCollapsed }
+    const created: MediaShellSection = {
+      root: box,
+      body,
+      get collapsed() {
+        return box.dataset['collapsed'] === 'true'
+      },
+      setCollapsed,
+      onToggle(listener) {
+        listeners.push(listener)
+      },
+    }
     sections.set(id, created)
     return created
   }
-  const clearSections = (): void => {
-    sections.clear()
-    right.replaceChildren()
+  const clearSections = (keep: readonly string[] = []): void => {
+    for (const [id, item] of sections) {
+      if (keep.includes(id)) continue
+      item.root.remove()
+      sections.delete(id)
+    }
   }
 
   // ------------------------------------------------------------------ gallery
   const toolbar = el(document, 'div', 'media-shell.gallery-toolbar', left)
-  const modes: GalleryMode[] = ['list', 'small', 'big']
-  const modeButtons = modes.map(mode => {
-    const button = el(document, 'button', 'media-shell.gallery-mode', toolbar)
-    button.type = 'button'
+  const modes = [
+    ['list', 'list-flat', 'mediaShell.galleryList'],
+    ['small', 'circle-small-filled', 'mediaShell.gallerySmall'],
+    ['big', 'circle-large-filled', 'mediaShell.galleryBig'],
+  ] as const satisfies readonly (readonly [GalleryMode, string, `${string}.${string}`])[]
+  const modeButtons = modes.map(([mode, glyph, label]) => {
+    const button = iconButton(toolbar, glyph, localizer.text(label), () => {
+      state.galleryMode = mode
+      renderGallery()
+      emit()
+    })
+    setPart(button, 'media-shell.gallery-mode')
     button.dataset['mode'] = mode
-    button.title = localizer.text(
-      mode === 'list'
-        ? 'mediaShell.galleryList'
-        : mode === 'small'
-          ? 'mediaShell.gallerySmall'
-          : 'mediaShell.galleryBig',
-    )
-    button.setAttribute('aria-label', button.title)
     return button
   })
-  const filter = el(document, 'input', 'media-shell.gallery-filter', toolbar)
-  filter.type = 'search'
-  filter.placeholder = localizer.text('mediaShell.galleryFilter')
-  filter.setAttribute('aria-label', filter.placeholder)
+  const filter = createFilterWidget(toolbar, {
+    localizer,
+    initial: {
+      caseSensitive: state.filterCase ?? false,
+      wholeWord: state.filterWord ?? false,
+      regex: state.filterRegex ?? false,
+    },
+    onChange(value) {
+      const toggled =
+        value.caseSensitive !== state.filterCase ||
+        value.wholeWord !== state.filterWord ||
+        value.regex !== state.filterRegex
+      state.filterCase = value.caseSensitive
+      state.filterWord = value.wholeWord
+      state.filterRegex = value.regex
+      renderGallery()
+      if (toggled) emit()
+    },
+  })
   const list = el(document, 'div', 'media-shell.gallery-list', left)
   let items: readonly ViewerGalleryItem[] = []
+  const expanded = new Set<string>()
   let thumbnails: AbortController | undefined
 
   const renderGallery = (): void => {
     thumbnails?.abort()
     thumbnails = new AbortController()
     const signal = thumbnails.signal
-    const mode = state.galleryMode ?? 'small'
-    for (const button of modeButtons)
+    const mode = state.galleryMode ?? 'list'
+    for (const button of modeButtons) {
       button.setAttribute('aria-pressed', String(button.dataset['mode'] === mode))
+    }
     list.dataset['mode'] = mode
     list.replaceChildren()
-    const query = filter.value.trim().toLowerCase()
-    const shown = items.filter(item => query === '' || item.label.toLowerCase().includes(query))
+    const matcher = filter.matcher()
+    const filtering = filter.options.text !== ''
     const groups = new Map<string, ViewerGalleryItem[]>()
-    for (const item of shown) {
+    for (const item of items) {
+      if (filtering && !textMatches(item.label, matcher)) continue
       const key = item.group ?? ''
       groups.set(key, [...(groups.get(key) ?? []), item])
     }
+    const pending: (() => Promise<void>)[] = []
     for (const [group, members] of groups) {
+      const open = filtering || group === '' || expanded.has(group)
       const groupBox = el(document, 'div', 'media-shell.gallery-group', list)
+      groupBox.dataset['collapsed'] = String(!open)
       if (group !== '') {
-        const heading = el(document, 'div', 'media-shell.gallery-group-header', groupBox)
-        heading.textContent = group
+        const heading = el(document, 'button', 'media-shell.gallery-group-header', groupBox)
+        heading.type = 'button'
+        heading.setAttribute('aria-expanded', String(open))
+        const chevron = icon(document, 'chevron-down')
+        setPart(chevron, 'media-shell.section-chevron')
+        heading.append(chevron)
+        const label = el(document, 'span', 'media-shell.gallery-label', heading)
+        label.textContent = group
+        label.title = group
         el(document, 'span', 'media-shell.gallery-count', heading).textContent = String(
           members.length,
         )
+        if (!filtering) {
+          heading.addEventListener('click', () => {
+            if (expanded.has(group)) expanded.delete(group)
+            else expanded.add(group)
+            renderGallery()
+          })
+        }
       }
+      if (!open) continue
       const cells = el(document, 'div', 'media-shell.gallery-cells', groupBox)
       for (const item of members) {
         const cell = el(document, 'button', 'media-shell.gallery-item', cells)
         cell.type = 'button'
-        cell.title = item.label
-        if (item.active === true) cell.setAttribute('aria-current', 'true')
-        if (mode !== 'list') {
-          const thumb = el(document, 'canvas', 'media-shell.gallery-thumb', cell)
-          const edge = THUMB_EDGE[mode]
-          thumb.width = edge
-          thumb.height = edge
-          void drawThumbnail(options.gallery, item.id, thumb, edge, signal)
+        cell.title = item.id
+        if (item.active === true) {
+          cell.setAttribute('aria-current', 'true')
+          setState(cell, ['active'])
+        }
+        if (mode === 'list') {
+          cell.append(icon(document, 'file-media'))
+        } else {
+          const wrap = el(document, 'span', 'media-shell.gallery-thumb-box', cell)
+          const thumb = el(document, 'canvas', 'media-shell.gallery-thumb', wrap)
+          thumb.width = 0
+          thumb.height = 0
+          wrap.append(icon(document, 'file-media'))
+          pending.push(() =>
+            drawThumbnail(options.gallery, item.id, thumb, THUMB_EDGE[mode], signal),
+          )
         }
         el(document, 'span', 'media-shell.gallery-label', cell).textContent = item.label
         cell.addEventListener('click', () => {
@@ -274,19 +365,26 @@ export function createMediaShell(document: Document, options: MediaShellOptions)
         })
       }
     }
+    if (groups.size === 0) {
+      el(document, 'div', 'media-shell.gallery-empty', list).textContent = localizer.text(
+        filtering ? 'mediaShell.galleryNoMatch' : 'mediaShell.galleryEmpty',
+      )
+    }
+    // MK2 decoded six thumbnails at a time so a big folder does not stall the host.
+    const next = async (): Promise<void> => {
+      for (let job = pending.shift(); job !== undefined && !signal.aborted; job = pending.shift()) {
+        await job()
+      }
+    }
+    for (let worker = 0; worker < THUMB_CONCURRENCY; worker += 1) void next()
   }
-  for (const button of modeButtons) {
-    button.addEventListener('click', () => {
-      state.galleryMode = button.dataset['mode'] as GalleryMode
-      renderGallery()
-      emit()
-    })
-  }
-  filter.addEventListener('input', renderGallery)
 
   const refreshGallery = async (signal?: AbortSignal): Promise<void> => {
     if (options.gallery === undefined) return
     items = await options.gallery.list(signal)
+    for (const item of items) {
+      if (item.active === true && item.group !== undefined) expanded.add(item.group)
+    }
     renderGallery()
   }
 
@@ -321,14 +419,15 @@ async function drawThumbnail(
     const pixels = new Uint8ClampedArray(thumb.width * thumb.height * 4)
     pixels.set(thumb.rgba.subarray(0, pixels.length))
     const bitmap = await createImageBitmap(new ImageData(pixels, thumb.width, thumb.height))
+    // Sized to the image, so the checkerboard behind it has no transparent letterbox.
     const scale = Math.min(edge / bitmap.width, edge / bitmap.height, 1)
-    const width = Math.max(1, Math.round(bitmap.width * scale))
-    const height = Math.max(1, Math.round(bitmap.height * scale))
-    context.clearRect(0, 0, edge, edge)
+    canvas.width = Math.max(1, Math.round(bitmap.width * scale))
+    canvas.height = Math.max(1, Math.round(bitmap.height * scale))
     context.imageSmoothingEnabled = scale < 1
-    context.drawImage(bitmap, (edge - width) / 2, (edge - height) / 2, width, height)
+    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
     bitmap.close()
+    canvas.dataset['loaded'] = 'true'
   } catch {
-    // A thumbnail is decoration: a sibling that cannot be decoded keeps its label.
+    // A thumbnail is decoration: a sibling that cannot be decoded keeps its icon and label.
   }
 }

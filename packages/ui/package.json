@@ -114,6 +114,18 @@
       "types": "./dist/media-shell/index.d.ts",
       "default": "./dist/media-shell/index.js"
     },
+    "./filter": {
+      "types": "./dist/filter/index.d.ts",
+      "default": "./dist/filter/index.js"
+    },
+    "./icons": {
+      "types": "./dist/icons/index.d.ts",
+      "default": "./dist/icons/index.js"
+    },
+    "./image-editing": {
+      "types": "./dist/image-editing/index.d.ts",
+      "default": "./dist/image-editing/index.js"
+    },
     "./card": {
       "types": "./dist/card/index.d.ts",
       "default": "./dist/card/index.js"
@@ -164,6 +176,7 @@
     }
   },
   "files": [
+    "assets",
     "contributions",
     "dist",
     "generated",

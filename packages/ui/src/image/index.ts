@@ -16,6 +16,8 @@
  */
 import type {
   AnyDescriptor,
+  JsonValue,
+  OperationSession,
   MetadataGroup,
   RasterImageInfo,
   RasterImageSource,
@@ -33,6 +35,12 @@ import {
   ViewerMountScope,
 } from '../viewer/index.js'
 import { createMediaShell } from '../media-shell/index.js'
+import {
+  createImageEditing,
+  type EditRect,
+  type ImageEditing,
+  type ImageEditSurface,
+} from '../image-editing/index.js'
 import { collectEncodedMedia } from '../media/encoded.js'
 import { exportOffer } from '../field-editor/index.js'
 import type { UiLocalizer } from '../localization/index.js'
@@ -299,6 +307,51 @@ export interface ImageViewerOptions {
   ) => Promise<ImageExportOutcome>
   /** Base name the exported files are derived from; the host usually supplies the subject name. */
   readonly exportBaseName?: (descriptor: AnyDescriptor) => string
+  /**
+   * How this host writes edited pixels back through the codec (`edit.content`). Absent means the
+   * Edit section says the format has no encoder instead of offering tools that cannot save.
+   */
+  readonly savePixels?: (
+    request: ImageSaveRequest,
+    signal?: AbortSignal,
+  ) => Promise<ImageSaveOutcome>
+  /** Why saving is unavailable, when `savePixels` is absent. */
+  readonly editableReason?: string
+  /** False removes the Edit section entirely (a read-only surface, e.g. a card preview). */
+  readonly editing?: boolean
+  /**
+   * Extra sidebar sections, in order, after Edit. This is how an extension adds its own panel — a
+   * game extension's texture checks, for instance — without this viewer knowing that game exists.
+   */
+  readonly sections?: readonly ImageSidebarSection[]
+}
+
+/**
+ * What a host needs to write painted pixels back: the subject it is writing, the operation session
+ * to reach its codec through, and the pixels. The viewer never constructs an edit plan itself.
+ */
+export interface ImageSaveRequest {
+  readonly descriptor: AnyDescriptor
+  readonly operations: OperationSession
+  readonly image: { readonly width: number; readonly height: number; readonly rgba: Uint8Array }
+}
+
+export type ImageSaveOutcome =
+  | { readonly state: 'saved'; readonly message: string }
+  | { readonly state: 'refused'; readonly reason: string }
+
+/**
+ * A contributed sidebar section is just a viewer module, mounted into the section's body with the
+ * same arguments this stage received. That is the whole extension point: a game extension ships a
+ * module and a title, and this viewer never learns the game exists.
+ */
+export interface ImageSidebarSection {
+  readonly id: string
+  readonly title: string
+  /** Codicon name for the section header. */
+  readonly icon?: string
+  readonly collapsed?: boolean
+  readonly module: ViewerModule
 }
 
 const ZOOM_CHOICES = [0.25, 0.5, 1, 2, 4, 8] as const
@@ -312,8 +365,9 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
       const scope = new ViewerMountScope(args.signal)
       const root = createSurface(args.container, localizer.text('viewer.image'))
       /*
-       * MK2 layout: gallery | render area | sidebar. The render area holds only the image; every
-       * control and fact is a sidebar section, and zoom/channel/size live in the host status bar.
+       * MK2's layout: gallery | render area | sidebar. The render area holds only the image, full
+       * size and with no margins; every fact and control is a sidebar section, and size, format,
+       * channels and zoom live in the host status bar (MK2's `StatusBarGroup`).
        */
       const shell = createMediaShell(root.ownerDocument, {
         localizer,
@@ -353,11 +407,21 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
       let fit = true
       let panX = 0
       let panY = 0
-      let background: ImageBackground = 'checker'
+      // Fixed, as in MK2: the checkerboard is what "transparent" looks like, not a preference.
+      const background: ImageBackground = 'checker'
       let channel: ImageChannel = 'rgb'
       let note = ''
       let descriptor = args.descriptor
       const decoded = new Map<string, ImageStageModel>()
+      /*
+       * Edited pixels, once the tools have touched them: an `ImageData` the editing module mutates
+       * in place, drawn from its own canvas instead of the decoded bitmap.
+       */
+      let working: ImageData | undefined
+      let workingCanvas: HTMLCanvasElement | undefined
+      let editing: ImageEditing | undefined
+      /** Where the image was last drawn, in CSS pixels of the render area. */
+      let placed = { x: 0, y: 0, width: 1, height: 1, scale: 1 }
 
       const context = canvas.getContext('2d')
       if (context === null) throw new TypeError('2d canvas context is unavailable')
@@ -384,15 +448,36 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
         return scratchContext.getImageData(0, 0, bitmap.width, bitmap.height)
       }
 
+      /** The pixels the tools work on, decoded from the shown subresource on first use. */
+      const ensureWorking = (): ImageData | undefined => {
+        if (working !== undefined) return working
+        if (model === undefined) return undefined
+        working = bitmapData(model.bitmap)
+        workingCanvas = root.ownerDocument.createElement('canvas')
+        workingCanvas.width = working.width
+        workingCanvas.height = working.height
+        workingCanvas.getContext('2d')?.putImageData(working, 0, 0)
+        return working
+      }
+
+      const shown = (): { width: number; height: number; image: CanvasImageSource } | undefined => {
+        if (working !== undefined && workingCanvas !== undefined) {
+          return { width: working.width, height: working.height, image: workingCanvas }
+        }
+        if (model === undefined) return undefined
+        return { width: model.bitmap.width, height: model.bitmap.height, image: model.bitmap }
+      }
+
       /** The scale "Fit" means: the whole image inside the render area, never enlarged. */
       const fitScale = (): number => {
-        if (model === undefined) return 1
+        const current = shown()
+        if (current === undefined) return 1
         const box = stage.getBoundingClientRect()
         const wide = compare === 'side-by-side' && comparison !== undefined
-        const contentWidth = wide ? model.bitmap.width * 2 + 8 : model.bitmap.width
+        const contentWidth = wide ? current.width * 2 + 8 : current.width
         return Math.min(
-          Math.max(16, box.width - 32) / contentWidth,
-          Math.max(16, box.height - 32) / model.bitmap.height,
+          Math.max(16, box.width) / contentWidth,
+          Math.max(16, box.height) / current.height,
           1,
         )
       }
@@ -409,27 +494,57 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
         return encoding === undefined ? base : `${base} · ${String(encoding.value)}`
       }
 
+      /** Conversions plus the PNG exports, as one status-bar menu on the format item. */
+      const formatChoices = (): readonly { readonly id: string; readonly label: string }[] => {
+        if (options.exportBytes === undefined) return []
+        const choices = [
+          { id: 'export-png', label: localizer.text('viewer.imageExport') },
+          ...(info !== undefined && enumerateSubresources(info).length > 1
+            ? [{ id: 'export-all', label: localizer.text('viewer.imageExportAll') }]
+            : []),
+          ...conversions().map(preset => ({
+            id: `convert:${preset.form.id}`,
+            label: preset.form.label,
+          })),
+        ]
+        return choices
+      }
+
       const publishStatus = (): void => {
-        if (model === undefined) return
+        const current = shown()
+        if (current === undefined) return
         const scale = currentScale()
+        const bytes = model?.bytes ?? 0
         const items = [
           {
             id: 'size',
-            text: `${model.bitmap.width} × ${model.bitmap.height}`,
+            icon: 'symbol-ruler',
+            text: `${current.width} × ${current.height}`,
+            tooltip: localizer.text('viewer.imageResizeTitle'),
             align: 'start' as const,
+            action: editing !== undefined,
           },
-          { id: 'format', text: formatLabel(), align: 'start' as const },
-          { id: 'bytes', text: `${(model.bytes / 1024).toFixed(1)} KiB`, align: 'start' as const },
+          {
+            id: 'format',
+            icon: 'file',
+            text: formatLabel(),
+            tooltip: localizer.text('viewer.imageConvert'),
+            align: 'start' as const,
+            choices: formatChoices(),
+          },
+          { id: 'bytes', text: `${(bytes / 1024).toFixed(1)} KiB`, align: 'start' as const },
           {
             id: 'channel',
+            icon: 'symbol-color',
             text: channel.toUpperCase(),
-            tooltip: localizer.text('viewer.imageControls'),
+            tooltip: localizer.text('viewer.imageChannels'),
             align: 'end' as const,
             selected: channel,
             choices: CHANNELS.map(value => ({ id: value, label: value.toUpperCase() })),
           },
           {
             id: 'zoom',
+            icon: 'zoom-in',
             text: fit
               ? `${localizer.text('viewer.fit')} (${Math.round(scale * 100)}%)`
               : `${Math.round(scale * 100)}%`,
@@ -441,32 +556,52 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
               ...ZOOM_CHOICES.map(value => ({ id: String(value), label: `${value * 100}%` })),
             ],
           },
-        ]
-        if (args.status !== undefined) {
-          args.status.set(items, (itemId, choiceId) => {
-            if (itemId === 'channel' && CHANNELS.includes(choiceId as ImageChannel)) {
-              channel = choiceId as ImageChannel
-            } else if (itemId === 'zoom') {
-              if (choiceId === 'fit') {
-                fit = true
-                panX = 0
-                panY = 0
-              } else {
-                const value = Number(choiceId)
-                if (Number.isFinite(value) && value > 0) {
-                  fit = false
-                  zoom = value
-                }
+        ].filter(item => item.text !== '')
+        args.status?.set(items, (itemId, choiceId) => {
+          if (itemId === 'channel' && CHANNELS.includes(choiceId as ImageChannel)) {
+            channel = choiceId as ImageChannel
+          } else if (itemId === 'size') {
+            editing?.openResize()
+            return
+          } else if (itemId === 'format') {
+            if (choiceId === 'export-png') runExport(false)
+            else if (choiceId === 'export-all') runExport(true)
+            else if (choiceId.startsWith('convert:'))
+              runConversion(choiceId.slice('convert:'.length))
+            return
+          } else if (itemId === 'zoom') {
+            if (choiceId === 'fit') {
+              fit = true
+              panX = 0
+              panY = 0
+            } else {
+              const value = Number(choiceId)
+              if (Number.isFinite(value) && value > 0) {
+                fit = false
+                zoom = value
               }
             }
-            paint()
-          })
-        }
+          }
+          paint()
+        })
       }
 
-      const paint = (): void => {
-        if (model === undefined) return
-        const { bitmap } = model
+      const paint = (preview?: ImageData, previewRect?: EditRect): void => {
+        const current = shown()
+        if (current === undefined) return
+        if (preview !== undefined && workingCanvas !== undefined && previewRect !== undefined) {
+          workingCanvas
+            .getContext('2d')
+            ?.putImageData(
+              preview,
+              0,
+              0,
+              previewRect.x,
+              previewRect.y,
+              previewRect.w,
+              previewRect.h,
+            )
+        }
         const box = stage.getBoundingClientRect()
         const ratio = globalThis.devicePixelRatio || 1
         const cssWidth = Math.max(1, Math.round(box.width))
@@ -476,13 +611,14 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
         context.setTransform(ratio, 0, 0, ratio, 0, 0)
         context.clearRect(0, 0, cssWidth, cssHeight)
         const scale = currentScale()
-        const width = Math.max(1, Math.round(bitmap.width * scale))
-        const height = Math.max(1, Math.round(bitmap.height * scale))
+        const width = Math.max(1, Math.round(current.width * scale))
+        const height = Math.max(1, Math.round(current.height * scale))
         const wide = compare === 'side-by-side' && comparison !== undefined
         const gap = wide ? 8 : 0
         const total = wide ? width * 2 + gap : width
         const x = Math.round((cssWidth - total) / 2 + panX)
         const y = Math.round((cssHeight - height) / 2 + panY)
+        placed = { x, y, width, height, scale }
         // The backdrop covers only the image, as in MK2: the render area keeps the editor colour.
         const backdrop = (left: number): void => {
           context.save()
@@ -503,16 +639,20 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
           context.imageSmoothingEnabled = scale < 1
           context.drawImage(image, left, y, width, height)
         }
-        if (compare === 'diff' && comparison !== undefined) {
+        if (compare === 'diff' && comparison !== undefined && model !== undefined) {
           const scratch = root.ownerDocument.createElement('canvas')
-          scratch.width = bitmap.width
-          scratch.height = bitmap.height
+          scratch.width = model.bitmap.width
+          scratch.height = model.bitmap.height
           scratch
             .getContext('2d')
-            ?.putImageData(differenceOf(bitmapData(bitmap), bitmapData(comparison.bitmap)), 0, 0)
+            ?.putImageData(
+              differenceOf(bitmapData(model.bitmap), bitmapData(comparison.bitmap)),
+              0,
+              0,
+            )
           draw(scratch, x)
         } else {
-          draw(bitmap, x)
+          draw(current.image, x)
           if (wide && comparison !== undefined) draw(comparison.bitmap, x + width + gap)
         }
         if (channel !== 'rgb') {
@@ -557,6 +697,7 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
         readout.hidden = compare === 'off' && note === ''
         renderOverlay()
         publishStatus()
+        editing?.refresh()
       }
 
       const resize = new ResizeObserver(() => paint())
@@ -566,6 +707,8 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
       const reload = (): void => {
         void (async () => {
           try {
+            working = undefined
+            workingCanvas = undefined
             model = await modelFor(subresource)
             comparison = compare === 'off' ? undefined : await modelFor(compareWith)
             note = ''
@@ -630,15 +773,26 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
           zoom = Math.min(32, currentScale() * 1.5)
           fit = false
         })
+        for (const value of CHANNELS) {
+          button(
+            overlay,
+            value.toUpperCase(),
+            localizer.text('viewer.isolateChannel', { channel: value.toUpperCase() }),
+            () => {
+              channel = value
+            },
+            channel === value,
+          )
+        }
         element(overlay, 'span', {
           part: 'image.readout',
           text: `${Math.round(currentScale() * 100)}%`,
         })
       }
 
-      // Wheel zoom about the pointer and drag pan, as in MK2.
+      // Wheel zoom about the pointer and drag pan, as in MK2 — and the part of MK3 to keep.
       const onWheel = (event: WheelEvent): void => {
-        if (model === undefined) return
+        if (shown() === undefined) return
         event.preventDefault()
         const before = currentScale()
         const next = Math.min(32, Math.max(0.05, before * (event.deltaY < 0 ? 1.25 : 0.8)))
@@ -655,28 +809,39 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
       let originX = 0
       let originY = 0
       const onPointerDown = (event: PointerEvent): void => {
+        // While the Edit section is open the tools take the left button; panning stays otherwise.
+        if (editing?.pointerDown(event) === true) return
         dragging = event.pointerId
         originX = event.clientX - panX
         originY = event.clientY - panY
         canvas.setPointerCapture(event.pointerId)
       }
       const onPointerMove = (event: PointerEvent): void => {
+        if (editing?.pointerMove(event) === true) return
         if (dragging !== event.pointerId) return
         panX = event.clientX - originX
         panY = event.clientY - originY
         paint()
       }
       const onPointerUp = (event: PointerEvent): void => {
+        if (editing?.pointerUp(event) === true) return
         if (dragging !== event.pointerId) return
         dragging = undefined
         canvas.releasePointerCapture(event.pointerId)
+      }
+      const onKeyDown = (event: KeyboardEvent): void => {
+        if (editing?.keyDown(event) !== true) return
+        event.preventDefault()
+        event.stopPropagation()
       }
       canvas.addEventListener('wheel', onWheel, { passive: false })
       canvas.addEventListener('pointerdown', onPointerDown)
       canvas.addEventListener('pointermove', onPointerMove)
       canvas.addEventListener('pointerup', onPointerUp)
       canvas.addEventListener('pointercancel', onPointerUp)
+      root.addEventListener('keydown', onKeyDown)
       canvas.addEventListener('dblclick', () => {
+        if (editing?.active === true) return
         fit = true
         panX = 0
         panY = 0
@@ -688,6 +853,7 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
         canvas.removeEventListener('pointermove', onPointerMove)
         canvas.removeEventListener('pointerup', onPointerUp)
         canvas.removeEventListener('pointercancel', onPointerUp)
+        root.removeEventListener('keydown', onKeyDown)
       })
 
       const facts = (parent: HTMLElement, rows: readonly (readonly [string, string])[]): void => {
@@ -735,12 +901,13 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
         })()
       }
 
-      /*
-       * The codec's own conversions (`export.convert` presets): the file comes back as bytes and
-       * goes to the same host writer as a PNG export — never back into the source.
-       */
-      const renderConversions = (parent: HTMLElement): void => {
-        const presets = exportOffer(descriptor).flatMap(form => {
+      /** The codec's own `export.convert` presets, as data the status menu and a button can use. */
+      const conversions = (): readonly {
+        readonly form: { readonly id: string; readonly label: string; readonly handlerId: string }
+        readonly input: JsonValue
+        readonly target: { readonly ext: string; readonly type: string }
+      }[] =>
+        exportOffer(descriptor).flatMap(form => {
           let input
           try {
             input = form.build(new Map())
@@ -753,72 +920,142 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
               : undefined
           return target === undefined ? [] : [{ form, input, target }]
         })
-        if (presets.length === 0) return
-        const bar = element(parent, 'div', { part: 'image.convert', role: 'toolbar' })
-        bar.setAttribute('aria-label', localizer.text('viewer.imageConvert'))
+
+      const runConversion = (formId: string): void => {
+        const preset = conversions().find(item => item.form.id === formId)
+        const write = options.exportBytes
+        if (preset === undefined || write === undefined) return
         const baseName = exportSafeName(
           options.exportBaseName === undefined ? 'image' : options.exportBaseName(descriptor),
         )
-        for (const { form, input, target } of presets) {
-          const node = button(bar, form.label, form.summary, () => {
-            const write = options.exportBytes
-            if (write === undefined) return
-            note = localizer.text('viewer.imageConverting', { preset: form.label })
-            void (async () => {
-              try {
-                const result = await args.operations.invoke(form.handlerId, input, {
-                  signal: scope.signal,
-                })
-                if (result.state !== 'ok') throw new Error(result.reason)
-                const output = result.output as { kind: string; value?: unknown }
-                if (output.kind !== 'bytes' || !(output.value instanceof Uint8Array)) {
-                  throw new Error(`the codec answered ${output.kind}, not bytes`)
-                }
-                const outcome = await write(
-                  [
-                    {
-                      name: convertedFileName(baseName, form.id, target.ext),
-                      mediaType: target.type,
-                      bytes: output.value,
-                    },
-                  ],
-                  scope.signal,
-                )
-                note =
-                  outcome.state === 'written'
-                    ? localizer.text('viewer.imageExported', { count: outcome.names.length })
-                    : localizer.text('viewer.imageExportRefused', { reason: outcome.reason })
-              } catch (error) {
-                note = localizer.text('viewer.imageExportRefused', {
-                  reason: error instanceof Error ? error.message : String(error),
-                })
-              }
-              paint()
-            })()
-          })
-          node.disabled = options.exportBytes === undefined
-          if (node.disabled) node.title = localizer.text('viewer.imageExportUnavailable')
-        }
+        note = localizer.text('viewer.imageConverting', { preset: preset.form.label })
+        paint()
+        void (async () => {
+          try {
+            const result = await args.operations.invoke(preset.form.handlerId, preset.input, {
+              signal: scope.signal,
+            })
+            if (result.state !== 'ok') throw new Error(result.reason)
+            const output = result.output as { kind: string; value?: unknown }
+            if (output.kind !== 'bytes' || !(output.value instanceof Uint8Array)) {
+              throw new Error(`the codec answered ${output.kind}, not bytes`)
+            }
+            const outcome = await write(
+              [
+                {
+                  name: convertedFileName(baseName, preset.form.id, preset.target.ext),
+                  mediaType: preset.target.type,
+                  bytes: output.value,
+                },
+              ],
+              scope.signal,
+            )
+            note =
+              outcome.state === 'written'
+                ? localizer.text('viewer.imageExported', { count: outcome.names.length })
+                : localizer.text('viewer.imageExportRefused', { reason: outcome.reason })
+          } catch (error) {
+            note = localizer.text('viewer.imageExportRefused', {
+              reason: error instanceof Error ? error.message : String(error),
+            })
+          }
+          paint()
+        })()
+      }
+
+      // ---------------------------------------------------------------- editing
+      const editSurface: ImageEditSurface = {
+        pixels: () => ensureWorking(),
+        replace(next) {
+          working = next
+          workingCanvas = root.ownerDocument.createElement('canvas')
+          workingCanvas.width = next.width
+          workingCanvas.height = next.height
+          workingCanvas.getContext('2d')?.putImageData(next, 0, 0)
+          paint()
+        },
+        show(preview, rect) {
+          if (preview === undefined) {
+            const current = working
+            if (current !== undefined) workingCanvas?.getContext('2d')?.putImageData(current, 0, 0)
+            paint()
+            return
+          }
+          paint(preview, rect)
+        },
+        toImage(event) {
+          const current = shown()
+          const box = stage.getBoundingClientRect()
+          const scale = placed.scale
+          const x = (event.clientX - box.left - placed.x) / scale
+          const y = (event.clientY - box.top - placed.y) / scale
+          return {
+            x: Math.max(0, Math.min(current?.width ?? 0, x)),
+            y: Math.max(0, Math.min(current?.height ?? 0, y)),
+          }
+        },
+        toScreen(rect) {
+          return {
+            left: placed.x + rect.x * placed.scale,
+            top: placed.y + rect.y * placed.scale,
+            width: rect.w * placed.scale,
+            height: rect.h * placed.scale,
+          }
+        },
+        channel: () => channel,
+      }
+
+      const saveEdits = async (pixels: ImageData): Promise<void> => {
+        const save = options.savePixels
+        if (save === undefined) return
+        note = localizer.text('viewer.imageSaving')
+        paint()
+        const outcome = await save(
+          {
+            descriptor,
+            operations: args.operations,
+            image: {
+              width: pixels.width,
+              height: pixels.height,
+              rgba: new Uint8Array(pixels.data),
+            },
+          },
+          scope.signal,
+        )
+        note =
+          outcome.state === 'saved'
+            ? outcome.message
+            : localizer.text('viewer.imageSaveRefused', { reason: outcome.reason })
+        paint()
+        if (outcome.state !== 'saved') throw new Error(outcome.reason)
       }
 
       const renderSections = (): void => {
         shell.clearSections()
         if (info !== undefined && model !== undefined) {
           const extent = subresourceExtent(info, subresource.mipLevel)
-          facts(shell.section('image', localizer.text('viewer.imageSectionImage')).body, [
-            [localizer.text('viewer.imageDimensions'), `${extent.width} × ${extent.height}`],
-            [localizer.text('viewer.imageAspect'), (extent.width / extent.height).toFixed(3)],
+          facts(
+            shell.section('image', localizer.text('viewer.imageSectionImage'), { icon: 'info' })
+              .body,
             [
-              localizer.text('viewer.imageHasAlpha'),
-              info.alphaMode === 'none' || info.channels < 4 ? 'no' : 'yes',
+              [localizer.text('viewer.imageDimensions'), `${extent.width} × ${extent.height}`],
+              [localizer.text('viewer.imageAspect'), (extent.width / extent.height).toFixed(3)],
+              [
+                localizer.text('viewer.imageHasAlpha'),
+                info.alphaMode === 'none' || info.channels < 4 ? 'no' : 'yes',
+              ],
             ],
-          ])
-          facts(shell.section('format', localizer.text('viewer.imageSectionFormat')).body, [
-            [localizer.text('viewer.imageFormat'), formatLabel()],
-            [localizer.text('viewer.imageMipLevels'), String(axisCount(info, 'mipLevel'))],
-            [localizer.text('viewer.imageChannels'), `${info.channels} × ${info.bitDepth}-bit`],
-            [localizer.text('viewer.imageColorSpace'), String(info.colorSpace)],
-          ])
+          )
+          facts(
+            shell.section('format', localizer.text('viewer.imageSectionFormat'), { icon: 'file' })
+              .body,
+            [
+              [localizer.text('viewer.imageFormat'), formatLabel()],
+              [localizer.text('viewer.imageMipLevels'), String(axisCount(info, 'mipLevel'))],
+              [localizer.text('viewer.imageChannels'), `${info.channels} × ${info.bitDepth}-bit`],
+              [localizer.text('viewer.imageColorSpace'), String(info.colorSpace)],
+            ],
+          )
           const axes: readonly (readonly [keyof ImageSubresource, string])[] = [
             ['mipLevel', 'mip'],
             ['layer', 'layer'],
@@ -826,10 +1063,9 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
             ['slice', 'slice'],
           ]
           if (axes.some(([axis]) => axisCount(info, axis) > 1)) {
-            const body = shell.section(
-              'subresource',
-              localizer.text('viewer.imageSubresources'),
-            ).body
+            const body = shell.section('subresource', localizer.text('viewer.imageSubresources'), {
+              icon: 'layers',
+            }).body
             const bar = element(body, 'div', { part: 'image.subresources', role: 'toolbar' })
             const current = info
             for (const [axis, name] of axes) {
@@ -881,49 +1117,61 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
             }
           }
         }
-        const channels = shell.section(
-          'channels',
-          localizer.text('viewer.imageSectionChannels'),
-        ).body
-        const channelBar = element(channels, 'div', { part: 'image.toolbar', role: 'toolbar' })
-        for (const value of CHANNELS) {
-          button(
-            channelBar,
-            value.toUpperCase(),
-            localizer.text('viewer.isolateChannel', { channel: value.toUpperCase() }),
-            () => {
-              channel = value
-              renderSections()
-            },
-            channel === value,
-          )
+        /*
+         * Edit is MK2's section: collapsed until asked for, because expanding it is what puts the
+         * tools on the pointer. The host says whether the codec can write these pixels back.
+         */
+        if (options.editing !== false) {
+          const section = shell.section('edit', localizer.text('viewer.imageSectionEdit'), {
+            icon: 'tools',
+            collapsed: true,
+          })
+          editing?.destroy()
+          editing = createImageEditing(section.body, {
+            localizer,
+            surface: editSurface,
+            overlay: stage,
+            editable: options.savePixels !== undefined,
+            ...(options.editableReason === undefined
+              ? {}
+              : { unavailableReason: options.editableReason }),
+            ...(options.savePixels === undefined ? {} : { onSave: saveEdits }),
+          })
+          editing.setActive(!section.collapsed)
+          section.onToggle(collapsed => {
+            editing?.setActive(!collapsed)
+            paint()
+          })
         }
-        button(channelBar, 'BG', localizer.text('viewer.cycleBackdrop'), () => {
-          background =
-            background === 'checker' ? 'dark' : background === 'dark' ? 'light' : 'checker'
-        })
-        const exportBody = shell.section('export', localizer.text('viewer.imageSectionExport')).body
-        const exportBar = element(exportBody, 'div', { part: 'image.toolbar', role: 'toolbar' })
-        const canExport = options.exportBytes !== undefined
-        for (const [label, title, all] of [
-          [localizer.text('viewer.imageExport'), localizer.text('viewer.imageExportTitle'), false],
-          [
-            localizer.text('viewer.imageExportAll'),
-            localizer.text('viewer.imageExportAllTitle'),
-            true,
-          ],
-        ] as const) {
-          const node = button(exportBar, label, title, () => runExport(all))
-          node.disabled =
-            !canExport || (all && (info === undefined || enumerateSubresources(info).length < 2))
-          if (!canExport) node.title = localizer.text('viewer.imageExportUnavailable')
+        for (const contributed of options.sections ?? []) {
+          const section = shell.section(contributed.id, contributed.title, {
+            ...(contributed.icon === undefined ? {} : { icon: contributed.icon }),
+            collapsed: contributed.collapsed ?? true,
+          })
+          void contributed.module
+            .mount({ ...args, container: section.body })
+            .then(mounted => {
+              scope.cleanup(() => void mounted.unmount())
+            })
+            // A section whose module cannot bind (no such data source here) is removed, not empty.
+            .catch(() => section.root.remove())
         }
-        renderConversions(exportBody)
-        const groups = metadataGroups(descriptor)
+        /*
+         * The codec's own metadata, without the host's technical groups: identity and traits are
+         * plumbing, and a group that repeats the Image and Format sections is noise.
+         */
+        const groups = metadataGroups(descriptor).filter(
+          group => !/^(identity|traits|detection)$/iu.test(group.id),
+        )
         if (groups.length > 0) {
-          const body = shell.section('metadata', localizer.text('viewer.imageSectionMetadata')).body
+          const body = shell.section('metadata', localizer.text('viewer.imageSectionMetadata'), {
+            icon: 'symbol-misc',
+            collapsed: true,
+          }).body
           for (const group of groups) {
-            element(body, 'h3', { part: 'image.metadata-group', text: group.label })
+            if (groups.length > 1) {
+              element(body, 'h3', { part: 'image.metadata-group', text: group.label })
+            }
             facts(
               body,
               group.entries.map(entry => [entry.key, String(entry.value)] as const),
@@ -949,7 +1197,10 @@ export function createImageViewer(options: ImageViewerOptions = {}): ViewerModul
           }),
         })
       }
-      scope.cleanup(() => args.status?.clear())
+      scope.cleanup(() => {
+        editing?.destroy()
+        args.status?.clear()
+      })
 
       return createViewerMount(root, scope, args, ({ descriptor: next }) => {
         descriptor = next

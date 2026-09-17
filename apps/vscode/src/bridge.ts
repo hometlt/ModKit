@@ -129,6 +129,10 @@ export type ShellRequest =
         readonly tooltip?: string
         readonly align?: 'start' | 'end'
         readonly choices?: readonly { readonly id: string; readonly label: string }[]
+        /** Codicon name; the native status bar spells it `$(name)`. */
+        readonly icon?: string
+        /** One click, no menu: reported back as an empty choice id. */
+        readonly action?: boolean
         readonly selected?: string
       }[]
     }

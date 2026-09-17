@@ -57,7 +57,7 @@ describe('webview content-security policy', () => {
     expect(directives.some(directive => directive.includes('unsafe-eval'))).toBe(false)
   })
 
-  it('adds exactly the two allowances the shipped viewers need, and nothing else', () => {
+  it('adds exactly the three allowances the shipped viewers need, and nothing else', () => {
     const directives = contentSecurityPolicy(webview.cspSource, 'n')
     // the vector stage renders through an <img> blob url; a thumbnail may be a data uri
     expect(directives).toContain(`img-src ${webview.cspSource} data: blob:`)
@@ -66,11 +66,14 @@ describe('webview content-security policy', () => {
     // and the same two relaxations `VIEWER_CSP` already carries, so nothing was invented here
     expect(VIEWER_CSP.imgSrc).toContain('blob:')
     expect(VIEWER_CSP.mediaSrc).toContain('blob:')
+    // the viewers draw their icons with the shipped codicon font, served from the same origin
+    expect(directives).toContain(`font-src ${webview.cspSource}`)
     // nothing beyond: no network, no frames, no worker origin of its own
     const names = directives.map(directive => directive.split(' ')[0])
     expect(names).toEqual([
       'default-src',
       'style-src',
+      'font-src',
       'style-src-attr',
       'script-src',
       'img-src',

@@ -133,6 +133,9 @@ const mapPreviewCandidates = (items: readonly unknown[]): readonly MapPreviewCan
     return [item as MapPreviewCandidate]
   })
 
+/** A sibling larger than this is listed without a thumbnail rather than read for one. */
+const GALLERY_THUMBNAIL_MAXIMUM_BYTES = 16 * 1024 * 1024
+
 function baseName(path: string): string {
   const parts = path.split(/[\\/]/u).filter(Boolean)
   return parts[parts.length - 1] ?? path
@@ -374,6 +377,36 @@ async function mount(
             group: baseName(folder),
             active: item.id === entry.id,
           }))
+      },
+      /*
+       * MK2 streamed gallery thumbnails from the extension host, which owns the decoders. Here the
+       * page reads the sibling's bytes through the same granted access it already has and hands
+       * them to the opened subject's raster port as embedded bytes — so a DDS thumbnail costs one
+       * host decode of a fitting mip level, and the page never chooses a codec or a path.
+       */
+      async thumbnail(id, maxEdge, signal) {
+        const readRaster = subjects.get(entry.id)?.session.readRasterResource
+        if (readRaster === undefined) return undefined
+        try {
+          const bytes = await access.read(id, GALLERY_THUMBNAIL_MAXIMUM_BYTES, signal)
+          const result = await readRaster(
+            {
+              kind: 'embedded',
+              bytes,
+              maxBytes: Math.max(4, maxEdge) ** 2 * 4 * 16,
+              selection: { mipLevel: 'fit' },
+            },
+            signal,
+          )
+          if (result.state !== 'decoded') return undefined
+          return {
+            width: result.region.width,
+            height: result.region.height,
+            rgba: result.region.pixels,
+          }
+        } catch {
+          return undefined
+        }
       },
       async open(id) {
         await bridge.request({ op: 'open-in-editor', path: id })

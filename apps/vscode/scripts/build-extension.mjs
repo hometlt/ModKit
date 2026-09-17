@@ -475,6 +475,10 @@ async function buildInto(output, syncManifest) {
     process.exit(1)
   }
   cpSync(stylesheet, join(output, 'modkit-ui.css'))
+  // The icon font the viewers draw with (MK2's codicons), next to the page that links it.
+  cpSync(join(repoRoot, 'packages', 'ui', 'assets', 'codicons'), join(output, 'codicons'), {
+    recursive: true,
+  })
 
   // Shell chrome only: the shipped stylesheet has no layout for the `workbench` parts on purpose, so
   // the host places them. Everything else the page draws comes from `modkit-ui.css`.

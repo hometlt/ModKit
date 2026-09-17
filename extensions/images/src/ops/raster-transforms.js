@@ -92,6 +92,18 @@ export const TRANSFORMS = Object.freeze({
       return prepareSc2ButtonIcon(image, request.options ?? {})
     },
   },
+  /**
+   * Whole-image replacement: the pixels a viewer's paint tools produced (crop and resize included),
+   * re-encoded by the codec. `image` is `{ width, height, pixels }`, pixels as base64 or numbers.
+   */
+  replace: {
+    label: 'Replace pixels',
+    apply: (_image, request) => {
+      const image = imageFromRequest(request.image)
+      if (image === undefined) throw new TypeError('replace requires an image')
+      return image
+    },
+  },
   'color-key': {
     label: 'Make one colour transparent',
     apply: (image, request) => {
@@ -128,7 +140,11 @@ function imageFromRequest(value) {
   if (value === null || typeof value !== 'object') return undefined
   const width = Number(value.width)
   const height = Number(value.height)
-  const pixels = Array.isArray(value.pixels) ? Uint8Array.from(value.pixels) : undefined
+  const pixels = Array.isArray(value.pixels)
+    ? Uint8Array.from(value.pixels)
+    : typeof value.pixels === 'string'
+      ? Uint8Array.from(atob(value.pixels), character => character.charCodeAt(0))
+      : undefined
   if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || pixels === undefined) {
     return undefined
   }

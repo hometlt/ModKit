@@ -183,7 +183,6 @@ describe('VS Code view policy', () => {
       'hex',
       'hex-editor',
       'image',
-      'metadata',
       'model',
       'transport',
       'table',
@@ -199,7 +198,9 @@ describe('VS Code view policy', () => {
     expect(source).not.toContain('@modkit/ui/monaco')
     expect(source).not.toContain('@modkit/ui/settings')
     expect(source).not.toContain('@modkit/ui/workbench')
-    for (const id of ['text-editor', 'edit', 'metadata', 'hex-editor']) {
+    // `edit` and `metadata` are no longer stages of their own: they are sidebar sections of the
+    // render view, mounted as viewer modules by the image stage.
+    for (const id of ['text-editor', 'hex-editor']) {
       expect(source).toMatch(
         new RegExp(`id: '${id}',[\\s\\S]*?appLocal: true,[\\s\\S]*?\\n    \\}`, 'u'),
       )

@@ -4929,36 +4929,12 @@
     background: var(--mk-color-hover);
   }
 
-  [data-mk-part='media-shell.toggle']::before {
-    content: '';
-    inline-size: 14px;
-    block-size: 12px;
-    border: 1.5px solid currentColor;
-    border-radius: 2px;
-  }
-
-  [data-mk-part='media-shell.toggle']::after {
-    content: '';
-    position: absolute;
-    inline-size: 1.5px;
-    block-size: 12px;
-    background: currentColor;
-  }
-
   [data-mk-part='media-shell.toggle'][data-side='left'] {
     inset-inline-start: calc(var(--shell-left, 240px) + 4px + var(--mk-space-2));
   }
 
-  [data-mk-part='media-shell.toggle'][data-side='left']::after {
-    inset-inline-start: 10px;
-  }
-
   [data-mk-part='media-shell.toggle'][data-side='right'] {
     inset-inline-end: calc(var(--shell-right, 300px) + 4px + var(--mk-space-2));
-  }
-
-  [data-mk-part='media-shell.toggle'][data-side='right']::after {
-    inset-inline-end: 10px;
   }
 
   [data-mk-part='media-shell'][data-layout~='left-collapsed']
@@ -5001,20 +4977,22 @@
   }
 
   [data-mk-part='media-shell.section-chevron'] {
-    display: inline-block;
     flex: none;
-    inline-size: 6px;
-    block-size: 6px;
-    margin-inline: 2px 4px;
-    border-inline-end: 1.5px solid currentColor;
-    border-block-end: 1.5px solid currentColor;
-    transform: translateY(-2px) rotate(45deg);
+    font-size: 12px;
     transition: transform 0.12s ease;
   }
 
+  [data-mk-part='media-shell.section-icon'] {
+    flex: none;
+    font-size: 13px;
+    opacity: 0.8;
+  }
+
   [data-mk-part='media-shell.section'][data-collapsed='true']
+    [data-mk-part='media-shell.section-chevron'],
+  [data-mk-part='media-shell.gallery-group'][data-collapsed='true']
     [data-mk-part='media-shell.section-chevron'] {
-    transform: rotate(-45deg);
+    transform: rotate(-90deg);
   }
 
   [data-mk-part='media-shell.section-body'] {
@@ -5046,57 +5024,103 @@
     cursor: pointer;
   }
 
-  [data-mk-part='media-shell.gallery-mode']::before {
-    content: '';
-    display: block;
-    margin: auto;
-    background: currentColor;
-  }
-
-  [data-mk-part='media-shell.gallery-mode'][data-mode='list']::before {
-    inline-size: 12px;
-    block-size: 2px;
-    box-shadow:
-      0 -4px 0 currentColor,
-      0 4px 0 currentColor;
-  }
-
-  [data-mk-part='media-shell.gallery-mode'][data-mode='small']::before {
-    inline-size: 6px;
-    block-size: 6px;
-    border-radius: 50%;
-  }
-
-  [data-mk-part='media-shell.gallery-mode'][data-mode='big']::before {
-    inline-size: 12px;
-    block-size: 12px;
-    border-radius: 50%;
-  }
-
   [data-mk-part='media-shell.gallery-mode']:hover,
   [data-mk-part='media-shell.gallery-mode'][aria-pressed='true'] {
     opacity: 1;
     background: var(--mk-color-active);
   }
 
-  [data-mk-part='media-shell.gallery-filter'] {
+  /* Quick filter: a funnel button until opened, then an input with the three toggles. */
+  [data-mk-part='filter'] {
+    display: flex;
+    align-items: center;
+    margin-inline-start: auto;
+    border: 1px solid transparent;
+    border-radius: var(--mk-radius-sm);
+    overflow: hidden;
+  }
+
+  [data-mk-part='filter'][data-open='true'] {
     flex: 1;
     min-inline-size: 0;
-    margin-inline-start: auto;
-    padding: 2px 4px;
-    border: 1px solid var(--mk-color-border);
-    border-radius: var(--mk-radius-sm);
+    border-color: var(--mk-color-border);
     background: var(--mk-color-sunken);
+  }
+
+  [data-mk-part='filter'][data-mk-state~='invalid'] {
+    border-color: var(--mk-color-fg-destructive);
+  }
+
+  [data-mk-part='filter'][data-open='false'] [data-mk-part='filter.input'],
+  [data-mk-part='filter'][data-open='false'] [data-mk-part='filter.option'] {
+    display: none;
+  }
+
+  [data-mk-part='filter'][data-open='true'] [data-mk-part='filter.opener'] {
+    display: none;
+  }
+
+  [data-mk-part='filter.opener'],
+  [data-mk-part='filter.option'] {
+    flex: none;
+    display: inline-grid;
+    place-items: center;
+    inline-size: 22px;
+    block-size: 22px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--mk-color-fg);
+    opacity: 0.65;
+    cursor: pointer;
+  }
+
+  [data-mk-part='filter.option'] {
+    border-inline-start: 1px solid var(--mk-color-border);
+  }
+
+  [data-mk-part='filter.opener']:hover,
+  [data-mk-part='filter.option']:hover,
+  [data-mk-part='filter.option'][aria-pressed='true'] {
+    opacity: 1;
+    background: var(--mk-color-active);
+  }
+
+  [data-mk-part='filter.input'] {
+    flex: 1;
+    min-inline-size: 60px;
+    block-size: 22px;
+    padding: 2px 4px;
+    border: 0;
+    background: transparent;
     color: var(--mk-color-fg);
     font: inherit;
+    outline: none;
   }
 
   [data-mk-part='media-shell.gallery-group-header'] {
     display: flex;
+    align-items: center;
     gap: var(--mk-space-1);
+    inline-size: 100%;
     padding: 4px 8px;
+    border: 0;
+    background: transparent;
+    font: inherit;
     font-size: var(--mk-font-size-xs);
     color: var(--mk-color-fg-muted);
+    text-align: start;
+    cursor: pointer;
+  }
+
+  [data-mk-part='media-shell.gallery-group-header']:hover {
+    background: var(--mk-color-hover);
+  }
+
+  [data-mk-part='media-shell.gallery-empty'] {
+    padding: var(--mk-space-3);
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-sm);
   }
 
   [data-mk-part='media-shell.gallery-count'] {
@@ -5154,10 +5178,43 @@
     color: var(--mk-color-selection-fg);
   }
 
-  [data-mk-part='media-shell.gallery-thumb'] {
-    border: 1px solid var(--mk-color-border);
+  [data-mk-part='media-shell.gallery-thumb-box'] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 0;
+  }
+
+  [data-mk-part='media-shell.gallery-list'][data-mode='small']
+    [data-mk-part='media-shell.gallery-thumb-box'] {
+    inline-size: 76px;
+    block-size: 76px;
+  }
+
+  [data-mk-part='media-shell.gallery-list'][data-mode='big']
+    [data-mk-part='media-shell.gallery-thumb-box'] {
+    inline-size: 128px;
+    block-size: 128px;
+  }
+
+  /* The checkerboard sits on the canvas, so it spans the image and nothing more. */
+  [data-mk-part='media-shell.gallery-thumb'][data-loaded='true'] {
     border-radius: var(--mk-radius-sm);
-    background: var(--mk-color-canvas-bg);
+    background:
+      conic-gradient(
+          from 90deg at 50% 50%,
+          var(--mk-color-canvas-grid) 0 25%,
+          transparent 0 50%,
+          var(--mk-color-canvas-grid) 0 75%,
+          transparent 0
+        )
+        0 0 / 14px 14px,
+      var(--mk-color-canvas-bg);
+  }
+
+  /* The file icon shows only until (or unless) a thumbnail arrives. */
+  [data-mk-part='media-shell.gallery-thumb'][data-loaded='true'] + .codicon {
+    display: none;
   }
 
   [data-mk-part='media-shell.gallery-label'] {
@@ -5225,6 +5282,235 @@
     font-weight: var(--mk-font-weight-normal);
     text-transform: uppercase;
     letter-spacing: 0.04em;
+  }
+}
+
+/* Authored. MK2's Edit section: tool dock, colour swatch, brush settings, marquee, resize dialog. */
+
+@layer mk.components {
+  [data-mk-part='image-editing'] {
+    display: block;
+    font-size: var(--mk-font-size-sm);
+  }
+
+  [data-mk-part='image-editing.group'] {
+    margin-block-start: var(--mk-space-2);
+    padding-block-start: var(--mk-space-2);
+    border-block-start: 1px solid var(--mk-color-border);
+  }
+
+  [data-mk-part='image-editing.group']:first-child {
+    margin-block-start: 0;
+    padding-block-start: 0;
+    border-block-start: 0;
+  }
+
+  [data-mk-part='image-editing.group-title'] {
+    margin-block-end: var(--mk-space-1);
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  [data-mk-part='image-editing.row'] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--mk-space-1);
+    margin-block: var(--mk-space-1);
+  }
+
+  /* Icon-only dock, the Inkscape/Photoshop tool-panel convention: the tooltip carries the name. */
+  [data-mk-part='image-editing.tools'] {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 30px);
+    gap: 3px;
+  }
+
+  [data-mk-part='image-editing.tool'] {
+    display: grid;
+    place-items: center;
+    inline-size: 30px;
+    block-size: 30px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: var(--mk-radius-sm);
+    background: transparent;
+    color: var(--mk-color-fg);
+    cursor: pointer;
+  }
+
+  [data-mk-part='image-editing.tool']:hover {
+    border-color: var(--mk-color-border);
+    background: var(--mk-color-hover);
+  }
+
+  [data-mk-part='image-editing.tool'][data-mk-state~='active'] {
+    border-color: var(--mk-color-accent);
+    background: var(--mk-color-active);
+    color: var(--mk-color-accent);
+  }
+
+  [data-mk-part='image-editing.tool']:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  [data-mk-part='image-editing.tool'] svg {
+    display: block;
+    pointer-events: none;
+  }
+
+  [data-mk-part='image-editing.chip'] {
+    padding: 2px 8px;
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    background: transparent;
+    color: var(--mk-color-fg);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  [data-mk-part='image-editing.chip']:hover {
+    background: var(--mk-color-hover);
+  }
+
+  [data-mk-part='image-editing.chip']:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  [data-mk-part='image-editing.label'] {
+    min-inline-size: 44px;
+    color: var(--mk-color-fg-muted);
+  }
+
+  [data-mk-part='image-editing.range'] {
+    flex: 1;
+    min-inline-size: 60px;
+  }
+
+  [data-mk-part='image-editing.value'] {
+    color: var(--mk-color-fg-muted);
+    font-variant-numeric: tabular-nums;
+    text-align: end;
+  }
+
+  /* One swatch button over a checkerboard: partial alpha shows the checker through the colour. */
+  [data-mk-part='image-editing.swatch-button'] {
+    position: relative;
+    inline-size: 26px;
+    block-size: 26px;
+    padding: 0;
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    overflow: hidden;
+    cursor: pointer;
+    background:
+      conic-gradient(
+          from 90deg at 50% 50%,
+          var(--mk-color-canvas-grid) 0 25%,
+          transparent 0 50%,
+          var(--mk-color-canvas-grid) 0 75%,
+          transparent 0
+        )
+        0 0 / 8px 8px,
+      var(--mk-color-canvas-bg);
+  }
+
+  [data-mk-part='image-editing.swatch-alpha'] {
+    position: absolute;
+    inset: 0;
+  }
+
+  [data-mk-part='image-editing.swatches'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  [data-mk-part='image-editing.swatch'] {
+    inline-size: 18px;
+    block-size: 18px;
+    padding: 0;
+    border: 1px solid var(--mk-color-border);
+    border-radius: 3px;
+    cursor: pointer;
+  }
+
+  [data-mk-part='image-editing.popover'] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mk-space-1);
+    margin-block: 2px;
+    padding: var(--mk-space-2);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    background: var(--mk-color-sunken);
+  }
+
+  [data-mk-part='image-editing.actions'] {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--mk-space-1);
+  }
+
+  [data-mk-part='image-editing.note'] {
+    margin: 0;
+    color: var(--mk-color-fg-muted);
+    line-height: 1.4;
+  }
+
+  [data-mk-part='image-editing.number'] {
+    inline-size: 64px;
+    padding: 2px 4px;
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    background: var(--mk-color-sunken);
+    color: var(--mk-color-fg);
+    font: inherit;
+  }
+
+  [data-mk-part='image-editing.select'] {
+    padding: 2px 4px;
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    background: var(--mk-color-sunken);
+    color: var(--mk-color-fg);
+    font: inherit;
+  }
+
+  [data-mk-part='image-editing.check'] {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--mk-color-fg-muted);
+  }
+
+  /* Over the render area: sized in image pixels scaled by the current zoom, so it tracks the view. */
+  [data-mk-part='image-editing.marquee'] {
+    position: absolute;
+    border: 1px dashed var(--mk-color-canvas-selection);
+    background: var(--mk-color-selection-inactive);
+    pointer-events: none;
+  }
+
+  [data-mk-part='image-editing.dialog'] {
+    position: absolute;
+    inset-block-start: var(--mk-space-3);
+    inset-inline-start: 50%;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    gap: var(--mk-space-2);
+    min-inline-size: 220px;
+    padding: var(--mk-space-3);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-md);
+    background: var(--mk-color-raised);
+    box-shadow: var(--mk-elevation-3);
+    transform: translateX(-50%);
   }
 }
 

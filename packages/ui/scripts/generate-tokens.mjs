@@ -247,6 +247,8 @@ ${fragment('card.css')}
 
 ${fragment('media-shell.css')}
 
+${fragment('image-editing.css')}
+
 ${fragment('template.css')}
 `
 

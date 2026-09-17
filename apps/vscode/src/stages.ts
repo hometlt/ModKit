@@ -21,7 +21,6 @@ import { createGameTemplateViewer } from '@modkit/ui/template'
 import { createHexViewer } from '@modkit/ui/hex'
 import { createHexEditor } from '@modkit/ui/hex-editor'
 import { createImageViewer } from '@modkit/ui/image'
-import { createMetadataPanel } from '@modkit/ui/metadata'
 import { createModelViewer } from '@modkit/ui/model'
 import { createPlaybackViewer } from '@modkit/ui/transport'
 import { createTableViewer } from '@modkit/ui/table'
@@ -33,7 +32,11 @@ import { createWorldViewer } from '@modkit/ui/world'
 
 import { orderStages } from './view-policy.js'
 import { createVsCodeArchiveStage } from './archive-stage.js'
-import { createVsCodeEditPanel, type EditPanelOptions } from './edit-panel.js'
+import {
+  createVsCodeEditPanel,
+  createVsCodePixelSaver,
+  type EditPanelOptions,
+} from './edit-panel.js'
 import type { UiLocalizer } from '@modkit/ui/localization'
 
 /**
@@ -63,6 +66,26 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
          */
         ...(context.exportFiles === undefined ? {} : { exportBytes: context.exportFiles }),
         exportBaseName: descriptor => context.exportBaseName?.(descriptor) ?? 'image',
+        // The Edit section's Save: pixels → the codec's `replace` transform → the editing arm.
+        savePixels: createVsCodePixelSaver(context),
+        /*
+         * MK2's separate Edit, Metadata and Tree tabs are sidebar sections of the render view now.
+         * They are viewer modules like any other, which is also how an extension adds its own.
+         */
+        sections: [
+          {
+            id: 'transform',
+            title: context.localizer.text('stage.edit'),
+            icon: 'tools',
+            module: createVsCodeEditPanel(context),
+          },
+          {
+            id: 'structure',
+            title: context.localizer.text('stage.tree'),
+            icon: 'list-tree',
+            module: createTreeViewer({ localizer: context.localizer }),
+          },
+        ],
       }),
     },
     {
@@ -132,6 +155,8 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       // The card's preview section mounts the same shaded, textured model stage.
       module: createSubjectCardViewer({
         localizer: context.localizer,
+        // VS Code's tab and breadcrumb already name the subject; the card's own header repeated it.
+        header: false,
         previews: { model: modelViewer() },
         ...(context.textures === undefined ? {} : { textures: context.textures }),
       }),
@@ -200,26 +225,6 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       module: createTextEditorModule({ localizer: context.localizer }),
       trait: 'content.text',
       editable: true,
-      appLocal: true,
-    },
-    {
-      id: 'edit',
-      label: context.localizer.text('stage.edit'),
-      contract: 'common.view/byte-range-source',
-      module: createVsCodeEditPanel(context),
-      editable: true,
-      appLocal: true,
-    },
-    /*
-     * The metadata panel consumes no data source of its own — it renders the descriptor's metadata
-     * groups — so it is bound to the byte-range source, which is the host's floor for an opened
-     * subject. That makes "the subject opened" the condition, stated rather than implied.
-     */
-    {
-      id: 'metadata',
-      label: context.localizer.text('stage.metadata'),
-      contract: 'common.view/byte-range-source',
-      module: createMetadataPanel({ localizer: context.localizer }),
       appLocal: true,
     },
     {

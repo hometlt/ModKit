@@ -45,6 +45,17 @@ export const STAGE_ORDER: readonly string[] = Object.freeze([
   'hex-editor',
 ])
 
+/** Stages that render the subject itself; one of these outranks the card as the first view. */
+export const MEDIA_STAGE_IDS: readonly string[] = Object.freeze([
+  'image',
+  'vector',
+  'world',
+  'model',
+  'audio',
+  'video',
+  'playback',
+])
+
 /** The stage ids that only ever appear when this host can write the subject behind the tab. */
 export const EDITABLE_STAGE_IDS: readonly string[] = Object.freeze([
   'text-editor',
@@ -162,6 +173,15 @@ export function preferredStage(
   applicable: readonly string[],
   planActive: string | undefined,
 ): string | undefined {
+  /*
+   * A media subject opens on its render view, not on its card.
+   *
+   * The card is a good second view of a texture or a model — it is not the first one: what a person
+   * opened a `.dds` for is the picture, with the facts beside it in the sidebar. The card stays in
+   * the picker, and remains the plan's choice for subjects that have no render of their own.
+   */
+  const media = applicable.find(id => MEDIA_STAGE_IDS.includes(id))
+  if (planActive === 'card' && media !== undefined) return media
   if (planActive !== undefined && applicable.includes(planActive)) return planActive
   return applicable[0]
 }

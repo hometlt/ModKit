@@ -186,6 +186,14 @@ export const EXPLORER_PREVIEW_FALLBACK_MESSAGES = {
   'explorer.text': 'Text',
 } as const satisfies UiMessageCatalog
 
+export const FILTER_FALLBACK_MESSAGES = {
+  'filter.matchCase': 'Match case',
+  'filter.placeholder': 'Filter',
+  'filter.regex': 'Use regular expression',
+  'filter.title': 'Filter',
+  'filter.wholeWord': 'Match whole word',
+} as const satisfies UiMessageCatalog
+
 export const GRAPH_FALLBACK_MESSAGES = {
   'graph.all': 'All',
   'graph.allRelations': 'all',
@@ -282,9 +290,45 @@ export const IMAGE_EDIT_FALLBACK_MESSAGES = {
   'viewer.undo': 'Undo',
 } as const satisfies UiMessageCatalog
 
+export const IMAGE_EDITING_FALLBACK_MESSAGES = {
+  'imageEditing.alpha': 'Alpha',
+  'imageEditing.apply': 'Apply',
+  'imageEditing.bilinear': 'Bilinear',
+  'imageEditing.brushSettings': 'Brush settings',
+  'imageEditing.cancel': 'Cancel',
+  'imageEditing.clearSelection': 'Clear',
+  'imageEditing.color': 'Colour',
+  'imageEditing.colorAlpha': 'Colour and alpha',
+  'imageEditing.crop': 'Crop to selection',
+  'imageEditing.done': 'Done',
+  'imageEditing.height': 'Height',
+  'imageEditing.lockAspect': 'Lock aspect',
+  'imageEditing.nearest': 'Nearest',
+  'imageEditing.powerOfTwo': 'Snap to the nearest power of two',
+  'imageEditing.redo': 'Redo (Ctrl+Y)',
+  'imageEditing.resample': 'Resampling',
+  'imageEditing.resize': 'Resize',
+  'imageEditing.save': 'Save the edited pixels',
+  'imageEditing.size': 'Size',
+  'imageEditing.tolerance': 'Fill Δ',
+  'imageEditing.tool': 'Tool',
+  'imageEditing.tool.brush': 'Brush — freehand paint',
+  'imageEditing.tool.ellipse': 'Ellipse',
+  'imageEditing.tool.eraser': 'Eraser — clears to transparent',
+  'imageEditing.tool.eyedropper': 'Eyedropper — click to pick a colour',
+  'imageEditing.tool.fill': 'Bucket fill — click a region to flood-fill it',
+  'imageEditing.tool.gradient': 'Gradient — drag from opaque to transparent',
+  'imageEditing.tool.line': 'Line',
+  'imageEditing.tool.rect': 'Rectangle',
+  'imageEditing.tool.select': 'Select — drag a region, then Crop or Clear',
+  'imageEditing.unavailable':
+    'This format has no encoder — editing is unavailable; export still works.',
+  'imageEditing.undo': 'Undo (Ctrl+Z)',
+  'imageEditing.width': 'Width',
+} as const satisfies UiMessageCatalog
+
 export const IMAGE_FALLBACK_MESSAGES = {
   'viewer.actualPixels': 'Actual pixels',
-  'viewer.cycleBackdrop': 'Cycle the backdrop',
   'viewer.fit': 'Fit',
   'viewer.fitTitle': 'Fit to the stage',
   'viewer.image': 'Image viewer',
@@ -302,10 +346,7 @@ export const IMAGE_FALLBACK_MESSAGES = {
   'viewer.imageDimensions': 'Dimensions',
   'viewer.imageExport': 'Export',
   'viewer.imageExportAll': 'Export all',
-  'viewer.imageExportAllTitle': 'Export every declared subresource as PNG',
   'viewer.imageExportRefused': 'export refused: {reason}',
-  'viewer.imageExportTitle': 'Export the current subresource as PNG',
-  'viewer.imageExportUnavailable': 'This host cannot write exported files',
   'viewer.imageExported': 'exported {count} file(s)',
   'viewer.imageExporting': 'exporting…',
   'viewer.imageFormat': 'Format',
@@ -313,8 +354,10 @@ export const IMAGE_FALLBACK_MESSAGES = {
   'viewer.imageMipLevels': 'Mip levels',
   'viewer.imageNextSubresource': 'Next {axis}',
   'viewer.imagePreviousSubresource': 'Previous {axis}',
-  'viewer.imageSectionChannels': 'Channels',
-  'viewer.imageSectionExport': 'Export',
+  'viewer.imageResizeTitle': 'Resize…',
+  'viewer.imageSaveRefused': 'Could not save: {reason}',
+  'viewer.imageSaving': 'Saving the edited pixels…',
+  'viewer.imageSectionEdit': 'Edit',
   'viewer.imageSectionFormat': 'Format',
   'viewer.imageSectionImage': 'Image',
   'viewer.imageSectionMetadata': 'Header / metadata',
@@ -327,8 +370,9 @@ export const IMAGE_FALLBACK_MESSAGES = {
 export const MEDIA_SHELL_FALLBACK_MESSAGES = {
   'mediaShell.gallery': 'Gallery',
   'mediaShell.galleryBig': 'Large icons',
-  'mediaShell.galleryFilter': 'Filter',
+  'mediaShell.galleryEmpty': 'No media files found.',
   'mediaShell.galleryList': 'List',
+  'mediaShell.galleryNoMatch': 'No matching media files.',
   'mediaShell.gallerySmall': 'Small icons',
   'mediaShell.sidebar': 'Details',
   'mediaShell.toggleGallery': 'Toggle gallery',

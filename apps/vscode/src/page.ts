@@ -90,6 +90,7 @@ export function contentSecurityPolicy(cspSource: string, nonce: string): readonl
   return Object.freeze([
     "default-src 'none'",
     `style-src ${cspSource}`,
+    `font-src ${cspSource}`,
     "style-src-attr 'none'",
     `script-src 'nonce-${nonce}'`,
     `img-src ${cspSource} data: blob:`,
@@ -120,6 +121,7 @@ export function pageHtml(options: PageOptions): string {
   const script = webview.asWebviewUri('webview.js').toString()
   const shipped = webview.asWebviewUri('modkit-ui.css').toString()
   const chrome = webview.asWebviewUri('app.css').toString()
+  const icons = webview.asWebviewUri('codicons/codicon.css').toString()
   const policy = contentSecurityPolicy(webview.cspSource, nonce).join('; ')
 
   return `<!doctype html>
@@ -127,6 +129,7 @@ export function pageHtml(options: PageOptions): string {
   <head>
     <meta charset="utf-8" />
     <meta http-equiv="Content-Security-Policy" content="${policy};" />
+    <link rel="stylesheet" href="${icons}" />
     <link rel="stylesheet" href="${shipped}" />
     <link rel="stylesheet" href="${chrome}" />
     <title>Modkit</title>

@@ -14,6 +14,10 @@ export interface ViewerStatusBarItem {
   readonly align?: 'start' | 'end'
   readonly choices?: readonly { readonly id: string; readonly label: string }[]
   readonly selected?: string
+  /** Codicon name; VS Code's own status bar spells it `$(name)`. */
+  readonly icon?: string
+  /** No choice list: one click runs the viewer's action, reported as an empty choice id. */
+  readonly action?: boolean
 }
 
 type Choose = (itemId: string, choiceId: string) => void
@@ -52,9 +56,11 @@ export function createViewerStatusBar(): ViewerStatusBar {
         BASE_PRIORITY - index,
       )
       bar.name = item.tooltip ?? item.id
-      bar.text = item.choices === undefined ? item.text : `${item.text} $(chevron-down)`
+      const glyph = item.icon === undefined ? '' : `$(${item.icon}) `
+      const menu = item.choices !== undefined && item.choices.length > 0
+      bar.text = `${glyph}${item.text}${menu ? ' $(chevron-down)' : ''}`
       if (item.tooltip !== undefined) bar.tooltip = item.tooltip
-      if (item.choices !== undefined && item.choices.length > 0) {
+      if (menu || item.action === true) {
         bar.command = {
           title: item.tooltip ?? item.id,
           command: VIEWER_STATUS_CHOOSE_COMMAND,
@@ -72,7 +78,12 @@ export function createViewerStatusBar(): ViewerStatusBar {
       if (typeof key !== 'string' || typeof itemId !== 'string') return
       const entry = entries.get(key)
       const item = entry?.items.find(candidate => candidate.id === itemId)
-      if (entry === undefined || item?.choices === undefined) return
+      if (entry === undefined || item === undefined) return
+      // An action item has no menu: the click itself is the whole message.
+      if (item.choices === undefined || item.choices.length === 0) {
+        if (item.action === true) entry.choose(itemId, '')
+        return
+      }
       const picked = await vscode.window.showQuickPick(
         item.choices.map(choice => ({
           label: choice.label,

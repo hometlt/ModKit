@@ -1,0 +1,228 @@
+/* Authored. MK2's Edit section: tool dock, colour swatch, brush settings, marquee, resize dialog. */
+
+@layer mk.components {
+  [data-mk-part='image-editing'] {
+    display: block;
+    font-size: var(--mk-font-size-sm);
+  }
+
+  [data-mk-part='image-editing.group'] {
+    margin-block-start: var(--mk-space-2);
+    padding-block-start: var(--mk-space-2);
+    border-block-start: 1px solid var(--mk-color-border);
+  }
+
+  [data-mk-part='image-editing.group']:first-child {
+    margin-block-start: 0;
+    padding-block-start: 0;
+    border-block-start: 0;
+  }
+
+  [data-mk-part='image-editing.group-title'] {
+    margin-block-end: var(--mk-space-1);
+    color: var(--mk-color-fg-muted);
+    font-size: var(--mk-font-size-xs);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  [data-mk-part='image-editing.row'] {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--mk-space-1);
+    margin-block: var(--mk-space-1);
+  }
+
+  /* Icon-only dock, the Inkscape/Photoshop tool-panel convention: the tooltip carries the name. */
+  [data-mk-part='image-editing.tools'] {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, 30px);
+    gap: 3px;
+  }
+
+  [data-mk-part='image-editing.tool'] {
+    display: grid;
+    place-items: center;
+    inline-size: 30px;
+    block-size: 30px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: var(--mk-radius-sm);
+    background: transparent;
+    color: var(--mk-color-fg);
+    cursor: pointer;
+  }
+
+  [data-mk-part='image-editing.tool']:hover {
+    border-color: var(--mk-color-border);
+    background: var(--mk-color-hover);
+  }
+
+  [data-mk-part='image-editing.tool'][data-mk-state~='active'] {
+    border-color: var(--mk-color-accent);
+    background: var(--mk-color-active);
+    color: var(--mk-color-accent);
+  }
+
+  [data-mk-part='image-editing.tool']:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  [data-mk-part='image-editing.tool'] svg {
+    display: block;
+    pointer-events: none;
+  }
+
+  [data-mk-part='image-editing.chip'] {
+    padding: 2px 8px;
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    background: transparent;
+    color: var(--mk-color-fg);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  [data-mk-part='image-editing.chip']:hover {
+    background: var(--mk-color-hover);
+  }
+
+  [data-mk-part='image-editing.chip']:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+
+  [data-mk-part='image-editing.label'] {
+    min-inline-size: 44px;
+    color: var(--mk-color-fg-muted);
+  }
+
+  [data-mk-part='image-editing.range'] {
+    flex: 1;
+    min-inline-size: 60px;
+  }
+
+  [data-mk-part='image-editing.value'] {
+    color: var(--mk-color-fg-muted);
+    font-variant-numeric: tabular-nums;
+    text-align: end;
+  }
+
+  /* One swatch button over a checkerboard: partial alpha shows the checker through the colour. */
+  [data-mk-part='image-editing.swatch-button'] {
+    position: relative;
+    inline-size: 26px;
+    block-size: 26px;
+    padding: 0;
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    overflow: hidden;
+    cursor: pointer;
+    background:
+      conic-gradient(
+          from 90deg at 50% 50%,
+          var(--mk-color-canvas-grid) 0 25%,
+          transparent 0 50%,
+          var(--mk-color-canvas-grid) 0 75%,
+          transparent 0
+        )
+        0 0 / 8px 8px,
+      var(--mk-color-canvas-bg);
+  }
+
+  [data-mk-part='image-editing.swatch-alpha'] {
+    position: absolute;
+    inset: 0;
+  }
+
+  [data-mk-part='image-editing.swatches'] {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  [data-mk-part='image-editing.swatch'] {
+    inline-size: 18px;
+    block-size: 18px;
+    padding: 0;
+    border: 1px solid var(--mk-color-border);
+    border-radius: 3px;
+    cursor: pointer;
+  }
+
+  [data-mk-part='image-editing.popover'] {
+    display: flex;
+    flex-direction: column;
+    gap: var(--mk-space-1);
+    margin-block: 2px;
+    padding: var(--mk-space-2);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    background: var(--mk-color-sunken);
+  }
+
+  [data-mk-part='image-editing.actions'] {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--mk-space-1);
+  }
+
+  [data-mk-part='image-editing.note'] {
+    margin: 0;
+    color: var(--mk-color-fg-muted);
+    line-height: 1.4;
+  }
+
+  [data-mk-part='image-editing.number'] {
+    inline-size: 64px;
+    padding: 2px 4px;
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    background: var(--mk-color-sunken);
+    color: var(--mk-color-fg);
+    font: inherit;
+  }
+
+  [data-mk-part='image-editing.select'] {
+    padding: 2px 4px;
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    background: var(--mk-color-sunken);
+    color: var(--mk-color-fg);
+    font: inherit;
+  }
+
+  [data-mk-part='image-editing.check'] {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--mk-color-fg-muted);
+  }
+
+  /* Over the render area: sized in image pixels scaled by the current zoom, so it tracks the view. */
+  [data-mk-part='image-editing.marquee'] {
+    position: absolute;
+    border: 1px dashed var(--mk-color-canvas-selection);
+    background: var(--mk-color-selection-inactive);
+    pointer-events: none;
+  }
+
+  [data-mk-part='image-editing.dialog'] {
+    position: absolute;
+    inset-block-start: var(--mk-space-3);
+    inset-inline-start: 50%;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    gap: var(--mk-space-2);
+    min-inline-size: 220px;
+    padding: var(--mk-space-3);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-md);
+    background: var(--mk-color-raised);
+    box-shadow: var(--mk-elevation-3);
+    transform: translateX(-50%);
+  }
+}

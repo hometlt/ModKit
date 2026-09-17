@@ -270,6 +270,13 @@ export interface ViewerStatusItem {
   readonly align?: 'start' | 'end'
   readonly choices?: readonly { readonly id: string; readonly label: string }[]
   readonly selected?: string
+  /**
+   * Codicon name drawn before the text (`zoom-in`, `symbol-ruler`, `file`, `symbol-color`), the
+   * vocabulary VS Code's own status bar spells as `$(name)` and MK2's texture viewer used.
+   */
+  readonly icon?: string
+  /** No choice list: clicking runs one action, reported as an empty choice id. */
+  readonly action?: boolean
 }
 
 /** Host-owned status bar. A viewer mounted without it draws nothing there and loses nothing. */

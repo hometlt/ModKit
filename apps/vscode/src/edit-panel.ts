@@ -14,7 +14,7 @@ import {
   ViewerMountScope,
 } from '@modkit/ui/viewer'
 import type { AnyDescriptor, AssetEditPlan, SceneRendererPort, ViewerModule } from '@modkit/sdk'
-import type { ImageExportFile, ImageExportOutcome } from '@modkit/ui/image'
+import type { ImageExportFile, ImageExportOutcome, ImageViewerOptions } from '@modkit/ui/image'
 import type { UiLocalizer } from '@modkit/ui/localization'
 import type { ModelViewerOptions } from '@modkit/ui/model'
 import type { GameTemplateViewerOptions } from '@modkit/ui/template'
@@ -79,6 +79,73 @@ export function fidelityNote(
   return notes.length === 0
     ? ` (${localizer.text('vscode.edit.fidelityLoss')})`
     : ` (${localizer.text('vscode.edit.fidelityNotes', { notes: notes.join('; ') })})`
+}
+
+/**
+ * Writing painted pixels back: the same Path A round trip the panel below drives, with the input
+ * fixed to the codec's `replace` transform.
+ *
+ * The image stage hands over the pixels and its own operation session; this side invokes the
+ * codec's `edit.content` handler, applies the plan through the subject's editing arm and reopens
+ * the tab on the new revision, exactly as an edit-panel form does.
+ */
+export function createVsCodePixelSaver(
+  options: EditPanelOptions,
+): NonNullable<ImageViewerOptions['savePixels']> {
+  const localizer = options.localizer
+  return async (request, signal) => {
+    const descriptor = asRecord(request.descriptor)
+    const ports = options.portsFor(descriptor)
+    if (ports === undefined)
+      return { state: 'refused', reason: localizer.text('vscode.edit.noArm') }
+    const handlerId = editOffer(descriptor, { editable: true, localizer }).forms[0]?.handlerId
+    if (handlerId === undefined) {
+      return { state: 'refused', reason: localizer.text('vscode.edit.nothingHere') }
+    }
+    let result
+    try {
+      result = await request.operations.invoke(
+        handlerId,
+        {
+          transform: 'replace',
+          format: 'keep',
+          image: {
+            width: request.image.width,
+            height: request.image.height,
+            pixels: base64Of(request.image.rgba),
+          },
+        },
+        ...(signal === undefined ? [] : [{ signal }]),
+      )
+    } catch (error) {
+      return { state: 'refused', reason: error instanceof Error ? error.message : String(error) }
+    }
+    if (isRejected(result)) {
+      return { state: 'refused', reason: invokeRefusalMessage(result, localizer) }
+    }
+    let plan: AssetEditPlan
+    try {
+      plan = editPlanFromOperationOutput(result.output)
+    } catch (error) {
+      return { state: 'refused', reason: error instanceof Error ? error.message : String(error) }
+    }
+    const applied = await ports.applyPlan(plan)
+    if (applied.failed) return { state: 'refused', reason: applied.message }
+    const outcome = `${localizer.text('vscode.edit.apply')} — ${applied.message}${fidelityNote(plan, localizer)}`
+    options.recordOutcome(descriptor, outcome)
+    await options.reopen(descriptor)
+    return { state: 'saved', message: outcome }
+  }
+}
+
+/** Pixels cross the operation boundary as JSON; base64 keeps that from being one number per byte. */
+function base64Of(bytes: Uint8Array): string {
+  let text = ''
+  // Chunked: `String.fromCharCode(...bytes)` overflows the argument list on a real texture.
+  for (let index = 0; index < bytes.length; index += 0x8000) {
+    text += String.fromCharCode(...bytes.subarray(index, index + 0x8000))
+  }
+  return btoa(text)
 }
 
 export function createVsCodeEditPanel(options: EditPanelOptions): ViewerModule {
