@@ -1,0 +1,73 @@
+{
+  "features": [
+    [
+      "13517f4d7b0880dc",
+      "asset.search"
+    ],
+    [
+      "35c0b55bf61c4bba",
+      "describe"
+    ],
+    [
+      "54c4c73b52124350",
+      "sc2-data.references"
+    ],
+    [
+      "9dae17bf068b309f",
+      "sc2-data.resolve-inheritance"
+    ],
+    [
+      "b51c6b20ac8cd4d0",
+      "sc2-data.resolve-inheritance"
+    ],
+    [
+      "cdd8e9bfb9e97b2f",
+      "edit.content"
+    ],
+    [
+      "d65bac1b13594400",
+      "asset.validate"
+    ],
+    [
+      "dca3c258ce6db08c",
+      "detect"
+    ],
+    [
+      "f8ceabab58c03adb",
+      "export.convert"
+    ]
+  ],
+  "operations": [
+    [
+      "view.inspect",
+      "view.inspect"
+    ],
+    [
+      "asset.search",
+      "asset.search"
+    ],
+    [
+      "asset.validate",
+      "asset.validate"
+    ],
+    [
+      "edit.content",
+      "edit.content"
+    ],
+    [
+      "export.convert",
+      "export.convert"
+    ],
+    [
+      "sc2-data.references",
+      "sc2-data.references"
+    ],
+    [
+      "sc2-data.resolve-inheritance",
+      "sc2-data.resolve-inheritance"
+    ]
+  ],
+  "skipProbes": {
+    "describe": "Real MK3 gap: MK2 describe() reports structure.hierarchy 'partial' when an inheritance chain leaves the file; codec-kit createInspectionCodec publishes every trait as 'available' (no per-trait state), so blizzard/sc2-data cannot express it. Needs a codec-kit trait-state field."
+  }
+}

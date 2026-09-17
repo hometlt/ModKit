@@ -2827,9 +2827,15 @@
     {
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-data/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-data/receipt.json",
+          "sha256": "47374fbbf1e84701b0dac1c8e03570b43cfb511fd0f45267dcaa73b943d6fed6"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-data/feature/13517f4d7b0880dc",
-      "status": "pending"
+      "reearnedOn": "2026-09-17",
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -2856,9 +2862,15 @@
     {
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-data/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-data/receipt.json",
+          "sha256": "47374fbbf1e84701b0dac1c8e03570b43cfb511fd0f45267dcaa73b943d6fed6"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-data/feature/54c4c73b52124350",
-      "status": "pending"
+      "reearnedOn": "2026-09-17",
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -2873,16 +2885,28 @@
     {
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-data/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-data/receipt.json",
+          "sha256": "47374fbbf1e84701b0dac1c8e03570b43cfb511fd0f45267dcaa73b943d6fed6"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-data/feature/9dae17bf068b309f",
-      "status": "pending"
+      "reearnedOn": "2026-09-17",
+      "status": "adapted"
     },
     {
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-data/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-data/receipt.json",
+          "sha256": "47374fbbf1e84701b0dac1c8e03570b43cfb511fd0f45267dcaa73b943d6fed6"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-data/feature/b51c6b20ac8cd4d0",
-      "status": "pending"
+      "reearnedOn": "2026-09-17",
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -2892,16 +2916,28 @@
     {
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-data/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-data/receipt.json",
+          "sha256": "47374fbbf1e84701b0dac1c8e03570b43cfb511fd0f45267dcaa73b943d6fed6"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-data/feature/cdd8e9bfb9e97b2f",
-      "status": "pending"
+      "reearnedOn": "2026-09-17",
+      "status": "adapted"
     },
     {
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-data/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-data/receipt.json",
+          "sha256": "47374fbbf1e84701b0dac1c8e03570b43cfb511fd0f45267dcaa73b943d6fed6"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-data/feature/d65bac1b13594400",
-      "status": "pending"
+      "reearnedOn": "2026-09-17",
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -2918,9 +2954,15 @@
     {
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-data/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-data/receipt.json",
+          "sha256": "47374fbbf1e84701b0dac1c8e03570b43cfb511fd0f45267dcaa73b943d6fed6"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-data/feature/dca3c258ce6db08c",
-      "status": "pending"
+      "reearnedOn": "2026-09-17",
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -2930,37 +2972,67 @@
     {
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-data/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-data/receipt.json",
+          "sha256": "47374fbbf1e84701b0dac1c8e03570b43cfb511fd0f45267dcaa73b943d6fed6"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-data/feature/f8ceabab58c03adb",
-      "status": "pending"
+      "reearnedOn": "2026-09-17",
+      "status": "adapted"
     },
     {
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-data/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-data/receipt.json",
+          "sha256": "47374fbbf1e84701b0dac1c8e03570b43cfb511fd0f45267dcaa73b943d6fed6"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-data/operation/asset.search",
-      "status": "pending"
+      "reearnedOn": "2026-09-17",
+      "status": "adapted"
     },
     {
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-data/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-data/receipt.json",
+          "sha256": "47374fbbf1e84701b0dac1c8e03570b43cfb511fd0f45267dcaa73b943d6fed6"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-data/operation/asset.validate",
-      "status": "pending"
+      "reearnedOn": "2026-09-17",
+      "status": "adapted"
     },
     {
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-data/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-data/receipt.json",
+          "sha256": "47374fbbf1e84701b0dac1c8e03570b43cfb511fd0f45267dcaa73b943d6fed6"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-data/operation/edit.content",
-      "status": "pending"
+      "reearnedOn": "2026-09-17",
+      "status": "adapted"
     },
     {
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-data/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-data/receipt.json",
+          "sha256": "47374fbbf1e84701b0dac1c8e03570b43cfb511fd0f45267dcaa73b943d6fed6"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-data/operation/export.convert",
-      "status": "pending"
+      "reearnedOn": "2026-09-17",
+      "status": "adapted"
     },
     {
       "evidence": [],
@@ -2970,23 +3042,41 @@
     {
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-data/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-data/receipt.json",
+          "sha256": "47374fbbf1e84701b0dac1c8e03570b43cfb511fd0f45267dcaa73b943d6fed6"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-data/operation/sc2-data.references",
-      "status": "pending"
+      "reearnedOn": "2026-09-17",
+      "status": "adapted"
     },
     {
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-data/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-data/receipt.json",
+          "sha256": "47374fbbf1e84701b0dac1c8e03570b43cfb511fd0f45267dcaa73b943d6fed6"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-data/operation/sc2-data.resolve-inheritance",
-      "status": "pending"
+      "reearnedOn": "2026-09-17",
+      "status": "adapted"
     },
     {
       "demotedOn": "2026-09-16",
       "demotionReason": "receipt absent: artifacts/legacy-parity-sc2/sc2-data/receipt.json",
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-data/receipt.json",
+          "sha256": "47374fbbf1e84701b0dac1c8e03570b43cfb511fd0f45267dcaa73b943d6fed6"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-data/operation/view.inspect",
-      "status": "pending"
+      "reearnedOn": "2026-09-17",
+      "status": "adapted"
     },
     {
       "evidence": [],
