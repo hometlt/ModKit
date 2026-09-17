@@ -366,7 +366,9 @@ export function createExplorer(document: Document, options: ExplorerOptions): Ex
           }))
       },
       onActivate(node) {
-        if (node.kind === 'directory') return
+        // A folder named like a format (`Map.SC2Map`, `Data.SC2Mod`) is a loose package: opening it
+        // opens the package subject. Any other folder only expands, through its twisty.
+        if (node.kind === 'directory' && !supported.has(extensionOf(node.label))) return
         void activate(nodeToEntry(node))
       },
       onAction(node, action) {
