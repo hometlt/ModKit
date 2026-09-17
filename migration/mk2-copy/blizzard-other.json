@@ -1,0 +1,259 @@
+{
+  "schemaVersion": 1,
+  "family": "blizzard-other",
+  "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "copies": [
+    {
+      "source": "extensions/blizzard/diablo/games/diablo-2/game.manifest.json",
+      "destination": "modkit-extensions-blizzard/blizzard-diablo/src/lib/mk2/games/diablo-2/game.manifest.json",
+      "sha256Mk2": "94cfeeb364d8ca9f98125985d7f7e59b11c053c77df7c4732c61e3cc5c378c5c",
+      "sha256Mk3": "94cfeeb364d8ca9f98125985d7f7e59b11c053c77df7c4732c61e3cc5c378c5c",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/diablo/games/diablo-2/README.md",
+      "destination": "modkit-extensions-blizzard/blizzard-diablo/src/lib/mk2/games/diablo-2/README.md",
+      "sha256Mk2": "e34b4d1f62c89265f2d9d8a2c3a58418623783997402154ed4cedde875d0d0b9",
+      "sha256Mk3": "e34b4d1f62c89265f2d9d8a2c3a58418623783997402154ed4cedde875d0d0b9",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/diablo/games/diablo-2/src/detect.ts",
+      "destination": "modkit-extensions-blizzard/blizzard-diablo/src/lib/mk2/games/diablo-2/src/detect.ts",
+      "sha256Mk2": "cdb61ef96aaf441cb6c4f81864c66fabb5266f711067a19a30b47f659bfd6351",
+      "sha256Mk3": "cdb61ef96aaf441cb6c4f81864c66fabb5266f711067a19a30b47f659bfd6351",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/diablo/games/diablo-2/src/node.ts",
+      "destination": "modkit-extensions-blizzard/blizzard-diablo/src/lib/mk2/games/diablo-2/src/node.ts",
+      "sha256Mk2": "bee54641587c0abf793d7886536a6d95cccc158bdbc2b2ac73b18488b9989f00",
+      "sha256Mk3": "bee54641587c0abf793d7886536a6d95cccc158bdbc2b2ac73b18488b9989f00",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/diablo/games/diablo-2/test/detect.test.ts",
+      "destination": "modkit-extensions-blizzard/blizzard-diablo/test/mk2/games/diablo-2/test/detect.test.ts",
+      "sha256Mk2": "bfe267fe878c2e8520059caf13192382c554f13330c687b776b47d78b90921dd",
+      "sha256Mk3": "bfe267fe878c2e8520059caf13192382c554f13330c687b776b47d78b90921dd",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/diablo/games/diablo-2/test/node.test.ts",
+      "destination": "modkit-extensions-blizzard/blizzard-diablo/test/mk2/games/diablo-2/test/node.test.ts",
+      "sha256Mk2": "466193b7a3c92294e21ebfc0f95901f49de0a704cec113e2792401405e738871",
+      "sha256Mk3": "466193b7a3c92294e21ebfc0f95901f49de0a704cec113e2792401405e738871",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/diablo/games/diablo-3/game.manifest.json",
+      "destination": "modkit-extensions-blizzard/blizzard-diablo/src/lib/mk2/games/diablo-3/game.manifest.json",
+      "sha256Mk2": "487951951c4d46a43f2c65d7ac63dde22f64d3223f1e45e148ab1868a972965c",
+      "sha256Mk3": "487951951c4d46a43f2c65d7ac63dde22f64d3223f1e45e148ab1868a972965c",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/diablo/games/diablo-3/README.md",
+      "destination": "modkit-extensions-blizzard/blizzard-diablo/src/lib/mk2/games/diablo-3/README.md",
+      "sha256Mk2": "6b64c9010efc6b2c89ca283a08cffe6471bb311fb4a5cb5b627ccfaf2500418a",
+      "sha256Mk3": "6b64c9010efc6b2c89ca283a08cffe6471bb311fb4a5cb5b627ccfaf2500418a",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/diablo/games/diablo-3/src/detect.ts",
+      "destination": "modkit-extensions-blizzard/blizzard-diablo/src/lib/mk2/games/diablo-3/src/detect.ts",
+      "sha256Mk2": "658cf6c37d5c94b503e487e062c5f89f1880c0b0c9545b9afa3b36933db283f7",
+      "sha256Mk3": "658cf6c37d5c94b503e487e062c5f89f1880c0b0c9545b9afa3b36933db283f7",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/diablo/games/diablo-3/src/node.ts",
+      "destination": "modkit-extensions-blizzard/blizzard-diablo/src/lib/mk2/games/diablo-3/src/node.ts",
+      "sha256Mk2": "0540d2f970aec98980977fd6b53a54462f763398ced3d8f1c26b148c66416b27",
+      "sha256Mk3": "0540d2f970aec98980977fd6b53a54462f763398ced3d8f1c26b148c66416b27",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/diablo/games/diablo-3/test/detect.test.ts",
+      "destination": "modkit-extensions-blizzard/blizzard-diablo/test/mk2/games/diablo-3/test/detect.test.ts",
+      "sha256Mk2": "bdc3e6a6d4bdee84c65a28cf41b184f66648f4835338d1fdd5d6aebbe3a62e77",
+      "sha256Mk3": "bdc3e6a6d4bdee84c65a28cf41b184f66648f4835338d1fdd5d6aebbe3a62e77",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/diablo/games/diablo-3/test/node.test.ts",
+      "destination": "modkit-extensions-blizzard/blizzard-diablo/test/mk2/games/diablo-3/test/node.test.ts",
+      "sha256Mk2": "bc5c9994b6035fd72484e04ddcd6fa7dfdd015d44bf314e0827107e0c7a60976",
+      "sha256Mk3": "bc5c9994b6035fd72484e04ddcd6fa7dfdd015d44bf314e0827107e0c7a60976",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/warcraft-3/games/warcraft-3/game.manifest.json",
+      "destination": "modkit-extensions-blizzard/blizzard-warcraft-3/src/lib/mk2/games/warcraft-3/game.manifest.json",
+      "sha256Mk2": "a36dad2cdcf01d67183fc91b862a1c1ca4abbc0969537da1b97102054b14d91a",
+      "sha256Mk3": "a36dad2cdcf01d67183fc91b862a1c1ca4abbc0969537da1b97102054b14d91a",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/warcraft-3/games/warcraft-3/README.md",
+      "destination": "modkit-extensions-blizzard/blizzard-warcraft-3/src/lib/mk2/games/warcraft-3/README.md",
+      "sha256Mk2": "da616bec4a787783126ad6884d4cbacd7d8c17df4f815f90ebe44078dc364f4d",
+      "sha256Mk3": "da616bec4a787783126ad6884d4cbacd7d8c17df4f815f90ebe44078dc364f4d",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/warcraft-3/games/warcraft-3/src/detect.ts",
+      "destination": "modkit-extensions-blizzard/blizzard-warcraft-3/src/lib/mk2/games/warcraft-3/src/detect.ts",
+      "sha256Mk2": "0bed7226883b2512c3d2635abc735fe0d13e72c30a24fb2617c3b121699c5a8d",
+      "sha256Mk3": "0bed7226883b2512c3d2635abc735fe0d13e72c30a24fb2617c3b121699c5a8d",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/warcraft-3/games/warcraft-3/src/node.ts",
+      "destination": "modkit-extensions-blizzard/blizzard-warcraft-3/src/lib/mk2/games/warcraft-3/src/node.ts",
+      "sha256Mk2": "a1a4971d5f3d1ba220b415fdcad9008bbe58732128fd88b9e6d52a2a65e9e683",
+      "sha256Mk3": "a1a4971d5f3d1ba220b415fdcad9008bbe58732128fd88b9e6d52a2a65e9e683",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/warcraft-3/games/warcraft-3/test/detect.test.ts",
+      "destination": "modkit-extensions-blizzard/blizzard-warcraft-3/test/mk2/games/warcraft-3/test/detect.test.ts",
+      "sha256Mk2": "2dcb24178e146b444c91a6f7c6a663bfd1c8cc37900c0b3e8de0294c0c33c6a2",
+      "sha256Mk3": "2dcb24178e146b444c91a6f7c6a663bfd1c8cc37900c0b3e8de0294c0c33c6a2",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/warcraft-3/games/warcraft-3/test/node.test.ts",
+      "destination": "modkit-extensions-blizzard/blizzard-warcraft-3/test/mk2/games/warcraft-3/test/node.test.ts",
+      "sha256Mk2": "13593e4335e34f444c8b636971d743c10b154d7633829d1ab3f659194c7dc305",
+      "sha256Mk3": "13593e4335e34f444c8b636971d743c10b154d7633829d1ab3f659194c7dc305",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/starcraft-1/games/starcraft-1/game.manifest.json",
+      "destination": "modkit-extensions-blizzard/blizzard-common-formats/src/lib/mk2/games/starcraft-1/game.manifest.json",
+      "sha256Mk2": "6b54bcc6cfc4fe198d1b9b790a10ba24f64343397ba068247eee048631ba0145",
+      "sha256Mk3": "6b54bcc6cfc4fe198d1b9b790a10ba24f64343397ba068247eee048631ba0145",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/starcraft-1/games/starcraft-1/README.md",
+      "destination": "modkit-extensions-blizzard/blizzard-common-formats/src/lib/mk2/games/starcraft-1/README.md",
+      "sha256Mk2": "e8f455ba54d54e9ce2ad22012a5edb14dc97a099ddfd41f94af535a8dceb69b7",
+      "sha256Mk3": "e8f455ba54d54e9ce2ad22012a5edb14dc97a099ddfd41f94af535a8dceb69b7",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/starcraft-1/games/starcraft-1/src/detect.ts",
+      "destination": "modkit-extensions-blizzard/blizzard-common-formats/src/lib/mk2/games/starcraft-1/src/detect.ts",
+      "sha256Mk2": "374d57074e94c42fe4a929f8d3d5d128dc67857e221ee8a28034bd82d1449cbe",
+      "sha256Mk3": "374d57074e94c42fe4a929f8d3d5d128dc67857e221ee8a28034bd82d1449cbe",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/starcraft-1/games/starcraft-1/src/node.ts",
+      "destination": "modkit-extensions-blizzard/blizzard-common-formats/src/lib/mk2/games/starcraft-1/src/node.ts",
+      "sha256Mk2": "3271f45149f4e11d002b7fe2ee20a2483ef28227090684a35f9fe6c09d0a2f7e",
+      "sha256Mk3": "3271f45149f4e11d002b7fe2ee20a2483ef28227090684a35f9fe6c09d0a2f7e",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/starcraft-1/games/starcraft-1/test/detect.test.ts",
+      "destination": "modkit-extensions-blizzard/blizzard-common-formats/test/mk2/games/starcraft-1/test/detect.test.ts",
+      "sha256Mk2": "4649d6d66654fc00f419f4ecc5c4ed535cddae3dfa720bc87d9781b3c467d4ca",
+      "sha256Mk3": "4649d6d66654fc00f419f4ecc5c4ed535cddae3dfa720bc87d9781b3c467d4ca",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/starcraft-1/games/starcraft-1/test/node.test.ts",
+      "destination": "modkit-extensions-blizzard/blizzard-common-formats/test/mk2/games/starcraft-1/test/node.test.ts",
+      "sha256Mk2": "d28a9f083229a8937e01d48f16fabd0bdb0a0353df50cb5cfd9974cf49ffa476",
+      "sha256Mk3": "d28a9f083229a8937e01d48f16fabd0bdb0a0353df50cb5cfd9974cf49ffa476",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/warcraft-2/games/warcraft-2/game.manifest.json",
+      "destination": "modkit-extensions-blizzard/blizzard-common-formats/src/lib/mk2/games/warcraft-2/game.manifest.json",
+      "sha256Mk2": "0d0779194e214fde182eda43d92a7ff849e677ca00e2551d6d093cbdcc6b13ba",
+      "sha256Mk3": "0d0779194e214fde182eda43d92a7ff849e677ca00e2551d6d093cbdcc6b13ba",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/warcraft-2/games/warcraft-2/README.md",
+      "destination": "modkit-extensions-blizzard/blizzard-common-formats/src/lib/mk2/games/warcraft-2/README.md",
+      "sha256Mk2": "dd0577e51d67828aeb73446a1b1b5b6ab837b1fb28cf4eece997d8937c8d39a4",
+      "sha256Mk3": "dd0577e51d67828aeb73446a1b1b5b6ab837b1fb28cf4eece997d8937c8d39a4",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/warcraft-2/games/warcraft-2/src/detect.ts",
+      "destination": "modkit-extensions-blizzard/blizzard-common-formats/src/lib/mk2/games/warcraft-2/src/detect.ts",
+      "sha256Mk2": "0b0fdb97be79a6702075ce7a9032395680a1e955986d4611f3204ce13528485b",
+      "sha256Mk3": "0b0fdb97be79a6702075ce7a9032395680a1e955986d4611f3204ce13528485b",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/warcraft-2/games/warcraft-2/src/node.ts",
+      "destination": "modkit-extensions-blizzard/blizzard-common-formats/src/lib/mk2/games/warcraft-2/src/node.ts",
+      "sha256Mk2": "6034e2d9398f03dd0378b771c601557d8a26d99b4fccb225c0f7a027b8fc7c85",
+      "sha256Mk3": "6034e2d9398f03dd0378b771c601557d8a26d99b4fccb225c0f7a027b8fc7c85",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/warcraft-2/games/warcraft-2/test/detect.test.ts",
+      "destination": "modkit-extensions-blizzard/blizzard-common-formats/test/mk2/games/warcraft-2/test/detect.test.ts",
+      "sha256Mk2": "e1d1671457596dd812da7c0c6ba56cf23ed7f217512d648fa75fcd4c87a3cc63",
+      "sha256Mk3": "e1d1671457596dd812da7c0c6ba56cf23ed7f217512d648fa75fcd4c87a3cc63",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/warcraft-2/games/warcraft-2/test/node.test.ts",
+      "destination": "modkit-extensions-blizzard/blizzard-common-formats/test/mk2/games/warcraft-2/test/node.test.ts",
+      "sha256Mk2": "41b24994f9deb326a1c827c55a9076f5f411f033159d7ac10ff0282cda110fa0",
+      "sha256Mk3": "41b24994f9deb326a1c827c55a9076f5f411f033159d7ac10ff0282cda110fa0",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/world-of-warcraft/codecs/wow-m2/codec.manifest.json",
+      "destination": "modkit-extensions-blizzard/blizzard-common-formats/src/lib/mk2/codecs/wow-m2/codec.manifest.json",
+      "sha256Mk2": "18220763b3314c38fdee8c8ed8a9d0f6b68ae0753e5b9ac72cdbaf42df3a7f3a",
+      "sha256Mk3": "18220763b3314c38fdee8c8ed8a9d0f6b68ae0753e5b9ac72cdbaf42df3a7f3a",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/world-of-warcraft/codecs/wow-m2/README.md",
+      "destination": "modkit-extensions-blizzard/blizzard-common-formats/src/lib/mk2/codecs/wow-m2/README.md",
+      "sha256Mk2": "844edb5d8aa5b9607bf78a62099a995be3872ab71e2ac200255244b929e33c0e",
+      "sha256Mk3": "844edb5d8aa5b9607bf78a62099a995be3872ab71e2ac200255244b929e33c0e",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/world-of-warcraft/codecs/wow-m2/src/detect.ts",
+      "destination": "modkit-extensions-blizzard/blizzard-common-formats/src/lib/mk2/codecs/wow-m2/src/detect.ts",
+      "sha256Mk2": "c53bd184789ed7d39dff2d36fd3153610cafe46b1b8d22610e88ac946710a030",
+      "sha256Mk3": "c53bd184789ed7d39dff2d36fd3153610cafe46b1b8d22610e88ac946710a030",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/world-of-warcraft/codecs/wow-m2/src/index.ts",
+      "destination": "modkit-extensions-blizzard/blizzard-common-formats/src/lib/mk2/codecs/wow-m2/src/index.ts",
+      "sha256Mk2": "581f71619a3ca02469601e3b0b50a1b98891904993e284af386f1b8a6ab056c2",
+      "sha256Mk3": "581f71619a3ca02469601e3b0b50a1b98891904993e284af386f1b8a6ab056c2",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/world-of-warcraft/codecs/wow-m2/test/manifest.spec.ts",
+      "destination": "modkit-extensions-blizzard/blizzard-common-formats/test/mk2/codecs/wow-m2/test/manifest.spec.ts",
+      "sha256Mk2": "bccd14934ab5bca21271dc2da267a39c2f5e3bec2644a2a999c68433153682de",
+      "sha256Mk3": "bccd14934ab5bca21271dc2da267a39c2f5e3bec2644a2a999c68433153682de",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/blizzard/world-of-warcraft/games/world-of-warcraft/game.manifest.json",
+      "destination": "modkit-extensions-blizzard/blizzard-common-formats/src/lib/mk2/games/world-of-warcraft/game.manifest.json",
+      "sha256Mk2": "6c47f31da24b59a55ebae023c8798c9dbf474aaf316a57e89989b3d9e1b1885a",
+      "sha256Mk3": "6c47f31da24b59a55ebae023c8798c9dbf474aaf316a57e89989b3d9e1b1885a",
+      "rewrites": []
+    }
+  ]
+}
