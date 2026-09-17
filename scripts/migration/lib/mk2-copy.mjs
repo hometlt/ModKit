@@ -10,6 +10,10 @@ import {
   sc2M3FamilyPlanDigest,
 } from './sc2-m3-refreeze.mjs'
 
+// Both families share one MK2 checkout/oracle commit; each keeps its own declaration/ledger file
+// and 'family'-named scope semantics (SC2_M3_REFREEZE_PIN etc.) stay exclusive to 'sc2'.
+export const PINNED_DECLARATION_FAMILIES = new Set(['sc2', 'ea'])
+
 const acceptedScopePins = new Map([
   [
     'sc2-m1-libs-2026-09-04',
@@ -969,10 +973,10 @@ export async function prepareCopy({
   if (!scope) throw new Error('Explicit --scope required (m1-libs, sc2-bank, family)')
   if (
     declaration.schemaVersion !== 1 ||
-    declaration.family !== 'sc2' ||
+    !PINNED_DECLARATION_FAMILIES.has(declaration.family) ||
     declaration.oracleCommit !== MK2_PIN
   )
-    throw new Error('Invalid SC2 pinned declaration')
+    throw new Error('Invalid pinned declaration family')
   const selected = declaration.scopes?.[scope]
   if (!selected) throw new Error(`Unknown copy scope: ${scope}`)
   if (!selected.requiredSources?.length && !selected.sourcePrefixes?.length)
@@ -1487,7 +1491,8 @@ export async function copyCli(mode, argv = process.argv.slice(2)) {
       values.set(key, value)
     }
   }
-  if (values.get('--family') !== 'sc2') throw new Error('Explicit --family sc2 required')
+  if (!PINNED_DECLARATION_FAMILIES.has(values.get('--family')))
+    throw new Error('Explicit --family sc2|ea required')
   if (mode === 'check' && (values.has('--dry-run') || values.has('--provenance-only')))
     throw new Error('Check requires actual copies and provenance; copy-only flags are invalid')
   const workspaceRoot = path.resolve(
@@ -1520,5 +1525,111 @@ export async function copyCli(mode, argv = process.argv.slice(2)) {
     : mode === 'check'
       ? await checkCopies(prepared)
       : await writeCopies(prepared, { provenanceOnly: values.has('--provenance-only') })
+  console.log(JSON.stringify(result))
+}
+
+/**
+ * Stage H (mechanical port of non-SC2 Blizzard/publisher code): a lighter sibling of
+ * prepareCopy/copyCli for families outside the SC2 receipt-parity pipeline above. A row is
+ * copied byte-for-byte from the pinned MK2 commit — no rewrites, no import-declaration
+ * rewriting, no dependency-closure verification. Stage G's closure checks assume every import
+ * is meant to resolve today; that is false for a copy that is deliberately left unwired pending
+ * a later thin adapter ("перенести весь код, ничего не потеряв; дорабатывать его будем позже").
+ * The ledger this writes uses the same {source, destination, sha256Mk2, sha256Mk3} row shape as
+ * migration/mk2-copy/sc2.json so it reads the same way.
+ */
+export async function prepareMechanicalCopy({ declaration, workspaceRoot, repoRoot, source: suppliedSource }) {
+  if (
+    declaration.schemaVersion !== 1 ||
+    !declaration.family ||
+    declaration.family === 'sc2' ||
+    declaration.oracleCommit !== MK2_PIN
+  )
+    throw new Error('Invalid mechanical pinned declaration')
+  unique(declaration.copies, 'source', 'source')
+  unique(declaration.copies, 'destination', 'destination')
+  const source =
+    suppliedSource ??
+    (await createPinnedSource({
+      repoRoot,
+      commit: declaration.oracleCommit,
+      observeWorkingTree: false,
+    }))
+  if (source.commit !== declaration.oracleCommit) throw new Error('Pinned source commit mismatch')
+  const records = []
+  for (const row of declaration.copies) {
+    safeRelative(row.source)
+    safeRelative(row.destination)
+    const pinned = await source.read(row.source)
+    if (row.sha256Mk2 !== pinned.sha256) throw new Error(`Pinned source hash mismatch: ${row.source}`)
+    if (row.sha256Mk3 !== pinned.sha256)
+      throw new Error(`Mechanical copy must be byte-identical: ${row.destination}`)
+    records.push({
+      mk2Path: row.source,
+      destination: row.destination,
+      sha256Mk2: pinned.sha256,
+      sha256Mk3: pinned.sha256,
+      gitBlob: pinned.gitBlob,
+      bytes: pinned.bytes,
+    })
+  }
+  return { records, declaration, workspaceRoot }
+}
+
+export async function writeMechanicalCopies(prepared) {
+  for (const record of prepared.records) {
+    const target = await safeTarget(prepared.workspaceRoot, record.destination)
+    try {
+      if (sha256(await readFile(target)) !== record.sha256Mk3)
+        throw new Error(`Refusing to overwrite divergent destination: ${record.destination}`)
+      continue
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error
+    }
+    await mkdir(path.dirname(target), { recursive: true })
+    await writeFile(target, record.bytes, { flag: 'wx' })
+  }
+  return checkMechanicalCopies(prepared)
+}
+
+export async function checkMechanicalCopies(prepared) {
+  for (const record of prepared.records) {
+    const target = await safeTarget(prepared.workspaceRoot, record.destination)
+    if (sha256(await readFile(target)) !== record.sha256Mk3)
+      throw new Error(`Missing/tampered mechanical copy: ${record.destination}`)
+  }
+  return { family: prepared.declaration.family, files: prepared.records.length }
+}
+
+export async function mechanicalCopyCli(mode, argv = process.argv.slice(2)) {
+  const values = new Map()
+  for (let index = 0; index < argv.length; index++) {
+    const key = argv[index]
+    if (
+      !['--family', '--root', '--source-root', '--declaration'].includes(key) ||
+      values.has(key)
+    )
+      throw new Error(`Unknown/duplicate option: ${key}`)
+    const value = argv[++index]
+    if (!value || value.startsWith('--')) throw new Error(`Missing ${key} value`)
+    values.set(key, value)
+  }
+  const family = values.get('--family')
+  if (!family || family === 'sc2') throw new Error('Explicit non-sc2 --family required')
+  const workspaceRoot = path.resolve(
+    values.get('--root') ?? fileURLToPath(new URL('../../../..', import.meta.url)),
+  )
+  const declarationPath =
+    values.get('--declaration') ??
+    path.join(workspaceRoot, `modkit-core/migration/mk2-copy/${family}.json`)
+  const declaration = JSON.parse(await readFile(declarationPath, 'utf8'))
+  if (declaration.family !== family) throw new Error('Declaration family mismatch')
+  const prepared = await prepareMechanicalCopy({
+    declaration,
+    workspaceRoot,
+    repoRoot: values.get('--source-root') ?? path.join(workspaceRoot, 'references/modkitmk2'),
+  })
+  const result =
+    mode === 'check' ? await checkMechanicalCopies(prepared) : await writeMechanicalCopies(prepared)
   console.log(JSON.stringify(result))
 }

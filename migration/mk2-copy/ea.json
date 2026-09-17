@@ -1,0 +1,1500 @@
+{
+  "schemaVersion": 1,
+  "family": "ea",
+  "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+  "scopes": {
+    "ea-mechanical-2026-09-17": {
+      "status": "ready",
+      "copiedAt": "2026-09-17",
+      "requiredSources": [
+        "extensions/ea/archives/codecs/mix/src/config.ts",
+        "extensions/ea/archives/codecs/mix/src/detect.ts",
+        "extensions/ea/archives/codecs/mix/src/index.ts",
+        "extensions/ea/archives/codecs/mix/test/manifest.spec.ts",
+        "extensions/ea/archives/codecs/mix/test/mix.spec.ts",
+        "extensions/ea/emperor/codecs/emperor-rfh-rfd/src/detect.ts",
+        "extensions/ea/emperor/codecs/emperor-rfh-rfd/src/index.ts",
+        "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/archive.spec.ts",
+        "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/index.spec.ts",
+        "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/manifest.spec.ts",
+        "extensions/ea/emperor/codecs/emperor-xbf/src/detect.ts",
+        "extensions/ea/emperor/codecs/emperor-xbf/src/index.ts",
+        "extensions/ea/emperor/codecs/emperor-xbf/test/index.spec.ts",
+        "extensions/ea/emperor/codecs/emperor-xbf/test/manifest.spec.ts",
+        "extensions/ea/models/codecs/sage-w3x/src/detect.ts",
+        "extensions/ea/models/codecs/sage-w3x/src/index.ts",
+        "extensions/ea/models/codecs/sage-w3x/test/index.spec.ts",
+        "extensions/ea/models/codecs/sage-w3x/test/manifest.spec.ts",
+        "extensions/ea/models/codecs/westwood-w3d/src/detect.ts",
+        "extensions/ea/models/codecs/westwood-w3d/src/implementation.ts",
+        "extensions/ea/models/codecs/westwood-w3d/src/index.ts",
+        "extensions/ea/models/codecs/westwood-w3d/test/detect.spec.ts",
+        "extensions/ea/models/codecs/westwood-w3d/test/manifest.spec.ts",
+        "extensions/ea/models/codecs/westwood-w3d/test/westwood-w3d.spec.ts",
+        "extensions/ea/sage/codecs/big/src/index.ts",
+        "extensions/ea/sage/codecs/big/src/refpack.ts",
+        "extensions/ea/sage/codecs/big/src/source.ts",
+        "extensions/ea/sage/codecs/big/test/magic-resolution.spec.ts",
+        "extensions/ea/sage/codecs/big/test/manifest.spec.ts",
+        "extensions/ea/sage/codecs/big/test/refpack.spec.ts",
+        "extensions/ea/sage/codecs/big/test/source.spec.ts",
+        "extensions/ea/sage/codecs/cnc3-data/src/index.ts",
+        "extensions/ea/sage/codecs/cnc3-data/test/asset-declaration.spec.ts",
+        "extensions/ea/sage/codecs/cnc3-localization/src/codec.ts",
+        "extensions/ea/sage/codecs/cnc3-localization/src/csf.ts",
+        "extensions/ea/sage/codecs/cnc3-localization/src/index.ts",
+        "extensions/ea/sage/codecs/cnc3-localization/src/str.ts",
+        "extensions/ea/sage/codecs/cnc3-localization/test/localization.spec.ts",
+        "extensions/ea/sage/codecs/cnc3-localization/test/shared-registry.spec.ts",
+        "extensions/ea/sage/codecs/cnc3-map/src/ckmp.ts",
+        "extensions/ea/sage/codecs/cnc3-map/src/index.ts",
+        "extensions/ea/sage/codecs/cnc3-map/test/ckmp.spec.ts",
+        "extensions/ea/sage/codecs/sage-skudef/src/detect.ts",
+        "extensions/ea/sage/codecs/sage-skudef/src/index.ts",
+        "extensions/ea/sage/codecs/sage-skudef/src/mount.ts",
+        "extensions/ea/sage/codecs/sage-skudef/src/node.ts",
+        "extensions/ea/sage/codecs/sage-skudef/src/parse.ts",
+        "extensions/ea/sage/codecs/sage-skudef/src/resolve.ts",
+        "extensions/ea/sage/codecs/sage-skudef/test/real-install.spec.ts",
+        "extensions/ea/sage/codecs/sage-skudef/test/skudef.spec.ts",
+        "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/src/index.ts",
+        "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/test/index.spec.ts",
+        "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/test/manifest.spec.ts",
+        "extensions/ea/westwood/codecs/cps/src/index.ts",
+        "extensions/ea/westwood/codecs/r16/src/index.ts",
+        "extensions/ea/westwood/codecs/r8/src/dune-sprite.ts",
+        "extensions/ea/westwood/codecs/r8/src/index.ts",
+        "extensions/ea/westwood/codecs/shp/src/detect.ts",
+        "extensions/ea/westwood/codecs/shp/src/index.ts",
+        "extensions/ea/westwood/codecs/tmp/src/detect.ts",
+        "extensions/ea/westwood/codecs/tmp/src/index.ts",
+        "extensions/ea/westwood/codecs/vpl/src/detect.ts",
+        "extensions/ea/westwood/codecs/vpl/src/index.ts",
+        "extensions/ea/westwood/codecs/vpl/test/index.spec.ts",
+        "extensions/ea/westwood/codecs/wsa/src/index.ts"
+      ],
+      "provenance": "modkit-extensions-ea/MK2-EA-PROVENANCE.json",
+      "dependencies": [],
+      "importDispositions": [
+        {
+          "source": "extensions/ea/archives/codecs/mix/src/index.ts",
+          "specifier": "egoroof-blowfish",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/archives/codecs/mix/src/index.ts",
+          "specifier": "node:crypto",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/archives/codecs/mix/src/index.ts",
+          "specifier": "@modkitx/archives-processing/core/archive.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/archives/codecs/mix/src/index.ts",
+          "specifier": "@modkitx/archives-processing/core/types.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/archives/codecs/mix/test/manifest.spec.ts",
+          "specifier": "node:fs/promises",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/archives/codecs/mix/test/manifest.spec.ts",
+          "specifier": "node:path",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/archives/codecs/mix/test/manifest.spec.ts",
+          "specifier": "node:url",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/archives/codecs/mix/test/manifest.spec.ts",
+          "specifier": "@modkitx/assets",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/archives/codecs/mix/test/manifest.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/archives/codecs/mix/test/manifest.spec.ts",
+          "specifier": "@modkitx/archives-processing/registry",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/archives/codecs/mix/test/mix.spec.ts",
+          "specifier": "node:crypto",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/archives/codecs/mix/test/mix.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/archives/codecs/mix/test/mix.spec.ts",
+          "specifier": "@modkitx/archives-processing",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/src/index.ts",
+          "specifier": "node:fs",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/src/index.ts",
+          "specifier": "node:path",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/src/index.ts",
+          "specifier": "node:zlib",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/src/index.ts",
+          "specifier": "@modkitx/archives-processing/core/archive.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/src/index.ts",
+          "specifier": "@modkitx/archives-processing/core/types.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/archive.spec.ts",
+          "specifier": "node:fs",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/archive.spec.ts",
+          "specifier": "node:os",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/archive.spec.ts",
+          "specifier": "node:path",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/archive.spec.ts",
+          "specifier": "node:zlib",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/archive.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/archive.spec.ts",
+          "specifier": "@modkitx/ext-microsoft-age-series/codecs/age-bar/test/fixture-bytes.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/archive.spec.ts",
+          "specifier": "@modkitx/ext-microsoft-age-series/codecs/age-bar/test/named-record-fixture.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/archive.spec.ts",
+          "specifier": "@modkitx/archives-processing",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/index.spec.ts",
+          "specifier": "node:fs",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/index.spec.ts",
+          "specifier": "node:os",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/index.spec.ts",
+          "specifier": "node:path",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/index.spec.ts",
+          "specifier": "node:zlib",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/index.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/index.spec.ts",
+          "specifier": "@modkitx/archives-processing",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/manifest.spec.ts",
+          "specifier": "node:fs/promises",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/manifest.spec.ts",
+          "specifier": "node:path",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/manifest.spec.ts",
+          "specifier": "node:url",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/manifest.spec.ts",
+          "specifier": "@modkitx/assets",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/manifest.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/manifest.spec.ts",
+          "specifier": "@modkitx/archives-processing/registry",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-xbf/src/index.ts",
+          "specifier": "@modkitx/models-processing/core/codec",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-xbf/src/index.ts",
+          "specifier": "@modkitx/models-processing",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-xbf/test/index.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-xbf/test/index.spec.ts",
+          "specifier": "@modkitx/models-processing",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-xbf/test/index.spec.ts",
+          "specifier": "@modkitx/models-processing/registry",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-xbf/test/manifest.spec.ts",
+          "specifier": "node:fs/promises",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-xbf/test/manifest.spec.ts",
+          "specifier": "node:path",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-xbf/test/manifest.spec.ts",
+          "specifier": "node:url",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-xbf/test/manifest.spec.ts",
+          "specifier": "@modkitx/assets",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-xbf/test/manifest.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/emperor/codecs/emperor-xbf/test/manifest.spec.ts",
+          "specifier": "@modkitx/models-processing/registry",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/models/codecs/sage-w3x/src/index.ts",
+          "specifier": "fast-xml-parser",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/models/codecs/sage-w3x/src/index.ts",
+          "specifier": "@modkitx/models-processing/core/codec",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/models/codecs/sage-w3x/src/index.ts",
+          "specifier": "@modkitx/models-processing",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/models/codecs/sage-w3x/src/index.ts",
+          "specifier": "@modkitx/models-processing/core/westwood-bind-pose",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/models/codecs/sage-w3x/test/index.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/models/codecs/sage-w3x/test/index.spec.ts",
+          "specifier": "@modkitx/models-processing",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/models/codecs/sage-w3x/test/manifest.spec.ts",
+          "specifier": "node:fs/promises",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/models/codecs/sage-w3x/test/manifest.spec.ts",
+          "specifier": "node:path",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/models/codecs/sage-w3x/test/manifest.spec.ts",
+          "specifier": "node:url",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/models/codecs/sage-w3x/test/manifest.spec.ts",
+          "specifier": "@modkitx/assets",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/models/codecs/sage-w3x/test/manifest.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/models/codecs/sage-w3x/test/manifest.spec.ts",
+          "specifier": "@modkitx/models-processing/registry",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/models/codecs/westwood-w3d/src/implementation.ts",
+          "specifier": "@modkitx/models-processing/core/codec",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/models/codecs/westwood-w3d/src/implementation.ts",
+          "specifier": "@modkitx/models-processing",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/models/codecs/westwood-w3d/src/implementation.ts",
+          "specifier": "@modkitx/models-processing/core/westwood-bind-pose",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/models/codecs/westwood-w3d/test/detect.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/models/codecs/westwood-w3d/test/manifest.spec.ts",
+          "specifier": "node:fs/promises",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/models/codecs/westwood-w3d/test/manifest.spec.ts",
+          "specifier": "node:path",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/models/codecs/westwood-w3d/test/manifest.spec.ts",
+          "specifier": "node:url",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/models/codecs/westwood-w3d/test/manifest.spec.ts",
+          "specifier": "@modkitx/assets",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/models/codecs/westwood-w3d/test/manifest.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/models/codecs/westwood-w3d/test/manifest.spec.ts",
+          "specifier": "@modkitx/models-processing/registry",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/models/codecs/westwood-w3d/test/westwood-w3d.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/models/codecs/westwood-w3d/test/westwood-w3d.spec.ts",
+          "specifier": "@modkitx/models-processing",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/big/src/index.ts",
+          "specifier": "@modkitx/archives-processing/core/archive.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/big/src/index.ts",
+          "specifier": "@modkitx/core/errors",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/big/src/index.ts",
+          "specifier": "@modkitx/archives-processing/core/types.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/big/src/source.ts",
+          "specifier": "@modkitx/archives-processing/core/archive.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/big/src/source.ts",
+          "specifier": "@modkitx/core/errors",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/big/src/source.ts",
+          "specifier": "@modkitx/archives-processing/core/types.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/big/test/magic-resolution.spec.ts",
+          "specifier": "@modkitx/archives-processing",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/big/test/magic-resolution.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/big/test/manifest.spec.ts",
+          "specifier": "node:fs/promises",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/big/test/manifest.spec.ts",
+          "specifier": "node:path",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/big/test/manifest.spec.ts",
+          "specifier": "node:url",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/big/test/manifest.spec.ts",
+          "specifier": "@modkitx/assets",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/big/test/manifest.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/big/test/manifest.spec.ts",
+          "specifier": "@modkitx/archives-processing/registry",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/big/test/refpack.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/big/test/source.spec.ts",
+          "specifier": "@modkitx/archives-processing/core/source.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/big/test/source.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/cnc3-data/src/index.ts",
+          "specifier": "fast-xml-parser",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/cnc3-data/test/asset-declaration.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/cnc3-localization/src/codec.ts",
+          "specifier": "@modkitx/assets",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/cnc3-localization/src/codec.ts",
+          "specifier": "@modkitx/localization-processing/operations",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/cnc3-localization/test/localization.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/cnc3-localization/test/shared-registry.spec.ts",
+          "specifier": "node:fs",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/cnc3-localization/test/shared-registry.spec.ts",
+          "specifier": "node:fs/promises",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/cnc3-localization/test/shared-registry.spec.ts",
+          "specifier": "node:path",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/cnc3-localization/test/shared-registry.spec.ts",
+          "specifier": "node:url",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/cnc3-localization/test/shared-registry.spec.ts",
+          "specifier": "@modkitx/assets",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/cnc3-localization/test/shared-registry.spec.ts",
+          "specifier": "@modkitx/localization-processing",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/cnc3-localization/test/shared-registry.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/cnc3-map/test/ckmp.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/sage-skudef/src/mount.ts",
+          "specifier": "@modkitx/archives-processing/core/archive.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/sage-skudef/src/mount.ts",
+          "specifier": "@modkitx/archives-processing/core/types.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/sage-skudef/src/node.ts",
+          "specifier": "node:fs/promises",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/sage-skudef/src/node.ts",
+          "specifier": "@modkitx/archives-processing/core/fs-source.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/sage-skudef/test/real-install.spec.ts",
+          "specifier": "node:fs",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/sage-skudef/test/real-install.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/sage-skudef/test/skudef.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/sage/codecs/sage-skudef/test/skudef.spec.ts",
+          "specifier": "@modkitx/archives-processing/core/archive.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/src/index.ts",
+          "specifier": "@modkitx/models-processing/core/codec",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/src/index.ts",
+          "specifier": "@modkitx/models-processing",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/test/index.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/test/index.spec.ts",
+          "specifier": "@modkitx/models-processing",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/test/index.spec.ts",
+          "specifier": "@modkitx/models-processing/registry",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/test/manifest.spec.ts",
+          "specifier": "node:fs/promises",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/test/manifest.spec.ts",
+          "specifier": "node:path",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/test/manifest.spec.ts",
+          "specifier": "node:url",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "Node builtin retained by the unwired MK2 oracle copy; not yet exercised by an MK3 consumer."
+        },
+        {
+          "source": "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/test/manifest.spec.ts",
+          "specifier": "@modkitx/assets",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/test/manifest.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/test/manifest.spec.ts",
+          "specifier": "@modkitx/models-processing/registry",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/westwood/codecs/cps/src/index.ts",
+          "specifier": "@modkitx/image-processing/formats/legacy-rts.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/westwood/codecs/r16/src/index.ts",
+          "specifier": "@modkitx/image-processing/formats/legacy-rts.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/westwood/codecs/r8/src/dune-sprite.ts",
+          "specifier": "@modkitx/image-processing/formats/legacy-rts.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/westwood/codecs/r8/src/dune-sprite.ts",
+          "specifier": "@modkitx/image-processing/core/palette.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/westwood/codecs/r8/src/dune-sprite.ts",
+          "specifier": "@modkitx/image-processing/core/types.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/westwood/codecs/r8/src/index.ts",
+          "specifier": "@modkitx/image-processing/formats/legacy-rts.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/westwood/codecs/shp/src/index.ts",
+          "specifier": "@modkitx/image-processing/core/palette.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/westwood/codecs/shp/src/index.ts",
+          "specifier": "@modkitx/image-processing/core/types.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/westwood/codecs/tmp/src/index.ts",
+          "specifier": "@modkitx/image-processing/core/palette.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/westwood/codecs/tmp/src/index.ts",
+          "specifier": "@modkitx/image-processing/core/types.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/westwood/codecs/vpl/src/index.ts",
+          "specifier": "@modkitx/image-processing/core/palette.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/westwood/codecs/vpl/src/index.ts",
+          "specifier": "@modkitx/image-processing/core/types.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/westwood/codecs/vpl/test/index.spec.ts",
+          "specifier": "vitest",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/westwood/codecs/vpl/test/index.spec.ts",
+          "specifier": "@modkitx/image-processing",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        },
+        {
+          "source": "extensions/ea/westwood/codecs/wsa/src/index.ts",
+          "specifier": "@modkitx/image-processing/formats/legacy-rts.js",
+          "kind": "copied-unwired",
+          "count": 1,
+          "reason": "MK2 shared runtime package edge retained by the unwired oracle copy; no MK3 port/adapter consumes it yet."
+        }
+      ],
+      "dynamicImports": [],
+      "adapters": []
+    }
+  },
+  "copies": [
+    {
+      "source": "extensions/ea/archives/codecs/mix/src/config.ts",
+      "destination": "modkit-extensions-ea/archives/src/lib/mk2/archives/codecs/mix/src/config.ts",
+      "sha256Mk2": "3e1212fc39f72831cb8c6a02e5fa2c96daedfc46e841a385e89c3b48869b0510",
+      "sha256Mk3": "3e1212fc39f72831cb8c6a02e5fa2c96daedfc46e841a385e89c3b48869b0510",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/archives/codecs/mix/src/detect.ts",
+      "destination": "modkit-extensions-ea/archives/src/lib/mk2/archives/codecs/mix/src/detect.ts",
+      "sha256Mk2": "f700b4eb2a0a0417c6ca5d03c6c29c5a5ce276daa050345b9879e90071d76148",
+      "sha256Mk3": "f700b4eb2a0a0417c6ca5d03c6c29c5a5ce276daa050345b9879e90071d76148",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/archives/codecs/mix/src/index.ts",
+      "destination": "modkit-extensions-ea/archives/src/lib/mk2/archives/codecs/mix/src/index.ts",
+      "sha256Mk2": "400ff4e81a62dff641970f44dbf96f1794691a33a9db7db67375cdff89dc9240",
+      "sha256Mk3": "400ff4e81a62dff641970f44dbf96f1794691a33a9db7db67375cdff89dc9240",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/archives/codecs/mix/test/manifest.spec.ts",
+      "destination": "modkit-extensions-ea/archives/src/lib/mk2/archives/codecs/mix/test/manifest.spec.ts",
+      "sha256Mk2": "41f5b5cdab68c093a703931d2061834bc4a50f2a928414e87c1396f3b55f14d5",
+      "sha256Mk3": "41f5b5cdab68c093a703931d2061834bc4a50f2a928414e87c1396f3b55f14d5",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/archives/codecs/mix/test/mix.spec.ts",
+      "destination": "modkit-extensions-ea/archives/src/lib/mk2/archives/codecs/mix/test/mix.spec.ts",
+      "sha256Mk2": "179d2550871a0d08f43473fcc4e56bc99505776e9dda758b3071db1edbd86012",
+      "sha256Mk3": "179d2550871a0d08f43473fcc4e56bc99505776e9dda758b3071db1edbd86012",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/src/detect.ts",
+      "destination": "modkit-extensions-ea/emperor/src/lib/mk2/emperor/codecs/emperor-rfh-rfd/src/detect.ts",
+      "sha256Mk2": "fc28fb490dce980a5df69a8e94d52d51cb2d9565ec082469e8fd15ccb8c4f087",
+      "sha256Mk3": "fc28fb490dce980a5df69a8e94d52d51cb2d9565ec082469e8fd15ccb8c4f087",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/src/index.ts",
+      "destination": "modkit-extensions-ea/emperor/src/lib/mk2/emperor/codecs/emperor-rfh-rfd/src/index.ts",
+      "sha256Mk2": "884fb533275bb641aa27935cd6440aeba2f3bd554ac73fe97acdd723898d0799",
+      "sha256Mk3": "884fb533275bb641aa27935cd6440aeba2f3bd554ac73fe97acdd723898d0799",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/archive.spec.ts",
+      "destination": "modkit-extensions-ea/emperor/src/lib/mk2/emperor/codecs/emperor-rfh-rfd/test/archive.spec.ts",
+      "sha256Mk2": "f5cf96fa2fd20c5e3c8698581153a8ca4074174abab6845e5e2ccc0f58ee9c12",
+      "sha256Mk3": "f5cf96fa2fd20c5e3c8698581153a8ca4074174abab6845e5e2ccc0f58ee9c12",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/index.spec.ts",
+      "destination": "modkit-extensions-ea/emperor/src/lib/mk2/emperor/codecs/emperor-rfh-rfd/test/index.spec.ts",
+      "sha256Mk2": "81e006788e5c49d1d18e8159df4ef80e51c677a27b8bbccb089e7bc91ce4ff46",
+      "sha256Mk3": "81e006788e5c49d1d18e8159df4ef80e51c677a27b8bbccb089e7bc91ce4ff46",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/emperor/codecs/emperor-rfh-rfd/test/manifest.spec.ts",
+      "destination": "modkit-extensions-ea/emperor/src/lib/mk2/emperor/codecs/emperor-rfh-rfd/test/manifest.spec.ts",
+      "sha256Mk2": "b0e1b3524d28b53b8e5587f131b9814878c89df1d33140e7dc6783086c6ab72d",
+      "sha256Mk3": "b0e1b3524d28b53b8e5587f131b9814878c89df1d33140e7dc6783086c6ab72d",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/emperor/codecs/emperor-xbf/src/detect.ts",
+      "destination": "modkit-extensions-ea/emperor/src/lib/mk2/emperor/codecs/emperor-xbf/src/detect.ts",
+      "sha256Mk2": "3e671b563189766b75b0ee236f7a308ee36e1b45d619b9a6956b03edd09ba70e",
+      "sha256Mk3": "3e671b563189766b75b0ee236f7a308ee36e1b45d619b9a6956b03edd09ba70e",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/emperor/codecs/emperor-xbf/src/index.ts",
+      "destination": "modkit-extensions-ea/emperor/src/lib/mk2/emperor/codecs/emperor-xbf/src/index.ts",
+      "sha256Mk2": "a9e5899111fc7f9e6be0fc490f783c33b84df44ce9cf791bfbaaf120f5944f95",
+      "sha256Mk3": "a9e5899111fc7f9e6be0fc490f783c33b84df44ce9cf791bfbaaf120f5944f95",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/emperor/codecs/emperor-xbf/test/index.spec.ts",
+      "destination": "modkit-extensions-ea/emperor/src/lib/mk2/emperor/codecs/emperor-xbf/test/index.spec.ts",
+      "sha256Mk2": "36651a0973859feb6121c6b77344058904ea22df56dafc9b61f9a667ed394716",
+      "sha256Mk3": "36651a0973859feb6121c6b77344058904ea22df56dafc9b61f9a667ed394716",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/emperor/codecs/emperor-xbf/test/manifest.spec.ts",
+      "destination": "modkit-extensions-ea/emperor/src/lib/mk2/emperor/codecs/emperor-xbf/test/manifest.spec.ts",
+      "sha256Mk2": "bef5f10413dd27532a34071072005e937aaa85098a4d90671c5b994649a57d5c",
+      "sha256Mk3": "bef5f10413dd27532a34071072005e937aaa85098a4d90671c5b994649a57d5c",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/models/codecs/sage-w3x/src/detect.ts",
+      "destination": "modkit-extensions-ea/models/src/lib/mk2/models/codecs/sage-w3x/src/detect.ts",
+      "sha256Mk2": "44e1503cffa57b9ce0f4867dda8d8ab68adb7983d16e3c7c272d01c27fb4db89",
+      "sha256Mk3": "44e1503cffa57b9ce0f4867dda8d8ab68adb7983d16e3c7c272d01c27fb4db89",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/models/codecs/sage-w3x/src/index.ts",
+      "destination": "modkit-extensions-ea/models/src/lib/mk2/models/codecs/sage-w3x/src/index.ts",
+      "sha256Mk2": "f2455bf91233def958188d38f4d57c796cc44097a9ff78b0630d514e46fb13ec",
+      "sha256Mk3": "f2455bf91233def958188d38f4d57c796cc44097a9ff78b0630d514e46fb13ec",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/models/codecs/sage-w3x/test/index.spec.ts",
+      "destination": "modkit-extensions-ea/models/src/lib/mk2/models/codecs/sage-w3x/test/index.spec.ts",
+      "sha256Mk2": "163162b4f82b1b4cc1cf02a112e04443af7f2a8152b536dcd72dfd29ecdc5ba5",
+      "sha256Mk3": "163162b4f82b1b4cc1cf02a112e04443af7f2a8152b536dcd72dfd29ecdc5ba5",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/models/codecs/sage-w3x/test/manifest.spec.ts",
+      "destination": "modkit-extensions-ea/models/src/lib/mk2/models/codecs/sage-w3x/test/manifest.spec.ts",
+      "sha256Mk2": "fd9134f78d9e48b26324d9af01d85417a91d71faaced76553b45da85bc0408fc",
+      "sha256Mk3": "fd9134f78d9e48b26324d9af01d85417a91d71faaced76553b45da85bc0408fc",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/models/codecs/westwood-w3d/src/detect.ts",
+      "destination": "modkit-extensions-ea/models/src/lib/mk2/models/codecs/westwood-w3d/src/detect.ts",
+      "sha256Mk2": "d51d3aceb45ed9f5be4c1c7ebc59c44506220c6dddbb1867164753154d695a44",
+      "sha256Mk3": "d51d3aceb45ed9f5be4c1c7ebc59c44506220c6dddbb1867164753154d695a44",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/models/codecs/westwood-w3d/src/implementation.ts",
+      "destination": "modkit-extensions-ea/models/src/lib/mk2/models/codecs/westwood-w3d/src/implementation.ts",
+      "sha256Mk2": "e46ec01e73fbcf8c9a05548d602a3288035f15ae2cf5d7220218929a65712110",
+      "sha256Mk3": "e46ec01e73fbcf8c9a05548d602a3288035f15ae2cf5d7220218929a65712110",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/models/codecs/westwood-w3d/src/index.ts",
+      "destination": "modkit-extensions-ea/models/src/lib/mk2/models/codecs/westwood-w3d/src/index.ts",
+      "sha256Mk2": "b7952d85a610cf909f77f179556af0bfdef929ea1564b5be19227b25e372d987",
+      "sha256Mk3": "b7952d85a610cf909f77f179556af0bfdef929ea1564b5be19227b25e372d987",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/models/codecs/westwood-w3d/test/detect.spec.ts",
+      "destination": "modkit-extensions-ea/models/src/lib/mk2/models/codecs/westwood-w3d/test/detect.spec.ts",
+      "sha256Mk2": "ca3f45e93f302381084e901437697455ae215d408f261047c411121e7b2afe42",
+      "sha256Mk3": "ca3f45e93f302381084e901437697455ae215d408f261047c411121e7b2afe42",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/models/codecs/westwood-w3d/test/manifest.spec.ts",
+      "destination": "modkit-extensions-ea/models/src/lib/mk2/models/codecs/westwood-w3d/test/manifest.spec.ts",
+      "sha256Mk2": "17549adc7c3f7889dbcd4ef4a93ed7731bd161bc5eec1db5618b4a5ace212c54",
+      "sha256Mk3": "17549adc7c3f7889dbcd4ef4a93ed7731bd161bc5eec1db5618b4a5ace212c54",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/models/codecs/westwood-w3d/test/westwood-w3d.spec.ts",
+      "destination": "modkit-extensions-ea/models/src/lib/mk2/models/codecs/westwood-w3d/test/westwood-w3d.spec.ts",
+      "sha256Mk2": "6df58da52e0b5147bce1dc0a3d55284f1e769c078205ef3e502a845819fc4d5b",
+      "sha256Mk3": "6df58da52e0b5147bce1dc0a3d55284f1e769c078205ef3e502a845819fc4d5b",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/big/src/index.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/big/src/index.ts",
+      "sha256Mk2": "c0c7eee4d8457d1d6661d75d018def9cacf6f8b09f9a814a67bd7a981fbe97e3",
+      "sha256Mk3": "c0c7eee4d8457d1d6661d75d018def9cacf6f8b09f9a814a67bd7a981fbe97e3",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/big/src/refpack.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/big/src/refpack.ts",
+      "sha256Mk2": "93481a599c3fb915287e3d6c1bf76347b5df3470830b7e9f20c166268196f9fd",
+      "sha256Mk3": "93481a599c3fb915287e3d6c1bf76347b5df3470830b7e9f20c166268196f9fd",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/big/src/source.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/big/src/source.ts",
+      "sha256Mk2": "a1c11e1d5c7319c2378059aea14e44274929c084c7103b8bb5590d0029586c14",
+      "sha256Mk3": "a1c11e1d5c7319c2378059aea14e44274929c084c7103b8bb5590d0029586c14",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/big/test/magic-resolution.spec.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/big/test/magic-resolution.spec.ts",
+      "sha256Mk2": "a90aa8effcca84b93aea777566dc40c46152917f4606335794c790e6f460e79f",
+      "sha256Mk3": "a90aa8effcca84b93aea777566dc40c46152917f4606335794c790e6f460e79f",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/big/test/manifest.spec.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/big/test/manifest.spec.ts",
+      "sha256Mk2": "fb89a879bcf576e73379d8ec195353f7731ec4338645f62969e41d408b819960",
+      "sha256Mk3": "fb89a879bcf576e73379d8ec195353f7731ec4338645f62969e41d408b819960",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/big/test/refpack.spec.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/big/test/refpack.spec.ts",
+      "sha256Mk2": "9e7f8697b25603dd472aeaab83a901eac6d368a784842eeb1b56cd267dc236b8",
+      "sha256Mk3": "9e7f8697b25603dd472aeaab83a901eac6d368a784842eeb1b56cd267dc236b8",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/big/test/source.spec.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/big/test/source.spec.ts",
+      "sha256Mk2": "dacb8f527be6a3aedf4fb6db8345b417b760caadce975e56face5667a23e834b",
+      "sha256Mk3": "dacb8f527be6a3aedf4fb6db8345b417b760caadce975e56face5667a23e834b",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/cnc3-data/src/index.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/cnc3-data/src/index.ts",
+      "sha256Mk2": "c8007c290f7da06ead3d838eec84ef1d40eb1af4b8b2c28cd69a2be2cfef084e",
+      "sha256Mk3": "c8007c290f7da06ead3d838eec84ef1d40eb1af4b8b2c28cd69a2be2cfef084e",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/cnc3-data/test/asset-declaration.spec.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/cnc3-data/test/asset-declaration.spec.ts",
+      "sha256Mk2": "ba42c9940d29b9b320d5f80bcbe17d115cf23bfa3d49d3b454aed3c14bc7be0a",
+      "sha256Mk3": "ba42c9940d29b9b320d5f80bcbe17d115cf23bfa3d49d3b454aed3c14bc7be0a",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/cnc3-localization/src/codec.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/cnc3-localization/src/codec.ts",
+      "sha256Mk2": "ae7f72e3ee2d8d60180762f22630ac95404b1ec3e67f84f972870ac26d3fd478",
+      "sha256Mk3": "ae7f72e3ee2d8d60180762f22630ac95404b1ec3e67f84f972870ac26d3fd478",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/cnc3-localization/src/csf.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/cnc3-localization/src/csf.ts",
+      "sha256Mk2": "aa6a0730b4511872e2674355e04ce22f8b2c1ab49027de5d56a995e57f854ce2",
+      "sha256Mk3": "aa6a0730b4511872e2674355e04ce22f8b2c1ab49027de5d56a995e57f854ce2",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/cnc3-localization/src/index.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/cnc3-localization/src/index.ts",
+      "sha256Mk2": "68947d03cc8bc115d713b7c769447247a953de1dab0c0e507cc645d337ec14b3",
+      "sha256Mk3": "68947d03cc8bc115d713b7c769447247a953de1dab0c0e507cc645d337ec14b3",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/cnc3-localization/src/str.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/cnc3-localization/src/str.ts",
+      "sha256Mk2": "475fe6761372c11b5dd08f22490d20062b710df097dca3ac1b70eb78ba81cc79",
+      "sha256Mk3": "475fe6761372c11b5dd08f22490d20062b710df097dca3ac1b70eb78ba81cc79",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/cnc3-localization/test/localization.spec.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/cnc3-localization/test/localization.spec.ts",
+      "sha256Mk2": "8bc0be44e5402227df99dce9e4ab0bf01dd2fd5bbcafb17be2110abe7c0b200e",
+      "sha256Mk3": "8bc0be44e5402227df99dce9e4ab0bf01dd2fd5bbcafb17be2110abe7c0b200e",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/cnc3-localization/test/shared-registry.spec.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/cnc3-localization/test/shared-registry.spec.ts",
+      "sha256Mk2": "e77667c5865eb0092bc12dd5e08392f9bac53ad38a118d6cbc6cd39f81292033",
+      "sha256Mk3": "e77667c5865eb0092bc12dd5e08392f9bac53ad38a118d6cbc6cd39f81292033",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/cnc3-map/src/ckmp.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/cnc3-map/src/ckmp.ts",
+      "sha256Mk2": "92f52dd1bf0f8e51602b34b1fe29a4c0ba10e90229f8f3d75868293651fa7fdc",
+      "sha256Mk3": "92f52dd1bf0f8e51602b34b1fe29a4c0ba10e90229f8f3d75868293651fa7fdc",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/cnc3-map/src/index.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/cnc3-map/src/index.ts",
+      "sha256Mk2": "a9afeef39c1194dc13b64b862dcf65f7ad96345fc8c7dc5b7dcdfde6672b0bb8",
+      "sha256Mk3": "a9afeef39c1194dc13b64b862dcf65f7ad96345fc8c7dc5b7dcdfde6672b0bb8",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/cnc3-map/test/ckmp.spec.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/cnc3-map/test/ckmp.spec.ts",
+      "sha256Mk2": "210d38b5ed28b54157295c858ab19435743fe3bf4d6ef7af3b4c8c72c5091f2d",
+      "sha256Mk3": "210d38b5ed28b54157295c858ab19435743fe3bf4d6ef7af3b4c8c72c5091f2d",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/sage-skudef/src/detect.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/sage-skudef/src/detect.ts",
+      "sha256Mk2": "1189ed471c512cabab2ee494b54d238569fe29b98de1dcdb09d0d7e9532f28f6",
+      "sha256Mk3": "1189ed471c512cabab2ee494b54d238569fe29b98de1dcdb09d0d7e9532f28f6",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/sage-skudef/src/index.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/sage-skudef/src/index.ts",
+      "sha256Mk2": "9a60d9bb59399e40798c9af2e7aa3bffb538b2fa5c8ca7e8969a3b86aed507ba",
+      "sha256Mk3": "9a60d9bb59399e40798c9af2e7aa3bffb538b2fa5c8ca7e8969a3b86aed507ba",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/sage-skudef/src/mount.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/sage-skudef/src/mount.ts",
+      "sha256Mk2": "af821395fa468e48a7e225b8ba773ec4aa351d0bcd4791c13e0f40621061ca28",
+      "sha256Mk3": "af821395fa468e48a7e225b8ba773ec4aa351d0bcd4791c13e0f40621061ca28",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/sage-skudef/src/node.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/sage-skudef/src/node.ts",
+      "sha256Mk2": "b2994fdd2a6da62d0dd6d1cc1565c680c9e691b59c797061376f57d3a8756120",
+      "sha256Mk3": "b2994fdd2a6da62d0dd6d1cc1565c680c9e691b59c797061376f57d3a8756120",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/sage-skudef/src/parse.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/sage-skudef/src/parse.ts",
+      "sha256Mk2": "34d5042dab2b561fe5a557bfd898f25739303bcd2463fd577dddfb9ab89c42cd",
+      "sha256Mk3": "34d5042dab2b561fe5a557bfd898f25739303bcd2463fd577dddfb9ab89c42cd",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/sage-skudef/src/resolve.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/sage-skudef/src/resolve.ts",
+      "sha256Mk2": "0a5f26a16a9f9ec5cae7f2c7a3b713c47fb5ed46329a8aa02553d01957a8ce6f",
+      "sha256Mk3": "0a5f26a16a9f9ec5cae7f2c7a3b713c47fb5ed46329a8aa02553d01957a8ce6f",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/sage-skudef/test/real-install.spec.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/sage-skudef/test/real-install.spec.ts",
+      "sha256Mk2": "bc6e890d20b9a008059d137ae3757a7c5c9438823b32bb95398b1779bda4255e",
+      "sha256Mk3": "bc6e890d20b9a008059d137ae3757a7c5c9438823b32bb95398b1779bda4255e",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/sage/codecs/sage-skudef/test/skudef.spec.ts",
+      "destination": "modkit-extensions-ea/sage/src/lib/mk2/sage/codecs/sage-skudef/test/skudef.spec.ts",
+      "sha256Mk2": "fb22a2c502bb118ba037d17e2735c5a9ed00e82a7ad8d5ab40ad43a824258953",
+      "sha256Mk3": "fb22a2c502bb118ba037d17e2735c5a9ed00e82a7ad8d5ab40ad43a824258953",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/src/index.ts",
+      "destination": "modkit-extensions-ea/tiberian-sun/src/lib/mk2/tiberian-sun/codecs/red-alert2-vxl/src/index.ts",
+      "sha256Mk2": "8d8013193c996ef07921e270eebf7989e6f4815b0cf46925260e83316cc0f6d1",
+      "sha256Mk3": "8d8013193c996ef07921e270eebf7989e6f4815b0cf46925260e83316cc0f6d1",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/test/index.spec.ts",
+      "destination": "modkit-extensions-ea/tiberian-sun/src/lib/mk2/tiberian-sun/codecs/red-alert2-vxl/test/index.spec.ts",
+      "sha256Mk2": "580d38f8331b53faecd26232708b27a4b8269f75e6b0fbd8b0e1d1a5c3b800b2",
+      "sha256Mk3": "580d38f8331b53faecd26232708b27a4b8269f75e6b0fbd8b0e1d1a5c3b800b2",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/tiberian-sun/codecs/red-alert2-vxl/test/manifest.spec.ts",
+      "destination": "modkit-extensions-ea/tiberian-sun/src/lib/mk2/tiberian-sun/codecs/red-alert2-vxl/test/manifest.spec.ts",
+      "sha256Mk2": "60bbff11a1d884e727d9413720a3844af9b419824f887ed96d944c7662a1eb64",
+      "sha256Mk3": "60bbff11a1d884e727d9413720a3844af9b419824f887ed96d944c7662a1eb64",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/westwood/codecs/cps/src/index.ts",
+      "destination": "modkit-extensions-ea/westwood/src/lib/mk2/westwood/codecs/cps/src/index.ts",
+      "sha256Mk2": "3f100ef78e775e36e92e9c2f24856ec1dfe130bdb567e9a92a412344e2dd9d9f",
+      "sha256Mk3": "3f100ef78e775e36e92e9c2f24856ec1dfe130bdb567e9a92a412344e2dd9d9f",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/westwood/codecs/r16/src/index.ts",
+      "destination": "modkit-extensions-ea/westwood/src/lib/mk2/westwood/codecs/r16/src/index.ts",
+      "sha256Mk2": "5c75e45dc5e3f6b3f0b0a6aa3aed60cf9fb171046232da588ed3e9c91b8b6779",
+      "sha256Mk3": "5c75e45dc5e3f6b3f0b0a6aa3aed60cf9fb171046232da588ed3e9c91b8b6779",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/westwood/codecs/r8/src/dune-sprite.ts",
+      "destination": "modkit-extensions-ea/westwood/src/lib/mk2/westwood/codecs/r8/src/dune-sprite.ts",
+      "sha256Mk2": "99da4ba9f3fd9734987bf26427ed07c8e9cd689e1f7834c7e6f07e0a95da0359",
+      "sha256Mk3": "99da4ba9f3fd9734987bf26427ed07c8e9cd689e1f7834c7e6f07e0a95da0359",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/westwood/codecs/r8/src/index.ts",
+      "destination": "modkit-extensions-ea/westwood/src/lib/mk2/westwood/codecs/r8/src/index.ts",
+      "sha256Mk2": "84fc3e0647b2822f704767dca627229ae93bfa391186924f14618c97ed666f89",
+      "sha256Mk3": "84fc3e0647b2822f704767dca627229ae93bfa391186924f14618c97ed666f89",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/westwood/codecs/shp/src/detect.ts",
+      "destination": "modkit-extensions-ea/westwood/src/lib/mk2/westwood/codecs/shp/src/detect.ts",
+      "sha256Mk2": "3f71441ec416134e540bfdce620246b6f8b3dae69ad3b4f8cc58cf08af3cc30e",
+      "sha256Mk3": "3f71441ec416134e540bfdce620246b6f8b3dae69ad3b4f8cc58cf08af3cc30e",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/westwood/codecs/shp/src/index.ts",
+      "destination": "modkit-extensions-ea/westwood/src/lib/mk2/westwood/codecs/shp/src/index.ts",
+      "sha256Mk2": "226869d346cbf3d35dee9f513958180d11c37c4a76b9a64f0f1a43abed7e6df4",
+      "sha256Mk3": "226869d346cbf3d35dee9f513958180d11c37c4a76b9a64f0f1a43abed7e6df4",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/westwood/codecs/tmp/src/detect.ts",
+      "destination": "modkit-extensions-ea/westwood/src/lib/mk2/westwood/codecs/tmp/src/detect.ts",
+      "sha256Mk2": "0620e46c348d52fb15f237439139212bc5bde48cfabf267002ab7cc03e5c88f4",
+      "sha256Mk3": "0620e46c348d52fb15f237439139212bc5bde48cfabf267002ab7cc03e5c88f4",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/westwood/codecs/tmp/src/index.ts",
+      "destination": "modkit-extensions-ea/westwood/src/lib/mk2/westwood/codecs/tmp/src/index.ts",
+      "sha256Mk2": "369fd734cda5815d465af5d1552e9c6dc43a7341bb63d497beb319fb6a538801",
+      "sha256Mk3": "369fd734cda5815d465af5d1552e9c6dc43a7341bb63d497beb319fb6a538801",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/westwood/codecs/vpl/src/detect.ts",
+      "destination": "modkit-extensions-ea/westwood/src/lib/mk2/westwood/codecs/vpl/src/detect.ts",
+      "sha256Mk2": "03f1aa1f303c2707e8e5ae6eeaf55fb0448c5445daa914bf7143288bf4dd6bac",
+      "sha256Mk3": "03f1aa1f303c2707e8e5ae6eeaf55fb0448c5445daa914bf7143288bf4dd6bac",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/westwood/codecs/vpl/src/index.ts",
+      "destination": "modkit-extensions-ea/westwood/src/lib/mk2/westwood/codecs/vpl/src/index.ts",
+      "sha256Mk2": "5be52b7796de0e00dcaa098b096bbb9db8252bb813845be18ac3b1847ac5babe",
+      "sha256Mk3": "5be52b7796de0e00dcaa098b096bbb9db8252bb813845be18ac3b1847ac5babe",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/westwood/codecs/vpl/test/index.spec.ts",
+      "destination": "modkit-extensions-ea/westwood/src/lib/mk2/westwood/codecs/vpl/test/index.spec.ts",
+      "sha256Mk2": "538e2b76e8231e356f4675aea68dad0e3966ce2a07a976c3981e691d7b2e0daf",
+      "sha256Mk3": "538e2b76e8231e356f4675aea68dad0e3966ce2a07a976c3981e691d7b2e0daf",
+      "rewrites": []
+    },
+    {
+      "source": "extensions/ea/westwood/codecs/wsa/src/index.ts",
+      "destination": "modkit-extensions-ea/westwood/src/lib/mk2/westwood/codecs/wsa/src/index.ts",
+      "sha256Mk2": "cc38faeae0b689891ab3ccfa0d4cdd79eedf1b1e1a0deeb5ca9e7cfe57780c19",
+      "sha256Mk3": "cc38faeae0b689891ab3ccfa0d4cdd79eedf1b1e1a0deeb5ca9e7cfe57780c19",
+      "rewrites": []
+    }
+  ]
+}
