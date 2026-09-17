@@ -12,6 +12,7 @@
 import { _electron as electron } from 'playwright-core'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
+import { localExtensionRoots } from './extension-roots.mjs'
 
 const appRoot = resolve(import.meta.dirname, '..', '..', 'apps', 'electron')
 const [scenarioFile, outDir] = process.argv.slice(2)
@@ -19,6 +20,13 @@ if (scenarioFile === undefined || outDir === undefined)
   throw new Error('usage: capture-electron.mjs <scenarios.json> <out-dir>')
 const scenarios = JSON.parse(await readFile(scenarioFile, 'utf8'))
 await mkdir(outDir, { recursive: true })
+// A profile of our own that loads every local extension repository (the user's settings stay untouched).
+const profile = resolve(process.env.MODKIT_ELECTRON_USER_DATA_DIR ?? join(outDir, '.profile'))
+await mkdir(profile, { recursive: true })
+await writeFile(
+  join(profile, 'modkit-settings.json'),
+  JSON.stringify({ extensions: localExtensionRoots(resolve(appRoot, '..', '..')).map(path => ({ path, enabled: true })) }),
+)
 
 // The header's view selector (Карточка / Hex / Модель …), not a select inside a mounted viewer.
 const viewPicker = page =>
@@ -32,11 +40,29 @@ async function row(page, label) {
   return candidates.first()
 }
 
+// Extension sources that change while the app starts (a concurrent build) are refused on purpose;
+// such a scenario is captured again.
+const TRANSIENT = /changed after inventory/u
+
 const results = []
 for (const scenario of scenarios) {
+  let result
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    result = await capture(scenario)
+    if (!TRANSIENT.test(result.statusLine ?? '')) break
+    console.log(`retry ${scenario.id}: extension sources changed during startup`)
+  }
+  delete result.statusLine
+  console.log(`${result.ok ? 'ok  ' : 'FAIL'} ${scenario.id} ${result.error ?? result.note ?? ''}`)
+  results.push(result)
+}
+await writeFile(join(outDir, 'results.json'), `${JSON.stringify(results, null, 2)}\n`)
+
+async function capture(scenario) {
   const app = await electron.launch({
     args: [join(appRoot, 'electron', 'main.cjs'), '--open', scenario.folder],
     cwd: appRoot,
+    env: { ...process.env, MODKIT_ELECTRON_USER_DATA_DIR: profile },
   })
   const result = { id: scenario.id, title: scenario.title, ok: true }
   const log = []
@@ -75,6 +101,7 @@ for (const scenario of scenarios) {
       .evaluate(select => [...select.options].map(option => option.label))
       .catch(() => [])
     const text = await page.evaluate(() => document.body.innerText)
+    result.statusLine = text.trim().split(String.fromCharCode(10)).at(-1)
     await writeFile(join(outDir, `${scenario.id}.txt`), text)
   } catch (error) {
     result.ok = false
@@ -83,7 +110,5 @@ for (const scenario of scenarios) {
     await app.close().catch(() => {})
     await writeFile(join(outDir, `${scenario.id}.log`), log.join(''))
   }
-  console.log(`${result.ok ? "ok  " : "FAIL"} ${scenario.id} ${result.error ?? result.note ?? ""}`)
-  results.push(result)
+  return result
 }
-await writeFile(join(outDir, 'results.json'), `${JSON.stringify(results, null, 2)}\n`)

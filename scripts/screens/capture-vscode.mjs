@@ -4,16 +4,17 @@
  *   node scripts/screens/capture-vscode.mjs <scenarios.json> <out-dir> --vsix <file.vsix>
  *
  * Uses an isolated user-data and extensions directory under <out-dir>/.profile, installs the VSIX
- * there, points `modkit.extensions` at the local Blizzard extension roots, then opens each
+ * there, points `modkit.extensions` at every local extension repository, then opens each
  * scenario's file in one window (`-r <file>`) and saves <id>.png. Scenarios share the Electron
  * format: { id, title, folder, path: [...segments], wait? } — the file is folder/path.join('/').
  */
 import { spawn, spawnSync } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { existsSync, statSync } from 'node:fs'
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import { createServer } from 'node:net'
 import { join, resolve } from 'node:path'
 import { chromium } from 'playwright-core'
+import { localExtensionRoots } from './extension-roots.mjs'
 
 const argv = process.argv.slice(2)
 const [scenarioFile, outArgument] = argv
@@ -22,7 +23,6 @@ if (scenarioFile === undefined || outArgument === undefined || !argv.includes('-
   throw new Error('usage: capture-vscode.mjs <scenarios.json> <out-dir> --vsix <file.vsix>')
 const outDir = resolve(outArgument)
 const coreRoot = resolve(import.meta.dirname, '..', '..')
-const blizzardRoot = resolve(coreRoot, '..', 'modkit-extensions-blizzard')
 const codeHome = join(process.env.LOCALAPPDATA ?? '', 'Programs', 'Microsoft VS Code')
 const codeExe = join(codeHome, 'Code.exe')
 const codeCli = join(codeHome, 'bin', 'code.cmd')
@@ -35,9 +35,13 @@ const extensionsDir = join(profile, 'extensions')
 await rm(profile, { recursive: true, force: true })
 await mkdir(join(userData, 'User'), { recursive: true })
 await mkdir(extensionsDir, { recursive: true })
-// An empty folder of our own as the workspace: scenario files open beside it, never inside it.
-const workspace = join(profile, 'workspace')
-await mkdir(workspace, { recursive: true })
+// A multi-root workspace over the scenario folders, as a user who opened their mod folders would
+// have. The workspace file lives in the profile; nothing is written into the folders themselves.
+const workspace = join(profile, 'screens.code-workspace')
+await writeFile(
+  workspace,
+  JSON.stringify({ folders: [...new Set(scenarios.map(scenario => scenario.folder))].map(path => ({ path })) }),
+)
 
 const quote = value => `"${value}"`
 const install = spawnSync(
@@ -47,12 +51,11 @@ const install = spawnSync(
 )
 if (install.status !== 0) throw new Error(`VSIX install failed: ${install.stdout}${install.stderr}`)
 
-const repository = JSON.parse(await readFile(join(blizzardRoot, 'modkit.repository.json'), 'utf8'))
 await writeFile(
   join(userData, 'User', 'settings.json'),
   JSON.stringify(
     {
-      'modkit.extensions': repository.extensions.map(entry => resolve(blizzardRoot, entry.path)),
+      'modkit.extensions': localExtensionRoots(coreRoot),
       'workbench.startupEditor': 'none',
       'security.workspace.trust.enabled': false,
       'telemetry.telemetryLevel': 'off',
@@ -122,6 +125,13 @@ try {
     const file = [scenario.folder, ...(scenario.path ?? [])].join('/')
     const result = { id: scenario.id, title: scenario.title, ok: true }
     try {
+      // `-r <folder>` would replace this window's workspace (and hand the folder to extensions).
+      if (statSync(file).isDirectory()) {
+        result.note = 'папка: в VS Code открывается как папка рабочей области, отдельного экрана нет'
+        console.log(`skip ${scenario.id} ${result.note}`)
+        results.push(result)
+        continue
+      }
       spawnSync(codeExe, [...common, '-r', file], { stdio: 'ignore' })
       await sleep(scenario.wait ?? 8000)
       for (let waited = 0; /Opening|Открывается|Loading/u.test(await allText(page)); waited += 2000) {
