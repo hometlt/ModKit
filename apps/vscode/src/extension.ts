@@ -7389,14 +7389,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
    * one codec's default off or points the association somewhere else with VS Code's own «Open With
    * → Set Default». The planner in `./editor-associations.js` decides; this writes.
    *
-   * The write target follows the window: a workspace when one is open, the user's settings when not
-   * — the same rule every other Modkit setting follows, so "where did that change land" has one
-   * answer in this extension.
+   * The automatic sync writes the user's settings only. Writing the workspace created
+   * `.vscode/settings.json` inside whatever folder was opened — for a mod folder, inside the mod —
+   * on every activation, without the user asking. A workspace-level association the user sets
+   * still wins over this one, as VS Code resolves it.
    */
-  const associationTarget = (): vscode.ConfigurationTarget =>
-    (vscode.workspace.workspaceFolders?.length ?? 0) > 0
-      ? vscode.ConfigurationTarget.Workspace
-      : vscode.ConfigurationTarget.Global
+  const associationTarget = (): vscode.ConfigurationTarget => vscode.ConfigurationTarget.Global
 
   const readStringList = (key: string): readonly string[] => {
     const value = vscode.workspace.getConfiguration().get(key)
