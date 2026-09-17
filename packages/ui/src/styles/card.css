@@ -436,6 +436,58 @@
     cursor: grabbing;
   }
 
+  .modkit-graph__stage {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 240px;
+  }
+
+  [data-mk-part='graph.tooltip'] {
+    position: absolute;
+    z-index: 1;
+    max-width: 320px;
+    padding: var(--mk-space-1) var(--mk-space-2);
+    color: var(--mk-color-fg);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    background: var(--mk-color-overlay);
+    font-size: var(--mk-font-size-xs);
+    pointer-events: none;
+  }
+
+  [data-mk-part='graph.tooltip'][hidden] {
+    display: none;
+  }
+
+  [data-mk-part='graph.search'],
+  [data-mk-part='graph.node-list'] {
+    color: var(--mk-color-fg);
+    border: 1px solid var(--mk-color-border);
+    border-radius: var(--mk-radius-sm);
+    background: var(--mk-color-surface);
+    font: inherit;
+    font-size: var(--mk-font-size-xs);
+  }
+
+  [data-mk-part='graph.search'] {
+    height: var(--mk-size-control);
+    padding-inline: var(--mk-space-1);
+  }
+
+  [data-mk-part='graph.node-list'] {
+    flex: 0 0 auto;
+    min-height: 0;
+  }
+
+  [data-mk-part='graph.search']:focus-visible,
+  [data-mk-part='graph.node-list']:focus-visible,
+  [data-mk-part='graph.canvas']:focus-visible {
+    outline: 1px solid var(--mk-color-focus);
+    outline-offset: -1px;
+  }
+
+
   [data-mk-part='graph.hint'] {
     margin: 0;
     color: var(--mk-color-fg-subtle);

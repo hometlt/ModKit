@@ -385,7 +385,18 @@ const EN_MESSAGES = Object.freeze({
   'graph.renderer': 'Renderer',
   'graph.canvas2d': '2D canvas',
   'graph.hintOpen':
-    'Drag empty space to pan · drag a node to reposition it · scroll to zoom · double-click a node to open its linked subject',
+    'Drag empty space to pan · drag a node to reposition it · scroll to zoom · click a node to select it · double-click or Enter opens its linked subject',
+  'graph.canvas3d': '3D perspective',
+  'graph.hint3d':
+    'Drag to orbit · right- or Shift-drag to pan · scroll to zoom · drag a node to move it · click a node to focus it · arrow keys orbit',
+  'graph.hint3dOpen':
+    'Drag to orbit · right- or Shift-drag to pan · scroll to zoom · drag a node to move it · click a node to focus it · double-click or Enter opens its linked subject',
+  'graph.search': 'Search nodes…',
+  'graph.searchLabel': 'Highlight matching nodes',
+  'graph.matches': '{count} matches',
+  'graph.relations': 'Relations',
+  'graph.allRelations': 'all',
+  'graph.nodeList': 'Visible nodes',
   'graph.loadedCounts': 'loaded {nodes} of {totalNodes} nodes and {edges} of {totalEdges} edges',
   'graph.completeness': '{owner}{state}{reason}',
   'graph.source': 'source',
@@ -1030,7 +1041,18 @@ const RU_MESSAGES: Readonly<Record<CoreUiMessageKey, string>> = Object.freeze({
   'graph.renderer': 'Рендерер',
   'graph.canvas2d': 'Холст 2D',
   'graph.hintOpen':
-    'Пустой фон перемещает вид · узлы можно перетаскивать · колесо меняет масштаб · двойной щелчок открывает связанный субъект',
+    'Пустой фон перемещает вид · узлы можно перетаскивать · колесо меняет масштаб · щелчок выбирает узел · двойной щелчок или Enter открывает связанный субъект',
+  'graph.canvas3d': 'Перспектива 3D',
+  'graph.hint3d':
+    'Перетаскивание вращает вид · правая кнопка или Shift сдвигает · колесо меняет масштаб · узлы можно перетаскивать · щелчок фокусирует узел · стрелки вращают',
+  'graph.hint3dOpen':
+    'Перетаскивание вращает вид · правая кнопка или Shift сдвигает · колесо меняет масштаб · узлы можно перетаскивать · щелчок фокусирует узел · двойной щелчок или Enter открывает связанный субъект',
+  'graph.search': 'Поиск узлов…',
+  'graph.searchLabel': 'Подсветить найденные узлы',
+  'graph.matches': 'Найдено: {count}',
+  'graph.relations': 'Связи',
+  'graph.allRelations': 'все',
+  'graph.nodeList': 'Видимые узлы',
   'graph.loadedCounts': 'загружено узлов: {nodes} из {totalNodes}, связей: {edges} из {totalEdges}',
   'graph.completeness': '{owner}{state}{reason}',
   'graph.source': 'источник',

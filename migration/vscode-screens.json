@@ -1798,11 +1798,13 @@
         }
       },
       "evidence": [
-        "packages/ui/src/graph/index.ts:390 (2D canvas force layout, no three.js renderer wired)",
+        "packages/ui/src/graph/projection.ts (MK2 layoutRelationGraph/layoutGalaxyGraph port, perspective projection, hit testing)",
+        "packages/ui/src/graph/index.ts (default 3D perspective canvas mode, 2D mode toggle, search, relation-role filter, node listbox)",
+        "packages/ui/test/relation-graph-projection.test.ts",
         "apps/vscode/test/view-policy.test.ts",
         "packages/ui/test/relation-graph-source.test.ts"
       ],
-      "notes": "A real generic 2D canvas relation graph is wired (\"already-equivalent\" per migration/vscode-workflows.json workflow vscode/navigation-relations-refactors); the pseudo-3D visual style (three.js orbit/bloom) from relation-graph-main.ts was not reproduced and is called out separately as an Stage I/J port item.",
+      "notes": "The generic relation graph now opens in a pseudo-3D perspective mode on Canvas 2D: MK2 layout ported unchanged (same positions as the three.js original on the test fixture), shared orbit camera, depth-scaled and depth-faded nodes, edges coloured by relation role, hover tooltip, click to focus, double-click/Enter opens the subject through subjectNavigation, and a 2D mode toggle. Still partial: no re-root/depth/direction controls, because the source is a fixed snapshot, and no bloom postprocessing (the optional three.js backend in @modkit/scene/relations/three is not wired)",
       "fixture": "a SC2 unit id with several ability/effect/weapon references"
     },
     {
