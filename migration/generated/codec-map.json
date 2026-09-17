@@ -32,7 +32,7 @@
       ]
     }
   ],
-  "contributionCount": 199,
+  "contributionCount": 222,
   "inventorySha256": "08c3bdad48056914277c7f95a0f97ef4feb85c8ec86a2fa8faf47bd7f9817e8c",
   "legacyCount": 206,
   "rows": [
@@ -283,7 +283,7 @@
       "candidates": [
         {
           "id": "blizzard/blp",
-          "path": "blizzard-common-formats/contributions/codec-blp.json",
+          "path": "blizzard-common-formats/codecs/blp/codec.json",
           "repository": "blizzard"
         }
       ],
@@ -1023,14 +1023,14 @@
       "candidates": [
         {
           "id": "blizzard/galaxy",
-          "path": "starcraft2/contributions/codec-galaxy.json",
+          "path": "starcraft2/modules/galaxy/codecs/galaxy/codec.json",
           "repository": "blizzard"
         }
       ],
       "codec": "galaxy",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 8,
+      "pending": 10,
       "requirements": 32,
       "source": "extensions/blizzard/starcraft-2/codecs/galaxy/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/galaxy",
@@ -1317,23 +1317,18 @@
       "candidates": [
         {
           "id": "blizzard/m3",
-          "path": "models/contributions/codec-m3.json",
-          "repository": "blizzard"
-        },
-        {
-          "id": "blizzard/m3a",
-          "path": "models/contributions/codec-m3a.json",
+          "path": "models/codecs/m3/codec.json",
           "repository": "blizzard"
         }
       ],
       "codec": "m3",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 0,
+      "pending": 22,
       "requirements": 22,
       "source": "extensions/blizzard/starcraft-2/codecs/m3/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/m3",
-      "status": "evidence-ready"
+      "status": "pending"
     },
     {
       "candidates": [
@@ -1452,7 +1447,7 @@
       "candidates": [
         {
           "id": "blizzard/mpq",
-          "path": "mpq/contributions/codec-mpq.json",
+          "path": "mpq/codecs/container-mpq/codec.json",
           "repository": "blizzard"
         }
       ],
@@ -2125,7 +2120,7 @@
       "candidates": [
         {
           "id": "blizzard/sc2-bank",
-          "path": "starcraft2/contributions/codec-sc2-bank.json",
+          "path": "starcraft2/modules/banks/codecs/bank/codec.json",
           "repository": "blizzard"
         }
       ],
@@ -2142,14 +2137,14 @@
       "candidates": [
         {
           "id": "blizzard/sc2-data",
-          "path": "starcraft2/contributions/codec-sc2-data.json",
+          "path": "starcraft2/modules/data/codecs/sc2data/codec.json",
           "repository": "blizzard"
         }
       ],
       "codec": "sc2-data",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 9,
+      "pending": 26,
       "requirements": 26,
       "source": "extensions/blizzard/starcraft-2/codecs/sc2-data/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/sc2-data",
@@ -2159,14 +2154,14 @@
       "candidates": [
         {
           "id": "blizzard/sc2-document-metadata",
-          "path": "starcraft2/contributions/codec-sc2-document-metadata.json",
+          "path": "starcraft2/modules/mod/codecs/document-metadata/codec.json",
           "repository": "blizzard"
         }
       ],
       "codec": "sc2-document-metadata",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 5,
+      "pending": 19,
       "requirements": 19,
       "source": "extensions/blizzard/starcraft-2/codecs/sc2-document-metadata/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/sc2-document-metadata",
@@ -2176,14 +2171,14 @@
       "candidates": [
         {
           "id": "blizzard/sc2-layout",
-          "path": "starcraft2/contributions/codec-sc2-layout.json",
+          "path": "starcraft2/modules/layout/codecs/layout/codec.json",
           "repository": "blizzard"
         }
       ],
       "codec": "sc2-layout",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 17,
+      "pending": 28,
       "requirements": 28,
       "source": "extensions/blizzard/starcraft-2/codecs/sc2-layout/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/sc2-layout",
@@ -2193,7 +2188,7 @@
       "candidates": [
         {
           "id": "blizzard/sc2-map",
-          "path": "starcraft2/contributions/codec-sc2-map.json",
+          "path": "starcraft2/modules/map/codecs/package/codec.json",
           "repository": "blizzard"
         }
       ],
@@ -2210,7 +2205,7 @@
       "candidates": [
         {
           "id": "blizzard/sc2-mod",
-          "path": "starcraft2/contributions/codec-sc2-mod.json",
+          "path": "starcraft2/modules/mod/codecs/mod/codec.json",
           "repository": "blizzard"
         }
       ],
@@ -2227,7 +2222,7 @@
       "candidates": [
         {
           "id": "blizzard/sc2-replay",
-          "path": "starcraft2/contributions/codec-sc2-replay.json",
+          "path": "starcraft2/modules/replay/codecs/replay/codec.json",
           "repository": "blizzard"
         }
       ],
@@ -2244,7 +2239,7 @@
       "candidates": [
         {
           "id": "blizzard/sc2-runtime",
-          "path": "starcraft2/contributions/codec-sc2-runtime.json",
+          "path": "starcraft2/modules/runtime/codecs/runtime/codec.json",
           "repository": "blizzard"
         }
       ],
@@ -2261,14 +2256,14 @@
       "candidates": [
         {
           "id": "blizzard/sc2-strings",
-          "path": "starcraft2/contributions/codec-sc2-strings.json",
+          "path": "starcraft2/modules/strings/codecs/strings/codec.json",
           "repository": "blizzard"
         }
       ],
       "codec": "sc2-strings",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 17,
+      "pending": 26,
       "requirements": 26,
       "source": "extensions/blizzard/starcraft-2/codecs/sc2-strings/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/sc2-strings",
@@ -2278,18 +2273,18 @@
       "candidates": [
         {
           "id": "blizzard/sc2-triggers",
-          "path": "starcraft2/contributions/codec-sc2-triggers.json",
+          "path": "starcraft2/modules/triggers/codecs/triggers/codec.json",
           "repository": "blizzard"
         }
       ],
       "codec": "sc2-triggers",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 0,
+      "pending": 24,
       "requirements": 24,
       "source": "extensions/blizzard/starcraft-2/codecs/sc2-triggers/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/sc2-triggers",
-      "status": "evidence-ready"
+      "status": "pending"
     },
     {
       "candidates": [
@@ -3051,7 +3046,7 @@
       "candidates": [
         {
           "id": "modkit/warzone-pie",
-          "path": "contributions/codec-warzone-pie.json",
+          "path": "codecs/warzone-pie/codec.json",
           "repository": "warzone"
         }
       ],

@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "rule": "MK2 describe() disables export.convert and edit.structure when the document has error diagnostics (galaxy/src/describe.ts buildOperations, pin 1a14ba4e); MK3 blizzard/galaxy keeps both available (lossy print / revision-pinned edit plan). Cases on these fixtures are excluded from those two probes and reported as a behaviour divergence for owner review.",
+  "probes": [
+    "export.convert",
+    "edit.structure"
+  ],
+  "fixtures": [
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/check/bad.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/parser_recovery/assigment_expr_in_flow_statements.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/parser_recovery/call.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/parser_recovery/call_ommited_arg.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/parser_recovery/dummy_expression.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/parser_recovery/function_variable_begining.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/parser_recovery/if_statement_missing_close_bracket.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/parser_recovery/list.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/parser_recovery/multiline_string.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/parser_recovery/multiple_variable_assignment.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/parser_recovery/root_sub_block.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/service/call.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/service/completion/completion.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/service/completion/incomplete_variable_decl.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/service/completion/trigger.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/service/diagnostics_parse_error.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/service/signature/signature.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/type_checker/diagnostics/complex.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/type_checker/diagnostics/func_call.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/type_checker/diagnostics/struct.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/type_checker/error/byte.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/type_checker/error/call_arguments_expected.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/type_checker/error/complex_type_implict_cast.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/type_checker/error/fixed_implicit_cast.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/type_checker/error/no_data_ref_globals.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/type_checker/error/numeric_assignment.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/type_checker/error/return_expected_value.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/type_checker/error/return_unexpected_value.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/type_checker/error/typedef_base.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/type_checker/find/incomplete_if_identifier.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/type_checker/pass/arrayref_multi_dimensional.galaxy",
+    "extensions/blizzard/starcraft-2/src/language/test/fixtures/type_checker/ref.galaxy"
+  ]
+}
