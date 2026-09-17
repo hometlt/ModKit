@@ -1,0 +1,35 @@
+{
+  "galaxy": {
+    "features": [
+      ["galaxy/feature/e8f590258fb1808d", "capabilities", "galaxy.hover", "galaxy.definition", "galaxy.signature"]
+    ],
+    "skipCases": [
+      "galaxy.hover/const", "galaxy.hover/field", "galaxy.definition/struct",
+      "galaxy.references/decl", "galaxy.references/nodecl", "galaxy.symbols/main", "galaxy.symbols/lib",
+      "galaxy.workspace-symbols/help", "galaxy.workspace-symbols/pair", "galaxy.rename/helper"
+    ],
+    "divergences": {
+      "galaxy.hover/const": "MK2 renders `const int c_limit = 3`; MK3 renders `int c_limit`",
+      "galaxy.hover/field": "MK2 appends 'property of `Pair`'",
+      "galaxy.definition/struct": "MK2 returns the struct location twice",
+      "galaxy.references": "MK2 duplicates the declaration; without includeDeclaration MK2 still returns it",
+      "galaxy.symbols": "MK2 SymbolInformation (flat, struct kind 5, const kind 14) vs MK3 DocumentSymbol (include as module, kinds 13/23, struct fields as children)",
+      "galaxy.workspace-symbols": "MK2 duplicates entries and uses the full range; MK3 uses the name range",
+      "galaxy.rename/helper": "MK2 has no rename (null); MK3 renames across files"
+    }
+  },
+  "sc2-layout": {
+    "features": [
+      ["sc2-layout/feature/4103ffd9b1e8c390", "layout.color"],
+      ["sc2-layout/feature/86138cdac17f384a", "layout.symbols"]
+    ],
+    "skipCases": ["layout.hover/frame", "layout.definition/constant", "layout.references/constant", "layout.rename/constant"],
+    "divergences": {
+      "layout.hover/frame": "MK2 null; MK3 schema-doc hover",
+      "layout.definition/constant": "MK2 points at the element start (twice); MK3 at the name value",
+      "layout.references/constant": "MK2 empty; MK3 declaration + #Accent use",
+      "layout.rename/constant": "MK2 null; MK3 renames declaration and use",
+      "layout.symbols": "compared on name/kind/range/children; selectionRange and detail differ"
+    }
+  }
+}

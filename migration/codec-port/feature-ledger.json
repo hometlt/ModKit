@@ -1277,9 +1277,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-language/galaxy/receipt.json",
+          "sha256": "59e905084e6732b8cd831592767e2b4c2881a45ac18c346776b38a2fdbfda507"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/galaxy/feature/e8f590258fb1808d",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "demotedOn": "2026-09-16",
@@ -3453,9 +3458,14 @@
       "status": "pending"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-language/sc2-layout/receipt.json",
+          "sha256": "14d4cde5fa0ee1e12fd294d6eb0870b116b2d8de483ab738d3581cd34246c86b"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-layout/feature/4103ffd9b1e8c390",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "demotedOn": "2026-09-16",
@@ -3509,9 +3519,14 @@
       "status": "adapted"
     },
     {
-      "evidence": [],
+      "evidence": [
+        {
+          "path": "modkit-core/reports/parity/sc2-language/sc2-layout/receipt.json",
+          "sha256": "14d4cde5fa0ee1e12fd294d6eb0870b116b2d8de483ab738d3581cd34246c86b"
+        }
+      ],
       "id": "legacy/codec-manifest/modkit/sc2-layout/feature/86138cdac17f384a",
-      "status": "pending"
+      "status": "adapted"
     },
     {
       "evidence": [
