@@ -104,3 +104,11 @@ export {
 export { createModkit, type Modkit, type ModkitOpened, type ModkitOptions } from './modkit.js'
 /** Trusted desktop content-source configuration, re-exported so Node hosts need no direct vfs edge. */
 export { loadContentSources } from '@modkit/vfs/content-sources/node'
+export {
+  openDirectoryResolvedDataWorkspace,
+  RESOLVED_DATA_EDIT_UNAVAILABLE,
+  type DirectoryResolvedDataWorkspace,
+  type OpenDirectoryResolvedDataWorkspaceRequest,
+  type ResolvedDataChangeRequest,
+  type ResolvedDataEditingAuthority,
+} from './resolved-data-directories.js'

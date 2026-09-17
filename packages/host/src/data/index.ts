@@ -1,6 +1,12 @@
 /** Host definition, exact game-id matcher and activation adapter for semantic catalogs. */
 
-import { canonicalJsonStringify, contractId, diagnostic, type Diagnostic } from '@modkit/core'
+import {
+  canonicalJsonStringify,
+  contractId,
+  diagnostic,
+  ModkitError,
+  type Diagnostic,
+} from '@modkit/core'
 import {
   DATA_CATALOG_ANALYSIS_CONTRACT,
   DATA_CATALOG_MATCHER_PROFILE,
@@ -251,6 +257,34 @@ export const RESOLVED_DATA_WORKSPACE_CONTRACT_DEFINITION: ServiceContractDefinit
             major: 1,
           }),
           signal: Object.freeze({ arg: 0, key: 'signal' }),
+        }),
+        // Editing preview is optional and value-shaped: bytes are planned, never written here.
+        resolveEditTarget: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+          limits: Object.freeze({ maxBytes: 4_194_304, maxStringLength: 4_194_304 }),
+        }),
+        // Editing preview is optional and value-shaped: bytes are planned, never written here.
+        planEdit: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+          limits: Object.freeze({ maxBytes: 16_777_216, maxStringLength: 16_777_216 }),
+        }),
+        // Editing preview is optional and value-shaped: bytes are planned, never written here.
+        analyzeIsolation: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+          limits: Object.freeze({ maxBytes: 4_194_304, maxStringLength: 4_194_304 }),
+        }),
+        // Editing preview is optional and value-shaped: bytes are planned, never written here.
+        planIsolation: Object.freeze({
+          kind: 'value',
+          optional: true,
+          signal: Object.freeze({ arg: 0, key: 'signal' }),
+          limits: Object.freeze({ maxBytes: 16_777_216, maxStringLength: 16_777_216 }),
         }),
       }),
     }),
@@ -1490,6 +1524,28 @@ function bindDataDocumentDestination(
   })
 }
 
+export const DATA_EDIT_SELECTION_REQUIRED = 'x3.host/resolved-data-edit-selection-required'
+
+/**
+ * A provider that cannot choose the destination document answers with candidates; the caller must
+ * name one. That is a structured refusal carrying the candidates, not a generic failure.
+ */
+function dataEditSelectionRequired(
+  result: Readonly<{
+    reason: string
+    candidates: readonly Readonly<{ rootId: string; path: string }>[]
+  }>,
+): ModkitError {
+  return new ModkitError({
+    code: DATA_EDIT_SELECTION_REQUIRED,
+    message: `choose a destination document: ${result.reason}`,
+    context: {
+      reason: result.reason,
+      candidates: result.candidates.map(item => ({ rootId: item.rootId, path: item.path })),
+    },
+  })
+}
+
 /** Bind a provider-owned semantic preview to host-owned physical targets without trusting paths. */
 export function editChangeFromDataEditProposal(
   proposal: DataEditPlanProposal,
@@ -1646,17 +1702,21 @@ export function isolationChangeFromDataGraphProposal(
     targets: Object.freeze(guarded),
     edits: Object.freeze(edits),
     semanticIntent: Object.freeze({
-      kind: 'sc2-data-isolation-v1',
+      // The authored-text writer accepts exactly one save contract; the isolation rides in editIntent.
+      kind: 'sc2-authored-text-save-v1',
       formatId: 'sc2-data',
       sourceComplete: true,
       unknownDataPolicy: 'preserve-from-complete-snapshot',
       workspaceId: proposal.workspaceId,
       snapshotId: proposal.snapshotId,
       selectedRootId: proposal.selectedRootId,
-      clone: Object.freeze({ ...proposal.clone }),
-      owner: Object.freeze({ ...proposal.analysis.owner }),
-      target: Object.freeze({ ...proposal.analysis.target }),
-      ownerFieldPath: Object.freeze([...proposal.analysis.ownerFieldPath]),
+      editIntent: Object.freeze({
+        kind: 'isolate-shared-object',
+        clone: Object.freeze({ ...proposal.clone }),
+        owner: Object.freeze({ ...proposal.analysis.owner }),
+        target: Object.freeze({ ...proposal.analysis.target }),
+        ownerFieldPath: Object.freeze([...proposal.analysis.ownerFieldPath]),
+      }),
       previewSnapshotId: proposal.previewSnapshotId,
     }),
     provenance: Object.freeze({ actor: 'user', note: 'resolved SC2 data clone and rewire' }),
@@ -1955,9 +2015,7 @@ export async function analyzeResolvedDataWorkspace(
                   'resolved data workspace analysis was released while planning an asset edit',
                 )
               }
-              if ('state' in result) {
-                throw new TypeError(result.reason)
-              }
+              if ('state' in result) throw dataEditSelectionRequired(result)
               return editChangeFromDataEditProposal(result, documentTargets, writableRoots)
             },
           }),
@@ -2026,6 +2084,7 @@ export async function analyzeResolvedDataWorkspace(
                 writableRootIds: writableRootIdList,
               })
               if (released) throw new Error('resolved data workspace analysis was released while planning isolation')
+              if (result.state === 'selection-required') throw dataEditSelectionRequired(result)
               if (result.state !== 'planned') throw new TypeError(result.reason)
               return isolationChangeFromDataGraphProposal(result, documentTargets, writableRoots)
             },

@@ -213,10 +213,16 @@ describe('MCP edit lifecycle over installed SC2 writers', () => {
       expect(redone['result']).toMatchObject({ state: 'committed' })
       expect(await readFile(path, 'utf8')).toBe(written)
 
-      // Leave the fixture as it started for the edge cases below.
-      await client.callTool({ name: 'modkit.undo_edit', arguments: { transactionId } })
+      // A redo is a new transaction; undoing it leaves the fixture as it started.
+      const redoId = (redone['result'] as { receipt: { transactionId: string } }).receipt
+        .transactionId
+      const undoneRedo = data(
+        await client.callTool({ name: 'modkit.undo_edit', arguments: { transactionId: redoId } }),
+      )
+      expect(undoneRedo['result']).toMatchObject({ state: 'committed' })
+      expect(await readFile(path, 'utf8')).toBe(original)
       const discarded = data(
-        await client.callTool({ name: 'modkit.discard_edit', arguments: { id: transactionId } }),
+        await client.callTool({ name: 'modkit.discard_edit', arguments: { id: redoId } }),
       )
       expect(discarded).toMatchObject({ kind: 'history', discarded: true })
       await client.callTool({ name: 'modkit.close_subject', arguments: { handle } })

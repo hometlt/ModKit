@@ -1,5 +1,6 @@
 import { OutputArtifacts, OutputArtifactError, OUTPUT_ARTIFACT_POLICY } from './output-artifacts.js'
 import { randomUUID } from 'node:crypto'
+import { ModkitError } from '@modkit/core'
 import { describeInventoryContributions, summarizeEditPlan } from '@modkit/host'
 import type {
   AssetEditPlan,
@@ -29,6 +30,9 @@ import type {
   McpLanguageSessionOpenRequest,
   McpLanguageSessionUpdateRequest,
   McpOpenedSubject,
+  McpResolvedChange,
+  McpResolvedDataWorkspace,
+  McpResolvedWorkspaceRequest,
   ModkitMcpHostPort,
 } from './host-port.js'
 import {
@@ -82,9 +86,16 @@ interface EntityHandleEntry {
   readonly pending: Set<Promise<unknown>>
 }
 
+/** Host-owned commit authority behind a retained plan: a subject's or a resolved workspace's. */
+type McpEditingAuthority = Pick<
+  NonNullable<McpOpenedSubject['editing']>,
+  'coordinator' | 'grantSnapshot' | 'releasePlan'
+>
+
 interface EditPlanEntry {
   readonly id: string
   readonly handleId: string
+  readonly editing: McpEditingAuthority
   readonly operationId: string
   readonly plan: AssetEditPlan
   readonly expiresAt: number
@@ -93,7 +104,7 @@ interface EditPlanEntry {
 
 interface EditHistoryEntry {
   readonly handleId: string
-  readonly coordinator: NonNullable<McpOpenedSubject['editing']>['coordinator']
+  readonly editing: McpEditingAuthority
   receipt: CommitReceipt
 }
 
@@ -169,6 +180,10 @@ const hostFailure = (code: string, message: string): McpEnvelope =>
 export const operationFailure = (error: unknown): McpEnvelope => {
   if (error instanceof OutputArtifactError) return hostFailure(error.code, error.message)
   if (error instanceof McpOperationError) return hostFailure(error.code, error.message)
+  // Host-authored refusals carry a stable code the client can act on.
+  if (error instanceof ModkitError && error.code.startsWith('x3.host/')) {
+    return hostFailure(error.code, error.message)
+  }
   if (
     (error instanceof DOMException && error.name === 'AbortError') ||
     (error instanceof Error && error.name === 'AbortError')
@@ -362,6 +377,7 @@ export class ModkitMcpRuntime {
   private readonly entityHandles = new Map<string, EntityHandleEntry>()
   private readonly editPlans = new Map<string, EditPlanEntry>()
   private readonly editHistory = new Map<string, EditHistoryEntry>()
+  private readonly resolvedWorkspaces = new Map<string, McpResolvedDataWorkspace>()
   private readonly languageSessions = new Map<string, McpLanguageSession>()
   private languageSessionsOpening = 0
   private readonly outputs: OutputArtifacts
@@ -711,8 +727,29 @@ export class ModkitMcpRuntime {
     }
   }
 
+  /** Drop retained plans and history owned by one handle and release their payloads. */
+  private async releaseEditState(handle: string): Promise<void> {
+    const plans = [...this.editPlans.values()].filter(plan => plan.handleId === handle)
+    for (const plan of plans) this.editPlans.delete(plan.id)
+    await Promise.allSettled(plans.map(plan => plan.editing.releasePlan(plan.plan)))
+    for (const [transactionId, history] of this.editHistory) {
+      if (history.handleId === handle) this.editHistory.delete(transactionId)
+    }
+  }
+
   async close(handle: string): Promise<McpEnvelope> {
     if (this.entityHandles.has(handle)) return this.closeEntity(handle)
+    const workspace = this.resolvedWorkspaces.get(handle)
+    if (workspace !== undefined) {
+      this.resolvedWorkspaces.delete(handle)
+      await this.releaseEditState(handle)
+      await workspace.release()
+      return envelope({
+        snapshotId: `closed:${fingerprint([handle])}`,
+        completeness: 'complete',
+        data: { handle, closed: true },
+      })
+    }
     const entry = this.handles.get(handle)
     if (entry === undefined) {
       return hostFailure(
@@ -722,12 +759,7 @@ export class ModkitMcpRuntime {
     }
     this.handles.delete(handle)
     this.outputs.closeOwner(handle)
-    const plans = [...this.editPlans.values()].filter(plan => plan.handleId === handle)
-    for (const plan of plans) this.editPlans.delete(plan.id)
-    await Promise.allSettled(plans.map(plan => entry.opened.editing?.releasePlan(plan.plan)))
-    for (const [transactionId, history] of this.editHistory) {
-      if (history.handleId === handle) this.editHistory.delete(transactionId)
-    }
+    await this.releaseEditState(handle)
     const children = [...this.entityHandles.values()]
       .filter(candidate => candidate.parentId === handle)
       .map(candidate => candidate.id)
@@ -1675,17 +1707,12 @@ export class ModkitMcpRuntime {
     const now = Date.now()
     const expired = [...this.editPlans.values()].filter(plan => plan.expiresAt <= now)
     for (const plan of expired) this.editPlans.delete(plan.id)
-    await Promise.allSettled(
-      expired.map(async plan => {
-        await this.handles.get(plan.handleId)?.opened.editing?.releasePlan(plan.plan)
-      }),
-    )
+    await Promise.allSettled(expired.map(plan => plan.editing.releasePlan(plan.plan)))
   }
 
   private async retainedEditPlan(planHandle: string): Promise<{
     readonly plan: EditPlanEntry
-    readonly handle: HandleEntry
-    readonly editing: NonNullable<McpOpenedSubject['editing']>
+    readonly editing: McpEditingAuthority
   }> {
     await this.pruneExpiredEditPlans()
     const plan = this.editPlans.get(planHandle)
@@ -1695,16 +1722,14 @@ export class ModkitMcpRuntime {
         'The edit plan is unknown, expired, committed or already discarded.',
       )
     }
-    const handle = this.handles.get(plan.handleId)
-    const editing = handle?.opened.editing
-    if (handle === undefined || editing === undefined) {
+    if (!this.handles.has(plan.handleId) && !this.resolvedWorkspaces.has(plan.handleId)) {
       this.editPlans.delete(planHandle)
       throw new McpOperationError(
         'x3.mcp/editing-unavailable',
         'The subject editing surface for this plan is no longer open.',
       )
     }
-    return { plan, handle, editing }
+    return { plan, editing: plan.editing }
   }
 
   /**
@@ -1795,6 +1820,7 @@ export class ModkitMcpRuntime {
           this.editPlans.set(planHandle, {
             id: planHandle,
             handleId: entry.id,
+            editing,
             operationId: operation.id,
             plan: retainedPlan,
             expiresAt: planExpiresAt,
@@ -1998,8 +2024,8 @@ export class ModkitMcpRuntime {
     if (result.state !== 'not-applied') {
       this.editPlans.delete(planHandle)
       this.editHistory.set(result.receipt.transactionId, {
-        handleId: retained.handle.id,
-        coordinator: retained.editing.coordinator,
+        handleId: retained.plan.handleId,
+        editing: retained.editing,
         receipt: result.receipt,
       })
     }
@@ -2043,18 +2069,26 @@ export class ModkitMcpRuntime {
       )
     }
     const history = this.editHistory.get(transactionId)
-    if (history === undefined || !this.handles.has(history.handleId)) {
+    if (
+      history === undefined ||
+      (!this.handles.has(history.handleId) && !this.resolvedWorkspaces.has(history.handleId))
+    ) {
       throw new McpOperationError(
         'x3.mcp/unknown-edit-transaction',
         'The edit transaction is unknown or its subject handle is closed.',
       )
     }
-    const editing = this.handles.get(history.handleId)!.opened.editing!
-    const result = await history.coordinator[action](transactionId, {
-      grant: editing.grantSnapshot,
+    const result = await history.editing.coordinator[action](transactionId, {
+      grant: history.editing.grantSnapshot,
       signal,
     })
-    if (result.state !== 'not-applied') history.receipt = result.receipt
+    if (result.state !== 'not-applied') {
+      history.receipt = result.receipt
+      // A redo is a new transaction in the coordinator; it is the one a later undo names.
+      if (action === 'redo') {
+        this.editHistory.set(result.receipt.transactionId, { ...history, receipt: result.receipt })
+      }
+    }
     return envelope({
       snapshotId: `transaction:${transactionId}:${action}`,
       completeness: result.state === 'not-applied' ? 'invalid' : 'complete',
@@ -2076,7 +2110,7 @@ export class ModkitMcpRuntime {
     const plan = this.editPlans.get(id)
     if (plan !== undefined) {
       this.editPlans.delete(id)
-      await this.handles.get(plan.handleId)?.opened.editing?.releasePlan(plan.plan)
+      await plan.editing.releasePlan(plan.plan)
       return envelope({
         snapshotId: `edit-plan:${id}:discarded`,
         completeness: 'complete',
@@ -2085,7 +2119,7 @@ export class ModkitMcpRuntime {
     }
     const history = this.editHistory.get(id)
     if (history !== undefined) {
-      const discarded = await history.coordinator.discardHistory(id)
+      const discarded = await history.editing.coordinator.discardHistory(id)
       if (discarded) this.editHistory.delete(id)
       return envelope({
         snapshotId: `transaction:${id}:discarded`,
@@ -2097,6 +2131,183 @@ export class ModkitMcpRuntime {
       'x3.mcp/unknown-edit-state',
       'The edit plan or transaction is unknown or already discarded.',
     )
+  }
+
+  /** Open a host-owned resolved-data workspace over loose mod directories (active mod last). */
+  async openResolvedWorkspace(
+    request: McpResolvedWorkspaceRequest,
+    signal: AbortSignal,
+  ): Promise<McpEnvelope> {
+    const open = this.host.openResolvedDataWorkspace
+    if (open === undefined) {
+      throw new McpOperationError(
+        'x3.mcp/resolved-workspace-unavailable',
+        'This MCP host cannot open resolved-data workspaces.',
+      )
+    }
+    if (this.handles.size + this.entityHandles.size + this.resolvedWorkspaces.size >= MCP_MAX_OPEN_HANDLES) {
+      throw new McpOperationError(
+        'x3.mcp/handle-limit',
+        `At most ${MCP_MAX_OPEN_HANDLES} subject handles may be open at once.`,
+      )
+    }
+    const result = await open(request, signal)
+    if (result.state === 'unresolved') {
+      return envelope({
+        snapshotId: 'resolved-workspace:unresolved',
+        completeness: 'invalid',
+        diagnostics: result.diagnostics,
+        data: { state: 'unresolved' },
+      })
+    }
+    const workspace = result.workspace
+    if (signal.aborted) {
+      await workspace.release()
+      signal.throwIfAborted()
+    }
+    const handle = randomUUID()
+    this.resolvedWorkspaces.set(handle, workspace)
+    const summary = await workspace.selector.summary(signal)
+    const subjects = await workspace.selector.subjects({ limit: 50 }, signal)
+    return envelope({
+      snapshotId: workspace.snapshotId,
+      completeness: summary.completeness === 'complete' ? 'complete' : 'partial',
+      diagnostics: workspace.diagnostics,
+      data: {
+        state: 'opened',
+        handle,
+        activeRootId: workspace.activeRootId,
+        rootIds: workspace.rootIds,
+        totalSubjects: summary.totalSubjects,
+        subjects: subjects.items,
+      },
+    })
+  }
+
+  /**
+   * Propose a write to a resolved subject. The provider previews the destination; when it cannot
+   * choose one the answer lists candidates and retains nothing. Otherwise the writer plan is kept
+   * host-side under a plan handle for the ordinary prepare/commit/undo lifecycle.
+   */
+  async proposeResolvedEdit(
+    handle: string,
+    change: McpResolvedChange,
+    signal: AbortSignal,
+  ): Promise<McpEnvelope> {
+    const workspace = this.resolvedWorkspaces.get(handle)
+    if (workspace === undefined) {
+      throw new McpOperationError(
+        'x3.mcp/unknown-handle',
+        'The resolved workspace handle is unknown or already closed.',
+      )
+    }
+    const preview =
+      change.kind === 'field'
+        ? await workspace.selector.editTarget?.(
+            {
+              subjectId: change.subjectId,
+              fieldPath: change.fieldPath,
+              ...(change.targetDocument === undefined
+                ? {}
+                : { targetDocument: change.targetDocument }),
+            },
+            signal,
+          )
+        : await workspace.selector.isolationPlan?.(
+            {
+              schemaVersion: 1,
+              ownerSubjectId: change.ownerSubjectId,
+              targetSubjectId: change.targetSubjectId,
+              cloneSubjectId: change.cloneSubjectId,
+              ownerFieldPath: change.ownerFieldPath,
+              maxEdges: change.maxEdges,
+              ...(change.always === undefined ? {} : { always: change.always }),
+              ...(change.ownerTargetDocument === undefined
+                ? {}
+                : { ownerTargetDocument: change.ownerTargetDocument }),
+              ...(change.cloneTargetDocument === undefined
+                ? {}
+                : { cloneTargetDocument: change.cloneTargetDocument }),
+            },
+            signal,
+          )
+    if (preview === undefined) {
+      throw new McpOperationError(
+        'x3.mcp/resolved-edit-unavailable',
+        'The resolved workspace publishes no destination preview for this change.',
+      )
+    }
+    if (preview.state !== 'resolved' && preview.state !== 'planned') {
+      return envelope({
+        snapshotId: workspace.snapshotId,
+        completeness: preview.state === 'selection-required' ? 'partial' : 'invalid',
+        diagnostics: [
+          {
+            code:
+              preview.state === 'selection-required'
+                ? 'x3.mcp/resolved-edit-selection-required'
+                : 'x3.mcp/resolved-edit-unavailable',
+            message: preview.reason,
+            severity: preview.state === 'selection-required' ? 'information' : 'error',
+          },
+        ],
+        data: { state: preview.state, preview, committed: false },
+      })
+    }
+    await this.pruneExpiredEditPlans()
+    if (this.editPlans.size >= MCP_MAX_EDIT_PLANS) {
+      throw new McpOperationError(
+        'x3.mcp/edit-plan-limit',
+        `At most ${MCP_MAX_EDIT_PLANS} uncommitted edit plans may be retained.`,
+      )
+    }
+    let plan: AssetEditPlan
+    try {
+      plan = await workspace.planChange(change, signal)
+    } catch (error) {
+      const coded = error as { code?: unknown; message?: unknown; context?: unknown }
+      if (typeof coded.code !== 'string' || !coded.code.startsWith('x3.host/')) throw error
+      return envelope({
+        snapshotId: workspace.snapshotId,
+        completeness: 'invalid',
+        diagnostics: [
+          { code: coded.code, message: String(coded.message ?? ''), severity: 'error' },
+        ],
+        data: { state: 'refused', preview, context: (coded.context ?? null) as never, committed: false },
+      })
+    }
+    const planHandle = randomUUID()
+    const expiresAt = Date.now() + MCP_EDIT_PLAN_TTL_MS
+    this.editPlans.set(planHandle, {
+      id: planHandle,
+      handleId: handle,
+      editing: workspace.editing,
+      operationId: `resolved-data.${change.kind}`,
+      plan,
+      expiresAt,
+      prepared: undefined,
+    })
+    const projected = boundedJson({ preview, plan: summarizeEditPlan(plan) })
+    return envelope({
+      snapshotId: workspace.snapshotId,
+      completeness: projected.capped ? 'capped' : 'complete',
+      diagnostics: [
+        {
+          code: 'x3.mcp/edit-not-committed',
+          message:
+            'The plan describes the change and was retained by the host. It has not been validated or committed.',
+          severity: 'information',
+        },
+      ],
+      data: {
+        state: 'planned',
+        handle,
+        ...(projected.value as object),
+        planHandle,
+        expiresAt: new Date(expiresAt).toISOString(),
+        committed: false,
+      },
+    })
   }
 
   async language(request: McpLanguageRequest, signal: AbortSignal): Promise<McpEnvelope> {
@@ -2378,7 +2589,7 @@ export class ModkitMcpRuntime {
     const languageSessions = [...this.languageSessions.values()]
     this.languageSessions.clear()
     await Promise.allSettled(languageSessions.map(session => session.close()))
-    const handles = [...this.handles.keys()]
+    const handles = [...this.handles.keys(), ...this.resolvedWorkspaces.keys()]
     await Promise.allSettled(handles.map(handle => this.close(handle)))
     this.outputs.dispose()
   }

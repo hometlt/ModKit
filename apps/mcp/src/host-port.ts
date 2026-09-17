@@ -30,6 +30,9 @@ import {
   createModkit,
   createNodeMapPreviewResourcePlanResolver,
   type ModkitOpened,
+  openDirectoryResolvedDataWorkspace,
+  type DirectoryResolvedDataWorkspace,
+  type ResolvedDataChangeRequest,
 } from '@modkit/host/node'
 import { sceneModule } from '@modkit/scene/module'
 import { uvModule } from '@modkit/uv/module'
@@ -218,8 +221,26 @@ export interface McpLanguageSession {
   close(): Promise<void>
 }
 
+export type McpResolvedDataWorkspace = DirectoryResolvedDataWorkspace
+export type McpResolvedChange = ResolvedDataChangeRequest
+
+export interface McpResolvedWorkspaceRequest {
+  readonly gameId: string
+  /** Absolute sibling mod directories in load order; the last one is the writable active mod. */
+  readonly directories: readonly string[]
+  readonly locales: readonly string[]
+  readonly maxRequirements: number
+}
+
 /** Minimal host-injected seam; all authority remains in the public Modkit host. */
 export interface ModkitMcpHostPort {
+  openResolvedDataWorkspace?(
+    request: McpResolvedWorkspaceRequest,
+    signal?: AbortSignal,
+  ): Promise<
+    | Readonly<{ state: 'resolved'; workspace: McpResolvedDataWorkspace }>
+    | Readonly<{ state: 'unresolved'; diagnostics: readonly Diagnostic[] }>
+  >
   readonly outputArtifacts?: boolean
   readonly editsEnabled?: boolean
   readonly inventory: Inventory
@@ -867,6 +888,31 @@ const LANGUAGE_SNAPSHOT_DOCUMENTS = 1_024
     serviceOperationPermissions: Object.freeze([...(configuration.operationPermissions ?? [])]),
     effectfulServiceOperations: configuration.allowEffectfulServiceOperations === true,
     openLanguageSession,
+    ...(configuration.allowEdits === true
+      ? {
+          async openResolvedDataWorkspace(resolvedRequest, signal) {
+            const directories = resolvedRequest.directories.map(directory => {
+              if (!isAbsolute(directory) || !inside(roots, resolve(directory))) {
+                throw new TypeError('resolved workspace directories must be inside configured roots')
+              }
+              return resolve(directory)
+            })
+            return openDirectoryResolvedDataWorkspace({
+              services: modkit.services,
+              gameId: resolvedRequest.gameId,
+              directories,
+              roots,
+              locales: resolvedRequest.locales,
+              limits: {
+                ...MCP_MAP_PREVIEW_CATALOG_ENRICHMENT_POLICY.limits,
+                maxRequirements: resolvedRequest.maxRequirements,
+              },
+              budgets: mapPreviewBudget,
+              ...(signal === undefined ? {} : { signal }),
+            })
+          },
+        }
+      : {}),
     async serviceOperations(offset, limit, activate, signal) {
       return discoverServiceOperations({
         services: operationServices,

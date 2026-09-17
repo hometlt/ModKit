@@ -343,6 +343,64 @@ const prepareEditInput = z
   })
   .strict()
 const commitEditInput = z.object({ planHandle: editPlanHandleSchema }).strict()
+const documentRefSchema = z
+  .object({ rootId: z.string().min(1).max(512), path: z.string().min(1).max(4_096) })
+  .strict()
+const resolvedSubjectIdSchema = z.string().min(1).max(512)
+const openResolvedWorkspaceInput = z
+  .object({
+    gameId: z.string().min(1).max(128),
+    directories: z.array(z.string().min(1).max(4_096)).min(1).max(16),
+    locales: z.array(z.string().min(2).max(16)).min(1).max(8).default(['enUS']),
+    maxRequirements: z.number().int().min(1).max(512).default(512),
+  })
+  .strict()
+const jsonScalar = z.union([z.string().max(65_536), z.number(), z.boolean(), z.null()])
+const proposeResolvedEditInput = z
+  .object({
+    handle: handleSchema,
+    change: z.discriminatedUnion('kind', [
+      z
+        .object({
+          kind: z.literal('field'),
+          subjectId: resolvedSubjectIdSchema,
+          fieldPath: z.array(z.string().min(1).max(128)).min(1).max(32),
+          intent: z.discriminatedUnion('kind', [
+            z.object({ kind: z.literal('set-field'), value: jsonScalar }).strict(),
+            z.object({ kind: z.literal('remove-local-override') }).strict(),
+            z
+              .object({
+                kind: z.literal('set-indexed-entry'),
+                index: z.union([z.string().max(256), z.number().int()]),
+                value: jsonScalar,
+              })
+              .strict(),
+            z
+              .object({
+                kind: z.literal('remove-indexed-entry'),
+                index: z.union([z.string().max(256), z.number().int()]),
+              })
+              .strict(),
+          ]),
+          targetDocument: documentRefSchema.optional(),
+        })
+        .strict(),
+      z
+        .object({
+          kind: z.literal('isolation'),
+          ownerSubjectId: resolvedSubjectIdSchema,
+          targetSubjectId: resolvedSubjectIdSchema,
+          cloneSubjectId: resolvedSubjectIdSchema,
+          ownerFieldPath: z.array(z.string().min(1).max(128)).min(1).max(32),
+          maxEdges: z.number().int().min(1).max(10_000).default(1_000),
+          always: z.boolean().optional(),
+          ownerTargetDocument: documentRefSchema.optional(),
+          cloneTargetDocument: documentRefSchema.optional(),
+        })
+        .strict(),
+    ]),
+  })
+  .strict()
 const editHistoryInput = z.object({ limit: z.number().int().min(1).max(100).default(50) }).strict()
 const editTransactionInput = z.object({ transactionId: z.string().min(1).max(256) }).strict()
 const discardEditInput = z.object({ id: z.string().min(1).max(256) }).strict()
@@ -985,6 +1043,38 @@ export function createModkitMcpServer(host: ModkitMcpHostPort): ModkitMcpServerR
     },
     ({ handle, operationId, input }, context) =>
       safeTool(() => runtime.proposeEdit(handle, operationId, input, context.mcpReq.signal)),
+  )
+  server.registerTool(
+    'modkit.open_resolved_workspace',
+    {
+      title: 'Open a resolved mod workspace for editing',
+      description:
+        'Resolve sibling mod directories (dependencies first, active mod last) into one host-owned data workspace whose resolved subjects can be edited. Requires --allow-edits. Close it with close_subject.',
+      inputSchema: openResolvedWorkspaceInput,
+      outputSchema: envelopeSchema,
+      annotations: { ...readOnlyAnnotations, idempotentHint: false },
+    },
+    (request, context) =>
+      safeTool(() => runtime.openResolvedWorkspace(request, context.mcpReq.signal)),
+  )
+  server.registerTool(
+    'modkit.propose_resolved_edit',
+    {
+      title: 'Propose a write to a resolved subject',
+      description:
+        'Preview where a resolved field write or shared-object isolation lands in the active mod and retain the writer plan host-side. When the destination is ambiguous the answer lists candidate documents and nothing is retained; name one with targetDocument. Commit with prepare_edit/commit_edit.',
+      inputSchema: proposeResolvedEditInput,
+      outputSchema: envelopeSchema,
+      annotations: { ...readOnlyAnnotations, idempotentHint: false },
+    },
+    ({ handle, change }, context) =>
+      safeTool(() =>
+        runtime.proposeResolvedEdit(
+          handle,
+          change as import('./host-port.js').McpResolvedChange,
+          context.mcpReq.signal,
+        ),
+      ),
   )
   server.registerTool(
     'modkit.prepare_edit',

@@ -955,6 +955,8 @@ describe('MCP v2 adapter', () => {
       'modkit.release_output',
       // Reads what a change would be and writes nothing; see propose_edit's own case below.
       'modkit.propose_edit',
+      'modkit.open_resolved_workspace',
+      'modkit.propose_resolved_edit',
       'modkit.prepare_edit',
       'modkit.commit_edit',
       'modkit.edit_history',
