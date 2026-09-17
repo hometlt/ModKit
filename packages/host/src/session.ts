@@ -42,14 +42,18 @@ import type {
   SubjectFieldReferenceResolver,
   SubjectRelationProjectionBudget,
 } from './subject-projection.js'
-import {
-  createCompositeRelationGraphSource,
-  createCompositeSubjectFactsSource,
-  createDescriptorFallbackSubjectFactsSource,
-  createFieldRelationGraphSource,
-  descriptorSubjectRef,
-  metadataFieldProjections,
-} from './subject-projection.js'
+import { metadataFieldProjections } from './subject-field-projections.js'
+
+/**
+ * The projection machinery, loaded when something asks for it.
+ *
+ * A session must know at once whether it can offer a relation graph — that is
+ * `metadataFieldProjections` above, arithmetic over the descriptor — but the code that *builds*
+ * graphs and composite facts sources is heavy, and a codec asked only for pixels never reaches it.
+ * Importing it eagerly cost ~55 ms in every fresh worker, once per first open of every format.
+ */
+const projection = (): Promise<typeof import('./subject-projection.js')> =>
+  import('./subject-projection.js')
 
 export interface HostOperationContext {
   readonly signal?: AbortSignal
@@ -250,22 +254,24 @@ export function createAssetSession(options: AssetSessionOptions): ManagedAssetSe
     if (options.subjectProjection === undefined) {
       throw new TypeError('subject relation projection is unavailable')
     }
-    genericGraph ??= createFieldRelationGraphSource({
-      owner: descriptorSubjectRef(originalDescriptor),
-      ownerLabel:
-        originalDescriptor.interpretation === 'codec'
-          ? originalDescriptor.identity.formatLabel
-          : originalDescriptor.subjectUri,
-      ownerKind:
-        originalDescriptor.interpretation === 'codec'
-          ? `format:${originalDescriptor.identity.formatId}`
-          : 'format:unknown',
-      fields: metadataFields,
-      resolver: options.subjectProjection.references,
-      ...(options.subjectProjection.budget === undefined
-        ? {}
-        : { budget: options.subjectProjection.budget }),
-    })
+    const relations = options.subjectProjection
+    genericGraph ??= (async () => {
+      const built = await projection()
+      return built.createFieldRelationGraphSource({
+        owner: built.descriptorSubjectRef(originalDescriptor),
+        ownerLabel:
+          originalDescriptor.interpretation === 'codec'
+            ? originalDescriptor.identity.formatLabel
+            : originalDescriptor.subjectUri,
+        ownerKind:
+          originalDescriptor.interpretation === 'codec'
+            ? `format:${originalDescriptor.identity.formatId}`
+            : 'format:unknown',
+        fields: metadataFields,
+        resolver: relations.references,
+        ...(relations.budget === undefined ? {} : { budget: relations.budget }),
+      })
+    })()
     return genericGraph
   }
 
@@ -297,9 +303,11 @@ export function createAssetSession(options: AssetSessionOptions): ManagedAssetSe
     try {
       const generic = projectsRelations ? await projectedGraph() : undefined
       if (authoritative !== undefined && generic !== undefined) {
-        return releaseTogether(createCompositeRelationGraphSource([authoritative.value, generic]), [
-          authoritative.release,
-        ])
+        const built = await projection()
+        return releaseTogether(
+          built.createCompositeRelationGraphSource([authoritative.value, generic]),
+          [authoritative.release],
+        )
       }
       if (authoritative !== undefined) return authoritative
       if (generic !== undefined) return releaseTogether(generic, [])
@@ -322,7 +330,8 @@ export function createAssetSession(options: AssetSessionOptions): ManagedAssetSe
       authoritative = originalOffers.has('common.view/subject-facts-source@1')
         ? await options.openDataSource('common.view/subject-facts-source', 1)
         : undefined
-      const fallback = createDescriptorFallbackSubjectFactsSource({
+      const built = await projection()
+      const fallback = built.createDescriptorFallbackSubjectFactsSource({
         descriptor: originalDescriptor,
         ...(graph === undefined ? {} : { relations: graph.value }),
         ...(options.subjectProjection?.kindDefinition === undefined
@@ -332,7 +341,7 @@ export function createAssetSession(options: AssetSessionOptions): ManagedAssetSe
       return releaseTogether(
         authoritative === undefined
           ? fallback
-          : createCompositeSubjectFactsSource([authoritative.value, fallback]),
+          : built.createCompositeSubjectFactsSource([authoritative.value, fallback]),
         [
           ...(authoritative === undefined ? [] : [authoritative.release]),
           ...(graph === undefined ? [] : [graph.release]),

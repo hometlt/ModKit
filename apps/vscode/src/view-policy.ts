@@ -45,7 +45,14 @@ export const STAGE_ORDER: readonly string[] = Object.freeze([
   'hex-editor',
 ])
 
-/** Stages that render the subject itself; one of these outranks the card as the first view. */
+/**
+ * Stages that render the subject itself; one of these outranks the card as the first view.
+ *
+ * `archive` belongs here for the same reason the picture does: a container's own view is its entry
+ * list, and a person who opened one came for the entries. Without it an archive opened on its card
+ * — a page of facts about a file whose contents were one click away, and the regression that made
+ * MK2's archive browser look lost.
+ */
 export const MEDIA_STAGE_IDS: readonly string[] = Object.freeze([
   'image',
   'vector',
@@ -54,6 +61,7 @@ export const MEDIA_STAGE_IDS: readonly string[] = Object.freeze([
   'audio',
   'video',
   'playback',
+  'archive',
 ])
 
 /** The stage ids that only ever appear when this host can write the subject behind the tab. */

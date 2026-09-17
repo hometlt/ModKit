@@ -265,6 +265,72 @@ describe('VS Code view policy', () => {
     expect(preferredStage(editable, undefined)).not.toBe('hex')
   })
 
+  /*
+   * A container opens on its entries.
+   *
+   * A zip publishes a namespace entry source *and* subject facts, so both the archive view and the
+   * card apply — and a first view chosen by policy order alone put the card first for anything
+   * that was not obviously media. What a person who opened an archive came for is the entry list;
+   * MK2 showed it, and this is the rule that keeps it showing.
+   */
+  it('opens a real archive on its entries, not on its card', async () => {
+    const roots = await loadExtensionRoots([join(repositoryRoot, 'extensions', 'archives')], {
+      origin: 'bundled',
+    })
+    expect(roots.failures).toEqual([])
+    const services = await createNodeSubjectServices({
+      topology: createVsCodeDesktopTopology(),
+      realms: { host: VSCODE_DESKTOP_EXTENSION_REALM, workers: VSCODE_DESKTOP_WORKER_REALM },
+      extensions: roots.inputs,
+    })
+    const bytes = readFileSync(
+      join(
+        repositoryRoot,
+        'packages',
+        'testkit',
+        'test',
+        'fixtures',
+        'mk2-synthetic',
+        'minimal.zip',
+      ),
+    )
+    const result = await services.open({
+      source: {
+        kind: 'bytes',
+        ref: { id: 'memory://vscode/minimal.zip', uri: 'memory://vscode/minimal.zip' },
+        revision: revisionId('content-hash.sha256:minimal-zip'),
+        size: BigInt(bytes.byteLength),
+        read: async (offset, length) =>
+          new Uint8Array(bytes.subarray(Number(offset), Number(offset) + length)),
+        stream: async function* stream() {
+          yield new Uint8Array(bytes)
+        },
+      } as unknown as ArtifactByteSource,
+      path: 'minimal.zip',
+      intent: 'full',
+      grant: { id: 'view-policy-test', classes: ['read-source'] },
+      budget: {
+        maxInputBytes: 16_000_000n,
+        maxDepth: 64,
+        maxNodes: 100_000,
+        maxScalarBytes: 16_000_000,
+        maxDiagnostics: 100,
+      },
+    })
+    if (result.state !== 'opened') throw new Error(`zip did not open: ${result.reason}`)
+    const descriptor = result.descriptor as unknown as Record<string, unknown>
+    await result.session.dispose()
+
+    expect(publishedContracts(descriptor)).toContain('common.view/namespace-entry-source')
+    expect(publishedContracts(descriptor)).toContain('common.view/subject-facts-source')
+    const offered = applicableStages(CATALOG, descriptor).map(stageIdOf)
+    expect(offered).toContain('archive')
+    expect(offered).toContain('card')
+    expect(preferredStage(offered, undefined)).toBe('archive')
+    // …and a plan that named the card does not take the entries away.
+    expect(preferredStage(offered, 'card')).toBe('archive')
+  })
+
   it('offers Relations after Tree for a real bundled glTF graph source', async () => {
     const descriptor = await openGltfDescriptor()
     expect(publishedContracts(descriptor)).toContain('common.view/relation-graph-source')

@@ -1,11 +1,17 @@
 /** Generic subject relation and fallback-card projections owned by the host. */
 import { compareUtf8 } from '@modkit/core'
 import {
+  metadataFieldProjections,
+  referencePath,
+  type SubjectFieldProjection,
+} from './subject-field-projections.js'
+
+export { metadataFieldProjections, type SubjectFieldProjection }
+import {
   type AnyDescriptor,
   type AssetSourceRef,
   type FieldType,
   type JsonValue,
-  type MetadataGroup,
   type Page,
   type PageRequest,
   type RelatedSubjectFact,
@@ -45,12 +51,6 @@ export const DEFAULT_SUBJECT_RELATION_PROJECTION_BUDGET: SubjectRelationProjecti
     maxScalarBytes: 1_048_576,
     pageSize: 256,
   })
-
-export interface SubjectFieldProjection {
-  readonly path: string
-  readonly type: FieldType
-  readonly value: JsonValue
-}
 
 export interface SubjectFieldReferenceRequest {
   readonly owner: SubjectRef
@@ -135,10 +135,6 @@ function pageOf<T>(items: readonly T[], request: PageRequest): Page<T> {
     items: Object.freeze(items.slice(offset, next)),
     ...(next < items.length ? { nextCursor: String(next) } : {}),
   })
-}
-
-function referencePath(path: string, segment: string): string {
-  return path === '' ? segment : `${path}.${segment}`
 }
 
 function recordOf(value: JsonValue): Readonly<Record<string, JsonValue>> | undefined {
@@ -596,20 +592,6 @@ export function createCompositeRelationGraphSource(
       return pageOf((await snapshot).edges, page)
     },
   })
-}
-
-export function metadataFieldProjections(
-  groups: readonly MetadataGroup[],
-): readonly SubjectFieldProjection[] {
-  return Object.freeze(
-    groups.flatMap(group =>
-      group.entries.flatMap(entry =>
-        entry.type === undefined
-          ? []
-          : [{ path: referencePath(group.id, entry.key), type: entry.type, value: entry.value }],
-      ),
-    ),
-  )
 }
 
 function descriptorSources(descriptor: AnyDescriptor): readonly AssetSourceRef[] {
