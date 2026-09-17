@@ -1,0 +1,1525 @@
+{
+  "cases": [
+    {
+      "id": "model-basic",
+      "legacySha256": "a31e4ccf1001825234780f7a7fa6da86bc1aa952a97e4428364a38e2c2a57774",
+      "migratedSha256": "a31e4ccf1001825234780f7a7fa6da86bc1aa952a97e4428364a38e2c2a57774",
+      "verdict": "identical"
+    },
+    {
+      "id": "Harbinger",
+      "legacySha256": "2eab28517550fa4fa65c606ee1f41e9a525e564ef947bffc046c1d2320db3a63",
+      "migratedSha256": "2eab28517550fa4fa65c606ee1f41e9a525e564ef947bffc046c1d2320db3a63",
+      "verdict": "identical"
+    },
+    {
+      "id": "aiur_cliffrocks_00",
+      "legacySha256": "a31e4ccf1001825234780f7a7fa6da86bc1aa952a97e4428364a38e2c2a57774",
+      "migratedSha256": "a31e4ccf1001825234780f7a7fa6da86bc1aa952a97e4428364a38e2c2a57774",
+      "verdict": "identical"
+    },
+    {
+      "id": "analysisterminal",
+      "legacySha256": "abc8218712498d093c6b92df80523f8fe8cce94d84c73bfd6d15789bf1681611",
+      "migratedSha256": "abc8218712498d093c6b92df80523f8fe8cce94d84c73bfd6d15789bf1681611",
+      "verdict": "identical"
+    },
+    {
+      "id": "portrait",
+      "legacySha256": "598606d5a2ed30f0cdaebd60f5b6c25a7c3938aca8c93f16741e8a59329852a0",
+      "migratedSha256": "598606d5a2ed30f0cdaebd60f5b6c25a7c3938aca8c93f16741e8a59329852a0",
+      "verdict": "identical"
+    }
+  ],
+  "codec": "m3",
+  "corpusKind": "real",
+  "corpusSha256": "9c984bafa21130f4f59b6667452778c8da70c28517d4e17c166526aaab725599",
+  "counts": {
+    "bothRefused": 0,
+    "differing": 0,
+    "identical": 5,
+    "total": 5
+  },
+  "harness": {
+    "digest": "48fe4b0269e4379627d1d2c9bebe902f27fe21575bafbf6cebeda9218355597b",
+    "files": [
+      {
+        "byteLength": 1526,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\reports\\parity\\m3\\run.mjs",
+        "sha256": "2a0dba808b1d2281eff09bec1a66e5e782aae76666b22d88a44a3aa75055093c"
+      },
+      {
+        "byteLength": 35763,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\algorithms.mjs",
+        "sha256": "6e704837a200db9cd3b4a823df084d6f3b8e4b3ebd18a85e941c2880e7fbc5f9"
+      },
+      {
+        "byteLength": 10011,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\canonical-yaml.mjs",
+        "sha256": "541a530faceaf3f15e492d2203113eed830eb58f83e20c6f47755458a0b23049"
+      },
+      {
+        "byteLength": 1004,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\external-extension-roots.d.mts",
+        "sha256": "b2d681c1330a2024cbe2b8f7c106e5fcaa2c42e365a427349af48e2595f4e7fa"
+      },
+      {
+        "byteLength": 2098,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\external-extension-roots.mjs",
+        "sha256": "5595431b2d47b090c60b6ab4da5b8fee5aec71624342dd8bcc7b08e1f225aaaf"
+      },
+      {
+        "byteLength": 4359,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\identity-migration.d.mts",
+        "sha256": "d3fad3c8bed2acbf753bd02f431312a65bfa61cc3355d3e6b304fdf49123b54b"
+      },
+      {
+        "byteLength": 26727,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\identity-migration.mjs",
+        "sha256": "834d1aeab8d3268a91275c45023031645361f4164273b543e172a550403e376b"
+      },
+      {
+        "byteLength": 28556,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs",
+        "sha256": "1370bde7f031ce62bc4df3d7b47eaab24c3e4024fd48f4714b1c4fb63d78d993"
+      },
+      {
+        "byteLength": 66857,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\mk2-copy.mjs",
+        "sha256": "9072b036eab1516d16a552d3a9ae8089f28efa42c1e9d63c202c05a7c3b9b2ac"
+      },
+      {
+        "byteLength": 2267,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\nearest-block.mjs",
+        "sha256": "cf54a61f78153e9ad8ec023bd3fa5833b9ff0c64c6daeb81e6e79c1bf7aefca0"
+      },
+      {
+        "byteLength": 805,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\port-cli.mjs",
+        "sha256": "cfae57a42edc9c8567e060e33284c87695ae575faa00b43d20acbb39203b824a"
+      },
+      {
+        "byteLength": 2025,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\port-context.mjs",
+        "sha256": "f7b8cc5081ad0b7b6315f1678fb4e16116aa6d815c4515837bd758fa2a362223"
+      },
+      {
+        "byteLength": 15636,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\port-generators.mjs",
+        "sha256": "acaf7ba9da1b8c4c16f7973356b4479c214c88681a21f836795af2233e94c28a"
+      },
+      {
+        "byteLength": 12010,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\port-oracle-proof.mjs",
+        "sha256": "f41a6bc2df597eb62ca3b32babdb74419ed22525fef454ef96a199b21a3700d4"
+      },
+      {
+        "byteLength": 3500,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\port-runtime-proof.mjs",
+        "sha256": "7648d87eb0ee761d59302ffbdfa7b6350001f25f3de05b2e2f90c8dc97734790"
+      },
+      {
+        "byteLength": 17717,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\port-state.mjs",
+        "sha256": "cfb4fdfd27582132156123fc160d0e2b7f9257afe40b991eb9acc2ca32238d0f"
+      },
+      {
+        "byteLength": 3831,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\sc2-m3-destinations.mjs",
+        "sha256": "64101261b0387625e82b00cb414ae450dadec924314f80a3271820a301ec1214"
+      },
+      {
+        "byteLength": 1247,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\sc2-m3-refreeze.mjs",
+        "sha256": "39ec2c00e54be6f19471b22118285ea527ba220ee201750d35ddf1847aef8928"
+      },
+      {
+        "byteLength": 915,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\surface-matrix.d.mts",
+        "sha256": "80eecb871df4f131fb275351148913b89bd10b243f5a53cbc75c11de2a66971a"
+      },
+      {
+        "byteLength": 12839,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\surface-matrix.mjs",
+        "sha256": "b0b7f1a64608b64a145610d3e6b23aff84292cde548a994e51f5dcfd81a9aa7e"
+      },
+      {
+        "byteLength": 2590,
+        "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\ts-strict.mjs",
+        "sha256": "dd3eb67f7564ba869a81cb01df52818984bf5e4807e2069cd5674ed6a7971760"
+      }
+    ],
+    "omittedOptional": [],
+    "packages": [],
+    "runtime": {
+      "arch": "x64",
+      "node": "v24.16.0",
+      "platform": "win32"
+    },
+    "schemaVersion": 1
+  },
+  "inputs": {
+    "configSha256": "ba7061ec9d827b4e3018b1319bcf9f671ba7b97ff7d5def2f912659a7ca5e5ea",
+    "corpusFileSha256": "b726f5eda737998c62d68c2721cd756c2db1d265c8040da67c890bf2191d953e",
+    "legacyAdapterSha256": "eb66a997b0abfce6016a2c447d9e6df65cf610c00f50686da9fa1842e4beccbf",
+    "migratedAdapterSha256": "688657faa985c96c77987f730bd6606cf54f5412a121158fb715540494ce4b8a",
+    "operation": "material.project"
+  },
+  "migrated": {
+    "route": "ordinary host open → model-material-source@1 + model-scene-source@1",
+    "runtime": {
+      "digest": "c39db6b86735287a9ecbca619833f887ac1577fd313d657530507db4a455a359",
+      "fileCount": 4327,
+      "packages": [
+        "@logtape/logtape@2.2.4",
+        "@modkit/codec-kit@1.0.0",
+        "@modkit/core@0.1.0",
+        "@modkit/host@0.1.0",
+        "@modkit/scene@1.0.0",
+        "@modkit/sdk@0.1.0",
+        "@modkit/uv@1.0.0",
+        "@modkit/vfs@0.1.0",
+        "@xmldom/xmldom@0.9.12",
+        "ajv@8.20.0",
+        "commander@6.2.1",
+        "es-module-lexer@1.7.0",
+        "fast-deep-equal@3.1.3",
+        "fast-uri@3.1.7",
+        "fast-xml-parser@4.5.6",
+        "json-schema-traverse@1.0.0",
+        "jsonc-parser@3.3.1",
+        "pako@2.1.0",
+        "require-from-string@2.0.2",
+        "seek-bzip@2.0.0",
+        "strnum@1.1.2",
+        "texture2ddecoder-wasm@1.2.2",
+        "three@0.180.0",
+        "vscode-jsonrpc@9.0.0",
+        "vscode-languageserver-protocol@3.18.1",
+        "vscode-languageserver-textdocument@1.0.13",
+        "vscode-languageserver-types@3.18.0",
+        "vscode-languageserver@10.0.1"
+      ],
+      "runtime": {
+        "arch": "x64",
+        "node": "v24.16.0",
+        "platform": "win32"
+      }
+    }
+  },
+  "oracle": {
+    "modules": [
+      {
+        "additionalFiles": [
+          "extensions/blizzard/starcraft-2/codecs/m3/src/structures.xml",
+          "extensions/blizzard/starcraft-2/codecs/m3/test/fixtures/model.m3",
+          "extensions/blizzard/starcraft-2/codecs/m3/test/fixtures/corpus/Harbinger.m3",
+          "extensions/blizzard/starcraft-2/codecs/m3/test/fixtures/corpus/aiur_cliffrocks_00.m3",
+          "extensions/blizzard/starcraft-2/codecs/m3/test/fixtures/corpus/analysisterminal.m3",
+          "extensions/blizzard/starcraft-2/codecs/m3/test/fixtures/corpus/portrait.m3"
+        ],
+        "build": {
+          "compilerOptions": {
+            "declaration": true,
+            "declarationMap": true,
+            "esModuleInterop": true,
+            "exactOptionalPropertyTypes": true,
+            "forceConsistentCasingInFileNames": true,
+            "lib": [
+              "ES2022",
+              "DOM"
+            ],
+            "module": "NodeNext",
+            "moduleResolution": "NodeNext",
+            "noImplicitOverride": true,
+            "noPropertyAccessFromIndexSignature": true,
+            "noUncheckedIndexedAccess": true,
+            "outDir": "./dist",
+            "rootDir": "./src",
+            "skipLibCheck": true,
+            "sourceMap": true,
+            "strict": true,
+            "target": "ES2022"
+          },
+          "experimentalDecorators": true,
+          "format": "esm",
+          "target": "es2022"
+        },
+        "bundleSha256": "3e9d886ca490edbb3c3b1f66380acbf13109b3f5d9be4c079143f01113f8e227",
+        "cacheHit": false,
+        "cacheKey": "81e31d87685d1ba2b1a0abbf95410496f05634e941addf7d98506707aec96a1e",
+        "corpusDigest": "b046d42b22421993549f233d990688f49a138f5549c86f427737a0e942be4080",
+        "corpusManifest": {
+          "cases": [
+            {
+              "id": "model-basic",
+              "input": {
+                "hint": "model.m3",
+                "pinnedPath": "extensions/blizzard/starcraft-2/codecs/m3/test/fixtures/model.m3",
+                "sha256": "a9a126d0a2b7b54bc6ac70948a40bf34bd26260f063af498cc94ff3d9a528cda"
+              }
+            },
+            {
+              "id": "Harbinger",
+              "input": {
+                "hint": "Harbinger.m3",
+                "pinnedPath": "extensions/blizzard/starcraft-2/codecs/m3/test/fixtures/corpus/Harbinger.m3",
+                "sha256": "3a76330ab5126c26c303b50c47b1f957da09d62a1cbcf02ebbe82699e921809a"
+              }
+            },
+            {
+              "id": "aiur_cliffrocks_00",
+              "input": {
+                "hint": "aiur_cliffrocks_00.m3",
+                "pinnedPath": "extensions/blizzard/starcraft-2/codecs/m3/test/fixtures/corpus/aiur_cliffrocks_00.m3",
+                "sha256": "f88b3efbd1c3f58e7d8facba42f22b93e87f74dd6e41c7957c9db16432f8d866"
+              }
+            },
+            {
+              "id": "analysisterminal",
+              "input": {
+                "hint": "analysisterminal.m3",
+                "pinnedPath": "extensions/blizzard/starcraft-2/codecs/m3/test/fixtures/corpus/analysisterminal.m3",
+                "sha256": "5dbc13ed236fd7fcd66191481901aa803ea6498cb3cae23d36f2f20d26986f90"
+              }
+            },
+            {
+              "id": "portrait",
+              "input": {
+                "hint": "portrait.m3",
+                "pinnedPath": "extensions/blizzard/starcraft-2/codecs/m3/test/fixtures/corpus/portrait.m3",
+                "sha256": "41526d398c4de90fd38046cee1866ae1498b177c250796beaf6efd37ef38c5a0"
+              }
+            }
+          ],
+          "codec": "m3",
+          "description": "Complete MK2 RenderMaterial objects and ordered mesh material indices for the five pinned M3 models.",
+          "kind": "real",
+          "proofs": [
+            {
+              "adapterOperation": "material.project",
+              "caseIds": [
+                "model-basic",
+                "Harbinger",
+                "aiur_cliffrocks_00",
+                "analysisterminal",
+                "portrait"
+              ],
+              "kind": "feature",
+              "requirement": "legacy/codec-manifest/modkit/m3/feature/a1c083966b255d42"
+            }
+          ],
+          "schemaVersion": 1
+        },
+        "dependencies": [
+          {
+            "dependencies": {},
+            "files": [
+              {
+                "path": "esbuild.exe",
+                "sha256": "c7bee37877d0aa6a046e52783fa0a2cf1a9ce5579d68bb3083bda99d4bff18ef"
+              },
+              {
+                "path": "package.json",
+                "sha256": "89382df45735edcd917c492a810ab514920fa07d36c653cdc122bdfd8f526964"
+              },
+              {
+                "path": "README.md",
+                "sha256": "29cf512fa580b72392176bf694933ae0decaf18116fdeee917511b445411ce16"
+              }
+            ],
+            "name": "@esbuild/win32-x64",
+            "root": "C:\\FILES\\SC2Files\\coding\\modkit-core\\node_modules\\.pnpm\\@esbuild+win32-x64@0.28.2\\node_modules\\@esbuild\\win32-x64",
+            "version": "0.28.2"
+          },
+          {
+            "dependencies": {},
+            "files": [
+              {
+                "path": "bin/esbuild",
+                "sha256": "183d6ead2dbc3af51aec767d5395f86fe54fbbc2d2aa8e54feb4e31d76a62f7e"
+              },
+              {
+                "path": "install.js",
+                "sha256": "612294e278914443bdcf81cb17f54afec34dbdd2ebd999a6ee187912320cc315"
+              },
+              {
+                "path": "lib/main.d.ts",
+                "sha256": "e078310f23f0ccfa28a6ac81b5fad81f27150e921f92ab6e648caab42e2d9a14"
+              },
+              {
+                "path": "lib/main.js",
+                "sha256": "61ec0ba144ff93f4bf0e96ad6fab6f430ede0aa13e27ace8063ed63ba416b3cd"
+              },
+              {
+                "path": "LICENSE.md",
+                "sha256": "b40ec5baec7bb34fa5b1c09521fa3cd52d5fad7adafed74932a2010d3612a681"
+              },
+              {
+                "path": "package.json",
+                "sha256": "9d0bc453f4e791553c4cc2298ba023b409241fd9801e494741666eb0f6051490"
+              },
+              {
+                "path": "README.md",
+                "sha256": "6d481cd60ec3c679e5e395f547ab4221147f35642894f6b95a8df38fd25c87bd"
+              }
+            ],
+            "name": "esbuild",
+            "root": "C:\\FILES\\SC2Files\\coding\\modkit-core\\node_modules\\.pnpm\\esbuild@0.28.2\\node_modules\\esbuild",
+            "version": "0.28.2"
+          },
+          {
+            "dependencies": {},
+            "files": [
+              {
+                "path": "CHANGELOG.md",
+                "sha256": "803fc57a02455e2f327a472ab13a806977a4c07f16944ccb5d13b15528a0507a"
+              },
+              {
+                "path": "lib/.eslintrc.yml",
+                "sha256": "70c75c46006491756923a455fc4b6b4aae4ac514eb5fcc0e837eb5137a80b93e"
+              },
+              {
+                "path": "lib/dom-parser.js",
+                "sha256": "96b0a7d06483d231e68c078447804ded66057c5591f28f7d3ddb7a269e284975"
+              },
+              {
+                "path": "lib/dom.js",
+                "sha256": "1d2c660a02d522dc0a4a7d317dca3d8f2c48860e5e2a8275c2bda6e38e3e173f"
+              },
+              {
+                "path": "lib/entities.js",
+                "sha256": "5e36abcc9bbdffd3a2e5312d11e8afe8a27313cb972c98ed1dd09a7d3d471d3a"
+              },
+              {
+                "path": "lib/sax.js",
+                "sha256": "db705c793e9697e0a94fdac704b7c4514db22a59171fc9101e811f251657a077"
+              },
+              {
+                "path": "LICENSE",
+                "sha256": "4da724fc305d81606b245b324d4d2586916b9d248b23d82183df753ace0fdf71"
+              },
+              {
+                "path": "package.json",
+                "sha256": "6ffbcd910066018565faf70fee32e11ecb1e1dd738f405c32ef7d33a700bbd2e"
+              },
+              {
+                "path": "readme.md",
+                "sha256": "77b41d29f033835ae1a0aec5a0e7488af3ce3430e95c96c9d7ef0ff5f3e125a8"
+              }
+            ],
+            "name": "xmldom",
+            "root": "C:\\FILES\\SC2Files\\coding\\references\\modkitmk2\\node_modules\\.pnpm\\xmldom@0.6.0\\node_modules\\xmldom",
+            "version": "0.6.0"
+          }
+        ],
+        "dependenciesDigest": "27f2f29c2aa78dd4250c6b4ea1f5e2726b41a3388e4cc2cd0f18ab85faff7085",
+        "directory": "C:\\Users\\Admin\\AppData\\Local\\Temp\\claude\\C--FILES-SC2Files-coding\\147de1e5-3b4f-4cc5-9580-98eba6b5aeea\\scratchpad\\cache\\81e31d87685d1ba2b1a0abbf95410496f05634e941addf7d98506707aec96a1e",
+        "entry": "extensions/blizzard/starcraft-2/codecs/m3/src/index.ts",
+        "loader": [
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs",
+            "sha256": "1370bde7f031ce62bc4df3d7b47eaab24c3e4024fd48f4714b1c4fb63d78d993"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\geometry-output.mjs",
+            "sha256": "49b3dff8e7722168681afb47c5a5304084a450338b19439385a90f540a5f9b2d"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\portable-output.mjs",
+            "sha256": "e2e7d75ee4ac2813bd5f736cb6e7f8b84ecd51fffe66cecab75422fb3933a48b"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\fresh-static-oracle.mjs",
+            "sha256": "4ff1d328b9312ee7f4266a2fd64b711a86a72807acc0a24bf7699b5fbf27949d"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\configuration-output.mjs",
+            "sha256": "390aed3dd6a8007881195cccb80128867ee6e15dc438df49d3d29e13e9c1233b"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\fixed-output.mjs",
+            "sha256": "27c5227a738c816ef8a718738486c8bab5270380fd83e6b72dddeeb6d99ee13d"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\legacy.mjs",
+            "sha256": "eb66a997b0abfce6016a2c447d9e6df65cf610c00f50686da9fa1842e4beccbf"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\case-input.mjs",
+            "sha256": "d08518dcacd027d04383fc3a2f76227b9759075ff25778b7d3782a8d23a92db4"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\animation-output.mjs",
+            "sha256": "45d781e902e06bf30c45012a0d40fe0645cda038f11262424c162b752609ebbc"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\standalone-output.mjs",
+            "sha256": "de68e0d6fb41e231dc49a227400ef8f0db91e991ff543eb56acfab0f95e59bb1"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\binding-output.mjs",
+            "sha256": "1cdd1041a9c6ddf2534091e90f8fb6cf98e9ee3dbd0a30e1a6ed89c809fae46f"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\metadata-schema-output.mjs",
+            "sha256": "fd14d97fab7d61d093a6739e31cae7368c3b99cc2e306ca8e4e6bc24cbadbaec"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\effects-output.mjs",
+            "sha256": "a700fe16410ced52c14b944ac1977f64ebdd4b9e7894e11c7a002d26b14b1127"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\effects-oracle.mjs",
+            "sha256": "812775d9704b370c747154c4f7c7815bf925b30a841dd6a18c3ecbe076da7345"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\render-wiring-output.mjs",
+            "sha256": "e7c277181e3b0e2ef318bb048231b4b68fbd81db4c111c2f800a77d274951c44"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\render-wiring-environment.mjs",
+            "sha256": "675f09d9e42dd02e8f87cb0a3cfac007cb3138bdabb7212e5e2ac351d7eddde2"
+          }
+        ],
+        "loaderDigest": "ea03a61ec2c4fc85b9f591659c13ad53cc14282a17eda0293bdf7eb62ce16ccd",
+        "loaderSnapshots": [
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-core\\scripts\\migration\\lib\\legacy-oracle.mjs",
+            "sha256": "1370bde7f031ce62bc4df3d7b47eaab24c3e4024fd48f4714b1c4fb63d78d993",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\claude\\C--FILES-SC2Files-coding\\147de1e5-3b4f-4cc5-9580-98eba6b5aeea\\scratchpad\\cache\\81e31d87685d1ba2b1a0abbf95410496f05634e941addf7d98506707aec96a1e\\loader\\0-legacy-oracle.mjs"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\geometry-output.mjs",
+            "sha256": "49b3dff8e7722168681afb47c5a5304084a450338b19439385a90f540a5f9b2d",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\claude\\C--FILES-SC2Files-coding\\147de1e5-3b4f-4cc5-9580-98eba6b5aeea\\scratchpad\\cache\\81e31d87685d1ba2b1a0abbf95410496f05634e941addf7d98506707aec96a1e\\loader\\1-geometry-output.mjs"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\portable-output.mjs",
+            "sha256": "e2e7d75ee4ac2813bd5f736cb6e7f8b84ecd51fffe66cecab75422fb3933a48b",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\claude\\C--FILES-SC2Files-coding\\147de1e5-3b4f-4cc5-9580-98eba6b5aeea\\scratchpad\\cache\\81e31d87685d1ba2b1a0abbf95410496f05634e941addf7d98506707aec96a1e\\loader\\2-portable-output.mjs"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\fresh-static-oracle.mjs",
+            "sha256": "4ff1d328b9312ee7f4266a2fd64b711a86a72807acc0a24bf7699b5fbf27949d",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\claude\\C--FILES-SC2Files-coding\\147de1e5-3b4f-4cc5-9580-98eba6b5aeea\\scratchpad\\cache\\81e31d87685d1ba2b1a0abbf95410496f05634e941addf7d98506707aec96a1e\\loader\\3-fresh-static-oracle.mjs"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\configuration-output.mjs",
+            "sha256": "390aed3dd6a8007881195cccb80128867ee6e15dc438df49d3d29e13e9c1233b",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\claude\\C--FILES-SC2Files-coding\\147de1e5-3b4f-4cc5-9580-98eba6b5aeea\\scratchpad\\cache\\81e31d87685d1ba2b1a0abbf95410496f05634e941addf7d98506707aec96a1e\\loader\\4-configuration-output.mjs"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\fixed-output.mjs",
+            "sha256": "27c5227a738c816ef8a718738486c8bab5270380fd83e6b72dddeeb6d99ee13d",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\claude\\C--FILES-SC2Files-coding\\147de1e5-3b4f-4cc5-9580-98eba6b5aeea\\scratchpad\\cache\\81e31d87685d1ba2b1a0abbf95410496f05634e941addf7d98506707aec96a1e\\loader\\5-fixed-output.mjs"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\legacy.mjs",
+            "sha256": "eb66a997b0abfce6016a2c447d9e6df65cf610c00f50686da9fa1842e4beccbf",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\claude\\C--FILES-SC2Files-coding\\147de1e5-3b4f-4cc5-9580-98eba6b5aeea\\scratchpad\\cache\\81e31d87685d1ba2b1a0abbf95410496f05634e941addf7d98506707aec96a1e\\loader\\6-legacy.mjs"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\case-input.mjs",
+            "sha256": "d08518dcacd027d04383fc3a2f76227b9759075ff25778b7d3782a8d23a92db4",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\claude\\C--FILES-SC2Files-coding\\147de1e5-3b4f-4cc5-9580-98eba6b5aeea\\scratchpad\\cache\\81e31d87685d1ba2b1a0abbf95410496f05634e941addf7d98506707aec96a1e\\loader\\7-case-input.mjs"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\animation-output.mjs",
+            "sha256": "45d781e902e06bf30c45012a0d40fe0645cda038f11262424c162b752609ebbc",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\claude\\C--FILES-SC2Files-coding\\147de1e5-3b4f-4cc5-9580-98eba6b5aeea\\scratchpad\\cache\\81e31d87685d1ba2b1a0abbf95410496f05634e941addf7d98506707aec96a1e\\loader\\8-animation-output.mjs"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\standalone-output.mjs",
+            "sha256": "de68e0d6fb41e231dc49a227400ef8f0db91e991ff543eb56acfab0f95e59bb1",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\claude\\C--FILES-SC2Files-coding\\147de1e5-3b4f-4cc5-9580-98eba6b5aeea\\scratchpad\\cache\\81e31d87685d1ba2b1a0abbf95410496f05634e941addf7d98506707aec96a1e\\loader\\9-standalone-output.mjs"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\binding-output.mjs",
+            "sha256": "1cdd1041a9c6ddf2534091e90f8fb6cf98e9ee3dbd0a30e1a6ed89c809fae46f",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\claude\\C--FILES-SC2Files-coding\\147de1e5-3b4f-4cc5-9580-98eba6b5aeea\\scratchpad\\cache\\81e31d87685d1ba2b1a0abbf95410496f05634e941addf7d98506707aec96a1e\\loader\\10-binding-output.mjs"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\metadata-schema-output.mjs",
+            "sha256": "fd14d97fab7d61d093a6739e31cae7368c3b99cc2e306ca8e4e6bc24cbadbaec",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\claude\\C--FILES-SC2Files-coding\\147de1e5-3b4f-4cc5-9580-98eba6b5aeea\\scratchpad\\cache\\81e31d87685d1ba2b1a0abbf95410496f05634e941addf7d98506707aec96a1e\\loader\\11-metadata-schema-output.mjs"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\effects-output.mjs",
+            "sha256": "a700fe16410ced52c14b944ac1977f64ebdd4b9e7894e11c7a002d26b14b1127",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\claude\\C--FILES-SC2Files-coding\\147de1e5-3b4f-4cc5-9580-98eba6b5aeea\\scratchpad\\cache\\81e31d87685d1ba2b1a0abbf95410496f05634e941addf7d98506707aec96a1e\\loader\\12-effects-output.mjs"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\effects-oracle.mjs",
+            "sha256": "812775d9704b370c747154c4f7c7815bf925b30a841dd6a18c3ecbe076da7345",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\claude\\C--FILES-SC2Files-coding\\147de1e5-3b4f-4cc5-9580-98eba6b5aeea\\scratchpad\\cache\\81e31d87685d1ba2b1a0abbf95410496f05634e941addf7d98506707aec96a1e\\loader\\13-effects-oracle.mjs"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\render-wiring-output.mjs",
+            "sha256": "e7c277181e3b0e2ef318bb048231b4b68fbd81db4c111c2f800a77d274951c44",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\claude\\C--FILES-SC2Files-coding\\147de1e5-3b4f-4cc5-9580-98eba6b5aeea\\scratchpad\\cache\\81e31d87685d1ba2b1a0abbf95410496f05634e941addf7d98506707aec96a1e\\loader\\14-render-wiring-output.mjs"
+          },
+          {
+            "path": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\render-wiring-environment.mjs",
+            "sha256": "675f09d9e42dd02e8f87cb0a3cfac007cb3138bdabb7212e5e2ac351d7eddde2",
+            "snapshot": "C:\\Users\\Admin\\AppData\\Local\\Temp\\claude\\C--FILES-SC2Files-coding\\147de1e5-3b4f-4cc5-9580-98eba6b5aeea\\scratchpad\\cache\\81e31d87685d1ba2b1a0abbf95410496f05634e941addf7d98506707aec96a1e\\loader\\15-render-wiring-environment.mjs"
+          }
+        ],
+        "observeWorkingTree": false,
+        "operation": "material.project",
+        "operationOptions": {
+          "projection": "complete RenderMaterial JSON and ordered material indices",
+          "protocol": "m3-semantic-capabilities-v1"
+        },
+        "oracleCommit": "1a14ba4eddd0ae88de273348ebd44cfb98a0581d",
+        "runtime": {
+          "arch": "x64",
+          "binaryDigest": "c7bee37877d0aa6a046e52783fa0a2cf1a9ce5579d68bb3083bda99d4bff18ef",
+          "esbuild": "0.28.2",
+          "node": "v24.16.0",
+          "platform": "win32"
+        },
+        "runtimeDependencies": [
+          {
+            "name": "xmldom"
+          }
+        ],
+        "schemaVersion": 1,
+        "source": [
+          {
+            "gitBlob": "c4f2dc5b26154adcd3f5613cb3c619f747b1dc4e",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/animation/evaluator.ts",
+            "sha256": "822483ab5306e72fccc26432be6c2baf7c3e24897a0876b6636622a1699ba590"
+          },
+          {
+            "gitBlob": "7ec0d63a60a1b53b9a5bc2023127b815e28134bc",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/animation/tracks.ts",
+            "sha256": "2ad1abb380683cbf64539250bcbb3aef7583796dd4fb2e58612bafb267aed0b2"
+          },
+          {
+            "gitBlob": "12c2cb97ea48b6e7ed5e4c0e73c2f47824ef111a",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/binary/constants.ts",
+            "sha256": "6301f522498b7f35a184c9522abb7bb08e760d970386f698ec9dffe3f407028a"
+          },
+          {
+            "gitBlob": "2f41559e3a05f9df56bff356dd6df9cd5413319e",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/binary/fields.ts",
+            "sha256": "de21d8d89d1884f804e6b35bf99edb235c16fa0fac5a65dc14beab5602733274"
+          },
+          {
+            "gitBlob": "1fae57a4baebe373d1c92d836dfc3a820bdd461f",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/binary/parser.ts",
+            "sha256": "b3b9ce26f21920e54c61184df37290c1596bcd6d5742c8565b78992b8782ee5b"
+          },
+          {
+            "gitBlob": "59caa3ced6f6f2a93c7dfd67ffe2241bf0832c56",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/binary/registry.ts",
+            "sha256": "27ca88d79253f53c93d256191305cd629729d4331c1747ce617ae8d2debc9936"
+          },
+          {
+            "gitBlob": "47c0509bede16ca7b2bdfddc47542af4158495b6",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/binary/sections.ts",
+            "sha256": "20175b1afdb4b521fced2b65ba12eb33cb3847486f7b939039044affbe6d45a3"
+          },
+          {
+            "gitBlob": "36458da1b95d78c7ae0ca2179c19602821ef01bc",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/binary/structures.ts",
+            "sha256": "a60736b3a590faca1080694e09f4ff13d64307ed44d3d7899faf64a8212b3ed6"
+          },
+          {
+            "gitBlob": "9474934ed3ad7effa97b4b656c1e6a6d0138fa90",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/builder/effects.ts",
+            "sha256": "4d769a9e6142694726d70f90880d3bdf731b161d0b8fdf76edeceff0fb6a454a"
+          },
+          {
+            "gitBlob": "5d8f24ba0d910c92bdd521b730796b10f96ea380",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/builder/material-helpers.ts",
+            "sha256": "1b46f2d7db69c35f9f5a24d02c5b552883d7b2cc83074f43a67325cc111e948d"
+          },
+          {
+            "gitBlob": "323b31f0d8551c7c3a3f14c4ce0fb0c0f25e1ae5",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/builder/metadata.ts",
+            "sha256": "14f111291a02984751abfd20382497f356a3f22159e1f42c96cb2ecb485d1bb5"
+          },
+          {
+            "gitBlob": "435a30aef4bfcb1731757e17606854bc4dc6d9ff",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/builder/standard-material.ts",
+            "sha256": "3dc77ccc210dfc10ffdd6560e1528d8b1a15a93ac285cc43d104716f74155e65"
+          },
+          {
+            "gitBlob": "789badc41f6d09f68ca62f2b1eb659e2aca01692",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/config.ts",
+            "sha256": "4be0c40a5111df9633deb4e96f8f66086675a15d95d48d38a8bb36408fe699f0"
+          },
+          {
+            "gitBlob": "6bb750392a51bd53881efd7060da238c471112dd",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/document.ts",
+            "sha256": "d4dc3f37fe26ba83ec136d1ca61998ee46343465d946f4758ce0bd364bcbd381"
+          },
+          {
+            "gitBlob": "266efa50233c7c738595cf61d3610c8a7fef3d9e",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/edit.ts",
+            "sha256": "46a40ef37244dee6c8685f8e8a31671a61c1ee22f81b440289471534ebe86fb9"
+          },
+          {
+            "gitBlob": "b9b1c99c964458ce73322e8a642f2c7e4806caa7",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/encoder.ts",
+            "sha256": "716e6a0e37d079e14f3c8c484555afa806e0969ec41a3a1ce9cb89d5aec4ea50"
+          },
+          {
+            "gitBlob": "21b1d5be32c5853e39e701ef510b319b463e16ad",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/index.ts",
+            "sha256": "5612965e28e090c053cbcdcd0abb137a292579e570f48840c3c96f23e246ef77"
+          },
+          {
+            "gitBlob": "3746bbfe460a23eaafe903321a3a0a8ab0d06e28",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/lossless.ts",
+            "sha256": "02b7cdce00a34eb5134d32c748d33bf703f37234c0430a0bdc7c0a942f9db918"
+          },
+          {
+            "gitBlob": "de13a3926e01139803ae57186130d3c48c563e7b",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/magic.ts",
+            "sha256": "9c7401b85138f7873439da5eddde2518068283ecdd66df5f931cd3a3c3cdad22"
+          },
+          {
+            "gitBlob": "5c037e4b76f372e846edc7419f7612896c3ad4e7",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/model-codec.ts",
+            "sha256": "b9593571874b5111053e35980ae7890bd82c78213c53b841a23a4f90b166ee21"
+          },
+          {
+            "gitBlob": "6d5aa987c8571ba474986073be222f363e6016db",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/model-parser.ts",
+            "sha256": "cbe75035d940ad6fa94a2663931234abb8b1c01098b675150fe2920a002bfb4c"
+          },
+          {
+            "gitBlob": "6ab02b33a4696a1bc98fb78e6f27b42164ec9007",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/model.ts",
+            "sha256": "f607109c664da7eacfc7c789907fc77e2f395018731e6c3cbe35ed7463120068"
+          },
+          {
+            "gitBlob": "eaf36115dc3d51a2a1a1ad4d032e44d4c0d2604b",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/platform.node.ts",
+            "sha256": "a104c3cf9a788751f80df27fb63f442fdbaffb02d40f6ab30bb321ceb291e142"
+          },
+          {
+            "gitBlob": "ed3cccd83eddb0e8b671e065ea8c5638c9a03606",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/platform.ts",
+            "sha256": "90f71dd1eedf56bb43d82764f767d742b6e96f3597be04e795345834a24730dd"
+          },
+          {
+            "gitBlob": "6871926388725f9cdfeb6c22001c9144fc150d8e",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/render-model.ts",
+            "sha256": "9ec83fa5b2858275c264ee238ce9fcae2fb1d68c0249ce49a347748ac6ec13a5"
+          },
+          {
+            "gitBlob": "5dadbab6731bfbbb70a2b6ad9ecf456c565752b6",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/structural.ts",
+            "sha256": "83c6be059176a45a4359ba38fb35d2cf30c90ec7139008173ab3fc896d2599f2"
+          },
+          {
+            "gitBlob": "d4a17989a3d5f482c14595ea87986d58cf30ad1b",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/structures.xml",
+            "sha256": "62facf31fd9dddc94c8e213c9509311eda8737919177e94b188a5dc33c68f6cb"
+          },
+          {
+            "gitBlob": "fd90b370add32806b3f0e69e4c62801ed42bee72",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/types.ts",
+            "sha256": "4ce3124a1ebef2a90c8289e3b2d64526940fc9372384fee9d011eccb755693b4"
+          },
+          {
+            "gitBlob": "59f2f422c7b3ea5defe08b3117c94e962378ac7f",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/utils/bone-resolver.ts",
+            "sha256": "79aaca1122cb91510393590b666452f7831a8c11c6ce63fb06bfdb23d2dab4c4"
+          },
+          {
+            "gitBlob": "bafbd31df5ad7117553aada4dae7e431acd3c0bf",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/utils/matrix.ts",
+            "sha256": "3c29d9669f28abde0652827ae65b2ae5db56517d0875a4712a032c860d56b18d"
+          },
+          {
+            "gitBlob": "2c41e55928eea1e808fcf5955cba035983ba1d23",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/utils/texture-resolver.ts",
+            "sha256": "a59da4b63fff8ed151bde5251bb84780307bbbacc1ef4078133ebb274804341f"
+          },
+          {
+            "gitBlob": "b45a8a81d868b05fe410c9510dd72d5442fc1102",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/utils/texture.ts",
+            "sha256": "5b4864b260404ba93a77a0badb2ea61755d088b05a47aaebd7eaa384321a1549"
+          },
+          {
+            "gitBlob": "092beb95264a45c83ee29ee158379d1aa05f1c7f",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/utils/vertex.ts",
+            "sha256": "bedaae696cef7332741b2e5237c794aa0c29c368faf273aee7ca37780ee4b81c"
+          },
+          {
+            "gitBlob": "cb9c95a03bd89f7f35d36749ed2b608777713abc",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/test/fixtures/corpus/aiur_cliffrocks_00.m3",
+            "sha256": "f88b3efbd1c3f58e7d8facba42f22b93e87f74dd6e41c7957c9db16432f8d866"
+          },
+          {
+            "gitBlob": "1d19cdd252ae525b571a8137f3097cdaf6993e83",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/test/fixtures/corpus/analysisterminal.m3",
+            "sha256": "5dbc13ed236fd7fcd66191481901aa803ea6498cb3cae23d36f2f20d26986f90"
+          },
+          {
+            "gitBlob": "78b36b23af1073fa7983ae172c737a265e063361",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/test/fixtures/corpus/Harbinger.m3",
+            "sha256": "3a76330ab5126c26c303b50c47b1f957da09d62a1cbcf02ebbe82699e921809a"
+          },
+          {
+            "gitBlob": "f83f14e3e7b582a2b867ecf36fc320c29e70611f",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/test/fixtures/corpus/portrait.m3",
+            "sha256": "41526d398c4de90fd38046cee1866ae1498b177c250796beaf6efd37ef38c5a0"
+          },
+          {
+            "gitBlob": "0306c93ede5ed954c7fae0199a4b08cec5480dcd",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/test/fixtures/model.m3",
+            "sha256": "a9a126d0a2b7b54bc6ac70948a40bf34bd26260f063af498cc94ff3d9a528cda"
+          },
+          {
+            "gitBlob": "c6d864122c608e6adc40878c0d05ddc12469f677",
+            "path": "package.json",
+            "sha256": "801d820bdbfea47c3da11f02bb4e330536149a5e277b7b053650efae7808ea7f"
+          },
+          {
+            "gitBlob": "14fbdacad91594b7db3d84201cc10b6d2c520f5d",
+            "path": "packages/assets/package.json",
+            "sha256": "6316fba017961b70ee532ee7923e6eaecef2a0bef7fcaa5a6f43511f7c3baa2f"
+          },
+          {
+            "gitBlob": "44a05ecc8c55570751a7e4220afd4712d4d977fe",
+            "path": "packages/assets/src/artifact-registry.ts",
+            "sha256": "98dfb7f4d7d111c7edc3d271592b0e97f91866dd61252856775ada85088e47a4"
+          },
+          {
+            "gitBlob": "aaef41b228996e534979a9ce79f8730d4fae0995",
+            "path": "packages/assets/src/artifact-session.ts",
+            "sha256": "bf793763560709d654b3aa313a28e1c07f55fc95401a37e0803e6bc086f55490"
+          },
+          {
+            "gitBlob": "1482aa85e6afe2ba6113aea653214f9a30b7d00f",
+            "path": "packages/assets/src/asset-session.ts",
+            "sha256": "50ef09b361a65cbdbdd8db288d0810c0ec2b1a164799829a6d846457ce485305"
+          },
+          {
+            "gitBlob": "f3f942256c9cffd2f8055477be175a98d775b47a",
+            "path": "packages/assets/src/cancellation.ts",
+            "sha256": "f7c2202facc93ef36f2bec58e018a24798975b6c63e5838703a09aeec59a9c00"
+          },
+          {
+            "gitBlob": "600ac23eb9cfad2c7b05f6e6adda86678866748e",
+            "path": "packages/assets/src/capabilities.ts",
+            "sha256": "46a38586304ace9ef258f8d8204f0212bb00ebc0914ecaf3c7b3e1f691ae64dc"
+          },
+          {
+            "gitBlob": "6e5d2b7cd6ca9b21614254e778686568fc8dc69d",
+            "path": "packages/assets/src/codec-host.ts",
+            "sha256": "f24a096cfddd2d8f2271d7f565617af28e693065f4303e4d12b940bac24f3c71"
+          },
+          {
+            "gitBlob": "e77b711c651c418808c17b928e847b8325fe1e48",
+            "path": "packages/assets/src/codec-manifest.ts",
+            "sha256": "8dc829b32526c0c6c62de342f8290e8e3ac7e48cfa202e8791be118b97880592"
+          },
+          {
+            "gitBlob": "be4d26c9facbac09a54e0a125a4f43cdfb2eb3dd",
+            "path": "packages/assets/src/codec-matching.ts",
+            "sha256": "899ef6078a45e99570db905f9afe84094b99a2546b62183e3454c3e80eb52fb1"
+          },
+          {
+            "gitBlob": "8fe59decde18c184ce739bb92c1bcb9c4acbe2a1",
+            "path": "packages/assets/src/content.ts",
+            "sha256": "652751e3977d4fbd391d4b3c98b73505caf4567abb1fb134f1dec31447667f73"
+          },
+          {
+            "gitBlob": "5058369d401507a7e57850d87a646cf22f4174b7",
+            "path": "packages/assets/src/contributions.ts",
+            "sha256": "07b7b48dd5a47fbbf0cbc984bc4eccd28d27ad84a315bfeafbfd71856fbb570b"
+          },
+          {
+            "gitBlob": "7c8c95b1896b1105f6ef05934a505a340a59426c",
+            "path": "packages/assets/src/descriptor.ts",
+            "sha256": "23ed304bf71ff461a594f5322ecd2cf0a2c49263dd91f3d08dd41a6b51745c40"
+          },
+          {
+            "gitBlob": "9594c33c12e6ad9d1505fa0ad176dde7e4b9601f",
+            "path": "packages/assets/src/detection.ts",
+            "sha256": "3b29a2505d6287f39ffe02f324187d295c67f55e073788a8cb5842a3dc080bb9"
+          },
+          {
+            "gitBlob": "e8f344d8562f33381ccd42210164c066e9f24bc1",
+            "path": "packages/assets/src/diagnostics.ts",
+            "sha256": "22f992154fd099a4f867baf6e1ae1e7c84bf6682af65a5ad5d54cd30f4ced76b"
+          },
+          {
+            "gitBlob": "1102c8383fd141fa66bc6de63ab5ca5fbe1e8a06",
+            "path": "packages/assets/src/editing.ts",
+            "sha256": "331d2cd15839ab62339dc3dabd14a7ea0152af2fc9a0893015dffa004213c707"
+          },
+          {
+            "gitBlob": "4ebed340b01aff606ee8ce63bf887f3507509c3e",
+            "path": "packages/assets/src/format-registry-catalog-adapter.ts",
+            "sha256": "15e55e02fe9710e8743a9bc990c00c3300168f8c718e27abf70cbfe1b2b8c2ab"
+          },
+          {
+            "gitBlob": "6ea9f263fea954e4fa9f007ff9ace7cae81ae55c",
+            "path": "packages/assets/src/format-registry.ts",
+            "sha256": "574e1818c892be45b1c94c87782c42b727eafe3c673226b3b6997e64268d60a3"
+          },
+          {
+            "gitBlob": "6e6ad756db5528d6cd5d000785541dfb2fef7857",
+            "path": "packages/assets/src/game-contributions.ts",
+            "sha256": "101d1b196161809ef9703ce14260c603ca8901c7a2b86c9dd106c4a31cf5cecd"
+          },
+          {
+            "gitBlob": "5d72dc70a27791e94f0c0e61e416ae1d1bd74b7d",
+            "path": "packages/assets/src/index.ts",
+            "sha256": "366e3d5f311b086547c8a852a1092aa699993997bdaa68669df32ba92a11aac6"
+          },
+          {
+            "gitBlob": "c81b98081f92c116056e2c86632259d54353721c",
+            "path": "packages/assets/src/json.ts",
+            "sha256": "f044a80c402d72142fdf2c0f5345882cbcba828050b90704a022e4e01b00f4c5"
+          },
+          {
+            "gitBlob": "0b8dab34e8fb438fdaae451bfc56c9dc111531b8",
+            "path": "packages/assets/src/operations.ts",
+            "sha256": "7dd2c86bd0dbd06c4bfa78656bd4f3a36e0303a71ed0076e45b9014ca13b36f3"
+          },
+          {
+            "gitBlob": "4c23a7363474f99af595c8d4549d1f862e24e70b",
+            "path": "packages/assets/src/progress.ts",
+            "sha256": "f13bd7c0001c65a553cf0a90b5d36fbd32584d2de516837d37e43a3a2cae7285"
+          },
+          {
+            "gitBlob": "5dce8c8c3d9a93ef7556182709646c3fc8c56c87",
+            "path": "packages/assets/src/provenance.ts",
+            "sha256": "416aa8c50c436cbf5077fc37b9aab78c8932425ebc8286f2acc8dea5e3431037"
+          },
+          {
+            "gitBlob": "ffebcac77e7c768e67a38bec473132327857b899",
+            "path": "packages/assets/src/resolvers.ts",
+            "sha256": "afc9bf36cdac44a6e5d0cf043215461492a05438ec46fa40602cd3c66e86c73d"
+          },
+          {
+            "gitBlob": "20947903e77fb580e40bfc6483eab3f9ec0985f3",
+            "path": "packages/assets/src/source.ts",
+            "sha256": "beaa0779256b9dbbd0fd0b253a11ab7975919e778af6b84ee2d784adfa82a122"
+          },
+          {
+            "gitBlob": "bd9edf7b4f3e496d6f47f4f5df59dc02d1ad2984",
+            "path": "packages/assets/src/view-descriptors.ts",
+            "sha256": "09fe218ef8d491c8cea4d22cda3b215fc1ac9004d042bf168d95e57a6f5044ca"
+          },
+          {
+            "gitBlob": "27eadc620749f4c97c51c3f4faab3bb2aea76813",
+            "path": "packages/core/package.json",
+            "sha256": "8f0b475160fa2c26d8dddc1d667ddc4158aea98d63588109f59c2ca781a2321d"
+          },
+          {
+            "gitBlob": "712ccca88394d6b5bae1248d9ae9b3bb3c05fbc2",
+            "path": "packages/core/src/errors.ts",
+            "sha256": "4d5a594261ffa101005198d024cae9fa9ebefc3c617c49d4d6b1f45589857d20"
+          },
+          {
+            "gitBlob": "fc208f6f968c8e1330f13f64aaa03359878ecbe8",
+            "path": "packages/models-processing/package.json",
+            "sha256": "53fd12b7e4a39087c93e30debb7bda51af899f554fd49355e6716a49060c1c76"
+          },
+          {
+            "gitBlob": "c2e84db5d264ba15e7e676317e37f94408e09513",
+            "path": "packages/models-processing/src/core/codec.ts",
+            "sha256": "cf5dfecefffcd3fdab1890846424c4606d93867758243d1f76a06a7bbc48d65a"
+          },
+          {
+            "gitBlob": "cffa5345def0563f752fbf8eb3d035fe5bfab254",
+            "path": "packages/models-processing/src/core/effects-sim.ts",
+            "sha256": "0792d2e33f49056eafa5b7e11d17e911f4915ff5cc2efb367f90d20bedbfd193"
+          },
+          {
+            "gitBlob": "0622de93d73526af611cecfdada3e69ea7d74e10",
+            "path": "pnpm-lock.yaml",
+            "sha256": "1d01882dc1a3e00f918b08977bab09b5fa73deec6310644838ad16374cf8c296"
+          },
+          {
+            "gitBlob": "44e9289e360928f5efa7446128cc2e2092465e8d",
+            "path": "pnpm-workspace.yaml",
+            "sha256": "386e54acc7666b3a76bc5edba0d4bbf06bada6f28882169d1106885efc92ed1a"
+          },
+          {
+            "gitBlob": "d32176af2d4f65c1e55ca115e8add031fad01b99",
+            "path": "tsconfig.base.json",
+            "sha256": "ecfe908e6bd1cc0d8369707f6488d8d54cf945750f07a24cf4909782e40bfc76"
+          },
+          {
+            "gitBlob": "cd19a6ddf32838e95e0e9e7d4a537cd4dcaf5546",
+            "path": "tsconfig.json",
+            "sha256": "de14f0580bf35c4ab062c9e92501c80447663f50b6d024b71b450421301dee92"
+          }
+        ],
+        "sourceClosureDigest": "5e2a7d86c5aa18eebb0b8ccc92e5ffe27b243832c81d870751cedb7839f29d24",
+        "sourceFiles": [
+          {
+            "gitBlob": "c4f2dc5b26154adcd3f5613cb3c619f747b1dc4e",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/animation/evaluator.ts",
+            "sha256": "822483ab5306e72fccc26432be6c2baf7c3e24897a0876b6636622a1699ba590",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "7ec0d63a60a1b53b9a5bc2023127b815e28134bc",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/animation/tracks.ts",
+            "sha256": "2ad1abb380683cbf64539250bcbb3aef7583796dd4fb2e58612bafb267aed0b2",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "12c2cb97ea48b6e7ed5e4c0e73c2f47824ef111a",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/binary/constants.ts",
+            "sha256": "6301f522498b7f35a184c9522abb7bb08e760d970386f698ec9dffe3f407028a",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "2f41559e3a05f9df56bff356dd6df9cd5413319e",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/binary/fields.ts",
+            "sha256": "de21d8d89d1884f804e6b35bf99edb235c16fa0fac5a65dc14beab5602733274",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "1fae57a4baebe373d1c92d836dfc3a820bdd461f",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/binary/parser.ts",
+            "sha256": "b3b9ce26f21920e54c61184df37290c1596bcd6d5742c8565b78992b8782ee5b",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "59caa3ced6f6f2a93c7dfd67ffe2241bf0832c56",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/binary/registry.ts",
+            "sha256": "27ca88d79253f53c93d256191305cd629729d4331c1747ce617ae8d2debc9936",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "47c0509bede16ca7b2bdfddc47542af4158495b6",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/binary/sections.ts",
+            "sha256": "20175b1afdb4b521fced2b65ba12eb33cb3847486f7b939039044affbe6d45a3",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "36458da1b95d78c7ae0ca2179c19602821ef01bc",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/binary/structures.ts",
+            "sha256": "a60736b3a590faca1080694e09f4ff13d64307ed44d3d7899faf64a8212b3ed6",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "9474934ed3ad7effa97b4b656c1e6a6d0138fa90",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/builder/effects.ts",
+            "sha256": "4d769a9e6142694726d70f90880d3bdf731b161d0b8fdf76edeceff0fb6a454a",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "5d8f24ba0d910c92bdd521b730796b10f96ea380",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/builder/material-helpers.ts",
+            "sha256": "1b46f2d7db69c35f9f5a24d02c5b552883d7b2cc83074f43a67325cc111e948d",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "323b31f0d8551c7c3a3f14c4ce0fb0c0f25e1ae5",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/builder/metadata.ts",
+            "sha256": "14f111291a02984751abfd20382497f356a3f22159e1f42c96cb2ecb485d1bb5",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "435a30aef4bfcb1731757e17606854bc4dc6d9ff",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/builder/standard-material.ts",
+            "sha256": "3dc77ccc210dfc10ffdd6560e1528d8b1a15a93ac285cc43d104716f74155e65",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "789badc41f6d09f68ca62f2b1eb659e2aca01692",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/config.ts",
+            "sha256": "4be0c40a5111df9633deb4e96f8f66086675a15d95d48d38a8bb36408fe699f0",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "6bb750392a51bd53881efd7060da238c471112dd",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/document.ts",
+            "sha256": "d4dc3f37fe26ba83ec136d1ca61998ee46343465d946f4758ce0bd364bcbd381",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "266efa50233c7c738595cf61d3610c8a7fef3d9e",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/edit.ts",
+            "sha256": "46a40ef37244dee6c8685f8e8a31671a61c1ee22f81b440289471534ebe86fb9",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "b9b1c99c964458ce73322e8a642f2c7e4806caa7",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/encoder.ts",
+            "sha256": "716e6a0e37d079e14f3c8c484555afa806e0969ec41a3a1ce9cb89d5aec4ea50",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "21b1d5be32c5853e39e701ef510b319b463e16ad",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/index.ts",
+            "sha256": "5612965e28e090c053cbcdcd0abb137a292579e570f48840c3c96f23e246ef77",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "3746bbfe460a23eaafe903321a3a0a8ab0d06e28",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/lossless.ts",
+            "sha256": "02b7cdce00a34eb5134d32c748d33bf703f37234c0430a0bdc7c0a942f9db918",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "de13a3926e01139803ae57186130d3c48c563e7b",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/magic.ts",
+            "sha256": "9c7401b85138f7873439da5eddde2518068283ecdd66df5f931cd3a3c3cdad22",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "5c037e4b76f372e846edc7419f7612896c3ad4e7",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/model-codec.ts",
+            "sha256": "b9593571874b5111053e35980ae7890bd82c78213c53b841a23a4f90b166ee21",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "6d5aa987c8571ba474986073be222f363e6016db",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/model-parser.ts",
+            "sha256": "cbe75035d940ad6fa94a2663931234abb8b1c01098b675150fe2920a002bfb4c",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "6ab02b33a4696a1bc98fb78e6f27b42164ec9007",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/model.ts",
+            "sha256": "f607109c664da7eacfc7c789907fc77e2f395018731e6c3cbe35ed7463120068",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "eaf36115dc3d51a2a1a1ad4d032e44d4c0d2604b",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/platform.node.ts",
+            "sha256": "a104c3cf9a788751f80df27fb63f442fdbaffb02d40f6ab30bb321ceb291e142",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "ed3cccd83eddb0e8b671e065ea8c5638c9a03606",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/platform.ts",
+            "sha256": "90f71dd1eedf56bb43d82764f767d742b6e96f3597be04e795345834a24730dd",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "6871926388725f9cdfeb6c22001c9144fc150d8e",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/render-model.ts",
+            "sha256": "9ec83fa5b2858275c264ee238ce9fcae2fb1d68c0249ce49a347748ac6ec13a5",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "5dadbab6731bfbbb70a2b6ad9ecf456c565752b6",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/structural.ts",
+            "sha256": "83c6be059176a45a4359ba38fb35d2cf30c90ec7139008173ab3fc896d2599f2",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "d4a17989a3d5f482c14595ea87986d58cf30ad1b",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/structures.xml",
+            "sha256": "62facf31fd9dddc94c8e213c9509311eda8737919177e94b188a5dc33c68f6cb",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "fd90b370add32806b3f0e69e4c62801ed42bee72",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/types.ts",
+            "sha256": "4ce3124a1ebef2a90c8289e3b2d64526940fc9372384fee9d011eccb755693b4",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "59f2f422c7b3ea5defe08b3117c94e962378ac7f",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/utils/bone-resolver.ts",
+            "sha256": "79aaca1122cb91510393590b666452f7831a8c11c6ce63fb06bfdb23d2dab4c4",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "bafbd31df5ad7117553aada4dae7e431acd3c0bf",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/utils/matrix.ts",
+            "sha256": "3c29d9669f28abde0652827ae65b2ae5db56517d0875a4712a032c860d56b18d",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "2c41e55928eea1e808fcf5955cba035983ba1d23",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/utils/texture-resolver.ts",
+            "sha256": "a59da4b63fff8ed151bde5251bb84780307bbbacc1ef4078133ebb274804341f",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "b45a8a81d868b05fe410c9510dd72d5442fc1102",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/utils/texture.ts",
+            "sha256": "5b4864b260404ba93a77a0badb2ea61755d088b05a47aaebd7eaa384321a1549",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "092beb95264a45c83ee29ee158379d1aa05f1c7f",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/src/utils/vertex.ts",
+            "sha256": "bedaae696cef7332741b2e5237c794aa0c29c368faf273aee7ca37780ee4b81c",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "cb9c95a03bd89f7f35d36749ed2b608777713abc",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/test/fixtures/corpus/aiur_cliffrocks_00.m3",
+            "sha256": "f88b3efbd1c3f58e7d8facba42f22b93e87f74dd6e41c7957c9db16432f8d866",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "1d19cdd252ae525b571a8137f3097cdaf6993e83",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/test/fixtures/corpus/analysisterminal.m3",
+            "sha256": "5dbc13ed236fd7fcd66191481901aa803ea6498cb3cae23d36f2f20d26986f90",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "78b36b23af1073fa7983ae172c737a265e063361",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/test/fixtures/corpus/Harbinger.m3",
+            "sha256": "3a76330ab5126c26c303b50c47b1f957da09d62a1cbcf02ebbe82699e921809a",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "f83f14e3e7b582a2b867ecf36fc320c29e70611f",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/test/fixtures/corpus/portrait.m3",
+            "sha256": "41526d398c4de90fd38046cee1866ae1498b177c250796beaf6efd37ef38c5a0",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "0306c93ede5ed954c7fae0199a4b08cec5480dcd",
+            "path": "extensions/blizzard/starcraft-2/codecs/m3/test/fixtures/model.m3",
+            "sha256": "a9a126d0a2b7b54bc6ac70948a40bf34bd26260f063af498cc94ff3d9a528cda",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "c6d864122c608e6adc40878c0d05ddc12469f677",
+            "path": "package.json",
+            "sha256": "801d820bdbfea47c3da11f02bb4e330536149a5e277b7b053650efae7808ea7f",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "14fbdacad91594b7db3d84201cc10b6d2c520f5d",
+            "path": "packages/assets/package.json",
+            "sha256": "6316fba017961b70ee532ee7923e6eaecef2a0bef7fcaa5a6f43511f7c3baa2f",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "44a05ecc8c55570751a7e4220afd4712d4d977fe",
+            "path": "packages/assets/src/artifact-registry.ts",
+            "sha256": "98dfb7f4d7d111c7edc3d271592b0e97f91866dd61252856775ada85088e47a4",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "aaef41b228996e534979a9ce79f8730d4fae0995",
+            "path": "packages/assets/src/artifact-session.ts",
+            "sha256": "bf793763560709d654b3aa313a28e1c07f55fc95401a37e0803e6bc086f55490",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "1482aa85e6afe2ba6113aea653214f9a30b7d00f",
+            "path": "packages/assets/src/asset-session.ts",
+            "sha256": "50ef09b361a65cbdbdd8db288d0810c0ec2b1a164799829a6d846457ce485305",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "f3f942256c9cffd2f8055477be175a98d775b47a",
+            "path": "packages/assets/src/cancellation.ts",
+            "sha256": "f7c2202facc93ef36f2bec58e018a24798975b6c63e5838703a09aeec59a9c00",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "600ac23eb9cfad2c7b05f6e6adda86678866748e",
+            "path": "packages/assets/src/capabilities.ts",
+            "sha256": "46a38586304ace9ef258f8d8204f0212bb00ebc0914ecaf3c7b3e1f691ae64dc",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "6e5d2b7cd6ca9b21614254e778686568fc8dc69d",
+            "path": "packages/assets/src/codec-host.ts",
+            "sha256": "f24a096cfddd2d8f2271d7f565617af28e693065f4303e4d12b940bac24f3c71",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "e77b711c651c418808c17b928e847b8325fe1e48",
+            "path": "packages/assets/src/codec-manifest.ts",
+            "sha256": "8dc829b32526c0c6c62de342f8290e8e3ac7e48cfa202e8791be118b97880592",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "be4d26c9facbac09a54e0a125a4f43cdfb2eb3dd",
+            "path": "packages/assets/src/codec-matching.ts",
+            "sha256": "899ef6078a45e99570db905f9afe84094b99a2546b62183e3454c3e80eb52fb1",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "8fe59decde18c184ce739bb92c1bcb9c4acbe2a1",
+            "path": "packages/assets/src/content.ts",
+            "sha256": "652751e3977d4fbd391d4b3c98b73505caf4567abb1fb134f1dec31447667f73",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "5058369d401507a7e57850d87a646cf22f4174b7",
+            "path": "packages/assets/src/contributions.ts",
+            "sha256": "07b7b48dd5a47fbbf0cbc984bc4eccd28d27ad84a315bfeafbfd71856fbb570b",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "7c8c95b1896b1105f6ef05934a505a340a59426c",
+            "path": "packages/assets/src/descriptor.ts",
+            "sha256": "23ed304bf71ff461a594f5322ecd2cf0a2c49263dd91f3d08dd41a6b51745c40",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "9594c33c12e6ad9d1505fa0ad176dde7e4b9601f",
+            "path": "packages/assets/src/detection.ts",
+            "sha256": "3b29a2505d6287f39ffe02f324187d295c67f55e073788a8cb5842a3dc080bb9",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "e8f344d8562f33381ccd42210164c066e9f24bc1",
+            "path": "packages/assets/src/diagnostics.ts",
+            "sha256": "22f992154fd099a4f867baf6e1ae1e7c84bf6682af65a5ad5d54cd30f4ced76b",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "1102c8383fd141fa66bc6de63ab5ca5fbe1e8a06",
+            "path": "packages/assets/src/editing.ts",
+            "sha256": "331d2cd15839ab62339dc3dabd14a7ea0152af2fc9a0893015dffa004213c707",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "4ebed340b01aff606ee8ce63bf887f3507509c3e",
+            "path": "packages/assets/src/format-registry-catalog-adapter.ts",
+            "sha256": "15e55e02fe9710e8743a9bc990c00c3300168f8c718e27abf70cbfe1b2b8c2ab",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "6ea9f263fea954e4fa9f007ff9ace7cae81ae55c",
+            "path": "packages/assets/src/format-registry.ts",
+            "sha256": "574e1818c892be45b1c94c87782c42b727eafe3c673226b3b6997e64268d60a3",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "6e6ad756db5528d6cd5d000785541dfb2fef7857",
+            "path": "packages/assets/src/game-contributions.ts",
+            "sha256": "101d1b196161809ef9703ce14260c603ca8901c7a2b86c9dd106c4a31cf5cecd",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "5d72dc70a27791e94f0c0e61e416ae1d1bd74b7d",
+            "path": "packages/assets/src/index.ts",
+            "sha256": "366e3d5f311b086547c8a852a1092aa699993997bdaa68669df32ba92a11aac6",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "c81b98081f92c116056e2c86632259d54353721c",
+            "path": "packages/assets/src/json.ts",
+            "sha256": "f044a80c402d72142fdf2c0f5345882cbcba828050b90704a022e4e01b00f4c5",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "0b8dab34e8fb438fdaae451bfc56c9dc111531b8",
+            "path": "packages/assets/src/operations.ts",
+            "sha256": "7dd2c86bd0dbd06c4bfa78656bd4f3a36e0303a71ed0076e45b9014ca13b36f3",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "4c23a7363474f99af595c8d4549d1f862e24e70b",
+            "path": "packages/assets/src/progress.ts",
+            "sha256": "f13bd7c0001c65a553cf0a90b5d36fbd32584d2de516837d37e43a3a2cae7285",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "5dce8c8c3d9a93ef7556182709646c3fc8c56c87",
+            "path": "packages/assets/src/provenance.ts",
+            "sha256": "416aa8c50c436cbf5077fc37b9aab78c8932425ebc8286f2acc8dea5e3431037",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "ffebcac77e7c768e67a38bec473132327857b899",
+            "path": "packages/assets/src/resolvers.ts",
+            "sha256": "afc9bf36cdac44a6e5d0cf043215461492a05438ec46fa40602cd3c66e86c73d",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "20947903e77fb580e40bfc6483eab3f9ec0985f3",
+            "path": "packages/assets/src/source.ts",
+            "sha256": "beaa0779256b9dbbd0fd0b253a11ab7975919e778af6b84ee2d784adfa82a122",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "bd9edf7b4f3e496d6f47f4f5df59dc02d1ad2984",
+            "path": "packages/assets/src/view-descriptors.ts",
+            "sha256": "09fe218ef8d491c8cea4d22cda3b215fc1ac9004d042bf168d95e57a6f5044ca",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "27eadc620749f4c97c51c3f4faab3bb2aea76813",
+            "path": "packages/core/package.json",
+            "sha256": "8f0b475160fa2c26d8dddc1d667ddc4158aea98d63588109f59c2ca781a2321d",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "712ccca88394d6b5bae1248d9ae9b3bb3c05fbc2",
+            "path": "packages/core/src/errors.ts",
+            "sha256": "4d5a594261ffa101005198d024cae9fa9ebefc3c617c49d4d6b1f45589857d20",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "fc208f6f968c8e1330f13f64aaa03359878ecbe8",
+            "path": "packages/models-processing/package.json",
+            "sha256": "53fd12b7e4a39087c93e30debb7bda51af899f554fd49355e6716a49060c1c76",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "c2e84db5d264ba15e7e676317e37f94408e09513",
+            "path": "packages/models-processing/src/core/codec.ts",
+            "sha256": "cf5dfecefffcd3fdab1890846424c4606d93867758243d1f76a06a7bbc48d65a",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "cffa5345def0563f752fbf8eb3d035fe5bfab254",
+            "path": "packages/models-processing/src/core/effects-sim.ts",
+            "sha256": "0792d2e33f49056eafa5b7e11d17e911f4915ff5cc2efb367f90d20bedbfd193",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "0622de93d73526af611cecfdada3e69ea7d74e10",
+            "path": "pnpm-lock.yaml",
+            "sha256": "1d01882dc1a3e00f918b08977bab09b5fa73deec6310644838ad16374cf8c296",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "44e9289e360928f5efa7446128cc2e2092465e8d",
+            "path": "pnpm-workspace.yaml",
+            "sha256": "386e54acc7666b3a76bc5edba0d4bbf06bada6f28882169d1106885efc92ed1a",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "d32176af2d4f65c1e55ca115e8add031fad01b99",
+            "path": "tsconfig.base.json",
+            "sha256": "ecfe908e6bd1cc0d8369707f6488d8d54cf945750f07a24cf4909782e40bfc76",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          },
+          {
+            "gitBlob": "cd19a6ddf32838e95e0e9e7d4a537cd4dcaf5546",
+            "path": "tsconfig.json",
+            "sha256": "de14f0580bf35c4ab062c9e92501c80447663f50b6d024b71b450421301dee92",
+            "workingTreeMatchesPin": null,
+            "workingTreeSha256": null
+          }
+        ],
+        "stubs": [],
+        "workspaceScopes": [
+          "@modkitx"
+        ]
+      }
+    ]
+  },
+  "oracleVerification": {
+    "adapterPath": "C:\\FILES\\SC2Files\\coding\\modkit-extensions-blizzard\\models\\test\\parity\\legacy.mjs",
+    "adapterReviewRequired": true,
+    "adapterSha256": "eb66a997b0abfce6016a2c447d9e6df65cf610c00f50686da9fa1842e4beccbf",
+    "corpusDigest": "b046d42b22421993549f233d990688f49a138f5549c86f427737a0e942be4080",
+    "modules": [
+      {
+        "bundleSha256": "3e9d886ca490edbb3c3b1f66380acbf13109b3f5d9be4c079143f01113f8e227",
+        "cacheKey": "81e31d87685d1ba2b1a0abbf95410496f05634e941addf7d98506707aec96a1e",
+        "dependencyPackages": 3,
+        "directory": "C:\\Users\\Admin\\AppData\\Local\\Temp\\claude\\C--FILES-SC2Files-coding\\147de1e5-3b4f-4cc5-9580-98eba6b5aeea\\scratchpad\\cache\\81e31d87685d1ba2b1a0abbf95410496f05634e941addf7d98506707aec96a1e",
+        "sourceFiles": 74
+      }
+    ],
+    "operation": "material.project",
+    "verified": true
+  },
+  "proofs": [
+    {
+      "adapterOperation": "material.project",
+      "caseIds": [
+        "model-basic",
+        "Harbinger",
+        "aiur_cliffrocks_00",
+        "analysisterminal",
+        "portrait"
+      ],
+      "kind": "feature",
+      "requirement": "legacy/codec-manifest/modkit/m3/feature/a1c083966b255d42"
+    }
+  ],
+  "schemaVersion": 1,
+  "tests": {
+    "failed": 0,
+    "passed": 5
+  },
+  "verdict": "pass"
+}

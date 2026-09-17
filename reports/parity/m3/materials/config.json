@@ -1,0 +1,8 @@
+{
+  "corpus": "corpus.json",
+  "legacy": "../../../../../modkit-extensions-blizzard/models/test/parity/legacy.mjs",
+  "migrated": "../../../../../modkit-extensions-blizzard/models/test/parity/native.mjs",
+  "operation": "material.project",
+  "receipt": "receipt.json",
+  "schemaVersion": 1
+}

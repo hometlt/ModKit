@@ -32,7 +32,7 @@
       ]
     }
   ],
-  "contributionCount": 222,
+  "contributionCount": 223,
   "inventorySha256": "08c3bdad48056914277c7f95a0f97ef4feb85c8ec86a2fa8faf47bd7f9817e8c",
   "legacyCount": 206,
   "rows": [
@@ -1324,7 +1324,7 @@
       "codec": "m3",
       "family": "sc2",
       "featureAudit": "available",
-      "pending": 22,
+      "pending": 20,
       "requirements": 22,
       "source": "extensions/blizzard/starcraft-2/codecs/m3/codec.manifest.json",
       "sourceUnitId": "legacy/codec-manifest/modkit/m3",
