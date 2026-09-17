@@ -555,7 +555,9 @@ export async function loadMk2(entry, options = {}) {
                 ),
               },
             })
-            return { contents: transformed.code, loader: 'js' }
+            // Keep TypeScript semantics for the bundle step: esbuild then tolerates imports that
+            // name type-only re-exports (`export { SomeType } from './types'`) in pinned barrels.
+            return { contents: transformed.code, loader: /\.[cm]?tsx?$/u.test(ext) ? 'ts' : 'js' }
           })
         },
       },
