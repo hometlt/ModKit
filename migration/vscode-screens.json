@@ -33,8 +33,8 @@
       "other": 1
     },
     "byStatus": {
-      "present": 50,
-      "missing": 23,
+      "present": 51,
+      "missing": 22,
       "partial": 15,
       "superseded": 3
     }
@@ -906,9 +906,11 @@
       },
       "evidence": [
         "apps/vscode/src/stages.ts:95",
-        "extensions/video/src/ogv (OGV codec present)"
+        "extensions/video/src/ogv (OGV codec present)",
+        "modkit-extensions-other/extensions/adobe-flash/src/swf/codec.js",
+        "modkit-extensions-other/test/behavior/swf-tag-stream.test.ts"
       ],
-      "notes": "gap-vscode-assets-unexercised-media-and-conversion: standard containers + OGV are covered by the generic Video stage and a real OGV codec extension; SWF/Flash has no MK3 codec anywhere in the repo (confirmed missing by search) and .wmv is covered by extensions/video/src/wmv.",
+      "notes": "Standard containers + OGV are covered by the generic Video stage (extensions/video, incl. wmv). SWF: the adobe-flash codec now walks FWS/CWS tag streams (stage, frame labels, character dictionary in the tree) and extracts embedded JPEG/PNG/GIF bitmaps, MP3 sounds and binary data through the archive stage; ZWS stays header-only. Still partial: no SWF playback/first-frame render (MK2 used a vendored Ruffle runtime).",
       "fixture": ".ogv"
     },
     {
@@ -953,17 +955,22 @@
         "behavior": "Rendered a specimen of glyphs for a .ttf/.otf/.fnt font file."
       },
       "mk3": {
-        "status": "missing",
+        "status": "present",
         "commandIds": [],
-        "uiParts": [],
+        "uiParts": [
+          "vector"
+        ],
         "hosts": {
-          "vscode": "missing",
-          "electron": "missing",
-          "web": "missing"
+          "vscode": "present",
+          "electron": "present",
+          "web": "present"
         }
       },
-      "evidence": [],
-      "notes": "No font codec, stage, or \"@font-face\"/glyph-rendering code exists anywhere in packages/ui or apps/vscode; confirmed missing by direct search, not just ledger inference.",
+      "evidence": [
+        "extensions/vector/src/font/codec.js (modkit/vector-font)",
+        "extensions/vector/test/font-codec.test.ts"
+      ],
+      "notes": "New font codec (TTF/OTF/TTC/WOFF/WOFF2): name/head/maxp/OS/2 facts in metadata and tree; the glyph specimen is a secure static SVG from glyf outlines, shown by the generic vector stage in every host. CFF outlines and WOFF2 are metadata-only; Diablo III .fnt (MK2 Blizzard wrapper) is not covered here. Host UI not yet exercised live.",
       "fixture": ".ttf"
     },
     {

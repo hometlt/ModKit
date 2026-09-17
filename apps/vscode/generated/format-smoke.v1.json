@@ -9,7 +9,7 @@
     },
     "bundledCatalog": {
       "file": "generated/bundled-catalog.json",
-      "sha256": "sha256:2ad3d6e1a276bbb0f553fbd3acdebba479ba4c8600ff2734bdb2f343e1ea2fa6",
+      "sha256": "sha256:80aed71ea84f0ad8a793bae3d98589eefa2e27218775c88457a5db797f4ea480",
       "provenance": "checkout-physical-roots-verified-by-host-artifact-digest",
       "roots": [
         {
@@ -42,7 +42,7 @@
         },
         {
           "coordinate": "modkit/vector",
-          "digest": "sha256:35c72e642e3137361d1156a55da46c707f6cf5a8cb496e3a6c0747af8bc695a7"
+          "digest": "sha256:ddcfe9b666ddb9b13e552be526a114468317dd2a3d75a84c684d707c606489a2"
         },
         {
           "coordinate": "modkit/video",
@@ -71,7 +71,7 @@
         "wz2100project/warzone-2100"
       ]
     },
-    "codecContributionCount": 99
+    "codecContributionCount": 100
   },
   "cases": [
     {

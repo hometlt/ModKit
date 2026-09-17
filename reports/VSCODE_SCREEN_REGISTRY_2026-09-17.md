@@ -38,9 +38,9 @@ setting group (webview-панели, открываемые командой, н
 
 | status | count |
 |---|---|
-| present | 50 |
+| present | 51 |
 | partial | 15 |
-| missing | 23 |
+| missing | 22 |
 | superseded | 3 |
 | not-applicable | 0 |
 
@@ -49,7 +49,7 @@ setting group (webview-панели, открываемые командой, н
 | group | present | partial | missing | superseded |
 |---|---|---|---|---|
 | archives | 14 | 1 | 4 | 0 |
-| media | 7 | 4 | 1 | 0 |
+| media | 8 | 4 | 0 | 0 |
 | models | 3 | 0 | 0 | 0 |
 | maps-replays | 2 | 3 | 3 | 0 |
 | layout | 0 | 0 | 7 | 0 |
@@ -233,3 +233,10 @@ status-bar/setting-group, а `iconThemes`/`FileDecorationProvider` контри�
 (`subject.edit`); прямой записи нет. Тесты: `extensions/images/test/raster-export.test.ts`,
 `packages/ui/test/image-convert.test.ts`. Живая проверка в VS Code/Electron ещё не делалась.
 `modkit.assetsTexture.batchConvert` остаётся `partial` (нет пакетной команды по папке).
+
+Font Preview (`custom-editor:modkit.fontPreview`) → `present`: новый кодек
+`extensions/vector/src/font/codec.js` (TTF/OTF/TTC/WOFF/WOFF2; метаданные name/head/maxp/OS/2,
+лист глифов из `glyf` как безопасный статический SVG для общего vector stage; CFF и WOFF2 —
+только метаданные). SWF в `modkit.assetsVideoViewer` расширен в
+`modkit-extensions-other/extensions/adobe-flash` (tag stream FWS/CWS, словарь, извлечение
+JPEG/PNG/GIF/MP3/binary); строка остаётся `partial` — нет проигрывания/рендера кадра.

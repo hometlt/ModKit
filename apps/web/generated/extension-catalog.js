@@ -11592,13 +11592,15 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:35c72e642e3137361d1156a55da46c707f6cf5a8cb496e3a6c0747af8bc695a7',
+        artifactDigest: 'sha256:ddcfe9b666ddb9b13e552be526a114468317dd2a3d75a84c684d707c606489a2',
         fileDigests: {
           'MIGRATION-NOTES-common-vector.json':
             'sha256:76e47ea6385d042f14075f379848628612d27d2c63d0038ee67ca818210aaba8',
           'README.md': 'sha256:d77c6d61152adf760e489baade6b3421012ed8520e215797295eafbfe9db6979',
           'contributions/codec-emf.json':
             'sha256:0d196b6736562daa810ae0bd54485bedffc517c7be39a48e6b2215d22c2996a3',
+          'contributions/codec-font.json':
+            'sha256:c9d88b9d3fc10d4cdb44994b7c0ab95ca2f3892b861f7b448ed1f72a19bbadb6',
           'contributions/codec-svg.json':
             'sha256:596c58a8118c261a02149081225e0551a5eb86f0903078ae1a1c2a618016c972',
           'contributions/codec-wmf.json':
@@ -11606,16 +11608,22 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'package.json': 'sha256:15b510767b33a2cc3c2109f272937e8cc3ee4baa236e0bca78144e7fc1d368b0',
           'src/emf/codec.js':
             'sha256:6d5cefb8afb9903a197aaec92997b263e1b7ce7c377954ee2c456b09d3d0186b',
+          'src/font/codec.js':
+            'sha256:739aee64948c6620921047c7206f0c35e30e366a527ac5f53a549447eb996268',
           'src/index.js': 'sha256:904e9a577bfa759ce7ab355a01d2431961c7f7d3551a8b627a2eb56406948360',
           'src/linked.js':
-            'sha256:2beec9e4da6be3d658f913231ffa63287de94ea3af4988009ccaf5738b8523ea',
+            'sha256:1e605ad3eabcb7a41588dfaf196eef273984c8f644a3a6a6deb6bc1238af9db1',
           'src/svg/codec.js':
             'sha256:71a8327060f905452ed0b4a53cab1f58d79b60c9bf6ba25d4676ecf39a26f740',
           'src/wmf/codec.js':
             'sha256:8ee3ba99b0d0f8f0f00cd37e329008eb5247dbae684495f3b947c1bef6000aca',
+          'test/codec-session.ts':
+            'sha256:c2c0dd0f73ab028035bb4c798a9703bbed78500b29343de2906e7c6c2de39591',
+          'test/font-codec.test.ts':
+            'sha256:3545bef7d7d838dcb253c8aaea4a0f831b823478cb5637cb9d6c3c43972d928c',
         },
         inventoryRecordId:
-          'artifact:sha256:35c72e642e3137361d1156a55da46c707f6cf5a8cb496e3a6c0747af8bc695a7',
+          'artifact:sha256:ddcfe9b666ddb9b13e552be526a114468317dd2a3d75a84c684d707c606489a2',
       },
       artifactRoot: 'extensions/vector/',
       containers: {
@@ -11668,6 +11676,10 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         [
           'contributions/codec-emf.json',
           'sha256:0d196b6736562daa810ae0bd54485bedffc517c7be39a48e6b2215d22c2996a3',
+        ],
+        [
+          'contributions/codec-font.json',
+          'sha256:c9d88b9d3fc10d4cdb44994b7c0ab95ca2f3892b861f7b448ed1f72a19bbadb6',
         ],
         [
           'contributions/codec-svg.json',
@@ -11800,6 +11812,167 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               ],
               roles: ['media'],
               sourceTopology: 'single',
+            },
+            status: 'partial',
+          },
+        ],
+        [
+          'contributions/codec-font.json',
+          {
+            contract: {
+              id: 'modkit/codec-contribution',
+              major: 1,
+            },
+            displayName: 'Font (TrueType, OpenType, WOFF)',
+            id: 'modkit/vector-font',
+            limitations: [
+              'Reads the sfnt table directory of TTF, OTF, TTC (first font) and WOFF (tables inflated with DecompressionStream) and reports name, head, maxp and OS/2 facts.',
+              'The glyph sheet (common.view/vector-scene-source) is drawn from glyf outlines, simple and composite glyphs with offsets only; component scales are ignored.',
+              'CFF/CFF2 outlines and WOFF2 (Brotli plus the glyf transform) publish metadata only; WOFF2 reports its header and table tags.',
+              'No hinting, kerning, shaping or font installation; bitmap-only and colour fonts get no sheet.',
+            ],
+            runtimeVariants: [
+              {
+                entrypoint: './src/font/codec.js',
+                executionProfile: 'trusted-in-process',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['node'],
+                },
+                variantId: 'trusted-node',
+              },
+              {
+                entrypoint: './src/font/codec.js',
+                executionProfile: 'worker-brokered',
+                requestedPermissionClasses: ['read-source'],
+                target: {
+                  environments: ['browser-worker', 'node-worker'],
+                },
+                variantId: 'portable',
+              },
+            ],
+            schemaVersion: 1,
+            spec: {
+              artifactStages: ['authored', 'runtime'],
+              budgets: {
+                maxDepth: 64,
+                maxDiagnostics: 1000,
+                maxInputBytes: '67108864',
+                maxNodes: 100000,
+                maxScalarBytes: 104857600,
+              },
+              formatRefs: [
+                {
+                  formatId: 'font',
+                  label: 'Font',
+                  mediaType: 'font/sfnt',
+                },
+              ],
+              implementationTier: {
+                claimed: 1,
+              },
+              match: {
+                extensions: ['ttf', 'otf', 'ttc', 'woff', 'woff2'],
+                mediaTypes: ['font/ttf', 'font/otf', 'font/collection', 'font/woff', 'font/woff2'],
+                signatures: [
+                  {
+                    bytesHex: '00010000',
+                    from: 'start',
+                    offset: 0,
+                  },
+                  {
+                    bytesHex: '4f54544f',
+                    from: 'start',
+                    offset: 0,
+                  },
+                  {
+                    bytesHex: '74746366',
+                    from: 'start',
+                    offset: 0,
+                  },
+                  {
+                    bytesHex: '774f4646',
+                    from: 'start',
+                    offset: 0,
+                  },
+                  {
+                    bytesHex: '774f4632',
+                    from: 'start',
+                    offset: 0,
+                  },
+                ],
+              },
+              openIntents: ['probe', 'inspect', 'full', 'export'],
+              operations: [
+                {
+                  handlerId: 'inspect',
+                  id: 'view.inspect',
+                  mutatesSource: false,
+                  outputKinds: ['json'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'validate',
+                  id: 'asset.validate',
+                  mutatesSource: false,
+                  outputKinds: ['none'],
+                  requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'export-raw',
+                  id: 'export.raw',
+                  mutatesSource: false,
+                  outputKinds: ['bytes'],
+                  requiredPermissions: ['read-source'],
+                },
+              ],
+              probe: {
+                kind: 'bytes',
+                maxBytes: 4096,
+                ranges: [
+                  {
+                    from: 'start',
+                    length: 4096,
+                  },
+                ],
+              },
+              publishesDataSources: [
+                {
+                  contract: 'common.view/vector-scene-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/tree-data-source',
+                  major: 1,
+                },
+                {
+                  contract: 'common.view/byte-range-source',
+                  major: 1,
+                },
+              ],
+              representations: [
+                {
+                  contract: 'common.vector/scene-metadata',
+                  id: 'vector-scene',
+                  lossy: false,
+                  major: 1,
+                  stage: 'authored',
+                },
+              ],
+              roles: ['media'],
+              sourceTopology: 'single',
+              traitDeclarations: [
+                {
+                  id: 'vector.scene',
+                  presence: 'may-expose',
+                  representation: 'source',
+                },
+                {
+                  id: 'vector.paths',
+                  presence: 'may-expose',
+                  representation: 'source',
+                },
+              ],
             },
             status: 'partial',
           },
@@ -12090,14 +12263,18 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'MIGRATION-NOTES-common-vector.json',
         'README.md',
         'contributions/codec-emf.json',
+        'contributions/codec-font.json',
         'contributions/codec-svg.json',
         'contributions/codec-wmf.json',
         'package.json',
         'src/emf/codec.js',
+        'src/font/codec.js',
         'src/index.js',
         'src/linked.js',
         'src/svg/codec.js',
         'src/wmf/codec.js',
+        'test/codec-session.ts',
+        'test/font-codec.test.ts',
       ],
       name: 'vector',
       source: 'extensions/vector',
