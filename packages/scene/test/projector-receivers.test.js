@@ -161,6 +161,57 @@ test('WebGL offset is disabled for the following ordinary draw', () => {
   ])
 })
 
+test('zero-frustum terrain-bake projectors use their signed box and clip distant ground', () => {
+  const document = {
+    nodes: [{}],
+    extensions: {
+      UV_game_effects: {
+        projectors: [
+          {
+            node: 0,
+            material: 0,
+            active: 1,
+            projectionType: 'perspective',
+            offset: [0, 0, 0],
+            pitch: 0,
+            yaw: 0,
+            roll: 0,
+            alphaInit: 1,
+            falloff: 0,
+            attenuationDistance: 0,
+            flags: 0,
+            layer: 0,
+            near: 0,
+            far: 0,
+            fieldOfView: 0,
+            aspectRatio: 0,
+            boxOffsetXLeft: -2,
+            boxOffsetXRight: 2,
+            boxOffsetYBack: -2,
+            boxOffsetYFront: 2,
+            boxOffsetZBottom: -0.32,
+            boxOffsetZTop: 0.32,
+          },
+        ],
+      },
+    },
+  }
+  const out = createUvmProjectorFrame(document, {
+    receivers: receiver([-1, -1, 0, 1, -1, 0, 0, 1, 0, 100, 100, 0, 101, 100, 0, 100, 101, 0]).map(
+      x => x.primitive,
+    ),
+    nodeTransforms: new Map([['node-0', Float32Array.from(identity)]]),
+    activeNodes: new Set(['node-0']),
+    materials: [{ id: 'material-0', baseColor: [1, 1, 1, 1] }],
+    maxBytes: 65536,
+    maxNodes: 100,
+    warn: () => {},
+  })
+  assert.equal(out.primitives.length, 1)
+  assert.equal(out.primitives[0].positions.length, 9)
+  assert.deepEqual([...out.primitives[0].textureCoordinates], [0.25, 0.25, 0.75, 0.25, 0.5, 0.75])
+})
+
 test('headless provider applies offset per primitive and preserves unbiased draw behavior', async () => {
   const { renderHeadless } = await import('../src/render/headless.js')
   const positions = Float32Array.from([-0.75, -0.75, 0.5, 0, 0.75, 0.5, 0.75, -0.75, 0.5])

@@ -216,12 +216,19 @@ export function createUvmProjectorFrame(document: JsonObject, options: Options) 
           basis[1][2] * offset[1] +
           basis[2][2] * offset[2],
       ]
-    const projectionType = entry['projectionType']
-    if (projectionType !== 'orthographic' && projectionType !== 'perspective')
+    const authoredProjectionType = entry['projectionType']
+    if (authoredProjectionType !== 'orthographic' && authoredProjectionType !== 'perspective')
       throw new TypeError('unknown projector type')
+    let projectionType: 'orthographic' | 'perspective' = authoredProjectionType
     const near = scalar(entry['near']),
       far = scalar(entry['far']),
       tangentY = Math.tan(fov(scalar(entry['fieldOfView'])) * 0.5)
+    // Terrain-bake projectors can carry a zero perspective frustum and an explicit signed box.
+    // Keep that authored box instead of reducing its receiver volume to a near-zero cone.
+    const zBottom = scalar(entry['boxOffsetZBottom']), zTop = scalar(entry['boxOffsetZTop'])
+    const boxed = near === 0 && far === 0 && zTop > zBottom
+    if (boxed) projectionType = 'orthographic'
+    const forwardAxis = rotate([0, 0, 1])
     let left = Math.min(scalar(entry['boxOffsetXLeft']), scalar(entry['boxOffsetXRight'])),
       rightExtent = Math.max(scalar(entry['boxOffsetXLeft']), scalar(entry['boxOffsetXRight']))
     let bottom = Math.min(scalar(entry['boxOffsetYBack']), scalar(entry['boxOffsetYFront'])),
@@ -246,12 +253,12 @@ export function createUvmProjectorFrame(document: JsonObject, options: Options) 
     }
     const frame: ProjectorFrame = {
       projectionType,
-      origin,
+      origin: boxed ? [origin[0] + forwardAxis[0] * zBottom, origin[1] + forwardAxis[1] * zBottom, origin[2] + forwardAxis[2] * zBottom] : origin,
       rightAxis: rotate([1, 0, 0]),
       upAxis: rotate([0, 1, 0]),
-      forwardAxis: rotate([0, 0, 1]),
+      forwardAxis,
       near: Math.max(0.0001, Math.min(Math.abs(near), Math.abs(far))),
-      far: Math.max(0.001, Math.max(Math.abs(near), Math.abs(far))),
+      far: boxed ? zTop - zBottom : Math.max(0.001, Math.max(Math.abs(near), Math.abs(far))),
       left,
       rightExtent,
       bottom,

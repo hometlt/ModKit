@@ -29,6 +29,24 @@ function errorCode(run: () => unknown): string | undefined {
 }
 
 describe('UVW 1.0 production document', () => {
+  it('round-trips authored terrain, specular, colorization and AO lighting settings', async () => {
+    const base = JSON.parse(
+      new TextDecoder().decode(await fixture('uvw-profile-renderable-world.uvw.json')),
+    ) as { spaces: Array<{ layers: Array<Record<string, unknown>> }> }
+    const lighting = base.spaces[0]!.layers.find(layer => layer['kind'] === 'lighting')!
+    const toneMapping = {
+      operator: 'filmic', exposure: 1.2, whitePoint: 2, contrast: 1.1, correctGamma: true,
+      colorization: { hue: 0.2, saturation: 0.8, lightness: 0.1, brightness: 1.2, contrast: 1.1, blend: 0.3, inputLow: 0.05, inputHigh: 0.95, inputGamma: 1.1, outputLow: 0.02, outputHigh: 0.98 },
+      ambientOcclusion: { radius: 1.2, noOcclusion: 0.1, fullOcclusion: 0.9, power: 1.5 },
+    }
+    lighting['toneMapping'] = toneMapping
+    lighting['terrain'] = { specularExponent: 11.21, diffuseMultiplier: 1, specularMultiplier: 3 }
+    const document = parseUvwProfile(serializeUvwProfile(base as unknown as UvwProfileDocument))
+    const reopened = parseUvwProfile(serializeUvwProfile(document))
+    const layer = reopened.spaces[0]!.layers.find(layer => layer.kind === 'lighting')!
+    expect(layer).toMatchObject({ toneMapping, terrain: lighting['terrain'] })
+    expect(serializeUvwProfile(reopened)).toEqual(serializeUvwProfile(document))
+  })
   it.each(['uvw-profile-single-space.uvw.json', 'uvw-profile-source-units.uvw.json'])(
     'parses, canonicalizes and reopens %s byte-stably',
     async name => {

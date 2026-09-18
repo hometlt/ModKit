@@ -1,7 +1,13 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 
-import { createWorldWebGlPlan } from '../src/world/webgl.ts'
+import {
+  createWorldWebGlPlan,
+  worldMaterialLight,
+  worldModelAnimation,
+} from '../src/world/webgl.ts'
+import { toneMapWorldColor } from '../src/world/tone-mapping.ts'
+import { colorizeWorldColor, createWorldColorLut } from '../src/world/colorization.ts'
 
 const terrain = Array.from({ length: 4 }, (_, index) => ({
   facet: 'terrain',
@@ -28,6 +34,48 @@ const lighting = directional => ({
 })
 
 describe('world lighting rig', () => {
+  it('bakes a neutral 3D LUT with RGB axes and validates all native tone-map operators', () => {
+    const neutral = { inputLow: 0, inputHigh: 1, inputGamma: 1, outputLow: 0, outputHigh: 1, brightness: 1, contrast: 1, hue: 0, saturation: 0, lightness: 0, blend: 0 }
+    assert.deepEqual(colorizeWorldColor([0.2, 0.4, 0.8], neutral), [0.2, 0.4, 0.8])
+    const lut = createWorldColorLut(neutral)
+    assert.equal(lut.byteLength, 16384)
+    assert.deepEqual([...lut.slice(15 * 4, 15 * 4 + 4)], [255, 0, 0, 255])
+    assert.deepEqual([...lut.slice(15 * 16 * 4, 15 * 16 * 4 + 4)], [0, 255, 0, 255])
+    assert.deepEqual([...lut.slice(-4)], [255, 255, 255, 255])
+    for (const operator of ['reinhard', 'exponential', 'logarithmic', 'linear', 'filmic']) {
+      const settings = { operator, exposure: 1.55, contrast: 1, whitePoint: 1.85 }
+      assert.deepEqual(toneMapWorldColor([0, 0, 0], settings), [0, 0, 0])
+      assert.ok(toneMapWorldColor([2, 1, 0.5], settings).every(Number.isFinite))
+    }
+    assert.equal(toneMapWorldColor([0.4, 0.8, 0.2], { operator: 'linear', exposure: 1, contrast: 1, whitePoint: 1 })[1], 0.8)
+  })
+  it('tone maps HDR luminance once without changing RGB ratios or making black NaN', () => {
+    const settings = { operator: 'reinhard', exposure: 1.55, contrast: 1, whitePoint: 1.85 }
+    assert.deepEqual(toneMapWorldColor([0, 0, 0], settings), [0, 0, 0])
+    const mapped = toneMapWorldColor([2, 1, 0.5], settings)
+    assert.ok(mapped.every(Number.isFinite))
+    assert.equal(mapped[0] / mapped[1], 2)
+    assert.equal(mapped[1] / mapped[2], 2)
+    assert.ok(mapped[0] < 2)
+    const plan = createWorldWebGlPlan({
+      items: [...terrain, { ...lighting([]), toneMapping: settings }],
+    })
+    assert.deepEqual(plan.light.toneMapping, settings)
+  })
+  it('selects actor animation properties even when Stand has no keyed channels', () => {
+    const result = {
+      state: 'converted',
+      animations: [
+        { id: 'large', kind: 'sequence', name: 'Stand', channels: [] },
+        { id: 'small', kind: 'animation', name: 'Stand A', channels: [{}] },
+      ],
+    }
+    assert.equal(worldModelAnimation(result, {}).id, 'large')
+    assert.equal(
+      worldModelAnimation(result, { presentationAnimation: { name: 'Stand', groups: ['A'] } }).id,
+      'small',
+    )
+  })
   it('keeps every directional past the key light as a fill', () => {
     // SC2 rigs ship Key, Fill and Back; only the key light owns the shadow map.
     const plan = createWorldWebGlPlan({
@@ -36,15 +84,28 @@ describe('world lighting rig', () => {
         lighting([
           { id: 'Key', direction: [0.37, -0.72, 0.59], color: [1, 1, 1], intensity: 1 },
           { id: 'Fill', direction: [-0.7, -0.19, 0.69], color: [0.8, 0.68, 0.55], intensity: 1 },
-          { id: 'Back', direction: [-0.18, -0.71, -0.68], color: [0.34, 0.44, 0.61], intensity: 0.4 },
+          {
+            id: 'Back',
+            direction: [-0.18, -0.71, -0.68],
+            color: [0.34, 0.44, 0.61],
+            intensity: 0.4,
+            useAmbientOcclusion: false,
+          },
         ]),
       ],
     })
 
     assert.deepEqual(plan.light.direction, [0.37, -0.72, 0.59])
+    assert.deepEqual(worldMaterialLight(plan).direction, [-0.37, 0.72, -0.59])
     assert.equal(plan.light.fills.length, 2)
     assert.deepEqual(plan.light.fills[0].color, [0.8, 0.68, 0.55])
     assert.equal(plan.light.fills[1].intensity, 0.4)
+    assert.equal(plan.light.fills[0].useAmbientOcclusion, true)
+    assert.equal(plan.light.fills[1].useAmbientOcclusion, false)
+    assert.deepEqual(worldMaterialLight(plan).fills[0], {
+      direction: [0.7, 0.19, -0.69],
+      color: [0.8, 0.68, 0.55],
+    })
   })
 
   it('winds terrain so its face normal points up in scene space', () => {

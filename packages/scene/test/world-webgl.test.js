@@ -160,6 +160,7 @@ describe('common world WebGL plan', () => {
     })
     assert.equal(plan.opaqueTriangles.positions.length / 9, 5)
     assert.equal(plan.transparentTriangles.positions.length / 9, 2)
+    assert.deepEqual(plan.waterSurfaceDepth, plan.transparentTriangles.positions)
     assert.equal(plan.lines.positions.length / 6, 34)
     assert.equal(plan.points.positions.length / 3, 1)
     assert.deepEqual(
@@ -263,6 +264,8 @@ describe('common world WebGL plan', () => {
     assert.equal(atZero.transparentTexturedTriangles.length, 1)
     assert.equal(atZero.transparentTexturedTriangles[0].receiveShadows, true)
     assert.ok(atZero.transparentTexturedTriangles[0].positions.length > 0)
+    assert.ok(atZero.waterSurfaceDepth.length > 0)
+    assert.ok(atZero.waterSurfaceDepth.every((value, index) => index % 3 !== 1 || value === 0.5))
     // The ground rises with x and the surface sits at 0.5: water stops a hair (0.005) below it.
     assert.ok(
       Math.max(
@@ -1141,6 +1144,7 @@ describe('common world WebGL plan', () => {
     ].map(([x, y], index) => ({
       facet: 'terrain',
       id: `raster-terrain:${index}`,
+      ambientOcclusion: [0, 0.25, 0.5, 1][index],
       layerId: 'terrain',
       coordinateSpaceId: 'height-grid',
       lod: 'exact',
@@ -1203,6 +1207,12 @@ describe('common world WebGL plan', () => {
     assert.equal(plan.stats.terrainTexturedTriangles, 2)
     assert.equal(plan.splatTriangles.length, 1)
     assert.equal(plan.splatTriangles[0].textures.length, 2)
+    const batch = plan.splatTriangles[0]
+    for (let vertex = 0; vertex < batch.positions.length / 3; vertex++) {
+      const index = batch.positions[vertex * 3] + batch.positions[vertex * 3 + 2] * 2
+      assert.equal(batch.colors[vertex * 4 + 3], [0, 0.25, 0.5, 1][index])
+      assert.deepEqual(Array.from(batch.colors.slice(vertex * 4, vertex * 4 + 3)), [1, 1, 1])
+    }
     assert.deepEqual(
       plan.splatTriangles[0].normalTextures.map(texture => texture?.id),
       ['grass-normal.dds', 'dirt-normal.dds'],

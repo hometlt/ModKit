@@ -1,4 +1,5 @@
 import type { SceneRendererPrimitive } from '@modkit/sdk/renderer'
+import { invertMaterialFrame } from '../materials/frame.js'
 
 export type ProjectorVec3 = readonly [number, number, number]
 /** Prepared source-space frame. Plane ordering, float32 scratch and UV equations correspond to
@@ -94,6 +95,40 @@ export function clipProjectorReceivers(
   }
   const first = new Float32Array(60),
     second = new Float32Array(60)
+  // A terrain decal covers only a few cells. Reject distant triangles in receiver space before
+  // transforming/clipping them; still validate the entire input and enforce its work budget above.
+  const bounded = receivers.map(receiver => {
+    const inverse = invertMaterialFrame(receiver.transform)
+    const minimum = [Infinity, Infinity, Infinity],
+      maximum = [-Infinity, -Infinity, -Infinity]
+    for (const depth of [frame.near, frame.far]) {
+      for (const x of frame.projectionType === 'perspective'
+        ? [-depth * frame.tangentX, depth * frame.tangentX]
+        : [frame.left, frame.rightExtent]) {
+        for (const y of frame.projectionType === 'perspective'
+          ? [-depth * frame.tangentY, depth * frame.tangentY]
+          : [frame.bottom, frame.top]) {
+          const point = frame.origin.map(
+            (value, axis) =>
+              value +
+              frame.rightAxis[axis]! * x +
+              frame.upAxis[axis]! * y +
+              frame.forwardAxis[axis]! * depth,
+          )
+          for (let axis = 0; axis < 3; axis++) {
+            const value =
+              inverse[axis]! * point[0]! +
+              inverse[4 + axis]! * point[1]! +
+              inverse[8 + axis]! * point[2]! +
+              inverse[12 + axis]!
+            minimum[axis] = Math.min(minimum[axis]!, value - 1e-5)
+            maximum[axis] = Math.max(maximum[axis]!, value + 1e-5)
+          }
+        }
+      }
+    }
+    return { ...receiver, minimum, maximum }
+  })
   const distance = (vertices: Float32Array, vertex: number, plane: number): number => {
     const x = component(vertices, vertex * 6 + 3),
       y = component(vertices, vertex * 6 + 4),
@@ -151,10 +186,25 @@ export function clipProjectorReceivers(
   }
   const visit = (write?: (vertex: number) => void): number => {
     let vertices = 0
-    for (const { primitive, transform: m } of receivers) {
+    for (const { primitive, transform: m, minimum, maximum } of bounded) {
       const count = primitive.indices?.length ?? primitive.positions.length / 3
       for (let triangle = 0; triangle < count; triangle += 3) {
         options.signal?.throwIfAborted()
+        const a = (primitive.indices?.[triangle] ?? triangle) * 3
+        const b = (primitive.indices?.[triangle + 1] ?? triangle + 1) * 3
+        const c = (primitive.indices?.[triangle + 2] ?? triangle + 2) * 3
+        const p = primitive.positions
+        let outside = false
+        for (let axis = 0; axis < 3; axis++) {
+          if (
+            Math.max(p[a + axis]!, p[b + axis]!, p[c + axis]!) < minimum[axis]! ||
+            Math.min(p[a + axis]!, p[b + axis]!, p[c + axis]!) > maximum[axis]!
+          ) {
+            outside = true
+            break
+          }
+        }
+        if (outside) continue
         for (let vertex = 0; vertex < 3; vertex++) {
           const index = primitive.indices?.[triangle + vertex] ?? triangle + vertex
           const x = component(primitive.positions, index * 3),

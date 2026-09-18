@@ -89,6 +89,8 @@ export function materialWebGlDraws(
       light?: SceneRendererDirectionalLight & {
         /** Scene lighting ambient color; defaults to the scalar `ambient` as gray. */
         readonly ambientColor?: readonly [number, number, number]
+        readonly specularColor?: readonly [number, number, number]
+        readonly fills?: readonly { readonly direction: readonly [number, number, number]; readonly color: readonly [number, number, number] }[]
       },
     ): number {
       const { program: source, material, primitive } = draw
@@ -197,10 +199,26 @@ export function materialWebGlDraws(
           const color = light?.color ?? [1, 1, 1, 1]
           const ambient = light?.ambient ?? 0.25
           gl.uniform3f(uniform('u_sceneLightColor'), color[0], color[1], color[2])
+          gl.uniform3fv(uniform('u_sceneSpecularColor'), light?.specularColor ?? color.slice(0, 3))
           gl.uniform3fv(
             uniform('u_sceneAmbientColor'),
             light?.ambientColor ?? [ambient, ambient, ambient],
           )
+          for (let index = 0; index < 2; index++) {
+            const fill = light?.fills?.[index]
+            const direction = fill?.direction ?? [0, 0, 0]
+            const length = Math.hypot(...direction) || 1
+            const d = direction.map(value => value / length)
+            const view = camera.viewMatrix
+            const inView = view === undefined ? d : [
+              view[0]! * d[0]! + view[4]! * d[1]! + view[8]! * d[2]!,
+              view[1]! * d[0]! + view[5]! * d[1]! + view[9]! * d[2]!,
+              view[2]! * d[0]! + view[6]! * d[1]! + view[10]! * d[2]!,
+            ]
+            gl.uniform3fv(uniform(`u_sceneFillViewDirection${index}`), inView)
+            gl.uniform3fv(uniform(`u_sceneFillWorldDirection${index}`), d)
+            gl.uniform3fv(uniform(`u_sceneFillColor${index}`), fill?.color ?? [0, 0, 0])
+          }
         }
         if (environmentEnabled || worldShading) {
           if (
@@ -299,6 +317,21 @@ function leaseShaderSources(
     filters.set(resource, texture.filter ?? 'linear')
   // Opaque passes replace the target but the public framebuffer still stores premultiplied RGB.
   let fragment = source.fragmentSource
+  const worldShading = source.normalBlendPolicy !== undefined || source.normalMapSpace === 'object'
+  if (source.defines.sceneLighting) {
+    fragment = fragment.replace('uniform vec3 u_sceneLightColor;', 'uniform vec3 u_sceneLightColor;\nuniform vec3 u_sceneSpecularColor;')
+      .replace('spec * u_sceneLightColor * lambert', 'spec * u_sceneSpecularColor * lambert')
+    const lambert = (direction: string) => source.defines.doubleLambert
+      ? `clamp(-1.0 + 2.0 * dot(normal, ${direction}), 0.0, 1.0)`
+      : `max(dot(normal, ${direction}), 0.0)`
+    fragment = fragment.replace('precision highp float;', `precision highp float;
+      uniform vec3 u_sceneFillColor0, u_sceneFillColor1;
+      ${worldShading ? 'uniform vec3 u_sceneFillWorldDirection0, u_sceneFillWorldDirection1;' : 'in vec3 v_sceneFillDir0, v_sceneFillDir1;'}
+    `).replace('u_sceneAmbientColor + u_sceneLightColor * lambert',
+      `u_sceneAmbientColor + u_sceneLightColor * lambert +
+       u_sceneFillColor0 * ${lambert(worldShading ? 'u_sceneFillWorldDirection0' : 'v_sceneFillDir0')} +
+       u_sceneFillColor1 * ${lambert(worldShading ? 'u_sceneFillWorldDirection1' : 'v_sceneFillDir1')}`)
+  }
   const samplers: string[] = []
   const declarations: string[] = []
   for (const binding of source.textures)
@@ -325,10 +358,9 @@ function leaseShaderSources(
     fragment.replace(/void main\s*\(\s*\)/, 'void materialMain()') +
     '\nuniform vec4 u_instanceTint;\nvoid main(){materialMain();materialColor*=u_instanceTint;' +
     (materialIsSolid(source)
-      ? 'materialColor=clamp(materialColor,0.0,1.0);materialColor.rgb*=materialColor.a;'
+      ? (source.defines.sceneLighting ? 'materialColor.a=clamp(materialColor.a,0.0,1.0);' : 'materialColor=clamp(materialColor,0.0,1.0);') + 'materialColor.rgb*=materialColor.a;'
       : '') +
     '}\n'
-  const worldShading = source.normalBlendPolicy !== undefined || source.normalMapSpace === 'object'
   const vertexSource = sceneMaterialVertexSource(
     source.defines,
     source.environment !== undefined,

@@ -264,6 +264,53 @@ describe('common world renderer in a real browser WebGL2 context', () => {
             invalidShadowSizeRefused,
             version: gl.getParameter(gl.VERSION),
           };
+          // Regression: submerged height-cell creases must not cast SSAO onto a flat water plane.
+          // Also test a continuous slope, and a genuine dry crease so "disable AO" cannot pass.
+          const aoCanvas = document.createElement('canvas');
+          aoCanvas.width = aoCanvas.height = 128;
+          aoCanvas.style.cssText = 'width:128px;height:128px;position:absolute;left:-1000px';
+          document.body.append(aoCanvas);
+          const aoRenderer = createWorldWebGlRenderer(aoCanvas);
+          const aoGl = aoCanvas.getContext('webgl2');
+          const aoDifference = (slope, water) => {
+            const grid = Array.from({ length: 81 }, (_, index) => {
+              const x = index % 9, y = Math.floor(index / 9);
+              const height = slope ? -2 + x * 0.2 : ((x + y) % 2 ? -2 : -0.5);
+              return { facet: 'terrain', id: 'ao:' + index, layerId: 'terrain', coordinateSpaceId: 'height-grid',
+                lod: 'exact', x, y, heightBase: 0, heightAdjustment: 0, mask: 0,
+                uvwPosition: { x, y: height, z: -y } };
+            });
+            const waterItems = water ? [{ facet: 'water', id: 'water', layerId: 'water', coordinateSpaceId: 'uvw',
+              zoneId: 0, templateId: 'water', minimum: { x: 0, y: 0 }, maximum: { x: 8, y: 8 },
+              uvwMinimum: { x: 0, z: -8 }, uvwMaximum: { x: 8, z: 0 }, uvwElevation: 0,
+              materialId: 'water' }] : [];
+            const capture = enabled => {
+              aoRenderer.draw({ items: [...grid, ...waterItems, {
+                facet: 'lighting', id: 'light', layerId: 'light', coordinateSpaceId: 'uvw',
+                ambientColor: [0.7,0.7,0.7], ambientIntensity: 1, directional: [],
+                toneMapping: { operator: 'linear', contrast: 1, exposure: 1, whitePoint: 1,
+                  ...(enabled ? { ambientOcclusion: { radius: 1.5, noOcclusion: 0.6, fullOcclusion: 0.05, power: 2 } } : {}) },
+              }], waterMaterials: [{ materialId: 'water', color: [0.2,0.5,0.7,0.6], classification: 'water',
+                  shorelineMode: 'zone', colorFalloff: 0 }],
+                camera: { azimuth: 0.3, elevation: 1.5, zoom: 4, target: [0,0,0] }, shadows: false });
+              const image = new Uint8Array(128 * 128 * 4);
+              aoGl.readPixels(0,0,128,128,aoGl.RGBA,aoGl.UNSIGNED_BYTE,image);
+              return image;
+            };
+            const withoutAo = capture(false), withAo = capture(true);
+            let difference = 0;
+            for (let y = 32; y < 96; y++) for (let x = 32; x < 96; x++)
+              for (let channel = 0; channel < 3; channel++) {
+                const offset = (y * 128 + x) * 4 + channel;
+                difference += Math.abs(withAo[offset] - withoutAo[offset]);
+              }
+            return difference / (64 * 64 * 3);
+          };
+          globalThis.worldWebGlEvidence.waterAoDifference = aoDifference(false, true);
+          globalThis.worldWebGlEvidence.slopeAoDifference = aoDifference(true, false);
+          globalThis.worldWebGlEvidence.creaseAoDifference = aoDifference(false, false);
+          aoRenderer.dispose();
+          aoCanvas.remove();
         `,
         resolveDir: repoRoot,
         loader: 'ts',
@@ -345,11 +392,17 @@ describe('common world renderer in a real browser WebGL2 context', () => {
               afterAnimationSeek: Record<string, number | boolean>
               retainedAfterDispose: Record<string, number | boolean>
               version: string
+              waterAoDifference: number
+              slopeAoDifference: number
+              creaseAoDifference: number
             }
           }
         ).worldWebGlEvidence,
     )
     expect(evidence.version).toContain('WebGL 2.0')
+    expect(evidence.waterAoDifference).toBeLessThan(1)
+    expect(evidence.slopeAoDifference).toBeLessThan(1)
+    expect(evidence.creaseAoDifference).toBeGreaterThan(1)
     expect(evidence.changedPixels).toBeGreaterThan(5_000)
     expect(evidence.texturedBatches).toBe(1)
     expect(evidence.transparentTexturedBatches).toBe(1)

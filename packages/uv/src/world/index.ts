@@ -2,6 +2,7 @@
 
 import { canonicalJsonStringify, compareUtf8, ModkitError } from '@modkit/core'
 import type { MapModelComponentPlacement } from '@modkit/sdk'
+import type { WorldToneMapping, WorldTerrainLighting } from '@modkit/sdk/maps'
 
 export const UVW_PROFILE_FORMAT = 'UVW' as const
 export const UVW_PROFILE_VERSION = '1.0' as const
@@ -252,6 +253,9 @@ export interface UvwDirectionalLight {
   readonly direction: readonly [number, number, number]
   readonly color: readonly [number, number, number]
   readonly intensity: number
+  readonly specularColor?: readonly [number, number, number]
+  readonly specularIntensity?: number
+  readonly useAmbientOcclusion?: boolean
 }
 
 export interface UvwLightingLayer {
@@ -262,6 +266,8 @@ export interface UvwLightingLayer {
   readonly ambientColor: readonly [number, number, number]
   readonly ambientIntensity: number
   readonly directional: readonly UvwDirectionalLight[]
+  readonly toneMapping?: WorldToneMapping
+  readonly terrain?: WorldTerrainLighting
 }
 
 export type UvwHeightfieldSpaceLayer =
@@ -1692,7 +1698,7 @@ function lightingLayer(
   const item = record(value, path, state, depth)
   exactKeys(
     item,
-    ['schemaVersion', 'id', 'kind', 'label', 'ambientColor', 'ambientIntensity', 'directional'],
+    ['schemaVersion', 'id', 'kind', 'label', 'ambientColor', 'ambientIntensity', 'directional', 'toneMapping', 'terrain'],
     ['schemaVersion', 'id', 'kind', 'ambientColor', 'ambientIntensity', 'directional'],
     path,
   )
@@ -1707,7 +1713,7 @@ function lightingLayer(
       const light = record(entry, lightPath, state, depth + 2)
       exactKeys(
         light,
-        ['id', 'direction', 'color', 'intensity'],
+        ['id', 'direction', 'color', 'intensity', 'specularColor', 'specularIntensity', 'useAmbientOcclusion'],
         ['id', 'direction', 'color', 'intensity'],
         lightPath,
       )
@@ -1722,6 +1728,9 @@ function lightingLayer(
         direction,
         color,
         intensity: positive(light['intensity'], `${lightPath}.intensity`, state, depth + 3),
+        ...(light['specularColor'] === undefined ? {} : { specularColor: vec3(light['specularColor'], `${lightPath}.specularColor`, state, depth + 3) }),
+        ...(light['specularIntensity'] === undefined ? {} : { specularIntensity: finite(light['specularIntensity'], `${lightPath}.specularIntensity`, state, depth + 3) }),
+        ...(light['useAmbientOcclusion'] === undefined ? {} : { useAmbientOcclusion: booleanValue(light['useAmbientOcclusion'], `${lightPath}.useAmbientOcclusion`, state, depth + 3) }),
       })
     },
   )
@@ -1748,6 +1757,30 @@ function lightingLayer(
     ambientColor,
     ambientIntensity,
     directional: Object.freeze(directional),
+    ...(item['toneMapping'] === undefined ? {} : { toneMapping: toneMappingSettings(item['toneMapping'], `${path}.toneMapping`, state, depth + 1) }),
+    ...(item['terrain'] === undefined ? {} : { terrain: numericSettings(item['terrain'], ['specularExponent', 'diffuseMultiplier', 'specularMultiplier'] as const, `${path}.terrain`, state, depth + 1) }),
+  })
+}
+
+function numericSettings<const K extends readonly string[]>(value: unknown, keys: K, path: string, state: ValidationBudget, depth: number): { readonly [P in K[number]]: number } {
+  const fields = record(value, path, state, depth)
+  exactKeys(fields, [...keys], [...keys], path)
+  return Object.freeze(Object.fromEntries(keys.map(key => [key, finite(fields[key], `${path}.${key}`, state, depth + 1)]))) as { readonly [P in K[number]]: number }
+}
+
+function toneMappingSettings(value: unknown, path: string, state: ValidationBudget, depth: number): WorldToneMapping {
+  const fields = record(value, path, state, depth)
+  exactKeys(fields, ['operator', 'exposure', 'whitePoint', 'contrast', 'colorization', 'correctGamma', 'ambientOcclusion'], ['operator', 'exposure', 'whitePoint', 'contrast'], path)
+  const operator = string(fields['operator'], `${path}.operator`, state, depth + 1)
+  if (!['reinhard', 'exponential', 'logarithmic', 'linear', 'filmic'].includes(operator)) fail('unsupported tone map operator', `${path}.operator`)
+  return Object.freeze({
+    operator: operator as WorldToneMapping['operator'],
+    exposure: positive(fields['exposure'], `${path}.exposure`, state, depth + 1),
+    whitePoint: positive(fields['whitePoint'], `${path}.whitePoint`, state, depth + 1),
+    contrast: positive(fields['contrast'], `${path}.contrast`, state, depth + 1),
+    ...(fields['correctGamma'] === undefined ? {} : { correctGamma: booleanValue(fields['correctGamma'], `${path}.correctGamma`, state, depth + 1) }),
+    ...(fields['colorization'] === undefined ? {} : { colorization: numericSettings(fields['colorization'], ['inputLow', 'inputHigh', 'inputGamma', 'outputLow', 'outputHigh', 'brightness', 'contrast', 'hue', 'saturation', 'lightness', 'blend'] as const, `${path}.colorization`, state, depth + 1) }),
+    ...(fields['ambientOcclusion'] === undefined ? {} : { ambientOcclusion: numericSettings(fields['ambientOcclusion'], ['radius', 'noOcclusion', 'fullOcclusion', 'power'] as const, `${path}.ambientOcclusion`, state, depth + 1) }),
   })
 }
 

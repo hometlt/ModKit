@@ -509,6 +509,7 @@ precision highp float;
 uniform mat4 u_model, u_modelView, u_viewProjection, u_materialWorld;
 uniform mat3 u_worldNormalMatrix, u_viewNormalMatrix;
 uniform vec3 u_lightDirection;
+${defines.sceneLighting ? 'uniform vec3 u_sceneFillViewDirection0, u_sceneFillViewDirection1;\nout vec3 v_sceneFillDir0, v_sceneFillDir1;' : ''}
 ${worldGeometry ? 'uniform mat3 u_sceneWorldNormalMatrix;\nuniform float u_sceneWorldOrientation;\n' : ''}uniform float u_orientation, u_orthographic;
 in vec3 a_position, a_normal; in vec4 a_tangent;
 ${Array.from({ length: defines.uvSetCount }, (_, i) => `in vec2 a_uv${i}; out vec2 v_uv${i};`).join('\n')}
@@ -528,6 +529,7 @@ void main(){
   mat3 tbn=transpose(mat3(t,b,n));
   vec3 eye=u_orthographic>0.5?vec3(0.0,0.0,1.0):unit(-view,vec3(0.0,0.0,1.0));
   v_normal=vec3(0.0,0.0,1.0); v_lightDir=tbn*u_lightDirection;
+${defines.sceneLighting ? '  v_sceneFillDir0=tbn*u_sceneFillViewDirection0; v_sceneFillDir1=tbn*u_sceneFillViewDirection1;' : ''}
   v_halfVec=tbn*(-unit(eye+u_lightDirection,vec3(0.0,0.0,1.0))); v_viewDir=tbn*eye;
   v_viewPosition=u_orthographic>0.5?vec3(0.0,0.0,-1.0):view; v_viewNormal=n;
 ${

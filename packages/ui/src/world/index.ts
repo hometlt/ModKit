@@ -1212,7 +1212,8 @@ export function createWorldViewer(options: WorldViewerModuleOptions = {}): Viewe
             item.resourceId === undefined ? undefined : currentModel.models?.get(item.resourceId)
           if (
             result?.state !== 'converted' ||
-            !result.animations?.some(clip => clip.kind === 'animation' && clip.channels.length > 0)
+            !(result.animations?.some(clip => clip.kind === 'animation' && clip.channels.length > 0) ||
+              (item.presentationAnimation !== undefined && (result.animations?.length ?? 0) > 0))
           )
             continue
           const epoch = animationEpochs.get(item.objectId) ?? now

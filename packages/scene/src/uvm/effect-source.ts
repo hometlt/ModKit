@@ -1,4 +1,5 @@
-import type { SceneRendererMaterial } from '@modkit/sdk/renderer'
+import type { SceneRendererMaterial, SceneRendererPrimitive } from '@modkit/sdk/renderer'
+import { createUvmProjectorFrame } from './projectors.js'
 import { readUvmContainer } from '@modkit/uv/model/container'
 import { createModelSceneSampler } from '../model/sampler.js'
 import { createUvmEffectFrame } from './effects.js'
@@ -6,6 +7,12 @@ import { readUvmModel } from './model.js'
 import { field } from './values.js'
 
 export interface UvmEffectSource {
+  readonly hasProjectors: boolean
+  project(
+    time: number,
+    materials: readonly SceneRendererMaterial[],
+    receivers: readonly SceneRendererPrimitive[],
+  ): ReturnType<typeof createUvmProjectorFrame>
   /** Seconds of the looping clip whose sequence drives emission, when the model has one. */
   readonly clipSeconds?: number
   frame(
@@ -21,16 +28,23 @@ const MAX_CACHED_POSES = 4_096
 
 /**
  * Reusable live effects of one source-free UVM for scenes that place many instances (world maps).
- * Same pose and clip rule as the world model sampler: the first animation clip with channels.
+ * Uses the actor-selected sequence, including material-only sequences without keyed bones.
  * Returns undefined for a model without UV_game_effects.
  */
-export function createUvmEffectSource(bytes: Uint8Array): UvmEffectSource | undefined {
+export function createUvmEffectSource(
+  bytes: Uint8Array,
+  sequenceIndex?: number,
+): UvmEffectSource | undefined {
   const { document, binary } = readUvmContainer(bytes)
   if (field(document['extensions'], 'UV_game_effects') === undefined) return undefined
   const { scene, rig } = readUvmModel(document, binary, { maxScalarBytes: MAX_BYTES })
-  const clip = rig.clips.find(
-    candidate => candidate.kind === 'animation' && candidate.channels.length > 0,
-  )
+  const clip =
+    sequenceIndex === undefined
+      ? (rig.clips.find(candidate => candidate.name?.toLowerCase() === 'stand') ??
+        rig.clips.find(
+          candidate => candidate.kind === 'animation' && candidate.channels.length > 0,
+        ))
+      : rig.clips.find(candidate => candidate.sequenceIndex === sequenceIndex)
   // Emitters sample historical node poses while seeking; a geometry-free sampler avoids skinning.
   const pose = createModelSceneSampler(
     {
@@ -42,7 +56,7 @@ export function createUvmEffectSource(bytes: Uint8Array): UvmEffectSource | unde
     },
     {
       maxBytes: MAX_BYTES,
-      ...(clip === undefined
+      ...(clip === undefined || clip.kind !== 'animation'
         ? {}
         : {
             clip: {
@@ -67,6 +81,22 @@ export function createUvmEffectSource(bytes: Uint8Array): UvmEffectSource | unde
     return transforms
   }
   return Object.freeze<UvmEffectSource>({
+    hasProjectors:
+      Array.isArray(field(field(document['extensions'], 'UV_game_effects'), 'projectors')) &&
+      (field(field(document['extensions'], 'UV_game_effects'), 'projectors') as unknown[]).length >
+        0,
+    project: (time, materials, receivers) =>
+      createUvmProjectorFrame(document, {
+        time,
+        materials,
+        receivers,
+        activeNodes,
+        nodeTransforms: nodeTransformsAt(time),
+        ...(clip?.sequenceIndex === undefined ? {} : { sequenceIndex: clip.sequenceIndex }),
+        maxBytes: MAX_BYTES,
+        maxNodes: MAX_NODES,
+        warn: () => {},
+      }),
     ...(clip?.durationSeconds === undefined ? {} : { clipSeconds: clip.durationSeconds }),
     frame: (time: number, materials: readonly SceneRendererMaterial[], viewMatrix: Float32Array) =>
       createUvmEffectFrame(document, {

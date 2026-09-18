@@ -254,6 +254,7 @@ export type MapSemanticDocumentKind =
   | 'terrain-height'
   | 'terrain-native-parameters'
   | 'terrain-resource-index'
+  | 'terrain-vertex-color'
   | 'navigation'
   | 'gateways'
 
@@ -368,6 +369,8 @@ export interface MapRegion {
 }
 
 export interface MapTerrainSample {
+  /** Publisher-decoded scalar vertex AO; 1 means unoccluded. */
+  readonly ambientOcclusion?: number
   readonly x: number
   readonly y: number
   readonly heightBase: number
@@ -783,12 +786,17 @@ export interface MapWorldLightingSummary {
   readonly coordinateSpaceId: string
   readonly ambientColor: readonly [number, number, number]
   readonly ambientIntensity: number
+  readonly toneMapping?: WorldToneMapping
+  readonly terrain?: WorldTerrainLighting
   readonly directional: readonly Readonly<{
     readonly id: string
     /** Direction travelled by the light rays in `coordinateSpaceId`. */
     readonly direction: readonly [number, number, number]
     readonly color: readonly [number, number, number]
     readonly intensity: number
+    readonly specularColor?: readonly [number, number, number]
+    readonly specularIntensity?: number
+    readonly useAmbientOcclusion?: boolean
   }>[]
 }
 
@@ -1057,12 +1065,56 @@ export interface WorldSceneLightingItem {
   readonly coordinateSpaceId: string
   readonly ambientColor: readonly [number, number, number]
   readonly ambientIntensity: number
+  readonly toneMapping?: WorldToneMapping
+  readonly terrain?: WorldTerrainLighting
   readonly directional: readonly Readonly<{
     readonly id: string
     readonly direction: readonly [number, number, number]
     readonly color: readonly [number, number, number]
     readonly intensity: number
+    readonly specularColor?: readonly [number, number, number]
+    readonly specularIntensity?: number
+    readonly useAmbientOcclusion?: boolean
   }>[]
+}
+
+/** Luminance-preserving HDR mapping, applied after transparent scene compositing. */
+export interface WorldToneMapping {
+  readonly operator: 'reinhard' | 'exponential' | 'logarithmic' | 'linear' | 'filmic'
+  readonly exposure: number
+  readonly whitePoint: number
+  readonly contrast: number
+  readonly correctGamma?: boolean
+  readonly colorization?: WorldColorization
+  readonly ambientOcclusion?: WorldAmbientOcclusion
+}
+
+export interface WorldTerrainLighting {
+  readonly specularExponent: number
+  readonly diffuseMultiplier: number
+  readonly specularMultiplier: number
+}
+
+export interface WorldAmbientOcclusion {
+  readonly radius: number
+  readonly noOcclusion: number
+  readonly fullOcclusion: number
+  readonly power: number
+}
+
+/** Levels plus colourized HSL blend, baked into the post-tonemap 16-cubed LUT. */
+export interface WorldColorization {
+  readonly inputLow: number
+  readonly inputHigh: number
+  readonly inputGamma: number
+  readonly outputLow: number
+  readonly outputHigh: number
+  readonly brightness: number
+  readonly contrast: number
+  readonly hue: number
+  readonly saturation: number
+  readonly lightness: number
+  readonly blend: number
 }
 
 export type WorldSceneItem =

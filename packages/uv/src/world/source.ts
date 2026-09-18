@@ -455,6 +455,8 @@ function recordItems(
           coordinateSpaceId,
           ambientColor: layer.ambientColor,
           ambientIntensity: layer.ambientIntensity,
+          ...(layer.toneMapping === undefined ? {} : { toneMapping: layer.toneMapping }),
+          ...(layer.terrain === undefined ? {} : { terrain: layer.terrain }),
           directional: layer.directional,
         }),
       ])

@@ -668,6 +668,8 @@ async function reconstructLayer(
       ...label,
       ambientColor: environment.ambientColor,
       ambientIntensity: environment.ambientIntensity,
+      ...(environment.toneMapping === undefined ? {} : { toneMapping: environment.toneMapping }),
+      ...(environment.terrain === undefined ? {} : { terrain: environment.terrain }),
       directional: Object.freeze(
         environment.directional.map((light, index) =>
           Object.freeze({
