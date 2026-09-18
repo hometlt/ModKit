@@ -8,18 +8,19 @@
  * its dependencies in an empty module cache. For a person walking a folder of icons that is the
  * whole wait.
  *
- * What is cached is the *lease*, not authority. The key is the code and the authority it was
- * admitted with — contribution, variant, artifact digest, entrypoint, target realm and the exact
- * narrowed grant — so a reuse is the same code running under the same classes; anything else
- * activates its own realm. Every call is still checked by the gate at dispatch, which is where
- * per-call authority lives; this only avoids paying twice for the same load.
+ * What is cached is the *lease* — a realm with a module graph loaded — and a realm carries no
+ * authority. Nothing grant-shaped crosses into it: the worker is spawned with the artifact root,
+ * its file digests and the protocol limits, and loaded with a module URL and digests. Authority
+ * lives in the context the host builds for each activation (`createCodec(context)`) and in the
+ * gate's checks at dispatch, and both stay per activation. So the key is the *code* — contribution,
+ * variant, artifact digest, entrypoint, target realm — and two activations of the same code under
+ * different grants share one load. That is what lets the probe (narrowed to the probe classes) and
+ * the open (with `write-source` for a writable file) use one realm instead of bringing up two.
  *
  * Releases are reference counted and then idle: the last release starts a timer, and a reuse
  * inside that window takes the warm realm. A realm that died is dropped from the cache rather
  * than handed out, because the wrapped backend's own restart policy belongs to its lease.
  */
-import { canonicalJsonStringify } from '@modkit/core'
-import type { JsonValue } from '@modkit/sdk'
 import type {
   ExecutionBackend,
   ExecutionBackendActivation,
@@ -47,18 +48,8 @@ interface Entry {
   releasedAt: number
 }
 
-/**
- * Same code, same authority, same realm: everything a reuse must not change.
- *
- * The grant's `id` and `parentGrant` are deliberately left out — they name the subject session the
- * gate narrowed for, which is exactly the difference a warm realm is allowed to ignore. Every
- * other part of the grant is in the key, scopes included, so two subjects with different reach
- * never share one.
- */
+/** Same code in the same realm: everything a reuse must not change. */
 function activationKey(context: ExecutionBackendActivation): string {
-  const authority: Record<string, unknown> = { ...context.grant }
-  delete authority['id']
-  delete authority['parentGrant']
   return [
     context.ticket.contributionId,
     context.ticket.artifactDigest,
@@ -66,7 +57,6 @@ function activationKey(context: ExecutionBackendActivation): string {
     context.variant.executionProfile,
     context.target.environment,
     context.entrypoint.href,
-    canonicalJsonStringify(authority as JsonValue),
   ].join('|')
 }
 

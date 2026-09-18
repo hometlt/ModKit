@@ -1,10 +1,11 @@
 /**
  * What a warm realm may and may not share.
  *
- * The saving is real — a second open of the same codec went from ~190 ms to ~15 ms — but it is
- * only sound while the key is the code *and* the authority: two subjects whose grants differ must
- * never end up in one realm, a realm in use must not be torn down by someone else's release, and
- * a failed activation must not be cached as if it had worked.
+ * The saving is real — a second open of the same codec went from ~190 ms to ~15 ms. It is sound
+ * because a realm carries code, not authority: the grant lives in each activation's own context
+ * and in the gate's checks at dispatch. So the rules pinned here are about the *code* — the same
+ * code is loaded once, different code never shares a realm — and about lifetime: a realm in use is
+ * not torn down by someone else's release, and a failed activation is not cached as if it worked.
  */
 import { describe, expect, it, vi } from 'vitest'
 import type { PermissionGrant } from '@modkit/sdk'
@@ -72,18 +73,31 @@ describe('warm execution realms', () => {
     await second.release()
   })
 
-  it('never shares a realm between grants that differ in anything but the subject', async () => {
+  it('shares one load between grants, because a realm carries no authority', async () => {
+    // The probe runs narrowed to the probe classes and the open with `write-source`: one realm.
     const inner = counting()
     const warm = warmExecutionBackend(inner.backend, { idleMs: 10_000 })
 
-    const reader = await warm.activate(activation('modkit/dds', grant('vscode:s1')))
-    const writer = await warm.activate(
-      activation('modkit/dds', grant('vscode:s2', ['read-source', 'write-source'])),
+    const probe = await warm.activate(activation('modkit/dds', grant('vscode:s1')))
+    const open = await warm.activate(
+      activation('modkit/dds', grant('vscode:s1/open', ['read-source', 'write-source'])),
     )
 
+    expect(inner.loads()).toBe(1)
+    await probe.release()
+    await open.release()
+  })
+
+  it('never shares a realm between different code', async () => {
+    const inner = counting()
+    const warm = warmExecutionBackend(inner.backend, { idleMs: 10_000 })
+
+    const dds = await warm.activate(activation('modkit/dds', grant('vscode:s1')))
+    const png = await warm.activate(activation('modkit/png', grant('vscode:s1')))
+
     expect(inner.loads()).toBe(2)
-    await reader.release()
-    await writer.release()
+    await dds.release()
+    await png.release()
   })
 
   it('keeps a realm alive while anyone still holds it, and releases it after the idle window', async () => {

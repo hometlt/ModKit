@@ -309,7 +309,9 @@ function copyBundledCodecRoots(output) {
     bundledCatalog.rootCount !== bundledCatalog.roots.length ||
     bundledCatalog.rootCount < 1
   ) {
-    throw new TypeError('VS Code bundled catalog must name its generated Common roots and count them')
+    throw new TypeError(
+      'VS Code bundled catalog must name its generated Common roots and count them',
+    )
   }
   const roots = [...bundledCatalog.roots].sort((left, right) =>
     left.directory.localeCompare(right.directory),
@@ -465,6 +467,14 @@ async function buildInto(output, syncManifest) {
     target: ['chrome120'],
     absWorkingDir: repoRoot,
     logLevel: 'warning',
+    /*
+     * The page is what a person waits on, and a cold webview fetches, parses and evaluates this
+     * whole file before it can draw anything. Minified it is a fraction of the size. Names are
+     * kept: error messages, diagnostics and a few `instanceof`-free checks read `.name`, and a
+     * renamed class would turn a readable report into a letter.
+     */
+    minify: true,
+    keepNames: true,
   })
 
   const stylesheet = join(repoRoot, 'packages', 'ui', 'styles', 'modkit-ui.css')
