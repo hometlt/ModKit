@@ -1,29 +1,24 @@
 /**
  * A URI shape that names one entry inside a container, and the directory index behind it.
  *
- * Until now this product had no way to say "the W3D at `art/w3d/bowl.w3d` inside `Misc.big`". Every
- * door the extension opens takes a `vscode.Uri`, `describeOpenTarget` accepted only `file:`, and so
- * descending into an archive was an action inside the webview and nowhere else: the smoke receipt's
- * scenario 4 fails on exactly that sentence. The owner's requirement (REQUEST_VSCODE_NATIVE_SHELL
- * §3) names the mechanism — a `FileSystemProvider` over the host's `openNestedSubject` route, so
- * the *native* Explorer lists archive members — and a filesystem provider is addressed by URI. This
- * module is that address, kept free of the `vscode` module so the rule is unit-testable in Node.
+ * The shape is the one Java and many engines use for archive members, a path, `!/`, and the path
+ * inside: `modkit-container:/C:/Games/data.zip!/textures/marine.dds`. It reads as what it is, and
+ * VS Code's breadcrumbs, tab tooltips and Explorer show `Games › data.zip! › textures › marine.dds`.
  *
- * The shape is `modkit-container:/<token>/<entry path>`:
- *
- *  - **The token is the container's own path, hex-encoded.** Hex rather than base64url because a
- *    URI authority folds case in some editors' comparisons and a path segment must survive being
- *    round-tripped through `Uri.parse` unchanged; `[0-9a-f]` is invariant under both. It is an
- *    encoding, never a secret: anyone holding the URI already holds the path, and pretending
- *    otherwise would invite a handle table that outlives the window.
- *  - **The entry path is the container's own**, with the `/` separators a namespace listing uses.
- *    It is never a platform path, so nothing here joins it with `node:path`.
+ *  - **The container is its own path**, with `/` separators and a leading `/` before a drive
+ *    letter, so it survives `Uri.from({ scheme, path })` and comes back as the same platform path.
+ *  - **The entry path is the container's own**, with the `/` separators a listing uses. It is never
+ *    a platform path, so nothing here joins it with `node:path`.
+ *  - **The text form is the scheme plus the decoded path.** A `vscode.Uri` is turned into it from
+ *    `uri.path`, never `uri.toString()`, which percent-encodes the colon and the `!`.
  *
  * Everything is derived: no registry, no counter, no state. The same container yields the same URI
  * in every window, which is what lets a workspace folder for an archive be saved and reopened.
+ * ponytail: the first `!/` splits container from entry, so a container under a directory whose
+ * name ends in `!` is not addressable; escape it if such a path is ever met.
  */
 
-/** The scheme the extension registers a read-only filesystem provider for. */
+/** The scheme the extension registers a filesystem provider for. */
 export const CONTAINER_SCHEME = 'modkit-container'
 
 /** A container path and an entry inside it, as parsed out of one URI path. */
@@ -32,26 +27,6 @@ export interface ContainerLocation {
   readonly container: string
   /** Slash-separated path inside the container; empty means the container root itself. */
   readonly entry: string
-}
-
-const encoder = new TextEncoder()
-const decoder = new TextDecoder('utf-8', { fatal: true })
-
-function toHex(text: string): string {
-  return [...encoder.encode(text)].map(byte => byte.toString(16).padStart(2, '0')).join('')
-}
-
-function fromHex(token: string): string | undefined {
-  if (token.length === 0 || token.length % 2 !== 0 || !/^[0-9a-f]+$/u.test(token)) return undefined
-  const bytes = new Uint8Array(token.length / 2)
-  for (let index = 0; index < bytes.length; index += 1) {
-    bytes[index] = Number.parseInt(token.slice(index * 2, index * 2 + 2), 16)
-  }
-  try {
-    return decoder.decode(bytes)
-  } catch {
-    return undefined
-  }
 }
 
 /**
@@ -69,10 +44,16 @@ export function normalizeEntryPath(entry: string): string {
     .join('/')
 }
 
+const SEPARATOR = '!/'
+const BACKSLASH = String.fromCharCode(92)
+/** A Windows path (`C:` then a separator), which a URI path spells `/C:/…`. */
+const isDrivePath = (path: string): boolean =>
+  /^[A-Za-z]:/u.test(path) && (path[2] === '/' || path[2] === BACKSLASH)
+
 /** The `path` component of the URI addressing an entry (or the container root, for an empty entry). */
 export function containerUriPath(container: string, entry = ''): string {
-  const normalized = normalizeEntryPath(entry)
-  return `/${toHex(container)}${normalized === '' ? '' : `/${normalized}`}`
+  const path = isDrivePath(container) ? `/${container.replaceAll(BACKSLASH, '/')}` : container
+  return `${path}${SEPARATOR}${normalizeEntryPath(entry)}`
 }
 
 /** The whole URI as text — what a `SubjectOpener` receives, and what the smoke asserts on. */
@@ -82,12 +63,13 @@ export function containerUriText(container: string, entry = ''): string {
 
 /** Parse a URI `path` back into the container and entry it names, or `undefined` when it is not one. */
 export function parseContainerUriPath(path: string): ContainerLocation | undefined {
-  const segments = path.split('/').filter(segment => segment.length > 0)
-  const token = segments[0]
-  if (token === undefined) return undefined
-  const container = fromHex(token)
-  if (container === undefined) return undefined
-  return Object.freeze({ container, entry: segments.slice(1).join('/') })
+  const cut = path.indexOf(SEPARATOR)
+  const head = cut < 0 ? (path.endsWith('!') ? path.slice(0, -1) : undefined) : path.slice(0, cut)
+  if (head === undefined || head === '' || head === '/') return undefined
+  const drive = head.slice(1)
+  const container = isDrivePath(drive) ? drive.replaceAll('/', BACKSLASH) : head
+  const entry = cut < 0 ? '' : normalizeEntryPath(path.slice(cut + SEPARATOR.length))
+  return Object.freeze({ container, entry })
 }
 
 /** Parse a whole `modkit-container:` URI text; anything else answers `undefined`. */

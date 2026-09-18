@@ -603,19 +603,24 @@ function readPackagedManagedRegistry(extensionRoot: string): PackagedManagedRegi
  * downstream would silently address a file that does not exist.
  */
 function subjectPathOf(uri: vscode.Uri): string {
-  return uri.scheme === CONTAINER_SCHEME || uri.scheme === 'modkit-source'
-    ? uri.toString()
-    : uri.fsPath
+  if (uri.scheme === CONTAINER_SCHEME) return `${CONTAINER_SCHEME}:${uri.path}`
+  return uri.scheme === 'modkit-source' ? uri.toString() : uri.fsPath
 }
 
 /** The inverse: the URI a subject string names, for the editor surfaces that take one. */
 function subjectUriOf(path: string): vscode.Uri {
   if (path.startsWith('modkit-source:')) return vscode.Uri.parse(path)
-  return parseContainerUriText(path) === undefined ? vscode.Uri.file(path) : vscode.Uri.parse(path)
+  const location = parseContainerUriText(path)
+  return location === undefined
+    ? vscode.Uri.file(path)
+    : vscode.Uri.from({
+        scheme: CONTAINER_SCHEME,
+        path: containerUriPath(location.container, location.entry),
+      })
 }
 
 function subjectCandidateScopeOf(uri: vscode.Uri): VsCodeSubjectCandidateScope {
-  const container = parseContainerUriText(uri.toString())
+  const container = uri.scheme === CONTAINER_SCHEME ? parseContainerUriPath(uri.path) : undefined
   const workspaceTarget = container === undefined ? uri : vscode.Uri.file(container.container)
   const workspaceUri = vscode.workspace.getWorkspaceFolder(workspaceTarget)?.uri.toString()
   return Object.freeze({
@@ -5349,7 +5354,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
               viewerStatusBar.set(subjectKey(openPath), items, choose),
           }),
       openInEditor: async path => {
-        await vscode.commands.executeCommand('vscode.open', subjectUriOf(path))
+        // A tab of its own: a preview tab would replace the archive the member was opened from.
+        await vscode.commands.executeCommand('vscode.open', subjectUriOf(path), { preview: false })
       },
       /*
        * The same bounded snapshot the language features run on, for the operations that need it.
@@ -5869,7 +5875,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   const containerFrom = (argument: unknown): string | undefined => {
     if (argument instanceof vscode.Uri) {
       return argument.scheme === CONTAINER_SCHEME
-        ? parseContainerUriText(argument.toString())?.container
+        ? parseContainerUriPath(argument.path)?.container
         : argument.scheme === 'file'
           ? argument.fsPath
           : undefined
@@ -5888,7 +5894,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   }
 
   const entryFrom = (argument: unknown): string | undefined => {
-    if (argument instanceof vscode.Uri) return parseContainerUriText(argument.toString())?.entry
+    if (argument instanceof vscode.Uri) {
+      return argument.scheme === CONTAINER_SCHEME
+        ? parseContainerUriPath(argument.path)?.entry
+        : undefined
+    }
     if (typeof argument === 'string') return parseContainerUriText(argument)?.entry
     if (typeof argument === 'object' && argument !== null) {
       const entry = (argument as { readonly entry?: unknown }).entry

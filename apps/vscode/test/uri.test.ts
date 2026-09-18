@@ -9,13 +9,18 @@ import { describeOpenTarget, refusalFor, type UriLike } from '../src/uri.js'
 const uri = (scheme: string, fsPath = '', text?: string): UriLike => ({
   scheme,
   fsPath,
+  path: text === undefined ? fsPath : text.slice(text.indexOf(':') + 1),
   toString: () => text ?? `${scheme}://${fsPath}`,
 })
 
 describe('open target', () => {
   it('opens a connected source file by its complete URI', () => {
     const text = 'modkit-source://battlenet/public%3Aus/377020%401--Mod.SC2Mod/DocumentInfo'
-    expect(describeOpenTarget(uri('modkit-source', 'ignored', text))).toEqual({ state: 'accepted', path: text, kind: 'source-entry' })
+    expect(describeOpenTarget(uri('modkit-source', 'ignored', text))).toEqual({
+      state: 'accepted',
+      path: text,
+      kind: 'source-entry',
+    })
   })
   it.each([
     'modkit-source://battlenet/public%3Aus',
@@ -46,9 +51,9 @@ describe('open target', () => {
   it('refuses a container URI that names the container itself, and a malformed one', () => {
     const root = containerUriText('C:\\games\\Misc.big')
     expect(refusalFor(uri(CONTAINER_SCHEME, '', root))).toContain('open the container file')
-    expect(refusalFor(uri(CONTAINER_SCHEME, '', `${CONTAINER_SCHEME}:/zz/x.w3d`))).toContain(
-      'names no container',
-    )
+    expect(
+      refusalFor(uri(CONTAINER_SCHEME, '', `${CONTAINER_SCHEME}:/zz/x.w3d` /* no `!/` */)),
+    ).toContain('names no container')
   })
 
   it('refuses an unsaved buffer, naming the scheme and the reason', () => {

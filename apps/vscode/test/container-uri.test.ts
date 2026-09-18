@@ -69,12 +69,26 @@ describe('a container member has an address', () => {
     }
   })
 
+  it('reads as a path: the container, `!/`, then the member', () => {
+    expect(
+      containerUriText(
+        'C:' + String.fromCharCode(92) + 'Games' + String.fromCharCode(92) + 'data.zip',
+        'textures/marine.dds',
+      ),
+    ).toBe(`${CONTAINER_SCHEME}:/C:/Games/data.zip!/textures/marine.dds`)
+    expect(containerUriText('/srv/a.big')).toBe(`${CONTAINER_SCHEME}:/srv/a.big!/`)
+  })
+
   it('refuses anything that is not one of these', () => {
     expect(parseContainerUriText('file:///c:/a.big')).toBeUndefined()
     expect(parseContainerUriText(`${CONTAINER_SCHEME}:/`)).toBeUndefined()
-    // a token that is not hex names no container, rather than decoding to mojibake
-    expect(parseContainerUriText(`${CONTAINER_SCHEME}:/zzzz/a.w3d`)).toBeUndefined()
-    expect(isContainerUriText('C:\\apps\\a.big')).toBe(false)
+    // a path with no `!` names no container, rather than guessing where the archive ends
+    expect(parseContainerUriText(`${CONTAINER_SCHEME}:/srv/a.w3d`)).toBeUndefined()
+    expect(
+      isContainerUriText(
+        'C:' + String.fromCharCode(92) + 'apps' + String.fromCharCode(92) + 'a.big',
+      ),
+    ).toBe(false)
   })
 
   it('drops the segments an archive must not be able to climb with', () => {

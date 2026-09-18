@@ -17,13 +17,15 @@
  * shapes it consumes.
  */
 
-import { CONTAINER_SCHEME, parseContainerUriText } from './container-uri.js'
+import { CONTAINER_SCHEME, containerUriText, parseContainerUriPath } from './container-uri.js'
 
 /** The two fields of `vscode.Uri` this host reads, plus the identity it prints when refusing. */
 export interface UriLike {
   readonly scheme: string
   /** Platform path of a `file:` URI; meaningless for every other scheme, so it is never trusted. */
   readonly fsPath: string
+  /** Decoded path; a container member's address lives here, not in the encoded text. */
+  readonly path: string
   toString(): string
 }
 
@@ -95,7 +97,7 @@ export function describeOpenTarget(uri: UriLike): OpenTarget {
    * would be, one layer down, so accepting the URI here grants nothing the window did not have.
    */
   if (uri.scheme === CONTAINER_SCHEME) {
-    const location = parseContainerUriText(uri.toString())
+    const location = parseContainerUriPath(uri.path)
     if (location === undefined) {
       return {
         state: 'refused',
@@ -108,7 +110,11 @@ export function describeOpenTarget(uri: UriLike): OpenTarget {
         reason: 'this URI names the container itself; open the container file to browse it',
       }
     }
-    return { state: 'accepted', path: uri.toString(), kind: 'container-entry' }
+    return {
+      state: 'accepted',
+      path: containerUriText(location.container, location.entry),
+      kind: 'container-entry',
+    }
   }
   const known = KNOWN_SCHEMES[uri.scheme]
   return {
