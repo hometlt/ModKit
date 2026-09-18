@@ -19,6 +19,7 @@ import type { PreviewStage } from '@modkit/ui/explorer'
 import { createRelationGraphViewer } from '@modkit/ui/graph'
 import { createGameTemplateViewer } from '@modkit/ui/template'
 import { createHexViewer } from '@modkit/ui/hex'
+import { lazyViewerModule } from '@modkit/ui/viewer'
 import { createHexEditor } from '@modkit/ui/hex-editor'
 import { createImageViewer } from '@modkit/ui/image'
 import { createModelViewer } from '@modkit/ui/model'
@@ -28,7 +29,6 @@ import { createVirtualTextViewer } from '@modkit/ui/text-virtual'
 import { createTreeViewer } from '@modkit/ui/tree'
 import { createVectorViewer } from '@modkit/ui/vector'
 import { createVideoViewer } from '@modkit/ui/video'
-import { createWorldViewer } from '@modkit/ui/world'
 
 import { orderStages } from './view-policy.js'
 import { createVsCodeArchiveStage } from './archive-stage.js'
@@ -115,7 +115,11 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       id: 'world',
       label: context.localizer.text('stage.world'),
       contract: 'common.view/world-scene-source',
-      module: createWorldViewer({ localizer: context.localizer }),
+      // Loaded on first mount: the world renderer is the one stage that brings three.js, and a
+      // page that shows a texture or a table should not fetch or evaluate it.
+      module: lazyViewerModule(async () =>
+        (await import('@modkit/ui/world')).createWorldViewer({ localizer: context.localizer }),
+      ),
       // A timed world (a replay, a cutscene) follows its transport.
       optionalContracts: ['common.view/transport-source'],
     },

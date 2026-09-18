@@ -208,6 +208,28 @@ export function defineViewerModule(module: ViewerModule): ViewerModule {
   return Object.freeze(module)
 }
 
+/**
+ * A viewer whose code loads the first time it mounts.
+ *
+ * For a stage most subjects never reach — a map's world renderer, with three.js behind it — the
+ * host can list it without paying for it: the catalog holds this small object, and the real module
+ * is imported (a separate chunk in a split build) when a subject actually needs it, then kept.
+ */
+export function lazyViewerModule(load: () => Promise<ViewerModule>): ViewerModule {
+  let loading: Promise<ViewerModule> | undefined
+  return defineViewerModule({
+    abiVersion: 1,
+    async mount(args) {
+      loading ??= load().catch(error => {
+        // A failed load must not be remembered: the next mount tries again.
+        loading = undefined
+        throw error
+      })
+      return (await loading).mount(args)
+    },
+  })
+}
+
 export function operationById(
   descriptor: AnyDescriptor,
   operationId: string,

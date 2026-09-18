@@ -181,6 +181,7 @@ describe('VS Code view policy', () => {
       'graph',
       'template',
       'hex',
+      'viewer',
       'hex-editor',
       'image',
       'model',
@@ -190,9 +191,10 @@ describe('VS Code view policy', () => {
       'tree',
       'vector',
       'video',
-      'world',
       'localization',
     ])
+    // The world renderer (and three.js behind it) is imported on first mount, not with the page.
+    expect(source).toContain("import('@modkit/ui/world')")
     expect(source).not.toMatch(/from '@modkit\/ui'/u)
     expect(source).toContain('module: createRelationGraphViewer({ localizer: context.localizer })')
     expect(source).not.toContain('@modkit/ui/monaco')

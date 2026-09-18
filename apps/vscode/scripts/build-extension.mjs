@@ -459,10 +459,20 @@ async function buildInto(output, syncManifest) {
   })
 
   await build({
-    entryPoints: [join(appRoot, 'src', 'webview.ts')],
-    outfile: join(output, 'webview.js'),
+    entryPoints: { webview: join(appRoot, 'src', 'webview.ts') },
+    outdir: output,
     bundle: true,
     format: 'esm',
+    /*
+     * Split at every dynamic import. What a page needs to draw its first view is loaded up front;
+     * what only some subjects need — the precompiled schema validators (~4 MB, consulted the first
+     * time something is validated), the world renderer and three.js (only a map) — comes as its
+     * own chunk when it is first asked for. The chunks sit in one directory next to the page and
+     * are fetched from the same origin; a module's imports inherit its script nonce, so the page's
+     * content-security policy stays exactly as strict.
+     */
+    splitting: true,
+    chunkNames: 'chunks/[name]-[hash]',
     platform: 'browser',
     target: ['chrome120'],
     absWorkingDir: repoRoot,

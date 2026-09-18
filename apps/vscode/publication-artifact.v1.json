@@ -4,6 +4,7 @@
   "artifactKind": "deterministic-shell",
   "shellEntries": [
     "app.css",
+    "chunks",
     "codicons/codicon.css",
     "codicons/codicon.ttf",
     "extension.cjs",
