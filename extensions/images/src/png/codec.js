@@ -5,7 +5,14 @@ import {
   editPlanFromInput,
   replaceBytes,
 } from '@modkit/codec-kit'
-import { EXPORT_TARGETS, PNG_EXPORT_SCHEMA, exportRaster } from '../ops/raster-transforms.js'
+import {
+  EXPORT_TARGETS,
+  PNG_EXPORT_SCHEMA,
+  exportRaster,
+  rasterEditContent,
+  rasterEditContentOperation,
+} from '../ops/raster-transforms.js'
+import { encodePng } from '../writers/png-encoder.js'
 
 const SIGNATURE = Object.freeze([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
 const ascii = new TextDecoder('latin1')
@@ -467,7 +474,11 @@ function setTextHandler(bytes, png, input) {
 
 const definition = Object.freeze({
   id: 'modkit/image-png',
-  operations: Object.freeze([CONVERT_RGBA8_OPERATION, EDIT_FIELD_OPERATION]),
+  operations: Object.freeze([
+    CONVERT_RGBA8_OPERATION,
+    EDIT_FIELD_OPERATION,
+    rasterEditContentOperation('transform'),
+  ]),
   format: Object.freeze({ id: 'png', label: 'PNG image', mediaType: 'image/png' }),
   async detect(bytes) {
     const match = matchesSignature(bytes)
@@ -599,9 +610,30 @@ const definition = Object.freeze({
       handlers: {
         'convert-rgba8': convertRgba8Handler(bytes, png),
         'set-text': setTextHandler(bytes, png, context.input),
+        /*
+         * Pixels written back as an 8-bit RGBA PNG. The pixels are exact; ancillary chunks (text,
+         * gamma, ICC) and the source's bit depth and palette are not carried over, which is what
+         * `preservesUnknownData: false` says.
+         */
+        transform: rasterEditContent({
+          codecId: 'modkit/image-png',
+          input: context.input,
+          bytes,
+          decode: async signal => ({
+            width: png.width,
+            height: png.height,
+            pixels: await decodeRgba8(bytes, png, signal),
+          }),
+          encode: (image, signal) => encodePng(image.width, image.height, image.pixels, signal),
+          fidelity: {
+            roundTrip: 'semantic',
+            preservesUnknownData: false,
+            notes: ['Written as 8-bit RGBA; text, gamma and colour-profile chunks are dropped.'],
+          },
+        }),
       },
       maxDecodedBytes: BigInt(png.width) * BigInt(png.height) * 4n,
-      unsupportedFeatures: [...(decodedAccess ? [] : ['decoded-region-provider']), 'pixel-editing'],
+      unsupportedFeatures: [...(decodedAccess ? [] : ['decoded-region-provider'])],
     }
   },
 })

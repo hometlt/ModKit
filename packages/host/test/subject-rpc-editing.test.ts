@@ -16,6 +16,7 @@ import {
   createEvidenceRegistry,
   createRawWriter,
   createSubjectEditing,
+  HOST_RAW_WRITER_EVIDENCE_RECORD,
   exposeSubjectRpc,
   type SubjectEditing,
   type SubjectRpcClient,
@@ -82,6 +83,8 @@ afterEach(async () => {
 async function servingPair(options: {
   readonly editable: boolean
   readonly operationPlan?: boolean
+  /** Make the operation plan lossy and answer the host's confirmation with this. */
+  readonly confirm?: boolean
 }): Promise<{
   client: SubjectRpcClient
   path: string
@@ -101,9 +104,15 @@ async function servingPair(options: {
   const open = createPathSubjectOpener({ subjects, roots: [scratch], grant: WRITE })
   const channel = new MessageChannel()
   const session = 's14-rpc'
+  const issued = new Map<string, string>()
   const real = exposeSubjectRpc({
     port: channel.port1 as unknown as MessagePortLike,
     session,
+    async confirm(plan) {
+      if (options.confirm !== true) return undefined
+      issued.set('host-token', plan.planId)
+      return 'host-token'
+    },
     async open(requested, signal) {
       const result = await open(requested, signal)
       if (result.snapshot.state === 'opened' && result.session !== undefined && options.editable) {
@@ -118,7 +127,15 @@ async function servingPair(options: {
             } as never,
             grant: WRITE,
             backendFor: () => backend,
-            evidenceFor: plan => createEvidenceRegistry().evidenceFor(plan),
+            evidenceFor: plan =>
+              createEvidenceRegistry([
+                HOST_RAW_WRITER_EVIDENCE_RECORD,
+                {
+                  ...HOST_RAW_WRITER_EVIDENCE_RECORD,
+                  claim: { roundTrip: 'lossy', preservesUnknownData: false },
+                },
+              ]).evidenceFor(plan),
+            confirmationMatches: (token, plan) => issued.get(token) === plan.planId,
             writer: createRawWriter(),
           }),
         )
@@ -150,7 +167,18 @@ async function servingPair(options: {
                       ],
                       provenance: { actor: 'user' },
                     })
-                    return { state: 'ok', output: { kind: 'edit-plan', plan }, diagnostics: [] }
+                    const output =
+                      options.confirm === undefined
+                        ? plan
+                        : {
+                            ...plan,
+                            fidelity: { roundTrip: 'lossy', preservesUnknownData: false },
+                          }
+                    return {
+                      state: 'ok',
+                      output: { kind: 'edit-plan', plan: output },
+                      diagnostics: [],
+                    }
                   },
                   async dispose() {},
                 })
@@ -181,6 +209,23 @@ async function servingPair(options: {
 }
 
 describe('editing over the subject RPC (S14)', () => {
+  it('prepares a lossy plan only after the host itself confirmed it', async () => {
+    for (const [confirm, state] of [
+      [true, 'ready'],
+      [false, 'rejected'],
+    ] as const) {
+      const { client, path } = await servingPair({ editable: true, operationPlan: true, confirm })
+      const opened = await client.open(path)
+      if (opened.state !== 'opened') throw new Error('open failed')
+      const result = await (await opened.session.operations()).invoke('fixture.rename', {})
+      if (result.state !== 'ok' || result.output.kind !== 'edit-plan') throw new Error('no plan')
+      const arm = await client.edit(opened.snapshot.sessionId)
+      const prepared = await arm.prepare(result.output.plan)
+      expect(prepared.state).toBe(state)
+      if (!confirm) expect(prepared).toMatchObject({ reason: 'confirmation-required' })
+    }
+  })
+
   it('commits an operation plan using its host-owned bytes and consumes it once', async () => {
     const { client, path } = await servingPair({ editable: true, operationPlan: true })
     const opened = await client.open(path)

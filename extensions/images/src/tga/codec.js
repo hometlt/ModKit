@@ -3,6 +3,8 @@ import {
   createRasterImageSource,
   createTreeDataSource,
 } from '@modkit/codec-kit'
+import { rasterEditContent, rasterEditContentOperation } from '../ops/raster-transforms.js'
+import { encodeTga } from './encode.js'
 
 const ID = 'modkit/tga'
 const FOOTER = Object.freeze([
@@ -225,6 +227,7 @@ function regionReader(bytes, tga) {
 const definition = Object.freeze({
   id: ID,
   format: Object.freeze({ id: 'tga', label: 'Truevision TGA', mediaType: 'image/x-tga' }),
+  operations: Object.freeze([rasterEditContentOperation('transform')]),
   async detect(prefix) {
     return plausibleHeader(prefix)
       ? { confidence: 0.9, kind: 'structure', note: 'tga-plausible-header' }
@@ -314,12 +317,34 @@ const definition = Object.freeze({
         'common.view/raster-image-source': raster,
       },
       ...(tga.decodedAccess ? { maxDecodedBytes: tga.decodedBytes } : {}),
+      handlers: {
+        /*
+         * Written back as uncompressed 32-bit RGBA: the pixels are exact, while RLE, the colour
+         * map, the image ID and the TGA 2.0 extension area are not carried over.
+         */
+        transform: rasterEditContent({
+          codecId: ID,
+          input: context.input,
+          bytes,
+          decode: async () => ({
+            width: tga.width,
+            height: tga.height,
+            pixels: decodePixels(bytes, tga),
+          }),
+          encode: encodeTga,
+          fidelity: {
+            roundTrip: 'semantic',
+            preservesUnknownData: false,
+            notes: [
+              'Written as uncompressed 32-bit RGBA; the image ID and extension area are dropped.',
+            ],
+          },
+        }),
+      },
       unsupportedFeatures: [
         ...(tga.decodedAccess ? [] : ['decoded-region-provider']),
         'color-mapped-pixel-decoding',
-        'tga-writing',
         'metadata-editing',
-        'pixel-editing',
       ],
     }
   },

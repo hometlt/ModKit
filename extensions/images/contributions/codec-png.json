@@ -11,30 +11,19 @@
       "variantId": "trusted-node",
       "entrypoint": "./src/png/codec.js",
       "target": {
-        "environments": [
-          "node"
-        ]
+        "environments": ["node"]
       },
       "executionProfile": "trusted-in-process",
-      "requestedPermissionClasses": [
-        "read-source",
-        "write-source"
-      ]
+      "requestedPermissionClasses": ["read-source", "write-source"]
     },
     {
       "variantId": "portable",
       "entrypoint": "./src/png/codec.js",
       "target": {
-        "environments": [
-          "browser-worker",
-          "node-worker"
-        ]
+        "environments": ["browser-worker", "node-worker"]
       },
       "executionProfile": "worker-brokered",
-      "requestedPermissionClasses": [
-        "read-source",
-        "write-source"
-      ]
+      "requestedPermissionClasses": ["read-source", "write-source"]
     }
   ],
   "spec": {
@@ -45,29 +34,13 @@
         "mediaType": "image/png"
       }
     ],
-    "roles": [
-      "media"
-    ],
+    "roles": ["media"],
     "sourceTopology": "single",
-    "artifactStages": [
-      "authored",
-      "compiled",
-      "runtime"
-    ],
-    "openIntents": [
-      "probe",
-      "inspect",
-      "thumbnail",
-      "full",
-      "export"
-    ],
+    "artifactStages": ["authored", "compiled", "runtime"],
+    "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
     "match": {
-      "extensions": [
-        "png"
-      ],
-      "mediaTypes": [
-        "image/png"
-      ],
+      "extensions": ["png"],
+      "mediaTypes": ["image/png"],
       "signatures": [
         {
           "from": "start",
@@ -114,45 +87,29 @@
         "id": "view.inspect",
         "handlerId": "inspect",
         "mutatesSource": false,
-        "requiredPermissions": [
-          "read-source"
-        ],
-        "outputKinds": [
-          "json"
-        ]
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
       },
       {
         "id": "asset.validate",
         "handlerId": "validate",
         "mutatesSource": false,
-        "requiredPermissions": [
-          "read-source"
-        ],
-        "outputKinds": [
-          "none"
-        ]
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
       },
       {
         "id": "export.raw",
         "handlerId": "export-raw",
         "mutatesSource": false,
-        "requiredPermissions": [
-          "read-source"
-        ],
-        "outputKinds": [
-          "bytes"
-        ]
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
       },
       {
         "id": "export.convert",
         "handlerId": "convert-rgba8",
         "mutatesSource": false,
-        "requiredPermissions": [
-          "read-source"
-        ],
-        "outputKinds": [
-          "bytes"
-        ],
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"],
         "inputSchema": {
           "$ref": "modkit://images/png-export-convert.v1",
           "document": {
@@ -315,10 +272,7 @@
         "id": "edit.field",
         "handlerId": "set-text",
         "mutatesSource": true,
-        "requiredPermissions": [
-          "read-source",
-          "write-source"
-        ],
+        "requiredPermissions": ["read-source", "write-source"],
         "inputSchema": {
           "$ref": "modkit://image-png/edit-field.v1",
           "document": {
@@ -339,9 +293,7 @@
                       "kind": "text",
                       "pattern": "^[^\\u0000]{1,79}$"
                     },
-                    "inputPath": [
-                      "key"
-                    ],
+                    "inputPath": ["key"],
                     "required": true,
                     "initial": "Description",
                     "source": "entry-key",
@@ -353,9 +305,7 @@
                     "type": {
                       "kind": "text"
                     },
-                    "inputPath": [
-                      "value"
-                    ],
+                    "inputPath": ["value"],
                     "initial": "set from the Modkit inspector",
                     "source": "entry-value",
                     "description": "Latin-1, no NUL"
@@ -365,9 +315,105 @@
             ]
           }
         },
-        "outputKinds": [
-          "edit-plan"
-        ]
+        "outputKinds": ["edit-plan"]
+      },
+      {
+        "id": "edit.content",
+        "handlerId": "transform",
+        "mutatesSource": true,
+        "requiredPermissions": ["read-source", "write-source"],
+        "inputSchema": {
+          "$ref": "modkit://images/raster-edit-content.v1",
+          "document": {
+            "schemaVersion": 1,
+            "forms": [
+              {
+                "id": "raster-color-key",
+                "label": "Make one colour transparent",
+                "summary": "Every pixel within the tolerance of the colour becomes fully transparent.",
+                "baseInput": {
+                  "transform": "color-key"
+                },
+                "fields": [
+                  {
+                    "key": "r",
+                    "label": "Red",
+                    "type": {
+                      "kind": "number",
+                      "integer": true,
+                      "min": 0,
+                      "max": 255
+                    },
+                    "inputPath": ["target", "r"],
+                    "required": true,
+                    "initial": 255
+                  },
+                  {
+                    "key": "g",
+                    "label": "Green",
+                    "type": {
+                      "kind": "number",
+                      "integer": true,
+                      "min": 0,
+                      "max": 255
+                    },
+                    "inputPath": ["target", "g"],
+                    "required": true,
+                    "initial": 0
+                  },
+                  {
+                    "key": "b",
+                    "label": "Blue",
+                    "type": {
+                      "kind": "number",
+                      "integer": true,
+                      "min": 0,
+                      "max": 255
+                    },
+                    "inputPath": ["target", "b"],
+                    "required": true,
+                    "initial": 255
+                  },
+                  {
+                    "key": "tolerance",
+                    "label": "Tolerance",
+                    "type": {
+                      "kind": "number",
+                      "integer": true,
+                      "min": 0,
+                      "max": 255
+                    },
+                    "inputPath": ["tolerance"],
+                    "required": true,
+                    "initial": 0
+                  }
+                ]
+              },
+              {
+                "id": "raster-rounded-alpha",
+                "label": "Round the alpha corners",
+                "summary": "Cuts the corners to transparent.",
+                "baseInput": {
+                  "transform": "rounded-alpha"
+                },
+                "fields": [
+                  {
+                    "key": "radius",
+                    "label": "Radius",
+                    "type": {
+                      "kind": "number",
+                      "min": 0
+                    },
+                    "inputPath": ["radius"],
+                    "required": true,
+                    "initial": 8
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "outputKinds": ["edit-plan"]
       }
     ],
     "traitDeclarations": [
@@ -406,6 +452,23 @@
       "maxNodes": 100000,
       "maxScalarBytes": 104857600,
       "maxDiagnostics": 1000
-    }
+    },
+    "fidelityEvidence": [
+      {
+        "formatId": "png",
+        "representationId": "raster-metadata",
+        "claim": {
+          "roundTrip": "semantic",
+          "preservesUnknownData": false
+        },
+        "evidenceId": "png-edit-content-v1",
+        "corpusId": "modkit/extensions/images/test/raster-edit-content.test.ts",
+        "corpusDigest": "none:proof-suite",
+        "conformanceProfile": "modkit/codec-contribution-v1",
+        "optionsFingerprint": "options:replace-pixels",
+        "inputClass": "png-rgba8",
+        "provenAt": "2026-09-18T00:00:00Z"
+      }
+    ]
   }
 }

@@ -4294,6 +4294,17 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     return answer === discard ? 'discard' : 'cancel'
   }
 
+  /** A lossy save is the person's call: say what the plan says it loses, and ask once. */
+  const confirmLossyWrite = async (notes: readonly string[]): Promise<boolean> => {
+    const save = localizer.text('vscode.edit.lossySave')
+    const answer = await vscode.window.showWarningMessage(
+      localizer.text('vscode.edit.lossyConfirm'),
+      { modal: true, detail: notes.join(' ') },
+      save,
+    )
+    return answer === save
+  }
+
   // ---------------------------------------------------------------- problems
   /*
    * Subject diagnostics on the editor's own surface.
@@ -5319,6 +5330,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             },
           }),
       confirmClose,
+      confirmLossyWrite,
       ...(openPath === undefined
         ? {}
         : {

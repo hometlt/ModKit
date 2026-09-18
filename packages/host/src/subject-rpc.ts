@@ -376,6 +376,13 @@ export interface ExposeSubjectRpcOptions {
    * `edit()` refuse, which is the honest answer — not a save button that fails at the end.
    */
   readonly editing?: (sessionId: string) => SubjectEditing | undefined
+  /**
+   * Host policy for a lossy (or non-round-tripping) write: ask the person in the host's own UI and
+   * answer with a token the editing coordinator's `confirmationMatches` accepts, or `undefined`
+   * when they decline. Absent, such a plan is refused as `confirmation-required`. The consumer
+   * never supplies a token itself — a page that could would be confirming on the person's behalf.
+   */
+  readonly confirm?: (plan: AssetEditPlan, signal?: AbortSignal) => Promise<string | undefined>
   /** Module identity the loader accepts (defaults to the generic root URL). */
   readonly moduleUrl?: string
   readonly onDiagnostic?: (diagnostic: { code: string; message: string }) => void
@@ -634,8 +641,12 @@ export function exposeSubjectRpc(options: ExposeSubjectRpcOptions): SubjectRpcEx
             kind: 'edit-plan',
             plan: issued,
           })
+          const lossy =
+            validated.fidelity.roundTrip === 'lossy' || validated.fidelity.roundTrip === 'none'
+          const confirmationToken = lossy ? await options.confirm?.(validated, signal) : undefined
           const result = await editing.coordinator.prepare(validated, {
             grant: editing.grantSnapshot,
+            ...(confirmationToken === undefined ? {} : { confirmationToken }),
             ...(signal === undefined ? {} : { signal }),
           })
           if (result.state === 'ready') {

@@ -22,6 +22,7 @@
  * `modkit.extensions` setting must not take the editor's Modkit surface down with it.
  */
 
+import { randomUUID } from 'node:crypto'
 import { readFile, readdir, stat } from 'node:fs/promises'
 import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { basename, isAbsolute, join, relative, resolve } from 'node:path'
@@ -633,6 +634,11 @@ export interface VsCodeServeOptions {
   readonly mapPreviewResourcePlanResolver?: MapPreviewResourcePlanResolver
   /** Localizes host-owned diagnostics before they cross into VS Code's Problems UI. */
   readonly localizer?: UiLocalizer
+  /**
+   * Ask before a lossy write (a block-compressed texture re-encoded, say); `notes` are the plan's
+   * own words on what is lost. Absent, such a save is refused as `confirmation-required`.
+   */
+  readonly confirmLossyWrite?: (notes: readonly string[]) => Promise<boolean>
   /** Confirm discarding unsaved work; a webview iframe cannot show a modal of its own. */
   readonly confirmClose?: (message: string, savable: boolean) => Promise<CloseAnswer>
   /** Open a file in an editor of its own kind (a gallery pick). */
@@ -967,6 +973,11 @@ function serveVsCode(
    * again. A bound keeps a very long session from growing without limit; the oldest arm is the one
    * whose tab was opened longest ago.
    */
+  /**
+   * Tokens this host issued after the person confirmed a lossy write, by the plan they confirmed.
+   * Kept, not consumed: a redo of that write presents the same token for the same plan.
+   */
+  const lossyConfirmations = new Map<string, string>()
   const rememberEditing = (sessionId: string, editing: SubjectEditing): void => {
     editingBySession.set(sessionId, editing)
     while (editingBySession.size > MAXIMUM_LIVE_EDITING_ARMS) {
@@ -1264,6 +1275,7 @@ function serveVsCode(
       const editing = createSubjectEditing({
         opened,
         grant: editGrant,
+        confirmationMatches: (token, plan) => lossyConfirmations.get(token) === plan.planId,
         backendFor: () => editingBackend,
         evidenceFor: plan => sessionEvidence.evidenceFor(plan),
         writer: selectedWriter,
@@ -1320,6 +1332,12 @@ function serveVsCode(
     framePort: bridge.framePort,
     session: options.session,
     open: openSubject,
+    confirm: async plan => {
+      if (!(await options.confirmLossyWrite?.(plan.fidelity.notes ?? []))) return undefined
+      const token = randomUUID()
+      lossyConfirmations.set(token, plan.planId)
+      return token
+    },
     navigate: async ({ parent, target }, signal) => {
       const diagnostics: Diagnostic[] = []
       const nested = await openNestedSubjectRef({

@@ -249,6 +249,8 @@ const EN_MESSAGES = Object.freeze({
     '{unsupported} of {declared} mutating operation(s) declared; none can be driven here',
   'vscode.edit.counts': '{forms} form(s) over {declared} mutating operation(s)',
   'vscode.edit.fidelityLoss': 'This rewrite may not preserve unaccounted format bytes',
+  'vscode.edit.lossyConfirm': 'Saving re-encodes this file and loses quality. Save anyway?',
+  'vscode.edit.lossySave': 'Save',
   'vscode.edit.fidelityNotes': 'Writer fidelity: {notes}',
   'vscode.edit.required': '{field} is required',
   'vscode.edit.unsupportedHandler': 'this host cannot construct the input for «{handler}» yet',
@@ -280,7 +282,7 @@ const EN_MESSAGES = Object.freeze({
   'vscode.edit.refusal.fidelityUnproven':
     'no evidence backs the writer fidelity claim for this change',
   'vscode.edit.refusal.confirmationRequired':
-    'a lossy write needs confirmation this host does not request',
+    'the lossy write was not confirmed',
   'vscode.edit.refusal.payloadUnavailable': 'the edited bytes never reached the writer',
 
   'vscode.edit.form.pngSetText.label': 'Set a PNG text field',
@@ -569,6 +571,8 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
     'Объявлено операций изменения: {declared}; недоступно здесь: {unsupported}',
   'vscode.edit.counts': 'Форм: {forms}; операций изменения: {declared}',
   'vscode.edit.fidelityLoss': 'При записи могут потеряться неизвестные байты формата',
+  'vscode.edit.lossyConfirm': 'Сохранение перекодирует файл с потерей качества. Сохранить?',
+  'vscode.edit.lossySave': 'Сохранить',
   'vscode.edit.fidelityNotes': 'Точность записи: {notes}',
   'vscode.edit.required': 'Поле «{field}» обязательно',
   'vscode.edit.unsupportedHandler': 'Хост пока не умеет собирать данные для «{handler}»',
@@ -596,7 +600,7 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.edit.refusal.guaranteeUnachievable': 'хост не может обещать достаточно безопасную запись',
   'vscode.edit.refusal.fidelityUnproven': 'точность записи не подтверждена доказательствами',
   'vscode.edit.refusal.confirmationRequired':
-    'запись с потерями требует подтверждения, которого этот хост не запрашивает',
+    'запись с потерями не подтверждена',
   'vscode.edit.refusal.payloadUnavailable': 'изменённые байты не дошли до модуля записи',
 
   'vscode.edit.form.pngSetText.label': 'Задать текстовое поле PNG',

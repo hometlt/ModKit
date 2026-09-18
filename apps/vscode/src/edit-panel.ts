@@ -114,7 +114,11 @@ export function createVsCodePixelSaver(
     const ports = options.portsFor(descriptor)
     if (ports === undefined)
       return { state: 'refused', reason: localizer.text('vscode.edit.noArm') }
-    const handlerId = editOffer(descriptor, { editable: true, localizer }).forms[0]?.handlerId
+    // Every writable raster codec takes painted pixels as `edit.content` `replace`; its other
+    // operations (a PNG text field, say) are not a way to save pixels.
+    const handlerId = descriptorOperations(descriptor).find(
+      item => item.id === 'edit.content' && item.mutatesSource,
+    )?.handlerId
     if (handlerId === undefined) {
       return { state: 'refused', reason: localizer.text('vscode.edit.nothingHere') }
     }

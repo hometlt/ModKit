@@ -18,6 +18,7 @@
  * checking nowhere means a modder gets a wrong texture.
  */
 
+import { editPlanFromInput, replaceBytes } from '@modkit/codec-kit'
 import { ENCODABLE_FORMATS, chooseDdsFormatForImage, encodeDds } from '../dds/encode.js'
 import { encodePng } from '../writers/png-encoder.js'
 import {
@@ -372,6 +373,78 @@ export const PNG_EXPORT_SCHEMA = Object.freeze({
     forms: Object.freeze([
       preset('png', 'PNG', 'Writes the base image as a PNG file.', { target: 'png' }, PNG_TARGET),
       ...ddsPresets(),
+    ]),
+  }),
+})
+
+/**
+ * `edit.content` for a codec that writes its own format back by re-encoding.
+ *
+ * One named transform over the decoded image — `replace` for the pixels a viewer painted, or any
+ * other entry of `TRANSFORMS` — then the codec's own `encode`, returned as a whole-file replace
+ * plan. The fidelity is the codec's to state: it knows what its encoder keeps and what it drops.
+ * `decode` is only asked for when a transform reads the current pixels; `replace` does not.
+ */
+export function rasterEditContent({ codecId, input, bytes, decode, encode, fidelity }) {
+  return async (value, options) => {
+    const request = value ?? {}
+    const transform = transformNamed(request.transform)
+    const current = request.transform === 'replace' ? undefined : await decode(options?.signal)
+    const encoded = await encode(transform.apply(current, request), options?.signal)
+    return {
+      kind: 'edit-plan',
+      plan: editPlanFromInput(input, {
+        planId: `${codecId}:${input.revisions.revision}:${request.transform}`,
+        edits: [replaceBytes(0, bytes.byteLength, encoded, transform.label)],
+        fidelity,
+      }),
+    }
+  }
+}
+
+/** The `edit.content` operation of a re-encoding codec; its forms are the generic transforms. */
+export const rasterEditContentOperation = handlerId =>
+  Object.freeze({
+    id: 'edit.content',
+    handlerId,
+    mutatesSource: true,
+    requiredPermissions: Object.freeze(['read-source', 'write-source']),
+    inputSchema: RASTER_EDIT_CONTENT_SCHEMA,
+    outputKinds: Object.freeze(['edit-plan']),
+  })
+
+/**
+ * The forms such a codec offers. Resizing is not among them: the viewer's size item does it, and
+ * the painted result arrives as `replace` like every other pixel edit.
+ */
+export const RASTER_EDIT_CONTENT_SCHEMA = Object.freeze({
+  $ref: 'modkit://images/raster-edit-content.v1',
+  document: Object.freeze({
+    schemaVersion: 1,
+    forms: Object.freeze([
+      form(
+        'raster-color-key',
+        'color-key',
+        'Make one colour transparent',
+        'Every pixel within the tolerance of the colour becomes fully transparent.',
+        [
+          numberField('r', 'Red', ['target', 'r'], 255, { integer: true, min: 0, max: 255 }),
+          numberField('g', 'Green', ['target', 'g'], 0, { integer: true, min: 0, max: 255 }),
+          numberField('b', 'Blue', ['target', 'b'], 255, { integer: true, min: 0, max: 255 }),
+          numberField('tolerance', 'Tolerance', ['tolerance'], 0, {
+            integer: true,
+            min: 0,
+            max: 255,
+          }),
+        ],
+      ),
+      form(
+        'raster-rounded-alpha',
+        'rounded-alpha',
+        'Round the alpha corners',
+        'Cuts the corners to transparent.',
+        [numberField('radius', 'Radius', ['radius'], 8, { min: 0 })],
+      ),
     ]),
   }),
 })

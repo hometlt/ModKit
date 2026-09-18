@@ -12,30 +12,19 @@
       "variantId": "trusted-node",
       "entrypoint": "./src/dds/codec.js",
       "target": {
-        "environments": [
-          "node"
-        ]
+        "environments": ["node"]
       },
       "executionProfile": "trusted-in-process",
-      "requestedPermissionClasses": [
-        "read-source",
-        "write-source"
-      ]
+      "requestedPermissionClasses": ["read-source", "write-source"]
     },
     {
       "variantId": "portable",
       "entrypoint": "./src/dds/codec.js",
       "target": {
-        "environments": [
-          "browser-worker",
-          "node-worker"
-        ]
+        "environments": ["browser-worker", "node-worker"]
       },
       "executionProfile": "worker-brokered",
-      "requestedPermissionClasses": [
-        "read-source",
-        "write-source"
-      ]
+      "requestedPermissionClasses": ["read-source", "write-source"]
     }
   ],
   "limitations": [
@@ -56,26 +45,12 @@
         "label": "DirectDraw Surface"
       }
     ],
-    "roles": [
-      "media"
-    ],
+    "roles": ["media"],
     "sourceTopology": "single",
-    "artifactStages": [
-      "authored",
-      "compiled",
-      "runtime"
-    ],
-    "openIntents": [
-      "probe",
-      "inspect",
-      "thumbnail",
-      "full",
-      "export"
-    ],
+    "artifactStages": ["authored", "compiled", "runtime"],
+    "openIntents": ["probe", "inspect", "thumbnail", "full", "export"],
     "match": {
-      "extensions": [
-        "dds"
-      ],
+      "extensions": ["dds"],
       "signatures": [
         {
           "from": "start",
@@ -122,46 +97,29 @@
         "id": "view.inspect",
         "handlerId": "inspect",
         "mutatesSource": false,
-        "requiredPermissions": [
-          "read-source"
-        ],
-        "outputKinds": [
-          "json"
-        ]
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["json"]
       },
       {
         "id": "asset.validate",
         "handlerId": "validate",
         "mutatesSource": false,
-        "requiredPermissions": [
-          "read-source"
-        ],
-        "outputKinds": [
-          "none"
-        ]
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["none"]
       },
       {
         "id": "export.raw",
         "handlerId": "export-raw",
         "mutatesSource": false,
-        "requiredPermissions": [
-          "read-source"
-        ],
-        "outputKinds": [
-          "bytes"
-        ]
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"]
       },
       {
         "id": "edit.content",
         "handlerId": "transform",
         "mutatesSource": true,
-        "requiredPermissions": [
-          "read-source",
-          "write-source"
-        ],
-        "outputKinds": [
-          "edit-plan"
-        ],
+        "requiredPermissions": ["read-source", "write-source"],
+        "outputKinds": ["edit-plan"],
         "inputSchema": {
           "$ref": "modkit://images/dds-edit-content.v1",
           "document": {
@@ -207,9 +165,7 @@
                         }
                       ]
                     },
-                    "inputPath": [
-                      "format"
-                    ],
+                    "inputPath": ["format"],
                     "initial": "dxt1"
                   }
                 ]
@@ -230,9 +186,7 @@
                       "integer": true,
                       "min": 1
                     },
-                    "inputPath": [
-                      "width"
-                    ],
+                    "inputPath": ["width"],
                     "required": true,
                     "initial": 64
                   },
@@ -244,9 +198,7 @@
                       "integer": true,
                       "min": 1
                     },
-                    "inputPath": [
-                      "height"
-                    ],
+                    "inputPath": ["height"],
                     "required": true,
                     "initial": 64
                   },
@@ -282,9 +234,7 @@
                         }
                       ]
                     },
-                    "inputPath": [
-                      "format"
-                    ],
+                    "inputPath": ["format"],
                     "initial": "keep"
                   }
                 ]
@@ -306,10 +256,7 @@
                       "min": 0,
                       "max": 255
                     },
-                    "inputPath": [
-                      "target",
-                      "r"
-                    ],
+                    "inputPath": ["target", "r"],
                     "required": true,
                     "initial": 255
                   },
@@ -322,10 +269,7 @@
                       "min": 0,
                       "max": 255
                     },
-                    "inputPath": [
-                      "target",
-                      "g"
-                    ],
+                    "inputPath": ["target", "g"],
                     "required": true,
                     "initial": 0
                   },
@@ -338,10 +282,7 @@
                       "min": 0,
                       "max": 255
                     },
-                    "inputPath": [
-                      "target",
-                      "b"
-                    ],
+                    "inputPath": ["target", "b"],
                     "required": true,
                     "initial": 255
                   },
@@ -354,9 +295,7 @@
                       "min": 0,
                       "max": 255
                     },
-                    "inputPath": [
-                      "tolerance"
-                    ],
+                    "inputPath": ["tolerance"],
                     "required": true,
                     "initial": 0
                   },
@@ -392,9 +331,7 @@
                         }
                       ]
                     },
-                    "inputPath": [
-                      "format"
-                    ],
+                    "inputPath": ["format"],
                     "initial": "keep"
                   }
                 ]
@@ -414,9 +351,7 @@
                       "kind": "number",
                       "min": 0
                     },
-                    "inputPath": [
-                      "radius"
-                    ],
+                    "inputPath": ["radius"],
                     "required": true,
                     "initial": 8
                   },
@@ -452,9 +387,7 @@
                         }
                       ]
                     },
-                    "inputPath": [
-                      "format"
-                    ],
+                    "inputPath": ["format"],
                     "initial": "keep"
                   }
                 ]
@@ -467,12 +400,8 @@
         "id": "export.convert",
         "handlerId": "convert",
         "mutatesSource": false,
-        "requiredPermissions": [
-          "read-source"
-        ],
-        "outputKinds": [
-          "bytes"
-        ],
+        "requiredPermissions": ["read-source"],
+        "outputKinds": ["bytes"],
         "inputSchema": {
           "$ref": "modkit://images/dds-export-convert.v1",
           "document": {
@@ -626,6 +555,23 @@
       "maxNodes": 100000,
       "maxScalarBytes": 104857600,
       "maxDiagnostics": 1000
-    }
+    },
+    "fidelityEvidence": [
+      {
+        "formatId": "dds",
+        "representationId": "raster-metadata",
+        "claim": {
+          "roundTrip": "lossy",
+          "preservesUnknownData": false
+        },
+        "evidenceId": "dds-edit-content-v1",
+        "corpusId": "modkit/extensions/images/test/raster-edit-content.test.ts",
+        "corpusDigest": "none:proof-suite",
+        "conformanceProfile": "modkit/codec-contribution-v1",
+        "optionsFingerprint": "options:replace-pixels",
+        "inputClass": "dds-rgba8",
+        "provenAt": "2026-09-18T00:00:00Z"
+      }
+    ]
   }
 }
