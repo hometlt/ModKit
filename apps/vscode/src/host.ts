@@ -691,6 +691,8 @@ export interface VsCodeServeOptions {
    */
   readonly exportFiles?: (
     files: readonly { readonly name: string; readonly bytes: Uint8Array }[],
+    /** The granted subject the files were made from: write beside it (inside it, for a member). */
+    beside?: string,
   ) => Promise<
     | { readonly state: 'written'; readonly names: readonly string[] }
     | { readonly state: 'refused'; readonly reason: string }
@@ -1640,8 +1642,17 @@ function serveVsCode(
             return { state: 'refused', reason: `«${file.name}» is larger than the export ceiling` }
           }
         }
+        const beside =
+          request.beside !== undefined &&
+          withinRoots(
+            options.roots().map(root => resolve(root)),
+            splitContainer(containerOfSubject(request.beside)).file,
+          )
+            ? request.beside
+            : undefined
         return await options.exportFiles(
           files.map(file => ({ name: file.name, bytes: file.bytes })),
+          beside,
         )
       }
       case 'workspace-documents': {

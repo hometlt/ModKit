@@ -598,6 +598,7 @@ async function mount(
          * itself. The page sends bytes and a leaf name; the extension host picks the folder.
          */
         async exportFiles(files) {
+          const beside = focused ?? snapshot.openPath
           const answer = await bridge.request({
             op: 'export-files',
             files: files.map(file => ({
@@ -605,6 +606,7 @@ async function mount(
               mediaType: file.mediaType,
               bytes: file.bytes,
             })),
+            ...(beside === undefined ? {} : { beside }),
           })
           const outcome = answer as { readonly state?: unknown; readonly names?: unknown }
           if (outcome?.state === 'written' && Array.isArray(outcome.names)) {

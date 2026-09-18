@@ -218,6 +218,8 @@ export type ShellRequest =
         readonly mediaType: string
         readonly bytes: Uint8Array
       }[]
+      /** The subject the files were made from; a conversion is written beside it and opened. */
+      readonly beside?: string
     }
   | { readonly op: 'set-extension'; readonly index: number; readonly enabled: boolean }
   | { readonly op: 'remove-extension'; readonly index: number }

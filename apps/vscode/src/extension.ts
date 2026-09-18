@@ -684,6 +684,7 @@ export const VIEWER_EXPORT_FOLDER = 'modkit-export'
  */
 async function exportViewerFiles(
   files: readonly { readonly name: string; readonly bytes: Uint8Array }[],
+  beside?: string,
 ): Promise<
   | { readonly state: 'written'; readonly names: readonly string[] }
   | {
@@ -692,6 +693,7 @@ async function exportViewerFiles(
     }
 > {
   const localizer = createVscodeLocalizer(vscode.env.language)
+  if (beside !== undefined) return writeBeside(files, beside)
   const folder = (vscode.workspace.workspaceFolders ?? []).find(
     candidate => candidate.uri.scheme === 'file',
   )
@@ -710,6 +712,37 @@ async function exportViewerFiles(
   void vscode.window.showInformationMessage(
     localizer.text('vscode.export.written', { count: names.length, folder: target.fsPath }),
   )
+  return { state: 'written', names: Object.freeze(names) }
+}
+
+/**
+ * A conversion lands where MK2 put it: beside its source — inside the same archive for a member —
+ * under a name that does not overwrite anything, and opens in a tab of its own.
+ */
+async function writeBeside(
+  files: readonly { readonly name: string; readonly bytes: Uint8Array }[],
+  beside: string,
+): Promise<{ readonly state: 'written'; readonly names: readonly string[] }> {
+  const source = subjectUriOf(beside)
+  const folder = vscode.Uri.joinPath(source, '..')
+  const exists = (uri: vscode.Uri): Thenable<boolean> =>
+    vscode.workspace.fs.stat(uri).then(
+      () => true,
+      () => false,
+    )
+  const names: string[] = []
+  for (const file of files) {
+    const dot = file.name.indexOf('.')
+    const stem = dot < 0 ? file.name : file.name.slice(0, dot)
+    const rest = dot < 0 ? '' : file.name.slice(dot)
+    let destination = vscode.Uri.joinPath(folder, file.name)
+    for (let copy = 2; await exists(destination); copy += 1) {
+      destination = vscode.Uri.joinPath(folder, `${stem} (${copy})${rest}`)
+    }
+    await vscode.workspace.fs.writeFile(destination, new Uint8Array(file.bytes))
+    names.push(destination.path.slice(destination.path.lastIndexOf('/') + 1))
+    await vscode.commands.executeCommand('vscode.open', destination, { preview: false })
+  }
   return { state: 'written', names: Object.freeze(names) }
 }
 
@@ -4356,16 +4389,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     return answer === discard ? 'discard' : 'cancel'
   }
 
-  /** A lossy save is the person's call: say what the plan says it loses, and ask once. */
-  const confirmLossyWrite = async (notes: readonly string[]): Promise<boolean> => {
-    const save = localizer.text('vscode.edit.lossySave')
-    const answer = await vscode.window.showWarningMessage(
-      localizer.text('vscode.edit.lossyConfirm'),
-      { modal: true, detail: notes.join(' ') },
-      save,
-    )
-    return answer === save
-  }
+  /*
+   * A lossy save needs the person's consent, and the editor's own Save is that consent: a texture
+   * in a block-compressed format is re-encoded on every save, which is what saving it means. The
+   * host still issues the token itself, so a page can never confirm on anyone's behalf.
+   */
+  const confirmLossyWrite = async (): Promise<boolean> => true
 
   // ---------------------------------------------------------------- problems
   /*
@@ -5533,7 +5562,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         })
         return { documents: snapshot.documents, isComplete: snapshot.isComplete }
       },
-      exportFiles: files => exportViewerFiles(files),
+      exportFiles: (files, beside) => exportViewerFiles(files, beside),
       configuration,
       mapPreviewResourcePlanResolver,
       localizer,

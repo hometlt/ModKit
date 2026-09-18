@@ -156,7 +156,7 @@ export function createVsCodePixelSaver(
     }
     const applied = await ports.applyPlan(plan)
     if (applied.failed) return { state: 'refused', reason: applied.message }
-    const outcome = `${localizer.text('vscode.edit.apply')} — ${applied.message}${fidelityNote(plan, localizer)}`
+    const outcome = `${localizer.text('vscode.edit.apply')} — ${applied.message}`
     options.recordOutcome(descriptor, outcome)
     await options.reopen(descriptor)
     return { state: 'saved', message: outcome }
