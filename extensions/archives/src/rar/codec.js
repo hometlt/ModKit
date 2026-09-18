@@ -1,24 +1,9 @@
 import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkit/codec-kit'
+import { crc32 } from '@modkit/codec-kit/checksum'
 
 const ID = 'modkit/rar'
 const SIGNATURE = Object.freeze([0x52, 0x61, 0x72, 0x21, 0x1a, 0x07, 0x00])
 const latin1 = new TextDecoder('latin1')
-
-const CRC_TABLE = (() => {
-  const table = new Uint32Array(256)
-  for (let index = 0; index < 256; index += 1) {
-    let value = index
-    for (let bit = 0; bit < 8; bit += 1) value = (value >>> 1) ^ (value & 1 ? 0xedb88320 : 0)
-    table[index] = value >>> 0
-  }
-  return table
-})()
-
-function crc32(bytes) {
-  let crc = 0xffffffff
-  for (const byte of bytes) crc = (crc >>> 8) ^ (CRC_TABLE[(crc ^ byte) & 0xff] ?? 0)
-  return (crc ^ 0xffffffff) >>> 0
-}
 
 function u16(bytes, offset, label) {
   if (offset < 0 || offset + 2 > bytes.byteLength) throw new TypeError(`RAR4 ${label} is truncated`)

@@ -1,20 +1,16 @@
 /**
- * The raster authoring operations the legacy MK2 image codec shipped beside its DDS decoder.
+ * The raster authoring operations MK2 shipped beside its DDS codec, shared by every image codec.
  *
- * Ported verbatim in behaviour from
- * `references/modkitmk2/extensions/common/images/codecs/dds/src/ops.ts`: `resizeRgba`,
- * `combineNormalSpecular`, `applyRoundedAlpha`
- * and `applyColorKeyTransparency`. Every one takes and returns `{ width, height, pixels }` with
- * `pixels` in top-left-first RGBA8 order, and none of them mutates its input.
- *
- * Two of these encode StarCraft II's texture conventions rather than anything general — the
- * channel layout SC2 expects from a normal map, and the framed, rounded button icon its UI uses.
- * They are here because the port carries everything MK2 had; which extension should own a
- * game-specific authoring operation is a placement question for phase B, not a reason to leave the
- * capability behind.
+ * Ported verbatim in behaviour from `references/modkitmk2/extensions/common/images/codecs/dds/src/ops.ts`
+ * (`resizeRgba`, `combineNormalSpecular`, `applyRoundedAlpha`, `applyColorKeyTransparency`), by
+ * way of MK3's `extensions/images/src/ops/raster-ops.js`. Every one takes and returns
+ * `{ width, height, pixels }` in top-left-first RGBA8 order, and none of them mutates its input.
  */
+import type { RgbaImage } from '../texture/types.js'
 
-function checked(image) {
+const at = (pixels: Uint8Array, index: number): number => pixels[index] as number
+
+function checked(image: RgbaImage): RgbaImage {
   if (image.pixels.length !== image.width * image.height * 4) {
     throw new TypeError(
       `image: expected ${image.width * image.height * 4} bytes, got ${image.pixels.length}`,
@@ -30,7 +26,7 @@ function checked(image) {
  * the identity and an upscale does not shift the image by half a texel. Resizing to the same
  * dimensions short-circuits to a copy.
  */
-export function resizeRgba(image, width, height) {
+export function resizeRgba(image: RgbaImage, width: number, height: number): RgbaImage {
   checked(image)
   if (width === image.width && height === image.height) {
     return { width, height, pixels: image.pixels.slice() }
@@ -50,10 +46,10 @@ export function resizeRgba(image, width, height) {
       const fx = sourceX - x0
       const target = (y * width + x) * 4
       for (let channel = 0; channel < 4; channel += 1) {
-        const p00 = image.pixels[(y0 * image.width + x0) * 4 + channel]
-        const p10 = image.pixels[(y0 * image.width + x1) * 4 + channel]
-        const p01 = image.pixels[(y1 * image.width + x0) * 4 + channel]
-        const p11 = image.pixels[(y1 * image.width + x1) * 4 + channel]
+        const p00 = at(image.pixels, (y0 * image.width + x0) * 4 + channel)
+        const p10 = at(image.pixels, (y0 * image.width + x1) * 4 + channel)
+        const p01 = at(image.pixels, (y1 * image.width + x0) * 4 + channel)
+        const p11 = at(image.pixels, (y1 * image.width + x1) * 4 + channel)
         out[target + channel] = Math.round(
           p00 * (1 - fx) * (1 - fy) + p10 * fx * (1 - fy) + p01 * (1 - fx) * fy + p11 * fx * fy,
         )
@@ -69,7 +65,7 @@ export function resizeRgba(image, width, height) {
  * The specular image is resampled to the normal map's size when they differ; only its blue channel
  * is read, which is what the legacy pipeline did with greyscale specular art.
  */
-export function combineNormalSpecular(normal, specular) {
+export function combineNormalSpecular(normal: RgbaImage, specular: RgbaImage): RgbaImage {
   checked(normal)
   checked(specular)
   const scaled =
@@ -77,12 +73,20 @@ export function combineNormalSpecular(normal, specular) {
       ? specular
       : resizeRgba(specular, normal.width, normal.height)
   const out = normal.pixels.slice()
-  for (let index = 0; index < out.length; index += 4) out[index + 2] = scaled.pixels[index + 2]
+  for (let index = 0; index < out.length; index += 4) {
+    out[index + 2] = at(scaled.pixels, index + 2)
+  }
   return { width: normal.width, height: normal.height, pixels: out }
 }
 
 /** Coverage of one pixel by a rounded rectangle: 1 inside, 0 outside, antialiased on the edge. */
-function roundedRectCoverage(x, y, width, height, radius) {
+function roundedRectCoverage(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+): number {
   const px = x + 0.5
   const py = y + 0.5
   const cx = px < radius ? radius : px > width - radius ? width - radius : px
@@ -96,29 +100,43 @@ function roundedRectCoverage(x, y, width, height, radius) {
 }
 
 /** Multiply alpha by a rounded-rectangle mask, leaving colour untouched. */
-export function applyRoundedAlpha(image, radius) {
+export function applyRoundedAlpha(image: RgbaImage, radius: number): RgbaImage {
   checked(image)
   const out = image.pixels.slice()
   for (let y = 0; y < image.height; y += 1) {
     for (let x = 0; x < image.width; x += 1) {
       const coverage = roundedRectCoverage(x, y, image.width, image.height, radius)
       const alpha = (y * image.width + x) * 4 + 3
-      out[alpha] = Math.round(out[alpha] * coverage)
+      out[alpha] = Math.round(at(out, alpha) * coverage)
     }
   }
   return { width: image.width, height: image.height, pixels: out }
 }
 
-export function applyColorKeyTransparency(image, options) {
+export interface Rgba {
+  readonly r: number
+  readonly g: number
+  readonly b: number
+  readonly a: number
+}
+
+export interface ColorKeyOptions {
+  readonly target: { readonly r: number; readonly g: number; readonly b: number }
+  readonly tolerance?: number
+  readonly replacement?: Rgba
+}
+
+/** Every pixel within `tolerance` of the target colour becomes `replacement` (transparent black). */
+export function applyColorKeyTransparency(image: RgbaImage, options: ColorKeyOptions): RgbaImage {
   checked(image)
   const tolerance = options.tolerance ?? 0
   const replacement = options.replacement ?? { r: 0, g: 0, b: 0, a: 0 }
   const out = image.pixels.slice()
   for (let index = 0; index < out.length; index += 4) {
     const close =
-      Math.abs(out[index] - options.target.r) <= tolerance &&
-      Math.abs(out[index + 1] - options.target.g) <= tolerance &&
-      Math.abs(out[index + 2] - options.target.b) <= tolerance
+      Math.abs(at(out, index) - options.target.r) <= tolerance &&
+      Math.abs(at(out, index + 1) - options.target.g) <= tolerance &&
+      Math.abs(at(out, index + 2) - options.target.b) <= tolerance
     if (close) {
       out[index] = replacement.r
       out[index + 1] = replacement.g

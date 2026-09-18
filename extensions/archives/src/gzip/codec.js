@@ -1,4 +1,6 @@
 import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkit/codec-kit'
+import { crc32 } from '@modkit/codec-kit/checksum'
+import { decompressBounded } from '@modkit/codec-kit/compression/bounded'
 
 const ID = 'modkit/gzip'
 const latin1 = new TextDecoder('latin1')
@@ -11,22 +13,6 @@ function u16(bytes, offset) {
 function u32(bytes, offset) {
   if (offset < 0 || offset + 4 > bytes.byteLength) throw new RangeError('GZip u32 is truncated')
   return new DataView(bytes.buffer, bytes.byteOffset + offset, 4).getUint32(0, true)
-}
-
-const CRC_TABLE = (() => {
-  const table = new Uint32Array(256)
-  for (let index = 0; index < 256; index += 1) {
-    let value = index
-    for (let bit = 0; bit < 8; bit += 1) value = (value >>> 1) ^ (value & 1 ? 0xedb88320 : 0)
-    table[index] = value >>> 0
-  }
-  return table
-})()
-
-function crc32(bytes) {
-  let crc = 0xffffffff
-  for (const byte of bytes) crc = (crc >>> 8) ^ (CRC_TABLE[(crc ^ byte) & 0xff] ?? 0)
-  return (crc ^ 0xffffffff) >>> 0
 }
 
 const matches = bytes => bytes[0] === 0x1f && bytes[1] === 0x8b
@@ -106,31 +92,13 @@ function parseGzip(bytes, maxScalarBytes) {
 
 async function extractGzip(bytes, gzip, maximum) {
   if (gzip.decodedSize > maximum) throw new RangeError('GZip payload exceeds maxScalarBytes budget')
-  if (typeof DecompressionStream !== 'function') {
-    throw new TypeError('GZip extraction is unavailable in this runtime')
-  }
-  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))
-  const reader = stream.getReader()
-  const chunks = []
-  let total = 0
-  while (true) {
-    const result = await reader.read()
-    if (result.done) break
-    total += result.value.byteLength
-    if (total > gzip.decodedSize || total > maximum) {
-      await reader.cancel('GZip decoded output exceeded its declared size')
-      throw new RangeError('GZip decoded output exceeds its declared size or budget')
-    }
-    chunks.push(result.value)
-  }
-  if (total !== gzip.decodedSize) {
+  const decoded = await decompressBounded(bytes, 'gzip', {
+    maxOutputBytes: gzip.decodedSize,
+    outputLimitError: () =>
+      new RangeError('GZip decoded output exceeds its declared size or budget'),
+  })
+  if (decoded.byteLength !== gzip.decodedSize) {
     throw new TypeError('GZip decoded size does not match the trailer')
-  }
-  const decoded = new Uint8Array(total)
-  let offset = 0
-  for (const chunk of chunks) {
-    decoded.set(chunk, offset)
-    offset += chunk.byteLength
   }
   if (crc32(decoded) !== gzip.decodedCrc) throw new TypeError('GZip decoded CRC-32 is invalid')
   return decoded

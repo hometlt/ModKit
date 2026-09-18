@@ -12,7 +12,9 @@ import {
   rasterEditContent,
   rasterEditContentOperation,
 } from '../ops/raster-transforms.js'
-import { encodePng } from '../writers/png-encoder.js'
+import { encodePng } from '@modkit/codec-kit/raster'
+import { crc32Range } from '@modkit/codec-kit/checksum'
+import { decompressBounded } from '@modkit/codec-kit/compression/bounded'
 
 const SIGNATURE = Object.freeze([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
 const ascii = new TextDecoder('latin1')
@@ -24,17 +26,6 @@ function matchesSignature(bytes) {
 function u32(bytes, offset) {
   if (offset < 0 || offset + 4 > bytes.byteLength) throw new RangeError('truncated PNG u32')
   return new DataView(bytes.buffer, bytes.byteOffset + offset, 4).getUint32(0, false)
-}
-
-function crc32(bytes, start, end) {
-  let crc = 0xffffffff
-  for (let offset = start; offset < end; offset += 1) {
-    crc ^= bytes[offset] ?? 0
-    for (let bit = 0; bit < 8; bit += 1) {
-      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0)
-    }
-  }
-  return (crc ^ 0xffffffff) >>> 0
 }
 
 function parsePng(bytes, maxChunks) {
@@ -51,7 +42,7 @@ function parsePng(bytes, maxChunks) {
     if (!/^[A-Za-z]{4}$/u.test(type) || end > bytes.byteLength) {
       throw new TypeError('PNG chunk is malformed or truncated')
     }
-    if (u32(bytes, offset + 8 + length) !== crc32(bytes, offset + 4, offset + 8 + length)) {
+    if (u32(bytes, offset + 8 + length) !== crc32Range(bytes, offset + 4, offset + 8 + length)) {
       throw new TypeError(`PNG ${type} chunk CRC is invalid`)
     }
     chunks.push(Object.freeze({ type, length, offset, dataOffset: offset + 8 }))
@@ -125,30 +116,15 @@ function paeth(a, b, c) {
   return distanceA <= distanceB && distanceA <= distanceC ? a : distanceB <= distanceC ? b : c
 }
 
-async function inflateBounded(compressed, expectedBytes, signal) {
-  if (typeof DecompressionStream !== 'function') {
-    throw new TypeError('no portable deflate decoder is available')
-  }
-  const result = new Uint8Array(expectedBytes)
-  const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate'))
-  const reader = stream.getReader()
-  let offset = 0
-  try {
-    while (true) {
-      if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-      const chunk = await reader.read()
-      if (chunk.done) break
-      if (offset + chunk.value.byteLength > expectedBytes) {
-        throw new RangeError('PNG inflated data exceeds its declared dimensions')
-      }
-      result.set(chunk.value, offset)
-      offset += chunk.value.byteLength
-    }
-  } finally {
-    reader.releaseLock()
-  }
-  if (offset !== expectedBytes) throw new TypeError('PNG inflated data is truncated')
-  return result
+/** The concatenated IDAT stream, which must inflate to exactly the scanlines the header declares. */
+async function decompressIdat(compressed, expectedBytes, signal) {
+  const raw = await decompressBounded(compressed, 'deflate', {
+    maxOutputBytes: expectedBytes,
+    ...(signal === undefined ? {} : { signal }),
+    outputLimitError: () => new RangeError('PNG inflated data exceeds its declared dimensions'),
+  })
+  if (raw.byteLength !== expectedBytes) throw new TypeError('PNG inflated data is truncated')
+  return raw
 }
 
 async function decodeRgba8(bytes, png, signal) {
@@ -167,7 +143,7 @@ async function decodeRgba8(bytes, png, signal) {
   const filterBytesPerPixel = indexed ? 1 : png.channels
   const expectedBytes = (rowBytes + 1) * png.height
   if (!Number.isSafeInteger(expectedBytes)) throw new RangeError('PNG decoded size is unsafe')
-  const raw = await inflateBounded(compressed, expectedBytes, signal)
+  const raw = await decompressIdat(compressed, expectedBytes, signal)
   const unfiltered = new Uint8Array(rowBytes * png.height)
   for (let y = 0; y < png.height; y += 1) {
     const filter = raw[y * (rowBytes + 1)]
@@ -424,7 +400,7 @@ function textChunkBytes(keyword, text) {
   chunk.set(key, 8)
   chunk[8 + key.byteLength] = 0
   chunk.set(value, 9 + key.byteLength)
-  new DataView(chunk.buffer).setUint32(8 + length, crc32(chunk, 4, 8 + length), false)
+  new DataView(chunk.buffer).setUint32(8 + length, crc32Range(chunk, 4, 8 + length), false)
   return chunk
 }
 

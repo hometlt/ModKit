@@ -124,6 +124,18 @@ export const nodeModuleMap: Readonly<Record<string, string>> = Object.freeze({
   '@modkit/codec-kit/text': pathToFileURL(
     join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'text', 'index.js'),
   ).href,
+  '@modkit/codec-kit/checksum': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'checksum', 'index.js'),
+  ).href,
+  '@modkit/codec-kit/compression/bounded': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'compression', 'bounded.js'),
+  ).href,
+  '@modkit/codec-kit/raster': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'raster', 'index.js'),
+  ).href,
+  '@modkit/codec-kit/texture/bc': pathToFileURL(
+    join(repositoryRoot, 'packages', 'codec-kit', 'dist', 'texture', 'bc.js'),
+  ).href,
   '@modkit/core': pathToFileURL(join(repositoryRoot, 'packages', 'core', 'dist', 'index.js')).href,
   '@modkit/sdk': pathToFileURL(join(repositoryRoot, 'packages', 'sdk', 'dist', 'index.js')).href,
 })

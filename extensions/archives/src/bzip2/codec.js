@@ -25,6 +25,7 @@
  */
 
 import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkit/codec-kit'
+import { createCrc32Msb } from '@modkit/codec-kit/checksum'
 
 const ID = 'modkit/bzip2'
 const BLOCK_MAGIC = '314159265359'
@@ -32,32 +33,6 @@ const END_MAGIC = '177245385090'
 const MAX_HUFFMAN_BITS = 20
 const MAX_SYMBOLS = 258
 const GROUP_SIZE = 50
-
-const CRC_TABLE = (() => {
-  const table = new Uint32Array(256)
-  for (let index = 0; index < table.length; index += 1) {
-    let value = index << 24
-    for (let bit = 0; bit < 8; bit += 1) {
-      value = (value & 0x80000000) === 0 ? value << 1 : (value << 1) ^ 0x04c11db7
-    }
-    table[index] = value >>> 0
-  }
-  return table
-})()
-
-class BzipCrc {
-  value = 0xffffffff
-
-  update(byte, count = 1) {
-    for (let index = 0; index < count; index += 1) {
-      this.value = ((this.value << 8) ^ (CRC_TABLE[((this.value >>> 24) ^ byte) & 0xff] ?? 0)) >>> 0
-    }
-  }
-
-  digest() {
-    return ~this.value >>> 0
-  }
-}
 
 class BitReader {
   constructor(bytes, offset) {
@@ -285,7 +260,7 @@ function decodeBlock(reader, blockSize, writer) {
   let current = position & 0xff
   position >>>= 8
   let run = -1
-  const crc = new BzipCrc()
+  const crc = createCrc32Msb()
   for (let remaining = transformedLength; remaining > 0; remaining -= 1) {
     const previous = current
     const packed = transformed[position] ?? 0

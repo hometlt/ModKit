@@ -202,6 +202,38 @@ const workerBuild = await build({
       'digest.js',
     ),
     'vendor/codec-kit/json-edit': join(repoRoot, 'packages', 'codec-kit', 'dist', 'json-edit.js'),
+    'vendor/codec-kit/checksum/index': join(
+      repoRoot,
+      'packages',
+      'codec-kit',
+      'dist',
+      'checksum',
+      'index.js',
+    ),
+    'vendor/codec-kit/compression/bounded': join(
+      repoRoot,
+      'packages',
+      'codec-kit',
+      'dist',
+      'compression',
+      'bounded.js',
+    ),
+    'vendor/codec-kit/raster/index': join(
+      repoRoot,
+      'packages',
+      'codec-kit',
+      'dist',
+      'raster',
+      'index.js',
+    ),
+    'vendor/codec-kit/texture/bc': join(
+      repoRoot,
+      'packages',
+      'codec-kit',
+      'dist',
+      'texture',
+      'bc.js',
+    ),
     'vendor/codec-kit/json-snapshot': join(
       repoRoot,
       'packages',
@@ -274,6 +306,13 @@ const workerBuild = await build({
   splitting: true,
   format: 'esm',
   platform: 'browser',
+  /*
+   * The canonical CRC-32 (`@modkit/codec-kit/checksum`) is the MK2 copy in `crypto/mpq.ts`, whose
+   * `md5` falls back to `import('crypto')` only where `crypto.subtle` is missing — never in a
+   * browser worker. Left external, that branch stays an inert dynamic import instead of failing
+   * the bundle; `node:` imports are still refused below.
+   */
+  external: ['crypto'],
   alias: {
     '@rgrove/parse-xml': join(dependencyRoot('@rgrove/parse-xml'), 'dist', 'browser.js'),
   },

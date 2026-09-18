@@ -6,35 +6,7 @@
  * the directory instead: every other entry's payload is copied byte for byte, and the edited entry
  * is re-encoded the way it was stored — PNG stays PNG, a DIB becomes a 32-bit DIB with its AND mask.
  */
-import { encodePng } from '../writers/png-encoder.js'
-
-/** A 32-bit bottom-up DIB, height doubled for the AND mask as the ICO format requires. */
-export function encodeDib(image) {
-  const { width, height, pixels } = image
-  const maskRow = Math.ceil(width / 32) * 4
-  const out = new Uint8Array(40 + width * height * 4 + maskRow * height)
-  const header = new DataView(out.buffer)
-  header.setUint32(0, 40, true)
-  header.setInt32(4, width, true)
-  header.setInt32(8, height * 2, true)
-  header.setUint16(12, 1, true)
-  header.setUint16(14, 32, true)
-  const maskStart = 40 + width * height * 4
-  for (let y = 0; y < height; y += 1) {
-    const row = height - 1 - y
-    for (let x = 0; x < width; x += 1) {
-      const source = (y * width + x) * 4
-      const target = 40 + (row * width + x) * 4
-      out[target] = pixels[source + 2]
-      out[target + 1] = pixels[source + 1]
-      out[target + 2] = pixels[source]
-      out[target + 3] = pixels[source + 3]
-      // Old renderers ignore alpha and read the mask: a transparent pixel is a masked one.
-      if (pixels[source + 3] === 0) out[maskStart + row * maskRow + (x >> 3)] |= 0x80 >> (x & 7)
-    }
-  }
-  return out
-}
+import { encodeIconDib, encodePng } from '@modkit/codec-kit/raster'
 
 export async function replaceIconEntry(bytes, entries, selected, image, cursor, signal) {
   if (image.width < 1 || image.height < 1 || image.width > 256 || image.height > 256) {
@@ -45,7 +17,7 @@ export async function replaceIconEntry(bytes, entries, selected, image, cursor, 
   const replacement =
     selected.payloadKind === 'png'
       ? await encodePng(image.width, image.height, image.pixels, signal)
-      : encodeDib(image)
+      : encodeIconDib(image)
   const payloads = entries.map(entry =>
     entry === selected ? replacement : bytes.subarray(entry.offset, entry.offset + entry.size),
   )

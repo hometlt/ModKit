@@ -9,6 +9,7 @@ import {
   lzmaDecode,
   parseLzmaProperties,
 } from '@modkit/codec-kit/compression'
+import { crc32 } from '@modkit/codec-kit/checksum'
 
 const ID = 'modkit/7z'
 const SIGNATURE = Object.freeze([0x37, 0x7a, 0xbc, 0xaf, 0x27, 0x1c])
@@ -63,22 +64,6 @@ const METHODS = Object.freeze({
   '06f10701': 'AES-256',
 })
 const DECODABLE = new Set(['Copy', 'Delta', 'LZMA', 'LZMA2', 'BCJ', 'BCJ2', 'Deflate', 'BZip2'])
-
-const CRC_TABLE = (() => {
-  const table = new Uint32Array(256)
-  for (let index = 0; index < 256; index += 1) {
-    let value = index
-    for (let bit = 0; bit < 8; bit += 1) value = (value >>> 1) ^ (value & 1 ? 0xedb88320 : 0)
-    table[index] = value >>> 0
-  }
-  return table
-})()
-
-function crc32(bytes) {
-  let crc = 0xffffffff
-  for (const byte of bytes) crc = (crc >>> 8) ^ (CRC_TABLE[(crc ^ byte) & 0xff] ?? 0)
-  return (crc ^ 0xffffffff) >>> 0
-}
 
 /** Errors a host or UI can branch on without parsing prose. */
 function archiveError(code, message) {

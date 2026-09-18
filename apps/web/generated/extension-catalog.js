@@ -6,7 +6,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
   extensions: [
     {
       artifact: {
-        artifactDigest: 'sha256:62a9eea31faebb23a5c7ddf4347042b3d394ef97b89638e68651db8a8a079d86',
+        artifactDigest: 'sha256:5a943143f0704167f7fe423d83d4468c1712df37a2db052f9482ba319e5af39d',
         fileDigests: {
           'MIGRATION-NOTES-common-archives.json':
             'sha256:4e1d77808583a26fb61d65d660ef09c3f4c222915c2e3581d793b202cbde4b44',
@@ -36,22 +36,22 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-xz.json':
             'sha256:b945ae5d8901c20343b9dfee344832375c2874acc24e2c791da9978baf28555e',
           'contributions/codec-zip.json':
-            'sha256:d765dacf8928d2e723ed903b99b4d86a89e1d6d7dfcb25229cb8a5f9dd438c4b',
+            'sha256:e630932c734c8af9534c84f03623a20bb62b8e58683b14e002bc58b8e4192465',
           'contributions/codec-zstd.json':
             'sha256:04f0c3c2fbad4b0f3f31f14ef33da92e4e2fa8957be84ddc0aa16ca4b007765f',
           'package.json': 'sha256:0f450dab994733b1f04493efbe9a07bb0f7f702969fbf9350675f2d425600c04',
           'src/7z/codec.js':
-            'sha256:6450a185f9d62348f0d6fc7eddc7ad6326a9c55a31a8a8f293216002dd0d5a25',
+            'sha256:bf31052ad1be7de6b9ef0f880f6a2c2f4ddaab72c0c6b46d065c98c71f8daae2',
           'src/brotli/codec.js':
             'sha256:e93f4d0c46b1e65cbcfb6e45a261a9e9bb1f121d1bd29ed4af693597578855e4',
           'src/bzip2/codec.js':
-            'sha256:9262af21b093e1dda8d26179a1326e1c694e18a587b36b7ab5ab3e3efc9278e4',
+            'sha256:f411d0060e8556126a157be7f6afb72dd2147b809e24e48154a544100bc103d6',
           'src/cab/codec.js':
             'sha256:977c58382988dfde9cbbcca33f2161cd503cc9039e6b56bea70d5e80755f9a92',
           'src/dmg/codec.js':
             'sha256:916492ed8efdbf47b264290ef78e8a8a4f5718d9d113b8866e3df10a1b397464',
           'src/gzip/codec.js':
-            'sha256:576774148aa4062c44cb15daf1c429bfd32ecf584d4d327d264047a482e293a4',
+            'sha256:59bb4fb55bfff1f0b827cb70a02e61b6d36d68f31c626204cfe56019eccae223',
           'src/index.js': 'sha256:121004c40bd5560b35a26034c291429f1d103e68698c7e1aaf5cf8456890dc95',
           'src/iso/codec.js':
             'sha256:3749e5ef15c83842bc9616acb7f3933d6819511375560cdfa2c4f24e37e67b22',
@@ -62,13 +62,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/pe/codec.js':
             'sha256:1fbc818d299678e2ee42241b81f6235401f717bd123449d0eae6d429bb0aa056',
           'src/rar/codec.js':
-            'sha256:0e9b22191b78f07fd8b094b6830f4d5704c7cc8051b44d41bab88c494615104b',
+            'sha256:d5c209e62dfa66678e8115ac294ccdaf98b9fdaad60620a98f792a93fcd0dd25',
           'src/tar/codec.js':
             'sha256:1ee376c3a57b28fd539f4dcaf800844d327c4eb1e6852a18617d85199661b3ac',
           'src/xz/codec.js':
-            'sha256:f91feab9fba35de78b6358997d65064b2bd6e2ac52a5226acb70d6a580293fdb',
+            'sha256:7f7bf200f42316f1225842dfafa0a05bbca0354c0c2e48d23e7afa026259edea',
           'src/zip/codec.js':
-            'sha256:d79f278cf8be4906cdecde32def292c5b09456cb2cd64205afd33b3d2e9aeb09',
+            'sha256:992502f9adde2a8c6195f2cf800ac3ddb9da6f61ebe86de7b8d7e99a73b20808',
           'src/zstd/codec.js':
             'sha256:6266e084d92f68329bb8ea89d24977a809e59d6db68fb03c4af97f43660231ca',
           'test/fixtures/7z/bcj.7z':
@@ -97,7 +97,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:ba910f659d74ec19eec62ac888ce88f34cc9cabce16624368c2fc972c70cbe65',
         },
         inventoryRecordId:
-          'artifact:sha256:62a9eea31faebb23a5c7ddf4347042b3d394ef97b89638e68651db8a8a079d86',
+          'artifact:sha256:5a943143f0704167f7fe423d83d4468c1712df37a2db052f9482ba319e5af39d',
       },
       artifactRoot: 'extensions/archives/',
       containers: {
@@ -197,7 +197,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-zip.json',
-          'sha256:d765dacf8928d2e723ed903b99b4d86a89e1d6d7dfcb25229cb8a5f9dd438c4b',
+          'sha256:e630932c734c8af9534c84f03623a20bb62b8e58683b14e002bc58b8e4192465',
         ],
         [
           'contributions/codec-zstd.json',
@@ -2038,6 +2038,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                       schemaVersion: 1,
                     },
                   },
+                  mutatesSource: true,
+                  outputKinds: ['edit-plan'],
+                  requiredPermissions: ['read-source', 'write-source'],
+                },
+                {
+                  handlerId: 'container-pack',
+                  id: 'container.pack',
                   mutatesSource: true,
                   outputKinds: ['edit-plan'],
                   requiredPermissions: ['read-source', 'write-source'],
@@ -5511,7 +5518,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:7b30d28c7977f00a2b5620b514155838265dfb7155406c00d6ab1c606fc8be25',
+        artifactDigest: 'sha256:a5c58e6b0030d3a5cce0339b9a471ad012b2878b10735a1a21094e4c9f00d835',
         fileDigests: {
           'README.md': 'sha256:352cfa63649efc3de2228881a13fadd2b2de56758ea86175c2c6e0da62f19152',
           'contributions/codec-markdown.json':
@@ -5537,7 +5544,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/odf/inspection.js':
             'sha256:f10f64f0fe7858f1175c8523733072116dcb070ef328ac60e906de98700d02d6',
           'src/odf/package.js':
-            'sha256:35b1af2fa4f7e9ae1246a700857de3ce227f075295772895ad88c62dc2b55fcf',
+            'sha256:19b912a6ef2f0d0d890e80639aa815e490864e292441618696fd3e1df848af83',
           'src/odg/codec.js':
             'sha256:fd2d2006b145618d4cdc347cc39966f691da16e2b1c3569fcd2b7479ad2fc0d8',
           'src/odp/codec.js':
@@ -5550,7 +5557,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:c047d1a7193eaef9307452f4cb3aa84bc9800e270993a5d02c53eca4582134f5',
         },
         inventoryRecordId:
-          'artifact:sha256:7b30d28c7977f00a2b5620b514155838265dfb7155406c00d6ab1c606fc8be25',
+          'artifact:sha256:a5c58e6b0030d3a5cce0339b9a471ad012b2878b10735a1a21094e4c9f00d835',
       },
       artifactRoot: 'extensions/documents/',
       containers: {
@@ -6582,7 +6589,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:462741af663e33a773db15e9c8ea975f4ff9278d47ecc7354b68a5e17410f72c',
+        artifactDigest: 'sha256:7ed6a4b070b82770ada5039451a338df565bfbe1733cda1116e7d16fa6f6c302',
         fileDigests: {
           'MIGRATION-NOTES-common-images.json':
             'sha256:44c30ea45aaceceff66d53f72e5e0d0ec8efb1a7f2afbc2f9913849720632e93',
@@ -6598,9 +6605,9 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-bmp.json':
             'sha256:51e2e65724d780a313dfeb1072929d9cb9fc3c5230b7597e0a3384dc77523326',
           'contributions/codec-cur.json':
-            'sha256:ca83a2ee185f99c30030382692eb875a4a7301aeb0d072a4bbf109f787d17bdf',
+            'sha256:1096814c71e3466f1b21c4f1c9357b0495ec369c667d54d2c664b398ab25a1d6',
           'contributions/codec-dds.json':
-            'sha256:86f715f9a0f64b339f1f2a1416f23b4ff99a7072d008ecdf859620b6dd9fd719',
+            'sha256:39c2a992ec9a105bca546d472b62a80fb5f6de9f60f42ff019d78217bfd6fa54',
           'contributions/codec-exr.json':
             'sha256:377eb43959c01dff23c3117a6a1263a9797e91503b79e65a718d049336e6cca7',
           'contributions/codec-gif.json':
@@ -6608,7 +6615,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-hdr.json':
             'sha256:f9a3809a8285db81095accabea92d22fec03a7aab43d17466f2ffd89a77581b8',
           'contributions/codec-ico.json':
-            'sha256:8d7b323ab46e27bffa3aa2b71d99ba7ee3a66e6486bae4eb8f9123cf86212c70',
+            'sha256:aff64663c3b889cf478a9e55dc95f070813f02a779fa8fcc21317ca3e23445f9',
           'contributions/codec-jpeg.json':
             'sha256:946928d5d5905b0bf752292d0fd16a2ec80ed5687e1876d0da7e1026af46bcc2',
           'contributions/codec-ktx.json':
@@ -6622,11 +6629,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'contributions/codec-pkm.json':
             'sha256:a59ca6a16fac9666bc9a22c5ec29584dce1fd6a58c1f76b66b069d77e8239929',
           'contributions/codec-png.json':
-            'sha256:a155950da23ab14b974671302d4c9bdd3b24e6341268faa082a314da5b125acd',
+            'sha256:e12b4fef492e9146a40e9526e1a446643b6082f1dcff2e5dd6032e8e67f96719',
           'contributions/codec-pvr.json':
             'sha256:e5eff0a04b8c20ee5806859a00d5e843a4c6a1cc089d768b0bed3c701fd1476b',
           'contributions/codec-tga.json':
-            'sha256:4995903bf43aa8de9f19c3a6be8716dd14e4bb746625010d5c2f01f740eded45',
+            'sha256:f4275bcf1b6e5a0c8be6262acd62a391ceaa0644f2581763b9de5f71a7ce694b',
           'contributions/codec-tiff.json':
             'sha256:5ab60e9ca9f2b5adbafc4364d3d60f47be6966875a65f48e62a053f69c31c37f',
           'contributions/codec-webp.json':
@@ -6635,7 +6642,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:811f3e474aa56eb4317369fdb2e628be861ed9e26a4be5660fce16fe75f3b448',
           'contributions/writer-png.json':
             'sha256:49583a58d35f864423155eae81992ed56764d4efe6c82c6931491f1b3157ee13',
-          'package.json': 'sha256:58b890127452522b69a3439c9452958590b14b490c67da491d3e5fd608a6cee1',
+          'package.json': 'sha256:0ea4eea14c29a97316e5ce3281cd4d272db2221d0e6c85386035250ea34c7aef',
           'src/ani/codec.js':
             'sha256:18bf84dd6807f2caf4d7bf3d5bb497cfba746f92b0e6bb3e459a0b09563f3c00',
           'src/astc/codec.js':
@@ -6653,11 +6660,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/dds/bptc.js':
             'sha256:f3a0636b0f5dde9b7f7ccc2e6874425bfef0f5e86f6a1801a8032885f61a39b4',
           'src/dds/codec.js':
-            'sha256:8a67ff55b5bd476af91f42fd3f72fbacc776340a0b71f7c4b6c65fbf4a2e6157',
+            'sha256:fc3d3622c8346299a44c6700680d0672bb0cfd6213212f29c3a2f68bea57c5b2',
           'src/dds/compressed.js':
             'sha256:af63c9438834ec0618e5ce3a207d45195cc603dcf4376c7964dfd3e939f7823e',
           'src/dds/encode.js':
-            'sha256:5f28fb28df56882fd869bcb0ea24d3fa0e2f66ba3988ef4e0c3ffb6fd6c84254',
+            'sha256:81eb1f075f2dd85d4004ca6674a43662dc3e0b136b7c8dd7c7a3bf79438c29f0',
           'src/dds/layout.js':
             'sha256:ad84d000700f52fb29f3fb4a6ea7cf421f9a9d1e9335fa5c247d1e70fc13b6b0',
           'src/exr/codec.js':
@@ -6669,7 +6676,9 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/ico/codec.js':
             'sha256:0007c46e11724f2e2195b0260801d5c6290fd3c05ac6229d9790e0bd1e86dd97',
           'src/ico/container.js':
-            'sha256:407cdb7ed7d152a32f1d78da0c9cd445d9a642c42c72230621fb7fbeab65e67c',
+            'sha256:c49b5460a36051ac34a202681488a946a4930bac3e87f5d6f1eb77a8653e801f',
+          'src/ico/encode.js':
+            'sha256:e1922a8c7f1c6ea0cd1cdb8101ae4610aaf7b00af7ef6679ce7188ff7cebe1b8',
           'src/index.js': 'sha256:bcbc40812fa5dcdb2937b0ff5b617c1483725570302b99f569249ac3c441ce41',
           'src/jpeg/codec.js':
             'sha256:a88284f59e5072c44e8352f772dd3de9342c06418e035f92fb9bd26c0b13d44e',
@@ -6679,10 +6688,8 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:4d6240d729468880b18a12e629d29972d0e70b25b6b909329786a24637c463f1',
           'src/linked.js':
             'sha256:bbe85af6cdf6da5544829b2bd7ad09a733ca00edc56e2229659247eba5cf8975',
-          'src/ops/raster-ops.js':
-            'sha256:01cf3696184a2597c96233219ab3c1084c6250cc78800e64e93e5e220b4ff798',
           'src/ops/raster-transforms.js':
-            'sha256:dcca210f1f32b8182c59b1ef0c228a2470d457ab9967dbe5639a10e3a4c42e98',
+            'sha256:4150cf69752d72d6d7cc5b64e2bd8cec6b68695012f8b0ea4f361b19c8490f5d',
           'src/pal/codec.js':
             'sha256:68718910cbdbc34fdca7a99817fc26d4a54b8521da4d38d4d13cbf633acbfc0b',
           'src/pcx/codec.js':
@@ -6692,11 +6699,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/pkm/etc.js':
             'sha256:99c4f4ab06d944e71e0993f671e3af6904c37bb5eb2bc0a65fdf1e6de265db7f',
           'src/png/codec.js':
-            'sha256:47eb42f9b93a15ec9311232326c0424d6668a94f9f178252bc8ba0ccb34c6d76',
+            'sha256:d4c68121b468f9b60c4e349b68e7d814c2e478bcb23c98714e174a54258c52e4',
           'src/pvr/codec.js':
             'sha256:3c02b42c1d6963dcb8e38a8bbfcc49ccf9b115118180835d59eb4ada15de7fea',
           'src/tga/codec.js':
-            'sha256:ffe8fe95b50e1c3339ffb699e478b43db9680d57b194d4cad5b0d994367b4232',
+            'sha256:d1f48b5e192fc42dcf72e80c24aa3ae731342b3d24409e660a85d9c061c9d13c',
           'src/tiff/codec.js':
             'sha256:2a875351ce1ac3fb1aa74354a9c09a46464662c8003aa95a7e5e86afc6026d4c',
           'src/webp/codec.js':
@@ -6704,7 +6711,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/writers/dds-encoder.js':
             'sha256:c4123ea5aa1089b6b53f6c8580e525cd7886c5be354ade13db3836ee53471cf1',
           'src/writers/png-encoder.js':
-            'sha256:7c3c406f732ab0988ec1005bdc00a02e43b20feebf38148dfcf442b56a0f028c',
+            'sha256:4951ff37f2c7cd401bb08469ac01117a791bb6908f5c7b7534018b89dc147771',
           'test/ani-raster-decode.test.ts':
             'sha256:7315f4f53f2c70259b308ba21190a890cf03b9fee61b2237ef981987b09dbc75',
           'test/astc-ordinary-ldr.test.ts':
@@ -6716,13 +6723,15 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'test/dds-subresources.test.ts':
             'sha256:750f3d6d06f89dd4c020851ba4919fb8335e8caf48dea682ce63eb0286cb8c9a',
           'test/dds-transform.test.ts':
-            'sha256:4e2c7879e873f7de7255f4c9710fdbdc2ef9dedb74bfd812f48be6fdec17c082',
+            'sha256:104de000cee52f895247c882aa74c54ba6c19a7ad763e830c285644a8fe40da9',
           'test/eac-r11-decode.test.ts':
             'sha256:2a0d83d3152224ce7ea530605bb9441912aa9be68b3b4ec60d1e51cb0e5beed4',
           'test/png-palette-decode.test.ts':
             'sha256:a91dff0a852807126efb31df8f4f7401a0eab4dcf9a36ba55081bd580ac5ac14',
+          'test/raster-edit-content.test.ts':
+            'sha256:6673c3bc7aaff3b1581346327013b57715eb0455b4ee78b1db82b134b30058af',
           'test/raster-export.test.ts':
-            'sha256:2f9fb0f38c12cffe24651d3fa0395ae57b2d5d962cb88626430e563e610e5e43',
+            'sha256:bff7ffa4f5b905a98c6800fcefed8fe7a7f693df6f7fe78b4264dc53ba4cd8f5',
           'vendor/texture2ddecoder/LICENSE':
             'sha256:49e3169a509b9a5311fe50957a334e9e1975164f27da6004358c22e91e10747c',
           'vendor/texture2ddecoder/README.md':
@@ -6733,7 +6742,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:8b819b0622cce57f809b369081bdd6eca09d1c1793da7f82192db39229356c1d',
         },
         inventoryRecordId:
-          'artifact:sha256:462741af663e33a773db15e9c8ea975f4ff9278d47ecc7354b68a5e17410f72c',
+          'artifact:sha256:7ed6a4b070b82770ada5039451a338df565bfbe1733cda1116e7d16fa6f6c302',
       },
       artifactRoot: 'extensions/images/',
       containers: {
@@ -6750,7 +6759,6 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             './formats/jpeg/codec': './src/jpeg/codec.js',
             './formats/png/codec': './src/png/codec.js',
             './linked': './src/linked.js',
-            './ops/raster': './src/ops/raster-ops.js',
             './package.json': './package.json',
             './writers/dds-encoder': './src/writers/dds-encoder.js',
             './writers/png-encoder': './src/writers/png-encoder.js',
@@ -6811,11 +6819,11 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-cur.json',
-          'sha256:ca83a2ee185f99c30030382692eb875a4a7301aeb0d072a4bbf109f787d17bdf',
+          'sha256:1096814c71e3466f1b21c4f1c9357b0495ec369c667d54d2c664b398ab25a1d6',
         ],
         [
           'contributions/codec-dds.json',
-          'sha256:86f715f9a0f64b339f1f2a1416f23b4ff99a7072d008ecdf859620b6dd9fd719',
+          'sha256:39c2a992ec9a105bca546d472b62a80fb5f6de9f60f42ff019d78217bfd6fa54',
         ],
         [
           'contributions/codec-exr.json',
@@ -6831,7 +6839,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-ico.json',
-          'sha256:8d7b323ab46e27bffa3aa2b71d99ba7ee3a66e6486bae4eb8f9123cf86212c70',
+          'sha256:aff64663c3b889cf478a9e55dc95f070813f02a779fa8fcc21317ca3e23445f9',
         ],
         [
           'contributions/codec-jpeg.json',
@@ -6859,7 +6867,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-png.json',
-          'sha256:a155950da23ab14b974671302d4c9bdd3b24e6341268faa082a314da5b125acd',
+          'sha256:e12b4fef492e9146a40e9526e1a446643b6082f1dcff2e5dd6032e8e67f96719',
         ],
         [
           'contributions/codec-pvr.json',
@@ -6867,7 +6875,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         ],
         [
           'contributions/codec-tga.json',
-          'sha256:4995903bf43aa8de9f19c3a6be8716dd14e4bb746625010d5c2f01f740eded45',
+          'sha256:f4275bcf1b6e5a0c8be6262acd62a391ceaa0644f2581763b9de5f71a7ce694b',
         ],
         [
           'contributions/codec-tiff.json',
@@ -7537,13 +7545,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             id: 'modkit/cur',
             limitations: [
               'The MK3 port validates every directory range, reports cursor hotspots, inspects PNG-backed and DIB entries, and decodes the selected uncompressed 24-bit or 32-bit DIB plus its AND mask to RGBA8.',
-              'PNG-backed pixel-region decoding, indexed/bitfield/compressed DIB decoding, animation, writing, and pixel editing remain unsupported.',
+              'PNG-backed pixel-region decoding, indexed/bitfield/compressed DIB decoding and animation remain unsupported; a pixel edit rewrites only the shown picture.',
             ],
             runtimeVariants: [
               {
                 entrypoint: './src/cur/codec.js',
                 executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: ['read-source'],
+                requestedPermissionClasses: ['read-source', 'write-source'],
                 target: {
                   environments: ['node'],
                 },
@@ -7552,7 +7560,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               {
                 entrypoint: './src/cur/codec.js',
                 executionProfile: 'worker-brokered',
-                requestedPermissionClasses: ['read-source'],
+                requestedPermissionClasses: ['read-source', 'write-source'],
                 target: {
                   environments: ['browser-worker', 'node-worker'],
                 },
@@ -7569,6 +7577,23 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 maxNodes: 100000,
                 maxScalarBytes: 104857600,
               },
+              fidelityEvidence: [
+                {
+                  claim: {
+                    preservesUnknownData: true,
+                    roundTrip: 'semantic',
+                  },
+                  conformanceProfile: 'modkit/codec-contribution-v1',
+                  corpusDigest: 'none:proof-suite',
+                  corpusId: 'modkit/extensions/images/test/raster-edit-content.test.ts',
+                  evidenceId: 'cur-edit-content-v1',
+                  formatId: 'cur',
+                  inputClass: 'cur-rgba8',
+                  optionsFingerprint: 'options:replace-pixels',
+                  provenAt: '2026-09-18T00:00:00Z',
+                  representationId: 'raster-metadata',
+                },
+              ],
               formatRefs: [
                 {
                   formatId: 'cur',
@@ -7610,6 +7635,105 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                   mutatesSource: false,
                   outputKinds: ['bytes'],
                   requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'transform',
+                  id: 'edit.content',
+                  inputSchema: {
+                    $ref: 'modkit://images/raster-edit-content.v1',
+                    document: {
+                      forms: [
+                        {
+                          baseInput: {
+                            transform: 'color-key',
+                          },
+                          fields: [
+                            {
+                              initial: 255,
+                              inputPath: ['target', 'r'],
+                              key: 'r',
+                              label: 'Red',
+                              required: true,
+                              type: {
+                                integer: true,
+                                kind: 'number',
+                                max: 255,
+                                min: 0,
+                              },
+                            },
+                            {
+                              initial: 0,
+                              inputPath: ['target', 'g'],
+                              key: 'g',
+                              label: 'Green',
+                              required: true,
+                              type: {
+                                integer: true,
+                                kind: 'number',
+                                max: 255,
+                                min: 0,
+                              },
+                            },
+                            {
+                              initial: 255,
+                              inputPath: ['target', 'b'],
+                              key: 'b',
+                              label: 'Blue',
+                              required: true,
+                              type: {
+                                integer: true,
+                                kind: 'number',
+                                max: 255,
+                                min: 0,
+                              },
+                            },
+                            {
+                              initial: 0,
+                              inputPath: ['tolerance'],
+                              key: 'tolerance',
+                              label: 'Tolerance',
+                              required: true,
+                              type: {
+                                integer: true,
+                                kind: 'number',
+                                max: 255,
+                                min: 0,
+                              },
+                            },
+                          ],
+                          id: 'raster-color-key',
+                          label: 'Make one colour transparent',
+                          summary:
+                            'Every pixel within the tolerance of the colour becomes fully transparent.',
+                        },
+                        {
+                          baseInput: {
+                            transform: 'rounded-alpha',
+                          },
+                          fields: [
+                            {
+                              initial: 8,
+                              inputPath: ['radius'],
+                              key: 'radius',
+                              label: 'Radius',
+                              required: true,
+                              type: {
+                                kind: 'number',
+                                min: 0,
+                              },
+                            },
+                          ],
+                          id: 'raster-rounded-alpha',
+                          label: 'Round the alpha corners',
+                          summary: 'Cuts the corners to transparent.',
+                        },
+                      ],
+                      schemaVersion: 1,
+                    },
+                  },
+                  mutatesSource: true,
+                  outputKinds: ['edit-plan'],
+                  requiredPermissions: ['read-source', 'write-source'],
                 },
               ],
               probe: {
@@ -7669,7 +7793,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               'Writing is a separate contribution: modkit/dds-encoder-writer (common.edit/writer@1) encodes RGBA8 pixels as rgba8, dxt1, dxt3 or dxt5.',
               'The compressed-texture view of a DDS (GPU blocks handed over undecoded, with block geometry, colour space, alpha mode and per-subresource byte ranges) is implemented in src/dds/compressed.js but is not published: MK3 has no common.view contract for compressed textures yet.',
               'Manifest v1 cannot express the legacy extension-or-signature fallback without turning it into a conjunction; generated routing intentionally uses the extension while the handwritten compatibility registry retains global signature sniffing.',
-              'edit.content applies one named pixel transform (resize, normal-map, combine-normal-specular, rounded-alpha, button-icon, color-key) and re-encodes the whole surface: mip levels, array layers and cube faces past the first are not carried over.',
+              'edit.content applies one named pixel transform (resize, combine-normal-specular, rounded-alpha, colour key, whole-image replace) and re-encodes the whole surface: mip levels, array layers and cube faces past the first are not carried over.',
             ],
             runtimeVariants: [
               {
@@ -7701,6 +7825,23 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 maxNodes: 100000,
                 maxScalarBytes: 104857600,
               },
+              fidelityEvidence: [
+                {
+                  claim: {
+                    preservesUnknownData: false,
+                    roundTrip: 'lossy',
+                  },
+                  conformanceProfile: 'modkit/codec-contribution-v1',
+                  corpusDigest: 'none:proof-suite',
+                  corpusId: 'modkit/extensions/images/test/raster-edit-content.test.ts',
+                  evidenceId: 'dds-edit-content-v1',
+                  formatId: 'dds',
+                  inputClass: 'dds-rgba8',
+                  optionsFingerprint: 'options:replace-pixels',
+                  provenAt: '2026-09-18T00:00:00Z',
+                  representationId: 'raster-metadata',
+                },
+              ],
               formatRefs: [
                 {
                   formatId: 'dds',
@@ -7750,64 +7891,6 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                     $ref: 'modkit://images/dds-edit-content.v1',
                     document: {
                       forms: [
-                        {
-                          baseInput: {
-                            transform: 'button-icon',
-                          },
-                          fields: [
-                            {
-                              initial: 'dxt5',
-                              inputPath: ['format'],
-                              key: 'format',
-                              label: 'Encoding',
-                              type: {
-                                kind: 'enum',
-                                members: [
-                                  {
-                                    id: 'keep',
-                                    label: 'Keep the source encoding',
-                                  },
-                                  {
-                                    id: 'dxt1',
-                                    label: 'DXT1 / BC1 (binary alpha)',
-                                  },
-                                  {
-                                    id: 'dxt3',
-                                    label: 'DXT3 / BC2',
-                                  },
-                                  {
-                                    id: 'dxt5',
-                                    label: 'DXT5 / BC3',
-                                  },
-                                  {
-                                    id: 'rgba8',
-                                    label: 'Uncompressed RGBA8',
-                                  },
-                                  {
-                                    id: 'auto',
-                                    label: 'DXT5 if any texel is partially transparent, else DXT1',
-                                  },
-                                ],
-                              },
-                            },
-                            {
-                              initial: 0.0390625,
-                              inputPath: ['options', 'framePercent'],
-                              key: 'framePercent',
-                              label: 'Frame (fraction of the edge)',
-                              required: true,
-                              type: {
-                                kind: 'number',
-                                max: 0.45,
-                                min: 0,
-                              },
-                            },
-                          ],
-                          id: 'dds-button-icon',
-                          label: 'Prepare an SC2 button icon',
-                          summary:
-                            'Insets a square icon (at most 256 x 256) in a transparent frame with rounded corners.',
-                        },
                         {
                           baseInput: {
                             transform: 'recompress',
@@ -8077,52 +8160,6 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                           label: 'Round the alpha corners',
                           summary: 'Cuts the corners to transparent.',
                         },
-                        {
-                          baseInput: {
-                            transform: 'normal-map',
-                          },
-                          fields: [
-                            {
-                              initial: 'keep',
-                              inputPath: ['format'],
-                              key: 'format',
-                              label: 'Encoding',
-                              type: {
-                                kind: 'enum',
-                                members: [
-                                  {
-                                    id: 'keep',
-                                    label: 'Keep the source encoding',
-                                  },
-                                  {
-                                    id: 'dxt1',
-                                    label: 'DXT1 / BC1 (binary alpha)',
-                                  },
-                                  {
-                                    id: 'dxt3',
-                                    label: 'DXT3 / BC2',
-                                  },
-                                  {
-                                    id: 'dxt5',
-                                    label: 'DXT5 / BC3',
-                                  },
-                                  {
-                                    id: 'rgba8',
-                                    label: 'Uncompressed RGBA8',
-                                  },
-                                  {
-                                    id: 'auto',
-                                    label: 'DXT5 if any texel is partially transparent, else DXT1',
-                                  },
-                                ],
-                              },
-                            },
-                          ],
-                          id: 'dds-normal-map',
-                          label: 'Convert a normal map to the SC2 layout',
-                          summary:
-                            'Moves the normal channels into the layout the SC2 shaders read.',
-                        },
                       ],
                       schemaVersion: 1,
                     },
@@ -8144,8 +8181,16 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                           },
                           fields: [],
                           id: 'png',
-                          label: 'Export PNG',
+                          label: 'PNG',
                           summary: 'Writes the base mip as a PNG file.',
+                          writes: {
+                            extension: '.png',
+                            format: {
+                              id: 'png',
+                              label: 'PNG',
+                            },
+                            mediaType: 'image/png',
+                          },
                         },
                         {
                           baseInput: {
@@ -8153,21 +8198,110 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                             target: 'dds',
                           },
                           fields: [],
-                          id: 'dxt1',
-                          label: 'Convert to DXT1',
+                          id: 'dds-dxt1',
+                          label: 'DDS · DXT1 / BC1 (binary alpha)',
                           summary:
                             'Writes a DXT1 copy; refused while any texel is partially transparent.',
+                          writes: {
+                            encoding: {
+                              id: 'dxt1',
+                              label: 'DXT1 / BC1 (binary alpha)',
+                            },
+                            extension: '.dds',
+                            format: {
+                              id: 'dds',
+                              label: 'DDS',
+                            },
+                            mediaType: 'image/vnd-ms.dds',
+                          },
                         },
                         {
                           baseInput: {
+                            format: 'dxt3',
                             target: 'dds',
-                            transform: 'button-icon',
                           },
                           fields: [],
-                          id: 'button',
-                          label: 'Prepare SC2 button icon',
-                          summary:
-                            'Writes a DXT5 button icon (square source, at most 256 x 256) with a transparent frame.',
+                          id: 'dds-dxt3',
+                          label: 'DDS · DXT3 / BC2',
+                          summary: 'Writes a DXT3 copy.',
+                          writes: {
+                            encoding: {
+                              id: 'dxt3',
+                              label: 'DXT3 / BC2',
+                            },
+                            extension: '.dds',
+                            format: {
+                              id: 'dds',
+                              label: 'DDS',
+                            },
+                            mediaType: 'image/vnd-ms.dds',
+                          },
+                        },
+                        {
+                          baseInput: {
+                            format: 'dxt5',
+                            target: 'dds',
+                          },
+                          fields: [],
+                          id: 'dds-dxt5',
+                          label: 'DDS · DXT5 / BC3',
+                          summary: 'Writes a DXT5 copy.',
+                          writes: {
+                            encoding: {
+                              id: 'dxt5',
+                              label: 'DXT5 / BC3',
+                            },
+                            extension: '.dds',
+                            format: {
+                              id: 'dds',
+                              label: 'DDS',
+                            },
+                            mediaType: 'image/vnd-ms.dds',
+                          },
+                        },
+                        {
+                          baseInput: {
+                            format: 'rgba8',
+                            target: 'dds',
+                          },
+                          fields: [],
+                          id: 'dds-rgba8',
+                          label: 'DDS · Uncompressed RGBA8',
+                          summary: 'Writes an uncompressed copy.',
+                          writes: {
+                            encoding: {
+                              id: 'rgba8',
+                              label: 'Uncompressed RGBA8',
+                            },
+                            extension: '.dds',
+                            format: {
+                              id: 'dds',
+                              label: 'DDS',
+                            },
+                            mediaType: 'image/vnd-ms.dds',
+                          },
+                        },
+                        {
+                          baseInput: {
+                            format: 'auto',
+                            target: 'dds',
+                          },
+                          fields: [],
+                          id: 'dds-auto',
+                          label: 'DDS · Automatic',
+                          summary: 'DXT5 if any texel is partially transparent, else DXT1.',
+                          writes: {
+                            encoding: {
+                              id: 'auto',
+                              label: 'Automatic',
+                            },
+                            extension: '.dds',
+                            format: {
+                              id: 'dds',
+                              label: 'DDS',
+                            },
+                            mediaType: 'image/vnd-ms.dds',
+                          },
                         },
                       ],
                       schemaVersion: 1,
@@ -8617,13 +8751,13 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             id: 'modkit/ico',
             limitations: [
               'The MK3 port validates every directory range, inspects PNG-backed and DIB entries, and decodes the selected uncompressed 24-bit or 32-bit DIB plus its AND mask to RGBA8.',
-              'PNG-backed pixel-region decoding, indexed/bitfield/compressed DIB decoding, writing, and pixel editing remain unsupported.',
+              'PNG-backed pixel-region decoding, indexed/bitfield/compressed DIB decoding remain unsupported; a pixel edit rewrites only the shown picture.',
             ],
             runtimeVariants: [
               {
                 entrypoint: './src/ico/codec.js',
                 executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: ['read-source'],
+                requestedPermissionClasses: ['read-source', 'write-source'],
                 target: {
                   environments: ['node'],
                 },
@@ -8632,7 +8766,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               {
                 entrypoint: './src/ico/codec.js',
                 executionProfile: 'worker-brokered',
-                requestedPermissionClasses: ['read-source'],
+                requestedPermissionClasses: ['read-source', 'write-source'],
                 target: {
                   environments: ['browser-worker', 'node-worker'],
                 },
@@ -8649,6 +8783,23 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 maxNodes: 100000,
                 maxScalarBytes: 104857600,
               },
+              fidelityEvidence: [
+                {
+                  claim: {
+                    preservesUnknownData: true,
+                    roundTrip: 'semantic',
+                  },
+                  conformanceProfile: 'modkit/codec-contribution-v1',
+                  corpusDigest: 'none:proof-suite',
+                  corpusId: 'modkit/extensions/images/test/raster-edit-content.test.ts',
+                  evidenceId: 'ico-edit-content-v1',
+                  formatId: 'ico',
+                  inputClass: 'ico-rgba8',
+                  optionsFingerprint: 'options:replace-pixels',
+                  provenAt: '2026-09-18T00:00:00Z',
+                  representationId: 'raster-metadata',
+                },
+              ],
               formatRefs: [
                 {
                   formatId: 'ico',
@@ -8690,6 +8841,105 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                   mutatesSource: false,
                   outputKinds: ['bytes'],
                   requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'transform',
+                  id: 'edit.content',
+                  inputSchema: {
+                    $ref: 'modkit://images/raster-edit-content.v1',
+                    document: {
+                      forms: [
+                        {
+                          baseInput: {
+                            transform: 'color-key',
+                          },
+                          fields: [
+                            {
+                              initial: 255,
+                              inputPath: ['target', 'r'],
+                              key: 'r',
+                              label: 'Red',
+                              required: true,
+                              type: {
+                                integer: true,
+                                kind: 'number',
+                                max: 255,
+                                min: 0,
+                              },
+                            },
+                            {
+                              initial: 0,
+                              inputPath: ['target', 'g'],
+                              key: 'g',
+                              label: 'Green',
+                              required: true,
+                              type: {
+                                integer: true,
+                                kind: 'number',
+                                max: 255,
+                                min: 0,
+                              },
+                            },
+                            {
+                              initial: 255,
+                              inputPath: ['target', 'b'],
+                              key: 'b',
+                              label: 'Blue',
+                              required: true,
+                              type: {
+                                integer: true,
+                                kind: 'number',
+                                max: 255,
+                                min: 0,
+                              },
+                            },
+                            {
+                              initial: 0,
+                              inputPath: ['tolerance'],
+                              key: 'tolerance',
+                              label: 'Tolerance',
+                              required: true,
+                              type: {
+                                integer: true,
+                                kind: 'number',
+                                max: 255,
+                                min: 0,
+                              },
+                            },
+                          ],
+                          id: 'raster-color-key',
+                          label: 'Make one colour transparent',
+                          summary:
+                            'Every pixel within the tolerance of the colour becomes fully transparent.',
+                        },
+                        {
+                          baseInput: {
+                            transform: 'rounded-alpha',
+                          },
+                          fields: [
+                            {
+                              initial: 8,
+                              inputPath: ['radius'],
+                              key: 'radius',
+                              label: 'Radius',
+                              required: true,
+                              type: {
+                                kind: 'number',
+                                min: 0,
+                              },
+                            },
+                          ],
+                          id: 'raster-rounded-alpha',
+                          label: 'Round the alpha corners',
+                          summary: 'Cuts the corners to transparent.',
+                        },
+                      ],
+                      schemaVersion: 1,
+                    },
+                  },
+                  mutatesSource: true,
+                  outputKinds: ['edit-plan'],
+                  requiredPermissions: ['read-source', 'write-source'],
                 },
               ],
               probe: {
@@ -9641,6 +9891,23 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 maxNodes: 100000,
                 maxScalarBytes: 104857600,
               },
+              fidelityEvidence: [
+                {
+                  claim: {
+                    preservesUnknownData: false,
+                    roundTrip: 'semantic',
+                  },
+                  conformanceProfile: 'modkit/codec-contribution-v1',
+                  corpusDigest: 'none:proof-suite',
+                  corpusId: 'modkit/extensions/images/test/raster-edit-content.test.ts',
+                  evidenceId: 'png-edit-content-v1',
+                  formatId: 'png',
+                  inputClass: 'png-rgba8',
+                  optionsFingerprint: 'options:replace-pixels',
+                  provenAt: '2026-09-18T00:00:00Z',
+                  representationId: 'raster-metadata',
+                },
+              ],
               formatRefs: [
                 {
                   formatId: 'png',
@@ -9694,24 +9961,153 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                       forms: [
                         {
                           baseInput: {
+                            target: 'png',
+                          },
+                          fields: [],
+                          id: 'png',
+                          label: 'PNG',
+                          summary: 'Writes the base image as a PNG file.',
+                          writes: {
+                            extension: '.png',
+                            format: {
+                              id: 'png',
+                              label: 'PNG',
+                            },
+                            mediaType: 'image/png',
+                          },
+                        },
+                        {
+                          baseInput: {
+                            format: 'dxt1',
+                            target: 'dds',
+                          },
+                          fields: [],
+                          id: 'dds-dxt1',
+                          label: 'DDS · DXT1 / BC1 (binary alpha)',
+                          summary:
+                            'Writes a DXT1 copy; refused while any texel is partially transparent.',
+                          writes: {
+                            encoding: {
+                              id: 'dxt1',
+                              label: 'DXT1 / BC1 (binary alpha)',
+                            },
+                            extension: '.dds',
+                            format: {
+                              id: 'dds',
+                              label: 'DDS',
+                            },
+                            mediaType: 'image/vnd-ms.dds',
+                          },
+                        },
+                        {
+                          baseInput: {
+                            format: 'dxt3',
+                            target: 'dds',
+                          },
+                          fields: [],
+                          id: 'dds-dxt3',
+                          label: 'DDS · DXT3 / BC2',
+                          summary: 'Writes a DXT3 copy.',
+                          writes: {
+                            encoding: {
+                              id: 'dxt3',
+                              label: 'DXT3 / BC2',
+                            },
+                            extension: '.dds',
+                            format: {
+                              id: 'dds',
+                              label: 'DDS',
+                            },
+                            mediaType: 'image/vnd-ms.dds',
+                          },
+                        },
+                        {
+                          baseInput: {
+                            format: 'dxt5',
+                            target: 'dds',
+                          },
+                          fields: [],
+                          id: 'dds-dxt5',
+                          label: 'DDS · DXT5 / BC3',
+                          summary: 'Writes a DXT5 copy.',
+                          writes: {
+                            encoding: {
+                              id: 'dxt5',
+                              label: 'DXT5 / BC3',
+                            },
+                            extension: '.dds',
+                            format: {
+                              id: 'dds',
+                              label: 'DDS',
+                            },
+                            mediaType: 'image/vnd-ms.dds',
+                          },
+                        },
+                        {
+                          baseInput: {
+                            format: 'rgba8',
+                            target: 'dds',
+                          },
+                          fields: [],
+                          id: 'dds-rgba8',
+                          label: 'DDS · Uncompressed RGBA8',
+                          summary: 'Writes an uncompressed copy.',
+                          writes: {
+                            encoding: {
+                              id: 'rgba8',
+                              label: 'Uncompressed RGBA8',
+                            },
+                            extension: '.dds',
+                            format: {
+                              id: 'dds',
+                              label: 'DDS',
+                            },
+                            mediaType: 'image/vnd-ms.dds',
+                          },
+                        },
+                        {
+                          baseInput: {
+                            format: 'auto',
+                            target: 'dds',
+                          },
+                          fields: [],
+                          id: 'dds-auto',
+                          label: 'DDS · Automatic',
+                          summary: 'DXT5 if any texel is partially transparent, else DXT1.',
+                          writes: {
+                            encoding: {
+                              id: 'auto',
+                              label: 'Automatic',
+                            },
+                            extension: '.dds',
+                            format: {
+                              id: 'dds',
+                              label: 'DDS',
+                            },
+                            mediaType: 'image/vnd-ms.dds',
+                          },
+                        },
+                        {
+                          baseInput: {
                             icon: true,
                             target: 'dds',
                           },
                           fields: [],
-                          id: 'dds',
-                          label: 'Convert icon to DDS',
+                          id: 'dds-icon',
+                          label: 'DDS · Icon (DXT5)',
                           summary: 'Writes a DXT5 DDS of a square icon smaller than 256 x 256.',
-                        },
-                        {
-                          baseInput: {
-                            target: 'dds',
-                            transform: 'button-icon',
+                          writes: {
+                            encoding: {
+                              id: 'icon',
+                              label: 'Icon (DXT5)',
+                            },
+                            extension: '.dds',
+                            format: {
+                              id: 'dds',
+                              label: 'DDS',
+                            },
+                            mediaType: 'image/vnd-ms.dds',
                           },
-                          fields: [],
-                          id: 'button',
-                          label: 'Prepare SC2 button icon',
-                          summary:
-                            'Writes a DXT5 button icon (square source, at most 256 x 256) with a transparent frame.',
                         },
                       ],
                       schemaVersion: 1,
@@ -9762,6 +10158,105 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                           label: 'Set a PNG text field',
                           summary:
                             'Sets or replaces one tEXt chunk; every other byte of the file is kept.',
+                        },
+                      ],
+                      schemaVersion: 1,
+                    },
+                  },
+                  mutatesSource: true,
+                  outputKinds: ['edit-plan'],
+                  requiredPermissions: ['read-source', 'write-source'],
+                },
+                {
+                  handlerId: 'transform',
+                  id: 'edit.content',
+                  inputSchema: {
+                    $ref: 'modkit://images/raster-edit-content.v1',
+                    document: {
+                      forms: [
+                        {
+                          baseInput: {
+                            transform: 'color-key',
+                          },
+                          fields: [
+                            {
+                              initial: 255,
+                              inputPath: ['target', 'r'],
+                              key: 'r',
+                              label: 'Red',
+                              required: true,
+                              type: {
+                                integer: true,
+                                kind: 'number',
+                                max: 255,
+                                min: 0,
+                              },
+                            },
+                            {
+                              initial: 0,
+                              inputPath: ['target', 'g'],
+                              key: 'g',
+                              label: 'Green',
+                              required: true,
+                              type: {
+                                integer: true,
+                                kind: 'number',
+                                max: 255,
+                                min: 0,
+                              },
+                            },
+                            {
+                              initial: 255,
+                              inputPath: ['target', 'b'],
+                              key: 'b',
+                              label: 'Blue',
+                              required: true,
+                              type: {
+                                integer: true,
+                                kind: 'number',
+                                max: 255,
+                                min: 0,
+                              },
+                            },
+                            {
+                              initial: 0,
+                              inputPath: ['tolerance'],
+                              key: 'tolerance',
+                              label: 'Tolerance',
+                              required: true,
+                              type: {
+                                integer: true,
+                                kind: 'number',
+                                max: 255,
+                                min: 0,
+                              },
+                            },
+                          ],
+                          id: 'raster-color-key',
+                          label: 'Make one colour transparent',
+                          summary:
+                            'Every pixel within the tolerance of the colour becomes fully transparent.',
+                        },
+                        {
+                          baseInput: {
+                            transform: 'rounded-alpha',
+                          },
+                          fields: [
+                            {
+                              initial: 8,
+                              inputPath: ['radius'],
+                              key: 'radius',
+                              label: 'Radius',
+                              required: true,
+                              type: {
+                                kind: 'number',
+                                min: 0,
+                              },
+                            },
+                          ],
+                          id: 'raster-rounded-alpha',
+                          label: 'Round the alpha corners',
+                          summary: 'Cuts the corners to transparent.',
                         },
                       ],
                       schemaVersion: 1,
@@ -9985,14 +10480,14 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             id: 'modkit/tga',
             limitations: [
               'The compatibility port performs a bounded TGA header walk and decodes raw or RLE non-colormapped truecolor and grayscale payloads while normalizing the declared image origin.',
-              'Color-mapped pixel decoding, TGA writing, metadata editing, and pixel editing remain unsupported.',
+              'Color-mapped pixel decoding and metadata editing remain unsupported; a pixel edit is written back as uncompressed 32-bit RGBA.',
               'Manifest routing uses the TGA 2.0 TRUEVISION-XFILE footer when present; older footerless files remain available through the .tga extension and header plausibility probe.',
             ],
             runtimeVariants: [
               {
                 entrypoint: './src/tga/codec.js',
                 executionProfile: 'trusted-in-process',
-                requestedPermissionClasses: ['read-source'],
+                requestedPermissionClasses: ['read-source', 'write-source'],
                 target: {
                   environments: ['node'],
                 },
@@ -10001,7 +10496,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
               {
                 entrypoint: './src/tga/codec.js',
                 executionProfile: 'worker-brokered',
-                requestedPermissionClasses: ['read-source'],
+                requestedPermissionClasses: ['read-source', 'write-source'],
                 target: {
                   environments: ['browser-worker', 'node-worker'],
                 },
@@ -10018,6 +10513,23 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                 maxNodes: 100000,
                 maxScalarBytes: 104857600,
               },
+              fidelityEvidence: [
+                {
+                  claim: {
+                    preservesUnknownData: false,
+                    roundTrip: 'semantic',
+                  },
+                  conformanceProfile: 'modkit/codec-contribution-v1',
+                  corpusDigest: 'none:proof-suite',
+                  corpusId: 'modkit/extensions/images/test/raster-edit-content.test.ts',
+                  evidenceId: 'tga-edit-content-v1',
+                  formatId: 'tga',
+                  inputClass: 'tga-rgba8',
+                  optionsFingerprint: 'options:replace-pixels',
+                  provenAt: '2026-09-18T00:00:00Z',
+                  representationId: 'raster-metadata',
+                },
+              ],
               formatRefs: [
                 {
                   formatId: 'tga',
@@ -10059,6 +10571,105 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
                   mutatesSource: false,
                   outputKinds: ['bytes'],
                   requiredPermissions: ['read-source'],
+                },
+                {
+                  handlerId: 'transform',
+                  id: 'edit.content',
+                  inputSchema: {
+                    $ref: 'modkit://images/raster-edit-content.v1',
+                    document: {
+                      forms: [
+                        {
+                          baseInput: {
+                            transform: 'color-key',
+                          },
+                          fields: [
+                            {
+                              initial: 255,
+                              inputPath: ['target', 'r'],
+                              key: 'r',
+                              label: 'Red',
+                              required: true,
+                              type: {
+                                integer: true,
+                                kind: 'number',
+                                max: 255,
+                                min: 0,
+                              },
+                            },
+                            {
+                              initial: 0,
+                              inputPath: ['target', 'g'],
+                              key: 'g',
+                              label: 'Green',
+                              required: true,
+                              type: {
+                                integer: true,
+                                kind: 'number',
+                                max: 255,
+                                min: 0,
+                              },
+                            },
+                            {
+                              initial: 255,
+                              inputPath: ['target', 'b'],
+                              key: 'b',
+                              label: 'Blue',
+                              required: true,
+                              type: {
+                                integer: true,
+                                kind: 'number',
+                                max: 255,
+                                min: 0,
+                              },
+                            },
+                            {
+                              initial: 0,
+                              inputPath: ['tolerance'],
+                              key: 'tolerance',
+                              label: 'Tolerance',
+                              required: true,
+                              type: {
+                                integer: true,
+                                kind: 'number',
+                                max: 255,
+                                min: 0,
+                              },
+                            },
+                          ],
+                          id: 'raster-color-key',
+                          label: 'Make one colour transparent',
+                          summary:
+                            'Every pixel within the tolerance of the colour becomes fully transparent.',
+                        },
+                        {
+                          baseInput: {
+                            transform: 'rounded-alpha',
+                          },
+                          fields: [
+                            {
+                              initial: 8,
+                              inputPath: ['radius'],
+                              key: 'radius',
+                              label: 'Radius',
+                              required: true,
+                              type: {
+                                kind: 'number',
+                                min: 0,
+                              },
+                            },
+                          ],
+                          id: 'raster-rounded-alpha',
+                          label: 'Round the alpha corners',
+                          summary: 'Cuts the corners to transparent.',
+                        },
+                      ],
+                      schemaVersion: 1,
+                    },
+                  },
+                  mutatesSource: true,
+                  outputKinds: ['edit-plan'],
+                  requiredPermissions: ['read-source', 'write-source'],
                 },
               ],
               probe: {
@@ -10480,12 +11091,12 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'src/hdr/codec.js',
         'src/ico/codec.js',
         'src/ico/container.js',
+        'src/ico/encode.js',
         'src/index.js',
         'src/jpeg/codec.js',
         'src/ktx/codec.js',
         'src/ktx2/codec.js',
         'src/linked.js',
-        'src/ops/raster-ops.js',
         'src/ops/raster-transforms.js',
         'src/pal/codec.js',
         'src/pcx/codec.js',
@@ -10506,6 +11117,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
         'test/dds-transform.test.ts',
         'test/eac-r11-decode.test.ts',
         'test/png-palette-decode.test.ts',
+        'test/raster-edit-content.test.ts',
         'test/raster-export.test.ts',
         'vendor/texture2ddecoder/LICENSE',
         'vendor/texture2ddecoder/README.md',
@@ -11592,7 +12204,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
     },
     {
       artifact: {
-        artifactDigest: 'sha256:ddcfe9b666ddb9b13e552be526a114468317dd2a3d75a84c684d707c606489a2',
+        artifactDigest: 'sha256:104db82904699682061f555a686e25ca37427956c18886c80ed9c8776d8bf2d6',
         fileDigests: {
           'MIGRATION-NOTES-common-vector.json':
             'sha256:76e47ea6385d042f14075f379848628612d27d2c63d0038ee67ca818210aaba8',
@@ -11609,7 +12221,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
           'src/emf/codec.js':
             'sha256:6d5cefb8afb9903a197aaec92997b263e1b7ce7c377954ee2c456b09d3d0186b',
           'src/font/codec.js':
-            'sha256:739aee64948c6620921047c7206f0c35e30e366a527ac5f53a549447eb996268',
+            'sha256:e288d99416fe8c415c482a47a2325e8f87da77517d21bf39347fe0162954d73e',
           'src/index.js': 'sha256:904e9a577bfa759ce7ab355a01d2431961c7f7d3551a8b627a2eb56406948360',
           'src/linked.js':
             'sha256:1e605ad3eabcb7a41588dfaf196eef273984c8f644a3a6a6deb6bc1238af9db1',
@@ -11623,7 +12235,7 @@ export const WEB_EXTENSION_CATALOG = Object.freeze({
             'sha256:3545bef7d7d838dcb253c8aaea4a0f831b823478cb5637cb9d6c3c43972d928c',
         },
         inventoryRecordId:
-          'artifact:sha256:ddcfe9b666ddb9b13e552be526a114468317dd2a3d75a84c684d707c606489a2',
+          'artifact:sha256:104db82904699682061f555a686e25ca37427956c18886c80ed9c8776d8bf2d6',
       },
       artifactRoot: 'extensions/vector/',
       containers: {

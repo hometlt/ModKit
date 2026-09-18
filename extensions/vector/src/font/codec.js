@@ -16,6 +16,7 @@ import {
   createTreeDataSource,
   createVectorSceneSource,
 } from '@modkit/codec-kit'
+import { decompressBounded } from '@modkit/codec-kit/compression/bounded'
 
 const ID = 'modkit/vector-font'
 const SPECIMEN = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789&?!'
@@ -69,9 +70,9 @@ function sfntDirectory(bytes, start) {
   return { flavor: tagOf(bytes, start), tables }
 }
 
-async function inflate(bytes, expected) {
-  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate'))
-  const out = new Uint8Array(await new Response(stream).arrayBuffer())
+/** One zlib-compressed WOFF table, which must inflate to exactly its declared length. */
+async function woffTable(bytes, expected) {
+  const out = await decompressBounded(bytes, 'deflate', { maxOutputBytes: expected })
   if (out.byteLength !== expected) throw new RangeError('WOFF table inflated to the wrong size')
   return out
 }
@@ -92,7 +93,7 @@ async function woffDirectory(bytes, budget) {
     total += original
     if (total > budget) throw new RangeError('WOFF tables exceed the scalar budget')
     const raw = bytes.subarray(offset, offset + compressed)
-    tables.set(tagOf(bytes, at), compressed < original ? await inflate(raw, original) : raw)
+    tables.set(tagOf(bytes, at), compressed < original ? await woffTable(raw, original) : raw)
   }
   return { flavor: tagOf(bytes, 4), tables }
 }

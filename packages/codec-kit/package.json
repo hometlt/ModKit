@@ -102,6 +102,14 @@
       "types": "./dist/texture/index.d.ts",
       "default": "./dist/texture/index.js"
     },
+    "./texture/bc": {
+      "types": "./dist/texture/bc.d.ts",
+      "default": "./dist/texture/bc.js"
+    },
+    "./raster": {
+      "types": "./dist/raster/index.d.ts",
+      "default": "./dist/raster/index.js"
+    },
     "./legacy/language-contracts": {
       "types": "./dist/legacy/language-contracts/index.d.ts",
       "default": "./dist/legacy/language-contracts/index.js"
@@ -141,6 +149,14 @@
     "./compression": {
       "types": "./dist/compression/index.d.ts",
       "default": "./dist/compression/index.js"
+    },
+    "./compression/bounded": {
+      "types": "./dist/compression/bounded.d.ts",
+      "default": "./dist/compression/bounded.js"
+    },
+    "./checksum": {
+      "types": "./dist/checksum/index.d.ts",
+      "default": "./dist/checksum/index.js"
     },
     "./model/sources": {
       "types": "./dist/model/sources.d.ts",

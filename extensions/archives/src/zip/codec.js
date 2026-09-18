@@ -4,6 +4,8 @@ import {
   editPlanFromInput,
   simpleLease,
 } from '@modkit/codec-kit'
+import { crc32 } from '@modkit/codec-kit/checksum'
+import { decompressBounded } from '@modkit/codec-kit/compression/bounded'
 
 const ZIP_LOCAL = 0x04034b50
 const ZIP_CENTRAL = 0x02014b50
@@ -38,16 +40,6 @@ function u32(bytes, offset) {
   if (offset < 0 || offset + 4 > bytes.byteLength) throw new RangeError('truncated ZIP u32')
   return new DataView(bytes.buffer, bytes.byteOffset + offset, 4).getUint32(0, true)
 }
-
-const CRC_TABLE = (() => {
-  const table = new Uint32Array(256)
-  for (let index = 0; index < 256; index += 1) {
-    let value = index
-    for (let bit = 0; bit < 8; bit += 1) value = (value >>> 1) ^ (value & 1 ? 0xedb88320 : 0)
-    table[index] = value >>> 0
-  }
-  return table
-})()
 
 /**
  * ZIP's method numbers, for the ones a reader can name honestly.
@@ -90,14 +82,6 @@ function dosTimestamp(dosDate, dosTime) {
   if (month < 1 || month > 12 || day < 1 || day > 31) return undefined
   if (hour > 23 || minute > 59 || second > 59) return undefined
   return Date.UTC(year, month - 1, day, hour, minute, second)
-}
-
-function crc32(bytes) {
-  let crc = 0xffffffff
-  for (let index = 0; index < bytes.byteLength; index += 1) {
-    crc = (crc >>> 8) ^ (CRC_TABLE[(crc ^ (bytes[index] ?? 0)) & 0xff] ?? 0)
-  }
-  return (crc ^ 0xffffffff) >>> 0
 }
 
 function findEocd(bytes) {
@@ -185,14 +169,6 @@ export function parseZipArchive(bytes, maxEntries) {
   return Object.freeze(entries)
 }
 
-async function inflateRaw(bytes) {
-  if (typeof DecompressionStream !== 'function') {
-    throw new TypeError('deflate extraction is unavailable in this runtime')
-  }
-  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'))
-  return new Uint8Array(await new Response(stream).arrayBuffer())
-}
-
 export async function extractZipArchiveEntry(bytes, entry) {
   if (entry.kind !== 'file') throw new TypeError('directories have no byte payload')
   if ((entry.flags & FLAG_ENCRYPTED) !== 0)
@@ -209,7 +185,7 @@ export async function extractZipArchiveEntry(bytes, entry) {
     entry.method === 0
       ? compressed
       : entry.method === 8
-        ? await inflateRaw(compressed)
+        ? await decompressBounded(compressed, 'deflate-raw', { maxOutputBytes: entry.size })
         : (() => {
             throw new TypeError(`unsupported ZIP compression method ${entry.method}`)
           })()

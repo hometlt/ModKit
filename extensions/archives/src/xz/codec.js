@@ -1,25 +1,10 @@
 import { createInspectionCodec, createTreeDataSource, simpleLease } from '@modkit/codec-kit'
 import { lzma2Decode, lzma2DictionarySize } from '@modkit/codec-kit/compression'
+import { crc32 } from '@modkit/codec-kit/checksum'
 
 const ID = 'modkit/xz'
 const HEADER_MAGIC = Object.freeze([0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00])
 const FOOTER_MAGIC = Object.freeze([0x59, 0x5a])
-
-const CRC_TABLE = (() => {
-  const table = new Uint32Array(256)
-  for (let index = 0; index < 256; index += 1) {
-    let value = index
-    for (let bit = 0; bit < 8; bit += 1) value = (value >>> 1) ^ (value & 1 ? 0xedb88320 : 0)
-    table[index] = value >>> 0
-  }
-  return table
-})()
-
-function crc32(bytes) {
-  let crc = 0xffffffff
-  for (const byte of bytes) crc = (crc >>> 8) ^ (CRC_TABLE[(crc ^ byte) & 0xff] ?? 0)
-  return (crc ^ 0xffffffff) >>> 0
-}
 
 function u32(bytes, offset, label) {
   if (offset < 0 || offset + 4 > bytes.byteLength) throw new TypeError(`XZ ${label} is truncated`)

@@ -1,7 +1,7 @@
 /**
  * The pixel transforms MK2 shipped, by name, and the raster export every image codec shares.
  *
- * `ops/raster-ops.js` holds the format-agnostic transforms — resize, the normal and specular
+ * `@modkit/codec-kit/raster` holds the format-agnostic transforms — resize, the normal and specular
  * combine, rounded alpha, colour-key transparency and whole-image replacement. MK2 reached them
  * (and its DDS/PNG file conversions, `apps/modkit-vscode/src/dds-commands.ts`) from VS Code
  * commands; MK3 puts them behind codec operations instead — `edit.content` for an in-place edit
@@ -20,13 +20,13 @@
 
 import { editPlanFromInput, replaceBytes } from '@modkit/codec-kit'
 import { ENCODABLE_FORMATS, chooseDdsFormatForImage, encodeDds } from '../dds/encode.js'
-import { encodePng } from '../writers/png-encoder.js'
 import {
   applyColorKeyTransparency,
   applyRoundedAlpha,
   combineNormalSpecular,
+  encodePng,
   resizeRgba,
-} from './raster-ops.js'
+} from '@modkit/codec-kit/raster'
 
 export const TRANSFORMS = Object.freeze({
   /** No pixel change: re-encode only (MK2 "DDS Convert DXT5 Binary Alpha to DXT1"). */

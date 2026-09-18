@@ -62,3 +62,26 @@ export async function decompressBounded(
   }
   return output
 }
+
+export type PortableCompressionFormat = PortableDecompressionFormat
+
+/**
+ * Compress with the platform's own encoder: zlib for PNG, raw deflate for ZIP, gzip for GZip.
+ * Every runtime Modkit targets has `CompressionStream`; one that does not refuses by name.
+ */
+export async function compressPortable(
+  payload: Uint8Array,
+  format: PortableCompressionFormat,
+  signal?: AbortSignal,
+): Promise<Uint8Array> {
+  signal?.throwIfAborted()
+  if (typeof CompressionStream !== 'function') {
+    throw new TypeError('portable compression requires CompressionStream')
+  }
+  const stream = new Blob([new Uint8Array(payload)])
+    .stream()
+    .pipeThrough(new CompressionStream(format))
+  const output = new Uint8Array(await new Response(stream).arrayBuffer())
+  signal?.throwIfAborted()
+  return output
+}

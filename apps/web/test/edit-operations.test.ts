@@ -62,13 +62,15 @@ function editable(key: string, value: string) {
 }
 
 describe('shared schema-driven edit forms in the PWA', () => {
-  it('discovers all eight shipped forms from operation input schemas', () => {
+  it('discovers every shipped form from operation input schemas', () => {
     expect(
       (['png', 'mp3', 'jpeg', 'zip'] as const).flatMap(name =>
         editOffer(descriptor(name), { editable: true }).forms.map(form => form.id),
       ),
     ).toEqual([
       'png-set-text',
+      'raster-color-key',
+      'raster-rounded-alpha',
       'mp3-set-text-frame',
       'jpeg-set-comment',
       'jpeg-remove-segment',
@@ -130,12 +132,16 @@ describe('shared schema-driven edit forms in the PWA', () => {
     ).toBe('the operation did not publish an input schema')
     const png = descriptor('png') as unknown as { metadata: MetadataGroup[] }
     png.metadata = []
-    expect(editOffer(png as unknown as AnyDescriptor, { editable: true }).forms).toEqual([])
+    // the text form needs its metadata binding; the pixel transforms do not
+    expect(
+      editOffer(png as unknown as AnyDescriptor, { editable: true }).forms.map(form => form.id),
+    ).toEqual(['raster-color-key', 'raster-rounded-alpha'])
   })
 
   it('retains shared descriptor and refusal helpers', () => {
     const subject = descriptor('zip')
-    expect(declaredMutatingOperations(subject)).toHaveLength(2)
+    // edit.structure, edit.content and the standard container.pack
+    expect(declaredMutatingOperations(subject)).toHaveLength(3)
     expect(metadataEntries(descriptor('png'), 'png-text')[0]?.value).toBe('old')
     expect(invokeRefusalMessage({ reason: 'permission-missing' })).toContain('permission-missing')
   })

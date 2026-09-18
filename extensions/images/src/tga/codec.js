@@ -4,7 +4,7 @@ import {
   createTreeDataSource,
 } from '@modkit/codec-kit'
 import { rasterEditContent, rasterEditContentOperation } from '../ops/raster-transforms.js'
-import { encodeTga } from './encode.js'
+import { encodeTga } from '@modkit/codec-kit/raster'
 
 const ID = 'modkit/tga'
 const FOOTER = Object.freeze([

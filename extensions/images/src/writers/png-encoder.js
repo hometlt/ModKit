@@ -14,95 +14,13 @@
  */
 
 import { defineWriter } from '@modkit/codec-kit'
+import { encodePng } from '@modkit/codec-kit/raster'
 
-const SIGNATURE = Object.freeze([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])
-const ascii = new TextEncoder()
 const CHANNELS = 4
 const MAX_DIMENSION = 0x7fffffff
 
-function crc32(bytes, start, end) {
-  let crc = 0xffffffff
-  for (let offset = start; offset < end; offset += 1) {
-    crc ^= bytes[offset] ?? 0
-    for (let bit = 0; bit < 8; bit += 1) {
-      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0)
-    }
-  }
-  return (crc ^ 0xffffffff) >>> 0
-}
-
-function chunkBytes(type, data) {
-  const out = new Uint8Array(12 + data.byteLength)
-  const view = new DataView(out.buffer)
-  view.setUint32(0, data.byteLength, false)
-  out.set(ascii.encode(type), 4)
-  out.set(data, 8)
-  view.setUint32(8 + data.byteLength, crc32(out, 4, 8 + data.byteLength), false)
-  return out
-}
-
 function deflateUnavailable() {
   return typeof CompressionStream !== 'function'
-}
-
-async function deflate(bytes, signal) {
-  if (deflateUnavailable()) {
-    throw new TypeError('no portable zlib encoder is available (CompressionStream is missing)')
-  }
-  const stream = new Blob([bytes]).stream().pipeThrough(new CompressionStream('deflate'))
-  const reader = stream.getReader()
-  const chunks = []
-  let total = 0
-  try {
-    while (true) {
-      if (signal?.aborted) throw new DOMException('operation cancelled', 'AbortError')
-      const chunk = await reader.read()
-      if (chunk.done) break
-      chunks.push(chunk.value)
-      total += chunk.value.byteLength
-    }
-  } finally {
-    reader.releaseLock()
-  }
-  const compressed = new Uint8Array(total)
-  let offset = 0
-  for (const chunk of chunks) {
-    compressed.set(chunk, offset)
-    offset += chunk.byteLength
-  }
-  return compressed
-}
-
-/** RGBA8 → PNG bytes; also the `export.convert` PNG target of every image codec. */
-export async function encodePng(width, height, pixels, signal) {
-  const rowBytes = width * CHANNELS
-  const raw = new Uint8Array((rowBytes + 1) * height)
-  for (let row = 0; row < height; row += 1) {
-    // filter 0 (None) on every scanline: the filter byte is already zero
-    raw.set(pixels.subarray(row * rowBytes, (row + 1) * rowBytes), row * (rowBytes + 1) + 1)
-  }
-  const header = new Uint8Array(13)
-  const view = new DataView(header.buffer)
-  view.setUint32(0, width, false)
-  view.setUint32(4, height, false)
-  header[8] = 8 // bit depth
-  header[9] = 6 // colour type: truecolour with alpha
-  header[10] = 0 // compression: deflate
-  header[11] = 0 // filter method 0
-  header[12] = 0 // no interlacing
-  const parts = [
-    Uint8Array.from(SIGNATURE),
-    chunkBytes('IHDR', header),
-    chunkBytes('IDAT', await deflate(raw, signal)),
-    chunkBytes('IEND', new Uint8Array(0)),
-  ]
-  const png = new Uint8Array(parts.reduce((total, part) => total + part.byteLength, 0))
-  let offset = 0
-  for (const part of parts) {
-    png.set(part, offset)
-    offset += part.byteLength
-  }
-  return png
 }
 
 function dimension(value) {

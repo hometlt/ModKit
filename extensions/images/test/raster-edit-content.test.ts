@@ -10,9 +10,7 @@ import { describe, expect, it } from 'vitest'
 import type { RasterImageSource } from '@modkit/sdk'
 import { openImageCodec } from './codec-session.js'
 import { encodeDds } from '../src/dds/encode.js'
-import { encodeDib } from '../src/ico/encode.js'
-import { encodeTga } from '../src/tga/encode.js'
-import { encodePng } from '../src/writers/png-encoder.js'
+import { encodeIconDib as encodeDib, encodePng, encodeTga } from '@modkit/codec-kit/raster'
 
 /** A 3 × 2 image with a distinct value in every channel of every pixel. */
 const painted = {

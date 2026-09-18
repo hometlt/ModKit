@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest'
 import type { RasterImageSource } from '@modkit/sdk'
 import { openImageCodec } from './codec-session.js'
 import { encodeDds } from '../src/dds/encode.js'
-import { encodePng } from '../src/writers/png-encoder.js'
+import { encodePng } from '@modkit/codec-kit/raster'
 
 function rgba(width: number, height: number, pixel: (x: number, y: number) => number[]) {
   const pixels = new Uint8Array(width * height * 4)
