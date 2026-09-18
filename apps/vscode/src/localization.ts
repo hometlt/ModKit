@@ -251,6 +251,12 @@ const EN_MESSAGES = Object.freeze({
   'vscode.edit.fidelityLoss': 'This rewrite may not preserve unaccounted format bytes',
   'vscode.edit.lossyConfirm': 'Saving re-encodes this file and loses quality. Save anyway?',
   'vscode.edit.lossySave': 'Save',
+  'vscode.archive.newFile': 'Name of the new file',
+  'vscode.archive.newFolder': 'Name of the new folder',
+  'vscode.archive.rename': 'New name for «{name}»',
+  'vscode.archive.badName': 'A name cannot be empty or contain / or \\',
+  'vscode.archive.deleteConfirm': 'Delete «{name}» from the archive? This cannot be undone.',
+  'vscode.archive.delete': 'Delete',
   'vscode.edit.fidelityNotes': 'Writer fidelity: {notes}',
   'vscode.edit.required': '{field} is required',
   'vscode.edit.unsupportedHandler': 'this host cannot construct the input for «{handler}» yet',
@@ -281,8 +287,7 @@ const EN_MESSAGES = Object.freeze({
   'vscode.edit.refusal.guaranteeUnachievable': 'the host cannot promise this write safely enough',
   'vscode.edit.refusal.fidelityUnproven':
     'no evidence backs the writer fidelity claim for this change',
-  'vscode.edit.refusal.confirmationRequired':
-    'the lossy write was not confirmed',
+  'vscode.edit.refusal.confirmationRequired': 'the lossy write was not confirmed',
   'vscode.edit.refusal.payloadUnavailable': 'the edited bytes never reached the writer',
 
   'vscode.edit.form.pngSetText.label': 'Set a PNG text field',
@@ -573,6 +578,12 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.edit.fidelityLoss': 'При записи могут потеряться неизвестные байты формата',
   'vscode.edit.lossyConfirm': 'Сохранение перекодирует файл с потерей качества. Сохранить?',
   'vscode.edit.lossySave': 'Сохранить',
+  'vscode.archive.newFile': 'Имя нового файла',
+  'vscode.archive.newFolder': 'Имя новой папки',
+  'vscode.archive.rename': 'Новое имя для «{name}»',
+  'vscode.archive.badName': 'Имя не может быть пустым или содержать / или \\',
+  'vscode.archive.deleteConfirm': 'Удалить «{name}» из архива? Отменить это нельзя.',
+  'vscode.archive.delete': 'Удалить',
   'vscode.edit.fidelityNotes': 'Точность записи: {notes}',
   'vscode.edit.required': 'Поле «{field}» обязательно',
   'vscode.edit.unsupportedHandler': 'Хост пока не умеет собирать данные для «{handler}»',
@@ -599,8 +610,7 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.edit.refusal.writeScopeMismatch': 'правка указывает файл вне разрешённой области записи',
   'vscode.edit.refusal.guaranteeUnachievable': 'хост не может обещать достаточно безопасную запись',
   'vscode.edit.refusal.fidelityUnproven': 'точность записи не подтверждена доказательствами',
-  'vscode.edit.refusal.confirmationRequired':
-    'запись с потерями не подтверждена',
+  'vscode.edit.refusal.confirmationRequired': 'запись с потерями не подтверждена',
   'vscode.edit.refusal.payloadUnavailable': 'изменённые байты не дошли до модуля записи',
 
   'vscode.edit.form.pngSetText.label': 'Задать текстовое поле PNG',

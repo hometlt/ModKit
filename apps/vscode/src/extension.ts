@@ -51,9 +51,11 @@ import {
 } from './acceptance.js'
 import {
   containerUriPath,
+  containerUriText,
   CONTAINER_SCHEME,
   parseContainerUriPath,
   parseContainerUriText,
+  splitContainer,
   type ContainerNode,
 } from './container-uri.js'
 import {
@@ -80,7 +82,12 @@ import {
   useArtifactDigestCache,
 } from '@modkit/host/node'
 import type { SubjectCandidateProviderSource, SubjectCandidateScope } from '@modkit/sdk'
-import type { ContainerRegistry } from './containers.js'
+import { isModkitError } from '@modkit/core'
+import {
+  CONTAINER_ENTRY_EXISTS,
+  CONTAINER_ENTRY_NOT_FOUND,
+  type ContainerRegistry,
+} from './containers.js'
 import {
   createOperationOutputStore,
   operationOutputName,
@@ -631,6 +638,8 @@ function subjectCandidateScopeOf(uri: vscode.Uri): VsCodeSubjectCandidateScope {
       : { containerUri: vscode.Uri.file(container.container).toString() }),
   })
 }
+
+const BACKSLASH = String.fromCharCode(92)
 
 class ModkitCustomDocument implements vscode.CustomDocument {
   readonly state: CustomDocumentState
@@ -1588,6 +1597,24 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     )
   }
 
+  /** Run one container change and answer in the filesystem's own error vocabulary. */
+  const changeContainer = async (uri: vscode.Uri, change: () => Promise<void>): Promise<void> => {
+    try {
+      await change()
+    } catch (error) {
+      if (error instanceof vscode.FileSystemError) throw error
+      const message = error instanceof Error ? error.message : String(error)
+      log(`[container] ${uri.path}: ${message}`)
+      if (isModkitError(error) && error.code === CONTAINER_ENTRY_EXISTS) {
+        throw vscode.FileSystemError.FileExists(message)
+      }
+      if (isModkitError(error) && error.code === CONTAINER_ENTRY_NOT_FOUND) {
+        throw vscode.FileSystemError.FileNotFound(message)
+      }
+      throw vscode.FileSystemError.NoPermissions(message)
+    }
+  }
+
   const containerChanges = new vscode.EventEmitter<vscode.FileChangeEvent[]>()
   context.subscriptions.push(containerChanges)
   // The same Explorer accepts local containers and remote VFS roots. This adapter owns no login protocol.
@@ -1804,31 +1831,50 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       }
     },
 
-    createDirectory: uri => {
-      throw vscode.FileSystemError.NoPermissions(uri)
-    },
     /*
-     * A member saves back into its container through the container's own `container.pack`. A
-     * format that cannot be written refuses with its reason, and VS Code's save-failure flow then
-     * offers Save As — the "keep a copy" the person needs.
+     * Writing, creating, removing and renaming inside a container go through its own
+     * `container.pack`, so the Explorer's file operations work on an archive as on a folder. A
+     * format that cannot be written refuses with its reason; on a save, VS Code then offers Save
+     * As — the "keep a copy" the person needs.
      */
-    async writeFile(uri, content) {
+    async createDirectory(uri) {
       const { container, entry } = containerLocation(uri)
-      try {
-        await containers.write(container, entry, content)
-      } catch (error) {
-        if (error instanceof vscode.FileSystemError) throw error
-        const message = error instanceof Error ? error.message : String(error)
-        log(`[container] ${uri.path}: ${message}`)
-        throw vscode.FileSystemError.NoPermissions(message)
+      await changeContainer(uri, () => containers.edit(container, { folders: [entry] }))
+      containerChanges.fire([{ type: vscode.FileChangeType.Created, uri }])
+    },
+    async writeFile(uri, content, flags) {
+      const { container, entry } = containerLocation(uri)
+      const exists = await containers.stat(container, entry).then(
+        () => true,
+        () => false,
+      )
+      if (!exists && !flags.create) throw vscode.FileSystemError.FileNotFound(uri)
+      if (exists && !flags.overwrite) throw vscode.FileSystemError.FileExists(uri)
+      await changeContainer(uri, () => containers.write(container, entry, content))
+      containerChanges.fire([
+        { type: exists ? vscode.FileChangeType.Changed : vscode.FileChangeType.Created, uri },
+      ])
+    },
+    async delete(uri) {
+      const { container, entry } = containerLocation(uri)
+      if (entry === '') throw vscode.FileSystemError.NoPermissions(uri)
+      await changeContainer(uri, () => containers.edit(container, { remove: [entry] }))
+      containerChanges.fire([{ type: vscode.FileChangeType.Deleted, uri }])
+    },
+    async rename(oldUri, newUri) {
+      const from = containerLocation(oldUri)
+      const to = containerLocation(newUri)
+      if (from.container !== to.container || from.entry === '' || to.entry === '') {
+        // Moving between containers is a copy and a delete; VS Code falls back to that itself.
+        throw vscode.FileSystemError.NoPermissions(oldUri)
       }
-      containerChanges.fire([{ type: vscode.FileChangeType.Changed, uri }])
-    },
-    delete: uri => {
-      throw vscode.FileSystemError.NoPermissions(uri)
-    },
-    rename: uri => {
-      throw vscode.FileSystemError.NoPermissions(uri)
+      await changeContainer(oldUri, () =>
+        containers.edit(from.container, { rename: [{ from: from.entry, to: to.entry }] }),
+      )
+      containerChanges.fire([
+        { type: vscode.FileChangeType.Deleted, uri: oldUri },
+        { type: vscode.FileChangeType.Created, uri: newUri },
+      ])
     },
   }
 
@@ -5353,6 +5399,101 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             viewerStatus: (items, choose) =>
               viewerStatusBar.set(subjectKey(openPath), items, choose),
           }),
+      /*
+       * The archive viewer's context menu, answered as the Explorer answers its own: names are
+       * asked for in the editor's input box, a delete is confirmed in a modal, paths go to the
+       * clipboard. Every change is one repack of the container through `containers.edit`.
+       */
+      archiveAction: async ({ container, action, path, kind }) => {
+        const { file, members } = splitContainer(container)
+        const leafOf = (item: string): string => item.slice(item.lastIndexOf('/') + 1)
+        const parentOf = (item: string): string => item.slice(0, Math.max(0, item.lastIndexOf('/')))
+        const join = (folder: string, leaf: string): string =>
+          folder === '' ? leaf : `${folder}/${leaf}`
+        const askName = async (prompt: string, value?: string): Promise<string | undefined> =>
+          (
+            await vscode.window.showInputBox({
+              prompt,
+              ...(value === undefined ? {} : { value }),
+              validateInput: text =>
+                text.trim() === '' || text.includes('/') || text.includes(BACKSLASH)
+                  ? localizer.text('vscode.archive.badName')
+                  : undefined,
+            })
+          )?.trim()
+        const openMember = (member: string): Thenable<unknown> =>
+          vscode.commands.executeCommand(
+            'vscode.open',
+            subjectUriOf(containerUriText(container, member)),
+            { preview: false },
+          )
+        try {
+          switch (action) {
+            case 'open':
+              await openMember(path)
+              return false
+            case 'copy-path':
+            case 'copy-relative-path': {
+              // `C:\Folder\Z2.zip!\Z.zip!\T.txt`, in the separators the file system uses.
+              const separator = file.includes(BACKSLASH) ? BACKSLASH : '/'
+              const head =
+                action === 'copy-path'
+                  ? file
+                  : vscode.workspace.asRelativePath(vscode.Uri.file(file), false)
+              const inside = [...members, path].filter(item => item !== '')
+              await vscode.env.clipboard.writeText(
+                [head, ...inside]
+                  .map(item => item.replaceAll('/', separator))
+                  .join(`!${separator}`),
+              )
+              return false
+            }
+            case 'new-file':
+            case 'new-folder': {
+              const folder = kind === 'file' ? parentOf(path) : path
+              const leaf = await askName(
+                localizer.text(
+                  action === 'new-file' ? 'vscode.archive.newFile' : 'vscode.archive.newFolder',
+                ),
+              )
+              if (leaf === undefined || leaf === '') return false
+              const target = join(folder, leaf)
+              if (action === 'new-folder') {
+                await containers.edit(container, { folders: [target] })
+                return true
+              }
+              await containers.write(container, target, new Uint8Array())
+              await openMember(target)
+              return true
+            }
+            case 'rename': {
+              const name = leafOf(path)
+              const leaf = await askName(localizer.text('vscode.archive.rename', { name }), name)
+              if (leaf === undefined || leaf === '' || leaf === name) return false
+              await containers.edit(container, {
+                rename: [{ from: path, to: join(parentOf(path), leaf) }],
+              })
+              return true
+            }
+            case 'delete': {
+              const confirm = localizer.text('vscode.archive.delete')
+              const answer = await vscode.window.showWarningMessage(
+                localizer.text('vscode.archive.deleteConfirm', { name: leafOf(path) }),
+                { modal: true },
+                confirm,
+              )
+              if (answer !== confirm) return false
+              await containers.edit(container, { remove: [path] })
+              return true
+            }
+          }
+        } catch (error) {
+          void vscode.window.showErrorMessage(
+            `Modkit: ${error instanceof Error ? error.message : String(error)}`,
+          )
+          return false
+        }
+      },
       openInEditor: async path => {
         // A tab of its own: a preview tab would replace the archive the member was opened from.
         await vscode.commands.executeCommand('vscode.open', subjectUriOf(path), { preview: false })

@@ -933,41 +933,96 @@ function containerPackHandler(bytes, entries, model, budget, input, source) {
     const usableModel = usable(model)
     const request = requireRecord(value, 'container.pack')
     if (request.mode === 'create') {
-      throw new TypeError('container.pack creates no ZIP archive here; it replaces entries of one')
+      throw new TypeError('container.pack creates no ZIP archive here; it edits an existing one')
     }
-    const replacements = requireList(request.replacements, 'container.pack replacements')
-    if (replacements.length === 0) throw new TypeError('container.pack needs a replacement')
-    const replaced = new Map()
-    for (const item of replacements) {
-      const change = requireRecord(item, 'container.pack replacement')
-      const entry = entries.find(candidate => candidate.id === change.entryId)
-      if (entry === undefined || entry.kind !== 'file') {
-        throw new TypeError(`ZIP file entry id «${String(change.entryId)}» was not found`)
+    const byId = new Map(entries.map(entry => [entry.id, entry]))
+    const touched = new Set()
+    /** A listed member, pinned to the revision the host read, named at most once per request. */
+    const member = (item, label) => {
+      const change = requireRecord(item, label)
+      const entry = byId.get(change.entryId)
+      if (entry === undefined) {
+        throw new TypeError(`ZIP entry id «${String(change.entryId)}» was not found`)
       }
       if (change.expectedRevision !== source.revision) {
         throw new TypeError(`«${entry.name}» changed since it was read`)
       }
-      if (replaced.has(entry.id)) throw new TypeError(`«${entry.name}» is replaced twice`)
+      if (touched.has(entry.id)) throw new TypeError(`«${entry.name}» is changed twice`)
+      touched.add(entry.id)
+      return { change, entry }
+    }
+    const replaced = new Map()
+    for (const item of requireList(request.replacements, 'container.pack replacements')) {
+      const { change, entry } = member(item, 'container.pack replacement')
+      if (entry.kind !== 'file') throw new TypeError(`«${entry.name}» is a folder, not content`)
       replaced.set(
         entry.id,
         decodeBase64(change.bytesBase64, budget.maxScalarBytes, `bytes for «${entry.name}»`),
       )
     }
-    const planned = entries.map(entry => {
+    const removed = new Set()
+    for (const item of requireList(request.remove, 'container.pack remove')) {
+      removed.add(member(item, 'container.pack remove').entry.id)
+    }
+    const renamed = new Map()
+    for (const item of requireList(request.rename, 'container.pack rename')) {
+      const { change, entry } = member(item, 'container.pack rename')
+      const name = safePath(String(change.name ?? ''))
+      if (name === '') throw new TypeError('a rename target cannot be empty')
+      if (entry.name.endsWith('/') !== name.endsWith('/')) {
+        throw new TypeError(`renaming «${entry.name}» to «${name}» would change its kind`)
+      }
+      renamed.set(entry.id, name)
+    }
+    const added = requireList(request.add, 'container.pack add').map(item => {
+      const change = requireRecord(item, 'container.pack add')
+      const name = safePath(String(change.name ?? ''))
+      if (name === '') throw new TypeError('an added member needs a name')
+      return {
+        name,
+        bytes: decodeBase64(change.bytesBase64, budget.maxScalarBytes, `bytes for «${name}»`),
+      }
+    })
+    if (touched.size + added.length === 0) throw new TypeError('container.pack names no change')
+
+    const names = new Set()
+    const claim = name => {
+      if (names.has(name)) throw new TypeError(`«${name}» would appear twice in the archive`)
+      names.add(name)
+    }
+    const planned = []
+    for (const entry of entries) {
+      if (removed.has(entry.id)) continue
       const range = usableModel.ranges.get(entry.id)
       if (range === undefined) throw new TypeError(`«${entry.name}» has no readable local block`)
       const data = replaced.get(entry.id)
-      return data === undefined
-        ? verbatimEntry(bytes, entry, range)
-        : restoredEntry(bytes, entry, range, data)
-    })
-    const names = entries.filter(entry => replaced.has(entry.id)).map(entry => entry.name)
+      const to = renamed.get(entry.id)
+      claim(to ?? entry.name)
+      planned.push(
+        data !== undefined
+          ? restoredEntry(bytes, entry, range, data)
+          : to !== undefined
+            ? renamedEntry(bytes, entry, range, to)
+            : verbatimEntry(bytes, entry, range),
+      )
+    }
+    for (const item of added) {
+      claim(item.name)
+      planned.push(storedEntry(item.name, item.bytes))
+    }
+    if (planned.length === 0) throw new TypeError('container.pack would leave an empty archive')
+    const summary = [
+      ...[...replaced.keys()].map(id => `replace ${byId.get(id).name}`),
+      ...added.map(item => `add ${item.name}`),
+      ...[...removed].map(id => `remove ${byId.get(id).name}`),
+      ...[...renamed].map(([id, name]) => `rename ${byId.get(id).name} → ${name}`),
+    ]
     return editPlanOutput(
       input,
       assembleArchive(planned, usableModel.comment, budget),
       usableModel,
-      `zip-container-pack:${names.join(',')}`,
-      `replace ${names.join(', ')} (stored)`,
+      `zip-container-pack:${summary.join(';')}`,
+      summary.join(', '),
     )
   }
 }

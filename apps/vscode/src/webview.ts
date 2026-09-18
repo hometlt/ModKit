@@ -558,6 +558,18 @@ async function mount(
           if (container === undefined) return
           await bridge.request({ op: 'open-in-editor', path: container, entry })
         },
+        async archiveAction(action, target) {
+          const subject = focused ?? snapshot.openPath
+          if (subject === undefined) return false
+          const answer = await bridge.request({
+            op: 'archive-action',
+            subject,
+            action,
+            path: target.path,
+            kind: target.kind,
+          })
+          return answer === true
+        },
         onPixelEdit() {
           if (snapshot.openPath === undefined) return
           bridge.emit({ op: 'document-edited', path: snapshot.openPath })

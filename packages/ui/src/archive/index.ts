@@ -14,6 +14,7 @@ import type {
   ViewerModule,
 } from '@modkit/sdk'
 import { icon } from '../icons/index.js'
+import { setToken } from '../tokens/index.js'
 import { createMediaShell } from '../media-shell/index.js'
 import { describeEntry, formatEntryBytes } from '../namespace/index.js'
 import { type UiLocalizer } from '../localization/index.js'
@@ -37,6 +38,23 @@ export interface ArchiveViewerOptions {
    * dispatches `modkit-open-source` with the member's leased source, as the namespace view does.
    */
   readonly openEntry?: (entry: NamespaceEntry) => void | Promise<void>
+  /**
+   * Run a file-manager action — the host asks for names, confirms deletes and owns the clipboard.
+   * Answers `true` when the archive changed. Absent, the viewer offers no context menu.
+   */
+  readonly act?: (action: ArchiveAction, target: ArchiveTarget) => Promise<boolean>
+  /** Draw the archive again after a change, from its new revision. */
+  readonly reload?: (descriptor: AnyDescriptor) => Promise<unknown>
+}
+
+/** What the Explorer offers on a file, a folder or the archive itself. */
+export type ArchiveAction =
+  'open' | 'new-file' | 'new-folder' | 'rename' | 'delete' | 'copy-path' | 'copy-relative-path'
+
+/** A path inside the archive (`''` for the archive itself) and what is there. */
+export interface ArchiveTarget {
+  readonly path: string
+  readonly kind: 'file' | 'folder' | 'root'
 }
 
 /** Listing pages read before the tree says it is incomplete. */
@@ -45,15 +63,27 @@ const MAXIMUM_PAGES = 200
 
 interface Folder {
   readonly name: string
+  readonly path: string
   readonly folders: Map<string, Folder>
   readonly files: NamespaceEntry[]
 }
 
-const folder = (name: string): Folder => ({ name, folders: new Map(), files: [] })
+const folder = (name: string, path: string): Folder => ({
+  name,
+  path,
+  folders: new Map(),
+  files: [],
+})
+
+const normalizedPath = (path: string): string =>
+  path
+    .split('/')
+    .filter(part => part !== '')
+    .join('/')
 
 /** Every member under its folder, with the folders a path implies created on the way. */
 export function buildArchiveTree(entries: readonly NamespaceEntry[]): Folder {
-  const root = folder('')
+  const root = folder('', '')
   for (const entry of entries) {
     const parts = entry.path.split('/').filter(part => part !== '')
     // A stored directory entry is a folder, so every one of its parts is.
@@ -62,7 +92,7 @@ export function buildArchiveTree(entries: readonly NamespaceEntry[]): Folder {
     for (const part of folders) {
       let next = cursor.folders.get(part)
       if (next === undefined) {
-        next = folder(part)
+        next = folder(part, cursor.path === '' ? part : `${cursor.path}/${part}`)
         cursor.folders.set(part, next)
       }
       cursor = next
@@ -242,12 +272,128 @@ export function createArchiveViewer(options: ArchiveViewerOptions = {}): ViewerM
         return { item, button }
       }
 
+      const say = (error: unknown): void => {
+        element(selected.body, 'p', {
+          part: 'viewer.empty',
+          text: error instanceof Error ? error.message : String(error),
+        })
+      }
+
+      /** One file-manager action; a change to the archive redraws it from its new revision. */
+      const act = (action: ArchiveAction, target: ArchiveTarget): void => {
+        if (options.act === undefined) return
+        void options
+          .act(action, target)
+          .then(async changed => {
+            if (changed) await options.reload?.(args.descriptor)
+          })
+          .catch(say)
+      }
+
+      // ------------------------------------------------------------ context menu
+      let menu: HTMLElement | undefined
+      const closeMenu = (): void => {
+        menu?.remove()
+        menu = undefined
+      }
+      const onOutside = (event: Event): void => {
+        if (menu !== undefined && !menu.contains(event.target as Node)) closeMenu()
+      }
+      const onEscape = (event: KeyboardEvent): void => {
+        if (event.key === 'Escape') closeMenu()
+      }
+      document.addEventListener('mousedown', onOutside, true)
+      document.addEventListener('keydown', onEscape, true)
+      scope.cleanup(() => {
+        document.removeEventListener('mousedown', onOutside, true)
+        document.removeEventListener('keydown', onEscape, true)
+        closeMenu()
+      })
+
+      /** VS Code's Explorer menu, per kind: what a file, a folder or the archive itself offers. */
+      const MENU: Readonly<Record<ArchiveTarget['kind'], readonly (ArchiveAction | '-')[]>> = {
+        file: ['open', '-', 'rename', 'delete', '-', 'copy-path', 'copy-relative-path'],
+        folder: [
+          'new-file',
+          'new-folder',
+          '-',
+          'rename',
+          'delete',
+          '-',
+          'copy-path',
+          'copy-relative-path',
+        ],
+        root: ['new-file', 'new-folder', '-', 'copy-path'],
+      }
+      const LABEL: Readonly<Record<ArchiveAction, Parameters<typeof localizer.text>[0]>> = {
+        open: 'viewer.archiveOpen',
+        'new-file': 'viewer.archiveNewFile',
+        'new-folder': 'viewer.archiveNewFolder',
+        rename: 'viewer.archiveRename',
+        delete: 'viewer.archiveDelete',
+        'copy-path': 'viewer.archiveCopyPath',
+        'copy-relative-path': 'viewer.archiveCopyRelativePath',
+      }
+      const openMenu = (target: ArchiveTarget, x: number, y: number): void => {
+        closeMenu()
+        if (options.act === undefined) return
+        const node = element(root, 'div', { part: 'explorer.tabmenu', role: 'menu' })
+        setToken(node, 'explorer.menu-x', `${Math.round(x)}px`)
+        setToken(node, 'explorer.menu-y', `${Math.round(y)}px`)
+        for (const action of MENU[target.kind]) {
+          if (action === '-') {
+            element(node, 'hr', { part: 'toolbar.separator' })
+            continue
+          }
+          const item = element(node, 'button', {
+            part: 'explorer.tabmenu-item',
+            role: 'menuitem',
+            text: localizer.text(LABEL[action]),
+          }) as HTMLButtonElement
+          item.type = 'button'
+          item.addEventListener('click', () => {
+            closeMenu()
+            act(action, target)
+          })
+        }
+        menu = node
+        ;(node.firstElementChild as HTMLElement | null)?.focus()
+      }
+
+      /** Right-click, F2, Delete and Enter on a row, as in the Explorer. */
+      const wire = (
+        button: HTMLButtonElement,
+        target: ArchiveTarget,
+        activate: () => void,
+      ): void => {
+        button.addEventListener('click', activate)
+        button.addEventListener('contextmenu', event => {
+          event.preventDefault()
+          event.stopPropagation()
+          select(button)
+          openMenu(target, event.clientX, event.clientY)
+        })
+        button.addEventListener('keydown', event => {
+          if (event.key === 'F2') act('rename', target)
+          else if (event.key === 'Delete') act('delete', target)
+          else if (event.key === 'ContextMenu' || (event.shiftKey && event.key === 'F10')) {
+            const box = button.getBoundingClientRect()
+            openMenu(target, box.left + 16, box.bottom)
+          } else return
+          event.preventDefault()
+        })
+      }
+      stage.addEventListener('contextmenu', event => {
+        event.preventDefault()
+        openMenu({ path: '', kind: 'root' }, event.clientX, event.clientY)
+      })
+
       const render = (parent: HTMLElement, node: Folder): void => {
         for (const child of [...node.folders.values()].sort(byName)) {
           const { item, button } = row(parent, child.name, 'folder')
           item.setAttribute('aria-expanded', 'false')
           let children: HTMLElement | undefined
-          button.addEventListener('click', () => {
+          wire(button, { path: child.path, kind: 'folder' }, () => {
             select(button)
             if (children === undefined) {
               children = element(item, 'ul', { part: 'archive.children', role: 'group' })
@@ -269,14 +415,9 @@ export function createArchiveViewer(options: ArchiveViewerOptions = {}): ViewerM
             element(button, 'span', { part: 'archive.detail', text: formatEntryBytes(entry.size) })
           }
           button.title = entry.path
-          button.addEventListener('click', () => {
+          wire(button, { path: normalizedPath(entry.path), kind: 'file' }, () => {
             select(button, entry)
-            void open(entry).catch((error: unknown) => {
-              element(selected.body, 'p', {
-                part: 'viewer.empty',
-                text: error instanceof Error ? error.message : String(error),
-              })
-            })
+            void open(entry).catch(say)
           })
         }
       }

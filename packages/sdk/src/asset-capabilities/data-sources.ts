@@ -612,8 +612,38 @@ export interface ContainerPackCreateInputV1 {
   readonly intent?: never
 }
 
-/** Version-one replacement or fresh-creation request for the standard `container.pack` operation. */
-export type ContainerPackInputV1 = ContainerPackReplaceInputV1 | ContainerPackCreateInputV1
+/** One member the host listed, pinned to the revision it saw. */
+export interface ContainerPackEntryRefV1 {
+  readonly entryId: string
+  readonly expectedRevision: RevisionId
+}
+
+/** A member moved to a new provider-portable path. */
+export interface ContainerPackEntryRenameV1 extends ContainerPackEntryRefV1 {
+  readonly name: string
+}
+
+/**
+ * Structural form of `container.pack`: what a file manager does to a folder — add, remove and
+ * rename members, and replace their bytes — in one repack. A name ending in `/` adds an empty
+ * folder. A folder the container only implies is not a member: the host names every member under
+ * it instead. Every member not named is kept as it was.
+ */
+export interface ContainerPackEditInputV1 {
+  readonly schemaVersion: 1
+  readonly mode: 'edit'
+  readonly expectedContainerRevision: RevisionId
+  readonly add?: readonly ContainerPackCreateFileV1[]
+  readonly remove?: readonly ContainerPackEntryRefV1[]
+  readonly rename?: readonly ContainerPackEntryRenameV1[]
+  readonly replacements?: readonly ContainerPackEntryReplacementV1[]
+  readonly files?: never
+  readonly intent?: never
+}
+
+/** Version-one replacement, fresh-creation or structural request for `container.pack`. */
+export type ContainerPackInputV1 =
+  ContainerPackReplaceInputV1 | ContainerPackCreateInputV1 | ContainerPackEditInputV1
 
 export interface NamespaceEntrySource {
   list(prefix: string, page: PageRequest, signal?: AbortSignal): Promise<Page<NamespaceEntry>>

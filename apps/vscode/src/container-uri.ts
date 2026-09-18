@@ -14,8 +14,9 @@
  *
  * Everything is derived: no registry, no counter, no state. The same container yields the same URI
  * in every window, which is what lets a workspace folder for an archive be saved and reopened.
- * ponytail: the first `!/` splits container from entry, so a container under a directory whose
- * name ends in `!` is not addressable; escape it if such a path is ever met.
+ * An archive inside an archive is one more level: `data.zip!/inner.zip!/readme.txt`.
+ * ponytail: every `!/` is a level, so a folder whose name ends in `!` is not addressable; escape
+ * it if such a path is ever met.
  */
 
 /** The scheme the extension registers a filesystem provider for. */
@@ -44,16 +45,36 @@ export function normalizeEntryPath(entry: string): string {
     .join('/')
 }
 
-const SEPARATOR = '!/'
+/** Between a container and what is inside it, at every level of nesting. */
+export const CONTAINER_SEPARATOR = '!/'
 const BACKSLASH = String.fromCharCode(92)
 /** A Windows path (`C:` then a separator), which a URI path spells `/C:/…`. */
 const isDrivePath = (path: string): boolean =>
   /^[A-Za-z]:/u.test(path) && (path[2] === '/' || path[2] === BACKSLASH)
 
+/**
+ * A container that may itself be a member: the file on disk, then the member path at each level.
+ * `C:\Folder\Z2.zip!/Z.zip` is `Z.zip` inside `Z2.zip`; a plain path has no members.
+ */
+export interface ContainerChain {
+  readonly file: string
+  readonly members: readonly string[]
+}
+
+export function splitContainer(container: string): ContainerChain {
+  const [file = '', ...members] = container.split(CONTAINER_SEPARATOR)
+  return { file, members: members.map(normalizeEntryPath) }
+}
+
+export function joinContainer(file: string, members: readonly string[]): string {
+  return [file, ...members].join(CONTAINER_SEPARATOR)
+}
+
 /** The `path` component of the URI addressing an entry (or the container root, for an empty entry). */
 export function containerUriPath(container: string, entry = ''): string {
-  const path = isDrivePath(container) ? `/${container.replaceAll(BACKSLASH, '/')}` : container
-  return `${path}${SEPARATOR}${normalizeEntryPath(entry)}`
+  const { file, members } = splitContainer(container)
+  const head = isDrivePath(file) ? `/${file.replaceAll(BACKSLASH, '/')}` : file
+  return [head, ...members, normalizeEntryPath(entry)].join(CONTAINER_SEPARATOR)
 }
 
 /** The whole URI as text — what a `SubjectOpener` receives, and what the smoke asserts on. */
@@ -61,15 +82,22 @@ export function containerUriText(container: string, entry = ''): string {
   return `${CONTAINER_SCHEME}:${containerUriPath(container, entry)}`
 }
 
-/** Parse a URI `path` back into the container and entry it names, or `undefined` when it is not one. */
+/**
+ * Parse a URI `path` back into the container and entry it names, or `undefined` when it is not one.
+ * Every `!/` is a level: the last one separates the innermost container from the entry.
+ */
 export function parseContainerUriPath(path: string): ContainerLocation | undefined {
-  const cut = path.indexOf(SEPARATOR)
-  const head = cut < 0 ? (path.endsWith('!') ? path.slice(0, -1) : undefined) : path.slice(0, cut)
-  if (head === undefined || head === '' || head === '/') return undefined
+  const parts = (path.endsWith('!') ? `${path}/` : path).split(CONTAINER_SEPARATOR)
+  const [head = '', ...rest] = parts
+  if (rest.length === 0 || head === '' || head === '/') return undefined
   const drive = head.slice(1)
-  const container = isDrivePath(drive) ? drive.replaceAll('/', BACKSLASH) : head
-  const entry = cut < 0 ? '' : normalizeEntryPath(path.slice(cut + SEPARATOR.length))
-  return Object.freeze({ container, entry })
+  const file = isDrivePath(drive) ? drive.replaceAll('/', BACKSLASH) : head
+  const members = rest.slice(0, -1).map(normalizeEntryPath)
+  if (members.some(member => member === '')) return undefined
+  return Object.freeze({
+    container: joinContainer(file, members),
+    entry: normalizeEntryPath(rest.at(-1) ?? ''),
+  })
 }
 
 /** Parse a whole `modkit-container:` URI text; anything else answers `undefined`. */
@@ -80,6 +108,12 @@ export function parseContainerUriText(text: string): ContainerLocation | undefin
   // (or a `//`-authority someone appended) names the same thing, so both are accepted.
   const rest = text.slice(prefix.length).replace(/^\/\/+/u, '/')
   return parseContainerUriPath(rest.startsWith('/') ? rest : `/${rest}`)
+}
+
+/** The container a subject names: its file on disk, or — for a member URI — that member itself. */
+export function containerOfSubject(subject: string): string {
+  const location = parseContainerUriText(subject)
+  return location === undefined ? subject : joinContainer(location.container, [location.entry])
 }
 
 /** True for a subject path that names a container member rather than a file on disk. */

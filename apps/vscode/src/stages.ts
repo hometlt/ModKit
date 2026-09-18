@@ -155,6 +155,13 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
         ...(context.openArchiveEntry === undefined
           ? {}
           : { openEntry: entry => context.openArchiveEntry?.(entry.path) }),
+        ...(context.archiveAction === undefined
+          ? {}
+          : {
+              act: (action, target) =>
+                context.archiveAction?.(action, target) ?? Promise.resolve(false),
+            }),
+        reload: descriptor => context.reopen(descriptor as unknown as Record<string, unknown>),
       }),
     },
     {

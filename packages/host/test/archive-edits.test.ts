@@ -573,7 +573,7 @@ describe('A4 — ZIP editing on the 13D seam (ADR-HOST-002 Path A)', () => {
       ],
     })
     if (packed.state !== 'ok') throw new Error(show(packed))
-    expect(packed.output.plan.planId).toBe('zip-container-pack:data/notes.md')
+    expect(packed.output.plan.planId).toBe('zip-container-pack:replace data/notes.md')
     const backend = createFileEditingBackend({ roots: [scratch] })
     try {
       const artifact = await artifactDigest()
@@ -601,6 +601,56 @@ describe('A4 — ZIP editing on the 13D seam (ADR-HOST-002 Path A)', () => {
     for (const name of ['readme.txt', 'keep/', 'drop.bin']) {
       expect(Buffer.compare(named(after, name).block, named(before, name).block), name).toBe(0)
     }
+  }, 60_000)
+
+  it('container.pack edit adds, removes and renames members as a file manager does', async () => {
+    const original = fixture()
+    const { path, result } = await openArchive('pack-edit.zip', original, WRITE)
+    const lease = await result.session.dataSource('common.view/namespace-entry-source', 1)
+    const listed = await (lease.value as NamespaceEntrySource).list('', { limit: 50 })
+    await lease.release()
+    const ref = (name: string) => {
+      const item = listed.items.find(entry => entry.path === name)
+      if (item === undefined) throw new Error(`${name} not listed`)
+      return { entryId: item.id, expectedRevision: item.revision }
+    }
+    const packed = await invokeContainerPack(result, {
+      schemaVersion: 1,
+      mode: 'edit',
+      expectedContainerRevision: result.descriptor.revision,
+      add: [
+        { name: 'new/', bytesBase64: '' },
+        { name: 'new/made.txt', bytesBase64: Buffer.from('made').toString('base64') },
+      ],
+      remove: [ref('drop.bin')],
+      rename: [{ ...ref('readme.txt'), name: 'docs/readme.txt' }],
+    })
+    if (packed.state !== 'ok') throw new Error(show(packed))
+    const backend = createFileEditingBackend({ roots: [scratch] })
+    try {
+      const artifact = await artifactDigest()
+      const editing = createSubjectEditing({
+        opened: result,
+        grant: WRITE,
+        backendFor: () => backend,
+        evidenceFor: plan => zipEvidence(plan, result, artifact, original),
+      })
+      const prepared = await editing.coordinator.prepare(packed.output.plan, {
+        grant: editing.grantSnapshot,
+      })
+      if (prepared.state !== 'ready') throw new Error(show(prepared))
+      await editing.coordinator.commit(prepared.prepared, { grant: editing.grantSnapshot })
+    } finally {
+      await backend.dispose()
+      await result.session.dispose()
+    }
+    const after = readZip(readFileSync(path))
+    const names = after.entries.map(entry => entry.name)
+    expect(names).toContain('docs/readme.txt')
+    expect(names).toContain('new/')
+    expect(names).not.toContain('drop.bin')
+    expect(names).not.toContain('readme.txt')
+    expect(payloadOf(named(after, 'new/made.txt')).toString('utf8')).toBe('made')
   }, 60_000)
 
   it('without write-source the archive still opens (degraded) and both mutating operations are refused by the host', async () => {

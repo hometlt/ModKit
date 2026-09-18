@@ -90,6 +90,10 @@ function validateInput(input: ContainerPackInputV1): void {
     }
     return
   }
+  if (value['mode'] === 'edit') {
+    validateEdit(value)
+    return
+  }
   if (value['mode'] !== undefined && value['mode'] !== 'replace') {
     invalidInput(`container.pack mode ${String(value['mode'])} is not supported by version 1`)
   }
@@ -127,6 +131,54 @@ function validateInput(input: ContainerPackInputV1): void {
   }
 }
 
+const EDIT_KEYS = new Set([
+  'schemaVersion',
+  'mode',
+  'expectedContainerRevision',
+  'add',
+  'remove',
+  'rename',
+  'replacements',
+])
+
+/** The structural form: every list optional, at least one change, each item well-formed. */
+function validateEdit(value: Readonly<Record<string, unknown>>): void {
+  if (Object.keys(value).some(key => !EDIT_KEYS.has(key))) {
+    invalidInput('container.pack edit input contains unsupported fields')
+  }
+  const list = (key: string): readonly unknown[] => {
+    const items = value[key]
+    if (items === undefined) return []
+    if (!Array.isArray(items)) invalidInput(`container.pack edit ${key} must be an array`)
+    return items
+  }
+  const ref = (item: Readonly<Record<string, unknown>> | undefined): boolean =>
+    item !== undefined &&
+    typeof item['entryId'] === 'string' &&
+    item['entryId'] !== '' &&
+    typeof item['expectedRevision'] === 'string' &&
+    item['expectedRevision'] !== ''
+  const named = (item: Readonly<Record<string, unknown>> | undefined): boolean =>
+    item !== undefined && typeof item['name'] === 'string' && item['name'] !== ''
+  const checks: readonly [
+    string,
+    (item: Readonly<Record<string, unknown>> | undefined) => boolean,
+  ][] = [
+    ['add', item => named(item) && canonicalBase64(item?.['bytesBase64'])],
+    ['remove', ref],
+    ['rename', item => ref(item) && named(item)],
+    ['replacements', item => ref(item) && canonicalBase64(item?.['bytesBase64'])],
+  ]
+  let changes = 0
+  for (const [key, check] of checks) {
+    for (const [index, item] of list(key).entries()) {
+      if (!check(record(item))) invalidInput(`container.pack edit ${key} ${index} is malformed`)
+      changes += 1
+    }
+  }
+  if (changes === 0) invalidInput('container.pack edit input names no change')
+}
+
 /**
  * Invoke `container.pack` by its standard operation id on a subject opened through inventory.
  * Applications never need a provider-private handler id or module export.
@@ -155,11 +207,9 @@ export async function invokeContainerPack(
       message: 'the opened subject publishes no available container.pack operation',
     })
   }
-  const result = await opened.session.operations().invoke(
-    operation.handlerId,
-    input as unknown as JsonValue,
-    options,
-  )
+  const result = await opened.session
+    .operations()
+    .invoke(operation.handlerId, input as unknown as JsonValue, options)
   throwIfAborted(options.signal)
   if (result.state === 'ok') {
     if (result.output.kind !== 'edit-plan') {

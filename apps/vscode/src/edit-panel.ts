@@ -20,6 +20,7 @@ import type {
   ImageExportOutcome,
   ImageViewerOptions,
 } from '@modkit/ui/image'
+import type { ArchiveAction, ArchiveTarget } from '@modkit/ui/archive'
 import type { UiLocalizer } from '@modkit/ui/localization'
 import type { ModelViewerOptions } from '@modkit/ui/model'
 import type { GameTemplateViewerOptions } from '@modkit/ui/template'
@@ -80,6 +81,8 @@ export interface EditPanelOptions {
   readonly omitEncoding?: boolean
   /** Open one member of the shown archive in an editor tab of its own. */
   openArchiveEntry?(entry: string): Promise<void>
+  /** A file-manager action on the shown archive; `true` when it changed. */
+  archiveAction?(action: ArchiveAction, target: ArchiveTarget): Promise<boolean>
   /** Operations extensions published for the image surface, and how to run one. */
   readonly pixelOperations?: ImageViewerOptions['pixelOperations']
 }

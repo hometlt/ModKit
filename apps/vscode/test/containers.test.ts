@@ -43,6 +43,7 @@ import { createBridge, type WebviewChannel } from '../src/bridge.js'
 import {
   containerUriText,
   CONTAINER_SCHEME,
+  joinContainer,
   parseContainerUriText,
   type ContainerNode,
 } from '../src/container-uri.js'
@@ -500,9 +501,48 @@ describe('the Explorer can be answered from inside a container', () => {
     writeFileSync(copy, readFileSync(archive))
     await containers.write(copy, 'hello.txt', new TextEncoder().encode('written back'))
     expect(new TextDecoder().decode(await containers.read(copy, 'hello.txt'))).toBe('written back')
-    expect(await codeOf(() => containers.write(copy, 'absent.txt', new Uint8Array(1)))).toBe(
-      'x3.app/vscode-container-entry-not-found',
-    )
+    // A path the archive does not hold yet is created, as a file manager's save does.
+    await containers.write(copy, 'added.txt', new TextEncoder().encode('new'))
+    expect(new TextDecoder().decode(await containers.read(copy, 'added.txt'))).toBe('new')
+  }, 120_000)
+
+  it('opens, reads and writes a file inside an archive inside an archive', async () => {
+    const { containers, workspace, archive } = await registryFor()
+    const outer = join(workspace, 'outer.zip')
+    writeFileSync(outer, readFileSync(archive))
+    await containers.edit(outer, { write: [{ entry: 'inner.zip', bytes: readFileSync(archive) }] })
+    const inner = joinContainer(outer, ['inner.zip'])
+    expect(new TextDecoder().decode(await containers.read(inner, 'hello.txt'))).toContain('hello')
+    const opened = await containers.open(containerUriText(inner, 'hello.txt'))
+    expect(opened.snapshot.state).toBe('opened')
+    await opened.session?.dispose()
+
+    await containers.write(inner, 'hello.txt', new TextEncoder().encode('nested write'))
+    expect(new TextDecoder().decode(await containers.read(inner, 'hello.txt'))).toBe('nested write')
+  }, 120_000)
+
+  it('creates, renames and removes files and folders as a file manager does', async () => {
+    const { containers, workspace, archive } = await registryFor()
+    const copy = join(workspace, 'managed.zip')
+    writeFileSync(copy, readFileSync(archive))
+    await containers.edit(copy, {
+      folders: ['empty'],
+      write: [{ entry: 'docs/a.txt', bytes: new TextEncoder().encode('a') }],
+    })
+    expect((await containers.list(copy, '')).map(node => node.name).sort()).toEqual([
+      'docs',
+      'empty',
+      'hello.txt',
+    ])
+    await containers.edit(copy, { rename: [{ from: 'docs', to: 'notes' }] })
+    expect(new TextDecoder().decode(await containers.read(copy, 'notes/a.txt'))).toBe('a')
+    await containers.edit(copy, { remove: ['notes', 'empty'] })
+    expect((await containers.list(copy, '')).map(node => node.name)).toEqual(['hello.txt'])
+    expect(
+      await codeOf(() =>
+        containers.edit(copy, { rename: [{ from: 'hello.txt', to: 'hello.txt' }] }),
+      ),
+    ).toBe('x3.app/vscode-container-entry-exists')
   }, 120_000)
 
   it('reads a member through the container, not from disk', async () => {

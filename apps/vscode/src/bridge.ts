@@ -22,6 +22,7 @@
  * Nothing here interprets a frame, and nothing here grants anything — it is a pipe with a codec.
  */
 
+import type { ArchiveAction, ArchiveTarget } from '@modkit/ui/archive'
 import {
   decodeJsonValue,
   encodeJsonValue,
@@ -131,6 +132,14 @@ export type ShellRequest =
   /** Show another file in this editor (a gallery pick). */
   /** A file, or with `entry` one member of the container file at `path`. */
   | { readonly op: 'open-in-editor'; readonly path: string; readonly entry?: string }
+  /** A file-manager action inside the archive `subject` shows (a file, or a member archive). */
+  | {
+      readonly op: 'archive-action'
+      readonly subject: string
+      readonly action: ArchiveAction
+      readonly path: string
+      readonly kind: ArchiveTarget['kind']
+    }
   /** The mounted viewer's status items, drawn as native status bar entries. */
   | {
       readonly op: 'status-set'

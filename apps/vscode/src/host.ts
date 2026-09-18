@@ -94,7 +94,14 @@ import {
   type WebviewChannel,
 } from './bridge.js'
 import type { ExtensionCardResourceTarget } from './extension-cards.js'
-import { containerUriText, isContainerUriText, parseContainerUriText } from './container-uri.js'
+import type { ArchiveAction, ArchiveTarget } from '@modkit/ui/archive'
+import {
+  containerOfSubject,
+  containerUriText,
+  isContainerUriText,
+  parseContainerUriText,
+  splitContainer,
+} from './container-uri.js'
 import {
   containerMemberEditingBackend,
   createContainerRegistry,
@@ -645,6 +652,16 @@ export interface VsCodeServeOptions {
   readonly confirmLossyWrite?: (notes: readonly string[]) => Promise<boolean>
   /** Confirm discarding unsaved work; a webview iframe cannot show a modal of its own. */
   readonly confirmClose?: (message: string, savable: boolean) => Promise<CloseAnswer>
+  /**
+   * A file-manager action inside a container (`container` may be a member archive): the adapter
+   * asks for names, confirms deletes, owns the clipboard. `true` when the container changed.
+   */
+  readonly archiveAction?: (request: {
+    readonly container: string
+    readonly action: ArchiveAction
+    readonly path: string
+    readonly kind: ArchiveTarget['kind']
+  }) => Promise<boolean>
   /** Open a file in an editor of its own kind (a gallery pick). */
   readonly openInEditor?: (path: string) => Promise<void>
   /** Draw the mounted viewer's status items; `choose` reports a picked choice back to the page. */
@@ -1553,15 +1570,28 @@ function serveVsCode(
           ? readContainerEntry(options.containers, request.path, request.maxBytes)
           : readEntry(roots, request.path, request.maxBytes)
       case 'open-in-editor': {
+        const container = containerOfSubject(request.path)
         const roots = options.roots().map(root => resolve(root))
-        if (!withinRoots(roots, request.path))
+        if (!withinRoots(roots, splitContainer(container).file))
           throw new Error('that file is outside the granted folders')
         await options.openInEditor?.(
-          request.entry === undefined
-            ? request.path
-            : containerUriText(request.path, request.entry),
+          request.entry === undefined ? request.path : containerUriText(container, request.entry),
         )
         return true
+      }
+      case 'archive-action': {
+        const container = containerOfSubject(request.subject)
+        const roots = options.roots().map(root => resolve(root))
+        if (!withinRoots(roots, splitContainer(container).file))
+          throw new Error('that archive is outside the granted folders')
+        return (
+          (await options.archiveAction?.({
+            container,
+            action: request.action,
+            path: request.path,
+            kind: request.kind,
+          })) ?? false
+        )
       }
       case 'viewer-operations':
         return (await options.viewerOperations?.list(request.surface)) ?? []
