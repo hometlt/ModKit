@@ -629,7 +629,7 @@ function subjectCandidateScopeOf(uri: vscode.Uri): VsCodeSubjectCandidateScope {
 
 class ModkitCustomDocument implements vscode.CustomDocument {
   readonly state: CustomDocumentState
-  /** A container member is served by a read-only provider; there is nothing to save it back into. */
+  /** A remote content source has nothing to save into; a container member saves into its container. */
   readonly readOnly: boolean
 
   constructor(
@@ -637,8 +637,7 @@ class ModkitCustomDocument implements vscode.CustomDocument {
     forceReadOnly = false,
   ) {
     this.state = new CustomDocumentState(subjectPathOf(uri))
-    this.readOnly =
-      forceReadOnly || uri.scheme === CONTAINER_SCHEME || uri.scheme === 'modkit-source'
+    this.readOnly = forceReadOnly || uri.scheme === 'modkit-source'
   }
 
   dispose(): void {
@@ -1773,7 +1772,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           ctime: node.modifiedAt ?? 0,
           mtime: node.modifiedAt ?? 0,
           size: node.size ?? 0,
-          permissions: vscode.FilePermission.Readonly,
         }
       } catch (error) {
         throw asFileSystemError(uri, error)
@@ -1804,8 +1802,22 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     createDirectory: uri => {
       throw vscode.FileSystemError.NoPermissions(uri)
     },
-    writeFile: uri => {
-      throw vscode.FileSystemError.NoPermissions(uri)
+    /*
+     * A member saves back into its container through the container's own `container.pack`. A
+     * format that cannot be written refuses with its reason, and VS Code's save-failure flow then
+     * offers Save As — the "keep a copy" the person needs.
+     */
+    async writeFile(uri, content) {
+      const { container, entry } = containerLocation(uri)
+      try {
+        await containers.write(container, entry, content)
+      } catch (error) {
+        if (error instanceof vscode.FileSystemError) throw error
+        const message = error instanceof Error ? error.message : String(error)
+        log(`[container] ${uri.path}: ${message}`)
+        throw vscode.FileSystemError.NoPermissions(message)
+      }
+      containerChanges.fire([{ type: vscode.FileChangeType.Changed, uri }])
     },
     delete: uri => {
       throw vscode.FileSystemError.NoPermissions(uri)
@@ -1820,7 +1832,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       // Container entry paths come out of the container's own tables; two members differing only in
       // case are two members, and folding them would hide one.
       isCaseSensitive: true,
-      isReadonly: true,
     }),
   )
 
@@ -5338,7 +5349,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
               viewerStatusBar.set(subjectKey(openPath), items, choose),
           }),
       openInEditor: async path => {
-        await vscode.commands.executeCommand('vscode.open', vscode.Uri.file(path))
+        await vscode.commands.executeCommand('vscode.open', subjectUriOf(path))
       },
       /*
        * The same bounded snapshot the language features run on, for the operations that need it.

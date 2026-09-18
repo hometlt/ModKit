@@ -124,7 +124,7 @@ export function createNamespaceViewer(options: UiLocalizationOptions = {}): View
 export const namespaceViewer: ViewerModule = createNamespaceViewer()
 
 export default namespaceViewer /** Bytes as a container listing shows them: exact under 1 KiB, one decimal above. */
-function formatEntryBytes(value: bigint): string {
+export function formatEntryBytes(value: bigint): string {
   if (value < 1024n) return `${value} B`
   const units = ['KiB', 'MiB', 'GiB', 'TiB']
   let scaled = Number(value) / 1024
@@ -144,7 +144,7 @@ function formatEntryBytes(value: bigint): string {
  * neither means much alone — "deflate" without a ratio says nothing about what was saved, and a
  * stored size without the method looks like a contradiction of the real size.
  */
-function describeEntry(entry: NamespaceEntry, localizer: UiLocalizer): string {
+export function describeEntry(entry: NamespaceEntry, localizer: UiLocalizer): string {
   if (entry.kind === 'directory') return ''
   const parts: string[] = []
   if (entry.size !== undefined) parts.push(formatEntryBytes(entry.size))

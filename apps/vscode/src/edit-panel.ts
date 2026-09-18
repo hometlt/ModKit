@@ -78,6 +78,8 @@ export interface EditPanelOptions {
   onPixelEdit?(): void
   /** Leave the encoding field out of every form; the status bar's format menu owns that choice. */
   readonly omitEncoding?: boolean
+  /** Open one member of the shown archive in an editor tab of its own. */
+  openArchiveEntry?(entry: string): Promise<void>
   /** Operations extensions published for the image surface, and how to run one. */
   readonly pixelOperations?: ImageViewerOptions['pixelOperations']
 }

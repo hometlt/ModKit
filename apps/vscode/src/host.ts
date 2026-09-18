@@ -95,7 +95,11 @@ import {
 } from './bridge.js'
 import type { ExtensionCardResourceTarget } from './extension-cards.js'
 import { containerUriText, isContainerUriText, parseContainerUriText } from './container-uri.js'
-import { createContainerRegistry, type ContainerRegistry } from './containers.js'
+import {
+  containerMemberEditingBackend,
+  createContainerRegistry,
+  type ContainerRegistry,
+} from './containers.js'
 import { describeInventoryContributions, type ContributionRow } from './contributions.js'
 import { prepareVsCodeMapPreview, type VsCodeMapPreviewCandidate } from './map-preview.js'
 import { parseVsCodeMapPreviewSelectionRequest } from './map-preview-selection.js'
@@ -978,6 +982,37 @@ function serveVsCode(
    * Kept, not consumed: a redo of that write presents the same token for the same plan.
    */
   const lossyConfirmations = new Map<string, string>()
+  /**
+   * Editing for a container member: the codec's own operations (Path A) and the raw writer for
+   * the hex and text editors, committed back into the container by `containerMemberEditingBackend`.
+   * ponytail: no format-writer resolution (Path B) for members yet; add it when a member needs a
+   * service writer rather than its codec.
+   */
+  const memberEditing = async (
+    sessionId: string,
+    session: AssetSession,
+    location: { readonly container: string; readonly entry: string },
+  ): Promise<SubjectEditing> => {
+    const containers = options.containers
+    if (containers === undefined) throw new TypeError('this window composed no containers')
+    const descriptor = await session.descriptor()
+    const sessionEvidence =
+      descriptor.interpretation === 'codec'
+        ? codecFidelityEvidenceRecords(services.inventory, {
+            codecId: descriptor.identity.codecId,
+            formatId: descriptor.identity.formatId,
+          }).reduce((registry, record) => registry.with(record), evidence)
+        : evidence
+    const backend = containerMemberEditingBackend(containers, location.container, location.entry)
+    return createSubjectEditing({
+      opened: { state: 'opened', session, descriptor } as never,
+      grant: { id: `vscode:${sessionId}`, classes: ['read-source', 'write-source'] },
+      backendFor: () => backend,
+      evidenceFor: plan => sessionEvidence.evidenceFor(plan),
+      confirmationMatches: (token, plan) => lossyConfirmations.get(token) === plan.planId,
+      writer: rawWriter,
+    })
+  }
   const rememberEditing = (sessionId: string, editing: SubjectEditing): void => {
     editingBySession.set(sessionId, editing)
     while (editingBySession.size > MAXIMUM_LIVE_EDITING_ARMS) {
@@ -1062,6 +1097,13 @@ function serveVsCode(
           variantId: answer.snapshot.selected.variantId,
           confidence: answer.snapshot.selected.confidence,
         })
+        const location = parseContainerUriText(subjectRequested)
+        if (answer.session !== undefined && location !== undefined) {
+          rememberEditing(
+            answer.snapshot.sessionId,
+            await memberEditing(answer.snapshot.sessionId, answer.session, location),
+          )
+        }
         return presentation === undefined
           ? answer
           : {
@@ -1115,10 +1157,10 @@ function serveVsCode(
      * read-only grant made every in-place edit refuse at the click — `write-source` missing —
      * however writable the file was. It is added only for a real file inside the granted roots: a
      * container member has nowhere to be written back to, and the gate still narrows the class to
-     * contributions whose manifest asked for it.
+     * contributions whose manifest asked for it. A container member is written back into its
+     * container (see `containerMemberEditingBackend`); a remote content source is not writable.
      */
-    const writable =
-      !isContainerUriText(subjectRequested) && !subjectRequested.startsWith('modkit-source:')
+    const writable = !subjectRequested.startsWith('modkit-source:')
     const baseGrant = options.grant ?? DEFAULT_OPEN_GRANT
     const openGrant: PermissionGrant = writable
       ? {
@@ -1514,7 +1556,11 @@ function serveVsCode(
         const roots = options.roots().map(root => resolve(root))
         if (!withinRoots(roots, request.path))
           throw new Error('that file is outside the granted folders')
-        await options.openInEditor?.(request.path)
+        await options.openInEditor?.(
+          request.entry === undefined
+            ? request.path
+            : containerUriText(request.path, request.entry),
+        )
         return true
       }
       case 'viewer-operations':

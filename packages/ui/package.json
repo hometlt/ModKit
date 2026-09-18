@@ -98,6 +98,10 @@
       "types": "./dist/vector/index.d.ts",
       "default": "./dist/vector/index.js"
     },
+    "./archive": {
+      "types": "./dist/archive/index.d.ts",
+      "default": "./dist/archive/index.js"
+    },
     "./video": {
       "types": "./dist/video/index.d.ts",
       "default": "./dist/video/index.js"

@@ -914,6 +914,64 @@ function editContentHandler(bytes, entries, model, budget, input) {
   }
 }
 
+/**
+ * `container.pack`: the host's standard way to write a member back — entries named by id, pinned
+ * to the revision the host read them at — so an application saves an edited entry without knowing
+ * this codec's own `edit.content` input. The assembly is the one `edit.content` uses: every other
+ * entry is copied verbatim, which is what the verbatim-reassembly evidence proves.
+ */
+const CONTAINER_PACK_OPERATION = Object.freeze({
+  id: 'container.pack',
+  handlerId: 'container-pack',
+  mutatesSource: true,
+  requiredPermissions: Object.freeze(['read-source', 'write-source']),
+  outputKinds: Object.freeze(['edit-plan']),
+})
+
+function containerPackHandler(bytes, entries, model, budget, input, source) {
+  return async value => {
+    const usableModel = usable(model)
+    const request = requireRecord(value, 'container.pack')
+    if (request.mode === 'create') {
+      throw new TypeError('container.pack creates no ZIP archive here; it replaces entries of one')
+    }
+    const replacements = requireList(request.replacements, 'container.pack replacements')
+    if (replacements.length === 0) throw new TypeError('container.pack needs a replacement')
+    const replaced = new Map()
+    for (const item of replacements) {
+      const change = requireRecord(item, 'container.pack replacement')
+      const entry = entries.find(candidate => candidate.id === change.entryId)
+      if (entry === undefined || entry.kind !== 'file') {
+        throw new TypeError(`ZIP file entry id «${String(change.entryId)}» was not found`)
+      }
+      if (change.expectedRevision !== source.revision) {
+        throw new TypeError(`«${entry.name}» changed since it was read`)
+      }
+      if (replaced.has(entry.id)) throw new TypeError(`«${entry.name}» is replaced twice`)
+      replaced.set(
+        entry.id,
+        decodeBase64(change.bytesBase64, budget.maxScalarBytes, `bytes for «${entry.name}»`),
+      )
+    }
+    const planned = entries.map(entry => {
+      const range = usableModel.ranges.get(entry.id)
+      if (range === undefined) throw new TypeError(`«${entry.name}» has no readable local block`)
+      const data = replaced.get(entry.id)
+      return data === undefined
+        ? verbatimEntry(bytes, entry, range)
+        : restoredEntry(bytes, entry, range, data)
+    })
+    const names = entries.filter(entry => replaced.has(entry.id)).map(entry => entry.name)
+    return editPlanOutput(
+      input,
+      assembleArchive(planned, usableModel.comment, budget),
+      usableModel,
+      `zip-container-pack:${names.join(',')}`,
+      `replace ${names.join(', ')} (stored)`,
+    )
+  }
+}
+
 function namespaceSource(entries, source) {
   const byId = new Map(entries.map(entry => [entry.id, entry]))
   return Object.freeze({
@@ -990,6 +1048,7 @@ const definition = Object.freeze({
     }),
     EDIT_STRUCTURE_OPERATION,
     EDIT_CONTENT_OPERATION,
+    CONTAINER_PACK_OPERATION,
   ]),
   async detect(bytes) {
     const signature = bytes.byteLength >= 4 ? u32(bytes, 0) : 0
@@ -1095,6 +1154,14 @@ const definition = Object.freeze({
           context.input,
         ),
         'edit-content': editContentHandler(bytes, entries, model, context.budget, context.input),
+        'container-pack': containerPackHandler(
+          bytes,
+          entries,
+          model,
+          context.budget,
+          context.input,
+          context.source,
+        ),
       },
     }
   },

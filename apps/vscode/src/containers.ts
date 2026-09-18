@@ -37,12 +37,21 @@ import type {
   AssetSession,
   NamespaceEntry,
   NamespaceEntrySource,
+  PayloadStore,
   PermissionGrant,
   ResourceBudget,
+  SourceEdit,
+  SubjectEditTarget,
 } from '@modkit/sdk'
 import {
   artifactNamespaceSourceFromVfsMount,
+  codecFidelityEvidenceRecords,
+  createEvidenceRegistry,
+  createSubjectEditing,
+  invokeContainerPack,
   nestedSubjectServices,
+  replacedBytes,
+  type EditingBackend,
   openNestedSubject,
   openSubject,
   subjectOpenSnapshot,
@@ -50,7 +59,7 @@ import {
   type SubjectOpenedSnapshot,
   type SubjectServices,
 } from '@modkit/host'
-import { createPathSubjectOpener } from '@modkit/host/node'
+import { createFileEditingBackend, createPathSubjectOpener } from '@modkit/host/node'
 import { VirtualFileSystem } from '@modkit/vfs'
 import { createFileVfsProvider } from '@modkit/vfs/providers/file'
 
@@ -58,6 +67,7 @@ import { findArchiveExtractOperation } from './archive-entry.js'
 import {
   buildContainerIndex,
   listContainerDirectory,
+  normalizeEntryPath,
   parseContainerUriText,
   statContainerEntry,
   type ContainerIndex,
@@ -69,6 +79,7 @@ import { searchContainerIndex, type ContainerSearchHit } from './workbench-workf
 export const NOT_A_CONTAINER = 'x3.app/vscode-not-a-container'
 /** The URI named a member the container's own listing does not hold. */
 export const CONTAINER_ENTRY_NOT_FOUND = 'x3.app/vscode-container-entry-not-found'
+export const CONTAINER_NOT_WRITABLE = 'x3.app/vscode-container-not-writable'
 
 const NAMESPACE_ENTRY_SOURCE = 'common.view/namespace-entry-source'
 /** Entries requested per listing page. The same bound the archive stage pages with. */
@@ -114,6 +125,12 @@ export interface ContainerRegistry {
     query: string,
     signal?: AbortSignal,
   ): Promise<readonly ContainerSearchHit[]>
+  /**
+   * Write one member back into its container through the standard `container.pack`, committed to
+   * the container file under `write-source`. A container whose codec publishes no pack refuses
+   * with a reason a person can act on — save a copy instead.
+   */
+  write(container: string, entry: string, bytes: Uint8Array, signal?: AbortSignal): Promise<void>
   /** Drop one held listing/session and open it again from its current source revision. */
   refresh(container: string, signal?: AbortSignal): Promise<ContainerIndex>
   /** Release one held container without disturbing other sources in this window. */
@@ -534,6 +551,122 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
       return (await holderFor(container, signal)).index
     },
 
+    async write(container, entry, bytes, signal) {
+      const roots = options.roots().map(root => resolve(root))
+      if (roots.length === 0 || !insideGrantedRoots(roots, container)) {
+        throw new TypeError('path is outside the granted roots')
+      }
+      const grant: PermissionGrant = {
+        id: `${options.grant.id}:container-write:${randomUUID()}`,
+        classes: Object.freeze([
+          ...options.grant.classes.filter(item => item !== 'write-source'),
+          'write-source' as const,
+        ]),
+      }
+      const answer = await createPathSubjectOpener({
+        subjects: options.services,
+        roots,
+        grant,
+        budget: options.budget,
+      })(container, signal)
+      if (answer.snapshot.state !== 'opened' || answer.session === undefined) {
+        throw new ModkitError({ code: NOT_A_CONTAINER, message: 'the container did not open' })
+      }
+      const session = answer.session
+      const backend = createFileEditingBackend({ roots })
+      try {
+        const descriptor = await session.descriptor()
+        if (!('identity' in descriptor)) throw new TypeError('the container did not open')
+        if (!descriptor.operations.some(item => item.id === 'container.pack')) {
+          throw new ModkitError({
+            code: CONTAINER_NOT_WRITABLE,
+            message: `${descriptor.identity.formatId.toUpperCase()} archives cannot be written back; save a copy instead`,
+          })
+        }
+        const lease = await session.dataSource(NAMESPACE_ENTRY_SOURCE, 1)
+        let member: NamespaceEntry | undefined
+        try {
+          const namespace = lease.value as NamespaceEntrySource
+          const wanted = normalizeEntryPath(entry)
+          let cursor: string | undefined
+          for (let page = 0; page < MAXIMUM_PAGES && member === undefined; page += 1) {
+            const listed = await namespace.list(
+              '',
+              { limit: PAGE_LIMIT, ...(cursor === undefined ? {} : { cursor }) },
+              signal,
+            )
+            member = listed.items.find(item => normalizeEntryPath(item.path) === wanted)
+            cursor = listed.nextCursor
+            if (cursor === undefined) break
+          }
+        } finally {
+          await lease.release()
+        }
+        if (member === undefined || member.kind !== 'file') {
+          throw new ModkitError({
+            code: CONTAINER_ENTRY_NOT_FOUND,
+            message: `«${entry}» is not a file in this container`,
+          })
+        }
+        const packed = await invokeContainerPack(
+          { descriptor, session },
+          {
+            schemaVersion: 1,
+            expectedContainerRevision: descriptor.revision,
+            replacements: [
+              {
+                entryId: member.id,
+                expectedRevision: member.revision,
+                bytesBase64: Buffer.from(bytes).toString('base64'),
+              },
+            ],
+          },
+          signal === undefined ? {} : { signal },
+        )
+        if (packed.state !== 'ok') {
+          throw new ModkitError({
+            code: CONTAINER_NOT_WRITABLE,
+            message: `the container refused the write: ${packed.reason}`,
+          })
+        }
+        const evidence = codecFidelityEvidenceRecords(options.services.inventory, {
+          codecId: descriptor.identity.codecId,
+          formatId: descriptor.identity.formatId,
+        }).reduce((registry, record) => registry.with(record), createEvidenceRegistry())
+        const editing = createSubjectEditing({
+          opened: { state: 'opened', session, descriptor } as never,
+          grant,
+          backendFor: () => backend,
+          evidenceFor: plan => evidence.evidenceFor(plan),
+        })
+        const prepared = await editing.coordinator.prepare(packed.output.plan, {
+          grant: editing.grantSnapshot,
+          ...(signal === undefined ? {} : { signal }),
+        })
+        if (prepared.state !== 'ready') {
+          throw new ModkitError({
+            code: CONTAINER_NOT_WRITABLE,
+            message: `the write was refused: ${prepared.state === 'rejected' ? prepared.reason : 'the container changed on disk'}`,
+          })
+        }
+        const committed = await editing.coordinator.commit(prepared.prepared, {
+          grant: editing.grantSnapshot,
+          ...(signal === undefined ? {} : { signal }),
+        })
+        if (committed.state !== 'committed') {
+          throw new ModkitError({
+            code: CONTAINER_NOT_WRITABLE,
+            message: `the write did not complete (${committed.state})`,
+          })
+        }
+      } finally {
+        await backend.dispose()
+        await session.dispose()
+      }
+      // Every held listing of this container now describes the old bytes.
+      await release(container)
+    },
+
     release,
 
     /**
@@ -563,7 +696,17 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
           parent: holder.session,
           entryId,
           ...nestedSubjectServices(options.services),
-          grant: options.grant,
+          /*
+           * A member may plan its own edits: `write-source` lets its codec's mutating operations
+           * run. They only return plans; the host commits them back through `write`.
+           */
+          grant: {
+            ...options.grant,
+            classes: Object.freeze([
+              ...options.grant.classes.filter(item => item !== 'write-source'),
+              'write-source' as const,
+            ]),
+          },
           budget: options.budget,
           pageLimit: PAGE_LIMIT,
           onDiagnostic: item => {
@@ -628,4 +771,78 @@ export function createContainerRegistry(options: ContainerRegistryOptions): Cont
     },
   }
   return Object.freeze(registry)
+}
+
+/** Whole-member payloads a container write accepts; the host's own inline cap covers the rest. */
+const MAXIMUM_MEMBER_BYTES = 256 * 1024 * 1024
+
+/**
+ * The editing backend of one container member: a commit is the member's new bytes, packed back
+ * into the container through `write`.
+ *
+ * Atomic, because a pack is a single replace of the container file, and a batch folds into that
+ * one write. There is no rollback and no revision of its own: the member's revision is the
+ * container's, which the pack itself re-reads and pins at write time.
+ * ponytail: no conflict check between open and save beyond that pin; add a container stat
+ * compare in `currentRevision` if two writers to one archive become a real case.
+ */
+export function containerMemberEditingBackend(
+  registry: Pick<ContainerRegistry, 'read' | 'write'>,
+  container: string,
+  entry: string,
+): EditingBackend {
+  const nextBytes = async (
+    edits: readonly SourceEdit[],
+    payloads: PayloadStore,
+    signal?: AbortSignal,
+  ): Promise<Uint8Array> => {
+    let bytes: Uint8Array | undefined
+    for (const edit of edits) {
+      if (edit.operation !== 'replace') {
+        throw new TypeError(
+          `a container member takes content replacements, not «${edit.operation}»`,
+        )
+      }
+      bytes ??=
+        edit.range === undefined ? new Uint8Array() : await registry.read(container, entry, signal)
+      bytes = await replacedBytes(edit, bytes, payloads, MAXIMUM_MEMBER_BYTES, signal)
+    }
+    if (bytes === undefined) throw new TypeError('nothing to write')
+    return bytes
+  }
+  return Object.freeze({
+    profile: Object.freeze({
+      backendId: 'vscode-container-member',
+      guarantees: Object.freeze(['atomic'] as const),
+      supportsPrepare: true,
+      supportsRollback: false,
+      supportsJournal: false,
+      supportsRename: false,
+    }),
+    writable: true,
+    async currentRevision(target: SubjectEditTarget) {
+      return target.expectedRevision
+    },
+    async apply(edit, options) {
+      await registry.write(
+        container,
+        entry,
+        await nextBytes([edit], options.payloads, options.signal),
+        options.signal,
+      )
+      return { after: options.expectedRevision }
+    },
+    async applyBatch(requests, options) {
+      const bytes = await nextBytes(
+        requests.map(request => request.edit),
+        options.payloads,
+        options.signal,
+      )
+      await registry.write(container, entry, bytes, options.signal)
+      return requests.map(request => ({
+        targetId: request.edit.targetId,
+        after: request.expectedRevision,
+      }))
+    },
+  } satisfies EditingBackend)
 }

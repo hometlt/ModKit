@@ -417,6 +417,62 @@
     white-space: nowrap;
   }
 
+  /* Archive: the member tree fills the render area, one compact row per folder or file. */
+  [data-mk-part='media-shell.stage'] > [data-mk-part='archive.members'] {
+    position: absolute;
+    inset: 0;
+    overflow: auto;
+    padding-block: 4px;
+  }
+
+  [data-mk-part='archive.member-list'],
+  [data-mk-part='archive.children'] {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  [data-mk-part='archive.children'] {
+    padding-inline-start: 12px;
+  }
+
+  [data-mk-part='archive.row'] {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    inline-size: 100%;
+    padding: 1px 8px;
+    border: 0;
+    background: transparent;
+    color: var(--mk-color-fg);
+    font: inherit;
+    text-align: start;
+    cursor: pointer;
+  }
+
+  [data-mk-part='archive.row']:hover {
+    background: var(--mk-color-hover);
+  }
+
+  [data-mk-part='archive.row'][aria-selected='true'] {
+    background: var(--mk-color-selection);
+    color: var(--mk-color-selection-fg);
+  }
+
+  [data-mk-part='archive.name'] {
+    flex: 1 1 auto;
+    min-inline-size: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  [data-mk-part='archive.detail'] {
+    flex: none;
+    opacity: 0.7;
+    font-size: var(--mk-font-size-xs);
+  }
+
   /* Video, audio and models fill the render area the same way the image does. */
   [data-mk-part='media-shell.stage'] > [data-mk-part='video'],
   [data-mk-part='media-shell.stage'] > [data-mk-part='audio'],

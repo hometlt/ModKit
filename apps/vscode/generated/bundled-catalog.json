@@ -26,7 +26,7 @@
         "modkit/xz",
         "modkit/zstd"
       ],
-      "digest": "sha256:62a9eea31faebb23a5c7ddf4347042b3d394ef97b89638e68651db8a8a079d86"
+      "digest": "sha256:011901cad45a5effea85dce7618ca3d6dcedf74eb6f5d93fee73f0e8453287a8"
     },
     {
       "name": "audio",
@@ -121,7 +121,7 @@
         "modkit/tiff",
         "modkit/webp"
       ],
-      "digest": "sha256:4976c37cc0e1893bde6f53d150e2cf7a58739e251e42b2098afbfe3773f69f0f"
+      "digest": "sha256:dc8bc6cec92a782e0f1a7a453cf0285763c13cae31639e1deee2dea45d83cbd7"
     },
     {
       "name": "models",

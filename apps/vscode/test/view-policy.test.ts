@@ -172,6 +172,7 @@ describe('VS Code view policy', () => {
     )
 
     expect(importedSurfaces).toEqual([
+      'archive',
       'audio',
       'code',
       'card',

@@ -387,6 +387,7 @@ export {
   type HostCommitCoordinatorOptions,
   type ManagedEditSession,
 } from './editing.js'
+export { replacedBytes } from './editing-splice.js'
 export {
   createHostComposition,
   type HostComposition,

@@ -129,7 +129,8 @@ export type ShellRequest =
   /** A webview iframe cannot show a modal of its own, so the prompt happens in the editor. */
   | { readonly op: 'confirm'; readonly message: string; readonly savable: boolean }
   /** Show another file in this editor (a gallery pick). */
-  | { readonly op: 'open-in-editor'; readonly path: string }
+  /** A file, or with `entry` one member of the container file at `path`. */
+  | { readonly op: 'open-in-editor'; readonly path: string; readonly entry?: string }
   /** The mounted viewer's status items, drawn as native status bar entries. */
   | {
       readonly op: 'status-set'

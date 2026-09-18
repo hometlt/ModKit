@@ -552,6 +552,12 @@ async function mount(
         registerPixelEditing(handlers) {
           pixelEditing = handlers
         },
+        // An archive member opens as a tab of its own, addressed through the container VFS.
+        async openArchiveEntry(entry) {
+          const container = focused ?? snapshot.openPath
+          if (container === undefined) return
+          await bridge.request({ op: 'open-in-editor', path: container, entry })
+        },
         onPixelEdit() {
           if (snapshot.openPath === undefined) return
           bridge.emit({ op: 'document-edited', path: snapshot.openPath })

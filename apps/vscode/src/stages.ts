@@ -10,6 +10,7 @@
  * editor, and a VS Code webview gets neither. The bounded and virtual text viewers cover reading;
  * the text editor stage covers writing.
  */
+import { createArchiveViewer } from '@modkit/ui/archive'
 import { createAudioViewer } from '@modkit/ui/audio'
 import { createBoundedTextViewer } from '@modkit/ui/code'
 import { createSubjectCardViewer } from '@modkit/ui/card'
@@ -31,7 +32,6 @@ import { createVectorViewer } from '@modkit/ui/vector'
 import { createVideoViewer } from '@modkit/ui/video'
 
 import { orderStages } from './view-policy.js'
-import { createVsCodeArchiveStage } from './archive-stage.js'
 import {
   createVsCodeEditPanel,
   createVsCodePixelSaver,
@@ -150,7 +150,12 @@ export function createVsCodePreviewStages(context: EditPanelOptions): readonly P
       id: 'archive',
       label: context.localizer.text('stage.entries'),
       contract: 'common.view/namespace-entry-source',
-      module: createVsCodeArchiveStage(context.localizer),
+      module: createArchiveViewer({
+        localizer: context.localizer,
+        ...(context.openArchiveEntry === undefined
+          ? {}
+          : { openEntry: entry => context.openArchiveEntry?.(entry.path) }),
+      }),
     },
     {
       id: 'template',

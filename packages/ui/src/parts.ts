@@ -204,6 +204,15 @@ export const PARTS = Object.freeze([
   'vector.image',
   'vector.readout',
 
+  // archive stage
+  'archive.members',
+  'archive.member-list',
+  'archive.item',
+  'archive.row',
+  'archive.name',
+  'archive.detail',
+  'archive.children',
+
   // video stage
   'video',
   'video.player',

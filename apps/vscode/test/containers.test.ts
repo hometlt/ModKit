@@ -494,6 +494,17 @@ describe('the Explorer can be answered from inside a container', () => {
     expect(text.size).toBeGreaterThan(0)
   }, 120_000)
 
+  it('writes a member back into its archive and reads the new bytes', async () => {
+    const { containers, workspace, archive } = await registryFor()
+    const copy = join(workspace, 'written.zip')
+    writeFileSync(copy, readFileSync(archive))
+    await containers.write(copy, 'hello.txt', new TextEncoder().encode('written back'))
+    expect(new TextDecoder().decode(await containers.read(copy, 'hello.txt'))).toBe('written back')
+    expect(await codeOf(() => containers.write(copy, 'absent.txt', new Uint8Array(1)))).toBe(
+      'x3.app/vscode-container-entry-not-found',
+    )
+  }, 120_000)
+
   it('reads a member through the container, not from disk', async () => {
     const { containers, archive } = await registryFor()
     const bytes = await containers.read(archive, 'hello.txt')

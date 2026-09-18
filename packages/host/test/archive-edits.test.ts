@@ -28,7 +28,12 @@ import {
   type NamespaceEntrySource,
   type PermissionGrant,
 } from '@modkit/sdk'
-import { createSubjectEditing, type ExtensionInput, type OpenedSubject } from '@modkit/host'
+import {
+  createSubjectEditing,
+  invokeContainerPack,
+  type ExtensionInput,
+  type OpenedSubject,
+} from '@modkit/host'
 import {
   createFileEditingBackend,
   createNodeSubjectServices,
@@ -545,6 +550,57 @@ describe('A4 — ZIP editing on the 13D seam (ADR-HOST-002 Path A)', () => {
       expect(Buffer.compare(named(after, name).record, named(before, name).record), name).toBe(0)
     }
     expect(after.comment).toBe('A4 archive comment')
+  }, 60_000)
+
+  it('container.pack replaces an entry named by id and revision, as any host asks for it', async () => {
+    const original = fixture()
+    const { path, result } = await openArchive('pack.zip', original, WRITE)
+    const lease = await result.session.dataSource('common.view/namespace-entry-source', 1)
+    const listed = await (lease.value as NamespaceEntrySource).list('', { limit: 50 })
+    await lease.release()
+    const notes = listed.items.find(item => item.path === 'data/notes.md')
+    if (notes === undefined) throw new Error('notes not listed')
+    const replacement = Buffer.from('replaced by container.pack', 'utf8')
+    const packed = await invokeContainerPack(result, {
+      schemaVersion: 1,
+      expectedContainerRevision: result.descriptor.revision,
+      replacements: [
+        {
+          entryId: notes.id,
+          expectedRevision: notes.revision,
+          bytesBase64: replacement.toString('base64'),
+        },
+      ],
+    })
+    if (packed.state !== 'ok') throw new Error(show(packed))
+    expect(packed.output.plan.planId).toBe('zip-container-pack:data/notes.md')
+    const backend = createFileEditingBackend({ roots: [scratch] })
+    try {
+      const artifact = await artifactDigest()
+      const editing = createSubjectEditing({
+        opened: result,
+        grant: WRITE,
+        backendFor: () => backend,
+        evidenceFor: plan => zipEvidence(plan, result, artifact, original),
+      })
+      const prepared = await editing.coordinator.prepare(packed.output.plan, {
+        grant: editing.grantSnapshot,
+      })
+      if (prepared.state !== 'ready') throw new Error(show(prepared))
+      const committed = await editing.coordinator.commit(prepared.prepared, {
+        grant: editing.grantSnapshot,
+      })
+      expect(committed.state).toBe('committed')
+    } finally {
+      await backend.dispose()
+      await result.session.dispose()
+    }
+    const before = readZip(original)
+    const after = readZip(readFileSync(path))
+    expect(Buffer.compare(payloadOf(named(after, 'data/notes.md')), replacement)).toBe(0)
+    for (const name of ['readme.txt', 'keep/', 'drop.bin']) {
+      expect(Buffer.compare(named(after, name).block, named(before, name).block), name).toBe(0)
+    }
   }, 60_000)
 
   it('without write-source the archive still opens (degraded) and both mutating operations are refused by the host', async () => {
