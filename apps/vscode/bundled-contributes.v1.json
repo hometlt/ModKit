@@ -294,6 +294,11 @@
   "views": {
     "modkit": [
       {
+        "id": "modkit.gallery",
+        "name": "%view.gallery%",
+        "type": "webview"
+      },
+      {
         "id": "modkit.host",
         "name": "%view.host%"
       },

@@ -9,6 +9,7 @@
     "codicons/codicon.ttf",
     "extension.cjs",
     "format-smoke.v1.json",
+    "gallery-webview.js",
     "modkit-ui.css",
     "webview.js",
     "worker-bootstrap.js"

@@ -415,6 +415,17 @@ async function mount(
   let pixelEditing: import('@modkit/ui/image').ImageEditingHandlers | undefined
 
   const galleryFor = (entry: ExplorerEntry): ViewerGalleryPort | undefined => {
+    // Images use the workspace gallery in the native Modkit sidebar.
+    const sources = subjects.get(entry.id)?.descriptor['dataSources']
+    if (
+      Array.isArray(sources) &&
+      sources.some(source =>
+        ['common.view/raster-image-source', 'common.view/vector-scene-source'].includes(
+          source?.contract,
+        ),
+      )
+    )
+      return undefined
     if (snapshot.openPath === undefined || entry.id !== snapshot.openPath) return undefined
     const cut = Math.max(entry.id.lastIndexOf('/'), entry.id.lastIndexOf(String.fromCharCode(92)))
     const extension = entry.name.includes('.')

@@ -1,4 +1,5 @@
 {
+  "view.gallery": "Галерея изображений",
   "command.contentSources": "Modkit: Источники содержимого (локальные / Battle.net)…",
   "extension.displayName": "Modkit MK3",
   "extension.description": "Среда Modkit MK3 для игровых модификаций и их ресурсов.",

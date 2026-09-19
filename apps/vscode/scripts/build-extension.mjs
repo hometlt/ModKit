@@ -459,7 +459,10 @@ async function buildInto(output, syncManifest) {
   })
 
   await build({
-    entryPoints: { webview: join(appRoot, 'src', 'webview.ts') },
+    entryPoints: {
+      webview: join(appRoot, 'src', 'webview.ts'),
+      'gallery-webview': join(appRoot, 'src', 'gallery-webview.ts'),
+    },
     outdir: output,
     bundle: true,
     format: 'esm',

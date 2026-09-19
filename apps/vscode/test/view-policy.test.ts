@@ -303,7 +303,7 @@ describe('VS Code view policy', () => {
         ref: { id: 'memory://vscode/minimal.zip', uri: 'memory://vscode/minimal.zip' },
         revision: revisionId('content-hash.sha256:minimal-zip'),
         size: BigInt(bytes.byteLength),
-        read: async (offset, length) =>
+        read: async (offset: bigint, length: number) =>
           new Uint8Array(bytes.subarray(Number(offset), Number(offset) + length)),
         stream: async function* stream() {
           yield new Uint8Array(bytes)

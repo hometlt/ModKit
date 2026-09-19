@@ -13,7 +13,8 @@
  * webview is not an extension host) stays true in the running product and not only in the
  * topology.
  */
-import { createHash } from 'node:crypto'
+import { createHash, randomBytes } from 'node:crypto'
+import { imageGalleryExtensions, galleryThumbnail, imageGalleryHtml } from './image-gallery.js'
 import { copyFileSync, createReadStream, existsSync, readFileSync, statSync } from 'node:fs'
 import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -1226,6 +1227,7 @@ export interface ModkitExtensionApi {
 export async function activate(context: vscode.ExtensionContext): Promise<ModkitExtensionApi> {
   if (activeLanguageShutdown !== undefined) await activeLanguageShutdown()
   const activationStarted = Date.now()
+  const languageOnly = process.env.MODKIT_VSCODE_LANGUAGE_ONLY === '1'
   const output = vscode.window.createOutputChannel('Modkit MK3')
   context.subscriptions.push(output)
   /** Where the time goes on the paths a person waits on; see `./timing.ts`. */
@@ -1272,7 +1274,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
    * opened until the user invokes the refresh command.
    */
   const initialConfiguration = vscode.workspace.getConfiguration('modkit')
-  const rawConfiguredExtensions = initialConfiguration.get('extensions')
+  const debugLanguageExtensions = process.env.MODKIT_VSCODE_LANGUAGE_EXTENSIONS
+  const rawConfiguredExtensions =
+    languageOnly && debugLanguageExtensions !== undefined
+      ? debugLanguageExtensions.split('|').filter(Boolean)
+      : initialConfiguration.get('extensions')
   const registrySetting = initialConfiguration.get<unknown>('extensionRegistry')
   const registryEnvironment = process.env.MODKIT_EXTENSION_REGISTRY
   const packagedRegistry = readPackagedManagedRegistry(extensionRoot)
@@ -1559,11 +1565,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
    */
   let workspaceFolderMutation: Promise<unknown> = Promise.resolve()
   let workspaceFolderAnnouncements = 0
-  context.subscriptions.push(
-    vscode.workspace.onDidChangeWorkspaceFolders(() => {
-      workspaceFolderAnnouncements += 1
-    }),
-  )
+  if (!languageOnly)
+    context.subscriptions.push(
+      vscode.workspace.onDidChangeWorkspaceFolders(() => {
+        workspaceFolderAnnouncements += 1
+      }),
+    )
   const addContainerWorkspaceFolder = (
     folder: vscode.Uri,
     name: string,
@@ -1745,84 +1752,85 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   }
   const operationOutputs = createOperationOutputStore()
   const operationOutputChanged = new vscode.EventEmitter<vscode.Uri>()
-  context.subscriptions.push(
-    sourceChanges,
-    vscode.workspace.registerFileSystemProvider('modkit-source', sourceFileSystem, {
-      isReadonly: true,
-      isCaseSensitive: true,
-    }),
-    // Answers that are documents; the scheme carries no authority, only what this window produced.
-    vscode.workspace.registerTextDocumentContentProvider(OPERATION_OUTPUT_SCHEME, {
-      onDidChange: operationOutputChanged.event,
-      provideTextDocumentContent: uri => operationOutputs.read(uri.path) ?? '',
-    }),
-    operationOutputChanged,
-    {
-      dispose: () => {
-        void contentSources?.then(source => source?.dispose()).catch(() => undefined)
+  if (!languageOnly)
+    context.subscriptions.push(
+      sourceChanges,
+      vscode.workspace.registerFileSystemProvider('modkit-source', sourceFileSystem, {
+        isReadonly: true,
+        isCaseSensitive: true,
+      }),
+      // Answers that are documents; the scheme carries no authority, only what this window produced.
+      vscode.workspace.registerTextDocumentContentProvider(OPERATION_OUTPUT_SCHEME, {
+        onDidChange: operationOutputChanged.event,
+        provideTextDocumentContent: uri => operationOutputs.read(uri.path) ?? '',
+      }),
+      operationOutputChanged,
+      {
+        dispose: () => {
+          void contentSources?.then(source => source?.dispose()).catch(() => undefined)
+        },
       },
-    },
-    vscode.commands.registerCommand('modkit.contentSources', async () => {
-      try {
-        await chooseContentSource({
-          russian: vscode.env.language.startsWith('ru'),
-          choose: async (title, items) =>
-            (await vscode.window.showQuickPick([...items], { title }))?.id,
-          input: title => Promise.resolve(vscode.window.showInputBox({ title })),
-          async call(method, args) {
-            const source = await requireContentSources()
-            const value = await callContentSources(source, method, args)
-            if (
-              [
-                'connect',
-                'disconnect',
-                'add',
-                'remove',
-                'refresh',
-                'publish',
-                'deletePublication',
-              ].includes(method)
-            ) {
-              sourceChanges.fire(
-                (vscode.workspace.workspaceFolders ?? [])
-                  .filter(folder => folder.uri.scheme === 'modkit-source')
-                  .map(folder => ({ type: vscode.FileChangeType.Changed, uri: folder.uri })),
-              )
-            }
-            return value
-          },
-          async open(source) {
-            if (!vscode.workspace.workspaceFolders?.length) {
-              throw new Error(localizer.text('vscode.container.openFolderFirst'))
-            }
-            const uri = vscode.Uri.from({
-              scheme: 'modkit-source',
-              authority: 'battlenet',
-              path: `/${source.id}`,
-            })
-            const result = await addContainerWorkspaceFolder(uri, source.label)
-            if (result === 'rejected')
-              throw new Error('The workspace could not add this content source')
-            await vscode.commands.executeCommand('revealInExplorer', uri)
-          },
-          async openLocal() {
-            const selected = await vscode.commands.executeCommand<
-              { installPath: string } | undefined
-            >('modkit.selectGameInstallation')
-            if (selected)
-              await vscode.commands.executeCommand(
-                'modkit.browseContainer',
-                vscode.Uri.file(selected.installPath),
-              )
-          },
-        })
-      } catch (error) {
-        void vscode.window.showErrorMessage(
-          `Modkit: ${error instanceof Error ? error.message : 'Content source failed'}`,
-        )
-      }
-    }),
-  )
+      vscode.commands.registerCommand('modkit.contentSources', async () => {
+        try {
+          await chooseContentSource({
+            russian: vscode.env.language.startsWith('ru'),
+            choose: async (title, items) =>
+              (await vscode.window.showQuickPick([...items], { title }))?.id,
+            input: title => Promise.resolve(vscode.window.showInputBox({ title })),
+            async call(method, args) {
+              const source = await requireContentSources()
+              const value = await callContentSources(source, method, args)
+              if (
+                [
+                  'connect',
+                  'disconnect',
+                  'add',
+                  'remove',
+                  'refresh',
+                  'publish',
+                  'deletePublication',
+                ].includes(method)
+              ) {
+                sourceChanges.fire(
+                  (vscode.workspace.workspaceFolders ?? [])
+                    .filter(folder => folder.uri.scheme === 'modkit-source')
+                    .map(folder => ({ type: vscode.FileChangeType.Changed, uri: folder.uri })),
+                )
+              }
+              return value
+            },
+            async open(source) {
+              if (!vscode.workspace.workspaceFolders?.length) {
+                throw new Error(localizer.text('vscode.container.openFolderFirst'))
+              }
+              const uri = vscode.Uri.from({
+                scheme: 'modkit-source',
+                authority: 'battlenet',
+                path: `/${source.id}`,
+              })
+              const result = await addContainerWorkspaceFolder(uri, source.label)
+              if (result === 'rejected')
+                throw new Error('The workspace could not add this content source')
+              await vscode.commands.executeCommand('revealInExplorer', uri)
+            },
+            async openLocal() {
+              const selected = await vscode.commands.executeCommand<
+                { installPath: string } | undefined
+              >('modkit.selectGameInstallation')
+              if (selected)
+                await vscode.commands.executeCommand(
+                  'modkit.browseContainer',
+                  vscode.Uri.file(selected.installPath),
+                )
+            },
+          })
+        } catch (error) {
+          void vscode.window.showErrorMessage(
+            `Modkit: ${error instanceof Error ? error.message : 'Content source failed'}`,
+          )
+        }
+      }),
+    )
   const containerFileSystem: vscode.FileSystemProvider = {
     // A refresh explicitly invalidates the held session/listing and emits one native root change.
     onDidChangeFile: containerChanges.event,
@@ -1911,13 +1919,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     },
   }
 
-  context.subscriptions.push(
-    vscode.workspace.registerFileSystemProvider(CONTAINER_SCHEME, containerFileSystem, {
-      // Container entry paths come out of the container's own tables; two members differing only in
-      // case are two members, and folding them would hide one.
-      isCaseSensitive: true,
-    }),
-  )
+  if (!languageOnly)
+    context.subscriptions.push(
+      vscode.workspace.registerFileSystemProvider(CONTAINER_SCHEME, containerFileSystem, {
+        // Container entry paths come out of the container's own tables; two members differing only in
+        // case are two members, and folding them would hide one.
+        isCaseSensitive: true,
+      }),
+    )
 
   // ---------------------------------------------------------------- configuration
   /*
@@ -4207,12 +4216,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     }
     await writePackageGateReceipt(gateReceipt)
   }
-  context.subscriptions.push(
-    vscode.commands.registerCommand(
-      '_modkit.acceptance.packageInstallGate',
-      packageInstallGateReceipt,
-    ),
-  )
+  if (!languageOnly)
+    context.subscriptions.push(
+      vscode.commands.registerCommand(
+        '_modkit.acceptance.packageInstallGate',
+        packageInstallGateReceipt,
+      ),
+    )
   // Reproject on open so a settings write is reflected even when the user postpones the reload.
   // Inventory stays the activation snapshot; direct enablement is the live preference layered on
   // top of it, and the card names both instead of showing a stale button.
@@ -5316,6 +5326,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   })
   log(`language routes configured: ${languageRoutes.length}`)
 
+  if (languageOnly) {
+    const activationMs = Date.now() - activationStarted
+    log(`Modkit language-only debug host activated in ${activationMs} ms`)
+    return Object.freeze({
+      activationMs,
+      missingCatalogRoots: Object.freeze(
+        host.extensions.problems.filter(problem => problem.startsWith('the shipped catalog names')),
+      ),
+      contributions: host.contributions.length,
+      runtime: runtimeDebug,
+      facilities: () => undefined,
+    })
+  }
+
   // ---------------------------------------------------------------- facilities
   /*
    * What the page reports it can honour, against what the realm was composed with (§1.5).
@@ -5660,6 +5684,161 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   }
 
   // ---------------------------------------------------------------- shared command runtime
+  const galleryExtensions = imageGalleryExtensions(host.services.inventory)
+  const galleryOpener = createVsCodeCommandOpener({ services: host.services, roots })
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider('modkit.gallery', {
+      resolveWebviewView(view) {
+        const galleryResources = vscode.Uri.joinPath(context.extensionUri, 'dist-app')
+        view.webview.options = { enableScripts: true, localResourceRoots: [galleryResources] }
+        const resource = (name: string) =>
+          view.webview.asWebviewUri(vscode.Uri.joinPath(galleryResources, name)).toString()
+        view.webview.html = imageGalleryHtml(randomBytes(16).toString('hex'), {
+          cspSource: view.webview.cspSource,
+          script: resource('gallery-webview.js'),
+          stylesheet: resource('modkit-ui.css'),
+          icons: resource('codicons/codicon.css'),
+        })
+        let items: { id: string; label: string; group: string }[] = []
+        let revision = 0
+        let queue = Promise.resolve()
+        const cancellation = new AbortController()
+        const active = () => {
+          const tab = vscode.window.tabGroups.activeTabGroup.activeTab?.input
+          return tab instanceof vscode.TabInputCustom ? tab.uri.fsPath : ''
+        }
+        const refresh = async () => {
+          const current = ++revision
+          const folders = vscode.workspace.workspaceFolders ?? []
+          const groups = await Promise.all(
+            folders
+              .filter(folder => folder.uri.scheme === 'file')
+              .map(async folder => {
+                const entries = await Promise.resolve(
+                  vscode.workspace.fs.readDirectory(folder.uri),
+                ).catch(() => [])
+                return entries
+                  .filter(
+                    ([name, type]) =>
+                      type === vscode.FileType.File &&
+                      galleryExtensions.has(name.split('.').at(-1)?.toLowerCase() ?? ''),
+                  )
+                  .map(([name]) => ({
+                    id: vscode.Uri.joinPath(folder.uri, name).fsPath,
+                    label: name,
+                    group: folder.name,
+                  }))
+                  .sort((a, b) => a.label.localeCompare(b.label))
+              }),
+          )
+          if (current !== revision || cancellation.signal.aborted) return
+          items = groups.flat()
+          await view.webview.postMessage({ op: 'files', items, active: active() })
+        }
+        const subscriptions: vscode.Disposable[] = [
+          view.onDidDispose(() => {
+            cancellation.abort()
+            subscriptions.forEach(item => item.dispose())
+          }),
+          vscode.workspace.onDidChangeWorkspaceFolders(() => void refresh()),
+          vscode.window.tabGroups.onDidChangeTabs(
+            () => void view.webview.postMessage({ op: 'active', id: active() }),
+          ),
+          view.webview.onDidReceiveMessage((message: unknown) => {
+            if (message === null || typeof message !== 'object') return
+            const request = message as { op?: string; id?: string; generation?: number }
+            if (request.op === 'refresh') {
+              void refresh()
+              return
+            }
+            const item = items.find(item => item.id === request.id)
+            if (!item) return
+            if (request.op === 'open') {
+              openResource(vscode.Uri.file(item.id))
+              return
+            }
+            if (request.op !== 'thumbnail') return
+            const current = revision
+            queue = queue
+              .then(async () => {
+                if (current !== revision || cancellation.signal.aborted) return
+                let opened: Awaited<ReturnType<typeof galleryOpener>> | undefined
+                let sent = false
+                let raster:
+                  import('@modkit/sdk').Lease<import('@modkit/sdk').RasterImageSource> | undefined
+                try {
+                  const stat = await vscode.workspace.fs.stat(vscode.Uri.file(item.id))
+                  if (stat.size > 16 * 1024 * 1024) return
+                  opened = await galleryOpener(item.id, cancellation.signal)
+                  if (!opened.session) return
+                  raster = await opened.session.dataSource('common.view/raster-image-source', 1)
+                  const info = await raster.value.info(cancellation.signal)
+                  if (!info.decodedAccess || !raster.value.readRegion) return
+                  let mipLevel = 0
+                  while (
+                    mipLevel + 1 < info.mipLevels &&
+                    Math.max(info.width, info.height) / 2 ** mipLevel > 96
+                  )
+                    mipLevel++
+                  const width = Math.max(1, Math.floor(info.width / 2 ** mipLevel))
+                  const height = Math.max(1, Math.floor(info.height / 2 ** mipLevel))
+                  if (width * height * 4 > 16 * 1024 * 1024) return
+                  const region = await raster.value.readRegion(
+                    {
+                      x: 0,
+                      y: 0,
+                      width,
+                      height,
+                      mipLevel,
+                      frame: 0,
+                      layer: 0,
+                      face: 0,
+                      slice: 0,
+                      pixelFormat: 'rgba8',
+                      maxBytes: 16 * 1024 * 1024,
+                    },
+                    cancellation.signal,
+                  )
+                  if (current === revision && !cancellation.signal.aborted) {
+                    await view.webview.postMessage({
+                      op: 'thumbnail',
+                      id: item.id,
+                      generation: request.generation,
+                      thumbnail: galleryThumbnail(region),
+                    })
+                    sent = true
+                  }
+                } catch {
+                  /* A file with no decoded pixels stays in the gallery by name. */
+                } finally {
+                  if (!sent && current === revision && !cancellation.signal.aborted)
+                    await view.webview.postMessage({
+                      op: 'thumbnail',
+                      id: item.id,
+                      generation: request.generation,
+                    })
+                  await raster?.release()
+                  await opened?.session?.dispose()
+                }
+              })
+              .catch(error => log(`[gallery] ${String(error)}`))
+          }),
+        ]
+        for (const folder of vscode.workspace.workspaceFolders ?? []) {
+          const watcher = vscode.workspace.createFileSystemWatcher(
+            new vscode.RelativePattern(folder, '*'),
+          )
+          subscriptions.push(
+            watcher,
+            watcher.onDidCreate(() => void refresh()),
+            watcher.onDidChange(() => void refresh()),
+            watcher.onDidDelete(() => void refresh()),
+          )
+        }
+      },
+    }),
+  )
+
   /*
    * The same subject and generic service commands the CLI and protocol adapters run.
    *

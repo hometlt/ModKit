@@ -6,7 +6,12 @@ describe('native custom document state', () => {
   it('fires one dirty transition and delegates save/revert to the resolved webview', async () => {
     const saveDocument = vi.fn(async () => undefined)
     const revertDocument = vi.fn(async () => undefined)
-    const session = { saveDocument, revertDocument }
+    const session = {
+      saveDocument,
+      revertDocument,
+      undoDocument: vi.fn(async () => undefined),
+      redoDocument: vi.fn(async () => undefined),
+    }
     const document = new CustomDocumentState('C:\\workspace\\asset.bin')
     document.attach(session)
 
@@ -29,6 +34,8 @@ describe('native custom document state', () => {
     const session = {
       saveDocument: async () => undefined,
       revertDocument: async () => undefined,
+      undoDocument: async () => undefined,
+      redoDocument: async () => undefined,
     }
     document.attach(session)
     document.detach(session)

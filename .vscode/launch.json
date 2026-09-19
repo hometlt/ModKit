@@ -85,7 +85,27 @@
       "name": "Modkit Core: VS Code Extension (Extension Host)",
       "type": "extensionHost",
       "request": "launch",
-      "args": ["--extensionDevelopmentPath=${workspaceFolder}/apps/vscode"],
+      "args": [
+        "--disable-extensions",
+        "--user-data-dir=${workspaceFolder}/../.vscode-modkit/user-data",
+        "--extensionDevelopmentPath=${workspaceFolder}/apps/vscode"
+      ],
+      "preLaunchTask": "Modkit Core: Build VS Code Extension",
+      "outFiles": ["${workspaceFolder}/apps/vscode/dist-app/**/*.cjs"]
+    },
+    {
+      "name": "Modkit Core: VS Code Language Services Only",
+      "type": "extensionHost",
+      "request": "launch",
+      "args": [
+        "--disable-extensions",
+        "--user-data-dir=${workspaceFolder}/../.vscode-modkit/language-user-data",
+        "--extensionDevelopmentPath=${workspaceFolder}/apps/vscode"
+      ],
+      "env": {
+        "MODKIT_VSCODE_LANGUAGE_ONLY": "1",
+        "MODKIT_VSCODE_LANGUAGE_EXTENSIONS": "${workspaceFolder}/../modkit-extensions-blizzard|${workspaceFolder}/../modkit-extensions-warzone"
+      },
       "preLaunchTask": "Modkit Core: Build VS Code Extension",
       "outFiles": ["${workspaceFolder}/apps/vscode/dist-app/**/*.cjs"]
     },

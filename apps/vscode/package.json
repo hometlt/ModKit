@@ -411,6 +411,11 @@
           "name": "%view.extensions%"
         },
         {
+          "id": "modkit.gallery",
+          "name": "%view.gallery%",
+          "type": "webview"
+        },
+        {
           "id": "modkit.host",
           "name": "%view.host%"
         }
@@ -470,6 +475,7 @@
     "onCustomEditor:modkit.hexViewer",
     "onCustomEditor:modkit.imageViewer",
     "onView:modkit.extensions",
+    "onView:modkit.gallery",
     "onView:modkit.host",
     "onFileSystem:modkit-container",
     "onFileSystem:modkit-source",

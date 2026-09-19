@@ -1,0 +1,81 @@
+image should be saved without Save command
+Undo/Redo doesnt work. selection tools shold be blue color and half trnsparent in seelction area 
+now after any modification gallery and file view panels re-renders, it should not happen. if image modifed ans saved in gallery only thumbnail of that image should be re-renderd, not the whole area. file webview panel should npt be re-rendered
+can we remove "Transform" panel from right sidebar,
+ but keep operations in show and run commands in vscode topbar (with > command) 
+ we can also add operaions from SC2 extensions to there ( with > command for images)
+ header/metadata section of the right panel should be viewed as a a panel with editable values. (each value should have type , and possible values , anddepend oni t it should be different editors, selectbox with options, text field, number input, color input  etc.). for PNG set png field can be used from there .
+
+convertion does not work ( nothing happen after i select convertion option)
+
+
+subresources comparison and export we might need to rename it to make shorted. maybe mip levels need a better interface. separate section, only load lozyly when expanded and show all mips as in gallery.
+
+now hide gallery panel from all webviews, only keep in modkit panel
+
+
+move "toggle right panel" to actions-container  do not show right panel by default. but save the state of this panel and sections e(expanded or not)
+
+hex editor should work for each binary format. and allow to edit values undo redo and save operations.
+
+
+for all vector images and documents we should bring all fucntionality from mk2 and use same webview template as for normal images (render area, right panel) but here we can add option to actions-container to show preview and code or only code or only image in render area, similar to how md viewers works
+
+
+popup menu for archives should work natively using native vscode popups if possible ( custom in electron app) . it hould have same background, separator lines paddings and hotkeys. also i should be able to navigate files with arrows and tab button
+
+
+hide host panel from modkit panel and problems from extensions ( if there are no problems exists)
+
+i need VFS Sources section in Modkit panel. it should show all Modkit sources and allow to add more . for example it can detect installed CASC ( by sc2/casc extensions) for sc2 it can detect all sc2 directories and add them ( with savegames, wizards, sc2 cache , sc2 directory) and show them there. extensions can add their sources options. in MK2 it worked as "archives" section in modkit panel and some other were shown in modkiy section.
+
+
+there was a "mod" section in modkit which shown all resources from loaded mod
+gamedata -> Abil, accumulator ...
+layouts -> all s2 layouts
+strings -> all locales -> gamehotkeys, gamestrings, objectstrings, triggerstrings etc.
+galaxy -> functions variables structs includes
+asset aliases 
+editorcategories
+fontstyles -> styles, constants font groups
+preload
+files -> files grouped by type
+dependencies
+
+
+we need to keep it but in universal way. becouse we need to support multiple mod structures . sc2, warzone2100 , cnc3, red alert3 and others. so mod provider can make their own resources trees. wen clicking on items it shows item card ot redirect to the code where item defined
+we need to ensure that entity cards works 
+
+
+SC2 GameData:
+ensure that we have same functionality as before ( or better)
+
+full autocomplete with fields classes descriotions, validation.
+
+before each entity id should be full part chain shown and unit card button and calculate resolved values fcntionality <!-- Modkit: resolved view (own + inherited. same as in MK2 
+
+unit cards should show resources, unit description, icon, command card, produced by,weaposn stats and all the rest which already was in mk2
+
+
+autocomplete should work for "parent" field as well and allow to choose entities of same class with default="1" value.
+
+graph button should show panel with enitty relations ( same as in mk2)
+
+ensure that language serviews works for layouts, galaxy , and other codecs.same as for vector images should be button to show code/render views.
+
+
+should be codec assets files sc2 ,like this one - for mods\tib-data.SC2Mod\Base.SC2Data\GameData\Assets.txt
+
+with all lsp features, similar to gamestrings
+
+
+sc2 version files, shoudl allow to view and edit data fields
+
+all color fields in text editors should have colorpicker. (with sc2 constants options where appliable)
+
+all relations should show list of options,
+including files fields for each language codec.
+
+localisation should work similar to MK2. with option to switch to strings table, tree view, and auto translate buttons
+
+need to ensure that map preview works, allow to show 2d and 3d renders.
