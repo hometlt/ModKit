@@ -6,7 +6,7 @@ import {
 import { createUvmParticleGeometry, type UvmModelParticleDraw } from './effect-particles.js'
 import { createUvmRibbonGeometry } from './ribbon-geometry.js'
 import { bindUvmEffectLinks } from './effect-links.js'
-import { effectSurfaceMaterial, projectorMaterial } from './projector-material.js'
+import { effectSurfaceMaterial } from './projector-material.js'
 import { readEffectCollisionShapes } from './effect-collisions.js'
 import { readEffectProjectors } from './effect-projectors.js'
 import { captureCollisionSplats, type UvmCollisionSplat } from './collision-splats.js'
@@ -849,16 +849,36 @@ export function createUvmEffectFrame(document: JsonObject, options: UvmEffectFra
     const base = materialById.get(`material-${emitter.materialIndex}`)
     if (base === undefined) throw new TypeError('ribbon material absent')
     const id = `uvm-effect-ribbon-${ribbonOrdinals[geometry.emitter]}`
-    const material = projectorMaterial(
+    const material = effectSurfaceMaterial(
       base,
       id,
-      1,
       options.maxNodes - emitterCount - meshNodes - primitives.length,
       options.maxBytes - bytes,
+      emitter.texturePath,
       signal,
     )
     if (material === undefined) continue
     // Ribbons are camera-facing strips too; see the particle note above.
+    if (material.simpleEffect === undefined) {
+      const c = geometry.colors
+      materials.push(material)
+      primitives.push({
+        id,
+        materialId: id,
+        topology: 'triangles',
+        positions: geometry.positions,
+        indices: geometry.indices,
+        textureCoordinates: geometry.textureCoordinates,
+        textureCoordinateSets: [1, 2, 3].map(set => ({
+          set,
+          coordinates: geometry.textureCoordinates,
+        })),
+        colors: geometry.colors,
+        tint: [c[0] ?? 1, c[1] ?? 1, c[2] ?? 1, c[3] ?? 1],
+        transform: Float32Array.from(toWorld),
+      })
+      continue
+    }
     materials.push({
       ...material,
       simpleEffect: {

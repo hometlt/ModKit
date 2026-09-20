@@ -605,6 +605,90 @@ describe('common world WebGL plan', () => {
     assert.deepEqual(Array.from(scene.primitives[0].transform.slice(12, 15)), [4, 2, 6])
   })
 
+  it('preserves composite vocabulary and advances a default Stand material sequence', () => {
+    const layer = (slot, animated = false) => ({
+      slot,
+      texturePath: 'water.png',
+      constantColor: { value: [1, 1, 1, 1] },
+      uvSource: 0,
+      channels: slot === 'alpha1' ? 4 : 0,
+      op: 2,
+      teamColorMode: 0,
+      invert: false,
+      clampResult: true,
+      wrapX: true,
+      wrapY: true,
+      ...(animated
+        ? {
+            colorMultiply: {
+              value: 0,
+              sequenceTracks: [{
+                sequenceIndex: 0,
+                track: {
+                  globalSeqId: null,
+                  lineType: 1,
+                  keys: [
+                    { frame: 0, vector: [0] },
+                    { frame: 2, vector: [1] },
+                  ],
+                },
+              }],
+            },
+          }
+        : {}),
+    })
+    const standard = {
+      layers: { diffuse: layer('diffuse'), alpha1: layer('alpha1', true) },
+      blendMode: 1,
+      priority: 0,
+      specularity: 10,
+      specMult: 1,
+      emisMult: 1,
+      specMode: 0,
+      alphaTestThreshold: 0,
+      twoSided: false,
+      unshaded: true,
+      doubleLambert: false,
+      clampOutput: false,
+      usesVertexColor: false,
+      usesVertexAlpha: false,
+    }
+    const item = {
+      facet: 'objects', id: 'water', layerId: 'objects', coordinateSpaceId: 'uvw',
+      kind: 'doodad', objectId: 12, position: { x: 0, y: 0, z: 0 },
+      uvwPosition: { x: 0, y: 0, z: 0 }, resourceId: 'water-model',
+    }
+    const model = {
+      state: 'converted', sourceKey: 'water-model', diagnostics: [], complete: true, meshes: [],
+      primitives: [{
+        id: 'water-plane', topology: 'triangles', materialId: 'water',
+        positions: Float32Array.from([0, 0, 0, 1, 0, 0, 0, 1, 0]),
+        textureCoordinates: Float32Array.from([0, 0, 1, 0, 0, 1]),
+      }],
+      animations: [{
+        id: 'stand', name: 'Stand', kind: 'animation', provenance: 'direct', frames: 2,
+        durationSeconds: 4, looping: true, sequenceIndex: 0, channels: [],
+      }],
+      materials: [{
+        id: 'water', blendMode: 'blend',
+        layers: [{ slot: 'diffuse', resourceId: 'water.png', uvSource: 0 }, { slot: 'alpha1', resourceId: 'water.png', uvSource: 0 }],
+        shader: { id: 'modkit.render-material.v1', parameters: {
+          renderModel: { version: 1, layers: [], composite: { priority: 0, passes: [{ material: standard, alphaFactor: { value: 1 } }] } },
+        } },
+      }],
+      textures: [{ id: 'water.png', width: 1, height: 1, rgba: Uint8Array.of(80, 160, 200, 255) }],
+    }
+    const at = timeSeconds => createWorldWebGlPlan({
+      items: [item], models: new Map([['water-model', model]]), timeSeconds,
+    })
+    const initial = at(0), animated = at(2)
+    assert.equal(initial.modelMaterialScenes.length, 1)
+    assert.equal(initial.transparentTexturedTriangles.length, 0)
+    assert.equal(initial.modelMaterialScenes[0].programs.get('water').passes[0].blend, 'blend')
+    assert.equal(initial.modelMaterialScenes[0].programs.get('water').passes[0].uniforms.u_alpha1Multiply, 0)
+    assert.equal(animated.modelMaterialScenes[0].programs.get('water').passes[0].uniforms.u_alpha1Multiply, 1)
+  })
+
   it('keeps alpha cutoffs and common/native shadow policy on opaque textured materials', () => {
     const item = (objectId, resourceId) => ({
       facet: 'objects',

@@ -239,17 +239,15 @@ test('particles and ribbons select common simple-effect state independently of n
       Float32Array.from(Array.from({ length: vertices }, () => [0.5, 0.25, 1, 0.5]).flat()),
     )
   }
-  assert.deepEqual(
-    projectorMaterial(base, 'unchanged-projector', 0.5, 10000, 1048576).baseColor,
-    [1, 1, 1, 0.5],
-  )
+  const projector = projectorMaterial(base, 'unchanged-projector', 0.5, 10000, 1048576)
+  assert.equal(projector.simpleEffect.blend, 'blend')
 
   // A program that samples the emitter texture keeps its full shading (alpha masks included):
   // two-sided, and the per-sprite lifecycle color becomes the primitive tint.
   const diffuse = {
     slot: 'diffuse',
     texturePath: 'particle.dds',
-    uvSource: 0,
+    uvSource: 6,
     channels: 0,
     op: 2,
     teamColorMode: 0,
@@ -283,5 +281,29 @@ test('particles and ribbons select common simple-effect state independently of n
   const program = full.materials.find(value => value.id === sprite.materialId)
   assert.equal(program.simpleEffect, undefined)
   assert.equal(program.shader.parameters.renderModel.standard.twoSided, true)
+  assert.equal(program.shader.parameters.renderModel.standard.layers.diffuse.uvSource, 0)
   assert.deepEqual(sprite.tint, [0.5, 0.25, 1, 0.5])
+
+  const animatedAlpha = {
+    ...diffuse,
+    slot: 'alpha1',
+    texturePath: 'mask.dds',
+    colorMultiply: { value: 0, sequenceTracks: [] },
+  }
+  const maskedProjector = projectorMaterial({
+    ...textured,
+    shader: {
+      ...textured.shader,
+      parameters: {
+        renderModel: {
+          version: 1,
+          standard: {
+            ...standard,
+            layers: { diffuse, alpha1: animatedAlpha },
+          },
+        },
+      },
+    },
+  }, 'animated-alpha-projector', 0.5, 10000, 1048576)
+  assert.equal(maskedProjector.simpleEffect, undefined)
 })

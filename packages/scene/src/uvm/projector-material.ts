@@ -19,7 +19,7 @@ export function effectSurfaceMaterial(
   signal?: AbortSignal,
 ): SceneRendererMaterial | undefined {
   const simple = () => {
-    const material = projectorMaterial(base, id, 1, maxNodes, maxBytes, signal)
+    const material = simpleEffectMaterial(base, id, 1, maxNodes, maxBytes, signal)
     return (
       material && {
         ...material,
@@ -41,7 +41,26 @@ export function effectSurfaceMaterial(
   // An emitter texture the material program never samples keeps the single-texture pass.
   if (texturePath !== undefined && !sampler.resources.includes(texturePath)) return simple()
   const model = object(base.shader.parameters['renderModel'], 'render model')
-  const twoSided = (material: unknown) => ({ ...object(material, 'standard'), twoSided: true })
+  const twoSided = (material: unknown) => {
+    const standard = object(material, 'standard')
+    const layers = standard['layers']
+    return {
+      ...standard,
+      twoSided: true,
+      ...(layers === undefined
+        ? {}
+        : {
+            layers: Object.fromEntries(
+              Object.entries(object(layers, 'standard layers')).map(([slot, raw]) => {
+                const layer = object(raw, `standard layer ${slot}`)
+                // SC2's particle UV source is the atlas rectangle already emitted on UV0 by the
+                // UVM particle/ribbon geometry adapter.
+                return [slot, layer['uvSource'] === 6 ? { ...layer, uvSource: 0 } : layer]
+              }),
+            ),
+          }),
+    }
+  }
   const renderModel = {
     ...model,
     ...(model['standard'] === undefined ? {} : { standard: twoSided(model['standard']) }),
@@ -69,9 +88,8 @@ export function effectSurfaceMaterial(
   } as SceneRendererMaterial
 }
 
-/** Existing render-material vocabulary -> the simple live-effect pass. This is deliberately
- * independent of format: M3 already publishes the exact ordered legacy layer list here. */
-export function projectorMaterial(
+/** Existing render-material vocabulary -> the simple live-effect fallback. */
+function simpleEffectMaterial(
   base: SceneRendererMaterial,
   id: string,
   alpha: number,
@@ -147,4 +165,37 @@ export function projectorMaterial(
   }
   // Retain the authored shader so its resources continue through the normal scoped acquisition.
   return { ...base, id, baseColor: [1, 1, 1, alpha], shading: 'unlit', simpleEffect }
+}
+
+/**
+ * Animated alpha projectors need the complete SC2 material program: their alpha masks remove the
+ * rectangular projection footprint. Ordinary splats retain the established single-texture path;
+ * compiling every legacy projector as a full material turns unsupported transparent layers black.
+ */
+export function projectorMaterial(
+  base: SceneRendererMaterial,
+  id: string,
+  alpha: number,
+  maxNodes: number,
+  maxBytes: number,
+  signal?: AbortSignal,
+): SceneRendererMaterial | undefined {
+  if (base.shader?.id === 'modkit.render-material.v1') {
+    const model = object(base.shader.parameters['renderModel'], 'render model')
+    const standard = model['standard']
+    if (standard !== undefined) {
+      const layers = object(object(standard, 'standard')['layers'] ?? {}, 'standard layers')
+      const animatedAlpha = ['alpha1', 'alpha2'].some(slot => {
+        const raw = layers[slot]
+        if (raw === undefined) return false
+        const layer = object(raw, `standard layer ${slot}`)
+        return ['colorAdd', 'colorMultiply', 'uvOffset', 'uvAngle', 'uvTiling'].some(key =>
+          Array.isArray(object(layer[key] ?? {}, `${slot} ${key}`)['sequenceTracks']),
+        )
+      })
+      if (animatedAlpha)
+        return effectSurfaceMaterial(base, id, maxNodes, maxBytes, undefined, signal)
+    }
+  }
+  return simpleEffectMaterial(base, id, alpha, maxNodes, maxBytes, signal)
 }

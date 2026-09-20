@@ -441,8 +441,15 @@ export function worldModelAnimation(result: Extract<WorldSceneModelResult, { sta
     ?? (item.presentationAnimation === undefined ? result.animations?.find(clip => clip.kind === 'animation' && clip.channels.length > 0) : undefined)
 }
 
-function worldObjectTime(input: WorldWebGlInput, item: WorldSceneObjectItem): number {
-  return (input.animationTimes?.get(item.objectId) ?? (item.presentationAnimation ? input.timeSeconds ?? 0 : 0)) * (item.presentationAnimation?.speed ?? 1)
+function worldObjectTime(
+  input: WorldWebGlInput,
+  item: WorldSceneObjectItem,
+  hasSelectedAnimation: boolean,
+): number {
+  return (
+    input.animationTimes?.get(item.objectId) ??
+    (item.presentationAnimation !== undefined || hasSelectedAnimation ? input.timeSeconds ?? 0 : 0)
+  ) * (item.presentationAnimation?.speed ?? 1)
 }
 
 function colorHash(value: string | number): readonly [number, number, number, number] {
@@ -982,10 +989,27 @@ function presentationMaterials(
     if (firstPass !== undefined && ref.shader !== undefined) {
       standard = firstPass
       const blend = typeof firstPass['blendMode'] === 'number' ? firstPass['blendMode'] : 0
+      const { composite: _composite, ...surfaceModel } = renderModel ?? {}
+      void _composite
+      const animatedComposite = Object.values(record(firstPass['layers']) ?? {}).some(raw => {
+        const layer = record(raw)
+        return ['colorAdd', 'colorMultiply', 'uvOffset', 'uvAngle', 'uvTiling'].some(key =>
+          Array.isArray(record(layer?.[key])?.['sequenceTracks']),
+        )
+      })
       out = {
         ...ref,
         ...(blend === 0 ? {} : { alphaMode: 'blend' as const }),
-        shader: { ...ref.shader, parameters: { ...parameters, renderModel: { standard } } },
+        shader: {
+          ...ref.shader,
+          parameters: {
+            ...parameters,
+            // Animated water/effect composites need the complete sequence vocabulary. Static
+            // legacy composites keep the established textured fallback until every CMP_ family
+            // has material parity; compiling those today turns authored transparent areas black.
+            renderModel: animatedComposite ? { ...surfaceModel, standard } : { standard },
+          },
+        },
       }
     }
     if (cliff && standard !== undefined && out.shader !== undefined) {
@@ -997,7 +1021,9 @@ function presentationMaterials(
           ...out.shader,
           parameters: {
             ...out.shader.parameters,
-            renderModel: { standard: { ...standard, blendMode: 0, alphaTestThreshold: 0.5 } },
+            renderModel: {
+              standard: { ...standard, blendMode: 0, alphaTestThreshold: 0.5 },
+            },
           },
         },
       }
@@ -1227,8 +1253,8 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
     const result = input.models?.get(resourceId)
     if (result?.state !== 'converted') return undefined
     const selected = worldModelAnimation(result, item)
-    const clock = worldObjectTime(input, item)
-    const time = selected?.durationSeconds && item.presentationAnimation?.loop
+    const clock = worldObjectTime(input, item, selected !== undefined)
+    const time = selected?.durationSeconds && (item.presentationAnimation?.loop ?? selected.looping)
       ? clock % selected.durationSeconds : clock
     const sharedKey = `${resourceId}\u0000${selected?.id ?? ''}\u0000${time}`
     const shared = planSamples.get(sharedKey)
@@ -2368,8 +2394,9 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
           : sampled.primitives
       let programs: ReadonlyMap<string, SceneMaterialPrograms> = new Map()
       const selectedAnimation = worldModelAnimation(result, item)
-      const time = worldObjectTime(input, item)
-      const sequenceTime = selectedAnimation?.durationSeconds && item.presentationAnimation?.loop
+      const time = worldObjectTime(input, item, selectedAnimation !== undefined)
+      const sequenceTime = selectedAnimation?.durationSeconds &&
+        (item.presentationAnimation?.loop ?? selectedAnimation.looping)
         ? time % selectedAnimation.durationSeconds : time
       const teamColor =
         item.presentationTeamColor ??
@@ -2551,8 +2578,31 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
           id: 'world-terrain-receiver', topology: 'triangles', positions: projectorGround,
           transform: Float32Array.from(invertMaterialFrame(Array.from(instanceTransform))),
         }])
+        let projectedPrograms: ReadonlyMap<string, SceneMaterialPrograms> = new Map()
+        try {
+          projectedPrograms = prepareSceneMaterialPrograms(
+            projected.materials,
+            new Map(scene.textures.map(texture => [texture.id, texture])),
+            materialContext,
+            [],
+          )
+        } catch {
+          // Unsupported projector materials remain isolated from the rest of the map.
+        }
+        const projectedMaterialPrimitives: SceneRendererPrimitive[] = []
         for (const primitive of projected.primitives) {
           const material = projected.materials.find(candidate => candidate.id === primitive.materialId)
+          if (material !== undefined && material.simpleEffect === undefined) {
+            if (projectedPrograms.has(material.id))
+              projectedMaterialPrimitives.push(Object.freeze({
+                ...primitive,
+                transform: multiplyComponentTransforms(
+                  instanceTransform,
+                  primitive.transform ?? IDENTITY_COMPONENT_TRANSFORM,
+                ),
+              }))
+            continue
+          }
           const resource = material?.simpleEffect?.textureResource
           const textureId = material?.textureBindings?.find(binding => binding.resourceId === resource)?.textureId
           const texture = scene.textures.find(candidate => candidate.id === textureId)
@@ -2560,7 +2610,7 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
           const key = `projector:${texture.id}`
           const target = transparentTextured.get(key) ?? {
             ...batch(), textureCoordinates: [], texture, blendMode: 'blend' as const,
-            castShadows: false, receiveShadows: true,
+            castShadows: false, receiveShadows: false,
           }
           transparentTextured.set(key, target)
           for (const triangle of primitiveTriangles(primitive)) {
@@ -2573,6 +2623,14 @@ export function createWorldWebGlPlan(input: WorldWebGlInput): WorldWebGlPlan {
               [1, 1, 1, material?.baseColor?.[3] ?? 1])
           }
         }
+        if (projectedMaterialPrimitives.length > 0)
+          modelMaterialScenes.push(Object.freeze({
+            primitives: Object.freeze(projectedMaterialPrimitives),
+            shadowPrimitives: Object.freeze([]),
+            materials: projected.materials,
+            programs: projectedPrograms,
+            textures: scene.textures,
+          }))
       }
       if (effectSource !== undefined)
         modelEffects.push(

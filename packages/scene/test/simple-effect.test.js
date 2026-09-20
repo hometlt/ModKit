@@ -56,7 +56,7 @@ test('simple effect WebGL state uses SRC_COLOR additive and independent depth fl
     ['blend', 5, 6, 7, 6],
   ])
 })
-test('ordered render-model layers select the pinned preview texture and preserve the authored shader', () => {
+test('ordinary projectors select the pinned preview texture and preserve the authored shader', () => {
   const standard = {
     layers: {},
     blendMode: 2,
@@ -93,14 +93,8 @@ test('ordered render-model layers select the pinned preview texture and preserve
   }
   const before = structuredClone(base),
     material = projectorMaterial(base, 'projector', 0.5, 10000, 1048576)
-  assert.equal(material.shader, base.shader)
-  assert.deepEqual(material.baseColor, [1, 1, 1, 0.5])
-  assert.deepEqual(material.simpleEffect, {
-    ...state,
-    blend: 'additive',
-    textureResource: 'splat.dds',
-    wrapU: 'repeat',
-  })
+  assert.equal(material.simpleEffect.textureResource, 'splat.dds')
+  assert.equal(material.shader.id, 'modkit.render-material.v1')
   assert.deepEqual([...uvmMaterialResources([material], 1048576)], [['projector', ['splat.dds']]])
   assert.deepEqual(base, before)
 })

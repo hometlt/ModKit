@@ -317,6 +317,16 @@ function leaseShaderSources(
     filters.set(resource, texture.filter ?? 'linear')
   // Opaque passes replace the target but the public framebuffer still stores premultiplied RGB.
   let fragment = source.fragmentSource
+  if (source.twoSided) {
+    const main = fragment.search(/void main\s*\(\s*\)/u)
+    if (main >= 0) {
+      const body = fragment.slice(main).replace(
+        /vec3 normal\s*=\s*/u,
+        match => `${match}(gl_FrontFacing ? 1.0 : -1.0) * `,
+      )
+      fragment = fragment.slice(0, main) + body
+    }
+  }
   const worldShading = source.normalBlendPolicy !== undefined || source.normalMapSpace === 'object'
   if (source.defines.sceneLighting) {
     fragment = fragment.replace('uniform vec3 u_sceneLightColor;', 'uniform vec3 u_sceneLightColor;\nuniform vec3 u_sceneSpecularColor;')

@@ -306,6 +306,9 @@ export function createUvmProjectorFrame(document: JsonObject, options: Options) 
       textureCoordinates: geometry.textureCoordinates,
       transform: Float32Array.from(toWorld),
       depthBias: { slopeScale: -1, units: -1 },
+      ...(material.simpleEffect === undefined
+        ? { tint: [1, 1, 1, alpha] as const }
+        : {}),
     })
     for (const key of [
       'falloff',
@@ -366,6 +369,9 @@ export function createUvmProjectorFrame(document: JsonObject, options: Options) 
         textureCoordinates: geometry.textureCoordinates,
         transform: Float32Array.from(toWorld),
         depthBias: { slopeScale: -1, units: -1 },
+        ...(material.simpleEffect === undefined
+          ? { tint: [1, 1, 1, splat.alpha] as const }
+          : {}),
       })
     }
   }

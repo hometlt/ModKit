@@ -66,17 +66,17 @@ export function createWorldToneMapper(gl: WebGL2RenderingContext) {
       return p.xyz / p.w;
     }
     vec3 surfaceNormal(vec2 coord, vec3 p) {
-      // Screen derivatives cross triangle/silhouette boundaries inside a 2x2 fragment quad.
-      // Pick each difference from the side whose depth extrapolates back onto this surface.
+      // Average both sides across a continuous surface so the two triangles of a terrain ramp use
+      // one smooth normal. At a real depth break, keep the derivative on the nearer side instead of
+      // pulling the background or an adjacent object into the normal.
       vec2 x = vec2(pixelSize.x, 0.0), y = vec2(0.0, pixelSize.y);
-      float center = texture(depthMap, coord).r;
-      vec4 adjacent = vec4(texture(depthMap, coord - x).r, texture(depthMap, coord + x).r,
-        texture(depthMap, coord - y).r, texture(depthMap, coord + y).r);
-      vec4 distant = vec4(texture(depthMap, coord - 2.0 * x).r, texture(depthMap, coord + 2.0 * x).r,
-        texture(depthMap, coord - 2.0 * y).r, texture(depthMap, coord + 2.0 * y).r);
-      vec4 error = abs(2.0 * adjacent - distant - center);
-      vec3 dx = error.x < error.y ? p - positionAt(coord - x) : positionAt(coord + x) - p;
-      vec3 dy = error.z < error.w ? p - positionAt(coord - y) : positionAt(coord + y) - p;
+      vec3 left = positionAt(coord - x), right = positionAt(coord + x);
+      vec3 down = positionAt(coord - y), up = positionAt(coord + y);
+      vec4 gap = vec4(length(p - left), length(right - p), length(p - down), length(up - p));
+      vec3 dx = max(gap.x, gap.y) <= max(min(gap.x, gap.y) * 4.0, 0.01)
+        ? right - left : (gap.x < gap.y ? p - left : right - p);
+      vec3 dy = max(gap.z, gap.w) <= max(min(gap.z, gap.w) * 4.0, 0.01)
+        ? up - down : (gap.z < gap.w ? p - down : up - p);
       vec3 n = cross(dx, dy);
       return n / max(length(n), 0.000001);
     }
@@ -97,7 +97,12 @@ export function createWorldToneMapper(gl: WebGL2RenderingContext) {
         if (any(lessThan(coord, vec2(0.0))) || any(greaterThan(coord, vec2(1.0))) || texture(depthMap, coord).r >= 0.999999) continue;
         vec3 delta = positionAt(coord) - p;
         float distance = length(delta);
-        float above = max(dot(n, delta) - 0.005, 0.0);
+        float signedHeight = dot(n, delta);
+        float tangentDistance = length(delta - n * signedHeight);
+        // Adjacent terrain triangles form a visually smooth ramp even when their reconstructed
+        // planes differ slightly. Ignore that shallow crease instead of drawing the shared edge
+        // as an AO blocker; real contact geometry remains above this angular bias.
+        float above = max(signedHeight - max(0.005, tangentDistance * 0.25), 0.0);
         float blocker = clamp((above / max(distance, 0.000001) - aoSettings.z) / max(aoSettings.y - aoSettings.z, 0.000001), 0.0, 1.0);
         blocked += blocker * (1.0 - smoothstep(aoSettings.x * 0.5, aoSettings.x, distance));
       }
