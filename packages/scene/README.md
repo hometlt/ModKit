@@ -2,6 +2,9 @@
 
 Built-in, format-neutral scene facilities shared by the Modkit applications.
 
+The SC2 map ingestion and world-render pipeline is documented in
+[`SC2_MAP_RENDERING_PIPELINE.md`](./SC2_MAP_RENDERING_PIPELINE.md).
+
 `@modkit/scene/model` owns portable scene assembly and sampled playback. It consumes a complete
 model projection (including a reopened UVM document), joins explicit bone poses, applies the shared
 MK2 CPU skinning kernel and returns geometry for the existing browser/headless renderer contract.
