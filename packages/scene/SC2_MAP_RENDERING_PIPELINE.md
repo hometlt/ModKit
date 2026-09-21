@@ -213,6 +213,11 @@ resources.
 конкретного bottleneck, но сильный сигнал для профилирования и аккуратного
 выделения чистых facet builders.
 
+Измеренная стоимость одного построения плана на Amphion — 7430.1 ms
+(`worldPlanBuildP50Milliseconds`). План retained только при неизменном input;
+для анимированной сцены изменение `timeSeconds` считается изменением input и
+вызывает полное перестроение.
+
 ## 8. Headless/диагностический payload
 
 `world.json + world.bin` — диагностический и regression route, а не обязательный
@@ -274,6 +279,22 @@ cliffs и water. `--lighting-effects 0` — A/B режим новых lighting e
 | Objects, lighting effects off |    13.411 s |      703.2 ms |        1.422 |
 | Terrain-only + effects        |     3.550 s |       12.0 ms |       83.333 |
 
+Важное уточнение (ревизия 2026-09-21). Обе строки с объектами снимались при
+`timeSeconds: 0`, то есть с переиспользованным планом: receipt показывает
+`worldPlanBuilds: 1`, `worldPlanReuses: 1` и одно построение плана за
+7430.1 ms. При этом `sameWorldPlanInput` инвалидирует план при изменении
+`timeSeconds`, если `animatedWorld(input)` истинно, а Amphion удовлетворяет
+это условие (анимированная вода и `presentationAnimation` у объектов).
+Поэтому медиана 987.4 ms описывает кадр без перестройки плана и **не**
+описывает анимированный steady state: при ненулевом animation step каждый
+кадр дополнительно платит полное построение плана.
+
+Из того же receipt видно, что GPU-геометрия уже разделяется между
+экземплярами: `geometryEntries: 240` и `geometryBytesRetained: 79,508,848`
+на 10,742 instances при `geometryCacheHits: 17452` за два кадра, то есть
+около 8.7 тыс. model draw calls на кадр. Узкое место кадра — число draw
+calls и CPU submit, а не дублирование геометрии в GPU-памяти.
+
 Это не гарантированный игровой FPS. Выборка мала, первый кадр включает plan
 build/прогрев, значения заметно колеблются. Payload, plan, JS heap и GPU bytes
 могут владеть общими данными, поэтому их нельзя просто складывать. JS heap
@@ -297,22 +318,38 @@ renderer сам по себе достаточно быстрый.
 
 ### P1: наибольшая ожидаемая отдача
 
-1. **Persistent converted-model cache.** Ключ: content digest + codec/version +
-   conversion options. Кеш должен переживать повторное открытие карты. Это
-   напрямую атакует 185.8 s model conversion.
-2. **GPU instancing повторяющихся статичных моделей.** Хранить одну local-space
-   geometry и массив transforms/team colors для одинаковых doodads, cliff
-   pieces и props; не разворачивать geometry для каждого экземпляра.
+1. **Переиспользование UVM projection.** В одном холодном прогоне Amphion 527
+   acquisitions разрешаются в 349 уникальных `.m3`: 178 конвертаций (33.8%) —
+   повторы того же файла, в основном cliff pieces. Yaw применяется после
+   model port, поэтому один UVM корректен для всех повёрнутых вариантов.
+   Сначала process-wide single-flight/cache в памяти, persistent — только
+   после доказанного выигрыша. Ключ и его текущие пробелы описаны в F2
+   handoff-документа: companion/M3A closure и revision конвертера в него
+   сейчас не входят.
+2. **Убрать per-instance world-space работу и picking-копии.** Внутренний цикл
+   плана считает три world-space вершины на треугольник для каждого
+   экземпляра даже на shared-material ветке, где результат нужен только
+   picking, и складывает их в `number[]` на объект, затем в `Float32Array`.
+   При 1.79 млн треугольников это около 64 MB retained и около 129 MB
+   транзитно. Это самый дешёвый по диффу пункт: он не меняет contracts и не
+   требует instancing.
 3. **Разделить static plan и dynamic state.** Terrain, static geometry и
    материалы остаются неизменными; на animation frame обновляются только
-   transforms, skinning/effects и действительно изменившиеся buffers.
-4. **Убрать дубли ресурсов.** Reference-counted decoded texture/model cache;
+   transforms, skinning/effects и действительно изменившиеся buffers. Это
+   предварительное условие любой цели по анимированному кадру: сейчас
+   изменение `timeSeconds` пересобирает план целиком.
+4. **GPU instancing повторяющихся статичных моделей.** Одна local-space
+   geometry и массив transforms/team colors для одинаковых doodads, cliff
+   pieces и props. Цель — сократить около 8.7 тыс. model draw calls на кадр;
+   GPU-геометрия уже общая (240 entries), поэтому экономии GPU-памяти от
+   этого пункта ждать не следует.
+5. **Убрать дубли ресурсов.** Reference-counted decoded texture/model cache;
    освобождать исходные binary/CPU copies после успешной GPU upload, если они
    не нужны для edit/inspection lease.
-5. **Профилировать material draws.** Кешировать VAO/static bindings, сокращать
+6. **Профилировать material draws.** Кешировать VAO/static bindings, сокращать
    state/uniform switches, отдельно измерить shadow, opaque, transparency,
    effects и postprocess.
-6. **Bounded parallel conversion.** Сохранять ограниченный параллелизм, но
+7. **Bounded parallel conversion.** Сохранять ограниченный параллелизм, но
    исключить одновременную конвертацию одного logical model ID и измерять каждый
    read/resolve/decode/convert этап.
 
@@ -378,4 +415,12 @@ renderer сам по себе достаточно быстрый.
 5. high-resolution overview, повёрнутый на 90 градусов против часовой стрелки;
 6. benchmark receipt после прогрева с plan build/reuse и pass timings;
 7. визуальная проверка ramps, cliff tops, splats, foliage, shadows, minerals и
-   water effects.
+   water effects;
+8. отдельные замеры кадра в двух режимах: при неизменном `timeSeconds` и при
+   ненулевом animation step. Для второго режима в receipt должно быть видно,
+   растёт ли `worldPlanBuilds` вместе с числом кадров: сейчас растёт, и без
+   этого различения любые выводы о steady-state FPS неверны;
+9. в receipt фиксируется конфигурация замера: `maxModels`, `maxModelBytes`,
+   `maxConcurrentModelAcquisitions`, размер, backend и animation step. Числа,
+   снятые при разных `maxModels`, несравнимы, потому что этот параметр
+   определяет и бюджет текстур модели.
