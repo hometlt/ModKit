@@ -257,6 +257,11 @@
       "command": "modkit.sources.publish",
       "title": "%command.sources.publish.title%",
       "icon": "$(cloud-upload)"
+    },
+    {
+      "command": "modkit.sources.deletePublication",
+      "title": "%command.sources.deletePublication.title%",
+      "icon": "$(trash)"
     }
   ],
   "configuration": {
@@ -554,6 +559,11 @@
         "command": "modkit.sources.publish",
         "when": "resourceScheme == modkit-source",
         "group": "navigation@26"
+      },
+      {
+        "command": "modkit.sources.deletePublication",
+        "when": "resourceScheme == modkit-source",
+        "group": "navigation@27"
       }
     ],
     "view/title": [
@@ -738,6 +748,11 @@
         "command": "modkit.sources.publish",
         "when": "view == modkit.sources && viewItem == modkitSource.publication.cached",
         "group": "inline@0"
+      },
+      {
+        "command": "modkit.sources.deletePublication",
+        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.publication\\./",
+        "group": "publication@1"
       }
     ]
   },

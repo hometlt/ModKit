@@ -3073,6 +3073,42 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       }),
 
       /*
+       * Deleting one of this account's publications. The backend hands back a description of
+       * exactly the row it will delete, and that description — not the row that was clicked — is
+       * what the reader confirms, so a stale tree cannot delete the wrong publication.
+       */
+      vscode.commands.registerCommand('modkit.sources.deletePublication', async (argument: unknown) => {
+        const target = contentSourceRow(argument)
+        if (target === undefined) return false
+        const source = await requireContentSources()
+        const review = (await callContentSources(source, 'prepareDeletePublication', [
+          target.id,
+          target.path,
+        ])) as { id: string; label: string; description: string }
+        const confirmed = await vscode.window.showWarningMessage(
+          localizer.text('vscode.sources.confirmDelete', {
+            name: review.label,
+            detail: review.description,
+          }),
+          { modal: true },
+          localizer.text('vscode.sources.deleteAction'),
+        )
+        if (confirmed === undefined) return false
+        await vscode.window.withProgress(
+          {
+            location: vscode.ProgressLocation.Notification,
+            title: localizer.text('vscode.sources.deleting', { name: review.label }),
+          },
+          () => callContentSources(source, 'deletePublication', [review.id]),
+        )
+        rowChanged(target)
+        void vscode.window.showInformationMessage(
+          localizer.text('vscode.sources.deleted', { name: review.label }),
+        )
+        return true
+      }),
+
+      /*
        * Publishing a revision of one of this account's publications.
        *
        * A revision is not a new publication: the name, the preview images and everything the

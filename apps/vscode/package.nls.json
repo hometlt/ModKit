@@ -75,5 +75,6 @@
   "command.clearSourceCache": "Remove local copy",
   "command.detachSource": "Detach mod",
   "command.sources.disconnect.title": "Disconnect the account",
-  "command.sources.publish.title": "Publish a new revision"
+  "command.sources.publish.title": "Publish a new revision",
+  "command.sources.deletePublication.title": "Delete the publication"
 }
