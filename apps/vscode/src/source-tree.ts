@@ -71,6 +71,8 @@ export interface SourceTreeInput {
   readonly mountingIds?: ReadonlySet<string>
   /** Accounts this machine last had open. One that is not connected is listed as a way back in. */
   readonly knownConnections?: readonly { readonly region: string; readonly accountId: string }[]
+  /** What each account has left to publish into, ready to read, keyed by source id. */
+  readonly storage?: ReadonlyMap<string, string>
   /** Accounts whose catalogue was kept from an earlier session, listed until one is refreshed. */
   readonly rememberedRoots?: readonly {
     readonly id: string
@@ -243,11 +245,13 @@ export function createSourceTree(input: SourceTreeInput): readonly SourceTreeNod
           : mounted
             ? input.text.mounted
             : input.text.available
+        // What the account has left to publish into belongs on the row that publishes.
+        const room = input.storage?.get(root.id)
         return Object.freeze({
           kind: 'provider-root' as const,
           id: `provider-root:${root.id}`,
           label: root.label,
-          description: `${root.region} · ${state}`,
+          description: `${root.region} · ${state}${room === undefined ? '' : ` · ${room}`}`,
           tooltip: root.id,
           icon: mounting ? 'sync~spin' : mounted ? 'folder-opened' : 'cloud',
           // A mounted root carries its own context value so the view can offer unmount on exactly

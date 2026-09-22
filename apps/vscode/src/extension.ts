@@ -1356,6 +1356,7 @@ class SourcesView implements vscode.TreeDataProvider<SourceTreeNode>, vscode.Dis
       readonly label: string
       readonly region: string
     }[] = () => [],
+    private readonly storage: () => Promise<ReadonlyMap<string, string>> = async () => new Map(),
   ) {}
 
   dispose(): void {
@@ -1480,6 +1481,7 @@ class SourcesView implements vscode.TreeDataProvider<SourceTreeNode>, vscode.Dis
         mountingIds: this.mountingIds(),
         knownConnections: this.knownConnections(),
         rememberedRoots: this.rememberedRoots(),
+        storage: await this.storage(),
         ...(provider.snapshot === undefined ? {} : { providerSnapshot: provider.snapshot }),
         ...(provider.problem === undefined ? {} : { providerProblem: provider.problem }),
         text: {
@@ -2085,6 +2087,13 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   }
   const mapPreviewResourcePlanResolver = createNodeMapPreviewResourcePlanResolver({
     subjects: host.services,
+    // Same classes the explicit discovery commands pass; without them the installed game is never
+    // located and a map opens as its archive entry list instead of the world view.
+    installationDiscoveryGrant: {
+      id: 'vscode-map-preview-installation-discovery',
+      classes:
+        process.platform === 'win32' ? ['filesystem-read', 'process-launch'] : ['filesystem-read'],
+    },
   })
   const runtimeDebug = createRuntimeDebugController({
     services: host.services,
@@ -2608,6 +2617,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     rowChanged({ id: location.id, path: root })
     readPublications.add(key)
   }
+  const storageStates = new Map<string, { readonly at: number; readonly text: string }>()
+  const STORAGE_TTL = 60_000
   /** A row whose cache state changed is redrawn at once: decoration, colour and tree row. */
   const rowChanged = (target: { readonly id: string; readonly path: string }): void => {
     cacheStates.delete(target.id)
@@ -2884,6 +2895,39 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         label: entry.label,
         region: entry.region,
       })),
+    async () => {
+      /*
+       * What an account has left to publish into. It is one query per connected account, held
+       * briefly: the number moves only when something is published, and a tree redraw must not
+       * turn into a round of network calls.
+       */
+      const source = await contentSources?.catch(() => undefined)
+      const rows = new Map<string, string>()
+      if (source === undefined) return rows
+      const snapshot = await source.snapshot().catch(() => undefined)
+      for (const connection of snapshot?.connections ?? []) {
+        const id = `mine:${connection.id}`
+        const held = storageStates.get(id)
+        let text = held !== undefined && Date.now() - held.at < STORAGE_TTL ? held.text : undefined
+        if (text === undefined) {
+          const answer = (await callContentSources(source, 'storage', [connection.id]).catch(
+            () => undefined,
+          )) as { usedBytes?: number; maxBytes?: number; usedSlots?: number; maxSlots?: number } | undefined
+          if (answer?.usedBytes !== undefined && answer.maxBytes !== undefined) {
+            const mib = (value: number) => Math.round(value / (1024 * 1024))
+            text = localizer.text('vscode.sources.storage', {
+              used: String(mib(answer.usedBytes)),
+              total: String(mib(answer.maxBytes)),
+              slots: String(answer.usedSlots ?? 0),
+              maxSlots: String(answer.maxSlots ?? 0),
+            })
+            storageStates.set(id, { at: Date.now(), text })
+          }
+        }
+        if (text !== undefined) rows.set(id, text)
+      }
+      return rows
+    },
   )
   const sourceFileSystem: vscode.FileSystemProvider = {
     onDidChangeFile: sourceChanges.event,

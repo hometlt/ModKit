@@ -61,6 +61,7 @@ const EN_MESSAGES = Object.freeze({
   'vscode.sources.nothingMounted': 'No content source is mounted in this window',
   'vscode.sources.chooseUnmount': 'Select the source to unmount',
   'vscode.sources.cached': 'Downloaded to the local cache',
+  'vscode.sources.storage': '{used} of {total} MiB, {slots} of {maxSlots} slots',
   'vscode.sources.deletePublication': 'Delete the publication…',
   'vscode.sources.confirmDelete':
     'Delete {name} from Battle.net? {detail} This cannot be undone.',
@@ -479,6 +480,7 @@ const RU_MESSAGES: Readonly<Record<keyof typeof EN_MESSAGES, string>> = Object.f
   'vscode.sources.nothingMounted': 'В этом окне нет смонтированных источников',
   'vscode.sources.chooseUnmount': 'Выберите источник для отмонтирования',
   'vscode.sources.cached': 'Скачан в локальный кэш',
+  'vscode.sources.storage': '{used} из {total} МиБ, {slots} из {maxSlots} слотов',
   'vscode.sources.deletePublication': 'Удалить публикацию…',
   'vscode.sources.confirmDelete':
     'Удалить {name} из Battle.net? {detail} Отменить это нельзя.',
