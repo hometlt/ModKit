@@ -30,6 +30,7 @@ export interface SourceTreeText {
   readonly mounting: string
   readonly available: string
   readonly signIn: string
+  readonly disconnected: string
   readonly onlineUnavailable: string
   readonly myPublications: string
   readonly publicCatalogue: string
@@ -37,7 +38,7 @@ export interface SourceTreeText {
 }
 
 export type SourceTreeNodeKind =
-  'group' | 'workspace' | 'installation' | 'connection' | 'provider-root' | 'notice'
+  'group' | 'workspace' | 'installation' | 'connection' | 'provider-root' | 'publication' | 'notice'
 
 export interface SourceTreeNode {
   readonly kind: SourceTreeNodeKind
@@ -50,6 +51,12 @@ export interface SourceTreeNode {
   readonly uri?: string
   readonly normalizedPath?: string
   readonly sourceId?: string
+  /** A URI the host can decorate: it is what greys a row that is not connected or not downloaded. */
+  readonly resourceUri?: string
+  /** Publication rows only: whether the archive is already in the local cache. */
+  readonly cached?: boolean
+  /** An account this machine knows but is not connected to; selecting the row signs in. */
+  readonly offlineAccount?: { readonly region: string; readonly accountId: string }
   readonly children?: readonly SourceTreeNode[]
 }
 
@@ -61,6 +68,8 @@ export interface SourceTreeInput {
   readonly mountedInstallationPaths?: ReadonlySet<string>
   /** Roots whose mount is in flight, so the row says so before its folder can list anything. */
   readonly mountingIds?: ReadonlySet<string>
+  /** Accounts this machine last had open. One that is not connected is listed as a way back in. */
+  readonly knownConnections?: readonly { readonly region: string; readonly accountId: string }[]
   readonly providerSnapshot?: ContentSourceSnapshot
   readonly providerProblem?: string
   readonly text: SourceTreeText
@@ -162,19 +171,41 @@ export function createSourceTree(input: SourceTreeInput): readonly SourceTreeNod
           contextValue: 'modkitSource.connection',
         }),
       )
+    /*
+     * An account this machine knows but is not connected to is still an account: it is listed,
+     * greyed, and selecting it signs back in. Without the row the reader has to remember which
+     * account was theirs and find it again in a region list.
+     */
+    const connectedIds = new Set(input.providerSnapshot.connections.map(item => item.accountId))
+    const offlineChildren = (input.knownConnections ?? [])
+      .filter(item => !connectedIds.has(item.accountId))
+      .sort((left, right) => compareText(left.accountId, right.accountId) || compareText(left.region, right.region))
+      .map(item =>
+        Object.freeze({
+          kind: 'connection' as const,
+          id: `connection:offline:${item.region}:${item.accountId}`,
+          label: item.accountId,
+          description: `${item.region} · ${input.text.disconnected}`,
+          icon: 'account',
+          contextValue: 'modkitSource.connection.offline',
+          resourceUri: `modkit-account://${encodeURIComponent(item.region)}/${encodeURIComponent(item.accountId)}`,
+          offlineAccount: item,
+        }),
+      )
+    const accountChildren = [...connectionChildren, ...offlineChildren]
     providerChildren.push(
       Object.freeze({
         kind: 'group',
         id: 'provider:connections',
         label: input.text.connections,
-        description: String(connectionChildren.length),
+        description: String(accountChildren.length),
         icon: 'plug',
         // Signing in belongs where the accounts are listed, and an empty list has to say how to
         // stop being empty: a toolbar action on a section nobody expanded is not an answer.
         contextValue: 'modkitSource.connections',
         children: Object.freeze(
-          connectionChildren.length > 0
-            ? connectionChildren
+          accountChildren.length > 0
+            ? accountChildren
             : /*
                * A provider that reports no regions has no online half at all — the local folders
                * still work, but there is nothing to sign in to. Saying «sign in» there sends the

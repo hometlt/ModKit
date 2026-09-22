@@ -1342,6 +1342,13 @@ class SourcesView implements vscode.TreeDataProvider<SourceTreeNode>, vscode.Dis
     private readonly localizer: UiLocalizer,
     private readonly mountedInstallationPaths: () => ReadonlySet<string> = () => new Set(),
     private readonly mountingIds: () => ReadonlySet<string> = () => new Set(),
+    private readonly knownConnections: () => readonly {
+      readonly region: string
+      readonly accountId: string
+    }[] = () => [],
+    private readonly listPublications: (
+      sourceId: string,
+    ) => Promise<readonly { readonly name: string; readonly cached: boolean }[]> = async () => [],
   ) {}
 
   dispose(): void {
@@ -1367,16 +1374,34 @@ class SourcesView implements vscode.TreeDataProvider<SourceTreeNode>, vscode.Dis
   getTreeItem(node: SourceTreeNode): vscode.TreeItem {
     const item = new vscode.TreeItem(
       node.label,
-      node.children === undefined
-        ? vscode.TreeItemCollapsibleState.None
-        : vscode.TreeItemCollapsibleState.Expanded,
+      node.kind === 'provider-root'
+        ? vscode.TreeItemCollapsibleState.Collapsed
+        : node.children === undefined
+          ? vscode.TreeItemCollapsibleState.None
+          : vscode.TreeItemCollapsibleState.Expanded,
     )
     item.id = node.id
     item.iconPath = new vscode.ThemeIcon(node.icon)
+    // The host decorates by URI, which is what greys a row that is not connected or not downloaded.
+    if (node.resourceUri !== undefined) item.resourceUri = vscode.Uri.parse(node.resourceUri)
     if (node.contextValue !== undefined) item.contextValue = node.contextValue
     if (node.description !== undefined) item.description = node.description
     item.tooltip = node.tooltip ?? node.description ?? node.label
-    if (node.kind === 'provider-root') {
+    if (node.kind === 'publication') {
+      item.collapsibleState = vscode.TreeItemCollapsibleState.None
+      item.command = {
+        command: node.cached === true ? 'modkit.sources.revealLocal' : 'modkit.sources.download',
+        title: this.localizer.text(node.cached === true ? 'vscode.sources.reveal' : 'vscode.sources.download'),
+        arguments: [node],
+      }
+    } else if (node.offlineAccount !== undefined) {
+      // The row that says the account is not connected is the row that connects it.
+      item.command = {
+        command: 'modkit.sources.signIn',
+        title: this.localizer.text('vscode.sources.signIn'),
+        arguments: [node],
+      }
+    } else if (node.kind === 'provider-root') {
       item.command = {
         command: 'modkit.sources.open',
         title: this.localizer.text('vscode.sources.open'),
@@ -1415,6 +1440,28 @@ class SourcesView implements vscode.TreeDataProvider<SourceTreeNode>, vscode.Dis
   }
 
   async getChildren(node?: SourceTreeNode): Promise<SourceTreeNode[]> {
+    /*
+     * A root's children are the publications it carries, read through the provider so the row can
+     * say whether each one is already downloaded. The catalogue itself is held by the provider and
+     * only re-read on refresh, so expanding a root costs nothing.
+     */
+    if (node?.kind === 'provider-root' && node.sourceId !== undefined) {
+      const sourceId = node.sourceId
+      const rows = await this.listPublications(sourceId).catch(() => [])
+      return rows.map(row =>
+        Object.freeze({
+          kind: 'publication' as const,
+          id: `publication:${sourceId}:${row.name}`,
+          label: row.name,
+          icon: row.cached ? 'package' : 'cloud',
+          contextValue: `modkitSource.publication.${row.cached ? 'cached' : 'notCached'}`,
+          sourceId,
+          cached: row.cached,
+          resourceUri: `modkit-source://battlenet/${encodeURIComponent(sourceId)}/${encodeURIComponent(row.name)}`,
+          normalizedPath: row.name,
+        }),
+      )
+    }
     if (node !== undefined) return [...(node.children ?? [])]
     const provider = await this.loadProviderState()
     return [
@@ -1424,6 +1471,7 @@ class SourcesView implements vscode.TreeDataProvider<SourceTreeNode>, vscode.Dis
         mountedProviderRootIds: this.mountedProviderRootIds(),
         mountedInstallationPaths: this.mountedInstallationPaths(),
         mountingIds: this.mountingIds(),
+        knownConnections: this.knownConnections(),
         ...(provider.snapshot === undefined ? {} : { providerSnapshot: provider.snapshot }),
         ...(provider.problem === undefined ? {} : { providerProblem: provider.problem }),
         text: {
@@ -1441,6 +1489,7 @@ class SourcesView implements vscode.TreeDataProvider<SourceTreeNode>, vscode.Dis
           mounting: this.localizer.text('vscode.sources.mounting'),
           available: this.localizer.text('vscode.sources.available'),
           signIn: this.localizer.text('vscode.sources.signIn'),
+          disconnected: this.localizer.text('vscode.sources.disconnected'),
           onlineUnavailable: this.localizer.text('vscode.sources.onlineUnavailable'),
           myPublications: this.localizer.text('vscode.sources.myPublications'),
           publicCatalogue: this.localizer.text('vscode.sources.publicCatalogue'),
@@ -2528,7 +2577,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
             (argument as { readonly resourceUri?: unknown }).resourceUri instanceof vscode.Uri
           ? ((argument as { readonly resourceUri: vscode.Uri }).resourceUri)
           : undefined
-    if (uri === undefined) return undefined
+    if (uri === undefined) {
+      // A row action may arrive as a tree node instead of an Explorer URI.
+      const row =
+        typeof argument === 'object' && argument !== null
+          ? (argument as { readonly sourceId?: unknown; readonly normalizedPath?: unknown })
+          : undefined
+      return typeof row?.sourceId === 'string' && typeof row.normalizedPath === 'string'
+        ? { id: row.sourceId, path: row.normalizedPath, name: row.normalizedPath }
+        : undefined
+    }
     try {
       const location = sourceLocation(uri)
       if (!location.path) return undefined
@@ -2545,6 +2603,19 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     else cacheStates.delete(id)
     sourceDecorations.fire(undefined)
   }
+  /** A row whose cache state changed is redrawn at once: decoration, colour and tree row. */
+  const rowChanged = (target: { readonly id: string; readonly path: string }): void => {
+    cacheStates.delete(target.id)
+    sourceDecorations.fire(
+      vscode.Uri.parse(
+        `modkit-source://battlenet/${encodeURIComponent(target.id)}/${target.path
+          .split('/')
+          .map(part => encodeURIComponent(part))
+          .join('/')}`,
+      ),
+    )
+    sourcesView.refresh()
+  }
   const cacheStateOf = async (id: string): Promise<Map<string, boolean>> => {
     const held = cacheStates.get(id)
     if (held !== undefined && Date.now() - held.at < CACHE_STATE_TTL) return held.rows
@@ -2560,6 +2631,12 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   const sourceDecorationProvider: vscode.FileDecorationProvider = {
     onDidChangeFileDecorations: sourceDecorations.event,
     async provideFileDecoration(uri) {
+      if (uri.scheme === 'modkit-account') {
+        return {
+          color: new vscode.ThemeColor('disabledForeground'),
+          tooltip: localizer.text('vscode.sources.disconnected'),
+        }
+      }
       if (uri.scheme !== 'modkit-source') return undefined
       let location: { id: string; path: string }
       try {
@@ -2623,6 +2700,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     return true
   }
   const revealLocalSource = async (argument: unknown): Promise<boolean> => {
+    // A publication row in the Sources view carries the same target as its Explorer URI.
+    const row = argument instanceof vscode.Uri ? undefined : contentSourceRow(argument)
+    if (row !== undefined) {
+      const target = (await callContentSources(
+        await requireContentSources(),
+        'resolveLocalPath',
+        [row.id, row.path],
+      )) as ContentSourceLocalPath | undefined
+      if (target !== undefined) return revealLocalPath(target)
+    }
     if (argument instanceof vscode.Uri) {
       if (argument.scheme === 'modkit-source') {
         const location = sourceLocation(argument)
@@ -2693,6 +2780,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           }),
       ),
     () => new Set(mountingSources.keys()),
+    () => knownConnections(),
+    async sourceId => {
+      const rows = await (await requireContentSources()).list(sourceId, '')
+      const states = await cacheStateOf(sourceId).catch(() => new Map<string, boolean>())
+      return rows
+        .filter(row => row.directory)
+        .map(row => ({ name: row.name, cached: states.get(row.name) === true }))
+    },
   )
   const sourceFileSystem: vscode.FileSystemProvider = {
     onDidChangeFile: sourceChanges.event,
@@ -2776,8 +2871,20 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
        * region — so the view offers the region list to add one and offers sign-out on the
        * connection itself. Nothing here holds a credential: the provider owns the login.
        */
-      vscode.commands.registerCommand('modkit.sources.signIn', async () => {
+      vscode.commands.registerCommand('modkit.sources.signIn', async (argument: unknown) => {
         const source = await requireContentSources()
+        // Selecting an account the machine knows connects that one, without asking for a region.
+        const offline =
+          typeof argument === 'object' && argument !== null
+            ? (argument as { readonly offlineAccount?: { region?: unknown; accountId?: unknown } })
+                .offlineAccount
+            : undefined
+        if (typeof offline?.region === 'string' && typeof offline.accountId === 'string') {
+          await callContentSources(source, 'connect', [offline.region, offline.accountId])
+          await rememberConnections(source)
+          sourcesView.refresh()
+          return true
+        }
         const snapshot = await source.snapshot()
         const regions = snapshot.regions ?? []
         if (regions.length === 0) {
@@ -2975,7 +3082,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           },
           () => callContentSources(source, 'download', [target.id, target.path]),
         )
-        forgetCacheStates(target.id)
+        rowChanged(target)
         void vscode.window.showInformationMessage(
           localizer.text('vscode.sources.downloaded', { name: target.name }),
         )
@@ -2990,7 +3097,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           return
         }
         await callContentSources(source, 'clearCache', [target.id, target.path])
-        forgetCacheStates(target.id)
+        rowChanged(target)
         void vscode.window.showInformationMessage(
           localizer.text('vscode.sources.cacheCleared', { name: target.name }),
         )

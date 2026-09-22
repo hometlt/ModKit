@@ -693,6 +693,31 @@
         "command": "modkit.sources.refresh",
         "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.(?:providerRoot|connection)(?:\\.(?:mounted|mounting))?$/",
         "group": "inline@3"
+      },
+      {
+        "command": "modkit.sources.clearCache",
+        "when": "view == modkit.sources && viewItem == modkitSource.publication.cached",
+        "group": "inline@1"
+      },
+      {
+        "command": "modkit.sources.download",
+        "when": "view == modkit.sources && viewItem == modkitSource.publication.notCached",
+        "group": "inline@1"
+      },
+      {
+        "command": "modkit.sources.revealLocal",
+        "when": "view == modkit.sources && viewItem == modkitSource.publication.cached",
+        "group": "inline@2"
+      },
+      {
+        "command": "modkit.sources.detach",
+        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.publication\\./",
+        "group": "inline@3"
+      },
+      {
+        "command": "modkit.sources.signIn",
+        "when": "view == modkit.sources && viewItem == modkitSource.connection.offline",
+        "group": "inline@1"
       }
     ]
   },

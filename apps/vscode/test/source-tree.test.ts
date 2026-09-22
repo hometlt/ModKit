@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { createSourceTree, type SourceTreeText } from '../src/source-tree.js'
+import { createSourceTree, type SourceTreeNode, type SourceTreeText } from '../src/source-tree.js'
 
 const text: SourceTreeText = {
   workspace: 'Workspace',
@@ -17,6 +17,7 @@ const text: SourceTreeText = {
   mounting: 'mounting…',
   available: 'available',
   signIn: 'Sign in to Battle.net…',
+  disconnected: 'signed in, not connected',
   onlineUnavailable: 'Battle.net accounts are unavailable',
   myPublications: 'My published mods',
   publicCatalogue: 'Public mods',
@@ -187,5 +188,39 @@ describe('VS Code Sources tree', () => {
       id: 'provider:unavailable',
       description: 'runtime is not configured',
     })
+  })
+})
+
+describe('accounts this machine knows', () => {
+  it('lists an account that is signed in but not connected, and only that one', () => {
+    const tree = createSourceTree({
+      workspaceFolders: [],
+      selectedInstallations: [],
+      mountedProviderRootIds: new Set(),
+      providerSnapshot,
+      knownConnections: [
+        { region: 'us', accountId: 'example' },
+        { region: 'eu', accountId: 'other' },
+      ],
+      text,
+    })
+    const find = (nodes: readonly SourceTreeNode[], id: string): SourceTreeNode | undefined => {
+      for (const node of nodes) {
+        if (node.id === id) return node
+        const found = find(node.children ?? [], id)
+        if (found !== undefined) return found
+      }
+      return undefined
+    }
+    const accounts = find(tree, 'provider:connections')?.children ?? []
+    // The connected account keeps its live row; the remembered one is listed once, greyed.
+    expect(accounts.map(row => row.id)).toEqual([
+      'connection:account',
+      'connection:offline:eu:other',
+    ])
+    const offline = accounts[1]
+    expect(offline?.offlineAccount).toEqual({ region: 'eu', accountId: 'other' })
+    expect(offline?.resourceUri).toBe('modkit-account://eu/other')
+    expect(offline?.contextValue).toBe('modkitSource.connection.offline')
   })
 })
