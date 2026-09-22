@@ -193,6 +193,11 @@
       "icon": "$(close)"
     },
     {
+      "command": "modkit.sources.disconnect",
+      "title": "%command.sources.disconnect.title%",
+      "icon": "$(debug-disconnect)"
+    },
+    {
       "command": "modkit.sources.download",
       "title": "%command.downloadSource%",
       "icon": "$(cloud-download)"
@@ -548,6 +553,11 @@
         "group": "inline@3"
       },
       {
+        "command": "modkit.sources.disconnect",
+        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.providerRoot(\\.|$)/",
+        "group": "inline@3"
+      },
+      {
         "command": "modkit.sources.download",
         "when": "view == modkit.sources && viewItem == modkitSource.publication.notCached",
         "group": "inline@1"
@@ -564,8 +574,8 @@
       },
       {
         "command": "modkit.sources.refresh",
-        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.(?:providerRoot|connection)(?:\\.(?:mounted|mounting))?$/",
-        "group": "inline@3"
+        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.providerRoot(\\.|$)/",
+        "group": "inline@2"
       },
       {
         "command": "modkit.sources.revealLocal",
@@ -600,7 +610,7 @@
       {
         "command": "modkit.sources.unmount",
         "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.(?:providerRoot|localRoot|installation)\\.(?:mounted|mounting)$/",
-        "group": "inline@3"
+        "group": "inline@4"
       },
       {
         "command": "modkit.unloadSource",

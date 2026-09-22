@@ -247,6 +247,11 @@
       "command": "modkit.sources.detach",
       "title": "%command.detachSource%",
       "icon": "$(close)"
+    },
+    {
+      "command": "modkit.sources.disconnect",
+      "title": "%command.sources.disconnect.title%",
+      "icon": "$(debug-disconnect)"
     }
   ],
   "configuration": {
@@ -677,7 +682,7 @@
       {
         "command": "modkit.sources.unmount",
         "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.(?:providerRoot|localRoot|installation)\\.(?:mounted|mounting)$/",
-        "group": "inline@3"
+        "group": "inline@4"
       },
       {
         "command": "modkit.sources.signIn",
@@ -688,11 +693,6 @@
         "command": "modkit.sources.signOut",
         "when": "view == modkit.sources && viewItem == modkitSource.connection",
         "group": "inline@1"
-      },
-      {
-        "command": "modkit.sources.refresh",
-        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.(?:providerRoot|connection)(?:\\.(?:mounted|mounting))?$/",
-        "group": "inline@3"
       },
       {
         "command": "modkit.sources.clearCache",
@@ -718,6 +718,16 @@
         "command": "modkit.sources.signIn",
         "when": "view == modkit.sources && viewItem == modkitSource.connection.offline",
         "group": "inline@1"
+      },
+      {
+        "command": "modkit.sources.refresh",
+        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.providerRoot(\\.|$)/",
+        "group": "inline@2"
+      },
+      {
+        "command": "modkit.sources.disconnect",
+        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.providerRoot(\\.|$)/",
+        "group": "inline@3"
       }
     ]
   },

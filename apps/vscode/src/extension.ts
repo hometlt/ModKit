@@ -324,6 +324,8 @@ const MANAGED_RELEASE_CATALOG = 'catalog.v1.json'
 const SELECTED_SOURCES_KEY = 'modkit.selectedContentSources'
 /** Accounts this machine last had connected: region and non-secret account id, never a ticket. */
 const BATTLENET_CONNECTIONS_KEY = 'modkit.sources.knownConnections'
+/** The last listing read for each account's root, so a new window can show it before connecting. */
+const CATALOGUE_KEY = 'modkit.sources.catalogue'
 
 interface PackagedManagedRegistry {
   readonly catalogPath: string
@@ -1349,6 +1351,11 @@ class SourcesView implements vscode.TreeDataProvider<SourceTreeNode>, vscode.Dis
     private readonly listPublications: (
       sourceId: string,
     ) => Promise<readonly { readonly name: string; readonly cached: boolean }[]> = async () => [],
+    private readonly rememberedRoots: () => readonly {
+      readonly id: string
+      readonly label: string
+      readonly region: string
+    }[] = () => [],
   ) {}
 
   dispose(): void {
@@ -1472,6 +1479,7 @@ class SourcesView implements vscode.TreeDataProvider<SourceTreeNode>, vscode.Dis
         mountedInstallationPaths: this.mountedInstallationPaths(),
         mountingIds: this.mountingIds(),
         knownConnections: this.knownConnections(),
+        rememberedRoots: this.rememberedRoots(),
         ...(provider.snapshot === undefined ? {} : { providerSnapshot: provider.snapshot }),
         ...(provider.problem === undefined ? {} : { providerProblem: provider.problem }),
         text: {
@@ -1490,6 +1498,7 @@ class SourcesView implements vscode.TreeDataProvider<SourceTreeNode>, vscode.Dis
           available: this.localizer.text('vscode.sources.available'),
           signIn: this.localizer.text('vscode.sources.signIn'),
           disconnected: this.localizer.text('vscode.sources.disconnected'),
+          stale: this.localizer.text('vscode.sources.stale'),
           onlineUnavailable: this.localizer.text('vscode.sources.onlineUnavailable'),
           myPublications: this.localizer.text('vscode.sources.myPublications'),
           publicCatalogue: this.localizer.text('vscode.sources.publicCatalogue'),
@@ -2644,6 +2653,68 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     cacheStates.set(id, { at: Date.now(), rows })
     return rows
   }
+  /*
+   * What each account's catalogue held when it was last read.
+   *
+   * A window that opens before any connection still has to show the account's mods: the folder was
+   * mounted in this workspace and the reader expects to find it there. So the listing is kept, and
+   * a root served from it is greyed until a connection refreshes it — the rows are real names, not
+   * a promise that they are usable offline.
+   */
+  interface RememberedCatalogue {
+    readonly label: string
+    readonly region: string
+    readonly accountId: string
+    readonly at: number
+    readonly names: readonly string[]
+  }
+  const catalogues = (): Record<string, RememberedCatalogue> =>
+    context.globalState.get<Record<string, RememberedCatalogue>>(CATALOGUE_KEY) ?? {}
+  const staleRoots = new Set<string>()
+  const noteCatalogue = async (id: string, names: readonly string[]): Promise<void> => {
+    if (!id.startsWith('mine:')) return
+    const source = await contentSources?.catch(() => undefined)
+    const snapshot = source === undefined ? undefined : await source.snapshot().catch(() => undefined)
+    const root = snapshot?.roots.find(item => item.id === id)
+    const connection = snapshot?.connections.find(item => `mine:${item.id}` === id)
+    if (root === undefined || connection === undefined) return
+    await context.globalState.update(CATALOGUE_KEY, {
+      ...catalogues(),
+      [id]: {
+        label: root.label,
+        region: root.region,
+        accountId: connection.accountId,
+        at: Date.now(),
+        names: [...names],
+      },
+    })
+  }
+  /**
+   * Take the account back on demand: reaching for a root this window has no connection for is a
+   * reason to sign in, not an error to report. One attempt at a time per account, so a folder that
+   * fans out into many reads asks once.
+   */
+  const signingIn = new Map<string, Promise<boolean>>()
+  const signInFor = (id: string): Promise<boolean> => {
+    const remembered = catalogues()[id]
+    if (remembered === undefined) return Promise.resolve(false)
+    let task = signingIn.get(id)
+    if (task === undefined) {
+      task = (async () => {
+        const source = await requireContentSources()
+        if ((await source.snapshot()).roots.some(root => root.id === id)) return true
+        await callContentSources(source, 'connect', [remembered.region, remembered.accountId])
+        await rememberConnections(source)
+        staleRoots.delete(id)
+        sourceDecorations.fire(undefined)
+        sourcesView.refresh()
+        return true
+      })().catch(() => false)
+      signingIn.set(id, task)
+      void task.finally(() => signingIn.delete(id))
+    }
+    return task
+  }
   const sourceDecorationProvider: vscode.FileDecorationProvider = {
     onDidChangeFileDecorations: sourceDecorations.event,
     async provideFileDecoration(uri) {
@@ -2659,6 +2730,14 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         location = sourceLocation(uri)
       } catch {
         return undefined
+      }
+      // A root served from the last session says so, and says it about its rows too.
+      if (staleRoots.has(location.id)) {
+        return {
+          ...(location.path && !location.path.includes('/') ? { badge: '☁' } : {}),
+          color: new vscode.ThemeColor('disabledForeground'),
+          tooltip: localizer.text('vscode.sources.stale'),
+        }
       }
       // Only a publication row carries a cache state; everything below it lives inside one.
       if (!location.path || location.path.includes('/')) return undefined
@@ -2798,12 +2877,31 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     () => new Set(mountingSources.keys()),
     () => knownConnections(),
     async sourceId => {
-      const rows = await (await requireContentSources()).list(sourceId, '')
-      const states = await cacheStateOf(sourceId).catch(() => new Map<string, boolean>())
-      return rows
-        .filter(row => row.directory)
-        .map(row => ({ name: row.name, cached: states.get(row.name) === true }))
+      try {
+        const rows = await (await requireContentSources()).list(sourceId, '')
+        const states = await cacheStateOf(sourceId).catch(() => new Map<string, boolean>())
+        staleRoots.delete(sourceId)
+        void noteCatalogue(
+          sourceId,
+          rows.map(row => row.name),
+        )
+        return rows
+          .filter(row => row.directory)
+          .map(row => ({ name: row.name, cached: states.get(row.name) === true }))
+      } catch (error) {
+        // Not connected: the account's mods are listed from the last session, and stay greyed.
+        const remembered = catalogues()[sourceId]
+        if (remembered === undefined) throw error
+        staleRoots.add(sourceId)
+        return remembered.names.map(name => ({ name, cached: false }))
+      }
     },
+    () =>
+      Object.entries(catalogues()).map(([id, entry]) => ({
+        id,
+        label: entry.label,
+        region: entry.region,
+      })),
   )
   const sourceFileSystem: vscode.FileSystemProvider = {
     onDidChangeFile: sourceChanges.event,
@@ -2811,23 +2909,33 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     async stat(uri) {
       const location = sourceLocation(uri)
       const source = await requireContentSources()
+      const directory = {
+        type: vscode.FileType.Directory,
+        ctime: 0,
+        mtime: 0,
+        size: 0,
+        permissions: vscode.FilePermission.Readonly,
+      }
       if (!location.path) {
-        if (!(await source.snapshot()).roots.some(root => root.id === location.id))
-          throw vscode.FileSystemError.FileNotFound(uri)
-        return {
-          type: vscode.FileType.Directory,
-          ctime: 0,
-          mtime: 0,
-          size: 0,
-          permissions: vscode.FilePermission.Readonly,
-        }
+        if ((await source.snapshot()).roots.some(root => root.id === location.id)) return directory
+        // Not connected in this window: the folder is still the one that was mounted here.
+        if (catalogues()[location.id] === undefined) throw vscode.FileSystemError.FileNotFound(uri)
+        staleRoots.add(location.id)
+        return directory
       }
       const parts = location.path.split('/')
       const name = parts.pop()
-      const node = (await source.list(location.id, parts.join('/'))).find(
-        item => item.name === name,
-      )
-      if (!node) throw vscode.FileSystemError.FileNotFound(uri)
+      const node = (await source.list(location.id, parts.join('/')).catch((error: unknown) => {
+        if (parts.length === 0 && catalogues()[location.id]?.names.includes(name ?? '')) return undefined
+        throw error
+      }))?.find(item => item.name === name)
+      if (!node) {
+        if (parts.length === 0 && catalogues()[location.id]?.names.includes(name ?? '')) {
+          staleRoots.add(location.id)
+          return directory
+        }
+        throw vscode.FileSystemError.FileNotFound(uri)
+      }
       return {
         type: node.directory ? vscode.FileType.Directory : vscode.FileType.File,
         ctime: 0,
@@ -2838,22 +2946,56 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
     },
     async readDirectory(uri) {
       const location = sourceLocation(uri)
-      const entries = (
-        await (await requireContentSources()).list(location.id, location.path)
-      ).map(item => [item.name, item.directory ? vscode.FileType.Directory : vscode.FileType.File] as const)
-      // Browsing inside a publication downloads it, so the row it belongs to has to say so.
-      publicationRead(location)
-      return entries.map(entry => [entry[0], entry[1]] as [string, vscode.FileType])
+      const read = async (): Promise<[string, vscode.FileType][]> => {
+        const entries = await (await requireContentSources()).list(location.id, location.path)
+        if (!location.path) {
+          staleRoots.delete(location.id)
+          void noteCatalogue(
+            location.id,
+            entries.map(entry => entry.name),
+          )
+        }
+        // Browsing inside a publication downloads it, so the row it belongs to has to say so.
+        publicationRead(location)
+        return entries.map(entry => [
+          entry.name,
+          entry.directory ? vscode.FileType.Directory : vscode.FileType.File,
+        ])
+      }
+      try {
+        return await read()
+      } catch (error) {
+        const remembered = catalogues()[location.id]
+        if (remembered === undefined) throw error
+        /*
+         * Reaching into a mod that is not loaded is the moment to ask for the account: the reader
+         * asked for its contents, and only the account can produce them. The root itself is served
+         * from the last session instead, so a window opens with the mods it had.
+         */
+        if (location.path && (await signInFor(location.id))) return read()
+        if (location.path) throw error
+        staleRoots.add(location.id)
+        sourceDecorations.fire(undefined)
+        return remembered.names.map(name => [name, vscode.FileType.Directory])
+      }
     },
     async readFile(uri) {
       const location = sourceLocation(uri)
-      const bytes = await (await requireContentSources()).read(
-        location.id,
-        location.path,
-        64 * 1024 * 1024,
-      )
-      publicationRead(location)
-      return bytes
+      const read = async (): Promise<Uint8Array> => {
+        const bytes = await (await requireContentSources()).read(
+          location.id,
+          location.path,
+          64 * 1024 * 1024,
+        )
+        publicationRead(location)
+        return bytes
+      }
+      try {
+        return await read()
+      } catch (error) {
+        if (await signInFor(location.id)) return read()
+        throw error
+      }
     },
     createDirectory: uri => {
       throw vscode.FileSystemError.NoPermissions(uri)
@@ -2948,6 +3090,47 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         return true
       }),
 
+      /*
+       * Disconnect on the root row: the account that produced these mods is the thing being let go
+       * of. A connected account is signed out. One that is only remembered has nothing to sign out
+       * of, so the row itself is what goes — after saying so, because the list is the only trace
+       * of it this window has.
+       */
+      vscode.commands.registerCommand('modkit.sources.disconnect', async (argument: unknown) => {
+        const row =
+          typeof argument === 'object' && argument !== null
+            ? (argument as { readonly sourceId?: unknown })
+            : undefined
+        const sourceId = typeof row?.sourceId === 'string' ? row.sourceId : undefined
+        if (sourceId === undefined || !sourceId.startsWith('mine:')) return false
+        const source = await requireContentSources()
+        const snapshot = await source.snapshot()
+        if (snapshot.roots.some(root => root.id === sourceId)) {
+          await callContentSources(source, 'disconnect', [sourceId.slice('mine:'.length)])
+          await rememberConnections(source)
+          staleRoots.add(sourceId)
+          sourceDecorations.fire(undefined)
+          sourcesView.refresh()
+          return true
+        }
+        const remembered = catalogues()[sourceId]
+        if (remembered === undefined) return false
+        const confirmed = await vscode.window.showWarningMessage(
+          localizer.text('vscode.sources.confirmForget', { name: remembered.label }),
+          { modal: true },
+          localizer.text('vscode.sources.forget'),
+        )
+        if (confirmed === undefined) return false
+        const { [sourceId]: _dropped, ...rest } = catalogues()
+        await context.globalState.update(CATALOGUE_KEY, rest)
+        await context.globalState.update(
+          BATTLENET_CONNECTIONS_KEY,
+          knownConnections().filter(item => item.accountId !== remembered.accountId),
+        )
+        staleRoots.delete(sourceId)
+        sourcesView.refresh()
+        return true
+      }),
       vscode.commands.registerCommand('modkit.sources.signOut', async (argument: unknown) => {
         const row =
           typeof argument === 'object' && argument !== null
@@ -3167,7 +3350,16 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
           const roots =
             selected !== undefined
               ? [selected]
-              : (await source.snapshot()).roots.map(root => root.id)
+              : [
+                  ...new Set([
+                    ...(await source.snapshot()).roots.map(root => root.id),
+                    ...Object.keys(catalogues()),
+                  ]),
+                ]
+          // Refreshing a root this window has no connection for is a reason to sign in.
+          for (const id of roots) {
+            if (!(await source.snapshot()).roots.some(root => root.id === id)) await signInFor(id)
+          }
           for (const id of roots) {
             await callContentSources(source, 'refresh', [id]).catch(() => undefined)
           }

@@ -18,6 +18,7 @@ const text: SourceTreeText = {
   available: 'available',
   signIn: 'Sign in to Battle.net…',
   disconnected: 'signed in, not connected',
+  stale: 'from the last session',
   onlineUnavailable: 'Battle.net accounts are unavailable',
   myPublications: 'My published mods',
   publicCatalogue: 'Public mods',
@@ -222,5 +223,35 @@ describe('accounts this machine knows', () => {
     expect(offline?.offlineAccount).toEqual({ region: 'eu', accountId: 'other' })
     expect(offline?.resourceUri).toBe('modkit-account://eu/other')
     expect(offline?.contextValue).toBe('modkitSource.connection.offline')
+  })
+})
+
+describe('a catalogue kept from an earlier session', () => {
+  it('lists the account root greyed, and drops it once the account is connected', () => {
+    const find = (nodes: readonly SourceTreeNode[], id: string): SourceTreeNode | undefined => {
+      for (const node of nodes) {
+        if (node.id === id) return node
+        const found = find(node.children ?? [], id)
+        if (found !== undefined) return found
+      }
+      return undefined
+    }
+    const build = (rememberedRoots: readonly { id: string; label: string; region: string }[]) =>
+      createSourceTree({
+        workspaceFolders: [],
+        selectedInstallations: [],
+        mountedProviderRootIds: new Set(),
+        providerSnapshot,
+        rememberedRoots,
+        text,
+      })
+    const kept = build([{ id: 'mine:other', label: 'Other account · EU', region: 'eu' }])
+    const row = find(kept, 'provider-root:mine:other')
+    expect(row?.contextValue).toBe('modkitSource.providerRoot.offline')
+    expect(row?.description).toBe('eu · from the last session')
+    expect(row?.sourceId).toBe('mine:other')
+    // The live root wins: an account that is connected is not also listed from what was kept.
+    const live = build([{ id: 'mine:account', label: 'Example account · US', region: 'us' }])
+    expect(find(live, 'provider-root:mine:account')?.contextValue).toBe('modkitSource.providerRoot')
   })
 })

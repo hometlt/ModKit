@@ -31,6 +31,7 @@ export interface SourceTreeText {
   readonly available: string
   readonly signIn: string
   readonly disconnected: string
+  readonly stale: string
   readonly onlineUnavailable: string
   readonly myPublications: string
   readonly publicCatalogue: string
@@ -70,6 +71,12 @@ export interface SourceTreeInput {
   readonly mountingIds?: ReadonlySet<string>
   /** Accounts this machine last had open. One that is not connected is listed as a way back in. */
   readonly knownConnections?: readonly { readonly region: string; readonly accountId: string }[]
+  /** Accounts whose catalogue was kept from an earlier session, listed until one is refreshed. */
+  readonly rememberedRoots?: readonly {
+    readonly id: string
+    readonly label: string
+    readonly region: string
+  }[]
   readonly providerSnapshot?: ContentSourceSnapshot
   readonly providerProblem?: string
   readonly text: SourceTreeText
@@ -263,6 +270,31 @@ export function createSourceTree(input: SourceTreeInput): readonly SourceTreeNod
       const bucket = rootsByKind.get(root.kind)
       if (bucket === undefined) rootsByKind.set(root.kind, [node])
       else bucket.push(node)
+    }
+    /*
+     * An account this window has no connection for still owns the mods it owned: the row is listed
+     * from what was kept, greyed, and refreshing it is what signs back in. Leaving it out would
+     * make a workspace look as if the account's mods had gone.
+     */
+    const liveRootIds = new Set(input.providerSnapshot.roots.map(root => root.id))
+    const offlineRoots = (input.rememberedRoots ?? [])
+      .filter(root => !liveRootIds.has(root.id))
+      .sort((left, right) => compareText(left.label, right.label))
+      .map(root =>
+        Object.freeze({
+          kind: 'provider-root' as const,
+          id: `provider-root:${root.id}`,
+          label: root.label,
+          description: `${root.region} · ${input.text.stale}`,
+          tooltip: root.id,
+          icon: 'cloud',
+          contextValue: 'modkitSource.providerRoot.offline',
+          sourceId: root.id,
+          resourceUri: `modkit-account://${encodeURIComponent(root.region)}/${encodeURIComponent(root.id)}`,
+        }),
+      )
+    if (offlineRoots.length > 0) {
+      rootsByKind.set('mine', [...(rootsByKind.get('mine') ?? []), ...offlineRoots])
     }
     const rootGroups: readonly (readonly [string, string, string])[] = [
       ['mine', 'provider:mine', input.text.myPublications],
