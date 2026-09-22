@@ -194,6 +194,16 @@ export interface ModelBounds {
   readonly max: readonly [number, number, number]
 }
 
+/**
+ * Which way is up in the coordinates this scene publishes.
+ *
+ * A viewer cannot orient geometry it has no orientation for, and guessing gets it wrong half the
+ * time: glTF and UVM are y-up, while StarCraft II's M3, Warcraft III's MDX and Diablo III's APP
+ * are all z-up. A publisher that omits it is read as `+y`, which is what every consumer assumed
+ * before this existed.
+ */
+export type ModelUpAxis = '+y' | '+z'
+
 export interface ModelSceneInfo {
   readonly scenes: number
   readonly nodes: number
@@ -203,6 +213,8 @@ export interface ModelSceneInfo {
   readonly textures: number
   readonly animations: number
   readonly bounds?: ModelBounds
+  /** Defaults to `+y` when absent. */
+  readonly upAxis?: ModelUpAxis
   /** Metadata-only sources remain useful while buffer resolution is unavailable. */
   readonly geometryAccess: 'decoded' | 'metadata-only'
 }

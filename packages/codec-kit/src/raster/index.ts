@@ -8,4 +8,13 @@ export {
   type ColorKeyOptions,
   type Rgba,
 } from './ops.js'
+export {
+  decodeBaselineJpeg,
+  decodeBaselineJpegPlanes,
+  readJpegFrameInfo,
+  type JpegPlane,
+  type JpegPlanes,
+  type JpegDecodeOptions,
+  type JpegFrameInfo,
+} from './jpeg.js'
 export type { RgbaImage } from '../texture/types.js'

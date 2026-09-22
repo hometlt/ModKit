@@ -347,6 +347,173 @@ export interface ModelSocketInfo {
   readonly byRole: Readonly<Record<string, number>>
 }
 
+/**
+ * One publisher-native scalar an effect declares.
+ *
+ * The parameters of an emitter do not generalise — M3's `squirt` and `tailLength` have no MDX
+ * counterpart, and inventing a shared vocabulary for them would mean dropping whatever did not
+ * fit. They are carried as the publisher wrote them, in declaration order, so a viewer can show
+ * an emitter's real settings without knowing the format.
+ */
+export interface ModelEffectProperty {
+  readonly key: string
+  readonly value: string | number | boolean
+  /** True when the publisher stores this as an animated track rather than one fixed value. */
+  readonly animated?: boolean
+}
+
+/**
+ * One emitter or field the model declares: a particle system, a ribbon, a force, a warp.
+ *
+ * `kind` is the publisher's own word rather than a closed set, because the set is not closed: M3
+ * has warps and projectors, Warcraft III has popcorn emitters, and a viewer that only knew a fixed
+ * list would silently drop the rest.
+ */
+export interface ModelEffectRef {
+  readonly id: string
+  readonly kind: string
+  readonly name?: string
+  /** The node this effect rides on, in the publisher's node space. */
+  readonly nodeId?: string
+  /** Joins `ModelMaterialRef.id` when the effect draws with one of the model's materials. */
+  readonly materialId?: string
+  /** Joins `ModelResourceRef.id` when the effect names a logical resource of its own. */
+  readonly resourceId?: string
+  readonly properties?: readonly ModelEffectProperty[]
+}
+
+export interface ModelEffectInfo {
+  readonly effects: number
+  /** Counts per publisher kind. */
+  readonly byKind: Readonly<Record<string, number>>
+  /** The effect profile the publisher names, where it names one (`m3`, `mdx`, …). */
+  readonly profile?: string
+}
+
+/** Emitters and fields — `common.view/model-effect-source@1`. */
+export interface ModelEffectSource {
+  info(signal?: AbortSignal): Promise<ModelEffectInfo>
+  effects(page: PageRequest, signal?: AbortSignal): Promise<Page<ModelEffectRef>>
+}
+
+/**
+ * A light the model carries.
+ *
+ * `kind` is the publisher's own word — M3 writes `directional`, `point` and `spot`, another format
+ * may write something else — and the two colours are the ones every light model in this family
+ * separates. Everything beyond that stays in `properties`, because falloff, decay and hotspot do
+ * not mean the same thing in two engines.
+ */
+export interface ModelLightRef {
+  readonly id: string
+  readonly kind: string
+  readonly name?: string
+  readonly nodeId?: string
+  /** Linear RGB in 0..1. */
+  readonly color?: readonly [number, number, number]
+  readonly intensity?: number
+  readonly properties?: readonly ModelEffectProperty[]
+}
+
+export interface ModelLightInfo {
+  readonly lights: number
+  readonly byKind: Readonly<Record<string, number>>
+}
+
+/** Lights — `common.view/model-light-source@1`. */
+export interface ModelLightSource {
+  info(signal?: AbortSignal): Promise<ModelLightInfo>
+  lights(page: PageRequest, signal?: AbortSignal): Promise<Page<ModelLightRef>>
+}
+
+/**
+ * A camera the model carries.
+ *
+ * Field of view is in radians and the clip planes are in the model's own units, because those
+ * three are the values every camera in this family states and a viewer can act on. The rest —
+ * depth of field, bokeh, focus ranges — stays in `properties`.
+ */
+export interface ModelCameraRef {
+  readonly id: string
+  readonly name?: string
+  readonly nodeId?: string
+  readonly fieldOfViewRadians?: number
+  readonly nearClip?: number
+  readonly farClip?: number
+  readonly properties?: readonly ModelEffectProperty[]
+}
+
+export interface ModelCameraInfo {
+  readonly cameras: number
+}
+
+/** Cameras — `common.view/model-camera-source@1`. */
+export interface ModelCameraSource {
+  info(signal?: AbortSignal): Promise<ModelCameraInfo>
+  cameras(page: PageRequest, signal?: AbortSignal): Promise<Page<ModelCameraRef>>
+}
+
+/**
+ * One simulated body, joint, constraint or cloth.
+ *
+ * Kind-tagged for the same reason effects are: the set is not closed, and a fixed list would drop
+ * whatever a publisher has that this build had not heard of. A joint names two nodes, so both are
+ * addressable rather than one being lost.
+ */
+export interface ModelPhysicsRef {
+  readonly id: string
+  /** `rigid-body`, `joint`, `cloth`, `constraint`, … in the publisher's own words. */
+  readonly kind: string
+  readonly name?: string
+  readonly nodeId?: string
+  /** The second node, for a relation that joins two of them. */
+  readonly secondNodeId?: string
+  /** The volume's own shape where it has one: `box`, `sphere`, `capsule`, `convex-hull`, `mesh`. */
+  readonly shape?: string
+  readonly properties?: readonly ModelEffectProperty[]
+}
+
+export interface ModelPhysicsInfo {
+  readonly bodies: number
+  readonly byKind: Readonly<Record<string, number>>
+}
+
+/** Simulation bodies and their relations — `common.view/model-physics-source@1`. */
+export interface ModelPhysicsSource {
+  info(signal?: AbortSignal): Promise<ModelPhysicsInfo>
+  bodies(page: PageRequest, signal?: AbortSignal): Promise<Page<ModelPhysicsRef>>
+}
+
+/**
+ * Something that drives a node at runtime rather than a clip driving it.
+ *
+ * A turret aims, an inverse-kinematics chain solves, a billboard faces the camera. They are one
+ * family because a consumer asks the same question of all three — which nodes does the engine move
+ * on its own, and under what rule — and because none of them is animation data.
+ */
+export interface ModelNodeBehaviourRef {
+  readonly id: string
+  /** `turret`, `ik`, `billboard`, … in the publisher's own words. */
+  readonly kind: string
+  readonly name?: string
+  /** The node this behaviour drives. */
+  readonly nodeId?: string
+  /** Every node the behaviour touches, for one that spans a chain or a group. */
+  readonly nodeIds?: readonly string[]
+  readonly properties?: readonly ModelEffectProperty[]
+}
+
+export interface ModelNodeBehaviourInfo {
+  readonly behaviours: number
+  readonly byKind: Readonly<Record<string, number>>
+}
+
+/** Runtime node behaviours — `common.view/model-node-behaviour-source@1`. */
+export interface ModelNodeBehaviourSource {
+  info(signal?: AbortSignal): Promise<ModelNodeBehaviourInfo>
+  behaviours(page: PageRequest, signal?: AbortSignal): Promise<Page<ModelNodeBehaviourRef>>
+}
+
 /** Attachment points — `common.view/model-socket-source@1`. */
 export interface ModelSocketSource {
   info(signal?: AbortSignal): Promise<ModelSocketInfo>
@@ -396,16 +563,6 @@ export const RESERVED_MODEL_FACET_SOURCES: readonly ReservedModelFacetSource[] =
     ]),
     blockedBy:
       'no codec publishes named variants today: UV_game_variants exists in the schema and no reader surfaces it',
-  }),
-  Object.freeze({
-    contract: 'common.view/model-effect-source',
-    major: 1,
-    minimalShape: Object.freeze([
-      'info(): { effects, byKind, profile? }',
-      'effects(page): { id, kind, nodeId?, materialId? }',
-    ]),
-    blockedBy:
-      'the UVM reader publishes effect *counts* by kind, which fills info() and nothing else; per-emitter records have no publisher, and a page method no publisher can fill is not a contract',
   }),
 ])
 

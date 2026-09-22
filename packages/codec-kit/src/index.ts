@@ -77,6 +77,8 @@ export interface InspectionTreeNode {
   readonly kind: string
   readonly label: string
   readonly preview?: string
+  /** Stable root or nested-subject address for generic host navigation. */
+  readonly subjectId?: string
   readonly semanticPath?: readonly string[]
   readonly children?: readonly InspectionTreeNode[]
   /**
@@ -353,6 +355,7 @@ export function createTreeDataSource(rootNode: InspectionTreeNode): TreeDataSour
         kind: value.kind,
         label: value.label,
         ...(value.preview === undefined ? {} : { preview: value.preview }),
+        ...(value.subjectId === undefined ? {} : { subjectId: value.subjectId }),
         ...(value.semanticPath === undefined
           ? {}
           : { semanticPath: Object.freeze([...value.semanticPath]) }),
@@ -703,6 +706,11 @@ export {
   createModelAnimationSource,
   createModelCollisionSource,
   createModelMaterialSource,
+  createModelCameraSource,
+  createModelEffectSource,
+  createModelLightSource,
+  createModelNodeBehaviourSource,
+  createModelPhysicsSource,
   createModelSocketSource,
 } from './model/sources.js'
 

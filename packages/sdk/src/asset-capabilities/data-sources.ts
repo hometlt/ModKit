@@ -51,6 +51,22 @@ import type {
   ModelMaterialSource,
   ModelResourceRefsSource,
   ModelSkeletonSource,
+  ModelCameraInfo,
+  ModelCameraRef,
+  ModelCameraSource,
+  ModelLightInfo,
+  ModelLightRef,
+  ModelLightSource,
+  ModelNodeBehaviourInfo,
+  ModelNodeBehaviourRef,
+  ModelNodeBehaviourSource,
+  ModelPhysicsInfo,
+  ModelPhysicsRef,
+  ModelPhysicsSource,
+  ModelEffectInfo,
+  ModelEffectProperty,
+  ModelEffectRef,
+  ModelEffectSource,
   ModelSocketSource,
 } from './model-facet-sources.js'
 import type { WorldSceneSource } from '../maps/index.js'
@@ -86,6 +102,22 @@ export {
   type ModelSocketInfo,
   type ModelSocketOrientation,
   type ModelSocketRef,
+  type ModelCameraInfo,
+  type ModelCameraRef,
+  type ModelCameraSource,
+  type ModelLightInfo,
+  type ModelLightRef,
+  type ModelLightSource,
+  type ModelNodeBehaviourInfo,
+  type ModelNodeBehaviourRef,
+  type ModelNodeBehaviourSource,
+  type ModelPhysicsInfo,
+  type ModelPhysicsRef,
+  type ModelPhysicsSource,
+  type ModelEffectInfo,
+  type ModelEffectProperty,
+  type ModelEffectRef,
+  type ModelEffectSource,
   type ModelSocketSource,
   type ReservedModelFacetSource,
 } from './model-facet-sources.js'
@@ -104,6 +136,7 @@ export type {
   ModelPrimitiveRequest,
   ModelPrimitiveTopology,
   ModelSceneInfo,
+  ModelUpAxis,
   ModelSceneSource,
   RasterImageInfo,
   RasterImageSource,
@@ -217,6 +250,8 @@ export interface TreeNodeFacts {
   readonly kind: string
   readonly label: string
   readonly preview?: string
+  /** Stable subject address opened when a host activates this node. */
+  readonly subjectId?: string
   readonly range?: SourceSpan
   readonly semanticPath?: readonly string[]
   /** Exact lookup coordinate for optional help provided by the host. */
@@ -647,6 +682,11 @@ export type ContainerPackInputV1 =
 
 export interface NamespaceEntrySource {
   list(prefix: string, page: PageRequest, signal?: AbortSignal): Promise<Page<NamespaceEntry>>
+  /**
+   * Optional immediate-child listing for very large hierarchical namespaces. Unlike the flat
+   * listing, this returns only files and directories directly below the requested path.
+   */
+  children?(path: string, page: PageRequest, signal?: AbortSignal): Promise<Page<NamespaceEntry>>
   /**
    * Optional bounded bytes stored before the namespace container itself. The carrier owns the
    * physical range; a semantic codec owns its interpretation.
@@ -1157,6 +1197,11 @@ export interface DataSourceContractMap {
   'common.view/model-collision-source': { 1: ModelCollisionSource }
   'common.view/model-material-source': { 1: ModelMaterialSource }
   'common.view/model-socket-source': { 1: ModelSocketSource }
+  'common.view/model-effect-source': { 1: ModelEffectSource }
+  'common.view/model-light-source': { 1: ModelLightSource }
+  'common.view/model-camera-source': { 1: ModelCameraSource }
+  'common.view/model-physics-source': { 1: ModelPhysicsSource }
+  'common.view/model-node-behaviour-source': { 1: ModelNodeBehaviourSource }
   'common.view/relation-graph-source': { 1: RelationGraphSource }
   'common.view/subject-selector-source': { 1: SubjectSelectorSource }
   'common.view/subject-facts-source': { 1: SubjectFactsSource }

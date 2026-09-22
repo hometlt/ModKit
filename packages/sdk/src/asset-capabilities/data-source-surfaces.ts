@@ -48,6 +48,11 @@ import type {
   ModelMaterialSource,
   ModelResourceRefsSource,
   ModelSkeletonSource,
+  ModelCameraSource,
+  ModelEffectSource,
+  ModelLightSource,
+  ModelNodeBehaviourSource,
+  ModelPhysicsSource,
   ModelSocketSource,
 } from './model-facet-sources.js'
 import type { WorldSceneSource } from '../maps/index.js'
@@ -157,6 +162,7 @@ const transportSourceSurface = {
 const namespaceEntrySourceSurface = {
   methods: {
     list: cancellableValue,
+    children: { kind: 'value', optional: true, ...sig },
     readPreamble: { kind: 'value', optional: true, ...sig },
     search: { kind: 'value', optional: true, ...sig },
     /** `Lease<AssetSourceRef>`: the ref crosses by copy, the lease is a release-only handle. */
@@ -260,6 +266,41 @@ const modelSocketSourceSurface = {
   },
 } as const satisfies SurfaceOf<ModelSocketSource>
 
+const modelEffectSourceSurface = {
+  methods: {
+    info: cancellableValue,
+    effects: cancellableValue,
+  },
+} as const satisfies SurfaceOf<ModelEffectSource>
+
+const modelLightSourceSurface = {
+  methods: {
+    info: cancellableValue,
+    lights: cancellableValue,
+  },
+} as const satisfies SurfaceOf<ModelLightSource>
+
+const modelCameraSourceSurface = {
+  methods: {
+    info: cancellableValue,
+    cameras: cancellableValue,
+  },
+} as const satisfies SurfaceOf<ModelCameraSource>
+
+const modelPhysicsSourceSurface = {
+  methods: {
+    info: cancellableValue,
+    bodies: cancellableValue,
+  },
+} as const satisfies SurfaceOf<ModelPhysicsSource>
+
+const modelNodeBehaviourSourceSurface = {
+  methods: {
+    info: cancellableValue,
+    behaviours: cancellableValue,
+  },
+} as const satisfies SurfaceOf<ModelNodeBehaviourSource>
+
 const relationGraphSourceSurface = {
   methods: {
     summary: cancellableValue,
@@ -356,6 +397,11 @@ export const STANDARD_DATA_SOURCE_SURFACES: Readonly<
   'common.view/model-animation-source': modelAnimationSourceSurface,
   'common.view/model-collision-source': modelCollisionSourceSurface,
   'common.view/model-material-source': modelMaterialSourceSurface,
+  'common.view/model-effect-source': modelEffectSourceSurface,
+  'common.view/model-light-source': modelLightSourceSurface,
+  'common.view/model-camera-source': modelCameraSourceSurface,
+  'common.view/model-physics-source': modelPhysicsSourceSurface,
+  'common.view/model-node-behaviour-source': modelNodeBehaviourSourceSurface,
   'common.view/model-socket-source': modelSocketSourceSurface,
   'common.view/relation-graph-source': relationGraphSourceSurface,
   'common.view/subject-selector-source': subjectSelectorSourceSurface,

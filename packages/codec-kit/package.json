@@ -165,6 +165,10 @@
     "./projection": {
       "types": "./dist/projection.d.ts",
       "default": "./dist/projection.js"
+    },
+    "./raster/jpeg": {
+      "types": "./dist/raster/jpeg.d.ts",
+      "default": "./dist/raster/jpeg.js"
     }
   },
   "files": [
@@ -202,7 +206,7 @@
     "build": "tsc -b",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "clean": "tsc -b --clean",
-    "test": "node --test test/*.test.mjs",
+    "test": "node --test test/*.test.mjs && node --test test/raster-jpeg.test.ts",
     "test:legacy": "node --test test/legacy-kit.test.mjs",
     "typecheck:mk2-libraries": "tsc -p tsconfig.mk2-libraries.json --noEmit",
     "typecheck:mk2-libraries:test": "tsc -p tsconfig.mk2-libraries.test.json --noEmit"

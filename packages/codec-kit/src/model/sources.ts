@@ -16,6 +16,17 @@ import type {
   ModelSceneInfo,
   ModelSceneSource,
   ModelSkeletonSource,
+  ModelCameraRef,
+  ModelCameraSource,
+  ModelEffectProperty,
+  ModelLightRef,
+  ModelLightSource,
+  ModelNodeBehaviourRef,
+  ModelNodeBehaviourSource,
+  ModelPhysicsRef,
+  ModelPhysicsSource,
+  ModelEffectRef,
+  ModelEffectSource,
   ModelSocketRef,
   ModelSocketSource,
 } from '@modkit/sdk'
@@ -286,6 +297,141 @@ export function createModelMaterialSource({
 }
 
 /** `common.view/model-socket-source@1` — stable attachment identity and native source name. */
+/**
+ * Emitters and fields, as the model declares them.
+ *
+ * Properties are carried in the publisher's own words and order: emitter parameters do not
+ * generalise across games, and a shared vocabulary would silently drop whatever did not fit.
+ */
+export function createModelEffectSource({
+  effects,
+  profile,
+}: {
+  readonly effects: readonly ModelEffectRef[]
+  readonly profile?: string
+}): ModelEffectSource {
+  const items = effects.map(effect => ({
+    ...effect,
+    ...(effect.properties === undefined
+      ? {}
+      : { properties: Object.freeze(effect.properties.map((one: ModelEffectProperty) => Object.freeze({ ...one }))) }),
+  }))
+  const byKind: Record<string, number> = {}
+  for (const effect of items) byKind[effect.kind] = (byKind[effect.kind] ?? 0) + 1
+  return facetSource(
+    Object.freeze({
+      effects: items.length,
+      byKind: Object.freeze(byKind),
+      ...(profile === undefined ? {} : { profile }),
+    }),
+    'effects',
+    items,
+  )
+}
+
+/** Lights, as the model declares them. */
+export function createModelLightSource({
+  lights,
+}: {
+  readonly lights: readonly ModelLightRef[]
+}): ModelLightSource {
+  const items = lights.map(light => ({
+    ...light,
+    ...(light.color === undefined ? {} : { color: Object.freeze([...light.color] as const) }),
+    ...(light.properties === undefined
+      ? {}
+      : {
+          properties: Object.freeze(
+            light.properties.map((one: ModelEffectProperty) => Object.freeze({ ...one })),
+          ),
+        }),
+  }))
+  const byKind: Record<string, number> = {}
+  for (const light of items) byKind[light.kind] = (byKind[light.kind] ?? 0) + 1
+  return facetSource(
+    Object.freeze({ lights: items.length, byKind: Object.freeze(byKind) }),
+    'lights',
+    items,
+  ) as unknown as ModelLightSource
+}
+
+/** Cameras, as the model declares them. */
+export function createModelCameraSource({
+  cameras,
+}: {
+  readonly cameras: readonly ModelCameraRef[]
+}): ModelCameraSource {
+  const items = cameras.map(camera => ({
+    ...camera,
+    ...(camera.properties === undefined
+      ? {}
+      : {
+          properties: Object.freeze(
+            camera.properties.map((one: ModelEffectProperty) => Object.freeze({ ...one })),
+          ),
+        }),
+  }))
+  return facetSource(
+    Object.freeze({ cameras: items.length }),
+    'cameras',
+    items,
+  ) as unknown as ModelCameraSource
+}
+
+/** Simulation bodies and their relations. */
+export function createModelPhysicsSource({
+  bodies,
+}: {
+  readonly bodies: readonly ModelPhysicsRef[]
+}): ModelPhysicsSource {
+  const items = bodies.map(body => ({
+    ...body,
+    ...(body.properties === undefined
+      ? {}
+      : {
+          properties: Object.freeze(
+            body.properties.map((one: ModelEffectProperty) => Object.freeze({ ...one })),
+          ),
+        }),
+  }))
+  const byKind: Record<string, number> = {}
+  for (const body of items) byKind[body.kind] = (byKind[body.kind] ?? 0) + 1
+  return facetSource(
+    Object.freeze({ bodies: items.length, byKind: Object.freeze(byKind) }),
+    'bodies',
+    items,
+  ) as unknown as ModelPhysicsSource
+}
+
+/** Turrets, inverse-kinematics chains and billboards: what the engine drives on its own. */
+export function createModelNodeBehaviourSource({
+  behaviours,
+}: {
+  readonly behaviours: readonly ModelNodeBehaviourRef[]
+}): ModelNodeBehaviourSource {
+  const items = behaviours.map(behaviour => ({
+    ...behaviour,
+    ...(behaviour.nodeIds === undefined
+      ? {}
+      : { nodeIds: Object.freeze([...behaviour.nodeIds]) }),
+    ...(behaviour.properties === undefined
+      ? {}
+      : {
+          properties: Object.freeze(
+            behaviour.properties.map((one: ModelEffectProperty) => Object.freeze({ ...one })),
+          ),
+        }),
+  }))
+  const byKind: Record<string, number> = {}
+  for (const behaviour of items)
+    byKind[behaviour.kind] = (byKind[behaviour.kind] ?? 0) + 1
+  return facetSource(
+    Object.freeze({ behaviours: items.length, byKind: Object.freeze(byKind) }),
+    'behaviours',
+    items,
+  ) as unknown as ModelNodeBehaviourSource
+}
+
 export function createModelSocketSource({
   sockets,
 }: {

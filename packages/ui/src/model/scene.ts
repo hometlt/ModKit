@@ -14,6 +14,7 @@
  */
 
 import type {
+  ModelUpAxis,
   ModelBoneBinding,
   ModelBounds,
   ModelMaterialRef,
@@ -44,6 +45,9 @@ export const MODEL_FIELD_OF_VIEW = 0.8
  */
 export const MODEL_DEFAULT_BASE_COLOR: SceneRendererColor = Object.freeze([0.78, 0.8, 0.84, 1])
 
+/** What a textured material modulates its texels by: nothing. */
+export const MODEL_TEXTURED_BASE_COLOR: SceneRendererColor = Object.freeze([1, 1, 1, 1])
+
 /**
  * The key light, in view-independent world space.
  *
@@ -56,6 +60,39 @@ export const MODEL_KEY_LIGHT: SceneRendererDirectionalLight = Object.freeze({
   color: Object.freeze([1, 1, 1, 1]) as SceneRendererColor,
   ambient: 0.28,
 })
+
+/**
+ * The rotation that brings a publisher's up axis onto the viewer's.
+ *
+ * The orbit controller works in y-up viewer space by construction, so a z-up model is turned once,
+ * here, rather than every consumer inventing its own correction. `+y` needs no rotation and
+ * returns undefined so nothing is multiplied for the common case.
+ *
+ * Column-major, like every other matrix in this contract: it maps (x, y, z) to (x, z, -y).
+ */
+export function upAxisCorrection(upAxis: ModelUpAxis | undefined): Float32Array | undefined {
+  if (upAxis !== '+z') return undefined
+  return Float32Array.from([1, 0, 0, 0, 0, 0, -1, 0, 0, 1, 0, 0, 0, 0, 0, 1])
+}
+
+/** Apply a world correction to a primitive, composing with any transform it already carries. */
+export function orientPrimitive(
+  primitive: SceneRendererPrimitive,
+  correction: Float32Array | undefined,
+): SceneRendererPrimitive {
+  if (correction === undefined) return primitive
+  const existing = primitive.transform
+  if (existing === undefined) return { ...primitive, transform: correction }
+  const out = new Float32Array(16)
+  for (let row = 0; row < 4; row += 1)
+    for (let column = 0; column < 4; column += 1) {
+      let sum = 0
+      for (let k = 0; k < 4; k += 1)
+        sum += (correction[k * 4 + row] ?? 0) * (existing[column * 4 + k] ?? 0)
+      out[column * 4 + row] = sum
+    }
+  return { ...primitive, transform: out }
+}
 
 export interface ModelFraming {
   readonly center: Vector3
@@ -366,7 +403,12 @@ export function sceneMaterials(
     }
     return Object.freeze({
       id: ref.id,
-      baseColor: texture === undefined ? materialColorFor(ref.id) : MODEL_DEFAULT_BASE_COLOR,
+      /*
+       * A bound texture is the surface's own albedo, so it is shown at its own value. Modulating
+       * it by the untextured grey made textured models darker than untextured ones — worst on the
+       * dark textures where detail matters most.
+       */
+      baseColor: texture === undefined ? materialColorFor(ref.id) : MODEL_TEXTURED_BASE_COLOR,
       ...(texture === undefined ? {} : { baseColorTexture: texture.id }),
       shading: shaded ? ('lambert' as const) : ('unlit' as const),
       ...(ref.alphaMode === undefined ? {} : { alphaMode: ref.alphaMode }),

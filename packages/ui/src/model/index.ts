@@ -1,13 +1,23 @@
 import type {
+  AnyDescriptor,
+  CommitCoordinator,
+  EditAuthorizationPort,
+  JsonValue,
   Lease,
   ModelAnimationClip,
   ModelBoneBinding,
   ModelCollisionVolume,
+  ModelCameraRef,
+  ModelEffectRef,
+  ModelLightRef,
+  ModelNodeBehaviourRef,
+  ModelPhysicsRef,
   ModelMaterialRef,
   ModelPrimitive,
   ModelResourceRef,
   ModelSceneSource,
   ModelSocketRef,
+  OperationSession,
   RasterResourcePort,
   SceneRenderer,
   SceneRendererPrimitive,
@@ -17,6 +27,7 @@ import type {
 } from '@modkit/sdk'
 import { createModelSceneSampler } from '@modkit/scene/model'
 import { loadModelStage, readModelRecords, MODEL_MAXIMUM_RECORDS } from './source.js'
+import { orientPrimitive, upAxisCorrection } from './scene.js'
 export {
   loadModelStage,
   MODEL_MAXIMUM_PRIMITIVE_BYTES,
@@ -24,6 +35,9 @@ export {
 } from './source.js'
 export type { ModelStageModel } from './source.js'
 import { createMediaShell } from '../media-shell/index.js'
+import { commitOperationWrite } from '../field-write/index.js'
+import { exportOffer, type EditOperationForm } from '../field-editor/index.js'
+import type { ImageExportFile, ImageExportOutcome, ImageSidebarSection } from '../image/index.js'
 import {
   createSurface,
   createViewerMount,
@@ -118,6 +132,45 @@ export const MODEL_RENDERER_BACKENDS: Readonly<Record<string, string>> = Object.
 /** The 2D fallback's backend name; see `MODEL_RENDERER_BACKENDS`. */
 export const MODEL_WIREFRAME_BACKEND = 'wireframe'
 
+/**
+ * The operation a clip rename goes through.
+ *
+ * It is the common field write, not a model-specific one: a viewer that invented its own rename
+ * operation would only work for the codecs that had implemented it.
+ */
+const CLIP_RENAME_OPERATION = 'edit.field'
+
+/**
+ * The operation a model conversion goes through.
+ *
+ * An image offers its `export.convert` presets; a model offers the native encodings its codec
+ * declares. Both are the same shape — a non-mutating operation whose input schema lists the
+ * targets — so both are read with the same helper and drawn the same way.
+ */
+const MODEL_CONVERT_OPERATION = 'model.export-native'
+
+export interface ModelConversionPreset {
+  readonly form: EditOperationForm
+  readonly input: JsonValue
+}
+
+/**
+ * The conversion presets a model codec publishes, as data a menu or a button can use.
+ *
+ * A form that declares no write target is not a conversion — it is some other preset of the same
+ * operation — and is left out rather than guessed at from its input.
+ */
+export function modelConversions(descriptor: AnyDescriptor): readonly ModelConversionPreset[] {
+  return exportOffer(descriptor, MODEL_CONVERT_OPERATION).flatMap(form => {
+    if (form.writes === undefined) return []
+    try {
+      return [{ form, input: form.build(new Map()) }]
+    } catch {
+      return []
+    }
+  })
+}
+
 export function modelRendererBackend(rendererId: string): string {
   return MODEL_RENDERER_BACKENDS[rendererId] ?? 'provider'
 }
@@ -139,6 +192,11 @@ export const MODEL_FACET_CONTRACTS = Object.freeze([
   'common.view/model-collision-source',
   'common.view/model-material-source',
   'common.view/model-socket-source',
+  'common.view/model-effect-source',
+  'common.view/model-light-source',
+  'common.view/model-camera-source',
+  'common.view/model-physics-source',
+  'common.view/model-node-behaviour-source',
 ] as const)
 
 /** Facet id → the one count worth putting on a single readout line. */
@@ -153,6 +211,14 @@ const FACET_READOUT: Readonly<Record<string, { labelKey: UiMessageKey; key: stri
     'common.view/model-collision-source': { labelKey: 'viewer.modelCollision', key: 'volumes' },
     'common.view/model-material-source': { labelKey: 'viewer.modelMaterials', key: 'materials' },
     'common.view/model-socket-source': { labelKey: 'viewer.modelSockets', key: 'sockets' },
+    'common.view/model-effect-source': { labelKey: 'viewer.modelEffects', key: 'effects' },
+    'common.view/model-light-source': { labelKey: 'viewer.modelLights', key: 'lights' },
+    'common.view/model-camera-source': { labelKey: 'viewer.modelCameras', key: 'cameras' },
+    'common.view/model-physics-source': { labelKey: 'viewer.modelPhysics', key: 'bodies' },
+    'common.view/model-node-behaviour-source': {
+      labelKey: 'viewer.modelBehaviours',
+      key: 'behaviours',
+    },
   })
 
 export interface ModelFacetDetail {
@@ -233,6 +299,33 @@ function facetItem(
     const item = value as ModelMaterialRef
     return `${short(item.name ?? item.id)} · ${item.type ?? localizer.text('viewer.modelMaterial')} · ${item.blendMode ?? localizer.text('viewer.modelBlendUnknown')} · ${localizer.text('viewer.modelLayers', { count: item.layers?.length ?? 0 })}`
   }
+  if (contract === 'common.view/model-light-source') {
+    const item = value as ModelLightRef
+    return `${short(item.name ?? item.id)} · ${item.kind} · ${item.nodeId ?? '—'}`
+  }
+  if (contract === 'common.view/model-camera-source') {
+    const item = value as ModelCameraRef
+    const fov =
+      item.fieldOfViewRadians === undefined
+        ? '—'
+        : `${((item.fieldOfViewRadians * 180) / Math.PI).toFixed(1)}°`
+    return `${short(item.name ?? item.id)} · ${fov} · ${item.nodeId ?? '—'}`
+  }
+  if (contract === 'common.view/model-physics-source') {
+    const item = value as ModelPhysicsRef
+    return `${short(item.name ?? item.id)} · ${item.kind}${item.shape === undefined ? '' : ` · ${item.shape}`} · ${item.nodeId ?? '—'}`
+  }
+  if (contract === 'common.view/model-node-behaviour-source') {
+    const item = value as ModelNodeBehaviourRef
+    const spans = item.nodeIds === undefined ? '' : ` · ${String(item.nodeIds.length)}`
+    return `${short(item.name ?? item.id)} · ${item.kind} · ${item.nodeId ?? '—'}${spans}`
+  }
+  if (contract === 'common.view/model-effect-source') {
+    const item = value as ModelEffectRef
+    // Kind, where it rides, and how many of its own settings it carries — the three things that
+    // distinguish one emitter from another without printing seventy-odd parameters in a list.
+    return `${short(item.name ?? item.id)} · ${item.kind} · ${item.nodeId ?? '—'} · ${localizer.text('viewer.modelEffectProperties', { count: item.properties?.length ?? 0 })}`
+  }
   const item = value as ModelSocketRef
   return `${short(item.sourceName ?? item.id)} · ${item.role} · ${item.nodeId}`
 }
@@ -245,6 +338,11 @@ const FACET_PAGE_METHOD: Readonly<Record<ModelFacetDetail['contract'], string>> 
   'common.view/model-collision-source': 'volumes',
   'common.view/model-material-source': 'materials',
   'common.view/model-socket-source': 'sockets',
+  'common.view/model-effect-source': 'effects',
+  'common.view/model-light-source': 'lights',
+  'common.view/model-camera-source': 'cameras',
+  'common.view/model-physics-source': 'bodies',
+  'common.view/model-node-behaviour-source': 'behaviours',
 })
 
 export interface ModelFacetPage {
@@ -462,8 +560,36 @@ function themeColor(canvas: HTMLCanvasElement, token: string, fallback: string):
   return getComputedStyle(canvas).getPropertyValue(token).trim() || fallback
 }
 
+/**
+ * The host's file writer, reused rather than redeclared.
+ *
+ * It is the same writer the image view is given: one host capability, one type. A parallel
+ * model-shaped copy would only force every host to adapt twice for the same job.
+ */
+export type { ImageExportFile as ModelExportFile } from '../image/index.js'
+export type { ImageExportOutcome as ModelExportOutcome } from '../image/index.js'
+
 export interface ModelViewerOptions {
+  /**
+   * How this host writes converted files, when it can. A host that omits it gets a conversion
+   * control that says why it is disabled rather than a button that quietly does nothing — the same
+   * rule the image view follows.
+   */
+  readonly exportBytes?: (
+    files: readonly ImageExportFile[],
+    signal?: AbortSignal | undefined,
+  ) => Promise<ImageExportOutcome>
+  /** Base name the converted file is derived from; the host usually supplies the subject name. */
+  readonly exportBaseName?: (descriptor: AnyDescriptor) => string
   readonly localizer?: UiLocalizer
+  /**
+   * Sidebar sections the host contributes, beside the ones the model declares for itself.
+   *
+   * The same route the image view takes: MK2 showed a model's codec operations and its document
+   * tree as separate tabs, and a host that wants them here mounts them as sections rather than the
+   * viewer reaching for panels it does not own.
+   */
+  readonly sections?: readonly ImageSidebarSection[]
   /**
    * Where this stage asks for a `common.render/scene-3d` provider.
    *
@@ -590,6 +716,124 @@ export async function resolveModelViewerTextures(
   return textures
 }
 
+/** The document path whose value is a clip's name, for a subject that stores clips as UVM does. */
+export function clipNamePath(clip: ModelAnimationClip, ordinal: number): readonly string[] {
+  // `sequenceIndex` is the clip's own key where a publisher states one; otherwise its position in
+  // the published order, which is the order the document lists animations in.
+  const index = Number.isSafeInteger(clip.sequenceIndex) ? (clip.sequenceIndex as number) : ordinal
+  return ['animations', String(index), 'name']
+}
+
+interface ClipRenameOptions {
+  readonly localizer: UiLocalizer
+  readonly descriptor: AnyDescriptor
+  readonly operations: OperationSession
+  readonly commit?: CommitCoordinator
+  readonly authorization?: EditAuthorizationPort
+  readonly selector: HTMLSelectElement
+  readonly clips: readonly ModelAnimationClip[]
+  readonly signal?: AbortSignal
+}
+
+/**
+ * Rename the selected clip, beside the selector that chose it.
+ *
+ * Offered only when the subject declares the field-write operation *and* the host granted a commit
+ * route: a control that accepts a name, reports success and saves nothing is worse than no control,
+ * so its absence is deliberate rather than a missing feature.
+ *
+ * The write itself is the ordinary field write every editable tree row uses — the viewer names the
+ * path, the codec turns it into an edit plan, the host commits it.
+ */
+export function canRenameClips(route: {
+  readonly descriptor: AnyDescriptor
+  readonly commit?: CommitCoordinator
+  readonly authorization?: EditAuthorizationPort
+}): boolean {
+  const operation = route.descriptor.operations.find(
+    (candidate: { readonly id: string }) => candidate.id === CLIP_RENAME_OPERATION,
+  )
+  if (operation === undefined || operation.state !== 'available') return false
+  // Without both ports the write cannot land, and a control that cannot save is worse than none.
+  return route.commit !== undefined && route.authorization !== undefined
+}
+
+function mountClipRename(
+  toolbar: HTMLElement,
+  options: ClipRenameOptions,
+): (() => void) | undefined {
+  if (!canRenameClips(options)) return undefined
+
+  const field = element(toolbar, 'input', { part: 'model.animation-name' }) as HTMLInputElement
+  field.type = 'text'
+  field.disabled = true
+  field.setAttribute('aria-label', options.localizer.text('viewer.modelAnimationName'))
+  const status = element(toolbar, 'output', { part: 'model.animation-name-status' })
+
+  const selectedClip = (): { clip: ModelAnimationClip; ordinal: number } | undefined => {
+    const ordinal = options.clips.findIndex(candidate => candidate.id === options.selector.value)
+    const clip = options.clips[ordinal]
+    return clip === undefined ? undefined : { clip, ordinal }
+  }
+
+  const syncToSelection = () => {
+    const selected = selectedClip()
+    field.disabled = selected === undefined
+    field.value = selected?.clip.name ?? ''
+    status.textContent = ''
+  }
+  syncToSelection()
+  options.selector.addEventListener('change', syncToSelection, {
+    ...(options.signal === undefined ? {} : { signal: options.signal }),
+  })
+
+  const rename = async () => {
+    const selected = selectedClip()
+    const name = field.value.trim()
+    if (selected === undefined || name === '' || name === selected.clip.name) {
+      syncToSelection()
+      return
+    }
+    field.disabled = true
+    status.textContent = options.localizer.text('viewer.modelAnimationRenaming')
+    const refusal = await commitOperationWrite(
+      {
+        descriptor: options.descriptor,
+        operations: options.operations,
+        ...(options.commit === undefined ? {} : { commit: options.commit }),
+        ...(options.authorization === undefined ? {} : { authorization: options.authorization }),
+      },
+      CLIP_RENAME_OPERATION,
+      {
+        groupId: 'tree',
+        path: [...clipNamePath(selected.clip, selected.ordinal)],
+        key: 'name',
+        value: name,
+      } as JsonValue,
+      options.signal,
+    )
+    field.disabled = false
+    if (refusal !== undefined) {
+      status.textContent = refusal
+      return
+    }
+    status.textContent = ''
+    // The selector label follows the committed name; the host reopens the subject for the rest.
+    const option = [...options.selector.options].find(
+      candidate => candidate.value === selected.clip.id,
+    )
+    if (option !== undefined) option.text = name
+  }
+
+  field.addEventListener('change', () => void rename(), {
+    ...(options.signal === undefined ? {} : { signal: options.signal }),
+  })
+  return () => {
+    field.remove()
+    status.remove()
+  }
+}
+
 export function createModelViewer(options: ModelViewerOptions = {}): ViewerModule {
   const localizer = withEnglishUiFallback(options.localizer, MODEL_FALLBACK_MESSAGES)
   return defineViewerModule({
@@ -688,6 +932,19 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
           element(row, 'dt', { text: label, part: 'metadata.label' })
           setViewerText(element(row, 'dd', { part: 'metadata.value' }), value, 64)
         }
+        for (const contributed of options.sections ?? []) {
+          const section = shell.section(contributed.id, contributed.title, {
+            ...(contributed.icon === undefined ? {} : { icon: contributed.icon }),
+            collapsed: contributed.collapsed ?? true,
+          })
+          void contributed.module
+            .mount({ ...args, container: section.body })
+            .then(mounted => {
+              scope.cleanup(() => void mounted.unmount())
+            })
+            // A section whose module cannot bind (no such data source here) is removed, not empty.
+            .catch(() => section.root.remove())
+        }
         for (const detail of facetDetails) {
           const section = shell.section(
             `facet:${detail.label}`,
@@ -779,8 +1036,21 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
           const clips = (facetPages.get('common.view/model-animation-source')?.items ??
             []) as readonly ModelAnimationClip[]
           const projection = { ...model, skeleton: boneBindings }
+          /*
+           * The publisher's up axis, applied once here.
+           *
+           * The orbit controller works in y-up viewer space by construction, so a z-up model —
+           * StarCraft II, Warcraft III, Diablo III — has to be turned before it is framed or lit,
+           * or it lies on its side and the key light rakes it from below. A publisher that states
+           * nothing is read as y-up, which is what every consumer assumed before.
+           */
+          const correction = upAxisCorrection(model.info.upAxis)
+          const orient = (sampled: ReturnType<typeof player.sample>) =>
+            correction === undefined
+              ? sampled
+              : { ...sampled, primitives: sampled.primitives.map(one => orientPrimitive(one, correction)) }
           let player = createModelSceneSampler(projection, { signal: scope.signal })
-          let scene = player.sample(0, scope.signal)
+          let scene = orient(player.sample(0, scope.signal))
           let selectedPrimitive: string | undefined
           let activeClip: ModelAnimationClip | undefined
           let timeSeconds = 0
@@ -849,7 +1119,7 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
               return
             }
             try {
-              scene = player.sample(timeSeconds, scope.signal)
+              scene = orient(player.sample(timeSeconds, scope.signal))
             } catch (error) {
               setViewerText(playbackStatus, error instanceof Error ? error.message : String(error))
               canvas.setAttribute('data-model-pose-diagnostics', 'common.model/pose-failed')
@@ -1008,10 +1278,89 @@ export function createModelViewer(options: ModelViewerOptions = {}): ViewerModul
               { signal: scope.signal },
             )
           }
+          const conversions = modelConversions(args.descriptor)
+          if (conversions.length > 0) {
+            const convert = element(toolbar, 'select', {
+              part: 'model.convert-selector',
+            }) as HTMLSelectElement
+            convert.setAttribute('aria-label', localizer.text('viewer.modelConvert'))
+            const prompt = element(convert, 'option', {
+              text: localizer.text('viewer.modelConvert'),
+            }) as HTMLOptionElement
+            prompt.value = ''
+            for (const preset of conversions) {
+              const option = element(convert, 'option', { text: preset.form.label })
+              ;(option as HTMLOptionElement).value = preset.form.id
+            }
+            const convertStatus = element(toolbar, 'output', { part: 'model.convert-status' })
+            const writeFiles = options.exportBytes
+            if (writeFiles === undefined) {
+              convert.disabled = true
+              // The host granted no writer, so the control says why rather than doing nothing.
+              convertStatus.textContent = localizer.text('viewer.modelConvertUnavailable')
+            } else
+              convert.addEventListener(
+                'change',
+                () => {
+                  const preset = conversions.find(item => item.form.id === convert.value)
+                  convert.value = ''
+                  if (preset === undefined) return
+                  convertStatus.textContent = localizer.text('viewer.modelConverting', {
+                    preset: preset.form.label,
+                  })
+                  void (async () => {
+                    try {
+                      const result = await args.operations.invoke(
+                        preset.form.handlerId,
+                        preset.input,
+                        { signal: scope.signal },
+                      )
+                      if (result.state !== 'ok') throw new Error(result.reason)
+                      const output = result.output as { kind: string; value?: unknown }
+                      if (output.kind !== 'bytes' || !(output.value instanceof Uint8Array))
+                        throw new Error(`the codec answered ${output.kind}, not bytes`)
+                      const base = options.exportBaseName?.(args.descriptor) ?? 'model'
+                      const writes = preset.form.writes
+                      if (writes === undefined)
+                        throw new Error(`${preset.form.id} declares no write target`)
+                      const outcome = await writeFiles(
+                        [
+                          {
+                            name: `${base}.${writes.extension}`,
+                            mediaType: writes.mediaType,
+                            bytes: output.value,
+                          },
+                        ],
+                        scope.signal,
+                      )
+                      convertStatus.textContent =
+                        outcome.state === 'written'
+                          ? localizer.text('viewer.modelConverted', { preset: preset.form.label })
+                          : (outcome.reason ?? outcome.state)
+                    } catch (error) {
+                      convertStatus.textContent =
+                        error instanceof Error ? error.message : String(error)
+                    }
+                  })()
+                },
+                { signal: scope.signal },
+              )
+          }
           if (clips.length > 0) {
             const selector = element(toolbar, 'select', {
               part: 'model.animation-selector',
             }) as HTMLSelectElement
+            const renameClip = mountClipRename(toolbar, {
+              localizer,
+              descriptor: args.descriptor,
+              operations: args.operations,
+              ...(args.commit === undefined ? {} : { commit: args.commit }),
+              ...(args.authorization === undefined ? {} : { authorization: args.authorization }),
+              selector,
+              clips,
+              signal: scope.signal,
+            })
+            if (renameClip !== undefined) scope.cleanup(renameClip)
             selector.setAttribute('aria-label', localizer.text('viewer.modelAnimation'))
             const rest = element(selector, 'option', {
               text: localizer.text('viewer.modelRestPose'),
