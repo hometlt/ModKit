@@ -252,6 +252,11 @@
       "command": "modkit.sources.disconnect",
       "title": "%command.sources.disconnect.title%",
       "icon": "$(debug-disconnect)"
+    },
+    {
+      "command": "modkit.sources.publish",
+      "title": "%command.sources.publish.title%",
+      "icon": "$(cloud-upload)"
     }
   ],
   "configuration": {
@@ -330,11 +335,6 @@
         "items": {
           "type": "string"
         }
-      },
-      "modkit.sources.reconnectOnStartup": {
-        "type": "boolean",
-        "default": false,
-        "markdownDescription": "%configuration.reconnectOnStartup.description%"
       }
     }
   },
@@ -549,6 +549,11 @@
         "command": "modkit.sources.detach",
         "when": "resourceScheme == modkit-source",
         "group": "navigation@23"
+      },
+      {
+        "command": "modkit.sources.publish",
+        "when": "resourceScheme == modkit-source",
+        "group": "navigation@26"
       }
     ],
     "view/title": [
@@ -727,6 +732,11 @@
       {
         "command": "modkit.sources.addPublic",
         "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.publicRoot(\\.|$)/",
+        "group": "inline@0"
+      },
+      {
+        "command": "modkit.sources.publish",
+        "when": "view == modkit.sources && viewItem == modkitSource.publication.cached",
         "group": "inline@0"
       }
     ]

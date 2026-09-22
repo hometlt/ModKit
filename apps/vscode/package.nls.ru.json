@@ -74,6 +74,6 @@
   "command.downloadSource": "Скачать",
   "command.clearSourceCache": "Удалить локальную копию",
   "command.detachSource": "Открепить мод",
-  "configuration.reconnectOnStartup.description": "Восстанавливать подключения Battle.net, которые были открыты на этой машине в прошлый раз. Сохраняется сам вход, поэтому подключение проходит без запроса пароля, пока аккаунт не вышел; после выхода ничего не восстанавливается.",
-  "command.sources.disconnect.title": "Отключить аккаунт"
+  "command.sources.disconnect.title": "Отключить аккаунт",
+  "command.sources.publish.title": "Опубликовать новую ревизию"
 }

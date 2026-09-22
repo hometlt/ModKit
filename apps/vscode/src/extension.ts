@@ -2556,24 +2556,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       (snapshot.connections ?? []).map(item => ({ region: item.region, accountId: item.accountId })),
     )
   }
-  const reconnectKnownAccounts = async (): Promise<void> => {
-    const remembered = knownConnections()
-    if (remembered.length === 0) return
-    if (!vscode.workspace.getConfiguration('modkit').get<boolean>('sources.reconnectOnStartup')) return
-    const source = await contentSources?.catch(() => undefined)
-    if (source === undefined) return
-    await vscode.window.withProgress(
-      { location: vscode.ProgressLocation.Window, title: localizer.text('vscode.sources.reconnecting') },
-      async () => {
-        for (const item of remembered) {
-          await callContentSources(source, 'connect', [item.region, item.accountId]).catch(
-            () => undefined,
-          )
-        }
-      },
-    )
-    sourcesView.refresh()
-  }
   /** A row action arrives as the Explorer's URI; anything else is not a content-source row. */
   const contentSourceRow = (
     argument: unknown,
@@ -3090,6 +3072,112 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         return true
       }),
 
+      /*
+       * Publishing a revision of one of this account's publications.
+       *
+       * A revision is not a new publication: the name, the preview images and everything the
+       * catalogue reports about how the mod is listed come from the header it already has, and
+       * only the archive and the two flags the author chose are new. Each choice is asked once,
+       * and nothing is sent until the compiled package is described and accepted.
+       */
+      vscode.commands.registerCommand('modkit.sources.publish', async (argument: unknown) => {
+        const target = contentSourceRow(argument)
+        if (target === undefined) return false
+        const source = await requireContentSources()
+        if ((await source.snapshot()).publishing !== true) {
+          void vscode.window.showWarningMessage(localizer.text('vscode.sources.publishUnavailable'))
+          return false
+        }
+        const archive = await vscode.window.showQuickPick(
+          [
+            { label: localizer.text('vscode.sources.publishArchiveCached'), pick: false },
+            { label: localizer.text('vscode.sources.publishArchivePick'), pick: true },
+          ],
+          { title: localizer.text('vscode.sources.publishArchive') },
+        )
+        if (archive === undefined) return false
+        let archivePath: string | undefined
+        if (archive.pick) {
+          const chosen = await vscode.window.showOpenDialog({
+            canSelectMany: false,
+            openLabel: localizer.text('vscode.sources.publishConfirmAction'),
+            filters: { StarCraft: ['SC2Map', 'SC2Mod', 's2ma'] },
+          })
+          archivePath = chosen?.[0]?.fsPath
+          if (archivePath === undefined) return false
+        }
+        const listing = await vscode.window.showQuickPick(
+          [
+            { label: localizer.text('vscode.sources.publishPrivate'), value: 'private' as const },
+            { label: localizer.text('vscode.sources.publishPublic'), value: 'public' as const },
+          ],
+          { title: localizer.text('vscode.sources.publishVisibility') },
+        )
+        if (listing === undefined) return false
+        const lock = await vscode.window.showQuickPick(
+          [
+            { label: localizer.text('vscode.sources.publishLockedYes'), value: true },
+            { label: localizer.text('vscode.sources.publishLockedNo'), value: false },
+          ],
+          { title: localizer.text('vscode.sources.publishLocked') },
+        )
+        if (lock === undefined) return false
+        const review = (await vscode.window.withProgress(
+          { location: vscode.ProgressLocation.Notification, title: localizer.text('vscode.sources.publishPreparing') },
+          () =>
+            callContentSources(source, 'prepareRevision', [
+              target.id,
+              target.path,
+              {
+                ...(archivePath === undefined ? {} : { archivePath }),
+                visibility: listing.value,
+                locked: lock.value,
+              },
+            ]),
+        )) as {
+          id: string
+          name: string
+          account: string
+          region: string
+          bytes: number
+          visibility: string
+          locked: boolean
+          target: { mode: string; id?: number; expectedVersion?: number }
+        }
+        const version = review.target.expectedVersion ?? 0
+        const confirmed = await vscode.window.showWarningMessage(
+          localizer.text('vscode.sources.publishConfirm', {
+            name: review.name,
+            region: review.region.toUpperCase(),
+            visibility: localizer.text(
+              review.visibility === 'public' ? 'vscode.sources.publishPublic' : 'vscode.sources.publishPrivate',
+            ),
+            locked: review.locked ? ` + ${localizer.text('vscode.sources.publishLockedYes')}` : '',
+            account: review.account,
+            bytes: String(review.bytes),
+            version: `${version >>> 16}.${version & 0xffff}`,
+          }),
+          { modal: true },
+          localizer.text('vscode.sources.publishConfirmAction'),
+        )
+        if (confirmed === undefined) return false
+        const receipt = (await vscode.window.withProgress(
+          {
+            location: vscode.ProgressLocation.Notification,
+            title: localizer.text('vscode.sources.publishing', { name: review.name }),
+          },
+          () => callContentSources(source, 'publish', [review.id]),
+        )) as { publication?: { version?: number } }
+        const published = receipt.publication?.version ?? 0
+        rowChanged(target)
+        void vscode.window.showInformationMessage(
+          localizer.text('vscode.sources.published', {
+            name: review.name,
+            version: `${published >>> 16}.${published & 0xffff}`,
+          }),
+        )
+        return true
+      }),
       /*
        * Disconnect on the root row: the account that produced these mods is the thing being let go
        * of. A connected account is signed out. One that is only remembered has nothing to sign out
@@ -11305,9 +11393,6 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
 
   const activationMs = Date.now() - activationStarted
   log(`Modkit MK3 activated in ${activationMs} ms`)
-  // Taking the remembered accounts back is not part of activating: it waits for its own turn.
-  void reconnectKnownAccounts().catch(() => undefined)
-
   return Object.freeze({
     activationMs,
     /*

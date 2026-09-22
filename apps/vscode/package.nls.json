@@ -74,6 +74,6 @@
   "command.downloadSource": "Download",
   "command.clearSourceCache": "Remove local copy",
   "command.detachSource": "Detach mod",
-  "configuration.reconnectOnStartup.description": "Take the Battle.net accounts this machine last had connected back when a window opens. The sign-in itself is what is kept, so this reconnects without asking for a password while the account stays signed in; sign out and nothing is reconnected.",
-  "command.sources.disconnect.title": "Disconnect the account"
+  "command.sources.disconnect.title": "Disconnect the account",
+  "command.sources.publish.title": "Publish a new revision"
 }

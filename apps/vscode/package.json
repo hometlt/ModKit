@@ -198,6 +198,11 @@
         "icon": "$(plug)"
       },
       {
+        "command": "modkit.sources.publish",
+        "title": "%command.sources.publish.title%",
+        "icon": "$(cloud-upload)"
+      },
+      {
         "command": "modkit.sources.refresh",
         "title": "%command.refreshSources%",
         "icon": "$(refresh)"
@@ -294,11 +299,6 @@
           "items": { "type": "string" },
           "markdownDescription": "%configuration.nonDefaultContributions.description%",
           "type": "array"
-        },
-        "modkit.sources.reconnectOnStartup": {
-          "default": false,
-          "markdownDescription": "%configuration.reconnectOnStartup.description%",
-          "type": "boolean"
         }
       }
     },
@@ -416,6 +416,11 @@
           "group": "navigation@21"
         },
         {
+          "command": "modkit.sources.publish",
+          "when": "resourceScheme == modkit-source",
+          "group": "navigation@26"
+        },
+        {
           "command": "modkit.sources.revealLocal",
           "when": "resourceScheme == modkit-source || resourceScheme == modkit-container",
           "group": "navigation@20"
@@ -521,6 +526,11 @@
           "command": "modkit.sources.openInstallation",
           "when": "view == modkit.sources && viewItem == modkitSource.installation",
           "group": "inline@1"
+        },
+        {
+          "command": "modkit.sources.publish",
+          "when": "view == modkit.sources && viewItem == modkitSource.publication.cached",
+          "group": "inline@0"
         },
         {
           "command": "modkit.sources.refresh",
@@ -663,6 +673,7 @@
     "onCommand:modkit.sources.download",
     "onCommand:modkit.sources.open",
     "onCommand:modkit.sources.openInstallation",
+    "onCommand:modkit.sources.publish",
     "onCommand:modkit.sources.refresh",
     "onCommand:modkit.sources.revealLocal",
     "onCommand:modkit.sources.signIn",
