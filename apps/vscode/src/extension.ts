@@ -2144,8 +2144,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
   // ---------------------------------------------------------------- granted roots
   /** Directories the user reached outside the workspace (a single file opened by name). */
   /** The realm rail. Held rather than constructed inline, because a page's report refreshes it. */
+  // A chosen game installation belongs to the user, not to one workspace; older windows kept it
+  // per workspace, so that value is still read when nothing is stored for the user yet.
   let selectedSources = selectedContentSources(
-    context.workspaceState.get<unknown>(SELECTED_SOURCES_KEY),
+    context.globalState.get<unknown>(SELECTED_SOURCES_KEY) ??
+      context.workspaceState.get<unknown>(SELECTED_SOURCES_KEY),
   )
   /**
    * Mounts in flight, by the id the Sources row carries — a provider root id or an installation's
@@ -9511,7 +9514,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
 
   const publishSelectedSources = async (next: readonly SelectedContentSource[]): Promise<void> => {
     selectedSources = next
-    await context.workspaceState.update(SELECTED_SOURCES_KEY, next)
+    await context.globalState.update(SELECTED_SOURCES_KEY, next)
     resetContentSources()
     hostView.refresh()
     sourcesView.refresh()
