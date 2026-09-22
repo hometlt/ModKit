@@ -73,5 +73,6 @@
   "command.addPublicSource": "Add a published mod…",
   "command.downloadSource": "Download",
   "command.clearSourceCache": "Remove local copy",
-  "command.detachSource": "Detach mod"
+  "command.detachSource": "Detach mod",
+  "configuration.reconnectOnStartup.description": "Take the Battle.net accounts this machine last had connected back when a window opens. The sign-in itself is what is kept, so this reconnects without asking for a password while the account stays signed in; sign out and nothing is reconnected."
 }

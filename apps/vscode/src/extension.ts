@@ -322,6 +322,8 @@ const MANAGED_PACKAGES_DIRECTORY = 'managed-packages'
 const MANAGED_RELEASE_DESCRIPTOR = 'release.v1.json'
 const MANAGED_RELEASE_CATALOG = 'catalog.v1.json'
 const SELECTED_SOURCES_KEY = 'modkit.selectedContentSources'
+/** Accounts this machine last had connected: region and non-secret account id, never a ticket. */
+const BATTLENET_CONNECTIONS_KEY = 'modkit.sources.knownConnections'
 
 interface PackagedManagedRegistry {
   readonly catalogPath: string
@@ -2468,6 +2470,52 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
    * downloaded offers `download`. Listing a root is a catalogue call, so the answer is held briefly
    * and dropped whenever a row is downloaded, cleared, added or detached.
    */
+  /**
+   * Which accounts this machine last had open, so a new window can take the same ones back.
+   *
+   * A native session is a process with a live connection: closing the window ends it, and nothing
+   * here pretends otherwise. What survives is the sign-in itself, so reconnecting the remembered
+   * account asks Battle.net for nothing the user has to type.
+   */
+  const knownConnections = (): readonly { region: string; accountId: string }[] => {
+    const stored = context.globalState.get<unknown>(BATTLENET_CONNECTIONS_KEY)
+    if (!Array.isArray(stored)) return []
+    return stored.flatMap(item =>
+      typeof item === 'object' &&
+      item !== null &&
+      typeof (item as { region?: unknown }).region === 'string' &&
+      typeof (item as { accountId?: unknown }).accountId === 'string'
+        ? [{ region: (item as { region: string }).region, accountId: (item as { accountId: string }).accountId }]
+        : [],
+    )
+  }
+  const rememberedAccount = (region: string): string | undefined =>
+    knownConnections().find(item => item.region === region)?.accountId
+  const rememberConnections = async (source: ContentSources): Promise<void> => {
+    const snapshot = await source.snapshot()
+    await context.globalState.update(
+      BATTLENET_CONNECTIONS_KEY,
+      (snapshot.connections ?? []).map(item => ({ region: item.region, accountId: item.accountId })),
+    )
+  }
+  const reconnectKnownAccounts = async (): Promise<void> => {
+    const remembered = knownConnections()
+    if (remembered.length === 0) return
+    if (!vscode.workspace.getConfiguration('modkit').get<boolean>('sources.reconnectOnStartup')) return
+    const source = await contentSources?.catch(() => undefined)
+    if (source === undefined) return
+    await vscode.window.withProgress(
+      { location: vscode.ProgressLocation.Window, title: localizer.text('vscode.sources.reconnecting') },
+      async () => {
+        for (const item of remembered) {
+          await callContentSources(source, 'connect', [item.region, item.accountId]).catch(
+            () => undefined,
+          )
+        }
+      },
+    )
+    sourcesView.refresh()
+  }
   /** A row action arrives as the Explorer's URI; anything else is not a content-source row. */
   const contentSourceRow = (
     argument: unknown,
@@ -2763,7 +2811,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
               )
         const region = chosen === undefined ? undefined : 'id' in chosen ? chosen.id : undefined
         if (typeof region !== 'string') return false
-        await callContentSources(source, 'connect', [region])
+        await callContentSources(source, 'connect', [region, rememberedAccount(region)])
+        await rememberConnections(source)
         sourcesView.refresh()
         return true
       }),
@@ -2796,6 +2845,8 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
               )?.id)
         if (typeof chosen !== 'string') return false
         await callContentSources(source, 'disconnect', [chosen])
+        // A signed-out account must not be taken back by the next window.
+        await rememberConnections(source)
         sourcesView.refresh()
         return true
       }),
@@ -10865,6 +10916,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
 
   const activationMs = Date.now() - activationStarted
   log(`Modkit MK3 activated in ${activationMs} ms`)
+  // Taking the remembered accounts back is not part of activating: it waits for its own turn.
+  void reconnectKnownAccounts().catch(() => undefined)
+
   return Object.freeze({
     activationMs,
     /*

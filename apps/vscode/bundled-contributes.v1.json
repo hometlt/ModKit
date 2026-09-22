@@ -325,6 +325,11 @@
         "items": {
           "type": "string"
         }
+      },
+      "modkit.sources.reconnectOnStartup": {
+        "type": "boolean",
+        "default": false,
+        "markdownDescription": "%configuration.reconnectOnStartup.description%"
       }
     }
   },

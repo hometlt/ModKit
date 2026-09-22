@@ -324,6 +324,11 @@
         },
         "markdownDescription": "%configuration.nonDefaultContributions.description%",
         "type": "array"
+      },
+      "modkit.sources.reconnectOnStartup": {
+        "default": false,
+        "markdownDescription": "%configuration.reconnectOnStartup.description%",
+        "type": "boolean"
       }
     }
   },
