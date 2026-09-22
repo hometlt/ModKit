@@ -1,0 +1,17 @@
+[
+  {
+    "name": "map-top",
+    "comment": "Strictly top-down. Azimuth pi/2 turns the frame a quarter turn counter-clockwise against azimuth 0, which puts map north up and east right.",
+    "elevation": 1.5,
+    "zoom": 1.7,
+    "azimuth": 1.5707963267948966,
+    "target": [0, 0, 0]
+  },
+  {
+    "name": "map-iso",
+    "elevation": 0.9,
+    "zoom": 1.4,
+    "azimuth": 0.7853981633974483,
+    "target": [0, 0, 0]
+  }
+]
