@@ -208,6 +208,11 @@
         "icon": "$(cloud-upload)"
       },
       {
+        "command": "modkit.sources.publishNew",
+        "title": "%command.sources.publishNew.title%",
+        "icon": "$(add)"
+      },
+      {
         "command": "modkit.sources.refresh",
         "title": "%command.refreshSources%",
         "icon": "$(refresh)"
@@ -548,6 +553,11 @@
           "group": "inline@0"
         },
         {
+          "command": "modkit.sources.publishNew",
+          "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.providerRoot(\\.|$)/",
+          "group": "inline@0"
+        },
+        {
           "command": "modkit.sources.refresh",
           "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.(?:providerRoot|publicRoot)(\\.|$)/",
           "group": "inline@2"
@@ -690,6 +700,7 @@
     "onCommand:modkit.sources.open",
     "onCommand:modkit.sources.openInstallation",
     "onCommand:modkit.sources.publish",
+    "onCommand:modkit.sources.publishNew",
     "onCommand:modkit.sources.refresh",
     "onCommand:modkit.sources.revealLocal",
     "onCommand:modkit.sources.signIn",

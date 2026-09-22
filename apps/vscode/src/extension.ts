@@ -3109,6 +3109,123 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
       }),
 
       /*
+       * Publishing a document Battle.net has never seen.
+       *
+       * The server is asked about the name first: it answers with the attribute namespace the
+       * header must carry, and refuses outright if the name is already published — which is what
+       * separates creating a publication from revising one.
+       */
+      vscode.commands.registerCommand('modkit.sources.publishNew', async (argument: unknown) => {
+        const source = await requireContentSources()
+        const snapshot = await source.snapshot()
+        if (snapshot.publishing !== true) {
+          void vscode.window.showWarningMessage(localizer.text('vscode.sources.publishUnavailable'))
+          return false
+        }
+        const row =
+          typeof argument === 'object' && argument !== null
+            ? (argument as { readonly sourceId?: unknown })
+            : undefined
+        const connections = snapshot.connections ?? []
+        const chosen =
+          typeof row?.sourceId === 'string' && row.sourceId.startsWith('mine:')
+            ? connections.find(item => `mine:${item.id}` === row.sourceId)
+            : connections.length === 1
+              ? connections[0]
+              : await vscode.window
+                  .showQuickPick(
+                    connections.map(item => ({
+                      label: item.label,
+                      description: item.region.toUpperCase(),
+                      id: item.id,
+                    })),
+                    { title: localizer.text('vscode.sources.chooseConnection') },
+                  )
+                  .then(picked =>
+                    picked === undefined ? undefined : connections.find(item => item.id === picked.id),
+                  )
+        if (chosen === undefined) return false
+        const picked = await vscode.window.showOpenDialog({
+          canSelectMany: false,
+          openLabel: localizer.text('vscode.sources.publishConfirmAction'),
+          title: localizer.text('vscode.sources.publishNewArchive'),
+          filters: { StarCraft: ['SC2Map', 'SC2Mod', 's2ma'] },
+        })
+        const archivePath = picked?.[0]?.fsPath
+        if (archivePath === undefined) return false
+        const name = await vscode.window.showInputBox({
+          title: localizer.text('vscode.sources.publishNewName'),
+          placeHolder: localizer.text('vscode.sources.publishNewNamePlaceholder'),
+          value: archivePath.split(/[\\/]/u).at(-1)?.replace(/\.(SC2Map|SC2Mod|s2ma)$/iu, '') ?? '',
+          validateInput: value => (value.trim().length > 0 && value.trim().length <= 80 ? undefined : ''),
+        })
+        if (name === undefined || name.trim().length === 0) return false
+        const listing = await vscode.window.showQuickPick(
+          [
+            { label: localizer.text('vscode.sources.publishPrivate'), value: 'private' as const },
+            { label: localizer.text('vscode.sources.publishPublic'), value: 'public' as const },
+          ],
+          { title: localizer.text('vscode.sources.publishVisibility') },
+        )
+        if (listing === undefined) return false
+        const lock = await vscode.window.showQuickPick(
+          [
+            { label: localizer.text('vscode.sources.publishLockedProtected'), value: true, protect: true },
+            { label: localizer.text('vscode.sources.publishLockedYes'), value: true, protect: false },
+            { label: localizer.text('vscode.sources.publishLockedNo'), value: false, protect: false },
+          ],
+          { title: localizer.text('vscode.sources.publishLocked') },
+        )
+        if (lock === undefined) return false
+        const review = (await vscode.window.withProgress(
+          { location: vscode.ProgressLocation.Notification, title: localizer.text('vscode.sources.publishPreparing') },
+          () =>
+            callContentSources(source, 'prepareFirstPublication', [
+              chosen.id,
+              {
+                archivePath,
+                name: name.trim(),
+                visibility: listing.value,
+                locked: lock.value,
+                protectHeader: lock.protect,
+              },
+            ]),
+        )) as { id: string; name: string; account: string; region: string; bytes: number; locked: boolean }
+        const confirmed = await vscode.window.showWarningMessage(
+          localizer.text('vscode.sources.publishNewConfirm', {
+            name: review.name,
+            region: review.region.toUpperCase(),
+            visibility: localizer.text(
+              listing.value === 'public' ? 'vscode.sources.publishPublic' : 'vscode.sources.publishPrivate',
+            ),
+            locked: review.locked ? ` + ${localizer.text('vscode.sources.publishLockedYes')}` : '',
+            account: review.account,
+            bytes: String(review.bytes),
+          }),
+          { modal: true },
+          localizer.text('vscode.sources.publishConfirmAction'),
+        )
+        if (confirmed === undefined) return false
+        const receipt = (await vscode.window.withProgress(
+          {
+            location: vscode.ProgressLocation.Notification,
+            title: localizer.text('vscode.sources.publishing', { name: review.name }),
+          },
+          () => callContentSources(source, 'publish', [review.id]),
+        )) as { publication?: { version?: number } }
+        const published = receipt.publication?.version ?? 0
+        forgetCacheStates()
+        sourcesView.refresh()
+        void vscode.window.showInformationMessage(
+          localizer.text('vscode.sources.published', {
+            name: review.name,
+            version: `${published >>> 16}.${published & 0xffff}`,
+          }),
+        )
+        return true
+      }),
+
+      /*
        * Publishing a revision of one of this account's publications.
        *
        * A revision is not a new publication: the name, the preview images and everything the

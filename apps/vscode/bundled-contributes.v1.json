@@ -262,6 +262,11 @@
       "command": "modkit.sources.deletePublication",
       "title": "%command.sources.deletePublication.title%",
       "icon": "$(trash)"
+    },
+    {
+      "command": "modkit.sources.publishNew",
+      "title": "%command.sources.publishNew.title%",
+      "icon": "$(add)"
     }
   ],
   "configuration": {
@@ -753,6 +758,11 @@
         "command": "modkit.sources.deletePublication",
         "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.publication\\./",
         "group": "publication@1"
+      },
+      {
+        "command": "modkit.sources.publishNew",
+        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.providerRoot(\\.|$)/",
+        "group": "inline@0"
       }
     ]
   },

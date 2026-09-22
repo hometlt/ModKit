@@ -223,6 +223,11 @@
       "icon": "$(cloud-upload)"
     },
     {
+      "command": "modkit.sources.publishNew",
+      "title": "%command.sources.publishNew.title%",
+      "icon": "$(add)"
+    },
+    {
       "command": "modkit.sources.refresh",
       "title": "%command.refreshSources%",
       "icon": "$(refresh)"
@@ -600,6 +605,11 @@
       {
         "command": "modkit.sources.publish",
         "when": "view == modkit.sources && viewItem == modkitSource.publication.cached",
+        "group": "inline@0"
+      },
+      {
+        "command": "modkit.sources.publishNew",
+        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.providerRoot(\\.|$)/",
         "group": "inline@0"
       },
       {

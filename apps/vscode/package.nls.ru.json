@@ -76,5 +76,6 @@
   "command.detachSource": "Открепить мод",
   "command.sources.disconnect.title": "Отключить аккаунт",
   "command.sources.publish.title": "Опубликовать новую ревизию",
-  "command.sources.deletePublication.title": "Удалить публикацию"
+  "command.sources.deletePublication.title": "Удалить публикацию",
+  "command.sources.publishNew.title": "Опубликовать новый мод или карту"
 }
