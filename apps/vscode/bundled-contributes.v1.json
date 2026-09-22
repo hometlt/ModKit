@@ -683,6 +683,11 @@
         "command": "modkit.sources.signOut",
         "when": "view == modkit.sources && viewItem == modkitSource.connection",
         "group": "inline@1"
+      },
+      {
+        "command": "modkit.sources.refresh",
+        "when": "view == modkit.sources && viewItem =~ /^modkitSource\\.(?:providerRoot|connection)(?:\\.(?:mounted|mounting))?$/",
+        "group": "inline@3"
       }
     ]
   },

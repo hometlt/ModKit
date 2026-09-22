@@ -2964,7 +2964,33 @@ export async function activate(context: vscode.ExtensionContext): Promise<Modkit
         )
       }),
 
-      vscode.commands.registerCommand('modkit.sources.refresh', () => {
+      /*
+       * The catalogue is read when a connection is opened and then held: browsing a published mod
+       * must not ask Battle.net again for the list. Refresh is the one place that does, for the
+       * selected root or for every one of them.
+       */
+      vscode.commands.registerCommand('modkit.sources.refresh', async (argument: unknown) => {
+        const row =
+          typeof argument === 'object' && argument !== null
+            ? (argument as { readonly sourceId?: unknown; readonly id?: unknown })
+            : undefined
+        const selected =
+          typeof row?.sourceId === 'string'
+            ? row.sourceId
+            : typeof row?.id === 'string' && row.id.includes(':')
+              ? row.id
+              : undefined
+        const source = await contentSources?.catch(() => undefined)
+        if (source !== undefined) {
+          const roots =
+            selected !== undefined
+              ? [selected]
+              : (await source.snapshot()).roots.map(root => root.id)
+          for (const id of roots) {
+            await callContentSources(source, 'refresh', [id]).catch(() => undefined)
+          }
+        }
+        forgetCacheStates(selected)
         sourcesView.refresh()
         return true
       }),
